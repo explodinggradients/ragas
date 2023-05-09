@@ -5,7 +5,6 @@ dependencies = [
 dynamic = ["version", "readme"]
 
 [tool.setuptools.dynamic]
-version = {attr = "belar.VERSION"}
 readme = {file = ["README.md"], content-type = "text/plain"}
 
 [build-system]
