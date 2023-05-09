@@ -1,0 +1,15 @@
+[project]
+name = "belar"
+dependencies = [
+]
+dynamic = ["version", "readme"]
+
+[tool.setuptools.dynamic]
+version = {attr = "belar.VERSION"}
+readme = {file = ["README.md"], content-type = "text/plain"}
+
+[build-system]
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+[tool.setuptools_scm]
+write_to = "belar/_version.py"
