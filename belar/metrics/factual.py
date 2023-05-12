@@ -1,5 +1,4 @@
 from __future__ import annotations
-from tkinter.ttk import _Padding
 
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import typing as t
@@ -71,7 +70,7 @@ class EntailmentScore(Metric):
 
         encodings = self.tokenizer(
             ground_truth, generated_text, truncation=True, return_tensors="pt",
-            max_length=self.max_length, padding=True,
+            max_length=self.max_length, padding="max_length",
         )
 
         score = self.batch_infer(encodings)
