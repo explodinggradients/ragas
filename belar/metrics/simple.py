@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass
 from nltk.tokenize import word_tokenize
-from nltk.translate.bleu_score import corpus_bleu
+from nltk.translate.bleu_score import sentence_bleu
 from rouge_score import rouge_scorer
 
 from belar.metrics.base import Metric
@@ -52,12 +52,15 @@ class BLEU(Metric):
     def score(self, ground_truth: t.List[str], generated_text: t.List[str]):
         ground_truth_ = [[word_tokenize(text)] for text in ground_truth]
         generated_text_ = [word_tokenize(text) for text in generated_text]
-        return corpus_bleu(
-            ground_truth_,
-            generated_text_,
-            weights=self.weights,
-            smoothing_function=self.smoothing_function,
-        )
+        return [
+            sentence_bleu(
+                s1,
+                s2,
+                weights=self.weights,
+                smoothing_function=self.smoothing_function,
+            )
+            for s1, s2 in zip(ground_truth_, generated_text_)
+        ]
 
 
 Rouge1 = ROUGE("rouge1")
