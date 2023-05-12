@@ -1,5 +1,4 @@
 from __future__ import annotations
-from tkinter.ttk import _Padding
 
 import typing as t
 from dataclasses import dataclass
