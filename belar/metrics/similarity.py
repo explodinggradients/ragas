@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 from dataclasses import dataclass
+
 import numpy as np
 from numpy.linalg import norm
 from sentence_transformers import SentenceTransformer
