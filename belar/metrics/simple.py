@@ -55,14 +55,14 @@ class ROUGE(Metric):
     def is_batchable(self):
         return False
 
-    def score(self, ground_truth: str, generated_text: str):
-        if isinstance(ground_truth, list):
-            ground_truth = ground_truth[0]
-        if isinstance(generated_text, list):
-            generated_text = generated_text[0]
-
-        score = self.scorer.score(ground_truth, generated_text)[self.type]
-        return score.fmeasure
+    def score(
+        self, ground_truths: list[str], generated_texts: list[str]
+    ) -> list[float]:
+        scores = [
+            self.scorer.score(ground_truth, generated_texts[i])[self.type].fmeasure
+            for i, ground_truth in enumerate(ground_truths)
+        ]
+        return scores
 
 
 class EditScore(Metric):
