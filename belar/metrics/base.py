@@ -21,9 +21,7 @@ class Metric(ABC):
         ...
 
     @abstractmethod
-    def score(
-        self, ground_truth: list[str] | str, generated_text: list[str] | str
-    ) -> list[float] | float:
+    def score(self, ground_truth: list[str], generated_text: list[str]) -> list[float]:
         ...
 
 
@@ -33,7 +31,7 @@ class Evaluation:
     batched: bool = True
     batch_size: int = 1000
 
-    def eval(self, ground_truth: list[list[str]], generated_text: list[str]):
+    def eval(self, ground_truth: list[list[str]], generated_text: list[str]) -> Dataset:
         ds = Dataset.from_dict(
             {"ground_truth": ground_truth, "generated_text": generated_text}
         )
@@ -41,6 +39,7 @@ class Evaluation:
 
         return ds
 
+    # TODO: set a typevar here for row
     def _get_score(self, row: dict[str, list[t.Any]] | dict[str, t.Any]):
         for metric in self.metrics:
             if self.batched:
