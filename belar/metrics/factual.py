@@ -1,4 +1,5 @@
 from __future__ import annotations
+from tkinter.ttk import _Padding
 
 import typing as t
 from dataclasses import dataclass
@@ -19,6 +20,7 @@ class EntailmentScore(Metric):
     max_length: int = 512
     batch_size: int = 4
     device: t.Literal["cpu", "cuda"] = "cpu"
+
 
     def __post_init__(self):
         self.device = device_check(self.device)
