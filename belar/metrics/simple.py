@@ -12,31 +12,6 @@ ROUGE_TYPES = t.Literal["rouge1", "rouge2", "rougeL"]
 
 
 @dataclass
-class ROUGE(Metric):
-    type: t.Literal[ROUGE_TYPES]
-    use_stemmer: bool = False
-
-    def __post_init__(self):
-        self.scorer = rouge_scorer.RougeScorer(
-            [self.type], use_stemmer=self.use_stemmer
-        )
-
-    def name(self):
-        return self.type
-
-    def is_batchable(self):
-        return False
-
-    def score(self, ground_truth: str, generated_text: str):
-        if isinstance(ground_truth, list):
-            ground_truth = ground_truth[0]
-        if isinstance(generated_text, list):
-            generated_text = generated_text[0]
-
-        score = self.scorer.score(ground_truth, generated_text)[self.type]
-        return score.fmeasure
-
-
 class BLEU(Metric):
     weights: t.List[float] = [0.25, 0.25, 0.25, 0.25]
     smoothing_function = None
@@ -61,6 +36,32 @@ class BLEU(Metric):
             )
             for s1, s2 in zip(ground_truth_, generated_text_)
         ]
+
+
+@dataclass
+class ROUGE(Metric):
+    type: t.Literal[ROUGE_TYPES]
+    use_stemmer: bool = False
+
+    def __post_init__(self):
+        self.scorer = rouge_scorer.RougeScorer(
+            [self.type], use_stemmer=self.use_stemmer
+        )
+
+    def name(self):
+        return self.type
+
+    def is_batchable(self):
+        return False
+
+    def score(self, ground_truth: str, generated_text: str):
+        if isinstance(ground_truth, list):
+            ground_truth = ground_truth[0]
+        if isinstance(generated_text, list):
+            generated_text = generated_text[0]
+
+        score = self.scorer.score(ground_truth, generated_text)[self.type]
+        return score.fmeasure
 
 
 Rouge1 = ROUGE("rouge1")
