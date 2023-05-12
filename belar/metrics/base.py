@@ -23,24 +23,21 @@ class Metric(ABC):
     def score(self, ground_truth, generated_text) -> float | list[float]:
         ...
 
-    def __call__(self, row):
-        score = self.score(row["ground_truth"], row["generated_text"])
-        row[f"{self.name}_score"] = score
-
-        return row
-
 
 @dataclass
 class Evaluation:
     metrics: list[Metric]
+    batched: bool = False
 
-    def eval(
-        self, ground_truth: Dataset, generated_text: t.Sequence, batched: bool = False
-    ):
+    def eval(self, ground_truth: list[list[str]], generated_text: list[list[str]]):
         ds = ground_truth.add_column("generated_text", generated_text)
-        scores_list = []
-        for metric in self.metrics:
-            scores = ds.map(metric, batched=batched)[f"{metric.name}_score"]
-            scores_list.append(scores)
+        ds = ds.map(self._get_score, batched=self.batched)
 
-        return scores_list
+        return ds
+
+    def _get_score(self, row):
+        for metric in self.metrics:
+            score = metric.score(row["ground_truth"], row["generated_text"])
+            row[f"{metric.name}_score"] = score
+
+        return row
