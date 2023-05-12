@@ -44,7 +44,7 @@ class EditScore(Metric):
 
     @property
     def name(self) -> str:
-        return f"edit-{self.measure}"
+        return f"edit_{self.measure}"
 
     @property
     def is_batchable(self):
