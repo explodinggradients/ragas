@@ -50,9 +50,11 @@ class ROUGE(Metric):
             [self.type], use_stemmer=self.use_stemmer
         )
 
+    @property
     def name(self):
         return self.type
 
+    @property
     def is_batchable(self):
         return False
 
