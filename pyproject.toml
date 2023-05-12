@@ -1,6 +1,8 @@
 [project]
 name = "belar"
 dependencies = [
+"Levenshtein",
+"rouge-score"
 ]
 dynamic = ["version", "readme"]
 
