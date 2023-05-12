@@ -10,6 +10,7 @@ from belar.metrics.base import Metric
 
 SBERT_METRIC = t.Literal["cosine", "euclidean"]
 
+
 @dataclass
 class SBERTScore(Metric):
     similarity_metric: t.Literal[SBERT_METRIC] = "cosine"
@@ -25,19 +26,15 @@ class SBERTScore(Metric):
     ):
         return f"SBERT_{self.similarity_metric}"
 
+    @property
     def is_batchable(self):
         return True
 
     def score(
         self,
-        ground_truth: str | list[str],
-        generated_text: str | list[str],
+        ground_truth: list[str],
+        generated_text: list[str],
     ):
-        if isinstance(ground_truth, str):
-            ground_truth = [ground_truth]
-        if isinstance(generated_text, str):
-            generated_text = [generated_text]
-
         gndtruth_emb = self.model.encode(
             ground_truth, batch_size=self.batch_size, convert_to_numpy=True
         )
