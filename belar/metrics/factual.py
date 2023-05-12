@@ -34,9 +34,11 @@ class EntailmentScore(Metric):
         else:
             self.id2label = model_config["id2label"]
 
+    @property
     def name(self):
-        return "Entailment-Score"
+        return "Entailment_score"
 
+    @property
     def is_batchable(self):
         return True
 
@@ -55,19 +57,14 @@ class EntailmentScore(Metric):
 
     def score(
         self,
-        ground_truth: t.Union[str, t.List[str]],
-        generated_text: t.Union[str, t.List[str]],
+        ground_truth: t.List[str],
+        generated_text: t.List[str],
     ):
         """
         ground_truth : premis
         generated_text : hypothesis
         returns entailement probability score
         """
-
-        if isinstance(ground_truth, str):
-            ground_truth = [ground_truth]
-        if isinstance(generated_text, str):
-            generated_text = [generated_text]
 
         encodings = self.tokenizer(
             ground_truth, generated_text, truncation=True, return_tensors="pt"
