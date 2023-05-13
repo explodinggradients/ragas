@@ -20,7 +20,6 @@ class EntailmentScore(Metric):
     batch_size: int = 4
     device: t.Literal["cpu", "cuda"] = "cpu"
 
-
     def __post_init__(self):
         self.device = device_check(self.device)
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
