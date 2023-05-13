@@ -6,9 +6,9 @@ help: ## Show all Makefile targets
 .PHONY: format lint type style clean run-benchmarks
 format: ## Running code formatter: black and isort
 	@echo "(black) Formatting codebase..."
-	@black --config pyproject.toml belar tests docs examples
+	@black --config pyproject.toml belar tests examples
 	@echo "(black) Formatting stubs..."
-	@find src -name "*.pyi" ! -name "*_pb2*" -exec black --pyi --config pyproject.toml {} \;
+	@find belar -name "*.pyi" ! -name "*_pb2*" -exec black --pyi --config pyproject.toml {} \;
 	@echo "(isort) Reordering imports..."
 	@isort .
 	@echo "(ruff) Running fix only..."
@@ -18,7 +18,7 @@ lint: ## Running lint checker: ruff
 	@ruff check belar examples tests
 type: ## Running type checker: pyright
 	@echo "(pyright) Typechecking codebase..."
-	@pyright -p belar -w
+	@pyright -p belar
 style: format lint
 clean: ## Clean all generated files
 	@echo "Cleaning all generated files..."
