@@ -1,21 +1,12 @@
 import typing as t
-from dataclasses import dataclass
 
 from datasets import Dataset, load_dataset
 from torch.cuda import is_available
 from tqdm import tqdm
 from utils import print_table, timeit
 
-from belar.metrics import (
-    EditDistance,
-    EditRatio,
-    EntailmentScore,
-    Evaluation,
-    Rouge1,
-    Rouge2,
-    RougeL,
-    SBERTScore,
-)
+from belar.metrics import (EditDistance, EditRatio, EntailmentScore,
+                           Evaluation, Rouge1, Rouge2, RougeL, SBERTScore)
 
 DEVICE = "cuda" if is_available() else "cpu"
 BATCHES = [0, 1]

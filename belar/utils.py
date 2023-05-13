@@ -1,6 +1,7 @@
-import torch
 import typing as t
 from warnings import warn
+
+import torch
 
 DEVICES = ["cpu", "cuda"]
 
