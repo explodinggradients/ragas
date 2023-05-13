@@ -14,8 +14,8 @@ dynamic = ["version", "readme"]
 [project.optional-dependencies]
 test = [
     # "pytest-cov",
-    "pydantic",
     "pytest",
+    "rich",
 ]
 
 [tool.setuptools.dynamic]

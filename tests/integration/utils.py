@@ -3,6 +3,8 @@ from __future__ import annotations
 import time
 
 import numpy as np
+from rich.console import Console
+from rich.table import Table
 
 
 def timeit(func, iteration=3):
@@ -25,3 +27,13 @@ def timeit(func, iteration=3):
         return np.mean(runtimes), np.var(runtimes)
 
     return function_timer
+
+
+def print_table(result):
+    table = Table("Batch Name", "(mean, var)", title="Benchmark Results")
+
+    for batch_name, (mean, var) in result.items():
+        table.add_row(batch_name, f"{mean:.4f}, {var:.4f}")
+
+    console = Console()
+    console.print(table)
