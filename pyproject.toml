@@ -8,7 +8,6 @@ dynamic = ["version", "readme"]
 
 [project.optional-dependencies]
 dev = [
-    "pre-commit",
 ]
 
 [tool.setuptools.dynamic]
