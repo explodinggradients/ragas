@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from Levenshtein import distance, ratio
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+from Levenshtein import distance, ratio
 from nltk.tokenize import word_tokenize
 from nltk.translate.bleu_score import sentence_bleu
 from rouge_score import rouge_scorer
@@ -14,7 +15,7 @@ ROUGE_TYPES = t.Literal["rouge1", "rouge2", "rougeL"]
 
 @dataclass
 class BLEU(Metric):
-    weights: t.List[float] = [0.25, 0.25, 0.25, 0.25]
+    weights: list[float] = field(default_factory=lambda: [0.25, 0.25, 0.25, 0.25])
     smoothing_function = None
 
     @property
@@ -49,9 +50,11 @@ class ROUGE(Metric):
             [self.type], use_stemmer=self.use_stemmer
         )
 
+    @property
     def name(self):
         return self.type
 
+    @property
     def is_batchable(self):
         return False
 
@@ -65,6 +68,7 @@ class ROUGE(Metric):
         return scores
 
 
+@dataclass
 class EditScore(Metric):
     measure: t.Literal["distance", "ratio"] = "ratio"
 
@@ -90,5 +94,8 @@ class EditScore(Metric):
 Rouge1 = ROUGE("rouge1")
 Rouge2 = ROUGE("rouge2")
 RougeL = ROUGE("rougeL")
+BLUE = BLEU()
+EditDistance = EditScore("distance")
+EditRatio = EditScore("ratio")
 
-__all__ = ["Rouge1", "Rouge2", "RougeL"]
+__all__ = ["Rouge1", "Rouge2", "RougeL", "BLEU", "EditDistance", "EditRatio"]
