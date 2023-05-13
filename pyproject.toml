@@ -6,6 +6,11 @@ dependencies = [
 ]
 dynamic = ["version", "readme"]
 
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+]
+
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/plain"}
 
