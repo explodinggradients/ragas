@@ -19,12 +19,12 @@ lint: ## Running lint checker: ruff
 type: ## Running type checker: pyright
 	@echo "(pyright) Typechecking codebase..."
 	@pyright -p belar
-style: format lint
 clean: ## Clean all generated files
 	@echo "Cleaning all generated files..."
 	@cd $(GIT_ROOT)/docs && make clean
 	@cd $(GIT_ROOT) || exit 1
 	@find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
+run-ci: format lint type ## Running all CI checks
 run-benchmarks: ## Run benchmarks
 	@echo "Running benchmarks..."
 	@cd $(GIT_ROOT)/tests/benchmarks && python benchmark.py 
