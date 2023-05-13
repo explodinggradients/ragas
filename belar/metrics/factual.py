@@ -1,11 +1,15 @@
 from __future__ import annotations
 
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import typing as t
 from dataclasses import dataclass
 
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
 from belar.metrics import Metric
 from belar.utils import device_check
+
+if t.TYPE_CHECKING:
+    from torch import device as Device
 
 
 @dataclass
@@ -15,8 +19,9 @@ class EntailmentScore(Metric):
     """
 
     model_name: str = "typeform/distilbert-base-uncased-mnli"
+    max_length: int = 512
     batch_size: int = 4
-    device: t.Literal["cpu", "cuda"] = "cpu"
+    device: t.Literal["cpu", "cuda"] | Device = "cpu"
 
     def __post_init__(self):
         self.device = device_check(self.device)
@@ -67,7 +72,12 @@ class EntailmentScore(Metric):
         """
 
         encodings = self.tokenizer(
-            ground_truth, generated_text, truncation=True, return_tensors="pt"
+            ground_truth,
+            generated_text,
+            truncation=True,
+            return_tensors="pt",
+            max_length=self.max_length,
+            padding="max_length",
         )
 
         score = self.batch_infer(encodings)
