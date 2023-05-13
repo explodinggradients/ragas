@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+
+env:
+  LINES: 120
+  COLUMNS: 120
+
+# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#defaultsrun
+defaults:
+  run:
+    shell: bash --noprofile --norc -exo pipefail {0}
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    outputs:
+      related: ${{ steps.filter.outputs.related }}
+      bentoml: ${{ steps.filter.outputs.bentoml }}
+      docs: ${{ steps.filter.outputs.docs }}
+      protos: ${{ steps.filter.outputs.protos }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          base: "main"
+          filters: |
+            related: &related
+              - .github/workflows/ci.yml
+              - codecov.yml
+              - pyproject.toml
+            belar:
+              - "belar/**"
+              - "tests/**"
+              - "examples/**"
+            docs:
+              - *related
+              - requirements/docs-requirements.txt
+              - "docs/**"
+
