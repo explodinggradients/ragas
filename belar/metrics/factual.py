@@ -104,17 +104,27 @@ class Qsquare(Metric):
         self.qa = QAGQ.from_pretrained(self.qa_model_name)
         self.qg = QAGQ.from_pretrained(self.qg_model_name)
         
-
+    @property
+    def name(self):
+        return "Q^2"
+    
+    @property
+    def is_batchable(self):
+        return True
 
     def generate_candidates(self, text:str):
 
         text = text.strip()
         nouns = [i.text.lower() for i in self.nlp(text).noun_chunks if i.text.lower() not in self.nlp.Defaults.stop_words]
-        entities = [ent.text.lower() for ent in self.nlp(text)]
+        entities = [ent.text.lower() for ent in self.nlp(text).ents]
         num_nouns = max(0, self.max_answers - len(entities))
-        nouns = np.random.choice(np.setdiff1d(nouns, entities), size=num_nouns).tolist()
+        nouns = list(np.setdiff1d(nouns, entities))
+        if nouns:
+            nouns = np.random.choice(nouns, size=num_nouns).tolist()
+        else:
+            nouns = []
 
-        return entities + nouns
+        return entities + list(set(nouns))
     
     def generate_questions(self,candidates:list[str], context:str, **kwargs):
 
@@ -140,7 +150,7 @@ class Qsquare(Metric):
         pass
 
         
-    def score(self, ground_truth: list[str], generated_text: list[str]):
+    def score(self, ground_truth: list[str], generated_text: list[str], **kwargs):
         
         gnd_qans = {}
         ans_candidates = [self.generate_candidates(text) for text in ground_truth]
@@ -151,10 +161,11 @@ class Qsquare(Metric):
         for i,gen_text in enumerate(generated_text):
             questions = [item["question"] for item in gnd_qans[i]]
             gen_answers = self.generate_answers(questions, gen_text)
-            gnd_qans[i] = [item.update({"predicted_answer":ans}) for item, ans in zip(gnd_qans[i], gen_answers)]
+            _ = [item.update({"predicted_answer":ans}) for item, ans in zip(gnd_qans[i], gen_answers)]
 
         with open("qa-qj-intermediate.json", "w") as file:
             json.dump(gnd_qans, file, indent=4)
+        return gnd_qans
 
 
 
@@ -189,7 +200,7 @@ class QAGQ:
         return cls(model, model_name_or_path)
 
     
-    def batch_generate_question(self,answers:list[str], contexts:str,**kwargs):
+    def batch_generate_question(self,answers:list[str], context:str,**kwargs):
 
         input_texts = ["answer: %s  context: %s </s>" % (ans, context) for ans in answers]
         max_length = kwargs.pop("input_max_length",512)
