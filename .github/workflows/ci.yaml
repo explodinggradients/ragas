@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  LINES: 120
+  COLUMNS: 120
+
+# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#defaultsrun
+defaults:
+  run:
+    shell: bash --noprofile --norc -exo pipefail {0}
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    outputs:
+      related: ${{ steps.filter.outputs.related }}
+      belar: ${{ steps.filter.outputs.belar }}
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          base: "main"
+          token: ${{ github.token }}
+          filters: |
+            related: &related
+              - .github/workflows/ci.yml
+              - codecov.yml
+              - pyproject.toml
+              - requirements/test.txt
+            belar:
+              - "belar/**"
+              - "tests/**"
+              - "examples/**"
+            docs:
+              - *related
+              - requirements/docs-requirements.txt
+              - "docs/**"
+
+  unit_tests:
+    needs:
+      - diff
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+
+    if: ${{ (github.event_name == 'pull_request' && needs.diff.outputs.belar == 'true') || github.event_name == 'push' }}
+    name: python${{ matrix.python-version }}_unit_tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # fetch all tags and branches
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+
+      - name: Get pip cache dir
+        id: cache-dir
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        id: cache-pip
+        with:
+          path: ${{ steps.cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-tests-${{ hashFiles('requirements/test.txt') }}
+
+      - name: Install dependencies
+        run: |
+          pip install "."
+          pip install -r requirements/test.txt
+
+      - name: Run unit tests
+        run: |
+          # OPTS=(--cov-config pyproject.toml --cov=src/bentoml --cov-append)
+          if [ "${{ matrix.os }}" != 'windows-latest' ]; then
+            # we will use pytest-xdist to improve tests run-time.
+            OPTS=(--dist loadfile -n auto)
+          fi
+          # Now run the unit tests
+          pytest tests/unit "${OPTS[@]}"
+
+  codestyle_check:
+    runs-on: ubuntu-latest
+    needs:
+      - diff
+
+    if: ${{ (github.event_name == 'pull_request' && needs.diff.outputs.belar == 'true') || github.event_name == 'push' }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10.6"
+          architecture: x64
+
+      - name: Get pip cache dir
+        id: cache-dir
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Fetch origin
+        run: git fetch origin "$GITHUB_BASE_REF"
+
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "17"
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        id: cache-pip
+        with:
+          path: ${{ steps.cache-dir.outputs.dir }}
+          key: codestyle-${{ hashFiles('requirements/dev.txt') }}
+
+      - name: Install dependencies
+        run: |
+          pip install .
+          pip install -r requirements/dev.txt
+
+      - name: Format check
+        run: |
+          make format
+      - name: Lint check
+        run: make lint
+      - name: Type check
+        if: ${{ github.event_name == 'pull_request' }}
+        run: git diff --name-only --diff-filter=AM "origin/$GITHUB_BASE_REF" -z -- '**/*.py' '**/*.pyi' | xargs -0 --no-run-if-empty pyright

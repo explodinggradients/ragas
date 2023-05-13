@@ -9,6 +9,9 @@ from sentence_transformers import SentenceTransformer
 
 from belar.metrics.base import Metric
 
+if t.TYPE_CHECKING:
+    from torch import Tensor
+
 SBERT_METRIC = t.Literal["cosine", "euclidean"]
 
 
@@ -41,6 +44,10 @@ class SBERTScore(Metric):
         )
         gentext_emb = self.model.encode(
             generated_text, batch_size=self.batch_size, convert_to_numpy=True
+        )
+        assert isinstance(gentext_emb, Tensor) and isinstance(gndtruth_emb, Tensor), (
+            f"Both gndtruth_emb[{type(gentext_emb)}], gentext_emb[{type(gentext_emb)}]"
+            " should be Tensor."
         )
 
         if self.similarity_metric == "cosine":

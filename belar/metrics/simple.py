@@ -14,7 +14,7 @@ ROUGE_TYPES = t.Literal["rouge1", "rouge2", "rougeL"]
 
 
 @dataclass
-class BLEU(Metric):
+class BLEUScore(Metric):
     weights: list[float] = field(default_factory=lambda: [0.25, 0.25, 0.25, 0.25])
     smoothing_function = None
 
@@ -94,8 +94,6 @@ class EditScore(Metric):
 Rouge1 = ROUGE("rouge1")
 Rouge2 = ROUGE("rouge2")
 RougeL = ROUGE("rougeL")
-BLUE = BLEU()
+BLUE = BLEUScore()
 EditDistance = EditScore("distance")
 EditRatio = EditScore("ratio")
-
-__all__ = ["Rouge1", "Rouge2", "RougeL", "BLEU", "EditDistance", "EditRatio"]
