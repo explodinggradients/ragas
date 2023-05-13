@@ -25,6 +25,7 @@ jobs:
         id: filter
         with:
           base: "main"
+          token: ${{ github.token }}
           filters: |
             related: &related
               - .github/workflows/ci.yml
