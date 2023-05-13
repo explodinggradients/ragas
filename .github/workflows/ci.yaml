@@ -17,9 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       related: ${{ steps.filter.outputs.related }}
-      bentoml: ${{ steps.filter.outputs.bentoml }}
+      belar: ${{ steps.filter.outputs.belar }}
       docs: ${{ steps.filter.outputs.docs }}
-      protos: ${{ steps.filter.outputs.protos }}
     steps:
       - uses: actions/checkout@v3
       - uses: dorny/paths-filter@v2
@@ -31,6 +30,7 @@ jobs:
               - .github/workflows/ci.yml
               - codecov.yml
               - pyproject.toml
+              - requirements/tests-requirements.txt
             belar:
               - "belar/**"
               - "tests/**"
@@ -40,3 +40,53 @@ jobs:
               - requirements/docs-requirements.txt
               - "docs/**"
 
+  unit_tests:
+    needs:
+      - diff
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+
+    if: ${{ (github.event_name == 'pull_request' && needs.diff.outputs.belar == 'true') || github.event_name == 'push' }}
+    name: python${{ matrix.python-version }}_unit_tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # fetch all tags and branches
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+
+      - name: Get pip cache dir
+        id: cache-dir
+        run: |
+          echo ::set-output name=dir::$(pip cache dir)
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        id: cache-pip
+        with:
+          path: ${{ steps.cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-tests-${{ hashFiles('requirements/tests-requirements.txt') }}
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements/tests-requirements.txt
+
+      - name: Run unit tests
+        run: |
+          # OPTS=(--cov-config pyproject.toml --cov=src/bentoml --cov-append)
+          if [ "${{ matrix.os }}" != 'windows-latest' ]; then
+            # we will use pytest-xdist to improve tests run-time.
+            OPTS=(--dist loadfile -n auto)
+          fi
+          # Now run the unit tests
+          pytest tests/unit "${OPTS[@]}"

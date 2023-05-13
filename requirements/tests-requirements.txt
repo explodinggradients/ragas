@@ -1,0 +1,7 @@
+pytest
+rich
+ruff
+isort
+black[jupyter]
+pyright
+pytest-xdist[psutil]
