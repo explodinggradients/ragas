@@ -18,7 +18,7 @@ from belar.metrics import (
 )
 
 DEVICE = "cuda" if is_available() else "cpu"
-BATCHES = [0, 1, 10, 20, 30, 60]
+BATCHES = [0, 1]
 # init metrics
 sbert_score = SBERTScore(similarity_metric="cosine")
 entail = EntailmentScore(max_length=512, device=DEVICE)
@@ -28,8 +28,8 @@ METRICS = {
     "RougeL": RougeL,
     "EditRatio": EditRatio,
     "EditDistance": EditDistance,
-    "SBERTScore": sbert_score,
-    "EntailmentScore": entail,
+    # "SBERTScore": sbert_score,
+    # "EntailmentScore": entail,
 }
 DS = load_dataset("explodinggradients/eli5-test", split="test_eli5")
 
