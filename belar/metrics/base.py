@@ -12,16 +12,18 @@ from datasets import Dataset
 class Metric(ABC):
     @property
     @abstractmethod
-    def name(self) -> str:
+    def name(self: t.Self) -> str:
         ...
 
     @property
     @abstractmethod
-    def is_batchable(self) -> bool:
+    def is_batchable(self: t.Self) -> bool:
         ...
 
     @abstractmethod
-    def score(self, ground_truth: list[str], generated_text: list[str]) -> list[float]:
+    def score(
+        self: t.Self, ground_truth: list[str], generated_text: list[str]
+    ) -> list[float]:
         ...
 
 
@@ -67,7 +69,11 @@ class Evaluation:
             else:  # not batched
                 split_indices = len(row["ground_truth"])
                 ground_truths = row["ground_truth"]
-                generated_texts = [row["generated_text"]] * split_indices
+                generated_text = row["generated_text"]
+                assert isinstance(
+                    generated_text, str
+                ), f"generated_text should be str but got {type(generated_text)}"
+                generated_texts = [generated_text] * split_indices
                 scores = metric.score(ground_truths, generated_texts)
                 score = np.max(scores)
 

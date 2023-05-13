@@ -1,14 +1,22 @@
 from __future__ import annotations
 
 import time
+import typing as t
 
 import numpy as np
 from rich.console import Console
 from rich.table import Table
 
+P = t.ParamSpec("P")
+R = t.TypeVar("R")
+OrigFunc = t.Callable[P, R]
+DecoratedFunc = t.Callable[P, tuple[np.floating, np.floating]]
 
-def timeit(func, iteration=3):
-    def function_timer(*args, **kwargs) -> tuple(np.floating, np.floating):
+
+def timeit(func: OrigFunc, iteration: int = 3) -> DecoratedFunc:
+    def function_timer(
+        *args: P.args, **kwargs: P.kwargs
+    ) -> tuple[np.floating, np.floating]:
         """
         Time the execution of a function and returns the time taken
         """
