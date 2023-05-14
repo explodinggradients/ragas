@@ -12,12 +12,12 @@ from ragas.metrics.base import Metric
 if t.TYPE_CHECKING:
     from torch import Tensor
 
-SBERT_METRIC = t.Literal["cosine", "euclidean"]
+BERT_METRIC = t.Literal["cosine", "euclidean"]
 
 
 @dataclass
-class SBERTScore(Metric):
-    similarity_metric: t.Literal[SBERT_METRIC] = "cosine"
+class BERTScore(Metric):
+    similarity_metric: t.Literal[BERT_METRIC] = "cosine"
     model_path: str = "all-MiniLM-L6-v2"
     batch_size: int = 1000
 
@@ -28,7 +28,7 @@ class SBERTScore(Metric):
     def name(
         self,
     ):
-        return f"SBERT_{self.similarity_metric}"
+        return f"BERTScore_{self.similarity_metric}"
 
     @property
     def is_batchable(self):
@@ -64,4 +64,4 @@ class SBERTScore(Metric):
         return score
 
 
-__all__ = ["SBERTScore"]
+bert_score = BERTScore()

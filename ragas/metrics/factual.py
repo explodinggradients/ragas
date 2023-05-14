@@ -218,7 +218,7 @@ class Qsquare(Metric):
 
     @property
     def name(self):
-        return "Q^2"
+        return "Qsquare"
 
     @property
     def is_batchable(self):
@@ -340,5 +340,5 @@ class Qsquare(Metric):
         return scores
 
 
-ENTScore = EntailmentScore()
-Q2Score = Qsquare()
+entailment_score = EntailmentScore()
+q_square = Qsquare()
