@@ -80,6 +80,8 @@ If you want a more in-depth explanation of core components, check out our [quick
 
 ### ✏️ Character based 
 
+Character based metrics focus on analyzing text at the character level.
+
 - **Levenshtein distance** the number of single character edits (additional, insertion, deletion) required to change your generated text to ground truth text.
 - **Levenshtein** **ratio** is obtained by dividing the Levenshtein distance by sum of number of characters in generated text and ground truth. This type of metrics is suitable where one works with short and precise texts.
 
