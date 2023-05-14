@@ -1,4 +1,4 @@
 def test_import():
-    import belar
+    import ragas
 
-    assert belar is not None
+    assert ragas is not None

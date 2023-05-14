@@ -160,3 +160,4 @@ cython_debug/
 #.idea/
 belar/_version.py
 **/tmp.ipynb
+ragas/_version.py

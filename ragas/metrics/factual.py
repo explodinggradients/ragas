@@ -9,18 +9,23 @@ from dataclasses import dataclass
 import numpy as np
 import spacy
 import transformers
-from transformers import (AutoConfig, AutoModelForSequenceClassification,
-                          AutoTokenizer, PreTrainedModel)
+from transformers import (
+    AutoConfig,
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    PreTrainedModel,
+)
 
-from belar.metrics import Metric
-from belar.utils import device_check
+from ragas.metrics import Metric
+from ragas.utils import device_check
 
 if t.TYPE_CHECKING:
     from torch import device as Device
 
 from transformers.models.auto.modeling_auto import (
     MODEL_FOR_QUESTION_ANSWERING_MAPPING_NAMES,
-    MODEL_WITH_LM_HEAD_MAPPING_NAMES)
+    MODEL_WITH_LM_HEAD_MAPPING_NAMES,
+)
 
 MODEL_MAPPINGS_NAMES = [
     MODEL_WITH_LM_HEAD_MAPPING_NAMES,
