@@ -19,7 +19,6 @@ from transformers import (
     PreTrainedModel,
 )
 
-from ragas.exceptions import RagasException
 from ragas.metrics import Metric
 from ragas.utils import device_check
 
@@ -224,7 +223,8 @@ class Qsquare(Metric):
                 f"Spacy model [{SPACY_MODEL}] not found. Please run "
                 f"`python -m spacy download {SPACY_MODEL}` to install it."
             )
-            # logger.warning(f"Spacy models '{spacy_model_name}' not found.  Downloading and installing.")
+            # logger.warning(f"Spacy models '{spacy_model_name}' not found."
+            # "  Downloading and installing.")
             spacy_download(SPACY_MODEL)
             self.nlp = spacy.load(SPACY_MODEL)
 
