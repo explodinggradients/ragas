@@ -318,5 +318,5 @@ class Qsquare(Metric):
         scores = [sum(sublist) / (len(sublist) + EPS) for sublist in scores]
         return scores
 
-
-__all__ = ["EntailmentScore", "Qsquare"]
+ENTScore = EntailmentScore()
+Q2Score = Qsquare()
