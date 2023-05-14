@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import numpy as np
+import re
+import string
 import spacy
 import torch
 from transformers import AutoConfig, AutoTokenizer, AutoModelForSequenceClassification
@@ -95,7 +97,7 @@ class Qsquare(Metric):
     candidate_filter: bool = True
     load_single = False
     batch_size: int = 4
-    include_nouns: bool = False
+    include_nouns: bool = True
 
 
     def __post_init__(self,):
@@ -132,7 +134,7 @@ class Qsquare(Metric):
         for idx in range(0, len(candidates), self.batch_size):
             batch_questions = self.qg.batch_generate_question(candidates[idx:idx+self.batch_size],
                                            context, **kwargs)
-            questions.extend(batch_questions)
+            questions.extend([qstn if qstn.endswith('?') else f'{qstn}?' for qstn in batch_questions ])
         assert len(questions) == len(candidates), "Missing question for some candidates"
         return questions
 
@@ -158,10 +160,13 @@ class Qsquare(Metric):
     
 
     def clean_candidate(self, text):
-        pass
+        
         #strip-lower-remove punct-
+        text = text.strip().lower()
+        text = text.translate(str.maketrans('', '', string.punctuation))
+        text = re.sub(r'\b(a|an|the|in|our)\b', ' ', text)
 
-
+        return text
     def score_candidates(self, ques_ans_dict:dict):
         
         nli = EntailmentScore()
@@ -172,7 +177,9 @@ class Qsquare(Metric):
                 if item["answer"] == item["predicted_answer"]:
                     item.update({"score":1})
                 else:
-                    score = nli.score([item.get("answer")],[item.get("predicted_answer")])
+                    qstn = item.get("question")
+                    score = nli.score([f'{qstn}{item.get("answer")}'],
+                                      [f'{qstn}{item.get("predicted_answer")}'])
                     item.update({"score":score})
         
         return ques_ans_dict
@@ -195,7 +202,13 @@ class Qsquare(Metric):
         with open("qa-qj-intermediate.json", "w") as file:
             json.dump(gnd_qans, file, indent=4)
             
-        gnd_gans = self.score_candidates(gnd_qans)
+        del self.qa
+        del self.qg
+        
+        gnd_qans = self.score_candidates(gnd_qans)
+        
+        with open("qa-qj-intermediate.json", "w") as file:
+            json.dump(gnd_qans, file, indent=4)
         
         return gnd_qans
         
