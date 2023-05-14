@@ -304,7 +304,7 @@ class Qsquare(Metric):
                 item.update({"predicted_answer": ans})
                 for item, ans in zip(gnd_qans[i], gen_answers)
             ]
-            
+
         del self.qa
         del self.qg
 
@@ -318,4 +318,5 @@ class Qsquare(Metric):
         scores = [sum(sublist) / (len(sublist) + EPS) for sublist in scores]
         return scores
 
-__all__ = ["EntailmentScore","Qsquare"]
+
+__all__ = ["EntailmentScore", "Qsquare"]

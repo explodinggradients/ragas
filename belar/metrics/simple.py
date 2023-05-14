@@ -94,14 +94,6 @@ class EditScore(Metric):
 Rouge1 = ROUGE("rouge1")
 Rouge2 = ROUGE("rouge2")
 RougeL = ROUGE("rougeL")
-<<<<<<< HEAD
-BLUE = BLEU()
-EditDistance = EditScore("distance")
-EditRatio = EditScore("ratio")
-
-__all__ = ["Rouge1", "Rouge2", "RougeL", "BLEU", "EditDistance", "EditRatio"]
-=======
 BLUE = BLEUScore()
 EditDistance = EditScore("distance")
 EditRatio = EditScore("ratio")
->>>>>>> main
