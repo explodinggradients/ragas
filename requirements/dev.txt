@@ -3,3 +3,4 @@ ruff
 isort
 black[jupyter]
 pyright
+langchain
