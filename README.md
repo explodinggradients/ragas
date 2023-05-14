@@ -3,7 +3,7 @@
   src="./docs/assets/logo.png">
 </h1>
 <p align="center">
-  <i>STOA for LLM Augmented Retrieval</i>
+  <i>SOTA metrics for evaluating Retrieval Augmented Generation (RAG)</i>
 </p>
 
 <p align="center">
