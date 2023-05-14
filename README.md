@@ -26,9 +26,10 @@
 
 <h4 align="center">
     <p>
-        <a href="#beers-installation">Installation</a> |
-        <a href="#beers-quick-example">Quick Example</a> |
-        <a href="https://huggingface.co/BeIR">Hugging Face</a>
+        <a href="#Installation">Installation</a> |
+        <a href="#quickstart">Quick Example</a> |
+        <a href="#metrics">Quick Example</a> |
+        <a href="https://huggingface.co/explodinggradients">Hugging Face</a>
     <p>
 </h4>
 

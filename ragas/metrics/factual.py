@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import spacy
+import torch
 import transformers
 from transformers import (
     AutoConfig,
@@ -213,12 +214,13 @@ class Qsquare(Metric):
     def __post_init__(self):
         self.qa = QAGQ.from_pretrained(self.qa_model_name)
         self.qg = QAGQ.from_pretrained(self.qg_model_name)
+        self.nli = EntailmentScore()
         try:
             self.nlp = spacy.load(SPACY_MODEL)
         except OSError:
             raise RagasException(
                 f"Spacy model [{SPACY_MODEL}] not found. Please run "
-                "`python -m spacy download {SPACY_MODEL}` to install it."
+                f"`python -m spacy download {SPACY_MODEL}` to install it."
             )
 
     @property
@@ -288,7 +290,6 @@ class Qsquare(Metric):
         return text
 
     def score_candidates(self, ques_ans_dict: dict):
-        nli = EntailmentScore()
         for qas in ques_ans_dict.values():
             for item in qas:
                 item["answer"] = self.clean_candidate(item["answer"])
@@ -299,7 +300,7 @@ class Qsquare(Metric):
                     item.update({"score": 1})
                 else:
                     qstn = item.get("question")
-                    score_dict = nli.infer(
+                    score_dict = self.nli.infer(
                         f'{qstn}{item.get("answer")}',
                         f'{qstn}{item.get("predicted_answer")}',
                     )
@@ -331,8 +332,8 @@ class Qsquare(Metric):
                 for item, ans in zip(gnd_qans[i], gen_answers)
             ]
 
-        del self.qa
-        del self.qg
+        # del self.qa
+        # del self.qg
 
         gnd_qans = self.score_candidates(gnd_qans)
 
@@ -345,5 +346,6 @@ class Qsquare(Metric):
         return scores
 
 
-entailment_score = EntailmentScore()
-q_square = Qsquare()
+device = "cuda" if torch.cuda.is_available() else "cpu"
+entailment_score = EntailmentScore(device=device)
+q_square = Qsquare(device=device)
