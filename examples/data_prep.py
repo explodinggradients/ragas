@@ -1,4 +1,7 @@
-from datasets import concatenate_datasets, load_dataset
+import concurrent.futures as f
+
+from datasets import DatasetDict, load_dataset
+from langchain.llms import OpenAI
 
 
 def format_for_belar(row):
@@ -9,17 +12,15 @@ def format_for_belar(row):
 
 
 d = load_dataset("eli5")
+assert isinstance(d, DatasetDict)
 ds = d["test_eli5"].map(format_for_belar, batched=False)
 ds = ds.select_columns(["context", "prompt", "ground_truth"])
 
 ds = ds.shuffle(seed=42).select(range(500))
-ds.shape, ds.column_names
+print(ds.shape, ds.column_names)
 
-import concurrent.futures as f
 
-from langchain.llms import OpenAI
-
-llm = OpenAI()
+llm = OpenAI()  # type: ignore
 prompt = """
 {context}
 with the above context explain like I'm five: {prompt}
