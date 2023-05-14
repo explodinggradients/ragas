@@ -28,7 +28,7 @@ MODEL_MAPPINGS_NAMES = [
 
 
 SPACY_MODEL = "en_core_web_sm"
-LABEL2SCORE = {"entailment": 1, "contradiction": 0, "neutral": 0}
+LABEL2SCORE = {"entailment": 1, "contradiction": 0, "neutral": 0.5}
 EPS = 1e-8
 
 
@@ -190,7 +190,7 @@ class Qsquare(Metric):
     load_single = False
     batch_size: int = 4
     include_nouns: bool = True
-    save_intermediate = False
+    save_results: bool = False
 
     def __post_init__(
         self,
@@ -314,7 +314,7 @@ class Qsquare(Metric):
 
         gnd_qans = self.score_candidates(gnd_qans)
 
-        if self.save_intermediate:
+        if self.save_results:
             with open("qa-qj-intermediate.json", "w") as file:
                 json.dump(gnd_qans, file, indent=4)
 
