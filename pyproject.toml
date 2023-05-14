@@ -9,7 +9,6 @@ dependencies = [
     "nltk",
     "datasets",
     "spacy<4.0.0,>=3.0.0",
-    "en-core-web-sm",
 ]
 dynamic = ["version", "readme"]
 
