@@ -8,6 +8,7 @@ dependencies = [
     "sentence-transformers",
     "nltk",
     "datasets",
+    "spacy",
 ]
 dynamic = ["version", "readme"]
 
