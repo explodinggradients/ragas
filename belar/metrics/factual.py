@@ -308,10 +308,7 @@ class Qsquare(Metric):
                 item.update({"predicted_answer": ans})
                 for item, ans in zip(gnd_qans[i], gen_answers)
             ]
-
-        with open("qa-qj-intermediate.json", "w") as file:
-            json.dump(gnd_qans, file, indent=4)
-
+            
         del self.qa
         del self.qg
 
@@ -324,3 +321,5 @@ class Qsquare(Metric):
         scores = [[dic["score"] for dic in item] for item in gnd_qans.values()]
         scores = [sum(sublist) / (len(sublist) + EPS) for sublist in scores]
         return scores
+
+__all__ = ["EntailmentScore","Qsquare"]
