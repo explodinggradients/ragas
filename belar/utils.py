@@ -1,10 +1,9 @@
+from __future__ import annotations
 import typing as t
 from warnings import warn
 
 import torch
-
-if t.TYPE_CHECKING:
-    from torch import device as Device
+from torch import device as Device
 
 DEVICES = ["cpu", "cuda"]
 
