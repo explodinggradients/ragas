@@ -7,10 +7,8 @@ from utils import print_table, timeit
 
 from ragas.metrics import (
     Evaluation,
-    bert_score,
     edit_distance,
     edit_ratio,
-    entailment_score,
     q_square,
     rouge1,
     rouge2,
