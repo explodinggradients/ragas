@@ -1,36 +1,27 @@
 import typing as t
 
-from datasets import Dataset, load_dataset
+from datasets import Dataset, arrow_dataset, load_dataset
 from torch.cuda import is_available
 from tqdm import tqdm
 from utils import print_table, timeit
 
-from ragas.metrics import (
-    EditDistance,
-    EditRatio,
-    EntailmentScore,
-    Evaluation,
-    Rouge1,
-    Rouge2,
-    RougeL,
-    SBERTScore,
-)
+from ragas.metrics import Evaluation, edit_distance, edit_ratio, rouge1, rouge2, rougeL
 
 DEVICE = "cuda" if is_available() else "cpu"
 BATCHES = [0, 1]
-# init metrics
-sbert_score = SBERTScore(similarity_metric="cosine")
-entail = EntailmentScore(max_length=512, device=DEVICE)
+
 METRICS = {
-    "Rouge1": Rouge1,
-    "Rouge2": Rouge2,
-    "RougeL": RougeL,
-    "EditRatio": EditRatio,
-    "EditDistance": EditDistance,
+    "Rouge1": rouge1,
+    "Rouge2": rouge2,
+    "RougeL": rougeL,
+    "EditRatio": edit_ratio,
+    "EditDistance": edit_distance,
     # "SBERTScore": sbert_score,
     # "EntailmentScore": entail,
 }
 DS = load_dataset("explodinggradients/eli5-test", split="test_eli5")
+assert isinstance(DS, arrow_dataset.Dataset), "Not an arrow_dataset"
+DS = DS.select(range(100))
 
 
 def setup() -> t.Iterator[tuple[str, Evaluation, Dataset]]:
