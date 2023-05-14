@@ -1,19 +1,15 @@
 from __future__ import annotations
 
-import json
-import numpy as np
-import re
-import string
-import spacy
-import transformers
-from transformers import AutoConfig, AutoTokenizer, AutoModelForSequenceClassification
-from transformers.modeling_utils import PreTrainedModel
 import typing as t
 from dataclasses import dataclass
 
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from belar.metrics import Metric
 from belar.utils import device_check
+
+if t.TYPE_CHECKING:
+    from torch import device as Device
 
 
 from transformers.models.auto.modeling_auto import (
@@ -38,10 +34,10 @@ class EntailmentScore(Metric):
     Entailment score using ground truth as premise and generated text as hypothesis.
     """
 
-    model_name: str = "cross-encoder/nli-roberta-base"
+    model_name: str = "typeform/distilbert-base-uncased-mnli"
     max_length: int = 512
     batch_size: int = 4
-    device: t.Literal["cpu", "cuda"] = "cpu"
+    device: t.Literal["cpu", "cuda"] | Device = "cpu"
 
     def __post_init__(self):
         self.device = device_check(self.device)
