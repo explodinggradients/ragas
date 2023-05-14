@@ -9,6 +9,7 @@ dependencies = [
     "nltk",
     "datasets",
     "spacy<4.0.0,>=3.0.0",
+    "protobuf<=3.20.0",
 ]
 dynamic = ["version", "readme"]
 

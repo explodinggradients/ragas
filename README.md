@@ -7,28 +7,29 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/beir-cellar/beir/releases">
-        <img alt="GitHub release" src="https://img.shields.io/github/release/beir-cellar/beir.svg">
+    <a href="https://github.com/explodinggradients/ragas/releases">
+        <img alt="GitHub release" src="https://img.shields.io/github/release/explodinggradients/ragas.svg">
     </a>
     <a href="https://www.python.org/">
             <img alt="Build" src="https://img.shields.io/badge/Made%20with-Python-1f425f.svg?color=purple">
     </a>
-    <a href="https://github.com/beir-cellar/beir/blob/master/LICENSE">
-        <img alt="License" src="https://img.shields.io/github/license/beir-cellar/beir.svg?color=green">
+    <a href="https://github.com/explodinggradients/ragas/blob/master/LICENSE">
+        <img alt="License" src="https://img.shields.io/github/license/explodinggradients/ragas.svg?color=green">
     </a>
     <a href="https://colab.research.google.com/drive/1HfutiEhHMJLXiWGT8pcipxT5L2TpYEdt?usp=sharing">
         <img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg">
     </a>
-    <a href="https://github.com/beir-cellar/beir/">
+    <a href="https://github.com/explodinggradients/ragas/">
         <img alt="Downloads" src="https://badges.frapsoft.com/os/v1/open-source.svg?v=103">
     </a>
 </p>
 
 <h4 align="center">
     <p>
-        <a href="#beers-installation">Installation</a> |
-        <a href="#beers-quick-example">Quick Example</a> |
-        <a href="https://huggingface.co/BeIR">Hugging Face</a>
+        <a href="#Installation">Installation</a> |
+        <a href="#quickstart">Quick Example</a> |
+        <a href="#metrics">Metrics List</a> |
+        <a href="https://huggingface.co/explodinggradients">Hugging Face</a>
     <p>
 </h4>
 
@@ -36,7 +37,7 @@ ragas is a framework that helps you evaluate your Retrieval Augmented Generation
 
 ragas provides you with the tools based on the latest research for evaluating LLM generated text  to give you insights about your RAG pipeline. ragas can be integrated with your CI/CD to provide continuous check to ensure performance.
 
-## Installation 🛡
+## 🛡 Installation 
 
 ```bash
 pip install ragas
@@ -47,7 +48,7 @@ git clone https://github.com/explodinggradients/ragas && cd ragas
 pip install -e .
 ```
 
-## Quickstart 🔥
+## 🔥 Quickstart 
 
 This is a small example program you can run to see ragas in action!
 ```python
@@ -74,10 +75,12 @@ e = Evaluation(
 results = e.eval(ds["ground_truth"], ds["generated_text"])
 print(results)
 ```
-If you want a more in-depth explanation of core components, check out our quick-start notebook
+If you want a more in-depth explanation of core components, check out our [quick-start notebook](./examples/quickstart.ipynb)
 ## 🧰 Metrics
 
 ### ✏️ Character based 
+
+Character based metrics focus on analyzing text at the character level.
 
 - **Levenshtein distance** the number of single character edits (additional, insertion, deletion) required to change your generated text to ground truth text.
 - **Levenshtein** **ratio** is obtained by dividing the Levenshtein distance by sum of number of characters in generated text and ground truth. This type of metrics is suitable where one works with short and precise texts.
@@ -92,7 +95,7 @@ N-gram based metrics as name indicates uses n-grams for comparing generated answ
 
 - **BLEU** (BiLingual Evaluation Understudy)
 
-It measures precision by comparing  clipped n-grams in generated text to ground truth text. These matches do not consider the ordering of words.
+    It measures precision by comparing  clipped n-grams in generated text to ground truth text. These matches do not consider the ordering of words.
 
 ### 🪄 Model Based
 
