@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+import json
+import re
+import string
 import typing as t
 from dataclasses import dataclass
 
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+import numpy as np
+import transformers
+from transformers import (AutoConfig, AutoModelForSequenceClassification,
+                          AutoTokenizer, PreTrainedModel)
 
 from belar.metrics import Metric
 from belar.utils import device_check
@@ -11,11 +17,9 @@ from belar.utils import device_check
 if t.TYPE_CHECKING:
     from torch import device as Device
 
-
 from transformers.models.auto.modeling_auto import (
-    MODEL_WITH_LM_HEAD_MAPPING_NAMES,
     MODEL_FOR_QUESTION_ANSWERING_MAPPING_NAMES,
-)
+    MODEL_WITH_LM_HEAD_MAPPING_NAMES)
 
 MODEL_MAPPINGS_NAMES = [
     MODEL_WITH_LM_HEAD_MAPPING_NAMES,
