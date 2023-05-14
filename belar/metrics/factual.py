@@ -7,6 +7,7 @@ import typing as t
 from dataclasses import dataclass
 
 import numpy as np
+import spacy
 import transformers
 from transformers import (AutoConfig, AutoModelForSequenceClassification,
                           AutoTokenizer, PreTrainedModel)
