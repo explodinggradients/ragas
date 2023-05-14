@@ -37,7 +37,7 @@ ragas is a framework that helps you evaluate your Retrieval Augmented Generation
 
 ragas provides you with the tools based on the latest research for evaluating LLM generated text  to give you insights about your RAG pipeline. ragas can be integrated with your CI/CD to provide continuous check to ensure performance.
 
-## 🛡Installation 
+## 🛡 Installation 
 
 ```bash
 pip install ragas
@@ -93,7 +93,7 @@ N-gram based metrics as name indicates uses n-grams for comparing generated answ
 
 - **BLEU** (BiLingual Evaluation Understudy)
 
-It measures precision by comparing  clipped n-grams in generated text to ground truth text. These matches do not consider the ordering of words.
+    It measures precision by comparing  clipped n-grams in generated text to ground truth text. These matches do not consider the ordering of words.
 
 ### 🪄 Model Based
 
