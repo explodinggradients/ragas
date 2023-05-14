@@ -5,8 +5,8 @@ from dataclasses import dataclass
 
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-from belar.metrics import Metric
-from belar.utils import device_check
+from ragas.metrics import Metric
+from ragas.utils import device_check
 
 if t.TYPE_CHECKING:
     from torch import device as Device

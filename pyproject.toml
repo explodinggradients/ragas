@@ -1,5 +1,5 @@
 [project]
-name = "belar"
+name = "ragas"
 dependencies = [
     "Levenshtein",
     "rouge-score",
@@ -11,20 +11,6 @@ dependencies = [
 ]
 dynamic = ["version", "readme"]
 
-[project.optional-dependencies]
-test = [
-    # "pytest-cov",
-    "pytest",
-    "rich",
-]
-
-dev = [
-    "ruff",
-    "isort",
-    "black[jupyter]",
-    "pyright",
-]
-
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/plain"}
 
@@ -32,4 +18,4 @@ readme = {file = ["README.md"], content-type = "text/plain"}
 requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
-write_to = "belar/_version.py"
+write_to = "ragas/_version.py"

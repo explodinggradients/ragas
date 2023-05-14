@@ -8,7 +8,7 @@ from nltk.tokenize import word_tokenize
 from nltk.translate.bleu_score import sentence_bleu
 from rouge_score import rouge_scorer
 
-from belar.metrics.base import Metric
+from ragas.metrics.base import Metric
 
 ROUGE_TYPES = t.Literal["rouge1", "rouge2", "rougeL"]
 

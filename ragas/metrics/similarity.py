@@ -7,7 +7,7 @@ import numpy as np
 from numpy.linalg import norm
 from sentence_transformers import SentenceTransformer
 
-from belar.metrics.base import Metric
+from ragas.metrics.base import Metric
 
 if t.TYPE_CHECKING:
     from torch import Tensor

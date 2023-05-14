@@ -6,19 +6,19 @@ help: ## Show all Makefile targets
 .PHONY: format lint type style clean run-benchmarks
 format: ## Running code formatter: black and isort
 	@echo "(black) Formatting codebase..."
-	@black --config pyproject.toml belar tests examples
+	@black --config pyproject.toml ragas tests examples
 	@echo "(black) Formatting stubs..."
-	@find belar -name "*.pyi" ! -name "*_pb2*" -exec black --pyi --config pyproject.toml {} \;
+	@find ragas -name "*.pyi" ! -name "*_pb2*" -exec black --pyi --config pyproject.toml {} \;
 	@echo "(isort) Reordering imports..."
 	@isort .
 	@echo "(ruff) Running fix only..."
-	@ruff check belar examples tests --fix-only
+	@ruff check ragas examples tests --fix-only
 lint: ## Running lint checker: ruff
 	@echo "(ruff) Linting development project..."
-	@ruff check belar examples tests
+	@ruff check ragas examples tests
 type: ## Running type checker: pyright
 	@echo "(pyright) Typechecking codebase..."
-	@pyright -p belar
+	@pyright -p ragas
 clean: ## Clean all generated files
 	@echo "Cleaning all generated files..."
 	@cd $(GIT_ROOT)/docs && make clean
