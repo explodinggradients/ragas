@@ -98,5 +98,5 @@ Model based methods uses language models combined with NLP techniques to compare
     
     Best used to measure factual consistencies between ground truth and generated text. Scores can range from 0 to 1. Higher score indicates better factual consistency between ground truth and generated answer. Employs QA-QG paradigm followed by NLI to compare ground truth and generated answer. Q2Score score is highly correlated with human judgement.
 
-Checkout references for related publications.
+Checkout [citations](./citations.md) for related publications.
 
