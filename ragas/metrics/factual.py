@@ -16,6 +16,7 @@ from transformers import (
     PreTrainedModel,
 )
 
+from ragas.exceptions import RagasException
 from ragas.metrics import Metric
 from ragas.utils import device_check
 
@@ -209,12 +210,16 @@ class Qsquare(Metric):
     include_nouns: bool = True
     save_results: bool = False
 
-    def __post_init__(
-        self,
-    ):
-        self.nlp = spacy.load(SPACY_MODEL)
+    def __post_init__(self):
         self.qa = QAGQ.from_pretrained(self.qa_model_name)
         self.qg = QAGQ.from_pretrained(self.qg_model_name)
+        try:
+            self.nlp = spacy.load(SPACY_MODEL)
+        except OSError:
+            raise RagasException(
+                f"Spacy model [{SPACY_MODEL}] not found. Please run "
+                "`python -m spacy download {SPACY_MODEL}` to install it."
+            )
 
     @property
     def name(self):
