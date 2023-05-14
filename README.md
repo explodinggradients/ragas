@@ -46,7 +46,7 @@ from ragas.metrics import (
 ) # import the metrics you want to use
 
 # load the dataset
-ds = load_dataset("explodinggradients/eli5-test", split="test_eli5")
+ds = load_dataset("explodinggradients/eli5-test", split="test_eli5").select(range(100))
 
 # init the evaluator, this takes in the metrics you want to use
 # and performs the evaluation
@@ -97,4 +97,6 @@ Model based methods uses language models combined with NLP techniques to compare
 - **$Q^2$**
     
     Best used to measure factual consistencies between ground truth and generated text. Scores can range from 0 to 1. Higher score indicates better factual consistency between ground truth and generated answer. Employs QA-QG paradigm followed by NLI to compare ground truth and generated answer. Q2Score score is highly correlated with human judgement.
+
+Checkout references for related publications.
 
