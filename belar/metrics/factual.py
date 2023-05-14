@@ -27,7 +27,7 @@ MODEL_MAPPINGS_NAMES = [
     MODEL_FOR_QUESTION_ANSWERING_MAPPING_NAMES,
 ]
 
-
+DEVICES = ["cpu", "cuda"]
 SPACY_MODEL = "en_core_web_sm"
 LABEL2SCORE = {"entailment": 1, "contradiction": 0, "neutral": 0.5}
 EPS = 1e-8
@@ -125,11 +125,16 @@ class EntailmentScore(Metric):
 
 
 class QAGQ:
-    def __init__(self, model: PreTrainedModel, model_name_or_path: str, device="cpu"):
+    def __init__(
+        self,
+        model: PreTrainedModel,
+        model_name_or_path: str,
+        device: t.Literal["cpu", "cuda"] | Device = "cpu",
+    ):
         self.model = model.from_pretrained(model_name_or_path)
-        self.model.eval()
+        self.model.eval()  # type: ignore
         self.device = device_check(device)
-        self.model.to(self.device)
+        self.model.to(self.device)  # type: ignore
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
 
     @classmethod
@@ -157,7 +162,7 @@ class QAGQ:
             return_tensors="pt",
         )
         encodings = {k: v.to(self.device) for k, v in encodings.items()}
-        outputs = self.model.generate(**encodings, **kwargs)
+        outputs = self.model.generate(**encodings, **kwargs)  # type: ignore
         outputs = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
         return [output.replace("question:", "").strip() for output in outputs]
 
@@ -174,7 +179,9 @@ class QAGQ:
         encodings = {
             k: v.view(-1, max_length).to(self.device) for k, v in encodings.items()
         }
-        poss_ans_starts, poss_ans_ends = self.model(**encodings, return_dict=False)
+        poss_ans_starts, poss_ans_ends = self.model(
+            **encodings, return_dict=False
+        )  # type: ignore
         best_start = poss_ans_starts.argmax(1)
         best_ends = poss_ans_ends.argmax(1)
         answers = [
