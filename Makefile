@@ -5,12 +5,12 @@ help: ## Show all Makefile targets
 
 .PHONY: format lint type style clean run-benchmarks
 format: ## Running code formatter: black and isort
+	@echo "(isort) Ordering imports..."
+	@isort .
 	@echo "(black) Formatting codebase..."
 	@black --config pyproject.toml ragas tests examples
 	@echo "(black) Formatting stubs..."
 	@find ragas -name "*.pyi" ! -name "*_pb2*" -exec black --pyi --config pyproject.toml {} \;
-	@echo "(isort) Reordering imports..."
-	@isort .
 	@echo "(ruff) Running fix only..."
 	@ruff check ragas examples tests --fix-only
 lint: ## Running lint checker: ruff
