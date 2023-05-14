@@ -32,6 +32,20 @@
     <p>
 </h4>
 
+ragas is a framework that helps you evaluate your Retrieval Augmented Generation (RAG) pipelines. RAG denotes a class of LLM applications that use external data to augment the LLM’s context. There are existing tools and frameworks that help you build these pipelines but evaluating it and quantifying your pipeline performance can be hard.. This is were ragas (RAG Assessment) comes in
+
+ragas provides you with the tools based on the latest research for evaluating LLM generated text  to give you insights about your RAG pipeline. ragas can be integrated with your CI/CD to provide continuous check to ensure performance.
+
+## Installation 🛡
+
+```bash
+pip install ragas
+```
+if you want to install from source 
+```bash
+git clone https://github.com/explodinggradients/ragas && cd ragas
+pip install -e .
+```
 
 ## Quickstart 🔥
 
