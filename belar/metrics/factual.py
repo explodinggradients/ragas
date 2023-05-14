@@ -49,12 +49,16 @@ class EntailmentScore(Metric):
 
     def batch_infer(self, inputs: dict):
         predictions = []
-        input_ids = inputs["input_ids"]
+        input_ids, attention_mask = inputs["input_ids"], inputs["attention_mask"]
         label2id = {value.lower(): key for key, value in self.id2label.items()}
 
         for idx in range(0, len(input_ids), self.batch_size):
-            batch_ids = input_ids[idx : idx + self.batch_size]
-            output = self.model(batch_ids.to(self.device))
+            batch_inp_ids = input_ids[idx : idx + self.batch_size]
+            batch_attn_mask = attention_mask[idx : idx + self.batch_size]
+
+            output = self.model(
+                batch_inp_ids.to(self.device), batch_attn_mask.to(self.device)
+            )
             pred = output.logits.softmax(axis=-1).detach().cpu()
             predictions.extend(pred[:, label2id["entailment"]].tolist())
 
