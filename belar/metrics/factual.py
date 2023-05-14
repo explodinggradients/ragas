@@ -318,5 +318,6 @@ class Qsquare(Metric):
         scores = [sum(sublist) / (len(sublist) + EPS) for sublist in scores]
         return scores
 
+
 ENTScore = EntailmentScore()
 Q2Score = Qsquare()
