@@ -77,7 +77,7 @@ class Evaluation:
                 scores = metric.score(ground_truths, generated_texts)
                 score = np.max(scores)
 
-            row[f"{metric.name}_score"] = score
+            row[f"{metric.name}"] = score
 
         return row
 

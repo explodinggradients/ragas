@@ -9,9 +9,6 @@ from sentence_transformers import SentenceTransformer
 
 from ragas.metrics.base import Metric
 
-if t.TYPE_CHECKING:
-    from torch import Tensor
-
 BERT_METRIC = t.Literal["cosine", "euclidean"]
 
 
@@ -45,9 +42,11 @@ class BERTScore(Metric):
         gentext_emb = self.model.encode(
             generated_text, batch_size=self.batch_size, convert_to_numpy=True
         )
-        assert isinstance(gentext_emb, Tensor) and isinstance(gndtruth_emb, Tensor), (
+        assert isinstance(gentext_emb, np.ndarray) and isinstance(
+            gndtruth_emb, np.ndarray
+        ), (
             f"Both gndtruth_emb[{type(gentext_emb)}], gentext_emb[{type(gentext_emb)}]"
-            " should be Tensor."
+            " should be numpy ndarray."
         )
 
         if self.similarity_metric == "cosine":
