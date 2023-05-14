@@ -1,5 +1,4 @@
 from __future__ import annotations
-from textwrap import indent
 
 import json
 import numpy as np
@@ -96,6 +95,7 @@ class Qsquare(Metric):
     candidate_filter: bool = True
     load_single = False
     batch_size: int = 4
+    include_nouns: bool = False
 
 
     def __post_init__(self,):
@@ -116,15 +116,15 @@ class Qsquare(Metric):
 
         text = text.strip()
         nouns = [i.text.lower() for i in self.nlp(text).noun_chunks if i.text.lower() not in self.nlp.Defaults.stop_words]
-        entities = [ent.text.lower() for ent in self.nlp(text).ents]
+        entities = set([ent.text.lower() for ent in self.nlp(text).ents])
         num_nouns = max(0, self.max_answers - len(entities))
-        nouns = list(np.setdiff1d(nouns, entities))
-        if nouns:
+        nouns = list(np.setdiff1d(nouns, list(entities)))
+        if nouns and self.include_nouns:
             nouns = np.random.choice(nouns, size=num_nouns).tolist()
         else:
             nouns = []
 
-        return entities + list(set(nouns))
+        return list(entities.union(set(nouns)))
     
     def generate_questions(self,candidates:list[str], context:str, **kwargs):
 
@@ -145,17 +145,46 @@ class Qsquare(Metric):
         assert len(answers) == len(questions), "Missing answers for some questions"
         return answers
 
-    def filter_candidates(self, candidates:list[str],context:str):
+    def filter_candidates(self, questions:list[str], candidates:list[str], gen_answers:list[str]):
         
-        pass
+        final_questions = []
+        final_candidates = []
+        for qstn, ans1, ans2 in zip(questions, candidates, gen_answers):
+            if self.clean_candidate(ans1) == self.clean_candidate(ans2):
+                final_candidates.append(ans1)
+                final_questions.append(qstn)
+        
+        return final_questions, final_candidates
+    
 
+    def clean_candidate(self, text):
+        pass
+        #strip-lower-remove punct-
+
+
+    def score_candidates(self, ques_ans_dict:dict):
         
+        nli = EntailmentScore()
+        for qas in ques_ans_dict.values():
+            for item in qas:
+                item["answer"] = self.clean_candidate(item["answer"])
+                item["predicted_answer"] = self.clean_candidate(item["predicted_answer"])
+                if item["answer"] == item["predicted_answer"]:
+                    item.update({"score":1})
+                else:
+                    score = nli.score([item.get("answer")],[item.get("predicted_answer")])
+                    item.update({"score":score})
+        
+        return ques_ans_dict
+    
     def score(self, ground_truth: list[str], generated_text: list[str], **kwargs):
         
         gnd_qans = {}
         ans_candidates = [self.generate_candidates(text) for text in ground_truth]
         for i,(candidates, context) in enumerate(zip(ans_candidates, ground_truth)):
             questions = self.generate_questions(candidates, context, **kwargs)
+            gen_answers = self.generate_answers(questions, context)
+            questions, candidates = self.filter_candidates(questions, candidates, gen_answers)
             gnd_qans[i] = [{"question": qstn, "answer":ans} for qstn, ans in zip(questions, candidates)]
 
         for i,gen_text in enumerate(generated_text):
@@ -165,7 +194,13 @@ class Qsquare(Metric):
 
         with open("qa-qj-intermediate.json", "w") as file:
             json.dump(gnd_qans, file, indent=4)
+            
+        gnd_gans = self.score_candidates(gnd_qans)
+        
         return gnd_qans
+        
+        
+
 
 
 
