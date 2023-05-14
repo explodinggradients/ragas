@@ -5,11 +5,13 @@ import re
 import string
 import typing as t
 from dataclasses import dataclass
+from warnings import warn
 
 import numpy as np
 import spacy
 import torch
 import transformers
+from spacy.cli.download import download as spacy_download
 from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,
@@ -218,10 +220,13 @@ class Qsquare(Metric):
         try:
             self.nlp = spacy.load(SPACY_MODEL)
         except OSError:
-            raise RagasException(
+            warn(
                 f"Spacy model [{SPACY_MODEL}] not found. Please run "
                 f"`python -m spacy download {SPACY_MODEL}` to install it."
             )
+            # logger.warning(f"Spacy models '{spacy_model_name}' not found.  Downloading and installing.")
+            spacy_download(SPACY_MODEL)
+            self.nlp = spacy.load(SPACY_MODEL)
 
     @property
     def name(self):
