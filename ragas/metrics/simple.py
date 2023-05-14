@@ -91,9 +91,9 @@ class EditScore(Metric):
         return score
 
 
-Rouge1 = ROUGE("rouge1")
-Rouge2 = ROUGE("rouge2")
-RougeL = ROUGE("rougeL")
-BLUE = BLEUScore()
-EditDistance = EditScore("distance")
-EditRatio = EditScore("ratio")
+rouge1 = ROUGE("rouge1")
+rouge2 = ROUGE("rouge2")
+rougeL = ROUGE("rougeL")
+bleu_score = BLEUScore()
+edit_distance = EditScore("distance")
+edit_ratio = EditScore("ratio")
