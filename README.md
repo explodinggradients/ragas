@@ -27,8 +27,8 @@
 <h4 align="center">
     <p>
         <a href="#beers-installation">Installation</a> |
-        <a href="#beers-quick-example">Quick Example</a> |
-        <a href="https://huggingface.co/BeIR">Hugging Face</a>
+        <a href="#beers-quickstart">Quickstart</a> |
+        <a href="https://huggingface.co/explodinggradients">Hugging Face</a>
     <p>
 </h4>
 
@@ -36,7 +36,7 @@ ragas is a framework that helps you evaluate your Retrieval Augmented Generation
 
 ragas provides you with the tools based on the latest research for evaluating LLM generated text  to give you insights about your RAG pipeline. ragas can be integrated with your CI/CD to provide continuous check to ensure performance.
 
-## Installation 🛡
+## :beers: Installation
 
 ```bash
 pip install ragas
@@ -47,7 +47,7 @@ git clone https://github.com/explodinggradients/ragas && cd ragas
 pip install -e .
 ```
 
-## Quickstart 🔥
+## :beers: Quickstart 
 
 This is a small example program you can run to see ragas in action!
 ```python
@@ -75,7 +75,7 @@ results = e.eval(ds["ground_truth"], ds["generated_text"])
 print(results)
 ```
 If you want a more in-depth explanation of core components, check out our quick-start notebook
-## 🧰 Metrics
+## :beers: Metrics
 
 ### ✏️ Character based 
 
@@ -110,7 +110,7 @@ Model based methods uses language models combined with NLP techniques to compare
 
 - **$Q^2$**
     
-    Best used to measure factual consistencies between ground truth and generated text. Scores can range from 0 to 1. Higher score indicates better factual consistency between ground truth and generated answer. Employs QA-QG paradigm followed by NLI to compare ground truth and generated answer. Q2Score score is highly correlated with human judgement.
+    Best used to measure factual consistencies between ground truth and generated text. Scores can range from 0 to 1. Higher score indicates better factual consistency between ground truth and generated answer. Employs QA-QG paradigm followed by NLI to compare ground truth and generated answer. $Q^2$ score is highly correlated with human judgement.
 
 📜 Checkout [citations](./citations.md) for related publications.
 
