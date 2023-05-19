@@ -50,8 +50,8 @@ class BERTScore(Metric):
         )
 
         if self.similarity_metric == "cosine":
-            score = np.dot(gndtruth_emb, gentext_emb.T) / (
-                norm(gndtruth_emb) * norm(gentext_emb)
+            score = np.sum(gndtruth_emb * gentext_emb, axis=1) / (
+                norm(gndtruth_emb, axis=1) * norm(gentext_emb, axis=1)
             )
 
         elif self.similarity_metric == "euclidean":
