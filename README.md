@@ -26,9 +26,9 @@
 
 <h4 align="center">
     <p>
-        <a href="#beers-installation">Installation</a> |
-        <a href="#beers-quickstart">Quickstart</a> |
-        <a href="#beers-metrics">Metrics</a> |
+        <a href="#shield-installation">Installation</a> |
+        <a href="#fire-quickstart">Quickstart</a> |
+        <a href="#luggage-metrics">Metrics</a> |
         <a href="https://huggingface.co/explodinggradients">Hugging Face</a>
     <p>
 </h4>
@@ -37,7 +37,7 @@ ragas is a framework that helps you evaluate your Retrieval Augmented Generation
 
 ragas provides you with the tools based on the latest research for evaluating LLM generated text  to give you insights about your RAG pipeline. ragas can be integrated with your CI/CD to provide continuous check to ensure performance.
 
-## :beers: Installation
+## :shield: Installation
 
 ```bash
 pip install ragas
@@ -48,7 +48,7 @@ git clone https://github.com/explodinggradients/ragas && cd ragas
 pip install -e .
 ```
 
-## :beers: Quickstart 
+## :fire: Quickstart 
 
 This is a small example program you can run to see ragas in action!
 ```python
@@ -76,14 +76,14 @@ results = e.eval(ds["ground_truth"], ds["generated_text"])
 print(results)
 ```
 If you want a more in-depth explanation of core components, check out our quick-start notebook
-## :beers: Metrics
+## :luggage: Metrics
 
-### ✏️ Character based 
+### :3rd_place_medal: Character based 
 
 - **Levenshtein distance** the number of single character edits (additional, insertion, deletion) required to change your generated text to ground truth text.
 - **Levenshtein** **ratio** is obtained by dividing the Levenshtein distance by sum of number of characters in generated text and ground truth. This type of metrics is suitable where one works with short and precise texts.
 
-### 🖊 N-Gram based
+### :2nd_place_medal: N-Gram based
 
 N-gram based metrics as name indicates uses n-grams for comparing generated answer with ground truth. It is suitable to extractive and abstractive tasks but has its limitations in long free form answers due to the word based comparison.
 
@@ -95,7 +95,7 @@ N-gram based metrics as name indicates uses n-grams for comparing generated answ
 
     It measures precision by comparing  clipped n-grams in generated text to ground truth text. These matches do not consider the ordering of words.
 
-### 🪄 Model Based
+### :1st_place_medal: Model Based
 
 Model based methods uses language models combined with NLP techniques to compare generated text with ground truth.  It is well suited for free form long or short answer types. 
 
@@ -111,7 +111,7 @@ Model based methods uses language models combined with NLP techniques to compare
 
 - **$Q^2$**
     
-    Best used to measure factual consistencies between ground truth and generated text. Scores can range from 0 to 1. Higher score indicates better factual consistency between ground truth and generated answer. Employs QA-QG paradigm followed by NLI to compare ground truth and generated answer. $Q^2$ score is highly correlated with human judgement.
+    Best used to measure factual consistencies between ground truth and generated text. Scores can range from 0 to 1. Higher score indicates better factual consistency between ground truth and generated answer. Employs QA-QG paradigm followed by NLI to compare ground truth and generated answer. $Q^2$ score is highly correlated with human judgement. :warning: time and resource hungry metrics. 
 
-📜 Checkout [citations](./citations.md) for related publications.
+📜 Checkout [citations](./references.md) for related publications.
 
