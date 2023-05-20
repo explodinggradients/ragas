@@ -18,7 +18,7 @@ class BERTScore(Metric):
     model_path: str = "all-MiniLM-L6-v2"
     batch_size: int = 1000
 
-    def __post_init__(self):
+    def init_model(self):
         self.model = SentenceTransformer(self.model_path)
 
     @property

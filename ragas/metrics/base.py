@@ -53,6 +53,10 @@ class Evaluation:
         ds = Dataset.from_dict(
             {"ground_truth": ground_truth, "generated_text": generated_text}
         )
+
+        # initialize all the models in the metrics
+        [m.init_model() for m in self.metrics]
+
         ds = ds.map(
             self._get_score,
             batched=self.batched,

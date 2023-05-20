@@ -52,7 +52,7 @@ class EntailmentScore(Metric):
     batch_size: int = 4
     device: t.Literal["cpu", "cuda"] | Device = "cpu"
 
-    def __post_init__(self):
+    def init_model(self):
         self.device = device_check(self.device)
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         self.model = AutoModelForSequenceClassification.from_pretrained(self.model_name)
@@ -212,7 +212,7 @@ class Qsquare(Metric):
     include_nouns: bool = True
     save_results: bool = False
 
-    def __post_init__(self):
+    def init_model(self):
         self.qa = QAGQ.from_pretrained(self.qa_model_name)
         self.qg = QAGQ.from_pretrained(self.qg_model_name)
         self.nli = EntailmentScore()

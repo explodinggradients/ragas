@@ -7,8 +7,10 @@ from utils import print_table, timeit
 
 from ragas.metrics import (
     Evaluation,
+    bert_score,
     edit_distance,
     edit_ratio,
+    entailment_score,
     q_square,
     rouge1,
     rouge2,
@@ -16,17 +18,17 @@ from ragas.metrics import (
 )
 
 DEVICE = "cuda" if is_available() else "cpu"
-BATCHES = [0, 1]
+BATCHES = [0, 1, 30, 60]
 
 METRICS = {
     "Rouge1": rouge1,
-    "Rouge2": rouge2,
-    "RougeL": rougeL,
+    # "Rouge2": rouge2,
+    # "RougeL": rougeL,
     "EditRatio": edit_ratio,
-    "EditDistance": edit_distance,
-    # "SBERTScore": bert_score,
+    # "EditDistance": edit_distance,
+    "SBERTScore": bert_score,
     # "EntailmentScore": entailment_score,
-    "Qsquare": q_square,
+    # "Qsquare": q_square,
 }
 DS = load_dataset("explodinggradients/eli5-test", split="test_eli5")
 assert isinstance(DS, arrow_dataset.Dataset), "Not an arrow_dataset"
