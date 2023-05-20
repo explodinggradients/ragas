@@ -13,17 +13,33 @@ class Metric(ABC):
     @property
     @abstractmethod
     def name(self: t.Self) -> str:
+        """
+        the metric name
+        """
         ...
 
     @property
     @abstractmethod
     def is_batchable(self: t.Self) -> bool:
+        """
+        Attribute to check if this metric is is_batchable
+        """
+        ...
+
+    @abstractmethod
+    def init_model():
+        """
+        This method will lazy initialize the model.
+        """
         ...
 
     @abstractmethod
     def score(
         self: t.Self, ground_truth: list[str], generated_text: list[str]
     ) -> list[float]:
+        """
+        Run the metric on the ground_truth and generated_text and return score.
+        """
         ...
 
 
