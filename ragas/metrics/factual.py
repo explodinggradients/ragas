@@ -327,7 +327,7 @@ class Qsquare(Metric):
                 )
             gnd_qans[i] = [
                 {"question": qstn, "answer": ans}
-                for qstn, ans in zip(questions, candidates)
+                for qstn, ans in zip(questions, candidates)  # type: ignore
             ]
 
         for i, gen_text in enumerate(generated_text):
@@ -335,7 +335,7 @@ class Qsquare(Metric):
             gen_answers = self.generate_answers(questions, gen_text)
             _ = [
                 item.update({"predicted_answer": ans})
-                for item, ans in zip(gnd_qans[i], gen_answers)
+                for item, ans in zip(gnd_qans[i], gen_answers)  # type: ignore
             ]
 
         # del self.qa
