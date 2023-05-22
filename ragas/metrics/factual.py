@@ -216,6 +216,7 @@ class Qsquare(Metric):
         self.qa = QAGQ.from_pretrained(self.qa_model_name)
         self.qg = QAGQ.from_pretrained(self.qg_model_name)
         self.nli = EntailmentScore()
+        self.nli.init_model()
         try:
             self.nlp = spacy.load(SPACY_MODEL)
         except OSError:
