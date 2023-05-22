@@ -5,7 +5,12 @@ from torch.cuda import is_available
 from tqdm import tqdm
 from utils import print_table, timeit
 
-from ragas.metrics import Evaluation, bert_score, edit_ratio, rouge1
+from ragas.metrics import (
+    Evaluation,
+    bert_score,
+    edit_ratio,
+    rouge1,
+)
 
 DEVICE = "cuda" if is_available() else "cpu"
 BATCHES = [0, 1, 30, 60]
