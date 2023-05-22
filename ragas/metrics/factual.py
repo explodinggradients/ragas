@@ -52,7 +52,7 @@ class EntailmentScore(Metric):
     batch_size: int = 4
     device: t.Literal["cpu", "cuda"] | Device = "cpu"
 
-    def __post_init__(self):
+    def init_model(self):
         self.device = device_check(self.device)
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         self.model = AutoModelForSequenceClassification.from_pretrained(self.model_name)
@@ -212,10 +212,11 @@ class Qsquare(Metric):
     include_nouns: bool = True
     save_results: bool = False
 
-    def __post_init__(self):
+    def init_model(self):
         self.qa = QAGQ.from_pretrained(self.qa_model_name)
         self.qg = QAGQ.from_pretrained(self.qg_model_name)
         self.nli = EntailmentScore()
+        self.nli.init_model()
         try:
             self.nlp = spacy.load(SPACY_MODEL)
         except OSError:
@@ -326,7 +327,7 @@ class Qsquare(Metric):
                 )
             gnd_qans[i] = [
                 {"question": qstn, "answer": ans}
-                for qstn, ans in zip(questions, candidates)
+                for qstn, ans in zip(questions, candidates)  # type: ignore
             ]
 
         for i, gen_text in enumerate(generated_text):
@@ -334,7 +335,7 @@ class Qsquare(Metric):
             gen_answers = self.generate_answers(questions, gen_text)
             _ = [
                 item.update({"predicted_answer": ans})
-                for item, ans in zip(gnd_qans[i], gen_answers)
+                for item, ans in zip(gnd_qans[i], gen_answers)  # type: ignore
             ]
 
         # del self.qa

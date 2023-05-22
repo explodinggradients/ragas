@@ -26,6 +26,9 @@ class BLEUScore(Metric):
     def is_batchable(self):
         return True
 
+    def init_model(self):
+        ...
+
     def score(self, ground_truth: t.List[str], generated_text: t.List[str]):
         ground_truth_ = [[word_tokenize(text)] for text in ground_truth]
         generated_text_ = [word_tokenize(text) for text in generated_text]
@@ -45,7 +48,7 @@ class ROUGE(Metric):
     type: t.Literal[ROUGE_TYPES]
     use_stemmer: bool = False
 
-    def __post_init__(self):
+    def init_model(self):
         self.scorer = rouge_scorer.RougeScorer(
             [self.type], use_stemmer=self.use_stemmer
         )
@@ -79,6 +82,9 @@ class EditScore(Metric):
     @property
     def is_batchable(self):
         return True
+
+    def init_model(self):
+        ...
 
     def score(self, ground_truth: t.List[str], generated_text: t.List[str]):
         if self.measure == "distance":
