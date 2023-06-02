@@ -1,14 +1,25 @@
+import logging
 import os
 
+import backoff
 import openai
 
 openai.api_key = os.environ.get("OPENAI_API_KEY")
+
+# TODO better way of logging backoffs
+logging.getLogger("backoff").addHandler(logging.StreamHandler())
 
 
 # each of these calls have to check for
 # https://platform.openai.com/docs/guides/error-codes/api-errors
 # and handle it gracefully
+@backoff.on_exception(backoff.expo, openai.APIError, max_tries=5)
 def llm(prompts: list[str], **kwargs):
+    """
+    TODOs
+
+    - what happens when backoff fails?
+    """
     response = openai.Completion.create(
         model=kwargs.get("model", "text-davinci-003"),
         prompt=prompts,
@@ -20,6 +31,7 @@ def llm(prompts: list[str], **kwargs):
         logprobs=kwargs.get("logprobs", 1),
         n=kwargs.get("n", 1),
     )
+
     return response
 
 
