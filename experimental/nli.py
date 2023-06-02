@@ -5,7 +5,7 @@ import typing as t
 from llms import llm, llm_async
 from metrics import GenerationMetric
 
-QUESTION_ANSWER_STMNT = """Given a question and answer, create a statement.
+SHORT_FORM_ANSWER = """Given a question and answer, create a statement.
 question: Who is the president of India?
 answer: Narendra Modi
 statement: Narendara Modi is the president of India.
@@ -22,25 +22,39 @@ question: {}
 answer: {}
 statemtent:"""
 
-ANSWER_STMNT = """
+LONG_FORM_ANSWER = """
 Given a question and answer, create one or more statements from answer.
 question: Who was  Albert Einstein and what is he best known for?
 answer: He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.
-statements: Albert Einstein was born in Germany.\n\nAlbert Einstein was best known for his theory of relativity.
+statements:\nAlbert Einstein was born in Germany.\nAlbert Einstein was best known for his theory of relativity.
 question:{}
 answer: {}
-statements:
-"""
+statements:\n"""
 
-VERIFY = """
-Given a context and set of statements separated by '.', Answer YES for each statement if it is supported by context and NO if not.
-context: Albert Einstein was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. Best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.
-statements: Albert Einstein was born in India. Albert Einstein was best known for his theory of relativity.
-answer: NO. YES. 
-context: {}
-statements: {}
-answer:"""
-DICT = {"YES": 0, "NO": 1}
+NLI_STATEMENTS = """
+Prompt: Natural language inference
+Consider the following context:
+Context:
+John is a student at XYZ University. He is pursuing a degree in Computer Science. He is enrolled in several courses this semester, including Data Structures, Algorithms, and Database Management. John is a diligent student and spends a significant amount of time studying and completing assignments. He often stays late in the library to work on his projects.
+Now, read the following statements and determine whether they are supported by the information present in the context. Provide a brief explanation for each statement. Also provide a Final Answer (Yes/No) at the end. 
+statements:\n1. John is majoring in Biology.\n2. John is taking a course on Artificial Intelligence.\n3. John is a dedicated student.\n4. John has a part-time job.\n5. John is interested in computer programming.\n
+Answer:
+1. John is majoring in Biology.
+Explanation: John's major is explicitly mentioned as Computer Science. There is no information suggesting he is majoring in Biology. So answer is No.
+2. John is taking a course on Artificial Intelligence.
+Explanation: The context mentions the courses John is currently enrolled in, and Artificial Intelligence is not mentioned. Therefore, it cannot be deduced that John is taking a course on AI.So answer is No.
+3. John is a dedicated student.
+Explanation: The prompt states that he spends a significant amount of time studying and completing assignments. Additionally, it mentions that he often stays late in the library to work on his projects, which implies dedication.So answer is Yes.
+4. John has a part-time job.
+Explanation: There is no information given in the context about John having a part-time job. Therefore, it cannot be deduced that John has a part-time job. So answer is No.
+5. John is interested in computer programming.
+Explanation: The context states that John is pursuing a degree in Computer Science, which implies an interest in computer programming.So answer is Yes.
+Final answer: No. No. Yes. No. Yes.
+context:\n{}
+statements:\n{}
+Now, read the following statements and determine whether they are supported by the information present in the context. Provide a brief explanation for each statement. Also provide a Final Answer (Yes/No) at the end. 
+Answer:
+"""
 
 
 class NLIScore(GenerationMetric):
@@ -67,13 +81,11 @@ class NLIScore(GenerationMetric):
 
         prompts = []
         for question, answer in zip(questions, answers):
-            ## single phrase answer
             if (len(answer.split()) < 4) or (len(answer.split(".")) == 1):
-                prompt = QUESTION_ANSWER_STMNT.format(question, answer)
+                prompt = SHORT_FORM_ANSWER.format(question, answer)
                 prompts.append(prompt)
-            ## long form
             else:
-                prompt = ANSWER_STMNT.format(question, answer)
+                prompt = LONG_FORM_ANSWER.format(question, answer)
                 prompts.append(prompt)
 
         response = llm(prompts)
@@ -81,15 +93,14 @@ class NLIScore(GenerationMetric):
         print(usage)
         list_statements = []
         for output in response["choices"]:
-            statements = output["text"].split("\n\n")
+            statements = output["text"].split("\n")
             list_statements.append(statements)
 
-        # print(list_statements)
 
-        ## verify
         prompts = []
         for context, statements in zip(contexts, list_statements):
-            prompt = VERIFY.format(context, ". ".join(statements))
+            statements = "\n".join([f'{i+1}.{st}' for i, st in enumerate(statements)])
+            prompt = NLI_STATEMENTS.format(context, statements)
             prompts.append(prompt)
 
         response = llm(prompts)
@@ -99,9 +110,14 @@ class NLIScore(GenerationMetric):
 
         scores = []
         for i, output in enumerate(outputs):
-            score = sum(
-                [DICT[key.strip()] for key in output["text"].split(".") if key != ""]
-            ) / len(list_statements[i])
+            output = output['text'].lower().strip()
+            if output.find("final answer:") != -1:
+                output = output[output.find("final answer:") + len("final answer:"):]
+                score = sum(0 if "yes" in answer else 1 for answer in output.strip().split(".") if answer != '')
+                score = score / len(list_statements[i])
+            else:
+                score = max(0, output.count("so answer is no")) / len(list_statements[i])
+            
             scores.append(1 - score)
 
         return scores
