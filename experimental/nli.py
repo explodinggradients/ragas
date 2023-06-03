@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from llms import llm, llm_async
-from metrics import GenerationMetric
+from metrics import QCAMetric
 
 SHORT_FORM_ANSWER = """Given a question and answer, create a statement.
 question: Who is the president of India?
@@ -57,7 +57,7 @@ Answer:
 """
 
 
-class NLIScore(GenerationMetric):
+class NLIScore(QCAMetric):
     @property
     def name(self):
         return "NLI_score"
@@ -96,10 +96,9 @@ class NLIScore(GenerationMetric):
             statements = output["text"].split("\n")
             list_statements.append(statements)
 
-
         prompts = []
         for context, statements in zip(contexts, list_statements):
-            statements = "\n".join([f'{i+1}.{st}' for i, st in enumerate(statements)])
+            statements = "\n".join([f"{i+1}.{st}" for i, st in enumerate(statements)])
             prompt = NLI_STATEMENTS.format(context, statements)
             prompts.append(prompt)
 
@@ -110,14 +109,20 @@ class NLIScore(GenerationMetric):
 
         scores = []
         for i, output in enumerate(outputs):
-            output = output['text'].lower().strip()
+            output = output["text"].lower().strip()
             if output.find("final answer:") != -1:
-                output = output[output.find("final answer:") + len("final answer:"):]
-                score = sum(0 if "yes" in answer else 1 for answer in output.strip().split(".") if answer != '')
+                output = output[output.find("final answer:") + len("final answer:") :]
+                score = sum(
+                    0 if "yes" in answer else 1
+                    for answer in output.strip().split(".")
+                    if answer != ""
+                )
                 score = score / len(list_statements[i])
             else:
-                score = max(0, output.count("so answer is no")) / len(list_statements[i])
-            
+                score = max(0, output.count("so answer is no")) / len(
+                    list_statements[i]
+                )
+
             scores.append(1 - score)
 
         return scores
