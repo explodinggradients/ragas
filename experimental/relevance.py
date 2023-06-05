@@ -69,7 +69,7 @@ class QGen:
 
         return {"input_ids":inputs.input_ids,
                 "attention_mask":inputs.attention_mask,
-                "decoder_input_ids":labels},labels
+                "labels":labels},labels
     
     def get_loss(self,logits:Tensor, labels: Tensor):
         
