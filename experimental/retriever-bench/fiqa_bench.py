@@ -40,14 +40,16 @@ retriever = EvaluateRetrieval(
     model, score_function="dot"
 )  # or "cos_sim" for cosine similarity
 
-LOAD_BI_ENCODER_RESULTS = False
+LOAD_BI_ENCODER_RESULTS = True
 if not LOAD_BI_ENCODER_RESULTS:
     #### Load the SBERT model and retrieve using cosine-similarity
     results = retriever.retrieve(corpus, queries)
 
     with open("results.pkl", "wb") as f:
         pickle.dump(results, f)
+    print("Saved results to file!")
 else:
+    print("Loading results from file")
     with open("results.pkl", "rb") as f:
         results = pickle.load(f)
 
@@ -56,12 +58,12 @@ else:
 # Load CrossEncoder Models
 reranker = {}
 for model_name in [
-    "cross-encoder/ms-marco-TinyBERT-L-6",
-    # "cross-encoder/ms-marco-MiniLM-L-6-v2",
+    # "cross-encoder/ms-marco-TinyBERT-L-6",
+    "cross-encoder/ms-marco-MiniLM-L-6-v2",
     # "cross-encoder/stsb-distilroberta-base",
     # "cross-encoder/ms-marco-electra-base",
 ]:
-    reranker[model_name] = Rerank(CrossEncoder(model_name), batch_size=128)
+    reranker[model_name] = Rerank(CrossEncoder(model_name), batch_size=32)
 
 # Rerank top-100 results using the reranker provided
 rerank_results = {}
