@@ -1,4 +1,3 @@
-from ragas.metrics.base import Evaluation, Metric
 from ragas.metrics.factual import entailment_score, q_square
 from ragas.metrics.similarity import bert_score
 from ragas.metrics.simple import (
@@ -10,7 +9,7 @@ from ragas.metrics.simple import (
     rougeL,
 )
 
-__all__ = [
+grounded = [
     "Evaluation",
     "Metric",
     "entailment_score",
