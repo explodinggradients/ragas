@@ -5,28 +5,18 @@ import typing as t
 from llms import llm, llm_async
 from metrics import QCAMetric
 
-SHORT_FORM_ANSWER = """Given a question and answer, create a statement.
-question: Who is the president of India?
-answer: Narendra Modi
-statement: Narendara Modi is the president of India.
-question: Which magazine was started first Arthur's Magazine or Women's Magazine?
-answer: Arthur's Magazine
-statement: Arthur's Magazine started before Women's magazine. 
-question: Cadmium Chloride is slightly soluble in this chemical, it is also called what?
-answer: alochol
-statement: Cadmium Chloride is slightly soluble in alcohol.
-question: Were Shahul and Jithin of the same nationality?
-answer: They were from different countries.
-statement: Shahul and Jithin were from different countries.
-question: {}
-answer: {}
-statemtent:"""
 
 LONG_FORM_ANSWER = """
 Given a question and answer, create one or more statements from answer.
 question: Who was  Albert Einstein and what is he best known for?
 answer: He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.
 statements:\nAlbert Einstein was born in Germany.\nAlbert Einstein was best known for his theory of relativity.
+question: Cadmium Chloride is slightly soluble in this chemical, it is also called what?
+answer: alochol
+statements:\nCadmium Chloride is slightly soluble in alcohol.
+question: Were Shahul and Jithin of the same nationality?
+answer: They were from different countries.
+statements:\nShahul and Jithin were from different countries.
 question:{}
 answer: {}
 statements:\n"""
@@ -81,12 +71,8 @@ class NLIScore(QCAMetric):
 
         prompts = []
         for question, answer in zip(questions, answers):
-            if (len(answer.split()) < 4) or (len(answer.split(".")) == 1):
-                prompt = SHORT_FORM_ANSWER.format(question, answer)
-                prompts.append(prompt)
-            else:
-                prompt = LONG_FORM_ANSWER.format(question, answer)
-                prompts.append(prompt)
+            prompt = LONG_FORM_ANSWER.format(question, answer)
+            prompts.append(prompt)
 
         response = llm(prompts)
         usage = response["usage"]
