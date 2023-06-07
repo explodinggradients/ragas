@@ -161,7 +161,6 @@ cython_debug/
 
 # Ragas specific
 ragas/_version.py
-experiments/wikiqa/data
-experiments/wikiqa/storage
-experimental/retriever-bench/datasets
+experiments/**/data
+experiments/**/storage
 **/fil-result/
