@@ -76,6 +76,7 @@ Ragas measures your pipeline's performance against two dimensions
 
 Through repeated experiments, we have found that the quality of a RAG pipeline is highly dependent on these two dimensions. The final `ragas_score` is the harmonic mean of these two factors. 
 
+To read more about our metrics, checkout [docs](/docs/metrics.md).
 ## :question: How to use Ragas to improve your pipeline?
 *"Measurement is the first step that leads to control and eventually to improvement" - James Harrington*
 
