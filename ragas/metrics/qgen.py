@@ -154,11 +154,11 @@ class QGenScore(Metric):
 
     def score(self: t.Self, dataset: Dataset) -> Dataset:
         """
-        dataset: Dataset["question", "answer"]
+        dataset: Dataset[question: list[str], answer: list[str]]
         """
 
         sentence_ds = dataset.map(
-            self._make_question_answer_pairs, batched=True, batch_size=1000
+            self._make_question_answer_pairs, batched=True, batch_size=10
         )
 
         # we loose memory here because we have to make it py_list
