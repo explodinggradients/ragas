@@ -27,28 +27,12 @@ def get_evaluation_mode(ds: Dataset):
 
 
 def evaluate(
+    dataset: Dataset,
     metrics: list[Metric],
-    dataset: Dataset | None = None,
-    questions: list[str] | None = None,
-    answers: list[str] | None = None,
-    ground_truths: list[str] | None = None,
-    contexts: list[list[str]] | None = None,
 ) -> Result:
     """ """
     if dataset is None:
-        data = {}
-        if questions is not None:
-            data["questions"] = questions
-        if answers is not None:
-            data["answers"] = answers
-        if ground_truths is not None:
-            data["ground_truths"] = ground_truths
-        if contexts is not None:
-            data["contexts"] = contexts
-
-        if len(data) == 0:
-            raise ValueError("Provide dataset or (qagc)")
-        dataset = Dataset.from_dict(data)
+        raise ValueError("Provide dataset!")
 
     # TODO: validate EvaluationMode here
     # evaluation_mode = get_evaluation_mode(dataset)

@@ -86,15 +86,18 @@ class Factuality(Metric):
             prompts.append(prompt)
 
         response = openai_completion(prompts)
-        list_statements = []
+        list_statements: list[list[str]] = []
         for output in response["choices"]:
             statements = output["text"].split("\n")
             list_statements.append(statements)
 
         prompts = []
         for context, statements in zip(contexts, list_statements):
-            statements = "\n".join([f"{i+1}.{st}" for i, st in enumerate(statements)])
-            prompt = NLI_STATEMENTS.format(context, statements)
+            statements_str: str = "\n".join(
+                [f"{i+1}.{st}" for i, st in enumerate(statements)]
+            )
+            contexts_str: str = "\n".join(context)
+            prompt = NLI_STATEMENTS.format(contexts_str, statements_str)
             prompts.append(prompt)
 
         response = openai_completion(prompts)
