@@ -36,6 +36,10 @@ class Metric(ABC):
         """
         ...
 
+    @abstractmethod
+    def score(self: t.Self, dataset: Dataset) -> Dataset:
+        ...
+
     def get_batches(self, dataset_size: int):
         tail = dataset_size % self.batch_size
         num_batches = floor(dataset_size / self.batch_size)
@@ -48,15 +52,3 @@ class Metric(ABC):
         )
 
         return batches
-
-    @abstractmethod
-    def score(self: t.Self, dataset: Dataset) -> Dataset:
-        ...
-
-
-class QCAMetric(Metric, ABC):
-    @abstractmethod
-    def _score_batch(
-        self: t.Self, question: list[str], answer: list[str], contexts: list[list[str]]
-    ) -> dict:
-        ...

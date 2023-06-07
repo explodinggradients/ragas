@@ -1,0 +1,9 @@
+from dataclasses import dataclass
+
+from sentence_transformers import cross_encoder
+
+from ragas.metrics.base import Metric
+
+
+@dataclass
+class ContextRelevancy 

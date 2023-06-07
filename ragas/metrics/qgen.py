@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import typing as t
+from dataclasses import dataclass
 
 import numpy as np
 import torch
 import transformers
+from datasets import Dataset
 from torch import Tensor
 from torch.nn import CrossEntropyLoss
 from torch.nn.functional import normalize
@@ -12,6 +14,8 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AutoConfig, AutoTokenizer
 from transformers.models.auto.modeling_auto import MODEL_WITH_LM_HEAD_MAPPING_NAMES
+
+from ragas.metrics.base import Metric
 
 if t.TYPE_CHECKING:
     import numpy.typing as npt
@@ -111,7 +115,7 @@ class QGen:
 
     def predict(
         self,
-        sentences: list[str, str],
+        sentences: list[list[str]],
         batch_size: int = 32,
         show_progress: bool = True,
     ) -> npt.NDArray[np.float64]:
@@ -131,3 +135,35 @@ class QGen:
                 predictions.append(loss)
 
         return np.hstack(predictions)
+
+
+@dataclass
+class QGenScore(Metric):
+    batch_size: int = 32
+    name: str = "qgen_score"
+    model_name: str = "t5-base"
+
+    def init_model(self: t.Self):
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model = QGen(self.model_name, self.device)
+
+    @staticmethod
+    def _make_question_answer_pairs(row: dict) -> dict:
+        row["sentences"] = list(zip(row["question"], row["answer"]))
+        return row
+
+    def score(self: t.Self, dataset: Dataset) -> Dataset:
+        """
+        dataset: Dataset["question", "answer"]
+        """
+
+        sentence_ds = dataset.map(
+            self._make_question_answer_pairs, batched=True, batch_size=1000
+        )
+
+        # we loose memory here because we have to make it py_list
+        scores = self.model.predict(sentence_ds["sentences"])
+        return Dataset.from_dict({f"{self.name}": scores})
+
+
+qgen_score = QGenScore()
