@@ -3,6 +3,7 @@ import os
 
 import backoff
 import openai
+from openai.error import RateLimitError
 
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -13,7 +14,7 @@ logging.getLogger("backoff").addHandler(logging.StreamHandler())
 # each of these calls have to check for
 # https://platform.openai.com/docs/guides/error-codes/api-errors
 # and handle it gracefully
-@backoff.on_exception(backoff.expo, openai.APIError, max_tries=5)
+@backoff.on_exception(backoff.expo, RateLimitError, max_tries=5)
 def openai_completion(prompts: list[str], **kwargs):
     """
     TODOs

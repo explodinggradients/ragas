@@ -1,63 +1,69 @@
+from __future__ import annotations
+
+import typing as t
 from dataclasses import dataclass
+from enum import Enum
+
+import numpy as np
+from datasets import Dataset, concatenate_datasets
+from tqdm import tqdm
+
+from ragas.metrics.base import Metric
+
+EvaluationMode = Enum("EvaluationMode", "generative retrieval grounded")
 
 
-@dataclass
-class Evaluation:
-    metrics: list[Metric]
-    batched: bool = True
-    batch_size: int = 1000
+def get_evaluation_mode(ds: Dataset):
+    """
+    validates the dataset and returns the evaluation type
 
-    def eval(self, ground_truth: list[list[str]], generated_text: list[str]) -> Result:
-        ds = Dataset.from_dict(
-            {"ground_truth": ground_truth, "generated_text": generated_text}
-        )
+    possible evaluation types
+    1. (q,a,c)
+    2. (q)
+    3. (q,c)
+    4. (g,a)
+    """
+    ...
 
-        # initialize all the models in the metrics
-        [m.init_model() for m in self.metrics]
 
-        ds = ds.map(
-            self._get_score,
-            batched=self.batched,
-            batch_size=self.batch_size,
-            remove_columns=["ground_truth", "generated_text"],
-        )
+def evaluate(
+    metrics: list[Metric],
+    dataset: Dataset | None = None,
+    questions: list[str] | None = None,
+    answers: list[str] | None = None,
+    ground_truths: list[str] | None = None,
+    contexts: list[list[str]] | None = None,
+) -> Result:
+    """ """
+    if dataset is None:
+        data = {}
+        if questions is not None:
+            data["questions"] = questions
+        if answers is not None:
+            data["answers"] = answers
+        if ground_truths is not None:
+            data["ground_truths"] = ground_truths
+        if contexts is not None:
+            data["contexts"] = contexts
 
-        return Result(ds)
+        if len(data) == 0:
+            raise ValueError("Provide dataset or (qagc)")
+        dataset = Dataset.from_dict(data)
 
-    # TODO: set a typevar here for row
-    def _get_score(self, row: dict[str, list[t.Any]] | dict[str, t.Any]):
-        for metric in self.metrics:
-            if self.batched:
-                split_indices = []
-                last_split_index = 0
-                ground_truths = []
-                generated_texts = []
-                for i, ground_truth_list in enumerate(row["ground_truth"]):
-                    split_indices.append(last_split_index + len(ground_truth_list))
-                    last_split_index = split_indices[-1]
-                    ground_truths.extend(ground_truth_list)
-                    generated_texts.extend(
-                        [row["generated_text"][i]] * len(ground_truth_list)
-                    )
+    # TODO: validate EvaluationMode here
+    # evaluation_mode = get_evaluation_mode(dataset)
 
-                # contruct variable array back and compute score
-                batch_scores_flat = metric.score(ground_truths, generated_texts)
-                batch_scores = np.split(batch_scores_flat, split_indices)
-                score = [np.max(x) for x in batch_scores[:-1]]
-            else:  # not batched
-                split_indices = len(row["ground_truth"])
-                ground_truths = row["ground_truth"]
-                generated_text = row["generated_text"]
-                assert isinstance(
-                    generated_text, str
-                ), f"generated_text should be str but got {type(generated_text)}"
-                generated_texts = [generated_text] * split_indices
-                scores = metric.score(ground_truths, generated_texts)
-                score = np.max(scores)
+    # TODO: check if all the metrics are compatible with the evaluation mode
 
-            row[f"{metric.name}"] = score
+    # run the evaluation on dataset with different metrics
+    # initialize all the models in the metrics
+    [m.init_model() for m in metrics]
 
-        return row
+    scores = []
+    for metric in tqdm(metrics):
+        scores.append(metric.score(dataset).select_columns(metric.name))
+
+    return Result(concatenate_datasets(scores))
 
 
 @dataclass

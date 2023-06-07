@@ -1,6 +1,6 @@
 """
-Q - questions
-A - answers: generated_text from RAG pipeline
+Q - question
+A - answer: generated_text from RAG pipeline
 C - contexts: context used for generation
 G - ground_truths: ground truth answer
 """
@@ -9,23 +9,23 @@ from __future__ import annotations
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from math import floor
+
+from datasets import Dataset
 
 
 @dataclass
 class Metric(ABC):
     @property
     @abstractmethod
-    def name(self: t.Self) -> str:
-        """
-        the metric name
-        """
+    def batch_size(self: t.Self) -> int:
         ...
 
     @property
     @abstractmethod
-    def is_batchable(self: t.Self) -> bool:
+    def name(self: t.Self) -> str:
         """
-        Attribute to check if this metric is is_batchable
+        the metric name
         """
         ...
 
@@ -36,43 +36,27 @@ class Metric(ABC):
         """
         ...
 
+    def get_batches(self, dataset_size: int):
+        tail = dataset_size % self.batch_size
+        num_batches = floor(dataset_size / self.batch_size)
+        batches = [
+            range(i, i + self.batch_size)
+            for i in range(0, self.batch_size * num_batches, self.batch_size)
+        ]
+        batches.append(
+            range(self.batch_size * num_batches, self.batch_size * num_batches + tail)
+        )
+
+        return batches
+
     @abstractmethod
-    def score(
-        self: t.Self, ground_truth: list[str], generated_text: list[str]
-    ) -> list[float]:
-        """
-        Run the metric on the ground_truth and generated_text and return score.
-        """
+    def score(self: t.Self, dataset: Dataset) -> Dataset:
         ...
 
 
-@dataclass
-class GAmetric(Metric, ABC):
-    @abstractmethod
-    def score(self: t.Self, ground_truth: list[str], answer: list[str]) -> list[float]:
-        """
-        Run the metric on the ground_truth and generated_text and return score.
-        """
-        ...
-
-
-@dataclass
 class QCAMetric(Metric, ABC):
     @abstractmethod
-    def score(
-        self: t.Self, questions: list[str], context: list[list[str]], answer: list[str]
-    ):
-        """
-        Return the NLI score for each (q, c, a) pair
-        """
-        ...
-
-
-@dataclass
-class QAMetric(Metric, ABC):
-    @abstractmethod
-    def score(self: t.Self, questions: list[str], answer: list[str]):
-        """
-        Return the NLI score for each (q, c, a) pair
-        """
+    def _score_batch(
+        self: t.Self, question: list[str], answer: list[str], contexts: list[list[str]]
+    ) -> dict:
         ...

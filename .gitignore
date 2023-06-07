@@ -164,3 +164,4 @@ ragas/_version.py
 experiments/wikiqa/data
 experiments/wikiqa/storage
 experimental/retriever-bench/datasets
+**/fil-result/

@@ -1,9 +1,16 @@
 from __future__ import annotations
 
 import typing as t
+from dataclasses import dataclass
 
-from ragas.metrics.base import QCAMetric
+from datasets import concatenate_datasets
+from tqdm import tqdm
+
+from ragas.metrics.base import Metric
 from ragas.metrics.llms import openai_completion
+
+if t.TYPE_CHECKING:
+    from datasets import Dataset
 
 #################
 # NLI Score
@@ -60,55 +67,55 @@ Answer:
 """
 
 
-class NLIScore(QCAMetric):
+@dataclass
+class NLIScore(Metric):
+    batch_size: int = 15
+
     @property
     def name(self):
         return "NLI_score"
 
-    @property
-    def is_batchable(self: t.Self):
-        return True
-
     def init_model(self: t.Self):
         pass
 
-    def score(
-        self: t.Self,
-        questions: list[str],
-        contexts: list[list[str]],
-        answers: list[str],
-    ):
+    def score(self: t.Self, dataset: Dataset) -> Dataset:
+        scores = []
+        for batch in tqdm(self.get_batches(len(dataset))):
+            score = self._score_batch(dataset.select(batch))
+            scores.append(score)
+
+        return concatenate_datasets(scores)
+
+    def _score_batch(self: t.Self, ds: Dataset) -> Dataset:
         """
         returns the NLI score for each (q, c, a) pair
         """
-
+        question, answer, contexts = ds["question"], ds["answer"], ds["contexts"]
         prompts = []
-        for question, answer in zip(questions, answers):
-            if (len(answer.split()) < 4) or (len(answer.split(".")) == 1):
-                prompt = SHORT_FORM_ANSWER.format(question, answer)
+        for q, a in zip(question, answer):
+            if (len(a.split()) < 4) or (len(a.split(".")) == 1):
+                prompt = SHORT_FORM_ANSWER.format(q, a)
                 prompts.append(prompt)
             else:
-                prompt = LONG_FORM_ANSWER.format(question, answer)
+                prompt = LONG_FORM_ANSWER.format(q, a)
                 prompts.append(prompt)
 
         response = openai_completion(prompts)
-        usage = response["usage"]
-        print(usage)
+        # TODO: track usages
         list_statements = []
         for output in response["choices"]:
             statements = output["text"].split("\n")
             list_statements.append(statements)
 
         prompts = []
-        for context, statements in zip(contexts, list_statements):
+        for contexts, statements in zip(contexts, list_statements):
             statements = "\n".join([f"{i+1}.{st}" for i, st in enumerate(statements)])
-            prompt = NLI_STATEMENTS.format(context, statements)
+            prompt = NLI_STATEMENTS.format(contexts, statements)
             prompts.append(prompt)
 
         response = openai_completion(prompts)
         outputs = response["choices"]
         usage = response["usage"]
-        print(usage)
 
         scores = []
         for i, output in enumerate(outputs):
@@ -128,7 +135,7 @@ class NLIScore(QCAMetric):
 
             scores.append(1 - score)
 
-        return scores
+        return ds.add_column(f"{self.name}", scores)  # type: ignore
 
 
-factuality = NLIScore()
+nli_score = NLIScore()
