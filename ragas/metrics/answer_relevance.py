@@ -138,9 +138,9 @@ class QGen:
 
 
 @dataclass
-class QGenScore(Metric):
+class AnswerRelevancy(Metric):
     batch_size: int = 32
-    name: str = "qgen_score"
+    name: str = "answer_relevancy"
     model_name: str = "t5-base"
 
     def init_model(self: t.Self):
@@ -166,4 +166,4 @@ class QGenScore(Metric):
         return Dataset.from_dict({f"{self.name}": scores})
 
 
-qgen_score = QGenScore()
+answer_relevancy = AnswerRelevancy()

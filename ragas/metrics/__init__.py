@@ -1,13 +1,12 @@
-from ragas.metrics.nli import NLIScore
-from ragas.metrics.nli import nli_score as factuality
-from ragas.metrics.qgen import QGenScore
-from ragas.metrics.qgen import qgen_score as answer_relevancy
-from ragas.metrics.qgen_context import context_relavancy
+from ragas.metrics.answer_relevance import AnswerRelevancy, answer_relevancy
+from ragas.metrics.context_relevance import ContextRelevancy, context_relavancy
+from ragas.metrics.factual import Factuality, factuality
 
 __all__ = [
-    "NLIScore",
+    "Factuality",
     "factuality",
-    "QGenScore",
+    "AnswerRelevancy",
     "answer_relevancy",
+    "ContextRelevancy",
     "context_relavancy",
 ]

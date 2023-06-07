@@ -68,7 +68,7 @@ Answer:
 
 
 @dataclass
-class NLIScore(Metric):
+class Factuality(Metric):
     batch_size: int = 15
 
     @property
@@ -100,6 +100,7 @@ class NLIScore(Metric):
                 prompt = LONG_FORM_ANSWER.format(q, a)
                 prompts.append(prompt)
 
+        print(prompts)
         response = openai_completion(prompts)
         # TODO: track usages
         list_statements = []
@@ -113,6 +114,7 @@ class NLIScore(Metric):
             prompt = NLI_STATEMENTS.format(contexts, statements)
             prompts.append(prompt)
 
+        print(prompts)
         response = openai_completion(prompts)
         outputs = response["choices"]
         usage = response["usage"]
@@ -135,7 +137,8 @@ class NLIScore(Metric):
 
             scores.append(1 - score)
 
+        print(scores)
         return ds.add_column(f"{self.name}", scores)  # type: ignore
 
 
-nli_score = NLIScore()
+factuality = Factuality()

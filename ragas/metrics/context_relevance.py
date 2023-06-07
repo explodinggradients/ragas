@@ -3,13 +3,12 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass
 
-import numpy as np
 import torch
 from datasets import Dataset
 from pandas import DataFrame
 
+from ragas.metrics.answer_relevance import QGen
 from ragas.metrics.base import Metric
-from ragas.metrics.qgen import QGen
 
 
 @dataclass
