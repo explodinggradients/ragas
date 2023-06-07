@@ -60,4 +60,4 @@ class ContextRelevancy(Metric):
         return score_ds
 
 
-context_relavancy = ContextRelevancy()
+context_relevancy = ContextRelevancy()
