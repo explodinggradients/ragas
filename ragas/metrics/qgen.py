@@ -111,7 +111,7 @@ class QGen:
 
     def predict(
         self,
-        sentences: list[list[str]],
+        sentences: list[str, str],
         batch_size: int = 32,
         show_progress: bool = True,
     ) -> npt.NDArray[np.float64]:
