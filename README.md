@@ -71,10 +71,21 @@ If you want a more in-depth explanation of core components, check out our quick-
 ## :luggage: Metrics
 
 Ragas measures your pipeline's performance against two dimensions
-1. Factuality: measures the factual consistency of the generated answer against the given context.
-2. Relevancy:  measures how relevant retrieved contexts and the generated answer are to the question. 
+1. **Factuality**: measures the factual consistency of the generated answer against the given context.
+2. **Relevancy**:  measures how relevant retrieved contexts and the generated answer are to the question. 
 
 Through repeated experiments, we have found that the quality of a RAG pipeline is highly dependent on these two dimensions. The final `ragas_score` is the harmonic mean of these two factors. 
+
+## :question: How to use Ragas to improve your pipeline?
+*"Measurement is the first step that leads to control and eventually to improvement" - James Harrington*
+
+Here we assume that you already have your RAG pipeline ready. When is comes to RAG pipelines, there are mainly two parts - Retriever and generator. A change in any of this should also impact your pipelines's quality.
+
+1. First, decide one parameter that you're interested in adjusting. for example the number of retrieved documents, K. 
+2. Collect a set of sample prompts (min 20) to form your test set.
+3. Run your pipeline using the test set before and after the change. Each time record the prompts with context and generated output.
+4. Run ragas evaluation for each of them to generate evaluation scores. 
+5. Compare the scores and you will know how much the change has affected your pipelines's performance.
 
 
 ## :raising_hand_man: FAQ
