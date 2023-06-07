@@ -100,24 +100,24 @@ class Factuality(Metric):
                 prompt = LONG_FORM_ANSWER.format(q, a)
                 prompts.append(prompt)
 
-        print(prompts)
         response = openai_completion(prompts)
         # TODO: track usages
-        list_statements = []
+        list_statements: list[list[str]] = []
         for output in response["choices"]:
-            statements = output["text"].split("\n")
+            statements: list[str] = output["text"].split("\n")
             list_statements.append(statements)
 
         prompts = []
         for contexts, statements in zip(contexts, list_statements):
-            statements = "\n".join([f"{i+1}.{st}" for i, st in enumerate(statements)])
-            prompt = NLI_STATEMENTS.format(contexts, statements)
+            statements_str = "\n".join(
+                [f"{i+1}.{st}" for i, st in enumerate(statements)]
+            )
+            contexts_str = ", ".join(contexts)
+            prompt = NLI_STATEMENTS.format(contexts_str, statements_str)
             prompts.append(prompt)
 
-        print(prompts)
         response = openai_completion(prompts)
         outputs = response["choices"]
-        usage = response["usage"]
 
         scores = []
         for i, output in enumerate(outputs):
@@ -137,7 +137,6 @@ class Factuality(Metric):
 
             scores.append(1 - score)
 
-        print(scores)
         return ds.add_column(f"{self.name}", scores)  # type: ignore
 
 
