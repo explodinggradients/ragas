@@ -15,28 +15,17 @@ if t.TYPE_CHECKING:
 #################
 # NLI Score
 #################
-SHORT_FORM_ANSWER = """Given a question and answer, create a statement.
-question: Who is the president of India?
-answer: Narendra Modi
-statement: Narendara Modi is the president of India.
-question: Which magazine was started first Arthur's Magazine or Women's Magazine?
-answer: Arthur's Magazine
-statement: Arthur's Magazine started before Women's magazine. 
-question: Cadmium Chloride is slightly soluble in this chemical, it is also called what?
-answer: alochol
-statement: Cadmium Chloride is slightly soluble in alcohol.
-question: Were Shahul and Jithin of the same nationality?
-answer: They were from different countries.
-statement: Shahul and Jithin were from different countries.
-question: {}
-answer: {}
-statemtent:"""
-
 LONG_FORM_ANSWER = """
 Given a question and answer, create one or more statements from answer.
 question: Who was  Albert Einstein and what is he best known for?
 answer: He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.
 statements:\nAlbert Einstein was born in Germany.\nAlbert Einstein was best known for his theory of relativity.
+question: Cadmium Chloride is slightly soluble in this chemical, it is also called what?
+answer: alochol
+statements:\nCadmium Chloride is slightly soluble in alcohol.
+question: Were Shahul and Jithin of the same nationality?
+answer: They were from different countries.
+statements:\nShahul and Jithin were from different countries.
 question:{}
 answer: {}
 statements:\n"""
@@ -93,27 +82,19 @@ class Factuality(Metric):
         question, answer, contexts = ds["question"], ds["answer"], ds["contexts"]
         prompts = []
         for q, a in zip(question, answer):
-            if (len(a.split()) < 4) or (len(a.split(".")) == 1):
-                prompt = SHORT_FORM_ANSWER.format(q, a)
-                prompts.append(prompt)
-            else:
-                prompt = LONG_FORM_ANSWER.format(q, a)
-                prompts.append(prompt)
+            prompt = LONG_FORM_ANSWER.format(q, a)
+            prompts.append(prompt)
 
         response = openai_completion(prompts)
-        # TODO: track usages
-        list_statements: list[list[str]] = []
+        list_statements = []
         for output in response["choices"]:
-            statements: list[str] = output["text"].split("\n")
+            statements = output["text"].split("\n")
             list_statements.append(statements)
 
         prompts = []
-        for contexts, statements in zip(contexts, list_statements):
-            statements_str = "\n".join(
-                [f"{i+1}.{st}" for i, st in enumerate(statements)]
-            )
-            contexts_str = ", ".join(contexts)
-            prompt = NLI_STATEMENTS.format(contexts_str, statements_str)
+        for context, statements in zip(contexts, list_statements):
+            statements = "\n".join([f"{i+1}.{st}" for i, st in enumerate(statements)])
+            prompt = NLI_STATEMENTS.format(context, statements)
             prompts.append(prompt)
 
         response = openai_completion(prompts)
