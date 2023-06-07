@@ -48,7 +48,10 @@ class ContextRelevancy(Metric):
             batch_size=10,
             remove_columns=dataset.column_names,
         )
+
+        # we loose memory here because we have to make it py_list
         scores = self.model.predict(sentence_ds["sentences"])
+
         sentence_ds = sentence_ds.add_column(self.name, scores)  # type: ignore
         df = sentence_ds.to_pandas()
         assert isinstance(df, DataFrame)

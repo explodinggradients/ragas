@@ -160,7 +160,6 @@ class AnswerRelevancy(Metric):
         sentence_ds = dataset.map(
             self._make_question_answer_pairs, batched=True, batch_size=10
         )
-
         # we loose memory here because we have to make it py_list
         scores = self.model.predict(sentence_ds["sentences"])
         return Dataset.from_dict({f"{self.name}": scores})
