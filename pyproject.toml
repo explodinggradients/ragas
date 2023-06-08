@@ -24,4 +24,4 @@ requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-write_to = "ragas/_version.py"
+write_to = "src/ragas/_version.py"
