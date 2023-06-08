@@ -1,17 +1,18 @@
 [project]
 name = "ragas"
 dependencies = [
-    "Levenshtein",
-    "rouge-score",
     "numpy",
     "transformers",
     "sentence-transformers",
-    "nltk",
     "datasets",
-    "spacy<4.0.0,>=3.0.0",
     "protobuf<=3.20.0",
+    "backoff",
+    "openai",
 ]
 dynamic = ["version", "readme"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/plain"}
@@ -19,5 +20,6 @@ readme = {file = ["README.md"], content-type = "text/plain"}
 [build-system]
 requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
+
 [tool.setuptools_scm]
-write_to = "ragas/_version.py"
+write_to = "src/ragas/_version.py"

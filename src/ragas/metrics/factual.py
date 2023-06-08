@@ -28,7 +28,7 @@ answer: They were from different countries.
 statements:\nShahul and Jithin were from different countries.
 question:{}
 answer: {}
-statements:\n"""
+statements:\n"""  # noqa: E501
 
 NLI_STATEMENTS = """
 Prompt: Natural language inference
@@ -53,7 +53,7 @@ context:\n{}
 statements:\n{}
 Now, read the following statements and determine whether they are supported by the information present in the context. Provide a brief explanation for each statement. Also provide a Final Answer (Yes/No) at the end. 
 Answer:
-"""
+"""  # noqa: E501
 
 
 @dataclass
@@ -87,7 +87,7 @@ class Factuality(Metric):
 
         response = openai_completion(prompts)
         list_statements: list[list[str]] = []
-        for output in response["choices"]:
+        for output in response["choices"]:  # type: ignore
             statements = output["text"].split("\n")
             list_statements.append(statements)
 
@@ -101,7 +101,7 @@ class Factuality(Metric):
             prompts.append(prompt)
 
         response = openai_completion(prompts)
-        outputs = response["choices"]
+        outputs = response["choices"]  # type: ignore
 
         scores = []
         for i, output in enumerate(outputs):
