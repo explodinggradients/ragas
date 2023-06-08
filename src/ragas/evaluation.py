@@ -45,8 +45,7 @@ def evaluate(
     for metric in metrics:
         scores.append(metric.score(dataset).select_columns(metric.name))
 
-    print(scores)
-    return Result(concatenate_datasets(scores))
+    return Result(concatenate_datasets(scores, axis=1))
 
 
 @dataclass
@@ -54,8 +53,13 @@ class Result(dict):
     scores: Dataset
 
     def __post_init__(self):
+        values = []
         for cn in self.scores.column_names:
-            self[cn] = np.mean(self.scores[cn])
+            value = np.mean(self.scores[cn])
+            self[cn] = value
+            values.append(value)
+
+        self["ragas_score"] = len(values) / np.sum(1.0 / np.array(values))
 
     def describe(self):
         description = {}

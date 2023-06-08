@@ -70,7 +70,6 @@ class Factuality(Metric):
     def score(self: t.Self, dataset: Dataset) -> Dataset:
         scores = []
         for batch in tqdm(self.get_batches(len(dataset))):
-            print(batch)
             score = self._score_batch(dataset.select(batch))
             scores.append(score)
 

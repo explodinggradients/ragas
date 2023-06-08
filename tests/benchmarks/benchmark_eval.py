@@ -1,22 +1,21 @@
-from datasets import arrow_dataset, load_dataset
+import os
+
+from datasets import Dataset, load_dataset
 from torch.cuda import is_available
 
-from ragas.metrics import Evaluation, bert_score, edit_ratio, rougeL
-from ragas.metrics.factual import EntailmentScore
+from ragas import evaluate
+from ragas.metrics import answer_relevancy, context_relavancy, factuality
 
 DEVICE = "cuda" if is_available() else "cpu"
-entailment_score = EntailmentScore(device=DEVICE, batch_size=2)
-# q_square = Qsquare(device=DEVICE, batch_size=2)
 
-DS = load_dataset("explodinggradients/ragas-webgpt", split="train")
-assert isinstance(DS, arrow_dataset.Dataset), "Not an arrow_dataset"
-DS = DS.select(range(500))
+PATH_TO_DATSET_GIT_REPO = "../../../datasets/fiqa/"
+assert os.path.isdir(PATH_TO_DATSET_GIT_REPO), "Dataset not found"
+ds = Dataset.from_json(os.path.join(PATH_TO_DATSET_GIT_REPO, "gen_ds.json"))
+assert isinstance(ds, Dataset)
 
 if __name__ == "__main__":
-    e = Evaluation(
-        metrics=[rougeL, edit_ratio, bert_score, entailment_score],
-        batched=True,
-        batch_size=64,
+    result = evaluate(
+        ds,
+        metrics=[answer_relevancy, context_relavancy, factuality],
     )
-    result = e.eval(DS["ground_truth"], DS["generated_text"])
     print(result)
