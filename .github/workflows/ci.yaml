@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       related: ${{ steps.filter.outputs.related }}
-      belar: ${{ steps.filter.outputs.belar }}
+      ragas: ${{ steps.filter.outputs.ragas }}
       docs: ${{ steps.filter.outputs.docs }}
     steps:
       - uses: actions/checkout@v3
@@ -35,8 +35,8 @@ jobs:
               - codecov.yml
               - pyproject.toml
               - requirements/test.txt
-            belar:
-              - "belar/**"
+            ragas:
+              - "src/ragas/**"
               - "tests/**"
               - "examples/**"
             docs:
@@ -54,7 +54,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.7", "3.8", "3.9", "3.10"]
 
-    if: ${{ (github.event_name == 'pull_request' && needs.diff.outputs.belar == 'true') || github.event_name == 'push' }}
+    if: ${{ (github.event_name == 'pull_request' && needs.diff.outputs.ragas == 'true') || github.event_name == 'push' }}
     name: python${{ matrix.python-version }}_unit_tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
 
@@ -101,7 +101,7 @@ jobs:
     needs:
       - diff
 
-    if: ${{ (github.event_name == 'pull_request' && needs.diff.outputs.belar == 'true') || github.event_name == 'push' }}
+    if: ${{ (github.event_name == 'pull_request' && needs.diff.outputs.ragas == 'true') || github.event_name == 'push' }}
 
     steps:
       - uses: actions/checkout@v3
@@ -144,4 +144,4 @@ jobs:
         run: make lint
       - name: Type check
         if: ${{ github.event_name == 'pull_request' }}
-        run: git diff --name-only --diff-filter=AM "origin/$GITHUB_BASE_REF" -z -- '**/*.py' '**/*.pyi' | xargs -0 --no-run-if-empty pyright
+        run: git diff --name-only --diff-filter=AM "origin/$GITHUB_BASE_REF" -z -- 'src/**/*.py' 'src/**/*.pyi' | xargs -0 --no-run-if-empty pyright

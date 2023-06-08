@@ -59,7 +59,9 @@ class Result(dict):
             self[cn] = value
             values.append(value)
 
-        self["ragas_score"] = len(values) / np.sum(1.0 / np.array(values))
+        # harmonic mean of all the scores we have
+        if len(values) == 3:
+            self["ragas_score"] = len(values) / np.sum(1.0 / np.array(values))
 
     def describe(self):
         description = {}
