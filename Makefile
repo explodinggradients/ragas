@@ -8,17 +8,17 @@ format: ## Running code formatter: black and isort
 	@echo "(isort) Ordering imports..."
 	@isort .
 	@echo "(black) Formatting codebase..."
-	@black --config pyproject.toml ragas tests examples
+	@black --config pyproject.toml src tests examples experiments
 	@echo "(black) Formatting stubs..."
-	@find ragas -name "*.pyi" ! -name "*_pb2*" -exec black --pyi --config pyproject.toml {} \;
+	@find src -name "*.pyi" ! -name "*_pb2*" -exec black --pyi --config pyproject.toml {} \;
 	@echo "(ruff) Running fix only..."
-	@ruff check ragas examples tests --fix-only
+	@ruff check src examples tests --fix-only
 lint: ## Running lint checker: ruff
 	@echo "(ruff) Linting development project..."
-	@ruff check ragas examples tests
+	@ruff check src examples tests
 type: ## Running type checker: pyright
 	@echo "(pyright) Typechecking codebase..."
-	@pyright ragas
+	@pyright src
 clean: ## Clean all generated files
 	@echo "Cleaning all generated files..."
 	@cd $(GIT_ROOT)/docs && make clean

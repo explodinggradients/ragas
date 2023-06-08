@@ -5,7 +5,6 @@ from enum import Enum
 
 import numpy as np
 from datasets import Dataset, concatenate_datasets
-from tqdm import tqdm
 
 from ragas.metrics.base import Metric
 
@@ -43,9 +42,10 @@ def evaluate(
     [m.init_model() for m in metrics]
 
     scores = []
-    for metric in tqdm(metrics):
+    for metric in metrics:
         scores.append(metric.score(dataset).select_columns(metric.name))
 
+    print(scores)
     return Result(concatenate_datasets(scores))
 
 
