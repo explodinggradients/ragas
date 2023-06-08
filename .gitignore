@@ -164,3 +164,4 @@ ragas/_version.py
 experiments/**/data
 experiments/**/storage
 **/fil-result/
+src/ragas/_version.py

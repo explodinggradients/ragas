@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import typing as t
 from dataclasses import dataclass
 from enum import Enum
 
 import numpy as np
 from datasets import Dataset, concatenate_datasets
-from tqdm import tqdm
 
 from ragas.metrics.base import Metric
 
@@ -44,10 +42,10 @@ def evaluate(
     [m.init_model() for m in metrics]
 
     scores = []
-    for metric in tqdm(metrics):
+    for metric in metrics:
         scores.append(metric.score(dataset).select_columns(metric.name))
 
-    return Result(concatenate_datasets(scores))
+    return Result(concatenate_datasets(scores, axis=1))
 
 
 @dataclass
@@ -55,8 +53,13 @@ class Result(dict):
     scores: Dataset
 
     def __post_init__(self):
+        values = []
         for cn in self.scores.column_names:
-            self[cn] = np.mean(self.scores[cn])
+            value = np.mean(self.scores[cn])
+            self[cn] = value
+            values.append(value)
+
+        self["ragas_score"] = len(values) / np.sum(1.0 / np.array(values))
 
     def describe(self):
         description = {}
