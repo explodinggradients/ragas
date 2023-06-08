@@ -121,7 +121,7 @@ class QGen:
     ) -> npt.NDArray[np.float64]:
         predictions = []
         dataloader = DataLoader(
-            sentences, batch_size=batch_size, collate_fn=self.collate_fn
+            sentences, batch_size=batch_size, collate_fn=self.collate_fn  # type: ignore
         )
 
         if show_progress:

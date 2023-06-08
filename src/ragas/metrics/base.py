@@ -47,8 +47,11 @@ class Metric(ABC):
             range(i, i + self.batch_size)
             for i in range(0, self.batch_size * num_batches, self.batch_size)
         ]
-        batches.append(
-            range(self.batch_size * num_batches, self.batch_size * num_batches + tail)
-        )
+        if tail != 0:
+            batches.append(
+                range(
+                    self.batch_size * num_batches, self.batch_size * num_batches + tail
+                )
+            )
 
         return batches
