@@ -26,9 +26,23 @@ def get_evaluation_mode(ds: Dataset):
 
 def evaluate(
     dataset: Dataset,
-    metrics: list[Metric],
+    metrics: list[Metric] | None = None,
 ) -> Result:
-    """ """
+    """
+    Run the evaluation on the dataset with different metrics
+
+    Parameters
+    ----------
+    dataset : Dataset[question: list[str], contexts: list[list[str]], answer: list[str]]
+        The dataset in the format of ragas which the metrics will use to score the RAG pipeline with
+    metrics : list[Metric] , optional
+        List of metrics to use for evaluation. If not provided then ragas will run the evaluation on the best set of metrics to give a complete view.
+
+    Returns
+    -------
+    result : Result
+        Result object containing the scores of each metric. You can use this do do analysis later. If the top 3 metrics are provided then it also returns the `ragas_score` for the entire pipeline.
+    """
     if dataset is None:
         raise ValueError("Provide dataset!")
 
@@ -36,6 +50,11 @@ def evaluate(
     # evaluation_mode = get_evaluation_mode(dataset)
 
     # TODO: check if all the metrics are compatible with the evaluation mode
+
+    if metrics is None:
+        from ragas.metrics import answer_relevancy, context_relevancy, factuality
+
+        metrics = [answer_relevancy, context_relevancy, factuality]
 
     # run the evaluation on dataset with different metrics
     # initialize all the models in the metrics
