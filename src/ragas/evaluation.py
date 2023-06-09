@@ -76,12 +76,14 @@ def evaluate(
     for metric in metrics:
         scores.append(metric.score(dataset).select_columns(metric.name))
 
-    return Result(concatenate_datasets(scores, axis=1))
+    return Result(scores=concatenate_datasets(scores, axis=1), dataset=dataset)
 
 
 @dataclass
 class Result(dict):
     scores: Dataset
+    dataset: Dataset | None = None
+    ragas_score: float | None = None
 
     def __post_init__(self):
         values = []
@@ -108,5 +110,17 @@ class Result(dict):
             }
         return description
 
+    def to_pandas(self, batch_size: int | None = None, batched: bool = False):
+        if self.dataset is None:
+            raise ValueError("dataset is not provided for the results class")
+        assert self.scores.shape[0] == self.dataset.shape[0]
+        result_ds = concatenate_datasets([self.dataset, self.scores], axis=1)
+
+        return result_ds.to_pandas(batch_size=batch_size, batched=batched)
+
     def __repr__(self) -> str:
-        return super().__repr__()
+        scores = self.copy()
+        ragas_score = scores.pop("ragas_score")
+        score_strs = [f"'ragas_score': {ragas_score:0.3f}"]
+        score_strs.extend([f"'{k}': {v:0.3f}" for k, v in scores.items()])
+        return "{" + ", ".join(score_strs) + "}"

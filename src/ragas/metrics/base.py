@@ -14,6 +14,21 @@ from math import floor
 from datasets import Dataset
 
 
+def make_batches(total_size: int, batch_size: int) -> list[range]:
+    """
+    Take a total size and batch size and return a list of ranges for the batches
+    """
+    tail = total_size % batch_size
+    num_batches = floor(total_size / batch_size)
+    batches = [
+        range(i, i + batch_size) for i in range(0, batch_size * num_batches, batch_size)
+    ]
+    if tail != 0:
+        batches.append(range(batch_size * num_batches, batch_size * num_batches + tail))
+
+    return batches
+
+
 @dataclass
 class Metric(ABC):
     @property
@@ -40,18 +55,5 @@ class Metric(ABC):
     def score(self: t.Self, dataset: Dataset) -> Dataset:
         ...
 
-    def get_batches(self, dataset_size: int):
-        tail = dataset_size % self.batch_size
-        num_batches = floor(dataset_size / self.batch_size)
-        batches = [
-            range(i, i + self.batch_size)
-            for i in range(0, self.batch_size * num_batches, self.batch_size)
-        ]
-        if tail != 0:
-            batches.append(
-                range(
-                    self.batch_size * num_batches, self.batch_size * num_batches + tail
-                )
-            )
-
-        return batches
+    def get_batches(self, dataset_size: int) -> list[range]:
+        return make_batches(dataset_size, self.batch_size)

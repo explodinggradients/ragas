@@ -28,3 +28,6 @@ run-ci: format lint type ## Running all CI checks
 run-benchmarks: ## Run benchmarks
 	@echo "Running benchmarks..."
 	@cd $(GIT_ROOT)/tests/benchmarks && python benchmark.py 
+test: ## Run tests
+	@echo "Running tests..."
+	@pytest tests/unit
