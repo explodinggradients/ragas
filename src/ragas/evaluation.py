@@ -107,20 +107,6 @@ class Result(dict):
         if len(values) == 3:
             self["ragas_score"] = len(values) / np.sum(1.0 / np.array(values))
 
-    def describe(self):
-        description = {}
-        for cn in self.scores.column_names:
-            description[cn] = {
-                "mean": np.mean(self.scores[cn]),
-                "25%": np.percentile(self.scores[cn], 25),
-                "50%": np.percentile(self.scores[cn], 50),
-                "75%": np.percentile(self.scores[cn], 75),
-                "min": np.min(self.scores[cn]),
-                "max": np.max(self.scores[cn]),
-                "std": np.std(self.scores[cn]),
-            }
-        return description
-
     def to_pandas(self, batch_size: int | None = None, batched: bool = False):
         if self.dataset is None:
             raise ValueError("dataset is not provided for the results class")
@@ -132,6 +118,6 @@ class Result(dict):
     def __repr__(self) -> str:
         scores = self.copy()
         ragas_score = scores.pop("ragas_score")
-        score_strs = [f"'ragas_score': {ragas_score:0.3f}"]
-        score_strs.extend([f"'{k}': {v:0.3f}" for k, v in scores.items()])
+        score_strs = [f"'ragas_score': {ragas_score:0.4f}"]
+        score_strs.extend([f"'{k}': {v:0.4f}" for k, v in scores.items()])
         return "{" + ", ".join(score_strs) + "}"
