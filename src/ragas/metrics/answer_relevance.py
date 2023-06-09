@@ -24,7 +24,7 @@ if t.TYPE_CHECKING:
 class QGen:
     def __init__(self, model_name: str, device: str) -> None:
         config = AutoConfig.from_pretrained(model_name)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, model_max_length=512)
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = "[PAD]"
         architecture = np.intersect1d(
