@@ -55,18 +55,23 @@ This is a small example program you can run to see ragas in action!
 ```python
 
 from ragas import evaluate
+from datasets import Dataset
 import os
 
 os.environ["OPENAI_API_KEY"] = "your-openai-key"
 
-ds = Dataset({
-    features: ['question','context','answer'],
-    num_rows: 25
-})
-results = evaluate(ds)
+# prepare your huggingface dataset in the format
+# Dataset({
+#     features: ['question','contexts','answer'],
+#     num_rows: 25
+# })
+
+dataset: Dataset
+
+results = evaluate(dataset)
 
 ```
-If you want a more in-depth explanation of core components, check out our quick-start notebook
+If you want a more in-depth explanation of core components, check out our [quick-start notebook](./examples/quickstart.ipynb)
 ## :luggage: Metrics
 
 Ragas measures your pipeline's performance against two dimensions
