@@ -164,4 +164,5 @@ ragas/_version.py
 experiments/**/data
 experiments/**/storage
 **/fil-result/
+experiments/baselines/fiqa/datasets
 src/ragas/_version.py
