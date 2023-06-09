@@ -54,7 +54,6 @@ pip install -e .
 This is a small example program you can run to see ragas in action!
 ```python
 
-from ragas.metrics import factuality, answer_relevancy, context_relevancy
 from ragas import evaluate
 import os
 
@@ -64,7 +63,7 @@ ds = Dataset({
     features: ['question','context','answer'],
     num_rows: 25
 })
-results = evaluate(ds, metrics=[nli, answer_relevancy, context_relevancy])
+results = evaluate(ds)
 
 ```
 If you want a more in-depth explanation of core components, check out our quick-start notebook
