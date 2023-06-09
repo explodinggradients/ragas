@@ -35,6 +35,7 @@ def evaluate(
     ----------
     dataset : Dataset[question: list[str], contexts: list[list[str]], answer: list[str]]
         The dataset in the format of ragas which the metrics will use to score the RAG pipeline with
+
     metrics : list[Metric] , optional
         List of metrics to use for evaluation. If not provided then ragas will run the evaluation on the best set of metrics to give a complete view.
 
@@ -42,6 +43,17 @@ def evaluate(
     -------
     result : Result
         Result object containing the scores of each metric. You can use this do do analysis later. If the top 3 metrics are provided then it also returns the `ragas_score` for the entire pipeline.
+
+    Examples
+    --------
+    the basic usage is as follows:
+    ```
+    from ragas import evaluate
+    dataset  # this is in the format [question: list[str], contexts: list[list[str]], answer: list[str]]
+
+    result = evaluate(dataset)
+    print(result["ragas_score"])
+    ```
     """
     if dataset is None:
         raise ValueError("Provide dataset!")
