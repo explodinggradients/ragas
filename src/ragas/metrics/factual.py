@@ -62,7 +62,7 @@ class Factuality(Metric):
 
     @property
     def name(self):
-        return "NLI_score"
+        return "factuality"
 
     def init_model(self: t.Self):
         pass
