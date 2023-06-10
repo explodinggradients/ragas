@@ -69,7 +69,8 @@ os.environ["OPENAI_API_KEY"] = "your-openai-key"
 dataset: Dataset
 
 results = evaluate(dataset)
-
+# {'ragas_score': 0.860, 'context_relavency': 0.817, 
+# 'factuality': 0.892, 'answer_relevancy': 0.874}
 ```
 If you want a more in-depth explanation of core components, check out our [quick-start notebook](./examples/quickstart.ipynb)
 ## :luggage: Metrics
