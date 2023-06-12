@@ -85,7 +85,7 @@ To read more about our metrics, checkout [docs](/docs/metrics.md).
 ## :question: How to use Ragas to improve your pipeline?
 *"Measurement is the first step that leads to control and eventually to improvement" - James Harrington*
 
-Here we assume that you already have your RAG pipeline ready. When is comes to RAG pipelines, there are mainly two parts - Retriever and generator. A change in any of this should also impact your pipelines's quality.
+Here we assume that you already have your RAG pipeline ready. When it comes to RAG pipelines, there are mainly two parts - Retriever and generator. A change in any of this should also impact your pipelines's quality.
 
 1. First, decide one parameter that you're interested in adjusting. for example the number of retrieved documents, K. 
 2. Collect a set of sample prompts (min 20) to form your test set.
