@@ -16,6 +16,7 @@ from ragas.metrics import context_relevancy
 ## Why is ragas better than scoring using GPT 3.5 directly.
 LLM like GPT 3.5 struggle when it comes to scoring generated text directly. For instance, these models would always only generate integer scores and these scores vary when invoked differently. Advanced paradigms and techniques leveraging LLMs to minimize this bias is the solution ragas presents.
 <h1 align="center">
-  <img style="vertical-align:middle" height="200"
+  <img style="vertical-align:middle" height="350"
   src="./assets/bar-graph.svg">
 </h1>
+
