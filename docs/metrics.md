@@ -20,3 +20,4 @@ LLM like GPT 3.5 struggle when it comes to scoring generated text directly. For 
   src="./assets/bar-graph.svg">
 </h1>
 
+Take a look at our experiments [here](/experiments/assesments/metrics_assesments.ipynb)
