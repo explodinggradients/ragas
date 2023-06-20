@@ -55,18 +55,24 @@ This is a small example program you can run to see ragas in action!
 ```python
 
 from ragas import evaluate
+from datasets import Dataset
 import os
 
 os.environ["OPENAI_API_KEY"] = "your-openai-key"
 
-ds = Dataset({
-    features: ['question','context','answer'],
-    num_rows: 25
-})
-results = evaluate(ds)
+# prepare your huggingface dataset in the format
+# Dataset({
+#     features: ['question','contexts','answer'],
+#     num_rows: 25
+# })
 
+dataset: Dataset
+
+results = evaluate(dataset)
+# {'ragas_score': 0.860, 'context_relavency': 0.817, 
+# 'factuality': 0.892, 'answer_relevancy': 0.874}
 ```
-If you want a more in-depth explanation of core components, check out our quick-start notebook
+If you want a more in-depth explanation of core components, check out our [quick-start notebook](./examples/quickstart.ipynb)
 ## :luggage: Metrics
 
 Ragas measures your pipeline's performance against two dimensions
@@ -79,7 +85,7 @@ To read more about our metrics, checkout [docs](/docs/metrics.md).
 ## :question: How to use Ragas to improve your pipeline?
 *"Measurement is the first step that leads to control and eventually to improvement" - James Harrington*
 
-Here we assume that you already have your RAG pipeline ready. When is comes to RAG pipelines, there are mainly two parts - Retriever and generator. A change in any of this should also impact your pipelines's quality.
+Here we assume that you already have your RAG pipeline ready. When it comes to RAG pipelines, there are mainly two parts - Retriever and generator. A change in any of this should also impact your pipelines's quality.
 
 1. First, decide one parameter that you're interested in adjusting. for example the number of retrieved documents, K. 
 2. Collect a set of sample prompts (min 20) to form your test set.

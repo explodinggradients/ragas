@@ -4,3 +4,4 @@ isort
 black[jupyter]
 pyright
 langchain
+notebook
