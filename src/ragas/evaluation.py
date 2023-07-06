@@ -18,7 +18,7 @@ def get_evaluation_mode(ds: Dataset):
 
     possible evaluation types
     1. (q,a,c)
-    2. (q)
+    2. (q,a)
     3. (q,c)
     4. (g,a)
     """
@@ -129,7 +129,9 @@ class Result(dict):
 
     def __repr__(self) -> str:
         scores = self.copy()
-        ragas_score = scores.pop("ragas_score")
-        score_strs = [f"'ragas_score': {ragas_score:0.4f}"]
+        score_strs = []
+        if "ragas_score" in scores:
+            ragas_score = scores.pop("ragas_score")
+            score_strs += f"'ragas_score': {ragas_score:0.4f}"
         score_strs.extend([f"'{k}': {v:0.4f}" for k, v in scores.items()])
         return "{" + ", ".join(score_strs) + "}"
