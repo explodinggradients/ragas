@@ -16,8 +16,11 @@
     <a href="https://github.com/explodinggradients/ragas/blob/master/LICENSE">
         <img alt="License" src="https://img.shields.io/github/license/explodinggradients/ragas.svg?color=green">
     </a>
-    <a href="https://colab.research.google.com/drive/1HfutiEhHMJLXiWGT8pcipxT5L2TpYEdt?usp=sharing">
+    <a href="https://colab.research.google.com/github/explodinggradients/ragas/blob/main/examples/quickstart.ipynb">
         <img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg">
+    </a>
+    <a href="https://discord.gg/5djav8GGNZ">
+        <img alt="discord-invite" src="https://dcbadge.vercel.app/api/server/5djav8GGNZ?style=flat">
     </a>
     <a href="https://github.com/explodinggradients/ragas/">
         <img alt="Downloads" src="https://badges.frapsoft.com/os/v1/open-source.svg?v=103">
@@ -29,6 +32,7 @@
         <a href="#shield-installation">Installation</a> |
         <a href="#fire-quickstart">Quickstart</a> |
         <a href="#luggage-metrics">Metrics</a> |
+        <a href="#-community">Community</a> |
         <a href="#raising_hand_man-faq">FAQ</a> |
         <a href="https://huggingface.co/explodinggradients">Hugging Face</a>
     <p>
@@ -91,12 +95,15 @@ Here we assume that you already have your RAG pipeline ready. When it comes to R
 2. Collect a set of sample prompts (min 20) to form your test set.
 3. Run your pipeline using the test set before and after the change. Each time record the prompts with context and generated output.
 4. Run ragas evaluation for each of them to generate evaluation scores. 
-5. Compare the scores and you will know how much the change has affected your pipelines's performance.
+5. Compare the scores and you will know how much the change has affected your pipelines' performance.
 
+## 🫂 Community
+If you want to get more involved with Ragas, check out our [discord server](https://discord.gg/5djav8GGNZ). It's a fun community where we geek out about LLM, Retrieval, Production issues and more.
 
 ## :raising_hand_man: FAQ
 1. Why harmonic mean?
-Harmonic mean penalizes extreme values. For example if your generated answer is fully factually consistent with the context (factuality = 1) but is not relevant to the question (relevancy = 0), simple average would give you a score of 0.5 but harmonic mean will give you 0.0
+
+Harmonic mean penalizes extreme values. For example, if your generated answer is fully factually consistent with the context (factuality = 1) but is not relevant to the question (relevancy = 0), a simple average would give you a score of 0.5 but a harmonic mean will give you 0.0
 
 
 
