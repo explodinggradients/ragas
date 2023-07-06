@@ -62,7 +62,7 @@ def evaluate(
 
     >>> result = evaluate(dataset)
     >>> print(result["ragas_score"])
-    {'ragas_score': 0.860, 'context_relavency': 0.817, 'factuality': 0.892,
+    {'ragas_score': 0.860, 'context_relavency': 0.817, 'faithfulness': 0.892,
     'answer_relevancy': 0.874}
     ```
     """
@@ -75,9 +75,9 @@ def evaluate(
     # TODO: check if all the metrics are compatible with the evaluation mode
 
     if metrics is None:
-        from ragas.metrics import answer_relevancy, context_relevancy, factuality
+        from ragas.metrics import answer_relevancy, context_relevancy, faithfulness
 
-        metrics = [answer_relevancy, context_relevancy, factuality]
+        metrics = [answer_relevancy, context_relevancy, faithfulness]
 
     # run the evaluation on dataset with different metrics
     # initialize all the models in the metrics

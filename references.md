@@ -18,7 +18,7 @@ DOI=https://doi.org/10.48550/arXiv.1904.09675
 }
 
 @misc{
-title={On Faithfulness and Factuality in Abstractive Summarization},
+title={On Faithfulness and Faithfulness in Abstractive Summarization},
 author={Maynez* et al.}, year={2020},
 DOI=https://doi.org/10.48550/arXiv.2005.00661
 }

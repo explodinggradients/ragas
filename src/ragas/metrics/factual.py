@@ -57,12 +57,12 @@ Answer:
 
 
 @dataclass
-class Factuality(Metric):
+class Faithfulness(Metric):
     batch_size: int = 15
 
     @property
     def name(self):
-        return "factuality"
+        return "faithfulness"
 
     def init_model(self: t.Self):
         pass
@@ -124,4 +124,4 @@ class Factuality(Metric):
         return ds.add_column(f"{self.name}", scores)  # type: ignore
 
 
-factuality = Factuality()
+faithfulness = Faithfulness()
