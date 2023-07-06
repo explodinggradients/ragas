@@ -26,7 +26,7 @@ USAGE_REQUESTS_TIMEOUT_SEC = 1
 
 @lru_cache(maxsize=1)
 def do_not_track() -> bool:  # pragma: no cover
-    # Returns True if and only if the environment variable is defined and has value True.
+    # Returns True if and only if the environment variable is defined and has value True
     # The function is cached for better performance.
     return os.environ.get(RAGAS_DO_NOT_TRACK, str(False)).lower() == "true"
 
