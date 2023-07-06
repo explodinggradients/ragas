@@ -6,6 +6,7 @@ from enum import Enum
 import numpy as np
 from datasets import Dataset, concatenate_datasets
 
+from ragas._analytics import EvaluationEvent, track
 from ragas.metrics.base import Metric
 
 EvaluationMode = Enum("EvaluationMode", "generative retrieval grounded")
@@ -17,7 +18,7 @@ def get_evaluation_mode(ds: Dataset):
 
     possible evaluation types
     1. (q,a,c)
-    2. (q)
+    2. (q,a)
     3. (q,c)
     4. (g,a)
     """
@@ -87,6 +88,17 @@ def evaluate(
     for metric in metrics:
         scores.append(metric.score(dataset).select_columns(metric.name))
 
+    # log the evaluation event
+    metrics_names = [m.name for m in metrics]
+    track(
+        EvaluationEvent(
+            event_type="evaluation",
+            metrics=metrics_names,
+            evaluation_mode="",
+            num_rows=dataset.shape[0],
+        )
+    )
+
     return Result(scores=concatenate_datasets(scores, axis=1), dataset=dataset)
 
 
@@ -117,7 +129,9 @@ class Result(dict):
 
     def __repr__(self) -> str:
         scores = self.copy()
-        ragas_score = scores.pop("ragas_score")
-        score_strs = [f"'ragas_score': {ragas_score:0.4f}"]
+        score_strs = []
+        if "ragas_score" in scores:
+            ragas_score = scores.pop("ragas_score")
+            score_strs += f"'ragas_score': {ragas_score:0.4f}"
         score_strs.extend([f"'{k}': {v:0.4f}" for k, v in scores.items()])
         return "{" + ", ".join(score_strs) + "}"

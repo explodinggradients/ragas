@@ -27,7 +27,7 @@ clean: ## Clean all generated files
 run-ci: format lint type ## Running all CI checks
 run-benchmarks: ## Run benchmarks
 	@echo "Running benchmarks..."
-	@cd $(GIT_ROOT)/tests/benchmarks && python benchmark.py 
+	@cd $(GIT_ROOT)/tests/benchmarks && python benchmark_eval.py
 test: ## Run tests
 	@echo "Running tests..."
 	@pytest tests/unit
