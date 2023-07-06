@@ -74,14 +74,14 @@ dataset: Dataset
 
 results = evaluate(dataset)
 # {'ragas_score': 0.860, 'context_relavency': 0.817, 
-# 'factuality': 0.892, 'answer_relevancy': 0.874}
+# 'faithfulness': 0.892, 'answer_relevancy': 0.874}
 ```
 If you want a more in-depth explanation of core components, check out our [quick-start notebook](./examples/quickstart.ipynb)
 ## :luggage: Metrics
 
 Ragas measures your pipeline's performance against two dimensions
-1. **Factuality**: measures the factual consistency of the generated answer against the given context.
-2. **Relevancy**:  measures how relevant retrieved contexts and the generated answer are to the question. 
+1. **Faithfulness**: measures the information consistency of the generated answer against the given context. If any claims made in the answer that cannot be deduced from context is penalized. 
+2. **Relevancy**:  measures how relevant retrieved contexts and the generated answer are to the question. The presence of extra or redundant information is penalized. 
 
 Through repeated experiments, we have found that the quality of a RAG pipeline is highly dependent on these two dimensions. The final `ragas_score` is the harmonic mean of these two factors. 
 
@@ -103,7 +103,7 @@ If you want to get more involved with Ragas, check out our [discord server](http
 ## :raising_hand_man: FAQ
 1. Why harmonic mean?
 
-Harmonic mean penalizes extreme values. For example, if your generated answer is fully factually consistent with the context (factuality = 1) but is not relevant to the question (relevancy = 0), a simple average would give you a score of 0.5 but a harmonic mean will give you 0.0
+Harmonic mean penalizes extreme values. For example, if your generated answer is fully factually consistent with the context (faithfulness = 1) but is not relevant to the question (relevancy = 0), a simple average would give you a score of 0.5 but a harmonic mean will give you 0.0
 
 
 

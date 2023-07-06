@@ -4,7 +4,7 @@ from datasets import Dataset
 from torch.cuda import is_available
 
 from ragas import evaluate
-from ragas.metrics import answer_relevancy, context_relavancy, factuality
+from ragas.metrics import answer_relevancy, context_relevancy, faithfulness
 
 DEVICE = "cuda" if is_available() else "cpu"
 
@@ -16,6 +16,6 @@ assert isinstance(ds, Dataset)
 if __name__ == "__main__":
     result = evaluate(
         ds,
-        metrics=[answer_relevancy, context_relavancy, factuality],
+        metrics=[answer_relevancy, context_relevancy, faithfulness],
     )
     print(result)
