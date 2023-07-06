@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 USAGE_TRACKING_URL = "https://t.explodinggradients.com"
 RAGAS_DO_NOT_TRACK = "RAGAS_DO_NOT_TRACK"
-RAGAS_DEBUG_USAGE = "__RAGAS_DEBUG_USAGE"
+RAGAS_DEBUG_TRACKING = "__RAGAS_DEBUG_TRACKING"
 USAGE_REQUESTS_TIMEOUT_SEC = 1
 
 
@@ -34,7 +34,7 @@ def do_not_track() -> bool:  # pragma: no cover
 @lru_cache(maxsize=1)
 def _usage_event_debugging() -> bool:
     # For BentoML developers only - debug and print event payload if turned on
-    return os.environ.get(RAGAS_DEBUG_USAGE, str(False)).lower() == "true"
+    return os.environ.get(RAGAS_DEBUG_TRACKING, str(False)).lower() == "true"
 
 
 def silent(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
