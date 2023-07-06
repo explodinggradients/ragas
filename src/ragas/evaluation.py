@@ -94,7 +94,7 @@ def evaluate(
         EvaluationEvent(
             event_type="evaluation",
             metrics=metrics_names,
-            evaluation_mode="generative",
+            evaluation_mode="",
             num_rows=dataset.shape[0],
         )
     )
