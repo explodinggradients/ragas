@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import logging
 import os
 import typing as t
+from functools import lru_cache
 from warnings import warn
 
 import torch
@@ -23,7 +25,10 @@ def device_check(device: t.Literal["cpu", "cuda"] | Device) -> torch.device:
     return torch.device(device)
 
 
+@lru_cache(maxsize=1)
 def get_debug_mode() -> bool:
-    if DEBUG_ENV_VAR in os.environ:
-        return os.environ[DEBUG_ENV_VAR].lower() == "true"
-    return False
+    if os.environ.get(DEBUG_ENV_VAR, str(False)).lower() == "true":
+        logging.basicConfig(level=logging.DEBUG)
+        return True
+    else:
+        return False

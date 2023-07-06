@@ -6,6 +6,7 @@ from enum import Enum
 import numpy as np
 from datasets import Dataset, concatenate_datasets
 
+from ragas._analytics import EvaluationEvent, track
 from ragas.metrics.base import Metric
 
 EvaluationMode = Enum("EvaluationMode", "generative retrieval grounded")
@@ -86,6 +87,17 @@ def evaluate(
     scores = []
     for metric in metrics:
         scores.append(metric.score(dataset).select_columns(metric.name))
+
+    # log the evaluation event
+    metrics_names = [m.name for m in metrics]
+    track(
+        EvaluationEvent(
+            event_type="evaluation",
+            metrics=metrics_names,
+            evaluation_mode="generative",
+            num_rows=dataset.shape[0],
+        )
+    )
 
     return Result(scores=concatenate_datasets(scores, axis=1), dataset=dataset)
 
