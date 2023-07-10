@@ -77,7 +77,7 @@ results = evaluate(dataset)
 # {'ragas_score': 0.860, 'context_relavency': 0.817, 
 # 'faithfulness': 0.892, 'answer_relevancy': 0.874}
 ```
-If you want a more in-depth explanation of core components, check out our [quick-start notebook](./examples/quickstart.ipynb)
+If you want a more in-depth explanation of core components, check out our [quick-start notebook](./docs/quickstart.ipynb)
 ## :luggage: Metrics
 
 Ragas measures your pipeline's performance against two dimensions
