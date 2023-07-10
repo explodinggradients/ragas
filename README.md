@@ -16,7 +16,7 @@
     <a href="https://github.com/explodinggradients/ragas/blob/master/LICENSE">
         <img alt="License" src="https://img.shields.io/github/license/explodinggradients/ragas.svg?color=green">
     </a>
-    <a href="https://colab.research.google.com/github/explodinggradients/ragas/blob/main/examples/quickstart.ipynb">
+    <a href="https://colab.research.google.com/github/explodinggradients/ragas/blob/main/docs/quickstart.ipynb">
         <img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg">
     </a>
     <a href="https://discord.gg/5djav8GGNZ">
