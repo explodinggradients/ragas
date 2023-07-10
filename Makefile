@@ -8,14 +8,14 @@ format: ## Running code formatter: black and isort
 	@echo "(isort) Ordering imports..."
 	@isort .
 	@echo "(black) Formatting codebase..."
-	@black --config pyproject.toml src tests examples experiments
+	@black --config pyproject.toml src tests docs experiments
 	@echo "(black) Formatting stubs..."
 	@find src -name "*.pyi" ! -name "*_pb2*" -exec black --pyi --config pyproject.toml {} \;
 	@echo "(ruff) Running fix only..."
-	@ruff check src examples tests --fix-only
+	@ruff check src docs tests --fix-only
 lint: ## Running lint checker: ruff
 	@echo "(ruff) Linting development project..."
-	@ruff check src examples tests
+	@ruff check src docs tests
 type: ## Running type checker: pyright
 	@echo "(pyright) Typechecking codebase..."
 	@pyright src
