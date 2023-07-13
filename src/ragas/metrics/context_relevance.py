@@ -7,7 +7,6 @@ from typing import List
 
 import numpy as np
 from datasets import Dataset
-from pandas import DataFrame
 from sentence_transformers import CrossEncoder
 
 from ragas.metrics.base import Metric
@@ -32,31 +31,33 @@ context:\n{}
 sentences:"""  # noqa: E501
 
 
-def sent_tokenize(sent: str):
+def sent_tokenize(sent: str) -> List[str]:
     return [s[:-1] if s.endswith(".") else s for s in sent.strip().split(". ")]
 
 
 class SentenceAgreement:
     def __init__(
-        self, model_name="cross-encoder/stsb-TinyBERT-L-4", metric="bert_score"
+        self: t.Self,
+        model_name: str = "cross-encoder/stsb-TinyBERT-L-4",
+        metric: str = "bert_score",
     ):
         self.metric = metric
         self.cross_encoder = CrossEncoder(model_name)
 
-    def bert_score(self, para1: str, para2: str):
+    def bert_score(self, para1: str, para2: str) -> float:
         sentences1, sentences2 = sent_tokenize(para1), sent_tokenize(para2)
         scores = self.cross_encoder.predict(list(product(sentences1, sentences2)))
         scores = scores.reshape(len(sentences1), len(sentences2))
         return scores.max(axis=1).mean()
 
     @staticmethod
-    def jaccard_score(para1: str, para2: str):
+    def jaccard_score(para1: str, para2: str) -> float:
         sentences1, sentences2 = sent_tokenize(para1), sent_tokenize(para2)
         intersect = len(np.intersect1d(sentences1, sentences2))
         union = len(np.union1d(sentences1, sentences2))
         return intersect / union
 
-    def evaluate(self, answers: List[List[str]]):
+    def evaluate(self, answers: List[List[str]]) -> float:
         """
         eval nC2 combinations
         """
@@ -123,11 +124,7 @@ class ContextRelevancy(Metric):
                 agr_score = 1
             scores.append(agr_score * np.mean(overlap_scores))
 
-        dataset = dataset.add_column(self.name, scores)  # type: ignore
-        df = dataset.to_pandas()
-        assert isinstance(df, DataFrame)
-
-        return df
+        return dataset.add_column(f"{self.name}", scores)  # type: ignore
 
 
 context_relevancy = ContextRelevancy()
