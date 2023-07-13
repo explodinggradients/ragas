@@ -46,7 +46,10 @@ class SentenceAgreement:
 
     def bert_score(self, para1: str, para2: str) -> float:
         sentences1, sentences2 = sent_tokenize(para1), sent_tokenize(para2)
-        scores = self.cross_encoder.predict(list(product(sentences1, sentences2)))
+        scores = self.cross_encoder.predict(
+            list(product(sentences1, sentences2)), convert_to_numpy=True  # type: ignore
+        )
+        assert isinstance(scores, np.ndarray), "Expects ndarray"
         scores = scores.reshape(len(sentences1), len(sentences2))
         return scores.max(axis=1).mean()
 
@@ -65,11 +68,16 @@ class SentenceAgreement:
         groups = combinations(answers, 2)
         for group in groups:
             if self.metric == "jaccard":
-                score = self.jaccard_score(*group)
+                score = self.jaccard_score(*group)  # type: ignore
             elif self.metric == "bert_score":
-                score = self.bert_score(*group)
+                score = self.bert_score(*group)  # type: ignore
+            else:
+                score = 0
+                raise ValueError(f"Metric {self.metric} unavailable")
             scores.append(score)
-        return np.mean(scores)
+        scores = np.mean(scores)
+        assert isinstance(scores, float), "Expects floats"
+        return scores
 
 
 @dataclass
@@ -99,10 +107,10 @@ class ContextRelevancy(Metric):
 
         prev = 0
         outputs = []
-        for i in range(self.strictness, len(responses["choices"]) + 1, self.strictness):
-            output = [
-                responses["choices"][idx]["text"].strip() for idx in range(prev, i)
-            ]
+        responses = responses["choices"]  # type: ignore
+        for i in range(self.strictness, len(responses) + 1, self.strictness):
+            output = [responses[idx]["text"].strip() for idx in range(prev, i)]
+
             outputs.append(output)
             prev = i
 
