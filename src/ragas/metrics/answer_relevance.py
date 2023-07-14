@@ -129,9 +129,11 @@ class QGen:
 
         for _, data in enumerate(dataloader):
             inputs, labels = data
+            inputs = {k: v.to(self._target_device) for k, v in inputs.items()}
+            labels = labels.to(self._target_device)
             with torch.no_grad():
                 logits = self.model(**inputs, output_hidden_states=False).logits
-                loss = self.get_loss(logits, labels)
+                loss = self.get_loss(logits.cpu(), labels)
                 predictions.append(loss)
 
         return np.hstack(predictions)
