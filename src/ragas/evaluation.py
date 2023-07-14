@@ -85,6 +85,7 @@ def evaluate(
 
     scores = []
     for metric in metrics:
+        print(f"evaluating with [{metric.name}]")
         scores.append(metric.score(dataset).select_columns(metric.name))
 
     # log the evaluation event
