@@ -82,7 +82,8 @@ If you want a more in-depth explanation of core components, check out our [quick
 
 Ragas measures your pipeline's performance against two dimensions
 1. **Faithfulness**: measures the information consistency of the generated answer against the given context. If any claims made in the answer that cannot be deduced from context is penalized. 
-2. **Relevancy**:  measures how relevant retrieved contexts and the generated answer are to the question. The presence of extra or redundant information is penalized. 
+2. **Context Relevancy**:  measures how relevant retrieved contexts is to the question. Ideally the context should only contain information necessary to answer the question. The presence of redundant information in the context is penalized.
+3. **Answer Relevancy**: measures how relevant generated answer is to the question. This do not ensure factuality of the generated answer rather penalizes the presence of redundant information in the generated answer.
 
 Through repeated experiments, we have found that the quality of a RAG pipeline is highly dependent on these two dimensions. The final `ragas_score` is the harmonic mean of these two factors. 
 
