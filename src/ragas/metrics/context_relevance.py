@@ -82,6 +82,16 @@ class SentenceAgreement:
 
 @dataclass
 class ContextRelevancy(Metric):
+
+    """
+    params
+    strictness: Integer, controls the number of times sentence extraction is
+    performed to quantify uncertainty from the LLM. Defaults to 2.
+    agreement_metric: bert_score or jaccard_score, used to measure agreement
+    between multiple samples.
+    model_name: any encoder model. Used for calculating bert_score.
+    """
+
     name: str = "context_relavency"
     batch_size: int = 15
     agreement_metric: str = "bert_score"
@@ -103,11 +113,15 @@ class ContextRelevancy(Metric):
             prompt = CONTEXT_RELEVANCE.format(q, "\n".join(c))
             prompts.append(prompt)
 
-        responses = openai_completion(prompts, n=self.strictness)
+        responses = []
+        for batch_idx in range(0, len(prompts), 20):
+            batch_responses = openai_completion(
+                prompts[batch_idx : batch_idx + 20], n=self.strictness
+            )
+            responses.append(batch_responses["choices"])  # type: ignore
 
         prev = 0
         outputs = []
-        responses = responses["choices"]  # type: ignore
         for i in range(self.strictness, len(responses) + 1, self.strictness):
             output = [responses[idx]["text"].strip() for idx in range(prev, i)]
 
