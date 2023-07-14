@@ -37,7 +37,6 @@ def evaluate(
     dataset : Dataset[question: list[str], contexts: list[list[str]], answer: list[str]]
         The dataset in the format of ragas which the metrics will use to score the RAG
         pipeline with
-
     metrics : list[Metric] , optional
         List of metrics to use for evaluation. If not provided then ragas will run the
         evaluation on the best set of metrics to give a complete view.

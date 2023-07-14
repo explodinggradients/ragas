@@ -81,21 +81,36 @@ class SentenceAgreement:
 
 @dataclass
 class ContextRelevancy(Metric):
-
     """
-    params
-    strictness: Integer, controls the number of times sentence extraction is
-    performed to quantify uncertainty from the LLM. Defaults to 2.
-    agreement_metric: bert_score or jaccard_score, used to measure agreement
-    between multiple samples.
-    model_name: any encoder model. Used for calculating bert_score.
+    Extracts sentences from the context that are relevant to the question with
+    self-consistancy checks. The number of relevant sentences and is used as the score.
+
+    Attributes
+    ----------
+    name : str
+    batch_size : int
+        Batch size for openai completion.
+    strictness : int
+        Controls the number of times sentence extraction is performed to quantify
+        uncertainty from the LLM. Defaults to 2.
+    agreement_metric : str
+        "bert_score" or "jaccard_score", used to measure agreement between multiple
+        samples.
+    model_name : str
+        any encoder model. Used for calculating bert_score.
     """
 
     name: str = "context_relavency"
     batch_size: int = 15
-    agreement_metric: str = "bert_score"
     strictness: int = 2
+    agreement_metric: str = "bert_score"
     model_name: str = "cross-encoder/stsb-TinyBERT-L-4"
+
+    def __post_init__(self: t.Self):
+        if self.agreement_metric == "bert_score" and self.model_name is None:
+            raise ValueError(
+                "model_name must be provided when agreement_metric is bert_score"
+            )
 
     def init_model(self: t.Self):
         self.sent_agreement = SentenceAgreement(
@@ -104,7 +119,14 @@ class ContextRelevancy(Metric):
 
     def score(self: t.Self, dataset: Dataset) -> Dataset:
         """
+        Parameters
+        ----------
         dataset: Dataset[question: list[str], contexts: list[list[str]]]
+
+        Returns
+        -------
+        Dataset[question: list[str], contexts: list[list[str]], scores: list[float]]
+            Dataset with the scores for each row.
         """
         prompts = []
         questions, contexts = dataset["question"], dataset["contexts"]
