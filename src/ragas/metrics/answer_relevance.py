@@ -133,7 +133,7 @@ class QGen:
             labels = labels.to(self._target_device)
             with torch.no_grad():
                 logits = self.model(**inputs, output_hidden_states=False).logits
-                loss = self.get_loss(logits.cpu(), labels)
+                loss = self.get_loss(logits, labels)
                 predictions.append(loss)
 
         return np.hstack(predictions)

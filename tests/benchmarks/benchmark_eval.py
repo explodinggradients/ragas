@@ -19,7 +19,7 @@ else:
 
 if __name__ == "__main__":
     result = evaluate(
-        ds.select(range(3)),
+        ds,
         metrics=[answer_relevancy, context_relevancy, faithfulness],
     )
     print(result)
