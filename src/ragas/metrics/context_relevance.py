@@ -60,7 +60,7 @@ class SentenceAgreement:
         union = len(np.union1d(sentences1, sentences2))
         return intersect / union
 
-    def evaluate(self, answers: List[List[str]]) -> float:
+    def evaluate(self, answers: List[List[str]]) -> np.float_:
         """
         eval nC2 combinations
         """
@@ -75,9 +75,8 @@ class SentenceAgreement:
                 score = 0
                 raise ValueError(f"Metric {self.metric} unavailable")
             scores.append(score)
-        scores = np.mean(scores)
-        assert isinstance(scores, float), "Expects floats"
-        return scores
+        score = np.mean(scores)
+        return score
 
 
 @dataclass
@@ -118,7 +117,7 @@ class ContextRelevancy(Metric):
             batch_responses = openai_completion(
                 prompts[batch_idx : batch_idx + 20], n=self.strictness
             )
-            responses.append(batch_responses["choices"])  # type: ignore
+            responses.extend(batch_responses["choices"])  # type: ignore
 
         prev = 0
         outputs = []
