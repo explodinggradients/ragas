@@ -8,6 +8,7 @@ from typing import List
 import numpy as np
 from datasets import Dataset
 from sentence_transformers import CrossEncoder
+from tqdm import tqdm
 
 from ragas.metrics.base import Metric
 from ragas.metrics.llms import openai_completion
@@ -135,7 +136,7 @@ class ContextRelevancy(Metric):
             prompts.append(prompt)
 
         responses = []
-        for batch_idx in range(0, len(prompts), 20):
+        for batch_idx in tqdm(range(0, len(prompts), 20)):
             batch_responses = openai_completion(
                 prompts[batch_idx : batch_idx + 20], n=self.strictness
             )
