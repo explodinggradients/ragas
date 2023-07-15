@@ -1,6 +1,6 @@
 from ragas.metrics.answer_relevance import AnswerRelevancy, answer_relevancy
 from ragas.metrics.context_relevance import ContextRelevancy, context_relevancy
-from ragas.metrics.factual import Faithfulness, faithfulness
+from ragas.metrics.faithfulnes import Faithfulness, faithfulness
 
 __all__ = [
     "Faithfulness",
