@@ -3,7 +3,7 @@
   src="./docs/assets/logo.png">
 </h1>
 <p align="center">
-  <i>SOTA metrics for evaluating Retrieval Augmented Generation (RAG)</i>
+  <i>Evaluation framework for your Retrieval Augmented Generation (RAG) pipelines</i>
 </p>
 
 <p align="center">
