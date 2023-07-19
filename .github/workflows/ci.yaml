@@ -27,7 +27,7 @@ jobs:
       - name: show openai_key
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: echo open_ai: $OPENAI_API_KEY
+        run: echo open_ai - $OPENAI_API_KEY
       - uses: dorny/paths-filter@v2
         id: filter
         with:
