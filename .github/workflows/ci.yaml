@@ -18,6 +18,7 @@ defaults:
 jobs:
   diff:
     runs-on: ubuntu-latest
+    environment: unit_tests
     outputs:
       related: ${{ steps.filter.outputs.related }}
       ragas: ${{ steps.filter.outputs.ragas }}
@@ -49,6 +50,7 @@ jobs:
               - "docs/**"
 
   unit_tests:
+    environment: unit_tests
     needs:
       - diff
 
