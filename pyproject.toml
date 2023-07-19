@@ -8,6 +8,7 @@ dependencies = [
     "protobuf<=3.20.0",
     "langchain",
     "openai",
+    "pydantic^1"
 ]
 dynamic = ["version", "readme"]
 
