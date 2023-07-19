@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from math import floor
 
 from datasets import Dataset
+from langchain.base_language import BaseLanguageModel
 
 
 def make_batches(total_size: int, batch_size: int) -> list[range]:
@@ -31,17 +32,18 @@ def make_batches(total_size: int, batch_size: int) -> list[range]:
 
 @dataclass
 class Metric(ABC):
-    @property
-    @abstractmethod
-    def batch_size(self: t.Self) -> int:
-        ...
+    batch_size: int
+    llm: t.Optional[BaseLanguageModel] = None
+
+    def __post_init__(self: t.Self):
+        if self.llm is None:
+            from langchain.chat_models import ChatOpenAI
+
+            self.llm = ChatOpenAI()
 
     @property
     @abstractmethod
-    def name(self: t.Self) -> str:
-        """
-        the metric name
-        """
+    def name(self) -> str:
         ...
 
     @abstractmethod

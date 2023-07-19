@@ -3,20 +3,27 @@ from __future__ import annotations
 import logging
 import os
 
-import backoff
 import openai
-from openai.error import RateLimitError
+from langchain.chat_models.base import BaseChatModel
+from langchain.llms.base import BaseLLM
+from langchain.prompts import ChatPromptTemplate
+from langchain.schema import LLMResult
 
-openai.api_key = os.environ.get("OPENAI_API_KEY")
 
-# TODO better way of logging backoffs
-logging.getLogger("backoff").addHandler(logging.StreamHandler())
+def generate(
+    prompts: list[ChatPromptTemplate], llm: BaseLLM | BaseChatModel
+) -> LLMResult:
+    if isinstance(llm, BaseLLM):
+        ps = [p.format() for p in prompts]
+        return llm.generate(ps)
+    elif isinstance(llm, BaseChatModel):
+        ps = [p.format_messages() for p in prompts]
+        return llm.generate(ps)
 
 
 # each of these calls have to check for
 # https://platform.openai.com/docs/guides/error-codes/api-errors
 # and handle it gracefully
-@backoff.on_exception(backoff.expo, RateLimitError, max_tries=5)
 def openai_completion(prompts: list[str], **kwargs):
     """
     TODOs
