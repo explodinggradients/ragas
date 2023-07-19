@@ -88,7 +88,7 @@ jobs:
 
       - name: Run unit tests
         env:
-          OPEN_API_KEY: ${{ secrets.OPEN_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           # OPTS=(--cov-config pyproject.toml --cov=src/bentoml --cov-append)
           if [ "${{ matrix.os }}" != 'windows-latest' ]; then
