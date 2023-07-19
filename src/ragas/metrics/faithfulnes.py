@@ -32,8 +32,8 @@ answer: They were from different countries.
 statements:\nShahul and Jithin were from different countries.
 question:{question}
 answer: {answer}
-statements:\n"""
-)  # noqa: E501
+statements:\n"""  # noqa: E501
+)
 
 
 NLI_STATEMENTS_MESSAGE = HumanMessagePromptTemplate.from_template(
@@ -60,8 +60,8 @@ context:\n{context}
 statements:\n{statements}
 Now, read the following statements and determine whether they are supported by the information present in the context. Provide a brief explanation for each statement. Also provide a Final Answer (Yes/No) at the end. 
 Answer:
-"""
-)  # noqa: E501
+"""  # noqa: E501
+)
 
 
 @dataclass

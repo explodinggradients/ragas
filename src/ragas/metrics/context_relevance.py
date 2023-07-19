@@ -33,8 +33,8 @@ sentences:Scott Derrickson (born July 16, 1966) is an American director, screenw
 
 question:{question}
 context:\n{context}
-sentences:"""
-)  # noqa: E501
+sentences:"""  # noqa: E501
+)
 
 
 def sent_tokenize(sent: str) -> List[str]:
