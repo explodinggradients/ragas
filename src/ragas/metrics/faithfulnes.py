@@ -10,7 +10,7 @@ from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from tqdm import tqdm
 
 from ragas.metrics.base import Metric
-from ragas.metrics.llms import generate, openai_completion
+from ragas.metrics.llms import generate
 
 if t.TYPE_CHECKING:
     from datasets import Dataset

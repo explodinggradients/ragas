@@ -39,7 +39,7 @@ class Metric(ABC):
         if self.llm is None:
             from langchain.chat_models import ChatOpenAI
 
-            self.llm = ChatOpenAI()
+            self.llm = ChatOpenAI(model_name="gpt-3.5-turbo-16k")  # type: ignore
 
     @property
     @abstractmethod
