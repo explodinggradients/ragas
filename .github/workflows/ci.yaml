@@ -24,6 +24,10 @@ jobs:
       docs: ${{ steps.filter.outputs.docs }}
     steps:
       - uses: actions/checkout@v3
+      - name: show openai_key
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: echo $OPENAI_API_KEY
       - uses: dorny/paths-filter@v2
         id: filter
         with:
@@ -85,6 +89,7 @@ jobs:
         run: |
           pip install "."
           pip install -r requirements/test.txt
+
 
       - name: Run unit tests
         env:
