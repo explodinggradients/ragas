@@ -7,13 +7,17 @@ from typing import List
 
 import numpy as np
 from datasets import Dataset
+from langchain.chat_models.base import BaseChatModel
+from langchain.llms.base import BaseLLM
+from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from sentence_transformers import CrossEncoder
 from tqdm import tqdm
 
 from ragas.metrics.base import Metric
-from ragas.metrics.llms import openai_completion
+from ragas.metrics.llms import generate
 
-CONTEXT_RELEVANCE = """
+CONTEXT_RELEVANCE = HumanMessagePromptTemplate.from_template(
+    """\
 Task: Candidate sentence extraction.
 Given the question and context, extract minimum number of sentences from context required to answer the question. If the context do not contain information required to answer the question return "No candidate sentences found".
 
@@ -27,9 +31,10 @@ context :\nScott Derrickson (born July 16, 1966) is an American director, screen
 Now given a question and context, extract the minimum number of sentences from the given context required to answer the question completely. 
 sentences:Scott Derrickson (born July 16, 1966) is an American director, screenwriter and producer. Edward Davis Wood Jr. (October 10, 1924 – December 10, 1978) was an American filmmaker, actor, writer, producer, and director.
 
-question:{}
-context:\n{}
+question:{question}
+context:\n{context}
 sentences:"""  # noqa: E501
+)
 
 
 def sent_tokenize(sent: str) -> List[str]:
@@ -61,7 +66,7 @@ class SentenceAgreement:
         union = len(np.union1d(sentences1, sentences2))
         return intersect / union
 
-    def evaluate(self, answers: List[List[str]]) -> np.float_:
+    def evaluate(self, answers: List[str]) -> np.float_:
         """
         eval nC2 combinations
         """
@@ -103,6 +108,7 @@ class ContextRelevancy(Metric):
 
     name: str = "context_relavency"
     batch_size: int = 15
+    llm: t.Optional[BaseLLM | BaseChatModel] = None
     strictness: int = 2
     agreement_metric: str = "bert_score"
     model_name: str = "cross-encoder/stsb-TinyBERT-L-4"
@@ -112,6 +118,7 @@ class ContextRelevancy(Metric):
             raise ValueError(
                 "model_name must be provided when agreement_metric is bert_score"
             )
+        super().__post_init__()
 
     def init_model(self: t.Self):
         self.sent_agreement = SentenceAgreement(
@@ -129,33 +136,28 @@ class ContextRelevancy(Metric):
         Dataset[question: list[str], contexts: list[list[str]], scores: list[float]]
             Dataset with the scores for each row.
         """
+        if self.llm is None:
+            raise ValueError("llm must not be None")
         prompts = []
         questions, contexts = dataset["question"], dataset["contexts"]
         for q, c in zip(questions, contexts):
-            prompt = CONTEXT_RELEVANCE.format(q, "\n".join(c))
-            prompts.append(prompt)
+            human_prompt = CONTEXT_RELEVANCE.format(question=q, context="\n".join(c))
+            prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
-        responses = []
+        responses: list[list[str]] = []
         for batch_idx in tqdm(range(0, len(prompts), 20)):
-            batch_responses = openai_completion(
-                prompts[batch_idx : batch_idx + 20], n=self.strictness
+            results = generate(
+                prompts[batch_idx : batch_idx + 20], self.llm, n=self.strictness
             )
-            responses.extend(batch_responses["choices"])  # type: ignore
-
-        prev = 0
-        outputs = []
-        for i in range(self.strictness, len(responses) + 1, self.strictness):
-            output = [responses[idx]["text"].strip() for idx in range(prev, i)]
-
-            outputs.append(output)
-            prev = i
+            batch_responses = [[i.text for i in r] for r in results.generations]
+            responses.extend(batch_responses)  # type: ignore
 
         scores = []
-        for context, n_output in zip(contexts, outputs):
+        for context, n_response in zip(contexts, responses):
             context = "\n".join(context)
             overlap_scores = []
             context_sents = sent_tokenize(context)
-            for output in n_output:
+            for output in n_response:
                 indices = [
                     context.find(sent)
                     for sent in sent_tokenize(output)
@@ -163,7 +165,7 @@ class ContextRelevancy(Metric):
                 ]
                 overlap_scores.append(len(indices) / len(context_sents))
             if self.strictness > 1:
-                agr_score = self.sent_agreement.evaluate(n_output)
+                agr_score = self.sent_agreement.evaluate(n_response)
             else:
                 agr_score = 1
             scores.append(agr_score * np.mean(overlap_scores))
