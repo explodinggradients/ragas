@@ -4,10 +4,13 @@ import typing as t
 from dataclasses import dataclass
 
 from datasets import concatenate_datasets
+from langchain.chat_models.base import BaseChatModel
+from langchain.llms.base import BaseLLM
+from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from tqdm import tqdm
 
 from ragas.metrics.base import Metric
-from ragas.metrics.llms import openai_completion
+from ragas.metrics.llms import generate
 
 if t.TYPE_CHECKING:
     from datasets import Dataset
@@ -15,7 +18,8 @@ if t.TYPE_CHECKING:
 #################
 # NLI Score
 #################
-LONG_FORM_ANSWER = """
+LONG_FORM_ANSWER_PROMPT = HumanMessagePromptTemplate.from_template(
+    """\
 Given a question and answer, create one or more statements from answer.
 question: Who was  Albert Einstein and what is he best known for?
 answer: He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.
@@ -26,11 +30,14 @@ statements:\nCadmium Chloride is slightly soluble in alcohol.
 question: Were Shahul and Jithin of the same nationality?
 answer: They were from different countries.
 statements:\nShahul and Jithin were from different countries.
-question:{}
-answer: {}
+question:{question}
+answer: {answer}
 statements:\n"""  # noqa: E501
+)
 
-NLI_STATEMENTS = """
+
+NLI_STATEMENTS_MESSAGE = HumanMessagePromptTemplate.from_template(
+    """
 Prompt: Natural language inference
 Consider the following context:
 Context:
@@ -49,20 +56,19 @@ Explanation: There is no information given in the context about John having a pa
 5. John is interested in computer programming.
 Explanation: The context states that John is pursuing a degree in Computer Science, which implies an interest in computer programming.So answer is Yes.
 Final answer: No. No. Yes. No. Yes.
-context:\n{}
-statements:\n{}
+context:\n{context}
+statements:\n{statements}
 Now, read the following statements and determine whether they are supported by the information present in the context. Provide a brief explanation for each statement. Also provide a Final Answer (Yes/No) at the end. 
 Answer:
 """  # noqa: E501
+)
 
 
 @dataclass
 class Faithfulness(Metric):
+    name: str = "faithfulness"
     batch_size: int = 15
-
-    @property
-    def name(self):
-        return "faithfulness"
+    llm: t.Optional[BaseLLM | BaseChatModel] = None
 
     def init_model(self: t.Self):
         pass
@@ -79,16 +85,19 @@ class Faithfulness(Metric):
         """
         returns the NLI score for each (q, c, a) pair
         """
+        assert self.llm is not None, "LLM not initialized"
+
         question, answer, contexts = ds["question"], ds["answer"], ds["contexts"]
         prompts = []
         for q, a in zip(question, answer):
-            prompt = LONG_FORM_ANSWER.format(q, a)
-            prompts.append(prompt)
+            human_prompt = LONG_FORM_ANSWER_PROMPT.format(question=q, answer=a)
+            prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
-        response = openai_completion(prompts)
+        result = generate(prompts, self.llm)
         list_statements: list[list[str]] = []
-        for output in response["choices"]:  # type: ignore
-            statements = output["text"].split("\n")
+        for output in result.generations:
+            # use only the first generation for each prompt
+            statements = output[0].text.split("\n")
             list_statements.append(statements)
 
         prompts = []
@@ -97,15 +106,17 @@ class Faithfulness(Metric):
                 [f"{i+1}.{st}" for i, st in enumerate(statements)]
             )
             contexts_str: str = "\n".join(context)
-            prompt = NLI_STATEMENTS.format(contexts_str, statements_str)
-            prompts.append(prompt)
+            human_prompt = NLI_STATEMENTS_MESSAGE.format(
+                context=contexts_str, statements=statements_str
+            )
+            prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
-        response = openai_completion(prompts)
-        outputs = response["choices"]  # type: ignore
+        result = generate(prompts, self.llm)
+        outputs = result.generations
 
         scores = []
         for i, output in enumerate(outputs):
-            output = output["text"].lower().strip()
+            output = output[0].text.lower().strip()
             if output.find("final answer:") != -1:
                 output = output[output.find("final answer:") + len("final answer:") :]
                 score = sum(

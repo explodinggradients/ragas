@@ -1,54 +1,41 @@
 from __future__ import annotations
 
-import logging
-import os
+import typing as t
 
-import backoff
-import openai
-from openai.error import RateLimitError
-
-openai.api_key = os.environ.get("OPENAI_API_KEY")
-
-# TODO better way of logging backoffs
-logging.getLogger("backoff").addHandler(logging.StreamHandler())
+from langchain.chat_models import ChatOpenAI
+from langchain.chat_models.base import BaseChatModel
+from langchain.llms import OpenAI
+from langchain.llms.base import BaseLLM
+from langchain.prompts import ChatPromptTemplate
+from langchain.schema import LLMResult
 
 
-# each of these calls have to check for
-# https://platform.openai.com/docs/guides/error-codes/api-errors
-# and handle it gracefully
-@backoff.on_exception(backoff.expo, RateLimitError, max_tries=5)
-def openai_completion(prompts: list[str], **kwargs):
-    """
-    TODOs
-
-    - what happens when backoff fails?
-    """
-    response = openai.Completion.create(
-        model=kwargs.get("model", "text-davinci-003"),
-        prompt=prompts,
-        temperature=kwargs.get("temperature", 0),
-        top_p=kwargs.get("top_p", 1),
-        frequency_penalty=kwargs.get("frequency_penalty", 0.0),
-        presence_penalty=kwargs.get("presence_penalty", 0.0),
-        max_tokens=kwargs.get("max_tokens", 500),
-        logprobs=kwargs.get("logprobs", 1),
-        n=kwargs.get("n", 1),
-    )
-
-    return response
+def isOpenAI(llm: BaseLLM | BaseChatModel) -> bool:
+    return isinstance(llm, OpenAI) or isinstance(llm, ChatOpenAI)
 
 
-# TODO: make this work
-def openai_completion_async(prompts: list[str], **kwargs):
-    response = openai.Completion.acreate(
-        model=kwargs.get("model", "text-davinci-003"),
-        prompt=prompts,
-        temperature=kwargs.get("temperature", 0),
-        top_p=kwargs.get("top_p", 1),
-        frequency_penalty=kwargs.get("frequency_penalty", 0.0),
-        presence_penalty=kwargs.get("presence_penalty", 0.0),
-        max_tokens=kwargs.get("max_tokens", 500),
-        logprobs=kwargs.get("logprobs", 1),
-        n=kwargs.get("n", 1),
-    )
-    return response
+def generate(
+    prompts: list[ChatPromptTemplate],
+    llm: BaseLLM | BaseChatModel,
+    n: t.Optional[int] = None,
+) -> LLMResult:
+    old_n = None
+    if n is not None:
+        if isinstance(llm, OpenAI) or isinstance(llm, ChatOpenAI):
+            old_n = llm.n
+            llm.n = n
+        else:
+            raise Exception(
+                f"n={n} was passed to generate but the LLM {llm} does not support it."
+                " Raise an issue if you want support for {llm}."
+            )
+    if isinstance(llm, BaseLLM):
+        ps = [p.format() for p in prompts]
+        result = llm.generate(ps)
+    elif isinstance(llm, BaseChatModel):
+        ps = [p.format_messages() for p in prompts]
+        result = llm.generate(ps)
+
+    if isinstance(llm, OpenAI) or isinstance(llm, ChatOpenAI):
+        llm.n = old_n  # type: ignore
+    return result

@@ -1,6 +1,4 @@
-import os
-
-from datasets import Dataset, load_dataset
+from datasets import load_dataset
 from torch.cuda import is_available
 
 from ragas import evaluate
