@@ -25,9 +25,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: show openai_key
-        run: echo open_ai - "$OPENAI_API_KEY"
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: echo open_ai - "$OPENAI_API_KEY"
       - uses: dorny/paths-filter@v2
         id: filter
         with:
@@ -42,7 +42,6 @@ jobs:
             ragas:
               - "src/ragas/**"
               - "tests/**"
-              - "examples/**"
             docs:
               - *related
               - requirements/docs-requirements.txt
@@ -101,7 +100,7 @@ jobs:
             OPTS=(--dist loadfile -n auto)
           fi
           # Now run the unit tests
-          pytest tests/unit "${OPTS[@]}"
+          OPENAI_API_KEY="test" pytest tests/unit "${OPTS[@]}"
 
   codestyle_check:
     runs-on: ubuntu-latest
