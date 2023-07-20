@@ -24,10 +24,6 @@ jobs:
       docs: ${{ steps.filter.outputs.docs }}
     steps:
       - uses: actions/checkout@v3
-      - name: show openai_key
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: OPENAI_API_KEY="test" echo open_ai - "$OPENAI_API_KEY"
       - uses: dorny/paths-filter@v2
         id: filter
         with:
@@ -91,8 +87,6 @@ jobs:
 
 
       - name: Run unit tests
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           # OPTS=(--cov-config pyproject.toml --cov=src/bentoml --cov-append)
           if [ "${{ matrix.os }}" != 'windows-latest' ]; then
