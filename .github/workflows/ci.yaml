@@ -36,6 +36,7 @@ jobs:
               - pyproject.toml
               - requirements/test.txt
             ragas:
+              - *related
               - "src/ragas/**"
               - "tests/**"
             docs:
