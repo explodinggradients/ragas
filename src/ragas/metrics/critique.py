@@ -36,11 +36,11 @@ class AspectCritique(Metric):
     strictness: self consistency checks
     """
 
-    name: str = field(default="" ,repr=True)
-    definition: str = field(default="" ,repr=True)
-    strictness: int = field(default=1 ,repr=False)
-    batch_size: int = field(default=15 ,repr=False)
-    llm: t.Optional[BaseLLM | BaseChatModel] = field(default=None ,repr=False)
+    name: str = field(default="", repr=True)
+    definition: str = field(default="", repr=True)
+    strictness: int = field(default=1, repr=False)
+    batch_size: int = field(default=15, repr=False)
+    llm: t.Optional[BaseLLM | BaseChatModel] = field(default=None, repr=False)
 
     def __post_init__(self: t.Self):
         assert self.name != "", "Expects a name"
