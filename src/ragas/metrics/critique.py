@@ -5,6 +5,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 
 from datasets import Dataset
+from langchain.chat_models import ChatOpenAI
 from langchain.chat_models.base import BaseChatModel
 from langchain.llms.base import BaseLLM
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
@@ -40,12 +41,13 @@ class AspectCritique(MetricWithLLM):
     definition: str = field(default="", repr=True)
     strictness: int = field(default=1, repr=False)
     batch_size: int = field(default=15, repr=False)
-    llm: t.Optional[BaseLLM | BaseChatModel] = field(default=None, repr=False)
+    llm: BaseLLM | BaseChatModel = field(
+        default=ChatOpenAI(model_name="gpt-3.5-turbo-16k"), repr=False  # type: ignore
+    )
 
     def __post_init__(self: t.Self):
         assert self.name != "", "Expects a name"
         assert self.definition != "", "Expects definition"
-        super().__post_init__()
 
     def init_model(self: t.Self):
         self.strictness = (

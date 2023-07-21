@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 import numpy as np
@@ -8,6 +8,7 @@ from datasets import Dataset, concatenate_datasets
 
 from ragas._analytics import EvaluationEvent, track
 from ragas.metrics.base import Metric
+from ragas.metrics.critique import AspectCritique
 
 EvaluationMode = Enum("EvaluationMode", "generative retrieval grounded")
 
@@ -84,7 +85,10 @@ def evaluate(
     [m.init_model() for m in metrics]
 
     scores = []
+    binary_metrics = []
     for metric in metrics:
+        if isinstance(metric, AspectCritique):
+            binary_metrics.append(metric.name)
         print(f"evaluating with [{metric.name}]")
         scores.append(metric.score(dataset).select_columns(metric.name))
 
@@ -99,7 +103,11 @@ def evaluate(
         )
     )
 
-    return Result(scores=concatenate_datasets(scores, axis=1), dataset=dataset)
+    return Result(
+        scores=concatenate_datasets(scores, axis=1),
+        dataset=dataset,
+        binary_columns=binary_metrics,
+    )
 
 
 @dataclass
@@ -107,16 +115,18 @@ class Result(dict):
     scores: Dataset
     dataset: Dataset | None = None
     ragas_score: float | None = None
+    binary_columns: list[str] = field(default_factory=list)
 
     def __post_init__(self):
         values = []
         for cn in self.scores.column_names:
             value = np.mean(self.scores[cn])
             self[cn] = value
-            values.append(value)
+            if cn not in self.binary_columns:
+                values.append(value)
 
         # harmonic mean of all the scores we have
-        if len(values) == 3:
+        if len(values) > 1:
             self["ragas_score"] = len(values) / np.sum(1.0 / np.array(values))
 
     def to_pandas(self, batch_size: int | None = None, batched: bool = False):
