@@ -10,7 +10,7 @@ from langchain.llms.base import BaseLLM
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from tqdm import tqdm
 
-from ragas.metrics.base import Metric
+from ragas.metrics.base import MetricWithLLM
 from ragas.metrics.llms import generate
 
 CRITIQUE_PROMPT = HumanMessagePromptTemplate.from_template(
@@ -31,7 +31,7 @@ Here's are my thoughts:
 
 
 @dataclass
-class AspectCritique(Metric):
+class AspectCritique(MetricWithLLM):
     """
     strictness: self consistency checks
     """
