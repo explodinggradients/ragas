@@ -42,7 +42,7 @@ results = answer_relevancy.score(dataset)
 ```
 
 
-4. `Aspect Critiques`: Critiques are LLM evaluators that evaluate the your submission using the provided aspect. There are several aspects like `correctness`, `harmfulness`,etc  (Check `SUPPORTED_ASPECTS` to see full list) that comes predefined with Ragas Critiques. If you wish to define your own aspect you can also do this. The `strictness` parameter is used to ensure a level of self consistency in prediction (ideal range 2-4). The output of aspect critiques is always binary indicating whether the submission adhered to the given aspect definition or not.
+4. `Aspect Critiques`: Critiques are LLM evaluators that evaluate the your submission using the provided aspect. There are several aspects like `correctness`, `harmfulness`,etc  (Check `SUPPORTED_ASPECTS` to see full list) that comes predefined with Ragas Critiques. If you wish to define your own aspect you can also do this. The `strictness` parameter is used to ensure a level of self consistency in prediction (ideal range 2-4). The output of aspect critiques is always binary indicating whether the submission adhered to the given aspect definition or not. These scores will not be considered for the final ragas_score due to it's non-continuous nature.
 
 ```python
 ## check predefined aspects
