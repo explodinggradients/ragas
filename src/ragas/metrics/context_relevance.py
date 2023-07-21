@@ -7,13 +7,11 @@ from typing import List
 
 import numpy as np
 from datasets import Dataset
-from langchain.chat_models.base import BaseChatModel
-from langchain.llms.base import BaseLLM
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from sentence_transformers import CrossEncoder
 from tqdm import tqdm
 
-from ragas.metrics.base import Metric
+from ragas.metrics.base import MetricWithLLM
 from ragas.metrics.llms import generate
 
 CONTEXT_RELEVANCE = HumanMessagePromptTemplate.from_template(
@@ -86,7 +84,7 @@ class SentenceAgreement:
 
 
 @dataclass
-class ContextRelevancy(Metric):
+class ContextRelevancy(MetricWithLLM):
     """
     Extracts sentences from the context that are relevant to the question with
     self-consistancy checks. The number of relevant sentences and is used as the score.
@@ -108,7 +106,6 @@ class ContextRelevancy(Metric):
 
     name: str = "context_relavency"
     batch_size: int = 15
-    llm: t.Optional[BaseLLM | BaseChatModel] = None
     strictness: int = 2
     agreement_metric: str = "bert_score"
     model_name: str = "cross-encoder/stsb-TinyBERT-L-4"
@@ -118,7 +115,6 @@ class ContextRelevancy(Metric):
             raise ValueError(
                 "model_name must be provided when agreement_metric is bert_score"
             )
-        super().__post_init__()
 
     def init_model(self: t.Self):
         self.sent_agreement = SentenceAgreement(

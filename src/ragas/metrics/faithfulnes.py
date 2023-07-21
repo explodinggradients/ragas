@@ -4,12 +4,10 @@ import typing as t
 from dataclasses import dataclass
 
 from datasets import concatenate_datasets
-from langchain.chat_models.base import BaseChatModel
-from langchain.llms.base import BaseLLM
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from tqdm import tqdm
 
-from ragas.metrics.base import Metric
+from ragas.metrics.base import MetricWithLLM
 from ragas.metrics.llms import generate
 
 if t.TYPE_CHECKING:
@@ -65,10 +63,9 @@ Answer:
 
 
 @dataclass
-class Faithfulness(Metric):
+class Faithfulness(MetricWithLLM):
     name: str = "faithfulness"
     batch_size: int = 15
-    llm: t.Optional[BaseLLM | BaseChatModel] = None
 
     def init_model(self: t.Self):
         pass

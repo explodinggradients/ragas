@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from math import floor
 
 from datasets import Dataset
+from langchain.chat_models import ChatOpenAI
 from langchain.chat_models.base import BaseChatModel
 from langchain.llms.base import BaseLLM
 
@@ -34,13 +35,6 @@ def make_batches(total_size: int, batch_size: int) -> list[range]:
 @dataclass
 class Metric(ABC):
     batch_size: int
-    llm: t.Optional[BaseLLM | BaseChatModel] = None
-
-    def __post_init__(self: t.Self):
-        if self.llm is None:
-            from langchain.chat_models import ChatOpenAI
-
-            self.llm = ChatOpenAI(model_name="gpt-3.5-turbo-16k")  # type: ignore
 
     @property
     @abstractmethod
@@ -60,3 +54,10 @@ class Metric(ABC):
 
     def get_batches(self, dataset_size: int) -> list[range]:
         return make_batches(dataset_size, self.batch_size)
+
+
+@dataclass
+class MetricWithLLM(Metric):
+    llm: BaseLLM | BaseChatModel = ChatOpenAI(
+        model_name="gpt-3.5-turbo-16k"  # type: ignore
+    )
