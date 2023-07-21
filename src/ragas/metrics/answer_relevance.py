@@ -141,8 +141,8 @@ class QGen:
 
 @dataclass
 class AnswerRelevancy(Metric):
-    batch_size: int = 32
     name: str = "answer_relevancy"
+    batch_size: int = 32
     model_name: str = "t5-base"
 
     def init_model(self: t.Self):
