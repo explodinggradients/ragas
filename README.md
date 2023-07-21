@@ -80,12 +80,13 @@ results = evaluate(dataset)
 If you want a more in-depth explanation of core components, check out our [quick-start notebook](./docs/quickstart.ipynb)
 ## :luggage: Metrics
 
-Ragas measures your pipeline's performance against two dimensions
+Ragas measures your pipeline's performance against different dimensions
 1. **Faithfulness**: measures the information consistency of the generated answer against the given context. If any claims made in the answer that cannot be deduced from context is penalized. 
 2. **Context Relevancy**:  measures how relevant retrieved contexts is to the question. Ideally the context should only contain information necessary to answer the question. The presence of redundant information in the context is penalized.
 3. **Answer Relevancy**: measures how relevant generated answer is to the question. This do not ensure factuality of the generated answer rather penalizes the presence of redundant information in the generated answer.
+4. **Aspect Critiques**: Designed to judge the submission against defined aspects like harmlessness, correctness, etc. You can also define your own aspect and validate the submission against your desired aspect. The output of aspect critiques is always binary.
 
-Through repeated experiments, we have found that the quality of a RAG pipeline is highly dependent on these two dimensions. The final `ragas_score` is the harmonic mean of these two factors. 
+The final `ragas_score` is the harmonic mean of of individual metric scores. 
 
 To read more about our metrics, checkout [docs](/docs/metrics.md).
 ## 🫂 Community
