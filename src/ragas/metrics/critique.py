@@ -104,9 +104,11 @@ class AspectCritique(MetricWithLLM):
             prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
         responses: list[list[str]] = []
-        for batch_idx in tqdm(range(0, len(prompts), 20)):
+        for batch_idx in tqdm(range(0, len(prompts), self.batch_size)):
             results = generate(
-                prompts[batch_idx : batch_idx + 20], self.llm, n=self.strictness
+                prompts[batch_idx : batch_idx + self.batch_size],
+                self.llm,
+                n=self.strictness,
             )
             batch_responses = [[i.text for i in r] for r in results.generations]
             responses.extend(batch_responses)  # type: ignore
