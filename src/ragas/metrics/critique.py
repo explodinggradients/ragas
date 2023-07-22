@@ -73,7 +73,10 @@ class AspectCritique(MetricWithLLM):
         )
 
     def prompt_format(
-        self: t.Self, question: str, answer: str, context: t.Optional[str] = None
+        self: t.Self,
+        question: str,
+        answer: str,
+        context: t.Optional[str | list[str]] = None,
     ):
         if context is not None:
             if isinstance(context, list):
