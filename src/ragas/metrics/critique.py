@@ -34,7 +34,23 @@ Here's are my thoughts:
 @dataclass
 class AspectCritique(MetricWithLLM):
     """
-    strictness: self consistency checks
+    Judges the submission to give binary results using the criteria specified
+    in the metric definition.
+
+    Attributes
+    ----------
+    name: str
+        name of the metrics
+    definition: str
+        criteria to judge the submission, example "Is the submission spreading
+        fake information?"
+    strictness: int
+        The number of times self consistency checks is made. Final judgement is
+        made using majority vote.
+    batch_size: int
+        Batch size for openai completion.
+    llm : BaseLLM | BaseChatModel
+        llm API of your choice
     """
 
     name: str = field(default="", repr=True)
@@ -50,6 +66,7 @@ class AspectCritique(MetricWithLLM):
         assert self.definition != "", "Expects definition"
 
     def init_model(self: t.Self):
+        # ensure odd number of checks to avoid tie in majority vote.
         self.strictness = (
             self.strictness if self.strictness % 2 == 0 else self.strictness + 1
         )
