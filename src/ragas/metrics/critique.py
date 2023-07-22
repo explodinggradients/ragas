@@ -58,7 +58,7 @@ class AspectCritique(MetricWithLLM):
     strictness: int = field(default=1, repr=False)
     batch_size: int = field(default=15, repr=False)
     llm: BaseLLM | BaseChatModel = field(
-        default_factory=ChatOpenAI(model_name="gpt-3.5-turbo-16k"),  # type: ignore
+        default=ChatOpenAI(model_name="gpt-3.5-turbo-16k"),  # type: ignore
         repr=False,
     )
 
