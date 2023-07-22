@@ -36,6 +36,7 @@ jobs:
               - pyproject.toml
               - requirements/test.txt
             ragas:
+              - *related
               - "src/ragas/**"
               - "tests/**"
             docs:
@@ -51,7 +52,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     if: ${{ (github.event_name == 'pull_request' && needs.diff.outputs.ragas == 'true') || github.event_name == 'push' }}
     name: python${{ matrix.python-version }}_unit_tests (${{ matrix.os }})
