@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import typing as t
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from math import floor
 
 from datasets import Dataset
@@ -56,8 +56,10 @@ class Metric(ABC):
         return make_batches(dataset_size, self.batch_size)
 
 
+def _llm_factory():
+    return ChatOpenAI(model_name="gpt-3.5-turbo-16k")  # type: ignore
+
+
 @dataclass
 class MetricWithLLM(Metric):
-    llm: BaseLLM | BaseChatModel = ChatOpenAI(
-        model_name="gpt-3.5-turbo-16k"  # type: ignore
-    )
+    llm: BaseLLM | BaseChatModel = field(default_factory=_llm_factory)

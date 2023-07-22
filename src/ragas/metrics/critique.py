@@ -5,13 +5,12 @@ from collections import Counter
 from dataclasses import dataclass, field
 
 from datasets import Dataset
-from langchain.chat_models import ChatOpenAI
 from langchain.chat_models.base import BaseChatModel
 from langchain.llms.base import BaseLLM
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from tqdm import tqdm
 
-from ragas.metrics.base import MetricWithLLM
+from ragas.metrics.base import MetricWithLLM, _llm_factory
 from ragas.metrics.llms import generate
 
 CRITIQUE_PROMPT = HumanMessagePromptTemplate.from_template(
@@ -58,7 +57,7 @@ class AspectCritique(MetricWithLLM):
     strictness: int = field(default=1, repr=False)
     batch_size: int = field(default=15, repr=False)
     llm: BaseLLM | BaseChatModel = field(
-        default=ChatOpenAI(model_name="gpt-3.5-turbo-16k"),  # type: ignore
+        default_factory=_llm_factory,
         repr=False,
     )
 

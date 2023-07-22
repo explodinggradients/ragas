@@ -12,7 +12,7 @@ ds = load_dataset("explodinggradients/fiqa", "ragas_eval")["baseline"]
 
 if __name__ == "__main__":
     result = evaluate(
-        ds,
+        ds.select(range(5)),
         metrics=[answer_relevancy, context_relevancy, faithfulness, harmfulness],
     )
     print(result)
