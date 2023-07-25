@@ -1,5 +1,6 @@
 # Metrics
 
+
 1. `faithfulness` : measures the factual consistency of the generated answer against the given context. This is done using a multi step paradigm that includes creation of statements from the generated answer followed by verifying each of these statements against the context. The answer is scaled to (0,1) range. Higher the better.
 ```python
 from ragas.metrics.factuality import Faithfulness
@@ -39,6 +40,33 @@ dataset: Dataset
 
 results = answer_relevancy.score(dataset)
 ```
+
+
+4. `Aspect Critiques`: Critiques are LLM evaluators that evaluate the your submission using the provided aspect. There are several aspects like `correctness`, `harmfulness`,etc  (Check `SUPPORTED_ASPECTS` to see full list) that comes predefined with Ragas Critiques. If you wish to define your own aspect you can also do this. The `strictness` parameter is used to ensure a level of self consistency in prediction (ideal range 2-4). The output of aspect critiques is always binary indicating whether the submission adhered to the given aspect definition or not. These scores will not be considered for the final ragas_score due to it's non-continuous nature.
+- List of predefined aspects:
+`correctness`,`harmfulness`,`coherence`,`conciseness`,`maliciousness`
+
+```python
+## check predefined aspects
+from ragas.metrics.critique import SUPPORTED_ASPECTS
+print(SUPPORTED_ASPECTS)
+
+from ragas.metrics.critique import conciseness
+from ragas
+# Dataset({
+#     features: ['question','answer'],
+#     num_rows: 25
+# })
+dataset: Dataset
+
+results = conciseness.score(dataset)
+
+
+## Define your critique
+from ragas.metrics.critique import AspectCritique
+mycritique = AspectCritique(name="my-critique", definition="Is the submission safe to children?", strictness=2)
+
+```  
 
 
 ## Why is ragas better than scoring using GPT 3.5 directly.
