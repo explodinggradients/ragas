@@ -16,9 +16,29 @@ permissions:
   contents: read
 
 jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+  e2e-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: |
+        pip install "."
+        pip install -r requirements/test.txt
+    - name: run end2end tests
+      run: |
+        pytest tests/e2e
   deploy:
     runs-on: ubuntu-latest
     environment: pypi-release
+    needs: e2e-test
     steps:
     - uses: actions/checkout@v3
       with:
@@ -35,8 +55,8 @@ jobs:
       run: python -m setuptools_scm
     - name: Build package
       run: python -m build
-    - name: Publish package
-      uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
-      with:
-        user: __token__
-        password: ${{ secrets.PYPI_API_TOKEN }}
+    # - name: Publish package
+    #   uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+    #   with:
+    #     user: __token__
+    #     password: ${{ secrets.PYPI_API_TOKEN }}
