@@ -11,7 +11,7 @@ from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from sentence_transformers import CrossEncoder
 from tqdm import tqdm
 
-from ragas.metrics.base import MetricWithLLM
+from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.metrics.llms import generate
 
 CONTEXT_RELEVANCE = HumanMessagePromptTemplate.from_template(
@@ -105,6 +105,7 @@ class ContextRelevancy(MetricWithLLM):
     """
 
     name: str = "context_relavency"
+    evaluation_mode: EvaluationMode = EvaluationMode.qc
     batch_size: int = 15
     strictness: int = 2
     agreement_metric: str = "bert_score"

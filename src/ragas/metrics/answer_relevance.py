@@ -15,7 +15,7 @@ from tqdm import tqdm
 from transformers import AutoConfig, AutoTokenizer
 from transformers.models.auto.modeling_auto import MODEL_WITH_LM_HEAD_MAPPING_NAMES
 
-from ragas.metrics.base import Metric
+from ragas.metrics.base import EvaluationMode, Metric
 
 if t.TYPE_CHECKING:
     import numpy.typing as npt
@@ -142,6 +142,7 @@ class QGen:
 @dataclass
 class AnswerRelevancy(Metric):
     name: str = "answer_relevancy"
+    evaluation_mode: EvaluationMode = EvaluationMode.qa
     batch_size: int = 32
     model_name: str = "t5-base"
 

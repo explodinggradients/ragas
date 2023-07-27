@@ -45,6 +45,11 @@ class Metric(ABC):
     def name(self) -> str:
         ...
 
+    @property
+    @abstractmethod
+    def evaluation_mode(self) -> EvaluationMode:
+        ...
+
     @abstractmethod
     def init_model():
         """

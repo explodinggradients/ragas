@@ -1,6 +1,6 @@
 from datasets import Dataset, Sequence
 
-from ragas.metrics.base import EvaluationMode
+from ragas.metrics.base import EvaluationMode, Metric
 
 
 def validate_column_dtypes(ds: Dataset):
@@ -22,7 +22,15 @@ def validate_column_dtypes(ds: Dataset):
                 )
 
 
-def get_evaluation_mode(ds: Dataset):
+EVALMODE_TO_COLUMNS = {
+    EvaluationMode.qac: ["question", "answer", "contexts"],
+    EvaluationMode.qa: ["question", "answer"],
+    EvaluationMode.qc: ["question", "contexts"],
+    EvaluationMode.ga: ["ground_truths", "answer"],
+}
+
+
+def validate_evaluation_modes(ds: Dataset, metrics: list[Metric]):
     """
     validates the dataset and returns the evaluation type
 
@@ -32,15 +40,14 @@ def get_evaluation_mode(ds: Dataset):
     3. (q,c)
     4. (g,a)
     """
-    if (
-        "question" in ds.features
-        and "answer" in ds.features
-        and "contexts" in ds.features
-    ):
-        return EvaluationMode.qac
-    elif "question" in ds.features and "answer" in ds.features:
-        return EvaluationMode.qa
-    elif "question" in ds.features and "contexts" in ds.features:
-        return EvaluationMode.qc
-    elif "ground_truths" in ds.features and "answer" in ds.features:
-        return EvaluationMode.ga
+
+    required_columns = set()
+    for m in metrics:
+        required_columns.update(EVALMODE_TO_COLUMNS[m.evaluation_mode])
+
+    available_columns = set(ds.features.keys())
+    if required_columns != available_columns:
+        raise ValueError(
+            f"Dataset should have the following additional columns "
+            "{required_columns - available_columns} for the metrics you are using."
+        )

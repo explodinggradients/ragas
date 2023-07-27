@@ -10,7 +10,7 @@ from langchain.llms.base import BaseLLM
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from tqdm import tqdm
 
-from ragas.metrics.base import MetricWithLLM, _llm_factory
+from ragas.metrics.base import EvaluationMode, MetricWithLLM, _llm_factory
 from ragas.metrics.llms import generate
 
 CRITIQUE_PROMPT = HumanMessagePromptTemplate.from_template(
@@ -53,6 +53,7 @@ class AspectCritique(MetricWithLLM):
     """
 
     name: str = field(default="", repr=True)
+    evaluation_mode: EvaluationMode = EvaluationMode.qac
     definition: str = field(default="", repr=True)
     strictness: int = field(default=1, repr=False)
     batch_size: int = field(default=15, repr=False)
