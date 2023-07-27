@@ -9,6 +9,7 @@ from __future__ import annotations
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from enum import Enum
 from math import floor
 
 from datasets import Dataset
@@ -30,6 +31,9 @@ def make_batches(total_size: int, batch_size: int) -> list[range]:
         batches.append(range(batch_size * num_batches, batch_size * num_batches + tail))
 
     return batches
+
+
+EvaluationMode = Enum("EvaluationMode", "qac qa qc ga")
 
 
 @dataclass

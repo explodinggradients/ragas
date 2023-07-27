@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
 
 import numpy as np
 from datasets import Dataset, concatenate_datasets
@@ -9,21 +8,6 @@ from datasets import Dataset, concatenate_datasets
 from ragas._analytics import EvaluationEvent, track
 from ragas.metrics.base import Metric
 from ragas.metrics.critique import AspectCritique
-
-EvaluationMode = Enum("EvaluationMode", "generative retrieval grounded")
-
-
-def get_evaluation_mode(ds: Dataset):
-    """
-    validates the dataset and returns the evaluation type
-
-    possible evaluation types
-    1. (q,a,c)
-    2. (q,a)
-    3. (q,c)
-    4. (g,a)
-    """
-    ...
 
 
 def evaluate(
