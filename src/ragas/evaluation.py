@@ -34,6 +34,12 @@ def evaluate(
         later. If the top 3 metrics are provided then it also returns the `ragas_score`
         for the entire pipeline.
 
+    Raises
+    ------
+    ValueError
+        if validation fails because the columns required for the metrics are missing or
+        if the columns are of the wrong format.
+
     Examples
     --------
     the basic usage is as follows:
