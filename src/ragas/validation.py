@@ -47,6 +47,7 @@ def validate_evaluation_modes(ds: Dataset, metrics: list[Metric]):
     for m in metrics:
         required_columns = set(EVALMODE_TO_COLUMNS[m.evaluation_mode])
         available_columns = set(ds.features.keys())
+        import ipdb; ipdb.set_trace()  # fmt: skip
         if required_columns.symmetric_difference(available_columns):
             raise ValueError(
                 f"The metric [{m.name}] that that is used requires the following "
