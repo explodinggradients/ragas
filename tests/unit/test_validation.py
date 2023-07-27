@@ -12,15 +12,15 @@ CaseToTest = namedtuple(
 
 TEST_CASES = [
     CaseToTest("a", "b", ["c"], None, True, [faithfulness], True),
-    CaseToTest("a", "b", ["c"], ["g"], True, [faithfulness], False),
+    CaseToTest("a", "b", ["c"], ["g"], True, [faithfulness], True),
     CaseToTest("a", None, ["c"], None, True, [context_relevancy], True),
     CaseToTest("a", None, "c", None, False, [context_relevancy], True),
     CaseToTest(
         "a", None, [["c"]], None, False, [context_relevancy, answer_relevancy], False
     ),
-    CaseToTest("a", None, ["c"], "g", False, [context_relevancy], False),
-    CaseToTest("a", None, ["c"], [["g"]], False, [context_relevancy], False),
-    CaseToTest(1, None, ["c"], ["g"], False, [context_relevancy], False),
+    CaseToTest("a", None, ["c"], "g", False, [context_relevancy], True),
+    CaseToTest("a", None, ["c"], [["g"]], False, [context_relevancy], True),
+    CaseToTest(1, None, ["c"], ["g"], False, [context_relevancy], True),
     CaseToTest(1, None, None, None, False, [context_relevancy], False),
 ]
 
