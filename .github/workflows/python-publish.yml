@@ -19,7 +19,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: pypi-release
-    needs: e2e-test
     steps:
     - uses: actions/checkout@v3
       with:
