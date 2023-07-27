@@ -1,6 +1,10 @@
+from collections import namedtuple
+
 import pytest
 from datasets import Dataset
 
+from ragas.metrics import answer_relevancy, context_relevancy, faithfulness
+from ragas.metrics.critique import harmfulness
 from ragas.validation import validate_column_dtypes
 
 test_dataset = Dataset.from_dict(
@@ -10,33 +14,39 @@ test_dataset = Dataset.from_dict(
     }
 )
 
+CaseToTest = namedtuple(
+    "TestCase", ["q", "a", "c", "g", "is_valid_columns", "metrics", "is_valid_metrics"]
+)
+
 TEST_CASES = [
-    ("a", "b", ["c"], None, True),
-    ("a", "b", ["c"], ["g"], True),
-    ("a", None, ["c"], None, True),
-    ("a", None, "c", None, False),
-    ("a", None, [["c"]], None, False),
-    ("a", None, ["c"], "g", False),
-    ("a", None, ["c"], [["g"]], False),
-    (1, None, ["c"], ["g"], False),
-    (1, None, None, None, False),
+    CaseToTest("a", "b", ["c"], None, True, [faithfulness], True),
+    CaseToTest("a", "b", ["c"], ["g"], True, [faithfulness], False),
+    CaseToTest("a", None, ["c"], None, True, [context_relevancy], True),
+    CaseToTest("a", None, "c", None, False, [context_relevancy], True),
+    CaseToTest(
+        "a", None, [["c"]], None, False, [context_relevancy, answer_relevancy], False
+    ),
+    CaseToTest("a", None, ["c"], "g", False, [context_relevancy], False),
+    CaseToTest("a", None, ["c"], [["g"]], False, [context_relevancy], False),
+    CaseToTest(1, None, ["c"], ["g"], False, [context_relevancy], False),
+    CaseToTest(1, None, None, None, False, [context_relevancy], False),
 ]
 
 
-@pytest.mark.parametrize("q,a,c,g,is_valid", TEST_CASES)
-def test_validate_column_dtypes(q, a, c, g, is_valid):
+@pytest.mark.parametrize("testcase", TEST_CASES)
+def test_validate_column_dtypes(testcase):
     dataset_dict = {}
-    if q is not None:
-        dataset_dict["question"] = [q]
-    if a is not None:
-        dataset_dict["answer"] = [a]
-    if c is not None:
-        dataset_dict["contexts"] = [c]
-    if g is not None:
-        dataset_dict["ground_truths"] = [g]
+    if testcase.q is not None:
+        dataset_dict["question"] = [testcase.q]
+    if testcase.a is not None:
+        dataset_dict["answer"] = [testcase.a]
+    if testcase.c is not None:
+        dataset_dict["contexts"] = [testcase.c]
+    if testcase.g is not None:
+        dataset_dict["ground_truths"] = [testcase.g]
 
     test_dataset = Dataset.from_dict(dataset_dict)
-    if is_valid:
+    if testcase.is_valid_columns:
         validate_column_dtypes(test_dataset)
     else:
         with pytest.raises(ValueError):
