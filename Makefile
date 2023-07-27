@@ -33,4 +33,4 @@ test: ## Run tests
 	@pytest tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 test-e2e: ## Run end2end tests
 	echo "running end2end tests..."
-	@pytest tests/e2e
+	@pytest tests/e2e -s
