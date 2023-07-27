@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datasets import Dataset, Sequence
 
 from ragas.metrics.base import EvaluationMode, Metric
