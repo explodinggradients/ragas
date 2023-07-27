@@ -8,6 +8,7 @@ from datasets import Dataset, concatenate_datasets
 from ragas._analytics import EvaluationEvent, track
 from ragas.metrics.base import Metric
 from ragas.metrics.critique import AspectCritique
+from ragas.validation import validate_column_dtypes, validate_evaluation_modes
 
 
 def evaluate(
@@ -54,15 +55,14 @@ def evaluate(
     if dataset is None:
         raise ValueError("Provide dataset!")
 
-    # TODO: validate EvaluationMode here
-    # evaluation_mode = get_evaluation_mode(dataset)
-
-    # TODO: check if all the metrics are compatible with the evaluation mode
-
     if metrics is None:
         from ragas.metrics import answer_relevancy, context_relevancy, faithfulness
 
         metrics = [answer_relevancy, context_relevancy, faithfulness]
+
+    # validation
+    validate_evaluation_modes(dataset, metrics)
+    validate_column_dtypes(dataset)
 
     # run the evaluation on dataset with different metrics
     # initialize all the models in the metrics

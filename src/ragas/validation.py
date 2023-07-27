@@ -18,7 +18,8 @@ def validate_column_dtypes(ds: Dataset):
                 and ds.features[column_names].feature.dtype == "string"
             ):
                 raise ValueError(
-                    f'Dataset feature "{column_names}" should be of type Sequence[string]'
+                    f'Dataset feature "{column_names}" should be of type'
+                    " Sequence[string]"
                 )
 
 
@@ -41,13 +42,12 @@ def validate_evaluation_modes(ds: Dataset, metrics: list[Metric]):
     4. (g,a)
     """
 
-    required_columns = set()
     for m in metrics:
-        required_columns.update(EVALMODE_TO_COLUMNS[m.evaluation_mode])
-
-    available_columns = set(ds.features.keys())
-    if required_columns != available_columns:
-        raise ValueError(
-            f"Dataset should have the following additional columns "
-            "{required_columns - available_columns} for the metrics you are using."
-        )
+        required_columns = set(EVALMODE_TO_COLUMNS[m.evaluation_mode])
+        available_columns = set(ds.features.keys())
+        if required_columns.symmetric_difference(available_columns):
+            raise ValueError(
+                f"The metric [{m.name}] that that is used requires the following "
+                f"additional columns {list(required_columns - available_columns)} "
+                "to be present in the dataset."
+            )

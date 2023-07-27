@@ -4,7 +4,6 @@ import pytest
 from datasets import Dataset
 
 from ragas.metrics import answer_relevancy, context_relevancy, faithfulness
-from ragas.metrics.critique import harmfulness
 from ragas.validation import validate_column_dtypes, validate_evaluation_modes
 
 CaseToTest = namedtuple(
