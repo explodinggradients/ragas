@@ -7,7 +7,7 @@ from datasets import concatenate_datasets
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from tqdm import tqdm
 
-from ragas.metrics.base import MetricWithLLM
+from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.metrics.llms import generate
 
 if t.TYPE_CHECKING:
@@ -65,6 +65,7 @@ Answer:
 @dataclass
 class Faithfulness(MetricWithLLM):
     name: str = "faithfulness"
+    evaluation_mode: EvaluationMode = EvaluationMode.qac
     batch_size: int = 15
 
     def init_model(self: t.Self):
