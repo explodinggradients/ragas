@@ -28,7 +28,7 @@ dataset: Dataset
 results = context_rel.score(dataset)
 ```
 
-3. `answer_relevancy`: measures how relevant is the generated answer to the prompt. This is quantified using conditional likelihood of an LLM generating the question given the answer. This is implemented using a custom model. Values range (0,1), higher the better.
+3. `answer_relevancy`: measures how relevant is the generated answer to the prompt. If the generated answer is incomplete or contains redundant information the score will be low. This is quantified by working out the chance of an LLM generating the given question using the generated answer. Values range (0,1), higher the better.
 ```python
 from ragas.metrics.answer_relevancy import AnswerRelevancy
 answer_relevancy = AnswerRelevancy(model_name="t5-small")
