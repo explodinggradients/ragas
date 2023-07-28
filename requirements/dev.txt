@@ -3,5 +3,5 @@ ruff
 isort
 black[jupyter]
 pyright
-langchain
+llama_index
 notebook

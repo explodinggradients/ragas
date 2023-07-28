@@ -29,7 +29,7 @@ def evaluate(
 
     Returns
     -------
-    result : Result
+    Result
         Result object containing the scores of each metric. You can use this do analysis
         later. If the top 3 metrics are provided then it also returns the `ragas_score`
         for the entire pipeline.
