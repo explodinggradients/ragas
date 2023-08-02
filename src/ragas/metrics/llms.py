@@ -10,7 +10,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema import LLMResult
 
 if t.TYPE_CHECKING:
-    from langchain.callbacks.manager import Callbacks
+    from langchain.callbacks.base import Callbacks
 
 
 def isOpenAI(llm: BaseLLM | BaseChatModel) -> bool:
@@ -21,7 +21,7 @@ def generate(
     prompts: list[ChatPromptTemplate],
     llm: BaseLLM | BaseChatModel,
     n: t.Optional[int] = None,
-    callbacks: Callbacks = None,
+    callbacks: t.Optional[Callbacks] = None,
 ) -> LLMResult:
     old_n = None
     n_swapped = False
