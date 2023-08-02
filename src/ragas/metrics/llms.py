@@ -9,6 +9,9 @@ from langchain.llms.base import BaseLLM
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import LLMResult
 
+if t.TYPE_CHECKING:
+    from langchain.callbacks.base import Callbacks
+
 
 def isOpenAI(llm: BaseLLM | BaseChatModel) -> bool:
     return isinstance(llm, OpenAI) or isinstance(llm, ChatOpenAI)
@@ -18,6 +21,7 @@ def generate(
     prompts: list[ChatPromptTemplate],
     llm: BaseLLM | BaseChatModel,
     n: t.Optional[int] = None,
+    callbacks: t.Optional[Callbacks] = None,
 ) -> LLMResult:
     old_n = None
     n_swapped = False
@@ -33,11 +37,12 @@ def generate(
             )
     if isinstance(llm, BaseLLM):
         ps = [p.format() for p in prompts]
-        result = llm.generate(ps)
+        result = llm.generate(ps, callbacks=callbacks)
     elif isinstance(llm, BaseChatModel):
         ps = [p.format_messages() for p in prompts]
-        result = llm.generate(ps)
+        result = llm.generate(ps, callbacks=callbacks)
 
     if (isinstance(llm, OpenAI) or isinstance(llm, ChatOpenAI)) and n_swapped:
         llm.n = old_n  # type: ignore
+
     return result

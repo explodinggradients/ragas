@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass
 
-from datasets import concatenate_datasets
+from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from tqdm import tqdm
 
@@ -70,65 +70,76 @@ class Faithfulness(MetricWithLLM):
         pass
 
     def score(self: t.Self, dataset: Dataset) -> Dataset:
+        assert self.llm is not None, "LLM not initialized"
+
         scores = []
-        for batch in tqdm(self.get_batches(len(dataset))):
-            score = self._score_batch(dataset.select(batch))
-            scores.append(score)
+        with trace_as_chain_group(f"ragas_{self.name}") as score_group:
+            for batch in tqdm(self.get_batches(len(dataset))):
+                score = self._score_batch(dataset.select(batch), callbacks=score_group)
+                scores.extend(score)
 
-        return concatenate_datasets(scores)
+        return dataset.add_column(self.name, scores)  # type: ignore
 
-    def _score_batch(self: t.Self, ds: Dataset) -> Dataset:
+    def _score_batch(
+        self: t.Self,
+        ds: Dataset,
+        callbacks: CallbackManager,
+        callback_group_name: str = "batch",
+    ) -> list[float]:
         """
         returns the NLI score for each (q, c, a) pair
         """
-        assert self.llm is not None, "LLM not initialized"
 
         question, answer, contexts = ds["question"], ds["answer"], ds["contexts"]
         prompts = []
-        for q, a in zip(question, answer):
-            human_prompt = LONG_FORM_ANSWER_PROMPT.format(question=q, answer=a)
-            prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
-        result = generate(prompts, self.llm)
-        list_statements: list[list[str]] = []
-        for output in result.generations:
-            # use only the first generation for each prompt
-            statements = output[0].text.split("\n")
-            list_statements.append(statements)
+        with trace_as_chain_group(
+            callback_group_name, callback_manager=callbacks
+        ) as batch_group:
+            for q, a in zip(question, answer):
+                human_prompt = LONG_FORM_ANSWER_PROMPT.format(question=q, answer=a)
+                prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
-        prompts = []
-        for context, statements in zip(contexts, list_statements):
-            statements_str: str = "\n".join(
-                [f"{i+1}.{st}" for i, st in enumerate(statements)]
-            )
-            contexts_str: str = "\n".join(context)
-            human_prompt = NLI_STATEMENTS_MESSAGE.format(
-                context=contexts_str, statements=statements_str
-            )
-            prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
+            result = generate(prompts, self.llm, callbacks=batch_group)
+            list_statements: list[list[str]] = []
+            for output in result.generations:
+                # use only the first generation for each prompt
+                statements = output[0].text.split("\n")
+                list_statements.append(statements)
 
-        result = generate(prompts, self.llm)
-        outputs = result.generations
-
-        scores = []
-        final_answer = "Final verdict for each statement in order:"
-        final_answer = final_answer.lower()
-        for i, output in enumerate(outputs):
-            output = output[0].text.lower().strip()
-            if output.find(final_answer) != -1:
-                output = output[output.find(final_answer) + len(final_answer) :]
-                score = sum(
-                    0 if "yes" in answer else 1
-                    for answer in output.strip().split(".")
-                    if answer != ""
+            prompts = []
+            for context, statements in zip(contexts, list_statements):
+                statements_str: str = "\n".join(
+                    [f"{i+1}.{st}" for i, st in enumerate(statements)]
                 )
-                score = score / len(list_statements[i])
-            else:
-                score = max(0, output.count("verdict: no")) / len(list_statements[i])
+                contexts_str: str = "\n".join(context)
+                human_prompt = NLI_STATEMENTS_MESSAGE.format(
+                    context=contexts_str, statements=statements_str
+                )
+                prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
-            scores.append(1 - score)
+            result = generate(prompts, self.llm, callbacks=batch_group)
+            outputs = result.generations
 
-        return ds.add_column(f"{self.name}", scores)  # type: ignore
+            scores = []
+            final_answer = "Final verdict for each statement in order:"
+            final_answer = final_answer.lower()
+            for i, output in enumerate(outputs):
+                output = output[0].text.lower().strip()
+                if output.find(final_answer) != -1:
+                    output = output[output.find(final_answer) + len(final_answer) :]
+                    score = sum(
+                        0 if "yes" in answer else 1
+                        for answer in output.strip().split(".")
+                        if answer != ""
+                    )
+                    score = score / len(list_statements[i])
+                else:
+                    score = max(0, output.count("verdict: no")) / len(list_statements[i])
+
+                scores.append(1 - score)
+
+        return scores
 
 
 faithfulness = Faithfulness()
