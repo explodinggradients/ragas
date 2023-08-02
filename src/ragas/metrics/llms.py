@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from dataclasses import dataclass
 
 from langchain.chat_models import ChatOpenAI
 from langchain.chat_models.base import BaseChatModel

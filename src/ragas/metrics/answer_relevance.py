@@ -54,15 +54,7 @@ class AnswerRelevancy(MetricWithLLM):
     def init_model(self: t.Self):
         self.embedding = OpenAIEmbeddings()  # type: ignore
 
-    def score(self: t.Self, dataset: Dataset) -> Dataset:
-        scores = []
-        for batch in tqdm(self.get_batches(len(dataset))):
-            score = self._score_batch(dataset.select(batch))
-            scores.extend(score)
-
-        return dataset.add_column(f"{self.name}", scores)  # type: ignore
-
-    def _score_batch(self: t.Self, dataset: Dataset):
+    def _score_batch(self: t.Self, dataset: Dataset) -> list:
         questions, answers = dataset["question"], dataset["answer"]
 
         prompts = []

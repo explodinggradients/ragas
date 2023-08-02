@@ -3,15 +3,11 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass
 
-from datasets import concatenate_datasets
+from datasets import Dataset
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-from tqdm import tqdm
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.metrics.llms import generate
-
-if t.TYPE_CHECKING:
-    from datasets import Dataset
 
 #################
 # NLI Score
@@ -71,15 +67,7 @@ class Faithfulness(MetricWithLLM):
     def init_model(self: t.Self):
         pass
 
-    def score(self: t.Self, dataset: Dataset) -> Dataset:
-        scores = []
-        for batch in tqdm(self.get_batches(len(dataset))):
-            score = self._score_batch(dataset.select(batch))
-            scores.append(score)
-
-        return concatenate_datasets(scores)
-
-    def _score_batch(self: t.Self, ds: Dataset) -> Dataset:
+    def _score_batch(self: t.Self, ds: Dataset) -> list:
         """
         returns the NLI score for each (q, c, a) pair
         """
@@ -130,7 +118,7 @@ class Faithfulness(MetricWithLLM):
 
             scores.append(1 - score)
 
-        return ds.add_column(f"{self.name}", scores)  # type: ignore
+        return scores
 
 
 faithfulness = Faithfulness()

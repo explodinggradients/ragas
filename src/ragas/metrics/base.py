@@ -12,10 +12,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from math import floor
 
-from datasets import Dataset
+from datasets import Dataset, concatenate_datasets
 from langchain.chat_models import ChatOpenAI
 from langchain.chat_models.base import BaseChatModel
 from langchain.llms.base import BaseLLM
+from tqdm import tqdm
 
 
 def make_batches(total_size: int, batch_size: int) -> list[range]:
@@ -57,9 +58,27 @@ class Metric(ABC):
         """
         ...
 
-    @abstractmethod
     def score(self: t.Self, dataset: Dataset) -> Dataset:
-        ...
+        scores = []
+        for batch in tqdm(self.get_batches(len(dataset))):
+            score = self._score_batch(dataset.select(batch))
+            scores.extend(score)
+
+        return dataset.add_column(f"{self.name}", scores)  # type: ignore
+
+    def _score_batch(self: t.Self, dataset: Dataset) -> list:
+        raise NotImplemented
+
+    def score_single(self: t.Self, ds_row: dict) -> float:
+        """
+        Score for a single row of dataset
+        """
+        # TODO: validation check if they are string
+
+        ds = Dataset.from_dict({k: [v] for k, v in ds_row.items()})
+        score = self._score_batch(ds)
+
+        return score[0]
 
     def get_batches(self, dataset_size: int) -> list[range]:
         return make_batches(dataset_size, self.batch_size)
