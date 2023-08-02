@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from datasets import Dataset
+from langchain.callbacks.manager import trace_as_chain_group
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from tqdm import tqdm
@@ -13,7 +14,7 @@ from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.metrics.llms import generate
 
 if t.TYPE_CHECKING:
-    pass
+    from langchain.callbacks.manager import CallbackManager
 
 
 QUESTION_GEN = HumanMessagePromptTemplate.from_template(
@@ -54,21 +55,30 @@ class AnswerRelevancy(MetricWithLLM):
     def init_model(self: t.Self):
         self.embedding = OpenAIEmbeddings()  # type: ignore
 
-    def _score_batch(self: t.Self, dataset: Dataset) -> list:
+    def _score_batch(
+        self: t.Self,
+        dataset: Dataset,
+        callbacks: t.Optional[CallbackManager] = None,
+        callback_group_name: str = "batch",
+    ) -> list[float]:
         questions, answers = dataset["question"], dataset["answer"]
+        with trace_as_chain_group(
+            callback_group_name, callback_manager=callbacks
+        ) as batch_group:
+            prompts = []
+            for ans in answers:
+                human_prompt = QUESTION_GEN.format(answer=ans)
+                prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
-        prompts = []
-        for ans in answers:
-            human_prompt = QUESTION_GEN.format(answer=ans)
-            prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
+            results = generate(
+                prompts, self.llm, n=self.strictness, callbacks=batch_group
+            )
+            results = [[i.text for i in r] for r in results.generations]
 
-        results = generate(prompts, self.llm, n=self.strictness)
-        results = [[i.text for i in r] for r in results.generations]
-
-        scores = []
-        for question, gen_questions in zip(questions, results):
-            cosine_sim = self.calculate_similarity(question, gen_questions)
-            scores.append(cosine_sim.max())
+            scores = []
+            for question, gen_questions in zip(questions, results):
+                cosine_sim = self.calculate_similarity(question, gen_questions)
+                scores.append(cosine_sim.max())
 
         return scores
 
