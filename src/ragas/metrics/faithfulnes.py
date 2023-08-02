@@ -37,26 +37,24 @@ statements:\n"""  # noqa: E501
 NLI_STATEMENTS_MESSAGE = HumanMessagePromptTemplate.from_template(
     """
 Prompt: Natural language inference
-Consider the following context:
-Context:
-John is a student at XYZ University. He is pursuing a degree in Computer Science. He is enrolled in several courses this semester, including Data Structures, Algorithms, and Database Management. John is a diligent student and spends a significant amount of time studying and completing assignments. He often stays late in the library to work on his projects.
-Now, read the following statements and determine whether they are supported by the information present in the context. Provide a brief explanation for each statement. Also provide a Final Answer (Yes/No) at the end. 
+Consider the given context and following statements, then determine whether they are supported by the information present in the context.Provide a brief explanation for each statement before arriving at the verdict (Yes/No). Provide a final verdict for each statement in order at the end in the given format. Do not deviate from the specified format.
+
+Context:\nJohn is a student at XYZ University. He is pursuing a degree in Computer Science. He is enrolled in several courses this semester, including Data Structures, Algorithms, and Database Management. John is a diligent student and spends a significant amount of time studying and completing assignments. He often stays late in the library to work on his projects.
 statements:\n1. John is majoring in Biology.\n2. John is taking a course on Artificial Intelligence.\n3. John is a dedicated student.\n4. John has a part-time job.\n5. John is interested in computer programming.\n
 Answer:
 1. John is majoring in Biology.
-Explanation: John's major is explicitly mentioned as Computer Science. There is no information suggesting he is majoring in Biology. So answer is No.
+Explanation: John's major is explicitly mentioned as Computer Science. There is no information suggesting he is majoring in Biology.  Verdict: No.
 2. John is taking a course on Artificial Intelligence.
-Explanation: The context mentions the courses John is currently enrolled in, and Artificial Intelligence is not mentioned. Therefore, it cannot be deduced that John is taking a course on AI.So answer is No.
+Explanation: The context mentions the courses John is currently enrolled in, and Artificial Intelligence is not mentioned. Therefore, it cannot be deduced that John is taking a course on AI. Verdict: No.
 3. John is a dedicated student.
-Explanation: The prompt states that he spends a significant amount of time studying and completing assignments. Additionally, it mentions that he often stays late in the library to work on his projects, which implies dedication.So answer is Yes.
+Explanation: The prompt states that he spends a significant amount of time studying and completing assignments. Additionally, it mentions that he often stays late in the library to work on his projects, which implies dedication. Verdict: Yes.
 4. John has a part-time job.
-Explanation: There is no information given in the context about John having a part-time job. Therefore, it cannot be deduced that John has a part-time job. So answer is No.
+Explanation: There is no information given in the context about John having a part-time job. Therefore, it cannot be deduced that John has a part-time job.  Verdict: No.
 5. John is interested in computer programming.
-Explanation: The context states that John is pursuing a degree in Computer Science, which implies an interest in computer programming.So answer is Yes.
-Final answer: No. No. Yes. No. Yes.
+Explanation: The context states that John is pursuing a degree in Computer Science, which implies an interest in computer programming. Verdict: Yes.
+Final verdict for each statement in order: No. No. Yes. No. Yes.
 context:\n{context}
 statements:\n{statements}
-Now, read the following statements and determine whether they are supported by the information present in the context. Provide a brief explanation for each statement. Also provide a Final Answer (Yes/No) at the end. 
 Answer:
 """  # noqa: E501
 )
@@ -113,10 +111,12 @@ class Faithfulness(MetricWithLLM):
         outputs = result.generations
 
         scores = []
+        final_answer = "Final verdict for each statement in order:"
+        final_answer = final_answer.lower()
         for i, output in enumerate(outputs):
             output = output[0].text.lower().strip()
-            if output.find("final answer:") != -1:
-                output = output[output.find("final answer:") + len("final answer:") :]
+            if output.find(final_answer) != -1:
+                output = output[output.find(final_answer) + len(final_answer) :]
                 score = sum(
                     0 if "yes" in answer else 1
                     for answer in output.strip().split(".")
@@ -124,9 +124,7 @@ class Faithfulness(MetricWithLLM):
                 )
                 score = score / len(list_statements[i])
             else:
-                score = max(0, output.count("so answer is no")) / len(
-                    list_statements[i]
-                )
+                score = max(0, output.count("verdict: no")) / len(list_statements[i])
 
             scores.append(1 - score)
 
