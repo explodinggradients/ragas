@@ -104,7 +104,7 @@ To disable usage-tracking you set the `RAGAS_DO_NOT_TRACK` flag to true.
 ## :raising_hand_man: FAQ
 1. Why harmonic mean?
 
-Harmonic means penalize extreme values. For example, if your generated answer is fully factually consistent with the context (faithfulness = 1) but is not relevant to the question (relevancy = 0), a simple average would give you a score of 0.5 but a harmonic mean will give you 0.0
+Harmonic-Mean penalizes extreme values. For example, if your generated answer is fully factually consistent with the context (faithfulness = 1) but is not relevant to the question (relevancy = 0), a simple average would give you a score of 0.5 but a harmonic mean will give you 0.0
 
 2. How to use Ragas to improve your pipeline?
 
