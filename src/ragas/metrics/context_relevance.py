@@ -7,6 +7,7 @@ from typing import List
 
 import numpy as np
 from datasets import Dataset
+from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from sentence_transformers import CrossEncoder
 from tqdm import tqdm
@@ -135,39 +136,57 @@ class ContextRelevancy(MetricWithLLM):
         """
         if self.llm is None:
             raise ValueError("llm must not be None")
-        prompts = []
-        questions, contexts = dataset["question"], dataset["contexts"]
-        for q, c in zip(questions, contexts):
-            human_prompt = CONTEXT_RELEVANCE.format(question=q, context="\n".join(c))
-            prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
-
-        responses: list[list[str]] = []
-        for batch_idx in tqdm(range(0, len(prompts), 20)):
-            results = generate(
-                prompts[batch_idx : batch_idx + 20], self.llm, n=self.strictness
-            )
-            batch_responses = [[i.text for i in r] for r in results.generations]
-            responses.extend(batch_responses)  # type: ignore
 
         scores = []
-        for context, n_response in zip(contexts, responses):
-            context = "\n".join(context)
-            overlap_scores = []
-            context_sents = sent_tokenize(context)
-            for output in n_response:
-                indices = [
-                    context.find(sent)
-                    for sent in sent_tokenize(output)
-                    if context.find(sent) != -1
-                ]
-                overlap_scores.append(len(indices) / len(context_sents))
-            if self.strictness > 1:
-                agr_score = self.sent_agreement.evaluate(n_response)
-            else:
-                agr_score = 1
-            scores.append(agr_score * np.mean(overlap_scores))
+        with trace_as_chain_group(f"ragas_{self.name}") as score_group:
+            for batch in tqdm(self.get_batches(len(dataset))):
+                score = self._score_batch(dataset.select(batch), callbacks=score_group)
+                scores.extend(score)
 
-        return dataset.add_column(f"{self.name}", scores)  # type: ignore
+        return dataset.add_column(self.name, scores)  # type: ignore
+
+    def _score_batch(
+        self: t.Self,
+        dataset: Dataset,
+        callbacks: t.Optional[CallbackManager] = None,
+        callback_group_name: str = "batch",
+    ) -> list[float]:
+        prompts = []
+        questions, contexts = dataset["question"], dataset["contexts"]
+        with trace_as_chain_group(
+            callback_group_name, callback_manager=callbacks
+        ) as batch_group:
+            for q, c in zip(questions, contexts):
+                human_prompt = CONTEXT_RELEVANCE.format(
+                    question=q, context="\n".join(c)
+                )
+                prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
+
+            responses: list[list[str]] = []
+            results = generate(
+                prompts, self.llm, n=self.strictness, callbacks=batch_group
+            )
+            responses = [[i.text for i in r] for r in results.generations]
+
+            scores = []
+            for context, n_response in zip(contexts, responses):
+                context = "\n".join(context)
+                overlap_scores = []
+                context_sents = sent_tokenize(context)
+                for output in n_response:
+                    indices = [
+                        context.find(sent)
+                        for sent in sent_tokenize(output)
+                        if context.find(sent) != -1
+                    ]
+                    overlap_scores.append(len(indices) / len(context_sents))
+                if self.strictness > 1:
+                    agr_score = self.sent_agreement.evaluate(n_response)
+                else:
+                    agr_score = 1
+                scores.append(agr_score * np.mean(overlap_scores))
+
+        return scores
 
 
 context_relevancy = ContextRelevancy()
