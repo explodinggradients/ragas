@@ -71,7 +71,7 @@ class Faithfulness(MetricWithLLM):
     def _score_batch(
         self: t.Self,
         ds: Dataset,
-        callbacks: CallbackManager,
+        callbacks: t.Optional[CallbackManager] = None,
         callback_group_name: str = "batch",
     ) -> list[float]:
         """
