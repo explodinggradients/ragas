@@ -27,8 +27,11 @@ sentences:His mass–energy equivalence formula E = mc2, which arises from relat
 
 question: Were Scott Derrickson and Ed Wood of the same nationality?
 context :\nScott Derrickson (born July 16, 1966) is an American director, screenwriter and producer He lives in Los Angeles, California He is best known for directing horror films such as "Sinister", "The Exorcism of Emily Rose", and "Deliver Us From Evil", as well as the 2016 Marvel Cinematic Universe installment, "Doctor Strange"Tyler Bates is an American musician, music producer, and composer for films, television, and video games. Adam Collis is an American filmmaker and actor.Conrad Brooks is an American actor.Edward Davis Wood Jr. (October 10, 1924 – December 10, 1978) was an American filmmaker, actor, writer, producer, and director.
-Now given a question and context, extract the minimum number of sentences from the given context required to answer the question completely. 
 sentences:Scott Derrickson (born July 16, 1966) is an American director, screenwriter and producer. Edward Davis Wood Jr. (October 10, 1924 – December 10, 1978) was an American filmmaker, actor, writer, producer, and director.
+
+question: How many were killed in the Tiananmen Square incident?
+context:\nTiananmen Square incident, also called June Fourth incident or 6/4, series of protests and demonstrations in China in the spring of 1989 that culminated on the night of June 3–4 with a government crackdown on the demonstrators in Tiananmen Square in Beijing.
+sentences: No candidate sentences found.
 
 question:{question}
 context:\n{context}
@@ -117,6 +120,7 @@ class ContextRelevancy(MetricWithLLM):
             raise ValueError(
                 "model_name must be provided when agreement_metric is bert_score"
             )
+        self.temperature = 0.2 if self.strictness > 0 else 0
 
     def init_model(self: t.Self):
         self.sent_agreement = SentenceAgreement(
@@ -164,7 +168,11 @@ class ContextRelevancy(MetricWithLLM):
 
             responses: list[list[str]] = []
             results = generate(
-                prompts, self.llm, n=self.strictness, callbacks=batch_group
+                prompts,
+                self.llm,
+                n=self.strictness,
+                temperature=self.temperature,
+                callbacks=batch_group,
             )
             responses = [[i.text for i in r] for r in results.generations]
 
@@ -174,11 +182,7 @@ class ContextRelevancy(MetricWithLLM):
                 overlap_scores = []
                 context_sents = sent_tokenize(context)
                 for output in n_response:
-                    indices = [
-                        context.find(sent)
-                        for sent in sent_tokenize(output)
-                        if context.find(sent) != -1
-                    ]
+                    indices = sent_tokenize(output)
                     overlap_scores.append(len(indices) / len(context_sents))
                 if self.strictness > 1:
                     agr_score = self.sent_agreement.evaluate(n_response)

@@ -21,10 +21,12 @@ def generate(
     prompts: list[ChatPromptTemplate],
     llm: BaseLLM | BaseChatModel,
     n: t.Optional[int] = None,
+    temperature: float = 0,
     callbacks: t.Optional[Callbacks] = None,
 ) -> LLMResult:
     old_n = None
     n_swapped = False
+    llm.temperature = temperature
     if n is not None:
         if isinstance(llm, OpenAI) or isinstance(llm, ChatOpenAI):
             old_n = llm.n

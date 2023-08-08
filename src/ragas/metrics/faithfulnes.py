@@ -135,7 +135,9 @@ class Faithfulness(MetricWithLLM):
                     )
                     score = score / len(list_statements[i])
                 else:
-                    score = max(0, output.count("verdict: no")) / len(list_statements[i])
+                    score = max(0, output.count("verdict: no")) / len(
+                        list_statements[i]
+                    )
 
                 scores.append(1 - score)
 
