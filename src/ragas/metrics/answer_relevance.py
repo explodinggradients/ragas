@@ -51,6 +51,9 @@ class AnswerRelevancy(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qa
     batch_size: int = 15
     strictness: int = 3
+    
+    def __post_init__(self: t.Self):
+        self.temperature = 0.2 if self.strictness > 0 else 0
 
     def init_model(self: t.Self):
         self.embedding = OpenAIEmbeddings()  # type: ignore
@@ -80,14 +83,14 @@ class AnswerRelevancy(MetricWithLLM):
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
             results = generate(
-                prompts, self.llm, n=self.strictness, callbacks=batch_group
+                prompts, self.llm, n=self.strictness, temperature=self.temperature, callbacks=batch_group
             )
             results = [[i.text for i in r] for r in results.generations]
 
             scores = []
             for question, gen_questions in zip(questions, results):
                 cosine_sim = self.calculate_similarity(question, gen_questions)
-                scores.append(cosine_sim.max())
+                scores.append(cosine_sim.mean())
 
         return scores
 
