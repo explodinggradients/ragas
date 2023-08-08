@@ -21,7 +21,7 @@ def generate(
     prompts: list[ChatPromptTemplate],
     llm: BaseLLM | BaseChatModel,
     n: t.Optional[int] = None,
-    temperature: t.Optional[int] = 0,
+    temperature: float = 0,
     callbacks: t.Optional[Callbacks] = None,
 ) -> LLMResult:
     old_n = None

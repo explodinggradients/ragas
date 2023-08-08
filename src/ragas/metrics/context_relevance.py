@@ -122,7 +122,6 @@ class ContextRelevancy(MetricWithLLM):
             )
         self.temperature = 0.2 if self.strictness > 0 else 0
 
-
     def init_model(self: t.Self):
         self.sent_agreement = SentenceAgreement(
             model_name=self.model_name, metric=self.agreement_metric
@@ -169,7 +168,11 @@ class ContextRelevancy(MetricWithLLM):
 
             responses: list[list[str]] = []
             results = generate(
-                prompts, self.llm, n=self.strictness,temperature=self.temperature, callbacks=batch_group
+                prompts,
+                self.llm,
+                n=self.strictness,
+                temperature=self.temperature,
+                callbacks=batch_group,
             )
             responses = [[i.text for i in r] for r in results.generations]
 

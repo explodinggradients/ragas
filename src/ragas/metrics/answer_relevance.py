@@ -51,7 +51,7 @@ class AnswerRelevancy(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qa
     batch_size: int = 15
     strictness: int = 3
-    
+
     def __post_init__(self: t.Self):
         self.temperature = 0.2 if self.strictness > 0 else 0
 
@@ -83,7 +83,11 @@ class AnswerRelevancy(MetricWithLLM):
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
             results = generate(
-                prompts, self.llm, n=self.strictness, temperature=self.temperature, callbacks=batch_group
+                prompts,
+                self.llm,
+                n=self.strictness,
+                temperature=self.temperature,
+                callbacks=batch_group,
             )
             results = [[i.text for i in r] for r in results.generations]
 
