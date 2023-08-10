@@ -14,6 +14,12 @@ from ragas.validation import validate_column_dtypes, validate_evaluation_modes
 def evaluate(
     dataset: Dataset,
     metrics: list[Metric] | None = None,
+    column_map: dict[str, str] = {
+        "question": "question",
+        "contexts": "contexts",
+        "answer": "answer",
+        "ground_truths": "ground_truths",
+    },
 ) -> Result:
     """
     Run the evaluation on the dataset with different metrics
@@ -65,6 +71,9 @@ def evaluate(
         from ragas.metrics import answer_relevancy, context_relevancy, faithfulness
 
         metrics = [answer_relevancy, context_relevancy, faithfulness]
+
+    # select columns from the dataset
+    dataset = dataset.from_dict({k: dataset[v] for k, v in column_map.items()})
 
     # validation
     validate_evaluation_modes(dataset, metrics)

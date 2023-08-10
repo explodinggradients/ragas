@@ -21,7 +21,7 @@ def validate_column_dtypes(ds: Dataset):
             ):
                 raise ValueError(
                     f'Dataset feature "{column_names}" should be of type'
-                    " Sequence[string]"
+                    f" Sequence[string], got {type(ds.features[column_names])}"
                 )
 
 
