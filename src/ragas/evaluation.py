@@ -54,7 +54,7 @@ def evaluate(
 
     >>> result = evaluate(dataset)
     >>> print(result["ragas_score"])
-    {'ragas_score': 0.860, 'context_ relevancy': 0.817, 'faithfulness': 0.892,
+    {'ragas_score': 0.860, 'context_relevancy': 0.817, 'faithfulness': 0.892,
     'answer_relevancy': 0.874}
     ```
     """
