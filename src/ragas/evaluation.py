@@ -54,7 +54,7 @@ def evaluate(
 
     >>> result = evaluate(dataset)
     >>> print(result["ragas_score"])
-    {'ragas_score': 0.860, 'context_relavency': 0.817, 'faithfulness': 0.892,
+    {'ragas_score': 0.860, 'context_relevancy': 0.817, 'faithfulness': 0.892,
     'answer_relevancy': 0.874}
     ```
     """
@@ -117,7 +117,8 @@ class Result(dict):
 
         # harmonic mean of all the scores we have
         if len(values) > 1:
-            self["ragas_score"] = len(values) / np.sum(1.0 / np.array(values))
+            reciprocal_sum = np.sum(1.0 / np.array(values))  # type: ignore
+            self["ragas_score"] = len(values) / reciprocal_sum
 
     def to_pandas(self, batch_size: int | None = None, batched: bool = False):
         if self.dataset is None:
