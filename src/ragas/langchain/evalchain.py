@@ -25,7 +25,10 @@ class RagasEvaluatorChain(Chain, RunEvaluator):
 
     @property
     def input_keys(self) -> list[str]:
-        return ["query", "result", "source_documents"]
+        keys = ["query", "result"]
+        if self.metric.evaluation_mode in [EvaluationMode.qac, EvaluationMode.qc]:
+            keys += ["source_documents"]
+        return keys
 
     @property
     def output_keys(self) -> list[str]:
@@ -37,13 +40,12 @@ class RagasEvaluatorChain(Chain, RunEvaluator):
         run_manager: t.Optional[CallbackManagerForChainRun] = None,
     ) -> dict[str, t.Any]:
         """Call the evaluation chain."""
-        # TODO: check if reuslt is present
-        answer = inputs["result"]
-        # TODO: check if query is present
-        question = inputs["query"]
+        self._validate(inputs)
         contexts = []
+
         _run_manager = run_manager or CallbackManagerForChainRun.get_noop_manager()
         callbacks = _run_manager.get_child()
+
         if "source_documents" in inputs:
             for document in inputs["source_documents"]:
                 if isinstance(document, dict):
@@ -51,6 +53,8 @@ class RagasEvaluatorChain(Chain, RunEvaluator):
                 else:
                     contexts.append(document.page_content)
 
+        question = inputs["query"]
+        answer = inputs["result"]
         score = self.metric.score_single(
             {
                 "question": question,
