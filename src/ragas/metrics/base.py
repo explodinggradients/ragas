@@ -64,10 +64,14 @@ class Metric(ABC):
         ...
 
     def score(
-        self: t.Self, dataset: Dataset, callbacks: t.Optional[Callbacks] = None
+        self: t.Self,
+        dataset: Dataset,
+        callback_manager: t.Optional[CallbackManager] = None,
     ) -> Dataset:
         scores = []
-        with trace_as_chain_group(f"ragas_{self.name}") as group:
+        with trace_as_chain_group(
+            f"ragas_{self.name}", callback_manager=callback_manager
+        ) as group:
             for batch in tqdm(self.get_batches(len(dataset))):
                 score = self._score_batch(dataset.select(batch), callbacks=group)
                 scores.extend(score)
