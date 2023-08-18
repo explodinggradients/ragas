@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from datasets import Dataset
+from rich.repr import Result
 
 from ragas import evaluate as ragas_evaluate
 from ragas.metrics.base import Metric
@@ -15,7 +16,7 @@ def evaluate(
     query_engine: BaseQueryEngine,
     metrics: list[Metric],
     questions: list[str],
-):
+) -> Result:
     """
     Run evaluation of llama_index QueryEngine with different metrics
 
