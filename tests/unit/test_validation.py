@@ -35,7 +35,7 @@ def test_validate_column_dtypes(testcase):
     if testcase.c is not None:
         dataset_dict["contexts"] = [testcase.c]
     if testcase.g is not None:
-        dataset_dict["ground_truths"] = [testcase.g]
+        dataset_dict["reference_answer"] = [testcase.g]
 
     test_dataset = Dataset.from_dict(dataset_dict)
     if testcase.is_valid_columns:
@@ -55,7 +55,7 @@ def test_validate_columns_and_metrics(testcase):
     if testcase.c is not None:
         dataset_dict["contexts"] = [testcase.c]
     if testcase.g is not None:
-        dataset_dict["ground_truths"] = [testcase.g]
+        dataset_dict["reference_answer"] = [testcase.g]
     test_dataset = Dataset.from_dict(dataset_dict)
 
     if testcase.is_valid_metrics:

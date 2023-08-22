@@ -2,7 +2,7 @@
 Q - question
 A - answer: generated_text from RAG pipeline
 C - contexts: context used for generation
-G - ground_truths: ground truth answer
+G - reference_answer: ground truth answer
 """
 from __future__ import annotations
 

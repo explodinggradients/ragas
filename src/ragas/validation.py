@@ -13,7 +13,7 @@ def validate_column_dtypes(ds: Dataset):
                     f'Dataset feature "{column_names}" should be of type string'
                 )
 
-    for column_names in ["contexts", "ground_truths"]:
+    for column_names in ["contexts", "reference_answer"]:
         if column_names in ds.features:
             if not (
                 isinstance(ds.features[column_names], Sequence)
@@ -29,7 +29,7 @@ EVALMODE_TO_COLUMNS = {
     EvaluationMode.qac: ["question", "answer", "contexts"],
     EvaluationMode.qa: ["question", "answer"],
     EvaluationMode.qc: ["question", "contexts"],
-    EvaluationMode.ga: ["ground_truths", "answer"],
+    EvaluationMode.ga: ["reference_answer", "answer"],
 }
 
 

@@ -48,7 +48,7 @@ def evaluate(
 
     >>> dataset
     Dataset({
-        features: ['question', 'ground_truths', 'answer', 'contexts'],
+        features: ['question', 'reference_answer', 'answer', 'contexts'],
         num_rows: 30
     })
 
