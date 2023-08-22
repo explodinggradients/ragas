@@ -125,7 +125,7 @@ class RagasEvaluatorChain(Chain, RunEvaluator):
         )
 
         # evaluate
-        dataset_with_scores = self.metric.score(dataset, callback_manager=callbacks)
+        dataset_with_scores = self.metric.score(dataset, callbacks=callbacks)
         scores = [
             {f"{self.metric.name}_score": score}
             for score in dataset_with_scores[self.metric.name]

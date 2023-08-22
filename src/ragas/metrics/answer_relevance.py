@@ -8,7 +8,6 @@ from datasets import Dataset
 from langchain.callbacks.manager import trace_as_chain_group
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-from tqdm import tqdm
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.metrics.llms import generate

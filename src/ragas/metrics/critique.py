@@ -9,7 +9,6 @@ from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.chat_models.base import BaseChatModel
 from langchain.llms.base import BaseLLM
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-from tqdm import tqdm
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM, _llm_factory
 from ragas.metrics.llms import generate

@@ -14,7 +14,6 @@ from math import floor
 
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
-from langchain.callbacks.tracers.langchain import LangChainTracer
 from langchain.chat_models import ChatOpenAI
 from langchain.chat_models.base import BaseChatModel
 from langchain.llms.base import BaseLLM
@@ -66,12 +65,11 @@ class Metric(ABC):
     def score(
         self: t.Self,
         dataset: Dataset,
-        callback_manager: t.Optional[CallbackManager] = None,
+        callbacks: t.Optional[Callbacks] = None,
     ) -> Dataset:
         scores = []
-        with trace_as_chain_group(
-            f"ragas_{self.name}", callback_manager=callback_manager
-        ) as group:
+        cm = CallbackManager.configure(inheritable_callbacks=callbacks)
+        with trace_as_chain_group(f"ragas_{self.name}", callback_manager=cm) as group:
             for batch in tqdm(self.get_batches(len(dataset))):
                 score = self._score_batch(dataset.select(batch), callbacks=group)
                 scores.extend(score)
