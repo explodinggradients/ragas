@@ -17,6 +17,10 @@ if t.TYPE_CHECKING:
 
 
 class RagasEvaluatorChain(Chain, RunEvaluator):
+    """
+    Wrapper around ragas Metrics to use them with langsmith.
+    """
+
     metric: Metric
 
     def __init__(self, **kwargs: t.Any):
@@ -39,7 +43,9 @@ class RagasEvaluatorChain(Chain, RunEvaluator):
         inputs: dict[str, t.Any],
         run_manager: t.Optional[CallbackManagerForChainRun] = None,
     ) -> dict[str, t.Any]:
-        """Call the evaluation chain."""
+        """
+        Call the evaluation chain.
+        """
         self._validate(inputs)
         contexts = []
 
@@ -135,6 +141,9 @@ class RagasEvaluatorChain(Chain, RunEvaluator):
     def evaluate_run(
         self, run: Run, example: t.Optional[Example] = None
     ) -> EvaluationResult:
+        """
+        Evaluate a langsmith run
+        """
         if run.outputs is None:
             raise ValueError("Run outputs cannot be None")
         run.outputs["query"] = run.inputs["query"]
