@@ -13,9 +13,14 @@ from enum import Enum
 from math import floor
 
 from datasets import Dataset
+from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.chat_models import ChatOpenAI
 from langchain.chat_models.base import BaseChatModel
 from langchain.llms.base import BaseLLM
+from tqdm import tqdm
+
+if t.TYPE_CHECKING:
+    from langchain.callbacks.base import Callbacks
 
 
 def make_batches(total_size: int, batch_size: int) -> list[range]:
@@ -57,9 +62,45 @@ class Metric(ABC):
         """
         ...
 
+    def score(
+        self: t.Self,
+        dataset: Dataset,
+        callbacks: t.Optional[Callbacks] = None,
+    ) -> Dataset:
+        scores = []
+        cm = CallbackManager.configure(inheritable_callbacks=callbacks)
+        with trace_as_chain_group(f"ragas_{self.name}", callback_manager=cm) as group:
+            for batch in tqdm(self.get_batches(len(dataset))):
+                score = self._score_batch(dataset.select(batch), callbacks=group)
+                scores.extend(score)
+
+        return dataset.add_column(f"{self.name}", scores)  # type: ignore
+
     @abstractmethod
-    def score(self: t.Self, dataset: Dataset) -> Dataset:
+    def _score_batch(
+        selfself: t.Self,
+        dataset: Dataset,
+        callbacks: t.Optional[Callbacks] = None,
+        callback_group_name: str = "batch",
+    ) -> list:
         ...
+
+    def score_single(
+        self: t.Self,
+        ds_row: dict,
+        callbacks: t.Optional[Callbacks] = None,
+    ) -> float:
+        """
+        Score for a single row of dataset
+        """
+        # TODO: validation check if they are string
+
+        ds = Dataset.from_dict({k: [v] for k, v in ds_row.items()})
+        score = self._score_batch(
+            ds, callback_group_name=self.name, callbacks=callbacks
+        )
+
+        return score[0]
 
     def get_batches(self, dataset_size: int) -> list[range]:
         return make_batches(dataset_size, self.batch_size)

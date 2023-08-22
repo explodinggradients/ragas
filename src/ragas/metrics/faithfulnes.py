@@ -5,7 +5,6 @@ from dataclasses import dataclass
 
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-from tqdm import tqdm
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.metrics.llms import generate
@@ -69,21 +68,10 @@ class Faithfulness(MetricWithLLM):
     def init_model(self: t.Self):
         pass
 
-    def score(self: t.Self, dataset: Dataset) -> Dataset:
-        assert self.llm is not None, "LLM not initialized"
-
-        scores = []
-        with trace_as_chain_group(f"ragas_{self.name}") as score_group:
-            for batch in tqdm(self.get_batches(len(dataset))):
-                score = self._score_batch(dataset.select(batch), callbacks=score_group)
-                scores.extend(score)
-
-        return dataset.add_column(self.name, scores)  # type: ignore
-
     def _score_batch(
         self: t.Self,
         ds: Dataset,
-        callbacks: CallbackManager,
+        callbacks: t.Optional[CallbackManager] = None,
         callback_group_name: str = "batch",
     ) -> list[float]:
         """
