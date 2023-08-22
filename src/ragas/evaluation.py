@@ -32,6 +32,10 @@ def evaluate(
     metrics : list[Metric] , optional
         List of metrics to use for evaluation. If not provided then ragas will run the
         evaluation on the best set of metrics to give a complete view.
+    column_map : dict[str, str], optional
+        The column names of the dataset to use for evaluation. If the column names of
+        the dataset are different from the default ones then you can provide the
+        mapping as a dictionary here.
 
     Returns
     -------
