@@ -15,9 +15,9 @@ def evaluate(
     dataset: Dataset,
     metrics: list[Metric] | None = None,
     column_map: dict[str, str] = {
-        # "question": "question",
+        "question": "question",
         "contexts": "contexts",
-        # "answer": "answer",
+        "answer": "answer",
         "ground_truths": "ground_truths",
     },
 ) -> Result:
@@ -77,7 +77,7 @@ def evaluate(
         metrics = [answer_relevancy, context_relevancy, faithfulness]
 
     # select columns from the dataset
-    # dataset = dataset.from_dict({k: dataset[v] for k, v in column_map.items()})
+    dataset = dataset.from_dict({k: dataset[v] for k, v in column_map.items()})
 
     # validation
     validate_evaluation_modes(dataset, metrics)
