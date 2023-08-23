@@ -191,13 +191,5 @@ class ContextRelevancy(MetricWithLLM):
                 scores.append(agr_score * np.mean(overlap_scores))
 
         return scores
-
-
-
-class ContextRecall(MetricWithLLM):
-    name: str = "context_recall"
-    batch_size: int = 15
-
-    
     
 context_relevancy = ContextRelevancy()

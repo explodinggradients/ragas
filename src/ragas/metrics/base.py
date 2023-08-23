@@ -2,7 +2,8 @@
 Q - question
 A - answer: generated_text from RAG pipeline
 C - contexts: context used for generation
-G - reference_answer: ground truth answer
+R_A - reference_answer: reference ground truth answer
+R_C - reference context: reference ground truth context
 """
 from __future__ import annotations
 
@@ -33,7 +34,7 @@ def make_batches(total_size: int, batch_size: int) -> list[range]:
     return batches
 
 
-EvaluationMode = Enum("EvaluationMode", "qac qa qc ga")
+EvaluationMode = Enum("EvaluationMode", "qac qa qc qr_ac r_cc")
 
 
 @dataclass

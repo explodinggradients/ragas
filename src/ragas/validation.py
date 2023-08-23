@@ -23,13 +23,15 @@ def validate_column_dtypes(ds: Dataset):
                     f'Dataset feature "{column_names}" should be of type'
                     " Sequence[string]"
                 )
-
+        # TODO: Add checks here
 
 EVALMODE_TO_COLUMNS = {
     EvaluationMode.qac: ["question", "answer", "contexts"],
     EvaluationMode.qa: ["question", "answer"],
     EvaluationMode.qc: ["question", "contexts"],
-    EvaluationMode.ga: ["reference_answer", "answer"],
+    EvaluationMode.qr_ac: ["question", "reference_answer", "context"],
+    EvaluationMode.r_cc: ["reference_context", "contexts"],
+
 }
 
 
