@@ -48,10 +48,6 @@ class ContextRecall(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.gc
     batch_size: int = 15
 
-    def __post_init__(self: t.Self):
-        self.prompt_format = CONTEXT_RECALL_RA
-        self.verdict_token = "[Attributed]"
-
     def init_model(self: t.Self):
         ...
 
@@ -61,15 +57,17 @@ class ContextRecall(MetricWithLLM):
         callbacks: t.Optional[CallbackManager] = None,
         callback_group_name: str = "batch",
     ) -> list:
+        verdict_token = "[Attributed]"
         prompts = []
         ground_truths, contexts = dataset["ground_truths"], dataset["contexts"]
+
         with trace_as_chain_group(
             callback_group_name, callback_manager=callbacks
         ) as batch_group:
             for gt, ctx in zip(ground_truths, contexts):
                 gt = "\n".join(gt) if isinstance(gt, list) else gt
                 ctx = "\n".join(ctx) if isinstance(ctx, list) else ctx
-                human_prompt = self.prompt_format.format(context=ctx, ground_truth=gt)
+                human_prompt = CONTEXT_RECALL_RA.format(context=ctx, ground_truth=gt)
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
             responses: list[list[str]] = []
@@ -85,8 +83,7 @@ class ContextRecall(MetricWithLLM):
                 sentences = response[0].split("\n")
                 denom = len(sentences)
                 numerator = sum(
-                    bool(sentence.find(self.verdict_token) != -1)
-                    for sentence in sentences
+                    bool(sentence.find(verdict_token) != -1) for sentence in sentences
                 )
                 scores.append(numerator / denom)
 
