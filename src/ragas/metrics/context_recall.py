@@ -32,6 +32,18 @@ classification:
 
 @dataclass
 class ContextRecall(MetricWithLLM):
+
+    """
+    Estimates context recall by estimating TP and FN using annotated answer and
+    retrieved context.
+
+    Attributes
+    ----------
+    name : str
+    batch_size : int
+        Batch size for openai completion.
+    """
+
     name: str = "context_recall"
     evaluation_mode: EvaluationMode = EvaluationMode.gc
     batch_size: int = 15
