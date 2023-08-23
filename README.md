@@ -91,7 +91,7 @@ Ragas measures your pipeline's performance against different dimensions
 
 2. **Context Relevancy**: measures how relevant retrieved contexts are to the question. Ideally, the context should only contain information necessary to answer the question. The presence of redundant information in the context is penalized.
 
-3. **Context Recall**: measures the recall of the retrieved context using either annotated answer as ground truth or annotated context as ground truth. 
+3. **Context Recall**: measures the recall of the retrieved context using annotated answer as ground truth. Annotated answer is taken as proxy for ground truth context.
 
 4. **Answer Relevancy**: refers to the degree to which a response directly addresses and is appropriate for a given question or context. This does not take the factuality of the answer into consideration but rather penalizes the present of redundant information or incomplete answers given a question.
 

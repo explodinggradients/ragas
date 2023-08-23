@@ -31,11 +31,11 @@ results = context_rel.score(dataset)
 ```
 
 ### Context Recall 
-This measures the recall of the retrieved context using either annotated answer as ground truth or annotated context as ground truth. 
+measures the recall of the retrieved context using annotated answer as ground truth. Annotated answer is taken as proxy for ground truth context.
 
 ```python
 from ragas.metrics.context_recall import ContextRecall
-context_recall = ContextRecall(reference="reference_answer")
+context_recall = ContextRecall()
 # Dataset({
 #     features: ['contexts','ground_truths'],
 #     num_rows: 25
