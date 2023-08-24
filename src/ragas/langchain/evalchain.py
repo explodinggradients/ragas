@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from collections import defaultdict
 
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManagerForChainRun
@@ -32,6 +33,8 @@ class RagasEvaluatorChain(Chain, RunEvaluator):
         keys = ["query", "result"]
         if self.metric.evaluation_mode in [EvaluationMode.qac, EvaluationMode.qc]:
             keys += ["source_documents"]
+        if self.metric.evaluation_mode in [EvaluationMode.gc]:
+            keys += ["ground_truths"]
         return keys
 
     @property
@@ -58,6 +61,9 @@ class RagasEvaluatorChain(Chain, RunEvaluator):
                     contexts.append(document["page_content"])
                 else:
                     contexts.append(document.page_content)
+        ground_truths = []
+        if "ground_truths" in inputs:
+            ground_truths = inputs["ground_truths"]
 
         question = inputs["query"]
         answer = inputs["result"]
@@ -66,6 +72,7 @@ class RagasEvaluatorChain(Chain, RunEvaluator):
                 "question": question,
                 "answer": answer,
                 "contexts": contexts,
+                "ground_truths": ground_truths,
             },
             callbacks=callbacks,
         )
@@ -96,6 +103,11 @@ class RagasEvaluatorChain(Chain, RunEvaluator):
                 f'"{context_key}" is required in each prediction for the '
                 f"metric[{self.metric.name}] you have chosen."
             )
+        if "ground_truths" in required_columns and "ground_truths" not in input:
+            raise ValueError(
+                f'"ground_truths" is required in each prediction for the '
+                f"metric[{self.metric.name}] you have chosen."
+            )
 
     def evaluate(
         self,
@@ -104,11 +116,12 @@ class RagasEvaluatorChain(Chain, RunEvaluator):
         question_key: str = "query",
         prediction_key: str = "result",
         context_key: str = "source_documents",
+        ground_truths_key: str = "ground_truths",
         *,
         callbacks: Callbacks = None,
     ) -> list[dict]:
         """Evaluate question answering examples and predictions."""
-        question, answer, contexts = [], [], []
+        dataset_dict = defaultdict(list)
 
         # validation
         if len(examples) != len(predictions):
@@ -122,13 +135,32 @@ class RagasEvaluatorChain(Chain, RunEvaluator):
                 {**example, **predictions[i]}, question_key, prediction_key, context_key
             )
             # transform into Dataset that is supported by ragas
-            question.append(example[question_key])
-            answer.append(predictions[i][prediction_key])
-            if self.metric.evaluation_mode in [EvaluationMode.qac, EvaluationMode.qc]:
-                contexts.append([d.page_content for d in predictions[i][context_key]])
-        dataset = Dataset.from_dict(
-            {"question": question, "answer": answer, "contexts": contexts}
-        )
+            if self.metric.evaluation_mode in [
+                EvaluationMode.qac,
+                EvaluationMode.qc,
+                EvaluationMode.qa,
+            ]:
+                dataset_dict["question"].append(example[question_key])
+
+            if self.metric.evaluation_mode in [EvaluationMode.qac, EvaluationMode.qa]:
+                dataset_dict["answer"].append(predictions[i][prediction_key])
+
+            if self.metric.evaluation_mode in [
+                EvaluationMode.qac,
+                EvaluationMode.qc,
+                EvaluationMode.gc,
+            ]:
+                dataset_dict["contexts"].append(
+                    [d.page_content for d in predictions[i][context_key]]
+                )
+
+            if self.metric.evaluation_mode == EvaluationMode.gc:
+                if isinstance(example["ground_truths"], list):
+                    dataset_dict["ground_truths"].append(example["ground_truths"])
+                else:
+                    dataset_dict["ground_truths"].append([example["ground_truths"]])
+
+        dataset = Dataset.from_dict(dataset_dict)
 
         # evaluate
         dataset_with_scores = self.metric.score(dataset, callbacks=callbacks)
@@ -145,9 +177,16 @@ class RagasEvaluatorChain(Chain, RunEvaluator):
         Evaluate a langsmith run
         """
         if run.outputs is None:
-            raise ValueError("Run outputs cannot be None")
-        run.outputs["query"] = run.inputs["query"]
-        eval_output = self(run.outputs, include_run_info=True)
+            raise ValueError("The chain should return results and service_document.")
+        if example is None:
+            raise ValueError("Examples have to be provided.")
+        chain_eval = run.outputs
+        chain_eval["query"] = run.inputs["query"]
+        if self.metric.evaluation_mode == EvaluationMode.gc:
+            if example.outputs is None or "ground_truths" not in example.outputs:
+                raise ValueError("expected `ground_truths` in example outputs.")
+            chain_eval["ground_truths"] = example.outputs["ground_truths"]
+        eval_output = self(chain_eval, include_run_info=True)
 
         score_name = f"{self.metric.name}_score"
         evaluation_result = EvaluationResult(

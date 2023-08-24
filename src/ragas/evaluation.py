@@ -76,12 +76,14 @@ def evaluate(
 
         metrics = [answer_relevancy, context_relevancy, faithfulness]
 
-    # select columns from the dataset
-    dataset = dataset.from_dict({k: dataset[v] for k, v in column_map.items()})
-
     # validation
     validate_evaluation_modes(dataset, metrics)
     validate_column_dtypes(dataset)
+
+    # select columns from the dataset
+    dataset = dataset.from_dict(
+        {column_map[name]: dataset[column_map[name]] for name in dataset.column_names}
+    )
 
     # run the evaluation on dataset with different metrics
     # initialize all the models in the metrics
