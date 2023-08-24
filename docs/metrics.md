@@ -30,7 +30,7 @@ dataset: Dataset
 results = context_rel.score(dataset)
 ```
 
-### Context Recall 
+### `Context Recall`
 measures the recall of the retrieved context using annotated answer as ground truth. Annotated answer is taken as proxy for ground truth context.
 
 ```python
