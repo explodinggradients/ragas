@@ -8,7 +8,11 @@ from datasets import Dataset, concatenate_datasets
 from ragas._analytics import EvaluationEvent, track
 from ragas.metrics.base import Metric
 from ragas.metrics.critique import AspectCritique
-from ragas.validation import validate_column_dtypes, validate_evaluation_modes
+from ragas.validation import (
+    remap_column_names,
+    validate_column_dtypes,
+    validate_evaluation_modes,
+)
 
 
 def evaluate(
@@ -81,11 +85,8 @@ def evaluate(
 
         metrics = [answer_relevancy, context_relevancy, faithfulness, context_recall]
 
-    # select columns from the dataset
-    inverse_column_map = {v: k for k, v in column_map.items()}
-    dataset = dataset.from_dict(
-        {inverse_column_map[name]: dataset[name] for name in dataset.column_names}
-    )
+    # remap column names from the dataset
+    dataset = remap_column_names(dataset, column_map)
 
     # validation
     validate_evaluation_modes(dataset, metrics)
