@@ -72,18 +72,24 @@ def evaluate(
         raise ValueError("Provide dataset!")
 
     if metrics is None:
-        from ragas.metrics import answer_relevancy, context_relevancy, faithfulness
+        from ragas.metrics import (
+            answer_relevancy,
+            context_recall,
+            context_relevancy,
+            faithfulness,
+        )
 
-        metrics = [answer_relevancy, context_relevancy, faithfulness]
+        metrics = [answer_relevancy, context_relevancy, faithfulness, context_recall]
+
+    # select columns from the dataset
+    inverse_column_map = {v: k for k, v in column_map.items()}
+    dataset = dataset.from_dict(
+        {inverse_column_map[name]: dataset[name] for name in dataset.column_names}
+    )
 
     # validation
     validate_evaluation_modes(dataset, metrics)
     validate_column_dtypes(dataset)
-
-    # select columns from the dataset
-    dataset = dataset.from_dict(
-        {column_map[name]: dataset[column_map[name]] for name in dataset.column_names}
-    )
 
     # run the evaluation on dataset with different metrics
     # initialize all the models in the metrics
