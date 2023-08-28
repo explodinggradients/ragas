@@ -5,6 +5,16 @@ from datasets import Dataset, Sequence
 from ragas.metrics.base import EvaluationMode, Metric
 
 
+def remap_column_names(dataset: Dataset, column_map: dict[str, str]) -> Dataset:
+    """
+    Remap the column names in case dataset uses different column names
+    """
+    inverse_column_map = {v: k for k, v in column_map.items()}
+    return dataset.from_dict(
+        {inverse_column_map[name]: dataset[name] for name in dataset.column_names}
+    )
+
+
 def validate_column_dtypes(ds: Dataset):
     for column_names in ["question", "answer"]:
         if column_names in ds.features:
