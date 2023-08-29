@@ -22,7 +22,7 @@ question: Who was  Albert Einstein and what is he best known for?
 answer: He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.
 statements:\nAlbert Einstein was born in Germany.\nAlbert Einstein was best known for his theory of relativity.
 question: Cadmium Chloride is slightly soluble in this chemical, it is also called what?
-answer: alochol
+answer: alcohol
 statements:\nCadmium Chloride is slightly soluble in alcohol.
 question: Were Shahul and Jithin of the same nationality?
 answer: They were from different countries.
