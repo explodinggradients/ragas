@@ -35,6 +35,7 @@ def validate_column_dtypes(ds: Dataset):
                 )
         # TODO: Add checks here
 
+
 EVALMODE_TO_COLUMNS = {
     EvaluationMode.qac: ["question", "answer", "contexts"],
     EvaluationMode.qa: ["question", "answer"],

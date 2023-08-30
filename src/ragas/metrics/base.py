@@ -39,11 +39,7 @@ def make_batches(total_size: int, batch_size: int) -> list[range]:
     return batches
 
 
-<<<<<<< HEAD
-EvaluationMode = Enum("EvaluationMode", "qac qa qc qr_ac r_cc")
-=======
 EvaluationMode = Enum("EvaluationMode", "qac qa qc gc")
->>>>>>> 9f54d016fd0743c4e6abac585cba76d36e3b1436
 
 
 @dataclass
