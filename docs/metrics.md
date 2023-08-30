@@ -30,6 +30,22 @@ dataset: Dataset
 results = context_rel.score(dataset)
 ```
 
+### `Context Recall`
+measures the recall of the retrieved context using annotated answer as ground truth. Annotated answer is taken as proxy for ground truth context.
+
+```python
+from ragas.metrics.context_recall import ContextRecall
+context_recall = ContextRecall()
+# Dataset({
+#     features: ['contexts','ground_truths'],
+#     num_rows: 25
+# })
+dataset: Dataset
+
+results = context_recall.score(dataset)
+```
+
+
 ### `AnswerRelevancy`
 
 This measures how relevant is the generated answer to the prompt. If the generated answer is incomplete or contains redundant information the score will be low. This is quantified by working out the chance of an LLM generating the given question using the generated answer. Values range (0,1), higher the better.

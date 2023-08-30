@@ -8,12 +8,22 @@ from datasets import Dataset, concatenate_datasets
 from ragas._analytics import EvaluationEvent, track
 from ragas.metrics.base import Metric
 from ragas.metrics.critique import AspectCritique
-from ragas.validation import validate_column_dtypes, validate_evaluation_modes
+from ragas.validation import (
+    remap_column_names,
+    validate_column_dtypes,
+    validate_evaluation_modes,
+)
 
 
 def evaluate(
     dataset: Dataset,
     metrics: list[Metric] | None = None,
+    column_map: dict[str, str] = {
+        "question": "question",
+        "contexts": "contexts",
+        "answer": "answer",
+        "ground_truths": "ground_truths",
+    },
 ) -> Result:
     """
     Run the evaluation on the dataset with different metrics
@@ -26,6 +36,10 @@ def evaluate(
     metrics : list[Metric] , optional
         List of metrics to use for evaluation. If not provided then ragas will run the
         evaluation on the best set of metrics to give a complete view.
+    column_map : dict[str, str], optional
+        The column names of the dataset to use for evaluation. If the column names of
+        the dataset are different from the default ones then you can provide the
+        mapping as a dictionary here.
 
     Returns
     -------
@@ -62,9 +76,17 @@ def evaluate(
         raise ValueError("Provide dataset!")
 
     if metrics is None:
-        from ragas.metrics import answer_relevancy, context_relevancy, faithfulness
+        from ragas.metrics import (
+            answer_relevancy,
+            context_recall,
+            context_relevancy,
+            faithfulness,
+        )
 
-        metrics = [answer_relevancy, context_relevancy, faithfulness]
+        metrics = [answer_relevancy, context_relevancy, faithfulness, context_recall]
+
+    # remap column names from the dataset
+    dataset = remap_column_names(dataset, column_map)
 
     # validation
     validate_evaluation_modes(dataset, metrics)

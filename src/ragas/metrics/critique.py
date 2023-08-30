@@ -9,7 +9,6 @@ from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.chat_models.base import BaseChatModel
 from langchain.llms.base import BaseLLM
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-from tqdm import tqdm
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM, _llm_factory
 from ragas.metrics.llms import generate
@@ -89,22 +88,10 @@ class AspectCritique(MetricWithLLM):
             input=question, submission=answer, criteria=self.definition
         )
 
-    def score(self: t.Self, dataset: Dataset) -> Dataset:
-        if self.llm is None:
-            raise ValueError("llm must not be None")
-
-        with trace_as_chain_group(f"ragas_{self.name}") as score_group:
-            scores = []
-            for batch in tqdm(self.get_batches(len(dataset))):
-                score = self._score_batch(dataset.select(batch), callbacks=score_group)
-                scores.extend(score)
-
-        return dataset.add_column(self.name, scores)  # type: ignore
-
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
-        callbacks: t.Optional[CallbackManager],
+        callbacks: t.Optional[CallbackManager] = None,
         callback_group_name: str = "batch",
     ) -> list[int]:
         questions, contexts, answers = [

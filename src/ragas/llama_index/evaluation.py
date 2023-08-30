@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from datasets import Dataset
+from rich.repr import Result
 
 from ragas import evaluate as ragas_evaluate
 from ragas.metrics.base import Metric
@@ -15,7 +16,8 @@ def evaluate(
     query_engine: BaseQueryEngine,
     metrics: list[Metric],
     questions: list[str],
-):
+    ground_truths: t.Optional[list[str]] = None,
+) -> Result:
     """
     Run evaluation of llama_index QueryEngine with different metrics
 
@@ -27,6 +29,8 @@ def evaluate(
         The ragas metrics to use for evaluation.
     questions : list[str]
         List of questions to evaluate on
+    ground_truths : list[str], optional
+        List of ground_truths answer to the question to evaluate on.
 
     Returns
     -------
@@ -78,14 +82,14 @@ def evaluate(
     for r in responses:
         answers.append(r.response)
         contexts.append([c.node.get_content() for c in r.source_nodes])
-
-    ds = Dataset.from_dict(
-        {
-            "question": questions,
-            "answer": answers,
-            "contexts": contexts,
-        }
-    )
+    dataset_dict = {
+        "question": questions,
+        "answer": answers,
+        "contexts": contexts,
+    }
+    if ground_truths is not None:
+        dataset_dict["ground_truths"] = ground_truths
+    ds = Dataset.from_dict(dataset_dict)
     result = ragas_evaluate(ds, metrics)
 
     return result

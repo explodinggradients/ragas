@@ -1,6 +1,7 @@
 """Async utils."""
 import asyncio
-from typing import Any, Coroutine, List
+from itertools import zip_longest
+from typing import Any, Coroutine, Iterable, List
 
 
 def run_async_tasks(
@@ -29,6 +30,8 @@ def run_async_tasks(
         # run the operation w/o tqdm on hitting a fatal
         # may occur in some environments where tqdm.asyncio
         # is not supported
+        except ImportError as e:
+            print(e)
         except Exception:
             pass
 
@@ -37,3 +40,20 @@ def run_async_tasks(
 
     outputs: List[Any] = asyncio.run(_gather())
     return outputs
+
+
+def chunks(iterable: Iterable, size: int) -> Iterable:
+    args = [iter(iterable)] * size
+    return zip_longest(*args, fillvalue=None)
+
+
+async def batch_gather(
+    tasks: List[Coroutine], batch_size: int = 10, verbose: bool = False
+) -> List[Any]:
+    output: List[Any] = []
+    for task_chunk in chunks(tasks, batch_size):
+        output_chunk = await asyncio.gather(*task_chunk)
+        output.extend(output_chunk)
+        if verbose:
+            print(f"Completed {len(output)} out of {len(tasks)} tasks")
+    return output

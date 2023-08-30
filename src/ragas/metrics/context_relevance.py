@@ -10,7 +10,6 @@ from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from sentence_transformers import CrossEncoder
-from tqdm import tqdm
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.metrics.llms import generate
@@ -127,28 +126,6 @@ class ContextRelevancy(MetricWithLLM):
             model_name=self.model_name, metric=self.agreement_metric
         )
 
-    def score(self: t.Self, dataset: Dataset) -> Dataset:
-        """
-        Parameters
-        ----------
-        dataset: Dataset[question: list[str], contexts: list[list[str]]]
-
-        Returns
-        -------
-        Dataset[question: list[str], contexts: list[list[str]], scores: list[float]]
-            Dataset with the scores for each row.
-        """
-        if self.llm is None:
-            raise ValueError("llm must not be None")
-
-        scores = []
-        with trace_as_chain_group(f"ragas_{self.name}") as score_group:
-            for batch in tqdm(self.get_batches(len(dataset))):
-                score = self._score_batch(dataset.select(batch), callbacks=score_group)
-                scores.extend(score)
-
-        return dataset.add_column(self.name, scores)  # type: ignore
-
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
@@ -182,6 +159,11 @@ class ContextRelevancy(MetricWithLLM):
                 overlap_scores = []
                 context_sents = sent_tokenize(context)
                 for output in n_response:
+                    indices = [
+                        context.find(sent)
+                        for sent in sent_tokenize(output)
+                        if context.find(sent) != -1
+                    ]
                     indices = sent_tokenize(output)
                     overlap_scores.append(len(indices) / len(context_sents))
                 if self.strictness > 1:

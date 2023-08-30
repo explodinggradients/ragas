@@ -5,7 +5,6 @@ from dataclasses import dataclass
 
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-from tqdm import tqdm
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.metrics.llms import generate
@@ -23,7 +22,7 @@ question: Who was  Albert Einstein and what is he best known for?
 answer: He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.
 statements:\nAlbert Einstein was born in Germany.\nAlbert Einstein was best known for his theory of relativity.
 question: Cadmium Chloride is slightly soluble in this chemical, it is also called what?
-answer: alochol
+answer: alcohol
 statements:\nCadmium Chloride is slightly soluble in alcohol.
 question: Were Shahul and Jithin of the same nationality?
 answer: They were from different countries.
@@ -69,21 +68,10 @@ class Faithfulness(MetricWithLLM):
     def init_model(self: t.Self):
         pass
 
-    def score(self: t.Self, dataset: Dataset) -> Dataset:
-        assert self.llm is not None, "LLM not initialized"
-
-        scores = []
-        with trace_as_chain_group(f"ragas_{self.name}") as score_group:
-            for batch in tqdm(self.get_batches(len(dataset))):
-                score = self._score_batch(dataset.select(batch), callbacks=score_group)
-                scores.extend(score)
-
-        return dataset.add_column(self.name, scores)  # type: ignore
-
     def _score_batch(
         self: t.Self,
         ds: Dataset,
-        callbacks: CallbackManager,
+        callbacks: t.Optional[CallbackManager] = None,
         callback_group_name: str = "batch",
     ) -> list[float]:
         """
