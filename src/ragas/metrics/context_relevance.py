@@ -159,13 +159,9 @@ class ContextRelevancy(MetricWithLLM):
                 overlap_scores = []
                 context_sents = sent_tokenize(context)
                 for output in n_response:
-                    indices = [
-                        context.find(sent)
-                        for sent in sent_tokenize(output)
-                        if context.find(sent) != -1
-                    ]
                     indices = sent_tokenize(output)
-                    overlap_scores.append(len(indices) / len(context_sents))
+                    score = min(len(indices) / len(context_sents), 1)
+                    overlap_scores.append(score)
                 if self.strictness > 1:
                     agr_score = self.sent_agreement.evaluate(n_response)
                 else:
