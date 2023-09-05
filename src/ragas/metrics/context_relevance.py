@@ -96,7 +96,7 @@ class ContextRelevancy(MetricWithLLM):
     name: str = "context_ relevancy"
     evaluation_mode: EvaluationMode = EvaluationMode.qc
     batch_size: int = 15
-    strictness: int = 1
+    strictness: int = 2
     agreement_metric: str = "bert_score"
     model_name: str = "cross-encoder/stsb-TinyBERT-L-4"
 
