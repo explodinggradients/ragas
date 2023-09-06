@@ -147,7 +147,7 @@ class ContextRelevancy(MetricWithLLM):
                 for output in n_response:
                     indices = (
                         output.split("\n")
-                        if output.lower() != "insufficient information"
+                        if output.lower() != "insufficient information."
                         else []
                     )
                     score = min(len(indices) / len(context_sents), 1)
