@@ -16,25 +16,11 @@ from ragas.metrics.llms import generate
 
 CONTEXT_RELEVANCE = HumanMessagePromptTemplate.from_template(
     """\
-Task: Candidate sentence extraction.
-Given the question and context, extract minimum number of sentences from context required to answer the question. If the context do not contain information required to answer the question return "No candidate sentences found".
-
-question: Which equation is known as worlds most famous equation?
-context:\nAlbert Einstein (14 March 1879 – 18 April 1955) was a German-born theoretical physicist,[5] widely ranked among the greatest and most influential scientists of all time. Best known for developing the theory of relativity, he also made important contributions to quantum mechanics, and was thus a central figure in the revolutionary reshaping of the scientific understanding of nature that modern physics accomplished in the first decades of the twentieth century.
-His mass–energy equivalence formula E = mc2, which arises from relativity theory, has been called "the world's most famous equation".
-sentences:His mass–energy equivalence formula E = mc2, which arises from relativity theory, has been called "the world's most famous equation".
-
-question: Were Scott Derrickson and Ed Wood of the same nationality?
-context :\nScott Derrickson (born July 16, 1966) is an American director, screenwriter and producer He lives in Los Angeles, California He is best known for directing horror films such as "Sinister", "The Exorcism of Emily Rose", and "Deliver Us From Evil", as well as the 2016 Marvel Cinematic Universe installment, "Doctor Strange"Tyler Bates is an American musician, music producer, and composer for films, television, and video games. Adam Collis is an American filmmaker and actor.Conrad Brooks is an American actor.Edward Davis Wood Jr. (October 10, 1924 – December 10, 1978) was an American filmmaker, actor, writer, producer, and director.
-sentences:Scott Derrickson (born July 16, 1966) is an American director, screenwriter and producer. Edward Davis Wood Jr. (October 10, 1924 – December 10, 1978) was an American filmmaker, actor, writer, producer, and director.
-
-question: How many were killed in the Tiananmen Square incident?
-context:\nTiananmen Square incident, also called June Fourth incident or 6/4, series of protests and demonstrations in China in the spring of 1989 that culminated on the night of June 3–4 with a government crackdown on the demonstrators in Tiananmen Square in Beijing.
-sentences: No candidate sentences found.
+Please extract relevant sentences from the provided context that can potentially help answer the following question. If no relevant sentences are found, or if you believe the question cannot be answered from the given context, return the phrase "Insufficient Information".  While extracting candidate sentences you're not allowed to make any changes to sentences from given context.
 
 question:{question}
 context:\n{context}
-sentences:"""  # noqa: E501
+candidate sentences:\n"""  # noqa: E501
 )
 
 
@@ -159,7 +145,11 @@ class ContextRelevancy(MetricWithLLM):
                 overlap_scores = []
                 context_sents = sent_tokenize(context)
                 for output in n_response:
-                    indices = sent_tokenize(output)
+                    indices = (
+                        output.split("\n")
+                        if output.lower() != "insufficient information."
+                        else []
+                    )
                     score = min(len(indices) / len(context_sents), 1)
                     overlap_scores.append(score)
                 if self.strictness > 1:
