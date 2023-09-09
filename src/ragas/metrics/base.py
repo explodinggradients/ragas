@@ -14,7 +14,7 @@ from math import floor
 
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
-from langchain.chat_models import ChatOpenAI
+from langchain.chat_models import ChatOpenAI, ChatLiteLLM
 from langchain.chat_models.base import BaseChatModel
 from langchain.llms.base import BaseLLM
 from tqdm import tqdm
@@ -107,7 +107,7 @@ class Metric(ABC):
 
 
 def _llm_factory():
-    return ChatOpenAI(model_name="gpt-3.5-turbo-16k")  # type: ignore
+    return ChatLiteLLM(model_name="gpt-3.5-turbo-16k")  # type: ignore
 
 
 @dataclass

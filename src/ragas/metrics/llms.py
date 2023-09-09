@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from langchain.chat_models import ChatOpenAI
+from langchain.chat_models import ChatOpenAI, ChatLiteLLM
 from langchain.chat_models.base import BaseChatModel
 from langchain.llms import OpenAI
 from langchain.llms.base import BaseLLM
@@ -14,7 +14,7 @@ if t.TYPE_CHECKING:
 
 
 def isOpenAI(llm: BaseLLM | BaseChatModel) -> bool:
-    return isinstance(llm, OpenAI) or isinstance(llm, ChatOpenAI)
+    return isinstance(llm, OpenAI) or isinstance(llm, ChatLiteLLM)
 
 
 def generate(
@@ -28,7 +28,7 @@ def generate(
     n_swapped = False
     llm.temperature = temperature
     if n is not None:
-        if isinstance(llm, OpenAI) or isinstance(llm, ChatOpenAI):
+        if isinstance(llm, OpenAI) or isinstance(llm, ChatLiteLLM):
             old_n = llm.n
             llm.n = n
             n_swapped = True
@@ -44,7 +44,7 @@ def generate(
         ps = [p.format_messages() for p in prompts]
         result = llm.generate(ps, callbacks=callbacks)
 
-    if (isinstance(llm, OpenAI) or isinstance(llm, ChatOpenAI)) and n_swapped:
+    if (isinstance(llm, OpenAI) or isinstance(llm, ChatLiteLLM)) and n_swapped:
         llm.n = old_n  # type: ignore
 
     return result
