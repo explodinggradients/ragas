@@ -44,6 +44,9 @@ class AnswerRelevancy(MetricWithLLM):
     strictness: int
         Here indicates the number questions generated per answer.
         Ideal range between 3 to 5.
+    embeddings: Embedding
+        The langchain wrapper of Embedding object. 
+        E.g. HuggingFaceEmbeddings('BAAI/bge-base-en')
     """
 
     name: str = "answer_relevancy"
