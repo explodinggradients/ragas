@@ -17,7 +17,7 @@ if t.TYPE_CHECKING:
 #################
 LONG_FORM_ANSWER_PROMPT = HumanMessagePromptTemplate.from_template(
     """\
-Given a question and answer, create one or more statements from answer.
+Given a question and answer, create one or more statements from each sentence in the given answer.
 question: Who was  Albert Einstein and what is he best known for?
 answer: He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.
 statements:\nAlbert Einstein was born in Germany.\nAlbert Einstein was best known for his theory of relativity.
