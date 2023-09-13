@@ -53,7 +53,7 @@ class AnswerRelevancy(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qa
     batch_size: int = 15
     strictness: int = 3
-    embeddings: Embeddings = None
+    embeddings: Embeddings | None = None
 
     def __post_init__(self: t.Self):
         self.temperature = 0.2 if self.strictness > 0 else 0
