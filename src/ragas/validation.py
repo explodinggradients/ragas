@@ -11,7 +11,7 @@ def remap_column_names(dataset: Dataset, column_map: dict[str, str]) -> Dataset:
     """
     inverse_column_map = {v: k for k, v in column_map.items()}
     return dataset.from_dict(
-        {inverse_column_map[name]: dataset[name] for name in dataset.column_names}
+        {inverse_column_map[name]: dataset[name] for name in column_map.values()}
     )
 
 

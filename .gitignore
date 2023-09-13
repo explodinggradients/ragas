@@ -167,3 +167,5 @@ experiments/**/storage
 experiments/baselines/fiqa/datasets
 src/ragas/_version.py
 .python-version
+experiments/retriever-benchmarks/datasets
+experiments/tmp
