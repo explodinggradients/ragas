@@ -6,6 +6,7 @@ from itertools import combinations, product
 from typing import List
 
 import numpy as np
+import pysbd
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
@@ -24,8 +25,16 @@ candidate sentences:\n"""  # noqa: E501
 )
 
 
-def sent_tokenize(sent: str) -> List[str]:
-    return [s[:-1] if s.endswith(".") else s for s in sent.strip().split(". ")]
+seg = pysbd.Segmenter(language="en", clean=False)
+
+
+def sent_tokenize(text: str) -> List[str]:
+    """
+    tokenizer text into sentences
+    """
+    sentences = seg.segment(text)
+    assert isinstance(sentences, list)
+    return sentences
 
 
 class SentenceAgreement:
@@ -85,7 +94,7 @@ class ContextRelevancy(MetricWithLLM):
         Batch size for openai completion.
     strictness : int
         Controls the number of times sentence extraction is performed to quantify
-        uncertainty from the LLM. Defaults to 2.
+        uncertainty from the LLM. Defaults to 1.
     agreement_metric : str
         "bert_score" or "jaccard_score", used to measure agreement between multiple
         samples.
@@ -96,7 +105,7 @@ class ContextRelevancy(MetricWithLLM):
     name: str = "context_relevancy"
     evaluation_mode: EvaluationMode = EvaluationMode.qc
     batch_size: int = 15
-    strictness: int = 2
+    strictness: int = 1
     agreement_metric: str = "bert_score"
     model_name: str = "cross-encoder/stsb-TinyBERT-L-4"
 
