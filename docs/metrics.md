@@ -48,7 +48,7 @@ results = context_recall.score(dataset)
 
 ### `AnswerRelevancy`
 
-This measures how relevant is the generated answer to the prompt. If the generated answer is incomplete or contains redundant information the score will be low. This is quantified by working out the chance of an LLM generating the given question using the generated answer. It is calculated from `question`, `answer` and `retrieved context`. Values range (0,1), higher the better.
+This measures how relevant is the generated answer to the prompt. If the generated answer is incomplete or contains redundant information the score will be low. This is quantified by working out the chance of an LLM generating the given question using the generated answer. It is calculated from `question` and `answer`. Values range (0,1), higher the better.
 ```python
 from ragas.metrics.answer_relevancy import AnswerRelevancy
 answer_relevancy = AnswerRelevancy()
