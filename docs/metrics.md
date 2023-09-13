@@ -2,7 +2,7 @@
 
 ### `Faithfulness`
 
-This measures the factual consistency of the generated answer against the given context. This is done using a multi step paradigm that includes creation of statements from the generated answer followed by verifying each of these statements against the context. The answer is scaled to (0,1) range. Higher the better.
+This measures the factual consistency of the generated answer against the given context. This is done using a multi step paradigm that includes creation of statements from the generated answer followed by verifying each of these statements against the context. It is calculated from `answer` and `retrieved context`. The answer is scaled to (0,1) range. Higher the better.
 ```python
 from ragas.metrics.factuality import Faithfulness
 faithfulness = Faithfulness()
@@ -17,7 +17,7 @@ results = faithfulness.score(dataset)
 ```
 ### `ContextRelevancy`
 
-This measures how relevant is the retrieved context to the prompt. This is done using a combination of OpenAI models and cross-encoder models. To improve the score one can try to optimize the amount of information present in the retrieved context. 
+This measures how relevant is the retrieved context to the prompt. This is done using a combination of OpenAI models and cross-encoder models. To improve the score one can try to optimize the amount of information present in the retrieved context. It is calculated from `question` and `retrieved context`. 
 ```python
 from ragas.metrics.context_relevancy import ContextRelevancy
 context_rel = ContextRelevancy(strictness=3)
@@ -31,7 +31,7 @@ results = context_rel.score(dataset)
 ```
 
 ### `Context Recall`
-measures the recall of the retrieved context using annotated answer as ground truth. Annotated answer is taken as proxy for ground truth context.
+measures the recall of the retrieved context using annotated answer as ground truth. Annotated answer is taken as proxy for ground truth context. It is calculated from `ground truth` and `retrieved context`.
 
 ```python
 from ragas.metrics.context_recall import ContextRecall
@@ -48,7 +48,7 @@ results = context_recall.score(dataset)
 
 ### `AnswerRelevancy`
 
-This measures how relevant is the generated answer to the prompt. If the generated answer is incomplete or contains redundant information the score will be low. This is quantified by working out the chance of an LLM generating the given question using the generated answer. Values range (0,1), higher the better.
+This measures how relevant is the generated answer to the prompt. If the generated answer is incomplete or contains redundant information the score will be low. This is quantified by working out the chance of an LLM generating the given question using the generated answer. It is calculated from `question` and `answer`. Values range (0,1), higher the better.
 ```python
 from ragas.metrics.answer_relevancy import AnswerRelevancy
 answer_relevancy = AnswerRelevancy()
@@ -64,7 +64,7 @@ results = answer_relevancy.score(dataset)
 
 ### `AspectCritique`
 
-`Aspect Critiques`: Critiques are LLM evaluators that evaluate the your submission using the provided aspect. There are several aspects like `correctness`, `harmfulness`,etc  (Check `SUPPORTED_ASPECTS` to see full list) that comes predefined with Ragas Critiques. If you wish to define your own aspect you can also do this. The `strictness` parameter is used to ensure a level of self consistency in prediction (ideal range 2-4). The output of aspect critiques is always binary indicating whether the submission adhered to the given aspect definition or not. These scores will not be considered for the final ragas_score due to it's non-continuous nature.
+`Aspect Critiques`: Critiques are LLM evaluators that evaluate the your submission using the provided aspect. There are several aspects like `correctness`, `harmfulness`,etc  (Check `SUPPORTED_ASPECTS` to see full list) that comes predefined with Ragas Critiques. If you wish to define your own aspect you can also do this. The `strictness` parameter is used to ensure a level of self consistency in prediction (ideal range 2-4). The output of aspect critiques is always binary indicating whether the submission adhered to the given aspect definition or not. It is calculated from `answer`. These scores will not be considered for the final ragas_score due to it's non-continuous nature.
 - List of predefined aspects:
 `correctness`,`harmfulness`,`coherence`,`conciseness`,`maliciousness`
 
