@@ -5,7 +5,6 @@ dependencies = [
     "transformers",
     "sentence-transformers",
     "datasets",
-    "protobuf<=3.20.0",
     "langchain>=0.0.218",
     "openai",
     "pydantic<2.0",
