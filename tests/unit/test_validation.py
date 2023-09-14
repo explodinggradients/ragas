@@ -4,7 +4,11 @@ import pytest
 from datasets import Dataset
 
 from ragas.metrics import answer_relevancy, context_relevancy, faithfulness
-from ragas.validation import validate_column_dtypes, validate_evaluation_modes
+from ragas.validation import (
+    remap_column_names,
+    validate_column_dtypes,
+    validate_evaluation_modes,
+)
 
 CaseToTest = namedtuple(
     "TestCase", ["q", "a", "c", "g", "is_valid_columns", "metrics", "is_valid_metrics"]
@@ -63,3 +67,41 @@ def test_validate_columns_and_metrics(testcase):
     else:
         with pytest.raises(ValueError):
             validate_evaluation_modes(test_dataset, testcase.metrics)
+
+
+column_maps = [
+    {
+        "question": "query",
+        "answer": "rag_answer",
+        "contexts": "rag_contexts",
+        "ground_truths": "original_answer",
+    },  # all columns present
+    {
+        "question": "query",
+        "answer": "rag_answer",
+    },  # subset of columns present
+]
+
+
+@pytest.mark.parametrize("column_map", column_maps)
+def test_column_remap(column_map):
+    """
+    test cases:
+    - extra columns present in the dataset
+    - not all columsn selected
+    - column names are different
+    """
+    TEST_DATASET = Dataset.from_dict(
+        {
+            "query": [""],
+            "rag_answer": [""],
+            "rag_contexts": [[""]],
+            "original_answer": [""],
+            "another_column": [""],
+            "rag_answer_v2": [""],
+            "rag_contexts_v2": [[""]],
+        }
+    )
+    remapped_dataset = remap_column_names(TEST_DATASET, column_map)
+
+    assert remapped_dataset.column_names == list(column_map.keys())
