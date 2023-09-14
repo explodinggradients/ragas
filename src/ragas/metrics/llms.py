@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import typing as t
 
-from langchain.chat_models import ChatOpenAI
+from langchain.chat_models import AzureChatOpenAI, ChatOpenAI
 from langchain.chat_models.base import BaseChatModel
-from langchain.llms import OpenAI
+from langchain.llms import AzureOpenAI, OpenAI
 from langchain.llms.base import BaseLLM
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import LLMResult
@@ -17,18 +17,33 @@ def isOpenAI(llm: BaseLLM | BaseChatModel) -> bool:
     return isinstance(llm, OpenAI) or isinstance(llm, ChatOpenAI)
 
 
+# have to specify it twice for runtime and static checks
+MULTIPLE_COMPLETION_SUPPORTED = [OpenAI, ChatOpenAI, AzureOpenAI, AzureChatOpenAI]
+MultipleCompletionSupportedLLM = t.Union[
+    OpenAI, ChatOpenAI, AzureOpenAI, AzureChatOpenAI
+]
+
+
+def multiple_completion_supported(llm: BaseLLM | BaseChatModel) -> bool:
+    for model in MULTIPLE_COMPLETION_SUPPORTED:
+        if isinstance(llm, model):
+            return True
+    return False
+
+
 def generate(
     prompts: list[ChatPromptTemplate],
     llm: BaseLLM | BaseChatModel,
-    n: t.Optional[int] = None,
+    n: int = 1,
     temperature: float = 0,
     callbacks: t.Optional[Callbacks] = None,
 ) -> LLMResult:
-    old_n = None
+    old_n: int = 1
     n_swapped = False
     llm.temperature = temperature
     if n is not None:
-        if isinstance(llm, OpenAI) or isinstance(llm, ChatOpenAI):
+        if multiple_completion_supported(llm):
+            llm = t.cast(MultipleCompletionSupportedLLM, llm)
             old_n = llm.n
             llm.n = n
             n_swapped = True
@@ -44,7 +59,8 @@ def generate(
         ps = [p.format_messages() for p in prompts]
         result = llm.generate(ps, callbacks=callbacks)
 
-    if (isinstance(llm, OpenAI) or isinstance(llm, ChatOpenAI)) and n_swapped:
-        llm.n = old_n  # type: ignore
+    if multiple_completion_supported(llm) and n_swapped:
+        llm = t.cast(MultipleCompletionSupportedLLM, llm)
+        llm.n = old_n
 
     return result
