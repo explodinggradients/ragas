@@ -44,7 +44,7 @@ class AnswerRelevancy(MetricWithLLM):
     strictness: int
         Here indicates the number questions generated per answer.
         Ideal range between 3 to 5.
-    embeddings: Embedding
+    embedding: Embedding
         The langchain wrapper of Embedding object. 
         E.g. HuggingFaceEmbeddings('BAAI/bge-base-en')
     """
@@ -53,13 +53,13 @@ class AnswerRelevancy(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qa
     batch_size: int = 15
     strictness: int = 3
-    embeddings: Embeddings | None = None
+    embedding: Embeddings | None = None
 
     def __post_init__(self: t.Self):
         self.temperature = 0.2 if self.strictness > 0 else 0
 
     def init_model(self: t.Self):
-        if self.embeddings is None:
+        if self.embedding is None:
             self.embedding = OpenAIEmbeddings()  # type: ignore
 
     def _score_batch(
