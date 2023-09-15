@@ -87,7 +87,9 @@ If you want a more in-depth explanation of core components, check out our [quick
 
 ## :luggage: Metrics
 
-Ragas measures your pipeline's performance against different dimensions
+Ragas measures your pipeline's performance against different dimensions:
+
+![image](https://github.com/emilesilvis/ragas/assets/557338/b6c0db98-a0a9-4414-9ad3-372d8ceab4c7)
 
 1. **Faithfulness**: measures the information consistency of the generated answer against the given context. If any claims are made in the answer that cannot be deduced from context is penalized. It is calculated from `answer` and `retrieved context`.
 
