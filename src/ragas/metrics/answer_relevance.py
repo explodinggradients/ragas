@@ -7,8 +7,9 @@ import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import trace_as_chain_group
 from langchain.embeddings import OpenAIEmbeddings
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain.embeddings.base import Embeddings
+from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
+
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.metrics.llms import generate
 
@@ -45,7 +46,7 @@ class AnswerRelevancy(MetricWithLLM):
         Here indicates the number questions generated per answer.
         Ideal range between 3 to 5.
     embeddings: Embedding
-        The langchain wrapper of Embedding object. 
+        The langchain wrapper of Embedding object.
         E.g. HuggingFaceEmbeddings('BAAI/bge-base-en')
     """
 
