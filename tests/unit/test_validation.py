@@ -105,3 +105,23 @@ def test_column_remap(column_map):
     remapped_dataset = remap_column_names(TEST_DATASET, column_map)
 
     assert remapped_dataset.column_names == list(column_map.keys())
+
+
+def test_column_remap_omit():
+    TEST_DATASET = Dataset.from_dict(
+        {
+            "query": [""],
+            "answer": [""],
+            "contexts": [[""]],
+        }
+    )
+
+    column_map = {
+        "question": "query",
+        "contexts": "contexts",
+        "answer": "answer",
+        "ground_truths": "ground_truths",
+    }
+
+    remapped_dataset = remap_column_names(TEST_DATASET, column_map)
+    assert remapped_dataset.column_names == ["question", "contexts", "answer"]
