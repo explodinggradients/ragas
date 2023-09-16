@@ -7,6 +7,7 @@ import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import trace_as_chain_group
 from langchain.embeddings import OpenAIEmbeddings
+from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain.embeddings.base import Embeddings
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
@@ -44,8 +45,8 @@ class AnswerRelevancy(MetricWithLLM):
     strictness: int
         Here indicates the number questions generated per answer.
         Ideal range between 3 to 5.
-    embedding: Embedding
-        The langchain wrapper of Embedding object. 
+    embeddings: Embedding
+        The langchain wrapper of Embedding object.
         E.g. HuggingFaceEmbeddings('BAAI/bge-base-en')
     """
 
@@ -53,14 +54,15 @@ class AnswerRelevancy(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qa
     batch_size: int = 15
     strictness: int = 3
-    embedding: Embeddings | None = None
+    embeddings: Embeddings | None = None
+
 
     def __post_init__(self: t.Self):
         self.temperature = 0.2 if self.strictness > 0 else 0
 
     def init_model(self: t.Self):
-        if self.embedding is None:
-            self.embedding = OpenAIEmbeddings()  # type: ignore
+        if self.embeddings is None:
+            self.embeddings = OpenAIEmbeddings()  # type: ignore
 
     def _score_batch(
         self: t.Self,
@@ -96,9 +98,9 @@ class AnswerRelevancy(MetricWithLLM):
     def calculate_similarity(
         self: t.Self, question: str, generated_questions: list[str]
     ):
-        question_vec = np.asarray(self.embedding.embed_query(question)).reshape(1, -1)
+        question_vec = np.asarray(self.embeddings.embed_query(question)).reshape(1, -1)
         gen_question_vec = np.asarray(
-            self.embedding.embed_documents(generated_questions)
+            self.embeddings.embed_documents(generated_questions)
         )
         norm = np.linalg.norm(gen_question_vec, axis=1) * np.linalg.norm(
             question_vec, axis=1
