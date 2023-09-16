@@ -9,7 +9,7 @@ from langchain.callbacks.manager import trace_as_chain_group
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-from langchain.embeddings.base import Embeddings
+
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.metrics.llms import generate
 
@@ -56,7 +56,6 @@ class AnswerRelevancy(MetricWithLLM):
     strictness: int = 3
     embeddings: Embeddings | None = None
 
-
     def __post_init__(self: t.Self):
         self.temperature = 0.2 if self.strictness > 0 else 0
 
@@ -98,6 +97,7 @@ class AnswerRelevancy(MetricWithLLM):
     def calculate_similarity(
         self: t.Self, question: str, generated_questions: list[str]
     ):
+        assert self.embeddings is not None
         question_vec = np.asarray(self.embeddings.embed_query(question)).reshape(1, -1)
         gen_question_vec = np.asarray(
             self.embeddings.embed_documents(generated_questions)
