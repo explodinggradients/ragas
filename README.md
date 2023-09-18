@@ -39,7 +39,7 @@
     <p>
 </h4>
 
-> Note: We're working with a few select organisations, leveraging what we learned building Ragas, to improve the reliability of their RAG systems in production. Due to our small team size we can only work with a few clients so do fill out [this form](https://forms.gle/tk9VZMaeybxQATU69) or write to us at [team@explodinggradients.com](mailto:team@explodinggradients.com) and we will get back 🙂
+> 🚀 Dedicated solutions and support to improve the reliability of RAG systems in production including custom models for production quality monitoring. Contact founders to learn more. [Talk to founders](https://calendly.com/shahules/30min)
 
 ragas is a framework that helps you evaluate your Retrieval Augmented Generation (RAG) pipelines. RAG denotes a class of LLM applications that use external data to augment the LLM’s context. There are existing tools and frameworks that help you build these pipelines but evaluating it and quantifying your pipeline performance can be hard. This is where ragas (RAG Assessment) comes in.
 
