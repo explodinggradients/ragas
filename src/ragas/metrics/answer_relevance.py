@@ -61,7 +61,7 @@ class AnswerRelevancy(MetricWithLLM):
 
     def init_model(self: t.Self):
         if self.embeddings is None:
-            self.embedding = OpenAIEmbeddings()  # type: ignore
+            self.embeddings = OpenAIEmbeddings()  # type: ignore
 
     def _score_batch(
         self: t.Self,
@@ -97,9 +97,10 @@ class AnswerRelevancy(MetricWithLLM):
     def calculate_similarity(
         self: t.Self, question: str, generated_questions: list[str]
     ):
-        question_vec = np.asarray(self.embedding.embed_query(question)).reshape(1, -1)
+        assert self.embeddings is not None
+        question_vec = np.asarray(self.embeddings.embed_query(question)).reshape(1, -1)
         gen_question_vec = np.asarray(
-            self.embedding.embed_documents(generated_questions)
+            self.embeddings.embed_documents(generated_questions)
         )
         norm = np.linalg.norm(gen_question_vec, axis=1) * np.linalg.norm(
             question_vec, axis=1
