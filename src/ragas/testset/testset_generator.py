@@ -1,17 +1,24 @@
 from llama_index import OpenAIEmbedding
 from numpy.random import default_rng
 import numpy as np
-from typing import t
+import numpy.testing as npt
+
+import typing as t
 from llama_index.readers.schema.base import Document
 from llama_index.node_parser.simple import SimpleNodeParser
 from llama_index.schema import TextNode
 from langchain.chat_models import ChatOpenAI
 
-from ragas.testset.prompts import COMPRESS_QUESTION, CONDITIONAL_QUESTION, CONVERSATION_QUESTION, FILTER_QUESTION, MULTICONTEXT_QUESTION, REASONING_QUESTION, SCORE_CONTEXT, SEED_QUESTION
+from ragas.testset.prompts import ANSWER_FORMULATE, COMPRESS_QUESTION, CONDITIONAL_QUESTION, CONTEXT_FORMULATE, CONVERSATION_QUESTION, FILTER_QUESTION, MULTICONTEXT_QUESTION, REASONING_QUESTION, SCORE_CONTEXT, SEED_QUESTION
 from ragas.metrics.llms import generate
 from llama_index.indices.query.embedding_utils import get_top_k_embeddings
 from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate
+from langchain.llms.base import BaseLLM
+from langchain.chat_models.base import BaseChatModel
+from collections import defaultdict, namedtuple
+
+
 
 
 DEFAULT_TESTDISTRIBUTION = {
@@ -39,18 +46,18 @@ class TestsetGenerator:
     """
     
     def __init__(self, generator_llm: BaseLLM | BaseChatModel, 
-                 filter_llm: BaseLLM | BaseChatModel, 
-                 embedding_model: Embeddings,
+                 ctitic_llm: BaseLLM | BaseChatModel, 
+                 embeddings_model: Embeddings,
                  testset_distribution: t.Optional[t.Dict[str, float]] = None,
                  chat_qa: bool = True, chunk_size: int = 1024, seed: int = 42) -> None:
         
         self.generator_llm = generator_llm
-        self.filter_llm = filter_llm
-        self.embedding_model = embedding_model
-        assert sum(testset_distribution.values()) == 1, "Sum of distribution should be 1"
+        self.ctitic_llm = ctitic_llm
+        self.embedding_model = embeddings_model
         testset_distribution = testset_distribution or DEFAULT_TESTDISTRIBUTION
+        npt.assert_almost_equal(1, sum(testset_distribution.values()), err_msg="Sum of distribution should be 1")
         
-        probs = np.cumsum(testset_distribution.values())
+        probs = np.cumsum(list(testset_distribution.values()))
         types = testset_distribution.keys()
         self.testset_distribution = dict(zip(types, probs))
         
@@ -61,13 +68,13 @@ class TestsetGenerator:
         
     @classmethod
     def from_default(cls, openai_generator_llm: str = "gpt-3.5-turbo-16k",
-                     openai_filter_llm: str = "gpt-4", embeddings_model: Embeddings | None = None):
+                     openai_filter_llm: str = "gpt-4"):
         
         generator_llm = ChatOpenAI(model_name = openai_generator_llm)
-        filtering_llm = ChatOpenAI(model_name = openai_filter_llm)
-        embeddings_model = embeddings_model or OpenAIEmbedding()
+        ctitic_llm = ChatOpenAI(model_name = openai_filter_llm)
+        embeddings_model = OpenAIEmbedding()
         return cls(generator_llm = generator_llm,
-                   filtering_llm = filtering_llm,
+                   ctitic_llm = ctitic_llm,
                    embeddings_model = embeddings_model)
         
     def _get_evolve_type(self):
@@ -79,24 +86,26 @@ class TestsetGenerator:
     
     def _filter_context(self, context: str):
         
-        prompt = ChatPromptTemplate.from_messages(SCORE_CONTEXT.format(context=context))
-        results = generate(prompts=[prompt], llm=self.filter_llm)
-        score = eval(results.generations[0].text.strip())
+        human_prompt = SCORE_CONTEXT.format(context=context)
+        prompt = ChatPromptTemplate.from_messages([human_prompt])
+        results = generate(prompts=[prompt], llm=self.ctitic_llm)
+        score = eval(results.generations[0][0].text.strip())
         assert isinstance(score, float), "Score should be of type float"
         return score >= self.threshold
     
     
     def _seed_question(self, context: str):
         
-        prompt = ChatPromptTemplate.from_messages(SEED_QUESTION.format(context=context))
+        human_prompt = SEED_QUESTION.format(context=context)
+        prompt = ChatPromptTemplate.from_messages([human_prompt])
         results = generate(prompts=[prompt], llm=self.generator_llm)
-        return results.generations[0].text.strip()
+        return results.generations[0][0].text.strip()
     
     def _filter_question(self, question: str):
         
         prompt = ChatPromptTemplate.from_messages(FILTER_QUESTION.format(question=question))
-        results = generate(prompts=[prompt], llm=self.filter_llm)
-        return bool(results.generations[0].strip().endswith("Yes."))
+        results = generate(prompts=[prompt], llm=self.ctitic_llm)
+        return bool(results.generations[0][0].strip().endswith("Yes."))
     
     def _reasoning_question(self, question: str, context:str):
         
@@ -112,11 +121,12 @@ class TestsetGenerator:
         
     def _multicontext_question(self, question: str, context1: str, context2: str):
         
-        prompt =  ChatPromptTemplate.from_messages(MULTICONTEXT_QUESTION.format(question=question, 
+        human_prompt = MULTICONTEXT_QUESTION.format(question=question, 
                                               context1=context1,
-                                              context2=context2))
-        results = generate(prompts=[prompt], llm=self.filter_llm)
-        return results.generations[0].text.strip()
+                                              context2=context2)
+        prompt = ChatPromptTemplate.from_messages([human_prompt])
+        results = generate(prompts=[prompt], llm=self.generator_llm)
+        return results.generations[0][0].text.strip()
     
     def _compress_question(self, question: str):
         return self._question_transformation(COMPRESS_QUESTION, question=question)
@@ -126,25 +136,42 @@ class TestsetGenerator:
 
     def _question_transformation(self, prompt, question: str):
         
-        prompt =  ChatPromptTemplate.from_messages(prompt.format(question=question))
-        results = generate(prompts=[prompt], llm=self.filter_llm)
-        return results.generations[0].text.strip()
+        human_prompt = prompt.format(question=question)
+        prompt =  ChatPromptTemplate.from_messages([human_prompt])
+        results = generate(prompts=[prompt], llm=self.generator_llm)
+        return results.generations[0][0].text.strip()
     
+    #TODO: change name to something appropriate for every call
     def _question_deepening(self, prompt, question, context):
-        prompt =  ChatPromptTemplate.from_messages(prompt.format(question=question, context=context))
-        results = generate(prompts=[prompt], llm=self.filter_llm)
-        return results.generations[0].text.strip()
+        
+        human_prompt = prompt.format(question=question, context=context)
+        prompt = ChatPromptTemplate.from_messages([human_prompt])
+        results = generate(prompts=[prompt], llm=self.generator_llm)
+        return results.generations[0][0].text.strip()
     
+    
+    def _generate_answer(self, question: str, context: str):
+        return self._question_deepening(
+            ANSWER_FORMULATE, question, context
+        )
+        
+    def _generate_context(self, question: str, text_chunk: str):
+        
+        return self._question_deepening(
+            CONTEXT_FORMULATE, question, text_chunk
+        )
+        
     def _remove_index(self, available_indices: list, node_idx: list):
         
-        _ = [available_indices.pop(idx) for idx in node_idx]
+        for idx in node_idx:
+            available_indices.remove(idx)
         return available_indices
     
     def _generate_doc_node_map(self, documenet_nodes: t.List[TextNode]):
         
         doc_nodeidx = defaultdict(list)
         for idx, node in enumerate(documenet_nodes):
-            doc_nodeidx[node.id_].update(idx)
+            doc_nodeidx[node.id_].append(idx)
             
         return doc_nodeidx
         
@@ -175,12 +202,15 @@ class TestsetGenerator:
         available_indices = np.arange(0, len(document_nodes)).tolist()
         doc_nodeidx = self._generate_doc_node_map(document_nodes)
         count = 0
+        TestDataset = namedtuple("TestDataset", ["question", "context", "answer"])
+        samples = []
+        
         #TODO : Add progess bar
         while count < test_size and available_indices != []:
             
             size = self.rng.integers(1, 3)
             node_idx = self.rng.choice(available_indices, size=1)[0]
-            available_indices = self._remove_index(available_indices, node_idx)
+            available_indices = self._remove_index(available_indices, [node_idx])
 
             neighbor_nodes = doc_nodeidx[document_nodes[node_idx].id_]
             node_indices = self._get_neighbour_node(node_idx, neighbor_nodes) if size > 1 else [node_idx]
@@ -197,22 +227,29 @@ class TestsetGenerator:
              
                 node_embedding = self._embed_nodes([nodes[-1]])
                 neighbor_nodes = self._remove_index(neighbor_nodes, node_indices)
-                neighbour_emb = self._embed_nodes([document_nodes[idx] for idx in neighbor_nodes])
-                _, indices = get_top_k_embeddings(node_embedding, neighbour_emb, similarity_cutoff=self.threshold)
+                neighbor_emb = self._embed_nodes([document_nodes[idx] for idx in neighbor_nodes])
+                _, indices = get_top_k_embeddings(node_embedding, neighbor_emb, similarity_cutoff=self.threshold)
                 if indices:
-                    best_neighbour = neighbor_nodes[indices[0]]
+                    best_neighbor = neighbor_nodes[indices[0]]
                 question = self._multicontext_question(question=seed_question, 
                                                        context1=text_chunk,
-                                                       context2=best_neighbour.get_content())
-                text_chunk = "\n".join([text_chunk, best_neighbour.get_context()])
+                                                       context2=best_neighbor.get_content())
+                text_chunk = "\n".join([text_chunk, best_neighbor.get_context()])
 
             else:    
                 
                 evolve_fun = question_deep_map.get(evolve_type)
                 question = getattr(self, evolve_fun)(seed_question, text_chunk) if evolve_fun else seed_question
             
+            #TODO: Question transformation
+            # compression/conversation
             
+            context = self._generate_context(question, text_chunk)
+            answer = self._generate_answer(question, context)
+            samples.append(TestDataset(question, context, answer))
+            count += 1
             
+        return samples
             
             
             
