@@ -110,3 +110,20 @@ answer: The specific paper being referred to is not mentioned in the question. H
 question:{question}
 answer:
 """)
+
+
+ANSWER_FORMULATE = HumanMessagePromptTemplate.from_template("""
+Answer the question using the information from the given context. 
+question:{question}
+context:{context}
+answer:
+""")
+
+CONTEXT_FORMULATE = HumanMessagePromptTemplate.from_template("""
+Please extract relevant sentences from the provided context that can potentially help answer the following question. While extracting candidate sentences you're not allowed to make any changes to sentences from given context.
+
+
+question:{question}
+context:\n{context}
+candidate sentences:\n
+""")
