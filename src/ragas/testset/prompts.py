@@ -88,7 +88,9 @@ Indirectly Rewritten Question:
 
 
 CONVERSATION_QUESTION = HumanMessagePromptTemplate.from_template("""
-Reformat the provided question into two separate questions that could be part of a conversation. Each question should focus on a specific aspect or subtopic related to the original question.
+Reformat the provided question into two separate questions as if it were to be part of a conversation. Each question should focus on a specific aspect or subtopic related to the original question.
+question: What are the advantages and disadvantages of remote work?
+Reformatted Questions for Conversation: What are the benefits of remote work?\nOn the flip side, what challenges are encountered when working remotely?
 question:{question}
 
 Reformatted Questions for Conversation:
