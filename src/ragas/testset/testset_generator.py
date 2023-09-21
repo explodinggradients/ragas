@@ -1,8 +1,10 @@
+from attr import dataclass
 from llama_index import OpenAIEmbedding
 from numpy.random import default_rng
 import numpy as np
 import numpy.testing as npt
 
+import pandas as pd
 import typing as t
 from llama_index.readers.schema.base import Document
 from llama_index.node_parser.simple import SimpleNodeParser
@@ -80,8 +82,8 @@ class TestsetGenerator:
     def _get_evolve_type(self):
         
         prob = self.rng.uniform(0, 1)
-        for key in self.testset_distribution:
-            if self.testset_distribution[key] <= prob:
+        for key in self.testset_distribution.keys():
+            if prob <= self.testset_distribution[key]:
                 return key
     
     def _filter_context(self, context: str):
@@ -109,13 +111,13 @@ class TestsetGenerator:
     
     def _reasoning_question(self, question: str, context:str):
         
-        return self._question_deepening(
+        return self._qc_template(
             REASONING_QUESTION, question, context
         )
     
     def _condition_question(self, question: str, context: str):
         
-        return self._question_deepening(
+        return self._qc_template(
             CONDITIONAL_QUESTION, question, context
         )
         
@@ -141,8 +143,7 @@ class TestsetGenerator:
         results = generate(prompts=[prompt], llm=self.generator_llm)
         return results.generations[0][0].text.strip()
     
-    #TODO: change name to something appropriate for every call
-    def _question_deepening(self, prompt, question, context):
+    def _qc_template(self, prompt, question, context):
         
         human_prompt = prompt.format(question=question, context=context)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
@@ -150,16 +151,15 @@ class TestsetGenerator:
         return results.generations[0][0].text.strip()
     
     
-    def _generate_answer(self, question: str, context: str):
-        return self._question_deepening(
-            ANSWER_FORMULATE, question, context
-        )
+    def _generate_answer(self, question: str, context: list[str]):
+        return [self._qc_template(
+            ANSWER_FORMULATE, qstn, context[i]
+        ) for i, qstn in enumerate(question.split("\n"))]
         
     def _generate_context(self, question: str, text_chunk: str):
-        
-        return self._question_deepening(
-            CONTEXT_FORMULATE, question, text_chunk
-        )
+        return [self._qc_template(
+            CONTEXT_FORMULATE, qstn, text_chunk
+        ) for qstn in question.split('\n')]
         
     def _remove_index(self, available_indices: list, node_idx: list):
         
@@ -202,7 +202,7 @@ class TestsetGenerator:
         available_indices = np.arange(0, len(document_nodes)).tolist()
         doc_nodeidx = self._generate_doc_node_map(document_nodes)
         count = 0
-        TestDataset = namedtuple("TestDataset", ["question", "context", "answer"])
+        Testdata_tuple = namedtuple("Testdata_tuple", ["question", "context", "answer", "question_type"])
         samples = []
         
         #TODO : Add progess bar
@@ -241,17 +241,42 @@ class TestsetGenerator:
                 evolve_fun = question_deep_map.get(evolve_type)
                 question = getattr(self, evolve_fun)(seed_question, text_chunk) if evolve_fun else seed_question
             
-            #TODO: Question transformation
-            # compression/conversation
+            if evolve_type != "simple":
+                prob = self.rng.uniform(0, 1)
+                if self.chat_qa and prob >= 0.5:
+                    question = self._conversational_question(question=question)
+                else:  
+                    question = self._compress_question(question=question)
             
             context = self._generate_context(question, text_chunk)
             answer = self._generate_answer(question, context)
-            samples.append(TestDataset(question, context, answer))
+            samples.append(Testdata_tuple(question.split("\n"), context, answer, evolve_type))
             count += 1
             
-        return samples
+        return TestDataset(test_data=samples)
             
+
+@dataclass            
+class TestDataset:
+    """
+    TestDataset class
+    """
+    
+    test_data: t.Sequence[tuple[list[str], list[str], list[str], str]]
             
-            
+    def to_pandas(self):
+        
+        data_samples = []
+        for data in self.test_data:
+            is_conv = len(data.context) > 1
+            question_type = data.question_type
+            data = [{"question":qstn, "context": ctx, "answer":ans, "question_type":question_type, "episode_done": True} for qstn, ctx, ans in zip(data.question, data.context, data.answer)]
+            if is_conv:
+                data[-1] = data[0].update({"episode_done":False})
+            data_samples.extend(data)
+        
+        return pd.DataFrame.from_records(data_samples)
+        
+           
             
         
