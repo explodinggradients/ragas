@@ -159,7 +159,10 @@ class ContextRelevancy(MetricWithLLM):
                         if output.lower() != "insufficient information."
                         else []
                     )
-                    score = min(len(indices) / len(context_sents), 1)
+                    if len(context_sents) == 0:
+                        score = 0
+                    else:
+                        score = min(len(indices) / len(context_sents), 1)
                     overlap_scores.append(score)
                 if self.strictness > 1:
                     agr_score = self.sent_agreement.evaluate(n_response)
