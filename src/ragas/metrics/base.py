@@ -11,6 +11,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
 from math import floor
+import os
 
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
@@ -107,8 +108,9 @@ class Metric(ABC):
 
 
 def _llm_factory():
+    if os.environ["OPENAI_API_TYPE"] == "azure":
+        return ChatOpenAI(model_name="gpt-3.5-turbo-16k", model_kwargs={"deployment_id": os.environ.get("DEPLOYMENT_ID")})
     return ChatOpenAI(model_name="gpt-3.5-turbo-16k")  # type: ignore
-
 
 @dataclass
 class MetricWithLLM(Metric):

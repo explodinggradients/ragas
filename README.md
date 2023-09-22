@@ -67,7 +67,8 @@ This is a small example program you can run to see ragas in action!
 from ragas import evaluate
 from datasets import Dataset
 import os
-
+#if os.environ["OPENAI_API_TYPE"] is azure
+#os.environ["DEPLOYMENT_ID"]= "your-deployment_id"
 os.environ["OPENAI_API_KEY"] = "your-openai-key"
 
 # prepare your huggingface dataset in the format
