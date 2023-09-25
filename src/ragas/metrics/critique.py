@@ -63,8 +63,10 @@ class AspectCritique(MetricWithLLM):
     )
 
     def __post_init__(self: t.Self):
-        assert self.name != "", "Expects a name"
-        assert self.definition != "", "Expects definition"
+        if self.name == "":
+            raise ValueError("Expects a name")
+        if self.definition == "":
+            raise ValueError("Expects definition")
 
         # ensure odd number of checks to avoid tie in majority vote.
         self.strictness = (
