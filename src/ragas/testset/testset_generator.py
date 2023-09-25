@@ -291,7 +291,7 @@ class TestsetGenerator:
             node_idx = self.rng.choice(available_indices, size=1)[0]
             available_indices = self._remove_index(available_indices, [node_idx])
 
-            neighbor_nodes = doc_nodeidx[document_nodes[node_idx].node_id]
+            neighbor_nodes = doc_nodeidx[document_nodes[node_idx].node_id] # type: ignore
 
             # Append multiple nodes randomly to remove chunking bias
             node_indices = (
