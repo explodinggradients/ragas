@@ -7,8 +7,8 @@ import numpy.testing as npt
 import pandas as pd
 from langchain.chat_models import ChatOpenAI
 from langchain.chat_models.base import BaseChatModel
-from langchain.embeddings.base import Embeddings
 from langchain.embeddings import OpenAIEmbeddings
+from langchain.embeddings.base import Embeddings
 from langchain.llms.base import BaseLLM
 from langchain.prompts import ChatPromptTemplate
 from llama_index.indices.query.embedding_utils import get_top_k_embeddings
@@ -151,6 +151,9 @@ class TestsetGenerator:
         )
 
     def _get_evolve_type(self) -> str:
+        """
+        Decides question evolution type based on probability
+        """
         prob = self.rng.uniform(0, 1)
         return next(
             (
@@ -162,6 +165,12 @@ class TestsetGenerator:
         )
 
     def _filter_context(self, context: str) -> bool:
+        """
+        context: str
+            The input context
+
+        Checks if the context is has information worthy of framing a question
+        """
         human_prompt = SCORE_CONTEXT.format(context=context)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
         results = generate(prompts=[prompt], llm=self.ctitic_llm)
@@ -248,18 +257,22 @@ class TestsetGenerator:
     def _embed_nodes(self, nodes: t.List[BaseNode]) -> t.Dict[str, t.List[float]]:
         embeddings = {}
         for node in nodes:
-            embeddings[node.id_] = list(self.embedding_model.embed_query(node.get_content()))
-        
+            embeddings[node.id_] = list(
+                self.embedding_model.embed_query(node.get_content())
+            )
 
         return embeddings
 
     def generate(self, documents: t.List[Document], test_size: int) -> TestDataset:
+        # Convert documents into nodes
         node_parser = SimpleNodeParser.from_defaults(
             chunk_size=self.chunk_size, chunk_overlap=0, include_metadata=True
         )
-        document_nodes: t.List[BaseNode] = node_parser.get_nodes_from_documents(documents=documents)
-        
+        document_nodes: t.List[BaseNode] = node_parser.get_nodes_from_documents(
+            documents=documents
+        )
 
+        # maximum 1 seed question per node
         if test_size > len(document_nodes):
             raise ValueError(
                 """Maximum possible number of samples exceeded, 
@@ -279,6 +292,8 @@ class TestsetGenerator:
             available_indices = self._remove_index(available_indices, [node_idx])
 
             neighbor_nodes = doc_nodeidx[document_nodes[node_idx].node_id]
+
+            # Append multiple nodes randomly to remove chunking bias
             node_indices = (
                 self._get_neighbour_node(node_idx, neighbor_nodes)
                 if size > 1 and evolve_type != "multi_context"
@@ -293,6 +308,7 @@ class TestsetGenerator:
             seed_question = self._seed_question(text_chunk)
 
             if evolve_type == "multi_context":
+                # Find most similar chunk in same document
                 node_embedding = self._embed_nodes([nodes[-1]])
                 neighbor_nodes = self._remove_index(neighbor_nodes, node_indices)
                 neighbor_emb = self._embed_nodes(
@@ -322,6 +338,7 @@ class TestsetGenerator:
                     else seed_question
                 )
 
+            # compress question or convert into conversational questions
             if evolve_type != "simple":
                 prob = self.rng.uniform(0, 1)
                 if self.chat_qa and prob <= self.chat_qa:
