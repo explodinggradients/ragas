@@ -4,8 +4,8 @@ from torch.cuda import is_available
 from ragas import evaluate
 from ragas.metrics import (
     answer_relevancy,
+    context_precision,
     context_recall,
-    context_relevancy,
     faithfulness,
 )
 from ragas.metrics.critique import harmfulness
@@ -20,7 +20,7 @@ if __name__ == "__main__":
         ds.select(range(5)),
         metrics=[
             answer_relevancy,
-            context_relevancy,
+            context_precision,
             faithfulness,
             harmfulness,
             context_recall,

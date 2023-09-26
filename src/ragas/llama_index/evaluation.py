@@ -51,13 +51,13 @@ def evaluate(
     of questions.
 
     ```python
-    from ragas.metrics import faithfulness, answer_relevancy, context_relevancy
+    from ragas.metrics import faithfulness, answer_relevancy, context_precision
     from ragas.metrics.critique import harmfulness
     from ragas.llama_index import evaluate
 
     query_engine = # from llamaindex
     questions: list[str] = [] # from somewhere
-    metrics = [faithfulness, answer_relevancy, context_relevancy, harmfulness]
+    metrics = [faithfulness, answer_relevancy, context_precision, harmfulness]
 
     r = evaluate(query_engine, metrics, questions)
 

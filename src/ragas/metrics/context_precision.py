@@ -181,8 +181,9 @@ class ContextPrecision(MetricWithLLM):
 
 @dataclass
 class ContextRelevancy(ContextPrecision):
+    name: str = "context_relevancy"
     show_deprecation_warning: bool = True
 
 
 context_precision = ContextPrecision()
-context_relevancy = ContextRelevancy()
+context_precision = ContextRelevancy()

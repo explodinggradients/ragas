@@ -68,7 +68,7 @@ def evaluate(
 
     >>> result = evaluate(dataset)
     >>> print(result["ragas_score"])
-    {'ragas_score': 0.860, 'context_relevancy': 0.817, 'faithfulness': 0.892,
+    {'ragas_score': 0.860, 'context_precision': 0.817, 'faithfulness': 0.892,
     'answer_relevancy': 0.874}
     ```
     """
@@ -78,12 +78,12 @@ def evaluate(
     if metrics is None:
         from ragas.metrics import (
             answer_relevancy,
+            context_precision,
             context_recall,
-            context_relevancy,
             faithfulness,
         )
 
-        metrics = [answer_relevancy, context_relevancy, faithfulness, context_recall]
+        metrics = [answer_relevancy, context_precision, faithfulness, context_recall]
 
     # remap column names from the dataset
     dataset = remap_column_names(dataset, column_map)
