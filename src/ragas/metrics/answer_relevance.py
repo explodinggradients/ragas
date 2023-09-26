@@ -59,9 +59,11 @@ class AnswerRelevancy(MetricWithLLM):
     def __post_init__(self: t.Self):
         self.temperature = 0.2 if self.strictness > 0 else 0
 
-    def init_model(self: t.Self):
         if self.embeddings is None:
             self.embeddings = OpenAIEmbeddings()  # type: ignore
+
+    def init_model(self: t.Self):
+        pass
 
     def _score_batch(
         self: t.Self,
