@@ -32,7 +32,7 @@ from ragas.testset.prompts import (
     SEED_QUESTION,
 )
 
-DEFAULT_TESTDISTRIBUTION = {
+DEFAULT_TEST_DISTRIBUTION = {
     "simple": 0.5,
     "reasoning": 0.2,
     "multi_context": 0.2,
@@ -44,8 +44,8 @@ question_deep_map = {
     "conditional": "_condition_question",
 }
 
-Testdata_tuple = namedtuple(
-    "Testdata_tuple", ["question", "context", "answer", "question_type"]
+TestdataRow = namedtuple(
+    "TestdataRow", ["question", "context", "answer", "question_type"]
 )
 
 
@@ -55,7 +55,7 @@ class TestDataset:
     TestDataset class
     """
 
-    test_data: t.List[Testdata_tuple]
+    test_data: t.List[TestdataRow]
 
     def to_pandas(self) -> pd.DataFrame:
         data_samples = []
@@ -105,7 +105,7 @@ class TestsetGenerator:
     def __init__(
         self,
         generator_llm: BaseLLM | BaseChatModel,
-        ctitic_llm: BaseLLM | BaseChatModel,
+        critic_llm: BaseLLM | BaseChatModel,
         embeddings_model: Embeddings,
         testset_distribution: t.Optional[t.Dict[str, float]] = None,
         chat_qa: float = 0.3,
@@ -113,9 +113,9 @@ class TestsetGenerator:
         seed: int = 42,
     ) -> None:
         self.generator_llm = generator_llm
-        self.ctitic_llm = ctitic_llm
+        self.critic_llm = critic_llm
         self.embedding_model = embeddings_model
-        testset_distribution = testset_distribution or DEFAULT_TESTDISTRIBUTION
+        testset_distribution = testset_distribution or DEFAULT_TEST_DISTRIBUTION
         npt.assert_almost_equal(
             1,
             sum(testset_distribution.values()),
@@ -140,11 +140,11 @@ class TestsetGenerator:
         chunk_size: int = 1024,
     ):
         generator_llm = ChatOpenAI(model=openai_generator_llm)
-        ctitic_llm = ChatOpenAI(model=openai_filter_llm)
-        embeddings_model = OpenAIEmbeddings()
+        critic_llm = ChatOpenAI(model=openai_filter_llm)
+        embeddings_model = OpenAIEmbeddings()  # type: ignore
         return cls(
             generator_llm=generator_llm,
-            ctitic_llm=ctitic_llm,
+            critic_llm=critic_llm,
             embeddings_model=embeddings_model,
             chat_qa=chat_qa,
             chunk_size=chunk_size,
@@ -173,7 +173,7 @@ class TestsetGenerator:
         """
         human_prompt = SCORE_CONTEXT.format(context=context)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = generate(prompts=[prompt], llm=self.ctitic_llm)
+        results = generate(prompts=[prompt], llm=self.critic_llm)
         score = eval(results.generations[0][0].text.strip())
         if not isinstance(score, float | int):
             score = 0.0
@@ -188,7 +188,7 @@ class TestsetGenerator:
     def _filter_question(self, question: str) -> bool:
         human_prompt = FILTER_QUESTION.format(question=question)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = generate(prompts=[prompt], llm=self.ctitic_llm)
+        results = generate(prompts=[prompt], llm=self.critic_llm)
         return bool(results.generations[0][0].text.strip().endswith("Yes."))
 
     def _reasoning_question(self, question: str, context: str) -> str:
@@ -351,7 +351,7 @@ class TestsetGenerator:
             context = self._generate_context(question, text_chunk)
             answer = self._generate_answer(question, context)
             samples.append(
-                Testdata_tuple(question.split("\n"), context, answer, evolve_type)
+                TestdataRow(question.split("\n"), context, answer, evolve_type)
             )
             count += 1
             pbar.update(count)
