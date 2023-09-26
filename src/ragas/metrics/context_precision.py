@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from dataclasses import dataclass
 from itertools import combinations, product
@@ -15,7 +16,7 @@ from sentence_transformers import CrossEncoder
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.metrics.llms import generate
 
-CONTEXT_RELEVANCE = HumanMessagePromptTemplate.from_template(
+CONTEXT_PRECISION = HumanMessagePromptTemplate.from_template(
     """\
 Please extract relevant sentences from the provided context that can potentially help answer the following question. If no relevant sentences are found, or if you believe the question cannot be answered from the given context, return the phrase "Insufficient Information".  While extracting candidate sentences you're not allowed to make any changes to sentences from given context.
 
@@ -82,7 +83,7 @@ class SentenceAgreement:
 
 
 @dataclass
-class ContextRelevancy(MetricWithLLM):
+class ContextPrecision(MetricWithLLM):
     """
     Extracts sentences from the context that are relevant to the question with
     self-consistancy checks. The number of relevant sentences and is used as the score.
@@ -102,12 +103,13 @@ class ContextRelevancy(MetricWithLLM):
         any encoder model. Used for calculating bert_score.
     """
 
-    name: str = "context_relevancy"
+    name: str = "context_precision"
     evaluation_mode: EvaluationMode = EvaluationMode.qc
     batch_size: int = 15
     strictness: int = 1
     agreement_metric: str = "bert_score"
     model_name: str = "cross-encoder/stsb-TinyBERT-L-4"
+    show_deprecation_warning: bool = False
 
     def __post_init__(self: t.Self):
         if self.agreement_metric == "bert_score" and self.model_name is None:
@@ -127,13 +129,17 @@ class ContextRelevancy(MetricWithLLM):
         callbacks: t.Optional[CallbackManager] = None,
         callback_group_name: str = "batch",
     ) -> list[float]:
+        if self.show_deprecation_warning:
+            logging.warning(
+                "The 'context_relevancy' metric is going to be deprecated soon! Please use the 'context_precision' metric instead. It is a drop-in replacement just a simple search and replace should work."  # noqa
+            )
         prompts = []
         questions, contexts = dataset["question"], dataset["contexts"]
         with trace_as_chain_group(
             callback_group_name, callback_manager=callbacks
         ) as batch_group:
             for q, c in zip(questions, contexts):
-                human_prompt = CONTEXT_RELEVANCE.format(
+                human_prompt = CONTEXT_PRECISION.format(
                     question=q, context="\n".join(c)
                 )
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
@@ -173,4 +179,11 @@ class ContextRelevancy(MetricWithLLM):
         return scores
 
 
-context_relevancy = ContextRelevancy()
+@dataclass
+class ContextRelevancy(ContextPrecision):
+    name: str = "context_relevancy"
+    show_deprecation_warning: bool = True
+
+
+context_precision = ContextPrecision()
+context_precision = ContextRelevancy()

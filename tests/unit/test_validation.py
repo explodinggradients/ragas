@@ -3,7 +3,7 @@ from collections import namedtuple
 import pytest
 from datasets import Dataset
 
-from ragas.metrics import answer_relevancy, context_relevancy, faithfulness
+from ragas.metrics import answer_relevancy, context_precision, faithfulness
 from ragas.validation import (
     remap_column_names,
     validate_column_dtypes,
@@ -17,15 +17,15 @@ CaseToTest = namedtuple(
 TEST_CASES = [
     CaseToTest("a", "b", ["c"], None, True, [faithfulness], True),
     CaseToTest("a", "b", ["c"], ["g"], True, [faithfulness], True),
-    CaseToTest("a", None, ["c"], None, True, [context_relevancy], True),
-    CaseToTest("a", None, "c", None, False, [context_relevancy], True),
+    CaseToTest("a", None, ["c"], None, True, [context_precision], True),
+    CaseToTest("a", None, "c", None, False, [context_precision], True),
     CaseToTest(
-        "a", None, [["c"]], None, False, [context_relevancy, answer_relevancy], False
+        "a", None, [["c"]], None, False, [context_precision, answer_relevancy], False
     ),
-    CaseToTest("a", None, ["c"], "g", False, [context_relevancy], True),
-    CaseToTest("a", None, ["c"], [["g"]], False, [context_relevancy], True),
-    CaseToTest(1, None, ["c"], ["g"], False, [context_relevancy], True),
-    CaseToTest(1, None, None, None, False, [context_relevancy], False),
+    CaseToTest("a", None, ["c"], "g", False, [context_precision], True),
+    CaseToTest("a", None, ["c"], [["g"]], False, [context_precision], True),
+    CaseToTest(1, None, ["c"], ["g"], False, [context_precision], True),
+    CaseToTest(1, None, None, None, False, [context_precision], False),
 ]
 
 

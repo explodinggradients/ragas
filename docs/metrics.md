@@ -15,15 +15,15 @@ dataset: Dataset
 
 results = faithfulness.score(dataset)
 ```
-### `ContextRelevancy`
+### `ContextPrecision`
 
 This measures how relevant is the retrieved context to the prompt. This is done using a combination of OpenAI models and cross-encoder models. To improve the score one can try to optimize the amount of information present in the retrieved context. It is calculated from `question` and `retrieved context`. 
 ```python
-from ragas.metrics import ContextRelevancy
-context_relevancy = ContextRelevancy(strictness=3)
+from ragas.metrics import ContextPrecision
+context_precision = ContextPrecision(strictness=3)
 
 # run init models to load the models used
-context_relevancy.init_model()
+context_precision.init_model()
 
 # Dataset({
 #     features: ['question','contexts'],
@@ -31,7 +31,7 @@ context_relevancy.init_model()
 # })
 dataset: Dataset
 
-results = context_relevancy.score(dataset)
+results = context_precision.score(dataset)
 ```
 
 ### `Context Recall`
