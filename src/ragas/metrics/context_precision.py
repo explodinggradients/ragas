@@ -131,8 +131,8 @@ class ContextPrecision(MetricWithLLM):
     ) -> list[float]:
         if self.show_deprecation_warning:
             logging.warning(
-                "The 'context_relevancy' metric is going to be deprecated soon! Please use the 'context_precision' metric instead. It is a drop-in replacement just a simple search and replace should work."
-            )  # noqa
+                "The 'context_relevancy' metric is going to be deprecated soon! Please use the 'context_precision' metric instead. It is a drop-in replacement just a simple search and replace should work."  # noqa
+            )
         prompts = []
         questions, contexts = dataset["question"], dataset["contexts"]
         with trace_as_chain_group(
