@@ -44,9 +44,7 @@ question_deep_map = {
     "conditional": "_condition_question",
 }
 
-TestdataRow = namedtuple(
-    "TestdataRow", ["question", "context", "answer", "question_type"]
-)
+DataRow = namedtuple("DataRow", ["question", "context", "answer", "question_type"])
 
 
 @dataclass
@@ -55,7 +53,7 @@ class TestDataset:
     TestDataset class
     """
 
-    test_data: t.List[TestdataRow]
+    test_data: t.List[DataRow]
 
     def to_pandas(self) -> pd.DataFrame:
         data_samples = []
@@ -286,16 +284,14 @@ class TestsetGenerator:
 
         pbar = tqdm(total=test_size)
         while count < test_size and available_indices != []:
-            size = self.rng.integers(1, 3)
             evolve_type = self._get_evolve_type()
             node_idx = self.rng.choice(available_indices, size=1)[0]
             available_indices = self._remove_index(available_indices, [node_idx])
 
-            neighbor_nodes = doc_nodeidx[
-                document_nodes[node_idx].node_id  # type: ignore
-            ]
+            neighbor_nodes = doc_nodeidx[document_nodes[node_idx].node_id]
 
             # Append multiple nodes randomly to remove chunking bias
+            size = self.rng.integers(1, 3)
             node_indices = (
                 self._get_neighbour_node(node_idx, neighbor_nodes)
                 if size > 1 and evolve_type != "multi_context"
@@ -332,6 +328,8 @@ class TestsetGenerator:
                 else:
                     continue
 
+            # for reasoning and conditional modes, evolve question with the
+            # functions from question_deep_map
             else:
                 evolve_fun = question_deep_map.get(evolve_type)
                 question = (
@@ -350,9 +348,7 @@ class TestsetGenerator:
 
             context = self._generate_context(question, text_chunk)
             answer = self._generate_answer(question, context)
-            samples.append(
-                TestdataRow(question.split("\n"), context, answer, evolve_type)
-            )
+            samples.append(DataRow(question.split("\n"), context, answer, evolve_type))
             count += 1
             pbar.update(count)
 
