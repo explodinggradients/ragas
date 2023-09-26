@@ -9,6 +9,8 @@ from ragas.metrics.context_recall import ContextRecall, context_recall
 from ragas.metrics.critique import AspectCritique
 from ragas.metrics.faithfulness import Faithfulness, faithfulness
 
+DEFAULT_METRICS = [answer_relevancy, context_relevancy, faithfulness, context_recall]
+
 # TODO: remove context_relevancy, ContextRelevancy after 0.1.0
 __all__ = [
     "Faithfulness",

@@ -3,9 +3,9 @@ from __future__ import annotations
 import typing as t
 
 from datasets import Dataset
-from rich.repr import Result
 
 from ragas import evaluate as ragas_evaluate
+from ragas.evaluation import Result
 from ragas.metrics.base import Metric
 
 if t.TYPE_CHECKING:
