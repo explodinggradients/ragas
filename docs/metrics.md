@@ -4,7 +4,7 @@
 
 This measures the factual consistency of the generated answer against the given context. This is done using a multi step paradigm that includes creation of statements from the generated answer followed by verifying each of these statements against the context. It is calculated from `answer` and `retrieved context`. The answer is scaled to (0,1) range. Higher the better.
 ```python
-from ragas.metrics.factuality import Faithfulness
+from ragas.metrics.faithfulness import Faithfulness
 faithfulness = Faithfulness()
 
 # Dataset({
@@ -19,22 +19,26 @@ results = faithfulness.score(dataset)
 
 This measures how relevant is the retrieved context to the prompt. This is done using a combination of OpenAI models and cross-encoder models. To improve the score one can try to optimize the amount of information present in the retrieved context. It is calculated from `question` and `retrieved context`. 
 ```python
-from ragas.metrics.context_relevancy import ContextRelevancy
-context_rel = ContextRelevancy(strictness=3)
+from ragas.metrics import ContextRelevancy
+context_relevancy = ContextRelevancy(strictness=3)
+
+# run init models to load the models used
+context_relevancy.init_model()
+
 # Dataset({
 #     features: ['question','contexts'],
 #     num_rows: 25
 # })
 dataset: Dataset
 
-results = context_rel.score(dataset)
+results = context_relevancy.score(dataset)
 ```
 
 ### `Context Recall`
 measures the recall of the retrieved context using annotated answer as ground truth. Annotated answer is taken as proxy for ground truth context. It is calculated from `ground truth` and `retrieved context`.
 
 ```python
-from ragas.metrics.context_recall import ContextRecall
+from ragas.metrics import ContextRecall
 context_recall = ContextRecall()
 # Dataset({
 #     features: ['contexts','ground_truths'],
@@ -50,8 +54,12 @@ results = context_recall.score(dataset)
 
 This measures how relevant is the generated answer to the prompt. If the generated answer is incomplete or contains redundant information the score will be low. This is quantified by working out the chance of an LLM generating the given question using the generated answer. It is calculated from `question` and `answer`. Values range (0,1), higher the better.
 ```python
-from ragas.metrics.answer_relevancy import AnswerRelevancy
+from ragas.metrics import AnswerRelevancy
 answer_relevancy = AnswerRelevancy()
+
+# init_model to load models used
+answer_relevancy.init_model()
+
 # Dataset({
 #     features: ['question','answer'],
 #     num_rows: 25
@@ -74,7 +82,6 @@ from ragas.metrics.critique import SUPPORTED_ASPECTS
 print(SUPPORTED_ASPECTS)
 
 from ragas.metrics.critique import conciseness
-from ragas
 # Dataset({
 #     features: ['question','answer'],
 #     num_rows: 25
@@ -88,6 +95,7 @@ results = conciseness.score(dataset)
 from ragas.metrics.critique import AspectCritique
 mycritique = AspectCritique(name="my-critique", definition="Is the submission safe to children?", strictness=2)
 
+results = mycritique.score(dataset)
 ```  
 
 
