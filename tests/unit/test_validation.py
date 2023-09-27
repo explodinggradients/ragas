@@ -3,7 +3,7 @@ from collections import namedtuple
 import pytest
 from datasets import Dataset
 
-from ragas.metrics import answer_relevancy, context_relevancy, faithfulness
+from ragas.metrics import answer_relevancy, context_precision, faithfulness
 from ragas.validation import (
     remap_column_names,
     validate_column_dtypes,
@@ -17,15 +17,15 @@ CaseToTest = namedtuple(
 TEST_CASES = [
     CaseToTest("a", "b", ["c"], None, True, [faithfulness], True),
     CaseToTest("a", "b", ["c"], ["g"], True, [faithfulness], True),
-    CaseToTest("a", None, ["c"], None, True, [context_relevancy], True),
-    CaseToTest("a", None, "c", None, False, [context_relevancy], True),
+    CaseToTest("a", None, ["c"], None, True, [context_precision], True),
+    CaseToTest("a", None, "c", None, False, [context_precision], True),
     CaseToTest(
-        "a", None, [["c"]], None, False, [context_relevancy, answer_relevancy], False
+        "a", None, [["c"]], None, False, [context_precision, answer_relevancy], False
     ),
-    CaseToTest("a", None, ["c"], "g", False, [context_relevancy], True),
-    CaseToTest("a", None, ["c"], [["g"]], False, [context_relevancy], True),
-    CaseToTest(1, None, ["c"], ["g"], False, [context_relevancy], True),
-    CaseToTest(1, None, None, None, False, [context_relevancy], False),
+    CaseToTest("a", None, ["c"], "g", False, [context_precision], True),
+    CaseToTest("a", None, ["c"], [["g"]], False, [context_precision], True),
+    CaseToTest(1, None, ["c"], ["g"], False, [context_precision], True),
+    CaseToTest(1, None, None, None, False, [context_precision], False),
 ]
 
 
@@ -105,3 +105,23 @@ def test_column_remap(column_map):
     remapped_dataset = remap_column_names(TEST_DATASET, column_map)
 
     assert remapped_dataset.column_names == list(column_map.keys())
+
+
+def test_column_remap_omit():
+    TEST_DATASET = Dataset.from_dict(
+        {
+            "query": [""],
+            "answer": [""],
+            "contexts": [[""]],
+        }
+    )
+
+    column_map = {
+        "question": "query",
+        "contexts": "contexts",
+        "answer": "answer",
+        "ground_truths": "ground_truths",
+    }
+
+    remapped_dataset = remap_column_names(TEST_DATASET, column_map)
+    assert remapped_dataset.column_names == ["question", "contexts", "answer"]

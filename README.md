@@ -39,9 +39,9 @@
     <p>
 </h4>
 
-> Note: We're working with a few select organisations, leveraging what we learned building Ragas, to improve the reliability of their RAG systems in production. Due to our small team size we can only work with a few clients so do fill out [this form](https://forms.gle/tk9VZMaeybxQATU69) or write to us at [team@explodinggradients.com](mailto:team@explodinggradients.com) and we will get back 🙂
+> 🚀 Dedicated solutions and support to improve the reliability of RAG systems in production including custom models for production quality monitoring. Contact founders to learn more. [Talk to founders](https://calendly.com/shahules/30min)
 
-ragas is a framework that helps you evaluate your Retrieval Augmented Generation (RAG) pipelines. RAG denotes a class of LLM applications that use external data to augment the LLM’s context. There are existing tools and frameworks that help you build these pipelines but evaluating it and quantifying your pipeline performance can be hard... This is where ragas (RAG Assessment) comes in
+ragas is a framework that helps you evaluate your Retrieval Augmented Generation (RAG) pipelines. RAG denotes a class of LLM applications that use external data to augment the LLM’s context. There are existing tools and frameworks that help you build these pipelines but evaluating it and quantifying your pipeline performance can be hard. This is where ragas (RAG Assessment) comes in.
 
 ragas provides you with the tools based on the latest research for evaluating LLM-generated text to give you insights about your RAG pipeline. ragas can be integrated with your CI/CD to provide continuous checks to ensure performance.
 
@@ -79,7 +79,7 @@ os.environ["OPENAI_API_KEY"] = "your-openai-key"
 dataset: Dataset
 
 results = evaluate(dataset)
-# {'ragas_score': 0.860, 'context_relevancy': 0.817,
+# {'ragas_score': 0.860, 'context_precision': 0.817,
 # 'faithfulness': 0.892, 'answer_relevancy': 0.874}
 ```
 
@@ -87,11 +87,13 @@ If you want a more in-depth explanation of core components, check out our [quick
 
 ## :luggage: Metrics
 
-Ragas measures your pipeline's performance against different dimensions
+Ragas measures your pipeline's performance against different dimensions:
+
+![image](https://github.com/emilesilvis/ragas/assets/557338/b6c0db98-a0a9-4414-9ad3-372d8ceab4c7)
 
 1. **Faithfulness**: measures the information consistency of the generated answer against the given context. If any claims are made in the answer that cannot be deduced from context is penalized. It is calculated from `answer` and `retrieved context`.
 
-2. **Context Relevancy**: measures how relevant retrieved contexts are to the question. Ideally, the context should only contain information necessary to answer the question. The presence of redundant information in the context is penalized. It is calculated from `question` and `retrieved context`.
+2. **Context Precision**: measures how relevant retrieved contexts are to the question. Ideally, the context should only contain information necessary to answer the question. The presence of redundant information in the context is penalized. It is calculated from `question` and `retrieved context`.
 
 3. **Context Recall**: measures the recall of the retrieved context using annotated answer as ground truth. Annotated answer is taken as proxy for ground truth context. It is calculated from `ground truth` and `retrieved context`.
 
