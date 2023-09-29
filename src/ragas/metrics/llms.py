@@ -188,7 +188,7 @@ class LangchainLLM(BaseRagasLLM):
                     completions.append(result.generations[i][0])
                 generations.append(completions)
 
-            # compute token usage
+            # compute total token usage by adding individual token usage
             llm_output = list_llmresults[0].llm_output
             if "token_usage" in llm_output:
                 sum_prompt_tokens = 0
