@@ -16,14 +16,30 @@ if t.TYPE_CHECKING:
 
 @dataclass
 class AnswerCorrectness(MetricWithLLM):
+
     """
-    docs
+    Measures answer correctness compared to ground truth as a combination of
+    semantic similarity and factuality
+
+    Attributes
+    ----------
+    name: string
+        The name of the metrics
+    batch_size: int
+        batch size for evaluation
+    weights:
+        a list of two weights corresponding to semantic similarity and factuality
+        Defaults [0.5, 0.5]
+    answer_similarity:
+        The AnswerSimilarity object
+    faithfulness
+        The faithfulness object
     """
 
     name: str = "answer_correctness"
     evaluation_mode: EvaluationMode = EvaluationMode.qga
     batch_size: int = 15
-    weights: list[float, float] = field(default_factory=lambda: [0.5, 0.5])
+    weights: list[float] = field(default_factory=lambda: [0.5, 0.5])
     answer_similarity: AnswerSimilarity | None = None
     faithfulness: Faithfulness | None = None
 
@@ -48,13 +64,12 @@ class AnswerCorrectness(MetricWithLLM):
             ds_faithfulness = dataset
 
         ds_faithfulness = ds_faithfulness.rename_columns({"ground_truths": "contexts"})
-        print(ds_faithfulness.column_names)
-        faithfulness_scores = self.faithfulness._score_batch(ds_faithfulness)
-        similarity_scores = self.answer_similarity._score_batch(dataset)
+        faith_scores = self.faithfulness._score_batch(ds_faithfulness)  # type: ignore
+        similarity_scores = self.answer_similarity._score_batch(dataset)  # type: ignore
 
-        scores = np.vstack([faithfulness_scores, similarity_scores])
+        scores = np.vstack([faith_scores, similarity_scores])
         scores = np.average(
-            [faithfulness_scores, similarity_scores], axis=0, weights=self.weights
+            [faith_scores, similarity_scores], axis=0, weights=self.weights
         )
 
         return scores.tolist()

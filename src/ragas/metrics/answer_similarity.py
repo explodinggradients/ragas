@@ -16,14 +16,29 @@ if t.TYPE_CHECKING:
 @dataclass
 class AnswerSimilarity(MetricWithLLM):
     """
-    docs
+    Scores the semantic similarity of ground truth with generated answer.
+    cross encoder score is used to quantify semantic similarity.
+    SAS paper: https://arxiv.org/pdf/2108.06130.pdf
+
+    Attributes
+    ----------
+    name : str
+    batch_size : int
+        Batch size for openai completion.
+    embeddings:
+        The cross-encoder model to be used.
+        Defaults cross-encoder/stsb-TinyBERT-L-4
+        Other good options https://huggingface.co/spaces/mteb/leaderboard
+    threshold:
+        The threshold if given used to map output to binary
+        Default 0.5
     """
 
     name: str = "answer_similarity"
     evaluation_mode: EvaluationMode = EvaluationMode.ga
     batch_size: int = 15
     embeddings: str | None = None
-    threshold: float | None = None
+    threshold: float | None = 0.5
 
     def __post_init__(self: t.Self):
         if self.embeddings is None:
