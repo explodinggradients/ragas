@@ -186,4 +186,4 @@ class ContextRelevancy(ContextPrecision):
 
 
 context_precision = ContextPrecision()
-context_precision = ContextRelevancy()
+context_relevancy = ContextRelevancy()
