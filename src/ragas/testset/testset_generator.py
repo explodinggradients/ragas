@@ -172,8 +172,12 @@ class TestsetGenerator:
         human_prompt = SCORE_CONTEXT.format(context=context)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
         results = generate(prompts=[prompt], llm=self.critic_llm)
-        score = eval(results.generations[0][0].text.strip())
-        if not isinstance(score, float | int):
+        output = results.generations[0][0].text.strip()
+        index = output.lower().find("score:")
+        if index != -1:
+            index += len("score:")
+            score = eval(output[index:])
+        else:
             score = 0.0
         return score >= self.threshold
 
