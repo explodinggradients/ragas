@@ -173,12 +173,14 @@ class TestsetGenerator:
         prompt = ChatPromptTemplate.from_messages([human_prompt])
         results = generate(prompts=[prompt], llm=self.critic_llm)
         output = results.generations[0][0].text.strip()
-        index = output.lower().find("score:")
-        if index != -1:
-            index += len("score:")
-            score = eval(output[index:])
-        else:
-            score = 0.0
+        score = eval(output)
+        if not isinstance(score, float | int):
+            index = output.lower().find("score:")
+            if index != -1:
+                index += len("score:")
+                score = eval(output[index:])
+            else:
+                score = 0.0
         return score >= self.threshold
 
     def _seed_question(self, context: str) -> str:
