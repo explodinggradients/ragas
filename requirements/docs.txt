@@ -1,3 +1,4 @@
 sphinx
-myst-parser
 git+https://github.com/kai687/sphinxawesome-theme.git
+myst-parser
+myst-nb

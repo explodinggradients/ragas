@@ -15,7 +15,7 @@ release = "0.0.16"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "myst_parser",
+    "myst_nb",
     "sphinxawesome_theme.highlighting",
     # "sphinxawesome_theme.docsearch",
 ]
@@ -27,13 +27,12 @@ exclude_patterns = []
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
+html_title = "Ragas"
 html_theme = "sphinxawesome_theme"
 html_static_path = ["_static"]
-
-# -- sphinxawesome_theme configurations -------------------------------------------------
+html_css_files = ["./assets/ragas.css"]
 
 html_theme_options = {
-    "logo_only": True,
-    "logo_light": "./assets/1.jpg",
-    "logo_dark": "./assets/2.jpg",
+    "logo_light": "./assets/ragas-logo.png",
+    "logo_dark": "./assets/ragas-logo.png",
 }
