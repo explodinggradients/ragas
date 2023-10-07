@@ -34,3 +34,7 @@ test: ## Run tests
 test-e2e: ## Run end2end tests
 	echo "running end2end tests..."
 	@pytest tests/e2e -s
+	
+# Docs
+watch-docs: ## Build and watch documentation
+	sphinx-autobuild docs/source docs/build/html --watch $(GIT_ROOT)/src/ --ignore "bazel-*"
