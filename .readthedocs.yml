@@ -12,7 +12,7 @@ build:
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
-  configuration: ./docs/source/conf.py
+  configuration: ./docs/conf.py
   # You can configure Sphinx to use a different builder, for instance use the dirhtml builder for simpler URLs
   # builder: "dirhtml"
   # Fail on all warnings to avoid broken references

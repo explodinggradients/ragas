@@ -37,4 +37,4 @@ test-e2e: ## Run end2end tests
 	
 # Docs
 watch-docs: ## Build and watch documentation
-	sphinx-autobuild docs/source docs/build/html --watch $(GIT_ROOT)/src/ --ignore "bazel-*"
+	sphinx-autobuild docs/ docs/build/html --watch $(GIT_ROOT)/src/ --ignore "bazel-*"
