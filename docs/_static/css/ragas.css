@@ -1,0 +1,25 @@
+/* Make pandas tables look correct in dark-mode */
+div.cell_output table {
+    color: var(--color-content-foreground);
+}
+
+div.cell_output table {
+    margin: auto;
+}
+
+div.cell_output tbody tr:nth-child(odd):not(:hover) {
+    background: var(--color-table-header-background);
+}
+
+div.cell_output thead {
+    border-bottom-color: var(--color-code-foreground);
+}
+
+div.cell_input {
+    display: none;
+}
+
+.dark {
+    background: var(--color-content-background);
+    color: var(--color-content-foreground);
+}

@@ -34,3 +34,8 @@ test: ## Run tests
 test-e2e: ## Run end2end tests
 	echo "running end2end tests..."
 	@pytest tests/e2e -s
+	
+# Docs
+doc-site: ## Build and serve documentation
+	@sphinx-build -nW --keep-going -j 4 -b html $(GIT_ROOT)/docs/ $(GIT_ROOT)/docs/_build/html
+	@python -m http.server --directory $(GIT_ROOT)/docs/_build/html
