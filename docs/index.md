@@ -9,5 +9,5 @@ Ragas provides you with the tools based on the latest research for evaluating LL
 getstarted/index.md
 concepts/index.md
 howtos/index.md
-references.md
+references/index.md
 ```

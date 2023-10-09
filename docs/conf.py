@@ -32,12 +32,12 @@ exclude_patterns = []
 
 html_title = "Ragas"
 html_theme = "sphinxawesome_theme"
-html_static_path = ["assets"]
+html_static_path = ["_static"]
 html_css_files = ["css/ragas.css"]
 
 html_theme_options = {
-    "logo_light": "./assets/imgs/ragas-logo.png",
-    "logo_dark": "./assets/imgs/ragas-logo.png",
+    "logo_light": "./_static/imgs/ragas-logo.png",
+    "logo_dark": "./_static/imgs/ragas-logo.png",
 }
 
 # -- Myst NB Config -------------------------------------------------
