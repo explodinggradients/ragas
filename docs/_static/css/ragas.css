@@ -18,3 +18,8 @@ div.cell_output thead {
 div.cell_input {
     display: none;
 }
+
+.dark {
+    background: var(--color-content-background);
+    color: var(--color-content-foreground);
+}

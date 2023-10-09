@@ -6,7 +6,7 @@ Ragas provides you with the tools based on the latest research for evaluating LL
 
 ```{toctree}
 :hidden:
-quickstarts/index.md
+getstarted/index.md
 concepts/index.md
 howtos/index.md
 references.md

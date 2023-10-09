@@ -1,5 +1,5 @@
 # Core Concepts
 
 ```{toctree}
-concepts/metrics.md
+metrics.md
 ```

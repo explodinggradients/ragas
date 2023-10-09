@@ -15,10 +15,13 @@ release = "0.0.16"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "myst_nb",
+    "myst_parser",
+    "sphinx_design",
+    # "myst_parser",
     "sphinxawesome_theme.highlighting",
     # "sphinxawesome_theme.docsearch",
 ]
+source_suffix = [".rst", ".md"]
 
 templates_path = ["_templates"]
 exclude_patterns = []
@@ -33,8 +36,8 @@ html_static_path = ["assets"]
 html_css_files = ["css/ragas.css"]
 
 html_theme_options = {
-    "logo_light": "imgs/ragas-logo.png",
-    "logo_dark": "imgs/ragas-logo.png",
+    "logo_light": "./assets/imgs/ragas-logo.png",
+    "logo_dark": "./assets/imgs/ragas-logo.png",
 }
 
 # -- Myst NB Config -------------------------------------------------
