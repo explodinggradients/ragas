@@ -34,6 +34,7 @@ html_title = "Ragas"
 html_theme = "sphinxawesome_theme"
 html_static_path = ["_static"]
 html_css_files = ["css/ragas.css"]
+html_favicon = "./_static/favicon.ico"
 
 html_theme_options = {
     "logo_light": "./_static/imgs/ragas-logo.png",
