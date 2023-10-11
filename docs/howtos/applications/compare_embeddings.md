@@ -23,6 +23,9 @@ For this tutorial notebook, I am using papers from Semantic Scholar that is rela
 
 ```{code-block} python
 :caption: load documents using llama-hub and create test data
+from llama_index import download_loader
+from ragas.testset import TestsetGenerator
+
 SemanticScholarReader = download_loader("SemanticScholarReader")
 loader = SemanticScholarReader()
 query_space = "large language models"
