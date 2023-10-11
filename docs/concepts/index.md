@@ -1,5 +1,14 @@
 # Core Concepts
+Core concepts that drives Ragas
+
 
 ```{toctree}
-metrics.md
+:caption: Concepts
+:hidden:
+
+metrics_driven
+metrics/index
+testset_generation
+feedback
+
 ```
