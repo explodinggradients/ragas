@@ -1,4 +1,4 @@
-## Faithfulness
+# Faithfulness
 
 This measures the factual consistency of the generated answer against the given context. It is calculated from answer and retrieved context. The answer is scaled to (0,1) range. Higher the better.
 
@@ -21,7 +21,7 @@ The generated answer is regarded as faithful if all the claims that are made in 
 ```
 
 
-### Example
+## Example
 
 ```{code-block} python
 :caption: Faithfulness metric with batch size 10
