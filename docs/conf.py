@@ -17,14 +17,22 @@ release = "0.0.16"
 extensions = [
     "myst_parser",
     "sphinx_design",
-    # "myst_parser",
     "sphinxawesome_theme.highlighting",
     # "sphinxawesome_theme.docsearch",
+    "autodoc2",
 ]
 source_suffix = [".rst", ".md"]
 
 templates_path = ["_templates"]
 exclude_patterns = []
+
+# autodocs
+autodoc2_packages = [
+    {
+        "path": "../src/ragas",
+        "auto_mode": False,
+    },
+]
 
 
 # -- Options for HTML output -------------------------------------------------
