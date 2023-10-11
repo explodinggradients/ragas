@@ -11,6 +11,25 @@ copyright = "2023, ExplodingGradients"
 author = "ExplodingGradients"
 release = "0.0.16"
 
+# enable extensions
+# https://myst-parser.readthedocs.io/en/latest/syntax/optional.html#syntax-admonitions
+myst_enable_extensions = [
+    "amsmath",
+    "colon_fence",
+    "deflist",
+    "dollarmath",
+    "fieldlist",
+    "html_admonition",
+    "html_image",
+    "linkify",
+    "replacements",
+    "smartquotes",
+    "strikethrough",
+    "substitution",
+    "tasklist",
+    "attrs_block",
+]
+
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
@@ -26,6 +45,8 @@ source_suffix = [".rst", ".md"]
 templates_path = ["_templates"]
 exclude_patterns = []
 
+myst_number_code_blocks = ["typescript"]
+
 # autodocs
 autodoc2_packages = [
     {
@@ -33,7 +54,6 @@ autodoc2_packages = [
         "auto_mode": False,
     },
 ]
-
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -51,3 +71,4 @@ html_theme_options = {
 
 # -- Myst NB Config -------------------------------------------------
 nb_execution_mode = "auto"
+
