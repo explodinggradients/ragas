@@ -1,8 +1,6 @@
+(core-concepts)=
 # Core Concepts
-Core concepts that drives Ragas
-
-
-```{toctree}
+:::{toctree}
 :caption: Concepts
 :hidden:
 
@@ -10,5 +8,6 @@ metrics_driven
 metrics/index
 testset_generation
 feedback
+:::
 
-```
+Ragas is using 

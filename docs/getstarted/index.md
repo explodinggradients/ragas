@@ -19,7 +19,7 @@ Before you go further make sure you have [Ragas installed](./install.md)!
 :::{note}
 The tutorials only give you on overview of what you can do with ragas and the
 basic skill you need to use it. If you want an in-depth explaination of the
-core-concepts behind Ragas, check out the [Core Concepts](../concepts/index.md) page.
+core-concepts behind Ragas, check out the [Core Concepts](../concepts/index.md) page. You can also checkout the [How-to Guides](../howtos/index.md) if you want to specific applications of Ragas.
 :::
 
 

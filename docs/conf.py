@@ -16,6 +16,10 @@ release = "0.0.16"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
+    "sphinx.ext.doctest",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.autosummary",
     "sphinxawesome_theme.highlighting",
     "sphinxawesome_theme.docsearch",
     "myst_parser",
@@ -35,6 +39,8 @@ autodoc2_packages = [
         "auto_mode": False,
     },
 ]
+autodoc2_render_plugin = "myst"
+autodoc2_output_dir = "./references"
 
 # algolia search
 docsearch_app_id = os.getenv("DOCSEARCH_APP_ID")
