@@ -1,3 +1,4 @@
+(get-started-testset-generation)=
 # Synthetic test data generation
 
 This tutorial is designed to help you create a synthetic evaluation dataset for assessing your RAG pipeline. To achieve this, we will utilize open-ai models, so please ensure you have your OpenAI API key ready and accessible within your environment.
