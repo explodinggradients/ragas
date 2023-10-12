@@ -9,7 +9,7 @@ execution:
 (heading-target)=
 # Evaluation
 
-welcome to the ragas quickstart. We're going to get you up and running with ragas as qickly as you can so that you can go back to improving your Retrieval Augmented Generation pipelines while this library makes sure your changes are improving your entire pipeline.
+welcome to the ragas quickstart. We're going to get you up and running with ragas as quickly as you can so that you can go back to improving your Retrieval Augmented Generation pipelines while this library makes sure your changes are improving your entire pipeline.
 
 to kick things of lets start with the data
 
@@ -32,7 +32,7 @@ os.environ["OPENAI_API_KEY"] = "your-openai-key"
 Ragas performs a `ground_truth` free evaluation of your RAG pipelines. This is because for most people building a gold labeled dataset which represents in the distribution they get in production is a very expensive process.
 
 ```{note}
-While originially ragas was aimed at `ground_truth` free evalutions there is some aspects of the RAG pipeline that need `ground_truth` in order to measure. We're in the process of building a testset generation features that will make it easier. Checkout [issue#136](https://github.com/explodinggradients/ragas/issues/136) for more details.
+While originally ragas was aimed at `ground_truth` free evaluations there is some aspects of the RAG pipeline that need `ground_truth` in order to measure. We're in the process of building a testset generation features that will make it easier. Checkout [issue#136](https://github.com/explodinggradients/ragas/issues/136) for more details.
 ```
 
 Hence to work with ragas all you need are the following data
@@ -41,7 +41,7 @@ Hence to work with ragas all you need are the following data
 - contexts: `list[list[str]]` - The contexts which where passed into the LLM to answer the question.
 - ground_truths: `list[list[str]]` - The ground truth answer to the questions. (only required if you are using context_recall)
 
-Ideally your list of questions should reflect the questions your users give, including those that you have been problamatic in the past.
+Ideally your list of questions should reflect the questions your users give, including those that you have been problematic in the past.
 
 Here we're using an example dataset from on of the baselines we created for the [Financial Opinion Mining and Question Answering (fiqa) Dataset](https://sites.google.com/view/fiqa/) we created. 
 
@@ -80,9 +80,9 @@ from ragas.metrics import (
 ```
 here you can see that we are using 4 metrics, but what do the represent?
 
-1. faithfulness - the factual consistancy of the answer to the context base on the question.
+1. faithfulness - the factual consistency of the answer to the context base on the question.
 2. context_precision - a measure of how relevant the retrieved context is to the question. Conveys quality of the retrieval pipeline.
-3. answer_relevancy - a measure of how relevent the answer is to the question
+3. answer_relevancy - a measure of how relevant the answer is to the question
 4. context_recall: measures the ability of the retriever to retrieve all the necessary information needed to answer the question. 
 
 
@@ -92,7 +92,7 @@ by default these metrics are using OpenAI's API to compute the score. If you usi
 
 ## Evaluation
 
-Running the evalutation is as simple as calling evaluate on the `Dataset` with the metrics of your choice.
+Running the evaluation is as simple as calling evaluate on the `Dataset` with the metrics of your choice.
 
 ```{code-block} python
 :caption: evaluate using sample dataset
