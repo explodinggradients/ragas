@@ -1,7 +1,7 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+import os
+from dataclasses import asdict
+
+from sphinxawesome_theme import ThemeOptions
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -16,17 +16,16 @@ release = "0.0.16"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
+    "sphinxawesome_theme.highlighting",
+    "sphinxawesome_theme.docsearch",
     "myst_parser",
     "sphinx_design",
-    "sphinxawesome_theme.highlighting",
-    # "sphinxawesome_theme.docsearch",
     "autodoc2",
 ]
-source_suffix = [".rst", ".md"]
 
+source_suffix = [".rst", ".md"]
 templates_path = ["_templates"]
 exclude_patterns = []
-
 myst_number_code_blocks = ["typescript"]
 
 # autodocs
@@ -36,6 +35,11 @@ autodoc2_packages = [
         "auto_mode": False,
     },
 ]
+
+# algolia search
+docsearch_app_id = os.getenv("DOCSEARCH_APP_ID")
+docsearch_api_key = os.getenv("DOCSEARCH_API_KEY")
+docsearch_index_name = os.getenv("DOCSEARCH_INDEX_NAME")
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -65,10 +69,6 @@ html_static_path = ["_static"]
 html_css_files = ["css/ragas.css"]
 html_favicon = "./_static/favicon.ico"
 
-
-from dataclasses import asdict
-
-from sphinxawesome_theme import ThemeOptions
 
 theme_options = ThemeOptions(
     logo_light="./_static/imgs/ragas-logo.png",
@@ -109,6 +109,3 @@ theme_options = ThemeOptions(
 )
 
 html_theme_options = asdict(theme_options)
-
-# -- Myst NB Config -------------------------------------------------
-nb_execution_mode = "auto"
