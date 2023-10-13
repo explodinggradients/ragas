@@ -11,7 +11,6 @@ copyright = "2023, ExplodingGradients"
 author = "ExplodingGradients"
 release = "0.0.16"
 
-
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
@@ -58,13 +57,6 @@ myst_enable_extensions = [
     # "attrs_block",
 ]
 
-html_title = "Ragas"
-html_theme = "sphinxawesome_theme"
-html_static_path = ["_static"]
-html_css_files = ["css/ragas.css"]
-html_favicon = "./_static/favicon.ico"
-
-
 theme_options = ThemeOptions(
     logo_light="./_static/imgs/ragas-logo.png",
     logo_dark="./_static/imgs/ragas-logo.png",
@@ -104,3 +96,6 @@ theme_options = ThemeOptions(
 )
 
 html_theme_options = asdict(theme_options)
+
+# -- Myst NB Config -------------------------------------------------
+nb_execution_mode = "off"
