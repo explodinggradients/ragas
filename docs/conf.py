@@ -3,6 +3,8 @@ from dataclasses import asdict
 
 from sphinxawesome_theme import ThemeOptions
 
+from ragas import __version__
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
@@ -10,6 +12,7 @@ project = "ragas"
 copyright = "2023, ExplodingGradients"
 author = "ExplodingGradients"
 release = "0.0.16"
+print("RAGAS VERSION", __version__)
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
