@@ -12,7 +12,7 @@ Ragas is a framework that helps you evaluate your Retrieval Augmented Generation
 
 ::::{grid} 2
 
-:::{grid-item-card} Get Started
+:::{grid-item-card} 🚀 Get Started
 :link: get-started
 :link-type: ref
 
@@ -21,14 +21,14 @@ RAG pipelines with it, how to generate synthetic testsets to run evaluations
 against and setting up online monitoring for your RAG apps.
 :::
 
-:::{grid-item-card} Core Concepts
+:::{grid-item-card} 📚 Core Concepts
 :link: core-concepts
 :link-type: ref
 
 The high-level explainations for building a better understand about the
 important topics such how to think about metrics-driven development, how the Ragas metrics work under the hood and synthetic dataset generation.
 :::
-:::{grid-item-card} How-to Guides
+:::{grid-item-card} 🛠️ How-to Guides
 :link: how-to-guides
 :link-type: ref
 
@@ -36,7 +36,7 @@ Practical guides to help you achieve a specific goals. Take a look at these
 guides to learn how to use Ragas to solve real-world problems.
 :::
 
-:::{grid-item-card} References
+:::{grid-item-card} 📖 References
 :link: references
 :link-type: ref
 
