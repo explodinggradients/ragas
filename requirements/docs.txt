@@ -3,3 +3,4 @@ git+https://github.com/jjmachan/sphinxawesome-theme.git@fix/docsearch
 myst-parser[linkify]
 sphinx_design
 astroid<3
+myst-nb
