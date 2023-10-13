@@ -1,7 +1,7 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+import os
+from dataclasses import asdict
+
+from sphinxawesome_theme import ThemeOptions
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -11,22 +11,35 @@ copyright = "2023, ExplodingGradients"
 author = "ExplodingGradients"
 release = "0.0.16"
 
-
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
+html_title = "Ragas"
+html_theme = "sphinxawesome_theme"
+html_static_path = ["_static"]
+html_css_files = ["css/ragas.css"]
+html_favicon = "./_static/favicon.ico"
+
 extensions = [
+    "sphinx.ext.doctest",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.autosummary",
+    "sphinxawesome_theme.highlighting",
+    "sphinxawesome_theme.docsearch",
     "myst_parser",
     "sphinx_design",
-    # "myst_parser",
-    "sphinxawesome_theme.highlighting",
-    # "sphinxawesome_theme.docsearch",
 ]
-source_suffix = [".rst", ".md"]
 
+source_suffix = [".rst", ".md"]
 templates_path = ["_templates"]
 exclude_patterns = []
 myst_number_code_blocks = ["typescript"]
+
+# algolia search
+docsearch_app_id = os.getenv("DOCSEARCH_APP_ID")
+docsearch_api_key = os.getenv("DOCSEARCH_API_KEY")
+docsearch_index_name = os.getenv("DOCSEARCH_INDEX_NAME")
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -50,24 +63,13 @@ myst_enable_extensions = [
     # "attrs_block",
 ]
 
-html_title = "Ragas"
-html_theme = "sphinxawesome_theme"
-html_static_path = ["_static"]
-html_css_files = ["css/ragas.css"]
-html_favicon = "./_static/favicon.ico"
-
-
-from dataclasses import asdict
-
-from sphinxawesome_theme import ThemeOptions
-
 theme_options = ThemeOptions(
     logo_light="./_static/imgs/ragas-logo.png",
     logo_dark="./_static/imgs/ragas-logo.png",
     extra_header_link_icons={
         "discord": {
             "link": "https://discord.gg/5djav8GGNZ",
-            "icon": """<svg height="26px" style="margin-right: 3px; display: inline" viewBox="0 0 22 22" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenod" clip-rule="evenod" d="M18.59 5.88997C17.36 5.31997 16.05 4.89997 14.67 4.65997C14.5 4.95997 14.3 5.36997 14.17 5.69997C12.71 5.47997 11.26 5.47997 9.83001 5.69997C9.69001 5.36997 9.49001 4.95997 9.32001 4.65997C7.94001 4.89997 6.63001 5.31997 5.40001 5.88997C2.92001 9.62997 2.25001 13.28 2.58001 16.87C4.23001 18.1 5.82001 18.84 7.39001 19.33C7.78001 18.8 8.12001 18.23 8.42001 17.64C7.85001 17.43 7.31001 17.16 6.80001 16.85C6.94001 16.75 7.07001 16.64 7.20001 16.54C10.33 18 13.72 18 16.81 16.54C16.94 16.65 17.07 16.75 17.21 16.85C16.7 17.16 16.15 17.42 15.59 17.64C15.89 18.23 16.23 18.8 16.62 19.33C18.19 18.84 19.79 18.1 21.43 16.87C21.82 12.7 20.76 9.08997 18.61 5.88997H18.59ZM8.84001 14.67C7.90001 14.67 7.13001 13.8 7.13001 12.73C7.13001 11.66 7.88001 10.79 8.84001 10.79C9.80001 10.79 10.56 11.66 10.55 12.73C10.55 13.79 9.80001 14.67 8.84001 14.67ZM15.15 14.67C14.21 14.67 13.44 13.8 13.44 12.73C13.44 11.66 14.19 10.79 15.15 10.79C16.11 10.79 16.87 11.66 16.86 12.73C16.86 13.79 16.11 14.67 15.15 14.67Z" fill="currentColor"/></svg>""",
+            "icon": """<svg height="26px" style="margin-right: 3px; display: inline" viewBox="0 0 22 22" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenod" clip-rule="evenod" d="M18.59 5.88997C17.36 5.31997 16.05 4.89997 14.67 4.65997C14.5 4.95997 14.3 5.36997 14.17 5.69997C12.71 5.47997 11.26 5.47997 9.83001 5.69997C9.69001 5.36997 9.49001 4.95997 9.32001 4.65997C7.94001 4.89997 6.63001 5.31997 5.40001 5.88997C2.92001 9.62997 2.25001 13.28 2.58001 16.87C4.23001 18.1 5.82001 18.84 7.39001 19.33C7.78001 18.8 8.12001 18.23 8.42001 17.64C7.85001 17.43 7.31001 17.16 6.80001 16.85C6.94001 16.75 7.07001 16.64 7.20001 16.54C10.33 18 13.72 18 16.81 16.54C16.94 16.65 17.07 16.75 17.21 16.85C16.7 17.16 16.15 17.42 15.59 17.64C15.89 18.23 16.23 18.8 16.62 19.33C18.19 18.84 19.79 18.1 21.43 16.87C21.82 12.7 20.76 9.08997 18.61 5.88997H18.59ZM8.84001 14.67C7.90001 14.67 7.13001 13.8 7.13001 12.73C7.13001 11.66 7.88001 10.79 8.84001 10.79C9.80001 10.79 10.56 11.66 10.55 12.73C10.55 13.79 9.80001 14.67 8.84001 14.67ZM15.15 14.67C14.21 14.67 13.44 13.8 13.44 12.73C13.44 11.66 14.19 10.79 15.15 10.79C16.11 10.79 16.87 11.66 16.86 12.73C16.86 13.79 16.11 14.67 15.15 14.67Z" fill="currentColor"/></svg>""",  # noqa
         },
         "github": {
             "link": "https://github.com/explodinggradients/ragas",
@@ -102,4 +104,4 @@ theme_options = ThemeOptions(
 html_theme_options = asdict(theme_options)
 
 # -- Myst NB Config -------------------------------------------------
-nb_execution_mode = "auto"
+nb_execution_mode = "off"

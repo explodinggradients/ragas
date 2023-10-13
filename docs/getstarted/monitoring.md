@@ -1,3 +1,4 @@
+(get-started-monitoring)=
 # Monitoring
 
 Maintaining the quality and performance of an LLM application in a production environment can be challenging. Ragas provides a solution through production quality monitoring, offering valuable insights into your application's performance. This is achieved by constructing custom, smaller, more cost-effective, and faster models.
