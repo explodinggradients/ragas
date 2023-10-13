@@ -25,15 +25,15 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx.ext.autosummary",
+    "sphinx_design",
     "sphinxawesome_theme.highlighting",
     "sphinxawesome_theme.docsearch",
-    "myst_parser",
-    "sphinx_design",
+    "myst_nb",
 ]
 
 source_suffix = [".rst", ".md"]
 templates_path = ["_templates"]
-exclude_patterns = []
+exclude_patterns = ["_build"]
 myst_number_code_blocks = ["typescript"]
 
 # algolia search
@@ -105,3 +105,4 @@ html_theme_options = asdict(theme_options)
 
 # -- Myst NB Config -------------------------------------------------
 nb_execution_mode = "off"
+nb_execute_in_temp = True

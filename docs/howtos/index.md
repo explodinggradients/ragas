@@ -12,11 +12,11 @@ sections first.
 
 These guides are organized into 3 sections
 
-- [Customisations](): How to customise Ragas to use with your system. Things
+- [Customisations](./customisations/index.md): How to customise Ragas to use with your system. Things
   like changing the LLMs used underneath are covered here.
-- [Applications](): Shows how to leverage Ragas framework to solve various
+- [Applications](./applications/index.md): Shows how to leverage Ragas framework to solve various
   real-world problems that you might be facing too.
-- [Integrations](): Integrations with other tools like langchain and llamaindex,
+- [Integrations](./integrations/index.md): Integrations with other tools like langchain and llamaindex,
   making it super easy to add ragas into your setup.
 
 You can check the entire list bellow 👇
@@ -24,6 +24,7 @@ You can check the entire list bellow 👇
 **Index**
 :::{toctree}
 
-applications/index
-
+customisations/index.md
+applications/index.md
+integrations/index.md
 :::
