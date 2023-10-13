@@ -2,5 +2,5 @@ Integrations
 ============
 
 .. toctree::
-   langchain 
-   llamaindex
+   langchain.rst
+   llamaindex.rst
