@@ -3,6 +3,8 @@ from dataclasses import asdict
 
 from sphinxawesome_theme import ThemeOptions
 
+from ragas import __version__
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
@@ -10,6 +12,7 @@ project = "ragas"
 copyright = "2023, ExplodingGradients"
 author = "ExplodingGradients"
 release = "0.0.16"
+print("RAGAS VERSION", __version__)
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -25,15 +28,15 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx.ext.autosummary",
+    "sphinx_design",
     "sphinxawesome_theme.highlighting",
     "sphinxawesome_theme.docsearch",
-    "myst_parser",
-    "sphinx_design",
+    "myst_nb",
 ]
 
 source_suffix = [".rst", ".md"]
 templates_path = ["_templates"]
-exclude_patterns = []
+exclude_patterns = ["_build"]
 myst_number_code_blocks = ["typescript"]
 
 # algolia search
@@ -105,3 +108,4 @@ html_theme_options = asdict(theme_options)
 
 # -- Myst NB Config -------------------------------------------------
 nb_execution_mode = "off"
+nb_execute_in_temp = True

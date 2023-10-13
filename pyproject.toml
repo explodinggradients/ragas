@@ -13,15 +13,6 @@ dependencies = [
 ]
 dynamic = ["version", "readme"]
 
-[project.optional-dependencies]
-docs = [
-    "sphinx",
-    "sphinxawesome-theme@git+https://github.com/jjmachan/sphinxawesome-theme.git@fix/docsearch",
-    "myst-parser[linkify]",
-    "sphinx_design",
-    "astroid<3",
-]
-
 [tool.setuptools]
 package-dir = {"" = "src"}
 

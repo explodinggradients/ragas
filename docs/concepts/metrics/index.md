@@ -1,3 +1,4 @@
+(ragas-metrics)=
 # Metrics
 
 ## Component-Wise Evaluation
