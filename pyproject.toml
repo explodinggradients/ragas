@@ -22,6 +22,21 @@ docs = [
     "astroid<3",
 ]
 
+test = [
+    "pytest",
+    "pytest-xdist[psutil]",
+]
+
+dev = [
+    "rich",
+    "ruff",
+    "isort",
+    "black[jupyter]",
+    "pyright",
+    "llama_index",
+    "notebook",
+]
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 
