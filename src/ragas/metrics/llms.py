@@ -44,7 +44,7 @@ def generate(
     if n is not None:
         if multiple_completion_supported(llm):
             llm = t.cast(MultipleCompletionSupportedLLM, llm)
-            old_n = llm.n
+            old_n = llm.n  # type: ignore (n is not found in valid)
             llm.n = n
             n_swapped = True
         else:
