@@ -24,23 +24,12 @@ extensions = [
     "sphinxawesome_theme.docsearch",
     "myst_parser",
     "sphinx_design",
-    "autodoc2",
 ]
 
 source_suffix = [".rst", ".md"]
 templates_path = ["_templates"]
 exclude_patterns = []
 myst_number_code_blocks = ["typescript"]
-
-# autodocs
-autodoc2_packages = [
-    {
-        "path": "../src/ragas",
-        "auto_mode": False,
-    },
-]
-autodoc2_render_plugin = "myst"
-autodoc2_output_dir = "./references"
 
 # algolia search
 docsearch_app_id = os.getenv("DOCSEARCH_APP_ID")

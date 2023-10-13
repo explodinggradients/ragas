@@ -2,5 +2,4 @@ sphinx
 git+https://github.com/jjmachan/sphinxawesome-theme.git@fix/docsearch
 myst-parser[linkify]
 sphinx_design
-sphinx-autodoc2
 astroid<3
