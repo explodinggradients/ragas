@@ -19,5 +19,8 @@ sphinx:
   # fail_on_warning: true
 
 python:
-   install:
-   - requirements: ./requirements/docs.txt
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs

@@ -14,6 +14,12 @@ release = "0.0.16"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
+html_title = "Ragas"
+html_theme = "sphinxawesome_theme"
+html_static_path = ["_static"]
+html_css_files = ["css/ragas.css"]
+html_favicon = "./_static/favicon.ico"
+
 extensions = [
     "sphinx.ext.doctest",
     "sphinx.ext.autodoc",
