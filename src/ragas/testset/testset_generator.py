@@ -1,3 +1,4 @@
+import re
 import typing as t
 import warnings
 from collections import defaultdict, namedtuple
@@ -34,10 +35,10 @@ from ragas.testset.prompts import (
 )
 
 DEFAULT_TEST_DISTRIBUTION = {
-    "simple": 0.0,
-    "reasoning": 0.0,
-    "multi_context": 0.7,
-    "conditional": 0.3,
+    "simple": 0.4,
+    "reasoning": 0.2,
+    "multi_context": 0.2,
+    "conditional": 0.2,
 }
 
 question_deep_map = {
@@ -174,18 +175,12 @@ class TestsetGenerator:
         prompt = ChatPromptTemplate.from_messages([human_prompt])
         results = generate(prompts=[prompt], llm=self.critic_llm)
         output = results.generations[0][0].text.strip()
-        try:
-            score = eval(output)
-            if not isinstance(score, float | int):
-                index = output.lower().find("score:")
-                if index != -1:
-                    index += len("score:")
-                    score = eval(output[index:])
-                else:
-                    score = 0.0
-        except Exception:
-            print("error occured in eval", output)
+        pattern = r"^[\d.]+$"
+        if not re.match(pattern, output):
             score = 0.0
+        else:
+            score = eval(output)
+
         return score >= self.threshold
 
     def _seed_question(self, context: str) -> str:
@@ -259,7 +254,7 @@ class TestsetGenerator:
             if node.ref_doc_id:
                 doc_nodes_map[node.ref_doc_id].append(node)
 
-        return doc_nodes_map # type: ignore
+        return doc_nodes_map  # type: ignore
 
     def _get_neighbour_node(
         self, node: BaseNode, related_nodes: list[BaseNode]
@@ -269,7 +264,6 @@ class TestsetGenerator:
             return [node]
         idx = related_nodes.index(node)
         ids = [idx - 1, idx] if idx == (len(related_nodes) - 1) else [idx, idx + 1]
-        print(ids)
         return [related_nodes[idx] for idx in ids]
 
     def _embed_nodes(self, nodes: t.List[BaseNode]) -> t.Dict[str, t.List[float]]:
@@ -299,9 +293,8 @@ class TestsetGenerator:
         available_nodes = document_nodes
         doc_nodes_map = self._generate_doc_nodes_map(document_nodes)
         count_neighbours = sum(len(val) > 1 for _, val in doc_nodes_map.items())
-        if count_neighbours < len(documents):
-            print(count_neighbours)
-            warnings.warn("Documents are too short")
+        if count_neighbours < len(documents) // 2:
+            warnings.warn("Most documents are too short")
 
         count = 0
         samples = []
@@ -329,7 +322,6 @@ class TestsetGenerator:
             seed_question = self._seed_question(text_chunk)
 
             if evolve_type == "multi_context":
-                print("inside multi context")
                 # Find most similar chunk in same document
                 node_embedding = self._embed_nodes([nodes[-1]])
                 neighbor_nodes = self._remove_nodes(neighbor_nodes, nodes)
@@ -349,7 +341,6 @@ class TestsetGenerator:
                     )
                     text_chunk = "\n".join([text_chunk, best_neighbor.get_content()])
                 else:
-                    print("skipped multi context", indices)
                     continue
 
             # for reasoning and conditional modes, evolve question with the
