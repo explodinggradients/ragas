@@ -193,7 +193,7 @@ class TestsetGenerator:
         human_prompt = FILTER_QUESTION.format(question=question)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
         results = generate(prompts=[prompt], llm=self.critic_llm)
-        return bool(results.generations[0][0].text.strip().endswith("Yes."))
+        return bool(results.generations[0][0].text.strip().lower().endswith("yes."))
 
     def _reasoning_question(self, question: str, context: str) -> str:
         return self._qc_template(REASONING_QUESTION, question, context)
@@ -312,6 +312,9 @@ class TestsetGenerator:
             if not score:
                 continue
             seed_question = self._seed_question(text_chunk)
+            is_valid_question = self._filter_question(seed_question)
+            if not is_valid_question:
+                continue
 
             if evolve_type == "multi_context":
                 # Find most similar chunk in same document
@@ -354,10 +357,14 @@ class TestsetGenerator:
                 else:
                     question = self._compress_question(question=question)
 
-            context = self._generate_context(question, text_chunk)
-            answer = self._generate_answer(question, context)
-            samples.append(DataRow(question.split("\n"), context, answer, evolve_type))
-            count += 1
-            pbar.update(count)
+            is_valid_question = self._filter_question(question)
+            if is_valid_question:
+                context = self._generate_context(question, text_chunk)
+                answer = self._generate_answer(question, context)
+                samples.append(
+                    DataRow(question.split("\n"), context, answer, evolve_type)
+                )
+                count += 1
+                pbar.update(count)
 
         return TestDataset(test_data=samples)
