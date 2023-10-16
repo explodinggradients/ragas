@@ -45,9 +45,11 @@ class AnswerCorrectness(MetricWithLLM):
 
     def __post_init__(self: t.Self):
         if self.answer_similarity is None:
-            self.answer_similarity = AnswerSimilarity()
+            self.answer_similarity = AnswerSimilarity(
+                llm=self.llm, batch_size=self.batch_size
+            )
         if self.faithfulness is None:
-            self.faithfulness = Faithfulness()
+            self.faithfulness = Faithfulness(llm=self.llm, batch_size=self.batch_size)
 
     def init_model(self: t.Self):
         pass
