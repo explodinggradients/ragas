@@ -1,0 +1,65 @@
+/* Base Theme */
+div.cell_input {
+    background: var(--background) !important;
+}
+
+.cell_output .output.text_plain,
+.cell_output .output.stream {
+  background: var(--background);
+  border: 1px solid grey;
+  border-radius: var(--mystnb-source-border-radius);
+}
+
+.cell_output .output.stderr {
+  background: var(--background);
+  border: 1px solid #fbc7c7;
+  border-radius: var(--mystnb-source-border-radius);
+}
+
+.cell_output .output.traceback {
+  background: var(--background);
+  border: 1px solid #fbc7c7;
+  border-radius: var(--mystnb-source-border-radius);
+}
+
+/* Pandas tables. Pulled from the Jupyter / nbsphinx CSS */
+div.cell_output table {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: var(--foreground);
+  font-size: 1em;
+  table-layout: fixed;
+}
+
+div.cell_output thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+
+div.cell_output tr,
+div.cell_output th,
+div.cell_output td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+
+div.cell_output th {
+  font-weight: bold;
+}
+
+div.cell_output tbody tr:nth-child(odd) {
+  background: var(--backgound);
+}
+
+div.cell_output tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
