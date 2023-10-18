@@ -28,14 +28,14 @@ While originally ragas was aimed at `ground_truth` free evaluations there is som
 ```
 
 Hence to work with ragas all you need are the following data
-- question: `list[str]` - These are the questions you RAG pipeline will be evaluated on. 
-- answer: `list[str]` - The answer generated from the RAG pipeline and give to the user.
-- contexts: `list[list[str]]` - The contexts which where passed into the LLM to answer the question.
+- question: `list[str]` - These are the questions your RAG pipeline will be evaluated on.
+- answer: `list[str]` - The answer generated from the RAG pipeline and given to the user.
+- contexts: `list[list[str]]` - The contexts which were passed into the LLM to answer the question.
 - ground_truths: `list[list[str]]` - The ground truth answer to the questions. (only required if you are using context_recall)
 
 Ideally your list of questions should reflect the questions your users give, including those that you have been problematic in the past.
 
-Here we're using an example dataset from on of the baselines we created for the [Financial Opinion Mining and Question Answering (fiqa) Dataset](https://sites.google.com/view/fiqa/) we created. 
+Here we're using an example dataset from on of the baselines we created for the [Financial Opinion Mining and Question Answering (fiqa) Dataset](https://sites.google.com/view/fiqa/) we created.
 
 
 ```{code-block} python
@@ -54,7 +54,7 @@ See [prepare-data](/docs/concepts/prepare_data.md) to learn how to prepare your 
 
 Ragas provides you with a few metrics to evaluate the different aspects of your RAG systems namely
 
-1. Retriever: offers `context_precision` and `context_recall` which give you the measure of the performance of your retrieval system. 
+1. Retriever: offers `context_precision` and `context_recall` which give you the measure of the performance of your retrieval system.
 2. Generator (LLM): offers `faithfulness` which measures hallucinations and `answer_relevancy` which measures how to the point the answers are to the question.
 
 The harmonic mean of these 4 aspects gives you the **ragas score** which is a single measure of the performance of your QA system across all the important aspects.
@@ -75,7 +75,7 @@ here you can see that we are using 4 metrics, but what do the represent?
 1. faithfulness - the factual consistency of the answer to the context base on the question.
 2. context_precision - a measure of how relevant the retrieved context is to the question. Conveys quality of the retrieval pipeline.
 3. answer_relevancy - a measure of how relevant the answer is to the question
-4. context_recall: measures the ability of the retriever to retrieve all the necessary information needed to answer the question. 
+4. context_recall: measures the ability of the retriever to retrieve all the necessary information needed to answer the question.
 
 
 ```{note}
