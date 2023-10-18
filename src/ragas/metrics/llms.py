@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import typing as t
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 
 from langchain.chat_models import AzureChatOpenAI, ChatOpenAI
 from langchain.chat_models.base import BaseChatModel
@@ -12,7 +11,6 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema import LLMResult
 
 from ragas.async_utils import run_async_tasks
-from ragas.exceptions import RagasException
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -84,30 +82,6 @@ class BaseRagasLLM(ABC):
     # supports multiple compeletions for the given prompt
     n_completions_supported: bool = False
 
-    def generate_multiple_completions(
-        self,
-        prompts: list[str],
-        n: t.Optional[int] = None,
-        temperature: float = 0,
-        callbacks: t.Optional[Callbacks] = None,
-    ) -> list[list[str]]:
-        if self.n_completions_supported:
-            raise NotImplementedError(
-                "generate_multiple_completions() not implemented even though this LLM "
-                "supports it. Please raise an issue so that we can fix if for you :)"
-            )
-        else:
-            raise RagasException("multiple_completions are not supported by this LLM")
-
-    @abstractmethod
-    async def generate_completions(
-        self,
-        prompts: list[str],
-        temperature: float = 0,
-        callbacks: t.Optional[Callbacks] = None,
-    ) -> list[str]:
-        ...
-
     @abstractmethod
     def generate(
         self,
@@ -138,7 +112,7 @@ class LangchainLLM(BaseRagasLLM):
         n: t.Optional[int] = None,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
-        old_n = self.llm.n
+        old_n = self.llm.n  # type: ignore (this function will only run for models with n)
         self.llm.n = n
         if isinstance(self.llm, BaseLLM):
             ps = [p.format() for p in prompts]
