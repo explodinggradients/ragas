@@ -97,7 +97,6 @@ result = evaluate(
         faithfulness,
         answer_relevancy,
         context_recall,
-        harmfulness,
     ],
 )
 
