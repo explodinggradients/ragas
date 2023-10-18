@@ -140,6 +140,7 @@ class TestsetGenerator:
         openai_filter_llm: str = "gpt-4",
         chat_qa: float = 0.3,
         chunk_size: int = 512,
+        testset_distribution: dict = DEFAULT_TEST_DISTRIBUTION,
     ):
         generator_llm = ChatOpenAI(model=openai_generator_llm)
         critic_llm = ChatOpenAI(model=openai_filter_llm)
@@ -150,6 +151,7 @@ class TestsetGenerator:
             embeddings_model=embeddings_model,
             chat_qa=chat_qa,
             chunk_size=chunk_size,
+            testset_distribution=testset_distribution,
         )
 
     def _get_evolve_type(self) -> str:
