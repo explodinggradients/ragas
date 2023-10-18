@@ -50,20 +50,26 @@ def evaluate(
     Once you have a llama_index QueryEngine created you can use it to evaluate on a list
     of questions.
 
-    ```python
-    from ragas.metrics import faithfulness, answer_relevancy, context_precision
-    from ragas.metrics.critique import harmfulness
-    from ragas.llama_index import evaluate
+    Import everything you need:
 
-    query_engine = # from llamaindex
-    questions: list[str] = [] # from somewhere
-    metrics = [faithfulness, answer_relevancy, context_precision, harmfulness]
+    >>> from ragas.metrics import faithfulness, answer_relevancy, context_precision
+    >>> from ragas.metrics.critique import harmfulness
+    >>> from ragas.llama_index import evaluate
 
-    r = evaluate(query_engine, metrics, questions)
+    init the query engine, get the questions and choose the metrics you want to use:
 
-    print(r) # prints the scores of each metric
-    r.to_pandas() # returns a pandas dataframe if you want to do further analysis
-    ```
+    >>> query_engine = # from llamaindex
+    >>> questions: list[str] = [] # from somewhere
+    >>> metrics = [faithfulness, answer_relevancy, context_precision, harmfulness]
+
+    Run the evaluation:
+
+    >>> r = evaluate(query_engine, metrics, questions)
+
+    analysis the result:
+
+    >>> print(r) # prints the scores of each metric
+    >>> r.to_pandas() # returns a pandas dataframe if you want to do further analysis
     """
 
     try:
