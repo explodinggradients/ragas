@@ -31,6 +31,7 @@ from ragas.testset.prompts import (
     SCORE_CONTEXT,
     SEED_QUESTION,
 )
+from ragas.testset.utils import load_as_json
 
 DEFAULT_TEST_DISTRIBUTION = {
     "simple": 0.5,
@@ -193,7 +194,9 @@ class TestsetGenerator:
         human_prompt = FILTER_QUESTION.format(question=question)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
         results = generate(prompts=[prompt], llm=self.critic_llm)
-        return bool(results.generations[0][0].text.strip().lower().endswith("yes."))
+        results = results.generations[0][0].text.strip()
+        json_results = load_as_json(results)
+        return json_results.get("verdict") == "No"
 
     def _reasoning_question(self, question: str, context: str) -> str:
         return self._qc_template(REASONING_QUESTION, question, context)
