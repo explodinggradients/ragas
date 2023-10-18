@@ -190,7 +190,7 @@ class TestsetGenerator:
         results = generate(prompts=[prompt], llm=self.critic_llm)
         results = results.generations[0][0].text.strip()
         json_results = load_as_json(results)
-        return json_results.get("verdict") == "No"
+        return json_results.get("verdict") != "No"
 
     def _reasoning_question(self, question: str, context: str) -> str:
         return self._qc_template(REASONING_QUESTION, question, context)
