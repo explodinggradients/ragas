@@ -8,10 +8,8 @@ import numpy as np
 import numpy.testing as npt
 import pandas as pd
 from langchain.chat_models import ChatOpenAI
-from langchain.chat_models.base import BaseChatModel
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.embeddings.base import Embeddings
-from langchain.llms.base import BaseLLM
 from langchain.prompts import ChatPromptTemplate
 from llama_index.indices.query.embedding_utils import get_top_k_embeddings
 from llama_index.node_parser.simple import SimpleNodeParser
@@ -20,7 +18,7 @@ from llama_index.schema import BaseNode
 from numpy.random import default_rng
 from tqdm import tqdm
 
-from ragas.metrics.llms import generate
+from ragas.metrics.llms import LangchainLLM
 from ragas.testset.prompts import (
     ANSWER_FORMULATE,
     COMPRESS_QUESTION,
@@ -86,9 +84,9 @@ class TestsetGenerator:
 
     Attributes
     ----------
-    generator_llm: BaseLLM | BaseChatModel
+    generator_llm: LangchainLLM
         LLM used for all the generator operations in the TestGeneration paradigm.
-    critique_llm: BaseLLM | BaseChatModel
+    critique_llm: LangchainLLM
         LLM used for all the filtering and scoring operations in TestGeneration
         paradigm.
     embeddings_model: Embeddings
@@ -104,8 +102,8 @@ class TestsetGenerator:
 
     def __init__(
         self,
-        generator_llm: BaseLLM | BaseChatModel,
-        critic_llm: BaseLLM | BaseChatModel,
+        generator_llm: LangchainLLM,
+        critic_llm: LangchainLLM,
         embeddings_model: Embeddings,
         testset_distribution: t.Optional[t.Dict[str, float]] = None,
         chat_qa: float = 0.0,
@@ -139,8 +137,8 @@ class TestsetGenerator:
         chat_qa: float = 0.3,
         chunk_size: int = 512,
     ):
-        generator_llm = ChatOpenAI(model=openai_generator_llm)
-        critic_llm = ChatOpenAI(model=openai_filter_llm)
+        generator_llm = LangchainLLM(llm=ChatOpenAI(model=openai_generator_llm))
+        critic_llm = LangchainLLM(llm=ChatOpenAI(model=openai_filter_llm))
         embeddings_model = OpenAIEmbeddings()  # type: ignore
         return cls(
             generator_llm=generator_llm,
@@ -173,7 +171,7 @@ class TestsetGenerator:
         """
         human_prompt = SCORE_CONTEXT.format(context=context)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = generate(prompts=[prompt], llm=self.critic_llm)
+        results = self.critic_llm.generate(prompts=[prompt])
         output = results.generations[0][0].text.strip()
         pattern = r"^[\d.]+$"
         if not re.match(pattern, output):
@@ -186,13 +184,13 @@ class TestsetGenerator:
     def _seed_question(self, context: str) -> str:
         human_prompt = SEED_QUESTION.format(context=context)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = generate(prompts=[prompt], llm=self.generator_llm)
+        results = self.generator_llm.generate(prompts=[prompt])
         return results.generations[0][0].text.strip()
 
     def _filter_question(self, question: str) -> bool:
         human_prompt = FILTER_QUESTION.format(question=question)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = generate(prompts=[prompt], llm=self.critic_llm)
+        results = self.critic_llm.generate(prompts=[prompt])
         return bool(results.generations[0][0].text.strip().endswith("Yes."))
 
     def _reasoning_question(self, question: str, context: str) -> str:
@@ -208,7 +206,7 @@ class TestsetGenerator:
             question=question, context1=context1, context2=context2
         )
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = generate(prompts=[prompt], llm=self.generator_llm)
+        results = self.generator_llm.generate(prompts=[prompt])
         return results.generations[0][0].text.strip()
 
     def _compress_question(self, question: str) -> str:
@@ -220,13 +218,13 @@ class TestsetGenerator:
     def _question_transformation(self, prompt, question: str) -> str:
         human_prompt = prompt.format(question=question)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = generate(prompts=[prompt], llm=self.generator_llm)
+        results = self.generator_llm.generate(prompts=[prompt])
         return results.generations[0][0].text.strip()
 
     def _qc_template(self, prompt, question, context) -> str:
         human_prompt = prompt.format(question=question, context=context)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = generate(prompts=[prompt], llm=self.generator_llm)
+        results = self.generator_llm.generate(prompts=[prompt])
         return results.generations[0][0].text.strip()
 
     def _generate_answer(self, question: str, context: list[str]) -> t.List[str]:

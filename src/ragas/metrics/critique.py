@@ -46,7 +46,7 @@ class AspectCritique(MetricWithLLM):
         made using majority vote.
     batch_size: int
         Batch size for openai completion.
-    llm : BaseLLM | BaseChatModel
+    llm : LangchainLLM
         llm API of your choice
     """
 
