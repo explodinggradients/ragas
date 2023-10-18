@@ -120,11 +120,10 @@ Score:
 
 FILTER_QUESTION = HumanMessagePromptTemplate.from_template(
     """\
-Determine if the given question can be clearly understood even when presented without any additional context? Reason before arriving at the answer.
+Determine if the given question can be clearly understood even when presented without any additional context. Specify reason and verdict is a valid json format.
 question: What is the keyword that best describes the paper's focus in natural language understanding tasks?
-answer: The specific paper being referred to is not mentioned in the question. Hence, No.
+{{"reason":"The specific paper being referred to is not mentioned in the question.", "verdict": "No"}}
 question:{question}
-answer:
 """  # noqa: E501
 )
 

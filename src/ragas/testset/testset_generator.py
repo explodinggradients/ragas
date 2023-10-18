@@ -1,4 +1,5 @@
-import re
+from __future__ import annotations
+
 import typing as t
 import warnings
 from collections import defaultdict, namedtuple
@@ -33,6 +34,7 @@ from ragas.testset.prompts import (
     SCORE_CONTEXT,
     SEED_QUESTION,
 )
+from ragas.testset.utils import load_as_json, load_as_score
 
 DEFAULT_TEST_DISTRIBUTION = {
     "simple": 0.4,
@@ -138,6 +140,7 @@ class TestsetGenerator:
         openai_filter_llm: str = "gpt-4",
         chat_qa: float = 0.3,
         chunk_size: int = 512,
+        testset_distribution: dict = DEFAULT_TEST_DISTRIBUTION,
     ):
         generator_llm = ChatOpenAI(model=openai_generator_llm)
         critic_llm = ChatOpenAI(model=openai_filter_llm)
@@ -148,6 +151,7 @@ class TestsetGenerator:
             embeddings_model=embeddings_model,
             chat_qa=chat_qa,
             chunk_size=chunk_size,
+            testset_distribution=testset_distribution,
         )
 
     def _get_evolve_type(self) -> str:
@@ -175,12 +179,7 @@ class TestsetGenerator:
         prompt = ChatPromptTemplate.from_messages([human_prompt])
         results = generate(prompts=[prompt], llm=self.critic_llm)
         output = results.generations[0][0].text.strip()
-        pattern = r"^[\d.]+$"
-        if not re.match(pattern, output):
-            score = 0.0
-        else:
-            score = eval(output)
-
+        score = load_as_score(output)
         return score >= self.threshold
 
     def _seed_question(self, context: str) -> str:
@@ -193,7 +192,9 @@ class TestsetGenerator:
         human_prompt = FILTER_QUESTION.format(question=question)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
         results = generate(prompts=[prompt], llm=self.critic_llm)
-        return bool(results.generations[0][0].text.strip().endswith("Yes."))
+        results = results.generations[0][0].text.strip()
+        json_results = load_as_json(results)
+        return json_results.get("verdict") != "No"
 
     def _reasoning_question(self, question: str, context: str) -> str:
         return self._qc_template(REASONING_QUESTION, question, context)
@@ -320,6 +321,9 @@ class TestsetGenerator:
             if not score:
                 continue
             seed_question = self._seed_question(text_chunk)
+            is_valid_question = self._filter_question(seed_question)
+            if not is_valid_question:
+                continue
 
             if evolve_type == "multi_context":
                 # Find most similar chunk in same document
@@ -361,10 +365,14 @@ class TestsetGenerator:
                 else:
                     question = self._compress_question(question=question)
 
-            context = self._generate_context(question, text_chunk)
-            answer = self._generate_answer(question, context)
-            samples.append(DataRow(question.split("\n"), context, answer, evolve_type))
-            count += 1
-            pbar.update(count)
+            is_valid_question = self._filter_question(question)
+            if is_valid_question:
+                context = self._generate_context(question, text_chunk)
+                answer = self._generate_answer(question, context)
+                samples.append(
+                    DataRow(question.split("\n"), context, answer, evolve_type)
+                )
+                count += 1
+                pbar.update(count)
 
         return TestDataset(test_data=samples)
