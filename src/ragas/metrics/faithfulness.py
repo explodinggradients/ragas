@@ -7,7 +7,6 @@ from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.metrics.llms import generate
 
 if t.TYPE_CHECKING:
     from datasets import Dataset
@@ -88,7 +87,7 @@ class Faithfulness(MetricWithLLM):
                 human_prompt = LONG_FORM_ANSWER_PROMPT.format(question=q, answer=a)
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
-            result = generate(prompts, self.llm, callbacks=batch_group)
+            result = self.llm.generate(prompts, callbacks=batch_group)
             list_statements: list[list[str]] = []
             for output in result.generations:
                 # use only the first generation for each prompt
@@ -106,7 +105,7 @@ class Faithfulness(MetricWithLLM):
                 )
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
-            result = generate(prompts, self.llm, callbacks=batch_group)
+            result = self.llm.generate(prompts, callbacks=batch_group)
             outputs = result.generations
 
             scores = []

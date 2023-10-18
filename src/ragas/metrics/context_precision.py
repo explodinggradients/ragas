@@ -14,7 +14,6 @@ from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from sentence_transformers import CrossEncoder
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.metrics.llms import generate
 
 CONTEXT_PRECISION = HumanMessagePromptTemplate.from_template(
     """\
@@ -145,9 +144,8 @@ class ContextPrecision(MetricWithLLM):
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
             responses: list[list[str]] = []
-            results = generate(
+            results = self.llm.generate(
                 prompts,
-                self.llm,
                 n=self.strictness,
                 temperature=self.temperature,
                 callbacks=batch_group,

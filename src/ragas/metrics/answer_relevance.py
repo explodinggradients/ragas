@@ -11,7 +11,6 @@ from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.metrics.llms import generate
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.manager import CallbackManager
@@ -80,9 +79,8 @@ class AnswerRelevancy(MetricWithLLM):
                 human_prompt = QUESTION_GEN.format(answer=ans)
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
-            results = generate(
+            results = self.llm.generate(
                 prompts,
-                self.llm,
                 n=self.strictness,
                 temperature=self.temperature,
                 callbacks=batch_group,

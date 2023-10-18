@@ -6,6 +6,8 @@ G - ground_truths: ground truth answer
 """
 from __future__ import annotations
 
+import logging
+import os
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -15,9 +17,9 @@ from math import floor
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.chat_models import ChatOpenAI
-from langchain.chat_models.base import BaseChatModel
-from langchain.llms.base import BaseLLM
 from tqdm import tqdm
+
+from ragas.metrics.llms import LangchainLLM
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -106,10 +108,16 @@ class Metric(ABC):
         return make_batches(dataset_size, self.batch_size)
 
 
-def _llm_factory():
-    return ChatOpenAI(model_name="gpt-3.5-turbo-16k")  # type: ignore
+def _llm_factory() -> LangchainLLM:
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if openai_api_key is None:
+        logging.warning(
+            "OPENAI_API_KEY is not set! Make sure your passing 'OPENAI_API_KEY' env variable."  # noqa
+        )
+    openai_llm = ChatOpenAI(model_name="gpt-3.5-turbo-16k")  # type: ignore
+    return LangchainLLM(openai_llm)
 
 
 @dataclass
 class MetricWithLLM(Metric):
-    llm: BaseLLM | BaseChatModel = field(default_factory=_llm_factory)
+    llm: LangchainLLM = field(default_factory=_llm_factory)

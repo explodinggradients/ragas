@@ -82,6 +82,11 @@ class BaseRagasLLM(ABC):
     # supports multiple compeletions for the given prompt
     n_completions_supported: bool = False
 
+    @property
+    @abstractmethod
+    def llm(self):
+        ...
+
     @abstractmethod
     def generate(
         self,
@@ -97,7 +102,11 @@ class LangchainLLM(BaseRagasLLM):
     n_completions_supported: bool = True
 
     def __init__(self, llm: BaseLLM | BaseChatModel):
-        self.llm = llm
+        self.langchain_llm = llm
+
+    @property
+    def llm(self):
+        return self.langchain_llm
 
     @staticmethod
     def llm_supports_completions(llm):
