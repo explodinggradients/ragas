@@ -34,7 +34,7 @@ def multiple_completion_supported(llm: BaseLLM | BaseChatModel) -> bool:
     return False
 
 
-def generate(
+def generate_old(
     prompts: list[ChatPromptTemplate],
     llm: BaseLLM | BaseChatModel,
     n: int = 1,
@@ -47,7 +47,7 @@ def generate(
     if n is not None:
         if multiple_completion_supported(llm):
             llm = t.cast(MultipleCompletionSupportedLLM, llm)
-            old_n = llm.n  # type: ignore (n is not found in valid)
+            old_n = llm.n
             llm.n = n
             n_swapped = True
         else:
@@ -118,11 +118,13 @@ class LangchainLLM(BaseRagasLLM):
     def generate_multiple_completions(
         self,
         prompts: list[ChatPromptTemplate],
-        n: t.Optional[int] = None,
+        n: int = 1,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
-        old_n = self.llm.n  # type: ignore (this function will only run for models with n)
-        self.llm.n = n
+        self.langchain_llm = t.cast(MultipleCompletionSupportedLLM, self.langchain_llm)
+        old_n = self.langchain_llm.n
+        self.langchain_llm.n = n
+
         if isinstance(self.llm, BaseLLM):
             ps = [p.format() for p in prompts]
             result = self.llm.generate(ps, callbacks=callbacks)
