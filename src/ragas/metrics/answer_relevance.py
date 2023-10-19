@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import typing as t
 from dataclasses import dataclass
 
@@ -10,6 +11,7 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
+from ragas.exceptions import OpenAIKeyNotFound
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:
@@ -57,7 +59,15 @@ class AnswerRelevancy(MetricWithLLM):
 
     def __post_init__(self: t.Self):
         if self.embeddings is None:
-            self.embeddings = OpenAIEmbeddings()  # type: ignore
+            oai_key = os.getenv("OPENAI_API_KEY", "no-key")
+            self.embeddings = OpenAIEmbeddings(openai_api_key=oai_key)  # type: ignore
+
+    def init_model(self):
+        super().init_model()
+
+        if isinstance(self.embeddings, OpenAIEmbeddings):
+            if self.embeddings.openai_api_key == "no-key":
+                raise OpenAIKeyNotFound
 
     def _score_batch(
         self: t.Self,

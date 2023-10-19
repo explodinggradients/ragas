@@ -19,7 +19,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.llms import OpenAI
 from tqdm import tqdm
 
-from ragas.exceptions import RagasException
+from ragas.exceptions import OpenAIKeyNotFound
 from ragas.metrics.llms import LangchainLLM
 
 if t.TYPE_CHECKING:
@@ -123,6 +123,4 @@ class MetricWithLLM(Metric):
         if isinstance(self.llm, ChatOpenAI) or isinstance(self.llm, OpenAI):
             self.llm.langchain_llm = t.cast(ChatOpenAI, self.llm)
             if self.llm.langchain_llm.openai_api_key == "no-key":
-                raise RagasException(
-                    "OpenAI API key not found! Please pass it via the 'OPENAI_API_KEY' environment variable."  # noqa
-                )
+                raise OpenAIKeyNotFound
