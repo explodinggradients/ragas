@@ -6,7 +6,6 @@ G - ground_truths: ground truth answer
 """
 from __future__ import annotations
 
-import logging
 import os
 import typing as t
 from abc import ABC, abstractmethod
@@ -17,8 +16,10 @@ from math import floor
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.chat_models import ChatOpenAI
+from langchain.llms import OpenAI
 from tqdm import tqdm
 
+from ragas.exceptions import RagasException
 from ragas.metrics.llms import LangchainLLM
 
 if t.TYPE_CHECKING:
@@ -109,17 +110,19 @@ class Metric(ABC):
 
 
 def _llm_factory() -> LangchainLLM:
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    if openai_api_key is None:
-        logging.warning(
-            "OPENAI_API_KEY is not set! Make sure your passing 'OPENAI_API_KEY' env variable."  # noqa
-        )
-    openai_llm = ChatOpenAI(
-        model_name="gpt-3.5-turbo-16k", openai_api_key=openai_api_key  # type: ignore
-    )
-    return LangchainLLM(openai_llm)
+    oai_key = os.getenv("OPENAI_API_KEY", "no-key")
+    openai_llm = ChatOpenAI(openai_api_key=oai_key)
+    return LangchainLLM(llm=openai_llm)
 
 
 @dataclass
 class MetricWithLLM(Metric):
     llm: LangchainLLM = field(default_factory=_llm_factory)
+
+    def init_model(self):
+        if isinstance(self.llm, ChatOpenAI) or isinstance(self.llm, OpenAI):
+            self.llm.langchain_llm = t.cast(ChatOpenAI, self.llm)
+            if self.llm.langchain_llm.openai_api_key == "no-key":
+                raise RagasException(
+                    "OpenAI API key not found! Please pass it via the 'OPENAI_API_KEY' environment variable."  # noqa
+                )

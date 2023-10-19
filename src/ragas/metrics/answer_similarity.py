@@ -44,9 +44,6 @@ class AnswerSimilarity(MetricWithLLM):
         if self.embeddings is None:
             self.cross_encoder = CrossEncoder("cross-encoder/stsb-TinyBERT-L-4")
 
-    def init_model(self: t.Self):
-        pass
-
     def _score_batch(
         self: t.Self,
         dataset: Dataset,

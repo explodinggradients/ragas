@@ -117,6 +117,7 @@ class ContextPrecision(MetricWithLLM):
             )
 
     def init_model(self: t.Self):
+        super().init_model()
         self.sent_agreement = SentenceAgreement(
             model_name=self.model_name, metric=self.agreement_metric
         )

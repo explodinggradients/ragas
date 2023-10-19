@@ -71,9 +71,6 @@ class AspectCritique(MetricWithLLM):
             self.strictness if self.strictness % 2 != 0 else self.strictness + 1
         )
 
-    def init_model(self: t.Self):
-        pass
-
     def prompt_format(
         self: t.Self,
         question: str,

@@ -59,9 +59,6 @@ class AnswerRelevancy(MetricWithLLM):
         if self.embeddings is None:
             self.embeddings = OpenAIEmbeddings()  # type: ignore
 
-    def init_model(self: t.Self):
-        pass
-
     def _score_batch(
         self: t.Self,
         dataset: Dataset,

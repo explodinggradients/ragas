@@ -64,9 +64,6 @@ class Faithfulness(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qac
     batch_size: int = 15
 
-    def init_model(self: t.Self):
-        pass
-
     def _score_batch(
         self: t.Self,
         ds: Dataset,

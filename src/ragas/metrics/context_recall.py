@@ -47,9 +47,6 @@ class ContextRecall(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.gc
     batch_size: int = 15
 
-    def init_model(self: t.Self):
-        ...
-
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
