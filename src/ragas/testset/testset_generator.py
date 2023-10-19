@@ -1,4 +1,5 @@
-import re
+from __future__ import annotations
+
 import typing as t
 import warnings
 from collections import defaultdict, namedtuple
@@ -11,9 +12,10 @@ from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate
+from langchain.schema.document import Document as LangchainDocument
 from llama_index.indices.query.embedding_utils import get_top_k_embeddings
 from llama_index.node_parser.simple import SimpleNodeParser
-from llama_index.readers.schema import Document
+from llama_index.readers.schema import Document as LlamaindexDocument
 from llama_index.schema import BaseNode
 from numpy.random import default_rng
 from tqdm import tqdm
@@ -31,6 +33,7 @@ from ragas.testset.prompts import (
     SCORE_CONTEXT,
     SEED_QUESTION,
 )
+from ragas.testset.utils import load_as_json, load_as_score
 
 DEFAULT_TEST_DISTRIBUTION = {
     "simple": 0.4,
@@ -136,6 +139,7 @@ class TestsetGenerator:
         openai_filter_llm: str = "gpt-4",
         chat_qa: float = 0.3,
         chunk_size: int = 512,
+        testset_distribution: dict = DEFAULT_TEST_DISTRIBUTION,
     ):
         generator_llm = LangchainLLM(llm=ChatOpenAI(model=openai_generator_llm))
         critic_llm = LangchainLLM(llm=ChatOpenAI(model=openai_filter_llm))
@@ -146,6 +150,7 @@ class TestsetGenerator:
             embeddings_model=embeddings_model,
             chat_qa=chat_qa,
             chunk_size=chunk_size,
+            testset_distribution=testset_distribution,
         )
 
     def _get_evolve_type(self) -> str:
@@ -173,12 +178,7 @@ class TestsetGenerator:
         prompt = ChatPromptTemplate.from_messages([human_prompt])
         results = self.critic_llm.generate(prompts=[prompt])
         output = results.generations[0][0].text.strip()
-        pattern = r"^[\d.]+$"
-        if not re.match(pattern, output):
-            score = 0.0
-        else:
-            score = eval(output)
-
+        score = load_as_score(output)
         return score >= self.threshold
 
     def _seed_question(self, context: str) -> str:
@@ -190,8 +190,11 @@ class TestsetGenerator:
     def _filter_question(self, question: str) -> bool:
         human_prompt = FILTER_QUESTION.format(question=question)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
+
         results = self.critic_llm.generate(prompts=[prompt])
-        return bool(results.generations[0][0].text.strip().endswith("Yes."))
+        results = results.generations[0][0].text.strip()
+        json_results = load_as_json(results)
+        return json_results.get("verdict") != "No"
 
     def _reasoning_question(self, question: str, context: str) -> str:
         return self._qc_template(REASONING_QUESTION, question, context)
@@ -273,11 +276,26 @@ class TestsetGenerator:
 
         return embeddings
 
-    def generate(self, documents: t.List[Document], test_size: int) -> TestDataset:
+    def generate(
+        self,
+        documents: list[LlamaindexDocument] | list[LangchainDocument],
+        test_size: int,
+    ) -> TestDataset:
+        if isinstance(documents[0], LangchainDocument):
+            # cast to LangchainDocument since its the only case here
+            documents = t.cast(list[LangchainDocument], documents)
+            documents = [
+                LlamaindexDocument.from_langchain_format(doc) for doc in documents
+            ]
+        elif not isinstance(documents[0], LlamaindexDocument):
+            raise ValueError(
+                "Testset Generatation only supports LlamaindexDocuments or LangchainDocuments"  # noqa
+            )
         # Convert documents into nodes
         node_parser = SimpleNodeParser.from_defaults(
             chunk_size=self.chunk_size, chunk_overlap=0, include_metadata=True
         )
+        documents = t.cast(list[LlamaindexDocument], documents)
         document_nodes: t.List[BaseNode] = node_parser.get_nodes_from_documents(
             documents=documents
         )
@@ -318,6 +336,9 @@ class TestsetGenerator:
             if not score:
                 continue
             seed_question = self._seed_question(text_chunk)
+            is_valid_question = self._filter_question(seed_question)
+            if not is_valid_question:
+                continue
 
             if evolve_type == "multi_context":
                 # Find most similar chunk in same document
@@ -359,10 +380,14 @@ class TestsetGenerator:
                 else:
                     question = self._compress_question(question=question)
 
-            context = self._generate_context(question, text_chunk)
-            answer = self._generate_answer(question, context)
-            samples.append(DataRow(question.split("\n"), context, answer, evolve_type))
-            count += 1
-            pbar.update(count)
+            is_valid_question = self._filter_question(question)
+            if is_valid_question:
+                context = self._generate_context(question, text_chunk)
+                answer = self._generate_answer(question, context)
+                samples.append(
+                    DataRow(question.split("\n"), context, answer, evolve_type)
+                )
+                count += 1
+                pbar.update(count)
 
         return TestDataset(test_data=samples)

@@ -17,7 +17,7 @@ from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 CONTEXT_PRECISION = HumanMessagePromptTemplate.from_template(
     """\
-Please extract relevant sentences from the provided context that can potentially help answer the following question. If no relevant sentences are found, or if you believe the question cannot be answered from the given context, return the phrase "Insufficient Information".  While extracting candidate sentences you're not allowed to make any changes to sentences from given context.
+Please extract relevant sentences from the provided context that is absolutely required answer the following question. If no relevant sentences are found, or if you believe the question cannot be answered from the given context, return the phrase "Insufficient Information".  While extracting candidate sentences you're not allowed to make any changes to sentences from given context.
 
 question:{question}
 context:\n{context}
@@ -157,7 +157,7 @@ class ContextPrecision(MetricWithLLM):
                 context_sents = sent_tokenize(context)
                 for output in n_response:
                     indices = (
-                        output.split("\n")
+                        sent_tokenize(output.strip())
                         if output.lower() != "insufficient information."
                         else []
                     )
