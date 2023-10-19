@@ -114,7 +114,9 @@ def _llm_factory() -> LangchainLLM:
         logging.warning(
             "OPENAI_API_KEY is not set! Make sure your passing 'OPENAI_API_KEY' env variable."  # noqa
         )
-    openai_llm = ChatOpenAI(model_name="gpt-3.5-turbo-16k")  # type: ignore
+    openai_llm = ChatOpenAI(
+        model_name="gpt-3.5-turbo-16k", openai_api_key=openai_api_key  # type: ignore
+    )
     return LangchainLLM(openai_llm)
 
 
