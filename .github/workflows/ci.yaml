@@ -95,7 +95,7 @@ jobs:
             OPTS=(--dist loadfile -n auto)
           fi
           # Now run the unit tests
-          OPENAI_API_KEY="test" pytest tests/unit "${OPTS[@]}"
+          pytest tests/unit "${OPTS[@]}"
 
   codestyle_check:
     runs-on: ubuntu-latest
