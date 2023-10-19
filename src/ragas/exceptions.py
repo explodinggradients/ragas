@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 
-
 class RagasException(Exception):
     """
     Base exception class for ragas.

@@ -5,9 +5,10 @@ welcome to the ragas quickstart. We're going to get you up and running with raga
 
 to kick things of lets start with the data
 
-```{note}
-Are you using Azure OpenAI endpoints? Then checkout [this quickstart guide](./guides/quickstart-azure-openai.ipynb)
-```
+:::{note}
+Are you using Azure OpenAI endpoints? Then checkout [this quickstart
+guide](../howtos/customisations/azure-openai.ipynb)
+:::
 
 ```bash
 pip install ragas
@@ -23,9 +24,9 @@ os.environ["OPENAI_API_KEY"] = "your-openai-key"
 
 Ragas performs a `ground_truth` free evaluation of your RAG pipelines. This is because for most people building a gold labeled dataset which represents in the distribution they get in production is a very expensive process.
 
-```{note}
+:::{note}
 While originally ragas was aimed at `ground_truth` free evaluations there is some aspects of the RAG pipeline that need `ground_truth` in order to measure. We're in the process of building a testset generation features that will make it easier. Checkout [issue#136](https://github.com/explodinggradients/ragas/issues/136) for more details.
-```
+:::
 
 Hence to work with ragas all you need are the following data
 - question: `list[str]` - These are the questions your RAG pipeline will be evaluated on.
@@ -46,10 +47,10 @@ fiqa_eval = load_dataset("explodinggradients/fiqa", "ragas_eval")
 fiqa_eval
 ```
 
-```{seealso}
-See [prepare-data](/docs/concepts/prepare_data.md) to learn how to prepare your own custom data for evaluation.
+:::{seealso}
+See [testset generation](./testset_generation.md) to learn how to generate your own synthetic data for evaluation.
+:::
 
-```
 ## Metrics
 
 Ragas provides you with a few metrics to evaluate the different aspects of your RAG systems namely
@@ -78,9 +79,9 @@ here you can see that we are using 4 metrics, but what do the represent?
 4. context_recall: measures the ability of the retriever to retrieve all the necessary information needed to answer the question.
 
 
-```{note}
-by default these metrics are using OpenAI's API to compute the score. If you using this metric make sure you set the environment key `OPENAI_API_KEY` with your API key. You can also try other LLMs for evaluation, check the [llm guide](./guides/llms.ipynb) to learn more
-```
+:::{note}
+by default these metrics are using OpenAI's API to compute the score. If you using this metric make sure you set the environment key `OPENAI_API_KEY` with your API key. You can also try other LLMs for evaluation, check the [llm guide](../howtos/customisations/llms.ipynb) to learn more
+:::
 
 ## Evaluation
 
