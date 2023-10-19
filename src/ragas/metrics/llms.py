@@ -156,6 +156,8 @@ class LangchainLLM(BaseRagasLLM):
         temperature: float = 0,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
+        # set temperature to 0.2 for multiple completions
+        temperature = 0.2 if n > 1 else 0
         self.llm.temperature = temperature
 
         if self.llm_supports_completions(self.llm):

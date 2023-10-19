@@ -56,8 +56,6 @@ class AnswerRelevancy(MetricWithLLM):
     embeddings: Embeddings | None = None
 
     def __post_init__(self: t.Self):
-        self.temperature = 0.2 if self.strictness > 0 else 0
-
         if self.embeddings is None:
             self.embeddings = OpenAIEmbeddings()  # type: ignore
 
@@ -82,7 +80,6 @@ class AnswerRelevancy(MetricWithLLM):
             results = self.llm.generate(
                 prompts,
                 n=self.strictness,
-                temperature=self.temperature,
                 callbacks=batch_group,
             )
             results = [[i.text for i in r] for r in results.generations]

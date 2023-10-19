@@ -68,7 +68,7 @@ class AspectCritique(MetricWithLLM):
 
         # ensure odd number of checks to avoid tie in majority vote.
         self.strictness = (
-            self.strictness if self.strictness % 2 == 0 else self.strictness + 1
+            self.strictness if self.strictness % 2 != 0 else self.strictness + 1
         )
 
     def init_model(self: t.Self):
