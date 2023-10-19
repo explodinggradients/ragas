@@ -91,7 +91,7 @@ Running the evaluation is as simple as calling evaluate on the `Dataset` with th
 from ragas import evaluate
 
 result = evaluate(
-    fiqa_eval["baseline"].select(range(1)),
+    fiqa_eval["baseline"].select(range(3)), # selecting only 3
     metrics=[
         context_precision,
         faithfulness,
