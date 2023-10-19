@@ -4,15 +4,6 @@ import json
 import re
 import warnings
 
-from langchain.schema.document import Document as LangchainDocument
-from llama_index.readers.schema import Document as LlamaindexDocument
-
-
-def langchain_to_llamaindex_documents(
-    langchain_docs: list[LangchainDocument],
-) -> list[LlamaindexDocument]:
-    ...
-
 
 def load_as_json(text):
     """
