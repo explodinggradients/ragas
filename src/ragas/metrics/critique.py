@@ -6,12 +6,10 @@ from dataclasses import dataclass, field
 
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
-from langchain.chat_models.base import BaseChatModel
-from langchain.llms.base import BaseLLM
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM, _llm_factory
-from ragas.metrics.llms import generate
+from ragas.metrics.llms import LangchainLLM
 
 CRITIQUE_PROMPT = HumanMessagePromptTemplate.from_template(
     """Given a input and submission. Evaluate the submission only using the given criteria. 
@@ -48,7 +46,7 @@ class AspectCritique(MetricWithLLM):
         made using majority vote.
     batch_size: int
         Batch size for openai completion.
-    llm : BaseLLM | BaseChatModel
+    llm : LangchainLLM
         llm API of your choice
     """
 
@@ -57,7 +55,7 @@ class AspectCritique(MetricWithLLM):
     definition: str = field(default="", repr=True)
     strictness: int = field(default=1, repr=False)
     batch_size: int = field(default=15, repr=False)
-    llm: BaseLLM | BaseChatModel = field(
+    llm: LangchainLLM = field(
         default_factory=_llm_factory,
         repr=False,
     )
@@ -70,11 +68,8 @@ class AspectCritique(MetricWithLLM):
 
         # ensure odd number of checks to avoid tie in majority vote.
         self.strictness = (
-            self.strictness if self.strictness % 2 == 0 else self.strictness + 1
+            self.strictness if self.strictness % 2 != 0 else self.strictness + 1
         )
-
-    def init_model(self: t.Self):
-        pass
 
     def prompt_format(
         self: t.Self,
@@ -113,9 +108,8 @@ class AspectCritique(MetricWithLLM):
                 human_prompt = self.prompt_format(question, answer, context)
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
-            results = generate(
+            results = self.llm.generate(
                 prompts,
-                self.llm,
                 n=self.strictness,
                 callbacks=batch_group,
             )
