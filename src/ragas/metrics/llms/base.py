@@ -7,13 +7,13 @@ from langchain.chat_models import AzureChatOpenAI, ChatOpenAI
 from langchain.chat_models.base import BaseChatModel
 from langchain.llms import AzureOpenAI, OpenAI
 from langchain.llms.base import BaseLLM
-from langchain.prompts import ChatPromptTemplate
 from langchain.schema import LLMResult
 
 from ragas.async_utils import run_async_tasks
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
+    from langchain.prompts import ChatPromptTemplate
 
 
 def isOpenAI(llm: BaseLLM | BaseChatModel) -> bool:
