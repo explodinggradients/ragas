@@ -22,21 +22,14 @@ os.environ["OPENAI_API_KEY"] = "your-openai-key"
 ```
 ## The Data
 
-Ragas performs a `ground_truth` free evaluation of your RAG pipelines. This is because for most people building a gold labeled dataset which represents in the distribution they get in production is a very expensive process.
+For this tutorial we are going to use an example dataset from one of the baselines we created for the [Financial Opinion Mining and Question Answering (fiqa) Dataset](https://sites.google.com/view/fiqa/). The dataset has the following columns.
 
-:::{note}
-While originally ragas was aimed at `ground_truth` free evaluations there is some aspects of the RAG pipeline that need `ground_truth` in order to measure. We're in the process of building a testset generation features that will make it easier. Checkout [issue#136](https://github.com/explodinggradients/ragas/issues/136) for more details.
-:::
-
-Hence to work with ragas all you need are the following data
 - question: `list[str]` - These are the questions your RAG pipeline will be evaluated on.
 - answer: `list[str]` - The answer generated from the RAG pipeline and given to the user.
 - contexts: `list[list[str]]` - The contexts which were passed into the LLM to answer the question.
 - ground_truths: `list[list[str]]` - The ground truth answer to the questions. (only required if you are using context_recall)
 
 Ideally your list of questions should reflect the questions your users give, including those that you have been problematic in the past.
-
-Here we're using an example dataset from on of the baselines we created for the [Financial Opinion Mining and Question Answering (fiqa) Dataset](https://sites.google.com/view/fiqa/) we created.
 
 
 ```{code-block} python

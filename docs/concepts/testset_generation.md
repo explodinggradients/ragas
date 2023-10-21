@@ -36,6 +36,27 @@ Moving forward, we are will be expanding the range of evolution techniques to of
 ## Example
 
 ```{code-block} python
+:caption: loading documents using langchain
+from langchain.document_loaders import PubMedLoader
+
+loader = PubMedLoader("liver", load_max_docs=10)
+documents = loader.load()
+```
+Checkout [langchain](https://python.langchain.com/docs/modules/data_connection/document_loaders/) document loaders to see more examples
+
+```{code-block} python
+:caption: loading documents using llama-index
+from llama_index import download_loader
+
+SemanticScholarReader = download_loader("SemanticScholarReader")
+loader = SemanticScholarReader()
+query_space = "large language models"
+documents = loader.load_data(query=query_space, limit=10)
+```
+Checkout [llama-index](https://gpt-index.readthedocs.io/en/stable/core_modules/data_modules/connector/root.html) document loaders to see more examples
+
+
+```{code-block} python
 :caption: Customising test set generation 
 from ragas.testset import TestsetGenerator
 from langchain.embeddings import OpenAIEmbeddings
