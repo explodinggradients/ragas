@@ -20,7 +20,7 @@ from langchain.llms import OpenAI
 from tqdm import tqdm
 
 from ragas.exceptions import OpenAIKeyNotFound
-from ragas.metrics.llms import LangchainLLM
+from ragas.llms import LangchainLLM
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks

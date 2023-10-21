@@ -8,8 +8,8 @@ from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
+from ragas.llms import LangchainLLM
 from ragas.metrics.base import EvaluationMode, MetricWithLLM, _llm_factory
-from ragas.metrics.llms import LangchainLLM
 
 CRITIQUE_PROMPT = HumanMessagePromptTemplate.from_template(
     """Given a input and submission. Evaluate the submission only using the given criteria. 
