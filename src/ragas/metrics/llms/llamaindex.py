@@ -1,26 +1,25 @@
 from __future__ import annotations
 
 import typing as t
-from dataclasses import dataclass
 
 from langchain.schema.output import Generation, LLMResult
 from llama_index.llms.base import LLM as LiLLM
 
 from ragas.async_utils import run_async_tasks
-from ragas.metrics.llms.base import BaseRagasLLM, LangchainLLM
+from ragas.metrics.llms.base import BaseRagasLLM
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
     from langchain.prompts import ChatPromptTemplate
 
 
-@dataclass
 class LlamaIndexLLM(BaseRagasLLM):
-    llamaindex_llm: LiLLM
+    def __init__(self, llm: LiLLM) -> None:
+        self.llama_index_llm = llm
 
     @property
     def llm(self) -> LiLLM:
-        return self.llamaindex_llm
+        return self.llama_index_llm
 
     def generate(
         self,
