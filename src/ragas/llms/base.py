@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import typing as t
 from abc import ABC, abstractmethod
 
@@ -151,3 +152,9 @@ class LangchainLLM(BaseRagasLLM):
                 }
 
             return LLMResult(generations=generations, llm_output=llm_output)
+
+
+def llm_factory() -> LangchainLLM:
+    oai_key = os.getenv("OPENAI_API_KEY", "no-key")
+    openai_llm = ChatOpenAI(openai_api_key=oai_key)
+    return LangchainLLM(llm=openai_llm)
