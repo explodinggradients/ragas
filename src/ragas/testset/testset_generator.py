@@ -20,7 +20,7 @@ from llama_index.schema import BaseNode
 from numpy.random import default_rng
 from tqdm import tqdm
 
-from ragas.metrics.llms import LangchainLLM
+from ragas.llms import LangchainLLM
 from ragas.testset.prompts import (
     ANSWER_FORMULATE,
     COMPRESS_QUESTION,
