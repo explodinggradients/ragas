@@ -91,7 +91,7 @@ class SentenceAgreement:
 
 
 @dataclass
-class ContextPrecision(MetricWithLLM):
+class ContextRelevancy(MetricWithLLM):
     """
     Extracts sentences from the context that are relevant to the question with
     self-consistancy checks. The number of relevant sentences and is used as the score.
@@ -186,10 +186,10 @@ class ContextPrecision(MetricWithLLM):
 
 
 @dataclass
-class AveragePrecision(MetricWithLLM):
+class ContextPrecision(MetricWithLLM):
 
     """
-    Average Precision is a metric that evaluates whether all of the ground-truth
+    Average Precision is a metric that evaluates whether all of the
     relevant items selected by the model are ranked higher or not.
 
     Attributes
@@ -257,12 +257,5 @@ class AveragePrecision(MetricWithLLM):
         return scores
 
 
-@dataclass
-class ContextRelevancy(ContextPrecision):
-    name: str = "context_relevancy"
-    show_deprecation_warning: bool = True
-
-
 context_precision = ContextPrecision()
 context_relevancy = ContextRelevancy()
-average_precision = AveragePrecision()
