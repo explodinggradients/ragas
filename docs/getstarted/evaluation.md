@@ -5,9 +5,10 @@ welcome to the ragas quickstart. We're going to get you up and running with raga
 
 to kick things of lets start with the data
 
-```{note}
-Are you using Azure OpenAI endpoints? Then checkout [this quickstart guide](./guides/quickstart-azure-openai.ipynb)
-```
+:::{note}
+Are you using Azure OpenAI endpoints? Then checkout [this quickstart
+guide](../howtos/customisations/azure-openai.ipynb)
+:::
 
 ```bash
 pip install ragas
@@ -21,21 +22,14 @@ os.environ["OPENAI_API_KEY"] = "your-openai-key"
 ```
 ## The Data
 
-Ragas performs a `ground_truth` free evaluation of your RAG pipelines. This is because for most people building a gold labeled dataset which represents in the distribution they get in production is a very expensive process.
+For this tutorial we are going to use an example dataset from one of the baselines we created for the [Financial Opinion Mining and Question Answering (fiqa) Dataset](https://sites.google.com/view/fiqa/). The dataset has the following columns.
 
-```{note}
-While originally ragas was aimed at `ground_truth` free evaluations there is some aspects of the RAG pipeline that need `ground_truth` in order to measure. We're in the process of building a testset generation features that will make it easier. Checkout [issue#136](https://github.com/explodinggradients/ragas/issues/136) for more details.
-```
-
-Hence to work with ragas all you need are the following data
 - question: `list[str]` - These are the questions your RAG pipeline will be evaluated on.
 - answer: `list[str]` - The answer generated from the RAG pipeline and given to the user.
 - contexts: `list[list[str]]` - The contexts which were passed into the LLM to answer the question.
 - ground_truths: `list[list[str]]` - The ground truth answer to the questions. (only required if you are using context_recall)
 
 Ideally your list of questions should reflect the questions your users give, including those that you have been problematic in the past.
-
-Here we're using an example dataset from on of the baselines we created for the [Financial Opinion Mining and Question Answering (fiqa) Dataset](https://sites.google.com/view/fiqa/) we created.
 
 
 ```{code-block} python
@@ -46,10 +40,10 @@ fiqa_eval = load_dataset("explodinggradients/fiqa", "ragas_eval")
 fiqa_eval
 ```
 
-```{seealso}
-See [prepare-data](/docs/concepts/prepare_data.md) to learn how to prepare your own custom data for evaluation.
+:::{seealso}
+See [testset generation](./testset_generation.md) to learn how to generate your own synthetic data for evaluation.
+:::
 
-```
 ## Metrics
 
 Ragas provides you with a few metrics to evaluate the different aspects of your RAG systems namely
@@ -78,9 +72,9 @@ here you can see that we are using 4 metrics, but what do the represent?
 4. context_recall: measures the ability of the retriever to retrieve all the necessary information needed to answer the question.
 
 
-```{note}
-by default these metrics are using OpenAI's API to compute the score. If you using this metric make sure you set the environment key `OPENAI_API_KEY` with your API key. You can also try other LLMs for evaluation, check the [llm guide](./guides/llms.ipynb) to learn more
-```
+:::{note}
+by default these metrics are using OpenAI's API to compute the score. If you using this metric make sure you set the environment key `OPENAI_API_KEY` with your API key. You can also try other LLMs for evaluation, check the [llm guide](../howtos/customisations/llms.ipynb) to learn more
+:::
 
 ## Evaluation
 
@@ -91,13 +85,12 @@ Running the evaluation is as simple as calling evaluate on the `Dataset` with th
 from ragas import evaluate
 
 result = evaluate(
-    fiqa_eval["baseline"].select(range(1)),
+    fiqa_eval["baseline"].select(range(3)), # selecting only 3
     metrics=[
         context_precision,
         faithfulness,
         answer_relevancy,
         context_recall,
-        harmfulness,
     ],
 )
 

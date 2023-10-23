@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import typing as t
 from dataclasses import dataclass
 
@@ -10,8 +11,8 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
+from ragas.exceptions import OpenAIKeyNotFound
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.metrics.llms import generate
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.manager import CallbackManager
@@ -57,13 +58,16 @@ class AnswerRelevancy(MetricWithLLM):
     embeddings: Embeddings | None = None
 
     def __post_init__(self: t.Self):
-        self.temperature = 0.2 if self.strictness > 0 else 0
-
         if self.embeddings is None:
-            self.embeddings = OpenAIEmbeddings()  # type: ignore
+            oai_key = os.getenv("OPENAI_API_KEY", "no-key")
+            self.embeddings = OpenAIEmbeddings(openai_api_key=oai_key)  # type: ignore
 
-    def init_model(self: t.Self):
-        pass
+    def init_model(self):
+        super().init_model()
+
+        if isinstance(self.embeddings, OpenAIEmbeddings):
+            if self.embeddings.openai_api_key == "no-key":
+                raise OpenAIKeyNotFound
 
     def _score_batch(
         self: t.Self,
@@ -80,11 +84,9 @@ class AnswerRelevancy(MetricWithLLM):
                 human_prompt = QUESTION_GEN.format(answer=ans)
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
-            results = generate(
+            results = self.llm.generate(
                 prompts,
-                self.llm,
                 n=self.strictness,
-                temperature=self.temperature,
                 callbacks=batch_group,
             )
             results = [[i.text for i in r] for r in results.generations]

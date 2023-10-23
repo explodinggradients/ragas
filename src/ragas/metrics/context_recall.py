@@ -8,7 +8,6 @@ from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.metrics.llms import generate
 
 CONTEXT_RECALL_RA = HumanMessagePromptTemplate.from_template(
     """
@@ -48,9 +47,6 @@ class ContextRecall(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.gc
     batch_size: int = 15
 
-    def init_model(self: t.Self):
-        ...
-
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
@@ -71,9 +67,8 @@ class ContextRecall(MetricWithLLM):
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
             responses: list[list[str]] = []
-            results = generate(
+            results = self.llm.generate(
                 prompts,
-                self.llm,
                 n=1,
                 callbacks=batch_group,
             )
