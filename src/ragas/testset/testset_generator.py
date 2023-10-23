@@ -281,16 +281,17 @@ class TestsetGenerator:
         documents: list[LlamaindexDocument] | list[LangchainDocument],
         test_size: int,
     ) -> TestDataset:
+        if not isinstance(documents[0], (LlamaindexDocument, LangchainDocument)):
+            raise ValueError(
+                "Testset Generatation only supports LlamaindexDocuments or LangchainDocuments"  # noqa
+            )
+
         if isinstance(documents[0], LangchainDocument):
             # cast to LangchainDocument since its the only case here
             documents = t.cast(list[LangchainDocument], documents)
             documents = [
                 LlamaindexDocument.from_langchain_format(doc) for doc in documents
             ]
-        elif not isinstance(documents[0], LlamaindexDocument):
-            raise ValueError(
-                "Testset Generatation only supports LlamaindexDocuments or LangchainDocuments"  # noqa
-            )
         # Convert documents into nodes
         node_parser = SimpleNodeParser.from_defaults(
             chunk_size=self.chunk_size, chunk_overlap=0, include_metadata=True
