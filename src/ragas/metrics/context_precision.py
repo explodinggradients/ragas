@@ -9,7 +9,6 @@ from typing import List
 import numpy as np
 import pysbd
 from datasets import Dataset
-from langchain.callbacks.base import Callbacks
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from sentence_transformers import CrossEncoder
@@ -210,7 +209,7 @@ class AveragePrecision(MetricWithLLM):
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
-        callbacks: Callbacks = None,
+        callbacks: t.Optional[CallbackManager] = None,
         callback_group_name: str = "batch",
     ) -> list:
         prompts = []
@@ -229,11 +228,9 @@ class AveragePrecision(MetricWithLLM):
                 prompts.extend(human_prompts)
 
             responses: list[list[str]] = []
-            results = generate(
+            results = self.llm.generate(
                 prompts,
-                self.llm,
                 n=1,
-                temperature=0.0,
                 callbacks=batch_group,
             )
             responses = [[i.text for i in r] for r in results.generations]
