@@ -15,7 +15,7 @@ from sentence_transformers import CrossEncoder
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
-CONTEXT_PRECISION = HumanMessagePromptTemplate.from_template(
+CONTEXT_RELEVANCE = HumanMessagePromptTemplate.from_template(
     """\
 Please extract relevant sentences from the provided context that is absolutely required answer the following question. If no relevant sentences are found, or if you believe the question cannot be answered from the given context, return the phrase "Insufficient Information".  While extracting candidate sentences you're not allowed to make any changes to sentences from given context.
 
@@ -24,7 +24,7 @@ context:\n{context}
 candidate sentences:\n"""  # noqa: E501
 )
 
-AVERAGE_PRECISION = HumanMessagePromptTemplate.from_template(
+CONTEXT_PRECISION = HumanMessagePromptTemplate.from_template(
     """\
 Given a question and a context, verify if the information in the given context is useful in answering the question. Return a Yes/No answer.
 question:{question}
@@ -147,7 +147,7 @@ class ContextRelevancy(MetricWithLLM):
             callback_group_name, callback_manager=callbacks
         ) as batch_group:
             for q, c in zip(questions, contexts):
-                human_prompt = CONTEXT_PRECISION.format(
+                human_prompt = CONTEXT_RELEVANCE.format(
                     question=q, context="\n".join(c)
                 )
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
@@ -199,7 +199,7 @@ class ContextPrecision(MetricWithLLM):
         Batch size for openai completion.
     """
 
-    name: str = "average_precision"
+    name: str = "context_precision"
     evaluation_mode: EvaluationMode = EvaluationMode.qc
     batch_size: int = 15
 
@@ -220,7 +220,7 @@ class ContextPrecision(MetricWithLLM):
             for qstn, ctx in zip(questions, contexts):
                 human_prompts = [
                     ChatPromptTemplate.from_messages(
-                        [AVERAGE_PRECISION.format(question=qstn, context=c)]
+                        [CONTEXT_PRECISION.format(question=qstn, context=c)]
                     )
                     for c in ctx
                 ]
