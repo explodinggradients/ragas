@@ -203,9 +203,6 @@ class ContextPrecision(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qc
     batch_size: int = 15
 
-    def init_model(self: t.Self):
-        pass
-
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
