@@ -242,14 +242,16 @@ class TestsetGenerator:
             for qstn in question.split("\n")
         ]
 
-    def _remove_nodes(self, available_indices: list, node_idx: list) -> t.List:
+    def _remove_nodes(
+        self, available_indices: list[BaseNode], node_idx: list
+    ) -> t.List[BaseNode]:
         for idx in node_idx:
             available_indices.remove(idx)
         return available_indices
 
     def _generate_doc_nodes_map(
         self, documenet_nodes: t.List[BaseNode]
-    ) -> t.Dict[str, BaseNode]:
+    ) -> t.Dict[str, t.List[BaseNode]]:
         doc_nodes_map: t.Dict[str, t.List[BaseNode]] = defaultdict(list[BaseNode])
         for node in documenet_nodes:
             if node.ref_doc_id:
@@ -288,7 +290,7 @@ class TestsetGenerator:
 
         if isinstance(documents[0], LangchainDocument):
             # cast to LangchainDocument since its the only case here
-            documents = t.cast(list[LangchainDocument], documents)
+            documents = t.cast(t.List[LangchainDocument], documents)
             documents = [
                 LlamaindexDocument.from_langchain_format(doc) for doc in documents
             ]
@@ -296,7 +298,7 @@ class TestsetGenerator:
         node_parser = SimpleNodeParser.from_defaults(
             chunk_size=self.chunk_size, chunk_overlap=0, include_metadata=True
         )
-        documents = t.cast(list[LlamaindexDocument], documents)
+        documents = t.cast(t.List[LlamaindexDocument], documents)
         document_nodes: t.List[BaseNode] = node_parser.get_nodes_from_documents(
             documents=documents
         )
@@ -319,7 +321,7 @@ class TestsetGenerator:
         pbar = tqdm(total=test_size)
         while count < test_size and available_nodes != []:
             evolve_type = self._get_evolve_type()
-            curr_node = self.rng.choice(available_nodes, size=1)[0]
+            curr_node = self.rng.choice(np.array(available_nodes), size=1)[0]
             available_nodes = self._remove_nodes(available_nodes, [curr_node])
 
             neighbor_nodes = doc_nodes_map[curr_node.source_node.node_id]
@@ -353,6 +355,8 @@ class TestsetGenerator:
                     similarity_cutoff=self.threshold / 10,
                 )
                 if indices:
+                    # type cast indices from list[Any] to list[int]
+                    indices = t.cast(t.List[int], indices)
                     best_neighbor = neighbor_nodes[indices[0]]
                     question = self._multicontext_question(
                         question=seed_question,
