@@ -14,7 +14,6 @@ from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from sentence_transformers import CrossEncoder
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.metrics.llms import generate
 
 CONTEXT_PRECISION = HumanMessagePromptTemplate.from_template(
     """\
@@ -116,9 +115,9 @@ class ContextPrecision(MetricWithLLM):
             raise ValueError(
                 "model_name must be provided when agreement_metric is bert_score"
             )
-        self.temperature = 0.2 if self.strictness > 0 else 0
 
     def init_model(self: t.Self):
+        super().init_model()
         self.sent_agreement = SentenceAgreement(
             model_name=self.model_name, metric=self.agreement_metric
         )
@@ -145,11 +144,9 @@ class ContextPrecision(MetricWithLLM):
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
             responses: list[list[str]] = []
-            results = generate(
+            results = self.llm.generate(
                 prompts,
-                self.llm,
                 n=self.strictness,
-                temperature=self.temperature,
                 callbacks=batch_group,
             )
             responses = [[i.text for i in r] for r in results.generations]

@@ -51,9 +51,6 @@ class AnswerCorrectness(MetricWithLLM):
         if self.faithfulness is None:
             self.faithfulness = Faithfulness(llm=self.llm, batch_size=self.batch_size)
 
-    def init_model(self: t.Self):
-        pass
-
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
