@@ -15,9 +15,9 @@ pip install ragas
 ```
 
 Ragas also uses OpenAI for running some metrics so make sure you have your openai key ready and available in your environment
+
 ```python
 import os
-
 os.environ["OPENAI_API_KEY"] = "your-openai-key"
 ```
 ## The Data
