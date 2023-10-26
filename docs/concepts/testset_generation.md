@@ -51,7 +51,7 @@ from llama_index import download_loader
 SemanticScholarReader = download_loader("SemanticScholarReader")
 loader = SemanticScholarReader()
 query_space = "large language models"
-documents = loader.load_data(query=query_space, limit=10)
+documents = loader.load_data(query=query_space,full_text=True,limit=10)
 ```
 Checkout [llama-index](https://gpt-index.readthedocs.io/en/stable/core_modules/data_modules/connector/root.html) document loaders to see more examples
 
@@ -90,7 +90,7 @@ test_generator = TestsetGenerator(
     chat_qa=chat_qa,
 )
 
-testset = testsetgenerator.generate(documents, test_size=100)
+testset = test_generator.generate(documents, test_size=5)
 
 ```
 
