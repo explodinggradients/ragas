@@ -12,4 +12,4 @@ def test_import():
 
 
 def test_type_casting():
-    t.cast(list[int], [1, 2, 3])
+    t.cast(t.List[int], [1, 2, 3])
