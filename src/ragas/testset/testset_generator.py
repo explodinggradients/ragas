@@ -288,7 +288,7 @@ class TestsetGenerator:
 
         if isinstance(documents[0], LangchainDocument):
             # cast to LangchainDocument since its the only case here
-            documents = t.cast(list[LangchainDocument], documents)
+            documents = t.cast(t.List[LangchainDocument], documents)
             documents = [
                 LlamaindexDocument.from_langchain_format(doc) for doc in documents
             ]
@@ -296,7 +296,7 @@ class TestsetGenerator:
         node_parser = SimpleNodeParser.from_defaults(
             chunk_size=self.chunk_size, chunk_overlap=0, include_metadata=True
         )
-        documents = t.cast(list[LlamaindexDocument], documents)
+        documents = t.cast(t.List[LlamaindexDocument], documents)
         document_nodes: t.List[BaseNode] = node_parser.get_nodes_from_documents(
             documents=documents
         )
