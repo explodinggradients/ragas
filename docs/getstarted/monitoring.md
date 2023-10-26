@@ -5,7 +5,7 @@ Maintaining the quality and performance of an LLM application in a production en
 
 :::{note}
 This is feature is still in beta access. You can requests for 
-[**early access**](https://calendly.com/shahules/30min) to get access
+[**early access**](https://calendly.com/shahules/30min) to try it out.
 :::
 
 The Ragas metrics can also be used with other LLM observability tools like
@@ -13,33 +13,15 @@ The Ragas metrics can also be used with other LLM observability tools like
 [Langfuse](https://langfuse.com/) to get model-based feedback about various
 aspects of you application like those mentioned below
 
-## What can be monitored
+:::{seealso}
+[Langfuse Integration](../howtos/integrations/langfuse.ipynb) to see Ragas
+monitoring in action within the Langfuse dashboard and how to set it up
+:::
 
-```{admonition} **Faithfulness**
-:class: note
+## Aspects to Monitor
 
-This feature assists in identifying and quantifying instances of hallucinations.
-```
-
-```{admonition} **Bad retrieval**
-:class: note
-
-This feature helps identify and quantify poor context retrievals.
-```
-
-```{admonition} **Bad response**
-:class: note
-
-This feature helps in recognizing and quantifying evasive, harmful, or toxic responses.
-```
-
-```{admonition} **Bad format**
-:class: note
-
-This feature helps in detecting and quantifying responses with incorrect formatting.
-```
-
-```{admonition} **Custom use-case**
-:class: hint
-
-For monitoring other critical aspects that are specific to your use case. [Talk to founders](https://calendly.com/shahules/30min)
+1. Faithfulness: This feature assists in identifying and quantifying instances of hallucinations.
+2. Bad retrieval: This feature helps identify and quantify poor context retrievals.
+3. Bad response: This feature helps in recognizing and quantifying evasive, harmful, or toxic responses.
+4. Bad format: This feature helps in detecting and quantifying responses with incorrect formatting.
+5. Custom use-case: For monitoring other critical aspects that are specific to your use case. [Talk to founders](https://calendly.com/shahules/30min)
