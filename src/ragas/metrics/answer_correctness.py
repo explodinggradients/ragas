@@ -68,7 +68,9 @@ class AnswerCorrectness(MetricWithLLM):
 
         scores = np.vstack([faith_scores, similarity_scores])
         scores = np.average(
-            [faith_scores, similarity_scores], axis=0, weights=self.weights
+            scores,
+            axis=0,
+            weights=self.weights,
         )
 
         return scores.tolist()
