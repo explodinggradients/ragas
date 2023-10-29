@@ -187,7 +187,6 @@ class ContextRelevancy(MetricWithLLM):
 
 @dataclass
 class ContextPrecision(MetricWithLLM):
-
     """
     Average Precision is a metric that evaluates whether all of the
     relevant items selected by the model are ranked higher or not.
