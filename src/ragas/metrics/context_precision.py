@@ -111,7 +111,7 @@ class ContextRelevancy(MetricWithLLM):
         any encoder model. Used for calculating bert_score.
     """
 
-    name: str = "context_precision"
+    name: str = "context_relevancy"
     evaluation_mode: EvaluationMode = EvaluationMode.qc
     batch_size: int = 15
     strictness: int = 1
