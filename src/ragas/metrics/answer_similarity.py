@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import os
 import typing as t
 from dataclasses import dataclass
 
 import numpy as np
 from datasets import Dataset
 from langchain.embeddings import OpenAIEmbeddings
-from ragas.embeddings.embeddings import HuggingfaceEmbeddings
 
+from ragas.embeddings.embeddings import HuggingfaceEmbeddings
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:
@@ -30,7 +29,8 @@ class AnswerSimilarity(MetricWithLLM):
     model_name:
         The model to be used for calculating semantic similarity
         Defaults open-ai-embeddings
-        oss options https://huggingface.co/spaces/mteb/leaderboard
+        select cross-encoder model for best results
+        https://huggingface.co/spaces/mteb/leaderboard
     threshold:
         The threshold if given used to map output to binary
         Default 0.5
@@ -39,14 +39,16 @@ class AnswerSimilarity(MetricWithLLM):
     name: str = "answer_similarity"
     evaluation_mode: EvaluationMode = EvaluationMode.ga
     batch_size: int = 15
-    model_name: str | None = None
+    model: HuggingfaceEmbeddings | None = None
     threshold: float | None = 0.5
 
     def __post_init__(self: t.Self):
-        if self.model_name is None:
+        if self.model is None:
             self.model = OpenAIEmbeddings()
+            self.is_cross_encoder = False
         else:
-            self.model = HuggingfaceEmbeddings(self.model_name)
+            self.is_cross_encoder = True if self.model.is_cross_encoder else False
+            self.model.encode_kwargs = {"batch_size": self.batch_size}
 
     def _score_batch(
         self: t.Self,
@@ -57,18 +59,12 @@ class AnswerSimilarity(MetricWithLLM):
         ground_truths, answers = dataset["ground_truths"], dataset["answer"]
         ground_truths = [item[0] for item in ground_truths]
 
-        if hasattr(self.model, "predict"):
+        if self.is_cross_encoder:
             inputs = [list(item) for item in list(zip(ground_truths, answers))]
-            scores = self.model.predict(
-                inputs, batch_size=self.batch_size, convert_to_numpy=True
-            )
+            scores = np.array(self.model.predict(inputs))
         else:
-            embeddings_1 = self.model.embed_documents(
-                ground_truths, normalize_embeddings=True, batch_size=self.batch_size
-            )
-            embeddings_2 = self.model.embed_documents(
-                answers, normalize_embeddings=True, batch_size=self.batch_size
-            )
+            embeddings_1 = np.array(self.model.embed_documents(ground_truths))
+            embeddings_2 = np.array(self.model.embed_documents(answers))
             similarity = embeddings_1 @ embeddings_2.T
             scores = np.diagonal(similarity)
 
