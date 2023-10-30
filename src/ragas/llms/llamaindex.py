@@ -3,7 +3,6 @@ from __future__ import annotations
 import typing as t
 
 from langchain.schema.output import Generation, LLMResult
-from llama_index.llms.base import LLM as LiLLM
 
 from ragas.async_utils import run_async_tasks
 from ragas.llms.base import BaseRagasLLM
@@ -11,6 +10,7 @@ from ragas.llms.base import BaseRagasLLM
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
     from langchain.prompts import ChatPromptTemplate
+    from llama_index.llms.base import LLM as LiLLM
 
 
 class LlamaIndexLLM(BaseRagasLLM):
