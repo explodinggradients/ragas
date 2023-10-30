@@ -1,4 +1,4 @@
-# Answer Relevance
+# Answer Relevancy
 
 The evaluation metric, Answer Relevancy, focuses on assessing how pertinent the generated answer is to the given prompt. A lower score is assigned to answers that are incomplete or contain redundant information. This metric is computed using the `question` and the `answer`, with values ranging between 0 and 1, where higher scores indicate better relevancy.
 
