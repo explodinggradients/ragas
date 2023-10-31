@@ -6,9 +6,9 @@ from dataclasses import dataclass, field
 import numpy as np
 from datasets import Dataset
 
-from ragas.metrics.answer_similarity import AnswerSimilarity
+from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.metrics.faithfulness import Faithfulness
+from ragas.metrics._faithfulness import Faithfulness
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.manager import CallbackManager
