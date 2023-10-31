@@ -66,8 +66,8 @@ from langchain.chat_models import ChatOpenAI
 # documents = load your documents
 
 # Add custom llms and embeddings
-generator_llm = ChatOpenAI(model="gpt-3.5-turbo")
-critic_llm = ChatOpenAI(model="gpt-4")
+generator_llm = LangchainLLM(llm=ChatOpenAI(model="gpt-3.5-turbo"))
+critic_llm = LangchainLLM(llm=ChatOpenAI(model="gpt-4"))
 embeddings_model = OpenAIEmbeddings()
 
 # Change resulting question type distribution
