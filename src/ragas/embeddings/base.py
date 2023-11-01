@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import os
 import typing as t
 from dataclasses import dataclass, field
 from typing import List
 
 import numpy as np
+from langchain.embeddings import OpenAIEmbeddings
 from langchain.schema.embeddings import Embeddings as RagasEmbeddings
 
 DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
@@ -55,6 +57,7 @@ class HuggingfaceEmbeddings(RagasEmbeddings):
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         from sentence_transformers.SentenceTransformer import SentenceTransformer
+        from torch import Tensor
 
         assert isinstance(
             self.model, SentenceTransformer
@@ -63,13 +66,24 @@ class HuggingfaceEmbeddings(RagasEmbeddings):
             texts, normalize_embeddings=True, **self.encode_kwargs
         )
 
+        assert isinstance(embeddings, Tensor)
         return embeddings.tolist()
 
     def predict(self, texts: List[List[str]]) -> List[List[float]]:
         from sentence_transformers.cross_encoder import CrossEncoder
+        from torch import Tensor
 
         assert isinstance(
             self.model, CrossEncoder
         ), "Model is not of the type CrossEncoder"
 
-        return self.model.predict(texts, **self.encode_kwargs).tolist()
+        predictions = self.model.predict(texts, **self.encode_kwargs)
+
+        assert isinstance(predictions, Tensor)
+        return predictions.tolist()
+
+
+def embedding_factory() -> RagasEmbeddings:
+    oai_key = os.getenv("OPENAI_API_KEY", "no-key")
+    openai_embeddings = OpenAIEmbeddings(openai_api_key=oai_key)
+    return openai_embeddings

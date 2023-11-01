@@ -1,3 +1,3 @@
-from ragas.embeddings.embeddings import HuggingfaceEmbeddings
+from ragas.embeddings.base import HuggingfaceEmbeddings, OpenAIEmbeddings
 
-__all__ = ["HuggingfaceEmbeddings"]
+__all__ = ["HuggingfaceEmbeddings", "OpenAIEmbeddings"]

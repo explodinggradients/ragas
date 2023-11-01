@@ -1,17 +1,23 @@
 from __future__ import annotations
 
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import Dataset
-from langchain.embeddings import OpenAIEmbeddings
 
-from ragas.embeddings.embeddings import HuggingfaceEmbeddings
+from ragas.embeddings.base import (
+    HuggingfaceEmbeddings,
+    OpenAIEmbeddings,
+    embedding_factory,
+)
+from ragas.exceptions import OpenAIKeyNotFound
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.manager import CallbackManager
+
+    from ragas.embeddings.base import RagasEmbeddings
 
 
 @dataclass
@@ -39,16 +45,22 @@ class AnswerSimilarity(MetricWithLLM):
     name: str = "answer_similarity"
     evaluation_mode: EvaluationMode = EvaluationMode.ga
     batch_size: int = 15
-    model: HuggingfaceEmbeddings | None = None
+    embeddings: RagasEmbeddings = field(default_factory=embedding_factory)
     threshold: float | None = 0.5
 
+    def init_model(self):
+        super().init_model()
+
+        if isinstance(self.embeddings, OpenAIEmbeddings):
+            if self.embeddings.openai_api_key == "no-key":
+                raise OpenAIKeyNotFound
+
     def __post_init__(self: t.Self):
-        if self.model is None:
-            self.model = OpenAIEmbeddings()
+        if isinstance(self.embeddings, OpenAIEmbeddings):
             self.is_cross_encoder = False
-        else:
-            self.is_cross_encoder = True if self.model.is_cross_encoder else False
-            self.model.encode_kwargs = {"batch_size": self.batch_size}
+        elif isinstance(self.embeddings, HuggingfaceEmbeddings):
+            self.is_cross_encoder = True if self.embeddings.is_cross_encoder else False
+            self.embeddings.encode_kwargs = {"batch_size": self.batch_size}
 
     def _score_batch(
         self: t.Self,
@@ -60,11 +72,12 @@ class AnswerSimilarity(MetricWithLLM):
         ground_truths = [item[0] for item in ground_truths]
 
         if self.is_cross_encoder:
+            assert isinstance(self.embeddings, HuggingfaceEmbeddings)
             inputs = [list(item) for item in list(zip(ground_truths, answers))]
-            scores = np.array(self.model.predict(inputs))
+            scores = np.array(self.embeddings.predict(inputs))
         else:
-            embeddings_1 = np.array(self.model.embed_documents(ground_truths))
-            embeddings_2 = np.array(self.model.embed_documents(answers))
+            embeddings_1 = np.array(self.embeddings.embed_documents(ground_truths))
+            embeddings_2 = np.array(self.embeddings.embed_documents(answers))
             similarity = embeddings_1 @ embeddings_2.T
             scores = np.diagonal(similarity)
 
