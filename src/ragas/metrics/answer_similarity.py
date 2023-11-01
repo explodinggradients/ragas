@@ -46,7 +46,14 @@ class AnswerSimilarity(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.ga
     batch_size: int = 15
     embeddings: RagasEmbeddings = field(default_factory=embedding_factory)
-    threshold: float | None = 0.5
+    is_cross_encoder: bool = False
+    threshold: float = 0.5
+
+    def __post_init__(self: t.Self):
+        # only for cross encoder
+        if isinstance(self.embeddings, HuggingfaceEmbeddings):
+            self.is_cross_encoder = True if self.embeddings.is_cross_encoder else False
+            self.embeddings.encode_kwargs = {"batch_size": self.batch_size}
 
     def init_model(self):
         super().init_model()
@@ -54,13 +61,6 @@ class AnswerSimilarity(MetricWithLLM):
         if isinstance(self.embeddings, OpenAIEmbeddings):
             if self.embeddings.openai_api_key == "no-key":
                 raise OpenAIKeyNotFound
-
-    def __post_init__(self: t.Self):
-        if isinstance(self.embeddings, OpenAIEmbeddings):
-            self.is_cross_encoder = False
-        elif isinstance(self.embeddings, HuggingfaceEmbeddings):
-            self.is_cross_encoder = True if self.embeddings.is_cross_encoder else False
-            self.embeddings.encode_kwargs = {"batch_size": self.batch_size}
 
     def _score_batch(
         self: t.Self,
