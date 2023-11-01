@@ -61,7 +61,7 @@ Checkout [llama-index](https://gpt-index.readthedocs.io/en/stable/core_modules/d
 from ragas.testset import TestsetGenerator
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.chat_models import ChatOpenAI
-
+from ragas.llms import LangchainLLM
 
 # documents = load your documents
 
