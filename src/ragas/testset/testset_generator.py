@@ -32,8 +32,9 @@ from ragas.testset.prompts import (
     REASONING_QUESTION,
     SCORE_CONTEXT,
     SEED_QUESTION,
+    TABLE_QA,
 )
-from ragas.testset.utils import load_as_json, load_as_score
+from ragas.testset.utils import load_as_json
 
 DEFAULT_TEST_DISTRIBUTION = {
     "simple": 0.4,
@@ -167,7 +168,7 @@ class TestsetGenerator:
             "simple",
         )
 
-    def _filter_context(self, context: str) -> bool:
+    def _filter_context(self, context: str) -> t.Dict:
         """
         context: str
             The input context
@@ -178,11 +179,16 @@ class TestsetGenerator:
         prompt = ChatPromptTemplate.from_messages([human_prompt])
         results = self.critic_llm.generate(prompts=[prompt])
         output = results.generations[0][0].text.strip()
-        score = load_as_score(output)
-        return score >= self.threshold
+        output = load_as_json(output)
+        output.update({"score": output.get("score", 0) >= self.threshold})
+        return output
 
-    def _seed_question(self, context: str) -> str:
-        human_prompt = SEED_QUESTION.format(context=context)
+    def _seed_question(self, context: str, is_table_present: bool) -> str:
+        if is_table_present:
+            human_prompt = TABLE_QA.format(context=context)
+        else:
+            human_prompt = SEED_QUESTION.format(context=context)
+
         prompt = ChatPromptTemplate.from_messages([human_prompt])
         results = self.generator_llm.generate(prompts=[prompt])
         return results.generations[0][0].text.strip()
@@ -335,10 +341,17 @@ class TestsetGenerator:
             )
 
             text_chunk = " ".join([node.get_content() for node in nodes])
-            score = self._filter_context(text_chunk)
-            if not score:
+            context_filter = self._filter_context(text_chunk)
+            if not context_filter.get("score"):
                 continue
-            seed_question = self._seed_question(text_chunk)
+
+            is_table_qa = context_filter.get("is_table_present", False)
+            seed_question = self._seed_question(text_chunk, is_table_qa)
+            evolve_type = (
+                "simple"
+                if ((evolve_type == "multi_context") and (is_table_qa))
+                else evolve_type
+            )
             is_valid_question = self._filter_question(seed_question)
             if not is_valid_question:
                 continue

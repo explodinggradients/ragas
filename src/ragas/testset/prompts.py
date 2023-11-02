@@ -17,6 +17,16 @@ context:{context}
 """  # noqa: E501
 )
 
+TABLE_QA = HumanMessagePromptTemplate.from_template(
+    """
+Your task is to frame a question from the given table following the rules given below
+    1. Answering the question should required understanding data present in the given table. 
+    2. The question must be reasonable and something a human would ask.
+    3. Do no use phrases like 'provided context','provided table' etc in the question
+    table:{context}
+    """  # noqa: E501
+)
+
 
 REASONING_QUESTION = HumanMessagePromptTemplate.from_template(
     """\
@@ -108,14 +118,18 @@ Reformatted Questions for Conversation:
 )
 
 SCORE_CONTEXT = HumanMessagePromptTemplate.from_template(
-    """Evaluate the provided context and assign a numerical score between 0 and 10 based on the following criteria:
-1. Award a high score to context that thoroughly delves into and explains concepts.
-2. Assign a lower score to context that contains excessive references, acknowledgments, external links, personal information, or other non-essential elements.
-Output the score only.
+    """Given a context, complete the two following tasks and output answer valid json format 
+1.Evaluate the provided context and assign a numerical score between 0 and 10 based on the following criteria:
+    - Award a high score to context that thoroughly delves into and explains concepts.
+    - Assign a lower score to context that contains excessive references, acknowledgments, personal information, or other non-essential elements.
+2.Check if context contains tables
+Context:
+Albert Einstein (/ˈaɪnstaɪn/ EYEN-styne;[4] German: [ˈalbɛɐt ˈʔaɪnʃtaɪn] ⓘ; 14 March 1879 – 18 April 1955) was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time.
+Output:
+{{"score":6.0, "is_table_present":False}}
 Context:
 {context}
-Score:
-"""  # noqa: E501
+Output:"""  # noqa: E501
 )
 
 FILTER_QUESTION = HumanMessagePromptTemplate.from_template(
