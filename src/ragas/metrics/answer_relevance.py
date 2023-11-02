@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import Dataset
@@ -11,11 +11,14 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
+from ragas.embeddings.base import embedding_factory
 from ragas.exceptions import OpenAIKeyNotFound
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.manager import CallbackManager
+
+    from ragas.embeddings.base import RagasEmbeddings
 
 
 QUESTION_GEN = HumanMessagePromptTemplate.from_template(
@@ -55,12 +58,7 @@ class AnswerRelevancy(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qa
     batch_size: int = 15
     strictness: int = 3
-    embeddings: Embeddings | None = None
-
-    def __post_init__(self: t.Self):
-        if self.embeddings is None:
-            oai_key = os.getenv("OPENAI_API_KEY", "no-key")
-            self.embeddings = OpenAIEmbeddings(openai_api_key=oai_key)  # type: ignore
+    embeddings: RagasEmbeddings = field(default_factory=embedding_factory)
 
     def init_model(self):
         super().init_model()
