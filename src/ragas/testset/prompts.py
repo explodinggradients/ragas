@@ -2,11 +2,11 @@ from langchain.prompts import HumanMessagePromptTemplate
 
 SEED_QUESTION = HumanMessagePromptTemplate.from_template(
     """\
-Your task is to formulate a question from given context satisfying the rules given below:
+Your task is to generate a question from given context satisfying the rules given below:
     1.The question should make sense to humans even when read without the given context.
     2.The question should be fully answered from the given context.
     3.The question should be framed from a part of context that contains important information. It can also be from tables,code,etc.
-    4.The answer to the question should not contain any links.
+    4.The question should be framed as person would be asking using first person pronouns. 
     5.The question should be of moderate difficulty.
     6.The question must be reasonable and must be understood and responded by humans.
     7.Do no use phrases like 'provided context',etc in the question
@@ -126,7 +126,7 @@ SCORE_CONTEXT = HumanMessagePromptTemplate.from_template(
 Context:
 Albert Einstein (/ˈaɪnstaɪn/ EYEN-styne;[4] German: [ˈalbɛɐt ˈʔaɪnʃtaɪn] ⓘ; 14 March 1879 – 18 April 1955) was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time.
 Output:
-{{"score":6.0, "is_table_present":False}}
+{{"score":6.0, "is_table_present":false}}
 Context:
 {context}
 Output:"""  # noqa: E501

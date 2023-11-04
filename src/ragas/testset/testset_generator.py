@@ -48,7 +48,9 @@ question_deep_map = {
     "conditional": "_condition_question",
 }
 
-DataRow = namedtuple("DataRow", ["question", "context", "answer", "question_type"])
+DataRow = namedtuple(
+    "DataRow", ["seed_question", "question", "context", "answer", "question_type"]
+)
 
 
 @dataclass
@@ -66,13 +68,16 @@ class TestDataset:
             question_type = data.question_type
             data = [
                 {
+                    "seed_question": seed,
                     "question": qstn,
                     "context": ctx,
                     "answer": ans,
                     "question_type": question_type,
                     "episode_done": True,
                 }
-                for qstn, ctx, ans in zip(data.question, data.context, data.answer)
+                for seed, qstn, ctx, ans in zip(
+                    data.seed_question, data.question, data.context, data.answer
+                )
             ]
             if is_conv:
                 data[0].update({"episode_done": False})
@@ -345,6 +350,7 @@ class TestsetGenerator:
             if not context_filter.get("score"):
                 continue
 
+            print(context_filter)
             is_table_qa = context_filter.get("is_table_present", False)
             seed_question = self._seed_question(text_chunk, is_table_qa)
             evolve_type = (
@@ -352,6 +358,7 @@ class TestsetGenerator:
                 if ((evolve_type == "multi_context") and (is_table_qa))
                 else evolve_type
             )
+            print("seed question", seed_question)
             is_valid_question = self._filter_question(seed_question)
             if not is_valid_question:
                 continue
@@ -403,7 +410,13 @@ class TestsetGenerator:
                 context = self._generate_context(question, text_chunk)
                 answer = self._generate_answer(question, context)
                 samples.append(
-                    DataRow(question.split("\n"), context, answer, evolve_type)
+                    DataRow(
+                        [seed_question],
+                        question.split("\n"),
+                        context,
+                        answer,
+                        evolve_type,
+                    )
                 )
                 count += 1
                 pbar.update(count)
