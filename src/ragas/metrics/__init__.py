@@ -1,12 +1,8 @@
 from ragas.metrics._answer_correctness import AnswerCorrectness, answer_correctness
 from ragas.metrics._answer_relevance import AnswerRelevancy, answer_relevancy
 from ragas.metrics._answer_similarity import AnswerSimilarity, answer_similarity
-from ragas.metrics._context_precision import (
-    ContextPrecision,
-    ContextRelevancy,
-    context_precision,
-    context_relevancy,
-)
+from ragas.metrics._context_precision import ContextPrecision, context_precision
+from ragas.metrics._context_relevancy import ContextRelevancy, context_relevancy
 from ragas.metrics._context_recall import ContextRecall, context_recall
 from ragas.metrics.critique import AspectCritique
 from ragas.metrics._faithfulness import Faithfulness, faithfulness
