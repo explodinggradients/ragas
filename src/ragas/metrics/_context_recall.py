@@ -9,8 +9,7 @@ from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
-CONTEXT_RECALL_RA = HumanMessagePromptTemplate.from_template(
-    """
+CONTEXT_RECALL_RA = """
 Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not.
 Think in steps and reason before coming to conclusion. 
 
@@ -26,7 +25,6 @@ context:{context}
 answer:{ground_truth}
 classification:
 """  # noqa: E501
-)
 
 
 @dataclass
@@ -46,6 +44,7 @@ class ContextRecall(MetricWithLLM):
     name: str = "context_recall"
     evaluation_mode: EvaluationMode = EvaluationMode.gc
     batch_size: int = 15
+    context_recall_prompt: str = CONTEXT_RECALL_RA
 
     def _score_batch(
         self: t.Self,
@@ -63,7 +62,7 @@ class ContextRecall(MetricWithLLM):
             for gt, ctx in zip(ground_truths, contexts):
                 gt = "\n".join(gt) if isinstance(gt, list) else gt
                 ctx = "\n".join(ctx) if isinstance(ctx, list) else ctx
-                human_prompt = CONTEXT_RECALL_RA.format(context=ctx, ground_truth=gt)
+                human_prompt = HumanMessagePromptTemplate.from_template(self.context_recall_prompt.format(context=ctx, ground_truth=gt))
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
             responses: list[list[str]] = []

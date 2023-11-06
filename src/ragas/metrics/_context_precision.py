@@ -12,14 +12,12 @@ from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
-CONTEXT_PRECISION = HumanMessagePromptTemplate.from_template(
-    """\
+CONTEXT_PRECISION = """\
 Given a question and a context, verify if the information in the given context is useful in answering the question. Return a Yes/No answer.
 question:{question}
 context:\n{context}
 answer:
 """  # noqa: E501
-)
 
 @dataclass
 class ContextPrecision(MetricWithLLM):
@@ -37,6 +35,7 @@ class ContextPrecision(MetricWithLLM):
     name: str = "context_precision"
     evaluation_mode: EvaluationMode = EvaluationMode.qc
     batch_size: int = 15
+    context_precision_prompt: str = CONTEXT_PRECISION
 
     def _score_batch(
         self: t.Self,
@@ -52,7 +51,7 @@ class ContextPrecision(MetricWithLLM):
             for qstn, ctx in zip(questions, contexts):
                 human_prompts = [
                     ChatPromptTemplate.from_messages(
-                        [CONTEXT_PRECISION.format(question=qstn, context=c)]
+                        [HumanMessagePromptTemplate.from_template(self.context_precision_prompt.format(question=qstn, context=c))]
                     )
                     for c in ctx
                 ]
