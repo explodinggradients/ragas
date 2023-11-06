@@ -18,8 +18,7 @@ if t.TYPE_CHECKING:
     from langchain.callbacks.manager import CallbackManager
 
 
-QUESTION_GEN = HumanMessagePromptTemplate.from_template(
-    """
+QUESTION_GEN = """
 Generate question for the given answer.
 Answer:\nThe PSLV-C56 mission is scheduled to be launched on Sunday, 30 July 2023 at 06:30 IST / 01:00 UTC. It will be launched from the Satish Dhawan Space Centre, Sriharikota, Andhra Pradesh, India 
 Question: When is the scheduled launch date and time for the PSLV-C56 mission, and where will it be launched from?
@@ -27,7 +26,6 @@ Question: When is the scheduled launch date and time for the PSLV-C56 mission, a
 Answer:{answer}
 Question:
 """  # noqa: E501
-)
 
 
 @dataclass
@@ -56,6 +54,7 @@ class AnswerRelevancy(MetricWithLLM):
     batch_size: int = 15
     strictness: int = 3
     embeddings: Embeddings | None = None
+    question_gen_prompt: str = QUESTION_GEN
 
     def __post_init__(self: t.Self):
         if self.embeddings is None:
@@ -81,7 +80,7 @@ class AnswerRelevancy(MetricWithLLM):
         ) as batch_group:
             prompts = []
             for ans in answers:
-                human_prompt = QUESTION_GEN.format(answer=ans)
+                human_prompt = HumanMessagePromptTemplate.from_template(self.question_gen_prompt.format(answer=ans))
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
             results = self.llm.generate(

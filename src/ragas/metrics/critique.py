@@ -11,8 +11,8 @@ from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from ragas.llms import LangchainLLM
 from ragas.metrics.base import EvaluationMode, MetricWithLLM, llm_factory
 
-CRITIQUE_PROMPT = HumanMessagePromptTemplate.from_template(
-    """Given a input and submission. Evaluate the submission only using the given criteria. 
+CRITIQUE_PROMPT_STR = """
+Given a input and submission. Evaluate the submission only using the given criteria. 
 Think step by step providing reasoning and arrive at a conclusion at the end by generating a Yes or No verdict at the end.
 
 input: Who was the director of Los Alamos Laboratory?
@@ -25,7 +25,6 @@ submission:{submission}
 criteria:{criteria}
 Here's are my thoughts:
 """  # noqa: E501
-)
 
 
 @dataclass
@@ -59,6 +58,7 @@ class AspectCritique(MetricWithLLM):
         default_factory=llm_factory,
         repr=False,
     )
+    critique_prompt: str = CRITIQUE_PROMPT_STR
 
     def __post_init__(self: t.Self):
         if self.name == "":
@@ -81,9 +81,9 @@ class AspectCritique(MetricWithLLM):
             if isinstance(context, list):
                 context = "\n".join(context)
             question = f"{question } answer using context: {context}"
-        return CRITIQUE_PROMPT.format(
+        return HumanMessagePromptTemplate.from_template(self.critique_prompt.format(
             input=question, submission=answer, criteria=self.definition
-        )
+        ))
 
     def _score_batch(
         self: t.Self,

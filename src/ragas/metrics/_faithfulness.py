@@ -14,8 +14,7 @@ if t.TYPE_CHECKING:
 #################
 # NLI Score
 #################
-LONG_FORM_ANSWER_PROMPT = HumanMessagePromptTemplate.from_template(
-    """\
+LONG_FORM_ANSWER_PROMPT = """\
 Given a question and answer, create one or more statements from each sentence in the given answer.
 question: Who was  Albert Einstein and what is he best known for?
 answer: He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.
@@ -29,11 +28,9 @@ statements:\nShahul and Jithin were from different countries.
 question:{question}
 answer: {answer}
 statements:\n"""  # noqa: E501
-)
 
 
-NLI_STATEMENTS_MESSAGE = HumanMessagePromptTemplate.from_template(
-    """
+NLI_STATEMENTS_MESSAGE = """
 Prompt: Natural language inference
 Consider the given context and following statements, then determine whether they are supported by the information present in the context.Provide a brief explanation for each statement before arriving at the verdict (Yes/No). Provide a final verdict for each statement in order at the end in the given format. Do not deviate from the specified format.
 
@@ -55,7 +52,6 @@ context:\n{context}
 statements:\n{statements}
 Answer:
 """  # noqa: E501
-)
 
 
 @dataclass
@@ -63,6 +59,8 @@ class Faithfulness(MetricWithLLM):
     name: str = "faithfulness"
     evaluation_mode: EvaluationMode = EvaluationMode.qac
     batch_size: int = 15
+    long_answer_prompt: str = LONG_FORM_ANSWER_PROMPT
+    nli_stmt_prompt: str = NLI_STATEMENTS_MESSAGE
 
     def _score_batch(
         self: t.Self,
@@ -81,7 +79,7 @@ class Faithfulness(MetricWithLLM):
             callback_group_name, callback_manager=callbacks
         ) as batch_group:
             for q, a in zip(question, answer):
-                human_prompt = LONG_FORM_ANSWER_PROMPT.format(question=q, answer=a)
+                human_prompt = HumanMessagePromptTemplate.from_template(self.long_answer_prompt.format(question=q, answer=a))
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
             result = self.llm.generate(prompts, callbacks=batch_group)
@@ -97,9 +95,9 @@ class Faithfulness(MetricWithLLM):
                     [f"{i+1}.{st}" for i, st in enumerate(statements)]
                 )
                 contexts_str: str = "\n".join(context)
-                human_prompt = NLI_STATEMENTS_MESSAGE.format(
+                human_prompt = HumanMessagePromptTemplate.from_template(self.nli_stmt_prompt.format(
                     context=contexts_str, statements=statements_str
-                )
+                ))
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
             result = self.llm.generate(prompts, callbacks=batch_group)

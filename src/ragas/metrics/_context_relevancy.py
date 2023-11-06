@@ -15,14 +15,12 @@ from sentence_transformers import CrossEncoder
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
-CONTEXT_RELEVANCE = HumanMessagePromptTemplate.from_template(
-    """\
+CONTEXT_RELEVANCE = """\
 Please extract relevant sentences from the provided context that is absolutely required answer the following question. If no relevant sentences are found, or if you believe the question cannot be answered from the given context, return the phrase "Insufficient Information".  While extracting candidate sentences you're not allowed to make any changes to sentences from given context.
 
 question:{question}
 context:\n{context}
 candidate sentences:\n"""  # noqa: E501
-)
 
 seg = pysbd.Segmenter(language="en", clean=False)
 
@@ -108,6 +106,7 @@ class ContextRelevancy(MetricWithLLM):
     agreement_metric: str = "bert_score"
     model_name: str = "cross-encoder/stsb-TinyBERT-L-4"
     show_deprecation_warning: bool = False
+    context_relevance_prompt: str = CONTEXT_RELEVANCE
 
     def __post_init__(self: t.Self):
         if self.agreement_metric == "bert_score" and self.model_name is None:
@@ -137,9 +136,9 @@ class ContextRelevancy(MetricWithLLM):
             callback_group_name, callback_manager=callbacks
         ) as batch_group:
             for q, c in zip(questions, contexts):
-                human_prompt = CONTEXT_RELEVANCE.format(
+                human_prompt = HumanMessagePromptTemplate.from_template(self.context_relevance_prompt.format(
                     question=q, context="\n".join(c)
-                )
+                ))
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
             responses: list[list[str]] = []
