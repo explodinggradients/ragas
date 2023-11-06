@@ -13,6 +13,10 @@ This tutorial notebook provides a step-by-step guide on how to compare and choos
 ## Create synthetic test data 
 
 
+```{hint}
+Ragas can also work with your dataset. Refer to [data preparation](./data_preparation.md) to see how you can use your dataset with ragas. 
+```
+
 Ragas offers a unique test generation paradigm that enables the creation of evaluation datasets specifically tailored to your retrieval and generation tasks. Unlike traditional QA generators, Ragas can generate a wide variety of challenging test cases from your document corpus.
 
 ```{seealso}
