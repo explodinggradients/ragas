@@ -60,7 +60,7 @@ class Faithfulness(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qac
     batch_size: int = 15
     long_answer_prompt: str = LONG_FORM_ANSWER_PROMPT
-    nli_stmt_prompt: str = NLI_STATEMENTS_MESSAGE
+    nli_statements_prompt: str = NLI_STATEMENTS_MESSAGE
 
     def _score_batch(
         self: t.Self,
@@ -95,7 +95,7 @@ class Faithfulness(MetricWithLLM):
                     [f"{i+1}.{st}" for i, st in enumerate(statements)]
                 )
                 contexts_str: str = "\n".join(context)
-                human_prompt = HumanMessagePromptTemplate.from_template(self.nli_stmt_prompt.format(
+                human_prompt = HumanMessagePromptTemplate.from_template(self.nli_statements_prompt.format(
                     context=contexts_str, statements=statements_str
                 ))
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))

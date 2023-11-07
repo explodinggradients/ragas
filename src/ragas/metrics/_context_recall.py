@@ -9,7 +9,7 @@ from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
-CONTEXT_RECALL_RA = """
+CONTEXT_RECALL_RA = """\
 Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not.
 Think in steps and reason before coming to conclusion. 
 

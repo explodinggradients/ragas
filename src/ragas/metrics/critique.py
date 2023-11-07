@@ -11,7 +11,7 @@ from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from ragas.llms import LangchainLLM
 from ragas.metrics.base import EvaluationMode, MetricWithLLM, llm_factory
 
-CRITIQUE_PROMPT_STR = """
+CRITIQUE_PROMPT_STR = """\
 Given a input and submission. Evaluate the submission only using the given criteria. 
 Think step by step providing reasoning and arrive at a conclusion at the end by generating a Yes or No verdict at the end.
 
