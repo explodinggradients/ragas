@@ -1,19 +1,20 @@
-from ragas.metrics.answer_correctness import AnswerCorrectness, answer_correctness
-from ragas.metrics.answer_relevance import AnswerRelevancy, answer_relevancy
-from ragas.metrics.answer_similarity import AnswerSimilarity, answer_similarity
-from ragas.metrics.context_precision import (
-    ContextPrecision,
-    ContextRelevancy,
-    context_precision,
-    context_relevancy,
-)
-from ragas.metrics.context_recall import ContextRecall, context_recall
+from ragas.metrics._answer_correctness import AnswerCorrectness, answer_correctness
+from ragas.metrics._answer_relevance import AnswerRelevancy, answer_relevancy
+from ragas.metrics._answer_similarity import AnswerSimilarity, answer_similarity
+from ragas.metrics._context_precision import ContextPrecision, context_precision
+from ragas.metrics._context_relevancy import ContextRelevancy, context_relevancy
+from ragas.metrics._context_recall import ContextRecall, context_recall
 from ragas.metrics.critique import AspectCritique
-from ragas.metrics.faithfulness import Faithfulness, faithfulness
+from ragas.metrics._faithfulness import Faithfulness, faithfulness
 
-DEFAULT_METRICS = [answer_relevancy, context_precision, faithfulness, context_recall]
+DEFAULT_METRICS = [
+    answer_relevancy,
+    context_precision,
+    faithfulness,
+    context_recall,
+    context_relevancy,
+]
 
-# TODO: remove context_relevancy, ContextRelevancy after 0.1.0
 __all__ = [
     "Faithfulness",
     "faithfulness",

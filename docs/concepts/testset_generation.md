@@ -61,13 +61,13 @@ Checkout [llama-index](https://gpt-index.readthedocs.io/en/stable/core_modules/d
 from ragas.testset import TestsetGenerator
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.chat_models import ChatOpenAI
-
+from ragas.llms import LangchainLLM
 
 # documents = load your documents
 
 # Add custom llms and embeddings
-generator_llm = ChatOpenAI(model="gpt-3.5-turbo")
-critic_llm = ChatOpenAI(model="gpt-4")
+generator_llm = LangchainLLM(llm=ChatOpenAI(model="gpt-3.5-turbo"))
+critic_llm = LangchainLLM(llm=ChatOpenAI(model="gpt-4"))
 embeddings_model = OpenAIEmbeddings()
 
 # Change resulting question type distribution

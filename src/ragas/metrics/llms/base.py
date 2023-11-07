@@ -3,9 +3,9 @@ from __future__ import annotations
 import typing as t
 from abc import ABC, abstractmethod
 
-from langchain.chat_models import AzureChatOpenAI, ChatOpenAI
+from langchain.chat_models import AzureChatOpenAI, ChatOpenAI, BedrockChat
 from langchain.chat_models.base import BaseChatModel
-from langchain.llms import AzureOpenAI, OpenAI
+from langchain.llms import AzureOpenAI, OpenAI, Bedrock
 from langchain.llms.base import BaseLLM
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import LLMResult
@@ -19,6 +19,8 @@ if t.TYPE_CHECKING:
 def isOpenAI(llm: BaseLLM | BaseChatModel) -> bool:
     return isinstance(llm, OpenAI) or isinstance(llm, ChatOpenAI)
 
+def isBedrock(llm: BaseLLM | BaseChatModel) -> bool:
+    return isinstance(llm, Bedrock) or isinstance(llm, BedrockChat)
 
 # have to specify it twice for runtime and static checks
 MULTIPLE_COMPLETION_SUPPORTED = [OpenAI, ChatOpenAI, AzureOpenAI, AzureChatOpenAI]
@@ -115,7 +117,10 @@ class LangchainLLM(BaseRagasLLM):
     ) -> LLMResult:
         # set temperature to 0.2 for multiple completions
         temperature = 0.2 if n > 1 else 0
-        self.llm.temperature = temperature
+        if isBedrock(self.llm) and ("model_kwargs" in self.llm.__dict__):
+            self.llm.model_kwargs = {"temperature": temperature}
+        else:
+            self.llm.temperature = temperature
 
         if self.llm_supports_completions(self.llm):
             return self.generate_multiple_completions(prompts, n, callbacks)
@@ -134,7 +139,7 @@ class LangchainLLM(BaseRagasLLM):
 
             # compute total token usage by adding individual token usage
             llm_output = list_llmresults[0].llm_output
-            if "token_usage" in llm_output:
+            if (llm_output is not None) and ("token_usage" in llm_output):
                 sum_prompt_tokens = 0
                 sum_completion_tokens = 0
                 sum_total_tokens = 0
