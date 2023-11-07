@@ -7,7 +7,7 @@ dependencies = [
     "datasets",
     "tiktoken",
     "langchain>=0.0.288",
-    "openai",
+    "openai<1",
     "pysbd>=0.3.4",
 ]
 dynamic = ["version", "readme"]
