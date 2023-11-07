@@ -3,9 +3,9 @@ from __future__ import annotations
 import typing as t
 from abc import ABC, abstractmethod
 
-from langchain.chat_models import AzureChatOpenAI, ChatOpenAI, BedrockChat
+from langchain.chat_models import AzureChatOpenAI, BedrockChat, ChatOpenAI
 from langchain.chat_models.base import BaseChatModel
-from langchain.llms import AzureOpenAI, OpenAI, Bedrock
+from langchain.llms import AzureOpenAI, Bedrock, OpenAI
 from langchain.llms.base import BaseLLM
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import LLMResult
@@ -19,8 +19,10 @@ if t.TYPE_CHECKING:
 def isOpenAI(llm: BaseLLM | BaseChatModel) -> bool:
     return isinstance(llm, OpenAI) or isinstance(llm, ChatOpenAI)
 
+
 def isBedrock(llm: BaseLLM | BaseChatModel) -> bool:
     return isinstance(llm, Bedrock) or isinstance(llm, BedrockChat)
+
 
 # have to specify it twice for runtime and static checks
 MULTIPLE_COMPLETION_SUPPORTED = [OpenAI, ChatOpenAI, AzureOpenAI, AzureChatOpenAI]

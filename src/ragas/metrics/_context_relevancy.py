@@ -174,4 +174,5 @@ class ContextRelevancy(MetricWithLLM):
 
         return scores
 
+
 context_relevancy = ContextRelevancy()
