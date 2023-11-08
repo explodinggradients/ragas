@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import typing as t
 from dataclasses import dataclass
-from itertools import combinations, product
 from typing import List
 
 import numpy as np
@@ -11,7 +10,6 @@ import pysbd
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-from sentence_transformers import CrossEncoder
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
@@ -36,50 +34,6 @@ def sent_tokenize(text: str) -> List[str]:
     return sentences
 
 
-class SentenceAgreement:
-    def __init__(
-        self: t.Self,
-        model_name: str = "cross-encoder/stsb-TinyBERT-L-4",
-        metric: str = "bert_score",
-    ):
-        self.metric = metric
-        self.cross_encoder = CrossEncoder(model_name)
-
-    def bert_score(self, para1: str, para2: str) -> float:
-        sentences1, sentences2 = sent_tokenize(para1), sent_tokenize(para2)
-        scores = self.cross_encoder.predict(
-            list(product(sentences1, sentences2)), convert_to_numpy=True  # type: ignore
-        )
-        assert isinstance(scores, np.ndarray), "Expects ndarray"
-        scores = scores.reshape(len(sentences1), len(sentences2))
-        return scores.max(axis=1).mean()
-
-    @staticmethod
-    def jaccard_score(para1: str, para2: str) -> float:
-        sentences1, sentences2 = sent_tokenize(para1), sent_tokenize(para2)
-        intersect = len(np.intersect1d(sentences1, sentences2))
-        union = len(np.union1d(sentences1, sentences2))
-        return intersect / union
-
-    def evaluate(self, answers: List[str]) -> np.float_:
-        """
-        eval nC2 combinations
-        """
-        scores = []
-        groups = combinations(answers, 2)
-        for group in groups:
-            if self.metric == "jaccard":
-                score = self.jaccard_score(*group)  # type: ignore
-            elif self.metric == "bert_score":
-                score = self.bert_score(*group)  # type: ignore
-            else:
-                score = 0
-                raise ValueError(f"Metric {self.metric} unavailable")
-            scores.append(score)
-        score = np.mean(scores)
-        return score
-
-
 @dataclass
 class ContextRelevancy(MetricWithLLM):
     """
@@ -91,35 +45,15 @@ class ContextRelevancy(MetricWithLLM):
     name : str
     batch_size : int
         Batch size for openai completion.
-    strictness : int
-        Controls the number of times sentence extraction is performed to quantify
-        uncertainty from the LLM. Defaults to 1.
-    agreement_metric : str
-        "bert_score" or "jaccard_score", used to measure agreement between multiple
-        samples.
-    model_name : str
-        any encoder model. Used for calculating bert_score.
     """
 
     name: str = "context_relevancy"
     evaluation_mode: EvaluationMode = EvaluationMode.qc
     batch_size: int = 15
-    strictness: int = 1
-    agreement_metric: str = "bert_score"
-    model_name: str = "cross-encoder/stsb-TinyBERT-L-4"
     show_deprecation_warning: bool = False
 
     def __post_init__(self: t.Self):
-        if self.agreement_metric == "bert_score" and self.model_name is None:
-            raise ValueError(
-                "model_name must be provided when agreement_metric is bert_score"
-            )
-
-    def init_model(self: t.Self):
-        super().init_model()
-        self.sent_agreement = SentenceAgreement(
-            model_name=self.model_name, metric=self.agreement_metric
-        )
+        pass
 
     def _score_batch(
         self: t.Self,
@@ -145,7 +79,7 @@ class ContextRelevancy(MetricWithLLM):
             responses: list[list[str]] = []
             results = self.llm.generate(
                 prompts,
-                n=self.strictness,
+                n=1,
                 callbacks=batch_group,
             )
             responses = [[i.text for i in r] for r in results.generations]
@@ -166,11 +100,7 @@ class ContextRelevancy(MetricWithLLM):
                     else:
                         score = min(len(indices) / len(context_sents), 1)
                     overlap_scores.append(score)
-                if self.strictness > 1:
-                    agr_score = self.sent_agreement.evaluate(n_response)
-                else:
-                    agr_score = 1
-                scores.append(agr_score * np.mean(overlap_scores))
+                scores.append(np.mean(overlap_scores))
 
         return scores
 
