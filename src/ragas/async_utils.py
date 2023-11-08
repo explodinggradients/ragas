@@ -4,6 +4,15 @@ from itertools import zip_longest
 from typing import Any, Coroutine, Iterable, List
 
 
+def get_running_loop() -> asyncio.AbstractEventLoop:
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+
+    return loop
+
+
 def run_async_tasks(
     tasks: List[Coroutine],
     show_progress: bool = False,
@@ -12,6 +21,7 @@ def run_async_tasks(
     """Run a list of async tasks."""
 
     tasks_to_execute: List[Any] = tasks
+    loop = get_running_loop()
     if show_progress:
         try:
             import nest_asyncio
