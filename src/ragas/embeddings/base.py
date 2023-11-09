@@ -66,7 +66,7 @@ class HuggingfaceEmbeddings(RagasEmbeddings):
             texts, normalize_embeddings=True, **self.encode_kwargs
         )
 
-        #assert isinstance(embeddings, Tensor)
+        assert isinstance(embeddings, Tensor)
         return embeddings.tolist()
 
     def predict(self, texts: List[List[str]]) -> List[List[float]]:
