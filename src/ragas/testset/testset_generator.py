@@ -20,7 +20,7 @@ from llama_index.schema import BaseNode
 from numpy.random import default_rng
 from tqdm import tqdm
 
-from ragas.metrics.llms import LangchainLLM
+from ragas.llms import LangchainLLM
 from ragas.testset.prompts import (
     ANSWER_FORMULATE,
     COMPRESS_QUESTION,
@@ -230,7 +230,7 @@ class TestsetGenerator:
         results = self.generator_llm.generate(prompts=[prompt])
         return results.generations[0][0].text.strip()
 
-    def _generate_answer(self, question: str, context: list[str]) -> t.List[str]:
+    def _generate_answer(self, question: str, context: t.List[str]) -> t.List[str]:
         return [
             self._qc_template(ANSWER_FORMULATE, qstn, context[i])
             for i, qstn in enumerate(question.split("\n"))
@@ -242,15 +242,17 @@ class TestsetGenerator:
             for qstn in question.split("\n")
         ]
 
-    def _remove_nodes(self, available_indices: list, node_idx: list) -> t.List:
+    def _remove_nodes(
+        self, available_indices: t.List[BaseNode], node_idx: t.List
+    ) -> t.List[BaseNode]:
         for idx in node_idx:
             available_indices.remove(idx)
         return available_indices
 
     def _generate_doc_nodes_map(
         self, documenet_nodes: t.List[BaseNode]
-    ) -> t.Dict[str, BaseNode]:
-        doc_nodes_map: t.Dict[str, t.List[BaseNode]] = defaultdict(list[BaseNode])
+    ) -> t.Dict[str, t.List[BaseNode]]:
+        doc_nodes_map: t.Dict[str, t.List[BaseNode]] = defaultdict(list)
         for node in documenet_nodes:
             if node.ref_doc_id:
                 doc_nodes_map[node.ref_doc_id].append(node)
@@ -258,7 +260,7 @@ class TestsetGenerator:
         return doc_nodes_map  # type: ignore
 
     def _get_neighbour_node(
-        self, node: BaseNode, related_nodes: list[BaseNode]
+        self, node: BaseNode, related_nodes: t.List[BaseNode]
     ) -> t.List[BaseNode]:
         if len(related_nodes) < 2:
             warnings.warn("No neighbors exists")
@@ -278,7 +280,7 @@ class TestsetGenerator:
 
     def generate(
         self,
-        documents: list[LlamaindexDocument] | list[LangchainDocument],
+        documents: t.List[LlamaindexDocument] | t.List[LangchainDocument],
         test_size: int,
     ) -> TestDataset:
         if not isinstance(documents[0], (LlamaindexDocument, LangchainDocument)):
@@ -288,7 +290,7 @@ class TestsetGenerator:
 
         if isinstance(documents[0], LangchainDocument):
             # cast to LangchainDocument since its the only case here
-            documents = t.cast(list[LangchainDocument], documents)
+            documents = t.cast(t.List[LangchainDocument], documents)
             documents = [
                 LlamaindexDocument.from_langchain_format(doc) for doc in documents
             ]
@@ -296,7 +298,7 @@ class TestsetGenerator:
         node_parser = SimpleNodeParser.from_defaults(
             chunk_size=self.chunk_size, chunk_overlap=0, include_metadata=True
         )
-        documents = t.cast(list[LlamaindexDocument], documents)
+        documents = t.cast(t.List[LlamaindexDocument], documents)
         document_nodes: t.List[BaseNode] = node_parser.get_nodes_from_documents(
             documents=documents
         )
@@ -319,7 +321,7 @@ class TestsetGenerator:
         pbar = tqdm(total=test_size)
         while count < test_size and available_nodes != []:
             evolve_type = self._get_evolve_type()
-            curr_node = self.rng.choice(available_nodes, size=1)[0]
+            curr_node = self.rng.choice(np.array(available_nodes), size=1)[0]
             available_nodes = self._remove_nodes(available_nodes, [curr_node])
 
             neighbor_nodes = doc_nodes_map[curr_node.source_node.node_id]
@@ -353,6 +355,8 @@ class TestsetGenerator:
                     similarity_cutoff=self.threshold / 10,
                 )
                 if indices:
+                    # type cast indices from list[Any] to list[int]
+                    indices = t.cast(t.List[int], indices)
                     best_neighbor = neighbor_nodes[indices[0]]
                     question = self._multicontext_question(
                         question=seed_question,

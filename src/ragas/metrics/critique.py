@@ -8,8 +8,8 @@ from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
-from ragas.metrics.base import EvaluationMode, MetricWithLLM, _llm_factory
-from ragas.metrics.llms import LangchainLLM
+from ragas.llms import LangchainLLM
+from ragas.metrics.base import EvaluationMode, MetricWithLLM, llm_factory
 
 CRITIQUE_PROMPT = HumanMessagePromptTemplate.from_template(
     """Given a input and submission. Evaluate the submission only using the given criteria. 
@@ -56,7 +56,7 @@ class AspectCritique(MetricWithLLM):
     strictness: int = field(default=1, repr=False)
     batch_size: int = field(default=15, repr=False)
     llm: LangchainLLM = field(
-        default_factory=_llm_factory,
+        default_factory=llm_factory,
         repr=False,
     )
 

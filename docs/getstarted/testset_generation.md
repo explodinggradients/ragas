@@ -33,6 +33,8 @@ We will now import and use Ragas' `Testsetgenerator` to promptly generate a synt
 
 ```{code-block} python
 :caption: Create 10 samples using default configuration
+from ragas.testset import TestsetGenerator
+
 testsetgenerator = TestsetGenerator.from_default()
 test_size = 10
 testset = testsetgenerator.generate(documents, test_size=test_size)

@@ -6,9 +6,9 @@ from dataclasses import dataclass, field
 import numpy as np
 from datasets import Dataset
 
-from ragas.metrics.answer_similarity import AnswerSimilarity
+from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.metrics.faithfulness import Faithfulness
+from ragas.metrics._faithfulness import Faithfulness
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.manager import CallbackManager
@@ -66,9 +66,11 @@ class AnswerCorrectness(MetricWithLLM):
         faith_scores = self.faithfulness._score_batch(ds_faithfulness)  # type: ignore
         similarity_scores = self.answer_similarity._score_batch(dataset)  # type: ignore
 
-        scores = np.vstack([faith_scores, similarity_scores])
+        scores_stacked = np.vstack([faith_scores, similarity_scores])
         scores = np.average(
-            [faith_scores, similarity_scores], axis=0, weights=self.weights
+            scores_stacked,
+            axis=0,
+            weights=self.weights,
         )
 
         return scores.tolist()

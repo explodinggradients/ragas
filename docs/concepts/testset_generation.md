@@ -51,7 +51,7 @@ from llama_index import download_loader
 SemanticScholarReader = download_loader("SemanticScholarReader")
 loader = SemanticScholarReader()
 query_space = "large language models"
-documents = loader.load_data(query=query_space, limit=10)
+documents = loader.load_data(query=query_space,full_text=True,limit=10)
 ```
 Checkout [llama-index](https://gpt-index.readthedocs.io/en/stable/core_modules/data_modules/connector/root.html) document loaders to see more examples
 
@@ -61,13 +61,13 @@ Checkout [llama-index](https://gpt-index.readthedocs.io/en/stable/core_modules/d
 from ragas.testset import TestsetGenerator
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.chat_models import ChatOpenAI
-
+from ragas.llms import LangchainLLM
 
 # documents = load your documents
 
 # Add custom llms and embeddings
-generator_llm = ChatOpenAI(model="gpt-3.5-turbo")
-critic_llm = ChatOpenAI(model="gpt-4")
+generator_llm = LangchainLLM(llm=ChatOpenAI(model="gpt-3.5-turbo"))
+critic_llm = LangchainLLM(llm=ChatOpenAI(model="gpt-4"))
 embeddings_model = OpenAIEmbeddings()
 
 # Change resulting question type distribution
@@ -90,7 +90,7 @@ test_generator = TestsetGenerator(
     chat_qa=chat_qa,
 )
 
-testset = testsetgenerator.generate(documents, test_size=100)
+testset = test_generator.generate(documents, test_size=5)
 
 ```
 

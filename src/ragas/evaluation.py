@@ -135,7 +135,7 @@ class Result(dict):
             value = np.mean(self.scores[cn])
             self[cn] = value
             if cn not in self.binary_columns:
-                values.append(value)
+                values.append(value + 1e-10)
 
         # harmonic mean of all the scores we have
         if len(values) > 1:
