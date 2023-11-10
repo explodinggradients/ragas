@@ -38,6 +38,30 @@ MultipleCompletionSupportedLLM = t.Union[
 ]
 
 
+def _compute_token_usage_langchain(list_llmresults: t.List[LLMResult]) -> t.Dict:
+    # compute total token usage by adding individual token usage
+    llm_output = list_llmresults[0].llm_output
+    if llm_output is None:
+        return {}
+    if (llm_output is not None) and ("token_usage" in llm_output):
+        sum_prompt_tokens = 0
+        sum_completion_tokens = 0
+        sum_total_tokens = 0
+        for result in list_llmresults:
+            token_usage = result.llm_output["token_usage"]
+            sum_prompt_tokens += token_usage["prompt_tokens"]
+            sum_completion_tokens += token_usage["completion_tokens"]
+            sum_total_tokens += token_usage["total_tokens"]
+
+        llm_output["token_usage"] = {
+            "prompt_tokens": sum_prompt_tokens,
+            "completion_tokens": sum_completion_tokens,
+            "sum_total_tokens": sum_total_tokens,
+        }
+
+    return llm_output
+
+
 class LangchainLLM(BaseRagasLLM):
     n_completions_supported: bool = True
 
@@ -117,22 +141,5 @@ class LangchainLLM(BaseRagasLLM):
                     completions.append(result.generations[i][0])
                 generations.append(completions)
 
-            # compute total token usage by adding individual token usage
-            llm_output = list_llmresults[0].llm_output
-            if (llm_output is not None) and ("token_usage" in llm_output):
-                sum_prompt_tokens = 0
-                sum_completion_tokens = 0
-                sum_total_tokens = 0
-                for result in list_llmresults:
-                    token_usage = result.llm_output["token_usage"]
-                    sum_prompt_tokens += token_usage["prompt_tokens"]
-                    sum_completion_tokens += token_usage["completion_tokens"]
-                    sum_total_tokens += token_usage["total_tokens"]
-
-                llm_output["token_usage"] = {
-                    "prompt_tokens": sum_prompt_tokens,
-                    "completion_tokens": sum_completion_tokens,
-                    "sum_total_tokens": sum_total_tokens,
-                }
-
+            llm_output = _compute_token_usage_langchain(list_llmresults)
             return LLMResult(generations=generations, llm_output=llm_output)

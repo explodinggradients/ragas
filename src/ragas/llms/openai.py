@@ -10,6 +10,7 @@ from openai import AsyncOpenAI
 
 from ragas.async_utils import run_async_tasks
 from ragas.llms.base import BaseRagasLLM
+from ragas.llms.langchain import _compute_token_usage_langchain
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -52,7 +53,7 @@ class OpenAI(BaseRagasLLM):
             )
             for choice in choices
         ]
-        llm_output = {"token_usage": token_usage, "model_name": "test"}
+        llm_output = {"token_usage": token_usage, "model_name": self.model}
         return LLMResult(generations=[generations], llm_output=llm_output)
 
     def generate(
@@ -66,7 +67,9 @@ class OpenAI(BaseRagasLLM):
             [self.agenerate(p, n, temperature, callbacks) for p in prompts]
         )
 
-        return llm_results
+        generations = [r.generations[0] for r in llm_results]
+        llm_output = _compute_token_usage_langchain(llm_results)
+        return LLMResult(generations=generations, llm_output=llm_output)
 
     async def agenerate(
         self,
@@ -76,9 +79,6 @@ class OpenAI(BaseRagasLLM):
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
         # TODO: use callbacks for llm generate
-        msgs = [convert_message_to_dict(m) for m in prompt.format_messages()]
-        print(msgs)
-
         completion = await self.client.chat.completions.create(
             model=self.model,
             messages=[convert_message_to_dict(m) for m in prompt.format_messages()],
