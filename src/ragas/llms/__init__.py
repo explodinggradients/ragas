@@ -1,5 +1,3 @@
-import os
-
 from ragas.llms.base import BaseRagasLLM
 from ragas.llms.langchain import LangchainLLM
 from ragas.llms.llamaindex import LlamaIndexLLM
