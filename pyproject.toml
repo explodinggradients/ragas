@@ -6,8 +6,8 @@ dependencies = [
     "sentence-transformers",
     "datasets",
     "tiktoken",
-    "langchain<0.0.330",
-    "openai<1",
+    "langchain",
+    "openai",
     "pysbd>=0.3.4",
 ]
 dynamic = ["version", "readme"]
