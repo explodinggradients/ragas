@@ -1,4 +1,6 @@
-from datasets import load_dataset
+import time
+
+from datasets import DatasetDict, load_dataset
 from torch.cuda import is_available
 
 from ragas import evaluate
@@ -13,11 +15,14 @@ from ragas.metrics.critique import harmfulness
 DEVICE = "cuda" if is_available() else "cpu"
 
 # data
-ds = load_dataset("explodinggradients/fiqa", "ragas_eval")["baseline"]
+ds = load_dataset("explodinggradients/fiqa", "ragas_eval")
+assert isinstance(ds, DatasetDict)
+fiqa = ds["baseline"]
 
 if __name__ == "__main__":
-    result = evaluate(
-        ds.select(range(5)),
+    start = time.time()
+    _ = evaluate(
+        fiqa,
         metrics=[
             answer_relevancy,
             context_precision,
@@ -26,4 +31,4 @@ if __name__ == "__main__":
             context_recall,
         ],
     )
-    print(result)
+    print(f"Time taken: {time.time() - start:.2f}s")
