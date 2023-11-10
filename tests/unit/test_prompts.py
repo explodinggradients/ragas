@@ -9,7 +9,7 @@ from langchain.prompts import HumanMessagePromptTemplate
 
 test_prompt = 'THIS IS A TEST PROMPT'
 
-answer_relevancy = AnswerRelevancy(question_gen_prompt=test_prompt)
+answer_relevancy = AnswerRelevancy(question_generation_prompt=test_prompt)
 context_precision = ContextPrecision(context_precision_prompt=test_prompt)
 context_relevancy = ContextRelevancy(context_relevance_prompt=test_prompt)
 context_recall = ContextRecall(context_recall_prompt=test_prompt)
