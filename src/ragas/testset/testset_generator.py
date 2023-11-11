@@ -27,7 +27,9 @@ from ragas.testset.prompts import (
     CONDITIONAL_QUESTION,
     CONTEXT_FORMULATE,
     CONVERSATION_QUESTION,
+    EVOLUTION_ELIMINATION,
     FILTER_QUESTION,
+    INFORMAL_QUESTION,
     MULTICONTEXT_QUESTION,
     REASONING_QUESTION,
     SCORE_CONTEXT,
@@ -49,7 +51,7 @@ question_deep_map = {
 }
 
 DataRow = namedtuple(
-    "DataRow", ["seed_question", "question", "context", "answer", "question_type"]
+    "DataRow", ["seed_question", "question", "context", "answer", "question_type", "evolution_elimination"]
 )
 
 
@@ -74,6 +76,7 @@ class TestDataset:
                     "answer": ans,
                     "question_type": question_type,
                     "episode_done": True,
+                    "evolution_elimination": data.evolution_elimination,
                 }
                 for seed, qstn, ctx, ans in zip(
                     data.seed_question, data.question, data.context, data.answer
@@ -206,6 +209,16 @@ class TestsetGenerator:
         results = results.generations[0][0].text.strip()
         json_results = load_as_json(results)
         return json_results.get("verdict") != "No"
+    
+    def _evolution_elimination(self, question1: str, question2: str) -> bool:
+        
+        human_prompt = EVOLUTION_ELIMINATION.format(question1=question1, question2=question2)
+        prompt = ChatPromptTemplate.from_messages([human_prompt])
+
+        results = self.critic_llm.generate(prompts=[prompt])
+        results = results.generations[0][0].text.strip()
+        json_results = load_as_json(results)
+        return json_results.get("verdict") != "Not Equal"
 
     def _reasoning_question(self, question: str, context: str) -> str:
         return self._qc_template(REASONING_QUESTION, question, context)
@@ -252,6 +265,18 @@ class TestsetGenerator:
             self._qc_template(CONTEXT_FORMULATE, qstn, text_chunk)
             for qstn in question.split("\n")
         ]
+        
+    def _question_transform(self, question:str) -> str:
+        
+        output = []
+        for qstn in question.split('\n'):
+            human_prompt = INFORMAL_QUESTION.format(question=qstn)
+            prompt = ChatPromptTemplate.from_messages([human_prompt])
+            results = self.generator_llm.generate(prompts=[prompt])
+            output.append(results.generations[0][0].text.strip())
+        
+        return '\n'.join(output)
+        
 
     def _remove_nodes(
         self, available_indices: list[BaseNode], node_idx: list
@@ -406,7 +431,14 @@ class TestsetGenerator:
                     question = self._compress_question(question=question)
 
             is_valid_question = self._filter_question(question)
+            if evolve_type != "simple":
+                evolution_elimination = self._evolution_elimination(question1=seed_question,
+                                                                 question2=question)
+            else:
+                evolution_elimination = None
+                
             if is_valid_question:
+                question = self._question_transform(question)
                 context = self._generate_context(question, text_chunk)
                 answer = self._generate_answer(question, context)
                 samples.append(
@@ -416,6 +448,7 @@ class TestsetGenerator:
                         context,
                         answer,
                         evolve_type,
+                        evolution_elimination,
                     )
                 )
                 count += 1
