@@ -6,14 +6,16 @@ import typing as t
 from functools import lru_cache
 from warnings import warn
 
-import torch
-from torch import device as Device
+if t.TYPE_CHECKING:
+    import torch
+    from torch import device as Device
 
 DEVICES = ["cpu", "cuda"]
 DEBUG_ENV_VAR = "RAGAS_DEBUG"
 
 
 def device_check(device: t.Literal["cpu", "cuda"] | Device) -> torch.device:
+    import torch
     if isinstance(device, Device):
         return device
     if device not in DEVICES:
