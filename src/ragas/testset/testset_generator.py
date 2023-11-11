@@ -117,7 +117,7 @@ class TestsetGenerator:
         set of documents. Defaults to {"easy":0.1, "reasoning":0.4, "conversation":0.5}
     prompts: dict
         Custom prompts for test set generation.
-        Defualts to ragas.testset.testset_generator.DEFAULT_TESTSET_PROMPTS
+        Defaults to ragas.testset.testset_generator.DEFAULT_TESTSET_PROMPTS
     """
 
     def __init__(
