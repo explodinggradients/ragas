@@ -230,7 +230,7 @@ class TestsetGenerator:
         results = self.generator_llm.generate(prompts=[prompt])
         return results.generations[0][0].text.strip()
 
-    def _generate_answer(self, question: str, context: list[str]) -> t.List[str]:
+    def _generate_answer(self, question: str, context: t.List[str]) -> t.List[str]:
         return [
             self._qc_template(ANSWER_FORMULATE, qstn, context[i])
             for i, qstn in enumerate(question.split("\n"))
@@ -243,7 +243,7 @@ class TestsetGenerator:
         ]
 
     def _remove_nodes(
-        self, available_indices: list[BaseNode], node_idx: list
+        self, available_indices: t.List[BaseNode], node_idx: t.List
     ) -> t.List[BaseNode]:
         for idx in node_idx:
             available_indices.remove(idx)
@@ -252,7 +252,7 @@ class TestsetGenerator:
     def _generate_doc_nodes_map(
         self, documenet_nodes: t.List[BaseNode]
     ) -> t.Dict[str, t.List[BaseNode]]:
-        doc_nodes_map: t.Dict[str, t.List[BaseNode]] = defaultdict(list[BaseNode])
+        doc_nodes_map: t.Dict[str, t.List[BaseNode]] = defaultdict(list)
         for node in documenet_nodes:
             if node.ref_doc_id:
                 doc_nodes_map[node.ref_doc_id].append(node)
@@ -260,7 +260,7 @@ class TestsetGenerator:
         return doc_nodes_map  # type: ignore
 
     def _get_neighbour_node(
-        self, node: BaseNode, related_nodes: list[BaseNode]
+        self, node: BaseNode, related_nodes: t.List[BaseNode]
     ) -> t.List[BaseNode]:
         if len(related_nodes) < 2:
             warnings.warn("No neighbors exists")
@@ -280,7 +280,7 @@ class TestsetGenerator:
 
     def generate(
         self,
-        documents: list[LlamaindexDocument] | list[LangchainDocument],
+        documents: t.List[LlamaindexDocument] | t.List[LangchainDocument],
         test_size: int,
     ) -> TestDataset:
         if not isinstance(documents[0], (LlamaindexDocument, LangchainDocument)):
