@@ -292,7 +292,7 @@ Casual Rewrite: What's the main job of a project manager, in simple terms?
 Formal Question: What mechanisms underlie the process of cellular respiration?
 Casual Rewrite: How does cellular respiration actually work?
 Formal Question:{question}
-"""
+Casual Rewrite:"""
 )
 
 CONTEXT_FORMULATE = HumanMessagePromptTemplate.from_template(
