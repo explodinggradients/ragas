@@ -3,14 +3,16 @@ from __future__ import annotations
 import os
 import typing as t
 from dataclasses import dataclass
+from sys import api_version
 
 from langchain.adapters.openai import convert_message_to_dict
 from langchain.schema import Generation, LLMResult
-from openai import AsyncOpenAI
+from openai import AsyncAzureOpenAI, AsyncOpenAI
 
 from ragas.async_utils import run_async_tasks
 from ragas.llms.base import BaseRagasLLM
 from ragas.llms.langchain import _compute_token_usage_langchain
+from ragas.utils import NO_KEY
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -87,3 +89,28 @@ class OpenAI(BaseRagasLLM):
         )
 
         return self.create_llm_result(completion)
+
+
+class AzureOpenAI(OpenAI):
+    api_version: str
+    azure_endpoint: str
+
+    def __init__(
+        self,
+        api_version: str,
+        azure_endpoint: str,
+        model: str,
+        api_key: str = NO_KEY,
+    ):
+        self.api_version = api_version
+        self.azure_endpoint = azure_endpoint
+        super().__init__(
+            model=model, api_key=os.getenv("AZURE_OPENAI_API_KEY", api_key)
+        )
+
+    def __post_init__(self):
+        self.client = AsyncAzureOpenAI(
+            api_version=self.api_version,
+            azure_endpoint=self.azure_endpoint,
+            api_key=self.api_key,
+        )

@@ -11,6 +11,8 @@ from torch import device as Device
 
 DEVICES = ["cpu", "cuda"]
 DEBUG_ENV_VAR = "RAGAS_DEBUG"
+# constant to tell us that there is no key passed to the llm/embeddings
+NO_KEY = "no-key"
 
 
 def device_check(device: t.Literal["cpu", "cuda"] | Device) -> torch.device:
