@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from langchain.adapters.openai import convert_message_to_dict
 from langchain.schema import Generation, LLMResult
@@ -22,9 +22,14 @@ if t.TYPE_CHECKING:
 @dataclass
 class OpenAI(BaseRagasLLM):
     model: str = "gpt-3.5-turbo-16k"
-    api_key: str = os.getenv("OPENAI_API_KEY", NO_KEY)
+    api_key: str = field(default=NO_KEY, repr=False)
 
     def __post_init__(self):
+        key_from_env = os.getenv("OPENAI_API_KEY", NO_KEY)
+        if key_from_env != NO_KEY:
+            self.api_key = key_from_env
+        else:
+            self.api_key = self.api_key
         self.client = AsyncOpenAI(api_key=self.api_key)
 
     @property

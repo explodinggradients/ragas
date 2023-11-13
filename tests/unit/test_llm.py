@@ -1,4 +1,5 @@
 import os
+from unittest.mock import patch
 
 import pytest
 from langchain.prompts.chat import ChatPromptTemplate
@@ -36,3 +37,72 @@ def test_validate_api_key():
     os.environ["FAKELLM_API_KEY"] = "random-key-102848595"
     # just check if no error is raised
     assert llm.validate_api_key() is None
+
+
+from ragas.llms.openai import (
+    AzureOpenAI,
+    AzureOpenAIKeyNotFound,
+    OpenAI,
+    OpenAIKeyNotFound,
+)
+
+
+def openai_llm_factory(with_api_key):
+    if with_api_key:
+        api_key = "random-key-102848595"
+        return OpenAI(api_key=api_key), api_key
+    else:
+        return OpenAI()
+
+
+def azure_llm_factory(with_api_key):
+    if with_api_key:
+        api_key = "random-key-102848595"
+        return (
+            AzureOpenAI(
+                model="en-fr",
+                api_version="2020-09-03",
+                azure_endpoint="https://api.labs.cognitive.microsofttranslator.com",
+                api_key=api_key,
+            ),
+            api_key,
+        )
+    else:
+        return AzureOpenAI(
+            model="en-fr",
+            api_version="2020-09-03",
+            azure_endpoint="https://api.labs.cognitive.microsofttranslator.com",
+        )
+
+
+@pytest.mark.parametrize(
+    "llm_factory, key_not_found_exception, environ_key",
+    [
+        (openai_llm_factory, OpenAIKeyNotFound, "OPENAI_API_KEY"),
+        (azure_llm_factory, AzureOpenAIKeyNotFound, "AZURE_OPENAI_API_KEY"),
+    ],
+)
+def test_validate_api_key_for_different_llms(
+    llm_factory, key_not_found_exception, environ_key
+):
+    # load key from environment variables
+    if environ_key in os.environ:
+        os.environ.pop(environ_key)
+    llm = llm_factory(with_api_key=False)
+    with pytest.raises(key_not_found_exception):
+        llm.validate_api_key()
+    os.environ[environ_key] = "random-key-102848595"
+    llm = llm_factory(with_api_key=False)
+    assert llm.validate_api_key() is None
+
+    # load key which is passed as argument
+    if environ_key in os.environ:
+        os.environ.pop(environ_key)
+    llm, _ = llm_factory(with_api_key=True)
+    assert llm.validate_api_key() is None
+
+    # assert order of precedence
+    os.environ[environ_key] = "random-key-102848595"
+    llm, api_key = llm_factory(with_api_key=True)
+    assert llm.validate_api_key
+    assert llm.api_key == api_key
