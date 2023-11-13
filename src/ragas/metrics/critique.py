@@ -12,7 +12,7 @@ from ragas.llms import llm_factory
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:
-    from ragas.llms import BaseRagasLLM
+    from ragas.llms import RagasLLM
 
 CRITIQUE_PROMPT = HumanMessagePromptTemplate.from_template(
     """Given a input and submission. Evaluate the submission only using the given criteria. 
@@ -58,7 +58,7 @@ class AspectCritique(MetricWithLLM):
     definition: str = field(default="", repr=True)
     strictness: int = field(default=1, repr=False)
     batch_size: int = field(default=15, repr=False)
-    llm: BaseRagasLLM = field(
+    llm: RagasLLM = field(
         default_factory=llm_factory,
         repr=False,
     )

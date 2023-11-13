@@ -10,7 +10,7 @@ from langchain.schema import LLMResult
 
 from ragas.async_utils import run_async_tasks
 from ragas.exceptions import AzureOpenAIKeyNotFound, OpenAIKeyNotFound
-from ragas.llms.base import BaseRagasLLM
+from ragas.llms.base import RagasLLM
 from ragas.utils import NO_KEY
 
 if t.TYPE_CHECKING:
@@ -66,7 +66,7 @@ def _compute_token_usage_langchain(list_llmresults: t.List[LLMResult]) -> t.Dict
     return llm_output
 
 
-class LangchainLLM(BaseRagasLLM):
+class LangchainLLM(RagasLLM):
     n_completions_supported: bool = True
 
     def __init__(self, llm: BaseLLM | BaseChatModel):

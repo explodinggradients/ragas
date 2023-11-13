@@ -35,7 +35,7 @@ from ragas.testset.prompts import (
 from ragas.testset.utils import load_as_json, load_as_score
 
 if t.TYPE_CHECKING:
-    from ragas.llms.base import BaseRagasLLM
+    from ragas.llms.base import RagasLLM
 
 
 DEFAULT_TEST_DISTRIBUTION = {
@@ -108,8 +108,8 @@ class TestsetGenerator:
 
     def __init__(
         self,
-        generator_llm: BaseRagasLLM,
-        critic_llm: BaseRagasLLM,
+        generator_llm: RagasLLM,
+        critic_llm: RagasLLM,
         embeddings_model: Embeddings,
         testset_distribution: t.Optional[t.Dict[str, float]] = None,
         chat_qa: float = 0.0,

@@ -6,7 +6,7 @@ import pytest
 from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema import Generation, LLMResult
 
-from ragas.llms.base import BaseRagasLLM
+from ragas.llms.base import RagasLLM
 from ragas.llms.openai import (
     AzureOpenAI,
     AzureOpenAIKeyNotFound,
@@ -16,7 +16,7 @@ from ragas.llms.openai import (
 from ragas.utils import NO_KEY
 
 
-class TestLLM(BaseRagasLLM):
+class TestLLM(RagasLLM):
     def llm(self):
         return self
 

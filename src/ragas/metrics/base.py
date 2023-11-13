@@ -21,7 +21,8 @@ from ragas.llms import llm_factory
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
-    from ragas.llms import BaseRagasLLM
+    from ragas.embeddings.base import RagasEmbeddings
+    from ragas.llms import RagasLLM
 
 
 def make_batches(total_size: int, batch_size: int) -> list[range]:
@@ -109,7 +110,7 @@ class Metric(ABC):
 
 @dataclass
 class MetricWithLLM(Metric):
-    llm: BaseRagasLLM = field(default_factory=llm_factory)
+    llm: RagasLLM = field(default_factory=llm_factory)
 
     def init_model(self):
         """
@@ -118,3 +119,6 @@ class MetricWithLLM(Metric):
         Also check if the api key is valid for OpenAI and AzureOpenAI
         """
         self.llm.validate_api_key()
+        if hasattr(self, "embeddings"):
+            self.embeddings = t.cast(RagasEmbeddings, self.embeddings)
+            self.embeddings.validate_api_key()

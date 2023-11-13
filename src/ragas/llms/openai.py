@@ -11,7 +11,7 @@ from openai import AsyncAzureOpenAI, AsyncClient, AsyncOpenAI
 
 from ragas.async_utils import run_async_tasks
 from ragas.exceptions import AzureOpenAIKeyNotFound, OpenAIKeyNotFound
-from ragas.llms.base import BaseRagasLLM
+from ragas.llms.base import RagasLLM
 from ragas.llms.langchain import _compute_token_usage_langchain
 from ragas.utils import NO_KEY
 
@@ -20,11 +20,12 @@ if t.TYPE_CHECKING:
     from langchain.prompts import ChatPromptTemplate
 
 
-class OpenAIBase(BaseRagasLLM):
+class OpenAIBase(RagasLLM):
     def __init__(self, model: str, _api_key_env_var: str) -> None:
         self.model = model
         self._api_key_env_var = _api_key_env_var
 
+        # api key
         key_from_env = os.getenv(self._api_key_env_var, NO_KEY)
         if key_from_env != NO_KEY:
             self.api_key = key_from_env
@@ -92,7 +93,7 @@ class OpenAIBase(BaseRagasLLM):
         # TODO: use callbacks for llm generate
         completion = await self._client.chat.completions.create(
             model=self.model,
-            messages=[convert_message_to_dict(m) for m in prompt.format_messages()],
+            messages=[convert_message_to_dict(m) for m in prompt.format_messages()],  # type: ignore
             temperature=temperature,
             n=n,
         )

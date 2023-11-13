@@ -11,6 +11,7 @@ from langchain.embeddings import OpenAIEmbeddings as BaseOpenAIEmbeddings
 from langchain.schema.embeddings import Embeddings
 from pydantic.dataclasses import dataclass
 
+from ragas.exceptions import AzureOpenAIKeyNotFound, OpenAIKeyNotFound
 from ragas.utils import NO_KEY
 
 DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
@@ -24,7 +25,7 @@ class RagasEmbeddings(Embeddings):
         pass
 
 
-class OpenAIEmbeddings(BaseOpenAIEmbeddings):
+class OpenAIEmbeddings(BaseOpenAIEmbeddings, RagasEmbeddings):
     openai_api_key: str = os.getenv("OPENAI_API_KEY", NO_KEY)
 
     def __post_init__(self):
@@ -40,8 +41,20 @@ class OpenAIEmbeddings(BaseOpenAIEmbeddings):
             raise OpenAIKeyNotFound
 
 
-class AzureOpenAIEmbeddings(BaseAzureOpenAIEmbeddings):
+class AzureOpenAIEmbeddings(BaseAzureOpenAIEmbeddings, RagasEmbeddings):
     openai_api_key: str = os.getenv("AZURE_OPENAI_API_KEY", NO_KEY)
+
+    def __post_init__(self):
+        # api key
+        key_from_env = os.getenv("OPENAI_API_KEY", NO_KEY)
+        if key_from_env != NO_KEY:
+            self.openai_api_key = key_from_env
+        else:
+            self.openai_api_key = self.openai_api_key
+
+    def validate_api_key(self):
+        if self.openai_api_key == NO_KEY:
+            raise AzureOpenAIKeyNotFound
 
 
 @dataclass
