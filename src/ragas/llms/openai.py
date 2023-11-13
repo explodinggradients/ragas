@@ -121,14 +121,14 @@ class OpenAI(OpenAIBase):
 
 @dataclass
 class AzureOpenAI(OpenAIBase):
-    model: str
-    api_version: str
     azure_endpoint: str
+    deployment: str
+    api_version: str
     api_key: str = field(default=NO_KEY, repr=False)
     _api_key_env_var: str = "AZURE_OPENAI_API_KEY"
 
     def __post_init__(self):
-        super().__init__(model=self.model, _api_key_env_var=self._api_key_env_var)
+        super().__init__(model=self.deployment, _api_key_env_var=self._api_key_env_var)
         self._client_init()
 
     def _client_init(self):
