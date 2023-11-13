@@ -18,7 +18,7 @@ lint: ## Running lint checker: ruff
 	@ruff check src docs tests
 type: ## Running type checker: pyright
 	@echo "(pyright) Typechecking codebase..."
-	@pyright src
+	PYRIGHT_PYTHON_FORCE_VERSION=latest pyright src
 clean: ## Clean all generated files
 	@echo "Cleaning all generated files..."
 	@cd $(GIT_ROOT)/docs && make clean

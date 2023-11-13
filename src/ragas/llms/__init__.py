@@ -6,5 +6,5 @@ from ragas.llms.openai import OpenAI
 __all__ = ["BaseRagasLLM", "LangchainLLM", "LlamaIndexLLM", "llm_factory", "OpenAI"]
 
 
-def llm_factory() -> BaseRagasLLM:
-    return OpenAI()
+def llm_factory(model="gpt-3.5-turbo-16k") -> BaseRagasLLM:
+    return OpenAI(model=model)

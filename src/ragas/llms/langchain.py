@@ -50,6 +50,8 @@ def _compute_token_usage_langchain(list_llmresults: t.List[LLMResult]) -> t.Dict
         sum_completion_tokens = 0
         sum_total_tokens = 0
         for result in list_llmresults:
+            if result.llm_output is None:
+                continue
             token_usage = result.llm_output["token_usage"]
             sum_prompt_tokens += token_usage["prompt_tokens"]
             sum_completion_tokens += token_usage["completion_tokens"]
@@ -129,6 +131,22 @@ class LangchainLLM(BaseRagasLLM):
             result = await self.llm.agenerate(ps, callbacks=callbacks)
 
         return result
+
+    async def agenerate(
+        self,
+        prompt: ChatPromptTemplate,
+        n: int = 1,
+        callbacks: t.Optional[Callbacks] = None,
+    ) -> LLMResult:
+        temperature = 0.2 if n > 1 else 0
+        if isBedrock(self.llm) and ("model_kwargs" in self.llm.__dict__):
+            self.llm.model_kwargs = {"temperature": temperature}
+        else:
+            self.llm.temperature = temperature
+
+        return await self.langchain_llm.agenerate(
+            [prompt.format_messages()], n=n, callbacks=callbacks
+        )
 
     def generate(
         self,
