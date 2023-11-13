@@ -84,6 +84,10 @@ class HuggingfaceEmbeddings(RagasEmbeddings):
                 self.model_name, cache_folder=self.cache_folder, **self.model_kwargs
             )
 
+        # ensure outputs are tensors
+        if "convert_to_tensor" not in self.encode_kwargs:
+            self.encode_kwargs["convert_to_tensor"] = True
+
     def embed_query(self, text: str) -> List[float]:
         return self.embed_documents([text])[0]
 
