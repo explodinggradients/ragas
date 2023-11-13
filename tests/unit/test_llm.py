@@ -1,11 +1,18 @@
+from __future__ import annotations
+
 import os
-from unittest.mock import patch
 
 import pytest
 from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema import Generation, LLMResult
 
 from ragas.llms.base import BaseRagasLLM
+from ragas.llms.openai import (
+    AzureOpenAI,
+    AzureOpenAIKeyNotFound,
+    OpenAI,
+    OpenAIKeyNotFound,
+)
 from ragas.utils import NO_KEY
 
 
@@ -37,14 +44,6 @@ def test_validate_api_key():
     os.environ["FAKELLM_API_KEY"] = "random-key-102848595"
     # just check if no error is raised
     assert llm.validate_api_key() is None
-
-
-from ragas.llms.openai import (
-    AzureOpenAI,
-    AzureOpenAIKeyNotFound,
-    OpenAI,
-    OpenAIKeyNotFound,
-)
 
 
 def openai_llm_factory(with_api_key):

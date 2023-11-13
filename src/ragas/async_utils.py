@@ -18,7 +18,7 @@ def run_async_tasks(
             import nest_asyncio
         except ImportError:
             raise RuntimeError(
-                "nest_asyncio is required to run async tasks in jupyter. Please install it via `pip install nest_asyncio`."
+                "nest_asyncio is required to run async tasks in jupyter. Please install it via `pip install nest_asyncio`."  # noqa
             )
         else:
             nest_asyncio.apply()
