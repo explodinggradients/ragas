@@ -2,14 +2,46 @@ from __future__ import annotations
 
 import os
 import typing as t
-from dataclasses import dataclass, field
+from dataclasses import field
 from typing import List
 
 import numpy as np
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.schema.embeddings import Embeddings as RagasEmbeddings
+from langchain.embeddings import AzureOpenAIEmbeddings as BaseAzureOpenAIEmbeddings
+from langchain.embeddings import OpenAIEmbeddings as BaseOpenAIEmbeddings
+from langchain.schema.embeddings import Embeddings
+from pydantic.dataclasses import dataclass
+
+from ragas.utils import NO_KEY
 
 DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
+
+
+class RagasEmbeddings(Embeddings):
+    def validate_api_key(self):
+        """
+        Validates that the api key is set for the Embeddings
+        """
+        pass
+
+
+class OpenAIEmbeddings(BaseOpenAIEmbeddings):
+    openai_api_key: str = os.getenv("OPENAI_API_KEY", NO_KEY)
+
+    def __post_init__(self):
+        # api key
+        key_from_env = os.getenv("OPENAI_API_KEY", NO_KEY)
+        if key_from_env != NO_KEY:
+            self.openai_api_key = key_from_env
+        else:
+            self.openai_api_key = self.openai_api_key
+
+    def validate_api_key(self):
+        if self.openai_api_key == NO_KEY:
+            raise OpenAIKeyNotFound
+
+
+class AzureOpenAIEmbeddings(BaseAzureOpenAIEmbeddings):
+    openai_api_key: str = os.getenv("AZURE_OPENAI_API_KEY", NO_KEY)
 
 
 @dataclass

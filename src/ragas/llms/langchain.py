@@ -158,6 +158,7 @@ class LangchainLLM(BaseRagasLLM):
                 result = await self.llm.agenerate(
                     [prompt.format_messages()], callbacks=callbacks
                 )
+            self.langchain_llm.n = old_n
         else:
             if isinstance(self.llm, BaseLLM):
                 list_llmresults: list[LLMResult] = run_async_tasks(
