@@ -11,7 +11,7 @@ from ragas.llms.base import BaseRagasLLM
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
     from langchain.prompts import ChatPromptTemplate
-    from openllm import LLM
+    from openllm import LLM, HTTPClient
 
 
 class OpenLLM(BaseRagasLLM):
@@ -48,6 +48,41 @@ class OpenLLM(BaseRagasLLM):
                 for p in prompts
             ]
         )
+        return LLMResult(
+            generations=[
+                [Generation(text=r.text) for r in result]
+                for result in [results[i : i + n] for i in range(0, len(results), n)]
+            ]
+        )
+
+
+class OpenLLMAPI(BaseRagasLLM):
+    n_completions_supported = True
+
+    def __init__(self, server_url: str, **kwargs: t.Any) -> None:
+        try:
+            import openllm_client
+        except ImportError:
+            raise ImportError(
+                "openllm-client is not installed. Please install it using `pip install openllm-client`"
+            )
+        self._llm = openllm_client.HTTPClient(server_url, **kwargs)
+
+    @property
+    def llm(self) -> HTTPClient:
+        return self._llm
+
+    def generate(
+        self,
+        prompts: list[ChatPromptTemplate],
+        n: int = 1,
+        temperature: float = 0,
+        callbacks: t.Optional[Callbacks] = None,
+    ) -> LLMResult:
+        temperature = 0.2 if n > 1 else 0
+        results = [
+            self.llm.generate(p.format(), n=n, temperature=temperature) for p in prompts
+        ]
         return LLMResult(
             generations=[
                 [Generation(text=r.text) for r in result]
