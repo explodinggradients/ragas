@@ -9,7 +9,6 @@ import numpy as np
 from langchain.embeddings import AzureOpenAIEmbeddings as BaseAzureOpenAIEmbeddings
 from langchain.embeddings import OpenAIEmbeddings as BaseOpenAIEmbeddings
 from langchain.schema.embeddings import Embeddings
-from pydantic import Field
 from pydantic.dataclasses import dataclass
 
 from ragas.exceptions import AzureOpenAIKeyNotFound, OpenAIKeyNotFound
@@ -45,16 +44,16 @@ class OpenAIEmbeddings(BaseOpenAIEmbeddings, RagasEmbeddings):
 
 
 class AzureOpenAIEmbeddings(BaseAzureOpenAIEmbeddings, RagasEmbeddings):
-    azure_endpoint: str
-    deployment: str
-    api_version: str
+    azure_endpoint: t.Optional[str] = None
+    deployment: t.Optional[str] = None
+    api_version: t.Optional[str] = None
     api_key: str = NO_KEY
 
     def __init__(
         self,
-        api_version: str,
-        azure_endpoint: str,
-        deployment: str,
+        api_version: t.Optional[str] = None,
+        azure_endpoint: t.Optional[str] = None,
+        deployment: t.Optional[str] = None,
         api_key: str = NO_KEY,
     ):
         # api key
