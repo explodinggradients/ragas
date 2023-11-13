@@ -9,7 +9,9 @@ from langchain.llms.base import BaseLLM
 from langchain.schema import LLMResult
 
 from ragas.async_utils import run_async_tasks
+from ragas.exceptions import AzureOpenAIKeyNotFound, OpenAIKeyNotFound
 from ragas.llms.base import BaseRagasLLM
+from ragas.utils import NO_KEY
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -71,6 +73,22 @@ class LangchainLLM(BaseRagasLLM):
     @property
     def llm(self):
         return self.langchain_llm
+
+    def validate_api_key(self):
+        # if langchain OpenAI or ChatOpenAI
+        if isinstance(self.llm, ChatOpenAI) or isinstance(self.llm, OpenAI):
+            # make sure the type is LangchainLLM with ChatOpenAI
+            self.langchain_llm = t.cast(ChatOpenAI, self.langchain_llm)
+            # raise error if no api key
+            if self.langchain_llm.openai_api_key == NO_KEY:
+                raise OpenAIKeyNotFound
+
+        # if langchain AzureOpenAI or ChatAzurerOpenAI
+        elif isinstance(self.llm, AzureChatOpenAI) or isinstance(self.llm, AzureOpenAI):
+            self.langchain_llm = t.cast(AzureChatOpenAI, self.langchain_llm)
+            # raise error if no api key
+            if self.langchain_llm.openai_api_key == NO_KEY:
+                raise AzureOpenAIKeyNotFound
 
     @staticmethod
     def llm_supports_completions(llm):

@@ -28,6 +28,12 @@ class BaseRagasLLM(ABC):
     def llm(self):
         ...
 
+    def validate_api_key(self):
+        """
+        Validates that the api key is set for the LLM
+        """
+        pass
+
     @abstractmethod
     def generate(
         self,

@@ -14,10 +14,6 @@ from math import floor
 
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
-from langchain.chat_models import AzureChatOpenAI as LC_AzureChatOpenAI
-from langchain.chat_models import ChatOpenAI as LC_ChatOpenAI
-from langchain.llms import AzureOpenAI as LC_AzureOpenAI
-from langchain.llms import OpenAI as LC_OpenAI
 from tqdm import tqdm
 
 from ragas.exceptions import AzureOpenAIKeyNotFound, OpenAIKeyNotFound
@@ -117,43 +113,10 @@ class Metric(ABC):
 class MetricWithLLM(Metric):
     llm: BaseRagasLLM = field(default_factory=llm_factory)
 
-    def _check_llm_keys(self):
-        # if langchain OpenAI or ChatOpenAI
-        if isinstance(self.llm, LC_ChatOpenAI) or isinstance(self.llm, LC_OpenAI):
-            # make sure the type is LangchainLLM with ChatOpenAI
-            self.llm = t.cast(LangchainLLM, self.llm)
-            self.llm.langchain_llm = t.cast(LC_ChatOpenAI, self.llm)
-
-            # raise error if no api key
-            if self.llm.langchain_llm.openai_api_key == NO_KEY:
-                raise OpenAIKeyNotFound
-
-        # if Ragas OpenAI
-        elif isinstance(self.llm, OpenAI):
-            self.llm = t.cast(OpenAI, self.llm)
-            if self.llm.api_key == NO_KEY:
-                raise OpenAIKeyNotFound
-
-        # if langchain AzureOpenAI or ChatAzurerOpenAI
-        elif isinstance(self.llm, LC_AzureChatOpenAI) or isinstance(
-            self.llm, LC_AzureOpenAI
-        ):
-            self.llm = t.cast(LangchainLLM, self.llm)
-            self.llm.langchain_llm = t.cast(LC_AzureChatOpenAI, self.llm)
-            # raise error if no api key
-            if self.llm.langchain_llm.openai_api_key == NO_KEY:
-                raise AzureOpenAIKeyNotFound
-
-        # if Ragas AzureOpenAI
-        elif isinstance(self.llm, AzureOpenAI):
-            self.llm = t.cast(AzureOpenAI, self.llm)
-            if self.llm.api_key == NO_KEY:
-                raise AzureOpenAIKeyNotFound
-
     def init_model(self):
         """
         Init any models in the metric, this is invoked before evaluate()
         to load all the models
         Also check if the api key is valid for OpenAI and AzureOpenAI
         """
-        self._check_llm_keys()
+        self.llm.validate_api_key()

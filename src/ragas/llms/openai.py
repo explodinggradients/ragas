@@ -10,6 +10,7 @@ from langchain.schema import Generation, LLMResult
 from openai import AsyncAzureOpenAI, AsyncOpenAI
 
 from ragas.async_utils import run_async_tasks
+from ragas.exceptions import AzureOpenAIKeyNotFound, OpenAIKeyNotFound
 from ragas.llms.base import BaseRagasLLM
 from ragas.llms.langchain import _compute_token_usage_langchain
 from ragas.utils import NO_KEY
@@ -24,12 +25,16 @@ class OpenAI(BaseRagasLLM):
     model: str = "gpt-3.5-turbo-16k"
     api_key: str = os.getenv("OPENAI_API_KEY", "no-key")
 
+    def __post_init__(self):
+        self.client = AsyncOpenAI(api_key=self.api_key)
+
     @property
     def llm(self):
         return self
 
-    def __post_init__(self):
-        self.client = AsyncOpenAI(api_key=self.api_key)
+    def validate_api_key(self):
+        if self.llm.api_key == NO_KEY:
+            raise OpenAIKeyNotFound
 
     def create_llm_result(self, response) -> LLMResult:
         """Create the LLMResult from the choices and prompts."""
@@ -114,3 +119,7 @@ class AzureOpenAI(OpenAI):
             azure_endpoint=self.azure_endpoint,
             api_key=self.api_key,
         )
+
+    def validate_api_key(self):
+        if self.llm.api_key == NO_KEY:
+            raise AzureOpenAIKeyNotFound
