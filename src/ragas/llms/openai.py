@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import os
 import typing as t
+from abc import abstractmethod
 from dataclasses import dataclass, field
 
 from langchain.adapters.openai import convert_message_to_dict
 from langchain.schema import Generation, LLMResult
-from openai import AsyncAzureOpenAI, AsyncOpenAI
+from openai import AsyncAzureOpenAI, AsyncClient, AsyncOpenAI
 
 from ragas.async_utils import run_async_tasks
 from ragas.exceptions import AzureOpenAIKeyNotFound, OpenAIKeyNotFound
@@ -19,26 +20,25 @@ if t.TYPE_CHECKING:
     from langchain.prompts import ChatPromptTemplate
 
 
-@dataclass
-class OpenAI(BaseRagasLLM):
-    model: str = "gpt-3.5-turbo-16k"
-    api_key: str = field(default=NO_KEY, repr=False)
+class OpenAIBase(BaseRagasLLM):
+    def __init__(self, model: str, _api_key_env_var: str) -> None:
+        self.model = model
+        self._api_key_env_var = _api_key_env_var
 
-    def __post_init__(self):
-        key_from_env = os.getenv("OPENAI_API_KEY", NO_KEY)
+        key_from_env = os.getenv(self._api_key_env_var, NO_KEY)
         if key_from_env != NO_KEY:
             self.api_key = key_from_env
         else:
             self.api_key = self.api_key
-        self.client = AsyncOpenAI(api_key=self.api_key)
+        self._client: AsyncClient
+
+    @abstractmethod
+    def _client_init(self) -> AsyncClient:
+        ...
 
     @property
     def llm(self):
         return self
-
-    def validate_api_key(self):
-        if self.llm.api_key == NO_KEY:
-            raise OpenAIKeyNotFound
 
     def create_llm_result(self, response) -> LLMResult:
         """Create the LLMResult from the choices and prompts."""
@@ -90,7 +90,7 @@ class OpenAI(BaseRagasLLM):
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
         # TODO: use callbacks for llm generate
-        completion = await self.client.chat.completions.create(
+        completion = await self._client.chat.completions.create(
             model=self.model,
             messages=[convert_message_to_dict(m) for m in prompt.format_messages()],
             temperature=temperature,
@@ -100,25 +100,38 @@ class OpenAI(BaseRagasLLM):
         return self.create_llm_result(completion)
 
 
-class AzureOpenAI(OpenAI):
-    api_version: str
-    azure_endpoint: str
-
-    def __init__(
-        self,
-        api_version: str,
-        azure_endpoint: str,
-        model: str,
-        api_key: str = NO_KEY,
-    ):
-        self.api_version = api_version
-        self.azure_endpoint = azure_endpoint
-        super().__init__(
-            model=model, api_key=os.getenv("AZURE_OPENAI_API_KEY", api_key)
-        )
+@dataclass
+class OpenAI(OpenAIBase):
+    model: str = "gpt-3.5-turbo-16k"
+    api_key: str = field(default=NO_KEY, repr=False)
+    _api_key_env_var: str = "OPENAI_API_KEY"
 
     def __post_init__(self):
-        self.client = AsyncAzureOpenAI(
+        super().__init__(model=self.model, _api_key_env_var=self._api_key_env_var)
+        self._client_init()
+
+    def _client_init(self):
+        self._client = AsyncOpenAI(api_key=self.api_key)
+
+    def validate_api_key(self):
+        if self.llm.api_key == NO_KEY:
+            raise OpenAIKeyNotFound
+
+
+@dataclass
+class AzureOpenAI(OpenAIBase):
+    model: str
+    api_version: str
+    azure_endpoint: str
+    api_key: str = field(default=NO_KEY, repr=False)
+    _api_key_env_var: str = "AZURE_OPENAI_API_KEY"
+
+    def __post_init__(self):
+        super().__init__(model=self.model, _api_key_env_var=self._api_key_env_var)
+        self._client_init()
+
+    def _client_init(self):
+        self._client = AsyncAzureOpenAI(
             api_version=self.api_version,
             azure_endpoint=self.azure_endpoint,
             api_key=self.api_key,
