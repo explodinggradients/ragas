@@ -1,7 +1,6 @@
 """Async utils."""
 import asyncio
-from itertools import zip_longest
-from typing import Any, Coroutine, Iterable, List
+from typing import Any, Coroutine, List
 
 
 def run_async_tasks(

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import typing as t
 from dataclasses import dataclass, field
 
@@ -8,7 +7,6 @@ import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import trace_as_chain_group
 from langchain.embeddings import OpenAIEmbeddings
-from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.embeddings.base import embedding_factory
