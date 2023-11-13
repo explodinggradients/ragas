@@ -98,7 +98,7 @@ class LangchainLLM(BaseRagasLLM):
             if isinstance(llm, llm_type):
                 return True
 
-    def generate_multiple_completions(
+    def _generate_multiple_completions(
         self,
         prompts: list[ChatPromptTemplate],
         n: int = 1,
@@ -144,9 +144,44 @@ class LangchainLLM(BaseRagasLLM):
         else:
             self.llm.temperature = temperature
 
-        return await self.langchain_llm.agenerate(
-            [prompt.format_messages()], n=n, callbacks=callbacks
-        )
+        if self.llm_supports_completions(self.llm):
+            self.langchain_llm = t.cast(
+                MultipleCompletionSupportedLLM, self.langchain_llm
+            )
+            old_n = self.langchain_llm.n
+            self.langchain_llm.n = n
+            if isinstance(self.llm, BaseLLM):
+                result = await self.llm.agenerate(
+                    [prompt.format()], callbacks=callbacks
+                )
+            else:  # if BaseChatModel
+                result = await self.llm.agenerate(
+                    [prompt.format_messages()], callbacks=callbacks
+                )
+        else:
+            if isinstance(self.llm, BaseLLM):
+                list_llmresults: list[LLMResult] = run_async_tasks(
+                    [
+                        self.llm.agenerate([prompt.format()], callbacks=callbacks)
+                        for _ in range(n)
+                    ]
+                )
+            else:
+                list_llmresults: list[LLMResult] = run_async_tasks(
+                    [
+                        self.llm.agenerate(
+                            [prompt.format_messages()], callbacks=callbacks
+                        )
+                        for _ in range(n)
+                    ]
+                )
+
+            # fill results as if the LLM supported multiple completions
+            generations = [r.generations[0][0] for r in list_llmresults]
+            llm_output = _compute_token_usage_langchain(list_llmresults)
+            result = LLMResult(generations=[generations], llm_output=llm_output)
+
+        return result
 
     def generate(
         self,
@@ -163,7 +198,7 @@ class LangchainLLM(BaseRagasLLM):
             self.llm.temperature = temperature
 
         if self.llm_supports_completions(self.llm):
-            return self.generate_multiple_completions(prompts, n, callbacks)
+            return self._generate_multiple_completions(prompts, n, callbacks)
         else:  # call generate_completions n times to mimic multiple completions
             list_llmresults = run_async_tasks(
                 [self.generate_completions(prompts, callbacks) for _ in range(n)]
