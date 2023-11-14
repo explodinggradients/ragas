@@ -9,7 +9,7 @@ from datasets import Dataset
 from langchain.callbacks.manager import trace_as_chain_group
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.embeddings.base import Embeddings
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
+from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, AIMessagePromptTemplate
 
 from ragas.embeddings.base import embedding_factory
 from ragas.exceptions import OpenAIKeyNotFound
@@ -59,6 +59,8 @@ class AnswerRelevancy(MetricWithLLM):
     batch_size: int = 15
     strictness: int = 3
     embeddings: RagasEmbeddings = field(default_factory=embedding_factory)
+    human_template: HumanMessagePromptTemplate = field(default_factory=lambda: QUESTION_GEN)
+    ai_template: AIMessagePromptTemplate = None
 
     def init_model(self):
         super().init_model()
@@ -79,21 +81,29 @@ class AnswerRelevancy(MetricWithLLM):
         ) as batch_group:
             prompts = []
             for ans in answers:
-                human_prompt = QUESTION_GEN.format(answer=ans)
-                prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
+                human_prompt = self.human_template.format(answer=ans)
+                messages = [human_prompt]
+                if self.ai_template is not None:
+                    ai_prompt = self.ai_template.format()
+                    messages.append(ai_prompt)
+                prompts.append(ChatPromptTemplate.from_messages(messages))
+            self.logs["prompts"] += prompts
 
             results = self.llm.generate(
                 prompts,
                 n=self.strictness,
                 callbacks=batch_group,
             )
-            results = [[i.text for i in r] for r in results.generations]
+            results = [[i.text.strip() for i in r] for r in results.generations]
+            self.logs["results"] += results
 
             scores = []
             for question, gen_questions in zip(questions, results):
                 cosine_sim = self.calculate_similarity(question, gen_questions)
+                self.logs["cosine_similarities"].append(cosine_sim)
                 scores.append(cosine_sim.mean())
 
+        self.logs["scores"] += scores
         return scores
 
     def calculate_similarity(

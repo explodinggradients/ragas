@@ -70,6 +70,7 @@ class AnswerSimilarity(MetricWithLLM):
     ) -> list[float]:
         ground_truths, answers = dataset["ground_truths"], dataset["answer"]
         ground_truths = [item[0] for item in ground_truths]
+        self.logs["ground_truths"] += ground_truths
 
         if self.is_cross_encoder:
             assert isinstance(self.embeddings, HuggingfaceEmbeddings)
@@ -78,12 +79,21 @@ class AnswerSimilarity(MetricWithLLM):
         else:
             embeddings_1 = np.array(self.embeddings.embed_documents(ground_truths))
             embeddings_2 = np.array(self.embeddings.embed_documents(answers))
-            similarity = embeddings_1 @ embeddings_2.T
+
+            # Normalize the embeddings to unit length
+            normalized_embeddings_1 = embeddings_1 / np.linalg.norm(embeddings_1, axis=1, keepdims=True)
+            normalized_embeddings_2 = embeddings_2 / np.linalg.norm(embeddings_2, axis=1, keepdims=True)
+
+            # Compute the similarity
+            similarity = normalized_embeddings_1 @ normalized_embeddings_2.T
+
             scores = np.diagonal(similarity)
+        self.logs["scores"] += scores.tolist()
 
         assert isinstance(scores, np.ndarray), "Expects ndarray"
         if self.threshold:
             scores = scores >= self.threshold  # type: ignore
+            self.logs["thresholded_scores"] += scores.tolist()
 
         return scores.tolist()
 

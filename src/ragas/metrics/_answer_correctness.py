@@ -64,7 +64,9 @@ class AnswerCorrectness(MetricWithLLM):
 
         ds_faithfulness = ds_faithfulness.rename_columns({"ground_truths": "contexts"})
         faith_scores = self.faithfulness._score_batch(ds_faithfulness)  # type: ignore
+        self.logs["faithfulness"] += faith_scores
         similarity_scores = self.answer_similarity._score_batch(dataset)  # type: ignore
+        self.logs["similarity"] += similarity_scores
 
         scores_stacked = np.vstack([faith_scores, similarity_scores])
         scores = np.average(
@@ -72,6 +74,7 @@ class AnswerCorrectness(MetricWithLLM):
             axis=0,
             weights=self.weights,
         )
+        self.logs["correctness"] += scores.tolist()
 
         return scores.tolist()
 

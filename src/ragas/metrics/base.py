@@ -46,6 +46,7 @@ EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga")
 @dataclass
 class Metric(ABC):
     batch_size: int
+    logs: t.defaultdict(list) = field(default_factory=lambda: t.defaultdict(list))
 
     @property
     @abstractmethod
