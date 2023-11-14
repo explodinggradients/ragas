@@ -25,7 +25,6 @@ from ragas.llms import LangchainLLM, llm_factory
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
-
 def make_batches(total_size: int, batch_size: int) -> list[range]:
     """
     Take a total size and batch size and return a list of ranges for the batches
