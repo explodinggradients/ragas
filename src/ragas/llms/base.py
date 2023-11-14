@@ -128,7 +128,7 @@ class LangchainLLM(BaseRagasLLM):
         # set temperature to 0.2 for multiple completions
         temperature = 0.2 if n > 1 else 0
         if isBedrock(self.llm) and ("model_kwargs" in self.llm.__dict__):
-            self.llm.model_kwargs = {"temperature": temperature}
+            self.llm.model_kwargs["temperature"] = temperature
         else:
             self.llm.temperature = temperature
 
