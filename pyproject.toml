@@ -2,8 +2,6 @@
 name = "ragas"
 dependencies = [
     "numpy",
-    "transformers",
-    "sentence-transformers",
     "datasets",
     "tiktoken",
     "langchain",
