@@ -7,6 +7,7 @@ G - ground_truths: ground truth answer
 from __future__ import annotations
 
 import typing as t
+from collections import defaultdict
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
@@ -46,7 +47,7 @@ EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga")
 @dataclass
 class Metric(ABC):
     batch_size: int
-    logs: t.defaultdict(list) = field(default_factory=lambda: t.defaultdict(list))
+    logs: t.defaultdict(list) = field(default_factory=lambda: defaultdict(list))
 
     @property
     @abstractmethod
