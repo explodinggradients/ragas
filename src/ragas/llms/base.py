@@ -122,11 +122,11 @@ class LangchainLLM(BaseRagasLLM):
         self,
         prompts: list[ChatPromptTemplate],
         n: int = 1,
-        temperature: float = 0,
+        temperature: float = 1e-8,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
         # set temperature to 0.2 for multiple completions
-        temperature = 0.2 if n > 1 else 0
+        temperature = 0.2 if n > 1 else 1e-8
         if isBedrock(self.llm) and ("model_kwargs" in self.llm.__dict__):
             self.llm.model_kwargs = {"temperature": temperature}
         else:
