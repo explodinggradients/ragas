@@ -152,6 +152,5 @@ class HuggingfaceEmbeddings(RagasEmbeddings):
 
 
 def embedding_factory() -> RagasEmbeddings:
-    oai_key = os.getenv("OPENAI_API_KEY", "no-key")
-    openai_embeddings = OpenAIEmbeddings(api_key=oai_key)
+    openai_embeddings = OpenAIEmbeddings()
     return openai_embeddings

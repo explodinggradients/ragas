@@ -9,6 +9,7 @@ dependencies = [
     "langchain",
     "openai",
     "pysbd>=0.3.4",
+    "nest-asyncio",
 ]
 dynamic = ["version", "readme"]
 
