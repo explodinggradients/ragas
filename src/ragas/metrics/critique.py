@@ -130,9 +130,6 @@ class AspectCritique(MetricWithLLM):
             answer_dict = {"yes": 1, "no": 0}
             for response in responses:
                 response = [(text, text.split("\n\n")[-1].strip().lower()) for text in response]
-                print(f"RESPONSE[-1]: {[item[-1] for item in response]}")
-
-                #print(f"RESPONSE: {response}")
                 self.logs["parsed_responses"] += response
                 if self.strictness > 1:
                     score = Counter(
