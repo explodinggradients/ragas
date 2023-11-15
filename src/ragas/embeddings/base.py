@@ -64,7 +64,7 @@ class AzureOpenAIEmbeddings(BaseAzureOpenAIEmbeddings, RagasEmbeddings):
             openai_api_key = api_key
 
         super(BaseAzureOpenAIEmbeddings, self).__init__(
-            azure_endpoint=azure_endpoint,
+            azure_endpoint=azure_endpoint,  # type: ignore (pydantic bug I think)
             deployment=deployment,
             api_version=api_version,
             api_key=openai_api_key,
@@ -152,6 +152,5 @@ class HuggingfaceEmbeddings(RagasEmbeddings):
 
 
 def embedding_factory() -> RagasEmbeddings:
-    oai_key = os.getenv("OPENAI_API_KEY", "no-key")
-    openai_embeddings = OpenAIEmbeddings(api_key=oai_key)
+    openai_embeddings = OpenAIEmbeddings()
     return openai_embeddings

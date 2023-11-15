@@ -49,7 +49,7 @@ class RagasLLM(ABC):
         self,
         prompts: ChatPromptTemplate,
         n: int = 1,
-        temperature: float = 0,
+        temperature: float = 1e-8,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
         ...
