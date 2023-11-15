@@ -5,7 +5,7 @@ dependencies = [
     "datasets",
     "tiktoken",
     "langchain",
-    "openai",
+    "openai>1",
     "pysbd>=0.3.4",
     "nest-asyncio",
 ]
