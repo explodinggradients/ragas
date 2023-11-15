@@ -1,7 +1,6 @@
 import time
 
 from datasets import DatasetDict, load_dataset
-from torch.cuda import is_available
 
 from ragas import evaluate
 from ragas.metrics import (
@@ -11,8 +10,6 @@ from ragas.metrics import (
     faithfulness,
 )
 from ragas.metrics.critique import harmfulness
-
-DEVICE = "cuda" if is_available() else "cpu"
 
 # data
 ds = load_dataset("explodinggradients/fiqa", "ragas_eval")
