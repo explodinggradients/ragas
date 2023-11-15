@@ -131,7 +131,8 @@ class AspectCritique(MetricWithLLM):
                 else:
                     score = answer_dict.get(response[0][-1])
 
-                scores.append(score)
+                # patch for critique: force score to 0 if the answer is not Yes or No
+                scores.append(score if score is not None else 0)
 
         return scores
 
