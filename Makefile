@@ -28,6 +28,11 @@ run-ci: format lint type ## Running all CI checks
 run-benchmarks: ## Run benchmarks
 	@echo "Running benchmarks..."
 	@cd $(GIT_ROOT)/tests/benchmarks && python benchmark_eval.py
+run-benchmarks-in-docker: ## Run benchmarks in docker
+	@echo "Running benchmarks in docker..."
+	@cd $(GIT_ROOT)
+	docker buildx build --build-arg OPENAI_API_KEY=$(OPENAI_API_KEY) -t ragas-benchmark -f $(GIT_ROOT)/tests/benchmarks/Dockerfile . 
+	docker inspect ragas-benchmark:latest | jq ".[0].Size" | numfmt --to=si
 test: ## Run tests
 	@echo "Running tests..."
 	@pytest tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)

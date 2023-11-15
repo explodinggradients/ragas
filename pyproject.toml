@@ -2,8 +2,6 @@
 name = "ragas"
 dependencies = [
     "numpy",
-    "transformers",
-    "sentence-transformers",
     "datasets",
     "tiktoken",
     "langchain",
@@ -12,6 +10,11 @@ dependencies = [
     "nest-asyncio",
 ]
 dynamic = ["version", "readme"]
+
+[project.optional-dependencies]
+all = [
+    "sentence-transformers",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
