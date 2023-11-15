@@ -8,7 +8,6 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.testing as npt
 import pandas as pd
-from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate
@@ -20,7 +19,7 @@ from llama_index.schema import BaseNode
 from numpy.random import default_rng
 from tqdm import tqdm
 
-from ragas.llms import LangchainLLM
+from ragas.llms import llm_factory
 from ragas.testset.prompts import (
     ANSWER_FORMULATE,
     COMPRESS_QUESTION,
@@ -34,6 +33,10 @@ from ragas.testset.prompts import (
     SEED_QUESTION,
 )
 from ragas.testset.utils import load_as_json, load_as_score
+
+if t.TYPE_CHECKING:
+    from ragas.llms.base import RagasLLM
+
 
 DEFAULT_TEST_DISTRIBUTION = {
     "simple": 0.4,
@@ -105,8 +108,8 @@ class TestsetGenerator:
 
     def __init__(
         self,
-        generator_llm: LangchainLLM,
-        critic_llm: LangchainLLM,
+        generator_llm: RagasLLM,
+        critic_llm: RagasLLM,
         embeddings_model: Embeddings,
         testset_distribution: t.Optional[t.Dict[str, float]] = None,
         chat_qa: float = 0.0,
@@ -141,8 +144,8 @@ class TestsetGenerator:
         chunk_size: int = 512,
         testset_distribution: dict = DEFAULT_TEST_DISTRIBUTION,
     ):
-        generator_llm = LangchainLLM(llm=ChatOpenAI(model=openai_generator_llm))
-        critic_llm = LangchainLLM(llm=ChatOpenAI(model=openai_filter_llm))
+        generator_llm = llm_factory(openai_generator_llm)
+        critic_llm = llm_factory(openai_filter_llm)
         embeddings_model = OpenAIEmbeddings()  # type: ignore
         return cls(
             generator_llm=generator_llm,
@@ -230,7 +233,7 @@ class TestsetGenerator:
         results = self.generator_llm.generate(prompts=[prompt])
         return results.generations[0][0].text.strip()
 
-    def _generate_answer(self, question: str, context: list[str]) -> t.List[str]:
+    def _generate_answer(self, question: str, context: t.List[str]) -> t.List[str]:
         return [
             self._qc_template(ANSWER_FORMULATE, qstn, context[i])
             for i, qstn in enumerate(question.split("\n"))
@@ -243,7 +246,7 @@ class TestsetGenerator:
         ]
 
     def _remove_nodes(
-        self, available_indices: list[BaseNode], node_idx: list
+        self, available_indices: t.List[BaseNode], node_idx: t.List
     ) -> t.List[BaseNode]:
         for idx in node_idx:
             available_indices.remove(idx)
@@ -252,7 +255,7 @@ class TestsetGenerator:
     def _generate_doc_nodes_map(
         self, documenet_nodes: t.List[BaseNode]
     ) -> t.Dict[str, t.List[BaseNode]]:
-        doc_nodes_map: t.Dict[str, t.List[BaseNode]] = defaultdict(list[BaseNode])
+        doc_nodes_map: t.Dict[str, t.List[BaseNode]] = defaultdict(list)
         for node in documenet_nodes:
             if node.ref_doc_id:
                 doc_nodes_map[node.ref_doc_id].append(node)
@@ -260,7 +263,7 @@ class TestsetGenerator:
         return doc_nodes_map  # type: ignore
 
     def _get_neighbour_node(
-        self, node: BaseNode, related_nodes: list[BaseNode]
+        self, node: BaseNode, related_nodes: t.List[BaseNode]
     ) -> t.List[BaseNode]:
         if len(related_nodes) < 2:
             warnings.warn("No neighbors exists")
@@ -280,7 +283,7 @@ class TestsetGenerator:
 
     def generate(
         self,
-        documents: list[LlamaindexDocument] | list[LangchainDocument],
+        documents: t.List[LlamaindexDocument] | t.List[LangchainDocument],
         test_size: int,
     ) -> TestDataset:
         if not isinstance(documents[0], (LlamaindexDocument, LangchainDocument)):
