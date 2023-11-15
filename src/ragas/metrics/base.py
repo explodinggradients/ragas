@@ -120,5 +120,7 @@ class MetricWithLLM(Metric):
         """
         self.llm.validate_api_key()
         if hasattr(self, "embeddings"):
-            self.embeddings = t.cast(RagasEmbeddings, self.embeddings)
-            self.embeddings.validate_api_key()
+            # since we are using Langchain Embeddings directly, we need to check this
+            if hasattr(self.embeddings, "validate_api_key"):
+                self.embeddings = t.cast(RagasEmbeddings, self.embeddings)
+                self.embeddings.validate_api_key()
