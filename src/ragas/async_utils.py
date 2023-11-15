@@ -1,7 +1,6 @@
 """Async utils."""
 import asyncio
-from itertools import zip_longest
-from typing import Any, Coroutine, Iterable, List
+from typing import Any, Coroutine, List
 
 
 def run_async_tasks(
@@ -10,50 +9,40 @@ def run_async_tasks(
     progress_bar_desc: str = "Running async tasks",
 ) -> List[Any]:
     """Run a list of async tasks."""
-
     tasks_to_execute: List[Any] = tasks
-    if show_progress:
+
+    # if running in notebook, use nest_asyncio to hijack the event loop
+    try:
+        loop = asyncio.get_running_loop()
         try:
             import nest_asyncio
-            from tqdm.asyncio import tqdm
-
-            # jupyter notebooks already have an event loop running
-            # we need to reuse it instead of creating a new one
+        except ImportError:
+            raise RuntimeError(
+                "nest_asyncio is required to run async tasks in jupyter. Please install it via `pip install nest_asyncio`."  # noqa
+            )
+        else:
             nest_asyncio.apply()
-            loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
 
-            async def _tqdm_gather() -> List[Any]:
-                return await tqdm.gather(*tasks_to_execute, desc=progress_bar_desc)
+    # gather tasks to run
+    if show_progress:
+        from tqdm.asyncio import tqdm
 
-            tqdm_outputs: List[Any] = loop.run_until_complete(_tqdm_gather())
-            return tqdm_outputs
+        async def _gather() -> List[Any]:
+            "gather tasks and show progress bar"
+            return await tqdm.gather(*tasks_to_execute, desc=progress_bar_desc)
+
+    else:  # don't show_progress
+
+        async def _gather() -> List[Any]:
+            return await asyncio.gather(*tasks_to_execute)
+
+    try:
+        outputs: List[Any] = loop.run_until_complete(_gather())
+    except Exception as e:
         # run the operation w/o tqdm on hitting a fatal
         # may occur in some environments where tqdm.asyncio
         # is not supported
-        except ImportError as e:
-            print(e)
-        except Exception:
-            pass
-
-    async def _gather() -> List[Any]:
-        return await asyncio.gather(*tasks_to_execute)
-
-    outputs: List[Any] = asyncio.run(_gather())
+        raise RuntimeError("Fatal error occurred while running async tasks.", e)
     return outputs
-
-
-def chunks(iterable: Iterable, size: int) -> Iterable:
-    args = [iter(iterable)] * size
-    return zip_longest(*args, fillvalue=None)
-
-
-async def batch_gather(
-    tasks: List[Coroutine], batch_size: int = 10, verbose: bool = False
-) -> List[Any]:
-    output: List[Any] = []
-    for task_chunk in chunks(tasks, batch_size):
-        output_chunk = await asyncio.gather(*task_chunk)
-        output.extend(output_chunk)
-        if verbose:
-            print(f"Completed {len(output)} out of {len(tasks)} tasks")
-    return output
