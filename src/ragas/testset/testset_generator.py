@@ -13,7 +13,7 @@ from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.document import Document as LangchainDocument
 from llama_index.indices.query.embedding_utils import get_top_k_embeddings
-from llama_index.node_parser.simple import SimpleNodeParser
+from llama_index.node_parser import SimpleNodeParser
 from llama_index.readers.schema import Document as LlamaindexDocument
 from llama_index.schema import BaseNode
 from numpy.random import default_rng
