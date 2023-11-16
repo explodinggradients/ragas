@@ -21,6 +21,7 @@ html_title = "Ragas"
 html_theme = "sphinxawesome_theme"
 html_static_path = ["_static"]
 html_css_files = ["css/ragas.css"]
+html_js_files = ["js/mendable_chat_bubble.js"]
 html_favicon = "./_static/favicon.ico"
 
 extensions = [
