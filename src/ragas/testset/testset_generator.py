@@ -32,6 +32,7 @@ from ragas.testset.prompts import (
     INFORMAL_QUESTION,
     MULTICONTEXT_QUESTION,
     REASONING_QUESTION,
+    REWRITE_QUESTION,
     SCORE_CONTEXT,
     SEED_QUESTION,
     TABLE_QA,
@@ -40,9 +41,9 @@ from ragas.testset.utils import load_as_json
 
 DEFAULT_TEST_DISTRIBUTION = {
     "simple": 0.4,
-    "reasoning": 0.2,
-    "multi_context": 0.2,
-    "conditional": 0.2,
+    "reasoning": 0.3,
+    "multi_context": 0.0,
+    "conditional": 0.3,
 }
 
 question_deep_map = {
@@ -119,7 +120,7 @@ class TestsetGenerator:
         embeddings_model: Embeddings,
         testset_distribution: t.Optional[t.Dict[str, float]] = None,
         chat_qa: float = 0.0,
-        chunk_size: int = 1024,
+        chunk_size: int = 712,
         seed: int = 42,
     ) -> None:
         self.generator_llm = generator_llm
@@ -208,7 +209,18 @@ class TestsetGenerator:
         results = self.critic_llm.generate(prompts=[prompt])
         results = results.generations[0][0].text.strip()
         json_results = load_as_json(results)
+        print(json_results)
         return json_results.get("verdict") != "No"
+    
+    def _rewrite_question(self, question: str, context: str) -> str:
+        
+        human_prompt = REWRITE_QUESTION.format(question=question, context=context)
+        prompt = ChatPromptTemplate.from_messages([human_prompt])
+
+        results = self.generator_llm.generate(prompts=[prompt])
+        results = results.generations[0][0].text.strip()
+        return results
+        
     
     def _evolution_elimination(self, question1: str, question2: str) -> bool:
         
@@ -286,24 +298,26 @@ class TestsetGenerator:
         return available_indices
 
     def _generate_doc_nodes_map(
-        self, documenet_nodes: t.List[BaseNode]
+        self, document_nodes: t.List[BaseNode]
     ) -> t.Dict[str, t.List[BaseNode]]:
         doc_nodes_map: t.Dict[str, t.List[BaseNode]] = defaultdict(list[BaseNode])
-        for node in documenet_nodes:
-            if node.ref_doc_id:
-                doc_nodes_map[node.ref_doc_id].append(node)
+        for node in document_nodes:
+            file_name = node.metadata.get('file_name')
+            if file_name:
+                doc_nodes_map[file_name].append(node)
 
         return doc_nodes_map  # type: ignore
 
     def _get_neighbour_node(
-        self, node: BaseNode, related_nodes: list[BaseNode]
+        self, node: BaseNode, related_nodes: list[BaseNode], number: int=1, after: bool=True,
     ) -> t.List[BaseNode]:
         if len(related_nodes) < 2:
             warnings.warn("No neighbors exists")
             return [node]
         idx = related_nodes.index(node)
-        ids = [idx - 1, idx] if idx == (len(related_nodes) - 1) else [idx, idx + 1]
-        return [related_nodes[idx] for idx in ids]
+        start_idx = idx if after else max(0, idx - number)
+        end_idx = idx + number if after else idx
+        return related_nodes[start_idx:end_idx]
 
     def _embed_nodes(self, nodes: t.List[BaseNode]) -> t.Dict[str, t.List[float]]:
         embeddings = {}
@@ -331,6 +345,10 @@ class TestsetGenerator:
                 LlamaindexDocument.from_langchain_format(doc) for doc in documents
             ]
         # Convert documents into nodes
+        # TODO: modify this to 
+        # each node should contain docs of preffered chunk size
+        # append document to provide enough context 
+        # Use metadata for this.
         node_parser = SimpleNodeParser.from_defaults(
             chunk_size=self.chunk_size, chunk_overlap=0, include_metadata=True
         )
@@ -347,10 +365,6 @@ class TestsetGenerator:
 
         available_nodes = document_nodes
         doc_nodes_map = self._generate_doc_nodes_map(document_nodes)
-        count_neighbours = sum(len(val) > 1 for _, val in doc_nodes_map.items())
-        if count_neighbours < len(documents) // 2:
-            warnings.warn("Most documents are too short")
-
         count = 0
         samples = []
 
@@ -360,22 +374,21 @@ class TestsetGenerator:
             curr_node = self.rng.choice(np.array(available_nodes), size=1)[0]
             available_nodes = self._remove_nodes(available_nodes, [curr_node])
 
-            neighbor_nodes = doc_nodes_map[curr_node.source_node.node_id]
+            neighbor_nodes = doc_nodes_map[curr_node.metadata['file_name']]
 
             # Append multiple nodes randomly to remove chunking bias
-            size = self.rng.integers(1, 3)
+            size = 3
             nodes = (
-                self._get_neighbour_node(curr_node, neighbor_nodes)
+                self._get_neighbour_node(curr_node, neighbor_nodes, number=size, after=False)
                 if size > 1 and evolve_type != "multi_context"
                 else [curr_node]
             )
-
-            text_chunk = " ".join([node.get_content() for node in nodes])
+            text_chunk = "\n".join([node.get_content() for node in nodes])
+            print("Len of text chunks", len(text_chunk.split()))
             context_filter = self._filter_context(text_chunk)
             if not context_filter.get("score"):
                 continue
-
-            print(context_filter)
+          
             is_table_qa = context_filter.get("is_table_present", False)
             seed_question = self._seed_question(text_chunk, is_table_qa)
             evolve_type = (
@@ -386,6 +399,7 @@ class TestsetGenerator:
             print("seed question", seed_question)
             is_valid_question = self._filter_question(seed_question)
             if not is_valid_question:
+                print('rewritten question', self._rewrite_question(question=seed_question, context=text_chunk))
                 continue
 
             if evolve_type == "multi_context":
@@ -430,7 +444,7 @@ class TestsetGenerator:
                 else:
                     question = self._compress_question(question=question)
 
-            is_valid_question = self._filter_question(question)
+            is_valid_question = self._filter_question(question) if evolve_type!="simple" else True
             if evolve_type != "simple":
                 evolution_elimination = self._evolution_elimination(question1=seed_question,
                                                                  question2=question)
@@ -455,3 +469,13 @@ class TestsetGenerator:
                 pbar.update(count)
 
         return TestDataset(test_data=samples)
+
+
+if __name__ == "__main__":
+    from llama_index import SimpleDirectoryReader
+
+    reader = SimpleDirectoryReader("/Users/shahules/belar/experimental/arxiv-papers/", num_files_limit=10)
+    documents = reader.load_data()
+    testsetgenerator = TestsetGenerator.from_default(chunk_size=1024)
+    test_size = 10
+    testset = testsetgenerator.generate(documents, test_size=test_size)

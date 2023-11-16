@@ -2,17 +2,10 @@ from langchain.prompts import HumanMessagePromptTemplate
 
 SEED_QUESTION = HumanMessagePromptTemplate.from_template(
     """\
-Your task is to generate a question from given context satisfying the rules given below:
-    1.The question should make sense to humans even when read without the given context.
-    2.The question should be fully answered from the given context.
-    3.The question should be framed from a part of context that contains important information. It can also be from tables,code,etc.
-    4.The question should be framed as person would be asking using first person pronouns. 
-    5.The question should be of moderate difficulty.
-    6.The question must be reasonable and must be understood and responded by humans.
-    7.Do no use phrases like 'provided context',etc in the question
-    8.Avoid framing question using word "and" that can be decomposed into more than one question.
-    9.The question should not contain more than 10 words, make of use of abbreviation wherever possible.
-
+Generate a question from given context satisfying the rules given below:
+    1.The question should be framed such that it must be clearly understood without providing context.
+    2.The question should be fully answerable from information present in given context.
+    
 Context:
 Mars is known as the Red Planet due to its reddish appearance, which is the result of iron oxide, commonly known as rust, on its surface.  
 Question: 
@@ -29,13 +22,8 @@ Question:
 How was the Eiffel Tower originally intended?
 
 Context:
-The human heart, located between the lungs, functions as the circulatory system's primary pump, circulating blood throughout the body.
-Question:
-What does quantum mechanics describe?
-
-
-context:{context}
-"""  # noqa: E501
+{context}
+Question:"""  # noqa: E501
 )
 
 TABLE_QA = HumanMessagePromptTemplate.from_template(
@@ -235,18 +223,43 @@ Context:
 Output:"""  # noqa: E501
 )
 
+REWRITE_QUESTION = HumanMessagePromptTemplate.from_template("""
+
+Given a context, transform the given question to be clear and standalone by replacing its coreferences with specific details from the context:
+
+Contexts:
+The Eiffel Tower was constructed using iron and was originally intended as a temporary exhibit for the 1889 World's Fair held in Paris.
+Despite its initial temporary purpose, the Eiffel Tower quickly became a symbol of Parisian ingenuity and an iconic landmark of the city, attracting millions of visitors each year
+The tower's design, created by Gustave Eiffel, was initially met with criticism from some French artists and intellectuals, but it has since been celebrated as a masterpiece of structural engineering and architectural design.
+Question:
+Who created the design for the Tower?
+Rewritten question:
+Who created the design for the Eiffel Tower?
+
+Contexts:
+'Exploring Zero-Shot Learning in Neural Networks' was published by Smith and Lee in 2021, focusing on the application of zero-shot learning techniques in artificial intelligence. 
+Question: 
+What datasets were used for the zero-shot evaluations in this study?
+Rewritten question:
+What datasets were used for the zero-shot evaluations Exploring Zero-Shot Learning in Neural Networks paper?
+
+
+Question:{question}
+Context: {context}
+Rewritten question:
+""")
+
 FILTER_QUESTION = HumanMessagePromptTemplate.from_template(
     """\
-Determine if the given question can be clearly understood even when presented without any additional context. Specify reason and verdict is a valid json format.
-question: 
-What is the keyword that best describes the paper's focus in natural language understanding tasks?
-{{"reason":"The specific paper being referred to is not mentioned in the question.", "verdict": "No"}}
-question:
-Who wrote 'Romeo and Juliet'?
-{{"reason": "The question is clear and can be answered without additional context because the author of 'Romeo and Juliet' is a well-established historical}}
-question:
-{question}
-"""  # noqa: E501
+Determine if the given question can be clearly understood without additional context.
+
+question: What is the keyword that best describes the paper's focus in natural language understanding tasks?
+Answer: {{"reason":"The specific paper being referred to is not mentioned in the question.", "verdict": "No"}}
+question: Who wrote 'Romeo and Juliet'?
+Answer: {{"reason": "The question is clear without additional context", "verdict": "Yes"}}
+
+question: {question}
+Answer:"""  # noqa: E501
 )
 
 EVOLUTION_ELIMINATION = HumanMessagePromptTemplate.from_template(
