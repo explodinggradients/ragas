@@ -111,6 +111,7 @@ class Metric(ABC):
 @dataclass
 class MetricWithLLM(Metric):
     llm: RagasLLM = field(default_factory=llm_factory)
+    metric_traces: dict = field(default_factory=dict)
 
     def init_model(self):
         """

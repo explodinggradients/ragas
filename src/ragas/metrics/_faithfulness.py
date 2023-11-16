@@ -63,6 +63,13 @@ class Faithfulness(MetricWithLLM):
     name: str = "faithfulness"
     evaluation_mode: EvaluationMode = EvaluationMode.qac
     batch_size: int = 15
+    
+    def init_model(self):
+        super().init_model()
+        self.metric_traces = {
+            "statements": [],
+            "verdicts": []
+        }
 
     def _score_batch(
         self: t.Self,
@@ -91,6 +98,7 @@ class Faithfulness(MetricWithLLM):
                 statements = output[0].text.split("\n")
                 list_statements.append(statements)
 
+            self.metric_traces["statements"] += list_statements
             prompts = []
             for context, statements in zip(contexts, list_statements):
                 statements_str: str = "\n".join(
@@ -110,6 +118,7 @@ class Faithfulness(MetricWithLLM):
             final_answer = final_answer.lower()
             for i, output in enumerate(outputs):
                 output = output[0].text.lower().strip()
+                self.metric_traces["verdicts"].append(output)
                 if output.find(final_answer) != -1:
                     output = output[output.find(final_answer) + len(final_answer) :]
                     score = sum(
