@@ -75,7 +75,7 @@ class ContextPrecision(MetricWithLLM):
             scores = []
 
             for response in grouped_responses:
-                response = [int("Yes" in resp) for resp in response]
+                response = [int(any("yes" in r.lower() for r in resp)) for resp in response]
                 denominator = sum(response) + 1e-10
                 numerator = sum(
                     [
