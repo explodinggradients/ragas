@@ -108,6 +108,8 @@ class Metric(ABC):
     def get_batches(self, dataset_size: int) -> list[range]:
         return make_batches(dataset_size, self.batch_size)
 
+    def reset_logs(self):
+        self.logs = defaultdict(list)
 
 @dataclass
 class MetricWithLLM(Metric):
