@@ -120,7 +120,7 @@ class TestsetGenerator:
         embeddings_model: Embeddings,
         testset_distribution: t.Optional[t.Dict[str, float]] = None,
         chat_qa: float = 0.0,
-        chunk_size: int = 712,
+        chunk_size: int = 356,
         seed: int = 42,
     ) -> None:
         self.generator_llm = generator_llm
@@ -140,6 +140,7 @@ class TestsetGenerator:
         self.chat_qa = chat_qa
         self.chunk_size = chunk_size
         self.threshold = 7.5
+        self.max_fixes = 2
         self.rng = default_rng(seed)
 
     @classmethod
@@ -309,15 +310,22 @@ class TestsetGenerator:
         return doc_nodes_map  # type: ignore
 
     def _get_neighbour_node(
-        self, node: BaseNode, related_nodes: list[BaseNode], number: int=1, after: bool=True,
+        self, node: BaseNode, related_nodes: list[BaseNode], max_tokens=1000, after: bool=True,
     ) -> t.List[BaseNode]:
         if len(related_nodes) < 2:
             warnings.warn("No neighbors exists")
             return [node]
         idx = related_nodes.index(node)
-        start_idx = idx if after else max(0, idx - number)
-        end_idx = idx + number if after else idx
-        return related_nodes[start_idx:end_idx]
+        tokens = 0
+        nodes = []
+        inc = 1 if after else -1
+        while tokens < max_tokens and idx>=0 and idx<len(related_nodes):
+            nodes.append(related_nodes[idx])
+            idx += inc
+            #TODO: replace split with tikitoken
+            tokens += len(related_nodes[idx].get_content().split())
+                
+        return nodes if after else nodes[::-1]
 
     def _embed_nodes(self, nodes: t.List[BaseNode]) -> t.Dict[str, t.List[float]]:
         embeddings = {}
@@ -377,14 +385,14 @@ class TestsetGenerator:
             neighbor_nodes = doc_nodes_map[curr_node.metadata['file_name']]
 
             # Append multiple nodes randomly to remove chunking bias
-            size = 3
-            nodes = (
-                self._get_neighbour_node(curr_node, neighbor_nodes, number=size, after=False)
-                if size > 1 and evolve_type != "multi_context"
-                else [curr_node]
-            )
+            if len(curr_node.get_content().split()) < self.chunk_size:
+                size = self.chunk_size - len(curr_node.get_content().split())
+                nodes = self._get_neighbour_node(curr_node, neighbor_nodes, max_tokens=size, after=False)
+            else:
+                nodes = [curr_node]
+                
             text_chunk = "\n".join([node.get_content() for node in nodes])
-            print("Len of text chunks", len(text_chunk.split()))
+            print("Len of text chunks", len(nodes), len(text_chunk.split()))
             context_filter = self._filter_context(text_chunk)
             if not context_filter.get("score"):
                 continue
@@ -398,12 +406,23 @@ class TestsetGenerator:
             )
             print("seed question", seed_question)
             is_valid_question = self._filter_question(seed_question)
-            if not is_valid_question:
-                print('rewritten question', self._rewrite_question(question=seed_question, context=text_chunk))
-                continue
+            tries = 1
+            
+            while tries < self.max_fixes and not is_valid_question:
+                nodes = self._get_neighbour_node(nodes[0], neighbor_nodes, max_tokens=500, after=False)
+                text_chunk = "\n".join([node.get_content() for node in nodes])
+                seed_question = self._rewrite_question(question=seed_question, context=text_chunk)
+                print("rewritten question", seed_question)
+                is_valid_question = self._filter_question(seed_question)
+                tries += 1
 
+            if not is_valid_question:
+                continue
+            
             if evolve_type == "multi_context":
                 # Find most similar chunk in same document
+                #TODO: handle cases where neighbour nodes is null, ie multi context across documents
+                # First preference - nodes from same document, second preference - other docs
                 node_embedding = self._embed_nodes([nodes[-1]])
                 neighbor_nodes = self._remove_nodes(neighbor_nodes, nodes)
                 neighbor_emb = self._embed_nodes(neighbor_nodes)
@@ -476,6 +495,6 @@ if __name__ == "__main__":
 
     reader = SimpleDirectoryReader("/Users/shahules/belar/experimental/arxiv-papers/", num_files_limit=10)
     documents = reader.load_data()
-    testsetgenerator = TestsetGenerator.from_default(chunk_size=1024)
+    testsetgenerator = TestsetGenerator.from_default(chunk_size=312)
     test_size = 10
     testset = testsetgenerator.generate(documents, test_size=test_size)

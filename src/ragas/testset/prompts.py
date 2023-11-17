@@ -251,12 +251,16 @@ Rewritten question:
 
 FILTER_QUESTION = HumanMessagePromptTemplate.from_template(
     """\
-Determine if the given question can be clearly understood without additional context.
+Determine if the given question can be understood without extra information.
 
 question: What is the keyword that best describes the paper's focus in natural language understanding tasks?
-Answer: {{"reason":"The specific paper being referred to is not mentioned in the question.", "verdict": "No"}}
+Answer: {{"reason":"The question mentions a 'paper' in it which makes it unclear without it", "verdict": "No"}}
 question: Who wrote 'Romeo and Juliet'?
-Answer: {{"reason": "The question is clear without additional context", "verdict": "Yes"}}
+Answer: {{"reason": "The question is clear", "verdict": "Yes"}}
+question: What did the study mention?
+Answer: {{"reason": "The question can be understood without additional context", "verdict": "Yes"}}
+question: What is the focus of the RETA-LLM toolkit?
+Answer: {{"reason": "The question can be understood without additional context", "verdict": "Yes"}}
 
 question: {question}
 Answer:"""  # noqa: E501
