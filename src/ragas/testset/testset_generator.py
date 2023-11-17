@@ -13,7 +13,7 @@ from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.document import Document as LangchainDocument
 from llama_index.indices.query.embedding_utils import get_top_k_embeddings
-from llama_index.node_parser import SimpleNodeParser
+from llama_index.node_parser.simple import SimpleNodeParser
 from llama_index.readers.schema import Document as LlamaindexDocument
 from llama_index.schema import BaseNode
 from numpy.random import default_rng
@@ -50,7 +50,7 @@ question_deep_map = {
     "conditional": "_condition_question",
 }
 
-DataRow = namedtuple("DataRow", ["question", "context", "answer", "question_type"])
+DataRow = namedtuple("DataRow", ["question", "contexts", "answer", "question_type"])
 
 
 @dataclass
@@ -64,17 +64,17 @@ class TestDataset:
     def to_pandas(self) -> pd.DataFrame:
         data_samples = []
         for data in self.test_data:
-            is_conv = len(data.context) > 1
+            is_conv = len(data.contexts) > 1
             question_type = data.question_type
             data = [
                 {
                     "question": qstn,
-                    "context": ctx,
+                    "contexts": ctx,
                     "answer": ans,
                     "question_type": question_type,
                     "episode_done": True,
                 }
-                for qstn, ctx, ans in zip(data.question, data.context, data.answer)
+                for qstn, ctx, ans in zip(data.question, data.contexts, data.answer)
             ]
             if is_conv:
                 data[0].update({"episode_done": False})
@@ -393,7 +393,7 @@ class TestsetGenerator:
                 context = self._generate_context(question, text_chunk)
                 answer = self._generate_answer(question, context)
                 samples.append(
-                    DataRow(question.split("\n"), context, answer, evolve_type)
+                    DataRow(question.split("\n"), [context], answer, evolve_type)
                 )
                 count += 1
                 pbar.update(count)
