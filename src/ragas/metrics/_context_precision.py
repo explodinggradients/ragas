@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import typing as t
 from dataclasses import dataclass
-from typing import List
 
 import numpy as np
-import pysbd
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
@@ -20,6 +18,7 @@ context:\n{context}
 answer:
 """  # noqa: E501
 )
+
 
 @dataclass
 class ContextPrecision(MetricWithLLM):

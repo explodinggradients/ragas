@@ -19,7 +19,7 @@ Low similarity answer: Isaac Newton's laws of motion greatly influenced classica
 ## Example
 
 ```{code-block} python
-from ragas.metrics import AnswerSimilarity()
+from ragas.metrics import AnswerSimilarity
 answer_similarity = AnswerSimilarity()
 
 

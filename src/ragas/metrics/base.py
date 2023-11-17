@@ -14,15 +14,15 @@ from math import floor
 
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
-from langchain.chat_models import ChatOpenAI
-from langchain.llms import OpenAI
 from tqdm import tqdm
 
-from ragas.exceptions import OpenAIKeyNotFound
-from ragas.llms import LangchainLLM, llm_factory
+from ragas.embeddings.base import RagasEmbeddings
+from ragas.llms import llm_factory
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
+
+    from ragas.llms import RagasLLM
 
 
 def make_batches(total_size: int, batch_size: int) -> list[range]:
@@ -110,10 +110,17 @@ class Metric(ABC):
 
 @dataclass
 class MetricWithLLM(Metric):
-    llm: LangchainLLM = field(default_factory=llm_factory)
+    llm: RagasLLM = field(default_factory=llm_factory)
 
     def init_model(self):
-        if isinstance(self.llm, ChatOpenAI) or isinstance(self.llm, OpenAI):
-            self.llm.langchain_llm = t.cast(ChatOpenAI, self.llm)
-            if self.llm.langchain_llm.openai_api_key == "no-key":
-                raise OpenAIKeyNotFound
+        """
+        Init any models in the metric, this is invoked before evaluate()
+        to load all the models
+        Also check if the api key is valid for OpenAI and AzureOpenAI
+        """
+        self.llm.validate_api_key()
+        if hasattr(self, "embeddings"):
+            # since we are using Langchain Embeddings directly, we need to check this
+            if hasattr(self.embeddings, "validate_api_key"):
+                self.embeddings = t.cast(RagasEmbeddings, self.embeddings)
+                self.embeddings.validate_api_key()

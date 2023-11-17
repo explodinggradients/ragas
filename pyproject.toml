@@ -2,15 +2,19 @@
 name = "ragas"
 dependencies = [
     "numpy",
-    "transformers",
-    "sentence-transformers",
     "datasets",
     "tiktoken",
-    "langchain>=0.0.288",
-    "openai",
+    "langchain",
+    "openai>1",
     "pysbd>=0.3.4",
+    "nest-asyncio",
 ]
 dynamic = ["version", "readme"]
+
+[project.optional-dependencies]
+all = [
+    "sentence-transformers",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}

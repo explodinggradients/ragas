@@ -8,19 +8,18 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.testing as npt
 import pandas as pd
-from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.document import Document as LangchainDocument
 from llama_index.indices.query.embedding_utils import get_top_k_embeddings
-from llama_index.node_parser.simple import SimpleNodeParser
+from llama_index.node_parser import SimpleNodeParser
 from llama_index.readers.schema import Document as LlamaindexDocument
 from llama_index.schema import BaseNode
 from numpy.random import default_rng
 from tqdm import tqdm
 
-from ragas.llms import LangchainLLM
+from ragas.llms import llm_factory
 from ragas.testset.prompts import (
     ANSWER_FORMULATE,
     COMPRESS_QUESTION,
@@ -34,6 +33,10 @@ from ragas.testset.prompts import (
     SEED_QUESTION,
 )
 from ragas.testset.utils import load_as_json, load_as_score
+
+if t.TYPE_CHECKING:
+    from ragas.llms.base import RagasLLM
+
 
 DEFAULT_TEST_DISTRIBUTION = {
     "simple": 0.4,
@@ -105,8 +108,8 @@ class TestsetGenerator:
 
     def __init__(
         self,
-        generator_llm: LangchainLLM,
-        critic_llm: LangchainLLM,
+        generator_llm: RagasLLM,
+        critic_llm: RagasLLM,
         embeddings_model: Embeddings,
         testset_distribution: t.Optional[t.Dict[str, float]] = None,
         chat_qa: float = 0.0,
@@ -141,8 +144,8 @@ class TestsetGenerator:
         chunk_size: int = 512,
         testset_distribution: dict = DEFAULT_TEST_DISTRIBUTION,
     ):
-        generator_llm = LangchainLLM(llm=ChatOpenAI(model=openai_generator_llm))
-        critic_llm = LangchainLLM(llm=ChatOpenAI(model=openai_filter_llm))
+        generator_llm = llm_factory(openai_generator_llm)
+        critic_llm = llm_factory(openai_filter_llm)
         embeddings_model = OpenAIEmbeddings()  # type: ignore
         return cls(
             generator_llm=generator_llm,

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -133,6 +134,7 @@ class Result(dict):
             value = np.mean(self.scores[cn])
             self[cn] = value
             if cn not in self.binary_columns:
+                value = t.cast(float, value)
                 values.append(value + 1e-10)
 
     def to_pandas(self, batch_size: int | None = None, batched: bool = False):
