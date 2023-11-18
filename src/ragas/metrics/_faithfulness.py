@@ -130,12 +130,12 @@ class Faithfulness(MetricWithLLM):
             final_answer = "Final verdict for each statement in order:"
             final_answer = final_answer.lower()
             for i, output in enumerate(outputs):
-                #print("HERE", output)
                 if output.find(final_answer) != -1:
                     self.logs["final_answer_string"].append(True)
                     output = output[output.find(final_answer) + len(final_answer) :]
                     self.logs["output"] += [output]
                     bools = [0 if "yes" in answer else 1 for answer in output.strip().split(".") if answer != ""]
+                    self.logs["bools"].append(bools)
                     score = sum(bools) / len(list_statements[i])
                 else:
                     self.logs["final_answer_string"].append(False)
