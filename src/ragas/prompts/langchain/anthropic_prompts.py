@@ -256,7 +256,7 @@ Answer:
 
 ASPECT_CRITIQUE_HUMAN: HumanMessagePromptTemplate = HumanMessagePromptTemplate.from_template(
     """<instructions>
-Given a input and submission. Evaluate the submission only using the given criteria. 
+Given an input and submission, evaluate the submission only using the given criteria.
 Think step by step providing reasoning and arrive at a conclusion at the end by generating a single word 'Yes' or 'No' verdict at the end.
 </instructions>
 
@@ -299,4 +299,65 @@ Remember, it's critical that your verdict is a single word of either 'Yes' or 'N
 ASPECT_CRITIQUE_AI: AIMessagePromptTemplate = AIMessagePromptTemplate.from_template(
     """Here are my thoughts followed by a single word "yes" or "no" verdict:
 """
+)
+
+ASPECT_GT_CRITIQUE_HUMAN: AIMessagePromptTemplate = AIMessagePromptTemplate.from_template(
+    """<instructions>
+Given a question, generated answer, and ground truth answer, evaluate the generated answer using the given criteria.
+Think step by step, providing reasoning, and conclude with a single word 'Yes' or 'No' verdict.
+</instructions>
+
+<example_input>
+<question>Describe the economic impact of the 2020 pandemic on South American countries. Answer using context: Limited data is available for 2020.</question>
+<ground_truth_answer>Comprehensive economic data for South American countries in 2020 is not yet available.</ground_truth_answer>
+<generated_answer>The pandemic led to a 5% decrease in GDP across South American countries.</generated_answer>
+<criteria>Did the generated answer correctly assess the sufficiency of the context to provide an accurate response?</criteria>
+</example_input>
+
+<example_response>The question asks for specific economic data from 2020, which is not yet available as per the ground truth. Despite the context being insufficient for a precise answer, the generated answer provides specific figures, which is incorrect under these circumstances. Therefore, the answer is:
+
+No</example_response>
+
+<example_input>
+<question>Explain the role of enzyme X in the human digestive system. Answer using context: Enzyme X's function is currently under research.</question>
+<ground_truth_answer>Enzyme X's specific role is not fully understood yet.</ground_truth_answer>
+<generated_answer>Currently, there is insufficient research to detail the exact role of enzyme X in the human digestive system.</generated_answer>
+<criteria>Did the generated answer correctly assess the sufficiency of the context to provide an accurate response?</criteria>
+</example_input>
+
+<example_response>The ground truth indicates that the role of enzyme X is not fully understood, making the context insufficient for a detailed explanation. The generated answer correctly identifies this insufficiency. Hence, the answer is:
+
+Yes</example_response>
+
+<example_input>
+<question>What are the primary colors in traditional color theory? Answer using context: Color theory is a fundamental area in art and design.</question>
+<ground_truth_answer>The primary colors in traditional color theory are red, blue, and yellow.</ground_truth_answer>
+<generated_answer>In traditional color theory, the primary colors are red, blue, and yellow.</generated_answer>
+<criteria>Did the generated answer correctly assess the sufficiency of the context to provide an accurate response?</criteria>
+</example_input>
+
+<example_response>The question provides sufficient context for a straightforward answer, which is accurately reflected in the ground truth. The generated answer matches the ground truth and is appropriate given the context. Therefore, the answer is:
+
+Yes</example_response>
+
+<example_input>
+<question>Who discovered penicillin? Answer using context: Penicillin was a groundbreaking discovery in medical science.</question>
+<ground_truth_answer>Alexander Fleming discovered penicillin.</ground_truth_answer>
+<generated_answer>The discovery of penicillin was made by Alexander Fleming.</generated_answer>
+<criteria>Does the generated answer accurately match the ground truth answer?</criteria>
+</example_input>
+
+<example_response>Considering the question along with its context about penicillin's significance in medical science, the focus is on the discoverer of penicillin. The generated answer aligns with the ground truth, correctly identifying Alexander Fleming as the discoverer. Therefore, the answer is:
+
+Yes</example_response>
+
+Now here is the input, submission, ground truth, and criteria for you to evaluate:
+
+<question>{input}</question>
+<ground_truth_answer>{ground_truth}</ground_truth_answer>
+<generated_answer>{submission}</generated_answer>
+<criteria>{criteria}</criteria>
+
+Remember, it's critical that your verdict is a single word of either 'Yes' or 'No' and nothing else!
+"""  # noqa: E501
 )

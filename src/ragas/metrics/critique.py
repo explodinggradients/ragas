@@ -78,14 +78,21 @@ class AspectCritique(MetricWithLLM):
         question: str,
         answer: str,
         context: t.Optional[str | list[str]] = None,
+        ground_truth: t.Optional[str] = None,
     ):
         if context is not None:
             if isinstance(context, list):
                 context = "\n".join(context)
             question = f"{question } answer using context: {context}"
-        human_prompt = self.human_template.format(
-            input=question, submission=answer, criteria=self.definition
-        )
+
+        if "ground_truth" in self.human_template.input_variables:
+            human_prompt = self.human_template.format(
+                input=question, submission=answer, criteria=self.definition, ground_truth=ground_truth,
+            )
+        else:
+            human_prompt = self.human_template.format(
+                input=question, submission=answer, criteria=self.definition
+            )
         messages = [human_prompt]
         if self.ai_template is not None:
             ai_prompt = self.ai_template.format()
@@ -98,9 +105,9 @@ class AspectCritique(MetricWithLLM):
         callbacks: t.Optional[CallbackManager] = None,
         callback_group_name: str = "batch",
     ) -> list[int]:
-        questions, contexts, answers = [
+        questions, contexts, answers, ground_truths = [
             dataset[key] if key in dataset.features else None
-            for key in ("question", "context", "answer")
+            for key in ("question", "context", "answer", "ground_truths")
         ]
         assert isinstance(questions, list)
         assert isinstance(answers, list)
@@ -111,8 +118,8 @@ class AspectCritique(MetricWithLLM):
         with trace_as_chain_group(
             callback_group_name, callback_manager=callbacks
         ) as batch_group:
-            for question, context, answer in zip(questions, contexts, answers):
-                messages = self.prompt_format(question, answer, context)
+            for question, context, answer, ground_truth in zip(questions, contexts, answers, ground_truths):
+                messages = self.prompt_format(question, answer, context, ground_truth)
                 prompts.append(ChatPromptTemplate.from_messages(messages))
             self.logs["prompts"] += prompts
 
