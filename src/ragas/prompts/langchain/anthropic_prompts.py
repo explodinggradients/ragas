@@ -308,20 +308,20 @@ Think step by step, providing reasoning, and conclude with a single word 'Yes' o
 </instructions>
 
 <example_input>
-<question>Describe the economic impact of the 2020 pandemic on South American countries. Answer using context: Limited data is available for 2020.</question>
-<ground_truth_answer>Comprehensive economic data for South American countries in 2020 is not yet available.</ground_truth_answer>
-<generated_answer>The pandemic led to a 5% decrease in GDP across South American countries.</generated_answer>
+<question>What are the functions of Vitamin C in the human body? Answer using context: Vitamin C is commonly found in citrus fruits and is essential for health.</question>
+<ground_truth_answer>Vitamin C plays various roles, including immune support and collagen synthesis, but further details are not provided in the context.</ground_truth_answer>
+<generated_answer>Vitamin C is crucial for immune system function and helps prevent scurvy.</generated_answer>
 <criteria>Did the generated answer correctly assess the sufficiency of the context to provide an accurate response?</criteria>
 </example_input>
 
-<example_response>The question asks for specific economic data from 2020, which is not yet available as per the ground truth. Despite the context being insufficient for a precise answer, the generated answer provides specific figures, which is incorrect under these circumstances. Therefore, the answer is:
+<example_response>The context mentions that Vitamin C is essential for health and found in citrus fruits, but it does not specify its functions. The generated answer states that Vitamin C supports the immune system and prevents scurvy. While these statements are true, they are not corroborated by the provided context. Therefore, the model did not correctly assess the context's sufficiency. The answer is:
 
 No</example_response>
 
 <example_input>
 <question>Explain the role of enzyme X in the human digestive system. Answer using context: Enzyme X's function is currently under research.</question>
 <ground_truth_answer>Enzyme X's specific role is not fully understood yet.</ground_truth_answer>
-<generated_answer>Currently, there is insufficient research to detail the exact role of enzyme X in the human digestive system.</generated_answer>
+<generated_answer>There is insufficient context information to detail the exact role of enzyme X in the human digestive system.</generated_answer>
 <criteria>Did the generated answer correctly assess the sufficiency of the context to provide an accurate response?</criteria>
 </example_input>
 
@@ -330,13 +330,13 @@ No</example_response>
 Yes</example_response>
 
 <example_input>
-<question>What are the primary colors in traditional color theory? Answer using context: Color theory is a fundamental area in art and design.</question>
+<question>What are the primary colors in traditional color theory? Answer using context: Traditional color theory states that red, blue, and yellow are the primary colors, which cannot be created by mixing other colors.</question>
 <ground_truth_answer>The primary colors in traditional color theory are red, blue, and yellow.</ground_truth_answer>
-<generated_answer>In traditional color theory, the primary colors are red, blue, and yellow.</generated_answer>
+<generated_answer>Red, blue, and yellow are the primary colors in traditional color theory.</generated_answer>
 <criteria>Did the generated answer correctly assess the sufficiency of the context to provide an accurate response?</criteria>
 </example_input>
 
-<example_response>The question provides sufficient context for a straightforward answer, which is accurately reflected in the ground truth. The generated answer matches the ground truth and is appropriate given the context. Therefore, the answer is:
+<example_response>The question asks for the primary colors in traditional color theory, and the provided context clearly states that these are red, blue, and yellow. The generated answer directly matches this information from the context, correctly identifying the primary colors as red, blue, and yellow. Given the context's sufficiency and the generated answer's accuracy, the answer is:
 
 Yes</example_response>
 
