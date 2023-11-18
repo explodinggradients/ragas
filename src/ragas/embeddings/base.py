@@ -2,14 +2,78 @@ from __future__ import annotations
 
 import os
 import typing as t
-from dataclasses import dataclass, field
+from dataclasses import field
 from typing import List
 
 import numpy as np
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.schema.embeddings import Embeddings as RagasEmbeddings
+from langchain.embeddings import AzureOpenAIEmbeddings as BaseAzureOpenAIEmbeddings
+from langchain.embeddings import OpenAIEmbeddings as BaseOpenAIEmbeddings
+from langchain.schema.embeddings import Embeddings
+from pydantic.dataclasses import dataclass
+
+from ragas.exceptions import AzureOpenAIKeyNotFound, OpenAIKeyNotFound
+from ragas.utils import NO_KEY
 
 DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
+
+
+class RagasEmbeddings(Embeddings):
+    def validate_api_key(self):
+        """
+        Validates that the api key is set for the Embeddings
+        """
+        pass
+
+
+class OpenAIEmbeddings(BaseOpenAIEmbeddings, RagasEmbeddings):
+    api_key: str = NO_KEY
+
+    def __init__(self, api_key: str = NO_KEY):
+        # api key
+        key_from_env = os.getenv("OPENAI_API_KEY", NO_KEY)
+        if key_from_env != NO_KEY:
+            openai_api_key = key_from_env
+        else:
+            openai_api_key = api_key
+        super(BaseOpenAIEmbeddings, self).__init__(openai_api_key=openai_api_key)
+        self.api_key = openai_api_key
+
+    def validate_api_key(self):
+        if self.openai_api_key == NO_KEY:
+            raise OpenAIKeyNotFound
+
+
+class AzureOpenAIEmbeddings(BaseAzureOpenAIEmbeddings, RagasEmbeddings):
+    azure_endpoint: t.Optional[str] = None
+    deployment: t.Optional[str] = None
+    api_version: t.Optional[str] = None
+    api_key: str = NO_KEY
+
+    def __init__(
+        self,
+        api_version: t.Optional[str] = None,
+        azure_endpoint: t.Optional[str] = None,
+        deployment: t.Optional[str] = None,
+        api_key: str = NO_KEY,
+    ):
+        # api key
+        key_from_env = os.getenv("AZURE_OPENAI_API_KEY", NO_KEY)
+        if key_from_env != NO_KEY:
+            openai_api_key = key_from_env
+        else:
+            openai_api_key = api_key
+
+        super(BaseAzureOpenAIEmbeddings, self).__init__(
+            azure_endpoint=azure_endpoint,  # type: ignore (pydantic bug I think)
+            deployment=deployment,
+            api_version=api_version,
+            api_key=openai_api_key,
+        )
+        self.api_key = openai_api_key
+
+    def validate_api_key(self):
+        if self.openai_api_key == NO_KEY:
+            raise AzureOpenAIKeyNotFound
 
 
 @dataclass
@@ -52,6 +116,10 @@ class HuggingfaceEmbeddings(RagasEmbeddings):
                 self.model_name, cache_folder=self.cache_folder, **self.model_kwargs
             )
 
+        # ensure outputs are tensors
+        if "convert_to_tensor" not in self.encode_kwargs:
+            self.encode_kwargs["convert_to_tensor"] = True
+
     def embed_query(self, text: str) -> List[float]:
         return self.embed_documents([text])[0]
 
@@ -84,6 +152,5 @@ class HuggingfaceEmbeddings(RagasEmbeddings):
 
 
 def embedding_factory() -> RagasEmbeddings:
-    oai_key = os.getenv("OPENAI_API_KEY", "no-key")
-    openai_embeddings = OpenAIEmbeddings(openai_api_key=oai_key)
+    openai_embeddings = OpenAIEmbeddings()
     return openai_embeddings

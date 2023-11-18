@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -87,7 +88,6 @@ def evaluate(
 
     # remap column names from the dataset
     dataset = remap_column_names(dataset, column_map)
-
     # validation
     validate_evaluation_modes(dataset, metrics)
     validate_column_dtypes(dataset)
@@ -126,7 +126,6 @@ def evaluate(
 class Result(dict):
     scores: Dataset
     dataset: Dataset | None = None
-    ragas_score: float | None = None
     binary_columns: list[str] = field(default_factory=list)
 
     def __post_init__(self):
@@ -135,12 +134,8 @@ class Result(dict):
             value = np.mean(self.scores[cn])
             self[cn] = value
             if cn not in self.binary_columns:
+                value = t.cast(float, value)
                 values.append(value + 1e-10)
-
-        # harmonic mean of all the scores we have
-        if len(values) > 1:
-            reciprocal_sum = np.sum(1.0 / np.array(values))  # type: ignore
-            self["ragas_score"] = len(values) / reciprocal_sum
 
     def to_pandas(self, batch_size: int | None = None, batched: bool = False):
         if self.dataset is None:
@@ -152,9 +147,5 @@ class Result(dict):
 
     def __repr__(self) -> str:
         scores = self.copy()
-        score_strs = []
-        if "ragas_score" in scores:
-            ragas_score = scores.pop("ragas_score")
-            score_strs.append(f"'ragas_score': {ragas_score:0.4f}")
-        score_strs.extend([f"'{k}': {v:0.4f}" for k, v in scores.items()])
+        score_strs = [f"'{k}': {v:0.4f}" for k, v in scores.items()]
         return "{" + ", ".join(score_strs) + "}"
