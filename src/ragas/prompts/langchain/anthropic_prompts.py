@@ -301,7 +301,7 @@ ASPECT_CRITIQUE_AI: AIMessagePromptTemplate = AIMessagePromptTemplate.from_templ
 """
 )
 
-ASPECT_GT_CRITIQUE_HUMAN: AIMessagePromptTemplate = AIMessagePromptTemplate.from_template(
+ASPECT_GT_CRITIQUE_HUMAN: HumanMessagePromptTemplate = HumanMessagePromptTemplate.from_template(
     """<instructions>
 Given a question, generated answer, and ground truth answer, evaluate the generated answer using the given criteria.
 Think step by step, providing reasoning, and conclude with a single word 'Yes' or 'No' verdict.
