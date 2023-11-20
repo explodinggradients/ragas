@@ -50,7 +50,7 @@ question_deep_map = {
     "conditional": "_condition_question",
 }
 
-DataRow = namedtuple("DataRow", ["question", "ground_truth_context", "ground_truth", "question_type"])
+DataRow = namedtuple("DataRow", ["question", "ground_truth_context", "ground_truth", "question_type", "episode_done"])
 
 
 @dataclass
@@ -64,19 +64,14 @@ class TestDataset:
     def to_pandas(self) -> pd.DataFrame:
         data_samples = []
         for data in self.test_data:
-            is_conv = len(data.ground_truth_context) > 1
-            data = [
-                {
+            data = {
                     "question": data.question,
                     "ground_truth_context": data.ground_truth_context,
                     "ground_truth": data.ground_truth,
                     "question_type": data.question_type,
-                    "episode_done": True,
-                }
-            ]
-            if is_conv:
-                data[0].update({"episode_done": False})
-            data_samples.extend(data)
+                    "episode_done": data.episode_done,
+            }
+            data_samples.append(data)
 
         return pd.DataFrame.from_records(data_samples)
 
@@ -389,11 +384,13 @@ class TestsetGenerator:
             is_valid_question = self._filter_question(question)
             if is_valid_question:
                 context = self._generate_context(question, text_chunk)
+                is_conv = len(context) > 1
                 answer = self._generate_answer(question, context)
-                samples.extend(
-                    DataRow(qstn, [ctx], ans, evolve_type)
-                    for qstn, ctx, ans in zip(question.split("\n"), context, answer)
-                )
+                for i, (qstn, ctx, ans) in enumerate(zip(question.split("\n"), context, answer)):
+                    episode_done = False if is_conv and i==0 else True
+                    samples.append(
+                            DataRow(qstn, [ctx], [ans], evolve_type, episode_done)
+                        )
                 count += 1
                 pbar.update(count)
 
