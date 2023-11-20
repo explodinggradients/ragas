@@ -113,18 +113,18 @@ class Faithfulness(MetricWithLLM):
                 output = output[0].text.lower().strip()
                 if final_answer in output:
                     output = output[output.find(final_answer) + len(final_answer) :]
-                    score = sum(
+                    hallucination_score = sum(
                         0 if "yes" in answer else 1
                         for answer in output.strip().split(".")
                         if answer != ""
                     )
-                    score = score / len(list_statements[i])
+                    hallucination_ratio = hallucination_score / len(list_statements[i])
                 else:
-                    score = max(0, output.count("verdict: no")) / len(
+                    hallucination_ratio = max(0, output.count("verdict: no")) / len(
                         list_statements[i]
                     )
 
-                scores.append(1 - score)
+                scores.append(1 - hallucination_ratio)
 
         return scores
 
