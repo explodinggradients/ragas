@@ -315,7 +315,7 @@ class TestsetGenerator:
         if len(related_nodes) < 2:
             warnings.warn("No neighbors exists")
             return [node]
-        idx = related_nodes.index(node)
+        idx = related_nodes.index(node) if node in related_nodes else []
         tokens = 0
         nodes = []
         inc = 1 if after else -1
