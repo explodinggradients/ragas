@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import typing as t
 
-from langchain.chat_models import AzureChatOpenAI, AzureMLChatOnlineEndpoint, BedrockChat, ChatOpenAI, ChatVertexAI
+from langchain.chat_models import AzureChatOpenAI, BedrockChat, ChatOpenAI, ChatVertexAI
+from langchain.chat_models.azureml_endpoint import AzureMLChatOnlineEndpoint
 from langchain.chat_models.base import BaseChatModel
 from langchain.llms import AzureOpenAI, Bedrock, OpenAI, VertexAI
 from langchain.llms.base import BaseLLM
