@@ -84,6 +84,7 @@ class Faithfulness(MetricWithLLM):
                 human_prompt = LONG_FORM_ANSWER_PROMPT.format(question=q, answer=a)
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
+
             result = self.llm.generate(prompts, callbacks=batch_group)
             list_statements: list[list[str]] = []
             for output in result.generations:
@@ -110,7 +111,7 @@ class Faithfulness(MetricWithLLM):
             final_answer = final_answer.lower()
             for i, output in enumerate(outputs):
                 output = output[0].text.lower().strip()
-                if output.find(final_answer) != -1:
+                if final_answer in output:
                     output = output[output.find(final_answer) + len(final_answer) :]
                     score = sum(
                         0 if "yes" in answer else 1
