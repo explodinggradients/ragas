@@ -4,6 +4,7 @@ import typing as t
 
 from langchain.chat_models import AzureChatOpenAI, BedrockChat, ChatOpenAI, ChatVertexAI
 from langchain.chat_models.azureml_endpoint import AzureMLChatOnlineEndpoint
+from langchain.chat_models.base import SimpleChatModel
 from langchain.chat_models.base import BaseChatModel
 from langchain.llms import AzureOpenAI, Bedrock, OpenAI, VertexAI
 from langchain.llms.base import BaseLLM
@@ -27,7 +28,7 @@ def isBedrock(llm: BaseLLM | BaseChatModel) -> bool:
     return isinstance(llm, Bedrock) or isinstance(llm, BedrockChat)
 
 
-def isAzureMLEndpoint(llm: BaseLLM | BaseChatModel) -> bool:
+def isAzureMLEndpoint(llm: BaseLLM | SimpleChatModel) -> bool:
     return isinstance(llm, AzureMLChatOnlineEndpoint)
 
 
@@ -39,9 +40,10 @@ MULTIPLE_COMPLETION_SUPPORTED = [
     AzureChatOpenAI,
     ChatVertexAI,
     VertexAI,
+    AzureMLChatOnlineEndpoint,
 ]
 MultipleCompletionSupportedLLM = t.Union[
-    OpenAI, ChatOpenAI, AzureOpenAI, AzureChatOpenAI, ChatVertexAI, VertexAI
+    OpenAI, ChatOpenAI, AzureOpenAI, AzureChatOpenAI, ChatVertexAI, VertexAI, AzureMLChatOnlineEndpoint
 ]
 
 
