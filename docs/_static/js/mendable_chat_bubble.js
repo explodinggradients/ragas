@@ -13,19 +13,28 @@ document.addEventListener("DOMContentLoaded", () => {
     function () {
       Mendable.initialize({
         anon_key: "f4cb5493-f914-43a5-8edc-f41463ea5bed",
-        type: "chat",
+        type: "searchBar",
         elementId: "searchbox",
-        userIcon: "./_static/ragas-logo.png",
-        icon: "./_static/ragas-logo.png",
         style: {
           darkMode: true,
-          accentColor: "#FECA4B"
+          accentColor: "#FECA4B",
+          backgroundColor: "#0F1629"
         },
-        floatingButtonStyle:{
-          backgroundColor: '#0F1629',
-          color: '#fff',
+        searchBarStyle: {
+          backgroundColor: "#00000000"
+        },
+        showSimpleSearch: true,
+        messageSettings: {
+          openSourcesInNewTab: false,
+          prettySources: true
         }
+        
       });
+
+      var searchForm = document.getElementById('searchbox');
+      searchForm.onsubmit = (event) => {
+        event.preventDefault();
+      }
     }
   );
 });
