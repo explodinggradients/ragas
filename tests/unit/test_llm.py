@@ -143,3 +143,4 @@ def test_validate_api_key_for_different_llms(
     obj = factory(with_api_key=False)
     os.environ[environ_key] = "random-key-102848595"
     assert obj.validate_api_key() is None
+    assert obj.api_key == "random-key-102848595"
