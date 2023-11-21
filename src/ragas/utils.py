@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
+import warnings
 from functools import lru_cache
 
 DEBUG_ENV_VAR = "RAGAS_DEBUG"
@@ -16,3 +18,17 @@ def get_debug_mode() -> bool:
         return True
     else:
         return False
+
+
+def load_as_json(text):
+    """
+    validate and return given text as json
+    """
+
+    try:
+        return json.loads(text)
+    except ValueError:
+        print(text)
+        warnings.warn("Invalid json")
+
+    return {}
