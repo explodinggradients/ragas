@@ -95,9 +95,10 @@ retry_decorator = create_base_retry_decorator(errors, max_retries=4)
 
 
 class OpenAIBase(RagasLLM):
-    def __init__(self, model: str, _api_key_env_var: str) -> None:
+    def __init__(self, model: str, _api_key_env_var: str, timeout: int = 60) -> None:
         self.model = model
         self._api_key_env_var = _api_key_env_var
+        self.timeout = timeout
 
         # api key
         key_from_env = os.getenv(self._api_key_env_var, NO_KEY)
@@ -187,7 +188,7 @@ class OpenAI(OpenAIBase):
         self._client_init()
 
     def _client_init(self):
-        self._client = AsyncOpenAI(api_key=self.api_key, timeout=30)
+        self._client = AsyncOpenAI(api_key=self.api_key, timeout=self.timeout)
 
     def validate_api_key(self):
         # before validating, check if the api key is already set
@@ -215,7 +216,7 @@ class AzureOpenAI(OpenAIBase):
             api_version=self.api_version,
             azure_endpoint=self.azure_endpoint,
             api_key=self.api_key,
-            timeout=30,
+            timeout=self.timeout,
         )
 
     def validate_api_key(self):
