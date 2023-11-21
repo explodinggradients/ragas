@@ -5,6 +5,17 @@ import warnings
 from collections import defaultdict, namedtuple
 from dataclasses import dataclass
 
+try:
+    from llama_index.indices.query.embedding_utils import get_top_k_embeddings
+    from llama_index.node_parser import SimpleNodeParser
+    from llama_index.readers.schema import Document as LlamaindexDocument
+    from llama_index.schema import BaseNode
+except ImportError:
+    raise ImportError(
+        "llama_index must be installed to use this function. "
+        "Please, install it with `pip install llama_index`."
+    )
+
 import numpy as np
 import numpy.testing as npt
 import pandas as pd
@@ -12,10 +23,6 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.document import Document as LangchainDocument
-from llama_index.indices.query.embedding_utils import get_top_k_embeddings
-from llama_index.node_parser import SimpleNodeParser
-from llama_index.readers.schema import Document as LlamaindexDocument
-from llama_index.schema import BaseNode
 from numpy.random import default_rng
 from tqdm import tqdm
 
