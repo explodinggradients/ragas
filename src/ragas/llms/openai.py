@@ -196,7 +196,11 @@ class OpenAI(OpenAIBase):
         if api_key != NO_KEY:
             self._client.api_key = api_key
         if self.llm.api_key == NO_KEY:
-            raise OpenAIKeyNotFound
+            os_env_key = os.getenv(self._api_key_env_var, NO_KEY)
+            if os_env_key != NO_KEY:
+                self.api_key = os_env_key
+            else:
+                raise OpenAIKeyNotFound
 
 
 @dataclass
@@ -221,4 +225,8 @@ class AzureOpenAI(OpenAIBase):
 
     def validate_api_key(self):
         if self.llm.api_key == NO_KEY:
-            raise AzureOpenAIKeyNotFound
+            os_env_key = os.getenv(self._api_key_env_var, NO_KEY)
+            if os_env_key != NO_KEY:
+                self.api_key = os_env_key
+            else:
+                raise AzureOpenAIKeyNotFound

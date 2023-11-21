@@ -40,7 +40,11 @@ class OpenAIEmbeddings(BaseOpenAIEmbeddings, RagasEmbeddings):
 
     def validate_api_key(self):
         if self.openai_api_key == NO_KEY:
-            raise OpenAIKeyNotFound
+            os_env_key = os.getenv("OPENAI_API_KEY", NO_KEY)
+            if os_env_key != NO_KEY:
+                self.api_key = os_env_key
+            else:
+                raise OpenAIKeyNotFound
 
 
 class AzureOpenAIEmbeddings(BaseAzureOpenAIEmbeddings, RagasEmbeddings):
@@ -73,7 +77,11 @@ class AzureOpenAIEmbeddings(BaseAzureOpenAIEmbeddings, RagasEmbeddings):
 
     def validate_api_key(self):
         if self.openai_api_key == NO_KEY:
-            raise AzureOpenAIKeyNotFound
+            os_env_key = os.getenv("AZURE_OPENAI_API_KEY", NO_KEY)
+            if os_env_key != NO_KEY:
+                self.api_key = os_env_key
+            else:
+                raise AzureOpenAIKeyNotFound
 
 
 @dataclass
