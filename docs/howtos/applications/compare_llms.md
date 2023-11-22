@@ -173,7 +173,7 @@ result
 
 ## Compare Scores
 
-Based on the evaluation results, it is apparent that the `faithfulness` and `answer_relevancy` metrics of the HuggingFace zephyr-7b-alpha model slightly outperform the falcon-7b-instruct model in my RAG pipeline when applied to my own dataset.
+Based on the evaluation results, it is apparent that the `faithfulness`, `answer_correctness` and `answer_relevancy` metrics of the HuggingFace zephyr-7b-alpha model slightly outperform the falcon-7b-instruct model in my RAG pipeline when applied to my own dataset.
 
 Refer to the complete colab notebook [here](https://colab.research.google.com/drive/10dNeU56XLOGUJ9gRuBFryyRwoy70rIeS?usp=sharing).
 
@@ -198,6 +198,8 @@ analysis(
     result_falcon_df[['faithfulness', 'answer_relevancy', 'answer_correctness']]
 ) 
 ```
+
+### Score distribution analysis
 <p align="left">
 <img src="../../_static/imgs/compare-llm-result.png" alt="results" width="800" height="600" />
 </p>
