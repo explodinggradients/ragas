@@ -1,29 +1,16 @@
 from langchain.prompts import HumanMessagePromptTemplate
 
-SEED_QUESTION = HumanMessagePromptTemplate.from_template(
-    """\
-Generate a question from given context satisfying the rules given below:
-    1.The question should be framed such that it must be clearly understood without providing context.
-    2.The question should be fully answerable from information present in given context.
+SEED_QUESTION = HumanMessagePromptTemplate.from_template("""
+Generate two questions from given context satisfying the rules given below:
+    2.The question should be framed such that it must be clearly understood without providing context.
+    3.The question should be fully answerable from information present in given context.
     
-Context:
-Mars is known as the Red Planet due to its reddish appearance, which is the result of iron oxide, commonly known as rust, on its surface.  
-Question: 
-Why is Mars called the Red Planet?
+{demonstration}
 
-Context:
-The Battle of Hastings in 1066 was significant because it led to the Norman conquest of England. This event dramatically altered English culture, language, and governance  
-Question:
-What is the significance of the Battle of Hastings?
-
-Context:
-The Eiffel Tower was constructed using iron and was originally intended as a temporary exhibit for the 1889 World's Fair held in Paris.
-Question:
-How was the Eiffel Tower originally intended?
 
 Context:
 {context}
-Question:"""  # noqa: E501
+Questions:"""  # noqa: E501
 )
 
 TABLE_QA = HumanMessagePromptTemplate.from_template(
@@ -320,3 +307,28 @@ context:\n{context}
 candidate sentences:\n
 """  # noqa: E501
 )
+
+
+demonstrations = [
+    {"context":"The Eiffel Tower in Paris was originally intended as a temporary structure, built for the 1889 World's Fair. It was almost dismantled in 1909 but was saved because it was repurposed as a giant radio antenna.",
+     "questions":[
+     {"question_Why": "Why was the Eiffel Tower originally planned to be a temporary structure?"},
+     {"question_Was":"Was the Eiffel Tower originally designed to be a permanent structure?"},
+     {"question_What":"What was the original purpose of the Eiffel Tower when it was built for the 1889 World's Fair?"},
+     {"question_How":"How did the Eiffel Tower avoid being dismantled in 1909?"},
+     {"question_Where":"Where is the Eiffel Tower?"}]     
+    },
+    
+    {
+      "context": "Photosynthesis is a process used by plants, algae, and certain bacteria to convert light energy into chemical energy.",
+      "questions": [
+        {"question_Why": "Why do plants perform photosynthesis?"},
+        {"question_Was": "Was photosynthesis discovered in plants, algae, or bacteria first?"},
+        {"question_What": "What converts light energy into chemical energy in photosynthesis?"},
+        {"question_How": "How do plants capture light energy for photosynthesis?"},
+        {"question_Where": "Where in plants does photosynthesis primarily occur?"},
+        {"question_Can": "Can photosynthesis occur in the absence of light?"}
+      ]
+    },
+
+]
