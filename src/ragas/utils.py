@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import logging
 import os
 import warnings
 from functools import lru_cache
@@ -26,8 +25,7 @@ def load_as_json(text):
 
     try:
         return json.loads(text)
-    except ValueError:
-        print(text)
-        warnings.warn("Invalid json")
+    except ValueError as e:
+        warnings.warn(f"Invalid json: {e}")
 
     return {}
