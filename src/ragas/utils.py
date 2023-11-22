@@ -14,7 +14,6 @@ NO_KEY = "no-key"
 @lru_cache(maxsize=1)
 def get_debug_mode() -> bool:
     if os.environ.get(DEBUG_ENV_VAR, str(False)).lower() == "true":
-        logging.basicConfig(level=logging.DEBUG)
         return True
     else:
         return False

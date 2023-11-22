@@ -58,7 +58,7 @@ test_answers = [[item] for item in test_df['answer'].values.tolist()]
 Here I am using llama-index to build a basic RAG pipeline with my documents. The goal here is to collect retrieved contexts and generated answer for each of the test questions from your pipeline. Ragas has integrations with various RAG frameworks which makes evaluating them easier using ragas.
 
 ```{note}
-refer to [langchain-tutorial]() see how to evaluate using langchain
+refer to [langchain-tutorial](../integrations/langchain.ipynb) see how to evaluate using langchain
 ```
 
 ```{code-block} python
