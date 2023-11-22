@@ -91,7 +91,7 @@ class ContextPrecision(MetricWithLLM):
             for response in grouped_responses:
                 response = [load_as_json(item) for item in sum(response, [])]
                 response = [
-                    int("yes" in resp.get("verdict").lower())
+                    int("yes" in resp.get("verdict", " ").lower())
                     if resp.get("verdict")
                     else np.nan
                     for resp in response
