@@ -82,6 +82,25 @@ def build_query_engine(llm):
 
     query_engine = vector_index.as_query_engine(similarity_top_k=2)
     return query_engine
+
+# Function to evaluate as Llama index does not support async evaluation for HFInference API
+def generate_responses(query_engine, test_questions, test_answers):
+  responses = [query_engine.query(q) for q in test_questions]
+
+  answers = []
+  contexts = []
+  for r in responses:
+    answers.append(r.response)
+    contexts.append([c.node.get_content() for c in r.source_nodes])
+  dataset_dict = {
+        "question": test_questions,
+        "answer": answers,
+        "contexts": contexts,
+  }
+  if test_answers is not None:
+    dataset_dict["ground_truths"] = test_answers
+  ds = Dataset.from_dict(dataset_dict)
+  return ds
 ```
 
 ## Import metrics from ragas
@@ -89,6 +108,8 @@ def build_query_engine(llm):
 Here we are importing metrics that are required to evaluate retriever component.
 
 ```{code-block} python
+from datasets import Dataset
+from ragas import evaluate
 from ragas.metrics import (
     faithfulness,
     answer_relevancy,
@@ -107,26 +128,6 @@ metrics = [
 For the first llm, I will be using HuggingFace [zephyr-7b-alpha](https://huggingface.co/HuggingFaceH4/zephyr-7b-alpha). I am using HuggingFaceInferenceAPI to generate answers using the model. HuggingFaceInferenceAPI is free to use and token can be setup using [HuggingFaceToken](https://huggingface.co/docs/hub/security-tokens).
 
 ```{code-block} python
-# Function to evaluate as Llama index does not support async evaluation for HFInference API
-def generate_responses(query_engine, test_questions, test_answers):
-  responses = [query_engine.query(q) for q in test_questions]
-
-  answers = []
-  contexts = []
-  for r in responses:
-    answers.append(r.response)
-    contexts.append([c.node.get_content() for c in r.source_nodes])
-  dataset_dict = {
-        "question": test_questions,
-        "answer": answers,
-        "contexts": contexts,
-  }
-  if test_answers is not None:
-    dataset_dict["ground_truths"] = test_answers
-  ds = Dataset.from_dict(dataset_dict)
-
-  return ds
-
 # Use zephyr model using HFInference API
 zephyr_llm = HuggingFaceInferenceAPI(
     model_name="HuggingFaceH4/zephyr-7b-alpha",
@@ -195,9 +196,8 @@ result_falcon_df = result.to_pandas()
 analysis(
     result_zephyr_df[['faithfulness', 'answer_relevancy', 'answer_correctness']],
     result_falcon_df[['faithfulness', 'answer_relevancy', 'answer_correctness']]
-)
+) 
 ```
-
 <p align="left">
 <img src="../../_static/imgs/compare-llm-result.png" alt="results" width="800" height="600" />
 </p>
