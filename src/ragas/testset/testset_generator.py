@@ -39,7 +39,8 @@ from ragas.testset.prompts import (
     SCORE_CONTEXT,
     SEED_QUESTION,
 )
-from ragas.testset.utils import load_as_json, load_as_score
+from ragas.testset.utils import load_as_score
+from ragas.utils import load_as_json
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import RagasLLM

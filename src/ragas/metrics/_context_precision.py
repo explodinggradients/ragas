@@ -9,14 +9,28 @@ from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import load_as_json
 
 CONTEXT_PRECISION = HumanMessagePromptTemplate.from_template(
     """\
-Given a question and a context, verify if the information in the given context is useful in answering the question. Return a Yes/No answer.
+Verify if the information in the given context is useful in answering the question.
+
+question: What are the health benefits of green tea?
+context: 
+This article explores the rich history of tea cultivation in China, tracing its roots back to the ancient dynasties. It discusses how different regions have developed their unique tea varieties and brewing techniques. The article also delves into the cultural significance of tea in Chinese society and how it has become a symbol of hospitality and relaxation.
+verification:
+{{"reason":"The context, while informative about the history and cultural significance of tea in China, does not provide specific information about the health benefits of green tea. Thus, it is not useful for answering the question about health benefits.", "verdict":"No"}}
+
+question: How does photosynthesis work in plants?
+context:
+Photosynthesis in plants is a complex process involving multiple steps. This paper details how chlorophyll within the chloroplasts absorbs sunlight, which then drives the chemical reaction converting carbon dioxide and water into glucose and oxygen. It explains the role of light and dark reactions and how ATP and NADPH are produced during these processes.
+verification:
+{{"reason":"This context is extremely relevant and useful for answering the question. It directly addresses the mechanisms of photosynthesis, explaining the key components and processes involved.", "verdict":"Yes"}}
+
 question:{question}
-context:\n{context}
-answer:
-"""  # noqa: E501
+context:
+{context}
+verification:"""  # noqa: E501
 )
 
 
@@ -75,7 +89,13 @@ class ContextPrecision(MetricWithLLM):
             scores = []
 
             for response in grouped_responses:
-                response = [int(any("yes" in r.lower() for r in resp)) for resp in response]
+                response = [load_as_json(item) for item in sum(response, [])]
+                response = [
+                    int("yes" in resp.get("verdict", " ").lower())
+                    if resp.get("verdict")
+                    else np.nan
+                    for resp in response
+                ]
                 denominator = sum(response) + 1e-10
                 numerator = sum(
                     [
