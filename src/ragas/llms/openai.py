@@ -29,7 +29,7 @@ from ragas.async_utils import run_async_tasks
 from ragas.exceptions import AzureOpenAIKeyNotFound, OpenAIKeyNotFound
 from ragas.llms.base import RagasLLM
 from ragas.llms.langchain import _compute_token_usage_langchain
-from ragas.utils import NO_KEY, get_debug_mode
+from ragas.utils import NO_KEY, NO_BASE_URL, get_debug_mode
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -95,7 +95,7 @@ retry_decorator = create_base_retry_decorator(errors, max_retries=4)
 
 
 class OpenAIBase(RagasLLM):
-    def __init__(self, model: str, _api_key_env_var: str, timeout: int = 60) -> None:
+    def __init__(self, model: str, _api_key_env_var: str, _base_url_env_var: str, timeout: int = 60) -> None:
         self.model = model
         self._api_key_env_var = _api_key_env_var
         self.timeout = timeout
@@ -106,6 +106,12 @@ class OpenAIBase(RagasLLM):
             self.api_key = key_from_env
         else:
             self.api_key = self.api_key
+
+        # base url
+        base_url_from_env = os.getenv(self._base_url_env_var, NO_BASE_URL)
+        if base_url_from_env != NO_BASE_URL:
+            self.base_url = base_url_from_env
+
         self._client: AsyncClient
 
     @abstractmethod
@@ -182,13 +188,14 @@ class OpenAI(OpenAIBase):
     model: str = "gpt-3.5-turbo-16k"
     api_key: str = field(default=NO_KEY, repr=False)
     _api_key_env_var: str = "OPENAI_API_KEY"
+    _base_url_env_var: str = "OPENAI_API_BASE"
 
     def __post_init__(self):
-        super().__init__(model=self.model, _api_key_env_var=self._api_key_env_var)
+        super().__init__(model=self.model, _api_key_env_var=self._api_key_env_var, _base_url_env_var=self._base_url_env_var)
         self._client_init()
 
     def _client_init(self):
-        self._client = AsyncOpenAI(api_key=self.api_key, timeout=self.timeout)
+        self._client = AsyncOpenAI(api_key=self.api_key, base_url = self.base_url, timeout=self.timeout)
 
     def validate_api_key(self):
         # before validating, check if the api key is already set
