@@ -131,7 +131,7 @@ class Result(dict):
     def __post_init__(self):
         values = []
         for cn in self.scores.column_names:
-            value = np.mean(self.scores[cn])
+            value = np.nanmean(self.scores[cn])
             self[cn] = value
             if cn not in self.binary_columns:
                 value = t.cast(float, value)

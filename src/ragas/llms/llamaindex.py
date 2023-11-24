@@ -10,7 +10,13 @@ from ragas.llms.base import RagasLLM
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
     from langchain.prompts import ChatPromptTemplate
-    from llama_index.llms.base import LLM as LiLLM
+    try:
+        from llama_index.llms.base import LLM as LiLLM
+    except ImportError:
+        raise ImportError(
+            "llama_index must be installed to use this function. "
+            "Please, install it with `pip install llama_index`."
+        )
 
 
 class LlamaIndexLLM(RagasLLM):
