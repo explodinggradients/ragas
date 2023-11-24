@@ -3,56 +3,107 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass
 
+import numpy as np
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import load_as_json
 
 if t.TYPE_CHECKING:
     from datasets import Dataset
 
-#################
-# NLI Score
-#################
+
 LONG_FORM_ANSWER_PROMPT = HumanMessagePromptTemplate.from_template(
     """\
-Given a question and answer, create one or more statements from each sentence in the given answer.
+Create one or more statements from each sentence in the given answer.
+
 question: Who was  Albert Einstein and what is he best known for?
 answer: He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.
-statements:\nAlbert Einstein was born in Germany.\nAlbert Einstein was best known for his theory of relativity.
+statements in json:
+{{
+    "statements": [
+        "Albert Einstein was born in Germany.",
+        "Albert Einstein was best known for his theory of relativity."
+    ]
+}}
+
 question: Cadmium Chloride is slightly soluble in this chemical, it is also called what?
 answer: alcohol
-statements:\nCadmium Chloride is slightly soluble in alcohol.
+statements in json:
+{{
+    "statements": [
+        "Cadmium Chloride is slightly soluble in alcohol."
+    ]
+}}
+
 question: Were Shahul and Jithin of the same nationality?
 answer: They were from different countries.
-statements:\nShahul and Jithin were from different countries.
+statements in json:
+{{
+    "statements": [
+        "Shahul and Jithin were from different countries."
+    ]
+}}
+
 question:{question}
 answer: {answer}
-statements:\n"""  # noqa: E501
+statements in json:"""  # noqa: E501
 )
 
 
 NLI_STATEMENTS_MESSAGE = HumanMessagePromptTemplate.from_template(
     """
-Prompt: Natural language inference
-Consider the given context and following statements, then determine whether they are supported by the information present in the context.Provide a brief explanation for each statement before arriving at the verdict (Yes/No). Provide a final verdict for each statement in order at the end in the given format. Do not deviate from the specified format.
+ Natural language inference
 
-Context:\nJohn is a student at XYZ University. He is pursuing a degree in Computer Science. He is enrolled in several courses this semester, including Data Structures, Algorithms, and Database Management. John is a diligent student and spends a significant amount of time studying and completing assignments. He often stays late in the library to work on his projects.
-statements:\n1. John is majoring in Biology.\n2. John is taking a course on Artificial Intelligence.\n3. John is a dedicated student.\n4. John has a part-time job.\n5. John is interested in computer programming.\n
+Context:
+John is a student at XYZ University. He is pursuing a degree in Computer Science. He is enrolled in several courses this semester, including Data Structures, Algorithms, and Database Management. John is a diligent student and spends a significant amount of time studying and completing assignments. He often stays late in the library to work on his projects.
+statement_1: John is majoring in Biology.
+statement_2: John is taking a course on Artificial Intelligence. 
+statement_3: John is a dedicated student. 
+statement_4: John has a part-time job.
 Answer:
-1. John is majoring in Biology.
-Explanation: John's major is explicitly mentioned as Computer Science. There is no information suggesting he is majoring in Biology.  Verdict: No.
-2. John is taking a course on Artificial Intelligence.
-Explanation: The context mentions the courses John is currently enrolled in, and Artificial Intelligence is not mentioned. Therefore, it cannot be deduced that John is taking a course on AI. Verdict: No.
-3. John is a dedicated student.
-Explanation: The prompt states that he spends a significant amount of time studying and completing assignments. Additionally, it mentions that he often stays late in the library to work on his projects, which implies dedication. Verdict: Yes.
-4. John has a part-time job.
-Explanation: There is no information given in the context about John having a part-time job. Therefore, it cannot be deduced that John has a part-time job.  Verdict: No.
-5. John is interested in computer programming.
-Explanation: The context states that John is pursuing a degree in Computer Science, which implies an interest in computer programming. Verdict: Yes.
-Final verdict for each statement in order: No. No. Yes. No. Yes.
-context:\n{context}
-statements:\n{statements}
+[
+    {{
+        "statement_1": "John is majoring in Biology.",
+        "reason": "John's major is explicitly mentioned as Computer Science. There is no information suggesting he is majoring in Biology.",
+        "verdict": "No"
+    }},
+    {{
+        "statement_2": "John is taking a course on Artificial Intelligence.",
+        "reason": "The context mentions the courses John is currently enrolled in, and Artificial Intelligence is not mentioned. Therefore, it cannot be deduced that John is taking a course on AI.",
+        "verdict": "No"
+    }},
+    {{
+        "statement_3": "John is a dedicated student.",
+        "reason": "The context states that he spends a significant amount of time studying and completing assignments. Additionally, it mentions that he often stays late in the library to work on his projects, which implies dedication.",
+        "verdict": "Yes"
+    }},
+    {{
+        "statement_4": "John has a part-time job.",
+        "reason": "There is no information given in the context about John having a part-time job.",
+        "verdict": "No"
+    }}
+]
+
+Context:
+Photosynthesis is a process used by plants, algae, and certain bacteria to convert light energy into chemical energy.
+statement_1: Answer not found in given context
+Answer:
+[
+     {{
+        "statement_4": "Answer not found in given context",
+        "reason": "The context does not provide enough information to determine the validity of the statement."
+        "verdict": "NULL"
+    }}
+]
+
+
+
+context:
+{context}
+statements:
+{statements}
 Answer:
 """  # noqa: E501
 )
@@ -84,18 +135,13 @@ class Faithfulness(MetricWithLLM):
                 human_prompt = LONG_FORM_ANSWER_PROMPT.format(question=q, answer=a)
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
-
             result = self.llm.generate(prompts, callbacks=batch_group)
-            list_statements: list[list[str]] = []
-            for output in result.generations:
-                # use only the first generation for each prompt
-                statements = output[0].text.split("\n")
-                list_statements.append(statements)
 
             prompts = []
-            for context, statements in zip(contexts, list_statements):
+            for context, output in zip(contexts, result.generations):
+                statements = load_as_json(output[0].text).get("statements", [])
                 statements_str: str = "\n".join(
-                    [f"{i+1}.{st}" for i, st in enumerate(statements)]
+                    [f"statement_{i+1}: {st}" for i, st in enumerate(statements)]
                 )
                 contexts_str: str = "\n".join(context)
                 human_prompt = NLI_STATEMENTS_MESSAGE.format(
@@ -105,26 +151,21 @@ class Faithfulness(MetricWithLLM):
 
             result = self.llm.generate(prompts, callbacks=batch_group)
             outputs = result.generations
-
+            verdict_score_map = {"yes": 1, "no": 0, "null": np.nan}
             scores = []
-            final_answer = "Final verdict for each statement in order:"
-            final_answer = final_answer.lower()
-            for i, output in enumerate(outputs):
-                output = output[0].text.lower().strip()
-                if final_answer in output:
-                    output = output[output.find(final_answer) + len(final_answer) :]
-                    score = sum(
-                        0 if "yes" in answer else 1
-                        for answer in output.strip().split(".")
-                        if answer != ""
-                    )
-                    score = score / len(list_statements[i])
+            for output in outputs:
+                output = load_as_json(output[0].text)
+                output = output if output else []
+                faithful_statements = sum(
+                    verdict_score_map.get(dict.get("verdict", "").lower(), np.nan)
+                    for dict in output
+                )
+                num_statements = len(output)
+                if num_statements:
+                    score = faithful_statements / num_statements
                 else:
-                    score = max(0, output.count("verdict: no")) / len(
-                        list_statements[i]
-                    )
-
-                scores.append(1 - score)
+                    score = np.nan
+                scores.append(score)
 
         return scores
 
