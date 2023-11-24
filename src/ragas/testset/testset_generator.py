@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 import warnings
+from enum import Enum
 from collections import defaultdict, namedtuple
 from dataclasses import dataclass
 
@@ -27,18 +28,7 @@ from numpy.random import default_rng
 from tqdm import tqdm
 
 from ragas.llms import llm_factory
-from ragas.testset.prompts import (
-    ANSWER_FORMULATE,
-    COMPRESS_QUESTION,
-    CONDITIONAL_QUESTION,
-    CONTEXT_FORMULATE,
-    CONVERSATION_QUESTION,
-    FILTER_QUESTION,
-    MULTICONTEXT_QUESTION,
-    REASONING_QUESTION,
-    SCORE_CONTEXT,
-    SEED_QUESTION,
-)
+from ragas.testset.prompts import Prompts
 from ragas.testset.utils import load_as_score
 from ragas.utils import load_as_json
 
@@ -113,6 +103,7 @@ class TestsetGenerator:
         critic_llm: RagasLLM,
         embeddings_model: Embeddings,
         testset_distribution: t.Optional[t.Dict[str, float]] = None,
+        testset_prompts: t.Optional[Enum] = None,
         chat_qa: float = 0.0,
         chunk_size: int = 1024,
         seed: int = 42,
@@ -130,6 +121,8 @@ class TestsetGenerator:
         probs = np.cumsum(list(testset_distribution.values()))
         types = testset_distribution.keys()
         self.testset_distribution = dict(zip(types, probs))
+
+        self.testset_prompts = testset_prompts or Prompts
 
         self.chat_qa = chat_qa
         self.chunk_size = chunk_size
@@ -178,7 +171,7 @@ class TestsetGenerator:
 
         Checks if the context is has information worthy of framing a question
         """
-        human_prompt = SCORE_CONTEXT.format(context=context)
+        human_prompt = self.testset_prompts.SCORE_CONTEXT.format(context=context)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
         results = self.critic_llm.generate(prompts=[prompt])
         output = results.generations[0][0].text.strip()
@@ -186,13 +179,13 @@ class TestsetGenerator:
         return score >= self.threshold
 
     def _seed_question(self, context: str) -> str:
-        human_prompt = SEED_QUESTION.format(context=context)
+        human_prompt = self.testset_prompts.SEED_QUESTION.format(context=context)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
         results = self.generator_llm.generate(prompts=[prompt])
         return results.generations[0][0].text.strip()
 
     def _filter_question(self, question: str) -> bool:
-        human_prompt = FILTER_QUESTION.format(question=question)
+        human_prompt = self.testset_prompts.FILTER_QUESTION.format(question=question)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
 
         results = self.critic_llm.generate(prompts=[prompt])
@@ -201,15 +194,15 @@ class TestsetGenerator:
         return json_results.get("verdict") != "No"
 
     def _reasoning_question(self, question: str, context: str) -> str:
-        return self._qc_template(REASONING_QUESTION, question, context)
+        return self._qc_template(self.testset_prompts.REASONING_QUESTION, question, context)
 
     def _condition_question(self, question: str, context: str) -> str:
-        return self._qc_template(CONDITIONAL_QUESTION, question, context)
+        return self._qc_template(self.testset_prompts.CONDITIONAL_QUESTION, question, context)
 
     def _multicontext_question(
         self, question: str, context1: str, context2: str
     ) -> str:
-        human_prompt = MULTICONTEXT_QUESTION.format(
+        human_prompt = self.testset_prompts.MULTICONTEXT_QUESTION.format(
             question=question, context1=context1, context2=context2
         )
         prompt = ChatPromptTemplate.from_messages([human_prompt])
@@ -217,10 +210,10 @@ class TestsetGenerator:
         return results.generations[0][0].text.strip()
 
     def _compress_question(self, question: str) -> str:
-        return self._question_transformation(COMPRESS_QUESTION, question=question)
+        return self._question_transformation(self.testset_prompts.COMPRESS_QUESTION, question=question)
 
     def _conversational_question(self, question: str) -> str:
-        return self._question_transformation(CONVERSATION_QUESTION, question=question)
+        return self._question_transformation(self.testset_prompts.CONVERSATION_QUESTION, question=question)
 
     def _question_transformation(self, prompt, question: str) -> str:
         human_prompt = prompt.format(question=question)
@@ -236,13 +229,13 @@ class TestsetGenerator:
 
     def _generate_answer(self, question: str, context: t.List[str]) -> t.List[str]:
         return [
-            self._qc_template(ANSWER_FORMULATE, qstn, context[i])
+            self._qc_template(self.testset_prompts.ANSWER_FORMULATE, qstn, context[i])
             for i, qstn in enumerate(question.split("\n"))
         ]
 
     def _generate_context(self, question: str, text_chunk: str) -> t.List[str]:
         return [
-            self._qc_template(CONTEXT_FORMULATE, qstn, text_chunk)
+            self._qc_template(self.testset_prompts.CONTEXT_FORMULATE, qstn, text_chunk)
             for qstn in question.split("\n")
         ]
 
