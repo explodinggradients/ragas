@@ -40,7 +40,8 @@ def evaluate(
     column_map : dict[str, str], optional
         The column names of the dataset to use for evaluation. If the column names of
         the dataset are different from the default ones then you can provide the
-        mapping as a dictionary here.
+        mapping as a dictionary here. Example: If the dataset column name is contexts_v1, 
+        column_map can be given as {"contexts":"contexts_v1"}
 
     Returns
     -------
