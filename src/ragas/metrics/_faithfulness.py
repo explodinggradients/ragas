@@ -102,7 +102,7 @@ statement_1: Nil
 Answer:
 [
      {{
-        "statement_4": "Nil",
+        "statement_1": "Nil",
         "reason": "The statement is invalid",
         "verdict": "No"
     }}
