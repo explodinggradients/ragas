@@ -91,11 +91,22 @@ Answer:
 [
      {{
         "statement_4": "Albert Einstein was a genius.",
-        "reason": "The context and statement are unrelated"
+        "reason": "The context and statement are unrelated",
         "verdict": "No"
     }}
 ]
 
+Context:
+Albert Einstein was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time.
+statement_1: Nil
+Answer:
+[
+     {{
+        "statement_4": "Nil",
+        "reason": "The statement is invalid",
+        "verdict": "No"
+    }}
+]
 
 
 context:
@@ -138,6 +149,7 @@ class Faithfulness(MetricWithLLM):
             prompts = []
             for context, output in zip(contexts, result.generations):
                 statements = load_as_json(output[0].text).get("statements", [])
+                statements = statements if statements != [] else ["Nil"]
                 statements_str: str = "\n".join(
                     [f"statement_{i+1}: {st}" for i, st in enumerate(statements)]
                 )
