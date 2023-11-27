@@ -73,7 +73,7 @@ class AnswerCorrectness(MetricWithLLM):
     name: str = "answer_correctness"
     evaluation_mode: EvaluationMode = EvaluationMode.qga
     batch_size: int = 15
-    weights: list[float] = field(default_factory=lambda: [0.5, 0.5])
+    weights: list[float] = field(default_factory=lambda: [0.75, 0.25])
     answer_similarity: AnswerSimilarity | None = None
 
     def __post_init__(self: t.Self):
@@ -128,8 +128,6 @@ class AnswerCorrectness(MetricWithLLM):
 
         similarity_scores = self.answer_similarity._score_batch(dataset)  # type: ignore
         scores_stacked = np.vstack([f1_score, similarity_scores])
-        print("faith", f1_score)
-        print("sim", similarity_scores)
         scores = np.average(
             scores_stacked,
             axis=0,
