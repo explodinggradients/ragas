@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import typing as t
 from dataclasses import dataclass
 
@@ -10,6 +9,7 @@ from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import load_as_json
 
 CONTEXT_RECALL_RA = HumanMessagePromptTemplate.from_template(
     """
@@ -114,10 +114,8 @@ class ContextRecall(MetricWithLLM):
             responses = [[i.text for i in r] for r in results.generations]
             scores = []
             for response in responses:
-                pattern = "\[\s*\{.*?\}(\s*,\s*\{.*?\})*\s*\]"
-                match = re.search(pattern, response[0].replace("\n", ""))
-                if match:
-                    response = eval(response[0])
+                response = load_as_json(response[0])
+                if response:
                     denom = len(response)
                     numerator = sum(
                         item.get("Attributed").lower() == "yes" for item in response
