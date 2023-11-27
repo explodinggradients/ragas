@@ -90,7 +90,7 @@ statement_1: Albert Einstein was a genius.
 Answer:
 [
      {{
-        "statement_4": "Albert Einstein was a genius.",
+        "statement_1": "Albert Einstein was a genius.",
         "reason": "The context and statement are unrelated"
         "verdict": "No"
     }}
