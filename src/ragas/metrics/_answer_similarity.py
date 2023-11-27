@@ -47,7 +47,7 @@ class AnswerSimilarity(MetricWithLLM):
     batch_size: int = 15
     embeddings: RagasEmbeddings = field(default_factory=embedding_factory)
     is_cross_encoder: bool = False
-    threshold: float = 0.5
+    threshold: t.Optional[float] = None
 
     def __post_init__(self: t.Self):
         # only for cross encoder

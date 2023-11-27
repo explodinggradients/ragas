@@ -37,13 +37,11 @@ statements in json:
     ]
 }}
 
-question: Were Shahul and Jithin of the same nationality?
-answer: They were from different countries.
+question: Were Hitler and Benito Mussolini of the same nationality?
+answer: Sorry, I can't provide answer to that question.
 statements in json:
 {{
-    "statements": [
-        "Shahul and Jithin were from different countries."
-    ]
+    "statements": []
 }}
 
 question:{question}
@@ -54,7 +52,7 @@ statements in json:"""  # noqa: E501
 
 NLI_STATEMENTS_MESSAGE = HumanMessagePromptTemplate.from_template(
     """
- Natural language inference
+ Natural language inference. Only use "Yes" or "No" as verdict.
 
 Context:
 John is a student at XYZ University. He is pursuing a degree in Computer Science. He is enrolled in several courses this semester, including Data Structures, Algorithms, and Database Management. John is a diligent student and spends a significant amount of time studying and completing assignments. He often stays late in the library to work on his projects.
@@ -88,16 +86,27 @@ Answer:
 
 Context:
 Photosynthesis is a process used by plants, algae, and certain bacteria to convert light energy into chemical energy.
-statement_1: Answer not found in given context
+statement_1: Albert Einstein was a genius.
 Answer:
 [
      {{
-        "statement_4": "Answer not found in given context",
-        "reason": "The context does not provide enough information to determine the validity of the statement."
-        "verdict": "NULL"
+        "statement_1": "Albert Einstein was a genius.",
+        "reason": "The context and statement are unrelated"
+        "verdict": "No"
     }}
 ]
 
+Context:
+Albert Einstein was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time.
+statement_1: Nil
+Answer:
+[
+     {{
+        "statement_1": "Nil",
+        "reason": "The statement is invalid",
+        "verdict": "No"
+    }}
+]
 
 
 context:
@@ -140,6 +149,7 @@ class Faithfulness(MetricWithLLM):
             prompts = []
             for context, output in zip(contexts, result.generations):
                 statements = load_as_json(output[0].text).get("statements", [])
+                statements = statements if statements != [] else ["Nil"]
                 statements_str: str = "\n".join(
                     [f"statement_{i+1}: {st}" for i, st in enumerate(statements)]
                 )
