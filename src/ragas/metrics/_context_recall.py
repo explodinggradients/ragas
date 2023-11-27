@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import typing as t
 from dataclasses import dataclass
-from ragas.utils import load_as_json
 
 import numpy as np
 from datasets import Dataset
