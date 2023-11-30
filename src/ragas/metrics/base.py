@@ -118,7 +118,8 @@ class MetricWithLLM(Metric):
         to load all the models
         Also check if the api key is valid for OpenAI and AzureOpenAI
         """
-        self.llm.validate_api_key()
+        if hasattr(self.llm, "validate_api_key"):
+            self.llm.validate_api_key()
         if hasattr(self, "embeddings"):
             # since we are using Langchain Embeddings directly, we need to check this
             if hasattr(self.embeddings, "validate_api_key"):
