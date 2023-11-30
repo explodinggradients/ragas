@@ -1,5 +1,7 @@
 from enum import Enum
+
 from langchain.prompts import HumanMessagePromptTemplate
+
 
 class Prompts(Enum):
     SEED_QUESTION = HumanMessagePromptTemplate.from_template(
@@ -18,7 +20,6 @@ class Prompts(Enum):
     context:{context}
     """  # noqa: E501
     )
-
 
     REASONING_QUESTION = HumanMessagePromptTemplate.from_template(
         """\
@@ -65,7 +66,6 @@ class Prompts(Enum):
     """  # noqa: E501
     )
 
-
     CONDITIONAL_QUESTION = HumanMessagePromptTemplate.from_template(
         """\
     Rewrite the provided question to increase its complexity by introducing a conditional element.
@@ -85,7 +85,6 @@ class Prompts(Enum):
     """  # noqa: E501
     )
 
-
     COMPRESS_QUESTION = HumanMessagePromptTemplate.from_template(
         """\
     Rewrite the following question to make it more indirect and shorter while retaining the essence of the original question. The goal is to create a question that conveys the same meaning but in a less direct manner.
@@ -96,7 +95,6 @@ class Prompts(Enum):
     Indirectly Rewritten Question:
     """  # noqa: E501
     )
-
 
     CONVERSATION_QUESTION = HumanMessagePromptTemplate.from_template(
         """\
@@ -128,7 +126,6 @@ class Prompts(Enum):
     question:{question}
     """  # noqa: E501
     )
-
 
     ANSWER_FORMULATE = HumanMessagePromptTemplate.from_template(
         """\

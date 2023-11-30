@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import typing as t
 import warnings
-from enum import Enum
 from collections import defaultdict, namedtuple
 from dataclasses import dataclass
 
@@ -48,7 +47,16 @@ question_deep_map = {
     "conditional": "_condition_question",
 }
 
-DataRow = namedtuple("DataRow", ["question", "ground_truth_context", "ground_truth", "question_type", "episode_done"])
+DataRow = namedtuple(
+    "DataRow",
+    [
+        "question",
+        "ground_truth_context",
+        "ground_truth",
+        "question_type",
+        "episode_done",
+    ],
+)
 
 
 @dataclass
@@ -63,11 +71,11 @@ class TestDataset:
         data_samples = []
         for data in self.test_data:
             data = {
-                    "question": data.question,
-                    "ground_truth_context": data.ground_truth_context,
-                    "ground_truth": data.ground_truth,
-                    "question_type": data.question_type,
-                    "episode_done": data.episode_done,
+                "question": data.question,
+                "ground_truth_context": data.ground_truth_context,
+                "ground_truth": data.ground_truth,
+                "question_type": data.question_type,
+                "episode_done": data.episode_done,
             }
             data_samples.append(data)
 
@@ -103,7 +111,7 @@ class TestsetGenerator:
         critic_llm: RagasLLM,
         embeddings_model: Embeddings,
         testset_distribution: t.Optional[t.Dict[str, float]] = None,
-        testset_prompts: t.Optional[Enum] = None,
+        testset_prompts: t.Optional[Prompts] = None,
         chat_qa: float = 0.0,
         chunk_size: int = 1024,
         seed: int = 42,
@@ -185,7 +193,9 @@ class TestsetGenerator:
         return results.generations[0][0].text.strip()
 
     def _filter_question(self, question: str) -> bool:
-        human_prompt = self.testset_prompts.FILTER_QUESTION.value.format(question=question)
+        human_prompt = self.testset_prompts.FILTER_QUESTION.value.format(
+            question=question
+        )
         prompt = ChatPromptTemplate.from_messages([human_prompt])
 
         results = self.critic_llm.generate(prompts=[prompt])
@@ -194,10 +204,14 @@ class TestsetGenerator:
         return json_results.get("verdict") != "No"
 
     def _reasoning_question(self, question: str, context: str) -> str:
-        return self._qc_template(self.testset_prompts.REASONING_QUESTION.value, question, context)
+        return self._qc_template(
+            self.testset_prompts.REASONING_QUESTION.value, question, context
+        )
 
     def _condition_question(self, question: str, context: str) -> str:
-        return self._qc_template(self.testset_prompts.CONDITIONAL_QUESTION.value, question, context)
+        return self._qc_template(
+            self.testset_prompts.CONDITIONAL_QUESTION.value, question, context
+        )
 
     def _multicontext_question(
         self, question: str, context1: str, context2: str
@@ -210,10 +224,14 @@ class TestsetGenerator:
         return results.generations[0][0].text.strip()
 
     def _compress_question(self, question: str) -> str:
-        return self._question_transformation(self.testset_prompts.COMPRESS_QUESTION.value, question=question)
+        return self._question_transformation(
+            self.testset_prompts.COMPRESS_QUESTION.value, question=question
+        )
 
     def _conversational_question(self, question: str) -> str:
-        return self._question_transformation(self.testset_prompts.CONVERSATION_QUESTION.value, question=question)
+        return self._question_transformation(
+            self.testset_prompts.CONVERSATION_QUESTION.value, question=question
+        )
 
     def _question_transformation(self, prompt, question: str) -> str:
         human_prompt = prompt.format(question=question)
@@ -229,13 +247,17 @@ class TestsetGenerator:
 
     def _generate_answer(self, question: str, context: t.List[str]) -> t.List[str]:
         return [
-            self._qc_template(self.testset_prompts.ANSWER_FORMULATE.value, qstn, context[i])
+            self._qc_template(
+                self.testset_prompts.ANSWER_FORMULATE.value, qstn, context[i]
+            )
             for i, qstn in enumerate(question.split("\n"))
         ]
 
     def _generate_context(self, question: str, text_chunk: str) -> t.List[str]:
         return [
-            self._qc_template(self.testset_prompts.CONTEXT_FORMULATE.value, qstn, text_chunk)
+            self._qc_template(
+                self.testset_prompts.CONTEXT_FORMULATE.value, qstn, text_chunk
+            )
             for qstn in question.split("\n")
         ]
 
@@ -387,11 +409,13 @@ class TestsetGenerator:
                 context = self._generate_context(question, text_chunk)
                 is_conv = len(context) > 1
                 answer = self._generate_answer(question, context)
-                for i, (qstn, ctx, ans) in enumerate(zip(question.split("\n"), context, answer)):
-                    episode_done = False if is_conv and i==0 else True
+                for i, (qstn, ctx, ans) in enumerate(
+                    zip(question.split("\n"), context, answer)
+                ):
+                    episode_done = False if is_conv and i == 0 else True
                     samples.append(
-                            DataRow(qstn, [ctx], [ans], evolve_type, episode_done)
-                        )
+                        DataRow(qstn, [ctx], [ans], evolve_type, episode_done)
+                    )
                 count += 1
                 pbar.update(count)
 
