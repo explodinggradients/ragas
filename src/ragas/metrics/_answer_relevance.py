@@ -89,8 +89,11 @@ class AnswerRelevancy(MetricWithLLM):
 
             scores = []
             for question, gen_questions in zip(questions, results):
-                cosine_sim = self.calculate_similarity(question, gen_questions)
-                scores.append(cosine_sim.mean())
+                if question is not None and question != "" and len(gen_questions) > 0:
+                    cosine_sim = self.calculate_similarity(question, gen_questions)
+                    scores.append(cosine_sim.mean())
+                else:
+                    scores.append(0.0)
 
         return scores
 

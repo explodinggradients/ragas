@@ -4,7 +4,7 @@ import typing as t
 
 from langchain.chat_models import AzureChatOpenAI, BedrockChat, ChatOpenAI, ChatVertexAI
 from langchain.chat_models.base import BaseChatModel
-from langchain.llms import AzureOpenAI, Bedrock, OpenAI, VertexAI
+from langchain.llms import AmazonAPIGateway, AzureOpenAI, Bedrock, OpenAI, VertexAI
 from langchain.llms.base import BaseLLM
 from langchain.schema import LLMResult
 
@@ -24,6 +24,9 @@ def isOpenAI(llm: BaseLLM | BaseChatModel) -> bool:
 
 def isBedrock(llm: BaseLLM | BaseChatModel) -> bool:
     return isinstance(llm, Bedrock) or isinstance(llm, BedrockChat)
+
+def isAmazonAPIGateway(llm: BaseLLM | BaseChatModel) -> bool:
+    return isinstance(llm, AmazonAPIGateway)
 
 
 # have to specify it twice for runtime and static checks
@@ -194,6 +197,8 @@ class LangchainLLM(RagasLLM):
         # set temperature to 0.2 for multiple completions
         temperature = 0.2 if n > 1 else 1e-8
         if isBedrock(self.llm) and ("model_kwargs" in self.llm.__dict__):
+            self.llm.model_kwargs = {"temperature": temperature}
+        elif isAmazonAPIGateway(self.llm) and ("model_kwargs" in self.llm.__dict__):
             self.llm.model_kwargs = {"temperature": temperature}
         else:
             self.llm.temperature = temperature
