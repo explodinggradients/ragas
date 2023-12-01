@@ -5,6 +5,7 @@ Generate two questions from given context satisfying the rules given below:
     2.The question should be framed such that it must be clearly understood without providing context.
     3.The question should be fully answerable from information present in given context.
     
+
 {demonstration}
 
 
@@ -238,19 +239,49 @@ Rewritten question:
 
 FILTER_QUESTION = HumanMessagePromptTemplate.from_template(
     """\
-Determine if the given question can be understood without extra information.
+Classify given question
+
+question: What is the discovery about space?
+{{
+    "reason":"The question is too vague and does not specify which discovery about space it is referring to."
+    "verdit":"No"
+}}
+
+question: What caused the Great Depression?
+{{
+    "reason":"The question is specific and refers to a well-known historical economic event, making it clear and answerable.",
+    "verdict":"Yes"
+}}
 
 question: What is the keyword that best describes the paper's focus in natural language understanding tasks?
-Answer: {{"reason":"The question mentions a 'paper' in it which makes it unclear without it", "verdict": "No"}}
+{{
+  "reason": "The question mentions a 'paper' in it without referring it's name which makes it unclear without it",
+  "verdict": "No"
+}}
 question: Who wrote 'Romeo and Juliet'?
-Answer: {{"reason": "The question is clear", "verdict": "Yes"}}
+{{
+  "reason": "The question is clear and refers to a specific work by name therefore it is clear",
+  "verdict": "Yes"
+}}
 question: What did the study mention?
-Answer: {{"reason": "The question can be understood without additional context", "verdict": "Yes"}}
-question: What is the focus of the RETA-LLM toolkit?
-Answer: {{"reason": "The question can be understood without additional context", "verdict": "Yes"}}
+{{
+  "reason": "The question is vague and does not specify which study it is referring to",
+  "verdict": "No"
+}}
+question: What is the focus of the REPLUG paper?
+{{
+    "reason": "The question refers to a specific work by it's name hence can be understood", 
+    "verdict": "Yes"
+}}
 
-question: {question}
-Answer:"""  # noqa: E501
+question: What is the purpose of the reward-driven stage in the training process?
+{{
+"reason": "The question lacks specific context regarding the type of training process, making it potentially ambiguous and open to multiple interpretations.",
+"verdict": "No"
+}}
+
+
+question: {question}"""  # noqa: E501
 )
 
 EVOLUTION_ELIMINATION = HumanMessagePromptTemplate.from_template(
