@@ -83,6 +83,17 @@ class TestDataset:
 
         return pd.DataFrame.from_records(data_samples)
 
+    def concat(self, other: TestDataset) -> TestDataset:
+        if not isinstance(other, TestDataset):
+            raise ValueError("other must be of type TestDataset")
+        return TestDataset(test_data=self.test_data + other.test_data)
+
+    def __len__(self) -> int:
+        return len(self.test_data)
+
+    def __getitem__(self, index: int) -> DataRow:
+        return self.test_data[index]
+
 
 class TestsetGenerator:
 
@@ -309,7 +320,7 @@ class TestsetGenerator:
         # maximum 1 seed question per node
         if test_size > len(document_nodes):
             raise ValueError(
-                """Maximum possible number of samples exceeded, 
+                """Maximum possible number of samples exceeded,
                              reduce test_size or add more documents"""
             )
 
