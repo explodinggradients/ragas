@@ -1,9 +1,7 @@
-from enum import Enum
-
 from langchain.prompts import HumanMessagePromptTemplate
 
 
-class Prompts(Enum):
+class Prompts():
     SEED_QUESTION = HumanMessagePromptTemplate.from_template(
         """\
     Your task is to formulate a question from given context satisfying the rules given below:
