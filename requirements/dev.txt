@@ -2,7 +2,7 @@ rich
 ruff
 isort
 black[jupyter]
-pyright
+pyright==1.1.338
 llama_index
 notebook
 sphinx-autobuild

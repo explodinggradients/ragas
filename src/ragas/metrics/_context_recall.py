@@ -116,10 +116,14 @@ class ContextRecall(MetricWithLLM):
             for response in responses:
                 response = load_as_json(response[0])
                 if response:
+                    response = [
+                        int(item.get("Attributed", "").lower() == "yes")
+                        if item.get("Attributed")
+                        else np.nan
+                        for item in response
+                    ]
                     denom = len(response)
-                    numerator = sum(
-                        item.get("Attributed").lower() == "yes" for item in response
-                    )
+                    numerator = sum(response)
                     scores.append(numerator / denom)
                 else:
                     scores.append(np.nan)
