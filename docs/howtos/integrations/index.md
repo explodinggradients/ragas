@@ -10,4 +10,5 @@ llamaindex.ipynb
 langchain.ipynb
 langsmith.ipynb
 langfuse.ipynb
+zeno.ipynb
 :::
