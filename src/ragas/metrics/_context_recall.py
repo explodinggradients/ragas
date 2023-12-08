@@ -9,7 +9,7 @@ from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.utils import load_as_json
+from ragas.utils import json_loader
 
 CONTEXT_RECALL_RA = HumanMessagePromptTemplate.from_template(
     """
@@ -114,7 +114,7 @@ class ContextRecall(MetricWithLLM):
             responses = [[i.text for i in r] for r in results.generations]
             scores = []
             for response in responses:
-                response = load_as_json(response[0])
+                response = json_loader.safe_load(response[0], self.llm)
                 if response:
                     denom = len(response)
                     numerator = sum(

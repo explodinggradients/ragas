@@ -9,7 +9,7 @@ from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.utils import load_as_json
+from ragas.utils import json_loader
 
 CONTEXT_PRECISION = HumanMessagePromptTemplate.from_template(
     """\
@@ -89,7 +89,9 @@ class ContextPrecision(MetricWithLLM):
             scores = []
 
             for response in grouped_responses:
-                response = [load_as_json(item) for item in sum(response, [])]
+                response = [
+                    json_loader.safe_load(item, self.llm) for item in sum(response, [])
+                ]
                 response = [
                     int("yes" in resp.get("verdict", " ").lower())
                     if resp.get("verdict")
