@@ -25,6 +25,7 @@ def isOpenAI(llm: BaseLLM | BaseChatModel) -> bool:
 def isBedrock(llm: BaseLLM | BaseChatModel) -> bool:
     return isinstance(llm, Bedrock) or isinstance(llm, BedrockChat)
 
+
 def isAmazonAPIGateway(llm: BaseLLM | BaseChatModel) -> bool:
     return isinstance(llm, AmazonAPIGateway)
 
