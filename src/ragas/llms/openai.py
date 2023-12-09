@@ -109,7 +109,7 @@ class OpenAIBase(RagasLLM):
         self._client: AsyncClient
 
     @abstractmethod
-    def _client_init(self) -> AsyncClient:
+    def _client_init(self):
         ...
 
     @property

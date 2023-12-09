@@ -77,7 +77,7 @@ class LangchainLLM(RagasLLM):
         self.langchain_llm = llm
 
     @property
-    def llm(self):
+    def llm(self) -> BaseLLM | BaseChatModel:
         return self.langchain_llm
 
     def validate_api_key(self):
@@ -140,6 +140,7 @@ class LangchainLLM(RagasLLM):
         self,
         prompt: ChatPromptTemplate,
         n: int = 1,
+        temperature: float = 1e-8,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
         temperature = 0.2 if n > 1 else 0

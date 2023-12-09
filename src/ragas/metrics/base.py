@@ -58,7 +58,7 @@ class Metric(ABC):
         ...
 
     @abstractmethod
-    def init_model():
+    def init_model(self):
         """
         This method will lazy initialize the model.
         """

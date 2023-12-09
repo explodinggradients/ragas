@@ -12,6 +12,7 @@ from ragas.utils import load_as_json
 
 if t.TYPE_CHECKING:
     from datasets import Dataset
+    from langchain.callbacks.base import Callbacks
 
 
 LONG_FORM_ANSWER_PROMPT = HumanMessagePromptTemplate.from_template(
@@ -120,25 +121,30 @@ Answer:
 
 @dataclass
 class Faithfulness(MetricWithLLM):
-    name: str = "faithfulness"
-    evaluation_mode: EvaluationMode = EvaluationMode.qac
+    name: str = "faithfulness"  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
     batch_size: int = 15
 
     def _score_batch(
         self: t.Self,
-        ds: Dataset,
-        callbacks: t.Optional[CallbackManager] = None,
+        dataset: Dataset,
+        callbacks: t.Optional[Callbacks] = None,
         callback_group_name: str = "batch",
     ) -> list[float]:
         """
         returns the NLI score for each (q, c, a) pair
         """
 
-        question, answer, contexts = ds["question"], ds["answer"], ds["contexts"]
+        question, answer, contexts = (
+            dataset["question"],
+            dataset["answer"],
+            dataset["contexts"],
+        )
         prompts = []
 
+        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
         with trace_as_chain_group(
-            callback_group_name, callback_manager=callbacks
+            callback_group_name, callback_manager=cb
         ) as batch_group:
             for q, a in zip(question, answer):
                 human_prompt = LONG_FORM_ANSWER_PROMPT.format(question=q, answer=a)

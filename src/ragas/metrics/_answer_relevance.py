@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import Dataset
-from langchain.callbacks.manager import trace_as_chain_group
+from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
@@ -15,7 +15,7 @@ from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import load_as_json
 
 if t.TYPE_CHECKING:
-    from langchain.callbacks.manager import CallbackManager
+    from langchain.callbacks.base import Callbacks
 
     from ragas.embeddings.base import RagasEmbeddings
 
@@ -86,8 +86,8 @@ class AnswerRelevancy(MetricWithLLM):
         E.g. HuggingFaceEmbeddings('BAAI/bge-base-en')
     """
 
-    name: str = "answer_relevancy"
-    evaluation_mode: EvaluationMode = EvaluationMode.qac
+    name: str = "answer_relevancy"  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
     batch_size: int = 15
     strictness: int = 3
     embeddings: RagasEmbeddings = field(default_factory=embedding_factory)
@@ -102,7 +102,7 @@ class AnswerRelevancy(MetricWithLLM):
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
-        callbacks: t.Optional[CallbackManager] = None,
+        callbacks: t.Optional[Callbacks] = None,
         callback_group_name: str = "batch",
     ) -> list[float]:
         questions, answers, contexts = (
@@ -110,8 +110,10 @@ class AnswerRelevancy(MetricWithLLM):
             dataset["answer"],
             dataset["contexts"],
         )
+
+        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
         with trace_as_chain_group(
-            callback_group_name, callback_manager=callbacks
+            callback_group_name, callback_manager=cb
         ) as batch_group:
             prompts = []
             for ans, ctx in zip(answers, contexts):
