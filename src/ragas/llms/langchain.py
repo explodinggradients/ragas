@@ -25,6 +25,7 @@ def isOpenAI(llm: BaseLLM | BaseChatModel) -> bool:
 def isBedrock(llm: BaseLLM | BaseChatModel) -> bool:
     return isinstance(llm, Bedrock) or isinstance(llm, BedrockChat)
 
+
 def isAmazonAPIGateway(llm: BaseLLM | BaseChatModel) -> bool:
     return isinstance(llm, AmazonAPIGateway)
 
@@ -76,7 +77,7 @@ class LangchainLLM(RagasLLM):
         self.langchain_llm = llm
 
     @property
-    def llm(self):
+    def llm(self) -> BaseLLM | BaseChatModel:
         return self.langchain_llm
 
     def validate_api_key(self):
@@ -139,6 +140,7 @@ class LangchainLLM(RagasLLM):
         self,
         prompt: ChatPromptTemplate,
         n: int = 1,
+        temperature: float = 1e-8,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
         temperature = 0.2 if n > 1 else 0

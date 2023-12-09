@@ -9,11 +9,9 @@ def remap_column_names(dataset: Dataset, column_map: dict[str, str]) -> Dataset:
     """
     Remap the column names in case dataset uses different column names
     """
-    
+
     inverse_column_map = {v: k for k, v in column_map.items()}
-    return dataset.rename_columns(
-        inverse_column_map
-    )
+    return dataset.rename_columns(inverse_column_map)
 
 
 def validate_column_dtypes(ds: Dataset):
