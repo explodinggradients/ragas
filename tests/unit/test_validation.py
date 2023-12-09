@@ -103,9 +103,7 @@ def test_column_remap(column_map):
         }
     )
     remapped_dataset = remap_column_names(TEST_DATASET, column_map)
-    assert all(
-        col in remapped_dataset.column_names for col in column_map.keys()
-    )
+    assert all(col in remapped_dataset.column_names for col in column_map.keys())
 
 
 def test_column_remap_omit():
