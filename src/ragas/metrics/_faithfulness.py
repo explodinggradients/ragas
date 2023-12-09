@@ -120,8 +120,8 @@ Answer:
 
 @dataclass
 class Faithfulness(MetricWithLLM):
-    name: str = "faithfulness"
-    evaluation_mode: EvaluationMode = EvaluationMode.qac
+    name: str = "faithfulness"  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
     batch_size: int = 15
 
     def _score_batch(

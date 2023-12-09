@@ -52,8 +52,8 @@ class AnswerRelevancy(MetricWithLLM):
         E.g. HuggingFaceEmbeddings('BAAI/bge-base-en')
     """
 
-    name: str = "answer_relevancy"
-    evaluation_mode: EvaluationMode = EvaluationMode.qa
+    name: str = "answer_relevancy"  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.qa  # type: ignore
     batch_size: int = 15
     strictness: int = 3
     embeddings: RagasEmbeddings = field(default_factory=embedding_factory)

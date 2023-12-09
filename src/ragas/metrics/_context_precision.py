@@ -47,8 +47,8 @@ class ContextPrecision(MetricWithLLM):
         Batch size for openai completion.
     """
 
-    name: str = "context_precision"
-    evaluation_mode: EvaluationMode = EvaluationMode.qc
+    name: str = "context_precision"  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.qc  # type: ignore
     batch_size: int = 15
 
     def _score_batch(

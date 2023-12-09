@@ -42,8 +42,8 @@ class AnswerSimilarity(MetricWithLLM):
         Default 0.5
     """
 
-    name: str = "answer_similarity"
-    evaluation_mode: EvaluationMode = EvaluationMode.ga
+    name: str = "answer_similarity"  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.ga  # type: ignore
     batch_size: int = 15
     embeddings: RagasEmbeddings = field(default_factory=embedding_factory)
     is_cross_encoder: bool = False

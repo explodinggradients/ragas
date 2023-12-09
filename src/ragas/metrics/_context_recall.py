@@ -77,8 +77,8 @@ class ContextRecall(MetricWithLLM):
         Batch size for openai completion.
     """
 
-    name: str = "context_recall"
-    evaluation_mode: EvaluationMode = EvaluationMode.qcg
+    name: str = "context_recall"  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
     batch_size: int = 15
 
     def _score_batch(

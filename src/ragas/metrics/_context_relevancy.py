@@ -47,8 +47,8 @@ class ContextRelevancy(MetricWithLLM):
         Batch size for openai completion.
     """
 
-    name: str = "context_relevancy"
-    evaluation_mode: EvaluationMode = EvaluationMode.qc
+    name: str = "context_relevancy"  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.qc  # type: ignore
     batch_size: int = 15
     show_deprecation_warning: bool = False
 

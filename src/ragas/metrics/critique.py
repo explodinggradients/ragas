@@ -53,8 +53,8 @@ class AspectCritique(MetricWithLLM):
         llm API of your choice
     """
 
-    name: str = field(default="", repr=True)
-    evaluation_mode: EvaluationMode = EvaluationMode.qac
+    name: str = field(default="", repr=True)  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
     definition: str = field(default="", repr=True)
     strictness: int = field(default=1, repr=False)
     batch_size: int = field(default=15, repr=False)
