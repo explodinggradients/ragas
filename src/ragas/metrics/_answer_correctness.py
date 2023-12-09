@@ -98,8 +98,9 @@ class AnswerCorrectness(MetricWithLLM):
         )
         prompts = []
 
+        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
         with trace_as_chain_group(
-            callback_group_name, callback_manager=callbacks
+            callback_group_name, callback_manager=cb
         ) as batch_group:
             for q, a, g in zip(question, answer, ground_truths):
                 human_prompt = CORRECTNESS_PROMPT.format(

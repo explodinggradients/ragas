@@ -12,6 +12,8 @@ from ragas.llms import llm_factory
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:
+    from langchain.callbacks.base import Callbacks
+
     from ragas.llms import RagasLLM
 
 CRITIQUE_PROMPT = HumanMessagePromptTemplate.from_template(
@@ -91,7 +93,7 @@ class AspectCritique(MetricWithLLM):
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
-        callbacks: t.Optional[CallbackManager] = None,
+        callbacks: t.Optional[Callbacks] = None,
         callback_group_name: str = "batch",
     ) -> list[int]:
         questions, contexts, answers = [
@@ -104,8 +106,10 @@ class AspectCritique(MetricWithLLM):
             contexts = [None] * len(questions)
 
         prompts = []
+
+        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
         with trace_as_chain_group(
-            callback_group_name, callback_manager=callbacks
+            callback_group_name, callback_manager=cb
         ) as batch_group:
             for question, context, answer in zip(questions, contexts, answers):
                 human_prompt = self.prompt_format(question, answer, context)

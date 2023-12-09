@@ -11,6 +11,9 @@ from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import load_as_json
 
+if t.TYPE_CHECKING:
+    from langchain.callbacks.base import Callbacks
+
 CONTEXT_RECALL_RA = HumanMessagePromptTemplate.from_template(
     """
 Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not. Output json with reason.
@@ -84,7 +87,7 @@ class ContextRecall(MetricWithLLM):
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
-        callbacks: t.Optional[CallbackManager] = None,
+        callbacks: t.Optional[Callbacks] = None,
         callback_group_name: str = "batch",
     ) -> list:
         prompts = []
@@ -94,8 +97,9 @@ class ContextRecall(MetricWithLLM):
             dataset["contexts"],
         )
 
+        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
         with trace_as_chain_group(
-            callback_group_name, callback_manager=callbacks
+            callback_group_name, callback_manager=cb
         ) as batch_group:
             for qstn, gt, ctx in zip(question, ground_truths, contexts):
                 gt = "\n".join(gt) if isinstance(gt, list) else gt

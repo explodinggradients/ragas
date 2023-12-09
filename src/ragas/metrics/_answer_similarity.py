@@ -15,7 +15,7 @@ from ragas.exceptions import OpenAIKeyNotFound
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:
-    from langchain.callbacks.manager import CallbackManager
+    from langchain.callbacks.base import Callbacks
 
     from ragas.embeddings.base import RagasEmbeddings
 
@@ -67,7 +67,7 @@ class AnswerSimilarity(MetricWithLLM):
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
-        callbacks: t.Optional[CallbackManager] = None,
+        callbacks: t.Optional[Callbacks] = None,
         callback_group_name: str = "batch",
     ) -> list[float]:
         ground_truths, answers = dataset["ground_truths"], dataset["answer"]
