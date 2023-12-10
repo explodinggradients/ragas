@@ -100,7 +100,7 @@ class JsonLoader:
                 return json.loads(text[start:end])
             except ValueError:
                 text = self._fix_to_json(text, llm)
-            retry -= 1
+            retry += 1
 
         return {}
 
