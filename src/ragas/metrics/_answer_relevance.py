@@ -12,7 +12,7 @@ from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from ragas.embeddings.base import embedding_factory
 from ragas.exceptions import OpenAIKeyNotFound
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.utils import load_as_json
+from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -125,7 +125,10 @@ class AnswerRelevancy(MetricWithLLM):
                 n=self.strictness,
                 callbacks=batch_group,
             )
-            results = [[load_as_json(i.text) for i in r] for r in results.generations]
+            results = [
+                [json_loader.safe_load(i.text, self.llm) for i in r]
+                for r in results.generations
+            ]
             scores = []
             for question, result in zip(questions, results):
                 gen_questions = [item.get("question", "") for item in result]
