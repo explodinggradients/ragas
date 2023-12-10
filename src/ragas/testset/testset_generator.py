@@ -63,6 +63,10 @@ question_deep_map = {
     "conditional": "_condition_question",
 }
 
+retry_errors = (
+    ValidationError,
+)
+
 DataRow = namedtuple(
     "DataRow",
     [
@@ -74,9 +78,7 @@ DataRow = namedtuple(
     ],
 )
 
-retry_errors = (
-    ValidationError,
-)
+Propose = namedtuple("Propose", ["question", "text_chunk"])
 
 
 @dataclass
@@ -300,14 +302,9 @@ class TestsetGenerator:
 
         return embeddings
 
-    def _propose_question(
+    def _make_propose(
         self, cur_node: BaseNode, neighbor_nodes: t.List[BaseNode], evolve_type: str
-    ) -> t.Tuple[str, str]:
-        """Propose a question from a node and its neighbors.
-
-        Returns:
-            (question, text_chunk): proposed question and the corresponding text chunk
-        """
+    ) -> t.Union[Propose, None]:
         # Append multiple nodes randomly to remove chunking bias
         size = self.rng.integers(1, 3)
         nodes = (
@@ -319,11 +316,11 @@ class TestsetGenerator:
         text_chunk = " ".join([node.get_content() for node in nodes])
         score = self._filter_context(text_chunk)
         if not score:
-            return (None, None)
+            return None
         seed_question = self._seed_question(text_chunk)
         is_valid_question = self._filter_question(seed_question)
         if not is_valid_question:
-            return (None, None)
+            return None
 
         if evolve_type == "multi_context":
             # Find most similar chunk in same document
@@ -347,7 +344,7 @@ class TestsetGenerator:
                 )
                 text_chunk = "\n".join([text_chunk, best_neighbor.get_content()])
             else:
-                return (None, None)
+                return None
 
         # for reasoning and conditional modes, evolve question with the
         # functions from question_deep_map
@@ -367,7 +364,7 @@ class TestsetGenerator:
             else:
                 question = self._compress_question(question=question)
 
-        return (question, text_chunk)
+        return Propose(question=question, text_chunk=text_chunk)
 
     def generate(
         self,
@@ -417,8 +414,9 @@ class TestsetGenerator:
 
             neighbor_nodes = doc_nodes_map[curr_node.source_node.node_id]
 
+            propose = None
             try:
-                question, text_chunk = self._propose_question(
+                propose = self._make_propose(
                     curr_node, neighbor_nodes, evolve_type
                 )
             except Exception as e:
@@ -426,8 +424,10 @@ class TestsetGenerator:
                 if not isinstance(err_cause, retry_errors):
                     raise e
 
-            if question is None:
+            if propose is None:
                 continue
+            question = propose.question
+            text_chunk = propose.text_chunk
 
             is_valid_question = self._filter_question(question)
             if is_valid_question:
