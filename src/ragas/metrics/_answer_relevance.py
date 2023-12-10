@@ -5,29 +5,63 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import Dataset
-from langchain.callbacks.manager import trace_as_chain_group
+from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.embeddings.base import embedding_factory
 from ragas.exceptions import OpenAIKeyNotFound
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import load_as_json
 
 if t.TYPE_CHECKING:
-    from langchain.callbacks.manager import CallbackManager
+    from langchain.callbacks.base import Callbacks
 
     from ragas.embeddings.base import RagasEmbeddings
 
 
 QUESTION_GEN = HumanMessagePromptTemplate.from_template(
     """
-Generate question for the given answer.
-Answer:\nThe PSLV-C56 mission is scheduled to be launched on Sunday, 30 July 2023 at 06:30 IST / 01:00 UTC. It will be launched from the Satish Dhawan Space Centre, Sriharikota, Andhra Pradesh, India 
-Question: When is the scheduled launch date and time for the PSLV-C56 mission, and where will it be launched from?
+Generate a question for the given answer and Identify if answer is noncommittal
 
-Answer:{answer}
-Question:
-"""  # noqa: E501
+Answer:
+Albert Einstein was born in Germany.
+Context:
+Albert Einstein was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time
+Output:
+{{"question":"Where was Albert Einstein born?","noncommittal":false}}
+
+
+Answer:
+It can change its skin color based on the temperature of its environment.
+Context:
+A recent scientific study has discovered a new species of frog in the Amazon rainforest that has the unique ability to change its skin color based on the temperature of its environment.
+Output:
+{{"question":"What unique ability does the newly discovered species of frog have?","noncommittal":false}}
+
+
+Answer:
+Everest
+Context:
+The tallest mountain on Earth, measured from sea level, is a renowned peak located in the Himalayas.
+Output:
+{{"question":"What is the tallest mountain on Earth?","noncommittal":false}}
+
+
+Answer:
+I don't know about the  groundbreaking feature of the smartphone invented in 2023 as am unware of information beyong 2022. 
+Context:
+In 2023, a groundbreaking invention was announced: a smartphone with a battery life of one month, revolutionizing the way people use mobile technology.
+Output:
+{{"question":"What was the groundbreaking feature of the smartphone invented in 2023?", "noncommittal":true}}
+
+
+
+Answer:
+{answer}
+Context:
+{context}
+Output:"""  # noqa: E501
 )
 
 
@@ -52,8 +86,8 @@ class AnswerRelevancy(MetricWithLLM):
         E.g. HuggingFaceEmbeddings('BAAI/bge-base-en')
     """
 
-    name: str = "answer_relevancy"
-    evaluation_mode: EvaluationMode = EvaluationMode.qa
+    name: str = "answer_relevancy"  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
     batch_size: int = 15
     strictness: int = 3
     embeddings: RagasEmbeddings = field(default_factory=embedding_factory)
@@ -68,16 +102,22 @@ class AnswerRelevancy(MetricWithLLM):
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
-        callbacks: t.Optional[CallbackManager] = None,
+        callbacks: t.Optional[Callbacks] = None,
         callback_group_name: str = "batch",
     ) -> list[float]:
-        questions, answers = dataset["question"], dataset["answer"]
+        questions, answers, contexts = (
+            dataset["question"],
+            dataset["answer"],
+            dataset["contexts"],
+        )
+
+        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
         with trace_as_chain_group(
-            callback_group_name, callback_manager=callbacks
+            callback_group_name, callback_manager=cb
         ) as batch_group:
             prompts = []
-            for ans in answers:
-                human_prompt = QUESTION_GEN.format(answer=ans)
+            for ans, ctx in zip(answers, contexts):
+                human_prompt = QUESTION_GEN.format(answer=ans, context="\n".join(ctx))
                 prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
             results = self.llm.generate(
@@ -85,15 +125,13 @@ class AnswerRelevancy(MetricWithLLM):
                 n=self.strictness,
                 callbacks=batch_group,
             )
-            results = [[i.text for i in r] for r in results.generations]
-
+            results = [[load_as_json(i.text) for i in r] for r in results.generations]
             scores = []
-            for question, gen_questions in zip(questions, results):
-                if question is not None and question != "" and len(gen_questions) > 0:
-                    cosine_sim = self.calculate_similarity(question, gen_questions)
-                    scores.append(cosine_sim.mean())
-                else:
-                    scores.append(0.0)
+            for question, result in zip(questions, results):
+                gen_questions = [item.get("question", "") for item in result]
+                committal = np.any([item.get("noncommittal", False) for item in result])
+                cosine_sim = self.calculate_similarity(question, gen_questions)
+                scores.append(cosine_sim.mean() * int(not committal))
 
         return scores
 
