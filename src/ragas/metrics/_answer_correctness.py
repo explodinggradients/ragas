@@ -10,7 +10,7 @@ from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.utils import load_as_json
+from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -118,7 +118,7 @@ class AnswerCorrectness(MetricWithLLM):
 
         f1_score = []
         for prediction in outputs:
-            prediction = load_as_json(prediction[0].text)
+            prediction = json_loader.safe_load(prediction[0].text, self.llm)
             prediction = [
                 item.get(key_map[k], np.nan)
                 for item in prediction
