@@ -111,6 +111,7 @@ class JsonLoader:
         callbacks: t.Optional[CallbackManager] = None,
         callback_group_name: str = "batch",
     ):
+       # TODO (executor)
         with trace_as_chain_group(
             callback_group_name, callback_manager=callbacks
         ) as batch_group:
