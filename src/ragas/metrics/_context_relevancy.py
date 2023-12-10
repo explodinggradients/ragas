@@ -13,6 +13,9 @@ from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
+if t.TYPE_CHECKING:
+    from langchain.callbacks.base import Callbacks
+
 CONTEXT_RELEVANCE = HumanMessagePromptTemplate.from_template(
     """\
 Please extract relevant sentences from the provided context that is absolutely required answer the following question. If no relevant sentences are found, or if you believe the question cannot be answered from the given context, return the phrase "Insufficient Information".  While extracting candidate sentences you're not allowed to make any changes to sentences from given context.
@@ -47,8 +50,8 @@ class ContextRelevancy(MetricWithLLM):
         Batch size for openai completion.
     """
 
-    name: str = "context_relevancy"
-    evaluation_mode: EvaluationMode = EvaluationMode.qc
+    name: str = "context_relevancy"  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.qc  # type: ignore
     batch_size: int = 15
     show_deprecation_warning: bool = False
 
@@ -58,7 +61,7 @@ class ContextRelevancy(MetricWithLLM):
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
-        callbacks: t.Optional[CallbackManager] = None,
+        callbacks: t.Optional[Callbacks] = None,
         callback_group_name: str = "batch",
     ) -> list[float]:
         if self.show_deprecation_warning:
@@ -67,8 +70,10 @@ class ContextRelevancy(MetricWithLLM):
             )
         prompts = []
         questions, contexts = dataset["question"], dataset["contexts"]
+
+        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
         with trace_as_chain_group(
-            callback_group_name, callback_manager=callbacks
+            callback_group_name, callback_manager=cb
         ) as batch_group:
             for q, c in zip(questions, contexts):
                 human_prompt = CONTEXT_RELEVANCE.format(

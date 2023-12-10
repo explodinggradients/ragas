@@ -12,6 +12,9 @@ from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import json_loader
 
+if t.TYPE_CHECKING:
+    from langchain.callbacks.base import Callbacks
+
 CORRECTNESS_PROMPT = HumanMessagePromptTemplate.from_template(
     """
 Extract following from given question and ground truth
@@ -70,8 +73,8 @@ class AnswerCorrectness(MetricWithLLM):
         The faithfulness object
     """
 
-    name: str = "answer_correctness"
-    evaluation_mode: EvaluationMode = EvaluationMode.qga
+    name: str = "answer_correctness"  # type: ignore[reportIncompatibleMethodOverride]
+    evaluation_mode: EvaluationMode = EvaluationMode.qga  # type: ignore[reportIncompatibleMethodOverride]
     batch_size: int = 15
     weights: list[float] = field(default_factory=lambda: [0.75, 0.25])
     answer_similarity: AnswerSimilarity | None = None
@@ -85,7 +88,7 @@ class AnswerCorrectness(MetricWithLLM):
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
-        callbacks: t.Optional[CallbackManager] = None,
+        callbacks: t.Optional[Callbacks] = None,
         callback_group_name: str = "batch",
     ) -> list[float]:
         question, answer, ground_truths = (
@@ -95,8 +98,9 @@ class AnswerCorrectness(MetricWithLLM):
         )
         prompts = []
 
+        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
         with trace_as_chain_group(
-            callback_group_name, callback_manager=callbacks
+            callback_group_name, callback_manager=cb
         ) as batch_group:
             for q, a, g in zip(question, answer, ground_truths):
                 human_prompt = CORRECTNESS_PROMPT.format(

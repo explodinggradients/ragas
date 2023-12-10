@@ -11,6 +11,9 @@ from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import json_loader
 
+if t.TYPE_CHECKING:
+    from langchain.callbacks.base import Callbacks
+
 CONTEXT_PRECISION = HumanMessagePromptTemplate.from_template(
     """\
 Verify if the information in the given context is useful in answering the question.
@@ -47,20 +50,22 @@ class ContextPrecision(MetricWithLLM):
         Batch size for openai completion.
     """
 
-    name: str = "context_precision"
-    evaluation_mode: EvaluationMode = EvaluationMode.qc
+    name: str = "context_precision"  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.qc  # type: ignore
     batch_size: int = 15
 
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
-        callbacks: t.Optional[CallbackManager] = None,
+        callbacks: t.Optional[Callbacks] = None,
         callback_group_name: str = "batch",
     ) -> list:
         prompts = []
         questions, contexts = dataset["question"], dataset["contexts"]
+
+        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
         with trace_as_chain_group(
-            callback_group_name, callback_manager=callbacks
+            callback_group_name, callback_manager=cb
         ) as batch_group:
             for qstn, ctx in zip(questions, contexts):
                 human_prompts = [
