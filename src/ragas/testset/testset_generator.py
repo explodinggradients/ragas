@@ -78,7 +78,7 @@ DataRow = namedtuple(
     ],
 )
 
-Propose = namedtuple("Propose", ["question", "text_chunk"])
+Proposal = namedtuple("Proposal", ["question", "text_chunk"])
 
 
 @dataclass
@@ -302,9 +302,9 @@ class TestsetGenerator:
 
         return embeddings
 
-    def _make_propose(
+    def _make_proposal(
         self, cur_node: BaseNode, neighbor_nodes: t.List[BaseNode], evolve_type: str
-    ) -> t.Union[Propose, None]:
+    ) -> t.Union[Proposal, None]:
         # Append multiple nodes randomly to remove chunking bias
         size = self.rng.integers(1, 3)
         nodes = (
@@ -364,7 +364,7 @@ class TestsetGenerator:
             else:
                 question = self._compress_question(question=question)
 
-        return Propose(question=question, text_chunk=text_chunk)
+        return Proposal(question=question, text_chunk=text_chunk)
 
     def generate(
         self,
@@ -414,9 +414,9 @@ class TestsetGenerator:
 
             neighbor_nodes = doc_nodes_map[curr_node.source_node.node_id]
 
-            propose = None
+            proposal = None
             try:
-                propose = self._make_propose(
+                proposal = self._make_proposal(
                     curr_node, neighbor_nodes, evolve_type
                 )
             except Exception as e:
@@ -424,10 +424,10 @@ class TestsetGenerator:
                 if not isinstance(err_cause, retry_errors):
                     raise e
 
-            if propose is None:
+            if proposal is None:
                 continue
-            question = propose.question
-            text_chunk = propose.text_chunk
+            question = proposal.question
+            text_chunk = proposal.text_chunk
 
             is_valid_question = self._filter_question(question)
             if is_valid_question:
