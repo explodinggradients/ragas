@@ -8,6 +8,7 @@ import numpy as np
 import numpy.typing as npt
 from langchain.text_splitter import TextSplitter
 from langchain_core.documents import Document as LCDocument
+from pydantic import Field
 
 Embedding = t.Union[t.List[float], npt.NDArray[np.float64]]
 
@@ -15,7 +16,7 @@ Embedding = t.Union[t.List[float], npt.NDArray[np.float64]]
 class Document(LCDocument):
     doc_id: str
     filename: t.Optional[str] = None
-    embedding: t.Optional[Embedding] = None
+    embedding: t.Optional[t.List[float]] = Field(default=None, repr=False)
 
 
 class DocumentStore(ABC):
@@ -68,14 +69,17 @@ default_similarity_fns = similarity
 
 
 def get_top_k_embeddings(
-    query_embedding: t.List[float],
-    embeddings: t.List[t.List[float]],
+    query_embedding: Embedding,
+    embeddings: t.List[Embedding],
     similarity_fn: t.Optional[t.Callable[..., float]] = None,
     similarity_top_k: t.Optional[int] = None,
     embedding_ids: t.Optional[t.List] = None,
     similarity_cutoff: t.Optional[float] = None,
 ) -> t.Tuple[t.List[float], t.List]:
-    """Get top nodes by similarity to the query."""
+    """
+    Get top nodes by similarity to the query.
+    returns the scores and the embedding_ids of the nodes
+    """
     if embedding_ids is None:
         embedding_ids = list(range(len(embeddings)))
 
@@ -103,25 +107,45 @@ class InMemoryDocumentStore:
     def __init__(self, splitter):
         super().__init__()
         self.splitter = splitter
-        self.embeddings = {}
-        self.documents = []
+        self.documents_list: t.List[Document] = []
+        self.embeddings_list: t.List[Embedding] = []
+        self.documents_map: t.Dict[str, Document] = {}
 
     def add_documents(self, docs: t.List[Document]):
-        return None
+        ...
 
-    def get_document(self, doc_id: int) -> Document:
-        return self.documents[doc_id]
+    def add_document(self, doc: Document):
+        ...
 
-    def get_similar(self, doc: Document, threshold: float = 0.7) -> t.List[Document]:
-        return []
+    def get_document(self, doc_id: str) -> Document:
+        return self.documents_map[doc_id]
+
+    def get_similar(
+        self, doc: Document, threshold: float = 0.7, top_k: int = 3
+    ) -> t.List[Document]:
+        if doc.embedding is None:
+            raise ValueError("Document has no embedding.")
+        scores, doc_ids = get_top_k_embeddings(
+            query_embedding=doc.embedding,
+            embeddings=self.embeddings_list,
+            similarity_fn=similarity,
+            similarity_cutoff=threshold,
+            # we need to return k+1 docs here as the top result is the input doc itself
+            similarity_top_k=top_k + 1,
+        )
+        # remove the query doc itself from results
+        scores, doc_ids = scores[1:], doc_ids[1:]
+        return [self.documents_list[doc_id] for doc_id in doc_ids]
 
     def get_adjascent(
         self, doc: Document, direction: str = "next"
-    ) -> t.Optional[t.List[Document]]:
-        index = self.documents.index(doc)
+    ) -> t.Optional[Document]:
+        # linear search for doc_id of doc in documents_list
+        index = self.documents_list.index(doc)
+
         if direction == "next":
-            if len(self.documents) > index + 1:
-                next_doc = self.documents[index + 1]
+            if len(self.documents_list) > index + 1:
+                next_doc = self.documents_list[index + 1]
                 if next_doc.filename == doc.filename:
                     return next_doc
                 else:
@@ -130,7 +154,7 @@ class InMemoryDocumentStore:
                 return None
         if direction == "prev":
             if index > 0:
-                prev_doc = self.documents[index - 1]
+                prev_doc = self.documents_list[index - 1]
                 if prev_doc.filename == doc.filename:
                     return prev_doc
                 else:
