@@ -1,7 +1,13 @@
 from langchain.prompts import ChatPromptTemplate
 
 from ragas.llms import RagasLLM
-from ragas.testset.prompts import FILTER_QUESTION, SCORE_CONTEXT, SEED_QUESTION
+from ragas.testset.docstore import Document, DocumentStore
+from ragas.testset.prompts import (
+    FILTER_QUESTION,
+    MULTICONTEXT_QUESTION,
+    SCORE_CONTEXT,
+    SEED_QUESTION,
+)
 from ragas.testset.testset_generator import load_as_score
 from ragas.utils import load_as_json
 
@@ -31,8 +37,23 @@ def filter_question(llm: RagasLLM, question: str) -> bool:
     return json_results.get("verdict") != "No"
 
 
-def simple_evolution(llm: RagasLLM, context: str):
-    human_prompt = SEED_QUESTION.format(context=context)
+def simple_evolution(llm: RagasLLM, seed_doc: Document):
+    human_prompt = SEED_QUESTION.format(context=seed_doc.page_content)
+    prompt = ChatPromptTemplate.from_messages([human_prompt])
+    results = llm.generate(prompts=[prompt])
+    question = results.generations[0][0].text.strip()
+    return question
+
+
+def multi_context_evolution(
+    llm: RagasLLM, seed_doc: Document, doc_store: DocumentStore
+):
+    question = simple_evolution(llm, seed_doc)
+    print(question)
+    similar_context = doc_store.get_similar(seed_doc)[0]
+    human_prompt = MULTICONTEXT_QUESTION.format(
+        question=question, context1=seed_doc.page_content, context2=similar_context
+    )
     prompt = ChatPromptTemplate.from_messages([human_prompt])
     results = llm.generate(prompts=[prompt])
     question = results.generations[0][0].text.strip()
