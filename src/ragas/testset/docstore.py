@@ -1,7 +1,7 @@
 import heapq
 import typing as t
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 import numpy as np
@@ -9,6 +9,9 @@ import numpy.typing as npt
 from langchain.text_splitter import TextSplitter
 from langchain_core.documents import Document as LCDocument
 from pydantic import Field
+
+from ragas.async_utils import run_async_tasks
+from ragas.embeddings.base import RagasEmbeddings, embedding_factory
 
 Embedding = t.Union[t.List[float], npt.NDArray[np.float64]]
 
@@ -103,21 +106,50 @@ def get_top_k_embeddings(
     return result_similarities, result_ids
 
 
+@dataclass
 class InMemoryDocumentStore:
-    def __init__(self, splitter):
-        super().__init__()
-        self.splitter = splitter
-        self.documents_list: t.List[Document] = []
-        self.embeddings_list: t.List[Embedding] = []
-        self.documents_map: t.Dict[str, Document] = {}
+    splitter: TextSplitter
+    embeddings: RagasEmbeddings = field(default_factory=embedding_factory, repr=False)
+    documents_list: t.List[Document] = field(default_factory=list)
+    embeddings_list: t.List[Embedding] = field(default_factory=list)
+    documents_map: t.Dict[str, Document] = field(default_factory=dict)
 
-    def add_documents(self, docs: t.List[Document]):
-        ...
+    def _add_documents_batch(self, docs: t.Sequence[Document], show_progress=True):
+        """
+        Add documents in batch mode.
+        """
+        # NOTE: Adds everything in async mode for now.
+        embed_tasks = []
+        docs_to_embed = []
+        for doc in docs:
+            if doc.embedding is None:
+                embed_tasks.append(self.embeddings.aembed_query(doc.page_content))
+                docs_to_embed.append(doc)
+            else:
+                self.documents_list.append(doc)
+                self.documents_map[doc.doc_id] = doc
+                self.embeddings_list.append(doc.embedding)
 
-    def add_document(self, doc: Document):
-        ...
+        embeddings = run_async_tasks(embed_tasks, show_progress=show_progress)
+        for doc, embedding in zip(docs_to_embed, embeddings):
+            doc.embedding = embedding
+            self.documents_list.append(doc)
+            self.documents_map[doc.doc_id] = doc
+            self.embeddings_list.append(doc.embedding)
 
-    def get_document(self, doc_id: str) -> Document:
+    def add(self, doc: t.Union[Document, t.Sequence[Document]], show_progress=True):
+        if isinstance(doc, list) or isinstance(doc, tuple):
+            self._add_documents_batch(doc)
+        elif isinstance(doc, Document):
+            self.documents_list.append(doc)
+            self.documents_map[doc.doc_id] = doc
+            if doc.embedding is None:
+                doc.embedding = self.embeddings.embed_query(doc.page_content)
+            self.embeddings_list.append(doc.embedding)
+        else:
+            raise ValueError("add() method only supports Document or List[Document]")
+
+    def get(self, doc_id: str) -> Document:
         return self.documents_map[doc_id]
 
     def get_similar(
