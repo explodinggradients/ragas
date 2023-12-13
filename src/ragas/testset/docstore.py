@@ -5,16 +5,17 @@ from dataclasses import dataclass
 from enum import Enum
 
 import numpy as np
+import numpy.typing as npt
 from langchain.text_splitter import TextSplitter
 from langchain_core.documents import Document as LCDocument
 
-if t.TYPE_CHECKING:
-    import numpy.typing as npt
+Embedding = t.Union[t.List[float], npt.NDArray[np.float64]]
 
 
 class Document(LCDocument):
-    def __init__(self) -> None:
-        self.doc_id = None
+    doc_id: str
+    filename: t.Optional[str] = None
+    embedding: t.Optional[Embedding] = None
 
 
 class DocumentStore(ABC):
@@ -22,7 +23,7 @@ class DocumentStore(ABC):
         self.documents = {}
 
     @abstractmethod
-    def add_document(self, doc: Document):
+    def add_documents(self, docs: t.List[Document]):
         ...
 
     @abstractmethod
@@ -44,9 +45,6 @@ class SimilarityMode(str, Enum):
     DEFAULT = "cosine"
     DOT_PRODUCT = "dot_product"
     EUCLIDEAN = "euclidean"
-
-
-Embedding = t.Union[t.List[float], npt.NDArray[np.float64]]
 
 
 def similarity(
@@ -101,20 +99,41 @@ def get_top_k_embeddings(
     return result_similarities, result_ids
 
 
-class InMemoryDocumentStore(DocumentStore):
-    def __init__(self):
+class InMemoryDocumentStore:
+    def __init__(self, splitter):
         super().__init__()
+        self.splitter = splitter
         self.embeddings = {}
+        self.documents = []
 
-    def add_document(self, doc: Document):
-        self.documents[doc.doc_id] = doc
-        self.embeddings[doc.doc_id] = doc.metadata["embedding"]
+    def add_documents(self, docs: t.List[Document]):
+        return None
 
     def get_document(self, doc_id: int) -> Document:
         return self.documents[doc_id]
 
-    def get_similar(self, doc: Document) -> t.List[Document]:
+    def get_similar(self, doc: Document, threshold: float = 0.7) -> t.List[Document]:
         return []
 
-    def get_adjascent(self, doc: Document, direction: str = "next") -> t.List[Document]:
-        return []
+    def get_adjascent(
+        self, doc: Document, direction: str = "next"
+    ) -> t.Optional[t.List[Document]]:
+        index = self.documents.index(doc)
+        if direction == "next":
+            if len(self.documents) > index + 1:
+                next_doc = self.documents[index + 1]
+                if next_doc.filename == doc.filename:
+                    return next_doc
+                else:
+                    return None
+            else:
+                return None
+        if direction == "prev":
+            if index > 0:
+                prev_doc = self.documents[index - 1]
+                if prev_doc.filename == doc.filename:
+                    return prev_doc
+                else:
+                    return None
+            else:
+                return None
