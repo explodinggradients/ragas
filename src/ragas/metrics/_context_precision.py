@@ -16,19 +16,19 @@ if t.TYPE_CHECKING:
 
 CONTEXT_PRECISION = HumanMessagePromptTemplate.from_template(
     """\
-Verify if the information in the given context is useful in answering the question.
+Verify if the information in the given context is useful in answering the question. Use only "Yes" (1) or "No" (0) as a binary verdict.
 
 question: What are the health benefits of green tea?
 context: 
 This article explores the rich history of tea cultivation in China, tracing its roots back to the ancient dynasties. It discusses how different regions have developed their unique tea varieties and brewing techniques. The article also delves into the cultural significance of tea in Chinese society and how it has become a symbol of hospitality and relaxation.
 verification:
-{{"reason":"The context, while informative about the history and cultural significance of tea in China, does not provide specific information about the health benefits of green tea. Thus, it is not useful for answering the question about health benefits.", "verdict":"No"}}
+{{"reason":"The context, while informative about the history and cultural significance of tea in China, does not provide specific information about the health benefits of green tea. Thus, it is not useful for answering the question about health benefits.", "verdict":"0"}}
 
 question: How does photosynthesis work in plants?
 context:
 Photosynthesis in plants is a complex process involving multiple steps. This paper details how chlorophyll within the chloroplasts absorbs sunlight, which then drives the chemical reaction converting carbon dioxide and water into glucose and oxygen. It explains the role of light and dark reactions and how ATP and NADPH are produced during these processes.
 verification:
-{{"reason":"This context is extremely relevant and useful for answering the question. It directly addresses the mechanisms of photosynthesis, explaining the key components and processes involved.", "verdict":"Yes"}}
+{{"reason":"This context is extremely relevant and useful for answering the question. It directly addresses the mechanisms of photosynthesis, explaining the key components and processes involved.", "verdict":"1"}}
 
 question:{question}
 context:
@@ -98,7 +98,7 @@ class ContextPrecision(MetricWithLLM):
                     json_loader.safe_load(item, self.llm) for item in sum(response, [])
                 ]
                 response = [
-                    int("yes" in resp.get("verdict", " ").lower())
+                    "1" == resp.get("verdict", " ").strip()
                     if resp.get("verdict")
                     else np.nan
                     for resp in response
