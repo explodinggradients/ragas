@@ -65,12 +65,10 @@ class AnswerCorrectness(MetricWithLLM):
     batch_size: int
         batch size for evaluation
     weights:
-        a list of two weights corresponding to semantic similarity and factuality
-        Defaults [0.5, 0.5]
+        a list of two weights corresponding to factuality and semantic similarity
+        Defaults [0.75, 0.25]
     answer_similarity:
         The AnswerSimilarity object
-    faithfulness
-        The faithfulness object
     """
 
     name: str = "answer_correctness"  # type: ignore[reportIncompatibleMethodOverride]
@@ -136,7 +134,7 @@ class AnswerCorrectness(MetricWithLLM):
     
                 f1_score.append(score)
     
-            similarity_scores = self.answer_similarity._score_batch(dataset)  # type: ignore
+            similarity_scores = self.answer_similarity._score_batch(dataset, callbacks=batch_group)  # type: ignore
             scores_stacked = np.vstack([f1_score, similarity_scores])
             scores = np.average(
                 scores_stacked,
