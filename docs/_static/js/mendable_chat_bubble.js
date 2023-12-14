@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Load Mendable script and initialize the component once script is loaded
   loadScript(
-    "https://unpkg.com/@mendable/search@0.0.165-beta.3/dist/umd/mendable-bundle.min.js",
+    "https://unpkg.com/@mendable/search@0.0.191/dist/umd/mendable-bundle.min.js",
     function () {
       Mendable.initialize({
         anon_key: "f4cb5493-f914-43a5-8edc-f41463ea5bed",
