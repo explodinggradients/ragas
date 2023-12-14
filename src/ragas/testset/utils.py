@@ -1,21 +1,7 @@
 from __future__ import annotations
 
-import json
 import re
 import warnings
-
-
-def load_as_json(text):
-    """
-    validate and return given text as json
-    """
-
-    try:
-        return json.loads(text)
-    except ValueError:
-        warnings.warn("Invalid json")
-
-    return {}
 
 
 def load_as_score(text):

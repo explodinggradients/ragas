@@ -6,7 +6,7 @@ from langchain.chat_models import AzureChatOpenAI, BedrockChat, ChatOpenAI, Chat
 from langchain.chat_models.azureml_endpoint import AzureMLChatOnlineEndpoint
 from langchain.chat_models.base import SimpleChatModel
 from langchain.chat_models.base import BaseChatModel
-from langchain.llms import AzureOpenAI, Bedrock, OpenAI, VertexAI
+from langchain.llms import AmazonAPIGateway, AzureOpenAI, Bedrock, OpenAI, VertexAI
 from langchain.llms.base import BaseLLM
 from langchain.schema import LLMResult
 
@@ -30,6 +30,9 @@ def isBedrock(llm: BaseLLM | BaseChatModel) -> bool:
 
 def isAzureMLEndpoint(llm: BaseLLM | SimpleChatModel) -> bool:
     return isinstance(llm, AzureMLChatOnlineEndpoint)
+  
+def isAmazonAPIGateway(llm: BaseLLM | BaseChatModel) -> bool:
+    return isinstance(llm, AmazonAPIGateway)
 
 
 # have to specify it twice for runtime and static checks
@@ -80,7 +83,7 @@ class LangchainLLM(RagasLLM):
         self.langchain_llm = llm
 
     @property
-    def llm(self):
+    def llm(self) -> BaseLLM | BaseChatModel:
         return self.langchain_llm
 
     def validate_api_key(self):
@@ -143,6 +146,7 @@ class LangchainLLM(RagasLLM):
         self,
         prompt: ChatPromptTemplate,
         n: int = 1,
+        temperature: float = 1e-8,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
         temperature = 0.2 if n > 1 else 0
@@ -206,6 +210,8 @@ class LangchainLLM(RagasLLM):
             self.llm.model_kwargs = {"temperature": temperature}
         elif isAzureMLEndpoint(self.llm) and ("model_kwargs" in self.llm.__dict__):
             self.llm.model_kwargs['temperature'] = temperature
+        elif isAmazonAPIGateway(self.llm) and ("model_kwargs" in self.llm.__dict__):
+            self.llm.model_kwargs = {"temperature": temperature}
         else:
             self.llm.temperature = temperature
 

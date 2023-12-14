@@ -40,7 +40,7 @@ def make_batches(total_size: int, batch_size: int) -> list[range]:
     return batches
 
 
-EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga")
+EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg")
 
 
 @dataclass
@@ -58,7 +58,7 @@ class Metric(ABC):
         ...
 
     @abstractmethod
-    def init_model():
+    def init_model(self):
         """
         This method will lazy initialize the model.
         """
@@ -118,7 +118,8 @@ class MetricWithLLM(Metric):
         to load all the models
         Also check if the api key is valid for OpenAI and AzureOpenAI
         """
-        self.llm.validate_api_key()
+        if hasattr(self.llm, "validate_api_key"):
+            self.llm.validate_api_key()
         if hasattr(self, "embeddings"):
             # since we are using Langchain Embeddings directly, we need to check this
             if hasattr(self.embeddings, "validate_api_key"):

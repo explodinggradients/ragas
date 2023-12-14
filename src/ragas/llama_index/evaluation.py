@@ -77,7 +77,7 @@ def evaluate(
     except ImportError:
         raise ImportError(
             "llama_index must be installed to use this function. "
-            "Install it with `pip install llama_index`."
+            "Please, install it with `pip install llama_index`."
         )
 
     # TODO: rate limit, error handling, retries

@@ -15,7 +15,7 @@ from ragas.exceptions import OpenAIKeyNotFound
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:
-    from langchain.callbacks.manager import CallbackManager
+    from langchain.callbacks.base import Callbacks
 
     from ragas.embeddings.base import RagasEmbeddings
 
@@ -42,18 +42,19 @@ class AnswerSimilarity(MetricWithLLM):
         Default 0.5
     """
 
-    name: str = "answer_similarity"
-    evaluation_mode: EvaluationMode = EvaluationMode.ga
+    name: str = "answer_similarity"  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.ga  # type: ignore
     batch_size: int = 15
     embeddings: RagasEmbeddings = field(default_factory=embedding_factory)
     is_cross_encoder: bool = False
-    threshold: float = 0.5
+    threshold: t.Optional[float] = None
 
     def __post_init__(self: t.Self):
         # only for cross encoder
         if isinstance(self.embeddings, HuggingfaceEmbeddings):
             self.is_cross_encoder = True if self.embeddings.is_cross_encoder else False
             self.embeddings.encode_kwargs = {
+                **self.embeddings.encode_kwargs,
                 "batch_size": self.batch_size,
             }
 
@@ -67,7 +68,7 @@ class AnswerSimilarity(MetricWithLLM):
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
-        callbacks: t.Optional[CallbackManager] = None,
+        callbacks: t.Optional[Callbacks] = None,
         callback_group_name: str = "batch",
     ) -> list[float]:
         ground_truths, answers = dataset["ground_truths"], dataset["answer"]

@@ -25,7 +25,7 @@ class RagasLLM(ABC):
 
     @property
     @abstractmethod
-    def llm(self):
+    def llm(self) -> t.Any:
         ...
 
     def validate_api_key(self):
@@ -39,7 +39,7 @@ class RagasLLM(ABC):
         self,
         prompts: list[ChatPromptTemplate],
         n: int = 1,
-        temperature: float = 0,
+        temperature: float = 1e-8,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
         ...
@@ -47,7 +47,7 @@ class RagasLLM(ABC):
     @abstractmethod
     async def agenerate(
         self,
-        prompts: ChatPromptTemplate,
+        prompt: ChatPromptTemplate,
         n: int = 1,
         temperature: float = 1e-8,
         callbacks: t.Optional[Callbacks] = None,

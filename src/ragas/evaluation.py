@@ -19,12 +19,7 @@ from ragas.validation import (
 def evaluate(
     dataset: Dataset,
     metrics: list[Metric] | None = None,
-    column_map: dict[str, str] = {
-        "question": "question",
-        "contexts": "contexts",
-        "answer": "answer",
-        "ground_truths": "ground_truths",
-    },
+    column_map: dict[str, str] = {},
 ) -> Result:
     """
     Run the evaluation on the dataset with different metrics
@@ -40,7 +35,8 @@ def evaluate(
     column_map : dict[str, str], optional
         The column names of the dataset to use for evaluation. If the column names of
         the dataset are different from the default ones then you can provide the
-        mapping as a dictionary here.
+        mapping as a dictionary here. Example: If the dataset column name is contexts_v1,
+        column_map can be given as {"contexts":"contexts_v1"}
 
     Returns
     -------
@@ -131,7 +127,7 @@ class Result(dict):
     def __post_init__(self):
         values = []
         for cn in self.scores.column_names:
-            value = np.mean(self.scores[cn])
+            value = np.nanmean(self.scores[cn])
             self[cn] = value
             if cn not in self.binary_columns:
                 value = t.cast(float, value)

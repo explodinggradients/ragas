@@ -5,6 +5,17 @@ import warnings
 from collections import defaultdict, namedtuple
 from dataclasses import dataclass
 
+try:
+    from llama_index.indices.query.embedding_utils import get_top_k_embeddings
+    from llama_index.node_parser import SimpleNodeParser
+    from llama_index.readers.schema import Document as LlamaindexDocument
+    from llama_index.schema import BaseNode
+except ImportError:
+    raise ImportError(
+        "llama_index must be installed to use this function. "
+        "Please, install it with `pip install llama_index`."
+    )
+
 import numpy as np
 import numpy.testing as npt
 import pandas as pd
@@ -12,10 +23,6 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.document import Document as LangchainDocument
-from llama_index.indices.query.embedding_utils import get_top_k_embeddings
-from llama_index.node_parser import SimpleNodeParser
-from llama_index.readers.schema import Document as LlamaindexDocument
-from llama_index.schema import BaseNode
 from numpy.random import default_rng
 from tqdm import tqdm
 
@@ -32,7 +39,8 @@ from ragas.testset.prompts import (
     SCORE_CONTEXT,
     SEED_QUESTION,
 )
-from ragas.testset.utils import load_as_json, load_as_score
+from ragas.testset.utils import load_as_score
+from ragas.utils import load_as_json
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import RagasLLM
@@ -50,7 +58,16 @@ question_deep_map = {
     "conditional": "_condition_question",
 }
 
-DataRow = namedtuple("DataRow", ["question", "context", "answer", "question_type"])
+DataRow = namedtuple(
+    "DataRow",
+    [
+        "question",
+        "ground_truth_context",
+        "ground_truth",
+        "question_type",
+        "episode_done",
+    ],
+)
 
 
 @dataclass
@@ -64,21 +81,14 @@ class TestDataset:
     def to_pandas(self) -> pd.DataFrame:
         data_samples = []
         for data in self.test_data:
-            is_conv = len(data.context) > 1
-            question_type = data.question_type
-            data = [
-                {
-                    "question": qstn,
-                    "context": ctx,
-                    "answer": ans,
-                    "question_type": question_type,
-                    "episode_done": True,
-                }
-                for qstn, ctx, ans in zip(data.question, data.context, data.answer)
-            ]
-            if is_conv:
-                data[0].update({"episode_done": False})
-            data_samples.extend(data)
+            data = {
+                "question": data.question,
+                "ground_truth_context": data.ground_truth_context,
+                "ground_truth": data.ground_truth,
+                "question_type": data.question_type,
+                "episode_done": data.episode_done,
+            }
+            data_samples.append(data)
 
         return pd.DataFrame.from_records(data_samples)
 
@@ -253,10 +263,10 @@ class TestsetGenerator:
         return available_indices
 
     def _generate_doc_nodes_map(
-        self, documenet_nodes: t.List[BaseNode]
+        self, document_nodes: t.List[BaseNode]
     ) -> t.Dict[str, t.List[BaseNode]]:
         doc_nodes_map: t.Dict[str, t.List[BaseNode]] = defaultdict(list)
-        for node in documenet_nodes:
+        for node in document_nodes:
             if node.ref_doc_id:
                 doc_nodes_map[node.ref_doc_id].append(node)
 
@@ -391,10 +401,15 @@ class TestsetGenerator:
             is_valid_question = self._filter_question(question)
             if is_valid_question:
                 context = self._generate_context(question, text_chunk)
+                is_conv = len(context) > 1
                 answer = self._generate_answer(question, context)
-                samples.append(
-                    DataRow(question.split("\n"), context, answer, evolve_type)
-                )
+                for i, (qstn, ctx, ans) in enumerate(
+                    zip(question.split("\n"), context, answer)
+                ):
+                    episode_done = False if is_conv and i == 0 else True
+                    samples.append(
+                        DataRow(qstn, [ctx], [ans], evolve_type, episode_done)
+                    )
                 count += 1
                 pbar.update(count)
 

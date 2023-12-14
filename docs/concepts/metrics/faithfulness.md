@@ -11,7 +11,7 @@ The generated answer is regarded as faithful if all the claims that are made in 
 
 
 ```{hint}
-**Question**: Where and where was Einstein born?
+**Question**: Where and when was Einstein born?
 
 **Context**: Albert Einstein (born 14 March 1879) was a German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time
 
