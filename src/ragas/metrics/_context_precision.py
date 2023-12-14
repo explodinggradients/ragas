@@ -98,7 +98,7 @@ class ContextPrecision(MetricWithLLM):
                     json_loader.safe_load(item, self.llm) for item in sum(response, [])
                 ]
                 response = [
-                    "1" == resp.get("verdict", " ").strip()
+                    int("1" == resp.get("verdict", " ").strip())
                     if resp.get("verdict")
                     else np.nan
                     for resp in response
