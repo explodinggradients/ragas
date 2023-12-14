@@ -10,7 +10,7 @@ from langchain.schema import LLMResult
 
 from ragas.async_utils import run_async_tasks
 from ragas.exceptions import AzureOpenAIKeyNotFound, OpenAIKeyNotFound
-from ragas.llms.base import RagasLLM
+from ragas.llms.base import BaseRagasLLM
 from ragas.utils import NO_KEY
 
 if t.TYPE_CHECKING:
@@ -18,15 +18,15 @@ if t.TYPE_CHECKING:
     from langchain.prompts import ChatPromptTemplate
 
 
-def isOpenAI(llm: BaseLLM | BaseChatModel) -> bool:
+def isOpenAI(llm: BaseRagasLLM | BaseChatModel) -> bool:
     return isinstance(llm, OpenAI) or isinstance(llm, ChatOpenAI)
 
 
-def isBedrock(llm: BaseLLM | BaseChatModel) -> bool:
+def isBedrock(llm: BaseRagasLLM | BaseChatModel) -> bool:
     return isinstance(llm, Bedrock) or isinstance(llm, BedrockChat)
 
 
-def isAmazonAPIGateway(llm: BaseLLM | BaseChatModel) -> bool:
+def isAmazonAPIGateway(llm: BaseRagasLLM | BaseChatModel) -> bool:
     return isinstance(llm, AmazonAPIGateway)
 
 
@@ -70,14 +70,14 @@ def _compute_token_usage_langchain(list_llmresults: t.List[LLMResult]) -> t.Dict
     return llm_output
 
 
-class LangchainLLM(RagasLLM):
+class LangchainLLM(BaseRagasLLM):
     n_completions_supported: bool = True
 
-    def __init__(self, llm: BaseLLM | BaseChatModel):
+    def __init__(self, llm: BaseRagasLLM | BaseChatModel):
         self.langchain_llm = llm
 
     @property
-    def llm(self) -> BaseLLM | BaseChatModel:
+    def llm(self) -> BaseRagasLLM | BaseChatModel:
         return self.langchain_llm
 
     def validate_api_key(self):
@@ -112,7 +112,7 @@ class LangchainLLM(RagasLLM):
         old_n = self.langchain_llm.n
         self.langchain_llm.n = n
 
-        if isinstance(self.llm, BaseLLM):
+        if isinstance(self.llm, BaseRagasLLM):
             ps = [p.format() for p in prompts]
             result = self.llm.generate(ps, callbacks=callbacks)
         else:  # if BaseChatModel
@@ -127,7 +127,7 @@ class LangchainLLM(RagasLLM):
         prompts: list[ChatPromptTemplate],
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
-        if isinstance(self.llm, BaseLLM):
+        if isinstance(self.llm, BaseRagasLLM):
             ps = [p.format() for p in prompts]
             result = await self.llm.agenerate(ps, callbacks=callbacks)
         else:  # if BaseChatModel
@@ -155,7 +155,7 @@ class LangchainLLM(RagasLLM):
             )
             old_n = self.langchain_llm.n
             self.langchain_llm.n = n
-            if isinstance(self.llm, BaseLLM):
+            if isinstance(self.llm, BaseRagasLLM):
                 result = await self.llm.agenerate(
                     [prompt.format()], callbacks=callbacks
                 )
@@ -165,7 +165,7 @@ class LangchainLLM(RagasLLM):
                 )
             self.langchain_llm.n = old_n
         else:
-            if isinstance(self.llm, BaseLLM):
+            if isinstance(self.llm, BaseRagasLLM):
                 list_llmresults: list[LLMResult] = run_async_tasks(
                     [
                         self.llm.agenerate([prompt.format()], callbacks=callbacks)

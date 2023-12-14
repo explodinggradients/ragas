@@ -5,7 +5,7 @@ import typing as t
 from langchain.schema.output import Generation, LLMResult
 
 from ragas.async_utils import run_async_tasks
-from ragas.llms.base import RagasLLM
+from ragas.llms.base import BaseRagasLLM
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -20,7 +20,7 @@ if t.TYPE_CHECKING:
         )
 
 
-class LlamaIndexLLM(RagasLLM):
+class LlamaIndexLLM(BaseRagasLLM):
     def __init__(self, llm: LiLLM) -> None:
         self.llama_index_llm = llm
 

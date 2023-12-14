@@ -22,7 +22,7 @@ from ragas.llms import llm_factory
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
-    from ragas.llms import RagasLLM
+    from ragas.llms import BaseRagasLLM
 
 
 def make_batches(total_size: int, batch_size: int) -> list[range]:
@@ -110,7 +110,7 @@ class Metric(ABC):
 
 @dataclass
 class MetricWithLLM(Metric):
-    llm: RagasLLM = field(default_factory=llm_factory)
+    llm: BaseRagasLLM = field(default_factory=llm_factory)
 
     def init_model(self):
         """

@@ -6,11 +6,12 @@ from abc import ABC, abstractmethod
 from langchain.schema import LLMResult
 
 if t.TYPE_CHECKING:
-    from langchain.callbacks.base import Callbacks
     from langchain.prompts import ChatPromptTemplate
+    from langchain_core.callbacks import Callbacks
+    from langchain_core.prompt_values import PromptValue
 
 
-class RagasLLM(ABC):
+class BaseRagasLLM(ABC):
     """
     BaseLLM is the base class for all LLMs. It provides a consistent interface for other
     classes that interact with LLMs like Langchains, LlamaIndex, LiteLLM etc. Handles

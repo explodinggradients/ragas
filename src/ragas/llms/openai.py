@@ -27,7 +27,7 @@ from tenacity import (
 
 from ragas.async_utils import run_async_tasks
 from ragas.exceptions import AzureOpenAIKeyNotFound, OpenAIKeyNotFound
-from ragas.llms.base import RagasLLM
+from ragas.llms.base import BaseRagasLLM
 from ragas.llms.langchain import _compute_token_usage_langchain
 from ragas.utils import NO_KEY, get_debug_mode
 
@@ -94,7 +94,7 @@ def create_base_retry_decorator(
 retry_decorator = create_base_retry_decorator(errors, max_retries=4)
 
 
-class OpenAIBase(RagasLLM):
+class OpenAIBase(BaseRagasLLM):
     def __init__(self, model: str, _api_key_env_var: str, timeout: int = 60) -> None:
         self.model = model
         self._api_key_env_var = _api_key_env_var

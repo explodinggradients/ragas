@@ -7,7 +7,7 @@ from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema import Generation, LLMResult
 
 from ragas.embeddings import AzureOpenAIEmbeddings, OpenAIEmbeddings
-from ragas.llms.base import RagasLLM
+from ragas.llms.base import BaseRagasLLM
 from ragas.llms.openai import (
     AzureOpenAI,
     AzureOpenAIKeyNotFound,
@@ -17,7 +17,7 @@ from ragas.llms.openai import (
 from ragas.utils import NO_KEY
 
 
-class TestLLM(RagasLLM):
+class TestLLM(BaseRagasLLM):
     def llm(self):
         return self
 
