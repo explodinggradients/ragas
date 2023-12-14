@@ -1,5 +1,6 @@
 import heapq
 import typing as t
+import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
@@ -17,7 +18,7 @@ Embedding = t.Union[t.List[float], npt.NDArray[np.float64]]
 
 
 class Document(LCDocument):
-    doc_id: str
+    doc_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     filename: t.Optional[str] = None
     embedding: t.Optional[t.List[float]] = Field(default=None, repr=False)
 
@@ -27,15 +28,17 @@ class DocumentStore(ABC):
         self.documents = {}
 
     @abstractmethod
-    def add_documents(self, docs: t.List[Document]):
+    def add(self, docs: t.List[Document], show_progress: bool = False):
         ...
 
     @abstractmethod
-    def get_document(self, doc_id: int) -> Document:
+    def get(self, doc_id: int) -> Document:
         ...
 
     @abstractmethod
-    def get_similar(self, doc: Document) -> t.List[Document]:
+    def get_similar(
+        self, doc: Document, threshold: float = 0.7, top_k: int = 3
+    ) -> t.List[Document]:
         ...
 
     @abstractmethod
@@ -107,7 +110,7 @@ def get_top_k_embeddings(
 
 
 @dataclass
-class InMemoryDocumentStore:
+class InMemoryDocumentStore(DocumentStore):
     splitter: TextSplitter
     embeddings: RagasEmbeddings = field(default_factory=embedding_factory, repr=False)
     documents_list: t.List[Document] = field(default_factory=list)
