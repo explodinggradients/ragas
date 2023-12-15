@@ -53,7 +53,7 @@ statements in json:"""  # noqa: E501
 
 NLI_STATEMENTS_MESSAGE = HumanMessagePromptTemplate.from_template(
     """
- Natural language inference. Only use "Yes" or "No" as verdict.
+ Natural language inference. Use only "Yes" (1) or "No" (0) as a binary verdict.
 
 Context:
 John is a student at XYZ University. He is pursuing a degree in Computer Science. He is enrolled in several courses this semester, including Data Structures, Algorithms, and Database Management. John is a diligent student and spends a significant amount of time studying and completing assignments. He often stays late in the library to work on his projects.
@@ -66,22 +66,22 @@ Answer:
     {{
         "statement_1": "John is majoring in Biology.",
         "reason": "John's major is explicitly mentioned as Computer Science. There is no information suggesting he is majoring in Biology.",
-        "verdict": "No"
+        "verdict": "0"
     }},
     {{
         "statement_2": "John is taking a course on Artificial Intelligence.",
         "reason": "The context mentions the courses John is currently enrolled in, and Artificial Intelligence is not mentioned. Therefore, it cannot be deduced that John is taking a course on AI.",
-        "verdict": "No"
+        "verdict": "0"
     }},
     {{
         "statement_3": "John is a dedicated student.",
         "reason": "The context states that he spends a significant amount of time studying and completing assignments. Additionally, it mentions that he often stays late in the library to work on his projects, which implies dedication.",
-        "verdict": "Yes"
+        "verdict": "1"
     }},
     {{
         "statement_4": "John has a part-time job.",
         "reason": "There is no information given in the context about John having a part-time job.",
-        "verdict": "No"
+        "verdict": "0"
     }}
 ]
 
@@ -93,7 +93,7 @@ Answer:
      {{
         "statement_1": "Albert Einstein was a genius.",
         "reason": "The context and statement are unrelated"
-        "verdict": "No"
+        "verdict": "0"
     }}
 ]
 
@@ -105,7 +105,7 @@ Answer:
      {{
         "statement_1": "Nil",
         "reason": "The statement is invalid",
-        "verdict": "No"
+        "verdict": "0"
     }}
 ]
 
@@ -169,7 +169,7 @@ class Faithfulness(MetricWithLLM):
 
             result = self.llm.generate(prompts, callbacks=batch_group)
             outputs = result.generations
-            verdict_score_map = {"yes": 1, "no": 0, "null": np.nan}
+            verdict_score_map = {"1": 1, "0": 0, "null": np.nan}
             scores = []
             for output in outputs:
                 output = json_loader.safe_load(output[0].text, self.llm)
