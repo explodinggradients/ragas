@@ -7,6 +7,7 @@ import numpy as np
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
+from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import json_loader
 
@@ -125,67 +126,62 @@ class Faithfulness(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
     batch_size: int = 15
 
-    def _score_batch(
+    def ascore(
         self: t.Self,
-        dataset: Dataset,
+        data_row: t.Dict,
         callbacks: t.Optional[Callbacks] = None,
-        callback_group_name: str = "batch",
-    ) -> list[float]:
+    ) -> float:
         """
         returns the NLI score for each (q, c, a) pair
         """
+        assert self.llm is not None, "LLM is not set"
 
         question, answer, contexts = (
-            dataset["question"],
-            dataset["answer"],
-            dataset["contexts"],
+            data_row["question"],
+            data_row["answer"],
+            data_row["contexts"],
         )
-        prompts = []
 
-        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(
-            callback_group_name, callback_manager=cb
-        ) as batch_group:
-            for q, a in zip(question, answer):
-                human_prompt = LONG_FORM_ANSWER_PROMPT.format(question=q, answer=a)
-                prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
+        # extract statements from answer given the question
+        human_prompt = LONG_FORM_ANSWER_PROMPT.format(question=question, answer=answer)
+        p = Prompt(
+            chat_prompt_template=ChatPromptTemplate.from_messages([human_prompt])
+        )
+        result = self.llm.generate_text(p, callbacks=callbacks)
 
-            result = self.llm.generate(prompts, callbacks=batch_group)
+        # check if the statements are support in the contexts
+        contexts_str: str = "\n".join(contexts)
+        statements = json_loader.safe_load(result.generations[0][0].text, self.llm).get(
+            "statements", []
+        )
+        statements = statements if statements != [] else ["Nil"]
+        statements_str: str = "\n".join(
+            [f"statement_{i+1}: {st}" for i, st in enumerate(statements)]
+        )
+        human_prompt = NLI_STATEMENTS_MESSAGE.format(
+            context=contexts_str, statements=statements_str
+        )
+        p = Prompt(
+            chat_prompt_template=ChatPromptTemplate.from_messages([human_prompt])
+        )
+        result = self.llm.generate_text(p, callbacks=callbacks)
 
-            prompts = []
-            for context, output in zip(contexts, result.generations):
-                statements = json_loader.safe_load(output[0].text, self.llm).get(
-                    "statements", []
-                )
-                statements = statements if statements != [] else ["Nil"]
-                statements_str: str = "\n".join(
-                    [f"statement_{i+1}: {st}" for i, st in enumerate(statements)]
-                )
-                contexts_str: str = "\n".join(context)
-                human_prompt = NLI_STATEMENTS_MESSAGE.format(
-                    context=contexts_str, statements=statements_str
-                )
-                prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
+        # check the verdicts and compute the score
+        output = result.generations[0][0]
+        verdict_score_map = {"yes": 1, "no": 0, "null": np.nan}
+        output = json_loader.safe_load(output.text, self.llm)
+        output = output if isinstance(output, list) else []
+        faithful_statements = sum(
+            verdict_score_map.get(dict.get("verdict", "").lower(), np.nan)
+            for dict in output
+        )
+        num_statements = len(output)
+        if num_statements:
+            score = faithful_statements / num_statements
+        else:
+            score = np.nan
 
-            result = self.llm.generate(prompts, callbacks=batch_group)
-            outputs = result.generations
-            verdict_score_map = {"yes": 1, "no": 0, "null": np.nan}
-            scores = []
-            for output in outputs:
-                output = json_loader.safe_load(output[0].text, self.llm)
-                output = output if isinstance(output, list) else []
-                faithful_statements = sum(
-                    verdict_score_map.get(dict.get("verdict", "").lower(), np.nan)
-                    for dict in output
-                )
-                num_statements = len(output)
-                if num_statements:
-                    score = faithful_statements / num_statements
-                else:
-                    score = np.nan
-                scores.append(score)
-
-        return scores
+        return score
 
 
 faithfulness = Faithfulness()

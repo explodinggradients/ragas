@@ -13,6 +13,8 @@ if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
     from langchain_core.prompt_values import PromptValue
 
+    from ragas.llms.prompt import Prompt
+
 MULTIPLE_COMPLETION_SUPPORTED = [
     OpenAI,
     ChatOpenAI,
@@ -41,7 +43,7 @@ class BaseRagasLLM(BaseLanguageModel):
 
     def generate_text(
         self,
-        prompt: PromptValue,
+        prompt: Prompt,
         n: int = 1,
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
@@ -70,7 +72,7 @@ class BaseRagasLLM(BaseLanguageModel):
 
     async def agenerate_text(
         self,
-        prompt: PromptValue,
+        prompt: Prompt,
         n: int = 1,
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
