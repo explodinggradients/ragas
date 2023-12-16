@@ -16,7 +16,7 @@ if t.TYPE_CHECKING:
 
 CONTEXT_RECALL_RA = HumanMessagePromptTemplate.from_template(
     """
-Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not. Output json with reason.
+Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not. Use only "Yes" (1) or "No" (0) as a binary classification. Output json with reason.
 
 
 question: What can you tell me about albert Albert Einstein?
@@ -26,22 +26,22 @@ classification:
 [
     {{  "statement_1":"Albert Einstein, born on 14 March 1879, was a German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time.",
         "reason": "The date of birth of Einstein is mentioned clearly in the context.",
-        "Attributed": "Yes"
+        "Attributed": "1"
     }},
     {{
         "statement_2":"He received the 1921 Nobel Prize in Physics 'for his services to theoretical physics.",
         "reason": "The exact sentence is present in the given context.",
-        "Attributed": "Yes"
+        "Attributed": "1"
     }},
     {{
         "statement_3": "He published 4 papers in 1905.",
         "reason": "There is no mention about papers he wrote in the given context.",
-        "Attributed": "No"
+        "Attributed": "0"
     }},
     {{
         "statement_4":"Einstein moved to Switzerland in 1895.",
         "reason": "There is no supporting evidence for this in the given context.",
-        "Attributed": "No"
+        "Attributed": "0"
     }}
 ]
 
@@ -54,7 +54,7 @@ classification:
     {{
         "statement_1":"England won the 2022 ICC Men's T20 World Cup.",
         "reason": "From context it is clear that England defeated Pakistan to win the World Cup.",
-         "Attributed": "Yes"
+         "Attributed": "1"
     }}
 ]
 
@@ -121,7 +121,7 @@ class ContextRecall(MetricWithLLM):
                 response = json_loader.safe_load(response[0], self.llm)
                 if response:
                     response = [
-                        int(item.get("Attributed", "").lower() == "yes")
+                        int(item.get("Attributed", "0").strip() == "1")
                         if item.get("Attributed")
                         else np.nan
                         for item in response
