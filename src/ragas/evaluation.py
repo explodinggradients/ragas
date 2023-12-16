@@ -15,11 +15,15 @@ from ragas.validation import (
     validate_evaluation_modes,
 )
 
+if t.TYPE_CHECKING:
+    from langchain_core.callbacks import Callbacks
+
 
 def evaluate(
     dataset: Dataset,
     metrics: list[Metric] | None = None,
     column_map: dict[str, str] = {},
+    callbacks: Callbacks = [],
 ) -> Result:
     """
     Run the evaluation on the dataset with different metrics
@@ -98,7 +102,9 @@ def evaluate(
         if isinstance(metric, AspectCritique):
             binary_metrics.append(metric.name)
         print(f"evaluating with [{metric.name}]")
-        scores.append(metric.score(dataset).select_columns(metric.name))
+        scores.append(
+            metric.score(dataset, callbacks=callbacks).select_columns(metric.name)
+        )
 
     # log the evaluation event
     metrics_names = [m.name for m in metrics]
