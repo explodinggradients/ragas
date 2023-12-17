@@ -17,10 +17,10 @@ class RagasPrompt(PromptValue):
     RagasPrompt is a class that represents a prompt for the ragas metrics.
     """
     instruction: str
-    examples: t.Optional[t.List[dict[str, t.Any]]] = []
+    examples: t.List[t.Dict[str, t.Any]] = []
     input_keys: t.List[str]
     output_key: str
-    output_type: t.Optional[str] = 'JSON'
+    output_type: str = 'JSON'
     
     def to_string(self) -> str:
         """Return prompt value as string."""
@@ -29,38 +29,37 @@ class RagasPrompt(PromptValue):
     def to_messages(self) -> t.List[BaseMessage]:
         """Return prompt as a list of Messages."""
         ...
-
-    @root_validator
-    def validate(cls, values: t.Dict) -> t.Dict:
+    @root_validator()
+    def validate_prompt(cls, value: t.Dict[str, str]) -> t.Dict[str, str]:
         """
         Validate the template string to ensure that it is in desired format.
         """
-        if values.get("instruction") is None or values.get("instruction") == "":
+        if value.get("instruction") is None or value.get("instruction") == "":
             raise ValueError(
                 "Instruction cannot be empty"
             )
-        if values.get("input_keys") is None or values.get("instruction") == []:
+        if value.get("input_keys") is None or value.get("instruction") == []:
             raise ValueError(
                 "Input keys cannot be empty"
             )
-        if values.get("output_key") is None or values.get("output_key") == "":
+        if value.get("output_key") is None or value.get("output_key") == "":
             raise ValueError(
                 "Output key cannot be empty"
             )
         
-        if values.get("examples"):
-            output_key = values.get("output_key")
-            for no, example in enumerate(values.get("examples")):
-                for inp_key in values.get("input_keys"):
-                    if inp_key not in example:
+        if value.get("examples"):
+            output_key = value["output_key"]
+            for no, example in enumerate(value['examples']):
+                for inp_key in value['input_keys']:
+                    if not inp_key in example:
                         raise ValueError(
                             f"Example {no+1} does not have the variable {inp_key} in the definition"
                         )
-                if output_key not in example:
+                if not output_key in example:
                     raise ValueError(
                         f"Example {no+1} does not have the variable {output_key} in the definition"
                     )
-                if values.get("output_type") == 'JSON':
+                if value["output_type"] == 'JSON':
                     try:
                         json.loads(example[output_key])
                     except ValueError as e:
@@ -68,7 +67,7 @@ class RagasPrompt(PromptValue):
                             f"{output_key} in example {no+1} is not in valid JSON format: {e}"
                         )
 
-        return values
+        return value
 
     def generate_prompt_string(self) -> str:
         """
@@ -88,7 +87,7 @@ class RagasPrompt(PromptValue):
 
         return prompt_str
 
-    def format(self, **kwargs: t.Any) -> str:
+    def format(self, **kwargs: t.Any) -> ChatPromptTemplate:
         """
         Format the RagasPrompt object into a ChatPromptTemplate object to be used in metrics.
         """
