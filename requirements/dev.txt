@@ -7,3 +7,4 @@ llama_index
 notebook
 sphinx-autobuild
 sentence-transformers
+fastembed
