@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import typing as t
-from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 from langchain.chat_models import AzureChatOpenAI, BedrockChat, ChatOpenAI, ChatVertexAI
 from langchain.llms import AmazonAPIGateway, AzureOpenAI, Bedrock, OpenAI, VertexAI
@@ -25,7 +25,7 @@ MULTIPLE_COMPLETION_SUPPORTED = [
 ]
 
 
-def is_multiple_completion_supported(llm: BaseRagasLLM) -> bool:
+def is_multiple_completion_supported(llm: BaseLanguageModel) -> bool:
     """Return whether the given LLM supports n-completion."""
     for llm_type in MULTIPLE_COMPLETION_SUPPORTED:
         if isinstance(llm, llm_type):
@@ -33,13 +33,16 @@ def is_multiple_completion_supported(llm: BaseRagasLLM) -> bool:
     return False
 
 
-class BaseRagasLLM(BaseLanguageModel):
+@dataclass
+class BaseRagasLLM:
     """
     A simple base class for RagasLLMs that is based on Langchain's BaseLanguageModel
     interface. it implements 2 functions:
     - generate_text: for generating text from a given PromptValue
     - agenerate_text: for generating text from a given PromptValue asynchronously
     """
+
+    langchain_llm: BaseLanguageModel
 
     def generate_text(
         self,
@@ -49,8 +52,8 @@ class BaseRagasLLM(BaseLanguageModel):
         stop: t.Optional[t.List[str]] = None,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
-        if is_multiple_completion_supported(self):
-            return self.generate_prompt(
+        if is_multiple_completion_supported(self.langchain_llm):
+            return self.langchain_llm.generate_prompt(
                 prompts=[prompt],
                 n=n,
                 temperature=temperature,
@@ -58,7 +61,7 @@ class BaseRagasLLM(BaseLanguageModel):
                 callbacks=callbacks,
             )
         else:
-            result = self.generate_prompt(
+            result = self.langchain_llm.generate_prompt(
                 prompts=[prompt] * n,
                 temperature=temperature,
                 stop=stop,
@@ -78,8 +81,8 @@ class BaseRagasLLM(BaseLanguageModel):
         stop: t.Optional[t.List[str]] = None,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
-        if is_multiple_completion_supported(self):
-            return await self.agenerate_prompt(
+        if is_multiple_completion_supported(self.langchain_llm):
+            return await self.langchain_llm.agenerate_prompt(
                 prompts=[prompt],
                 n=n,
                 temperature=temperature,
@@ -87,7 +90,7 @@ class BaseRagasLLM(BaseLanguageModel):
                 callbacks=callbacks,
             )
         else:
-            result = await self.agenerate_prompt(
+            result = await self.langchain_llm.agenerate_prompt(
                 prompts=[prompt] * n,
                 temperature=temperature,
                 stop=stop,

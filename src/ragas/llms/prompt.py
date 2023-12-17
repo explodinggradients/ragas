@@ -1,11 +1,9 @@
 import typing as t
 
+from langchain.prompts import ChatPromptTemplate
 from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.prompt_values import PromptValue
 from pydantic import Field
-
-if t.TYPE_CHECKING:
-    from langchain.prompts import ChatPromptTemplate
 
 
 class Prompt(PromptValue):
