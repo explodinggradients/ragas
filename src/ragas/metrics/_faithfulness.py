@@ -126,11 +126,7 @@ class Faithfulness(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
     batch_size: int = 15
 
-    def ascore(
-        self: t.Self,
-        data_row: t.Dict,
-        callbacks: t.Optional[Callbacks] = None,
-    ) -> float:
+    async def _ascore(self: t.Self, data_row: t.Dict, callbacks: Callbacks) -> float:
         """
         returns the NLI score for each (q, c, a) pair
         """
@@ -147,7 +143,7 @@ class Faithfulness(MetricWithLLM):
         p = Prompt(
             chat_prompt_template=ChatPromptTemplate.from_messages([human_prompt])
         )
-        result = self.llm.generate_text(p, callbacks=callbacks)
+        result = await self.llm.agenerate_text(p, callbacks=callbacks)
 
         # check if the statements are support in the contexts
         contexts_str: str = "\n".join(contexts)
@@ -164,7 +160,7 @@ class Faithfulness(MetricWithLLM):
         p = Prompt(
             chat_prompt_template=ChatPromptTemplate.from_messages([human_prompt])
         )
-        result = self.llm.generate_text(p, callbacks=callbacks)
+        result = await self.llm.agenerate_text(p, callbacks=callbacks)
 
         # check the verdicts and compute the score
         output = result.generations[0][0]

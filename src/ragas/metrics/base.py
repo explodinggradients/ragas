@@ -13,31 +13,16 @@ from enum import Enum
 from math import floor
 
 from datasets import Dataset
-from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
+from langchain_core.callbacks import CallbackManager, CallbackManagerForChainGroup
 from tqdm import tqdm
 
 from ragas.embeddings.base import RagasEmbeddings
 from ragas.llms import llm_factory
 
 if t.TYPE_CHECKING:
-    from langchain.callbacks.base import Callbacks
+    from langchain_core.callbacks import Callbacks
 
     from ragas.llms import BaseRagasLLM
-
-
-def make_batches(total_size: int, batch_size: int) -> list[range]:
-    """
-    Take a total size and batch size and return a list of ranges for the batches
-    """
-    tail = total_size % batch_size
-    num_batches = floor(total_size / batch_size)
-    batches = [
-        range(i, i + batch_size) for i in range(0, batch_size * num_batches, batch_size)
-    ]
-    if tail != 0:
-        batches.append(range(batch_size * num_batches, batch_size * num_batches + tail))
-
-    return batches
 
 
 EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg")
@@ -66,15 +51,44 @@ class Metric(ABC):
 
     def score(
         self: t.Self,
-        dataset: Dataset,
+        data_row: t.Dict,
         callbacks: t.Optional[Callbacks] = None,
     ) -> float:
         raise NotImplemented
 
-    @abstractmethod
-    def ascore(
-        self: t.Self, dataset: Dataset, callbacks: t.Optional[Callbacks] = None
+    async def ascore(
+        self: t.Self, data_row: t.Dict, callbacks: Callbacks = []
     ) -> float:
+        if isinstance(callbacks, list):
+            cm = CallbackManager.configure(inheritable_callbacks=callbacks)
+        else:
+            cm = t.cast(CallbackManager, callbacks)
+
+        rm = cm.on_chain_start({"name": self.name}, data_row)
+        child_cm = rm.get_child()
+        group_cm = CallbackManagerForChainGroup(
+            child_cm.handlers,
+            child_cm.inheritable_handlers,
+            child_cm.parent_run_id,
+            parent_run_manager=rm,
+            tags=child_cm.tags,
+            inheritable_tags=child_cm.inheritable_tags,
+            metadata=child_cm.metadata,
+            inheritable_metadata=child_cm.inheritable_metadata,
+        )
+        try:
+            score = await self._ascore(data_row=data_row, callbacks=group_cm)
+        except Exception as e:
+            if not group_cm.ended:
+                rm.on_chain_error(e)
+            raise e
+        else:
+            if not group_cm.ended:
+                rm.on_chain_end({"output": score})
+        return score
+
+    @abstractmethod
+    async def _ascore(self, data_row: t.Dict, callbacks: Callbacks = []) -> float:
         ...
 
 
@@ -90,7 +104,7 @@ class MetricWithLLM(Metric):
         """
         if self.llm is None:
             raise ValueError(
-                f"Metric '{self.name}' has no valid LLM provided. Please initantiate a the metric with an LLM to run."  # noqa
+                f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please initantiate a the metric with an LLM to run."  # noqa
             )
         if hasattr(self.llm, "validate_api_key"):
             self.llm.validate_api_key()

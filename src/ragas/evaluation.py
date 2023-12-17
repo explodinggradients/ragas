@@ -7,8 +7,11 @@ import numpy as np
 from datasets import Dataset, concatenate_datasets
 
 from ragas._analytics import EvaluationEvent, track
+from ragas.async_utils import run_async_tasks
+from ragas.callbacks import new_group
 from ragas.metrics.base import Metric
-from ragas.metrics.critique import AspectCritique
+
+# from ragas.metrics.critique import AspectCritique
 from ragas.validation import (
     remap_column_names,
     validate_column_dtypes,
@@ -22,8 +25,9 @@ if t.TYPE_CHECKING:
 def evaluate(
     dataset: Dataset,
     metrics: list[Metric] | None = None,
-    column_map: dict[str, str] = {},
     callbacks: Callbacks = [],
+    is_async: bool = True,
+    column_map: dict[str, str] = {},
 ) -> Result:
     """
     Run the evaluation on the dataset with different metrics
@@ -96,15 +100,48 @@ def evaluate(
     # initialize all the models in the metrics
     [m.init_model() for m in metrics]
 
-    scores = []
+    # new evaluation chain
+    evaluation_rm, evaluation_group_cm = new_group(
+        name="ragas evaluation", inputs={}, callbacks=callbacks, is_async=is_async
+    )
+    # list of chains for each row
+    row_chains = []
+
+    scoring_tasks = []
     binary_metrics = []
     for metric in metrics:
-        if isinstance(metric, AspectCritique):
-            binary_metrics.append(metric.name)
-        print(f"evaluating with [{metric.name}]")
-        scores.append(
-            metric.score(dataset, callbacks=callbacks).select_columns(metric.name)
+        # if isinstance(metric, AspectCritique):
+        # binary_metrics.append(metric.name)
+        ...
+    for i, row in enumerate(dataset):
+        row_rm, row_group_cm = new_group(
+            name=f"row {i}",
+            inputs=row,
+            callbacks=evaluation_group_cm,
+            is_async=is_async,
         )
+        scoring_tasks.extend(
+            [metric.ascore(data_row=row, callbacks=row_group_cm) for metric in metrics]
+        )
+        row_chains.append(row_rm)
+    # run the evaluation tasks
+    try:
+        results = run_async_tasks(
+            scoring_tasks, show_progress=True, progress_bar_desc="evaluating dataset"
+        )
+        # TODO: closing row chains here. handle errors here too
+        [chain.on_chain_end({}) for chain in row_chains]
+
+    # run evaluation task
+    except Exception as e:
+        if not evaluation_group_cm.ended:
+            evaluation_rm.on_chain_error(e)
+        raise e
+    else:
+        if not evaluation_group_cm.ended:
+            evaluation_rm.on_chain_end({})
+
+    return results
 
     # log the evaluation event
     metrics_names = [m.name for m in metrics]
