@@ -28,3 +28,4 @@ def test_import_module():
 
     for metric in test_critique:
         assert hasattr(ragas.metrics.critique, metric)
+test_import_module()
