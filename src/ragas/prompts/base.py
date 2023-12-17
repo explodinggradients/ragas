@@ -35,15 +35,15 @@ class RagasPrompt(PromptValue):
         """
         Validate the template string to ensure that it is in desired format.
         """
-        if values.get("instruction") == None or values.get("instruction") == "":
+        if values.get("instruction") is None or values.get("instruction") == "":
             raise ValueError(
                 "Instruction cannot be empty"
             )
-        if values.get("input_keys") == None or values.get("instruction") == []:
+        if values.get("input_keys") is None or values.get("instruction") == []:
             raise ValueError(
                 "Input keys cannot be empty"
             )
-        if values.get("output_key") == None or values.get("output_key") == "":
+        if values.get("output_key") is None or values.get("output_key") == "":
             raise ValueError(
                 "Output key cannot be empty"
             )
@@ -62,7 +62,7 @@ class RagasPrompt(PromptValue):
                     )
                 if values.get("output_type") == 'JSON':
                     try:
-                        example_json = json.loads(example[output_key])
+                        json.loads(example[output_key])
                     except ValueError as e:
                         raise ValueError(
                             f"{output_key} in example {no+1} is not in valid JSON format: {e}"
