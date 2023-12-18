@@ -23,27 +23,27 @@ class Prompt(PromptValue):
     output_type: str = 'json'
 
     @root_validator
-    def validate_prompt(cls, value: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+    def validate_prompt(cls, values: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
         """
         Validate the template string to ensure that it is in desired format.
         """
-        if value.get("instruction") is None or value.get("instruction") == "":
+        if values.get("instruction") is None or values.get("instruction") == "":
             raise ValueError(
                 "instruction cannot be empty"
             )
-        if value.get("input_keys") is None or value.get("instruction") == []:
+        if values.get("input_keys") is None or values.get("instruction") == []:
             raise ValueError(
                 "input_keys cannot be empty"
             )
-        if value.get("output_key") is None or value.get("output_key") == "":
+        if values.get("output_key") is None or values.get("output_key") == "":
             raise ValueError(
                 "output_key cannot be empty"
             )
         
-        if value.get("examples"):
-            output_key = value["output_key"]
-            for no, example in enumerate(value['examples']):
-                for inp_key in value['input_keys']:
+        if values.get("examples"):
+            output_key = values["output_key"]
+            for no, example in enumerate(values['examples']):
+                for inp_key in values['input_keys']:
                     if inp_key not in example:
                         raise ValueError(
                             f"example {no+1} does not have the variable {inp_key} in the definition"
@@ -52,7 +52,7 @@ class Prompt(PromptValue):
                     raise ValueError(
                         f"example {no+1} does not have the variable {output_key} in the definition"
                     )
-                if value["output_type"] == 'json':
+                if values["output_type"] == 'json':
                     try:
                         if output_key in example:
                             json.loads(example[output_key])
@@ -61,7 +61,7 @@ class Prompt(PromptValue):
                             f"{output_key} in example {no+1} is not in valid json format: {e}"
                         )
 
-        return value
+        return values
 
     def to_string(self) -> str:
         """
