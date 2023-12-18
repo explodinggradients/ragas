@@ -1,4 +1,5 @@
 from ragas.evaluation import evaluate
+from ragas.prompt import Prompt
 
 try:
     from ._version import version as __version__
@@ -8,4 +9,4 @@ except ImportError:
     version_tuple = (0, 0, "unknown version")
 
 
-__all__ = ["evaluate", "__version__", "version_tuple"]
+__all__ = ["evaluate", "Prompt", "__version__", "version_tuple"]

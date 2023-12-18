@@ -4,6 +4,7 @@ isort
 black[jupyter]
 pyright
 llama_index
+langchain-core
 notebook
 sphinx-autobuild
 sentence-transformers

@@ -5,14 +5,14 @@ import typing as t
 
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain_core.prompt_values import PromptValue
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import BaseMessage, HumanMessage
 
 try:
     from pydantic.v1 import root_validator
 except ImportError:
     from pydantic import root_validator
 
-class RagasPrompt(PromptValue):
+class Prompt(PromptValue):
     """
     RagasPrompt is a class that represents a prompt for the ragas metrics.
     """
@@ -20,56 +20,50 @@ class RagasPrompt(PromptValue):
     examples: t.List[t.Dict[str, t.Any]] = []
     input_keys: t.List[str]
     output_key: str
-    output_type: str = 'JSON'
-    
-    def to_string(self) -> str:
-        """Return prompt value as string."""
-        ...
-    
-    def to_messages(self) -> t.List[BaseMessage]:
-        """Return prompt as a list of Messages."""
-        ...
+    output_type: str = 'json'
+
     @root_validator()
-    def validate_prompt(cls, value: t.Dict[str, str]) -> t.Dict[str, str]:
+    def validate_prompt(cls, value: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
         """
         Validate the template string to ensure that it is in desired format.
         """
         if value.get("instruction") is None or value.get("instruction") == "":
             raise ValueError(
-                "Instruction cannot be empty"
+                "instruction cannot be empty"
             )
         if value.get("input_keys") is None or value.get("instruction") == []:
             raise ValueError(
-                "Input keys cannot be empty"
+                "input_keys cannot be empty"
             )
         if value.get("output_key") is None or value.get("output_key") == "":
             raise ValueError(
-                "Output key cannot be empty"
+                "output_key cannot be empty"
             )
         
         if value.get("examples"):
             output_key = value["output_key"]
             for no, example in enumerate(value['examples']):
                 for inp_key in value['input_keys']:
-                    if not inp_key in example:
+                    if inp_key not in example:
                         raise ValueError(
-                            f"Example {no+1} does not have the variable {inp_key} in the definition"
+                            f"example {no+1} does not have the variable {inp_key} in the definition"
                         )
-                if not output_key in example:
+                if output_key not in example:
                     raise ValueError(
-                        f"Example {no+1} does not have the variable {output_key} in the definition"
+                        f"example {no+1} does not have the variable {output_key} in the definition"
                     )
-                if value["output_type"] == 'JSON':
+                if value["output_type"] == 'json':
                     try:
-                        json.loads(example[output_key])
+                        if output_key in example:
+                            json.loads(example[output_key])
                     except ValueError as e:
                         raise ValueError(
-                            f"{output_key} in example {no+1} is not in valid JSON format: {e}"
+                            f"{output_key} in example {no+1} is not in valid json format: {e}"
                         )
 
         return value
 
-    def generate_prompt_string(self) -> str:
+    def to_string(self) -> str:
         """
         Generate the prompt string from the variables.
         """
@@ -78,7 +72,7 @@ class RagasPrompt(PromptValue):
         # Format the examples to match the Langchain prompt template
         for example in self.examples:
             for key, value in example.items():
-                value = value.replace('{','{{').replace('}','}}') if self.output_type == 'JSON' else value
+                value = value.replace('{','{{').replace('}','}}') if self.output_type == 'json' else value
                 prompt_str += f'\n{key}: {value}'
             prompt_str += '\n'
         
@@ -86,6 +80,25 @@ class RagasPrompt(PromptValue):
         prompt_str += f'\n{self.output_key}: \n'
 
         return prompt_str
+
+    def to_messages(self) -> t.List[BaseMessage]:
+        """Return prompt as a list of Messages."""
+        return [HumanMessage(content=self.to_string())]
+    
+    def get_example_str(self, example_no: int) -> str:
+        """
+        Get the example string from the example number.
+        """
+        if example_no >= len(self.examples):
+            raise ValueError(
+                f"example number {example_no} is out of range"
+            )
+        example = self.examples[example_no]
+        example_str = ''
+        for key, value in example.items():
+            value = value.replace('{','{{').replace('}','}}') if self.output_type == 'json' else value
+            example_str += f'\n{key}: {value}'
+        return example_str
 
     def format(self, **kwargs: t.Any) -> ChatPromptTemplate:
         """
@@ -95,6 +108,6 @@ class RagasPrompt(PromptValue):
             raise ValueError(
                 f"Input variables {self.input_keys} do not match with the given parameters {list(kwargs.keys())}"
             )
-        prompt = self.generate_prompt_string()
+        prompt = self.to_string()
         human_prompt = HumanMessagePromptTemplate.from_template(prompt)
         return ChatPromptTemplate.from_messages([human_prompt.format(**kwargs)])
