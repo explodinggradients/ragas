@@ -126,16 +126,16 @@ class Faithfulness(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
     batch_size: int = 15
 
-    async def _ascore(self: t.Self, data_row: t.Dict, callbacks: Callbacks) -> float:
+    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
         """
         returns the NLI score for each (q, c, a) pair
         """
         assert self.llm is not None, "LLM is not set"
 
         question, answer, contexts = (
-            data_row["question"],
-            data_row["answer"],
-            data_row["contexts"],
+            row["question"],
+            row["answer"],
+            row["contexts"],
         )
 
         # extract statements from answer given the question

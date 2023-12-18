@@ -9,7 +9,8 @@ from datasets import Dataset, concatenate_datasets
 from ragas._analytics import EvaluationEvent, track
 from ragas.async_utils import run_async_tasks
 from ragas.callbacks import new_group
-from ragas.metrics.base import Metric
+from ragas.llms.base import BaseRagasLLM
+from ragas.metrics.base import Metric, MetricWithLLM
 
 # from ragas.metrics.critique import AspectCritique
 from ragas.validation import (
@@ -25,6 +26,7 @@ if t.TYPE_CHECKING:
 def evaluate(
     dataset: Dataset,
     metrics: list[Metric] | None = None,
+    llm: t.Optional[BaseRagasLLM] = None,
     callbacks: Callbacks = [],
     is_async: bool = True,
     column_map: dict[str, str] = {},
@@ -90,15 +92,16 @@ def evaluate(
 
         metrics = [answer_relevancy, context_precision, faithfulness, context_recall]
 
+    if llm is None:
+        from ragas.llms import llm_factory
+
+        llm = llm_factory()
+
     # remap column names from the dataset
     dataset = remap_column_names(dataset, column_map)
     # validation
     validate_evaluation_modes(dataset, metrics)
     validate_column_dtypes(dataset)
-
-    # run the evaluation on dataset with different metrics
-    # initialize all the models in the metrics
-    [m.init_model() for m in metrics]
 
     # new evaluation chain
     evaluation_rm, evaluation_group_cm = new_group(
@@ -112,7 +115,13 @@ def evaluate(
     for metric in metrics:
         # if isinstance(metric, AspectCritique):
         # binary_metrics.append(metric.name)
-        ...
+        if isinstance(metric, MetricWithLLM):
+            if metric.llm is None:
+                metric.llm = llm
+
+    # initialize all the models in the metrics
+    [m.init_model() for m in metrics]
+
     for i, row in enumerate(dataset):
         row_rm, row_group_cm = new_group(
             name=f"row {i}",
@@ -121,7 +130,7 @@ def evaluate(
             is_async=is_async,
         )
         scoring_tasks.extend(
-            [metric.ascore(data_row=row, callbacks=row_group_cm) for metric in metrics]
+            [metric.ascore(row=row, callbacks=row_group_cm) for metric in metrics]
         )
         row_chains.append(row_rm)
     # run the evaluation tasks

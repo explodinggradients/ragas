@@ -51,20 +51,18 @@ class Metric(ABC):
 
     def score(
         self: t.Self,
-        data_row: t.Dict,
+        row: t.Dict,
         callbacks: t.Optional[Callbacks] = None,
     ) -> float:
         raise NotImplemented
 
-    async def ascore(
-        self: t.Self, data_row: t.Dict, callbacks: Callbacks = []
-    ) -> float:
+    async def ascore(self: t.Self, row: t.Dict, callbacks: Callbacks = []) -> float:
         if isinstance(callbacks, list):
             cm = CallbackManager.configure(inheritable_callbacks=callbacks)
         else:
             cm = t.cast(CallbackManager, callbacks)
 
-        rm = cm.on_chain_start({"name": self.name}, data_row)
+        rm = cm.on_chain_start({"name": self.name}, row)
         child_cm = rm.get_child()
         group_cm = CallbackManagerForChainGroup(
             child_cm.handlers,
@@ -77,7 +75,7 @@ class Metric(ABC):
             inheritable_metadata=child_cm.inheritable_metadata,
         )
         try:
-            score = await self._ascore(data_row=data_row, callbacks=group_cm)
+            score = await self._ascore(row=row, callbacks=group_cm)
         except Exception as e:
             if not group_cm.ended:
                 rm.on_chain_error(e)
@@ -88,7 +86,7 @@ class Metric(ABC):
         return score
 
     @abstractmethod
-    async def _ascore(self, data_row: t.Dict, callbacks: Callbacks = []) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks = []) -> float:
         ...
 
 

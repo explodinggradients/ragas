@@ -8,6 +8,7 @@ from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
+from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import json_loader
 
@@ -54,65 +55,48 @@ class ContextPrecision(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qc  # type: ignore
     batch_size: int = 15
 
-    def _score_batch(
+    async def _ascore(
         self: t.Self,
-        dataset: Dataset,
+        row: t.Dict,
         callbacks: t.Optional[Callbacks] = None,
-        callback_group_name: str = "batch",
-    ) -> list:
-        prompts = []
-        questions, contexts = dataset["question"], dataset["contexts"]
+    ) -> float:
+        assert self.llm is not None, "LLM is not set"
+        question, contexts = row["question"], row["contexts"]
 
-        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(
-            callback_group_name, callback_manager=cb
-        ) as batch_group:
-            for qstn, ctx in zip(questions, contexts):
-                human_prompts = [
-                    ChatPromptTemplate.from_messages(
-                        [CONTEXT_PRECISION.format(question=qstn, context=c)]
-                    )
-                    for c in ctx
-                ]
-
-                prompts.extend(human_prompts)
-
-            responses: list[list[str]] = []
-            results = self.llm.generate(
-                prompts,
-                n=1,
-                callbacks=batch_group,
+        human_prompts = [
+            ChatPromptTemplate.from_messages(
+                [CONTEXT_PRECISION.format(question=question, context=c)]
             )
-            responses = [[i.text for i in r] for r in results.generations]
-            context_lens = [len(ctx) for ctx in contexts]
-            context_lens.insert(0, 0)
-            context_lens = np.cumsum(context_lens)
-            grouped_responses = [
-                responses[start:end]
-                for start, end in zip(context_lens[:-1], context_lens[1:])
+            for c in contexts
+        ]
+
+        responses: list[str] = []
+        for hp in human_prompts:
+            result = await self.llm.agenerate_text(
+                Prompt(chat_prompt_template=hp),
+                n=1,
+                callbacks=callbacks,
+            )
+            responses.append(result.generations[0][0].text)
+
+        score = np.nan
+        response = [json_loader.safe_load(item, self.llm) for item in responses]
+        response = [
+            int("yes" in resp.get("verdict", " ").lower())
+            if resp.get("verdict")
+            else np.nan
+            for resp in response
+        ]
+        denominator = sum(response) + 1e-10
+        numerator = sum(
+            [
+                (sum(response[: i + 1]) / (i + 1)) * response[i]
+                for i in range(len(response))
             ]
-            scores = []
+        )
+        score = numerator / denominator
 
-            for response in grouped_responses:
-                response = [
-                    json_loader.safe_load(item, self.llm) for item in sum(response, [])
-                ]
-                response = [
-                    int("yes" in resp.get("verdict", " ").lower())
-                    if resp.get("verdict")
-                    else np.nan
-                    for resp in response
-                ]
-                denominator = sum(response) + 1e-10
-                numerator = sum(
-                    [
-                        (sum(response[: i + 1]) / (i + 1)) * response[i]
-                        for i in range(len(response))
-                    ]
-                )
-                scores.append(numerator / denominator)
-
-        return scores
+        return score
 
 
 context_precision = ContextPrecision()

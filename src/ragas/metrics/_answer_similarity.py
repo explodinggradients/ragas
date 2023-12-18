@@ -60,26 +60,20 @@ class AnswerSimilarity(MetricWithLLM):
     def init_model(self):
         super().init_model()
 
-        if isinstance(self.embeddings, OpenAIEmbeddings):
-            if self.embeddings.openai_api_key == "no-key":
-                raise OpenAIKeyNotFound
-
-    def _score_batch(
-        self: t.Self,
-        dataset: Dataset,
-        callbacks: t.Optional[Callbacks] = None,
-        callback_group_name: str = "batch",
-    ) -> list[float]:
-        ground_truths, answers = dataset["ground_truths"], dataset["answer"]
+    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks = []) -> float:
+        ground_truths, answers = row["ground_truths"], row["answer"]
+        # why?
         ground_truths = [item[0] for item in ground_truths]
 
-        if self.is_cross_encoder:
-            assert isinstance(self.embeddings, HuggingfaceEmbeddings)
-            inputs = [list(item) for item in list(zip(ground_truths, answers))]
-            scores = np.array(self.embeddings.predict(inputs))
+        if self.is_cross_encoder and isinstance(self.embeddings, HuggingfaceEmbeddings):
+            raise NotImplementedError(
+                "async score [ascore()] not implemented for HuggingFace embeddings"
+            )
         else:
-            embeddings_1 = np.array(self.embeddings.embed_documents(ground_truths))
-            embeddings_2 = np.array(self.embeddings.embed_documents(answers))
+            embeddings_1 = np.array(
+                await self.embeddings.aembed_documents(ground_truths)
+            )
+            embeddings_2 = np.array(await self.embeddings.aembed_documents(answers))
             similarity = embeddings_1 @ embeddings_2.T
             scores = np.diagonal(similarity)
 
@@ -87,7 +81,7 @@ class AnswerSimilarity(MetricWithLLM):
         if self.threshold:
             scores = scores >= self.threshold  # type: ignore
 
-        return scores.tolist()
+        return scores.tolist()[0]
 
 
 answer_similarity = AnswerSimilarity()

@@ -8,6 +8,7 @@ from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
+from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import json_loader
 
@@ -84,55 +85,51 @@ class ContextRecall(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
     batch_size: int = 15
 
-    def _score_batch(
+    async def _ascore(
         self: t.Self,
-        dataset: Dataset,
+        row: t.Dict,
         callbacks: t.Optional[Callbacks] = None,
-        callback_group_name: str = "batch",
-    ) -> list:
-        prompts = []
-        question, ground_truths, contexts = (
-            dataset["question"],
-            dataset["ground_truths"],
-            dataset["contexts"],
+    ) -> float:
+        assert self.llm is not None, "LLM is not set"
+
+        question, ground_truth, contexts = (
+            row["question"],
+            row["ground_truths"],
+            row["contexts"],
         )
 
-        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(
-            callback_group_name, callback_manager=cb
-        ) as batch_group:
-            for qstn, gt, ctx in zip(question, ground_truths, contexts):
-                gt = "\n".join(gt) if isinstance(gt, list) else gt
-                ctx = "\n".join(ctx) if isinstance(ctx, list) else ctx
-                human_prompt = CONTEXT_RECALL_RA.format(
-                    question=qstn, context=ctx, answer=gt
-                )
-                prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
+        ground_truth = (
+            "\n".join(ground_truth) if isinstance(ground_truth, list) else ground_truth
+        )
+        contexts = "\n".join(contexts) if isinstance(contexts, list) else contexts
+        human_prompt = CONTEXT_RECALL_RA.format(
+            question=question, context=contexts, answer=ground_truth
+        )
+        p = Prompt(
+            chat_prompt_template=ChatPromptTemplate.from_messages([human_prompt])
+        )
 
-            responses: list[list[str]] = []
-            results = self.llm.generate(
-                prompts,
-                n=1,
-                callbacks=batch_group,
-            )
-            responses = [[i.text for i in r] for r in results.generations]
-            scores = []
-            for response in responses:
-                response = json_loader.safe_load(response[0], self.llm)
-                if response:
-                    response = [
-                        int(item.get("Attributed", "").lower() == "yes")
-                        if item.get("Attributed")
-                        else np.nan
-                        for item in response
-                    ]
-                    denom = len(response)
-                    numerator = sum(response)
-                    scores.append(numerator / denom)
-                else:
-                    scores.append(np.nan)
+        results = await self.llm.agenerate_text(
+            p,
+            n=1,
+            callbacks=callbacks,
+        )
+        response = results.generations[0][0].text
+        response = json_loader.safe_load(response, self.llm)
+        if response:
+            response = [
+                int(item.get("Attributed", "").lower() == "yes")
+                if item.get("Attributed")
+                else np.nan
+                for item in response
+            ]
+            denom = len(response)
+            numerator = sum(response)
+            score = numerator / denom
+        else:
+            score = np.nan
 
-        return scores
+        return score
 
 
 context_recall = ContextRecall()
