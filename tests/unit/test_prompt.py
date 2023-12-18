@@ -1,4 +1,4 @@
-from ragas import Prompt
+from ragas.prompt import Prompt
 
 TESTCASES = [
                 {
