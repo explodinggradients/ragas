@@ -22,7 +22,7 @@ class Prompt(PromptValue):
     output_key: str
     output_type: str = 'json'
 
-    @root_validator()
+    @root_validator
     def validate_prompt(cls, value: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
         """
         Validate the template string to ensure that it is in desired format.
