@@ -69,7 +69,7 @@ class ContextPrecision(MetricWithLLM):
     """
 
     name: str = "context_precision"  # type: ignore
-    evaluation_mode: EvaluationMode = EvaluationMode.qc  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
     batch_size: int = 15
 
     def get_dataset_attributes(self, dataset: Dataset):
