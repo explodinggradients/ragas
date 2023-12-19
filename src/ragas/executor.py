@@ -1,9 +1,10 @@
 import asyncio
 import typing as t
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 
 import numpy as np
+from nltk.classify.textcat import re
 from sqlalchemy import except_
 from tqdm.auto import tqdm
 
@@ -32,17 +33,45 @@ class Executor:
                 "Cannot evaluate with both async and threads. Either set is_async=False or max_workers=None."  # noqa
             )
 
+    def wrap_callable_with_index(self, callable: t.Callable, counter):
+        def wrapped_callable(*args, **kwargs):
+            return counter, callable(*args, **kwargs)
+
+        async def wrapped_callable_async(*args, **kwargs):
+            return counter, await callable(*args, **kwargs)
+
+        if self.is_async:
+            return wrapped_callable_async
+        else:
+            return wrapped_callable
+
     def submit(self, callable: t.Callable, *args, **kwargs):
         if self.is_async:
             self.executor = t.cast(asyncio.AbstractEventLoop, self.executor)
-            self.futures.append(self.executor.create_task(callable(*args, **kwargs)))
+            callable_with_index = self.wrap_callable_with_index(
+                callable, len(self.futures)
+            )
+            # is type correct?
+            callable_with_index = t.cast(t.Callable, callable_with_index)
+            self.futures.append(
+                self.executor.create_task(callable_with_index(*args, **kwargs))
+            )
         else:
             self.executor = t.cast(ThreadPoolExecutor, self.executor)
-            self.futures.append(self.executor.submit(callable, *args, **kwargs))
+            callable_with_index = self.wrap_callable_with_index(
+                callable, len(self.futures)
+            )
+            self.futures.append(
+                self.executor.submit(callable_with_index, *args, **kwargs)
+            )
 
     async def _aresults(self) -> t.List[t.Any]:
         results = []
-        for future in tqdm(self.futures, desc="Evaluating"):
+        for future in tqdm(
+            asyncio.as_completed(self.futures),
+            desc="Evaluating",
+            total=len(self.futures),
+        ):
             r = np.nan
             try:
                 r = await future
@@ -73,7 +102,11 @@ class Executor:
         else:
             self.executor = t.cast(ThreadPoolExecutor, self.executor)
             try:
-                for future in tqdm(self.futures, desc="Evaluating"):
+                for future in tqdm(
+                    as_completed(self.futures),
+                    desc="Evaluating",
+                    total=len(self.futures),
+                ):
                     r = np.nan
                     try:
                         r = future.result()
@@ -85,4 +118,6 @@ class Executor:
                         results.append(r)
             finally:
                 self.executor.shutdown(wait=False)
-        return results
+
+        sorted_results = sorted(results, key=lambda x: x[0])
+        return [r[1] for r in sorted_results]

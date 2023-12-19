@@ -17,7 +17,7 @@ from langchain_core.callbacks import CallbackManager, CallbackManagerForChainGro
 from tqdm import tqdm
 
 from ragas.callbacks import new_group
-from ragas.embeddings.base import RagasEmbeddings
+from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.llms import llm_factory
 
 if t.TYPE_CHECKING:
@@ -108,5 +108,5 @@ class MetricWithLLM(Metric):
         if hasattr(self, "embeddings"):
             # since we are using Langchain Embeddings directly, we need to check this
             if hasattr(self.embeddings, "validate_api_key"):
-                self.embeddings = t.cast(RagasEmbeddings, self.embeddings)
+                self.embeddings = t.cast(BaseRagasEmbeddings, self.embeddings)
                 self.embeddings.validate_api_key()

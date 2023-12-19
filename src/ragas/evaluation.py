@@ -166,7 +166,13 @@ def evaluate(
         if not evaluation_group_cm.ended:
             evaluation_rm.on_chain_end({})
 
-    return results
+    # convert results to dataset_like
+    scores = []
+    for i, _ in enumerate(dataset):
+        s = {}
+        for j, m in enumerate(metrics):
+            s[m.name] = results[len(metrics) * i + j]
+            scores.append(s)
 
     # log the evaluation event
     metrics_names = [m.name for m in metrics]
@@ -179,22 +185,23 @@ def evaluate(
         )
     )
 
+    return scores
     return Result(
-        scores=concatenate_datasets(scores, axis=1),
-        dataset=dataset,
+        scores=scores,
+        dataset=dataset.to_dict(),
         binary_columns=binary_metrics,
     )
 
 
 @dataclass
 class Result(dict):
-    scores: Dataset
-    dataset: Dataset | None = None
-    binary_columns: list[str] = field(default_factory=list)
+    scores: t.List[t.Dict]
+    dataset: t.List[t.Dict] | None = None
+    binary_columns: t.List[str] = field(default_factory=list)
 
     def __post_init__(self):
         values = []
-        for cn in self.scores.column_names:
+        for cn in self.scores[0].keys():
             value = np.nanmean(self.scores[cn])
             self[cn] = value
             if cn not in self.binary_columns:
