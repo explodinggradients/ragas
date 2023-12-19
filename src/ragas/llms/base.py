@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from langchain.chat_models import AzureChatOpenAI, BedrockChat, ChatOpenAI, ChatVertexAI
@@ -34,7 +35,32 @@ def is_multiple_completion_supported(llm: BaseLanguageModel) -> bool:
 
 
 @dataclass
-class BaseRagasLLM:
+class BaseRagasLLM(ABC):
+    @abstractmethod
+    def generate_text(
+        self,
+        prompt: Prompt,
+        n: int = 1,
+        temperature: float = 1e-8,
+        stop: t.Optional[t.List[str]] = None,
+        callbacks: t.Optional[Callbacks] = None,
+    ) -> LLMResult:
+        ...
+
+    @abstractmethod
+    async def agenerate_text(
+        self,
+        prompt: Prompt,
+        n: int = 1,
+        temperature: float = 1e-8,
+        stop: t.Optional[t.List[str]] = None,
+        callbacks: t.Optional[Callbacks] = None,
+    ) -> LLMResult:
+        ...
+
+
+@dataclass
+class LangchainLLMWrapper:
     """
     A simple base class for RagasLLMs that is based on Langchain's BaseLanguageModel
     interface. it implements 2 functions:

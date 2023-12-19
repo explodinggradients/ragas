@@ -55,12 +55,7 @@ class ContextPrecision(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qc  # type: ignore
     batch_size: int = 15
 
-    async def _ascore(
-        self: t.Self,
-        row: t.Dict,
-        callbacks: t.Optional[Callbacks] = None,
-    ) -> float:
-        assert self.llm is not None, "LLM is not set"
+    def _context_precision_prompt(self, row: t.Dict) -> t.List[Prompt]:
         question, contexts = row["question"], row["contexts"]
 
         human_prompts = [
@@ -69,16 +64,9 @@ class ContextPrecision(MetricWithLLM):
             )
             for c in contexts
         ]
+        return [Prompt(chat_prompt_template=hp) for hp in human_prompts]
 
-        responses: list[str] = []
-        for hp in human_prompts:
-            result = await self.llm.agenerate_text(
-                Prompt(chat_prompt_template=hp),
-                n=1,
-                callbacks=callbacks,
-            )
-            responses.append(result.generations[0][0].text)
-
+    def _calculate_average_precision(self, responses: t.List[str]) -> float:
         score = np.nan
         response = [json_loader.safe_load(item, self.llm) for item in responses]
         response = [
@@ -95,7 +83,42 @@ class ContextPrecision(MetricWithLLM):
             ]
         )
         score = numerator / denominator
+        return score
 
+    async def _ascore(
+        self: t.Self,
+        row: t.Dict,
+        callbacks: Callbacks = [],
+    ) -> float:
+        assert self.llm is not None, "LLM is not set"
+
+        human_prompts = self._context_precision_prompt(row)
+        responses: t.List[str] = []
+        for hp in human_prompts:
+            result = await self.llm.agenerate_text(
+                hp,
+                n=1,
+                callbacks=callbacks,
+            )
+            responses.append(result.generations[0][0].text)
+
+        score = self._calculate_average_precision(responses)
+        return score
+
+    def _score(self, row: t.Dict, callbacks: Callbacks = []) -> float:
+        assert self.llm is not None, "LLM is not set"
+
+        human_prompts = self._context_precision_prompt(row)
+        responses: t.List[str] = []
+        for hp in human_prompts:
+            result = self.llm.generate_text(
+                hp,
+                n=1,
+                callbacks=callbacks,
+            )
+            responses.append(result.generations[0][0].text)
+
+        score = self._calculate_average_precision(responses)
         return score
 
 

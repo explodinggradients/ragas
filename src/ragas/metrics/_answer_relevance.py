@@ -17,7 +17,7 @@ from ragas.utils import json_loader
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
-    from ragas.embeddings.base import RagasEmbeddings
+    from ragas.embeddings.base import BaseRagasEmbeddings
 
 
 QUESTION_GEN = HumanMessagePromptTemplate.from_template(
@@ -90,7 +90,7 @@ class AnswerRelevancy(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
     batch_size: int = 15
     strictness: int = 3
-    embeddings: RagasEmbeddings = field(default_factory=embedding_factory)
+    embeddings: BaseRagasEmbeddings = field(default_factory=embedding_factory)
 
     def init_model(self):
         super().init_model()

@@ -17,7 +17,7 @@ from ragas.metrics.base import EvaluationMode, MetricWithLLM
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
-    from ragas.embeddings.base import RagasEmbeddings
+    from ragas.embeddings.base import BaseRagasEmbeddings
 
 
 @dataclass
@@ -45,7 +45,7 @@ class AnswerSimilarity(MetricWithLLM):
     name: str = "answer_similarity"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.ga  # type: ignore
     batch_size: int = 15
-    embeddings: RagasEmbeddings = field(default_factory=embedding_factory)
+    embeddings: BaseRagasEmbeddings = field(default_factory=embedding_factory)
     is_cross_encoder: bool = False
     threshold: t.Optional[float] = None
 
@@ -60,9 +60,28 @@ class AnswerSimilarity(MetricWithLLM):
     def init_model(self):
         super().init_model()
 
+    def _score(self, row: t.Dict, callbacks: Callbacks = ...) -> float:
+        ground_truths, answers = row["ground_truths"], row["answer"]
+        ground_truths = [item[0] for item in ground_truths]
+
+        if self.is_cross_encoder and isinstance(self.embeddings, HuggingfaceEmbeddings):
+            raise NotImplementedError(
+                "async score [ascore()] not implemented for HuggingFace embeddings"
+            )
+        else:
+            embeddings_1 = np.array(self.embeddings.embed_documents(ground_truths))
+            embeddings_2 = np.array(self.embeddings.embed_documents(answers))
+            similarity = embeddings_1 @ embeddings_2.T
+            scores = np.diagonal(similarity)
+
+        assert isinstance(scores, np.ndarray), "Expects ndarray"
+        if self.threshold:
+            scores = scores >= self.threshold  # type: ignore
+
+        return scores.tolist()[0]
+
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks = []) -> float:
         ground_truths, answers = row["ground_truths"], row["answer"]
-        # why?
         ground_truths = [item[0] for item in ground_truths]
 
         if self.is_cross_encoder and isinstance(self.embeddings, HuggingfaceEmbeddings):

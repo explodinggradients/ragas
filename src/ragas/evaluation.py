@@ -12,7 +12,7 @@ from tqdm import tqdm
 from ragas._analytics import EvaluationEvent, track
 from ragas.async_utils import run_async_tasks
 from ragas.callbacks import new_group
-from ragas.embeddings.base import RagasEmbeddings
+from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.executor import Executor
 from ragas.llms.base import BaseRagasLLM
 from ragas.metrics.base import Metric, MetricWithLLM
@@ -32,7 +32,7 @@ def evaluate(
     dataset: Dataset,
     metrics: list[Metric] | None = None,
     llm: t.Optional[BaseRagasLLM] = None,
-    embeddings: t.Optional[RagasEmbeddings] = None,
+    embeddings: t.Optional[BaseRagasEmbeddings] = None,
     callbacks: Callbacks = [],
     is_async: bool = True,
     max_workers: t.Optional[int] = None,
