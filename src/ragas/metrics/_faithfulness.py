@@ -13,7 +13,8 @@ from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from datasets import Dataset
-    from langchain.callbacks.base import Callbacks
+    from langchain_core.callbacks import Callbacks
+    from langchain_core.outputs import LLMResult
 
 
 LONG_FORM_ANSWER_PROMPT = HumanMessagePromptTemplate.from_template(
@@ -126,30 +127,23 @@ class Faithfulness(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
     batch_size: int = 15
 
-    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
-        """
-        returns the NLI score for each (q, c, a) pair
-        """
-        assert self.llm is not None, "LLM is not set"
-
-        question, answer, contexts = (
-            row["question"],
-            row["answer"],
-            row["contexts"],
-        )
+    def _create_answer_prompt(self, row: t.Dict) -> Prompt:
+        question, answer = row["question"], row["answer"]
 
         # extract statements from answer given the question
         human_prompt = LONG_FORM_ANSWER_PROMPT.format(question=question, answer=answer)
         p = Prompt(
             chat_prompt_template=ChatPromptTemplate.from_messages([human_prompt])
         )
-        result = await self.llm.agenerate_text(p, callbacks=callbacks)
+        return p
 
+    def _create_nli_prompt(self, row: t.Dict, answer_result: LLMResult) -> Prompt:
+        contexts = row["contexts"]
         # check if the statements are support in the contexts
         contexts_str: str = "\n".join(contexts)
-        statements = json_loader.safe_load(result.generations[0][0].text, self.llm).get(
-            "statements", []
-        )
+        statements = json_loader.safe_load(
+            answer_result.generations[0][0].text, self.llm
+        ).get("statements", [])
         statements = statements if statements != [] else ["Nil"]
         statements_str: str = "\n".join(
             [f"statement_{i+1}: {st}" for i, st in enumerate(statements)]
@@ -160,8 +154,9 @@ class Faithfulness(MetricWithLLM):
         p = Prompt(
             chat_prompt_template=ChatPromptTemplate.from_messages([human_prompt])
         )
-        result = await self.llm.agenerate_text(p, callbacks=callbacks)
+        return p
 
+    def _compute_score(self, result: LLMResult):
         # check the verdicts and compute the score
         output = result.generations[0][0]
         verdict_score_map = {"yes": 1, "no": 0, "null": np.nan}
@@ -178,6 +173,29 @@ class Faithfulness(MetricWithLLM):
             score = np.nan
 
         return score
+
+    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+        """
+        returns the NLI score for each (q, c, a) pair
+        """
+        assert self.llm is not None, "LLM is not set"
+        p = self._create_answer_prompt(row)
+        result = await self.llm.agenerate_text(p, callbacks=callbacks)
+
+        p = self._create_nli_prompt(row, result)
+        result = await self.llm.agenerate_text(p, callbacks=callbacks)
+
+        return self._compute_score(result)
+
+    def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
+        assert self.llm is not None, "LLM is not set"
+        p = self._create_answer_prompt(row)
+        result = self.llm.generate_text(p, callbacks=callbacks)
+
+        p = self._create_nli_prompt(row, result)
+        result = self.llm.generate_text(p, callbacks=callbacks)
+
+        return self._compute_score(result)
 
 
 faithfulness = Faithfulness()

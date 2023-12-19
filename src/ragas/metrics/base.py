@@ -16,6 +16,7 @@ from datasets import Dataset
 from langchain_core.callbacks import CallbackManager, CallbackManagerForChainGroup
 from tqdm import tqdm
 
+from ragas.callbacks import new_group
 from ragas.embeddings.base import RagasEmbeddings
 from ragas.llms import llm_factory
 
@@ -52,28 +53,26 @@ class Metric(ABC):
     def score(
         self: t.Self,
         row: t.Dict,
-        callbacks: t.Optional[Callbacks] = None,
+        callbacks: Callbacks = [],
     ) -> float:
-        raise NotImplemented
+        rm, group_cm = new_group(self.name, row, callbacks, is_async=False)
+        try:
+            score = self._score(row=row, callbacks=group_cm)
+        except Exception as e:
+            if not group_cm.ended:
+                rm.on_chain_error(e)
+            raise e
+        else:
+            if not group_cm.ended:
+                rm.on_chain_end({"output": score})
+        return score
+
+    # @abstractmethod
+    def _score(self, row: t.Dict, callbacks: Callbacks = []) -> float:
+        ...
 
     async def ascore(self: t.Self, row: t.Dict, callbacks: Callbacks = []) -> float:
-        if isinstance(callbacks, list):
-            cm = CallbackManager.configure(inheritable_callbacks=callbacks)
-        else:
-            cm = t.cast(CallbackManager, callbacks)
-
-        rm = cm.on_chain_start({"name": self.name}, row)
-        child_cm = rm.get_child()
-        group_cm = CallbackManagerForChainGroup(
-            child_cm.handlers,
-            child_cm.inheritable_handlers,
-            child_cm.parent_run_id,
-            parent_run_manager=rm,
-            tags=child_cm.tags,
-            inheritable_tags=child_cm.inheritable_tags,
-            metadata=child_cm.metadata,
-            inheritable_metadata=child_cm.inheritable_metadata,
-        )
+        rm, group_cm = new_group(self.name, row, callbacks, is_async=True)
         try:
             score = await self._ascore(row=row, callbacks=group_cm)
         except Exception as e:
