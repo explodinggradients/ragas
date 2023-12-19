@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import asyncio
 import typing as t
-from asyncio import Task
 from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor, wait
 from dataclasses import dataclass, field
 
@@ -13,6 +13,7 @@ from ragas._analytics import EvaluationEvent, track
 from ragas.async_utils import run_async_tasks
 from ragas.callbacks import new_group
 from ragas.embeddings.base import RagasEmbeddings
+from ragas.executor import Executor
 from ragas.llms.base import BaseRagasLLM
 from ragas.metrics.base import Metric, MetricWithLLM
 
@@ -102,6 +103,10 @@ def evaluate(
         from ragas.llms import llm_factory
 
         llm = llm_factory()
+    if embeddings is None:
+        from ragas.embeddings.base import embedding_factory
+
+        embeddings = embedding_factory()
 
     # remap column names from the dataset
     dataset = remap_column_names(dataset, column_map)
@@ -109,14 +114,6 @@ def evaluate(
     validate_evaluation_modes(dataset, metrics)
     validate_column_dtypes(dataset)
 
-    # new evaluation chain
-    evaluation_rm, evaluation_group_cm = new_group(
-        name="ragas evaluation", inputs={}, callbacks=callbacks, is_async=is_async
-    )
-    # list of chains for each row
-    row_chains = []
-
-    scoring_tasks = []
     binary_metrics = []
     for metric in metrics:
         # if isinstance(metric, AspectCritique):
@@ -128,55 +125,46 @@ def evaluate(
     # initialize all the models in the metrics
     [m.init_model() for m in metrics]
 
-    if is_async:
-        for i, row in enumerate(dataset):
-            row_rm, row_group_cm = new_group(
-                name=f"row {i}",
-                inputs=row,
-                callbacks=evaluation_group_cm,
-                is_async=is_async,
-            )
-            scoring_tasks.extend(
-                [metric.ascore(row=row, callbacks=row_group_cm) for metric in metrics]
-            )
-            row_chains.append(row_rm)
-        # run the evaluation tasks
-        try:
-            results = run_async_tasks(
-                scoring_tasks,
-                show_progress=True,
-                progress_bar_desc="evaluating dataset",
-            )
-            # TODO: closing row chains here. handle errors here too
-            [chain.on_chain_end({}) for chain in row_chains]
+    executor = Executor(in_async_mode=is_async, max_workers=max_workers)
+    # new evaluation chain
+    row_chains = []
+    evaluation_rm, evaluation_group_cm = new_group(
+        name="ragas evaluation", inputs={}, callbacks=callbacks, is_async=is_async
+    )
+    for i, row in enumerate(dataset):
+        row_rm, row_group_cm = new_group(
+            name=f"row {i}",
+            inputs=row,
+            callbacks=evaluation_group_cm,
+            is_async=is_async,
+        )
+        row_chains.append(row_rm)
 
-        # run evaluation task
-        except Exception as e:
-            if not evaluation_group_cm.ended:
-                evaluation_rm.on_chain_error(e)
-            raise e
+        if is_async:
+            [executor.submit(metric.ascore, row, row_group_cm) for metric in metrics]
         else:
-            if not evaluation_group_cm.ended:
-                evaluation_rm.on_chain_end({})
-            results = []
-    else:
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            for i, row in enumerate(dataset):
-                row_rm, row_group_cm = new_group(
-                    name=f"row {i}",
-                    inputs=row,
-                    callbacks=evaluation_group_cm,
-                    is_async=is_async,
-                )
-                for metric in metrics:
-                    future_result = executor.submit(metric.score, row, row_group_cm)
-                    scoring_tasks.append(future_result)
-                row_chains.append(row_rm)
+            [executor.submit(metric.score, row, row_group_cm) for metric in metrics]
 
-            # wait for results
-            results = []
-            for future_result in tqdm(scoring_tasks):
-                results.append(future_result.result())
+    try:
+        # get the results
+        if is_async:
+            # TODO: watch out for nested async loop error
+            results = asyncio.run(executor.aresults())
+        else:
+            results = executor.results()
+
+        # TODO: closing row chains here. handle errors here too
+        # and parse results so that its easier to view
+        [chain.on_chain_end({}) for chain in row_chains]
+
+    # run evaluation task
+    except Exception as e:
+        if not evaluation_group_cm.ended:
+            evaluation_rm.on_chain_error(e)
+        raise e
+    else:
+        if not evaluation_group_cm.ended:
+            evaluation_rm.on_chain_end({})
 
     return results
 
