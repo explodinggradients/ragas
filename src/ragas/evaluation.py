@@ -36,6 +36,7 @@ def evaluate(
     callbacks: Callbacks = [],
     is_async: bool = True,
     max_workers: t.Optional[int] = None,
+    raise_exceptions: bool = True,
     column_map: t.Dict[str, str] = {},
 ) -> Result:
     """
@@ -125,7 +126,9 @@ def evaluate(
     # initialize all the models in the metrics
     [m.init_model() for m in metrics]
 
-    executor = Executor(in_async_mode=is_async, max_workers=max_workers)
+    executor = Executor(
+        is_async=is_async, max_workers=max_workers, raise_exceptions=raise_exceptions
+    )
     # new evaluation chain
     row_chains = []
     evaluation_rm, evaluation_group_cm = new_group(
@@ -147,11 +150,7 @@ def evaluate(
 
     try:
         # get the results
-        if is_async:
-            # TODO: watch out for nested async loop error
-            results = asyncio.run(executor.aresults())
-        else:
-            results = executor.results()
+        results = executor.results()
 
         # TODO: closing row chains here. handle errors here too
         # and parse results so that its easier to view
@@ -161,6 +160,7 @@ def evaluate(
     except Exception as e:
         if not evaluation_group_cm.ended:
             evaluation_rm.on_chain_error(e)
+
         raise e
     else:
         if not evaluation_group_cm.ended:
