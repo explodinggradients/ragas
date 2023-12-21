@@ -60,7 +60,7 @@ class BaseRagasLLM(ABC):
 
 
 @dataclass
-class LangchainLLMWrapper:
+class LangchainLLMWrapper(BaseRagasLLM):
     """
     A simple base class for RagasLLMs that is based on Langchain's BaseLanguageModel
     interface. it implements 2 functions:
