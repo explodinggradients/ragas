@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import Dataset, concatenate_datasets
+from langchain_core.language_models import BaseLanguageModel
 from tqdm import tqdm
 
 from ragas._analytics import EvaluationEvent, track
@@ -14,7 +15,7 @@ from ragas.async_utils import run_async_tasks
 from ragas.callbacks import new_group
 from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.executor import Executor
-from ragas.llms.base import BaseRagasLLM
+from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics.base import Metric, MetricWithLLM
 
 # from ragas.metrics.critique import AspectCritique
@@ -99,11 +100,13 @@ def evaluate(
         )
 
         metrics = [answer_relevancy, context_precision, faithfulness, context_recall]
-
+    # set the llm and embeddings
     if llm is None:
         from ragas.llms import llm_factory
 
         llm = llm_factory()
+    elif isinstance(llm, BaseLanguageModel):
+        llm = LangchainLLMWrapper(llm)
     if embeddings is None:
         from ragas.embeddings.base import embedding_factory
 
@@ -130,7 +133,7 @@ def evaluate(
         is_async=is_async, max_workers=max_workers, raise_exceptions=raise_exceptions
     )
     # new evaluation chain
-    row_chains = []
+    row_run_managers = []
     evaluation_rm, evaluation_group_cm = new_group(
         name="ragas evaluation", inputs={}, callbacks=callbacks, is_async=is_async
     )
@@ -141,20 +144,28 @@ def evaluate(
             callbacks=evaluation_group_cm,
             is_async=is_async,
         )
-        row_chains.append(row_rm)
+        row_run_managers.append((row_rm, row_group_cm))
 
         if is_async:
             [executor.submit(metric.ascore, row, row_group_cm) for metric in metrics]
         else:
             [executor.submit(metric.score, row, row_group_cm) for metric in metrics]
 
+    scores = []
+    # import ipdb; ipdb.set_trace()  # fmt: skip
     try:
         # get the results
         results = executor.results()
-
-        # TODO: closing row chains here. handle errors here too
-        # and parse results so that its easier to view
-        [chain.on_chain_end({}) for chain in row_chains]
+        # convert results to dataset_like
+        for i, _ in enumerate(dataset):
+            s = {}
+            for j, m in enumerate(metrics):
+                s[m.name] = results[len(metrics) * i + j]
+            scores.append(s)
+            # close the row chain
+            row_rm, row_group_cm = row_run_managers[i]
+            if row_group_cm.ended:
+                row_rm.on_chain_end(s)
 
     # run evaluation task
     except Exception as e:
@@ -162,17 +173,11 @@ def evaluate(
             evaluation_rm.on_chain_error(e)
 
         raise e
-    else:
+    finally:
+        # close the evaluation chain
+        # TODO: show only aggregate scores
         if not evaluation_group_cm.ended:
-            evaluation_rm.on_chain_end({})
-
-    # convert results to dataset_like
-    scores = []
-    for i, _ in enumerate(dataset):
-        s = {}
-        for j, m in enumerate(metrics):
-            s[m.name] = results[len(metrics) * i + j]
-            scores.append(s)
+            evaluation_rm.on_chain_end(scores)
 
     # log the evaluation event
     metrics_names = [m.name for m in metrics]

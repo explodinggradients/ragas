@@ -93,7 +93,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
                 stop=stop,
                 callbacks=callbacks,
             )
-            # make LLMREsult.generation appear as if it was n_completions
+            # make LLMResult.generation appear as if it was n_completions
             # note that LLMResult.runs is still a list that represents each run
             generations = [[g[0] for g in result.generations]]
             result.generations = generations
@@ -122,7 +122,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
                 stop=stop,
                 callbacks=callbacks,
             )
-            # make LLMREsult.generation appear as if it was n_completions
+            # make LLMResult.generation appear as if it was n_completions
             # note that LLMResult.runs is still a list that represents each run
             generations = [[g[0] for g in result.generations]]
             result.generations = generations

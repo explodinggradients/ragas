@@ -55,7 +55,9 @@ class Metric(ABC):
         row: t.Dict,
         callbacks: Callbacks = [],
     ) -> float:
-        rm, group_cm = new_group(self.name, row, callbacks, is_async=False)
+        rm, group_cm = new_group(
+            self.name, inputs=row, callbacks=callbacks, is_async=False
+        )
         try:
             score = self._score(row=row, callbacks=group_cm)
         except Exception as e:
@@ -72,7 +74,9 @@ class Metric(ABC):
         ...
 
     async def ascore(self: t.Self, row: t.Dict, callbacks: Callbacks = []) -> float:
-        rm, group_cm = new_group(self.name, row, callbacks, is_async=True)
+        rm, group_cm = new_group(
+            self.name, inputs=row, callbacks=callbacks, is_async=True
+        )
         try:
             score = await self._ascore(row=row, callbacks=group_cm)
         except Exception as e:
