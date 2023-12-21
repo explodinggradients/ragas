@@ -26,7 +26,7 @@ def evaluate(
 
     Parameters
     ----------
-    dataset : Dataset[question: list[str], contexts: list[list[str]], answer: list[str]]
+    dataset : Dataset[question: list[str], ground_truths: list[str], answer: list[str], contexts: list[list[str]]]
         The dataset in the format of ragas which the metrics will use to score the RAG
         pipeline with
     metrics : list[Metric] , optional
