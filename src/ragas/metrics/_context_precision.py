@@ -76,7 +76,7 @@ class ContextPrecision(MetricWithLLM):
         answer = "ground_truths"
         if answer not in dataset.features.keys():
             logging.warning(
-                "Using context precision without ground truth will be soon depreciated. Use context_utilization instead"
+                "Using 'context_precision' without ground truth will be soon depreciated. Use 'context_utilization' instead"
             )
             answer = "answer"
 
