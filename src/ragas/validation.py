@@ -66,7 +66,7 @@ def validate_evaluation_modes(ds: Dataset, metrics: list[Metric]):
                 isinstance(m, ContextPrecision)
                 and "ground_truths" not in available_columns
             ):
-                extra_msg = "Looks like you're trying to use context precision without ground_truths. Please use context_utilization"
+                extra_msg = "Looks like you're trying to use 'context_precision' without ground_truths. Please use consider using  `context_utilization' instead."
 
             raise ValueError(
                 f"The metric [{m.name}] that that is used requires the following "
