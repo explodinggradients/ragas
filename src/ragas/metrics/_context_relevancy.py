@@ -11,19 +11,19 @@ from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
+from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
-CONTEXT_RELEVANCE = HumanMessagePromptTemplate.from_template(
-    """\
-Please extract relevant sentences from the provided context that is absolutely required answer the following question. If no relevant sentences are found, or if you believe the question cannot be answered from the given context, return the phrase "Insufficient Information".  While extracting candidate sentences you're not allowed to make any changes to sentences from given context.
-
-question:{question}
-context:\n{context}
-candidate sentences:\n"""  # noqa: E501
+CONTEXT_RELEVANCE = Prompt(
+    instruction="""Please extract relevant sentences from the provided context that is absolutely required answer the following question. If no relevant sentences are found, or if you believe the question cannot be answered from the given context, return the phrase "Insufficient Information".  While extracting candidate sentences you're not allowed to make any changes to sentences from given context.""",
+    input_keys=["question", "context"],
+    output_key="candidate sentences",
+    output_type="json"
 )
+
 
 seg = pysbd.Segmenter(language="en", clean=False)
 
@@ -76,10 +76,11 @@ class ContextRelevancy(MetricWithLLM):
             callback_group_name, callback_manager=cb
         ) as batch_group:
             for q, c in zip(questions, contexts):
-                human_prompt = CONTEXT_RELEVANCE.format(
-                    question=q, context="\n".join(c)
+                prompts.append(
+                    CONTEXT_RELEVANCE.format(
+                        question=q, context="\n".join(c)
+                    )
                 )
-                prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
             responses: list[list[str]] = []
             results = self.llm.generate(
