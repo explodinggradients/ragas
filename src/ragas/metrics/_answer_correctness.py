@@ -8,6 +8,7 @@ from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
+from ragas.llms.prompt import Prompt
 from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import json_loader
@@ -15,39 +16,37 @@ from ragas.utils import json_loader
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
-CORRECTNESS_PROMPT = HumanMessagePromptTemplate.from_template(
-    """
-Extract following from given question and ground truth
-
-Question:What powers the sun and what is its primary function?
-Answer: The sun is powered by nuclear fission, similar to nuclear reactors on Earth, and its primary function is to provide light to the solar system.
-Ground truth: The sun is actually powered by nuclear fusion, not fission. In its core, hydrogen atoms fuse to form helium, releasing a tremendous amount of energy. This energy is what lights up the sun and provides heat and light, essential for life on Earth. The sun's light also plays a critical role in Earth's climate system and helps to drive the weather and ocean currents.
-Extracted statements:
-[
-{{
-  "statements that are present in both the answer and the ground truth": ["The sun's primary function is to provide light"],
-  "statements present in the answer but not found in the ground truth": ["The sun is powered by nuclear fission", "similar to nuclear reactors on Earth"],
-  "relevant statements found in the ground truth but omitted in the answer": ["The sun is powered by nuclear fusion, not fission", "In its core, hydrogen atoms fuse to form helium, releasing a tremendous amount of energy", "This energy provides heat and light, essential for life on Earth", "The sun's light plays a critical role in Earth's climate system", "The sun helps to drive the weather and ocean currents"]
-}}
-]
-
-Question: What is the boiling point of water?
-Answer: The boiling point of water is 100 degrees Celsius at sea level.
-Ground truth: The boiling point of water is 100 degrees Celsius (212 degrees Fahrenheit) at sea level, but it can change with altitude.
-Extracted statements:
-[
-  {{
-    "statements that are present in both the answer and the ground truth": ["The boiling point of water is 100 degrees Celsius at sea level"],
-    "statements present in the answer but not found in the ground truth": [],
-    "relevant statements found in the ground truth but omitted in the answer": ["The boiling point can change with altitude", "The boiling point of water is 212 degrees Fahrenheit at sea level"]
-  }}
-]
-
-
-Question:{question}
-Answer: {answer}
-Ground truth: {ground_truth}
-Extracted statements:"""  # noqa: E501
+CORRECTNESS_PROMPT = Prompt(
+    instruction="""Extract following from given question and ground truth""",
+    examples=[
+        {
+            "question": """What powers the sun and what is its primary function?""",
+            "answer": """The sun is powered by nuclear fission, similar to nuclear reactors on Earth, and its primary function is to provide light to the solar system.""",
+            "ground_truth": """The sun is actually powered by nuclear fusion, not fission. In its core, hydrogen atoms fuse to form helium, releasing a tremendous amount of energy. This energy is what lights up the sun and provides heat and light, essential for life on Earth. The sun's light also plays a critical role in Earth's climate system and helps to drive the weather and ocean currents.""",
+            "Extracted statements": """[
+            {
+                "statements that are present in both the answer and the ground truth": ["The sun's primary function is to provide light"],
+                "statements present in the answer but not found in the ground truth": ["The sun is powered by nuclear fission", "similar to nuclear reactors on Earth"],
+                "relevant statements found in the ground truth but omitted in the answer": ["The sun is powered by nuclear fusion, not fission", "In its core, hydrogen atoms fuse to form helium, releasing a tremendous amount of energy", "This energy provides heat and light, essential for life on Earth", "The sun's light plays a critical role in Earth's climate system", "The sun helps to drive the weather and ocean currents"]
+            }]
+            """
+        },
+        {
+            "question": """What is the boiling point of water?""",
+            "answer": """The boiling point of water is 100 degrees Celsius at sea level.""",
+            "ground_truth": """The boiling point of water is 100 degrees Celsius (212 degrees Fahrenheit) at sea level, but it can change with altitude.""",
+            "Extracted statements": """[
+            {
+                "statements that are present in both the answer and the ground truth": ["The boiling point of water is 100 degrees Celsius at sea level"],
+                "statements present in the answer but not found in the ground truth": [],
+                "relevant statements found in the ground truth but omitted in the answer": ["The boiling point can change with altitude", "The boiling point of water is 212 degrees Fahrenheit at sea level"]
+            }]
+            """
+        }
+    ],
+    input_keys=["question", "answer", "ground_truth"],
+    output_key="Extracted statements",
+    output_type="json"
 )
 
 
@@ -101,10 +100,11 @@ class AnswerCorrectness(MetricWithLLM):
             callback_group_name, callback_manager=cb
         ) as batch_group:
             for q, a, g in zip(question, answer, ground_truths):
-                human_prompt = CORRECTNESS_PROMPT.format(
-                    question=q, ground_truth=g[0], answer=a
+                prompts.append(
+                    CORRECTNESS_PROMPT.format(
+                        question=q, ground_truth=g[0], answer=a
+                    )
                 )
-                prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
 
             result = self.llm.generate(prompts, callbacks=batch_group)
             outputs = result.generations

@@ -5,18 +5,17 @@ from dataclasses import dataclass
 
 import numpy as np
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
-from langchain.prompts import ChatPromptTemplate
-from ragas.llms import RagasLLM
-import os
 
+from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import json_loader
-from ragas.prompts import RagasPrompt
+from ragas.llms.prompt import Prompt
 if t.TYPE_CHECKING:
     from datasets import Dataset
     from langchain.callbacks.base import Callbacks
 
-LONG_FORM_ANSWER_PROMPT = RagasPrompt(
+
+LONG_FORM_ANSWER_PROMPT = Prompt(
     name="long_form_answer",
     instruction="Create one or more statements from each sentence in the given answer.",
     examples=[
@@ -31,7 +30,7 @@ LONG_FORM_ANSWER_PROMPT = RagasPrompt(
                     "Recognized globally, Einstein's work has profoundly impacted the scientific community",
                     "Einstein's groundbreaking theories continue to shape our understanding of physics today."
                 ]
-            }"""
+            }""",
         },
         {
             "question": "Cadmium Chloride is slightly soluble in this chemical, it is also called what?",
@@ -40,29 +39,29 @@ LONG_FORM_ANSWER_PROMPT = RagasPrompt(
                 "statements": [
                     "Cadmium Chloride is slightly soluble in alcohol."
                 ]
-            }"""
+            }""",
         },
         {
-            "question":"Were Hitler and Benito Mussolini of the same nationality?",
-            "answer":"Sorry, I can't provide answer to that question.",
-            "statements":"""{
+            "question": "Were Hitler and Benito Mussolini of the same nationality?",
+            "answer": "Sorry, I can't provide answer to that question.",
+            "statements": """{
                 "statements": []
-            }"""
-        }
+            }""",
+        },
     ],
     input_keys=["question", "answer"],
     output_key="statements",
     output_type="JSON",
-)
+)  # noqa: E501
 
 
-NLI_STATEMENTS_MESSAGE = RagasPrompt(
+NLI_STATEMENTS_MESSAGE = Prompt(
     name="nli_statements",
     instruction="Natural language inference. Use only 'Yes' (1), 'No' (0) and 'Null' (-1) as verdict.",
     examples=[
         {
             "context": """John is a student at XYZ University. He is pursuing a degree in Computer Science. He is enrolled in several courses this semester, including Data Structures, Algorithms, and Database Management. John is a diligent student and spends a significant amount of time studying and completing assignments. He often stays late in the library to work on his projects.""",
-            "statements":"""
+            "statements": """
             statement_1: John is majoring in Biology.
             statement_2: John is taking a course on Artificial Intelligence. 
             statement_3: John is a dedicated student. 
@@ -90,33 +89,31 @@ NLI_STATEMENTS_MESSAGE = RagasPrompt(
                 "verdict": "0"
             }
         ]
-            """
-            
-            
+            """,
         },
         {
             "context": """Photosynthesis is a process used by plants, algae, and certain bacteria to convert light energy into chemical energy.""",
-            "statements":"""statement_1: Albert Einstein was a genius.""",
-            "answer":"""{
+            "statements": """statement_1: Albert Einstein was a genius.""",
+            "answer": """{
                 "statement_1": "Albert Einstein was a genius.",
                 "reason": "The context and statement are unrelated",
                 "verdict": "0"
-            }"""
+            }""",
         },
         {
             "context": """Albert Einstein was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time.""",
-            "statements":"""statement_1: Nil""",
-            "answer":"""{
+            "statements": """statement_1: Nil""",
+            "answer": """{
                 "statement_1": "Nil",
                 "reason": "The statement is invalid",
                 "verdict": "-1"
-            }"""
-        }
+            }""",
+        },
     ],
     input_keys=["context", "statements"],
     output_key="answer",
     output_type="JSON",
-)
+)  # noqa: E501
 
 @dataclass
 class Faithfulness(MetricWithLLM):
@@ -136,7 +133,6 @@ class Faithfulness(MetricWithLLM):
         self.nli_statements_message.adapt(languge, cache_dir, self.llm)
         
     def save(self, cache_dir: str = "~/.cache/ragas/metrics/") -> None:  
-        #cache_dir/metric_name/language/prompt_name.pkl
         
         cache_dir = os.path.join(cache_dir, self.name)  
         self.long_form_answer_prompt.save(cache_dir)
@@ -164,8 +160,8 @@ class Faithfulness(MetricWithLLM):
             callback_group_name, callback_manager=cb
         ) as batch_group:
             for q, a in zip(question, answer):
-                human_prompt = self.long_form_answer_prompt.format(question=q, answer=a)
-                prompts.append([human_prompt])
+                human_prompt = LONG_FORM_ANSWER_PROMPT.format(question=q, answer=a)
+                prompts.append(human_prompt)
 
             result = self.llm.generate(prompts, callbacks=batch_group)
 
@@ -182,15 +178,15 @@ class Faithfulness(MetricWithLLM):
                 human_prompt = self.nli_statements_message.format(
                     context=contexts_str, statements=statements_str
                 )
-                prompts.append([human_prompt])
+                prompts.append(human_prompt)
 
             result = self.llm.generate(prompts, callbacks=batch_group)
             outputs = result.generations
-            verdict_score_map = {"1": 1, "0": 0, "1": np.nan}
+            verdict_score_map = {"1": 1, "0": 0, "null": np.nan}
             scores = []
             for output in outputs:
                 output = json_loader.safe_load(output[0].text, self.llm)
-                output = output if isinstance(output, list) else []
+                output = output if isinstance(output, list) else [output]
                 faithful_statements = sum(
                     verdict_score_map.get(dict.get("verdict", "").lower(), np.nan)
                     for dict in output
