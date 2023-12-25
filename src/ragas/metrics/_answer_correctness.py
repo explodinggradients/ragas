@@ -17,6 +17,7 @@ if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
 CORRECTNESS_PROMPT = Prompt(
+    name="answer_correctness",
     instruction="""Extract following from given question and ground truth""",
     examples=[
         {

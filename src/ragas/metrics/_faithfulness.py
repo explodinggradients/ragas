@@ -10,6 +10,8 @@ from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import json_loader
 from ragas.llms.prompt import Prompt
+import os
+
 if t.TYPE_CHECKING:
     from datasets import Dataset
     from langchain.callbacks.base import Callbacks
@@ -202,3 +204,7 @@ class Faithfulness(MetricWithLLM):
 
 
 faithfulness = Faithfulness()
+
+if __name__ == "__main__":
+    
+    faithfulness.adapt(languge="hindi")

@@ -6,7 +6,6 @@ from dataclasses import dataclass
 import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
@@ -16,6 +15,7 @@ if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
 CONTEXT_RECALL_RA = Prompt(
+    name="context_recall",
     instruction="""Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not. Use only "Yes" (1) or "No" (0) as a binary classification. Output json with reason.""",
     examples=[
         {

@@ -20,6 +20,7 @@ if t.TYPE_CHECKING:
 
 
 CRITIQUE_PROMPT = Prompt(
+    name="critique",
     instruction="Given a input and submission. Evaluate the submission only using the given criteria. Use only 'Yes' (1) and 'No' (0) as verdict.",
     examples=[
         {

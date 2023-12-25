@@ -17,6 +17,7 @@ if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
 CONTEXT_PRECISION = Prompt(
+    name="context_precision",
     instruction="""Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "1" if useful and "0" if not. """,
     examples=[
         {

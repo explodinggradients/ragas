@@ -21,6 +21,7 @@ if t.TYPE_CHECKING:
     from ragas.embeddings.base import RagasEmbeddings
 
 QUESTION_GEN = Prompt(
+    name="question_generation",
     instruction="""Generate a question for the given answer and Identify if answer is noncommittal""",
     examples=[
         {
