@@ -6,8 +6,8 @@ from dataclasses import dataclass
 import numpy as np
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
+from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.prompts import RagasPrompt
 from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
@@ -15,7 +15,7 @@ if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
 
-LONG_FORM_ANSWER_PROMPT = RagasPrompt(
+LONG_FORM_ANSWER_PROMPT = Prompt(
     name="long_form_answer",
     instruction="Create one or more statements from each sentence in the given answer.",
     examples=[
@@ -55,7 +55,7 @@ LONG_FORM_ANSWER_PROMPT = RagasPrompt(
 )  # noqa: E501
 
 
-NLI_STATEMENTS_MESSAGE = RagasPrompt(
+NLI_STATEMENTS_MESSAGE = Prompt(
     name="nli_statements",
     instruction="Natural language inference. Use only 'Yes' (1), 'No' (0) and 'Null' (-1) as verdict.",
     examples=[
@@ -112,8 +112,8 @@ NLI_STATEMENTS_MESSAGE = RagasPrompt(
     ],
     input_keys=["context", "statements"],
     output_key="answer",
-    output_type="JSON", 
-)    # noqa: E501
+    output_type="JSON",
+)  # noqa: E501
 
 
 @dataclass

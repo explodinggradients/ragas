@@ -9,8 +9,8 @@ from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
 from ragas.llms import llm_factory
+from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.prompts import RagasPrompt
 from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
@@ -19,7 +19,7 @@ if t.TYPE_CHECKING:
     from ragas.llms import RagasLLM
 
 
-CRITIQUE_PROMPT = RagasPrompt(
+CRITIQUE_PROMPT = Prompt(
     instruction="Given a input and submission. Evaluate the submission only using the given criteria. Use only 'Yes' (1) and 'No' (0) as verdict.",
     examples=[
         {
