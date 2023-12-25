@@ -12,6 +12,7 @@ if t.TYPE_CHECKING:
     from ragas.llms import RagasLLM
 
 JSON_PROMPT = Prompt(
+    name="json_safeloader",
     instruction="Rewrite the input into valid json",
     examples=[
         {
