@@ -6,7 +6,6 @@ from dataclasses import dataclass
 import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
@@ -43,7 +42,7 @@ CONTEXT_RECALL_RA = Prompt(
                 "reason": "There is no supporting evidence for this in the given context.",
                 "Attributed": "0"
             }]
-            """
+            """,
         },
         {
             "question": """who won 2020 icc world cup?""",
@@ -55,12 +54,12 @@ CONTEXT_RECALL_RA = Prompt(
                 "reason": "From context it is clear that England defeated Pakistan to win the World Cup.",
                  "Attributed": "1"
             }]
-            """
-        }
+            """,
+        },
     ],
     input_keys=["question", "context", "answer"],
     output_key="classification",
-    output_type="json"
+    output_type="json",
 )
 
 
@@ -103,9 +102,7 @@ class ContextRecall(MetricWithLLM):
                 gt = "\n".join(gt) if isinstance(gt, list) else gt
                 ctx = "\n".join(ctx) if isinstance(ctx, list) else ctx
                 prompts.append(
-                    CONTEXT_RECALL_RA.format(
-                        question=qstn, context=ctx, answer=gt
-                    )
+                    CONTEXT_RECALL_RA.format(question=qstn, context=ctx, answer=gt)
                 )
 
             responses: list[list[str]] = []

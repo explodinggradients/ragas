@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.llms.prompt import Prompt
 from ragas.metrics._answer_similarity import AnswerSimilarity
@@ -29,7 +28,7 @@ CORRECTNESS_PROMPT = Prompt(
                 "statements present in the answer but not found in the ground truth": ["The sun is powered by nuclear fission", "similar to nuclear reactors on Earth"],
                 "relevant statements found in the ground truth but omitted in the answer": ["The sun is powered by nuclear fusion, not fission", "In its core, hydrogen atoms fuse to form helium, releasing a tremendous amount of energy", "This energy provides heat and light, essential for life on Earth", "The sun's light plays a critical role in Earth's climate system", "The sun helps to drive the weather and ocean currents"]
             }]
-            """
+            """,
         },
         {
             "question": """What is the boiling point of water?""",
@@ -41,12 +40,12 @@ CORRECTNESS_PROMPT = Prompt(
                 "statements present in the answer but not found in the ground truth": [],
                 "relevant statements found in the ground truth but omitted in the answer": ["The boiling point can change with altitude", "The boiling point of water is 212 degrees Fahrenheit at sea level"]
             }]
-            """
-        }
+            """,
+        },
     ],
     input_keys=["question", "answer", "ground_truth"],
     output_key="Extracted statements",
-    output_type="json"
+    output_type="json",
 )
 
 
@@ -101,9 +100,7 @@ class AnswerCorrectness(MetricWithLLM):
         ) as batch_group:
             for q, a, g in zip(question, answer, ground_truths):
                 prompts.append(
-                    CORRECTNESS_PROMPT.format(
-                        question=q, ground_truth=g[0], answer=a
-                    )
+                    CORRECTNESS_PROMPT.format(question=q, ground_truth=g[0], answer=a)
                 )
 
             result = self.llm.generate(prompts, callbacks=batch_group)
@@ -113,7 +110,7 @@ class AnswerCorrectness(MetricWithLLM):
                 "FP": "statements present in the answer but not found in the ground truth",
                 "FN": "relevant statements found in the ground truth but omitted in the answer",  # noqa: E501
             }
-    
+
             f1_score = []
             for prediction in outputs:
                 prediction = json_loader.safe_load(prediction[0].text, self.llm)
@@ -131,9 +128,9 @@ class AnswerCorrectness(MetricWithLLM):
                     score = tp / (tp + 0.5 * (fp + fn))
                 else:
                     score = np.nan
-    
+
                 f1_score.append(score)
-    
+
             similarity_scores = self.answer_similarity._score_batch(dataset, callbacks=batch_group)  # type: ignore
             scores_stacked = np.vstack([f1_score, similarity_scores])
             scores = np.average(
