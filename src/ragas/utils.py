@@ -8,6 +8,12 @@ DEBUG_ENV_VAR = "RAGAS_DEBUG"
 # constant to tell us that there is no key passed to the llm/embeddings
 NO_KEY = "no-key"
 
+# Cache location
+DEFAULT_XDG_CACHE_HOME = "~/.cache"
+XDG_CACHE_HOME = os.getenv("XDG_CACHE_HOME", DEFAULT_XDG_CACHE_HOME)
+DEFAULT_RAGAS_CACHE_HOME = os.path.join(XDG_CACHE_HOME, "ragas")
+RAGAS_CACHE_HOME = os.path.expanduser(os.getenv("RAGAS_HOME", DEFAULT_RAGAS_CACHE_HOME))
+
 
 @lru_cache(maxsize=1)
 def get_debug_mode() -> bool:
