@@ -6,6 +6,8 @@ import typing as t
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain_core.messages import BaseMessage
 from langchain_core.prompt_values import PromptValue
+import pickle
+import os
 
 from ragas.llms.base import RagasLLM
 from ragas.utils import json_loader
@@ -20,12 +22,13 @@ class RagasPrompt(PromptValue):
     """
     RagasPrompt is a class that represents a prompt for the ragas metrics.
     """
-
+    name: str
     instruction: str
     examples: t.List[t.Dict[str, t.Any]] = []
     input_keys: t.List[str]
     output_key: str
     output_type: str = "JSON"
+    language: str = "en"
 
     def to_string(self) -> str:
         """Return prompt value as string."""
@@ -103,22 +106,26 @@ class RagasPrompt(PromptValue):
         human_prompt = HumanMessagePromptTemplate.from_template(prompt)
         return ChatPromptTemplate.from_messages([human_prompt.format(**kwargs)])
 
-    def adapt(self, languge: str, llm: RagasLLM) -> None:
+    def adapt(self, language: str, cache_dir: str, llm: RagasLLM) -> None:
         # TODO: Add callbacks
+        cache_dir = cache_dir if cache_dir else "~/.cache/ragas/prompts"
+        if os.path.exists(os.path.join(cache_dir, language, f"{self.name}.json")):
+            self._load(language, self.name, cache_dir)
+        
         prompts = []
         for example in self.examples:
             prompts.extend(
                 [
-                    str_translation.format(translate_to=languge, input=example.get(key))
+                    str_translation.format(translate_to=language, input=example.get(key))
                     for key in self.input_keys
                 ]
             )
             prompts.append(
                 json_translatation.format(
-                    translate_to=languge, input=example.get(self.output_key)
+                    translate_to=language, input=example.get(self.output_key)
                 )
                 if self.output_type.lower() == "json"
-                else str_translation.format(languge, example.get(self.output_key))
+                else str_translation.format(translate_to=language, input=example.get(self.output_key))
             )
 
         results = [result[0].text for result in llm.generate(prompts).generations]
@@ -141,9 +148,27 @@ class RagasPrompt(PromptValue):
                 else example[-1]
             )
             self.examples[i] = example_dict
+            
+        self.language = language
+        
+    def save(self, cache_dir: str = "~/.cache/ragas/prompts") -> None:
+        
+        cache_dir = os.path.join(cache_dir, self.language)
+        if not os.path.exists(cache_dir):
+            os.makedirs(cache_dir)
+        
+        cache_path = os.path.join(cache_dir, f"{self.name}.json")
+        self.to_json(cache_path)
+      
 
+    @classmethod 
+    def _load(cls, language: str, name: str, cache_dir: str ) -> RagasPrompt:
+        
+        path = os.path.join(cache_dir, language, f"{name}.json")
+        cls(**json.load(open(path)))
 
 str_translation = RagasPrompt(
+    name="str_translation",
     instruction="Language translation",
     examples=[
         {
@@ -158,6 +183,7 @@ str_translation = RagasPrompt(
 )
 
 json_translatation = RagasPrompt(
+    name="json_translation",
     instruction="Translate values in given json to target language ",
     examples=[
         {

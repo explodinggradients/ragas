@@ -17,7 +17,7 @@ from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from tqdm import tqdm
 
 from ragas.embeddings.base import RagasEmbeddings
-from ragas.llms import llm_factory
+from ragas.llms import RagasLLM, llm_factory
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -63,6 +63,27 @@ class Metric(ABC):
         This method will lazy initialize the model.
         """
         ...
+        
+    # @abstractmethod
+    def adapt(self, languge: str) -> None:
+        """
+        Adapt the metric to a different language.
+        """
+        pass
+    
+    # @abstractmethod
+    def save(self, path: t.Optional[str]=None) -> None:
+        """
+        Save the metric to a path.
+        """
+        pass
+    
+    # @abstractmethod
+    def load(self, path: t.Optional[str]=None) -> None:
+        """
+        Load the metric from a path.
+        """
+        pass
 
     def score(
         self: t.Self,
@@ -111,7 +132,8 @@ class Metric(ABC):
 @dataclass
 class MetricWithLLM(Metric):
     llm: RagasLLM = field(default_factory=llm_factory)
-
+    
+            
     def init_model(self):
         """
         Init any models in the metric, this is invoked before evaluate()
