@@ -9,12 +9,6 @@ from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from ragas.json_loader import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-<<<<<<< HEAD
-from ragas.utils import json_loader
-from ragas.llms.prompt import Prompt
-import os
-=======
->>>>>>> add-metric-prompts
 
 if t.TYPE_CHECKING:
     from datasets import Dataset
@@ -121,29 +115,25 @@ NLI_STATEMENTS_MESSAGE = Prompt(
     output_type="JSON",
 )  # noqa: E501
 
+
 @dataclass
 class Faithfulness(MetricWithLLM):
     name: str = "faithfulness"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
     batch_size: int = 15
-    
+
     def __post_init__(self: t.Self):
-        
         self.long_form_answer_prompt = LONG_FORM_ANSWER_PROMPT
         self.nli_statements_message = NLI_STATEMENTS_MESSAGE
-    
-    def adapt(self, languge: str, cache_dir: str = "~/.cache/ragas/metrics/") -> None:
-        
-        cache_dir = os.path.join(cache_dir, self.name)
-        self.long_form_answer_prompt.adapt(languge, cache_dir, self.llm)
-        self.nli_statements_message.adapt(languge, cache_dir, self.llm)
-        
-    def save(self, cache_dir: str = "~/.cache/ragas/metrics/") -> None:  
-        
-        cache_dir = os.path.join(cache_dir, self.name)  
+
+    def adapt(self, languge: str, cache_dir: t.Optional[str] = None) -> None:
+        self.long_form_answer_prompt.adapt(languge, self.llm, cache_dir)
+        self.nli_statements_message.adapt(languge, self.llm, cache_dir)
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
         self.long_form_answer_prompt.save(cache_dir)
         self.nli_statements_message.save(cache_dir)
-            
+
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
@@ -208,7 +198,3 @@ class Faithfulness(MetricWithLLM):
 
 
 faithfulness = Faithfulness()
-
-if __name__ == "__main__":
-    
-    faithfulness.adapt(languge="hindi")
