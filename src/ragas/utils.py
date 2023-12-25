@@ -8,7 +8,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
+
+from ragas.llms.prompt import Prompt
 
 if t.TYPE_CHECKING:
     from ragas.llms import RagasLLM
@@ -39,52 +40,46 @@ def load_as_json(text):
     return {}
 
 
-JSON_PROMPT = HumanMessagePromptTemplate.from_template(
-    """
-
-Rewrite the input into valid json
-
-
-Input:
-{{
+JSON_PROMPT = Prompt(
+    instruction="Rewrite the input into valid json",
+    examples=[
+        {
+            "input": """{
     "name": "John Doe",
     "age": 30,
     "isStudent": false
-    "address": {{
+    "address": {
         "street": "123 Main St",
         "city": "Anytown",
         "state": "CA",
-    }}
+    }
     "hobbies": ["reading", "swimming", "cycling"]
-}}
-Output:
-{{
-    "name": "John Doe",
-    "age": 30,
-    "isStudent": false,
-    "address": {{
-        "street": "123 Main St",
-        "city": "Anytown",
-        "state": "CA"
-    }},
-    "hobbies": ["reading", "swimming", "cycling"]
-}}
-
-
-Input:
-{{
-    "statement": "The Earth is also known as "Terra" "
-}}
-Output:
-{{
-    "statement": "The Earth is also known as 'Terra'"
-}}
-
-Input:
-{input}
-
-Output:
-"""
+    }""",
+            "output": """{
+        "name": "John Doe",
+        "age": 30,
+        "isStudent": false,
+        "address": {
+            "street": "123 Main St",
+            "city": "Anytown",
+            "state": "CA"
+        },
+        "hobbies": ["reading", "swimming", "cycling"]
+    }""",
+        },
+        {
+            "input": """{
+        "statement": "The Earth is also known as "Terra" "
+        }""",
+            "output": """{
+        "statement": "The Earth is also known as 'Terra'"
+    }
+""",
+        },
+    ],
+    input_keys=["input"],
+    output_key="output",
+    output_type="JSON",
 )
 
 
@@ -115,9 +110,8 @@ class JsonLoader:
         with trace_as_chain_group(
             callback_group_name, callback_manager=callbacks
         ) as batch_group:
-            human_prompt = ChatPromptTemplate.from_messages(
-                [JSON_PROMPT.format(input=text)]
-            )
+            human_prompt = JSON_PROMPT.format(input=text)
+
             results = llm.generate(
                 [human_prompt],
                 n=1,
