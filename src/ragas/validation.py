@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datasets import Dataset, Sequence
 
+from ragas.metrics._context_precision import ContextPrecision
 from ragas.metrics.base import EvaluationMode, Metric
 
 
@@ -60,8 +61,15 @@ def validate_evaluation_modes(ds: Dataset, metrics: list[Metric]):
         required_columns = set(EVALMODE_TO_COLUMNS[m.evaluation_mode])
         available_columns = set(ds.features.keys())
         if not required_columns.issubset(available_columns):
+            extra_msg = ""
+            if (
+                isinstance(m, ContextPrecision)
+                and "ground_truths" not in available_columns
+            ):
+                extra_msg = "Looks like you're trying to use 'context_precision' without ground_truths. Please use consider using  `context_utilization' instead."
+
             raise ValueError(
                 f"The metric [{m.name}] that that is used requires the following "
                 f"additional columns {list(required_columns - available_columns)} "
-                "to be present in the dataset."
+                f"to be present in the dataset. {extra_msg}"
             )

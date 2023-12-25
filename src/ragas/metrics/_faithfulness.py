@@ -53,7 +53,7 @@ statements in json:"""  # noqa: E501
 
 NLI_STATEMENTS_MESSAGE = HumanMessagePromptTemplate.from_template(
     """
- Natural language inference. Use only "Yes" (1) or "No" (0) as a binary verdict.
+ Natural language inference. Use only "Yes" (1), "No" (0) and "Null" (-1) as verdict.
 
 Context:
 John is a student at XYZ University. He is pursuing a degree in Computer Science. He is enrolled in several courses this semester, including Data Structures, Algorithms, and Database Management. John is a diligent student and spends a significant amount of time studying and completing assignments. He often stays late in the library to work on his projects.
@@ -105,7 +105,7 @@ Answer:
      {{
         "statement_1": "Nil",
         "reason": "The statement is invalid",
-        "verdict": "0"
+        "verdict": "-1"
     }}
 ]
 
@@ -169,7 +169,7 @@ class Faithfulness(MetricWithLLM):
 
             result = self.llm.generate(prompts, callbacks=batch_group)
             outputs = result.generations
-            verdict_score_map = {"1": 1, "0": 0, "null": np.nan}
+            verdict_score_map = {"1": 1, "0": 0, "-1": np.nan}
             scores = []
             for output in outputs:
                 output = json_loader.safe_load(output[0].text, self.llm)
