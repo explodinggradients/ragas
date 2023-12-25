@@ -6,11 +6,15 @@ from dataclasses import dataclass
 import numpy as np
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
+from ragas.json_loader import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+<<<<<<< HEAD
 from ragas.utils import json_loader
 from ragas.llms.prompt import Prompt
 import os
+=======
+>>>>>>> add-metric-prompts
 
 if t.TYPE_CHECKING:
     from datasets import Dataset
