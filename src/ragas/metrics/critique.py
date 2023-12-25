@@ -4,33 +4,39 @@ import typing as t
 from collections import Counter
 from dataclasses import dataclass, field
 
+import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.llms import llm_factory
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.prompts import RagasPrompt
+from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
     from ragas.llms import RagasLLM
 
-CRITIQUE_PROMPT = HumanMessagePromptTemplate.from_template(
-    """Given a input and submission. Evaluate the submission only using the given criteria. 
-Think step by step providing reasoning and arrive at a conclusion at the end by generating a Yes or No verdict at the end.
 
-input: Who was the director of Los Alamos Laboratory?
-submission: Einstein was the director of  Los Alamos Laboratory.
-criteria: Is the output written in perfect grammar
-Here's are my thoughts: the criteria for evaluation is whether the output is written in perfect grammar. In this case, the output is grammatically correct. Therefore, the answer is:\n\nYes
-
-input:{input}
-submission:{submission}
-criteria:{criteria}
-Here's are my thoughts:
-"""  # noqa: E501
-)
+CRITIQUE_PROMPT = RagasPrompt(
+    instruction="Given a input and submission. Evaluate the submission only using the given criteria. Use only 'Yes' (1) and 'No' (0) as verdict.",
+    examples=[
+        {
+            "input": "Who was the director of Los Alamos Laboratory?",
+            "submission": "Einstein was the director of  Los Alamos Laboratory.",
+            "criteria": "Is the output written in perfect grammar",
+            "output": """{
+                "reason":"the criteria for evaluation is whether the output is written in perfect grammar. In this case, the output is grammatically correct.",
+                "verdict":"1"
+            }
+            """,
+        }
+    ],
+    input_keys=["input", "submission", "criteria"],
+    output_key="output",
+    output_type="JSON",
+)  # noqa: E501
 
 
 @dataclass
@@ -113,7 +119,7 @@ class AspectCritique(MetricWithLLM):
         ) as batch_group:
             for question, context, answer in zip(questions, contexts, answers):
                 human_prompt = self.prompt_format(question, answer, context)
-                prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
+                prompts.append(human_prompt)
 
             results = self.llm.generate(
                 prompts,
@@ -125,18 +131,20 @@ class AspectCritique(MetricWithLLM):
             ]
 
             scores = []
-            answer_dict = {"Yes": 1, "No": 0}
+            answer_dict = {"1": 1, "0": 0}
             for response in responses:
-                response = [(text, text.split("\n\n")[-1]) for text in response]
+                response = [json_loader.safe_load(item, self.llm) for item in response]
                 if self.strictness > 1:
                     score = Counter(
-                        [answer_dict.get(item[-1], 0) for item in response]
+                        [
+                            answer_dict.get(item.get("verdict", np.nan), np.nan)
+                            for item in response
+                        ]
                     ).most_common(1)[0][0]
                 else:
-                    score = answer_dict.get(response[0][-1])
+                    score = answer_dict.get(response[0].get("verdict", np.nan), np.nan)
 
-                # patch for critique: force score to 0 if the answer is not Yes or No
-                scores.append(score if score is not None else 0)
+                scores.append(score)
 
         return scores
 
