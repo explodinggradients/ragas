@@ -42,6 +42,16 @@ def make_batches(total_size: int, batch_size: int) -> list[range]:
 
 EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg")
 
+EVALMODE_TO_COLUMNS = {
+    EvaluationMode.qac: ["question", "answer", "contexts"],
+    EvaluationMode.qa: ["question", "answer"],
+    EvaluationMode.qc: ["question", "contexts"],
+    EvaluationMode.gc: ["ground_truths", "contexts"],
+    EvaluationMode.ga: ["ground_truths", "answer"],
+    EvaluationMode.qga: ["question", "ground_truths", "answer"],
+    EvaluationMode.qcg: ["question", "contexts", "ground_truths"],
+}
+
 
 @dataclass
 class Metric(ABC):
