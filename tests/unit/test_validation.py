@@ -17,8 +17,8 @@ CaseToTest = namedtuple(
 TEST_CASES = [
     CaseToTest("a", "b", ["c"], None, True, [faithfulness], True),
     CaseToTest("a", "b", ["c"], ["g"], True, [faithfulness], True),
-    CaseToTest("a", None, ["c"], None, True, [context_precision], True),
-    CaseToTest("a", None, "c", None, False, [context_precision], True),
+    CaseToTest("a", None, ["c"], ["g"], True, [context_precision], True),
+    CaseToTest("a", "b", "c", ["g"], False, [context_precision], True),
     CaseToTest(
         "a", None, [["c"]], None, False, [context_precision, answer_relevancy], False
     ),

@@ -113,7 +113,6 @@ NLI_STATEMENTS_MESSAGE = RagasPrompt(
     input_keys=["context", "statements"],
     output_key="answer",
     output_type="JSON",  # noqa: E501
-)
 
 
 @dataclass
@@ -166,7 +165,7 @@ class Faithfulness(MetricWithLLM):
 
             result = self.llm.generate(prompts, callbacks=batch_group)
             outputs = result.generations
-            verdict_score_map = {"1": 1, "0": 0, "null": np.nan}
+            verdict_score_map = {"1": 1, "0": 0, "-1": np.nan}
             scores = []
             for output in outputs:
                 output = json_loader.safe_load(output[0].text, self.llm)
