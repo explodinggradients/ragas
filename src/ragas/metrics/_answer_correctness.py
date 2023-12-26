@@ -7,10 +7,10 @@ import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
-from ragas.json_loader import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -81,6 +81,13 @@ class AnswerCorrectness(MetricWithLLM):
             self.answer_similarity = AnswerSimilarity(
                 llm=self.llm, batch_size=self.batch_size
             )
+        self.correctness_prompt = CORRECTNESS_PROMPT
+
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        self.correctness_prompt.adapt(language, self.llm, cache_dir)
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        self.correctness_prompt.save(cache_dir)
 
     def _score_batch(
         self: t.Self,
@@ -101,7 +108,9 @@ class AnswerCorrectness(MetricWithLLM):
         ) as batch_group:
             for q, a, g in zip(question, answer, ground_truths):
                 prompts.append(
-                    CORRECTNESS_PROMPT.format(question=q, ground_truth=g[0], answer=a)
+                    self.correctness_prompt.format(
+                        question=q, ground_truth=g[0], answer=a
+                    )
                 )
 
             result = self.llm.generate(prompts, callbacks=batch_group)

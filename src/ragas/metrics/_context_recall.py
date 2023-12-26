@@ -7,9 +7,9 @@ import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
-from ragas.json_loader import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -82,6 +82,15 @@ class ContextRecall(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
     batch_size: int = 15
 
+    def __post_init__(self: t.Self):
+        self.context_recall_prompt = CONTEXT_RECALL_RA
+
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        self.context_recall_prompt.adapt(language, self.llm, cache_dir)
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.context_recall_prompt.save(cache_dir)
+
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
@@ -103,7 +112,9 @@ class ContextRecall(MetricWithLLM):
                 gt = "\n".join(gt) if isinstance(gt, list) else gt
                 ctx = "\n".join(ctx) if isinstance(ctx, list) else ctx
                 prompts.append(
-                    CONTEXT_RECALL_RA.format(question=qstn, context=ctx, answer=gt)
+                    self.context_recall_prompt.format(
+                        question=qstn, context=ctx, answer=gt
+                    )
                 )
 
             responses: list[list[str]] = []

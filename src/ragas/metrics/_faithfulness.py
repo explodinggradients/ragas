@@ -6,9 +6,9 @@ from dataclasses import dataclass
 import numpy as np
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
-from ragas.json_loader import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from datasets import Dataset
@@ -126,9 +126,9 @@ class Faithfulness(MetricWithLLM):
         self.long_form_answer_prompt = LONG_FORM_ANSWER_PROMPT
         self.nli_statements_message = NLI_STATEMENTS_MESSAGE
 
-    def adapt(self, languge: str, cache_dir: t.Optional[str] = None) -> None:
-        self.long_form_answer_prompt.adapt(languge, self.llm, cache_dir)
-        self.nli_statements_message.adapt(languge, self.llm, cache_dir)
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        self.long_form_answer_prompt.adapt(language, self.llm, cache_dir)
+        self.nli_statements_message.adapt(language, self.llm, cache_dir)
 
     def save(self, cache_dir: t.Optional[str] = None) -> None:
         self.long_form_answer_prompt.save(cache_dir)

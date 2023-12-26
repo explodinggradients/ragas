@@ -63,25 +63,18 @@ class Metric(ABC):
         This method will lazy initialize the model.
         """
         ...
-        
+
     # @abstractmethod
-    def adapt(self, languge: str) -> None:
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         """
         Adapt the metric to a different language.
         """
         pass
-    
+
     # @abstractmethod
-    def save(self, path: t.Optional[str]=None) -> None:
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
         """
         Save the metric to a path.
-        """
-        pass
-    
-    # @abstractmethod
-    def load(self, path: t.Optional[str]=None) -> None:
-        """
-        Load the metric from a path.
         """
         pass
 
@@ -132,8 +125,7 @@ class Metric(ABC):
 @dataclass
 class MetricWithLLM(Metric):
     llm: RagasLLM = field(default_factory=llm_factory)
-    
-            
+
     def init_model(self):
         """
         Init any models in the metric, this is invoked before evaluate()

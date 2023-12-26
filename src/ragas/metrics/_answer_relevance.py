@@ -10,9 +10,9 @@ from langchain.embeddings import OpenAIEmbeddings
 
 from ragas.embeddings.base import embedding_factory
 from ragas.exceptions import OpenAIKeyNotFound
-from ragas.json_loader import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -84,6 +84,15 @@ class AnswerRelevancy(MetricWithLLM):
             if self.embeddings.openai_api_key == "no-key":
                 raise OpenAIKeyNotFound
 
+    def __post_init__(self: t.Self):
+        self.question_generation = QUESTION_GEN
+
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        self.question_generation.adapt(language, self.llm, cache_dir)
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.question_generation.save(cache_dir)
+
     def _score_batch(
         self: t.Self,
         dataset: Dataset,
@@ -102,7 +111,9 @@ class AnswerRelevancy(MetricWithLLM):
         ) as batch_group:
             prompts = []
             for ans, ctx in zip(answers, contexts):
-                prompts.append(QUESTION_GEN.format(answer=ans, context="\n".join(ctx)))
+                prompts.append(
+                    self.question_generation.format(answer=ans, context="\n".join(ctx))
+                )
 
             results = self.llm.generate(
                 prompts,

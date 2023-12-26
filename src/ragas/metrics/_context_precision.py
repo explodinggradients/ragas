@@ -8,9 +8,9 @@ import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
-from ragas.json_loader import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -73,6 +73,15 @@ class ContextPrecision(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
     batch_size: int = 15
 
+    def __post_init__(self: t.Self):
+        self.context_precision_prompt = CONTEXT_PRECISION
+
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        self.context_precision_prompt.adapt(language, self.llm, cache_dir)
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.context_precision_prompt.save(cache_dir)
+
     def get_dataset_attributes(self, dataset: Dataset):
         answer = "ground_truths"
         if answer not in dataset.features.keys():
@@ -98,7 +107,9 @@ class ContextPrecision(MetricWithLLM):
         ) as batch_group:
             for qstn, ctx, answer in zip(questions, contexts, answers):
                 human_prompts = [
-                    CONTEXT_PRECISION.format(question=qstn, context=c, answer=answer)
+                    self.context_precision_prompt.format(
+                        question=qstn, context=c, answer=answer
+                    )
                     for c in ctx
                 ]
 

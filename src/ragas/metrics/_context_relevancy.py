@@ -56,7 +56,13 @@ class ContextRelevancy(MetricWithLLM):
     show_deprecation_warning: bool = False
 
     def __post_init__(self: t.Self):
-        pass
+        self.context_relevancy_prompt = CONTEXT_RELEVANCE
+
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        self.context_relevancy_prompt.adapt(language, self.llm, cache_dir)
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.context_relevancy_prompt.save(cache_dir)
 
     def _score_batch(
         self: t.Self,
@@ -77,7 +83,9 @@ class ContextRelevancy(MetricWithLLM):
         ) as batch_group:
             for q, c in zip(questions, contexts):
                 prompts.append(
-                    CONTEXT_RELEVANCE.format(question=q, context="\n".join(c))
+                    self.context_relevancy_prompt.format(
+                        question=q, context="\n".join(c)
+                    )
                 )
 
             responses: list[list[str]] = []

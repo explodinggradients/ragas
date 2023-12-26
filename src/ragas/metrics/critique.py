@@ -8,10 +8,10 @@ import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
-from ragas.json_loader import json_loader
 from ragas.llms import llm_factory
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -82,6 +82,13 @@ class AspectCritique(MetricWithLLM):
         self.strictness = (
             self.strictness if self.strictness % 2 != 0 else self.strictness + 1
         )
+        self.critic_prompt = CRITIQUE_PROMPT
+
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        self.critic_prompt.adapt(language, self.llm, cache_dir)
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.critic_prompt.save(cache_dir)
 
     def prompt_format(
         self: t.Self,
