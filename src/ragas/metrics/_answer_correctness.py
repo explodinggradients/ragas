@@ -80,8 +80,10 @@ class AnswerCorrectness(MetricWithLLM):
     def __post_init__(self: t.Self):
         if len(self.weights) != 2:
             raise ValueError("Expects a list of two weights. First for factuality, second for semantic similarity")
+        if all([w == 0 for w in self.weights]):
+            raise ValueError("At least one weight must be non-zero")
 
-        if self.answer_similarity is None:
+        if self.answer_similarity is None and self.weights[1] != 0:
             self.answer_similarity = AnswerSimilarity(
                 llm=self.llm, batch_size=self.batch_size
             )

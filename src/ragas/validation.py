@@ -3,7 +3,7 @@ from __future__ import annotations
 from datasets import Dataset, Sequence
 
 from ragas.metrics._context_precision import ContextPrecision
-from ragas.metrics.base import Metric, EVALMODE_TO_COLUMNS
+from ragas.metrics.base import EvaluationMode, Metric
 
 
 def remap_column_names(dataset: Dataset, column_map: dict[str, str]) -> Dataset:
@@ -33,6 +33,17 @@ def validate_column_dtypes(ds: Dataset):
                     f'Dataset feature "{column_names}" should be of type'
                     f" Sequence[string], got {type(ds.features[column_names])}"
                 )
+
+
+EVALMODE_TO_COLUMNS = {
+    EvaluationMode.qac: ["question", "answer", "contexts"],
+    EvaluationMode.qa: ["question", "answer"],
+    EvaluationMode.qc: ["question", "contexts"],
+    EvaluationMode.gc: ["ground_truths", "contexts"],
+    EvaluationMode.ga: ["ground_truths", "answer"],
+    EvaluationMode.qga: ["question", "ground_truths", "answer"],
+    EvaluationMode.qcg: ["question", "contexts", "ground_truths"],
+}
 
 
 def validate_evaluation_modes(ds: Dataset, metrics: list[Metric]):
