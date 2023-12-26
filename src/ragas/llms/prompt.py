@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import typing as t
 
@@ -9,7 +10,7 @@ from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.prompt_values import PromptValue
 from langchain_core.pydantic_v1 import root_validator
 
-from ragas.utils import RAGAS_CACHE_HOME
+from ragas.utils import RAGAS_CACHE_HOME, json_loader
 
 
 class Prompt(PromptValue):
@@ -157,8 +158,11 @@ class Prompt(PromptValue):
             example_dict.update(
                 {k: v for k, v in zip(self.input_keys, example[: len(self.input_keys)])}
             )
-            # TODO : safe load json - now circular import error
-            example_dict[self.output_key] = example[-1]
+            example_dict[self.output_key] = (
+                json.dumps(json_loader.safe_load(example[-1], llm))
+                if self.output_type.lower() == "json"
+                else example[-1]
+            )
 
             self.examples[i] = example_dict
 
@@ -171,14 +175,13 @@ class Prompt(PromptValue):
             os.makedirs(cache_dir)
 
         cache_path = os.path.join(cache_dir, f"{self.name}.json")
-        print(cache_path)
         with open(cache_path, "w") as file:
             json.dump(self.to_json(), file, indent=4)
 
     @classmethod
     def _load(cls, language: str, name: str, cache_dir: str) -> Prompt:
+        logging.log(logging.INFO, f"Loading {name} from {cache_dir}")
         path = os.path.join(cache_dir, language, f"{name}.json")
-        print("loading from", path)
         cls(**json.load(open(path))["kwargs"])
 
 
