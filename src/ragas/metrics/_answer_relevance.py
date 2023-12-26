@@ -10,7 +10,7 @@ from langchain.embeddings import OpenAIEmbeddings
 
 from ragas.embeddings.base import embedding_factory
 from ragas.exceptions import OpenAIKeyNotFound
-from ragas.json_loader import json_loader
+from ragas.utils import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
