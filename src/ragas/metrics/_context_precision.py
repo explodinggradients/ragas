@@ -7,11 +7,10 @@ from dataclasses import dataclass
 import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
+from ragas.utils import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -27,7 +26,7 @@ CONTEXT_PRECISION = Prompt(
                 "reason": "The provided context was indeed useful in arriving at the given answer. The context includes key information about Albert Einstein's life and contributions, which are reflected in the answer.",
                 "Verdict": "1"
             }
-            """
+            """,
         },
         {
             "question": """who won 2020 icc world cup?""",
@@ -37,7 +36,7 @@ CONTEXT_PRECISION = Prompt(
                 "reason": "the context was useful in clarifying the situation regarding the 2020 ICC World Cup and indicating that England was the winner of the tournament that was intended to be held in 2020 but actually took place in 2022.",
                 "verdict": "1"
             }
-            """
+            """,
         },
         {
             "question": """What is the tallest mountain in the world?""",
@@ -47,12 +46,12 @@ CONTEXT_PRECISION = Prompt(
                 "reason":"the provided context discusses the Andes mountain range, which, while impressive, does not include Mount Everest or directly relate to the question about the world's tallest mountain.",
                 "verdict":"0"
             }
-            """
-        }
+            """,
+        },
     ],
     input_keys=["question", "context", "answer"],
     output_key="verification",
-    output_type="json"
+    output_type="json",
 )
 
 
@@ -98,9 +97,7 @@ class ContextPrecision(MetricWithLLM):
         ) as batch_group:
             for qstn, ctx, answer in zip(questions, contexts, answers):
                 human_prompts = [
-                    CONTEXT_PRECISION.format(
-                        question=qstn, context=c, answer=answer
-                    )
+                    CONTEXT_PRECISION.format(question=qstn, context=c, answer=answer)
                     for c in ctx
                 ]
 

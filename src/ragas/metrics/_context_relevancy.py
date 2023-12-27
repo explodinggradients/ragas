@@ -9,7 +9,6 @@ import numpy as np
 import pysbd
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
@@ -21,7 +20,7 @@ CONTEXT_RELEVANCE = Prompt(
     instruction="""Please extract relevant sentences from the provided context that is absolutely required answer the following question. If no relevant sentences are found, or if you believe the question cannot be answered from the given context, return the phrase "Insufficient Information".  While extracting candidate sentences you're not allowed to make any changes to sentences from given context.""",
     input_keys=["question", "context"],
     output_key="candidate sentences",
-    output_type="json"
+    output_type="json",
 )
 
 
@@ -77,9 +76,7 @@ class ContextRelevancy(MetricWithLLM):
         ) as batch_group:
             for q, c in zip(questions, contexts):
                 prompts.append(
-                    CONTEXT_RELEVANCE.format(
-                        question=q, context="\n".join(c)
-                    )
+                    CONTEXT_RELEVANCE.format(question=q, context="\n".join(c))
                 )
 
             responses: list[list[str]] = []
