@@ -16,7 +16,6 @@ if t.TYPE_CHECKING:
 
 
 LONG_FORM_ANSWER_PROMPT = Prompt(
-    name="long_form_answer",
     instruction="Create one or more statements from each sentence in the given answer.",
     examples=[
         {
@@ -56,7 +55,6 @@ LONG_FORM_ANSWER_PROMPT = Prompt(
 
 
 NLI_STATEMENTS_MESSAGE = Prompt(
-    name="nli_statements",
     instruction="Natural language inference. Use only 'Yes' (1), 'No' (0) and 'Null' (-1) as verdict.",
     examples=[
         {
