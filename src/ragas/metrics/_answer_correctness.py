@@ -56,7 +56,7 @@ class AnswerCorrectness(MetricWithLLM):
 
     """
     Measures answer correctness compared to ground truth as a combination of
-    semantic similarity and factuality
+    factuality and semantic similarity.
 
     Attributes
     ----------
@@ -78,7 +78,14 @@ class AnswerCorrectness(MetricWithLLM):
     answer_similarity: AnswerSimilarity | None = None
 
     def __post_init__(self: t.Self):
-        if self.answer_similarity is None:
+        if len(self.weights) != 2:
+            raise ValueError("Expects a list of two weights. First for factuality, second for semantic similarity")
+        if all([w == 0 for w in self.weights]):
+            raise ValueError("At least one weight must be non-zero")
+        if not all([w >= 0 for w in self.weights]):
+            raise ValueError("Weights must be non-negative")
+
+        if self.answer_similarity is None and self.weights[1] != 0:
             self.answer_similarity = AnswerSimilarity(
                 llm=self.llm, batch_size=self.batch_size
             )
@@ -113,7 +120,7 @@ class AnswerCorrectness(MetricWithLLM):
                 "FP": "statements present in the answer but not found in the ground truth",
                 "FN": "relevant statements found in the ground truth but omitted in the answer",  # noqa: E501
             }
-    
+
             f1_score = []
             for prediction in outputs:
                 prediction = json_loader.safe_load(prediction[0].text, self.llm)
@@ -131,10 +138,13 @@ class AnswerCorrectness(MetricWithLLM):
                     score = tp / (tp + 0.5 * (fp + fn))
                 else:
                     score = np.nan
-    
+
                 f1_score.append(score)
-    
-            similarity_scores = self.answer_similarity._score_batch(dataset, callbacks=batch_group)  # type: ignore
+
+            if self.weights[1] == 0:
+                similarity_scores = np.zeros(len(f1_score))
+            else:
+                similarity_scores = self.answer_similarity._score_batch(dataset, callbacks=batch_group)  # type: ignore
             scores_stacked = np.vstack([f1_score, similarity_scores])
             scores = np.average(
                 scores_stacked,
