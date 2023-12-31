@@ -72,7 +72,7 @@ class Prompt(PromptValue):
         # Format the examples to match the Langchain prompt template
         for example in self.examples:
             for key, value in example.items():
-                value = json.dumps(value, ensure_ascii=False).encode('utf8').decode()
+                value = json.dumps(value, ensure_ascii=False).encode("utf8").decode()
                 value = (
                     value.replace("{", "{{").replace("}", "}}")
                     if self.output_type.lower() == "json"
@@ -99,7 +99,7 @@ class Prompt(PromptValue):
         example = self.examples[example_no]
         example_str = ""
         for key, value in example.items():
-            value = json.dumps(value, ensure_ascii=False).encode('utf8').decode()
+            value = json.dumps(value, ensure_ascii=False).encode("utf8").decode()
             value = (
                 value.replace("{", "{{").replace("}", "}}")
                 if self.output_type.lower() == "json"
@@ -171,7 +171,7 @@ class Prompt(PromptValue):
             self.examples[i] = example_dict
 
         self.language = language
-        
+
         # TODO:Validate the prompt after adaptation
 
     def save(self, cache_dir: t.Optional[str] = None) -> None:
