@@ -51,10 +51,11 @@ class Prompt(PromptValue):
                     raise ValueError(
                         f"example {no+1} does not have the variable {output_key} in the definition"
                     )
-                if values["output_type"] == "json":
+                if values["output_type"].lower() == "json":
                     try:
                         if output_key in example:
-                            json.loads(example[output_key])
+                            if isinstance(example[output_key], str):
+                                json.loads(example[output_key])
                     except ValueError as e:
                         raise ValueError(
                             f"{output_key} in example {no+1} is not in valid json format: {e}"
@@ -170,6 +171,8 @@ class Prompt(PromptValue):
             self.examples[i] = example_dict
 
         self.language = language
+        
+        # TODO:Validate the prompt after adaptation
 
     def save(self, cache_dir: t.Optional[str] = None) -> None:
         cache_dir = cache_dir if cache_dir else RAGAS_CACHE_HOME
