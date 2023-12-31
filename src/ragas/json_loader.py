@@ -3,21 +3,19 @@ from __future__ import annotations
 import json
 import os
 import typing as t
+import warnings
 from dataclasses import dataclass
 from functools import lru_cache
 
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
+if t.TYPE_CHECKING:
+    from ragas.llms import RagasLLM
+
 DEBUG_ENV_VAR = "RAGAS_DEBUG"
 # constant to tell us that there is no key passed to the llm/embeddings
 NO_KEY = "no-key"
-
-# Cache location
-DEFAULT_XDG_CACHE_HOME = "~/.cache"
-XDG_CACHE_HOME = os.getenv("XDG_CACHE_HOME", DEFAULT_XDG_CACHE_HOME)
-DEFAULT_RAGAS_CACHE_HOME = os.path.join(XDG_CACHE_HOME, "ragas")
-RAGAS_CACHE_HOME = os.path.expanduser(os.getenv("RAGAS_HOME", DEFAULT_RAGAS_CACHE_HOME))
 
 
 @lru_cache(maxsize=1)
@@ -28,7 +26,19 @@ def get_debug_mode() -> bool:
         return False
 
 
-# not migrating to Prompt format to avoid circular imports
+def load_as_json(text):
+    """
+    validate and return given text as json
+    """
+
+    try:
+        return json.loads(text)
+    except ValueError as e:
+        warnings.warn(f"Invalid json: {e}")
+
+    return {}
+
+
 JSON_PROMPT = HumanMessagePromptTemplate.from_template(
     """
 

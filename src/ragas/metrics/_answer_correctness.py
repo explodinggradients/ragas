@@ -7,10 +7,10 @@ import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
+from ragas.utils import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -55,7 +55,7 @@ class AnswerCorrectness(MetricWithLLM):
 
     """
     Measures answer correctness compared to ground truth as a combination of
-    semantic similarity and factuality
+    factuality and semantic similarity.
 
     Attributes
     ----------
@@ -77,7 +77,14 @@ class AnswerCorrectness(MetricWithLLM):
     answer_similarity: AnswerSimilarity | None = None
 
     def __post_init__(self: t.Self):
-        if self.answer_similarity is None:
+        if len(self.weights) != 2:
+            raise ValueError("Expects a list of two weights. First for factuality, second for semantic similarity")
+        if all([w == 0 for w in self.weights]):
+            raise ValueError("At least one weight must be non-zero")
+        if not all([w >= 0 for w in self.weights]):
+            raise ValueError("Weights must be non-negative")
+
+        if self.answer_similarity is None and self.weights[1] != 0:
             self.answer_similarity = AnswerSimilarity(
                 llm=self.llm, batch_size=self.batch_size
             )
@@ -141,7 +148,10 @@ class AnswerCorrectness(MetricWithLLM):
 
                 f1_score.append(score)
 
-            similarity_scores = self.answer_similarity._score_batch(dataset, callbacks=batch_group)  # type: ignore
+            if self.weights[1] == 0:
+                similarity_scores = np.zeros(len(f1_score))
+            else:
+                similarity_scores = self.answer_similarity._score_batch(dataset, callbacks=batch_group)  # type: ignore
             scores_stacked = np.vstack([f1_score, similarity_scores])
             scores = np.average(
                 scores_stacked,

@@ -7,9 +7,9 @@ import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
+from ragas.utils import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -112,9 +112,13 @@ class ContextRecall(MetricWithLLM):
                 gt = "\n".join(gt) if isinstance(gt, list) else gt
                 ctx = "\n".join(ctx) if isinstance(ctx, list) else ctx
                 prompts.append(
+<<<<<<< HEAD
                     self.context_recall_prompt.format(
                         question=qstn, context=ctx, answer=gt
                     )
+=======
+                    CONTEXT_RECALL_RA.format(question=qstn, context=ctx, answer=gt)
+>>>>>>> 84cb885d4bb26073bc1bd43f563238699f5c6cd7
                 )
 
             responses: list[list[str]] = []
