@@ -83,13 +83,9 @@ class ContextRelevancy(MetricWithLLM):
         ) as batch_group:
             for q, c in zip(questions, contexts):
                 prompts.append(
-<<<<<<< HEAD
                     self.context_relevancy_prompt.format(
                         question=q, context="\n".join(c)
                     )
-=======
-                    CONTEXT_RELEVANCE.format(question=q, context="\n".join(c))
->>>>>>> 84cb885d4bb26073bc1bd43f563238699f5c6cd7
                 )
 
             responses: list[list[str]] = []

@@ -6,11 +6,6 @@ from dataclasses import dataclass
 import numpy as np
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
-<<<<<<< HEAD
-from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM
-=======
->>>>>>> 84cb885d4bb26073bc1bd43f563238699f5c6cd7
 from ragas.utils import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM

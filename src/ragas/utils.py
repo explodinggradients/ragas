@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import typing as t
+import warnings
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -26,7 +27,18 @@ def get_debug_mode() -> bool:
         return True
     else:
         return False
+    
+def load_as_json(text):
+    """
+    validate and return given text as json
+    """
 
+    try:
+        return json.loads(text)
+    except ValueError as e:
+        warnings.warn(f"Invalid json: {e}")
+
+    return {}
 
 # not migrating to Prompt format to avoid circular imports
 JSON_PROMPT = HumanMessagePromptTemplate.from_template(
