@@ -1,7 +1,7 @@
 from ragas.llms.prompt import Prompt
 
 TESTCASES = [
-                {
+                {   "name":"test-prompt",
                     "instruction" : 'Create one or more statements from each sentence in the given answer.',
                     "examples" : [
                         {
@@ -25,6 +25,7 @@ TESTCASES = [
                     "output_key" : "statements in json",
                 },
                 {
+                    "name":"test-prompt",
                     "instruction" : 'Natural language inference. Use only "Yes" (1) or "No" (0) as a binary verdict.',
                     "examples" : [
                         {
@@ -62,6 +63,7 @@ TESTCASES = [
                     "output_type" : "json"
                 },
                 {
+                    "name":"test-prompt",
                     "instruction" : 'This is a test prompt without examples',
                     "input_keys" : ["Context"],
                     "output_key" : "Answer",
