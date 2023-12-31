@@ -86,6 +86,7 @@ class ContextRecall(MetricWithLLM):
         self.context_recall_prompt = CONTEXT_RECALL_RA
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        print(f"Adapting Context Recall to {language}")
         self.context_recall_prompt.adapt(language, self.llm, cache_dir)
 
     def save(self, cache_dir: str | None = None) -> None:

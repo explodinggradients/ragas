@@ -85,6 +85,7 @@ class AspectCritique(MetricWithLLM):
         self.critic_prompt = CRITIQUE_PROMPT
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        print(f"Adapting Critic to {language}")
         self.critic_prompt.adapt(language, self.llm, cache_dir)
 
     def save(self, cache_dir: str | None = None) -> None:

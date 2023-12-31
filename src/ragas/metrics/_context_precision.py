@@ -77,6 +77,7 @@ class ContextPrecision(MetricWithLLM):
         self.context_precision_prompt = CONTEXT_PRECISION
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        print(f"Adapting Context Precision to {language}")
         self.context_precision_prompt.adapt(language, self.llm, cache_dir)
 
     def save(self, cache_dir: str | None = None) -> None:
