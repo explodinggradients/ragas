@@ -10,6 +10,7 @@ from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.prompt_values import PromptValue
 from langchain_core.pydantic_v1 import root_validator
 
+from ragas.llms import RagasLLM
 from ragas.utils import RAGAS_CACHE_HOME, json_loader
 
 

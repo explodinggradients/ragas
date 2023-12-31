@@ -10,9 +10,9 @@ from langchain.embeddings import OpenAIEmbeddings
 
 from ragas.embeddings.base import embedding_factory
 from ragas.exceptions import OpenAIKeyNotFound
-from ragas.utils import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks

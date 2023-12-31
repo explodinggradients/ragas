@@ -63,9 +63,7 @@ question_deep_map = {
     "conditional": "_condition_question",
 }
 
-retry_errors = (
-    ValidationError,
-)
+retry_errors = (ValidationError,)
 
 DataRow = namedtuple(
     "DataRow",
@@ -416,9 +414,7 @@ class TestsetGenerator:
 
             proposal = None
             try:
-                proposal = self._make_proposal(
-                    curr_node, neighbor_nodes, evolve_type
-                )
+                proposal = self._make_proposal(curr_node, neighbor_nodes, evolve_type)
             except Exception as e:
                 err_cause = e.__cause__
                 if not isinstance(err_cause, retry_errors):

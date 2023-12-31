@@ -10,6 +10,9 @@ from functools import lru_cache
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
+if t.TYPE_CHECKING:
+    from ragas.llms import RagasLLM
+
 DEBUG_ENV_VAR = "RAGAS_DEBUG"
 # constant to tell us that there is no key passed to the llm/embeddings
 NO_KEY = "no-key"
@@ -27,7 +30,8 @@ def get_debug_mode() -> bool:
         return True
     else:
         return False
-    
+
+
 def load_as_json(text):
     """
     validate and return given text as json
@@ -39,6 +43,7 @@ def load_as_json(text):
         warnings.warn(f"Invalid json: {e}")
 
     return {}
+
 
 # not migrating to Prompt format to avoid circular imports
 JSON_PROMPT = HumanMessagePromptTemplate.from_template(

@@ -6,9 +6,9 @@ from dataclasses import dataclass
 import numpy as np
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
-from ragas.utils import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from datasets import Dataset

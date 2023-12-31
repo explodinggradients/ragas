@@ -7,10 +7,10 @@ import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
-from ragas.utils import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -78,7 +78,9 @@ class AnswerCorrectness(MetricWithLLM):
 
     def __post_init__(self: t.Self):
         if len(self.weights) != 2:
-            raise ValueError("Expects a list of two weights. First for factuality, second for semantic similarity")
+            raise ValueError(
+                "Expects a list of two weights. First for factuality, second for semantic similarity"
+            )
         if all([w == 0 for w in self.weights]):
             raise ValueError("At least one weight must be non-zero")
         if not all([w >= 0 for w in self.weights]):

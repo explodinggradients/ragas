@@ -22,8 +22,6 @@ from ragas.llms import RagasLLM, llm_factory
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
-    from ragas.llms import RagasLLM
-
 
 def make_batches(total_size: int, batch_size: int) -> list[range]:
     """
