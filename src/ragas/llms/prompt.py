@@ -185,7 +185,7 @@ class Prompt(PromptValue):
             json.dump(self.to_json(), file, indent=4)
 
     @classmethod
-    def _load(cls, language: str, name: str, cache_dir: str) -> Prompt:
+    def _load(cls, language: str, name: str, cache_dir: str) -> None:
         logging.log(logging.INFO, f"Loading {name} from {cache_dir}")
         path = os.path.join(cache_dir, language, f"{name}.json")
         cls(**json.load(open(path))["kwargs"])
