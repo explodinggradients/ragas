@@ -134,7 +134,9 @@ class AnswerCorrectness(MetricWithLLM):
             f1_score = []
             for prediction in outputs:
                 prediction = json_loader.safe_load(prediction[0].text, self.llm)
-                prediction = prediction if isinstance(prediction, list) else [prediction]
+                prediction = (
+                    prediction if isinstance(prediction, list) else [prediction]
+                )
                 if prediction:
                     prediction = [
                         item.get(key_map[k], np.nan)
