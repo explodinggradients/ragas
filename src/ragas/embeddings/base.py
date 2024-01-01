@@ -8,6 +8,7 @@ from typing import List
 import numpy as np
 from langchain.embeddings import AzureOpenAIEmbeddings as BaseAzureOpenAIEmbeddings
 from langchain.embeddings import OpenAIEmbeddings as BaseOpenAIEmbeddings
+from langchain.embeddings import FastEmbedEmbeddings as BaseFastEmbedEmbeddings
 from langchain.schema.embeddings import Embeddings
 from pydantic.dataclasses import dataclass
 
@@ -42,6 +43,22 @@ class OpenAIEmbeddings(BaseOpenAIEmbeddings, BaseRagasEmbeddings):
             else:
                 raise OpenAIKeyNotFound
 
+class FastEmbedEmbeddings(BaseFastEmbedEmbeddings, RagasEmbeddings):
+    """
+    Find the list of supported models at:
+    https://qdrant.github.io/fastembed/examples/Supported_Models/
+    """
+
+    model_name: str = DEFAULT_MODEL_NAME
+    """Model name to use."""
+    cache_folder: t.Optional[str] = None
+    """Path to store models."""
+
+    def validate_api_key(self):
+        """
+        Validates that the api key is set for the Embeddings
+        """
+        pass
 
 class AzureOpenAIEmbeddings(BaseAzureOpenAIEmbeddings, BaseRagasEmbeddings):
     azure_endpoint: t.Optional[str] = None

@@ -54,6 +54,7 @@ class AnswerSimilarity(MetricWithLLM):
         if isinstance(self.embeddings, HuggingfaceEmbeddings):
             self.is_cross_encoder = True if self.embeddings.is_cross_encoder else False
             self.embeddings.encode_kwargs = {
+                **self.embeddings.encode_kwargs,
                 "batch_size": self.batch_size,
             }
 
