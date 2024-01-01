@@ -122,11 +122,11 @@ class Prompt(PromptValue):
 
     def adapt(
         self, language: str, llm: RagasLLM, cache_dir: t.Optional[str] = None
-    ) -> None:
+    ) -> Prompt:
         # TODO: Add callbacks
         cache_dir = cache_dir if cache_dir else RAGAS_CACHE_HOME
         if os.path.exists(os.path.join(cache_dir, language, f"{self.name}.json")):
-            self._load(language, self.name, cache_dir)
+            return self._load(language, self.name, cache_dir)
 
         prompts = []
         for example in self.examples:
@@ -174,6 +174,8 @@ class Prompt(PromptValue):
 
         # TODO:Validate the prompt after adaptation
 
+        return self
+
     def save(self, cache_dir: t.Optional[str] = None) -> None:
         cache_dir = cache_dir if cache_dir else RAGAS_CACHE_HOME
         cache_dir = os.path.join(cache_dir, self.language)
@@ -185,10 +187,10 @@ class Prompt(PromptValue):
             json.dump(self.to_json(), file, indent=4)
 
     @classmethod
-    def _load(cls, language: str, name: str, cache_dir: str) -> None:
+    def _load(cls, language: str, name: str, cache_dir: str) -> Prompt:
         logging.log(logging.INFO, f"Loading {name} from {cache_dir}")
         path = os.path.join(cache_dir, language, f"{name}.json")
-        cls(**json.load(open(path))["kwargs"])
+        return cls(**json.load(open(path))["kwargs"])
 
 
 str_translation = Prompt(
