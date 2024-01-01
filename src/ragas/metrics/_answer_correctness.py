@@ -75,7 +75,7 @@ class AnswerCorrectness(MetricWithLLM):
 
     name: str = "answer_correctness"  # type: ignore[reportIncompatibleMethodOverride]
     evaluation_mode: EvaluationMode = EvaluationMode.qga  # type: ignore[reportIncompatibleMethodOverride]
-    correctness_prompt: Prompt = CORRECTNESS_PROMPT
+    correctness_prompt: Prompt = field(default_factory=lambda: CORRECTNESS_PROMPT)
     batch_size: int = 15
     weights: list[float] = field(default_factory=lambda: [0.75, 0.25])
     answer_similarity: AnswerSimilarity | None = None

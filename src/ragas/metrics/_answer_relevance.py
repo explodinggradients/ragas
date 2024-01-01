@@ -76,7 +76,7 @@ class AnswerRelevancy(MetricWithLLM):
 
     name: str = "answer_relevancy"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
-    question_generation: Prompt = QUESTION_GEN
+    question_generation: Prompt = field(default_factory=lambda: QUESTION_GEN)
     batch_size: int = 15
     strictness: int = 3
     embeddings: RagasEmbeddings = field(default_factory=embedding_factory)

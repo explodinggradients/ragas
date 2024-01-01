@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import Dataset
@@ -71,10 +71,8 @@ class ContextPrecision(MetricWithLLM):
 
     name: str = "context_precision"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
+    context_precision_prompt: Prompt = field(default_factory=lambda: CONTEXT_PRECISION)
     batch_size: int = 15
-
-    def __post_init__(self: t.Self):
-        self.context_precision_prompt = CONTEXT_PRECISION
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
         logging.info(f"Adapting Context Precision to {language}")

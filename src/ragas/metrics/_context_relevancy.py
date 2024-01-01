@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
 
 import numpy as np
@@ -54,7 +54,7 @@ class ContextRelevancy(MetricWithLLM):
 
     name: str = "context_relevancy"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qc  # type: ignore
-    context_relevancy_prompt: Prompt = CONTEXT_RELEVANCE
+    context_relevancy_prompt: Prompt = field(default_factory=lambda: CONTEXT_RELEVANCE)
     batch_size: int = 15
     show_deprecation_warning: bool = False
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import Dataset
@@ -83,7 +83,7 @@ class ContextRecall(MetricWithLLM):
 
     name: str = "context_recall"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
-    context_recall_prompt: Prompt = CONTEXT_RECALL_RA
+    context_recall_prompt: Prompt = field(default_factory=lambda: CONTEXT_RECALL_RA)
     batch_size: int = 15
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:

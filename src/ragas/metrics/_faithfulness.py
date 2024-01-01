@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
@@ -122,8 +122,12 @@ NLI_STATEMENTS_MESSAGE = Prompt(
 class Faithfulness(MetricWithLLM):
     name: str = "faithfulness"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
-    long_form_answer_prompt: Prompt = LONG_FORM_ANSWER_PROMPT
-    nli_statements_message: Prompt = NLI_STATEMENTS_MESSAGE
+    long_form_answer_prompt: Prompt = field(
+        default_factory=lambda: LONG_FORM_ANSWER_PROMPT
+    )
+    nli_statements_message: Prompt = field(
+        default_factory=lambda: NLI_STATEMENTS_MESSAGE
+    )
     batch_size: int = 15
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
