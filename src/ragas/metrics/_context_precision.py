@@ -2,20 +2,21 @@ from __future__ import annotations
 
 import logging
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
-from ragas.utils import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
 CONTEXT_PRECISION = Prompt(
+    name="context_precision",
     instruction="""Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "1" if useful and "0" if not. """,
     examples=[
         {
@@ -70,7 +71,17 @@ class ContextPrecision(MetricWithLLM):
 
     name: str = "context_precision"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
+    context_precision_prompt: Prompt = field(default_factory=lambda: CONTEXT_PRECISION)
     batch_size: int = 15
+
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        logging.info(f"Adapting Context Precision to {language}")
+        self.context_precision_prompt = self.context_precision_prompt.adapt(
+            language, self.llm, cache_dir
+        )
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.context_precision_prompt.save(cache_dir)
 
     def get_dataset_attributes(self, dataset: Dataset):
         answer = "ground_truths"
@@ -97,7 +108,9 @@ class ContextPrecision(MetricWithLLM):
         ) as batch_group:
             for qstn, ctx, answer in zip(questions, contexts, answers):
                 human_prompts = [
-                    CONTEXT_PRECISION.format(question=qstn, context=c, answer=answer)
+                    self.context_precision_prompt.format(
+                        question=qstn, context=c, answer=answer
+                    )
                     for c in ctx
                 ]
 

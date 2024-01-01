@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from dataclasses import dataclass, field
 
@@ -10,9 +11,11 @@ from langchain.embeddings import OpenAIEmbeddings
 
 from ragas.embeddings.base import embedding_factory
 from ragas.exceptions import OpenAIKeyNotFound
-from ragas.utils import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import json_loader
+
+logger = logging.getLogger(__name__)
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -20,6 +23,7 @@ if t.TYPE_CHECKING:
     from ragas.embeddings.base import RagasEmbeddings
 
 QUESTION_GEN = Prompt(
+    name="question_generation",
     instruction="""Generate a question for the given answer and Identify if answer is noncommittal""",
     examples=[
         {
@@ -72,6 +76,7 @@ class AnswerRelevancy(MetricWithLLM):
 
     name: str = "answer_relevancy"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
+    question_generation: Prompt = field(default_factory=lambda: QUESTION_GEN)
     batch_size: int = 15
     strictness: int = 3
     embeddings: RagasEmbeddings = field(default_factory=embedding_factory)
@@ -82,6 +87,15 @@ class AnswerRelevancy(MetricWithLLM):
         if isinstance(self.embeddings, OpenAIEmbeddings):
             if self.embeddings.openai_api_key == "no-key":
                 raise OpenAIKeyNotFound
+
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        logger.info(f"Adapting AnswerRelevancy metric to {language}")
+        self.question_generation = self.question_generation.adapt(
+            language, self.llm, cache_dir
+        )
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.question_generation.save(cache_dir)
 
     def _score_batch(
         self: t.Self,
@@ -101,7 +115,9 @@ class AnswerRelevancy(MetricWithLLM):
         ) as batch_group:
             prompts = []
             for ans, ctx in zip(answers, contexts):
-                prompts.append(QUESTION_GEN.format(answer=ans, context="\n".join(ctx)))
+                prompts.append(
+                    self.question_generation.format(answer=ans, context="\n".join(ctx))
+                )
 
             results = self.llm.generate(
                 prompts,

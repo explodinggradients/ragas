@@ -1,21 +1,24 @@
 from __future__ import annotations
 
+import logging
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
-from ragas.utils import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from datasets import Dataset
     from langchain.callbacks.base import Callbacks
 
+logger = logging.getLogger(__name__)
 
 LONG_FORM_ANSWER_PROMPT = Prompt(
+    name="long_form_answer",
     instruction="Create one or more statements from each sentence in the given answer.",
     examples=[
         {
@@ -55,6 +58,7 @@ LONG_FORM_ANSWER_PROMPT = Prompt(
 
 
 NLI_STATEMENTS_MESSAGE = Prompt(
+    name="nli_statements",
     instruction="Natural language inference. Use only 'Yes' (1), 'No' (0) and 'Null' (-1) as verdict.",
     examples=[
         {
@@ -118,7 +122,26 @@ NLI_STATEMENTS_MESSAGE = Prompt(
 class Faithfulness(MetricWithLLM):
     name: str = "faithfulness"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
+    long_form_answer_prompt: Prompt = field(
+        default_factory=lambda: LONG_FORM_ANSWER_PROMPT
+    )
+    nli_statements_message: Prompt = field(
+        default_factory=lambda: NLI_STATEMENTS_MESSAGE
+    )
     batch_size: int = 15
+
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        logger.info(f"Adapting Faithfulness metric to {language}")
+        self.long_form_answer_prompt = self.long_form_answer_prompt.adapt(
+            language, self.llm, cache_dir
+        )
+        self.nli_statements_message = self.nli_statements_message.adapt(
+            language, self.llm, cache_dir
+        )
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        self.long_form_answer_prompt.save(cache_dir)
+        self.nli_statements_message.save(cache_dir)
 
     def _score_batch(
         self: t.Self,
@@ -157,7 +180,7 @@ class Faithfulness(MetricWithLLM):
                     [f"statement_{i+1}: {st}" for i, st in enumerate(statements)]
                 )
                 contexts_str: str = "\n".join(context)
-                human_prompt = NLI_STATEMENTS_MESSAGE.format(
+                human_prompt = self.nli_statements_message.format(
                     context=contexts_str, statements=statements_str
                 )
                 prompts.append(human_prompt)

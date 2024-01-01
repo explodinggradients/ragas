@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from dataclasses import dataclass, field
 
@@ -7,15 +8,18 @@ import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
-from ragas.utils import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import json_loader
+
+logger = logging.getLogger(__name__)
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
 CORRECTNESS_PROMPT = Prompt(
+    name="answer_correctness",
     instruction="""Extract following from given question and ground truth""",
     examples=[
         {
@@ -71,13 +75,16 @@ class AnswerCorrectness(MetricWithLLM):
 
     name: str = "answer_correctness"  # type: ignore[reportIncompatibleMethodOverride]
     evaluation_mode: EvaluationMode = EvaluationMode.qga  # type: ignore[reportIncompatibleMethodOverride]
+    correctness_prompt: Prompt = field(default_factory=lambda: CORRECTNESS_PROMPT)
     batch_size: int = 15
     weights: list[float] = field(default_factory=lambda: [0.75, 0.25])
     answer_similarity: AnswerSimilarity | None = None
 
     def __post_init__(self: t.Self):
         if len(self.weights) != 2:
-            raise ValueError("Expects a list of two weights. First for factuality, second for semantic similarity")
+            raise ValueError(
+                "Expects a list of two weights. First for factuality, second for semantic similarity"
+            )
         if all([w == 0 for w in self.weights]):
             raise ValueError("At least one weight must be non-zero")
         if not all([w >= 0 for w in self.weights]):
@@ -87,6 +94,15 @@ class AnswerCorrectness(MetricWithLLM):
             self.answer_similarity = AnswerSimilarity(
                 llm=self.llm, batch_size=self.batch_size
             )
+
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        logger.info(f"Adapting AnswerCorrectness metric to {language}")
+        self.correctness_prompt = self.correctness_prompt.adapt(
+            language, self.llm, cache_dir
+        )
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        self.correctness_prompt.save(cache_dir)
 
     def _score_batch(
         self: t.Self,
@@ -107,7 +123,9 @@ class AnswerCorrectness(MetricWithLLM):
         ) as batch_group:
             for q, a, g in zip(question, answer, ground_truths):
                 prompts.append(
-                    CORRECTNESS_PROMPT.format(question=q, ground_truth=g[0], answer=a)
+                    self.correctness_prompt.format(
+                        question=q, ground_truth=g[0], answer=a
+                    )
                 )
 
             result = self.llm.generate(prompts, callbacks=batch_group)
@@ -121,7 +139,9 @@ class AnswerCorrectness(MetricWithLLM):
             f1_score = []
             for prediction in outputs:
                 prediction = json_loader.safe_load(prediction[0].text, self.llm)
-                prediction = prediction if isinstance(prediction, list) else []
+                prediction = (
+                    prediction if isinstance(prediction, list) else [prediction]
+                )
                 if prediction:
                     prediction = [
                         item.get(key_map[k], np.nan)
