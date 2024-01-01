@@ -19,6 +19,7 @@ if t.TYPE_CHECKING:
 
     from ragas.llms import RagasLLM
 
+logger = logging.getLogger(__name__)
 
 CRITIQUE_PROMPT = Prompt(
     name="critique",
@@ -65,6 +66,7 @@ class AspectCritique(MetricWithLLM):
 
     name: str = field(default="", repr=True)  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
+    critic_prompt: Prompt = CRITIQUE_PROMPT
     definition: str = field(default="", repr=True)
     strictness: int = field(default=1, repr=False)
     batch_size: int = field(default=15, repr=False)
@@ -83,10 +85,9 @@ class AspectCritique(MetricWithLLM):
         self.strictness = (
             self.strictness if self.strictness % 2 != 0 else self.strictness + 1
         )
-        self.critic_prompt = CRITIQUE_PROMPT
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
-        logging.info(f"Adapting Critic to {language}")
+        logger.info(f"Adapting Critic to {language}")
         self.critic_prompt.adapt(language, self.llm, cache_dir)
 
     def save(self, cache_dir: str | None = None) -> None:

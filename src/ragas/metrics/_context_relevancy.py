@@ -16,6 +16,8 @@ from ragas.metrics.base import EvaluationMode, MetricWithLLM
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
+logger = logging.getLogger(__name__)
+
 CONTEXT_RELEVANCE = Prompt(
     name="context_relevancy",
     instruction="""Please extract relevant sentences from the provided context that is absolutely required answer the following question. If no relevant sentences are found, or if you believe the question cannot be answered from the given context, return the phrase "Insufficient Information".  While extracting candidate sentences you're not allowed to make any changes to sentences from given context.""",
@@ -52,13 +54,12 @@ class ContextRelevancy(MetricWithLLM):
 
     name: str = "context_relevancy"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qc  # type: ignore
+    context_relevancy_prompt: Prompt = CONTEXT_RELEVANCE
     batch_size: int = 15
     show_deprecation_warning: bool = False
 
-    def __post_init__(self: t.Self):
-        self.context_relevancy_prompt = CONTEXT_RELEVANCE
-
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        logger.info(f"Adapting Context Relevancy to {language}")
         self.context_relevancy_prompt = self.context_relevancy_prompt.adapt(
             language, self.llm, cache_dir
         )
@@ -73,7 +74,7 @@ class ContextRelevancy(MetricWithLLM):
         callback_group_name: str = "batch",
     ) -> list[float]:
         if self.show_deprecation_warning:
-            logging.warning(
+            logger.warning(
                 "The 'context_relevancy' metric is going to be deprecated soon! Please use the 'context_precision' metric instead. It is a drop-in replacement just a simple search and replace should work."  # noqa
             )
         prompts = []

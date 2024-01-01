@@ -15,6 +15,8 @@ from ragas.utils import json_loader
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
+logger = logging.getLogger(__name__)
+
 CONTEXT_RECALL_RA = Prompt(
     name="context_recall",
     instruction="""Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not. Use only "Yes" (1) or "No" (0) as a binary classification. Output json with reason.""",
@@ -81,13 +83,11 @@ class ContextRecall(MetricWithLLM):
 
     name: str = "context_recall"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
+    context_recall_prompt: Prompt = CONTEXT_RECALL_RA
     batch_size: int = 15
 
-    def __post_init__(self: t.Self):
-        self.context_recall_prompt = CONTEXT_RECALL_RA
-
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
-        logging.info(f"Adapting Context Recall to {language}")
+        logger.info(f"Adapting Context Recall to {language}")
         self.context_recall_prompt = self.context_recall_prompt.adapt(
             language, self.llm, cache_dir
         )

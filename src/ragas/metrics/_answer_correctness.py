@@ -13,6 +13,8 @@ from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import json_loader
 
+logger = logging.getLogger(__name__)
+
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
@@ -73,6 +75,7 @@ class AnswerCorrectness(MetricWithLLM):
 
     name: str = "answer_correctness"  # type: ignore[reportIncompatibleMethodOverride]
     evaluation_mode: EvaluationMode = EvaluationMode.qga  # type: ignore[reportIncompatibleMethodOverride]
+    correctness_prompt: Prompt = CORRECTNESS_PROMPT
     batch_size: int = 15
     weights: list[float] = field(default_factory=lambda: [0.75, 0.25])
     answer_similarity: AnswerSimilarity | None = None
@@ -91,10 +94,9 @@ class AnswerCorrectness(MetricWithLLM):
             self.answer_similarity = AnswerSimilarity(
                 llm=self.llm, batch_size=self.batch_size
             )
-        self.correctness_prompt = CORRECTNESS_PROMPT
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
-        logging.info(f"Adapting AnswerCorrectness metric to {language}")
+        logger.info(f"Adapting AnswerCorrectness metric to {language}")
         self.correctness_prompt = self.correctness_prompt.adapt(
             language, self.llm, cache_dir
         )

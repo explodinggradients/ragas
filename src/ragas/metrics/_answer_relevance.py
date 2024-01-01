@@ -15,6 +15,8 @@ from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import json_loader
 
+logger = logging.getLogger(__name__)
+
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
@@ -74,6 +76,7 @@ class AnswerRelevancy(MetricWithLLM):
 
     name: str = "answer_relevancy"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
+    question_generation: Prompt = QUESTION_GEN
     batch_size: int = 15
     strictness: int = 3
     embeddings: RagasEmbeddings = field(default_factory=embedding_factory)
@@ -85,11 +88,8 @@ class AnswerRelevancy(MetricWithLLM):
             if self.embeddings.openai_api_key == "no-key":
                 raise OpenAIKeyNotFound
 
-    def __post_init__(self: t.Self):
-        self.question_generation = QUESTION_GEN
-
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
-        logging.info(f"Adapting AnswerRelevancy metric to {language}")
+        logger.info(f"Adapting AnswerRelevancy metric to {language}")
         self.question_generation = self.question_generation.adapt(
             language, self.llm, cache_dir
         )

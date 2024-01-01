@@ -15,6 +15,7 @@ if t.TYPE_CHECKING:
     from datasets import Dataset
     from langchain.callbacks.base import Callbacks
 
+logger = logging.getLogger(__name__)
 
 LONG_FORM_ANSWER_PROMPT = Prompt(
     name="long_form_answer",
@@ -121,14 +122,12 @@ NLI_STATEMENTS_MESSAGE = Prompt(
 class Faithfulness(MetricWithLLM):
     name: str = "faithfulness"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
+    long_form_answer_prompt: Prompt = LONG_FORM_ANSWER_PROMPT
+    nli_statements_message: Prompt = NLI_STATEMENTS_MESSAGE
     batch_size: int = 15
 
-    def __post_init__(self: t.Self):
-        self.long_form_answer_prompt = LONG_FORM_ANSWER_PROMPT
-        self.nli_statements_message = NLI_STATEMENTS_MESSAGE
-
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
-        logging.info(f"Adapting Faithfulness metric to {language}")
+        logger.info(f"Adapting Faithfulness metric to {language}")
         self.long_form_answer_prompt = self.long_form_answer_prompt.adapt(
             language, self.llm, cache_dir
         )
