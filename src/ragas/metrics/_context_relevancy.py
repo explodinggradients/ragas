@@ -59,7 +59,9 @@ class ContextRelevancy(MetricWithLLM):
         self.context_relevancy_prompt = CONTEXT_RELEVANCE
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
-        self.context_relevancy_prompt.adapt(language, self.llm, cache_dir)
+        self.context_relevancy_prompt = self.context_relevancy_prompt.adapt(
+            language, self.llm, cache_dir
+        )
 
     def save(self, cache_dir: str | None = None) -> None:
         self.context_relevancy_prompt.save(cache_dir)

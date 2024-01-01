@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from collections import Counter
 from dataclasses import dataclass, field
@@ -85,7 +86,7 @@ class AspectCritique(MetricWithLLM):
         self.critic_prompt = CRITIQUE_PROMPT
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
-        print(f"Adapting Critic to {language}")
+        logging.info(f"Adapting Critic to {language}")
         self.critic_prompt.adapt(language, self.llm, cache_dir)
 
     def save(self, cache_dir: str | None = None) -> None:

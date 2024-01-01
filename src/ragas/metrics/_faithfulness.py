@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from dataclasses import dataclass
 
@@ -127,9 +128,13 @@ class Faithfulness(MetricWithLLM):
         self.nli_statements_message = NLI_STATEMENTS_MESSAGE
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
-        print(f"Adapting Faithfulness metric to {language}")
-        self.long_form_answer_prompt.adapt(language, self.llm, cache_dir)
-        self.nli_statements_message.adapt(language, self.llm, cache_dir)
+        logging.info(f"Adapting Faithfulness metric to {language}")
+        self.long_form_answer_prompt = self.long_form_answer_prompt.adapt(
+            language, self.llm, cache_dir
+        )
+        self.nli_statements_message = self.nli_statements_message.adapt(
+            language, self.llm, cache_dir
+        )
 
     def save(self, cache_dir: t.Optional[str] = None) -> None:
         self.long_form_answer_prompt.save(cache_dir)

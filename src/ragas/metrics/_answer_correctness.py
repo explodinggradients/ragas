@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from dataclasses import dataclass, field
 
@@ -93,8 +94,10 @@ class AnswerCorrectness(MetricWithLLM):
         self.correctness_prompt = CORRECTNESS_PROMPT
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
-        print(f"Adapting AnswerCorrectness metric to {language}")
-        self.correctness_prompt.adapt(language, self.llm, cache_dir)
+        logging.info(f"Adapting AnswerCorrectness metric to {language}")
+        self.correctness_prompt = self.correctness_prompt.adapt(
+            language, self.llm, cache_dir
+        )
 
     def save(self, cache_dir: t.Optional[str] = None) -> None:
         self.correctness_prompt.save(cache_dir)

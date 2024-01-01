@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from dataclasses import dataclass, field
 
@@ -88,8 +89,10 @@ class AnswerRelevancy(MetricWithLLM):
         self.question_generation = QUESTION_GEN
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
-        print(f"Adapting AnswerRelevancy metric to {language}")
-        self.question_generation.adapt(language, self.llm, cache_dir)
+        logging.info(f"Adapting AnswerRelevancy metric to {language}")
+        self.question_generation = self.question_generation.adapt(
+            language, self.llm, cache_dir
+        )
 
     def save(self, cache_dir: str | None = None) -> None:
         self.question_generation.save(cache_dir)
