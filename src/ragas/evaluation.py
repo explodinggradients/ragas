@@ -152,7 +152,6 @@ def evaluate(
             [executor.submit(metric.score, row, row_group_cm) for metric in metrics]
 
     scores = []
-    # import ipdb; ipdb.set_trace()  # fmt: skip
     try:
         # get the results
         results = executor.results()
@@ -164,7 +163,7 @@ def evaluate(
             scores.append(s)
             # close the row chain
             row_rm, row_group_cm = row_run_managers[i]
-            if row_group_cm.ended:
+            if not row_group_cm.ended:
                 row_rm.on_chain_end(s)
 
     # run evaluation task
@@ -176,8 +175,13 @@ def evaluate(
     finally:
         # close the evaluation chain
         # TODO: show only aggregate scores
+        result = Result(
+            scores=Dataset.from_list(scores),
+            dataset=dataset,
+            binary_columns=binary_metrics,
+        )
         if not evaluation_group_cm.ended:
-            evaluation_rm.on_chain_end(scores)
+            evaluation_rm.on_chain_end(result)
 
     # log the evaluation event
     metrics_names = [m.name for m in metrics]
@@ -189,19 +193,13 @@ def evaluate(
             num_rows=dataset.shape[0],
         )
     )
-
-    return scores
-    return Result(
-        scores=scores,
-        dataset=dataset.to_dict(),
-        binary_columns=binary_metrics,
-    )
+    return result
 
 
 @dataclass
 class Result(dict):
-    scores: t.List[t.Dict]
-    dataset: t.List[t.Dict] | None = None
+    scores: Dataset
+    dataset: t.Optional[Dataset] = None
     binary_columns: t.List[str] = field(default_factory=list)
 
     def __post_init__(self):
