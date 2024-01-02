@@ -5,7 +5,7 @@ This is designed to assess submissions based on predefined aspects such as `harm
 
 Critiques within the LLM evaluators evaluate submissions based on the provided aspect. Ragas Critiques offers a range of predefined aspects like correctness, harmfulness, etc. (Please refer to `SUPPORTED_ASPECTS` for a complete list). If you prefer, you can also create custom aspects to evaluate submissions according to your unique requirements.
 
-The `strictness` parameter plays a crucial role in maintaining a certain level of self-consistency in predictions, with an ideal range typically falling between 2 to 4. It's important to note that the scores obtained from aspect critiques are binary and do not contribute to the final Ragas score due to their non-continuous nature.
+The `strictness` parameter plays a crucial role in maintaining a certain level of self-consistency in predictions, with an ideal range typically falling between 2 to 4.
 
 
 ```{hint}
