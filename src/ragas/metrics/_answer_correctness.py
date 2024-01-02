@@ -8,17 +8,19 @@ import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
+from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.utils import json_loader
 
 logger = logging.getLogger(__name__)
 
 if t.TYPE_CHECKING:
-    from langchain.callbacks.base import Callbacks
+    from langchain_core.callbacks import Callbacks
+    from langchain_core.outputs import LLMResult
 
 CORRECTNESS_PROMPT = Prompt(
+    name="answer_correctness",
     instruction="""Extract following from given question and ground truth""",
     examples=[
         {
@@ -94,14 +96,79 @@ class AnswerCorrectness(MetricWithLLM):
                 llm=self.llm, batch_size=self.batch_size
             )
 
-    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
-        logger.info(f"Adapting AnswerCorrectness metric to {language}")
-        self.correctness_prompt = self.correctness_prompt.adapt(
-            language, self.llm, cache_dir
+    def _compute_statement_presence(self, result: LLMResult) -> float:
+        assert self.llm is not None, "LLM must be set"
+
+        key_map = {
+            "TP": "statements that are present in both the answer and the ground truth",
+            "FP": "statements present in the answer but not found in the ground truth",
+            "FN": "relevant statements found in the ground truth but omitted in the answer",  # noqa: E501
+        }
+        outputs = result.generations[0]
+
+        prediction = json_loader.safe_load(outputs[0].text, self.llm)
+        prediction = prediction if isinstance(prediction, list) else [prediction]
+        if prediction:
+            prediction = [
+                item.get(key_map[k], np.nan)
+                for item in prediction
+                for k in key_map.keys()
+            ]
+            tp, fp, fn = [
+                len(item) if isinstance(item, list) else np.nan for item in prediction
+            ]
+            score = tp / (tp + 0.5 * (fp + fn))
+        else:
+            score = np.nan
+
+        return score
+
+    def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
+        assert self.llm is not None, "LLM must be set"
+        q, a, g = row["question"], row["answer"], row["ground_truths"][0]
+        p_value = self.correctness_prompt.format(question=q, ground_truth=g, answer=a)
+        is_statement_present = self.llm.generate_text(p_value, callbacks=callbacks)
+
+        f1_score = self._compute_statement_presence(is_statement_present)
+
+        if self.weights[1] == 0:
+            similarity_score = 0
+        else:
+            similarity_score = self.answer_similarity.score(row, callbacks=callbacks)  # type: ignore
+
+        score = np.average(
+            [f1_score, similarity_score],
+            weights=self.weights,
         )
 
-    def save(self, cache_dir: t.Optional[str] = None) -> None:
-        self.correctness_prompt.save(cache_dir)
+        return score
+
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        assert self.llm is not None, "LLM must be set"
+
+        q, a, g = row["question"], row["answer"], row["ground_truths"][0]
+        p_value = self.correctness_prompt.format(question=q, ground_truth=g, answer=a)
+        is_statement_present = await self.llm.agenerate_text(
+            p_value, callbacks=callbacks
+        )
+
+        f1_score = self._compute_statement_presence(is_statement_present)
+
+        if self.weights[1] == 0:
+            similarity_score = 0
+        else:
+            assert self.answer_similarity is not None, "AnswerSimilarity must be set"
+
+            similarity_score = await self.answer_similarity.ascore(
+                row, callbacks=callbacks
+            )
+
+        score = np.average(
+            [f1_score, similarity_score],
+            weights=self.weights,
+        )
+
+        return score
 
     def _score_batch(
         self: t.Self,
@@ -128,39 +195,12 @@ class AnswerCorrectness(MetricWithLLM):
                 )
 
             result = self.llm.generate(prompts, callbacks=batch_group)
-            outputs = result.generations
-            key_map = {
-                "TP": "statements that are present in both the answer and the ground truth",
-                "FP": "statements present in the answer but not found in the ground truth",
-                "FN": "relevant statements found in the ground truth but omitted in the answer",  # noqa: E501
-            }
-
-            f1_score = []
-            for prediction in outputs:
-                prediction = json_loader.safe_load(prediction[0].text, self.llm)
-                prediction = (
-                    prediction if isinstance(prediction, list) else [prediction]
-                )
-                if prediction:
-                    prediction = [
-                        item.get(key_map[k], np.nan)
-                        for item in prediction
-                        for k in key_map.keys()
-                    ]
-                    tp, fp, fn = [
-                        len(item) if isinstance(item, list) else np.nan
-                        for item in prediction
-                    ]
-                    score = tp / (tp + 0.5 * (fp + fn))
-                else:
-                    score = np.nan
-
-                f1_score.append(score)
 
             if self.weights[1] == 0:
                 similarity_scores = np.zeros(len(f1_score))
             else:
                 similarity_scores = self.answer_similarity._score_batch(dataset, callbacks=batch_group)  # type: ignore
+
             scores_stacked = np.vstack([f1_score, similarity_scores])
             scores = np.average(
                 scores_stacked,
@@ -169,6 +209,17 @@ class AnswerCorrectness(MetricWithLLM):
             )
 
         return scores.tolist()
+
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        assert self.llm is not None, "llm must be set to compute score"
+
+        logger.info(f"Adapting AnswerCorrectness metric to {language}")
+        self.correctness_prompt = self.correctness_prompt.adapt(
+            language, self.llm, cache_dir
+        )
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        self.correctness_prompt.save(cache_dir)
 
 
 answer_correctness = AnswerCorrectness()

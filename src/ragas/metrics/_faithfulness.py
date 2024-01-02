@@ -139,6 +139,8 @@ class Faithfulness(MetricWithLLM):
         return prompt_value
 
     def _create_nli_prompt(self, row: t.Dict, answer_result: LLMResult) -> PromptValue:
+        assert self.llm is not None, "llm must be set to compute score"
+
         contexts = row["contexts"]
         # check if the statements are support in the contexts
         contexts_str: str = "\n".join(contexts)
@@ -155,6 +157,8 @@ class Faithfulness(MetricWithLLM):
         return prompt_value
 
     def _compute_score(self, result: LLMResult):
+        assert self.llm is not None, "llm must be set to compute score"
+
         # check the verdicts and compute the score
         output = result.generations[0][0]
         verdict_score_map = {"1": 1, "0": 0, "null": np.nan}

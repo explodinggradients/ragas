@@ -1,3 +1,4 @@
+from ragas.metrics._answer_correctness import AnswerCorrectness, answer_correctness
 from ragas.metrics._answer_similarity import AnswerSimilarity, answer_similarity
 from ragas.metrics._context_precision import (
     ContextPrecision,
@@ -8,6 +9,8 @@ from ragas.metrics._context_precision import (
 from ragas.metrics._faithfulness import Faithfulness, faithfulness
 
 __all__ = [
+    "AnswerCorrectness",
+    "answer_correctness",
     "Faithfulness",
     "faithfulness",
     "AnswerSimilarity",
