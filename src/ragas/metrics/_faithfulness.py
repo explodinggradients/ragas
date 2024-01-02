@@ -193,7 +193,7 @@ class Faithfulness(MetricWithLLM):
                 output = json_loader.safe_load(output[0].text, self.llm)
                 output = output if isinstance(output, list) else [output]
                 faithful_statements = sum(
-                    verdict_score_map.get(dict.get("verdict", "").lower(), np.nan)
+                    verdict_score_map.get(str(dict.get("verdict", "")).lower(), np.nan)
                     for dict in output
                 )
                 num_statements = len(output)
