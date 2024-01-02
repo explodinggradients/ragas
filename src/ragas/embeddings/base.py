@@ -7,6 +7,7 @@ from typing import List
 
 import numpy as np
 from langchain.embeddings import AzureOpenAIEmbeddings as BaseAzureOpenAIEmbeddings
+from langchain.embeddings import FastEmbedEmbeddings as BaseFastEmbedEmbeddings
 from langchain.embeddings import OpenAIEmbeddings as BaseOpenAIEmbeddings
 from langchain.embeddings import FastEmbedEmbeddings as BaseFastEmbedEmbeddings
 from langchain.schema.embeddings import Embeddings

@@ -1,6 +1,7 @@
 from ragas.embeddings.base import (
     AzureOpenAIEmbeddings,
     BaseRagasEmbeddings,
+    FastEmbedEmbeddings,
     HuggingfaceEmbeddings,
     OpenAIEmbeddings,
 )
@@ -10,4 +11,5 @@ __all__ = [
     "OpenAIEmbeddings",
     "AzureOpenAIEmbeddings",
     "BaseRagasEmbeddings",
+    "FastEmbedEmbeddings",
 ]

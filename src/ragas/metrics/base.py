@@ -50,6 +50,20 @@ class Metric(ABC):
         """
         ...
 
+    # @abstractmethod
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Adapt the metric to a different language.
+        """
+        pass
+
+    # @abstractmethod
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Save the metric to a path.
+        """
+        pass
+
     def score(
         self: t.Self,
         row: t.Dict,

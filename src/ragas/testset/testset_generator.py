@@ -63,9 +63,7 @@ question_deep_map = {
     "conditional": "_condition_question",
 }
 
-retry_errors = (
-    ValidationError,
-)
+retry_errors = (ValidationError,)
 
 DataRow = namedtuple(
     "DataRow",

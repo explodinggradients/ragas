@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import logging
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
+from ragas.llms.prompt import Prompt
+from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
@@ -14,7 +17,10 @@ from ragas.metrics.base import EvaluationMode, MetricWithLLM
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
+logger = logging.getLogger(__name__)
+
 CONTEXT_RECALL_RA = Prompt(
+    name="context_recall",
     instruction="""Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not. Use only "Yes" (1) or "No" (0) as a binary classification. Output json with reason.""",
     examples=[
         {
@@ -79,9 +85,19 @@ class ContextRecall(MetricWithLLM):
 
     name: str = "context_recall"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
+    context_recall_prompt: Prompt = field(default_factory=lambda: CONTEXT_RECALL_RA)
     batch_size: int = 15
 
-    async def _ascore(
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        logger.info(f"Adapting Context Recall to {language}")
+        self.context_recall_prompt = self.context_recall_prompt.adapt(
+            language, self.llm, cache_dir
+        )
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.context_recall_prompt.save(cache_dir)
+
+    def _score_batch(
         self: t.Self,
         row: t.Dict,
         callbacks: t.Optional[Callbacks] = None,
@@ -102,7 +118,9 @@ class ContextRecall(MetricWithLLM):
                 gt = "\n".join(gt) if isinstance(gt, list) else gt
                 ctx = "\n".join(ctx) if isinstance(ctx, list) else ctx
                 prompts.append(
-                    CONTEXT_RECALL_RA.format(question=qstn, context=ctx, answer=gt)
+                    self.context_recall_prompt.format(
+                        question=qstn, context=ctx, answer=gt
+                    )
                 )
 
             responses: list[list[str]] = []

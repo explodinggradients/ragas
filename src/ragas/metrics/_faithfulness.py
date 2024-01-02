@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import logging
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
+from ragas.llms.prompt import Prompt
+from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
@@ -15,8 +18,10 @@ if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
     from langchain_core.outputs import LLMResult
 
+logger = logging.getLogger(__name__)
 
 LONG_FORM_ANSWER_PROMPT = Prompt(
+    name="long_form_answer",
     instruction="Create one or more statements from each sentence in the given answer.",
     examples=[
         {
@@ -56,6 +61,7 @@ LONG_FORM_ANSWER_PROMPT = Prompt(
 
 
 NLI_STATEMENTS_MESSAGE = Prompt(
+    name="nli_statements",
     instruction="Natural language inference. Use only 'Yes' (1), 'No' (0) and 'Null' (-1) as verdict.",
     examples=[
         {
@@ -119,56 +125,33 @@ NLI_STATEMENTS_MESSAGE = Prompt(
 class Faithfulness(MetricWithLLM):
     name: str = "faithfulness"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
+    long_form_answer_prompt: Prompt = field(
+        default_factory=lambda: LONG_FORM_ANSWER_PROMPT
+    )
+    nli_statements_message: Prompt = field(
+        default_factory=lambda: NLI_STATEMENTS_MESSAGE
+    )
     batch_size: int = 15
 
-    def _create_answer_prompt(self, row: t.Dict) -> Prompt:
-        question, answer = row["question"], row["answer"]
-
-        # extract statements from answer given the question
-        human_prompt = LONG_FORM_ANSWER_PROMPT.format(question=question, answer=answer)
-        p = Prompt(
-            chat_prompt_template=ChatPromptTemplate.from_messages([human_prompt])
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        logger.info(f"Adapting Faithfulness metric to {language}")
+        self.long_form_answer_prompt = self.long_form_answer_prompt.adapt(
+            language, self.llm, cache_dir
         )
-        return p
-
-    def _create_nli_prompt(self, row: t.Dict, answer_result: LLMResult) -> Prompt:
-        contexts = row["contexts"]
-        # check if the statements are support in the contexts
-        contexts_str: str = "\n".join(contexts)
-        statements = json_loader.safe_load(
-            answer_result.generations[0][0].text, self.llm
-        ).get("statements", [])
-        statements = statements if statements != [] else ["Nil"]
-        statements_str: str = "\n".join(
-            [f"statement_{i+1}: {st}" for i, st in enumerate(statements)]
+        self.nli_statements_message = self.nli_statements_message.adapt(
+            language, self.llm, cache_dir
         )
-        human_prompt = NLI_STATEMENTS_MESSAGE.format(
-            context=contexts_str, statements=statements_str
-        )
-        p = Prompt(
-            chat_prompt_template=ChatPromptTemplate.from_messages([human_prompt])
-        )
-        return p
 
-    def _compute_score(self, result: LLMResult):
-        # check the verdicts and compute the score
-        output = result.generations[0][0]
-        verdict_score_map = {"yes": 1, "no": 0, "null": np.nan}
-        output = json_loader.safe_load(output.text, self.llm)
-        output = output if isinstance(output, list) else []
-        faithful_statements = sum(
-            verdict_score_map.get(dict.get("verdict", "").lower(), np.nan)
-            for dict in output
-        )
-        num_statements = len(output)
-        if num_statements:
-            score = faithful_statements / num_statements
-        else:
-            score = np.nan
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        self.long_form_answer_prompt.save(cache_dir)
+        self.nli_statements_message.save(cache_dir)
 
-        return score
-
-    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+    def _score_batch(
+        self: t.Self,
+        dataset: Dataset,
+        callbacks: t.Optional[Callbacks] = None,
+        callback_group_name: str = "batch",
+    ) -> list[float]:
         """
         returns the NLI score for each (q, c, a) pair
         """
@@ -202,7 +185,7 @@ class Faithfulness(MetricWithLLM):
                     [f"statement_{i+1}: {st}" for i, st in enumerate(statements)]
                 )
                 contexts_str: str = "\n".join(context)
-                human_prompt = NLI_STATEMENTS_MESSAGE.format(
+                human_prompt = self.nli_statements_message.format(
                     context=contexts_str, statements=statements_str
                 )
                 prompts.append(human_prompt)

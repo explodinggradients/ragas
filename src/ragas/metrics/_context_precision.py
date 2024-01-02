@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import logging
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
+from ragas.llms.prompt import Prompt
+from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
@@ -16,6 +18,7 @@ if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
 CONTEXT_PRECISION = Prompt(
+    name="context_precision",
     instruction="""Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "1" if useful and "0" if not. """,
     examples=[
         {
@@ -70,7 +73,17 @@ class ContextPrecision(MetricWithLLM):
 
     name: str = "context_precision"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
+    context_precision_prompt: Prompt = field(default_factory=lambda: CONTEXT_PRECISION)
     batch_size: int = 15
+
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        logging.info(f"Adapting Context Precision to {language}")
+        self.context_precision_prompt = self.context_precision_prompt.adapt(
+            language, self.llm, cache_dir
+        )
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.context_precision_prompt.save(cache_dir)
 
     def get_dataset_attributes(self, dataset: Dataset):
         answer = "ground_truths"
@@ -97,7 +110,9 @@ class ContextPrecision(MetricWithLLM):
         ) as batch_group:
             for qstn, ctx, answer in zip(questions, contexts, answers):
                 human_prompts = [
-                    CONTEXT_PRECISION.format(question=qstn, context=c, answer=answer)
+                    self.context_precision_prompt.format(
+                        question=qstn, context=c, answer=answer
+                    )
                     for c in ctx
                 ]
 
@@ -132,12 +147,24 @@ class ContextPrecision(MetricWithLLM):
         score = numerator / denominator
         return score
 
-    async def _ascore(
-        self: t.Self,
-        row: t.Dict,
-        callbacks: Callbacks = [],
-    ) -> float:
-        assert self.llm is not None, "LLM is not set"
+            for response in grouped_responses:
+                response = [
+                    json_loader.safe_load(item, self.llm) for item in sum(response, [])
+                ]
+                response = [
+                    int("1" == resp.get("verdict", "0").strip())
+                    if resp.get("verdict")
+                    else np.nan
+                    for resp in response
+                ]
+                denominator = sum(response) + 1e-10
+                numerator = sum(
+                    [
+                        (sum(response[: i + 1]) / (i + 1)) * response[i]
+                        for i in range(len(response))
+                    ]
+                )
+                scores.append(numerator / denominator)
 
         human_prompts = self._context_precision_prompt(row)
         responses: t.List[str] = []
@@ -167,6 +194,14 @@ class ContextPrecision(MetricWithLLM):
 
         score = self._calculate_average_precision(responses)
         return score
+
+
+class ContextUtilization(ContextPrecision):
+    name = "ContextUtilization"
+    evaluation_mode = EvaluationMode.qac
+
+    def get_dataset_attributes(self, dataset: Dataset):
+        return dataset["question"], dataset["contexts"], dataset["answer"]
 
 
 class ContextUtilization(ContextPrecision):

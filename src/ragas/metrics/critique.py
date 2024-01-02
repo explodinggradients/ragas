@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from collections import Counter
 from dataclasses import dataclass, field
@@ -12,14 +13,17 @@ from ragas.utils import json_loader
 from ragas.llms import llm_factory
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.utils import json_loader
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
     from ragas.llms import BaseRagasLLM
 
+logger = logging.getLogger(__name__)
 
 CRITIQUE_PROMPT = Prompt(
+    name="critique",
     instruction="Given a input and submission. Evaluate the submission only using the given criteria. Use only 'Yes' (1) and 'No' (0) as verdict.",
     examples=[
         {
@@ -63,6 +67,7 @@ class AspectCritique(MetricWithLLM):
 
     name: str = field(default="", repr=True)  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
+    critic_prompt: Prompt = field(default_factory=lambda: CRITIQUE_PROMPT)
     definition: str = field(default="", repr=True)
     strictness: int = field(default=1, repr=False)
     batch_size: int = field(default=15, repr=False)
@@ -81,6 +86,13 @@ class AspectCritique(MetricWithLLM):
         self.strictness = (
             self.strictness if self.strictness % 2 != 0 else self.strictness + 1
         )
+
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        logger.info(f"Adapting Critic to {language}")
+        self.critic_prompt.adapt(language, self.llm, cache_dir)
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.critic_prompt.save(cache_dir)
 
     def prompt_format(
         self: t.Self,
