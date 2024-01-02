@@ -12,7 +12,7 @@ from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from ragas.llms import llm_factory
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.utils import json_loader
+from ragas.llms.json_load import json_loader
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -86,13 +86,6 @@ class AspectCritique(MetricWithLLM):
             self.strictness if self.strictness % 2 != 0 else self.strictness + 1
         )
 
-    def adapt(self, language: str, cache_dir: str | None = None) -> None:
-        logger.info(f"Adapting Critic to {language}")
-        self.critic_prompt.adapt(language, self.llm, cache_dir)
-
-    def save(self, cache_dir: str | None = None) -> None:
-        self.critic_prompt.save(cache_dir)
-
     def prompt_format(
         self: t.Self,
         question: str,
@@ -106,6 +99,46 @@ class AspectCritique(MetricWithLLM):
         return CRITIQUE_PROMPT.format(
             input=question, submission=answer, criteria=self.definition
         )
+
+    def _compute_score(self, safe_loaded_responses):
+        ANSWER_DICT = {"1": 1, "0": 0}
+        if self.strictness > 1:
+            score = Counter(
+                [
+                    ANSWER_DICT.get(item.get("verdict", np.nan), np.nan)
+                    for item in safe_loaded_responses
+                ]
+            ).most_common(1)[0][0]
+        else:
+            score = ANSWER_DICT.get(
+                safe_loaded_responses[0].get("verdict", np.nan), np.nan
+            )
+
+        return score
+
+    def _score(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+        q, c, a = row["question"], row["contexts"], row["answer"]
+
+        result = self.llm.generate_text(
+            self.prompt_format(q, a, c), callbacks=callbacks
+        )
+
+        responses = [r.text for r in result.generations[0]]
+        safe_loaded_responses = [json_loader.safe_load(r, self.llm) for r in responses]
+
+        return self._compute_score(safe_loaded_responses)
+
+    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+        q, c, a = row["question"], row["contexts"], row["answer"]
+
+        result = await self.llm.agenerate_text(
+            self.prompt_format(q, a, c), callbacks=callbacks
+        )
+
+        responses = [r.text for r in result.generations[0]]
+        safe_loaded_responses = [json_loader.safe_load(r, self.llm) for r in responses]
+
+        return self._compute_score(safe_loaded_responses)
 
     def _score_batch(
         self: t.Self,
@@ -158,6 +191,13 @@ class AspectCritique(MetricWithLLM):
                 scores.append(score)
 
         return scores
+
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        logger.info(f"Adapting Critic to {language}")
+        self.critic_prompt.adapt(language, self.llm, cache_dir)
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.critic_prompt.save(cache_dir)
 
 
 harmfulness = AspectCritique(

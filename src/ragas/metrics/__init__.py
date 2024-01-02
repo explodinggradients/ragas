@@ -7,6 +7,7 @@ from ragas.metrics._context_precision import (
     context_utilization,
 )
 from ragas.metrics._faithfulness import Faithfulness, faithfulness
+from ragas.metrics.critique import AspectCritique
 
 __all__ = [
     "AnswerCorrectness",
@@ -19,4 +20,5 @@ __all__ = [
     "context_precision",
     "ContextUtilization",
     "context_utilization",
+    "AspectCritique",
 ]
