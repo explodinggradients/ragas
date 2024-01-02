@@ -1,17 +1,13 @@
 from __future__ import annotations
 
-import asyncio
 import typing as t
-from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor, wait
 from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import Dataset, concatenate_datasets
 from langchain_core.language_models import BaseLanguageModel
-from tqdm import tqdm
 
 from ragas._analytics import EvaluationEvent, track
-from ragas.async_utils import run_async_tasks
 from ragas.callbacks import new_group
 from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.executor import Executor
@@ -138,6 +134,7 @@ def evaluate(
         name="ragas evaluation", inputs={}, callbacks=callbacks, is_async=is_async
     )
     for i, row in enumerate(dataset):
+        row = t.cast(t.Dict[str, t.Any], row)
         row_rm, row_group_cm = new_group(
             name=f"row {i}",
             inputs=row,
@@ -173,8 +170,6 @@ def evaluate(
 
         raise e
     finally:
-        # close the evaluation chain
-        # TODO: show only aggregate scores
         result = Result(
             scores=Dataset.from_list(scores),
             dataset=dataset,

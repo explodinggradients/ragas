@@ -9,8 +9,9 @@ from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.prompt_values import PromptValue as BasePromptValue
 from langchain_core.pydantic_v1 import BaseModel, root_validator
 
-from ragas.llms import RagasLLM
-from ragas.utils import RAGAS_CACHE_HOME, json_loader
+from ragas.llms import BaseRagasLLM
+from ragas.llms.json_load import json_loader
+from ragas.utils import get_cache_dir
 
 Example = t.Dict[str, t.Any]
 
@@ -133,10 +134,10 @@ class Prompt(BaseModel):
         return PromptValue(prompt_str=prompt.format(**kwargs))
 
     def adapt(
-        self, language: str, llm: RagasLLM, cache_dir: t.Optional[str] = None
+        self, language: str, llm: BaseRagasLLM, cache_dir: t.Optional[str] = None
     ) -> Prompt:
         # TODO: Add callbacks
-        cache_dir = cache_dir if cache_dir else RAGAS_CACHE_HOME
+        cache_dir = cache_dir if cache_dir else get_cache_dir()
         if os.path.exists(os.path.join(cache_dir, language, f"{self.name}.json")):
             return self._load(language, self.name, cache_dir)
 
@@ -160,7 +161,10 @@ class Prompt(BaseModel):
                 )
             )
 
-        results = [result[0].text for result in llm.generate(prompts).generations]
+        # NOTE: this is a slow loop, consider Executor to fasten this
+        results = []
+        for p in prompts:
+            results.append(llm.generate_text(p).generations[0][0].text)
         per_example_items = len(self.input_keys) + 1
         grouped_results = [
             results[i : i + per_example_items]

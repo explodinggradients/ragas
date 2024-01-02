@@ -5,14 +5,11 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from datasets import Dataset
 
 from ragas.embeddings.base import (
     HuggingfaceEmbeddings,
-    OpenAIEmbeddings,
     embedding_factory,
 )
-from ragas.exceptions import OpenAIKeyNotFound
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:
@@ -64,7 +61,7 @@ class AnswerSimilarity(MetricWithLLM):
     def init_model(self):
         super().init_model()
 
-    def _score(self, row: t.Dict, callbacks: Callbacks = ...) -> float:
+    def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
         ground_truths, answers = row["ground_truths"], row["answer"]
         ground_truths = [item[0] for item in ground_truths]
 

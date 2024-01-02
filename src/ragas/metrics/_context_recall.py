@@ -5,14 +5,11 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import json_loader
-from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks

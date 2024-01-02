@@ -6,16 +6,15 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import Dataset
-from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
-from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.utils import json_loader
-from ragas.llms.prompt import Prompt
+from ragas.llms.json_load import json_loader
+from ragas.llms.prompt import Prompt, PromptValue
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
+
+logger = logging.getLogger(__name__)
 
 CONTEXT_PRECISION = Prompt(
     name="context_precision",
@@ -76,63 +75,30 @@ class ContextPrecision(MetricWithLLM):
     context_precision_prompt: Prompt = field(default_factory=lambda: CONTEXT_PRECISION)
     batch_size: int = 15
 
-    def adapt(self, language: str, cache_dir: str | None = None) -> None:
-        logging.info(f"Adapting Context Precision to {language}")
-        self.context_precision_prompt = self.context_precision_prompt.adapt(
-            language, self.llm, cache_dir
-        )
-
-    def save(self, cache_dir: str | None = None) -> None:
-        self.context_precision_prompt.save(cache_dir)
-
-    def get_dataset_attributes(self, dataset: Dataset):
+    def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:
         answer = "ground_truths"
-        if answer not in dataset.features.keys():
-            logging.warning(
+        if answer not in row.keys():
+            logger.warning(
                 "Using 'context_precision' without ground truth will be soon depreciated. Use 'context_utilization' instead"
             )
             answer = "answer"
 
-        return dataset["question"], dataset["contexts"], dataset[answer]
+        return row["question"], row["contexts"], row[answer]
 
-    def _score_batch(
-        self: t.Self,
-        dataset: Dataset,
-        callbacks: t.Optional[Callbacks] = None,
-        callback_group_name: str = "batch",
-    ) -> list:
-        prompts = []
-        questions, contexts, answers = self.get_dataset_attributes(dataset)
-
-        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(
-            callback_group_name, callback_manager=cb
-        ) as batch_group:
-            for qstn, ctx, answer in zip(questions, contexts, answers):
-                human_prompts = [
-                    self.context_precision_prompt.format(
-                        question=qstn, context=c, answer=answer
-                    )
-                    for c in ctx
-                ]
-
-                prompts.extend(human_prompts)
-
-            responses: list[list[str]] = []
-            results = self.llm.generate(
-                prompts,
-                n=1,
-                callbacks=batch_group,
+    def _context_precision_prompt(self, row: t.Dict) -> t.List[PromptValue]:
+        question, contexts, answer = self._get_row_attributes(row)
+        return [
+            self.context_precision_prompt.format(
+                question=question, context=c, answer=answer
             )
             for c in contexts
         ]
-        return [Prompt(chat_prompt_template=hp) for hp in human_prompts]
 
     def _calculate_average_precision(self, responses: t.List[str]) -> float:
         score = np.nan
         response = [json_loader.safe_load(item, self.llm) for item in responses]
         response = [
-            int("yes" in resp.get("verdict", " ").lower())
+            int("1" == resp.get("verdict", "0").strip())
             if resp.get("verdict")
             else np.nan
             for resp in response
@@ -145,38 +111,6 @@ class ContextPrecision(MetricWithLLM):
             ]
         )
         score = numerator / denominator
-        return score
-
-            for response in grouped_responses:
-                response = [
-                    json_loader.safe_load(item, self.llm) for item in sum(response, [])
-                ]
-                response = [
-                    int("1" == resp.get("verdict", "0").strip())
-                    if resp.get("verdict")
-                    else np.nan
-                    for resp in response
-                ]
-                denominator = sum(response) + 1e-10
-                numerator = sum(
-                    [
-                        (sum(response[: i + 1]) / (i + 1)) * response[i]
-                        for i in range(len(response))
-                    ]
-                )
-                scores.append(numerator / denominator)
-
-        human_prompts = self._context_precision_prompt(row)
-        responses: t.List[str] = []
-        for hp in human_prompts:
-            result = await self.llm.agenerate_text(
-                hp,
-                n=1,
-                callbacks=callbacks,
-            )
-            responses.append(result.generations[0][0].text)
-
-        score = self._calculate_average_precision(responses)
         return score
 
     def _score(self, row: t.Dict, callbacks: Callbacks = []) -> float:
@@ -195,13 +129,34 @@ class ContextPrecision(MetricWithLLM):
         score = self._calculate_average_precision(responses)
         return score
 
+    async def _ascore(
+        self: t.Self,
+        row: t.Dict,
+        callbacks: Callbacks = [],
+    ) -> float:
+        assert self.llm is not None, "LLM is not set"
 
-class ContextUtilization(ContextPrecision):
-    name = "ContextUtilization"
-    evaluation_mode = EvaluationMode.qac
+        human_prompts = self._context_precision_prompt(row)
+        responses: t.List[str] = []
+        for hp in human_prompts:
+            result = await self.llm.agenerate_text(
+                hp,
+                n=1,
+                callbacks=callbacks,
+            )
+            responses.append(result.generations[0][0].text)
 
-    def get_dataset_attributes(self, dataset: Dataset):
-        return dataset["question"], dataset["contexts"], dataset["answer"]
+        score = self._calculate_average_precision(responses)
+        return score
+
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        logging.info(f"Adapting Context Precision to {language}")
+        self.context_precision_prompt = self.context_precision_prompt.adapt(
+            language, self.llm, cache_dir
+        )
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.context_precision_prompt.save(cache_dir)
 
 
 class ContextUtilization(ContextPrecision):

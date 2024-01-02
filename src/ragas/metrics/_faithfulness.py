@@ -5,18 +5,16 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
-from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.utils import json_loader
+from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:
-    from datasets import Dataset
     from langchain_core.callbacks import Callbacks
     from langchain_core.outputs import LLMResult
+
+    from ragas.llms.prompt import PromptValue
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +131,75 @@ class Faithfulness(MetricWithLLM):
     )
     batch_size: int = 15
 
+    def _create_answer_prompt(self, row: t.Dict) -> PromptValue:
+        question, answer = row["question"], row["answer"]
+
+        # extract statements from answer given the question
+        prompt_value = LONG_FORM_ANSWER_PROMPT.format(question=question, answer=answer)
+        return prompt_value
+
+    def _create_nli_prompt(self, row: t.Dict, answer_result: LLMResult) -> PromptValue:
+        contexts = row["contexts"]
+        # check if the statements are support in the contexts
+        contexts_str: str = "\n".join(contexts)
+        statements = json_loader.safe_load(
+            answer_result.generations[0][0].text, self.llm
+        ).get("statements", [])
+        statements = statements if statements != [] else ["Nil"]
+        statements_str: str = "\n".join(
+            [f"statement_{i+1}: {st}" for i, st in enumerate(statements)]
+        )
+        prompt_value = NLI_STATEMENTS_MESSAGE.format(
+            context=contexts_str, statements=statements_str
+        )
+        return prompt_value
+
+    def _compute_score(self, result: LLMResult):
+        # check the verdicts and compute the score
+        output = result.generations[0][0]
+        verdict_score_map = {"1": 1, "0": 0, "null": np.nan}
+        output = json_loader.safe_load(output.text, self.llm)
+        output = output if isinstance(output, list) else [output]
+        faithful_statements = sum(
+            verdict_score_map.get(
+                statement_with_validation.get("verdict", "").lower(), np.nan
+            )
+            for statement_with_validation in output
+        )
+        num_statements = len(output)
+        if num_statements:
+            score = faithful_statements / num_statements
+        else:
+            score = np.nan
+
+        return score
+
+    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+        """
+        returns the NLI score for each (q, c, a) pair
+        """
+        assert self.llm is not None, "LLM is not set"
+        p = self._create_answer_prompt(row)
+        result = await self.llm.agenerate_text(p, callbacks=callbacks)
+
+        p = self._create_nli_prompt(row, result)
+        result = await self.llm.agenerate_text(p, callbacks=callbacks)
+
+        return self._compute_score(result)
+
+    def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
+        assert self.llm is not None, "LLM is not set"
+        p = self._create_answer_prompt(row)
+        result = self.llm.generate_text(p, callbacks=callbacks)
+
+        p = self._create_nli_prompt(row, result)
+        result = self.llm.generate_text(p, callbacks=callbacks)
+
+        return self._compute_score(result)
+
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        assert self.llm is not None, "LLM is not set"
+
         logger.info(f"Adapting Faithfulness metric to {language}")
         self.long_form_answer_prompt = self.long_form_answer_prompt.adapt(
             language, self.llm, cache_dir
@@ -145,70 +211,6 @@ class Faithfulness(MetricWithLLM):
     def save(self, cache_dir: t.Optional[str] = None) -> None:
         self.long_form_answer_prompt.save(cache_dir)
         self.nli_statements_message.save(cache_dir)
-
-    def _score_batch(
-        self: t.Self,
-        dataset: Dataset,
-        callbacks: t.Optional[Callbacks] = None,
-        callback_group_name: str = "batch",
-    ) -> list[float]:
-        """
-        returns the NLI score for each (q, c, a) pair
-        """
-        assert self.llm is not None, "LLM is not set"
-        p = self._create_answer_prompt(row)
-        result = await self.llm.agenerate_text(p, callbacks=callbacks)
-
-        p = self._create_nli_prompt(row, result)
-        result = await self.llm.agenerate_text(p, callbacks=callbacks)
-
-        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(
-            callback_group_name, callback_manager=cb
-        ) as batch_group:
-            for q, a in zip(question, answer):
-                human_prompt = LONG_FORM_ANSWER_PROMPT.format(question=q, answer=a)
-                prompts.append(human_prompt)
-
-    def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
-        assert self.llm is not None, "LLM is not set"
-        p = self._create_answer_prompt(row)
-        result = self.llm.generate_text(p, callbacks=callbacks)
-
-            prompts = []
-            for context, output in zip(contexts, result.generations):
-                statements = json_loader.safe_load(output[0].text, self.llm).get(
-                    "statements", []
-                )
-                statements = statements if statements != [] else ["Nil"]
-                statements_str: str = "\n".join(
-                    [f"statement_{i+1}: {st}" for i, st in enumerate(statements)]
-                )
-                contexts_str: str = "\n".join(context)
-                human_prompt = self.nli_statements_message.format(
-                    context=contexts_str, statements=statements_str
-                )
-                prompts.append(human_prompt)
-
-            result = self.llm.generate(prompts, callbacks=batch_group)
-            outputs = result.generations
-            verdict_score_map = {"1": 1, "0": 0, "null": np.nan}
-            scores = []
-            for output in outputs:
-                output = json_loader.safe_load(output[0].text, self.llm)
-                output = output if isinstance(output, list) else [output]
-                faithful_statements = sum(
-                    verdict_score_map.get(dict.get("verdict", "").lower(), np.nan)
-                    for dict in output
-                )
-                num_statements = len(output)
-                if num_statements:
-                    score = faithful_statements / num_statements
-                else:
-                    score = np.nan
-                scores.append(score)
-
-        return scores
 
 
 faithfulness = Faithfulness()

@@ -4,17 +4,14 @@ import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from langchain.chat_models import AzureChatOpenAI, BedrockChat, ChatOpenAI, ChatVertexAI
-from langchain.llms import AmazonAPIGateway, AzureOpenAI, Bedrock, OpenAI, VertexAI
+from langchain.chat_models import AzureChatOpenAI, ChatOpenAI, ChatVertexAI
+from langchain.llms import AzureOpenAI, OpenAI, VertexAI
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import LLMResult
 
 if t.TYPE_CHECKING:
-    from langchain.prompts import ChatPromptTemplate
     from langchain_core.callbacks import Callbacks
     from langchain_core.prompt_values import PromptValue
-
-    from ragas.llms.prompt import Prompt
 
 MULTIPLE_COMPLETION_SUPPORTED = [
     OpenAI,
@@ -39,7 +36,7 @@ class BaseRagasLLM(ABC):
     @abstractmethod
     def generate_text(
         self,
-        prompt: Prompt,
+        prompt: PromptValue,
         n: int = 1,
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
@@ -50,7 +47,7 @@ class BaseRagasLLM(ABC):
     @abstractmethod
     async def agenerate_text(
         self,
-        prompt: Prompt,
+        prompt: PromptValue,
         n: int = 1,
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
@@ -72,7 +69,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
 
     def generate_text(
         self,
-        prompt: Prompt,
+        prompt: PromptValue,
         n: int = 1,
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
@@ -101,7 +98,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
 
     async def agenerate_text(
         self,
-        prompt: Prompt,
+        prompt: PromptValue,
         n: int = 1,
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,

@@ -14,8 +14,6 @@ from ragas.exceptions import OpenAIKeyNotFound
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import json_loader
-from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 logger = logging.getLogger(__name__)
 

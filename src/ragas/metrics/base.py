@@ -8,17 +8,10 @@ from __future__ import annotations
 
 import typing as t
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from math import floor
-
-from datasets import Dataset
-from langchain_core.callbacks import CallbackManager, CallbackManagerForChainGroup
-from tqdm import tqdm
 
 from ragas.callbacks import new_group
-from ragas.embeddings.base import BaseRagasEmbeddings
-from ragas.llms import llm_factory
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -50,19 +43,21 @@ class Metric(ABC):
         """
         ...
 
-    # @abstractmethod
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         """
         Adapt the metric to a different language.
         """
-        pass
+        raise NotImplementedError(
+            "adapt() is not implemented for {} metric".format(self.name)
+        )
 
-    # @abstractmethod
     def save(self, cache_dir: t.Optional[str] = None) -> None:
         """
         Save the metric to a path.
         """
-        pass
+        raise NotImplementedError(
+            "adapt() is not implemented for {} metric".format(self.name)
+        )
 
     def score(
         self: t.Self,
@@ -83,7 +78,7 @@ class Metric(ABC):
                 rm.on_chain_end({"output": score})
         return score
 
-    # @abstractmethod
+    @abstractmethod
     def _score(self, row: t.Dict, callbacks: Callbacks = []) -> float:
         ...
 
@@ -121,10 +116,3 @@ class MetricWithLLM(Metric):
             raise ValueError(
                 f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please initantiate a the metric with an LLM to run."  # noqa
             )
-        if hasattr(self.llm, "validate_api_key"):
-            self.llm.validate_api_key()
-        if hasattr(self, "embeddings"):
-            # since we are using Langchain Embeddings directly, we need to check this
-            if hasattr(self.embeddings, "validate_api_key"):
-                self.embeddings = t.cast(BaseRagasEmbeddings, self.embeddings)
-                self.embeddings.validate_api_key()

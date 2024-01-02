@@ -4,8 +4,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 
 import numpy as np
-from nltk.classify.textcat import re
-from sqlalchemy import except_
 from tqdm.auto import tqdm
 
 
