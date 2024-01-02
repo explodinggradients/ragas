@@ -194,7 +194,7 @@ class AnswerCorrectness(MetricWithLLM):
                     )
                 )
 
-            result = self.llm.generate(prompts, callbacks=batch_group)
+            self.llm.generate(prompts, callbacks=batch_group)
 
             if self.weights[1] == 0:
                 similarity_scores = np.zeros(len(f1_score))

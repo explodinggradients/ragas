@@ -5,22 +5,22 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from datasets import Dataset
-from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.embeddings import OpenAIEmbeddings
 
 from ragas.embeddings.base import embedding_factory
 from ragas.exceptions import OpenAIKeyNotFound
+from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.utils import json_loader
 
 logger = logging.getLogger(__name__)
 
 if t.TYPE_CHECKING:
-    from langchain.callbacks.base import Callbacks
+    from langchain_core.callbacks import Callbacks
+    from langchain_core.llms import LLMResult
 
     from ragas.embeddings.base import BaseRagasEmbeddings
+    from ragas.llms.prompt import PromptValue
 
 QUESTION_GEN = Prompt(
     name="question_generation",
@@ -88,55 +88,6 @@ class AnswerRelevancy(MetricWithLLM):
             if self.embeddings.openai_api_key == "no-key":
                 raise OpenAIKeyNotFound
 
-    def adapt(self, language: str, cache_dir: str | None = None) -> None:
-        logger.info(f"Adapting AnswerRelevancy metric to {language}")
-        self.question_generation = self.question_generation.adapt(
-            language, self.llm, cache_dir
-        )
-
-    def save(self, cache_dir: str | None = None) -> None:
-        self.question_generation.save(cache_dir)
-
-    def _score_batch(
-        self: t.Self,
-        dataset: Dataset,
-        callbacks: t.Optional[Callbacks] = None,
-        callback_group_name: str = "batch",
-    ) -> list[float]:
-        questions, answers, contexts = (
-            dataset["question"],
-            dataset["answer"],
-            dataset["contexts"],
-        )
-
-        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(
-            callback_group_name, callback_manager=cb
-        ) as batch_group:
-            prompts = []
-            for ans, ctx in zip(answers, contexts):
-                prompts.append(
-                    self.question_generation.format(answer=ans, context="\n".join(ctx))
-                )
-
-            results = self.llm.generate(
-                prompts,
-                n=self.strictness,
-                callbacks=batch_group,
-            )
-            results = [
-                [json_loader.safe_load(i.text, self.llm) for i in r]
-                for r in results.generations
-            ]
-            scores = []
-            for question, result in zip(questions, results):
-                gen_questions = [item.get("question", "") for item in result]
-                committal = np.any([item.get("noncommittal", False) for item in result])
-                cosine_sim = self.calculate_similarity(question, gen_questions)
-                scores.append(cosine_sim.mean() * int(not committal))
-
-        return scores
-
     def calculate_similarity(
         self: t.Self, question: str, generated_questions: list[str]
     ):
@@ -154,6 +105,57 @@ class AnswerRelevancy(MetricWithLLM):
             )
             / norm
         )
+
+    def _calculate_score(self, result: LLMResult, row: t.Dict) -> float:
+        assert self.llm is not None, "LLM is not set"
+
+        result = [
+            json_loader.safe_load(r.text, self.llm) for r in result.generations[0]
+        ]
+        question = row["question"]
+        gen_questions = [item.get("question", "") for item in result]
+        committal = np.any([item.get("noncommittal", False) for item in result])
+        cosine_sim = self.calculate_similarity(question, gen_questions)
+        score = cosine_sim.mean() * int(not committal)
+
+        return score
+
+    def _create_question_gen_prompt(self, row: t.Dict) -> PromptValue:
+        ans, ctx = row["answer"], row["contexts"]
+        return self.question_generation.format(answer=ans, context="\n".join(ctx))
+
+    def _score(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+        assert self.llm is not None, "LLM is not set"
+
+        prompt = self._create_question_gen_prompt(row)
+        result = self.llm.generate_text(
+            prompt,
+            n=self.strictness,
+            callbacks=callbacks,
+        )
+
+        return self._calculate_score(result, row)
+
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        assert self.llm is not None, "LLM is not set"
+
+        prompt = self._create_question_gen_prompt(row)
+        result = await self.llm.agenerate_text(
+            prompt,
+            n=self.strictness,
+            callbacks=callbacks,
+        )
+
+        return self._calculate_score(result, row)
+
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        logger.info(f"Adapting AnswerRelevancy metric to {language}")
+        self.question_generation = self.question_generation.adapt(
+            language, self.llm, cache_dir
+        )
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.question_generation.save(cache_dir)
 
 
 answer_relevancy = AnswerRelevancy()

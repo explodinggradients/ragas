@@ -6,10 +6,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from ragas.embeddings.base import (
-    HuggingfaceEmbeddings,
-    embedding_factory,
-)
+from ragas.embeddings.base import HuggingfaceEmbeddings, embedding_factory
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:

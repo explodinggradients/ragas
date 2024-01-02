@@ -5,6 +5,7 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
+from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
 from ragas.llms.prompt import Prompt
@@ -60,7 +61,7 @@ CONTEXT_RECALL_RA = Prompt(
             """,
         },
     ],
-    input_keys=["question", "context", "answer"],
+    input=["question", "context", "answer"],
     output_key="classification",
     output_type="json",
 )
@@ -96,15 +97,15 @@ class ContextRecall(MetricWithLLM):
 
     def _score_batch(
         self: t.Self,
-        row: t.Dict,
+        dataset: Dataset,
         callbacks: t.Optional[Callbacks] = None,
-    ) -> float:
-        assert self.llm is not None, "LLM is not set"
-
-        question, ground_truth, contexts = (
-            row["question"],
-            row["ground_truths"],
-            row["contexts"],
+        callback_group_name: str = "batch",
+    ) -> list:
+        prompts = []
+        question, ground_truths, contexts = (
+            dataset["question"],
+            dataset["ground_truths"],
+            dataset["contexts"],
         )
 
         cb = CallbackManager.configure(inheritable_callbacks=callbacks)
@@ -143,7 +144,7 @@ class ContextRecall(MetricWithLLM):
                 else:
                     scores.append(np.nan)
 
-        return score
+        return scores
 
 
 context_recall = ContextRecall()

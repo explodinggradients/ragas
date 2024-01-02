@@ -79,7 +79,7 @@ class Metric(ABC):
         return score
 
     @abstractmethod
-    def _score(self, row: t.Dict, callbacks: Callbacks = []) -> float:
+    def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
         ...
 
     async def ascore(self: t.Self, row: t.Dict, callbacks: Callbacks = []) -> float:
@@ -98,7 +98,7 @@ class Metric(ABC):
         return score
 
     @abstractmethod
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks = []) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         ...
 
 
