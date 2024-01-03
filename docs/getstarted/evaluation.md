@@ -96,7 +96,7 @@ result = evaluate(
 
 result
 ```
-and there you have it, all the scores you need. `ragas_score` gives you a single metric that you can use while 4 metrics individually would measure the different parts of your pipeline.
+and there you have it, all the scores you need.
 
 Now if we want to dig into the results and figure out examples where your pipeline performed worse or really good you can easily convert it into a pandas array and use your standard analytics tools too!
 

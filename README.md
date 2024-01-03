@@ -78,8 +78,9 @@ os.environ["OPENAI_API_KEY"] = "your-openai-key"
 dataset: Dataset
 
 results = evaluate(dataset)
-# {'ragas_score': 0.860, 'context_precision': 0.817,
-# 'faithfulness': 0.892, 'answer_relevancy': 0.874}
+# {'context_precision': 0.817,
+# 'faithfulness': 0.892, 
+# 'answer_relevancy': 0.874}
 ```
 
 Refer to our [documentation](https://docs.ragas.io/) to learn more.
