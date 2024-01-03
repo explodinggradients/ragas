@@ -32,6 +32,7 @@ from numpy.random import default_rng
 from tqdm import tqdm
 
 from ragas.llms import llm_factory
+from ragas.llms.json_load import load_as_json
 from ragas.testset.prompts import (
     ANSWER_FORMULATE,
     COMPRESS_QUESTION,
@@ -45,10 +46,9 @@ from ragas.testset.prompts import (
     SEED_QUESTION,
 )
 from ragas.testset.utils import load_as_score
-from ragas.utils import load_as_json
 
 if t.TYPE_CHECKING:
-    from ragas.llms.base import RagasLLM
+    pass
 
 
 DEFAULT_TEST_DISTRIBUTION = {

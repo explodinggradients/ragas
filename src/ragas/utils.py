@@ -14,7 +14,7 @@ def get_cache_dir() -> str:
     DEFAULT_XDG_CACHE_HOME = "~/.cache"
     xdg_cache = os.getenv("XDG_CACHE_HOME", DEFAULT_XDG_CACHE_HOME)
     default_ragas_cache = os.path.join(xdg_cache, "ragas")
-    return os.path.expanduser(os.getenv("RAGAS_HOME", default_ragas_cache))
+    return os.path.expanduser(os.getenv("RAGAS_CACHE_HOME", default_ragas_cache))
 
 
 @lru_cache(maxsize=1)

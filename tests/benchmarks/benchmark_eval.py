@@ -4,13 +4,14 @@ from datasets import DatasetDict, load_dataset
 
 from ragas import evaluate
 from ragas.metrics import (
-    faithfulness,
-    context_recall,
     answer_correctness,
-    context_relevancy,
-    context_precision,
-    context_utilization,
+    answer_relevancy,
     answer_similarity,
+    context_precision,
+    context_recall,
+    context_relevancy,
+    context_utilization,
+    faithfulness,
 )
 from ragas.metrics.critique import harmfulness
 
@@ -23,6 +24,7 @@ fiqa = ds["baseline"]
 metrics = [
     faithfulness,
     context_recall,
+    answer_relevancy,
     answer_correctness,
     harmfulness,
     context_relevancy,

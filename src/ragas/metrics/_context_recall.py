@@ -8,12 +8,13 @@ import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
+from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.llms.json_load import json_loader
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
+
     from ragas.llms.prompt import PromptValue
 
 logger = logging.getLogger(__name__)

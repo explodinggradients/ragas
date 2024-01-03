@@ -216,4 +216,5 @@ class Faithfulness(MetricWithLLM):
         self.long_form_answer_prompt.save(cache_dir)
         self.nli_statements_message.save(cache_dir)
 
+
 faithfulness = Faithfulness()

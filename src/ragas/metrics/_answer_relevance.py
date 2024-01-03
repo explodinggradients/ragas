@@ -149,6 +149,8 @@ class AnswerRelevancy(MetricWithLLM):
         return self._calculate_score(result, row)
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        assert self.llm is not None, "LLM is not set"
+
         logger.info(f"Adapting AnswerRelevancy metric to {language}")
         self.question_generation = self.question_generation.adapt(
             language, self.llm, cache_dir

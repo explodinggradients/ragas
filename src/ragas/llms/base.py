@@ -11,7 +11,8 @@ from langchain_core.outputs import LLMResult
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
-    from langchain_core.prompt_values import PromptValue
+
+    from ragas.llms.prompt import PromptValue
 
 MULTIPLE_COMPLETION_SUPPORTED = [
     OpenAI,
@@ -40,7 +41,7 @@ class BaseRagasLLM(ABC):
         n: int = 1,
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
-        callbacks: t.Optional[Callbacks] = None,
+        callbacks: Callbacks = [],
     ) -> LLMResult:
         ...
 
@@ -51,7 +52,7 @@ class BaseRagasLLM(ABC):
         n: int = 1,
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
-        callbacks: t.Optional[Callbacks] = None,
+        callbacks: Callbacks = [],
     ) -> LLMResult:
         ...
 

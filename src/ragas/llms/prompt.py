@@ -193,7 +193,7 @@ class Prompt(BaseModel):
         return self
 
     def save(self, cache_dir: t.Optional[str] = None) -> None:
-        cache_dir = cache_dir if cache_dir else RAGAS_CACHE_HOME
+        cache_dir = cache_dir if cache_dir else get_cache_dir()
         cache_dir = os.path.join(cache_dir, self.language)
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
