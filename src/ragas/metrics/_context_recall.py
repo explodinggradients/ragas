@@ -10,10 +10,11 @@ from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.utils import json_loader
+from ragas.llms.json_load import json_loader
 
 if t.TYPE_CHECKING:
-    from langchain.callbacks.base import Callbacks
+    from langchain_core.callbacks import Callbacks
+    from ragas.llms.prompt import PromptValue
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,7 @@ CONTEXT_RECALL_RA = Prompt(
             """,
         },
     ],
-    input=["question", "context", "answer"],
+    input_keys=["question", "context", "answer"],
     output_key="classification",
     output_type="json",
 )
@@ -85,15 +86,6 @@ class ContextRecall(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
     context_recall_prompt: Prompt = field(default_factory=lambda: CONTEXT_RECALL_RA)
     batch_size: int = 15
-
-    def adapt(self, language: str, cache_dir: str | None = None) -> None:
-        logger.info(f"Adapting Context Recall to {language}")
-        self.context_recall_prompt = self.context_recall_prompt.adapt(
-            language, self.llm, cache_dir
-        )
-
-    def save(self, cache_dir: str | None = None) -> None:
-        self.context_recall_prompt.save(cache_dir)
 
     def _score_batch(
         self: t.Self,
@@ -145,6 +137,51 @@ class ContextRecall(MetricWithLLM):
                     scores.append(np.nan)
 
         return scores
+
+    def _create_context_recall_prompt(self, row: t.Dict) -> PromptValue:
+        qstn, ctx, gt = row["question"], row["contexts"], row["ground_truths"]
+        gt = "\n".join(gt) if isinstance(gt, list) else gt
+        ctx = "\n".join(ctx) if isinstance(ctx, list) else ctx
+
+        return self.context_recall_prompt.format(question=qstn, context=ctx, answer=gt)
+
+    def _compute_score(self, response: t.Any) -> float:
+        if response:
+            response = [
+                int(item.get("Attributed", "0").strip() == "1")
+                if item.get("Attributed")
+                else np.nan
+                for item in response
+            ]
+            denom = len(response)
+            numerator = sum(response)
+            return numerator / denom
+        else:
+            return np.nan
+
+    def _score(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+        assert self.llm is not None, "set LLM before use"
+
+        result = self.llm.generate_text(
+            self._create_context_recall_prompt(row), callbacks=callbacks
+        )
+        response = json_loader.safe_load(result.generations[0][0].text, self.llm)
+
+        return self._compute_score(response)
+
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        ...
+
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        assert self.llm is not None, "set LLM before use"
+
+        logger.info(f"Adapting Context Recall to {language}")
+        self.context_recall_prompt = self.context_recall_prompt.adapt(
+            language, self.llm, cache_dir
+        )
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.context_recall_prompt.save(cache_dir)
 
 
 context_recall = ContextRecall()
