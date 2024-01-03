@@ -68,8 +68,8 @@ class AspectCritique(MetricWithLLM):
     definition: str = field(default="", repr=True)
     strictness: int = field(default=1, repr=False)
     batch_size: int = field(default=15, repr=False)
-    llm: BaseRagasLLM = field(  # type: ignore
-        default_factory=llm_factory,
+    llm: BaseRagasLLM | None = field(
+        default=None,
         repr=False,
     )
 
