@@ -6,8 +6,6 @@ from collections import Counter
 from dataclasses import dataclass, field
 
 import numpy as np
-from datasets import Dataset
-from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
 from ragas.llms import llm_factory
 from ragas.llms.json_load import json_loader
@@ -70,7 +68,7 @@ class AspectCritique(MetricWithLLM):
     definition: str = field(default="", repr=True)
     strictness: int = field(default=1, repr=False)
     batch_size: int = field(default=15, repr=False)
-    llm: BaseRagasLLM = field(
+    llm: BaseRagasLLM = field(  # type: ignore
         default_factory=llm_factory,
         repr=False,
     )
@@ -139,58 +137,6 @@ class AspectCritique(MetricWithLLM):
         safe_loaded_responses = [json_loader.safe_load(r, self.llm) for r in responses]
 
         return self._compute_score(safe_loaded_responses)
-
-    def _score_batch(
-        self: t.Self,
-        dataset: Dataset,
-        callbacks: t.Optional[Callbacks] = None,
-        callback_group_name: str = "batch",
-    ) -> list[int]:
-        questions, contexts, answers = [
-            dataset[key] if key in dataset.features else None
-            for key in ("question", "context", "answer")
-        ]
-        assert isinstance(questions, list)
-        assert isinstance(answers, list)
-        if contexts is None:
-            contexts = [None] * len(questions)
-
-        prompts = []
-
-        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(
-            callback_group_name, callback_manager=cb
-        ) as batch_group:
-            for question, context, answer in zip(questions, contexts, answers):
-                human_prompt = self.prompt_format(question, answer, context)
-                prompts.append(human_prompt)
-
-            results = self.llm.generate(
-                prompts,
-                n=self.strictness,
-                callbacks=batch_group,
-            )
-            responses: list[list[str]] = [
-                [i.text for i in r] for r in results.generations
-            ]
-
-            scores = []
-            answer_dict = {"1": 1, "0": 0}
-            for response in responses:
-                response = [json_loader.safe_load(item, self.llm) for item in response]
-                if self.strictness > 1:
-                    score = Counter(
-                        [
-                            answer_dict.get(item.get("verdict", np.nan), np.nan)
-                            for item in response
-                        ]
-                    ).most_common(1)[0][0]
-                else:
-                    score = answer_dict.get(response[0].get("verdict", np.nan), np.nan)
-
-                scores.append(score)
-
-        return scores
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
         logger.info(f"Adapting Critic to {language}")

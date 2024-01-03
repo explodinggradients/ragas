@@ -5,8 +5,6 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from datasets import Dataset
-from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
@@ -141,7 +139,7 @@ class AnswerCorrectness(MetricWithLLM):
             weights=self.weights,
         )
 
-        return score
+        return float(score)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM must be set"
@@ -168,47 +166,7 @@ class AnswerCorrectness(MetricWithLLM):
             weights=self.weights,
         )
 
-        return score
-
-    def _score_batch(
-        self: t.Self,
-        dataset: Dataset,
-        callbacks: t.Optional[Callbacks] = None,
-        callback_group_name: str = "batch",
-    ) -> list[float]:
-        question, answer, ground_truths = (
-            dataset["question"],
-            dataset["answer"],
-            dataset["ground_truths"],
-        )
-        prompts = []
-
-        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(
-            callback_group_name, callback_manager=cb
-        ) as batch_group:
-            for q, a, g in zip(question, answer, ground_truths):
-                prompts.append(
-                    self.correctness_prompt.format(
-                        question=q, ground_truth=g[0], answer=a
-                    )
-                )
-
-            self.llm.generate(prompts, callbacks=batch_group)
-
-            if self.weights[1] == 0:
-                similarity_scores = np.zeros(len(f1_score))
-            else:
-                similarity_scores = self.answer_similarity._score_batch(dataset, callbacks=batch_group)  # type: ignore
-
-            scores_stacked = np.vstack([f1_score, similarity_scores])
-            scores = np.average(
-                scores_stacked,
-                axis=0,
-                weights=self.weights,
-            )
-
-        return scores.tolist()
+        return float(score)
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         assert self.llm is not None, "llm must be set to compute score"

@@ -7,8 +7,6 @@ from typing import List
 
 import numpy as np
 import pysbd
-from datasets import Dataset
-from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
@@ -109,58 +107,6 @@ class ContextRelevancy(MetricWithLLM):
             callbacks=callbacks,
         )
         return self._compute_score(result.generations[0][0].text, row)
-
-    def _score_batch(
-        self: t.Self,
-        dataset: Dataset,
-        callbacks: t.Optional[Callbacks] = None,
-        callback_group_name: str = "batch",
-    ) -> list[float]:
-        if self.show_deprecation_warning:
-            logger.warning(
-                "The 'context_relevancy' metric is going to be deprecated soon! Please use the 'context_precision' metric instead. It is a drop-in replacement just a simple search and replace should work."  # noqa
-            )
-        prompts = []
-        questions, contexts = dataset["question"], dataset["contexts"]
-
-        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(
-            callback_group_name, callback_manager=cb
-        ) as batch_group:
-            for q, c in zip(questions, contexts):
-                prompts.append(
-                    self.context_relevancy_prompt.format(
-                        question=q, context="\n".join(c)
-                    )
-                )
-
-            responses: list[list[str]] = []
-            results = self.llm.generate(
-                prompts,
-                n=1,
-                callbacks=batch_group,
-            )
-            responses = [[i.text for i in r] for r in results.generations]
-
-            scores = []
-            for context, n_response in zip(contexts, responses):
-                context = "\n".join(context)
-                overlap_scores = []
-                context_sents = sent_tokenize(context)
-                for output in n_response:
-                    indices = (
-                        sent_tokenize(output.strip())
-                        if output.lower() != "insufficient information."
-                        else []
-                    )
-                    if len(context_sents) == 0:
-                        score = 0
-                    else:
-                        score = min(len(indices) / len(context_sents), 1)
-                    overlap_scores.append(score)
-                scores.append(np.mean(overlap_scores))
-
-        return scores
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
         assert self.llm is not None, "set LLM before use"

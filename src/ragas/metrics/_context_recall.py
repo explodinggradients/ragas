@@ -5,8 +5,6 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from datasets import Dataset
-from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
@@ -88,57 +86,6 @@ class ContextRecall(MetricWithLLM):
     context_recall_prompt: Prompt = field(default_factory=lambda: CONTEXT_RECALL_RA)
     batch_size: int = 15
 
-    def _score_batch(
-        self: t.Self,
-        dataset: Dataset,
-        callbacks: t.Optional[Callbacks] = None,
-        callback_group_name: str = "batch",
-    ) -> list:
-        prompts = []
-        question, ground_truths, contexts = (
-            dataset["question"],
-            dataset["ground_truths"],
-            dataset["contexts"],
-        )
-
-        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(
-            callback_group_name, callback_manager=cb
-        ) as batch_group:
-            for qstn, gt, ctx in zip(question, ground_truths, contexts):
-                gt = "\n".join(gt) if isinstance(gt, list) else gt
-                ctx = "\n".join(ctx) if isinstance(ctx, list) else ctx
-                prompts.append(
-                    self.context_recall_prompt.format(
-                        question=qstn, context=ctx, answer=gt
-                    )
-                )
-
-            responses: list[list[str]] = []
-            results = self.llm.generate(
-                prompts,
-                n=1,
-                callbacks=batch_group,
-            )
-            responses = [[i.text for i in r] for r in results.generations]
-            scores = []
-            for response in responses:
-                response = json_loader.safe_load(response[0], self.llm)
-                if response:
-                    response = [
-                        int(item.get("Attributed", "0").strip() == "1")
-                        if item.get("Attributed")
-                        else np.nan
-                        for item in response
-                    ]
-                    denom = len(response)
-                    numerator = sum(response)
-                    scores.append(numerator / denom)
-                else:
-                    scores.append(np.nan)
-
-        return scores
-
     def _create_context_recall_prompt(self, row: t.Dict) -> PromptValue:
         qstn, ctx, gt = row["question"], row["contexts"], row["ground_truths"]
         gt = "\n".join(gt) if isinstance(gt, list) else gt
@@ -171,7 +118,14 @@ class ContextRecall(MetricWithLLM):
         return self._compute_score(response)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        ...
+        assert self.llm is not None, "set LLM before use"
+
+        result = await self.llm.agenerate_text(
+            self._create_context_recall_prompt(row), callbacks=callbacks
+        )
+        response = json_loader.safe_load(result.generations[0][0].text, self.llm)
+
+        return self._compute_score(response)
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
         assert self.llm is not None, "set LLM before use"

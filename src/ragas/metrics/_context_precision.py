@@ -66,8 +66,8 @@ class ContextPrecision(MetricWithLLM):
     Attributes
     ----------
     name : str
-    batch_size : int
-        Batch size for openai completion.
+    evaluation_mode: EvaluationMode
+    context_precision_prompt: Prompt
     """
 
     name: str = "context_precision"  # type: ignore
@@ -94,20 +94,19 @@ class ContextPrecision(MetricWithLLM):
             for c in contexts
         ]
 
-    def _calculate_average_precision(self, responses: t.List[str]) -> float:
+    def _calculate_average_precision(self, json_responses: t.List[t.Dict]) -> float:
         score = np.nan
-        response = [json_loader.safe_load(item, self.llm) for item in responses]
-        response = [
+        verdict_list = [
             int("1" == resp.get("verdict", "0").strip())
             if resp.get("verdict")
             else np.nan
-            for resp in response
+            for resp in json_responses
         ]
-        denominator = sum(response) + 1e-10
+        denominator = sum(verdict_list) + 1e-10
         numerator = sum(
             [
-                (sum(response[: i + 1]) / (i + 1)) * response[i]
-                for i in range(len(response))
+                (sum(verdict_list[: i + 1]) / (i + 1)) * verdict_list[i]
+                for i in range(len(verdict_list))
             ]
         )
         score = numerator / denominator
@@ -126,7 +125,8 @@ class ContextPrecision(MetricWithLLM):
             )
             responses.append(result.generations[0][0].text)
 
-        score = self._calculate_average_precision(responses)
+        json_responses = [json_loader.safe_load(item, self.llm) for item in responses]
+        score = self._calculate_average_precision(json_responses)
         return score
 
     async def _ascore(
@@ -146,10 +146,13 @@ class ContextPrecision(MetricWithLLM):
             )
             responses.append(result.generations[0][0].text)
 
-        score = self._calculate_average_precision(responses)
+        json_responses = [json_loader.safe_load(item, self.llm) for item in responses]
+        score = self._calculate_average_precision(json_responses)
         return score
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        assert self.llm is not None, "LLM is not set"
+
         logging.info(f"Adapting Context Precision to {language}")
         self.context_precision_prompt = self.context_precision_prompt.adapt(
             language, self.llm, cache_dir

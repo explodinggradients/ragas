@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
-    from langchain_core.llms import LLMResult
 
     from ragas.embeddings.base import BaseRagasEmbeddings
     from ragas.llms.prompt import PromptValue
@@ -106,15 +105,10 @@ class AnswerRelevancy(MetricWithLLM):
             / norm
         )
 
-    def _calculate_score(self, result: LLMResult, row: t.Dict) -> float:
-        assert self.llm is not None, "LLM is not set"
-
-        result = [
-            json_loader.safe_load(r.text, self.llm) for r in result.generations[0]
-        ]
+    def _calculate_score(self, response: t.Sequence[t.Any], row: t.Dict) -> float:
         question = row["question"]
-        gen_questions = [item.get("question", "") for item in result]
-        committal = np.any([item.get("noncommittal", False) for item in result])
+        gen_questions = [item.get("question", "") for item in response]
+        committal = np.any([item.get("noncommittal", False) for item in response])
         cosine_sim = self.calculate_similarity(question, gen_questions)
         score = cosine_sim.mean() * int(not committal)
 
@@ -133,8 +127,11 @@ class AnswerRelevancy(MetricWithLLM):
             n=self.strictness,
             callbacks=callbacks,
         )
+        response = [
+            json_loader.safe_load(r.text, self.llm) for r in result.generations[0]
+        ]
 
-        return self._calculate_score(result, row)
+        return self._calculate_score(response, row)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM is not set"
@@ -145,8 +142,11 @@ class AnswerRelevancy(MetricWithLLM):
             n=self.strictness,
             callbacks=callbacks,
         )
+        response = [
+            json_loader.safe_load(r.text, self.llm) for r in result.generations[0]
+        ]
 
-        return self._calculate_score(result, row)
+        return self._calculate_score(response, row)
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
         assert self.llm is not None, "LLM is not set"

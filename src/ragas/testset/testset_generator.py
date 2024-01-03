@@ -48,7 +48,7 @@ from ragas.testset.prompts import (
 from ragas.testset.utils import load_as_score
 
 if t.TYPE_CHECKING:
-    pass
+    from ragas.llms.base import BaseRagasLLM
 
 
 DEFAULT_TEST_DISTRIBUTION = {
@@ -127,8 +127,8 @@ class TestsetGenerator:
 
     def __init__(
         self,
-        generator_llm: RagasLLM,
-        critic_llm: RagasLLM,
+        generator_llm: BaseRagasLLM,
+        critic_llm: BaseRagasLLM,
         embeddings_model: Embeddings,
         testset_distribution: t.Optional[t.Dict[str, float]] = None,
         chat_qa: float = 0.0,
@@ -198,7 +198,7 @@ class TestsetGenerator:
         """
         human_prompt = SCORE_CONTEXT.format(context=context)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = self.critic_llm.generate(prompts=[prompt])
+        results = self.critic_llm.generate_text_with_hmpt(prompts=[prompt])
         output = results.generations[0][0].text.strip()
         score = load_as_score(output)
         return score >= self.threshold
@@ -206,14 +206,14 @@ class TestsetGenerator:
     def _seed_question(self, context: str) -> str:
         human_prompt = SEED_QUESTION.format(context=context)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = self.generator_llm.generate(prompts=[prompt])
+        results = self.generator_llm.generate_text_with_hmpt(prompts=[prompt])
         return results.generations[0][0].text.strip()
 
     def _filter_question(self, question: str) -> bool:
         human_prompt = FILTER_QUESTION.format(question=question)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
 
-        results = self.critic_llm.generate(prompts=[prompt])
+        results = self.critic_llm.generate_text_with_hmpt(prompts=[prompt])
         results = results.generations[0][0].text.strip()
         json_results = load_as_json(results)
         return json_results.get("verdict") != "No"
@@ -231,7 +231,7 @@ class TestsetGenerator:
             question=question, context1=context1, context2=context2
         )
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = self.generator_llm.generate(prompts=[prompt])
+        results = self.generator_llm.generate_text_with_hmpt(prompts=[prompt])
         return results.generations[0][0].text.strip()
 
     def _compress_question(self, question: str) -> str:
@@ -243,13 +243,13 @@ class TestsetGenerator:
     def _question_transformation(self, prompt, question: str) -> str:
         human_prompt = prompt.format(question=question)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = self.generator_llm.generate(prompts=[prompt])
+        results = self.generator_llm.generate_text_with_hmpt(prompts=[prompt])
         return results.generations[0][0].text.strip()
 
     def _qc_template(self, prompt, question, context) -> str:
         human_prompt = prompt.format(question=question, context=context)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = self.generator_llm.generate(prompts=[prompt])
+        results = self.generator_llm.generate_text_with_hmpt(prompts=[prompt])
         return results.generations[0][0].text.strip()
 
     def _generate_answer(self, question: str, context: t.List[str]) -> t.List[str]:

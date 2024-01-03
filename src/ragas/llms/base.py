@@ -11,6 +11,7 @@ from langchain_core.outputs import LLMResult
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
+    from langchain_core.prompts import ChatPromptTemplate
 
     from ragas.llms.prompt import PromptValue
 
@@ -55,6 +56,18 @@ class BaseRagasLLM(ABC):
         callbacks: Callbacks = [],
     ) -> LLMResult:
         ...
+
+    # TODO: remove after testset generator is refactored
+    def generate_text_with_hmpt(
+        self,
+        prompts: t.List[ChatPromptTemplate],
+        n: int = 1,
+        temperature: float = 1e-8,
+        stop: t.Optional[t.List[str]] = None,
+        callbacks: Callbacks = [],
+    ) -> LLMResult:
+        prompt = PromptValue(prompt_str=prompts[0].format())
+        return self.generate_text(prompt, n, temperature, stop, callbacks)
 
 
 @dataclass
