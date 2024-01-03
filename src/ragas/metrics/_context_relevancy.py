@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 CONTEXT_RELEVANCE = Prompt(
     name="context_relevancy",
-    instruction="""Please extract relevant sentences from the provided context that is absolutely required answer the following question. If no relevant sentences are found, or if you believe the question cannot be answered from the given context, return the phrase "Insufficient Information".  While extracting candidate sentences you're not allowed to make any changes to sentences from given context.""",
-    input=["question", "context"],
+    instruction='Please extract relevant sentences from the provided context that is absolutely required answer the following question. If no relevant sentences are found, or if you believe the question cannot be answered from the given context, return the phrase "Insufficient Information".  While extracting candidate sentences you\'re not allowed to make any changes to sentences from given context.',
+    input_keys=["question", "context"],
     output_key="candidate sentences",
     output_type="json",
 )
@@ -58,14 +58,57 @@ class ContextRelevancy(MetricWithLLM):
     batch_size: int = 15
     show_deprecation_warning: bool = False
 
-    def adapt(self, language: str, cache_dir: str | None = None) -> None:
-        logger.info(f"Adapting Context Relevancy to {language}")
-        self.context_relevancy_prompt = self.context_relevancy_prompt.adapt(
-            language, self.llm, cache_dir
+    def _compute_score(self, responses: t.Any, row: t.Dict) -> float:
+        context = "\n".join(row["contexts"])
+        overlap_scores = []
+        context_sents = sent_tokenize(context)
+        for output in responses:
+            indices = (
+                sent_tokenize(output.strip())
+                if output.lower() != "insufficient information."
+                else []
+            )
+            if len(context_sents) == 0:
+                score = 0
+            else:
+                score = min(len(indices) / len(context_sents), 1)
+            overlap_scores.append(score)
+        return float(np.mean(overlap_scores))
+
+    def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
+        assert self.llm is not None, "LLM is not initialized"
+
+        if self.show_deprecation_warning:
+            logger.warning(
+                "The 'context_relevancy' metric is going to be deprecated soon! Please use the 'context_precision' metric instead. It is a drop-in replacement just a simple search and replace should work."  # noqa
+            )
+
+        question, contexts = row["question"], row["contexts"]
+        result = self.llm.generate_text(
+            self.context_relevancy_prompt.format(
+                question=question, context="\n".join(contexts)
+            ),
+            callbacks=callbacks,
         )
 
-    def save(self, cache_dir: str | None = None) -> None:
-        self.context_relevancy_prompt.save(cache_dir)
+        return self._compute_score(result.generations[0][0].text, row)
+
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        assert self.llm is not None, "LLM is not initialized"
+
+        if self.show_deprecation_warning:
+            logger.warning(
+                "The 'context_relevancy' metric is going to be deprecated soon! Please use the 'context_precision' metric instead. It is a drop-in replacement just a simple search and replace should work."  # noqa
+            )
+
+        question, contexts = row["question"], row["contexts"]
+        result = await self.llm.agenerate_text(
+            self.context_relevancy_prompt.format(
+                question=question, context="\n".join(contexts)
+            ),
+            callbacks=callbacks,
+        )
+        return self._compute_score(result.generations[0][0].text, row)
 
     def _score_batch(
         self: t.Self,
@@ -118,6 +161,17 @@ class ContextRelevancy(MetricWithLLM):
                 scores.append(np.mean(overlap_scores))
 
         return scores
+
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        assert self.llm is not None, "set LLM before use"
+
+        logger.info(f"Adapting Context Relevancy to {language}")
+        self.context_relevancy_prompt = self.context_relevancy_prompt.adapt(
+            language, self.llm, cache_dir
+        )
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.context_relevancy_prompt.save(cache_dir)
 
 
 context_relevancy = ContextRelevancy()
