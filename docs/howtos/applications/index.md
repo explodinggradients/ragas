@@ -9,4 +9,6 @@ usecases to solve problems you might encounter when your building.
 data_preparation
 compare_embeddings
 compare_llms
+custom_prompts
+use_prompt_adaptation
 ```
