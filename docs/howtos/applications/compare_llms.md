@@ -145,7 +145,7 @@ result_zephyr
 
 ```{code-block}
 :caption: output
-{'ragas_score': 0.7809, 'faithfulness': 0.8365, 'answer_relevancy': 0.8831, 'answer_correctness': 0.6605}
+{'faithfulness': 0.8365, 'answer_relevancy': 0.8831, 'answer_correctness': 0.6605}
 ```
 
 ## Evaluate Falcon-7B-Instruct LLM
@@ -168,7 +168,7 @@ result
 
 ```{code-block}
 :caption: output
-{'ragas_score': 0.6956, 'faithfulness': 0.6909, 'answer_relevancy': 0.8651, 'answer_correctness': 0.5850}
+{'faithfulness': 0.6909, 'answer_relevancy': 0.8651, 'answer_correctness': 0.5850}
 ```
 
 ## Compare Scores
