@@ -152,7 +152,7 @@ class AnswerCorrectness(MetricWithLLM):
                         len(item) if isinstance(item, list) else np.nan
                         for item in prediction
                     ]
-                    score = tp / (tp + 0.5 * (fp + fn))
+                    score = tp / (tp + 0.5 * (fp + fn)) if tp > 0 else 0
                 else:
                     score = np.nan
 
