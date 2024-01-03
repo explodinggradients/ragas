@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from dataclasses import dataclass, field
 
@@ -7,61 +8,48 @@ import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from langchain.embeddings import OpenAIEmbeddings
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.embeddings.base import embedding_factory
 from ragas.exceptions import OpenAIKeyNotFound
+from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.utils import json_loader
+
+logger = logging.getLogger(__name__)
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
     from ragas.embeddings.base import RagasEmbeddings
 
-
-QUESTION_GEN = HumanMessagePromptTemplate.from_template(
-    """
-Generate a question for the given answer and Identify if answer is noncommittal
-
-Answer:
-Albert Einstein was born in Germany.
-Context:
-Albert Einstein was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time
-Output:
-{{"question":"Where was Albert Einstein born?","noncommittal":false}}
-
-
-Answer:
-It can change its skin color based on the temperature of its environment.
-Context:
-A recent scientific study has discovered a new species of frog in the Amazon rainforest that has the unique ability to change its skin color based on the temperature of its environment.
-Output:
-{{"question":"What unique ability does the newly discovered species of frog have?","noncommittal":false}}
-
-
-Answer:
-Everest
-Context:
-The tallest mountain on Earth, measured from sea level, is a renowned peak located in the Himalayas.
-Output:
-{{"question":"What is the tallest mountain on Earth?","noncommittal":false}}
-
-
-Answer:
-I don't know about the  groundbreaking feature of the smartphone invented in 2023 as am unware of information beyong 2022. 
-Context:
-In 2023, a groundbreaking invention was announced: a smartphone with a battery life of one month, revolutionizing the way people use mobile technology.
-Output:
-{{"question":"What was the groundbreaking feature of the smartphone invented in 2023?", "noncommittal":true}}
-
-
-
-Answer:
-{answer}
-Context:
-{context}
-Output:"""  # noqa: E501
+QUESTION_GEN = Prompt(
+    name="question_generation",
+    instruction="""Generate a question for the given answer and Identify if answer is noncommittal""",
+    examples=[
+        {
+            "answer": """Albert Einstein was born in Germany.""",
+            "context": """Albert Einstein was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time""",
+            "output": """{"question":"Where was Albert Einstein born?","noncommittal":false}""",
+        },
+        {
+            "answer": """It can change its skin color based on the temperature of its environment.""",
+            "context": """A recent scientific study has discovered a new species of frog in the Amazon rainforest that has the unique ability to change its skin color based on the temperature of its environment.""",
+            "output": """{"question":"What unique ability does the newly discovered species of frog have?","noncommittal":false}""",
+        },
+        {
+            "answer": """Everest""",
+            "context": """The tallest mountain on Earth, measured from sea level, is a renowned peak located in the Himalayas.""",
+            "output": """{"question":"What is the tallest mountain on Earth?","noncommittal":false}""",
+        },
+        {
+            "answer": """I don't know about the  groundbreaking feature of the smartphone invented in 2023 as am unware of information beyond 2022. """,
+            "context": """In 2023, a groundbreaking invention was announced: a smartphone with a battery life of one month, revolutionizing the way people use mobile technology.""",
+            "output": """{"question":"What was the groundbreaking feature of the smartphone invented in 2023?", "noncommittal":true}""",
+        },
+    ],
+    input_keys=["answer", "context"],
+    output_key="output",
+    output_type="json",
 )
 
 
@@ -88,6 +76,7 @@ class AnswerRelevancy(MetricWithLLM):
 
     name: str = "answer_relevancy"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
+    question_generation: Prompt = field(default_factory=lambda: QUESTION_GEN)
     batch_size: int = 15
     strictness: int = 3
     embeddings: RagasEmbeddings = field(default_factory=embedding_factory)
@@ -98,6 +87,15 @@ class AnswerRelevancy(MetricWithLLM):
         if isinstance(self.embeddings, OpenAIEmbeddings):
             if self.embeddings.openai_api_key == "no-key":
                 raise OpenAIKeyNotFound
+
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        logger.info(f"Adapting AnswerRelevancy metric to {language}")
+        self.question_generation = self.question_generation.adapt(
+            language, self.llm, cache_dir
+        )
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.question_generation.save(cache_dir)
 
     def _score_batch(
         self: t.Self,
@@ -117,8 +115,9 @@ class AnswerRelevancy(MetricWithLLM):
         ) as batch_group:
             prompts = []
             for ans, ctx in zip(answers, contexts):
-                human_prompt = QUESTION_GEN.format(answer=ans, context="\n".join(ctx))
-                prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
+                prompts.append(
+                    self.question_generation.format(answer=ans, context="\n".join(ctx))
+                )
 
             results = self.llm.generate(
                 prompts,

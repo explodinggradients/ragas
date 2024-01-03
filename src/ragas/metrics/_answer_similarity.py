@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from dataclasses import dataclass, field
 
@@ -18,6 +19,8 @@ if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
     from ragas.embeddings.base import RagasEmbeddings
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass

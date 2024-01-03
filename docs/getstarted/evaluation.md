@@ -64,7 +64,7 @@ from ragas.metrics import (
     context_precision,
 )
 ```
-here you can see that we are using 4 metrics, but what do the represent?
+here you can see that we are using 4 metrics, but what do they represent?
 
 1. faithfulness - the factual consistency of the answer to the context base on the question.
 2. context_precision - a measure of how relevant the retrieved context is to the question. Conveys quality of the retrieval pipeline.
@@ -96,9 +96,9 @@ result = evaluate(
 
 result
 ```
-and there you have the it, all the scores you need. `ragas_score` gives you a single metric that you can use while the other onces measure the different parts of your pipeline.
+and there you have it, all the scores you need. `ragas_score` gives you a single metric that you can use while 4 metrics individually would measure the different parts of your pipeline.
 
-now if we want to dig into the results and figure out examples where your pipeline performed worse or really good you can easily convert it into a pandas array and use your standard analytics tools too!
+Now if we want to dig into the results and figure out examples where your pipeline performed worse or really good you can easily convert it into a pandas array and use your standard analytics tools too!
 
 ```{code-block} python
 :caption: export results
@@ -111,4 +111,4 @@ df.head()
 
 And thats it!
 
-if you have any suggestion/feedbacks/things your not happy about, please do share it in the [issue section](https://github.com/explodinggradients/ragas/issues). We love hearing from you 😁
+If you have any suggestion/feedbacks/things your not happy about, please do share it in the [issue section](https://github.com/explodinggradients/ragas/issues). We love hearing from you 😁

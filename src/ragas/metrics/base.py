@@ -17,12 +17,10 @@ from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 from tqdm import tqdm
 
 from ragas.embeddings.base import RagasEmbeddings
-from ragas.llms import llm_factory
+from ragas.llms import RagasLLM, llm_factory
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
-
-    from ragas.llms import RagasLLM
 
 
 def make_batches(total_size: int, batch_size: int) -> list[range]:
@@ -63,6 +61,20 @@ class Metric(ABC):
         This method will lazy initialize the model.
         """
         ...
+
+    # @abstractmethod
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Adapt the metric to a different language.
+        """
+        pass
+
+    # @abstractmethod
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Save the metric to a path.
+        """
+        pass
 
     def score(
         self: t.Self,
