@@ -29,11 +29,10 @@ CRITIQUE_PROMPT = Prompt(
             "input": "Who was the director of Los Alamos Laboratory?",
             "submission": "Einstein was the director of  Los Alamos Laboratory.",
             "criteria": "Is the output written in perfect grammar",
-            "output": """{
-                "reason":"the criteria for evaluation is whether the output is written in perfect grammar. In this case, the output is grammatically correct.",
-                "verdict":"1"
-            }
-            """,
+            "output": {
+                "reason": "the criteria for evaluation is whether the output is written in perfect grammar. In this case, the output is grammatically correct.",
+                "verdict": "1",
+            },
         }
     ],
     input_keys=["input", "submission", "criteria"],
