@@ -30,6 +30,17 @@ class PromptValue(BasePromptValue):
 class Prompt(BaseModel):
     """
     Prompt is a class that represents a prompt for the ragas metrics.
+    
+    Prompt is a class that represents a prompt for the ragas metrics.
+
+    Attributes:
+        name (str): The name of the prompt.
+        instruction (str): The instruction for the prompt.
+        examples (List[Dict[str, Any]]): List of example inputs and outputs for the prompt.
+        input_keys (List[str]): List of input variable names.
+        output_key (str): The output variable name.
+        output_type (str): The type of the output (default: "json").
+        language (str): The language of the prompt (default: "en").
     """
 
     name: str
