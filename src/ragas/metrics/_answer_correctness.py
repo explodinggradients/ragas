@@ -142,6 +142,7 @@ class AnswerCorrectness(MetricWithLLM):
                 prediction = (
                     prediction if isinstance(prediction, list) else [prediction]
                 )
+
                 if prediction:
                     prediction = [
                         item.get(key_map[k], np.nan)
@@ -152,7 +153,11 @@ class AnswerCorrectness(MetricWithLLM):
                         len(item) if isinstance(item, list) else np.nan
                         for item in prediction
                     ]
-                    score = tp / (tp + 0.5 * (fp + fn))
+
+                    if any([np.isnan(i) for i in [tp, fp, fn]]):
+                        score = np.nan
+                    else:
+                        score = tp / (tp + 0.5 * (fp + fn)) if tp > 0 else 0
                 else:
                     score = np.nan
 

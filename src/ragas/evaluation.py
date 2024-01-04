@@ -42,8 +42,7 @@ def evaluate(
     -------
     Result
         Result object containing the scores of each metric. You can use this do analysis
-        later. If the top 3 metrics are provided then it also returns the `ragas_score`
-        for the entire pipeline.
+        later.
 
     Raises
     ------
@@ -64,8 +63,9 @@ def evaluate(
     })
 
     >>> result = evaluate(dataset)
-    >>> print(result["ragas_score"])
-    {'ragas_score': 0.860, 'context_precision': 0.817, 'faithfulness': 0.892,
+    >>> print(result)
+    {'context_precision': 0.817,
+    'faithfulness': 0.892,
     'answer_relevancy': 0.874}
     ```
     """
