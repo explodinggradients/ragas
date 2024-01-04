@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from ragas.llms import llm_factory
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
@@ -115,6 +114,8 @@ class AspectCritique(MetricWithLLM):
         return score
 
     def _score(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+        assert self.llm is not None, "set LLM before use"
+
         q, c, a = row["question"], row["contexts"], row["answer"]
 
         result = self.llm.generate_text(
@@ -127,6 +128,8 @@ class AspectCritique(MetricWithLLM):
         return self._compute_score(safe_loaded_responses)
 
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+        assert self.llm is not None, "set LLM before use"
+
         q, c, a = row["question"], row["contexts"], row["answer"]
 
         result = await self.llm.agenerate_text(
@@ -139,6 +142,8 @@ class AspectCritique(MetricWithLLM):
         return self._compute_score(safe_loaded_responses)
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        assert self.llm is not None, "set LLM before use"
+
         logger.info(f"Adapting Critic to {language}")
         self.critic_prompt.adapt(language, self.llm, cache_dir)
 
