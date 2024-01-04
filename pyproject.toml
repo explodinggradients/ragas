@@ -23,6 +23,9 @@ package-dir = {"" = "src"}
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/plain"}
 
+[tool.ruff.lint]
+ignore = ["E501"]
+
 [build-system]
 requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"

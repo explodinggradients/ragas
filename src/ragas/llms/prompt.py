@@ -5,16 +5,29 @@ import logging
 import os
 import typing as t
 
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain_core.messages import BaseMessage, HumanMessage
-from langchain_core.prompt_values import PromptValue
-from langchain_core.pydantic_v1 import root_validator
+from langchain_core.prompt_values import PromptValue as BasePromptValue
+from langchain_core.pydantic_v1 import BaseModel, root_validator
 
-from ragas.llms import RagasLLM
-from ragas.utils import RAGAS_CACHE_HOME, json_loader
+from ragas.llms import BaseRagasLLM
+from ragas.llms.json_load import json_loader
+from ragas.utils import get_cache_dir
+
+Example = t.Dict[str, t.Any]
 
 
-class Prompt(PromptValue):
+class PromptValue(BasePromptValue):
+    prompt_str: str
+
+    def to_messages(self) -> t.List[BaseMessage]:
+        """Return prompt as a list of Messages."""
+        return [HumanMessage(content=self.to_string())]
+
+    def to_string(self) -> str:
+        return self.prompt_str
+
+
+class Prompt(BaseModel):
     """
     Prompt is a class that represents a prompt for the ragas metrics.
     
@@ -32,7 +45,7 @@ class Prompt(PromptValue):
 
     name: str
     instruction: str
-    examples: t.List[t.Dict[str, t.Any]] = []
+    examples: t.List[Example] = []
     input_keys: t.List[str]
     output_key: str
     output_type: str = "json"
@@ -80,26 +93,27 @@ class Prompt(PromptValue):
         """
         prompt_str = self.instruction + "\n"
 
-        # Format the examples to match the Langchain prompt template
-        for example in self.examples:
-            for key, value in example.items():
-                value = json.dumps(value, ensure_ascii=False).encode("utf8").decode()
-                value = (
-                    value.replace("{", "{{").replace("}", "}}")
-                    if self.output_type.lower() == "json"
-                    else value
-                )
-                prompt_str += f"\n{key}: {value}"
-            prompt_str += "\n"
+        if self.examples:
+            # Format the examples to match the Langchain prompt template
+            for example in self.examples:
+                for key, value in example.items():
+                    value = (
+                        json.dumps(value, ensure_ascii=False).encode("utf8").decode()
+                    )
+                    value = (
+                        value.replace("{", "{{").replace("}", "}}")
+                        if self.output_type.lower() == "json"
+                        else value
+                    )
+                    prompt_str += f"\n{key}: {value}"
+                prompt_str += "\n"
 
-        prompt_str += "".join(f"\n{key}: {{{key}}}" for key in self.input_keys)
-        prompt_str += f"\n{self.output_key}: \n"
+        if self.input_keys:
+            prompt_str += "".join(f"\n{key}: {{{key}}}" for key in self.input_keys)
+        if self.output_key:
+            prompt_str += f"\n{self.output_key}: \n"
 
         return prompt_str
-
-    def to_messages(self) -> t.List[BaseMessage]:
-        """Return prompt as a list of Messages."""
-        return [HumanMessage(content=self.to_string())]
 
     def get_example_str(self, example_no: int) -> str:
         """
@@ -119,7 +133,7 @@ class Prompt(PromptValue):
             example_str += f"\n{key}: {value}"
         return example_str
 
-    def format(self, **kwargs: t.Any) -> ChatPromptTemplate:
+    def format(self, **kwargs: t.Any) -> PromptValue:
         """
         Format the Prompt object into a ChatPromptTemplate object to be used in metrics.
         """
@@ -128,14 +142,13 @@ class Prompt(PromptValue):
                 f"Input variables {self.input_keys} do not match with the given parameters {list(kwargs.keys())}"
             )
         prompt = self.to_string()
-        human_prompt = HumanMessagePromptTemplate.from_template(prompt)
-        return ChatPromptTemplate.from_messages([human_prompt.format(**kwargs)])
+        return PromptValue(prompt_str=prompt.format(**kwargs))
 
     def adapt(
-        self, language: str, llm: RagasLLM, cache_dir: t.Optional[str] = None
+        self, language: str, llm: BaseRagasLLM, cache_dir: t.Optional[str] = None
     ) -> Prompt:
         # TODO: Add callbacks
-        cache_dir = cache_dir if cache_dir else RAGAS_CACHE_HOME
+        cache_dir = cache_dir if cache_dir else get_cache_dir()
         if os.path.exists(os.path.join(cache_dir, language, f"{self.name}.json")):
             return self._load(language, self.name, cache_dir)
 
@@ -159,7 +172,10 @@ class Prompt(PromptValue):
                 )
             )
 
-        results = [result[0].text for result in llm.generate(prompts).generations]
+        # NOTE: this is a slow loop, consider Executor to fasten this
+        results = []
+        for p in prompts:
+            results.append(llm.generate_text(p).generations[0][0].text)
         per_example_items = len(self.input_keys) + 1
         grouped_results = [
             results[i : i + per_example_items]
@@ -188,14 +204,14 @@ class Prompt(PromptValue):
         return self
 
     def save(self, cache_dir: t.Optional[str] = None) -> None:
-        cache_dir = cache_dir if cache_dir else RAGAS_CACHE_HOME
+        cache_dir = cache_dir if cache_dir else get_cache_dir()
         cache_dir = os.path.join(cache_dir, self.language)
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
 
         cache_path = os.path.join(cache_dir, f"{self.name}.json")
         with open(cache_path, "w") as file:
-            json.dump(self.to_json(), file, indent=4)
+            json.dump(self.dict(), file, indent=4)
 
     @classmethod
     def _load(cls, language: str, name: str, cache_dir: str) -> Prompt:

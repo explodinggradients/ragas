@@ -4,9 +4,13 @@ from datasets import DatasetDict, load_dataset
 
 from ragas import evaluate
 from ragas.metrics import (
+    answer_correctness,
     answer_relevancy,
+    answer_similarity,
     context_precision,
     context_recall,
+    context_relevancy,
+    context_utilization,
     faithfulness,
 )
 from ragas.metrics.critique import harmfulness
@@ -16,16 +20,37 @@ ds = load_dataset("explodinggradients/fiqa", "ragas_eval")
 assert isinstance(ds, DatasetDict)
 fiqa = ds["baseline"]
 
+# metrics
+metrics = [
+    faithfulness,
+    context_recall,
+    answer_relevancy,
+    answer_correctness,
+    harmfulness,
+    context_relevancy,
+    context_precision,
+    context_utilization,
+    answer_similarity,
+]
+
 if __name__ == "__main__":
+    # asyncio
+    start = time.time()
+    print("ignored")
+    # _ = evaluate(
+    #     fiqa,
+    #     metrics=[
+    #         faithfulness,
+    #     ],
+    #     is_async=True,
+    # )
+    print(f"Time taken [Asyncio]: {time.time() - start:.2f}s")
+
+    # Threads
     start = time.time()
     _ = evaluate(
         fiqa,
-        metrics=[
-            answer_relevancy,
-            context_precision,
-            faithfulness,
-            harmfulness,
-            context_recall,
-        ],
+        metrics=metrics,
+        is_async=False,
     )
-    print(f"Time taken: {time.time() - start:.2f}s")
+    print(f"Time taken [Threads]: {time.time() - start:.2f}s")
