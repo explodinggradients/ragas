@@ -100,10 +100,14 @@ class ContextPrecision(MetricWithLLM):
         questions, contexts, answers = self.get_dataset_attributes(dataset)
 
         cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(callback_group_name, callback_manager=cb) as batch_group:
+        with trace_as_chain_group(
+            callback_group_name, callback_manager=cb
+        ) as batch_group:
             for qstn, ctx, answer in zip(questions, contexts, answers):
                 human_prompts = [
-                    self.context_precision_prompt.format(question=qstn, context=c, answer=answer)
+                    self.context_precision_prompt.format(
+                        question=qstn, context=c, answer=answer
+                    )
                     for c in ctx
                 ]
 
@@ -126,7 +130,9 @@ class ContextPrecision(MetricWithLLM):
             scores = []
 
             for response in grouped_responses:
-                response = [json_loader.safe_load(item, self.llm) for item in sum(response, [])]
+                response = [
+                    json_loader.safe_load(item, self.llm) for item in sum(response, [])
+                ]
                 response = [
                     int("1" == resp.get("verdict", "0").strip())
                     if resp.get("verdict")

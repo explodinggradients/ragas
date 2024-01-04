@@ -107,11 +107,15 @@ class AnswerCorrectness(MetricWithLLM):
             raise ValueError("Weights must be non-negative")
 
         if self.answer_similarity is None and self.weights[1] != 0:
-            self.answer_similarity = AnswerSimilarity(llm=self.llm, batch_size=self.batch_size)
+            self.answer_similarity = AnswerSimilarity(
+                llm=self.llm, batch_size=self.batch_size
+            )
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         logger.info(f"Adapting AnswerCorrectness metric to {language}")
-        self.correctness_prompt = self.correctness_prompt.adapt(language, self.llm, cache_dir)
+        self.correctness_prompt = self.correctness_prompt.adapt(
+            language, self.llm, cache_dir
+        )
 
     def save(self, cache_dir: t.Optional[str] = None) -> None:
         self.correctness_prompt.save(cache_dir)
@@ -130,10 +134,14 @@ class AnswerCorrectness(MetricWithLLM):
         prompts = []
 
         cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(callback_group_name, callback_manager=cb) as batch_group:
+        with trace_as_chain_group(
+            callback_group_name, callback_manager=cb
+        ) as batch_group:
             for q, a, g in zip(question, answer, ground_truths):
                 prompts.append(
-                    self.correctness_prompt.format(question=q, ground_truth=g[0], answer=a)
+                    self.correctness_prompt.format(
+                        question=q, ground_truth=g[0], answer=a
+                    )
                 )
 
             result = self.llm.generate(prompts, callbacks=batch_group)
@@ -147,14 +155,19 @@ class AnswerCorrectness(MetricWithLLM):
             f1_score = []
             for prediction in outputs:
                 prediction = json_loader.safe_load(prediction[0].text, self.llm)
-                prediction = prediction if isinstance(prediction, list) else [prediction]
+                prediction = (
+                    prediction if isinstance(prediction, list) else [prediction]
+                )
 
                 if prediction:
                     prediction = [
-                        item.get(key_map[k], np.nan) for item in prediction for k in key_map.keys()
+                        item.get(key_map[k], np.nan)
+                        for item in prediction
+                        for k in key_map.keys()
                     ]
                     tp, fp, fn = [
-                        len(item) if isinstance(item, list) else np.nan for item in prediction
+                        len(item) if isinstance(item, list) else np.nan
+                        for item in prediction
                     ]
 
                     if any([np.isnan(i) for i in [tp, fp, fn]]):
