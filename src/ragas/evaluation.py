@@ -31,7 +31,7 @@ def evaluate(
     llm: t.Optional[BaseRagasLLM] = None,
     embeddings: t.Optional[BaseRagasEmbeddings] = None,
     callbacks: Callbacks = [],
-    is_async: bool = True,
+    is_async: bool = False,
     max_workers: t.Optional[int] = None,
     raise_exceptions: bool = True,
     column_map: t.Dict[str, str] = {},
