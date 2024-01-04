@@ -111,8 +111,12 @@ NLI_STATEMENTS_MESSAGE = Prompt(
 class Faithfulness(MetricWithLLM):
     name: str = "faithfulness"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
-    long_form_answer_prompt: Prompt = field(default_factory=lambda: LONG_FORM_ANSWER_PROMPT)
-    nli_statements_message: Prompt = field(default_factory=lambda: NLI_STATEMENTS_MESSAGE)
+    long_form_answer_prompt: Prompt = field(
+        default_factory=lambda: LONG_FORM_ANSWER_PROMPT
+    )
+    nli_statements_message: Prompt = field(
+        default_factory=lambda: NLI_STATEMENTS_MESSAGE
+    )
     batch_size: int = 15
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
@@ -146,7 +150,9 @@ class Faithfulness(MetricWithLLM):
         prompts = []
 
         cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(callback_group_name, callback_manager=cb) as batch_group:
+        with trace_as_chain_group(
+            callback_group_name, callback_manager=cb
+        ) as batch_group:
             for q, a in zip(question, answer):
                 human_prompt = LONG_FORM_ANSWER_PROMPT.format(question=q, answer=a)
                 prompts.append(human_prompt)
@@ -155,7 +161,9 @@ class Faithfulness(MetricWithLLM):
 
             prompts = []
             for context, output in zip(contexts, result.generations):
-                statements = json_loader.safe_load(output[0].text, self.llm).get("statements", [])
+                statements = json_loader.safe_load(output[0].text, self.llm).get(
+                    "statements", []
+                )
                 statements = statements if statements != [] else ["Nil"]
                 statements_str: str = "\n".join(
                     [f"statement_{i+1}: {st}" for i, st in enumerate(statements)]

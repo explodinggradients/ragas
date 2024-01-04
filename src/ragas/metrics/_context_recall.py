@@ -88,7 +88,9 @@ class ContextRecall(MetricWithLLM):
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
         logger.info(f"Adapting Context Recall to {language}")
-        self.context_recall_prompt = self.context_recall_prompt.adapt(language, self.llm, cache_dir)
+        self.context_recall_prompt = self.context_recall_prompt.adapt(
+            language, self.llm, cache_dir
+        )
 
     def save(self, cache_dir: str | None = None) -> None:
         self.context_recall_prompt.save(cache_dir)
@@ -107,12 +109,16 @@ class ContextRecall(MetricWithLLM):
         )
 
         cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(callback_group_name, callback_manager=cb) as batch_group:
+        with trace_as_chain_group(
+            callback_group_name, callback_manager=cb
+        ) as batch_group:
             for qstn, gt, ctx in zip(question, ground_truths, contexts):
                 gt = "\n".join(gt) if isinstance(gt, list) else gt
                 ctx = "\n".join(ctx) if isinstance(ctx, list) else ctx
                 prompts.append(
-                    self.context_recall_prompt.format(question=qstn, context=ctx, answer=gt)
+                    self.context_recall_prompt.format(
+                        question=qstn, context=ctx, answer=gt
+                    )
                 )
 
             responses: list[list[str]] = []

@@ -81,7 +81,9 @@ class AspectCritique(MetricWithLLM):
             raise ValueError("Expects definition")
 
         # ensure odd number of checks to avoid tie in majority vote.
-        self.strictness = self.strictness if self.strictness % 2 != 0 else self.strictness + 1
+        self.strictness = (
+            self.strictness if self.strictness % 2 != 0 else self.strictness + 1
+        )
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
         logger.info(f"Adapting Critic to {language}")
@@ -100,7 +102,9 @@ class AspectCritique(MetricWithLLM):
             if isinstance(context, list):
                 context = "\n".join(context)
             question = f"{question } answer using context: {context}"
-        return CRITIQUE_PROMPT.format(input=question, submission=answer, criteria=self.definition)
+        return CRITIQUE_PROMPT.format(
+            input=question, submission=answer, criteria=self.definition
+        )
 
     def _score_batch(
         self: t.Self,
@@ -120,7 +124,9 @@ class AspectCritique(MetricWithLLM):
         prompts = []
 
         cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(callback_group_name, callback_manager=cb) as batch_group:
+        with trace_as_chain_group(
+            callback_group_name, callback_manager=cb
+        ) as batch_group:
             for question, context, answer in zip(questions, contexts, answers):
                 human_prompt = self.prompt_format(question, answer, context)
                 prompts.append(human_prompt)
@@ -130,7 +136,9 @@ class AspectCritique(MetricWithLLM):
                 n=self.strictness,
                 callbacks=batch_group,
             )
-            responses: list[list[str]] = [[i.text for i in r] for r in results.generations]
+            responses: list[list[str]] = [
+                [i.text for i in r] for r in results.generations
+            ]
 
             scores = []
             answer_dict = {"1": 1, "0": 0}
@@ -138,7 +146,10 @@ class AspectCritique(MetricWithLLM):
                 response = [json_loader.safe_load(item, self.llm) for item in response]
                 if self.strictness > 1:
                     score = Counter(
-                        [answer_dict.get(item.get("verdict", np.nan), np.nan) for item in response]
+                        [
+                            answer_dict.get(item.get("verdict", np.nan), np.nan)
+                            for item in response
+                        ]
                     ).most_common(1)[0][0]
                 else:
                     score = answer_dict.get(response[0].get("verdict", np.nan), np.nan)

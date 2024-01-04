@@ -120,19 +120,25 @@ class ContextPrecision(MetricWithLLM):
             context_lens.insert(0, 0)
             context_lens = np.cumsum(context_lens)
             grouped_responses = [
-                responses[start:end] for start, end in zip(context_lens[:-1], context_lens[1:])
+                responses[start:end]
+                for start, end in zip(context_lens[:-1], context_lens[1:])
             ]
             scores = []
 
             for response in grouped_responses:
                 response = [json_loader.safe_load(item, self.llm) for item in sum(response, [])]
                 response = [
-                    int("1" == resp.get("verdict", "0").strip()) if resp.get("verdict") else np.nan
+                    int("1" == resp.get("verdict", "0").strip())
+                    if resp.get("verdict")
+                    else np.nan
                     for resp in response
                 ]
                 denominator = sum(response) + 1e-10
                 numerator = sum(
-                    [(sum(response[: i + 1]) / (i + 1)) * response[i] for i in range(len(response))]
+                    [
+                        (sum(response[: i + 1]) / (i + 1)) * response[i]
+                        for i in range(len(response))
+                    ]
                 )
                 scores.append(numerator / denominator)
 
