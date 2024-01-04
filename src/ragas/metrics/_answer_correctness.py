@@ -26,25 +26,41 @@ CORRECTNESS_PROMPT = Prompt(
             "question": """What powers the sun and what is its primary function?""",
             "answer": """The sun is powered by nuclear fission, similar to nuclear reactors on Earth, and its primary function is to provide light to the solar system.""",
             "ground_truth": """The sun is actually powered by nuclear fusion, not fission. In its core, hydrogen atoms fuse to form helium, releasing a tremendous amount of energy. This energy is what lights up the sun and provides heat and light, essential for life on Earth. The sun's light also plays a critical role in Earth's climate system and helps to drive the weather and ocean currents.""",
-            "Extracted statements": """[
-            {
-                "statements that are present in both the answer and the ground truth": ["The sun's primary function is to provide light"],
-                "statements present in the answer but not found in the ground truth": ["The sun is powered by nuclear fission", "similar to nuclear reactors on Earth"],
-                "relevant statements found in the ground truth but omitted in the answer": ["The sun is powered by nuclear fusion, not fission", "In its core, hydrogen atoms fuse to form helium, releasing a tremendous amount of energy", "This energy provides heat and light, essential for life on Earth", "The sun's light plays a critical role in Earth's climate system", "The sun helps to drive the weather and ocean currents"]
-            }]
-            """,
+            "Extracted statements": [
+                {
+                    "statements that are present in both the answer and the ground truth": [
+                        "The sun's primary function is to provide light"
+                    ],
+                    "statements present in the answer but not found in the ground truth": [
+                        "The sun is powered by nuclear fission",
+                        "similar to nuclear reactors on Earth",
+                    ],
+                    "relevant statements found in the ground truth but omitted in the answer": [
+                        "The sun is powered by nuclear fusion, not fission",
+                        "In its core, hydrogen atoms fuse to form helium, releasing a tremendous amount of energy",
+                        "This energy provides heat and light, essential for life on Earth",
+                        "The sun's light plays a critical role in Earth's climate system",
+                        "The sun helps to drive the weather and ocean currents",
+                    ],
+                }
+            ],
         },
         {
             "question": """What is the boiling point of water?""",
             "answer": """The boiling point of water is 100 degrees Celsius at sea level.""",
             "ground_truth": """The boiling point of water is 100 degrees Celsius (212 degrees Fahrenheit) at sea level, but it can change with altitude.""",
-            "Extracted statements": """[
-            {
-                "statements that are present in both the answer and the ground truth": ["The boiling point of water is 100 degrees Celsius at sea level"],
-                "statements present in the answer but not found in the ground truth": [],
-                "relevant statements found in the ground truth but omitted in the answer": ["The boiling point can change with altitude", "The boiling point of water is 212 degrees Fahrenheit at sea level"]
-            }]
-            """,
+            "Extracted statements": [
+                {
+                    "statements that are present in both the answer and the ground truth": [
+                        "The boiling point of water is 100 degrees Celsius at sea level"
+                    ],
+                    "statements present in the answer but not found in the ground truth": [],
+                    "relevant statements found in the ground truth but omitted in the answer": [
+                        "The boiling point can change with altitude",
+                        "The boiling point of water is 212 degrees Fahrenheit at sea level",
+                    ],
+                }
+            ],
         },
     ],
     input_keys=["question", "answer", "ground_truth"],
@@ -91,15 +107,11 @@ class AnswerCorrectness(MetricWithLLM):
             raise ValueError("Weights must be non-negative")
 
         if self.answer_similarity is None and self.weights[1] != 0:
-            self.answer_similarity = AnswerSimilarity(
-                llm=self.llm, batch_size=self.batch_size
-            )
+            self.answer_similarity = AnswerSimilarity(llm=self.llm, batch_size=self.batch_size)
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         logger.info(f"Adapting AnswerCorrectness metric to {language}")
-        self.correctness_prompt = self.correctness_prompt.adapt(
-            language, self.llm, cache_dir
-        )
+        self.correctness_prompt = self.correctness_prompt.adapt(language, self.llm, cache_dir)
 
     def save(self, cache_dir: t.Optional[str] = None) -> None:
         self.correctness_prompt.save(cache_dir)
@@ -118,14 +130,10 @@ class AnswerCorrectness(MetricWithLLM):
         prompts = []
 
         cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(
-            callback_group_name, callback_manager=cb
-        ) as batch_group:
+        with trace_as_chain_group(callback_group_name, callback_manager=cb) as batch_group:
             for q, a, g in zip(question, answer, ground_truths):
                 prompts.append(
-                    self.correctness_prompt.format(
-                        question=q, ground_truth=g[0], answer=a
-                    )
+                    self.correctness_prompt.format(question=q, ground_truth=g[0], answer=a)
                 )
 
             result = self.llm.generate(prompts, callbacks=batch_group)
@@ -139,19 +147,14 @@ class AnswerCorrectness(MetricWithLLM):
             f1_score = []
             for prediction in outputs:
                 prediction = json_loader.safe_load(prediction[0].text, self.llm)
-                prediction = (
-                    prediction if isinstance(prediction, list) else [prediction]
-                )
+                prediction = prediction if isinstance(prediction, list) else [prediction]
 
                 if prediction:
                     prediction = [
-                        item.get(key_map[k], np.nan)
-                        for item in prediction
-                        for k in key_map.keys()
+                        item.get(key_map[k], np.nan) for item in prediction for k in key_map.keys()
                     ]
                     tp, fp, fn = [
-                        len(item) if isinstance(item, list) else np.nan
-                        for item in prediction
+                        len(item) if isinstance(item, list) else np.nan for item in prediction
                     ]
 
                     if any([np.isnan(i) for i in [tp, fp, fn]]):
