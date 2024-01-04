@@ -151,9 +151,10 @@ class ContextPrecision(MetricWithLLM):
         return scores
 
 
+@dataclass
 class ContextUtilization(ContextPrecision):
-    name = "ContextUtilization"
-    evaluation_mode = EvaluationMode.qac
+    name: str = "context_utilization"
+    evaluation_mode: EvaluationMode = EvaluationMode.qac
 
     def get_dataset_attributes(self, dataset: Dataset):
         return dataset["question"], dataset["contexts"], dataset["answer"]
