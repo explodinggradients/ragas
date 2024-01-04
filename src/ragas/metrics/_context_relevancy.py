@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 CONTEXT_RELEVANCE = Prompt(
     name="context_relevancy",
-    instruction='Please extract relevant sentences from the provided context that is absolutely required answer the following question. If no relevant sentences are found, or if you believe the question cannot be answered from the given context, return the phrase "Insufficient Information".  While extracting candidate sentences you\'re not allowed to make any changes to sentences from given context.',
+    instruction="""Please extract relevant sentences from the provided context that is absolutely required answer the following question. If no relevant sentences are found, or if you believe the question cannot be answered from the given context, return the phrase "Insufficient Information".  While extracting candidate sentences you're not allowed to make any changes to sentences from given context.""",
     input_keys=["question", "context"],
     output_key="candidate sentences",
     output_type="json",
@@ -56,7 +56,7 @@ class ContextRelevancy(MetricWithLLM):
     batch_size: int = 15
     show_deprecation_warning: bool = False
 
-    def _compute_score(self, responses: t.Any, row: t.Dict) -> float:
+    def _compute_score(self, responses: str, row: t.Dict) -> float:
         context = "\n".join(row["contexts"])
         overlap_scores = []
         context_sents = sent_tokenize(context)
