@@ -56,22 +56,19 @@ class ContextRelevancy(MetricWithLLM):
     batch_size: int = 15
     show_deprecation_warning: bool = False
 
-    def _compute_score(self, responses: str, row: t.Dict) -> float:
+    def _compute_score(self, response: str, row: t.Dict) -> float:
         context = "\n".join(row["contexts"])
-        overlap_scores = []
         context_sents = sent_tokenize(context)
-        for output in responses:
-            indices = (
-                sent_tokenize(output.strip())
-                if output.lower() != "insufficient information."
-                else []
-            )
-            if len(context_sents) == 0:
-                score = 0
-            else:
-                score = min(len(indices) / len(context_sents), 1)
-            overlap_scores.append(score)
-        return float(np.mean(overlap_scores))
+        indices = (
+            sent_tokenize(response.strip())
+            if response.lower() != "insufficient information."
+            else []
+        )
+        # print(len(indices))
+        if len(context_sents) == 0:
+            return 0
+        else:
+            return min(len(indices) / len(context_sents), 1)
 
     def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM is not initialized"
