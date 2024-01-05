@@ -63,7 +63,15 @@ question_deep_map = {
 }
 
 DataRow = namedtuple(
-    "DataRow", ["seed_question", "question", "context", "answer", "question_type", "evolution_elimination"]
+    "DataRow",
+    [
+        "seed_question",
+        "question",
+        "context",
+        "answer",
+        "question_type",
+        "evolution_elimination",
+    ],
 )
 
 
@@ -209,9 +217,16 @@ class TestsetGenerator:
             human_prompt = TABLE_QA.format(context=context)
         else:
             from ragas.testset.prompts import demonstrations
+
             sample = self.rng.choice(demonstrations, 1)[0]
-            questions = self.rng.choice(sample['questions'],2,replace=False)
-            questions = "{"+str({k:v for dic in questions.tolist() for k,v in dic.items()}).replace("'",'"')+"}"
+            questions = self.rng.choice(sample["questions"], 2, replace=False)
+            questions = (
+                "{"
+                + str(
+                    {k: v for dic in questions.tolist() for k, v in dic.items()}
+                ).replace("'", '"')
+                + "}"
+            )
             demo = f'Context:{sample["context"]}\nQuestions:{questions}'
             human_prompt = SEED_QUESTION.format(demonstration=demo, context=context)
 
@@ -223,7 +238,7 @@ class TestsetGenerator:
         else:
             results = load_as_json(results)
             return [v for v in results.values()]
-            
+
     def _filter_question(self, question: str) -> bool:
         human_prompt = FILTER_QUESTION.format(question=question)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
@@ -233,20 +248,19 @@ class TestsetGenerator:
         json_results = load_as_json(results)
         print(json_results)
         return json_results.get("verdict") != "No"
-    
+
     def _rewrite_question(self, question: str, context: str) -> str:
-        
         human_prompt = REWRITE_QUESTION.format(question=question, context=context)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
 
         results = self.generator_llm.generate(prompts=[prompt])
         results = results.generations[0][0].text.strip()
         return results
-        
-    
+
     def _evolution_elimination(self, question1: str, question2: str) -> bool:
-        
-        human_prompt = EVOLUTION_ELIMINATION.format(question1=question1, question2=question2)
+        human_prompt = EVOLUTION_ELIMINATION.format(
+            question1=question1, question2=question2
+        )
         prompt = ChatPromptTemplate.from_messages([human_prompt])
 
         results = self.critic_llm.generate(prompts=[prompt])
@@ -299,18 +313,16 @@ class TestsetGenerator:
             self._qc_template(CONTEXT_FORMULATE, qstn, text_chunk)
             for qstn in question.split("\n")
         ]
-        
-    def _question_transform(self, question:str) -> str:
-        
+
+    def _question_transform(self, question: str) -> str:
         output = []
-        for qstn in question.split('\n'):
+        for qstn in question.split("\n"):
             human_prompt = INFORMAL_QUESTION.format(question=qstn)
             prompt = ChatPromptTemplate.from_messages([human_prompt])
             results = self.generator_llm.generate(prompts=[prompt])
             output.append(results.generations[0][0].text.strip())
-        
-        return '\n'.join(output)
-        
+
+        return "\n".join(output)
 
     def _remove_nodes(
         self, available_indices: t.List[BaseNode], node_idx: t.List
@@ -325,14 +337,18 @@ class TestsetGenerator:
     ) -> t.Dict[str, t.List[BaseNode]]:
         doc_nodes_map: t.Dict[str, t.List[BaseNode]] = defaultdict(list[BaseNode])
         for node in document_nodes:
-            file_name = node.metadata.get('file_name')
+            file_name = node.metadata.get("file_name")
             if file_name:
                 doc_nodes_map[file_name].append(node)
 
         return doc_nodes_map  # type: ignore
 
     def _get_neighbour_node(
-        self, node: BaseNode, related_nodes: list[BaseNode], max_tokens=1000, after: bool=True,
+        self,
+        node: BaseNode,
+        related_nodes: list[BaseNode],
+        max_tokens=1000,
+        after: bool = True,
     ) -> t.List[BaseNode]:
         if len(related_nodes) < 2:
             warnings.warn("No neighbors exists")
@@ -342,12 +358,12 @@ class TestsetGenerator:
             tokens = 0
             nodes = []
             inc = 1 if after else -1
-            while tokens < max_tokens and idx>=0 and idx<len(related_nodes):
+            while tokens < max_tokens and idx >= 0 and idx < len(related_nodes):
                 nodes.append(related_nodes[idx])
                 idx += inc
-                #TODO: replace split with tikitoken
+                # TODO: replace split with tikitoken
                 tokens += len(related_nodes[idx].get_content().split())
-                    
+
             return nodes if after else nodes[::-1]
         return [node]
 
@@ -377,9 +393,9 @@ class TestsetGenerator:
                 LlamaindexDocument.from_langchain_format(doc) for doc in documents
             ]
         # Convert documents into nodes
-        # TODO: modify this to 
+        # TODO: modify this to
         # each node should contain docs of preffered chunk size
-        # append document to provide enough context 
+        # append document to provide enough context
         # Use metadata for this.
         node_parser = SimpleNodeParser.from_defaults(
             chunk_size=self.chunk_size, chunk_overlap=0, include_metadata=True
@@ -406,21 +422,23 @@ class TestsetGenerator:
             curr_node = self.rng.choice(np.array(available_nodes), size=1)[0]
             available_nodes = self._remove_nodes(available_nodes, [curr_node])
 
-            neighbor_nodes = doc_nodes_map[curr_node.metadata['file_name']]
+            neighbor_nodes = doc_nodes_map[curr_node.metadata["file_name"]]
 
             # Append multiple nodes randomly to remove chunking bias
             if len(curr_node.get_content().split()) < self.chunk_size:
                 size = self.chunk_size - len(curr_node.get_content().split())
-                nodes = self._get_neighbour_node(curr_node, neighbor_nodes, max_tokens=size, after=False)
+                nodes = self._get_neighbour_node(
+                    curr_node, neighbor_nodes, max_tokens=size, after=False
+                )
             else:
                 nodes = [curr_node]
-                
+
             text_chunk = "\n".join([node.get_content() for node in nodes])
             print("Len of text chunks", len(nodes), len(text_chunk.split()))
             context_filter = self._filter_context(text_chunk)
             if not context_filter.get("score"):
                 continue
-          
+
             # is_table_qa = context_filter.get("is_table_present", False)
             is_table_qa = False
             seed_questions = self._seed_question(text_chunk, is_table_qa)
@@ -433,21 +451,25 @@ class TestsetGenerator:
             for seed_question in seed_questions:
                 is_valid_question = self._filter_question(seed_question)
                 tries = 1
-                
+
                 while tries < self.max_fixes and not is_valid_question:
-                    nodes = self._get_neighbour_node(nodes[0], neighbor_nodes, max_tokens=500, after=False)
+                    nodes = self._get_neighbour_node(
+                        nodes[0], neighbor_nodes, max_tokens=500, after=False
+                    )
                     text_chunk = "\n".join([node.get_content() for node in nodes])
-                    seed_question = self._rewrite_question(question=seed_question, context=text_chunk)
+                    seed_question = self._rewrite_question(
+                        question=seed_question, context=text_chunk
+                    )
                     print("rewritten question", seed_question)
                     is_valid_question = self._filter_question(seed_question)
                     tries += 1
 
                 if not is_valid_question:
                     continue
-                
+
                 if evolve_type == "multi_context":
                     # Find most similar chunk in same document
-                    #TODO: handle cases where neighbour nodes is null, ie multi context across documents
+                    # TODO: handle cases where neighbour nodes is null, ie multi context across documents
                     # First preference - nodes from same document, second preference - other docs
                     node_embedding = self._embed_nodes([nodes[-1]])
                     neighbor_nodes = self._remove_nodes(neighbor_nodes, nodes)
@@ -467,7 +489,9 @@ class TestsetGenerator:
                             context1=text_chunk,
                             context2=best_neighbor.get_content(),
                         )
-                        text_chunk = "\n".join([text_chunk, best_neighbor.get_content()])
+                        text_chunk = "\n".join(
+                            [text_chunk, best_neighbor.get_content()]
+                        )
                     else:
                         continue
 
@@ -489,13 +513,16 @@ class TestsetGenerator:
                     else:
                         question = self._compress_question(question=question)
 
-                is_valid_question = self._filter_question(question) if evolve_type!="simple" else True
+                is_valid_question = (
+                    self._filter_question(question) if evolve_type != "simple" else True
+                )
                 if evolve_type != "simple":
-                    evolution_elimination = self._evolution_elimination(question1=seed_question,
-                                                                    question2=question)
+                    evolution_elimination = self._evolution_elimination(
+                        question1=seed_question, question2=question
+                    )
                 else:
                     evolution_elimination = None
-                    
+
                 if is_valid_question:
                     # question = self._question_transform(question)
                     context = self._generate_context(question, text_chunk)
@@ -515,11 +542,19 @@ class TestsetGenerator:
 
         return TestDataset(test_data=samples)
 
+    def generate_new(self):
+        ...
+
+    async def agenerate_new(self):
+        ...
+
 
 if __name__ == "__main__":
     from llama_index import SimpleDirectoryReader
 
-    reader = SimpleDirectoryReader("/Users/shahules/belar/experimental/arxiv-papers/", num_files_limit=10)
+    reader = SimpleDirectoryReader(
+        "/Users/shahules/belar/experimental/arxiv-papers/", num_files_limit=10
+    )
     documents = reader.load_data()
     testsetgenerator = TestsetGenerator.from_default(chunk_size=312)
     test_size = 10
