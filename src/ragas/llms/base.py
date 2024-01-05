@@ -9,11 +9,12 @@ from langchain.llms import AzureOpenAI, OpenAI, VertexAI
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import LLMResult
 
+from ragas.llms.prompt import PromptValue
+
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
     from langchain_core.prompts import ChatPromptTemplate
 
-    from ragas.llms.prompt import PromptValue
 
 MULTIPLE_COMPLETION_SUPPORTED = [
     OpenAI,
