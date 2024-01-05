@@ -1,4 +1,3 @@
-import os
 from dataclasses import asdict
 
 from sphinxawesome_theme import ThemeOptions
@@ -21,6 +20,7 @@ html_title = "Ragas"
 html_theme = "sphinxawesome_theme"
 html_static_path = ["_static"]
 html_css_files = ["css/ragas.css"]
+html_js_files = ["js/mendable_chat_bubble.js"]
 html_favicon = "./_static/favicon.ico"
 
 extensions = [
@@ -30,7 +30,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx_design",
     "sphinxawesome_theme.highlighting",
-    "sphinxawesome_theme.docsearch",
+    # "sphinxawesome_theme.docsearch",
     "myst_nb",
 ]
 
@@ -40,9 +40,9 @@ exclude_patterns = ["_build"]
 myst_number_code_blocks = ["typescript"]
 
 # algolia search
-docsearch_app_id = os.getenv("DOCSEARCH_APP_ID")
-docsearch_api_key = os.getenv("DOCSEARCH_API_KEY")
-docsearch_index_name = os.getenv("DOCSEARCH_INDEX_NAME")
+# docsearch_app_id = os.getenv("DOCSEARCH_APP_ID")
+# docsearch_api_key = os.getenv("DOCSEARCH_API_KEY")
+# docsearch_index_name = os.getenv("DOCSEARCH_INDEX_NAME")
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

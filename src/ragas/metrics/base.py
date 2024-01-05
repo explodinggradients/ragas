@@ -8,36 +8,15 @@ from __future__ import annotations
 
 import typing as t
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from math import floor
 
-from datasets import Dataset
-from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
-from tqdm import tqdm
-
-from ragas.embeddings.base import RagasEmbeddings
-from ragas.llms import llm_factory
+from ragas.callbacks import new_group
 
 if t.TYPE_CHECKING:
-    from langchain.callbacks.base import Callbacks
+    from langchain_core.callbacks import Callbacks
 
-    from ragas.llms import RagasLLM
-
-
-def make_batches(total_size: int, batch_size: int) -> list[range]:
-    """
-    Take a total size and batch size and return a list of ranges for the batches
-    """
-    tail = total_size % batch_size
-    num_batches = floor(total_size / batch_size)
-    batches = [
-        range(i, i + batch_size) for i in range(0, batch_size * num_batches, batch_size)
-    ]
-    if tail != 0:
-        batches.append(range(batch_size * num_batches, batch_size * num_batches + tail))
-
-    return batches
+    from ragas.llms import BaseRagasLLM
 
 
 EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg")
@@ -64,53 +43,68 @@ class Metric(ABC):
         """
         ...
 
-    def score(
-        self: t.Self,
-        dataset: Dataset,
-        callbacks: t.Optional[Callbacks] = None,
-    ) -> Dataset:
-        scores = []
-        cm = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(f"ragas_{self.name}", callback_manager=cm) as group:
-            for batch in tqdm(self.get_batches(len(dataset))):
-                score = self._score_batch(dataset.select(batch), callbacks=group)
-                scores.extend(score)
-
-        return dataset.add_column(f"{self.name}", scores)  # type: ignore
-
-    @abstractmethod
-    def _score_batch(
-        selfself: t.Self,
-        dataset: Dataset,
-        callbacks: t.Optional[Callbacks] = None,
-        callback_group_name: str = "batch",
-    ) -> list:
-        ...
-
-    def score_single(
-        self: t.Self,
-        ds_row: dict,
-        callbacks: t.Optional[Callbacks] = None,
-    ) -> float:
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         """
-        Score for a single row of dataset
+        Adapt the metric to a different language.
         """
-        # TODO: validation check if they are string
-
-        ds = Dataset.from_dict({k: [v] for k, v in ds_row.items()})
-        score = self._score_batch(
-            ds, callback_group_name=self.name, callbacks=callbacks
+        raise NotImplementedError(
+            "adapt() is not implemented for {} metric".format(self.name)
         )
 
-        return score[0]
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Save the metric to a path.
+        """
+        raise NotImplementedError(
+            "adapt() is not implemented for {} metric".format(self.name)
+        )
 
-    def get_batches(self, dataset_size: int) -> list[range]:
-        return make_batches(dataset_size, self.batch_size)
+    def score(
+        self: t.Self,
+        row: t.Dict,
+        callbacks: Callbacks = [],
+    ) -> float:
+        rm, group_cm = new_group(
+            self.name, inputs=row, callbacks=callbacks, is_async=False
+        )
+        try:
+            score = self._score(row=row, callbacks=group_cm)
+        except Exception as e:
+            if not group_cm.ended:
+                rm.on_chain_error(e)
+            raise e
+        else:
+            if not group_cm.ended:
+                rm.on_chain_end({"output": score})
+        return score
+
+    @abstractmethod
+    def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
+        ...
+
+    async def ascore(self: t.Self, row: t.Dict, callbacks: Callbacks = []) -> float:
+        rm, group_cm = new_group(
+            self.name, inputs=row, callbacks=callbacks, is_async=True
+        )
+        try:
+            score = await self._ascore(row=row, callbacks=group_cm)
+        except Exception as e:
+            if not group_cm.ended:
+                rm.on_chain_error(e)
+            raise e
+        else:
+            if not group_cm.ended:
+                rm.on_chain_end({"output": score})
+        return score
+
+    @abstractmethod
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        ...
 
 
 @dataclass
 class MetricWithLLM(Metric):
-    llm: RagasLLM = field(default_factory=llm_factory)
+    llm: t.Optional[BaseRagasLLM] = None
 
     def init_model(self):
         """
@@ -118,10 +112,7 @@ class MetricWithLLM(Metric):
         to load all the models
         Also check if the api key is valid for OpenAI and AzureOpenAI
         """
-        if hasattr(self.llm, "validate_api_key"):
-            self.llm.validate_api_key()
-        if hasattr(self, "embeddings"):
-            # since we are using Langchain Embeddings directly, we need to check this
-            if hasattr(self.embeddings, "validate_api_key"):
-                self.embeddings = t.cast(RagasEmbeddings, self.embeddings)
-                self.embeddings.validate_api_key()
+        if self.llm is None:
+            raise ValueError(
+                f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please initantiate a the metric with an LLM to run."  # noqa
+            )

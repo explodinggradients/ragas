@@ -6,6 +6,8 @@
 
 metrics_driven
 metrics/index
+prompts
+prompt_adaptation
 testset_generation
 feedback
 :::

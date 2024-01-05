@@ -7,6 +7,7 @@ from typing import List
 
 import numpy as np
 from langchain.embeddings import AzureOpenAIEmbeddings as BaseAzureOpenAIEmbeddings
+from langchain.embeddings import FastEmbedEmbeddings as BaseFastEmbedEmbeddings
 from langchain.embeddings import OpenAIEmbeddings as BaseOpenAIEmbeddings
 from langchain.schema.embeddings import Embeddings
 from pydantic.dataclasses import dataclass
@@ -17,15 +18,11 @@ from ragas.utils import NO_KEY
 DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
 
 
-class RagasEmbeddings(Embeddings):
-    def validate_api_key(self):
-        """
-        Validates that the api key is set for the Embeddings
-        """
-        pass
+class BaseRagasEmbeddings(Embeddings):
+    ...
 
 
-class OpenAIEmbeddings(BaseOpenAIEmbeddings, RagasEmbeddings):
+class OpenAIEmbeddings(BaseOpenAIEmbeddings, BaseRagasEmbeddings):
     api_key: str = NO_KEY
 
     def __init__(self, api_key: str = NO_KEY):
@@ -47,7 +44,25 @@ class OpenAIEmbeddings(BaseOpenAIEmbeddings, RagasEmbeddings):
                 raise OpenAIKeyNotFound
 
 
-class AzureOpenAIEmbeddings(BaseAzureOpenAIEmbeddings, RagasEmbeddings):
+class FastEmbedEmbeddings(BaseFastEmbedEmbeddings, BaseRagasEmbeddings):
+    """
+    Find the list of supported models at:
+    https://qdrant.github.io/fastembed/examples/Supported_Models/
+    """
+
+    model_name: str = DEFAULT_MODEL_NAME
+    """Model name to use."""
+    cache_folder: t.Optional[str] = None
+    """Path to store models."""
+
+    def validate_api_key(self):
+        """
+        Validates that the api key is set for the Embeddings
+        """
+        pass
+
+
+class AzureOpenAIEmbeddings(BaseAzureOpenAIEmbeddings, BaseRagasEmbeddings):
     azure_endpoint: t.Optional[str] = None
     deployment: t.Optional[str] = None
     api_version: t.Optional[str] = None
@@ -85,7 +100,7 @@ class AzureOpenAIEmbeddings(BaseAzureOpenAIEmbeddings, RagasEmbeddings):
 
 
 @dataclass
-class HuggingfaceEmbeddings(RagasEmbeddings):
+class HuggingfaceEmbeddings(BaseRagasEmbeddings):
     model_name: str = DEFAULT_MODEL_NAME
     """Model name to use."""
     cache_folder: t.Optional[str] = None
@@ -159,6 +174,6 @@ class HuggingfaceEmbeddings(RagasEmbeddings):
         return predictions.tolist()
 
 
-def embedding_factory() -> RagasEmbeddings:
+def embedding_factory() -> BaseRagasEmbeddings:
     openai_embeddings = OpenAIEmbeddings()
     return openai_embeddings

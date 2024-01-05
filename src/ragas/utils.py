@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import json
 import os
-import warnings
 from functools import lru_cache
 
 DEBUG_ENV_VAR = "RAGAS_DEBUG"
@@ -11,21 +9,17 @@ NO_KEY = "no-key"
 
 
 @lru_cache(maxsize=1)
+def get_cache_dir() -> str:
+    "get cache location"
+    DEFAULT_XDG_CACHE_HOME = "~/.cache"
+    xdg_cache = os.getenv("XDG_CACHE_HOME", DEFAULT_XDG_CACHE_HOME)
+    default_ragas_cache = os.path.join(xdg_cache, "ragas")
+    return os.path.expanduser(os.getenv("RAGAS_CACHE_HOME", default_ragas_cache))
+
+
+@lru_cache(maxsize=1)
 def get_debug_mode() -> bool:
     if os.environ.get(DEBUG_ENV_VAR, str(False)).lower() == "true":
         return True
     else:
         return False
-
-
-def load_as_json(text):
-    """
-    validate and return given text as json
-    """
-
-    try:
-        return json.loads(text)
-    except ValueError as e:
-        warnings.warn(f"Invalid json: {e}")
-
-    return {}

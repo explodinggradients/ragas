@@ -16,6 +16,11 @@ except ImportError:
         "Please, install it with `pip install llama_index`."
     )
 
+try:
+    from pydantic.v1 import ValidationError
+except ImportError:
+    from pydantic import ValidationError
+
 import numpy as np
 import numpy.testing as npt
 import pandas as pd
@@ -27,6 +32,7 @@ from numpy.random import default_rng
 from tqdm import tqdm
 
 from ragas.llms import llm_factory
+from ragas.llms.json_load import load_as_json
 from ragas.testset.prompts import (
     ANSWER_FORMULATE,
     COMPRESS_QUESTION,
@@ -44,10 +50,9 @@ from ragas.testset.prompts import (
     TABLE_QA,
 )
 from ragas.testset.utils import load_as_score
-from ragas.utils import load_as_json
 
 if t.TYPE_CHECKING:
-    from ragas.llms.base import RagasLLM
+    from ragas.llms.base import BaseRagasLLM
 
 
 DEFAULT_TEST_DISTRIBUTION = {
@@ -62,6 +67,8 @@ question_deep_map = {
     "conditional": "_condition_question",
 }
 
+retry_errors = (ValidationError,)
+
 DataRow = namedtuple(
     "DataRow",
     [
@@ -73,6 +80,8 @@ DataRow = namedtuple(
         "evolution_elimination",
     ],
 )
+
+Proposal = namedtuple("Proposal", ["question", "text_chunk"])
 
 
 @dataclass
@@ -134,8 +143,8 @@ class TestsetGenerator:
 
     def __init__(
         self,
-        generator_llm: RagasLLM,
-        critic_llm: RagasLLM,
+        generator_llm: BaseRagasLLM,
+        critic_llm: BaseRagasLLM,
         embeddings_model: Embeddings,
         testset_distribution: t.Optional[t.Dict[str, float]] = None,
         chat_qa: float = 0.0,
@@ -206,7 +215,7 @@ class TestsetGenerator:
         """
         human_prompt = SCORE_CONTEXT.format(context=context)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = self.critic_llm.generate(prompts=[prompt])
+        results = self.critic_llm.generate_text_with_hmpt(prompts=[prompt])
         output = results.generations[0][0].text.strip()
         output = load_as_json(output)
         output.update({"score": output.get("score", 0) >= self.threshold})
@@ -231,19 +240,14 @@ class TestsetGenerator:
             human_prompt = SEED_QUESTION.format(demonstration=demo, context=context)
 
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = self.generator_llm.generate(prompts=[prompt])
-        results = results.generations[0][0].text
-        if is_table_present:
-            return [results]
-        else:
-            results = load_as_json(results)
-            return [v for v in results.values()]
+        results = self.generator_llm.generate_text_with_hmpt(prompts=[prompt])
+        return results.generations[0][0].text.strip()
 
     def _filter_question(self, question: str) -> bool:
         human_prompt = FILTER_QUESTION.format(question=question)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
 
-        results = self.critic_llm.generate(prompts=[prompt])
+        results = self.critic_llm.generate_text_with_hmpt(prompts=[prompt])
         results = results.generations[0][0].text.strip()
         json_results = load_as_json(results)
         print(json_results)
@@ -281,7 +285,7 @@ class TestsetGenerator:
             question=question, context1=context1, context2=context2
         )
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = self.generator_llm.generate(prompts=[prompt])
+        results = self.generator_llm.generate_text_with_hmpt(prompts=[prompt])
         return results.generations[0][0].text.strip()
 
     def _compress_question(self, question: str) -> str:
@@ -293,13 +297,13 @@ class TestsetGenerator:
     def _question_transformation(self, prompt, question: str) -> str:
         human_prompt = prompt.format(question=question)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = self.generator_llm.generate(prompts=[prompt])
+        results = self.generator_llm.generate_text_with_hmpt(prompts=[prompt])
         return results.generations[0][0].text.strip()
 
     def _qc_template(self, prompt, question, context) -> str:
         human_prompt = prompt.format(question=question, context=context)
         prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = self.generator_llm.generate(prompts=[prompt])
+        results = self.generator_llm.generate_text_with_hmpt(prompts=[prompt])
         return results.generations[0][0].text.strip()
 
     def _generate_answer(self, question: str, context: t.List[str]) -> t.List[str]:
@@ -376,6 +380,70 @@ class TestsetGenerator:
 
         return embeddings
 
+    def _make_proposal(
+        self, cur_node: BaseNode, neighbor_nodes: t.List[BaseNode], evolve_type: str
+    ) -> t.Union[Proposal, None]:
+        # Append multiple nodes randomly to remove chunking bias
+        size = self.rng.integers(1, 3)
+        nodes = (
+            self._get_neighbour_node(cur_node, neighbor_nodes)
+            if size > 1 and evolve_type != "multi_context"
+            else [cur_node]
+        )
+
+        text_chunk = " ".join([node.get_content() for node in nodes])
+        score = self._filter_context(text_chunk)
+        if not score:
+            return None
+        seed_question = self._seed_question(text_chunk)
+        is_valid_question = self._filter_question(seed_question)
+        if not is_valid_question:
+            return None
+
+        if evolve_type == "multi_context":
+            # Find most similar chunk in same document
+            node_embedding = self._embed_nodes([nodes[-1]])
+            neighbor_nodes = self._remove_nodes(neighbor_nodes, nodes)
+            neighbor_emb = self._embed_nodes(neighbor_nodes)
+
+            _, indices = get_top_k_embeddings(
+                list(node_embedding.values())[0],
+                list(neighbor_emb.values()),
+                similarity_cutoff=self.threshold / 10,
+            )
+            if indices:
+                # type cast indices from list[Any] to list[int]
+                indices = t.cast(t.List[int], indices)
+                best_neighbor = neighbor_nodes[indices[0]]
+                question = self._multicontext_question(
+                    question=seed_question,
+                    context1=text_chunk,
+                    context2=best_neighbor.get_content(),
+                )
+                text_chunk = "\n".join([text_chunk, best_neighbor.get_content()])
+            else:
+                return None
+
+        # for reasoning and conditional modes, evolve question with the
+        # functions from question_deep_map
+        else:
+            evolve_fun = question_deep_map.get(evolve_type)
+            question = (
+                getattr(self, evolve_fun)(seed_question, text_chunk)
+                if evolve_fun
+                else seed_question
+            )
+
+        # compress question or convert into conversational questions
+        if evolve_type != "simple":
+            prob = self.rng.uniform(0, 1)
+            if self.chat_qa and prob <= self.chat_qa:
+                question = self._conversational_question(question=question)
+            else:
+                question = self._compress_question(question=question)
+
+        return Proposal(question=question, text_chunk=text_chunk)
+
     def generate(
         self,
         documents: t.List[LlamaindexDocument] | t.List[LangchainDocument],
@@ -424,61 +492,30 @@ class TestsetGenerator:
 
             neighbor_nodes = doc_nodes_map[curr_node.metadata["file_name"]]
 
-            # Append multiple nodes randomly to remove chunking bias
-            if len(curr_node.get_content().split()) < self.chunk_size:
-                size = self.chunk_size - len(curr_node.get_content().split())
-                nodes = self._get_neighbour_node(
-                    curr_node, neighbor_nodes, max_tokens=size, after=False
-                )
-            else:
-                nodes = [curr_node]
+            proposal = None
+            try:
+                proposal = self._make_proposal(curr_node, neighbor_nodes, evolve_type)
+            except Exception as e:
+                err_cause = e.__cause__
+                if not isinstance(err_cause, retry_errors):
+                    raise e
 
-            text_chunk = "\n".join([node.get_content() for node in nodes])
-            print("Len of text chunks", len(nodes), len(text_chunk.split()))
-            context_filter = self._filter_context(text_chunk)
-            if not context_filter.get("score"):
+            if proposal is None:
                 continue
+            question = proposal.question
+            text_chunk = proposal.text_chunk
 
-            # is_table_qa = context_filter.get("is_table_present", False)
-            is_table_qa = False
-            seed_questions = self._seed_question(text_chunk, is_table_qa)
-            evolve_type = (
-                "simple"
-                if ((evolve_type == "multi_context") and (is_table_qa))
-                else evolve_type
-            )
-            print("seed question", seed_questions)
-            for seed_question in seed_questions:
-                is_valid_question = self._filter_question(seed_question)
-                tries = 1
-
-                while tries < self.max_fixes and not is_valid_question:
-                    nodes = self._get_neighbour_node(
-                        nodes[0], neighbor_nodes, max_tokens=500, after=False
-                    )
-                    text_chunk = "\n".join([node.get_content() for node in nodes])
-                    seed_question = self._rewrite_question(
-                        question=seed_question, context=text_chunk
-                    )
-                    print("rewritten question", seed_question)
-                    is_valid_question = self._filter_question(seed_question)
-                    tries += 1
-
-                if not is_valid_question:
-                    continue
-
-                if evolve_type == "multi_context":
-                    # Find most similar chunk in same document
-                    # TODO: handle cases where neighbour nodes is null, ie multi context across documents
-                    # First preference - nodes from same document, second preference - other docs
-                    node_embedding = self._embed_nodes([nodes[-1]])
-                    neighbor_nodes = self._remove_nodes(neighbor_nodes, nodes)
-                    neighbor_emb = self._embed_nodes(neighbor_nodes)
-
-                    _, indices = get_top_k_embeddings(
-                        list(node_embedding.values())[0],
-                        list(neighbor_emb.values()),
-                        similarity_cutoff=self.threshold / 10,
+            is_valid_question = self._filter_question(question)
+            if is_valid_question:
+                context = self._generate_context(question, text_chunk)
+                is_conv = len(context) > 1
+                answer = self._generate_answer(question, context)
+                for i, (qstn, ctx, ans) in enumerate(
+                    zip(question.split("\n"), context, answer)
+                ):
+                    episode_done = False if is_conv and i == 0 else True
+                    samples.append(
+                        DataRow(qstn, [ctx], [ans], evolve_type, episode_done)
                     )
                     if indices:
                         # type cast indices from list[Any] to list[int]

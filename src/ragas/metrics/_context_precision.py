@@ -1,39 +1,56 @@
 from __future__ import annotations
 
+import logging
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import Dataset
-from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
+from ragas.llms.json_load import json_loader
+from ragas.llms.prompt import Prompt, PromptValue
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.utils import load_as_json
 
 if t.TYPE_CHECKING:
-    from langchain.callbacks.base import Callbacks
+    from langchain_core.callbacks import Callbacks
 
-CONTEXT_PRECISION = HumanMessagePromptTemplate.from_template(
-    """\
-Verify if the information in the given context is useful in answering the question.
+logger = logging.getLogger(__name__)
 
-question: What are the health benefits of green tea?
-context: 
-This article explores the rich history of tea cultivation in China, tracing its roots back to the ancient dynasties. It discusses how different regions have developed their unique tea varieties and brewing techniques. The article also delves into the cultural significance of tea in Chinese society and how it has become a symbol of hospitality and relaxation.
-verification:
-{{"reason":"The context, while informative about the history and cultural significance of tea in China, does not provide specific information about the health benefits of green tea. Thus, it is not useful for answering the question about health benefits.", "verdict":"No"}}
-
-question: How does photosynthesis work in plants?
-context:
-Photosynthesis in plants is a complex process involving multiple steps. This paper details how chlorophyll within the chloroplasts absorbs sunlight, which then drives the chemical reaction converting carbon dioxide and water into glucose and oxygen. It explains the role of light and dark reactions and how ATP and NADPH are produced during these processes.
-verification:
-{{"reason":"This context is extremely relevant and useful for answering the question. It directly addresses the mechanisms of photosynthesis, explaining the key components and processes involved.", "verdict":"Yes"}}
-
-question:{question}
-context:
-{context}
-verification:"""  # noqa: E501
+CONTEXT_PRECISION = Prompt(
+    name="context_precision",
+    instruction="""Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "1" if useful and "0" if not. """,
+    examples=[
+        {
+            "question": """What can you tell me about albert Albert Einstein?""",
+            "context": """Albert Einstein (14 March 1879 – 18 April 1955) was a German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time. Best known for developing the theory of relativity, he also made important contributions to quantum mechanics, and was thus a central figure in the revolutionary reshaping of the scientific understanding of nature that modern physics accomplished in the first decades of the twentieth century. His mass–energy equivalence formula E = mc2, which arises from relativity theory, has been called "the world's most famous equation". He received the 1921 Nobel Prize in Physics "for his services to theoretical physics, and especially for his discovery of the law of the photoelectric effect", a pivotal step in the development of quantum theory. His work is also known for its influence on the philosophy of science. In a 1999 poll of 130 leading physicists worldwide by the British journal Physics World, Einstein was ranked the greatest physicist of all time. His intellectual achievements and originality have made Einstein synonymous with genius.""",
+            "answer": """Albert Einstein born in 14 March 1879 was German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time. He received the 1921 Nobel Prize in Physics for his services to theoretical physics. He published 4 papers in 1905. Einstein moved to Switzerland in 1895""",
+            "verification": {
+                "reason": "The provided context was indeed useful in arriving at the given answer. The context includes key information about Albert Einstein's life and contributions, which are reflected in the answer.",
+                "Verdict": "1",
+            },
+        },
+        {
+            "question": """who won 2020 icc world cup?""",
+            "context": """Who won the 2022 ICC Men's T20 World Cup?""",
+            "answer": """England""",
+            "verification": {
+                "reason": "the context was useful in clarifying the situation regarding the 2020 ICC World Cup and indicating that England was the winner of the tournament that was intended to be held in 2020 but actually took place in 2022.",
+                "verdict": "1",
+            },
+        },
+        {
+            "question": """What is the tallest mountain in the world?""",
+            "context": """The Andes is the longest continental mountain range in the world, located in South America. It stretches across seven countries and features many of the highest peaks in the Western Hemisphere. The range is known for its diverse ecosystems, including the high-altitude Andean Plateau and the Amazon rainforest.""",
+            "answer": """Mount Everest.""",
+            "verification": {
+                "reason": "the provided context discusses the Andes mountain range, which, while impressive, does not include Mount Everest or directly relate to the question about the world's tallest mountain.",
+                "verdict": "0",
+            },
+        },
+    ],
+    input_keys=["question", "context", "answer"],
+    output_key="verification",
+    output_type="json",
 )
 
 
@@ -46,71 +63,110 @@ class ContextPrecision(MetricWithLLM):
     Attributes
     ----------
     name : str
-    batch_size : int
-        Batch size for openai completion.
+    evaluation_mode: EvaluationMode
+    context_precision_prompt: Prompt
     """
 
     name: str = "context_precision"  # type: ignore
-    evaluation_mode: EvaluationMode = EvaluationMode.qc  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
+    context_precision_prompt: Prompt = field(default_factory=lambda: CONTEXT_PRECISION)
     batch_size: int = 15
 
-    def _score_batch(
-        self: t.Self,
-        dataset: Dataset,
-        callbacks: t.Optional[Callbacks] = None,
-        callback_group_name: str = "batch",
-    ) -> list:
-        prompts = []
-        questions, contexts = dataset["question"], dataset["contexts"]
-
-        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(
-            callback_group_name, callback_manager=cb
-        ) as batch_group:
-            for qstn, ctx in zip(questions, contexts):
-                human_prompts = [
-                    ChatPromptTemplate.from_messages(
-                        [CONTEXT_PRECISION.format(question=qstn, context=c)]
-                    )
-                    for c in ctx
-                ]
-
-                prompts.extend(human_prompts)
-
-            responses: list[list[str]] = []
-            results = self.llm.generate(
-                prompts,
-                n=1,
-                callbacks=batch_group,
+    def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:
+        answer = "ground_truths"
+        if answer not in row.keys():
+            logger.warning(
+                "Using 'context_precision' without ground truth will be soon depreciated. Use 'context_utilization' instead"
             )
-            responses = [[i.text for i in r] for r in results.generations]
-            context_lens = [len(ctx) for ctx in contexts]
-            context_lens.insert(0, 0)
-            context_lens = np.cumsum(context_lens)
-            grouped_responses = [
-                responses[start:end]
-                for start, end in zip(context_lens[:-1], context_lens[1:])
+            answer = "answer"
+
+        return row["question"], row["contexts"], row[answer]
+
+    def _context_precision_prompt(self, row: t.Dict) -> t.List[PromptValue]:
+        question, contexts, answer = self._get_row_attributes(row)
+        return [
+            self.context_precision_prompt.format(
+                question=question, context=c, answer=answer
+            )
+            for c in contexts
+        ]
+
+    def _calculate_average_precision(self, json_responses: t.List[t.Dict]) -> float:
+        score = np.nan
+        verdict_list = [
+            int("1" == resp.get("verdict", "0").strip())
+            if resp.get("verdict")
+            else np.nan
+            for resp in json_responses
+        ]
+        denominator = sum(verdict_list) + 1e-10
+        numerator = sum(
+            [
+                (sum(verdict_list[: i + 1]) / (i + 1)) * verdict_list[i]
+                for i in range(len(verdict_list))
             ]
-            scores = []
+        )
+        score = numerator / denominator
+        return score
 
-            for response in grouped_responses:
-                response = [load_as_json(item) for item in sum(response, [])]
-                response = [
-                    int("yes" in resp.get("verdict", " ").lower())
-                    if resp.get("verdict")
-                    else np.nan
-                    for resp in response
-                ]
-                denominator = sum(response) + 1e-10
-                numerator = sum(
-                    [
-                        (sum(response[: i + 1]) / (i + 1)) * response[i]
-                        for i in range(len(response))
-                    ]
-                )
-                scores.append(numerator / denominator)
+    def _score(self, row: t.Dict, callbacks: Callbacks = []) -> float:
+        assert self.llm is not None, "LLM is not set"
 
-        return scores
+        human_prompts = self._context_precision_prompt(row)
+        responses: t.List[str] = []
+        for hp in human_prompts:
+            result = self.llm.generate_text(
+                hp,
+                n=1,
+                callbacks=callbacks,
+            )
+            responses.append(result.generations[0][0].text)
+
+        json_responses = [json_loader.safe_load(item, self.llm) for item in responses]
+        score = self._calculate_average_precision(json_responses)
+        return score
+
+    async def _ascore(
+        self: t.Self,
+        row: t.Dict,
+        callbacks: Callbacks = [],
+    ) -> float:
+        assert self.llm is not None, "LLM is not set"
+
+        human_prompts = self._context_precision_prompt(row)
+        responses: t.List[str] = []
+        for hp in human_prompts:
+            result = await self.llm.agenerate_text(
+                hp,
+                n=1,
+                callbacks=callbacks,
+            )
+            responses.append(result.generations[0][0].text)
+
+        json_responses = [json_loader.safe_load(item, self.llm) for item in responses]
+        score = self._calculate_average_precision(json_responses)
+        return score
+
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        assert self.llm is not None, "LLM is not set"
+
+        logging.info(f"Adapting Context Precision to {language}")
+        self.context_precision_prompt = self.context_precision_prompt.adapt(
+            language, self.llm, cache_dir
+        )
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.context_precision_prompt.save(cache_dir)
+
+
+@dataclass
+class ContextUtilization(ContextPrecision):
+    name: str = "context_utilization"
+    evaluation_mode: EvaluationMode = EvaluationMode.qac
+
+    def get_dataset_attributes(self, dataset: Dataset):
+        return dataset["question"], dataset["contexts"], dataset["answer"]
 
 
 context_precision = ContextPrecision()
+context_utilization = ContextUtilization()

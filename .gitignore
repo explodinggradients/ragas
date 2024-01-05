@@ -161,7 +161,7 @@ cython_debug/
 
 # Ragas specific
 ragas/_version.py
-experiments/**
+experiments/
 **/fil-result/
 src/ragas/_version.py
 .python-version
