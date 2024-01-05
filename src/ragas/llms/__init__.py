@@ -1,10 +1,12 @@
-from ragas.llms.base import RagasLLM
-from ragas.llms.langchain import LangchainLLM
-from ragas.llms.llamaindex import LlamaIndexLLM
-from ragas.llms.openai import OpenAI
+from langchain.chat_models import ChatOpenAI
 
-__all__ = ["RagasLLM", "LangchainLLM", "LlamaIndexLLM", "llm_factory", "OpenAI"]
+from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
+
+__all__ = [
+    "BaseRagasLLM",
+    "llm_factory",
+]
 
 
-def llm_factory(model="gpt-3.5-turbo-16k") -> RagasLLM:
-    return OpenAI(model=model)
+def llm_factory(model="gpt-3.5-turbo-16k") -> BaseRagasLLM:
+    return LangchainLLMWrapper(ChatOpenAI(model=model))

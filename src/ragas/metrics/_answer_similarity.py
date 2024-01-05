@@ -5,20 +5,14 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from datasets import Dataset
 
-from ragas.embeddings.base import (
-    HuggingfaceEmbeddings,
-    OpenAIEmbeddings,
-    embedding_factory,
-)
-from ragas.exceptions import OpenAIKeyNotFound
+from ragas.embeddings.base import HuggingfaceEmbeddings, embedding_factory
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
-    from ragas.embeddings.base import RagasEmbeddings
+    from ragas.embeddings.base import BaseRagasEmbeddings
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +42,7 @@ class AnswerSimilarity(MetricWithLLM):
     name: str = "answer_similarity"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.ga  # type: ignore
     batch_size: int = 15
-    embeddings: RagasEmbeddings = field(default_factory=embedding_factory)
+    embeddings: BaseRagasEmbeddings = field(default_factory=embedding_factory)
     is_cross_encoder: bool = False
     threshold: t.Optional[float] = None
 
@@ -64,23 +58,14 @@ class AnswerSimilarity(MetricWithLLM):
     def init_model(self):
         super().init_model()
 
-        if isinstance(self.embeddings, OpenAIEmbeddings):
-            if self.embeddings.openai_api_key == "no-key":
-                raise OpenAIKeyNotFound
-
-    def _score_batch(
-        self: t.Self,
-        dataset: Dataset,
-        callbacks: t.Optional[Callbacks] = None,
-        callback_group_name: str = "batch",
-    ) -> list[float]:
-        ground_truths, answers = dataset["ground_truths"], dataset["answer"]
+    def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
+        ground_truths, answers = row["ground_truths"], row["answer"]
         ground_truths = [item[0] for item in ground_truths]
 
-        if self.is_cross_encoder:
-            assert isinstance(self.embeddings, HuggingfaceEmbeddings)
-            inputs = [list(item) for item in list(zip(ground_truths, answers))]
-            scores = np.array(self.embeddings.predict(inputs))
+        if self.is_cross_encoder and isinstance(self.embeddings, HuggingfaceEmbeddings):
+            raise NotImplementedError(
+                "async score [ascore()] not implemented for HuggingFace embeddings"
+            )
         else:
             embeddings_1 = np.array(self.embeddings.embed_documents(ground_truths))
             embeddings_2 = np.array(self.embeddings.embed_documents(answers))
@@ -91,7 +76,29 @@ class AnswerSimilarity(MetricWithLLM):
         if self.threshold:
             scores = scores >= self.threshold  # type: ignore
 
-        return scores.tolist()
+        return scores.tolist()[0]
+
+    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks = []) -> float:
+        ground_truths, answers = row["ground_truths"], row["answer"]
+        ground_truths = [item[0] for item in ground_truths]
+
+        if self.is_cross_encoder and isinstance(self.embeddings, HuggingfaceEmbeddings):
+            raise NotImplementedError(
+                "async score [ascore()] not implemented for HuggingFace embeddings"
+            )
+        else:
+            embeddings_1 = np.array(
+                await self.embeddings.aembed_documents(ground_truths)
+            )
+            embeddings_2 = np.array(await self.embeddings.aembed_documents(answers))
+            similarity = embeddings_1 @ embeddings_2.T
+            scores = np.diagonal(similarity)
+
+        assert isinstance(scores, np.ndarray), "Expects ndarray"
+        if self.threshold:
+            scores = scores >= self.threshold  # type: ignore
+
+        return scores.tolist()[0]
 
 
 answer_similarity = AnswerSimilarity()

@@ -109,7 +109,7 @@ result = evaluate(query_engine1, metrics, test_questions, test_answers)
 
 ```{code-block}
 :caption: output
-{'ragas_score': 0.3570, 'context_precision': 0.2378, 'context_recall': 0.7159}
+{'context_precision': 0.2378, 'context_recall': 0.7159}
 ```
 
 ## Evaluate Bge embeddings
@@ -124,7 +124,7 @@ result = evaluate(query_engine2, metrics, test_questions, test_answers)
 
 ```{code-block}
 :caption: output
-{'ragas_score': 0.3883, 'context_precision': 0.2655, 'context_recall': 0.7227}
+{'context_precision': 0.2655, 'context_recall': 0.7227}
 
 ```
 

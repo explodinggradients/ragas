@@ -5,18 +5,17 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from datasets import Dataset
-from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
 
+from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.utils import json_loader
 
 logger = logging.getLogger(__name__)
 
 if t.TYPE_CHECKING:
-    from langchain.callbacks.base import Callbacks
+    from langchain_core.callbacks import Callbacks
+    from langchain_core.outputs import LLMResult
 
 CORRECTNESS_PROMPT = Prompt(
     name="answer_correctness",
@@ -26,25 +25,41 @@ CORRECTNESS_PROMPT = Prompt(
             "question": """What powers the sun and what is its primary function?""",
             "answer": """The sun is powered by nuclear fission, similar to nuclear reactors on Earth, and its primary function is to provide light to the solar system.""",
             "ground_truth": """The sun is actually powered by nuclear fusion, not fission. In its core, hydrogen atoms fuse to form helium, releasing a tremendous amount of energy. This energy is what lights up the sun and provides heat and light, essential for life on Earth. The sun's light also plays a critical role in Earth's climate system and helps to drive the weather and ocean currents.""",
-            "Extracted statements": """[
-            {
-                "statements that are present in both the answer and the ground truth": ["The sun's primary function is to provide light"],
-                "statements present in the answer but not found in the ground truth": ["The sun is powered by nuclear fission", "similar to nuclear reactors on Earth"],
-                "relevant statements found in the ground truth but omitted in the answer": ["The sun is powered by nuclear fusion, not fission", "In its core, hydrogen atoms fuse to form helium, releasing a tremendous amount of energy", "This energy provides heat and light, essential for life on Earth", "The sun's light plays a critical role in Earth's climate system", "The sun helps to drive the weather and ocean currents"]
-            }]
-            """,
+            "Extracted statements": [
+                {
+                    "statements that are present in both the answer and the ground truth": [
+                        "The sun's primary function is to provide light"
+                    ],
+                    "statements present in the answer but not found in the ground truth": [
+                        "The sun is powered by nuclear fission",
+                        "similar to nuclear reactors on Earth",
+                    ],
+                    "relevant statements found in the ground truth but omitted in the answer": [
+                        "The sun is powered by nuclear fusion, not fission",
+                        "In its core, hydrogen atoms fuse to form helium, releasing a tremendous amount of energy",
+                        "This energy provides heat and light, essential for life on Earth",
+                        "The sun's light plays a critical role in Earth's climate system",
+                        "The sun helps to drive the weather and ocean currents",
+                    ],
+                }
+            ],
         },
         {
             "question": """What is the boiling point of water?""",
             "answer": """The boiling point of water is 100 degrees Celsius at sea level.""",
             "ground_truth": """The boiling point of water is 100 degrees Celsius (212 degrees Fahrenheit) at sea level, but it can change with altitude.""",
-            "Extracted statements": """[
-            {
-                "statements that are present in both the answer and the ground truth": ["The boiling point of water is 100 degrees Celsius at sea level"],
-                "statements present in the answer but not found in the ground truth": [],
-                "relevant statements found in the ground truth but omitted in the answer": ["The boiling point can change with altitude", "The boiling point of water is 212 degrees Fahrenheit at sea level"]
-            }]
-            """,
+            "Extracted statements": [
+                {
+                    "statements that are present in both the answer and the ground truth": [
+                        "The boiling point of water is 100 degrees Celsius at sea level"
+                    ],
+                    "statements present in the answer but not found in the ground truth": [],
+                    "relevant statements found in the ground truth but omitted in the answer": [
+                        "The boiling point can change with altitude",
+                        "The boiling point of water is 212 degrees Fahrenheit at sea level",
+                    ],
+                }
+            ],
         },
     ],
     input_keys=["question", "answer", "ground_truth"],
@@ -95,7 +110,86 @@ class AnswerCorrectness(MetricWithLLM):
                 llm=self.llm, batch_size=self.batch_size
             )
 
+    def _compute_statement_presence(self, result: LLMResult) -> float:
+        assert self.llm is not None, "LLM must be set"
+
+        key_map = {
+            "TP": "statements that are present in both the answer and the ground truth",
+            "FP": "statements present in the answer but not found in the ground truth",
+            "FN": "relevant statements found in the ground truth but omitted in the answer",  # noqa: E501
+        }
+        outputs = result.generations[0]
+
+        prediction = json_loader.safe_load(outputs[0].text, self.llm)
+        prediction = prediction if isinstance(prediction, list) else [prediction]
+        if prediction:
+            prediction = [
+                item.get(key_map[k], np.nan)
+                for item in prediction
+                for k in key_map.keys()
+            ]
+            tp, fp, fn = [
+                len(item) if isinstance(item, list) else np.nan for item in prediction
+            ]
+            if any([np.isnan(i) for i in [tp, fp, fn]]):
+                score = np.nan
+            else:
+                score = tp / (tp + 0.5 * (fp + fn)) if tp > 0 else 0
+        else:
+            score = np.nan
+
+        return score
+
+    def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
+        assert self.llm is not None, "LLM must be set"
+        q, a, g = row["question"], row["answer"], row["ground_truths"][0]
+        p_value = self.correctness_prompt.format(question=q, ground_truth=g, answer=a)
+        is_statement_present = self.llm.generate_text(p_value, callbacks=callbacks)
+
+        f1_score = self._compute_statement_presence(is_statement_present)
+
+        if self.weights[1] == 0:
+            similarity_score = 0
+        else:
+            similarity_score = self.answer_similarity.score(row, callbacks=callbacks)  # type: ignore
+
+        score = np.average(
+            [f1_score, similarity_score],
+            weights=self.weights,
+        )
+
+        return float(score)
+
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        assert self.llm is not None, "LLM must be set"
+
+        q, a, g = row["question"], row["answer"], row["ground_truths"][0]
+        p_value = self.correctness_prompt.format(question=q, ground_truth=g, answer=a)
+        is_statement_present = await self.llm.agenerate_text(
+            p_value, callbacks=callbacks
+        )
+
+        f1_score = self._compute_statement_presence(is_statement_present)
+
+        if self.weights[1] == 0:
+            similarity_score = 0
+        else:
+            assert self.answer_similarity is not None, "AnswerSimilarity must be set"
+
+            similarity_score = await self.answer_similarity.ascore(
+                row, callbacks=callbacks
+            )
+
+        score = np.average(
+            [f1_score, similarity_score],
+            weights=self.weights,
+        )
+
+        return float(score)
+
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        assert self.llm is not None, "llm must be set to compute score"
+
         logger.info(f"Adapting AnswerCorrectness metric to {language}")
         self.correctness_prompt = self.correctness_prompt.adapt(
             language, self.llm, cache_dir
@@ -103,73 +197,6 @@ class AnswerCorrectness(MetricWithLLM):
 
     def save(self, cache_dir: t.Optional[str] = None) -> None:
         self.correctness_prompt.save(cache_dir)
-
-    def _score_batch(
-        self: t.Self,
-        dataset: Dataset,
-        callbacks: t.Optional[Callbacks] = None,
-        callback_group_name: str = "batch",
-    ) -> list[float]:
-        question, answer, ground_truths = (
-            dataset["question"],
-            dataset["answer"],
-            dataset["ground_truths"],
-        )
-        prompts = []
-
-        cb = CallbackManager.configure(inheritable_callbacks=callbacks)
-        with trace_as_chain_group(
-            callback_group_name, callback_manager=cb
-        ) as batch_group:
-            for q, a, g in zip(question, answer, ground_truths):
-                prompts.append(
-                    self.correctness_prompt.format(
-                        question=q, ground_truth=g[0], answer=a
-                    )
-                )
-
-            result = self.llm.generate(prompts, callbacks=batch_group)
-            outputs = result.generations
-            key_map = {
-                "TP": "statements that are present in both the answer and the ground truth",
-                "FP": "statements present in the answer but not found in the ground truth",
-                "FN": "relevant statements found in the ground truth but omitted in the answer",  # noqa: E501
-            }
-
-            f1_score = []
-            for prediction in outputs:
-                prediction = json_loader.safe_load(prediction[0].text, self.llm)
-                prediction = (
-                    prediction if isinstance(prediction, list) else [prediction]
-                )
-                if prediction:
-                    prediction = [
-                        item.get(key_map[k], np.nan)
-                        for item in prediction
-                        for k in key_map.keys()
-                    ]
-                    tp, fp, fn = [
-                        len(item) if isinstance(item, list) else np.nan
-                        for item in prediction
-                    ]
-                    score = tp / (tp + 0.5 * (fp + fn))
-                else:
-                    score = np.nan
-
-                f1_score.append(score)
-
-            if self.weights[1] == 0:
-                similarity_scores = np.zeros(len(f1_score))
-            else:
-                similarity_scores = self.answer_similarity._score_batch(dataset, callbacks=batch_group)  # type: ignore
-            scores_stacked = np.vstack([f1_score, similarity_scores])
-            scores = np.average(
-                scores_stacked,
-                axis=0,
-                weights=self.weights,
-            )
-
-        return scores.tolist()
 
 
 answer_correctness = AnswerCorrectness()
