@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 import typing as t
+import uuid
 from dataclasses import asdict, dataclass
 from functools import lru_cache, wraps
 
 import requests
+from appdirs import user_data_dir
 
 from ragas.utils import get_debug_mode
 
@@ -21,6 +24,7 @@ logger = logging.getLogger(__name__)
 USAGE_TRACKING_URL = "https://t.explodinggradients.com"
 RAGAS_DO_NOT_TRACK = "RAGAS_DO_NOT_TRACK"
 RAGAS_DEBUG_TRACKING = "__RAGAS_DEBUG_TRACKING"
+USERID_PATH = user_data_dir("ragas")
 USAGE_REQUESTS_TIMEOUT_SEC = 1
 
 
@@ -57,6 +61,19 @@ def silent(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
     return wrapper
 
 
+def add_userid(payload: dict[str, t.Any]) -> dict[str, t.Any]:
+    uuid_filepath = os.path.join(USERID_PATH, "uuid.json")
+    if os.path.exists(uuid_filepath):
+        user_id = json.load(open(uuid_filepath))["userid"]
+    else:
+        os.mkdir(USERID_PATH)
+        user_id = uuid.uuid4().hex
+        with open(uuid_filepath, "w") as f:
+            json.dump({"userid": user_id}, f)
+    payload["userid"] = user_id
+    return payload
+
+
 @dataclass
 class BaseEvent:
     event_type: str
@@ -75,6 +92,7 @@ def track(event_properties: BaseEvent):
         return
 
     payload = asdict(event_properties)
+    payload = add_userid(payload)
 
     if _usage_event_debugging():
         # For internal debugging purpose
