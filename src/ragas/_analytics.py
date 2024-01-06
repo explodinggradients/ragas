@@ -5,11 +5,13 @@ import logging
 import os
 import typing as t
 import uuid
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from functools import lru_cache, wraps
 
 import requests
 from appdirs import user_data_dir
+from langchain_core.pydantic_v1 import BaseModel
+from pydantic import Field
 
 from ragas.utils import get_debug_mode
 
@@ -61,7 +63,7 @@ def silent(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
     return wrapper
 
 
-def add_userid(payload: dict[str, t.Any]) -> dict[str, t.Any]:
+def add_userid() -> str:
     uuid_filepath = os.path.join(USERID_PATH, "uuid.json")
     if os.path.exists(uuid_filepath):
         user_id = json.load(open(uuid_filepath))["userid"]
@@ -70,16 +72,14 @@ def add_userid(payload: dict[str, t.Any]) -> dict[str, t.Any]:
         user_id = uuid.uuid4().hex
         with open(uuid_filepath, "w") as f:
             json.dump({"userid": user_id}, f)
-    payload["userid"] = user_id
-    return payload
+    return user_id
 
 
-@dataclass
-class BaseEvent:
+class BaseEvent(BaseModel):
     event_type: str
+    user_id: str = Field(default_factory=lambda: add_userid)
 
 
-@dataclass
 class EvaluationEvent(BaseEvent):
     metrics: list[str]
     evaluation_mode: str
@@ -92,7 +92,6 @@ def track(event_properties: BaseEvent):
         return
 
     payload = asdict(event_properties)
-    payload = add_userid(payload)
 
     if _usage_event_debugging():
         # For internal debugging purpose
