@@ -10,7 +10,7 @@ def adapt(
     metrics: t.List[MetricWithLLM],
     language: str,
     llm: t.Optional[BaseRagasLLM] = None,
-    cache_dir: str | None = None,
+    cache_dir: t.Optional[str] = None,
 ) -> None:
     """
     Adapt the metric to a different language.
