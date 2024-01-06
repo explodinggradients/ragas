@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 import warnings
+import logging
 from collections import defaultdict, namedtuple
 from dataclasses import dataclass
 
@@ -48,6 +49,7 @@ from ragas.llms.json_load import load_as_json
 if t.TYPE_CHECKING:
     from ragas.llms.base import BaseRagasLLM
 
+logger = logging.getLogger(__name__)
 
 DEFAULT_TEST_DISTRIBUTION = {
     "simple": 0.4,
@@ -245,7 +247,7 @@ class TestsetGenerator:
         results = self.critic_llm.generate_text_with_hmpt(prompts=[prompt])
         results = results.generations[0][0].text.strip()
         json_results = load_as_json(results)
-        print(json_results)
+        logger.debug(json_results)
         return json_results.get("verdict") != "No"
 
     def _rewrite_question(self, question: str, context: str) -> str:
@@ -433,7 +435,7 @@ class TestsetGenerator:
                 nodes = [curr_node]
 
             text_chunk = "\n".join([node.get_content() for node in nodes])
-            print("Len of text chunks", len(nodes), len(text_chunk.split()))
+            logger.debug("Len of text chunks", len(nodes), len(text_chunk.split()))
             context_filter = self._filter_context(text_chunk)
             if not context_filter.get("score"):
                 continue
@@ -446,7 +448,7 @@ class TestsetGenerator:
                 if ((evolve_type == "multi_context") and (is_table_qa))
                 else evolve_type
             )
-            print("seed question", seed_questions)
+            logger.debug("seed question", seed_questions)
             for seed_question in seed_questions:
                 is_valid_question = self._filter_question(seed_question)
                 tries = 1
@@ -459,7 +461,7 @@ class TestsetGenerator:
                     seed_question = self._rewrite_question(
                         question=seed_question, context=text_chunk
                     )
-                    print("rewritten question", seed_question)
+                    logger.debug("rewritten question", seed_question)
                     is_valid_question = self._filter_question(seed_question)
                     tries += 1
 
