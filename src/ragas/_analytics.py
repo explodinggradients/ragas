@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 USAGE_TRACKING_URL = "https://t.explodinggradients.com"
 RAGAS_DO_NOT_TRACK = "RAGAS_DO_NOT_TRACK"
 RAGAS_DEBUG_TRACKING = "__RAGAS_DEBUG_TRACKING"
-USERID_PATH = user_data_dir("ragas")
 USAGE_REQUESTS_TIMEOUT_SEC = 1
+USER_DATA_DIR_NAME = "ragas"
 
 
 @lru_cache(maxsize=1)
@@ -63,12 +63,14 @@ def silent(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
     return wrapper
 
 
-def add_userid() -> str:
-    uuid_filepath = os.path.join(USERID_PATH, "uuid.json")
+@lru_cache(maxsize=1)
+def get_userid() -> str:
+    user_id_path = user_data_dir(USER_DATA_DIR_NAME)
+    uuid_filepath = os.path.join(user_id_path, "uuid.json")
     if os.path.exists(uuid_filepath):
         user_id = json.load(open(uuid_filepath))["userid"]
     else:
-        os.mkdir(USERID_PATH)
+        os.mkdir(user_id_path)
         user_id = "a-" + uuid.uuid4().hex
         with open(uuid_filepath, "w") as f:
             json.dump({"userid": user_id}, f)
@@ -77,7 +79,7 @@ def add_userid() -> str:
 
 class BaseEvent(BaseModel):
     event_type: str
-    user_id: str = Field(default_factory=add_userid)
+    user_id: str = Field(default_factory=get_userid)
 
 
 class EvaluationEvent(BaseEvent):
