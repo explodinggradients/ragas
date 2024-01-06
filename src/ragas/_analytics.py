@@ -69,7 +69,7 @@ def add_userid() -> str:
         user_id = json.load(open(uuid_filepath))["userid"]
     else:
         os.mkdir(USERID_PATH)
-        user_id = uuid.uuid4().hex
+        user_id = "a-" + uuid.uuid4().hex
         with open(uuid_filepath, "w") as f:
             json.dump({"userid": user_id}, f)
     return user_id
