@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 
-from ragas._analytics import EvaluationEvent
-
-
 def test_add_userid():
+    from ragas._analytics import EvaluationEvent
+
     evaluation_event = EvaluationEvent(
         event_type="evaluation", metrics=["harmfulness"], num_rows=1, evaluation_mode=""
     )
@@ -59,7 +58,7 @@ def test_load_userid_from_json_file(tmp_path, monkeypatch):
 
         json.dump({"userid": "test-userid"}, f)
 
-    from ragas._analytics import get_userid, user_data_dir, USER_DATA_DIR_NAME
+    from ragas._analytics import get_userid
 
-    assert user_data_dir(USER_DATA_DIR_NAME) == ""
+    get_userid.cache_clear()
     assert get_userid() == "test-userid"
