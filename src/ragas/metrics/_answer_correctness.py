@@ -110,7 +110,7 @@ class AnswerCorrectness(MetricWithLLM):
                 llm=self.llm, batch_size=self.batch_size
             )
 
-    def _compute_statement_presence(self, result: LLMResult) -> float:
+    def _compute_statement_presence(self, prediction: t.Any) -> float:
         assert self.llm is not None, "LLM must be set"
 
         key_map = {
@@ -118,9 +118,7 @@ class AnswerCorrectness(MetricWithLLM):
             "FP": "statements present in the answer but not found in the ground truth",
             "FN": "relevant statements found in the ground truth but omitted in the answer",  # noqa: E501
         }
-        outputs = result.generations[0]
 
-        prediction = json_loader.safe_load(outputs[0].text, self.llm)
         prediction = prediction if isinstance(prediction, list) else [prediction]
         if prediction:
             prediction = [
@@ -146,7 +144,10 @@ class AnswerCorrectness(MetricWithLLM):
         p_value = self.correctness_prompt.format(question=q, ground_truth=g, answer=a)
         is_statement_present = self.llm.generate_text(p_value, callbacks=callbacks)
 
-        f1_score = self._compute_statement_presence(is_statement_present)
+        prediction = json_loader.safe_load(
+            is_statement_present.generations[0][0].text, self.llm
+        )
+        f1_score = self._compute_statement_presence(prediction)
 
         if self.weights[1] == 0:
             similarity_score = 0
@@ -169,7 +170,10 @@ class AnswerCorrectness(MetricWithLLM):
             p_value, callbacks=callbacks
         )
 
-        f1_score = self._compute_statement_presence(is_statement_present)
+        prediction = await json_loader.asafe_load(
+            is_statement_present.generations[0][0].text, self.llm
+        )
+        f1_score = self._compute_statement_presence(prediction)
 
         if self.weights[1] == 0:
             similarity_score = 0

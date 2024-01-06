@@ -33,7 +33,6 @@ metrics = [
     context_utilization,
     answer_similarity,
 ]
-metrics = [faithfulness]
 
 IGNORE_THREADS = False
 IGNORE_ASYNCIO = False
