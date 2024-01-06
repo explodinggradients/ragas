@@ -81,7 +81,7 @@ class BaseEvent(BaseModel):
 
 
 class EvaluationEvent(BaseEvent):
-    metrics: list[str]
+    metrics: t.List[str]
     evaluation_mode: str
     num_rows: int
 
