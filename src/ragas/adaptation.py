@@ -2,7 +2,8 @@ import typing as t
 
 from langchain_core.language_models import BaseLanguageModel
 
-from ragas.llms import BaseRagasLLM, LangchainLLMWrapper, llm_factory
+from ragas.llms import llm_factory
+from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics.base import MetricWithLLM
 
 

@@ -5,7 +5,6 @@ from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 __all__ = [
     "BaseRagasLLM",
     "llm_factory",
-    "LangchainLLMWrapper",
 ]
 
 
