@@ -83,10 +83,6 @@ class AnswerRelevancy(MetricWithLLM):
     def init_model(self):
         super().init_model()
 
-        if isinstance(self.embeddings, OpenAIEmbeddings):
-            if self.embeddings.openai_api_key == "no-key":
-                raise OpenAIKeyNotFound
-
     def calculate_similarity(
         self: t.Self, question: str, generated_questions: list[str]
     ):
