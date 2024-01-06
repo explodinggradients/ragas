@@ -60,5 +60,7 @@ def test_load_userid_from_json_file(tmp_path, monkeypatch):
 
     from ragas._analytics import get_userid
 
+    # clear LRU cache since its created in setup for the above test
     get_userid.cache_clear()
+
     assert get_userid() == "test-userid"
