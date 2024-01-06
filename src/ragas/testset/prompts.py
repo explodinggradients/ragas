@@ -1,6 +1,7 @@
 from langchain.prompts import HumanMessagePromptTemplate
 
-SEED_QUESTION = HumanMessagePromptTemplate.from_template("""
+SEED_QUESTION = HumanMessagePromptTemplate.from_template(
+    """
 Generate two questions from given context satisfying the rules given below:
     2.The question should be framed such that it must be clearly understood without providing context.
     3.The question should be fully answerable from information present in given context.
@@ -211,7 +212,8 @@ Context:
 Output:"""  # noqa: E501
 )
 
-REWRITE_QUESTION = HumanMessagePromptTemplate.from_template("""
+REWRITE_QUESTION = HumanMessagePromptTemplate.from_template(
+    """
 
 Given a context, transform the given question to be clear and standalone by replacing its coreferences with specific details from the context:
 
@@ -235,7 +237,8 @@ What datasets were used for the zero-shot evaluations Exploring Zero-Shot Learni
 Question:{question}
 Context: {context}
 Rewritten question:
-""")
+"""
+)
 
 FILTER_QUESTION = HumanMessagePromptTemplate.from_template(
     """\
@@ -317,7 +320,7 @@ answer:
 
 
 INFORMAL_QUESTION = HumanMessagePromptTemplate.from_template(
-"""\
+    """\
 Rewrite the following question into a casual, conversational form as if it's being asked by someone in an informal setting. 
 Keep the core information request intact, without including any additional details or questions.
 Formal Question: What are the criteria for Objectives and Key Results?
@@ -341,25 +344,37 @@ candidate sentences:\n
 
 
 demonstrations = [
-    {"context":"The Eiffel Tower in Paris was originally intended as a temporary structure, built for the 1889 World's Fair. It was almost dismantled in 1909 but was saved because it was repurposed as a giant radio antenna.",
-     "questions":[
-     {"question_Why": "Why was the Eiffel Tower originally planned to be a temporary structure?"},
-     {"question_Was":"Was the Eiffel Tower originally designed to be a permanent structure?"},
-     {"question_What":"What was the original purpose of the Eiffel Tower when it was built for the 1889 World's Fair?"},
-     {"question_How":"How did the Eiffel Tower avoid being dismantled in 1909?"},
-     {"question_Where":"Where is the Eiffel Tower?"}]     
-    },
-    
     {
-      "context": "Photosynthesis is a process used by plants, algae, and certain bacteria to convert light energy into chemical energy.",
-      "questions": [
-        {"question_Why": "Why do plants perform photosynthesis?"},
-        {"question_Was": "Was photosynthesis discovered in plants, algae, or bacteria first?"},
-        {"question_What": "What converts light energy into chemical energy in photosynthesis?"},
-        {"question_How": "How do plants capture light energy for photosynthesis?"},
-        {"question_Where": "Where in plants does photosynthesis primarily occur?"},
-        {"question_Can": "Can photosynthesis occur in the absence of light?"}
-      ]
+        "context": "The Eiffel Tower in Paris was originally intended as a temporary structure, built for the 1889 World's Fair. It was almost dismantled in 1909 but was saved because it was repurposed as a giant radio antenna.",
+        "questions": [
+            {
+                "question_Why": "Why was the Eiffel Tower originally planned to be a temporary structure?"
+            },
+            {
+                "question_Was": "Was the Eiffel Tower originally designed to be a permanent structure?"
+            },
+            {
+                "question_What": "What was the original purpose of the Eiffel Tower when it was built for the 1889 World's Fair?"
+            },
+            {
+                "question_How": "How did the Eiffel Tower avoid being dismantled in 1909?"
+            },
+            {"question_Where": "Where is the Eiffel Tower?"},
+        ],
     },
-
+    {
+        "context": "Photosynthesis is a process used by plants, algae, and certain bacteria to convert light energy into chemical energy.",
+        "questions": [
+            {"question_Why": "Why do plants perform photosynthesis?"},
+            {
+                "question_Was": "Was photosynthesis discovered in plants, algae, or bacteria first?"
+            },
+            {
+                "question_What": "What converts light energy into chemical energy in photosynthesis?"
+            },
+            {"question_How": "How do plants capture light energy for photosynthesis?"},
+            {"question_Where": "Where in plants does photosynthesis primarily occur?"},
+            {"question_Can": "Can photosynthesis occur in the absence of light?"},
+        ],
+    },
 ]

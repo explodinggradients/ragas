@@ -38,7 +38,9 @@ LONG_FORM_ANSWER_PROMPT = Prompt(
         {
             "question": "Cadmium Chloride is slightly soluble in this chemical, it is also called what?",
             "answer": "alcohol",
-            "statements": {"statements": ["Cadmium Chloride is slightly soluble in alcohol."]},
+            "statements": {
+                "statements": ["Cadmium Chloride is slightly soluble in alcohol."]
+            },
         },
         {
             "question": "Were Hitler and Benito Mussolini of the same nationality?",
@@ -99,7 +101,11 @@ NLI_STATEMENTS_MESSAGE = Prompt(
         {
             "context": """Albert Einstein was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time.""",
             "statements": """statement_1: Nil""",
-            "answer": {"statement_1": "Nil", "reason": "The statement is invalid", "verdict": "-1"},
+            "answer": {
+                "statement_1": "Nil",
+                "reason": "The statement is invalid",
+                "verdict": "-1",
+            },
         },
     ],
     input_keys=["context", "statements"],

@@ -49,7 +49,6 @@ from ragas.testset.prompts import (
     SEED_QUESTION,
     TABLE_QA,
 )
-from ragas.testset.utils import load_as_score
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import BaseRagasLLM
@@ -221,7 +220,9 @@ class TestsetGenerator:
         output.update({"score": output.get("score", 0) >= self.threshold})
         return output
 
-    def _seed_question(self, context: str, is_table_present: bool) -> t.List[str]:
+    def _seed_question(
+        self, context: str, is_table_present: bool = False
+    ) -> t.List[str]:
         if is_table_present:
             human_prompt = TABLE_QA.format(context=context)
         else:
@@ -241,7 +242,12 @@ class TestsetGenerator:
 
         prompt = ChatPromptTemplate.from_messages([human_prompt])
         results = self.generator_llm.generate_text_with_hmpt(prompts=[prompt])
-        return results.generations[0][0].text.strip()
+        results = results.generations[0][0].text
+        if is_table_present:
+            return [results]
+        else:
+            results = load_as_json(results)
+            return [v for v in results.values()]
 
     def _filter_question(self, question: str) -> bool:
         human_prompt = FILTER_QUESTION.format(question=question)

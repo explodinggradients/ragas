@@ -18,8 +18,8 @@ def test_adjacent_nodes():
 
     assert store.get_adjascent(a1) == a2
     assert store.get_adjascent(a2, "prev") == a1
-    assert store.get_adjascent(a2, "next") == None
-    assert store.get_adjascent(b, "prev") == None
+    assert store.get_adjascent(a2, "next") is None
+    assert store.get_adjascent(b, "prev") is None
 
     # raise ValueError if doc not in store
     c = Document(doc_id="c", page_content="c", filename="c")

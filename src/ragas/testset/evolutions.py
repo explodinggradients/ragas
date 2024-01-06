@@ -1,8 +1,11 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+
 from langchain.prompts import ChatPromptTemplate
 
 from ragas.llms import BaseRagasLLM
+from ragas.llms.json_load import load_as_json
+from ragas.llms.prompt import PromptValue
 from ragas.testset.docstore import Document, DocumentStore
 from ragas.testset.prompts import (
     FILTER_QUESTION,
@@ -11,8 +14,6 @@ from ragas.testset.prompts import (
     SEED_QUESTION,
 )
 from ragas.testset.testset_generator import load_as_score
-from ragas.llms.json_load import load_as_json
-from ragas.llms.prompt import PromptValue
 
 
 @dataclass
