@@ -77,7 +77,7 @@ def add_userid() -> str:
 
 class BaseEvent(BaseModel):
     event_type: str
-    user_id: str = Field(default_factory=lambda: add_userid)
+    user_id: str = Field(default_factory=add_userid)
 
 
 class EvaluationEvent(BaseEvent):
