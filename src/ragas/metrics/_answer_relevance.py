@@ -143,7 +143,8 @@ class AnswerRelevancy(MetricWithLLM):
             callbacks=callbacks,
         )
         response = [
-            json_loader.safe_load(r.text, self.llm) for r in result.generations[0]
+            await json_loader.asafe_load(r.text, self.llm)
+            for r in result.generations[0]
         ]
 
         return self._calculate_score(response, row)
