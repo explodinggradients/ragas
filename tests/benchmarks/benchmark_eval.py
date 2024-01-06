@@ -1,5 +1,4 @@
 import time
-import logging
 
 from datasets import DatasetDict, load_dataset
 

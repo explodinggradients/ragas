@@ -12,7 +12,6 @@ from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
-    from langchain_core.outputs import LLMResult
 
     from ragas.llms.prompt import PromptValue
 

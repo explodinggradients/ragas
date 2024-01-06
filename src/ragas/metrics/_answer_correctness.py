@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
-    from langchain_core.outputs import LLMResult
 
 CORRECTNESS_PROMPT = Prompt(
     name="answer_correctness",
