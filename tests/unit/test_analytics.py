@@ -7,8 +7,8 @@ def test_add_userid():
     evaluation_event = EvaluationEvent(
         event_type="evaluation", metrics=["harmfulness"], num_rows=1, evaluation_mode=""
     )
-    payload = evaluation_event.__dict__
-    assert payload.get("user_id") is not None
+    payload = evaluation_event.dict()
+    assert isinstance(payload.get("user_id"), str)
 
 
 def setup_user_id_filepath(tmp_path, monkeypatch):
@@ -32,6 +32,9 @@ def test_write_to_file(tmp_path, monkeypatch):
     assert not userid_filepath.exists()
     from ragas._analytics import get_userid
     import json
+
+    # clear LRU cache since its created in setup for the above test
+    get_userid.cache_clear()
 
     userid = get_userid()
     assert userid_filepath.exists()
