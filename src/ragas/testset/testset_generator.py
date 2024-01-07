@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import typing as t
-import warnings
 import logging
 from collections import defaultdict, namedtuple
 from dataclasses import dataclass
@@ -25,7 +24,7 @@ from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.document import Document as LangchainDocument
 from numpy.random import default_rng
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 
 from ragas.llms import llm_factory
 from ragas.testset.prompts import (
@@ -247,7 +246,7 @@ class TestsetGenerator:
         results = self.critic_llm.generate_text_with_hmpt(prompts=[prompt])
         results = results.generations[0][0].text.strip()
         json_results = load_as_json(results)
-        logger.debug(json_results)
+        logger.debug("%s", json_results)
         return json_results.get("verdict") != "No"
 
     def _rewrite_question(self, question: str, context: str) -> str:
@@ -352,7 +351,7 @@ class TestsetGenerator:
         after: bool = True,
     ) -> t.List[BaseNode]:
         if len(related_nodes) < 2:
-            warnings.warn("No neighbors exists")
+            logging.warn("No neighbors exists")
             return [node]
         idx = related_nodes.index(node) if node in related_nodes else []
         if idx:
@@ -435,7 +434,9 @@ class TestsetGenerator:
                 nodes = [curr_node]
 
             text_chunk = "\n".join([node.get_content() for node in nodes])
-            logger.debug("Len of text chunks", len(nodes), len(text_chunk.split()))
+            logger.debug(
+                "Len of text chunks: %d %d", len(nodes), len(text_chunk.split())
+            )
             context_filter = self._filter_context(text_chunk)
             if not context_filter.get("score"):
                 continue
@@ -448,7 +449,7 @@ class TestsetGenerator:
                 if ((evolve_type == "multi_context") and (is_table_qa))
                 else evolve_type
             )
-            logger.debug("seed question", seed_questions)
+            logger.debug("seed question %s", seed_questions)
             for seed_question in seed_questions:
                 is_valid_question = self._filter_question(seed_question)
                 tries = 1
@@ -461,7 +462,7 @@ class TestsetGenerator:
                     seed_question = self._rewrite_question(
                         question=seed_question, context=text_chunk
                     )
-                    logger.debug("rewritten question", seed_question)
+                    logger.debug("rewritten question %s", seed_question)
                     is_valid_question = self._filter_question(seed_question)
                     tries += 1
 
