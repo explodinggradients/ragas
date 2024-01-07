@@ -22,10 +22,11 @@ logger = logging.getLogger(__name__)
 
 
 USAGE_TRACKING_URL = "https://t.explodinggradients.com"
-RAGAS_DO_NOT_TRACK = "RAGAS_DO_NOT_TRACK"
-RAGAS_DEBUG_TRACKING = "__RAGAS_DEBUG_TRACKING"
 USAGE_REQUESTS_TIMEOUT_SEC = 1
 USER_DATA_DIR_NAME = "ragas"
+# Any chance you chance this also change the variable in our ci.yaml file
+RAGAS_DO_NOT_TRACK = "RAGAS_DO_NOT_TRACK"
+RAGAS_DEBUG_TRACKING = "__RAGAS_DEBUG_TRACKING"
 
 
 @lru_cache(maxsize=1)
@@ -65,15 +66,13 @@ def silent(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
 @lru_cache(maxsize=1)
 @silent
 def get_userid() -> str:
-    user_id_path = user_data_dir(
-        appname=USER_DATA_DIR_NAME
-    )
+    user_id_path = user_data_dir(appname=USER_DATA_DIR_NAME)
     uuid_filepath = os.path.join(user_id_path, "uuid.json")
     if os.path.exists(uuid_filepath):
         user_id = json.load(open(uuid_filepath))["userid"]
     else:
         user_id = "a-" + uuid.uuid4().hex
-        os.mkdir(user_id_path)
+        os.makedirs(user_id_path)
         with open(uuid_filepath, "w") as f:
             json.dump({"userid": user_id}, f)
     return user_id
