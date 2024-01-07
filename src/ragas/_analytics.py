@@ -64,7 +64,9 @@ def silent(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
 @lru_cache(maxsize=1)
 @silent
 def get_userid() -> str:
-    user_id_path = user_data_dir(USER_DATA_DIR_NAME)
+    user_id_path = user_data_dir(
+        appname=USER_DATA_DIR_NAME, appauthor=False, roaming=True
+    )
     uuid_filepath = os.path.join(user_id_path, "uuid.json")
     if os.path.exists(uuid_filepath):
         user_id = json.load(open(uuid_filepath))["userid"]
@@ -93,7 +95,6 @@ def track(event_properties: BaseEvent):
         return
 
     payload = dict(event_properties)
-
     if _usage_event_debugging():
         # For internal debugging purpose
         logger.info("Tracking Payload: %s", payload)
