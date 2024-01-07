@@ -25,6 +25,19 @@ query_space = "large language models"
 documents = loader.load_data(query=query_space, limit=10)
 ```
 
+:::{note}
+Each Document object contains a metadata dictionary, which can be used to store additional information about the document which can be accessed with  `Document.metadata`. Please ensure that the metadata dictionary contains a key called `file_name` as this will be used in the generation process.
+
+An example of how to do this for `SemanticScholarReader` is shown below.
+
+```{code-block} python
+for d in documents:
+    d.metadata["file_name"] = d.metadata["title"]
+
+documents[0].metadata
+```
+:::
+
 At this point, we have a set of documents at our disposal, which will serve as the basis for creating synthetic Question/Context/Answer triplets.
 
 ## Data Generation
