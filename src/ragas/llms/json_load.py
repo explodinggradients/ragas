@@ -82,21 +82,38 @@ class JsonLoader:
                 start, end = self._find_outermost_json(text)
                 return json.loads(text[start:end])
             except ValueError:
-                text = self._fix_to_json(text, llm, callbacks)
+                from ragas.llms.prompt import PromptValue
+
+                results = llm.generate_text(
+                    PromptValue(prompt_str=JSON_PROMPT.format(input=text)),
+                    n=1,
+                    callbacks=callbacks,
+                )
+                text = results.generations[0][0].text
             retry += 1
 
         return {}
 
-    def _fix_to_json(self, text: str, llm: BaseRagasLLM, callbacks: Callbacks):
-        from ragas.llms.prompt import PromptValue
+    async def asafe_load(
+        self, text: str, llm: BaseRagasLLM, callbacks: Callbacks = None
+    ):
+        retry = 0
+        while retry <= self.max_retries:
+            try:
+                start, end = self._find_outermost_json(text)
+                return json.loads(text[start:end])
+            except ValueError:
+                from ragas.llms.prompt import PromptValue
 
-        # TODO (executor)
-        results = llm.generate_text(
-            PromptValue(prompt_str=JSON_PROMPT.format(input=text)),
-            n=1,
-            callbacks=callbacks,
-        )
-        return results.generations[0][0].text
+                results = await llm.agenerate_text(
+                    PromptValue(prompt_str=JSON_PROMPT.format(input=text)),
+                    n=1,
+                    callbacks=callbacks,
+                )
+                text = results.generations[0][0].text
+            retry += 1
+
+        return {}
 
     def _find_outermost_json(self, text):
         stack = []
