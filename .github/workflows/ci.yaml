@@ -94,6 +94,8 @@ jobs:
             # we will use pytest-xdist to improve tests run-time.
             OPTS=(--dist loadfile -n auto)
           fi
+          # ENV Vars
+          export RAGAS_DEBUG_TRACKING=true
           # Now run the unit tests
           pytest tests/unit "${OPTS[@]}"
 
