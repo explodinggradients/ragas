@@ -1,14 +1,25 @@
 from __future__ import annotations
 
 
-def test_add_userid():
+def test_base_event():
+    from ragas._analytics import BaseEvent
+
+    be = BaseEvent(event_type="evaluation")
+    assert isinstance(dict(be).get("event_type"), str)
+    assert isinstance(dict(be).get("user_id"), str)
+
+
+def test_evaluation_event():
     from ragas._analytics import EvaluationEvent
 
     evaluation_event = EvaluationEvent(
         event_type="evaluation", metrics=["harmfulness"], num_rows=1, evaluation_mode=""
     )
-    payload = evaluation_event.dict()
+
+    payload = dict(evaluation_event)
     assert isinstance(payload.get("user_id"), str)
+    assert isinstance(payload.get("evaluation_mode"), str)
+    assert isinstance(payload.get("metrics"), list)
 
 
 def setup_user_id_filepath(tmp_path, monkeypatch):
