@@ -96,6 +96,9 @@ jobs:
           fi
           # Now run the unit tests
           pytest tests/unit "${OPTS[@]}"
+        env:
+          __RAGAS_DEBUG_TRACKING: true
+          RAGAS_DO_NOT_TRACK: true
 
   codestyle_check:
     runs-on: ubuntu-latest

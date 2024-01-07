@@ -9,11 +9,9 @@ from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.prompt_values import PromptValue as BasePromptValue
 from langchain_core.pydantic_v1 import BaseModel, root_validator
 
+from ragas.llms import BaseRagasLLM
 from ragas.llms.json_load import json_loader
 from ragas.utils import get_cache_dir
-
-if t.TYPE_CHECKING:
-    from ragas.llms import BaseRagasLLM
 
 Example = t.Dict[str, t.Any]
 

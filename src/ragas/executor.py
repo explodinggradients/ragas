@@ -43,7 +43,9 @@ class Executor:
         else:
             return wrapped_callable
 
-    def submit(self, callable: t.Callable, *args, **kwargs):
+    def submit(
+        self, callable: t.Callable, *args, name: t.Optional[str] = None, **kwargs
+    ):
         if self.is_async:
             self.executor = t.cast(asyncio.AbstractEventLoop, self.executor)
             callable_with_index = self.wrap_callable_with_index(
@@ -52,7 +54,9 @@ class Executor:
             # is type correct?
             callable_with_index = t.cast(t.Callable, callable_with_index)
             self.futures.append(
-                self.executor.create_task(callable_with_index(*args, **kwargs))
+                self.executor.create_task(
+                    callable_with_index(*args, **kwargs), name=name
+                )
             )
         else:
             self.executor = t.cast(ThreadPoolExecutor, self.executor)

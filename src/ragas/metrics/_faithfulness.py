@@ -12,7 +12,6 @@ from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
-    from langchain_core.outputs import LLMResult
 
     from ragas.llms.prompt import PromptValue
 
@@ -133,15 +132,12 @@ class Faithfulness(MetricWithLLM):
         prompt_value = LONG_FORM_ANSWER_PROMPT.format(question=question, answer=answer)
         return prompt_value
 
-    def _create_nli_prompt(self, row: t.Dict, answer_result: LLMResult) -> PromptValue:
+    def _create_nli_prompt(self, row: t.Dict, statements: t.Any) -> PromptValue:
         assert self.llm is not None, "llm must be set to compute score"
 
         contexts = row["contexts"]
         # check if the statements are support in the contexts
         contexts_str: str = "\n".join(contexts)
-        statements = json_loader.safe_load(
-            answer_result.generations[0][0].text, self.llm
-        ).get("statements", [])
         statements = statements if statements != [] else ["Nil"]
         statements_str: str = "\n".join(
             [f"statement_{i+1}: {st}" for i, st in enumerate(statements)]
@@ -151,13 +147,9 @@ class Faithfulness(MetricWithLLM):
         )
         return prompt_value
 
-    def _compute_score(self, result: LLMResult):
-        assert self.llm is not None, "llm must be set to compute score"
-
+    def _compute_score(self, output: t.Any):
         # check the verdicts and compute the score
-        output = result.generations[0][0]
         verdict_score_map = {"1": 1, "0": 0, "null": np.nan}
-        output = json_loader.safe_load(output.text, self.llm)
         output = output if isinstance(output, list) else [output]
         faithful_statements = sum(
             verdict_score_map.get(
@@ -179,22 +171,32 @@ class Faithfulness(MetricWithLLM):
         """
         assert self.llm is not None, "LLM is not set"
         p = self._create_answer_prompt(row)
+        answer_result = await self.llm.agenerate_text(p, callbacks=callbacks)
+
+        statements = await json_loader.asafe_load(
+            answer_result.generations[0][0].text, self.llm
+        )
+        p = self._create_nli_prompt(row, statements.get("statements", []))
         result = await self.llm.agenerate_text(p, callbacks=callbacks)
 
-        p = self._create_nli_prompt(row, result)
-        result = await self.llm.agenerate_text(p, callbacks=callbacks)
-
-        return self._compute_score(result)
+        json_output = await json_loader.asafe_load(
+            result.generations[0][0].text, self.llm
+        )
+        return self._compute_score(json_output)
 
     def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM is not set"
         p = self._create_answer_prompt(row)
+        answer_result = self.llm.generate_text(p, callbacks=callbacks)
+
+        statements = json_loader.safe_load(
+            answer_result.generations[0][0].text, self.llm
+        )
+        p = self._create_nli_prompt(row, statements.get("statements", []))
         result = self.llm.generate_text(p, callbacks=callbacks)
 
-        p = self._create_nli_prompt(row, result)
-        result = self.llm.generate_text(p, callbacks=callbacks)
-
-        return self._compute_score(result)
+        json_output = json_loader.safe_load(result.generations[0][0].text, self.llm)
+        return self._compute_score(json_output)
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         assert self.llm is not None, "LLM is not set"

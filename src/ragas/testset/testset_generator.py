@@ -16,6 +16,11 @@ except ImportError:
         "Please, install it with `pip install llama_index`."
     )
 
+try:
+    from pydantic.v1 import ValidationError
+except ImportError:
+    from pydantic import ValidationError
+
 import numpy as np
 import numpy.testing as npt
 import pandas as pd
@@ -27,6 +32,7 @@ from numpy.random import default_rng
 from tqdm.notebook import tqdm
 
 from ragas.llms import llm_factory
+from ragas.llms.json_load import load_as_json
 from ragas.testset.prompts import (
     ANSWER_FORMULATE,
     COMPRESS_QUESTION,
@@ -62,6 +68,8 @@ question_deep_map = {
     "conditional": "_condition_question",
 }
 
+retry_errors = (ValidationError,)
+
 DataRow = namedtuple(
     "DataRow",
     [
@@ -73,6 +81,8 @@ DataRow = namedtuple(
         "evolution_elimination",
     ],
 )
+
+Proposal = namedtuple("Proposal", ["question", "text_chunk"])
 
 
 @dataclass
@@ -375,6 +385,70 @@ class TestsetGenerator:
             )
 
         return embeddings
+
+    def _make_proposal(
+        self, cur_node: BaseNode, neighbor_nodes: t.List[BaseNode], evolve_type: str
+    ) -> t.Union[Proposal, None]:
+        # Append multiple nodes randomly to remove chunking bias
+        size = self.rng.integers(1, 3)
+        nodes = (
+            self._get_neighbour_node(cur_node, neighbor_nodes)
+            if size > 1 and evolve_type != "multi_context"
+            else [cur_node]
+        )
+
+        text_chunk = " ".join([node.get_content() for node in nodes])
+        score = self._filter_context(text_chunk)
+        if not score:
+            return None
+        seed_question = self._seed_question(text_chunk)
+        is_valid_question = self._filter_question(seed_question)
+        if not is_valid_question:
+            return None
+
+        if evolve_type == "multi_context":
+            # Find most similar chunk in same document
+            node_embedding = self._embed_nodes([nodes[-1]])
+            neighbor_nodes = self._remove_nodes(neighbor_nodes, nodes)
+            neighbor_emb = self._embed_nodes(neighbor_nodes)
+
+            _, indices = get_top_k_embeddings(
+                list(node_embedding.values())[0],
+                list(neighbor_emb.values()),
+                similarity_cutoff=self.threshold / 10,
+            )
+            if indices:
+                # type cast indices from list[Any] to list[int]
+                indices = t.cast(t.List[int], indices)
+                best_neighbor = neighbor_nodes[indices[0]]
+                question = self._multicontext_question(
+                    question=seed_question,
+                    context1=text_chunk,
+                    context2=best_neighbor.get_content(),
+                )
+                text_chunk = "\n".join([text_chunk, best_neighbor.get_content()])
+            else:
+                return None
+
+        # for reasoning and conditional modes, evolve question with the
+        # functions from question_deep_map
+        else:
+            evolve_fun = question_deep_map.get(evolve_type)
+            question = (
+                getattr(self, evolve_fun)(seed_question, text_chunk)
+                if evolve_fun
+                else seed_question
+            )
+
+        # compress question or convert into conversational questions
+        if evolve_type != "simple":
+            prob = self.rng.uniform(0, 1)
+            if self.chat_qa and prob <= self.chat_qa:
+                question = self._conversational_question(question=question)
+            else:
+                question = self._compress_question(question=question)
+
+        return Proposal(question=question, text_chunk=text_chunk)
 
     def generate(
         self,

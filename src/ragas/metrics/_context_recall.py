@@ -123,7 +123,7 @@ class ContextRecall(MetricWithLLM):
         result = await self.llm.agenerate_text(
             self._create_context_recall_prompt(row), callbacks=callbacks
         )
-        response = json_loader.safe_load(result.generations[0][0].text, self.llm)
+        response = await json_loader.asafe_load(result.generations[0][0].text, self.llm)
 
         return self._compute_score(response)
 
