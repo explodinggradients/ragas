@@ -62,14 +62,15 @@ def silent(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
 
 
 @lru_cache(maxsize=1)
+@silent
 def get_userid() -> str:
     user_id_path = user_data_dir(USER_DATA_DIR_NAME)
     uuid_filepath = os.path.join(user_id_path, "uuid.json")
     if os.path.exists(uuid_filepath):
         user_id = json.load(open(uuid_filepath))["userid"]
     else:
-        os.mkdir(user_id_path)
         user_id = "a-" + uuid.uuid4().hex
+        os.mkdir(user_id_path)
         with open(uuid_filepath, "w") as f:
             json.dump({"userid": user_id}, f)
     return user_id
