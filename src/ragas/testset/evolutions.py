@@ -13,7 +13,6 @@ from ragas.testset.prompts import (
     SCORE_CONTEXT,
     SEED_QUESTION,
 )
-from ragas.testset.testset_generator import load_as_score
 
 
 @dataclass
@@ -44,8 +43,8 @@ async def filter_context(
     prompt = ChatPromptTemplate.from_messages([human_prompt])
     results = await llm.agenerate_text(prompt=to_pv(prompt))
     output = results.generations[0][0].text.strip()
-    score = load_as_score(output)
-    return score >= threshold
+    score = load_as_json(output)
+    return score >= threshold  # type: ignore
 
 
 async def filter_question(llm: BaseRagasLLM, question: str) -> bool:

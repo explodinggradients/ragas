@@ -213,7 +213,7 @@ class TestsetGenerator:
         else:
             from ragas.testset.prompts import demonstrations
 
-            sample = self.rng.choice(demonstrations, 1)[0]
+            sample = self.rng.choice(demonstrations, 1)[0]  # type: ignore
             questions = self.rng.choice(sample["questions"], 2, replace=False)
             questions = (
                 "{"
@@ -353,9 +353,9 @@ class TestsetGenerator:
             tokens = 0
             nodes = []
             inc = 1 if after else -1
-            while tokens < max_tokens and idx >= 0 and idx < len(related_nodes):
-                nodes.append(related_nodes[idx])
-                idx += inc
+            while tokens < max_tokens and idx >= 0 and idx < len(related_nodes):  # type: ignore
+                nodes.append(related_nodes[idx])  # type: ignore
+                idx += inc  # type: ignore
                 # TODO: replace split with tikitoken
                 tokens += len(related_nodes[idx].get_content().split())
 
