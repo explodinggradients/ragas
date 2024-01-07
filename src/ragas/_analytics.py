@@ -5,7 +5,6 @@ import logging
 import os
 import typing as t
 import uuid
-from dataclasses import asdict
 from functools import lru_cache, wraps
 
 import requests

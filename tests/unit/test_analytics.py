@@ -30,8 +30,9 @@ def test_write_to_file(tmp_path, monkeypatch):
 
     # check if file created if not existing
     assert not userid_filepath.exists()
-    from ragas._analytics import get_userid
     import json
+
+    from ragas._analytics import get_userid
 
     # clear LRU cache since its created in setup for the above test
     get_userid.cache_clear()
