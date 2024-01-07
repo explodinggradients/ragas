@@ -5,33 +5,22 @@ import typing as t
 from collections import defaultdict, namedtuple
 from dataclasses import dataclass
 
-try:
-    from llama_index.indices.query.embedding_utils import get_top_k_embeddings
-    from llama_index.node_parser import SimpleNodeParser
-    from llama_index.readers.schema import Document as LlamaindexDocument
-    from llama_index.schema import BaseNode
-except ImportError:
-    raise ImportError(
-        "llama_index must be installed to use this function. "
-        "Please, install it with `pip install llama_index`."
-    )
-
-try:
-    from pydantic.v1 import ValidationError
-except ImportError:
-    from pydantic import ValidationError
-
 import numpy as np
 import numpy.testing as npt
 import pandas as pd
+from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.document import Document as LangchainDocument
+from llama_index.indices.query.embedding_utils import get_top_k_embeddings
+from llama_index.node_parser.simple import SimpleNodeParser
+from llama_index.readers.schema import Document as LlamaindexDocument
+from llama_index.schema import BaseNode
 from numpy.random import default_rng
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 
-from ragas.llms import llm_factory
+from ragas.llms.base import LangchainLLMWrapper
 from ragas.llms.json_load import load_as_json
 from ragas.testset.prompts import (
     ANSWER_FORMULATE,
@@ -50,11 +39,6 @@ from ragas.testset.prompts import (
     TABLE_QA,
 )
 
-if t.TYPE_CHECKING:
-    from ragas.llms.base import BaseRagasLLM
-
-logger = logging.getLogger(__name__)
-
 DEFAULT_TEST_DISTRIBUTION = {
     "simple": 0.4,
     "reasoning": 0.3,
@@ -66,8 +50,6 @@ question_deep_map = {
     "reasoning": "_reasoning_question",
     "conditional": "_condition_question",
 }
-
-retry_errors = (ValidationError,)
 
 DataRow = namedtuple(
     "DataRow",
@@ -81,7 +63,7 @@ DataRow = namedtuple(
     ],
 )
 
-Proposal = namedtuple("Proposal", ["question", "text_chunk"])
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -125,9 +107,9 @@ class TestsetGenerator:
 
     Attributes
     ----------
-    generator_llm: LangchainLLM
+    generator_llm: LangchainLLMWrapper
         LLM used for all the generator operations in the TestGeneration paradigm.
-    critique_llm: LangchainLLM
+    critique_llm: LangchainLLMWrapper
         LLM used for all the filtering and scoring operations in TestGeneration
         paradigm.
     embeddings_model: Embeddings
@@ -143,8 +125,8 @@ class TestsetGenerator:
 
     def __init__(
         self,
-        generator_llm: BaseRagasLLM,
-        critic_llm: BaseRagasLLM,
+        generator_llm: LangchainLLMWrapper,
+        critic_llm: LangchainLLMWrapper,
         embeddings_model: Embeddings,
         testset_distribution: t.Optional[t.Dict[str, float]] = None,
         chat_qa: float = 0.0,
@@ -180,8 +162,12 @@ class TestsetGenerator:
         chunk_size: int = 512,
         testset_distribution: dict = DEFAULT_TEST_DISTRIBUTION,
     ):
-        generator_llm = llm_factory(openai_generator_llm)
-        critic_llm = llm_factory(openai_filter_llm)
+        generator_llm = LangchainLLMWrapper(
+            langchain_llm=ChatOpenAI(model=openai_generator_llm)
+        )
+        critic_llm = LangchainLLMWrapper(
+            langchain_llm=ChatOpenAI(model=openai_filter_llm)
+        )
         embeddings_model = OpenAIEmbeddings()  # type: ignore
         return cls(
             generator_llm=generator_llm,
@@ -227,7 +213,7 @@ class TestsetGenerator:
         else:
             from ragas.testset.prompts import demonstrations
 
-            sample = self.rng.choice(demonstrations, 1)[0]  # type: ignore
+            sample = self.rng.choice(demonstrations, 1)[0]
             questions = self.rng.choice(sample["questions"], 2, replace=False)
             questions = (
                 "{"
@@ -311,7 +297,7 @@ class TestsetGenerator:
         results = self.generator_llm.generate_text_with_hmpt(prompts=[prompt])
         return results.generations[0][0].text.strip()
 
-    def _generate_answer(self, question: str, context: t.List[str]) -> t.List[str]:
+    def _generate_answer(self, question: str, context: list[str]) -> t.List[str]:
         return [
             self._qc_template(ANSWER_FORMULATE, qstn, context[i])
             for i, qstn in enumerate(question.split("\n"))
@@ -334,7 +320,7 @@ class TestsetGenerator:
         return "\n".join(output)
 
     def _remove_nodes(
-        self, available_indices: t.List[BaseNode], node_idx: t.List
+        self, available_indices: list[BaseNode], node_idx: list
     ) -> t.List[BaseNode]:
         for idx in node_idx:
             if idx in available_indices:
@@ -385,73 +371,9 @@ class TestsetGenerator:
 
         return embeddings
 
-    def _make_proposal(
-        self, cur_node: BaseNode, neighbor_nodes: t.List[BaseNode], evolve_type: str
-    ) -> t.Union[Proposal, None]:
-        # Append multiple nodes randomly to remove chunking bias
-        size = self.rng.integers(1, 3)
-        nodes = (
-            self._get_neighbour_node(cur_node, neighbor_nodes)
-            if size > 1 and evolve_type != "multi_context"
-            else [cur_node]
-        )
-
-        text_chunk = " ".join([node.get_content() for node in nodes])
-        score = self._filter_context(text_chunk)
-        if not score:
-            return None
-        seed_question = self._seed_question(text_chunk, is_table_present=False)
-        is_valid_question = self._filter_question(seed_question)
-        if not is_valid_question:
-            return None
-
-        if evolve_type == "multi_context":
-            # Find most similar chunk in same document
-            node_embedding = self._embed_nodes([nodes[-1]])
-            neighbor_nodes = self._remove_nodes(neighbor_nodes, nodes)
-            neighbor_emb = self._embed_nodes(neighbor_nodes)
-
-            _, indices = get_top_k_embeddings(
-                list(node_embedding.values())[0],
-                list(neighbor_emb.values()),
-                similarity_cutoff=self.threshold / 10,
-            )
-            if indices:
-                # type cast indices from list[Any] to list[int]
-                indices = t.cast(t.List[int], indices)
-                best_neighbor = neighbor_nodes[indices[0]]
-                question = self._multicontext_question(
-                    question=seed_question,
-                    context1=text_chunk,
-                    context2=best_neighbor.get_content(),
-                )
-                text_chunk = "\n".join([text_chunk, best_neighbor.get_content()])
-            else:
-                return None
-
-        # for reasoning and conditional modes, evolve question with the
-        # functions from question_deep_map
-        else:
-            evolve_fun = question_deep_map.get(evolve_type)
-            question = (
-                getattr(self, evolve_fun)(seed_question, text_chunk)
-                if evolve_fun
-                else seed_question
-            )
-
-        # compress question or convert into conversational questions
-        if evolve_type != "simple":
-            prob = self.rng.uniform(0, 1)
-            if self.chat_qa and prob <= self.chat_qa:
-                question = self._conversational_question(question=question)
-            else:
-                question = self._compress_question(question=question)
-
-        return Proposal(question=question, text_chunk=text_chunk)
-
     def generate(
         self,
-        documents: t.List[LlamaindexDocument] | t.List[LangchainDocument],
+        documents: list[LlamaindexDocument] | list[LangchainDocument],
         test_size: int,
     ) -> TestDataset:
         if not isinstance(documents[0], (LlamaindexDocument, LangchainDocument)):
@@ -508,7 +430,7 @@ class TestsetGenerator:
 
             text_chunk = "\n".join([node.get_content() for node in nodes])
             logger.debug(
-                "Len of text chunks: %d %d", len(nodes), len(text_chunk.split())
+                "Len of text chunks %s %s", len(nodes), len(text_chunk.split())
             )
             context_filter = self._filter_context(text_chunk)
             if not context_filter.get("score"):
