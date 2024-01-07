@@ -36,19 +36,6 @@ metrics = [
 IGNORE_THREADS = False
 IGNORE_ASYNCIO = False
 
-# metrics
-metrics = [
-    faithfulness,
-    context_recall,
-    answer_relevancy,
-    answer_correctness,
-    harmfulness,
-    context_relevancy,
-    context_precision,
-    context_utilization,
-    answer_similarity,
-]
-
 if __name__ == "__main__":
     # asyncio
     if not IGNORE_ASYNCIO:
