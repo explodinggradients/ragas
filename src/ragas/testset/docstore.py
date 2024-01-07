@@ -28,11 +28,11 @@ class DocumentStore(ABC):
         self.documents = {}
 
     @abstractmethod
-    def add(self, docs: t.List[Document], show_progress: bool = False):
+    def add(self, doc: t.Union[Document, t.Sequence[Document]], show_progress=True):
         ...
 
     @abstractmethod
-    def get(self, doc_id: int) -> Document:
+    def get(self, doc_id: str) -> Document:
         ...
 
     @abstractmethod
@@ -42,7 +42,9 @@ class DocumentStore(ABC):
         ...
 
     @abstractmethod
-    def get_adjascent(self, doc: Document, direction: str = "next") -> t.List[Document]:
+    def get_adjascent(
+        self, doc: Document, direction: str = "next"
+    ) -> t.Optional[Document]:
         ...
 
 

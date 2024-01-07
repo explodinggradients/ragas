@@ -117,7 +117,6 @@ class AnswerCorrectness(MetricWithLLM):
             "FP": "statements present in the answer but not found in the ground truth",
             "FN": "relevant statements found in the ground truth but omitted in the answer",  # noqa: E501
         }
-        result.generations[0]
 
         prediction = prediction if isinstance(prediction, list) else [prediction]
         if prediction:

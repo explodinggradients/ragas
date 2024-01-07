@@ -48,7 +48,7 @@ async def filter_context(
     return score >= threshold
 
 
-def filter_question(llm: BaseRagasLLM, question: str) -> bool:
+async def filter_question(llm: BaseRagasLLM, question: str) -> bool:
     human_prompt = FILTER_QUESTION.format(question=question)
     prompt = ChatPromptTemplate.from_messages([human_prompt])
 
@@ -67,15 +67,15 @@ class Evolution:
         ...
 
 
-def simple_evolution(llm: BaseRagasLLM, seed_doc: Document):
+async def simple_evolution(llm: BaseRagasLLM, seed_doc: Document):
     human_prompt = SEED_QUESTION.format(context=seed_doc.page_content)
     prompt = ChatPromptTemplate.from_messages([human_prompt])
-    results = llm.generate(prompts=[prompt])
+    results = await llm.agenerate_text(prompt=to_pv(prompt))
     question = results.generations[0][0].text.strip()
     return question
 
 
-def multi_context_evolution(
+async def multi_context_evolution(
     llm: BaseRagasLLM, seed_doc: Document, doc_store: DocumentStore
 ):
     question = simple_evolution(llm, seed_doc)
@@ -85,6 +85,6 @@ def multi_context_evolution(
         question=question, context1=seed_doc.page_content, context2=similar_context
     )
     prompt = ChatPromptTemplate.from_messages([human_prompt])
-    results = llm.generate(prompts=[prompt])
+    results = await llm.agenerate_text(prompt=to_pv(prompt))
     question = results.generations[0][0].text.strip()
     return question
