@@ -1,6 +1,13 @@
 from __future__ import annotations
 
 
+def test_debug_tracking_flag():
+    import os
+    from ragas._analytics import RAGAS_DEBUG_TRACKING
+
+    assert os.environ.get(RAGAS_DEBUG_TRACKING, "").lower() == "true"
+
+
 def test_base_event():
     from ragas._analytics import BaseEvent
 
