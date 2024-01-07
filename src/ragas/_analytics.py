@@ -93,7 +93,7 @@ def track(event_properties: BaseEvent):
     if do_not_track():
         return
 
-    payload = asdict(event_properties)
+    payload = event_properties.dict()
 
     if _usage_event_debugging():
         # For internal debugging purpose
