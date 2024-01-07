@@ -12,9 +12,7 @@ from langchain_core.documents import Document as LCDocument
 from pydantic import Field
 
 from ragas.async_utils import run_async_tasks
-from ragas.embeddings.base import embedding_factory
-from ragas.embeddings.base import BaseRagasEmbeddings
-
+from ragas.embeddings.base import BaseRagasEmbeddings, embedding_factory
 
 Embedding = t.Union[t.List[float], npt.NDArray[np.float64]]
 

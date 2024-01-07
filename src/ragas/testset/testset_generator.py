@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import typing as t
 import logging
+import typing as t
 from collections import defaultdict, namedtuple
 from dataclasses import dataclass
 
@@ -49,7 +49,6 @@ from ragas.testset.prompts import (
     SEED_QUESTION,
     TABLE_QA,
 )
-from ragas.llms.json_load import load_as_json
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import BaseRagasLLM

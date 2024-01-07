@@ -31,12 +31,12 @@ def test_import_module():
 
 def test_import_in_debug_mode():
     """
-    if `RAGS_DEBUG` is set to `True`, the module should be imported with
+    if `RAGAS_DEBUG` is set to `True`, the module should be imported with
     logging level set to `DEBUG`
     """
     import os
 
-    os.environ["RAGS_DEBUG"] = "True"
+    os.environ["RAGAS_DEBUG"] = "True"
 
     from ragas.utils import get_debug_mode
 
