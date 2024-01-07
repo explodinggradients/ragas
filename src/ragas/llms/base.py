@@ -9,13 +9,11 @@ from langchain.llms import AzureOpenAI, OpenAI, VertexAI
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import LLMResult
 
-
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
     from langchain_core.prompts import ChatPromptTemplate
-    
-    from ragas.llms.prompt import PromptValue
 
+    from ragas.llms.prompt import PromptValue
 
 
 MULTIPLE_COMPLETION_SUPPORTED = [
@@ -69,7 +67,6 @@ class BaseRagasLLM(ABC):
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = [],
     ) -> LLMResult:
-        
         from ragas.llms.prompt import PromptValue
 
         prompt = PromptValue(prompt_str=prompts[0].format())
