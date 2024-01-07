@@ -5,7 +5,6 @@ import typing as t
 from dataclasses import dataclass, field
 from typing import List
 
-import numpy as np
 import pysbd
 
 from ragas.llms.prompt import Prompt

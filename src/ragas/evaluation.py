@@ -144,7 +144,12 @@ def evaluate(
         row_run_managers.append((row_rm, row_group_cm))
 
         if is_async:
-            [executor.submit(metric.ascore, row, row_group_cm) for metric in metrics]
+            [
+                executor.submit(
+                    metric.ascore, row, row_group_cm, name=f"{metric.name}-{i}"
+                )
+                for metric in metrics
+            ]
         else:
             [executor.submit(metric.score, row, row_group_cm) for metric in metrics]
 
