@@ -227,7 +227,7 @@ class TestsetGenerator:
         else:
             from ragas.testset.prompts import demonstrations
 
-            sample = self.rng.choice(demonstrations, 1)[0]
+            sample = self.rng.choice(demonstrations, 1)[0]  # type: ignore
             questions = self.rng.choice(sample["questions"], 2, replace=False)
             questions = (
                 "{"
@@ -360,7 +360,7 @@ class TestsetGenerator:
         after: bool = True,
     ) -> t.List[BaseNode]:
         if len(related_nodes) < 2:
-            logging.warn("No neighbors exists")
+            logger.warn("No neighbors exists")
             return [node]
         idx = related_nodes.index(node) if node in related_nodes else []
         if idx:
@@ -400,7 +400,7 @@ class TestsetGenerator:
         score = self._filter_context(text_chunk)
         if not score:
             return None
-        seed_question = self._seed_question(text_chunk)
+        seed_question = self._seed_question(text_chunk, is_table_present=False)
         is_valid_question = self._filter_question(seed_question)
         if not is_valid_question:
             return None
