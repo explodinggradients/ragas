@@ -39,7 +39,7 @@ def do_not_track() -> bool:  # pragma: no cover
 
 @lru_cache(maxsize=1)
 def _usage_event_debugging() -> bool:
-    # For BentoML developers only - debug and print event payload if turned on
+    # For Ragas developers only - debug and print event payload if turned on
     return os.environ.get(RAGAS_DEBUG_TRACKING, str(False)).lower() == "true"
 
 
