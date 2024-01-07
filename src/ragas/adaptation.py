@@ -23,11 +23,16 @@ def adapt(
         llm_wraper = llm_factory()
     elif isinstance(llm, BaseLanguageModel):
         llm_wraper = LangchainLLMWrapper(llm)
+    else:
+        raise ValueError("llm must be either None or a BaseLanguageModel")
 
     for metric in metrics:
-        if metric.llm is None or llm is not None:
+        metric_llm = metric.llm
+
+        if metric_llm is None or llm is not None:
             metric.llm = llm_wraper
 
         if hasattr(metric, "adapt"):
             metric.adapt(language, cache_dir=cache_dir)
             metric.save(cache_dir=cache_dir)
+            metric.llm = metric_llm
