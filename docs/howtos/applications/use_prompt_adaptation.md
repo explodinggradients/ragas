@@ -25,7 +25,7 @@ DatasetDict({
 
 ### Adapt metrics to target language
 
-Import any metrics from Ragas as required and adapt and save each one of them to the target language using `adapt` function.
+Import any metrics from Ragas as required and adapt and save each one of them to the target language using `adapt` function. Optionally you can also specify which llm to use for prompt adaptation, here I am using `gpt-4`. 
 
 ```{code-block} python
 
