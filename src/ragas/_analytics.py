@@ -62,6 +62,7 @@ def silent(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
 
 
 @lru_cache(maxsize=1)
+@silent
 def get_userid() -> str:
     user_id_path = user_data_dir(
         appname=USER_DATA_DIR_NAME
