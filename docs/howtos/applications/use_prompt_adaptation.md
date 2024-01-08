@@ -25,7 +25,7 @@ DatasetDict({
 
 ### Adapt metrics to target language
 
-Import any metrics from Ragas as required and adapt and save each one of them to the target language.
+Import any metrics from Ragas as required and adapt and save each one of them to the target language using `adapt` function. Optionally you can also specify which llm to use for prompt adaptation, here I am using `gpt-4`. It is highly recommended to use the best llm here as quality of adapted prompts highly influence the results. 
 
 ```{code-block} python
 
@@ -33,12 +33,13 @@ from ragas.metrics import (
     faithfulness,
     answer_correctness,
 )
+from langchain.chat_models import ChatOpenAI
+from ragas import adapt
 
-target_language = "hindi"
-faithfulness.adapt(target_language)
-faithfulness.save()
-answer_correctness.adapt(target_language)
-answer_correctness.save()
+# llm used for adaptation
+openai_model = ChatOpenAI(model_name="gpt-4")
+
+adapt(metrics=[faithfulness,answer_correctness], language="hindi", llm=openai_model)
 ```
 
 The prompts belonging to respective metrics will be now automatically adapted to the target language. The save step saves it to `.cacha/ragas` by default to reuse later.  Next time when you do adapt with the same metrics, ragas first checks if the adapted prompt is already present in the cache. 

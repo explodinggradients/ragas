@@ -129,7 +129,9 @@ class Faithfulness(MetricWithLLM):
         question, answer = row["question"], row["answer"]
 
         # extract statements from answer given the question
-        prompt_value = LONG_FORM_ANSWER_PROMPT.format(question=question, answer=answer)
+        prompt_value = self.long_form_answer_prompt.format(
+            question=question, answer=answer
+        )
         return prompt_value
 
     def _create_nli_prompt(self, row: t.Dict, statements: t.Any) -> PromptValue:
@@ -142,7 +144,7 @@ class Faithfulness(MetricWithLLM):
         statements_str: str = "\n".join(
             [f"statement_{i+1}: {st}" for i, st in enumerate(statements)]
         )
-        prompt_value = NLI_STATEMENTS_MESSAGE.format(
+        prompt_value = self.nli_statements_message.format(
             context=contexts_str, statements=statements_str
         )
         return prompt_value

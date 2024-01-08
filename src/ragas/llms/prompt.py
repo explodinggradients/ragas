@@ -217,7 +217,7 @@ class Prompt(BaseModel):
     def _load(cls, language: str, name: str, cache_dir: str) -> Prompt:
         logging.log(logging.INFO, f"Loading {name} from {cache_dir}")
         path = os.path.join(cache_dir, language, f"{name}.json")
-        return cls(**json.load(open(path))["kwargs"])
+        return cls(**json.load(open(path)))
 
 
 str_translation = Prompt(

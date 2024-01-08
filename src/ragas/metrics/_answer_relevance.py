@@ -5,10 +5,8 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from langchain.embeddings import OpenAIEmbeddings
 
 from ragas.embeddings.base import embedding_factory
-from ragas.exceptions import OpenAIKeyNotFound
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
