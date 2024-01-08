@@ -13,14 +13,21 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.document import Document as LangchainDocument
-from llama_index.indices.query.embedding_utils import get_top_k_embeddings
-from llama_index.node_parser.simple import SimpleNodeParser
-from llama_index.readers.schema import Document as LlamaindexDocument
-from llama_index.schema import BaseNode
 from numpy.random import default_rng
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 
-from ragas.llms.base import LangchainLLMWrapper
+try:
+    from llama_index.indices.query.embedding_utils import get_top_k_embeddings
+    from llama_index.node_parser import SimpleNodeParser
+    from llama_index.readers.schema import Document as LlamaindexDocument
+    from llama_index.schema import BaseNode
+except ImportError:
+    raise ImportError(
+        "llama_index must be installed to use this function. "
+        "Please, install it with `pip install llama_index`."
+    )
+
+from ragas.llms.base import LangchainLLMWrapper, BaseRagasLLM
 from ragas.llms.json_load import load_as_json
 from ragas.testset.prompts import (
     ANSWER_FORMULATE,
@@ -107,9 +114,9 @@ class TestsetGenerator:
 
     Attributes
     ----------
-    generator_llm: LangchainLLMWrapper
+    generator_llm: BaseRagasLLM
         LLM used for all the generator operations in the TestGeneration paradigm.
-    critique_llm: LangchainLLMWrapper
+    critique_llm: BaseRagasLLM
         LLM used for all the filtering and scoring operations in TestGeneration
         paradigm.
     embeddings_model: Embeddings
@@ -125,8 +132,8 @@ class TestsetGenerator:
 
     def __init__(
         self,
-        generator_llm: LangchainLLMWrapper,
-        critic_llm: LangchainLLMWrapper,
+        generator_llm: BaseRagasLLM,
+        critic_llm: BaseRagasLLM,
         embeddings_model: Embeddings,
         testset_distribution: t.Optional[t.Dict[str, float]] = None,
         chat_qa: float = 0.0,
