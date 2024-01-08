@@ -11,6 +11,7 @@ from langchain.embeddings import FastEmbedEmbeddings as BaseFastEmbedEmbeddings
 from langchain.embeddings import OpenAIEmbeddings as BaseOpenAIEmbeddings
 from langchain.schema.embeddings import Embeddings
 from pydantic.dataclasses import dataclass
+
 from ragas.exceptions import AzureOpenAIKeyNotFound, OpenAIKeyNotFound
 from ragas.utils import NO_KEY
 
