@@ -26,7 +26,7 @@ documents = loader.load_data(query=query_space, limit=10)
 ```
 
 :::{note}
-Each Document object contains a metadata dictionary, which can be used to store additional information about the document which can be accessed with  `Document.metadata`. Please ensure that the metadata dictionary contains a key called `file_name` as this will be used in the generation process.
+Each Document object contains a metadata dictionary, which can be used to store additional information about the document which can be accessed with  `Document.metadata`. Please ensure that the metadata dictionary contains a key called `file_name` as this will be used in the generation process. The `file_name` attribute in metadata is used to identify chunks belonging to the same document. For example, pages belonging to the same research publication can be identifies using filename.
 
 An example of how to do this for `SemanticScholarReader` is shown below.
 
