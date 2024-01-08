@@ -545,15 +545,3 @@ class TestsetGenerator:
                     pbar.update(count)
 
         return TestDataset(test_data=samples)
-
-
-if __name__ == "__main__":
-    from llama_index import SimpleDirectoryReader
-
-    reader = SimpleDirectoryReader(
-        "/Users/shahules/belar/experimental/arxiv-papers/", num_files_limit=10
-    )
-    documents = reader.load_data()
-    testsetgenerator = TestsetGenerator.from_default(chunk_size=312)
-    test_size = 10
-    testset = testsetgenerator.generate(documents, test_size=test_size)
