@@ -27,7 +27,7 @@ except ImportError:
         "Please, install it with `pip install llama_index`."
     )
 
-from ragas.llms.base import LangchainLLMWrapper, BaseRagasLLM
+from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.llms.json_load import load_as_json
 from ragas.testset.prompts import (
     ANSWER_FORMULATE,
@@ -170,10 +170,10 @@ class TestsetGenerator:
         testset_distribution: dict = DEFAULT_TEST_DISTRIBUTION,
     ):
         generator_llm = LangchainLLMWrapper(
-            langchain_llm=ChatOpenAI(model=openai_generator_llm)
+            langchain_llm=ChatOpenAI(model=openai_generator_llm)  # type: ignore
         )
         critic_llm = LangchainLLMWrapper(
-            langchain_llm=ChatOpenAI(model=openai_filter_llm)
+            langchain_llm=ChatOpenAI(model=openai_filter_llm)  # type: ignore
         )
         embeddings_model = OpenAIEmbeddings()  # type: ignore
         return cls(
