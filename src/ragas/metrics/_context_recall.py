@@ -114,6 +114,7 @@ class ContextRecall(MetricWithLLM):
             self._create_context_recall_prompt(row), callbacks=callbacks
         )
         response = json_loader.safe_load(result.generations[0][0].text, self.llm)
+        response = [response] if isinstance(response, dict) else response
 
         return self._compute_score(response)
 
