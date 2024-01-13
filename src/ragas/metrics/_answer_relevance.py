@@ -101,8 +101,16 @@ class AnswerRelevancy(MetricWithLLM):
 
     def _calculate_score(self, response: t.Sequence[t.Any], row: t.Dict) -> float:
         question = row["question"]
-        gen_questions = [item.get("question", "") for item in response]
-        committal = np.any([item.get("noncommittal", False) for item in response])
+        gen_questions = [
+            item.get("question", "") for item in response if isinstance(item, dict)
+        ]
+        committal = np.any(
+            [
+                item.get("noncommittal", False)
+                for item in response
+                if isinstance(item, dict)
+            ]
+        )
         cosine_sim = self.calculate_similarity(question, gen_questions)
         score = cosine_sim.mean() * int(not committal)
 
