@@ -33,15 +33,6 @@ def to_pv(prompt: ChatPromptTemplate) -> PromptValue:
 @dataclass
 class Filter(ABC):
     ...
-    # TODO: talk with @shahul about how we can unify the type
-
-    # @abstractmethod
-    # def filter(self) -> t.Any:
-    #     ...
-    #
-    # @abstractmethod
-    # async def afilter(self) -> t.Any:
-    #     ...
 
 
 @dataclass
