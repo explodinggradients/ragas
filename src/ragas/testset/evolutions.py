@@ -53,25 +53,6 @@ class NodeFilter(Filter):
         return score
 
 
-async def filter_node(
-    llm: BaseRagasLLM, node: Document, threshold: float = 7.5
-) -> t.Dict:
-    """
-    context: str
-        The input context
-
-    Checks if the context is has enough information to frame a question
-    """
-    human_prompt = SCORE_CONTEXT.format(context=node.page_content)
-    prompt = ChatPromptTemplate.from_messages([human_prompt])
-    results = await llm.agenerate_text(prompt=to_pv(prompt))
-    output = results.generations[0][0].text.strip()
-    score = load_as_json(output)
-    # TODO: instead of updating score add a new "pass" key
-    score.update({"score": score.get("score", 0) >= threshold})
-    return score
-
-
 @dataclass
 class QuestionFilter(Filter):
     llm: BaseRagasLLM
@@ -100,7 +81,7 @@ class SimpleEvolution(Evolution):
     node_filter: NodeFilter
     question_filter: QuestionFilter
     nodes: t.List[Node] = field(default_factory=list)
-    max_ties: int = 5
+    max_tries: int = 5
     _tries: int = field(default=0, init=False, repr=False)
 
     def merged_nodes(self) -> Node:
@@ -118,7 +99,7 @@ class SimpleEvolution(Evolution):
         if update_count:
             self._tries += 1
         print("retrying evolution: %s times", self._tries)
-        if self._tries > self.max_ties:
+        if self._tries > self.max_tries:
             # TODO: make this into a custom exception
             raise ValueError("Max tries reached")
         return await self.aevolve(llm, docstore)
@@ -149,6 +130,9 @@ class SimpleEvolution(Evolution):
                 if next_adjacent_node is not None:
                     # add nodes
                     self.nodes.append(next_adjacent_node)
+                else:
+                    # retry with new base node
+                    self.nodes = docstore.get_random_nodes(k=1)
             else:
                 # add prev nodes
                 self.nodes.insert(0, prev_adjacent_node)

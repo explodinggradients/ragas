@@ -198,7 +198,9 @@ class InMemoryDocumentStore(DocumentStore):
 
         self.add_nodes(nodes, show_progress=show_progress)
 
-    def add_nodes(self, nodes: t.Sequence[Node], show_progress=True):
+    def add_nodes(
+        self, nodes: t.Sequence[Node], show_progress=True, desc: str = "embedding nodes"
+    ):
         # NOTE: Adds everything in async mode for now.
         embed_tasks = []
         docs_to_embed = []
@@ -212,7 +214,9 @@ class InMemoryDocumentStore(DocumentStore):
                 self.node_map[n.doc_id] = n
                 self.node_embeddings_list.append(n.embedding)
 
-        embeddings = run_async_tasks(embed_tasks, show_progress=show_progress)
+        embeddings = run_async_tasks(
+            embed_tasks, show_progress=show_progress, progress_bar_desc=desc
+        )
         for n, embedding in zip(docs_to_embed, embeddings):
             n.embedding = embedding
             self.nodes.append(n)
