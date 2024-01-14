@@ -16,14 +16,14 @@ def test_adjacent_nodes():
     store = InMemoryDocumentStore(splitter=None)  # type: ignore
     store.nodes = [a1, a2, b]
 
-    assert store.get_adjascent(a1) == a2
-    assert store.get_adjascent(a2, Direction.PREV) == a1
-    assert store.get_adjascent(a2, Direction.NEXT) is None
-    assert store.get_adjascent(b, Direction.PREV) is None
+    assert store.get_adjacent(a1) == a2
+    assert store.get_adjacent(a2, Direction.PREV) == a1
+    assert store.get_adjacent(a2, Direction.NEXT) is None
+    assert store.get_adjacent(b, Direction.PREV) is None
 
     # raise ValueError if doc not in store
     c = Node(doc_id="c", page_content="c", filename="c")
-    pytest.raises(ValueError, store.get_adjascent, c)
+    pytest.raises(ValueError, store.get_adjacent, c)
 
 
 def create_test_nodes(with_embeddings=True):

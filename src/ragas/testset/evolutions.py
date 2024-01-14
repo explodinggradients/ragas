@@ -73,25 +73,17 @@ class QuestionFilter(Filter):
 
 @dataclass
 class Evolution:
-    ...
-
-
-@dataclass
-class SimpleEvolution(Evolution):
     node_filter: NodeFilter
     question_filter: QuestionFilter
     nodes: t.List[Node] = field(default_factory=list)
     max_tries: int = 5
+    _root_node: t.Optional[Node] = field(default=None, init=False, repr=False)
     _tries: int = field(default=0, init=False, repr=False)
 
     def merged_nodes(self) -> Node:
         return Node(
             doc_id="merged", page_content=" ".join(n.page_content for n in self.nodes)
         )
-
-    def evolve(self, llm: BaseRagasLLM, docstore: DocumentStore):
-        logger.info("evolving question")
-        return asyncio.get_event_loop().run_until_complete(self.aevolve(llm, docstore))
 
     async def aretry_evolve(
         self, llm: BaseRagasLLM, docstore: DocumentStore, update_count: bool = True
@@ -104,10 +96,47 @@ class SimpleEvolution(Evolution):
             raise ValueError("Max tries reached")
         return await self.aevolve(llm, docstore)
 
+    @abstractmethod
+    def evolve(self, llm: BaseRagasLLM, docstore: DocumentStore) -> str:
+        ...
+
+    @abstractmethod
+    async def aevolve(self, llm: BaseRagasLLM, docstore: DocumentStore) -> str:
+        ...
+
+
+@dataclass
+class SimpleEvolution(Evolution):
+    def evolve(self, llm: BaseRagasLLM, docstore: DocumentStore):
+        logger.info("evolving question")
+        return asyncio.get_event_loop().run_until_complete(self.aevolve(llm, docstore))
+
+    def _get_more_adjacent_nodes(self, docstore: DocumentStore):
+        """
+        if the evolutions doesn't have enough nodes to frame a question, get more nodes
+        """
+        assert self._root_node is not None, "root node cannot be None"
+        # get more nodes from above the context window
+        prev_adjacent_node = docstore.get_adjacent(self._root_node, Direction.PREV)
+        if prev_adjacent_node is None:
+            # get more nodes from below the context window
+            next_adjacent_node = docstore.get_adjacent(self._root_node, Direction.NEXT)
+            if next_adjacent_node is not None:
+                # add next nodes towards the end
+                self.nodes.append(next_adjacent_node)
+            else:
+                # retry with new base node
+                self.nodes = docstore.get_random_nodes(k=1)
+                self._root_node = self.nodes[0]
+        else:
+            # add prev nodes in index 0
+            self.nodes.insert(0, prev_adjacent_node)
+
     async def aevolve(self, llm: BaseRagasLLM, docstore: DocumentStore):
         # can the node be used to frame a question?
         if self._tries == 0:
             self.nodes = docstore.get_random_nodes(k=1)
+            self._root_node = self.nodes[0]
         merged_node = self.merged_nodes()
         passed, table_is_present = await self.node_filter.afilter(self.nodes[0])
         if not passed:
@@ -122,20 +151,7 @@ class SimpleEvolution(Evolution):
         is_valid_question = await self.question_filter.afilter(seed_question)
         if not is_valid_question:
             # get more context to rewrite question
-            prev_adjacent_node = docstore.get_adjacent(self.nodes[0], Direction.PREV)
-            if prev_adjacent_node is None:
-                next_adjacent_node = docstore.get_adjacent(
-                    self.nodes[-1], Direction.NEXT
-                )
-                if next_adjacent_node is not None:
-                    # add nodes
-                    self.nodes.append(next_adjacent_node)
-                else:
-                    # retry with new base node
-                    self.nodes = docstore.get_random_nodes(k=1)
-            else:
-                # add prev nodes
-                self.nodes.insert(0, prev_adjacent_node)
+            self._get_more_adjacent_nodes(docstore)
             # retry with new nodes added
             return await self.aretry_evolve(llm, docstore)
         else:
