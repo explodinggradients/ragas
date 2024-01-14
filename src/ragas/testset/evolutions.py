@@ -1,17 +1,17 @@
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
 import logging
 import typing as t
-from fsspec.exceptions import asyncio
-from random import choice, choices
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from random import choice
 
+from fsspec.exceptions import asyncio
 from langchain.prompts import ChatPromptTemplate
 from numpy.random import default_rng
 
 from ragas.llms import BaseRagasLLM
 from ragas.llms.json_load import load_as_json
 from ragas.llms.prompt import PromptValue
-from ragas.testset.docstore import Document, DocumentStore, Direction
+from ragas.testset.docstore import Direction, Document, DocumentStore, Node
 from ragas.testset.prompts import (
     FILTER_QUESTION,
     MULTICONTEXT_QUESTION,
@@ -20,7 +20,6 @@ from ragas.testset.prompts import (
     TABLE_QA,
     demonstrations,
 )
-from ragas.testset.docstore import Node
 
 rng = default_rng()
 logger = logging.getLogger(__name__)

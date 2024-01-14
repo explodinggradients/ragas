@@ -5,7 +5,7 @@ import typing as t
 import pytest
 from langchain_core.embeddings import Embeddings
 
-from ragas.testset.docstore import InMemoryDocumentStore, Node, Direction
+from ragas.testset.docstore import Direction, InMemoryDocumentStore, Node
 
 
 def test_adjacent_nodes():

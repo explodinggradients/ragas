@@ -1,6 +1,6 @@
 import heapq
-import typing as t
 import logging
+import typing as t
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -11,8 +11,8 @@ import numpy as np
 import numpy.typing as npt
 from langchain.text_splitter import TextSplitter
 from langchain_core.documents import Document as LCDocument
-from llama_index.readers.schema import Document as LlamaindexDocument
 from langchain_core.pydantic_v1 import Field
+from llama_index.readers.schema import Document as LlamaindexDocument
 
 from ragas.async_utils import run_async_tasks
 from ragas.embeddings.base import BaseRagasEmbeddings, embedding_factory
