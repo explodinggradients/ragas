@@ -5,6 +5,8 @@ from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
 from ragas.embeddings import BaseRagasEmbeddings
+from ragas.testset.docstore import DocumentStore, Document
+from ragas.testset.evolutions import SimpleEvolution
 
 from llama_index.readers.schema import Document as LlamaindexDocument
 
@@ -14,6 +16,7 @@ class TestsetGenerator:
     generator_llm: BaseRagasLLM
     critic_llm: BaseRagasLLM
     embeddings: BaseRagasEmbeddings
+    docstore: DocumentStore
 
     @classmethod
     def with_openai(
@@ -32,7 +35,9 @@ class TestsetGenerator:
         )
 
     def generate_with_llamaindex_docs(self, documents: t.Sequence[LlamaindexDocument]):
-        print(len(documents))
         # chunk documents and add to docstore
+        self.docstore.add_documents(
+            [Document.from_llamaindex_document(doc) for doc in documents]
+        )
         # create evolutions and add to executor queue
         # run till completion - keep updating progress bar

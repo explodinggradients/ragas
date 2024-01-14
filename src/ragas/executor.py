@@ -75,7 +75,7 @@ class Executor:
             desc=self.desc,
             total=len(self.futures),
         ):
-            r = (-1, np.nan)
+            r = (-1, None)
             try:
                 r = await future
             except Exception as e:
@@ -110,11 +110,11 @@ class Executor:
                     desc=self.desc,
                     total=len(self.futures),
                 ):
-                    r = (-1, np.nan)
+                    r = (-1, None)
                     try:
                         r = future.result()
                     except Exception as e:
-                        r = (-1, np.nan)
+                        r = (-1, None)
                         if self.raise_exceptions:
                             raise e
                     finally:

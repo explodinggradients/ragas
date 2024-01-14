@@ -104,9 +104,9 @@ class DocumentStore(ABC):
         ...
 
     @abstractmethod
-    def get_adjascent(
+    def get_adjacent(
         self, node: Node, direction: Direction = Direction.NEXT
-    ) -> t.Optional[Document]:
+    ) -> t.Optional[Node]:
         ...
 
 
@@ -248,9 +248,9 @@ class InMemoryDocumentStore(DocumentStore):
         items = [self.nodes[doc_id] for doc_id in doc_ids]
         return items
 
-    def get_adjascent(
+    def get_adjacent(
         self, node: Node, direction: Direction = Direction.NEXT
-    ) -> t.Optional[Document]:
+    ) -> t.Optional[Node]:
         # linear search for doc_id of doc in documents_list
         index = self.nodes.index(node)
 
