@@ -5,18 +5,21 @@ import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
+from random import choices
 
 import numpy as np
 import numpy.typing as npt
 from langchain.text_splitter import TextSplitter
 from langchain_core.documents import Document as LCDocument
-from pydantic import Field
+from llama_index.readers.schema import Document as LlamaindexDocument
+from langchain_core.pydantic_v1 import Field
 
 from ragas.async_utils import run_async_tasks
 from ragas.embeddings.base import BaseRagasEmbeddings, embedding_factory
 
-logger = logging.getLogger(__name__)
 Embedding = t.Union[t.List[float], npt.NDArray[np.float64]]
+logger = logging.getLogger(__name__)
+rng = np.random.default_rng()
 
 
 class Document(LCDocument):
@@ -41,9 +44,37 @@ class Document(LCDocument):
             filename=filename,
         )
 
+    @classmethod
+    def from_llamaindex_document(cls, doc: LlamaindexDocument):
+        doc_id = str(uuid.uuid4())
+        if doc.metadata.get("filename"):
+            filename = doc.metadata["filename"]
+        else:
+            logger.info(
+                "Document [ID: %s] has no filename. Using doc_id as filename.", doc_id
+            )
+            filename = doc_id
+        return cls(
+            page_content=doc.text,
+            metadata=doc.metadata,
+            doc_id=doc_id,
+            filename=filename,
+        )
+
 
 class Node(Document):
     ...
+
+
+class Direction(str, Enum):
+    """
+    Direction for getting adjascent nodes.
+    """
+
+    NEXT = "next"
+    PREV = "prev"
+    UP = "up"
+    DOWN = "down"
 
 
 class DocumentStore(ABC):
@@ -59,22 +90,22 @@ class DocumentStore(ABC):
         ...
 
     @abstractmethod
-    def get_document(self, doc_id: str) -> Document:
-        ...
-
-    @abstractmethod
     def get_node(self, node_id: str) -> Node:
         ...
 
     @abstractmethod
+    def get_random_nodes(self, k=1) -> t.List[Node]:
+        ...
+
+    @abstractmethod
     def get_similar(
-        self, item: t.Union[Document, Node], threshold: float = 0.7, top_k: int = 3
+        self, node: Node, threshold: float = 0.7, top_k: int = 3
     ) -> t.Union[t.List[Document], t.List[Node]]:
         ...
 
     @abstractmethod
     def get_adjascent(
-        self, item: t.Union[Document, Node], direction: str = "next"
+        self, node: Node, direction: Direction = Direction.NEXT
     ) -> t.Optional[Document]:
         ...
 
@@ -148,9 +179,9 @@ class InMemoryDocumentStore(DocumentStore):
     embeddings: BaseRagasEmbeddings = field(
         default_factory=embedding_factory, repr=False
     )
-    nodes: t.List[Document] = field(default_factory=list)
-    embeddings_list: t.List[Embedding] = field(default_factory=list)
-    node_map: t.Dict[str, Document] = field(default_factory=dict)
+    nodes: t.List[Node] = field(default_factory=list)
+    node_embeddings_list: t.List[Embedding] = field(default_factory=list)
+    node_map: t.Dict[str, Node] = field(default_factory=dict)
 
     def _embed_items(self, items: t.Union[t.Sequence[Document], t.Sequence[Node]]):
         ...
@@ -159,16 +190,18 @@ class InMemoryDocumentStore(DocumentStore):
         """
         Add documents in batch mode.
         """
-        # NOTE: Adds everything in async mode for now.
-        embed_tasks = []
-        docs_to_embed = []
-
-        # split documents with self.splitter
+        # split documents with self.splitter into smaller nodes
         nodes = [
-            Document.from_langchain_document(d)
+            Node.from_langchain_document(d)
             for d in self.splitter.transform_documents(docs)
         ]
 
+        self.add_nodes(nodes, show_progress=show_progress)
+
+    def add_nodes(self, nodes: t.Sequence[Node], show_progress=True):
+        # NOTE: Adds everything in async mode for now.
+        embed_tasks = []
+        docs_to_embed = []
         # get embeddings for the docs
         for n in nodes:
             if n.embedding is None:
@@ -177,66 +210,63 @@ class InMemoryDocumentStore(DocumentStore):
             else:
                 self.nodes.append(n)
                 self.node_map[n.doc_id] = n
-                self.embeddings_list.append(n.embedding)
+                self.node_embeddings_list.append(n.embedding)
 
         embeddings = run_async_tasks(embed_tasks, show_progress=show_progress)
         for n, embedding in zip(docs_to_embed, embeddings):
             n.embedding = embedding
             self.nodes.append(n)
             self.node_map[n.doc_id] = n
-            self.embeddings_list.append(n.embedding)
+            self.node_embeddings_list.append(n.embedding)
 
-    def add_nodes(self, nodes: t.Sequence[Node], show_progress=True):
+    def get_node(self, node_id: str) -> Node:
+        return self.node_map[node_id]
+
+    def get_document(self, doc_id: str) -> Node:
         raise NotImplementedError
 
-    def get_document(self, doc_id: str) -> Document:
-        return self.node_map[doc_id]
-
-    def get_node(self, node_id: str) -> Document:
-        ...
+    def get_random_nodes(self, k=1) -> t.List[Node]:
+        return choices(self.nodes, k=k)
 
     def get_similar(
-        self, item: t.Union[Document, Node], threshold: float = 0.7, top_k: int = 3
+        self, node: Node, threshold: float = 0.7, top_k: int = 3
     ) -> t.Union[t.List[Document], t.List[Node]]:
         items = []
-        if isinstance(item, Node):
-            ...
-        elif isinstance(item, Document):
-            doc = item
-            if doc.embedding is None:
-                raise ValueError("Document has no embedding.")
-            scores, doc_ids = get_top_k_embeddings(
-                query_embedding=doc.embedding,
-                embeddings=self.embeddings_list,
-                similarity_fn=similarity,
-                similarity_cutoff=threshold,
-                # we need to return k+1 docs here as the top result is the input doc itself
-                similarity_top_k=top_k + 1,
-            )
-            # remove the query doc itself from results
-            scores, doc_ids = scores[1:], doc_ids[1:]
-            items = [self.nodes[doc_id] for doc_id in doc_ids]
+        doc = node
+        if doc.embedding is None:
+            raise ValueError("Document has no embedding.")
+        scores, doc_ids = get_top_k_embeddings(
+            query_embedding=doc.embedding,
+            embeddings=self.node_embeddings_list,
+            similarity_fn=similarity,
+            similarity_cutoff=threshold,
+            # we need to return k+1 docs here as the top result is the input doc itself
+            similarity_top_k=top_k + 1,
+        )
+        # remove the query doc itself from results
+        scores, doc_ids = scores[1:], doc_ids[1:]
+        items = [self.nodes[doc_id] for doc_id in doc_ids]
         return items
 
     def get_adjascent(
-        self, item: t.Union[Document, Node], direction: str = "next"
+        self, node: Node, direction: Direction = Direction.NEXT
     ) -> t.Optional[Document]:
         # linear search for doc_id of doc in documents_list
-        index = self.nodes.index(item)
+        index = self.nodes.index(node)
 
-        if direction == "next":
+        if direction == Direction.NEXT:
             if len(self.nodes) > index + 1:
                 next_doc = self.nodes[index + 1]
-                if next_doc.filename == item.filename:
+                if next_doc.filename == node.filename:
                     return next_doc
                 else:
                     return None
             else:
                 return None
-        if direction == "prev":
+        if direction == Direction.PREV:
             if index > 0:
                 prev_doc = self.nodes[index - 1]
-                if prev_doc.filename == item.filename:
+                if prev_doc.filename == node.filename:
                     return prev_doc
                 else:
                     return None
