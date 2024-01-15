@@ -1,8 +1,8 @@
 import typing as t
 from dataclasses import dataclass
 
-from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
+from langchain_community.chat_models import ChatOpenAI
 from llama_index.readers.schema import Document as LlamaindexDocument
 
 from ragas.embeddings import BaseRagasEmbeddings
