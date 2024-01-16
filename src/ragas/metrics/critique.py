@@ -136,7 +136,9 @@ class AspectCritique(MetricWithLLM):
         )
 
         responses = [r.text for r in result.generations[0]]
-        safe_loaded_responses = [json_loader.safe_load(r, self.llm) for r in responses]
+        safe_loaded_responses = [
+            await json_loader.asafe_load(r, self.llm) for r in responses
+        ]
 
         return self._compute_score(safe_loaded_responses)
 

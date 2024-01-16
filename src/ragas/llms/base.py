@@ -9,13 +9,11 @@ from langchain.llms import AzureOpenAI, OpenAI, VertexAI
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import LLMResult
 
-
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
     from langchain_core.prompts import ChatPromptTemplate
-    
-    from ragas.llms.prompt import PromptValue
 
+    from ragas.llms.prompt import PromptValue
 
 
 MULTIPLE_COMPLETION_SUPPORTED = [
@@ -38,6 +36,11 @@ def is_multiple_completion_supported(llm: BaseLanguageModel) -> bool:
 
 @dataclass
 class BaseRagasLLM(ABC):
+    
+    def get_temperature(self, n: int) -> float:
+        """Return the temperature to use for completion based on n."""
+        return 0.3 if n > 1 else 1e-8
+    
     @abstractmethod
     def generate_text(
         self,
@@ -69,7 +72,6 @@ class BaseRagasLLM(ABC):
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = [],
     ) -> LLMResult:
-        
         from ragas.llms.prompt import PromptValue
 
         prompt = PromptValue(prompt_str=prompts[0].format())
@@ -95,6 +97,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
         stop: t.Optional[t.List[str]] = None,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
+        temperature = self.get_temperature(n=n)
         if is_multiple_completion_supported(self.langchain_llm):
             return self.langchain_llm.generate_prompt(
                 prompts=[prompt],
@@ -124,6 +127,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
         stop: t.Optional[t.List[str]] = None,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
+        temperature = self.get_temperature(n=n)
         if is_multiple_completion_supported(self.langchain_llm):
             return await self.langchain_llm.agenerate_prompt(
                 prompts=[prompt],

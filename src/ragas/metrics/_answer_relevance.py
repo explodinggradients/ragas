@@ -5,10 +5,8 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from langchain.embeddings import OpenAIEmbeddings
 
 from ragas.embeddings.base import embedding_factory
-from ragas.exceptions import OpenAIKeyNotFound
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
@@ -83,10 +81,6 @@ class AnswerRelevancy(MetricWithLLM):
     def init_model(self):
         super().init_model()
 
-        if isinstance(self.embeddings, OpenAIEmbeddings):
-            if self.embeddings.openai_api_key == "no-key":
-                raise OpenAIKeyNotFound
-
     def calculate_similarity(
         self: t.Self, question: str, generated_questions: list[str]
     ):
@@ -151,7 +145,8 @@ class AnswerRelevancy(MetricWithLLM):
             callbacks=callbacks,
         )
         response = [
-            json_loader.safe_load(r.text, self.llm) for r in result.generations[0]
+            await json_loader.asafe_load(r.text, self.llm)
+            for r in result.generations[0]
         ]
 
         return self._calculate_score(response, row)

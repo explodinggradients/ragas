@@ -9,7 +9,7 @@ Just like in any machine learning system, the performance of individual componen
 <img src="../../_static/imgs/component-wise-metrics.png" alt="evol-generate" width="600" height="400" />
 </p>
 
-- [Faithfulnesss](faithfulness.md)
+- [Faithfulness](faithfulness.md)
 - [Answer relevancy](answer_relevance.md)
 - [Context recall](context_recall.md)
 - [Context precision](context_precision.md)

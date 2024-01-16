@@ -11,4 +11,5 @@ compare_embeddings
 compare_llms
 custom_prompts
 use_prompt_adaptation
+tracing
 ```

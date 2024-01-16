@@ -6,7 +6,7 @@ The generated answer is regarded as faithful if all the claims that are made in 
 
 ```{math}
 :label: faithfulness
-\text{Faithfulness score} = {|\text{Number of claims that can be inferred from given context}| \over |\text{Total number of claims in the generated answer}|}
+\text{Faithfulness score} = {|\text{Number of claims in the generated answer that can be inferred from given context}| \over |\text{Total number of claims in the generated answer}|}
 ```
 
 
