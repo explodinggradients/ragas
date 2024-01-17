@@ -364,7 +364,7 @@ class TestsetGenerator:
                 nodes.append(related_nodes[idx])  # type: ignore
                 idx += inc  # type: ignore
                 # TODO: replace split with tikitoken
-                tokens += len(related_nodes[idx].get_content().split())
+                tokens += len(related_nodes[idx].get_content().split())  # type: ignore
 
             return nodes if after else nodes[::-1]
         return [node]

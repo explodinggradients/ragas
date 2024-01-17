@@ -36,11 +36,10 @@ def is_multiple_completion_supported(llm: BaseLanguageModel) -> bool:
 
 @dataclass
 class BaseRagasLLM(ABC):
-    
     def get_temperature(self, n: int) -> float:
         """Return the temperature to use for completion based on n."""
         return 0.3 if n > 1 else 1e-8
-    
+
     @abstractmethod
     def generate_text(
         self,

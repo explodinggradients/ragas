@@ -1,7 +1,4 @@
-from ragas.embeddings.base import (
-    BaseRagasEmbeddings,
-    HuggingfaceEmbeddings,
-)
+from ragas.embeddings.base import BaseRagasEmbeddings, HuggingfaceEmbeddings
 
 __all__ = [
     "HuggingfaceEmbeddings",

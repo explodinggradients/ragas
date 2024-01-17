@@ -1,4 +1,4 @@
-from langchain.chat_models import ChatOpenAI
+from langchain_openai.chat_models import ChatOpenAI
 
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 
