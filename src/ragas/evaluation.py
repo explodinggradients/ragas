@@ -12,7 +12,8 @@ from ragas.callbacks import new_group
 from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.executor import Executor
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
-from ragas.metrics.base import Metric, MetricWithLLM
+from ragas.metrics.base import Metric, MetricWithEmbeddings, MetricWithLLM
+from ragas.metrics.critique import AspectCritique
 
 # from ragas.metrics.critique import AspectCritique
 from ragas.validation import (
@@ -116,11 +117,14 @@ def evaluate(
 
     binary_metrics = []
     for metric in metrics:
-        # if isinstance(metric, AspectCritique):
-        # binary_metrics.append(metric.name)
+        if isinstance(metric, AspectCritique):
+            binary_metrics.append(metric.name)
         if isinstance(metric, MetricWithLLM):
             if metric.llm is None:
                 metric.llm = llm
+        if isinstance(metric, MetricWithEmbeddings):
+            if metric.embeddings is None:
+                metric.embeddings = embeddings
 
     # initialize all the models in the metrics
     [m.init_model() for m in metrics]

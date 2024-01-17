@@ -9,7 +9,7 @@ import numpy as np
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics._answer_similarity import AnswerSimilarity
-from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.metrics.base import EvaluationMode, MetricWithEmbeddings, MetricWithLLM
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ CORRECTNESS_PROMPT = Prompt(
 
 
 @dataclass
-class AnswerCorrectness(MetricWithLLM):
+class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
 
     """
     Measures answer correctness compared to ground truth as a combination of
@@ -106,7 +106,7 @@ class AnswerCorrectness(MetricWithLLM):
 
         if self.answer_similarity is None and self.weights[1] != 0:
             self.answer_similarity = AnswerSimilarity(
-                llm=self.llm, batch_size=self.batch_size
+                llm=self.llm, batch_size=self.batch_size, embeddings=self.embeddings
             )
 
     def _compute_statement_presence(self, prediction: t.Any) -> float:
