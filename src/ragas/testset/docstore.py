@@ -114,7 +114,7 @@ def get_top_k_embeddings(
 @dataclass
 class InMemoryDocumentStore(DocumentStore):
     splitter: TextSplitter
-    embeddings: BaseRagasEmbeddings = field(
+    embeddings: t.Optional[BaseRagasEmbeddings] = field(
         default_factory=embedding_factory, repr=False
     )
     documents_list: t.List[Document] = field(default_factory=list)
@@ -125,6 +125,8 @@ class InMemoryDocumentStore(DocumentStore):
         """
         Add documents in batch mode.
         """
+        assert self.embeddings is not None, "Embeddings must be set"
+
         # NOTE: Adds everything in async mode for now.
         embed_tasks = []
         docs_to_embed = []
@@ -145,6 +147,8 @@ class InMemoryDocumentStore(DocumentStore):
             self.embeddings_list.append(doc.embedding)
 
     def add(self, doc: t.Union[Document, t.Sequence[Document]], show_progress=True):
+        assert self.embeddings is not None, "Embeddings must be set"
+
         if isinstance(doc, list) or isinstance(doc, tuple):
             self._add_documents_batch(doc)
         elif isinstance(doc, Document):
