@@ -213,8 +213,7 @@ Output:"""  # noqa: E501
 )
 
 REWRITE_QUESTION = HumanMessagePromptTemplate.from_template(
-    """
-
+    """\
 Given a context, transform the given question to be clear and standalone by replacing its coreferences with specific details from the context:
 
 Contexts:

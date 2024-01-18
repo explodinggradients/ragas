@@ -3,12 +3,12 @@ import typing as t
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 
-import numpy as np
 from tqdm.auto import tqdm
 
 
 @dataclass
 class Executor:
+    desc: str = "Evaluating"
     is_async: bool = True
     max_workers: t.Optional[int] = None
     futures: t.List[t.Any] = field(default_factory=list, repr=False)
@@ -71,10 +71,10 @@ class Executor:
         results = []
         for future in tqdm(
             asyncio.as_completed(self.futures),
-            desc="Evaluating",
+            desc=self.desc,
             total=len(self.futures),
         ):
-            r = np.nan
+            r = (-1, None)
             try:
                 r = await future
             except Exception as e:
@@ -106,14 +106,14 @@ class Executor:
             try:
                 for future in tqdm(
                     as_completed(self.futures),
-                    desc="Evaluating",
+                    desc=self.desc,
                     total=len(self.futures),
                 ):
-                    r = np.nan
+                    r = (-1, None)
                     try:
                         r = future.result()
                     except Exception as e:
-                        r = np.nan
+                        r = (-1, None)
                         if self.raise_exceptions:
                             raise e
                     finally:
@@ -121,5 +121,6 @@ class Executor:
             finally:
                 self.executor.shutdown(wait=False)
 
+        print(results)
         sorted_results = sorted(results, key=lambda x: x[0])
         return [r[1] for r in sorted_results]

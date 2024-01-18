@@ -6,7 +6,7 @@ import pytest
 from langchain.text_splitter import TokenTextSplitter
 from langchain_core.embeddings import Embeddings
 
-from ragas.testset.docstore import Document, InMemoryDocumentStore
+from ragas.testset.docstore import Direction, InMemoryDocumentStore, Node
 
 
 class FakeEmbeddings(Embeddings):
@@ -32,9 +32,9 @@ class FakeEmbeddings(Embeddings):
 
 
 def test_adjacent_nodes():
-    a1 = Document(doc_id="a1", page_content="a1", filename="a")
-    a2 = Document(doc_id="a2", page_content="a2", filename="a")
-    b = Document(doc_id="b", page_content="b", filename="b")
+    a1 = Node(doc_id="a1", page_content="a1", filename="a")
+    a2 = Node(doc_id="a2", page_content="a2", filename="a")
+    b = Node(doc_id="b", page_content="b", filename="b")
 
     fake_embeddings = FakeEmbeddings()
     splitter = TokenTextSplitter(chunk_size=100, chunk_overlap=0)
@@ -42,17 +42,17 @@ def test_adjacent_nodes():
     store = InMemoryDocumentStore(splitter=splitter, embeddings=fake_embeddings)
     store.documents_list = [a1, a2, b]
 
-    assert store.get_adjascent(a1) == a2
-    assert store.get_adjascent(a2, "prev") == a1
-    assert store.get_adjascent(a2, "next") is None
-    assert store.get_adjascent(b, "prev") is None
+    assert store.get_adjacent(a1) == a2
+    assert store.get_adjacent(a2, Direction.PREV) == a1
+    assert store.get_adjacent(a2, Direction.NEXT) is None
+    assert store.get_adjacent(b, Direction.PREV) is None
 
     # raise ValueError if doc not in store
-    c = Document(doc_id="c", page_content="c", filename="c")
-    pytest.raises(ValueError, store.get_adjascent, c)
+    c = Node(doc_id="c", page_content="c", filename="c")
+    pytest.raises(ValueError, store.get_adjacent, c)
 
 
-def create_test_documents(with_embeddings=True):
+def create_test_nodes(with_embeddings=True):
     if with_embeddings:
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_embs.pkl")
         with open(path, "rb") as f:
@@ -61,13 +61,13 @@ def create_test_documents(with_embeddings=True):
         from collections import defaultdict
 
         embeddings = defaultdict(lambda: None)
-    a1 = Document(
+    a1 = Node(
         doc_id="a1", page_content="cat", filename="a", embedding=embeddings["cat"]
     )
-    a2 = Document(
+    a2 = Node(
         doc_id="a2", page_content="mouse", filename="a", embedding=embeddings["mouse"]
     )
-    b = Document(
+    b = Node(
         doc_id="b",
         page_content="solar_system",
         filename="b",
@@ -78,13 +78,12 @@ def create_test_documents(with_embeddings=True):
 
 
 def test_similar_nodes():
-    a1, a2, b = create_test_documents()
-
+    a1, a2, b = create_test_nodes()
     fake_embeddings = FakeEmbeddings()
     splitter = TokenTextSplitter(chunk_size=100, chunk_overlap=0)
     store = InMemoryDocumentStore(splitter=splitter, embeddings=fake_embeddings)
-    store.documents_list = [a1, a2, b]
-    store.embeddings_list = [d.embedding for d in store.documents_list]
+    store.nodes = [a1, a2, b]
+    store.node_embeddings_list = [d.embedding for d in store.nodes]
 
     assert store.get_similar(a1)[0] == a2
     assert store.get_similar(a2)[0] == a1
@@ -94,12 +93,12 @@ def test_similar_nodes():
 
 
 def test_similar_nodes_scaled():
-    a1, a2, b = create_test_documents()
+    a1, a2, b = create_test_nodes()
     fake_embeddings = FakeEmbeddings()
     splitter = TokenTextSplitter(chunk_size=100, chunk_overlap=0)
     store = InMemoryDocumentStore(splitter=splitter, embeddings=fake_embeddings)
-    store.documents_list = [a1, a2, b] + [b] * 100
-    store.embeddings_list = [d.embedding for d in store.documents_list]
+    store.nodes = [a1, a2, b] + [b] * 100
+    store.node_embeddings_list = [d.embedding for d in store.nodes]
 
     assert len(store.get_similar(a1, top_k=3)) == 3
     assert store.get_similar(a1)[0] == a2
@@ -107,19 +106,19 @@ def test_similar_nodes_scaled():
 
 
 def test_docstore_add():
-    a1, a2, b = create_test_documents()
+    a1, a2, b = create_test_nodes()
 
     fake_embeddings = FakeEmbeddings()
     splitter = TokenTextSplitter(chunk_size=100, chunk_overlap=0)
     store = InMemoryDocumentStore(splitter=splitter, embeddings=fake_embeddings)
     docs_added = []
     for doc in [a1, a2, b]:
-        store.add(doc)
+        store.add_nodes([doc])
         docs_added.append(doc)
-        assert store.documents_list == docs_added
-        assert store.embeddings_list == [d.embedding for d in docs_added]
+        assert store.nodes == docs_added
+        assert store.node_embeddings_list == [d.embedding for d in docs_added]
 
-    assert store.get(a1.doc_id) == a1
+    assert store.get_node(a1.doc_id) == a1
 
 
 @pytest.mark.asyncio
@@ -142,20 +141,20 @@ def test_docstore_add_batch():
     store = InMemoryDocumentStore(splitter=None, embeddings=fake_embeddings)  # type: ignore
 
     # add documents in batch
-    docs = create_test_documents(with_embeddings=False)
-    store.add(docs)
+    nodes = create_test_nodes(with_embeddings=False)
+    store.add_nodes(nodes)
     assert (
-        store.documents_map[docs[0].doc_id].embedding
-        == fake_embeddings.embeddings[docs[0].page_content]
+        store.node_map[nodes[0].doc_id].embedding
+        == fake_embeddings.embeddings[nodes[0].page_content]
     )
     # add documents in batch that have some embeddings
-    c = Document(doc_id="c", page_content="c", filename="c", embedding=[0.0] * 768)
-    d = Document(doc_id="d", page_content="d", filename="d", embedding=[0.0] * 768)
-    store.add([c, d])
+    c = Node(doc_id="c", page_content="c", filename="c", embedding=[0.0] * 768)
+    d = Node(doc_id="d", page_content="d", filename="d", embedding=[0.0] * 768)
+    store.add_nodes([c, d])
 
     # test get() and that embeddings are correct
-    assert store.get(c.doc_id).embedding == [0.0] * 768
-    assert store.get(d.doc_id).embedding == [0.0] * 768
-    assert len(store.documents_list) == 5
-    assert len(store.embeddings_list) == 5
-    assert len(store.documents_map) == 5
+    assert store.get_node(c.doc_id).embedding == [0.0] * 768
+    assert store.get_node(d.doc_id).embedding == [0.0] * 768
+    assert len(store.nodes) == 5
+    assert len(store.node_embeddings_list) == 5
+    assert len(store.node_map) == 5
