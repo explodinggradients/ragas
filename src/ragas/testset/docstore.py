@@ -12,7 +12,7 @@ from langchain_core.documents import Document as LCDocument
 from pydantic import Field
 
 from ragas.async_utils import run_async_tasks
-from ragas.embeddings.base import BaseRagasEmbeddings, embedding_factory
+from ragas.embeddings.base import BaseRagasEmbeddings
 
 Embedding = t.Union[t.List[float], npt.NDArray[np.float64]]
 
@@ -114,9 +114,7 @@ def get_top_k_embeddings(
 @dataclass
 class InMemoryDocumentStore(DocumentStore):
     splitter: TextSplitter
-    embeddings: t.Optional[BaseRagasEmbeddings] = field(
-        default_factory=embedding_factory, repr=False
-    )
+    embeddings: t.Optional[BaseRagasEmbeddings] = field(default=None, repr=False)
     documents_list: t.List[Document] = field(default_factory=list)
     embeddings_list: t.List[Embedding] = field(default_factory=list)
     documents_map: t.Dict[str, Document] = field(default_factory=dict)

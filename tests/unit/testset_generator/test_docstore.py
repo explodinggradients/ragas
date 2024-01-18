@@ -3,9 +3,32 @@ import pickle
 import typing as t
 
 import pytest
+from langchain.text_splitter import TokenTextSplitter
 from langchain_core.embeddings import Embeddings
 
 from ragas.testset.docstore import Document, InMemoryDocumentStore
+
+
+class FakeEmbeddings(Embeddings):
+    def __init__(self):
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_embs.pkl")
+        with open(path, "rb") as f:
+            self.embeddings: dict[str, t.Any] = pickle.load(f)
+
+    def _get_embedding(self, text: str) -> t.List[float]:
+        if text in self.embeddings:
+            return self.embeddings[text]
+        else:
+            return [0] * 768
+
+    def embed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
+        return [self._get_embedding(text) for text in texts]
+
+    def embed_query(self, text: str) -> t.List[float]:
+        return self._get_embedding(text)
+
+    async def aembed_query(self, text: str) -> t.List[float]:
+        return self._get_embedding(text)
 
 
 def test_adjacent_nodes():
@@ -13,7 +36,10 @@ def test_adjacent_nodes():
     a2 = Document(doc_id="a2", page_content="a2", filename="a")
     b = Document(doc_id="b", page_content="b", filename="b")
 
-    store = InMemoryDocumentStore(splitter=None)  # type: ignore
+    fake_embeddings = FakeEmbeddings()
+    splitter = TokenTextSplitter(chunk_size=100, chunk_overlap=0)
+
+    store = InMemoryDocumentStore(splitter=splitter, embeddings=fake_embeddings)
     store.documents_list = [a1, a2, b]
 
     assert store.get_adjascent(a1) == a2
@@ -53,7 +79,10 @@ def create_test_documents(with_embeddings=True):
 
 def test_similar_nodes():
     a1, a2, b = create_test_documents()
-    store = InMemoryDocumentStore(splitter=None)  # type: ignore
+
+    fake_embeddings = FakeEmbeddings()
+    splitter = TokenTextSplitter(chunk_size=100, chunk_overlap=0)
+    store = InMemoryDocumentStore(splitter=splitter, embeddings=fake_embeddings)
     store.documents_list = [a1, a2, b]
     store.embeddings_list = [d.embedding for d in store.documents_list]
 
@@ -66,7 +95,9 @@ def test_similar_nodes():
 
 def test_similar_nodes_scaled():
     a1, a2, b = create_test_documents()
-    store = InMemoryDocumentStore(splitter=None)  # type: ignore
+    fake_embeddings = FakeEmbeddings()
+    splitter = TokenTextSplitter(chunk_size=100, chunk_overlap=0)
+    store = InMemoryDocumentStore(splitter=splitter, embeddings=fake_embeddings)
     store.documents_list = [a1, a2, b] + [b] * 100
     store.embeddings_list = [d.embedding for d in store.documents_list]
 
@@ -77,7 +108,10 @@ def test_similar_nodes_scaled():
 
 def test_docstore_add():
     a1, a2, b = create_test_documents()
-    store = InMemoryDocumentStore(splitter=None)  # type: ignore
+
+    fake_embeddings = FakeEmbeddings()
+    splitter = TokenTextSplitter(chunk_size=100, chunk_overlap=0)
+    store = InMemoryDocumentStore(splitter=splitter, embeddings=fake_embeddings)
     docs_added = []
     for doc in [a1, a2, b]:
         store.add(doc)
@@ -86,28 +120,6 @@ def test_docstore_add():
         assert store.embeddings_list == [d.embedding for d in docs_added]
 
     assert store.get(a1.doc_id) == a1
-
-
-class FakeEmbeddings(Embeddings):
-    def __init__(self):
-        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_embs.pkl")
-        with open(path, "rb") as f:
-            self.embeddings: dict[str, t.Any] = pickle.load(f)
-
-    def _get_embedding(self, text: str) -> t.List[float]:
-        if text in self.embeddings:
-            return self.embeddings[text]
-        else:
-            return [0] * 768
-
-    def embed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
-        return [self._get_embedding(text) for text in texts]
-
-    def embed_query(self, text: str) -> t.List[float]:
-        return self._get_embedding(text)
-
-    async def aembed_query(self, text: str) -> t.List[float]:
-        return self._get_embedding(text)
 
 
 @pytest.mark.asyncio
