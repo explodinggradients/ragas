@@ -1,9 +1,10 @@
-from langchain.chat_models import ChatOpenAI
+from langchain_community.chat_models import ChatOpenAI
 
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 
 __all__ = [
     "BaseRagasLLM",
+    "LangchainLLMWrapper",
     "llm_factory",
 ]
 
