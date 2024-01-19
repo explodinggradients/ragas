@@ -5,28 +5,20 @@ from dataclasses import dataclass, field
 from random import choice
 
 from fsspec.exceptions import asyncio
-from langchain.prompts import ChatPromptTemplate
 from numpy.random import default_rng
 
 from ragas.llms import BaseRagasLLM
 from ragas.llms.json_load import load_as_json
-from ragas.llms.prompt import PromptValue
 from ragas.testset.docstore import Direction, Document, DocumentStore, Node
 from ragas.testset.prompts import (
     FILTER_QUESTION,
     MULTICONTEXT_QUESTION,
     SCORE_CONTEXT,
     SEED_QUESTION,
-    TABLE_QA,
-    demonstrations,
 )
 
 rng = default_rng()
 logger = logging.getLogger(__name__)
-
-
-def to_pv(prompt: ChatPromptTemplate) -> PromptValue:
-    return PromptValue(prompt_str=prompt.format())
 
 
 @dataclass
@@ -43,9 +35,8 @@ class NodeFilter(Filter):
         return asyncio.get_event_loop().run_until_complete(self.afilter(node))
 
     async def afilter(self, node: Node) -> t.Dict:
-        human_prompt = SCORE_CONTEXT.format(context=node.page_content)
-        prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = await self.llm.agenerate_text(prompt=to_pv(prompt))
+        prompt = SCORE_CONTEXT.format(context=node.page_content)
+        results = await self.llm.agenerate_text(prompt=prompt)
         output = results.generations[0][0].text.strip()
         score = load_as_json(output)
         score.update({"score": score.get("score", 0) >= self.threshold})
@@ -60,10 +51,8 @@ class QuestionFilter(Filter):
         return asyncio.get_event_loop().run_until_complete(self.afilter(question))
 
     async def afilter(self, question: str) -> bool:
-        human_prompt = FILTER_QUESTION.format(question=question)
-        prompt = ChatPromptTemplate.from_messages([human_prompt])
-
-        results = await self.llm.agenerate_text(prompt=to_pv(prompt))
+        prompt = FILTER_QUESTION.format(question=question)
+        results = await self.llm.agenerate_text(prompt=prompt)
         results = results.generations[0][0].text.strip()
         json_results = load_as_json(results)
         logger.debug("filtered question: %s", json_results)
@@ -161,25 +150,9 @@ class SimpleEvolution(Evolution):
 async def simple_evolution(
     llm: BaseRagasLLM, seed_doc: Document, is_table_present: bool = False
 ):
-    if is_table_present:
-        human_prompt = TABLE_QA.format(context=seed_doc.page_content)
-    else:
-        sample = rng.choice(demonstrations, 1)[0]  # type: ignore
-        questions = rng.choice(sample["questions"], 2, replace=False)
-        questions = (
-            "{"
-            + str({k: v for dic in questions.tolist() for k, v in dic.items()}).replace(
-                "'", '"'
-            )
-            + "}"
-        )
-        demo = f'Context:{sample["context"]}\nQuestions:{questions}'
-        human_prompt = SEED_QUESTION.format(
-            demonstration=demo, context=seed_doc.page_content
-        )
 
-    prompt = ChatPromptTemplate.from_messages([human_prompt])
-    results = llm.generate_text_with_hmpt(prompts=[prompt])
+    prompt = SEED_QUESTION.format(context=seed_doc.page_content)
+    results = llm.generate_text(prompt=prompt)
     results = results.generations[0][0].text
     if is_table_present:
         return [results]
@@ -194,10 +167,9 @@ async def multi_context_evolution(
     question = simple_evolution(llm, seed_node)
     print(question)
     similar_context = doc_store.get_similar(seed_node)[0]
-    human_prompt = MULTICONTEXT_QUESTION.format(
+    prompt = MULTICONTEXT_QUESTION.format(
         question=question, context1=seed_node.page_content, context2=similar_context
     )
-    prompt = ChatPromptTemplate.from_messages([human_prompt])
-    results = await llm.agenerate_text(prompt=to_pv(prompt))
+    results = await llm.agenerate_text(prompt=prompt)
     question = results.generations[0][0].text.strip()
     return question
