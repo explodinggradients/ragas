@@ -178,7 +178,7 @@ def evaluate(
             evaluation_rm.on_chain_error(e)
 
         raise e
-    finally:
+    else:
         result = Result(
             scores=Dataset.from_list(scores),
             dataset=dataset,
