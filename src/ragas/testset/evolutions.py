@@ -12,7 +12,7 @@ from ragas.llms.json_load import load_as_json
 from ragas.testset.docstore import Direction, Document, DocumentStore, Node
 from ragas.testset.prompts import (
     FILTER_QUESTION,
-    MULTICONTEXT_QUESTION,
+    MULTI_CONTEXT_QUESTION,
     SCORE_CONTEXT,
     SEED_QUESTION,
 )
@@ -150,7 +150,6 @@ class SimpleEvolution(Evolution):
 async def simple_evolution(
     llm: BaseRagasLLM, seed_doc: Document, is_table_present: bool = False
 ):
-
     prompt = SEED_QUESTION.format(context=seed_doc.page_content)
     results = llm.generate_text(prompt=prompt)
     results = results.generations[0][0].text
@@ -167,7 +166,7 @@ async def multi_context_evolution(
     question = simple_evolution(llm, seed_node)
     print(question)
     similar_context = doc_store.get_similar(seed_node)[0]
-    prompt = MULTICONTEXT_QUESTION.format(
+    prompt = MULTI_CONTEXT_QUESTION.format(
         question=question, context1=seed_node.page_content, context2=similar_context
     )
     results = await llm.agenerate_text(prompt=prompt)
