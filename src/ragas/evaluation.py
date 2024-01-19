@@ -48,6 +48,30 @@ def evaluate(
     metrics : list[Metric] , optional
         List of metrics to use for evaluation. If not provided then ragas will run the
         evaluation on the best set of metrics to give a complete view.
+    llm: BaseRagasLLM, optional
+        The language model to use for the metrics. If not provided then ragas will use
+        the default language model. This can we overridden by the llm specified in
+        the metric level with `metric.llm`.
+    embeddings: BaseRagasEmbeddings, optional
+        The embeddings to use for the metrics. If not provided then ragas will use
+        the default embeddings. This can we overridden by the embeddings specified in
+        the metric level with `metric.embeddings`.
+    callbacks: Callbacks, optional
+        Lifecycle Langchain Callbacks to run during evaluation. Check the
+        [langchain documentation](https://python.langchain.com/docs/modules/callbacks/)
+        for more information.
+    is_async: bool, optional
+        Whether to run the evaluation in async mode or not. If set to True then the
+        evaluation is run by calling the `metric.ascore` method. In case the llm or
+        embeddings does not support async then the evaluation can be run in sync mode
+        with `is_async=False`. Default is False.
+    max_workers: int, optional
+        The number of workers to use for the evaluation. This is used by the
+        `ThreadpoolExecutor` to run the evaluation in sync mode.
+    raise_exceptions: bool, optional
+        Whether to raise exceptions or not. If set to True then the evaluation will
+        raise an exception if any of the metrics fail. If set to False then the
+        evaluation will return `np.nan` for the row that failed. Default is True.
     column_map : dict[str, str], optional
         The column names of the dataset to use for evaluation. If the column names of
         the dataset are different from the default ones then you can provide the
