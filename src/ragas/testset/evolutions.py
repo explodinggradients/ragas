@@ -2,7 +2,6 @@ import logging
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from random import choice
 
 from fsspec.exceptions import asyncio
 from numpy.random import default_rng
@@ -11,9 +10,9 @@ from ragas.llms import BaseRagasLLM
 from ragas.llms.json_load import load_as_json
 from ragas.testset.docstore import Direction, Document, DocumentStore, Node
 from ragas.testset.prompts import (
+    context_scoring_prompt,
     filter_question_prompt,
     multi_context_question_prompt,
-    context_scoring_prompt,
     seed_question_prompt,
 )
 
@@ -132,10 +131,9 @@ class SimpleEvolution(Evolution):
             return await self.aretry_evolve(llm, docstore, update_count=False)
 
         # frame a basic question with with node
-        seed_questions = await simple_evolution(llm, merged_node)
+        seed_question = await simple_evolution(llm, merged_node)
         # NOTE: might need improvement
         # select only one seed question here
-        seed_question = choice(seed_questions)
         is_valid_question = await self.question_filter.afilter(seed_question)
         if not is_valid_question:
             # get more context to rewrite question
@@ -147,9 +145,7 @@ class SimpleEvolution(Evolution):
             return seed_question
 
 
-async def simple_evolution(
-    llm: BaseRagasLLM, seed_doc: Document
-):
+async def simple_evolution(llm: BaseRagasLLM, seed_doc: Document):
     prompt = seed_question_prompt.format(context=seed_doc.page_content)
     results = llm.generate_text(prompt=prompt)
     results = results.generations[0][0].text
@@ -160,7 +156,6 @@ async def multi_context_evolution(
     llm: BaseRagasLLM, seed_node: Node, doc_store: DocumentStore
 ):
     question = simple_evolution(llm, seed_node)
-    print(question)
     similar_context = doc_store.get_similar(seed_node)[0]
     prompt = multi_context_question_prompt.format(
         question=question, context1=seed_node.page_content, context2=similar_context
