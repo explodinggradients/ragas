@@ -40,7 +40,7 @@ def test_adjacent_nodes():
     splitter = TokenTextSplitter(chunk_size=100, chunk_overlap=0)
 
     store = InMemoryDocumentStore(splitter=splitter, embeddings=fake_embeddings)
-    store.documents_list = [a1, a2, b]
+    store.nodes = [a1, a2, b]
 
     assert store.get_adjacent(a1) == a2
     assert store.get_adjacent(a2, Direction.PREV) == a1
