@@ -35,7 +35,9 @@ class TestsetGenerator:
             from langchain.text_splitter import TokenTextSplitter
 
             splitter = TokenTextSplitter(chunk_size=chunk_size, chunk_overlap=0)
-            docstore = InMemoryDocumentStore(splitter)
+            docstore = InMemoryDocumentStore(
+                splitter=splitter, embeddings=embeddings_model
+            )
             return cls(
                 generator_llm=generator_llm_model,
                 critic_llm=critic_llm_model,
@@ -50,14 +52,15 @@ class TestsetGenerator:
                 docstore=docstore,
             )
 
-    def generate_with_llamaindex_docs(self, documents: t.Sequence[LlamaindexDocument]):
+    def generate_with_llamaindex_docs(
+        self, documents: t.Sequence[LlamaindexDocument], test_size: int
+    ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
             [Document.from_llamaindex_document(doc) for doc in documents]
         )
-        # create evolutions and add to executor queue
-        # run till completion - keep updating progress bar
-        #
+
+        return self.generate(test_size=test_size)
 
     def generate(self, test_size: int):
         node_filter = NodeFilter(self.critic_llm)
@@ -72,8 +75,9 @@ class TestsetGenerator:
                 self.docstore,
                 name=f"SimpleEvolution-{i}",
             )
-            try:
-                qs = exec.results()
-            except ValueError as e:
-                raise e
+
+        try:
+            qs = exec.results()
+        except ValueError as e:
+            raise e
         return qs

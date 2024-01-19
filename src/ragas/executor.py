@@ -121,6 +121,5 @@ class Executor:
             finally:
                 self.executor.shutdown(wait=False)
 
-        print(results)
         sorted_results = sorted(results, key=lambda x: x[0])
         return [r[1] for r in sorted_results]
