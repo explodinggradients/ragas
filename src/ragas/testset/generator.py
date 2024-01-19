@@ -2,12 +2,14 @@ import typing as t
 from dataclasses import dataclass
 
 from langchain.embeddings import OpenAIEmbeddings
-from langchain_community.chat_models import ChatOpenAI
+from langchain_openai.chat_models import ChatOpenAI
 from llama_index.readers.schema import Document as LlamaindexDocument
 
 from ragas.embeddings import BaseRagasEmbeddings
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
 from ragas.testset.docstore import Document, DocumentStore, InMemoryDocumentStore
+from ragas.executor import Executor
+from ragas.testset.evolutions import SimpleEvolution, QuestionFilter, NodeFilter
 
 
 @dataclass
@@ -37,15 +39,14 @@ class TestsetGenerator:
             return cls(
                 generator_llm=generator_llm_model,
                 critic_llm=critic_llm_model,
-                # TODO: remove type ignore after fixing embeddigns
-                embeddings=embeddings_model,  # type: ignore
+                embeddings=embeddings_model,
                 docstore=docstore,
             )
         else:
             return cls(
                 generator_llm=generator_llm_model,
                 critic_llm=critic_llm_model,
-                embeddings=embeddings_model,  # type: ignore
+                embeddings=embeddings_model,
                 docstore=docstore,
             )
 
@@ -56,3 +57,23 @@ class TestsetGenerator:
         )
         # create evolutions and add to executor queue
         # run till completion - keep updating progress bar
+        #
+
+    def generate(self, test_size: int):
+        node_filter = NodeFilter(self.critic_llm)
+        ques_filter = QuestionFilter(self.critic_llm)
+        exec = Executor()
+        qs = []
+        for i in range(test_size):
+            se = SimpleEvolution(node_filter, ques_filter)
+            exec.submit(
+                se.aevolve,
+                self.generator_llm,
+                self.docstore,
+                name=f"SimpleEvolution-{i}",
+            )
+            try:
+                qs = exec.results()
+            except ValueError as e:
+                raise e
+        return qs
