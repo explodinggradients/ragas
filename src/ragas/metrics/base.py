@@ -16,6 +16,7 @@ from ragas.callbacks import new_group
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
+    from ragas.embeddings import BaseRagasEmbeddings
     from ragas.llms import BaseRagasLLM
 
 
@@ -115,4 +116,20 @@ class MetricWithLLM(Metric):
         if self.llm is None:
             raise ValueError(
                 f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please initantiate a the metric with an LLM to run."  # noqa
+            )
+
+
+@dataclass
+class MetricWithEmbeddings(Metric):
+    embeddings: t.Optional[BaseRagasEmbeddings] = None
+
+    def init_model(self):
+        """
+        Init any models in the metric, this is invoked before evaluate()
+        to load all the models
+        Also check if the api key is valid for OpenAI and AzureOpenAI
+        """
+        if self.embeddings is None:
+            raise ValueError(
+                f"Metric '{self.name}' has no valid embeddings provided (self.embeddings is None). Please initantiate a the metric with an embeddings to run."  # noqa
             )

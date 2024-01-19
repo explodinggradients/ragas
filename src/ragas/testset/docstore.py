@@ -15,7 +15,7 @@ from langchain_core.pydantic_v1 import Field
 from llama_index.readers.schema import Document as LlamaindexDocument
 
 from ragas.async_utils import run_async_tasks
-from ragas.embeddings.base import BaseRagasEmbeddings, embedding_factory
+from ragas.embeddings.base import BaseRagasEmbeddings
 
 Embedding = t.Union[t.List[float], npt.NDArray[np.float64]]
 logger = logging.getLogger(__name__)
@@ -176,9 +176,7 @@ def get_top_k_embeddings(
 @dataclass
 class InMemoryDocumentStore(DocumentStore):
     splitter: TextSplitter
-    embeddings: BaseRagasEmbeddings = field(
-        default_factory=embedding_factory, repr=False
-    )
+    embeddings: t.Optional[BaseRagasEmbeddings] = field(default=None, repr=False)
     nodes: t.List[Node] = field(default_factory=list)
     node_embeddings_list: t.List[Embedding] = field(default_factory=list)
     node_map: t.Dict[str, Node] = field(default_factory=dict)
@@ -190,6 +188,8 @@ class InMemoryDocumentStore(DocumentStore):
         """
         Add documents in batch mode.
         """
+        assert self.embeddings is not None, "Embeddings must be set"
+
         # split documents with self.splitter into smaller nodes
         nodes = [
             Node.from_langchain_document(d)
@@ -201,6 +201,8 @@ class InMemoryDocumentStore(DocumentStore):
     def add_nodes(
         self, nodes: t.Sequence[Node], show_progress=True, desc: str = "embedding nodes"
     ):
+        assert self.embeddings is not None, "Embeddings must be set"
+
         # NOTE: Adds everything in async mode for now.
         embed_tasks = []
         docs_to_embed = []

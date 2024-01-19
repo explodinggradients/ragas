@@ -4,8 +4,6 @@ import os
 from functools import lru_cache
 
 DEBUG_ENV_VAR = "RAGAS_DEBUG"
-# constant to tell us that there is no key passed to the llm/embeddings
-NO_KEY = "no-key"
 
 
 @lru_cache(maxsize=1)

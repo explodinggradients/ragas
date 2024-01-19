@@ -2,23 +2,22 @@ from __future__ import annotations
 
 import logging
 import typing as t
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 
-from ragas.embeddings.base import HuggingfaceEmbeddings, embedding_factory
-from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.embeddings.base import HuggingfaceEmbeddings
+from ragas.metrics.base import EvaluationMode, MetricWithEmbeddings, MetricWithLLM
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
-    from ragas.embeddings.base import BaseRagasEmbeddings
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class AnswerSimilarity(MetricWithLLM):
+class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
     """
     Scores the semantic similarity of ground truth with generated answer.
     cross encoder score is used to quantify semantic similarity.
@@ -42,7 +41,6 @@ class AnswerSimilarity(MetricWithLLM):
     name: str = "answer_similarity"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.ga  # type: ignore
     batch_size: int = 15
-    embeddings: BaseRagasEmbeddings = field(default_factory=embedding_factory)
     is_cross_encoder: bool = False
     threshold: t.Optional[float] = None
 
@@ -59,6 +57,8 @@ class AnswerSimilarity(MetricWithLLM):
         super().init_model()
 
     def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
+        assert self.embeddings is not None, "embeddings must be set"
+
         ground_truths, answers = row["ground_truths"], row["answer"]
         ground_truths = [item[0] for item in ground_truths]
 
@@ -79,6 +79,8 @@ class AnswerSimilarity(MetricWithLLM):
         return scores.tolist()[0]
 
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks = []) -> float:
+        assert self.embeddings is not None, "embeddings must be set"
+
         ground_truths, answers = row["ground_truths"], row["answer"]
         ground_truths = [item[0] for item in ground_truths]
 

@@ -6,17 +6,15 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from ragas.embeddings.base import embedding_factory
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.metrics.base import EvaluationMode, MetricWithEmbeddings, MetricWithLLM
 
 logger = logging.getLogger(__name__)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
-    from ragas.embeddings.base import BaseRagasEmbeddings
     from ragas.llms.prompt import PromptValue
 
 QUESTION_GEN = Prompt(
@@ -51,7 +49,7 @@ QUESTION_GEN = Prompt(
 
 
 @dataclass
-class AnswerRelevancy(MetricWithLLM):
+class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
     """
     Scores the relevancy of the answer according to the given question.
     Answers with incomplete, redundant or unnecessary information is penalized.
@@ -76,7 +74,6 @@ class AnswerRelevancy(MetricWithLLM):
     question_generation: Prompt = field(default_factory=lambda: QUESTION_GEN)
     batch_size: int = 15
     strictness: int = 3
-    embeddings: BaseRagasEmbeddings = field(default_factory=embedding_factory)
 
     def init_model(self):
         super().init_model()
