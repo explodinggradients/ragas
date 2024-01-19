@@ -3,8 +3,8 @@ import typing as t
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 
-from tqdm.auto import tqdm
 import numpy as np
+from tqdm.auto import tqdm
 
 
 @dataclass
