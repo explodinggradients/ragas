@@ -1,8 +1,10 @@
+from langchain.prompts import HumanMessagePromptTemplate
+
 from ragas.llms.prompt import Prompt
 
 seed_question_prompt = Prompt(
     name="seed_question",
-    instruction="""Generate two questions from given context satisfying the rules given below:
+    instruction="""Generate a question from given context satisfying the rules given below:
     2.The question should be framed such that it must be clearly understood without providing context.
     3.The question should be fully answerable from information present in given context.""",
     examples=[
@@ -300,8 +302,6 @@ question_answer_prompt = Prompt(
 
 
 ## TODO: remove this
-
-from langchain.prompts import HumanMessagePromptTemplate
 
 SEED_QUESTION = HumanMessagePromptTemplate.from_template(
     """
