@@ -11,10 +11,10 @@ from ragas.llms import BaseRagasLLM
 from ragas.llms.json_load import load_as_json
 from ragas.testset.docstore import Direction, Document, DocumentStore, Node
 from ragas.testset.prompts import (
-    FILTER_QUESTION,
-    MULTI_CONTEXT_QUESTION,
-    SCORE_CONTEXT,
-    SEED_QUESTION,
+    filter_question_prompt,
+    multi_context_question_prompt,
+    context_scoring_prompt,
+    seed_question_prompt,
 )
 
 rng = default_rng()
@@ -35,7 +35,7 @@ class NodeFilter(Filter):
         return asyncio.get_event_loop().run_until_complete(self.afilter(node))
 
     async def afilter(self, node: Node) -> t.Dict:
-        prompt = SCORE_CONTEXT.format(context=node.page_content)
+        prompt = context_scoring_prompt.format(context=node.page_content)
         results = await self.llm.agenerate_text(prompt=prompt)
         output = results.generations[0][0].text.strip()
         score = load_as_json(output)
@@ -51,7 +51,7 @@ class QuestionFilter(Filter):
         return asyncio.get_event_loop().run_until_complete(self.afilter(question))
 
     async def afilter(self, question: str) -> bool:
-        prompt = FILTER_QUESTION.format(question=question)
+        prompt = filter_question_prompt.format(question=question)
         results = await self.llm.agenerate_text(prompt=prompt)
         results = results.generations[0][0].text.strip()
         json_results = load_as_json(results)
@@ -126,13 +126,13 @@ class SimpleEvolution(Evolution):
             self.nodes = docstore.get_random_nodes(k=1)
             self._root_node = self.nodes[0]
         merged_node = self.merged_nodes()
-        passed, table_is_present = await self.node_filter.afilter(self.nodes[0])
-        if not passed:
+        passed = await self.node_filter.afilter(self.nodes[0])
+        if not passed["score"]:
             self.nodes = docstore.get_random_nodes(k=1)
             return await self.aretry_evolve(llm, docstore, update_count=False)
 
         # frame a basic question with with node
-        seed_questions = await simple_evolution(llm, merged_node, table_is_present)
+        seed_questions = await simple_evolution(llm, merged_node)
         # NOTE: might need improvement
         # select only one seed question here
         seed_question = choice(seed_questions)
@@ -148,16 +148,12 @@ class SimpleEvolution(Evolution):
 
 
 async def simple_evolution(
-    llm: BaseRagasLLM, seed_doc: Document, is_table_present: bool = False
+    llm: BaseRagasLLM, seed_doc: Document
 ):
-    prompt = SEED_QUESTION.format(context=seed_doc.page_content)
+    prompt = seed_question_prompt.format(context=seed_doc.page_content)
     results = llm.generate_text(prompt=prompt)
     results = results.generations[0][0].text
-    if is_table_present:
-        return [results]
-    else:
-        results = load_as_json(results)
-        return [v for v in results.values()]
+    return results
 
 
 async def multi_context_evolution(
@@ -166,7 +162,7 @@ async def multi_context_evolution(
     question = simple_evolution(llm, seed_node)
     print(question)
     similar_context = doc_store.get_similar(seed_node)[0]
-    prompt = MULTI_CONTEXT_QUESTION.format(
+    prompt = multi_context_question_prompt.format(
         question=question, context1=seed_node.page_content, context2=similar_context
     )
     results = await llm.agenerate_text(prompt=prompt)
