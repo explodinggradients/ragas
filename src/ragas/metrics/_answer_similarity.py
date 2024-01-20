@@ -70,7 +70,12 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
             embeddings_1 = np.array(self.embeddings.embed_documents(ground_truths))
             embeddings_2 = np.array(self.embeddings.embed_documents(answers))
             similarity = embeddings_1 @ embeddings_2.T
-            scores = np.diagonal(similarity)
+            if similarity.size == 1:
+                # If similarity has only one value, directly use this value as scores
+                scores = similarity.flatten()
+            else:
+                # If similarity contains multiple values, extract the diagonal as scores
+                scores = np.diagonal(similarity)
 
         assert isinstance(scores, np.ndarray), "Expects ndarray"
         if self.threshold:
@@ -94,7 +99,10 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
             )
             embeddings_2 = np.array(await self.embeddings.aembed_documents(answers))
             similarity = embeddings_1 @ embeddings_2.T
-            scores = np.diagonal(similarity)
+            if similarity.size == 1:
+                scores = similarity.flatten()
+            else:
+                scores = np.diagonal(similarity)
 
         assert isinstance(scores, np.ndarray), "Expects ndarray"
         if self.threshold:
