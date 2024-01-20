@@ -8,7 +8,7 @@ format: ## Running code formatter: black and isort
 	@echo "(isort) Ordering imports..."
 	@isort .
 	@echo "(black) Formatting codebase..."
-	@black --config pyproject.toml src tests docs experiments
+	@black --config pyproject.toml src tests docs
 	@echo "(black) Formatting stubs..."
 	@find src -name "*.pyi" ! -name "*_pb2*" -exec black --pyi --config pyproject.toml {} \;
 	@echo "(ruff) Running fix only..."
@@ -25,14 +25,6 @@ clean: ## Clean all generated files
 	@cd $(GIT_ROOT) || exit 1
 	@find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 run-ci: format lint type ## Running all CI checks
-run-benchmarks: ## Run benchmarks
-	@echo "Running benchmarks..."
-	@cd $(GIT_ROOT)/tests/benchmarks && python benchmark_eval.py
-run-benchmarks-in-docker: ## Run benchmarks in docker
-	@echo "Running benchmarks in docker..."
-	@cd $(GIT_ROOT)
-	docker buildx build --build-arg OPENAI_API_KEY=$(OPENAI_API_KEY) -t ragas-benchmark -f $(GIT_ROOT)/tests/benchmarks/Dockerfile . 
-	docker inspect ragas-benchmark:latest | jq ".[0].Size" | numfmt --to=si
 test: ## Run tests
 	@echo "Running tests..."
 	@pytest tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
@@ -46,3 +38,16 @@ docs-site: ## Build and serve documentation
 	@python -m http.server --directory $(GIT_ROOT)/docs/_build/html
 watch-docs: ## Build and watch documentation
 	sphinx-autobuild docs docs/_build/html --watch $(GIT_ROOT)/src/ --ignore ".ipynb"
+
+# Benchmarks
+run-benchmarks-eval: ## Run benchmarks for Evaluation
+	@echo "Running benchmarks for Evaluation..."
+	@cd $(GIT_ROOT)/tests/benchmarks && python benchmark_eval.py
+run-benchmarks-testset: ## Run benchmarks for TestSet Generation
+	@echo "Running benchmarks for TestSet Generation..."
+	@cd $(GIT_ROOT)/tests/benchmarks && python benchmark_testsetgen.py
+run-benchmarks-in-docker: ## Run benchmarks in docker
+	@echo "Running benchmarks in docker..."
+	@cd $(GIT_ROOT)
+	docker buildx build --build-arg OPENAI_API_KEY=$(OPENAI_API_KEY) -t ragas-benchmark -f $(GIT_ROOT)/tests/benchmarks/Dockerfile . 
+	docker inspect ragas-benchmark:latest | jq ".[0].Size" | numfmt --to=si

@@ -1,3 +1,4 @@
+import os
 import time
 
 from datasets import DatasetDict, load_dataset
@@ -33,6 +34,7 @@ metrics = [
     answer_similarity,
 ]
 
+os.environ["PYTHONASYNCIODEBUG"] = "1"
 IGNORE_THREADS = False
 IGNORE_ASYNCIO = False
 
