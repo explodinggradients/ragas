@@ -3,6 +3,7 @@ import typing as t
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 
+import numpy as np
 from tqdm.auto import tqdm
 
 
@@ -74,7 +75,7 @@ class Executor:
             desc=self.desc,
             total=len(self.futures),
         ):
-            r = (-1, None)
+            r = (-1, np.nan)
             try:
                 r = await future
             except Exception as e:
@@ -109,11 +110,11 @@ class Executor:
                     desc=self.desc,
                     total=len(self.futures),
                 ):
-                    r = (-1, None)
+                    r = (-1, np.nan)
                     try:
                         r = future.result()
                     except Exception as e:
-                        r = (-1, None)
+                        r = (-1, np.nan)
                         if self.raise_exceptions:
                             raise e
                     finally:
@@ -121,6 +122,5 @@ class Executor:
             finally:
                 self.executor.shutdown(wait=False)
 
-        print(results)
         sorted_results = sorted(results, key=lambda x: x[0])
         return [r[1] for r in sorted_results]
