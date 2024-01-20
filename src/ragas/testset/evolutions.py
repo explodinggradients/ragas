@@ -2,31 +2,22 @@ import logging
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from random import choice
 
 from fsspec.exceptions import asyncio
-from langchain.prompts import ChatPromptTemplate
 from numpy.random import default_rng
 
 from ragas.llms import BaseRagasLLM
 from ragas.llms.json_load import load_as_json
-from ragas.llms.prompt import PromptValue
 from ragas.testset.docstore import Direction, Document, DocumentStore, Node
 from ragas.testset.prompts import (
-    FILTER_QUESTION,
-    MULTICONTEXT_QUESTION,
-    SCORE_CONTEXT,
-    SEED_QUESTION,
-    TABLE_QA,
-    demonstrations,
+    context_scoring_prompt,
+    filter_question_prompt,
+    multi_context_question_prompt,
+    seed_question_prompt,
 )
 
 rng = default_rng()
 logger = logging.getLogger(__name__)
-
-
-def to_pv(prompt: ChatPromptTemplate) -> PromptValue:
-    return PromptValue(prompt_str=prompt.format())
 
 
 @dataclass
@@ -43,9 +34,8 @@ class NodeFilter(Filter):
         return asyncio.get_event_loop().run_until_complete(self.afilter(node))
 
     async def afilter(self, node: Node) -> t.Dict:
-        human_prompt = SCORE_CONTEXT.format(context=node.page_content)
-        prompt = ChatPromptTemplate.from_messages([human_prompt])
-        results = await self.llm.agenerate_text(prompt=to_pv(prompt))
+        prompt = context_scoring_prompt.format(context=node.page_content)
+        results = await self.llm.agenerate_text(prompt=prompt)
         output = results.generations[0][0].text.strip()
         score = load_as_json(output)
         score.update({"score": score.get("score", 0) >= self.threshold})
@@ -60,10 +50,8 @@ class QuestionFilter(Filter):
         return asyncio.get_event_loop().run_until_complete(self.afilter(question))
 
     async def afilter(self, question: str) -> bool:
-        human_prompt = FILTER_QUESTION.format(question=question)
-        prompt = ChatPromptTemplate.from_messages([human_prompt])
-
-        results = await self.llm.agenerate_text(prompt=to_pv(prompt))
+        prompt = filter_question_prompt.format(question=question)
+        results = await self.llm.agenerate_text(prompt=prompt)
         results = results.generations[0][0].text.strip()
         json_results = load_as_json(results)
         logger.debug("filtered question: %s", json_results)
@@ -137,16 +125,15 @@ class SimpleEvolution(Evolution):
             self.nodes = docstore.get_random_nodes(k=1)
             self._root_node = self.nodes[0]
         merged_node = self.merged_nodes()
-        passed, table_is_present = await self.node_filter.afilter(self.nodes[0])
-        if not passed:
+        passed = await self.node_filter.afilter(self.nodes[0])
+        if not passed["score"]:
             self.nodes = docstore.get_random_nodes(k=1)
             return await self.aretry_evolve(llm, docstore, update_count=False)
 
         # frame a basic question with with node
-        seed_questions = await simple_evolution(llm, merged_node, table_is_present)
+        seed_question = await simple_evolution(llm, merged_node)
         # NOTE: might need improvement
         # select only one seed question here
-        seed_question = choice(seed_questions)
         is_valid_question = await self.question_filter.afilter(seed_question)
         if not is_valid_question:
             # get more context to rewrite question
@@ -158,46 +145,21 @@ class SimpleEvolution(Evolution):
             return seed_question
 
 
-async def simple_evolution(
-    llm: BaseRagasLLM, seed_doc: Document, is_table_present: bool = False
-):
-    if is_table_present:
-        human_prompt = TABLE_QA.format(context=seed_doc.page_content)
-    else:
-        sample = rng.choice(demonstrations, 1)[0]  # type: ignore
-        questions = rng.choice(sample["questions"], 2, replace=False)
-        questions = (
-            "{"
-            + str({k: v for dic in questions.tolist() for k, v in dic.items()}).replace(
-                "'", '"'
-            )
-            + "}"
-        )
-        demo = f'Context:{sample["context"]}\nQuestions:{questions}'
-        human_prompt = SEED_QUESTION.format(
-            demonstration=demo, context=seed_doc.page_content
-        )
-
-    prompt = ChatPromptTemplate.from_messages([human_prompt])
-    results = llm.generate_text_with_hmpt(prompts=[prompt])
+async def simple_evolution(llm: BaseRagasLLM, seed_doc: Document):
+    prompt = seed_question_prompt.format(context=seed_doc.page_content)
+    results = llm.generate_text(prompt=prompt)
     results = results.generations[0][0].text
-    if is_table_present:
-        return [results]
-    else:
-        results = load_as_json(results)
-        return [v for v in results.values()]
+    return results
 
 
 async def multi_context_evolution(
     llm: BaseRagasLLM, seed_node: Node, doc_store: DocumentStore
 ):
     question = simple_evolution(llm, seed_node)
-    print(question)
     similar_context = doc_store.get_similar(seed_node)[0]
-    human_prompt = MULTICONTEXT_QUESTION.format(
+    prompt = multi_context_question_prompt.format(
         question=question, context1=seed_node.page_content, context2=similar_context
     )
-    prompt = ChatPromptTemplate.from_messages([human_prompt])
-    results = await llm.agenerate_text(prompt=to_pv(prompt))
+    results = await llm.agenerate_text(prompt=prompt)
     question = results.generations[0][0].text.strip()
     return question
