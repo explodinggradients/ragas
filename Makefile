@@ -25,7 +25,6 @@ clean: ## Clean all generated files
 	@cd $(GIT_ROOT) || exit 1
 	@find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 run-ci: format lint type ## Running all CI checks
-	docker inspect ragas-benchmark:latest | jq ".[0].Size" | numfmt --to=si
 test: ## Run tests
 	@echo "Running tests..."
 	@pytest tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
@@ -51,3 +50,4 @@ run-benchmarks-in-docker: ## Run benchmarks in docker
 	@echo "Running benchmarks in docker..."
 	@cd $(GIT_ROOT)
 	docker buildx build --build-arg OPENAI_API_KEY=$(OPENAI_API_KEY) -t ragas-benchmark -f $(GIT_ROOT)/tests/benchmarks/Dockerfile . 
+	docker inspect ragas-benchmark:latest | jq ".[0].Size" | numfmt --to=si

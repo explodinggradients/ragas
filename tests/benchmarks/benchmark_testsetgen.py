@@ -1,7 +1,9 @@
 import os
-from ragas.testset.generator import TestsetGenerator
-from llama_index import download_loader
 import time
+
+from llama_index import download_loader
+
+from ragas.testset.generator import TestsetGenerator
 
 generator = TestsetGenerator.with_openai()
 

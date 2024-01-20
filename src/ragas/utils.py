@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import os
 import logging
+import os
 from functools import lru_cache
 
 DEBUG_ENV_VAR = "RAGAS_DEBUG"
