@@ -8,7 +8,7 @@ format: ## Running code formatter: black and isort
 	@echo "(isort) Ordering imports..."
 	@isort .
 	@echo "(black) Formatting codebase..."
-	@black --config pyproject.toml src tests docs experiments
+	@black --config pyproject.toml src tests docs
 	@echo "(black) Formatting stubs..."
 	@find src -name "*.pyi" ! -name "*_pb2*" -exec black --pyi --config pyproject.toml {} \;
 	@echo "(ruff) Running fix only..."
