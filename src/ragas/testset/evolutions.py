@@ -89,7 +89,7 @@ class Evolution:
     ):
         if update_count:
             self._tries += 1
-        print("retrying evolution: %s times", self._tries)
+        logger.info("retrying evolution: %s times", self._tries)
         if self._tries > self.max_tries:
             # TODO: make this into a custom exception
             raise ValueError("Max tries reached")
