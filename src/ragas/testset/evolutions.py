@@ -130,8 +130,10 @@ class SimpleEvolution(Evolution):
             self.nodes = docstore.get_random_nodes(k=1)
             return await self.aretry_evolve(llm, docstore, update_count=False)
 
-        # frame a basic question with with node
-        seed_question = await simple_evolution(llm, merged_node)
+        results = llm.generate_text(
+            prompt=seed_question_prompt.format(context=merged_node.page_content)
+        )
+        seed_question = results.generations[0][0].text
         # NOTE: might need improvement
         # select only one seed question here
         is_valid_question = await self.question_filter.afilter(seed_question)
@@ -145,13 +147,6 @@ class SimpleEvolution(Evolution):
             return seed_question
 
 
-async def simple_evolution(llm: BaseRagasLLM, seed_doc: Document):
-    prompt = seed_question_prompt.format(context=seed_doc.page_content)
-    results = llm.generate_text(prompt=prompt)
-    results = results.generations[0][0].text
-    return results
-
-
 async def multi_context_evolution(
     llm: BaseRagasLLM, seed_node: Node, doc_store: DocumentStore
 ):
@@ -163,3 +158,7 @@ async def multi_context_evolution(
     results = await llm.agenerate_text(prompt=prompt)
     question = results.generations[0][0].text.strip()
     return question
+
+
+class MultiContext(Evolution):
+    ...
