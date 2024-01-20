@@ -46,6 +46,11 @@ The prompts belonging to respective metrics will be now automatically adapted to
 
 Let’s inspect the adapted prompt belonging to the answer correctness metric
 
+```{note}
+When adapting prompts, it is recommended to review them manually prior to evaluation, as language models may introduce errors during translation
+````
+
+
 ```{code-block} python
 print(answer_correctness.correctness_prompt.to_string())
 ```
