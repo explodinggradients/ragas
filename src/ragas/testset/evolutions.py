@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import typing as t
 from abc import ABC, abstractmethod
@@ -14,10 +16,14 @@ from ragas.testset.prompts import (
     filter_question_prompt,
     multi_context_question_prompt,
     seed_question_prompt,
+    compress_question_prompt,
 )
 
 rng = default_rng()
 logger = logging.getLogger(__name__)
+
+if t.TYPE_CHECKING:
+    from ragas.llms.prompt import Prompt
 
 
 @dataclass
@@ -147,18 +153,49 @@ class SimpleEvolution(Evolution):
             return seed_question
 
 
-async def multi_context_evolution(
-    llm: BaseRagasLLM, seed_node: Node, doc_store: DocumentStore
-):
-    question = simple_evolution(llm, seed_node)
-    similar_context = doc_store.get_similar(seed_node)[0]
-    prompt = multi_context_question_prompt.format(
-        question=question, context1=seed_node.page_content, context2=similar_context
-    )
-    results = await llm.agenerate_text(prompt=prompt)
-    question = results.generations[0][0].text.strip()
-    return question
+@dataclass
+class MultiContextEvolution(Evolution):
+    se: SimpleEvolution = field(init=False, repr=False)
 
+    def __post_init__(self):
+        # init simple evolution to get seed question
+        self.se = SimpleEvolution(self.node_filter, self.question_filter)
 
-class MultiContext(Evolution):
-    ...
+    def _transform_question(
+        self, llm: BaseRagasLLM, prompt: Prompt, question: str
+    ) -> str:
+        results = llm.generate_text(prompt=prompt.format(question=question))
+        return results.generations[0][0].text.strip()
+
+    def evolve(self, llm: BaseRagasLLM, docstore: DocumentStore):
+        logger.info("evolving question")
+        return asyncio.get_event_loop().run_until_complete(self.aevolve(llm, docstore))
+
+    async def aevolve(self, llm: BaseRagasLLM, docstore: DocumentStore) -> str:
+        # gerenate seed question
+        self._root_node = docstore.get_random_nodes(k=1)[0]
+        question = await self.se.aevolve(llm, docstore)
+        logger.debug("[MultiContextEvolution] simple question generated: %s", question)
+
+        # find a similar node and generate a question based on both
+        similar_context = docstore.get_similar(self._root_node)[0]
+        prompt = multi_context_question_prompt.format(
+            question=question,
+            context1=self._root_node.page_content,
+            context2=similar_context,
+        )
+        results = await llm.agenerate_text(prompt=prompt)
+        question = results.generations[0][0].text.strip()
+        logger.debug(
+            "[MultiContextEvolution] multicontext question generated: %s", question
+        )
+
+        # compress the question
+        compressed_question = self._transform_question(
+            llm=llm, prompt=compress_question_prompt, question=question
+        )
+        logger.debug(
+            "[MultiContextEvolution] multicontext question compressed: %s", question
+        )
+
+        return compressed_question
