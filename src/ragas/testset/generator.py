@@ -6,10 +6,10 @@ from langchain_openai.chat_models import ChatOpenAI
 from llama_index.readers.schema import Document as LlamaindexDocument
 
 from ragas.embeddings import BaseRagasEmbeddings
+from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
 from ragas.testset.docstore import Document, DocumentStore, InMemoryDocumentStore
-from ragas.executor import Executor
-from ragas.testset.evolutions import SimpleEvolution, QuestionFilter, NodeFilter
+from ragas.testset.evolutions import NodeFilter, QuestionFilter, SimpleEvolution
 
 
 @dataclass
