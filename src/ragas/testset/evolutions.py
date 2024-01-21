@@ -4,6 +4,7 @@ import logging
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from collections import namedtuple
 
 from fsspec.exceptions import asyncio
 from numpy.random import default_rng
@@ -19,6 +20,7 @@ from ragas.testset.prompts import (
     compress_question_prompt,
     reasoning_question_prompt,
     evolution_elimination_prompt,
+    question_answer_prompt,
 )
 
 rng = default_rng()
@@ -92,6 +94,18 @@ class CurrentNodes:
     nodes: t.List[Node] = field(default_factory=list)
 
 
+DataRow = namedtuple(
+    "DataRow",
+    [
+        "question",
+        "context",
+        "answer",
+        "question_type",
+        "evolution_elimination",
+    ],
+)
+
+
 @dataclass
 class Evolution:
     generator_llm: BaseRagasLLM
@@ -104,57 +118,25 @@ class Evolution:
     @staticmethod
     def merge_nodes(nodes: CurrentNodes) -> Node:
         return Node(
-            doc_id="merged", page_content=" ".join(n.page_content for n in nodes.nodes)
+            doc_id="merged", page_content="\n".join(n.page_content for n in nodes.nodes)
         )
 
     async def aretry_evolve(
         self, current_nodes: CurrentNodes, update_count: bool = True
-    ):
+    ) -> str:
         if update_count:
             self._tries += 1
         logger.info("retrying evolution: %s times", self._tries)
         if self._tries > self.max_tries:
             # TODO: make this into a custom exception
             raise ValueError("Max tries reached")
-        return await self.aevolve(current_nodes)
+        return await self._aevolve(current_nodes)
 
     def _transform_question(self, prompt: Prompt, question: str) -> str:
         results = self.generator_llm.generate_text(
             prompt=prompt.format(question=question)
         )
         return results.generations[0][0].text.strip()
-
-    @abstractmethod
-    def evolve(self, current_nodes: CurrentNodes) -> str:
-        ...
-
-    @abstractmethod
-    async def aevolve(self, current_nodes: CurrentNodes) -> str:
-        ...
-
-
-@dataclass
-class ComplexEvolution(Evolution):
-    se: SimpleEvolution = field(init=False, repr=False)
-    evolution_filter: EvolutionFilter = field(init=False, repr=False)
-
-    def __post_init__(self):
-        # init simple evolution to get seed question
-        self.se = SimpleEvolution(
-            generator_llm=self.generator_llm,
-            docstore=self.docstore,
-            node_filter=self.node_filter,
-            question_filter=self.question_filter,
-        )
-        # init evolution filter with critic llm from another filter
-        self.evolution_filter = EvolutionFilter(self.node_filter.llm)
-
-
-@dataclass
-class SimpleEvolution(Evolution):
-    def evolve(self, current_nodes: CurrentNodes) -> str:
-        logger.info("evolving question")
-        return asyncio.get_event_loop().run_until_complete(self.aevolve(current_nodes))
 
     def _get_more_adjacent_nodes(self, current_nodes: CurrentNodes):
         """
@@ -182,7 +164,69 @@ class SimpleEvolution(Evolution):
 
         return current_nodes
 
-    async def aevolve(self, current_nodes: CurrentNodes) -> str:
+    def evolve(self, current_nodes: CurrentNodes) -> DataRow:
+        return asyncio.get_event_loop().run_until_complete(self.aevolve(current_nodes))
+
+    async def aevolve(self, current_nodes: CurrentNodes) -> DataRow:
+        evolved_question = await self._aevolve(current_nodes)
+        return self.generate_datarow(
+            question=evolved_question,
+            current_nodes=current_nodes,
+        )
+
+    @abstractmethod
+    async def _aevolve(self, current_nodes: CurrentNodes) -> str:
+        ...
+
+    def generate_datarow(
+        self,
+        question: str,
+        current_nodes: CurrentNodes,
+        question_type: str = "",
+        evolution_elimination: bool = False,
+    ):
+        merged_nodes = self.merge_nodes(current_nodes)
+        results = self.generator_llm.generate_text(
+            prompt=question_answer_prompt.format(
+                question=question, context=merged_nodes.page_content
+            )
+        )
+        results = results.generations[0][0].text.strip()
+        json_results = load_as_json(results)
+        logger.debug("answer generated: %s", json_results)
+
+        # TODO: what do if answer is -1?
+        answer = json_results.get("answer")
+
+        return DataRow(
+            question=question,
+            context=merged_nodes.page_content,
+            answer=answer,
+            question_type=question_type,
+            evolution_elimination=evolution_elimination,
+        )
+
+
+@dataclass
+class ComplexEvolution(Evolution):
+    se: SimpleEvolution = field(init=False, repr=False)
+    evolution_filter: EvolutionFilter = field(init=False, repr=False)
+
+    def __post_init__(self):
+        # init simple evolution to get seed question
+        self.se = SimpleEvolution(
+            generator_llm=self.generator_llm,
+            docstore=self.docstore,
+            node_filter=self.node_filter,
+            question_filter=self.question_filter,
+        )
+        # init evolution filter with critic llm from another filter
+        self.evolution_filter = EvolutionFilter(self.node_filter.llm)
+
+
+@dataclass
+class SimpleEvolution(Evolution):
+    async def _aevolve(self, current_nodes: CurrentNodes) -> str:
         merged_node = self.merge_nodes(current_nodes)
         passed = await self.node_filter.afilter(current_nodes.root_node)
         if not passed["score"]:
@@ -209,12 +253,8 @@ class SimpleEvolution(Evolution):
 
 @dataclass
 class MultiContextEvolution(ComplexEvolution):
-    def evolve(self, current_nodes: CurrentNodes) -> str:
-        logger.info("evolving question")
-        return asyncio.get_event_loop().run_until_complete(self.aevolve(current_nodes))
-
-    async def aevolve(self, current_nodes: CurrentNodes) -> str:
-        simple_question = await self.se.aevolve(current_nodes)
+    async def _aevolve(self, current_nodes: CurrentNodes) -> str:
+        simple_question = await self.se._aevolve(current_nodes)
         logger.debug(
             "[MultiContextEvolution] simple question generated: %s", simple_question
         )
@@ -258,12 +298,8 @@ class MultiContextEvolution(ComplexEvolution):
 
 @dataclass
 class ReasoningEvolution(ComplexEvolution):
-    def evolve(self, current_nodes: CurrentNodes) -> str:
-        logger.debug("evolving question")
-        return asyncio.get_event_loop().run_until_complete(self.aevolve(current_nodes))
-
-    async def aevolve(self, current_nodes: CurrentNodes) -> str:
-        simple_question = await self.se.aevolve(current_nodes)
+    async def _aevolve(self, current_nodes: CurrentNodes) -> str:
+        simple_question = await self.se._aevolve(current_nodes)
         logger.debug(
             "[ReasoningEvolution] simple question generated: %s", simple_question
         )
