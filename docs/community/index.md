@@ -1,22 +1,25 @@
-# **Community ❤️**
-
-## **Welcome to Our Community!**
+(community)=
+# Community ❤️
 
 **"Alone we can do so little; together we can do so much." - Helen Keller**
 
 Our project thrives on the vibrant energy, diverse skills, and shared passion of our community. It's not just about code; it's about people coming together to create something extraordinary. This space celebrates every contribution, big or small, and features the amazing people who make it all happen.
 
-**🗓 {bdg-link-primary-line}`Greg Loughnane's YT live event on RAG eval with LangChain and RAGAS on Jan 31 <https://www.youtube.com/@AI-Makerspace/featured>`**
+:::{note}
+**📅 Upcomming Events**
+
+- [Greg Loughnane's](https://www.youtube.com/@AI-Makerspace) YT live event on RAG eval with LangChain and RAGAS on [Jan 31](https://lu.ma/theartofrag)
+:::
 
 
-### **🌟  Contributors**
+## **🌟  Contributors**
 
 Meet some of our outstanding members who made significant contributions !
 
 - [Tino Max Thayil](https://github.com/tinomaxthayil)
 - [Da Chen](https://github.com/yuukidach)
 
-### **📚 Blog & Insights**
+## **📚 Blog & Insights**
 
 Explore insightful articles, tutorials, and stories written by and for our community members.
 
@@ -28,7 +31,7 @@ Explore insightful articles, tutorials, and stories written by and for our commu
 - [Langchain’s](https://blog.langchain.dev/) work about [RAG Evaluating RAG pipelines with RAGAs and Langsmith](https://blog.langchain.dev/evaluating-rag-pipelines-with-ragas-langsmith/) provides a complete tutorial on how to leverage both tools to evaluate RAG pipelines.
 - [Plaban Nayak](https://nayakpplaban.medium.com/) shares his work [Evaluate RAG Pipeline using RAGAS](https://medium.aiplanet.com/evaluate-rag-pipeline-using-ragas-fbdd8dd466c1) on building and evaluating a simple RAG using Langchain and RAGAS
 
-### **📅 Events**
+## **📅 Events**
 
 Stay updated with our latest gatherings, meetups, and online webinars.
 
