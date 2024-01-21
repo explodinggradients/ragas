@@ -17,6 +17,7 @@ from ragas.testset.prompts import (
     multi_context_question_prompt,
     seed_question_prompt,
     compress_question_prompt,
+    reasoning_question_prompt,
 )
 
 rng = default_rng()
@@ -174,15 +175,17 @@ class MultiContextEvolution(Evolution):
     async def aevolve(self, llm: BaseRagasLLM, docstore: DocumentStore) -> str:
         # gerenate seed question
         self._root_node = docstore.get_random_nodes(k=1)[0]
-        question = await self.se.aevolve(llm, docstore)
-        logger.debug("[MultiContextEvolution] simple question generated: %s", question)
+        simple_question = await self.se.aevolve(llm, docstore)
+        logger.debug(
+            "[MultiContextEvolution] simple question generated: %s", simple_question
+        )
 
         # find a similar node and generate a question based on both
-        similar_context = docstore.get_similar(self._root_node)[0]
+        similar_node = docstore.get_similar(self._root_node)[0]
         prompt = multi_context_question_prompt.format(
-            question=question,
+            question=simple_question,
             context1=self._root_node.page_content,
-            context2=similar_context,
+            context2=similar_node,
         )
         results = await llm.agenerate_text(prompt=prompt)
         question = results.generations[0][0].text.strip()
@@ -198,4 +201,44 @@ class MultiContextEvolution(Evolution):
             "[MultiContextEvolution] multicontext question compressed: %s", question
         )
 
+        if not await self.question_filter.afilter(compressed_question):
+            # retry
+            ...
+
+        # if not await self.evolution_elimation.afilter(
+        #     simple_question, compressed_question
+        # ):
+        #     ...
+
         return compressed_question
+
+
+@dataclass
+class ReasoningEvolution(Evolution):
+    se: SimpleEvolution = field(init=False, repr=False)
+
+    def __post_init__(self):
+        # init simple evolution to get seed question
+        self.se = SimpleEvolution(self.node_filter, self.question_filter)
+
+    def evolve(self, llm: BaseRagasLLM, docstore: DocumentStore):
+        logger.debug("evolving question")
+        return asyncio.get_event_loop().run_until_complete(self.aevolve(llm, docstore))
+
+    async def aevolve(self, llm: BaseRagasLLM, docstore: DocumentStore) -> str:
+        self._root_node = docstore.get_random_nodes(k=1)[0]
+        simple_question = await self.se.aevolve(llm, docstore)
+        logger.debug(
+            "[MultiContextEvolution] simple question generated: %s", simple_question
+        )
+
+        result = await llm.agenerate_text(
+            prompt=reasoning_question_prompt.format(
+                question=simple_question, context=self._root_node
+            )
+        )
+        reasoning_question = result.generations[0][0].text.strip()
+        if not await self.question_filter.afilter(reasoning_question):
+            # retry
+            ...
+        return reasoning_question
