@@ -3,9 +3,12 @@ import time
 
 from llama_index import download_loader
 
+from ragas.testset.evolutions import multi_context, reasoning, simple
 from ragas.testset.generator import TestsetGenerator
 
 generator = TestsetGenerator.with_openai()
+
+distributions = {simple: 0.5, multi_context: 0.4, reasoning: 0.1}
 
 
 def get_documents():
@@ -30,7 +33,9 @@ if __name__ == "__main__":
         os.environ["PYTHONASYNCIODEBUG"] = "1"
         print("Starting [Asyncio]")
         start = time.time()
-        generator.generate_with_llamaindex_docs(documents, test_size=100)
+        generator.generate_with_llamaindex_docs(
+            documents=documents, test_size=100, distributions=distributions
+        )
         print(f"Time taken: {time.time() - start:.2f}s")
 
     # Threads
