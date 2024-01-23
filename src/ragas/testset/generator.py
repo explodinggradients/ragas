@@ -13,11 +13,11 @@ from ragas.embeddings import BaseRagasEmbeddings
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
 from ragas.testset.docstore import Document, DocumentStore, InMemoryDocumentStore
-from ragas.testset.evolutions import ComplexEvolution, CurrentNodes, DataRow, Evolution
+from ragas.testset.evolutions import ComplexEvolution, CurrentNodes, DataRow
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 
 logger = logging.getLogger(__name__)
-Distributions = t.Dict[Evolution, float]
+Distributions = t.Dict[t.Any, float]
 
 
 @dataclass
