@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import typing as t
 from dataclasses import dataclass
 
+import pandas as pd
 from langchain.embeddings import OpenAIEmbeddings
 from langchain_openai.chat_models import ChatOpenAI
 from llama_index.readers.schema import Document as LlamaindexDocument
@@ -9,7 +12,35 @@ from ragas.embeddings import BaseRagasEmbeddings
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
 from ragas.testset.docstore import Document, DocumentStore, InMemoryDocumentStore
-from ragas.testset.evolutions import NodeFilter, QuestionFilter, SimpleEvolution
+from ragas.testset.evolutions import ComplexEvolution, CurrentNodes, DataRow, Evolution
+from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
+
+Distributions = t.Dict[Evolution, float]
+
+
+@dataclass
+class TestDataset:
+    """
+    TestDataset class
+    """
+
+    test_data: t.List[DataRow]
+
+    def to_pandas(self) -> pd.DataFrame:
+        data_samples = []
+        for data in self.test_data:
+            question_type = data.question_type
+            data = {
+                "question": data.question,
+                "context": data.context,
+                "answer": "" if data.answer is None else data.answer,
+                "question_type": question_type,
+                "episode_done": True,
+                "evolution_elimination": data.evolution_elimination,
+            }
+            data_samples.append(data)
+
+        return pd.DataFrame.from_records(data_samples)
 
 
 @dataclass
@@ -53,31 +84,52 @@ class TestsetGenerator:
             )
 
     def generate_with_llamaindex_docs(
-        self, documents: t.Sequence[LlamaindexDocument], test_size: int
+        self,
+        documents: t.Sequence[LlamaindexDocument],
+        test_size: int,
+        distributions: Distributions = {},
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
             [Document.from_llamaindex_document(doc) for doc in documents]
         )
 
-        return self.generate(test_size=test_size)
+        return self.generate(test_size=test_size, distributions=distributions)
 
-    def generate(self, test_size: int):
-        node_filter = NodeFilter(self.critic_llm)
-        ques_filter = QuestionFilter(self.critic_llm)
-        exec = Executor()
-        qs = []
-        for i in range(test_size):
-            se = SimpleEvolution(node_filter, ques_filter)
-            exec.submit(
-                se.aevolve,
-                self.generator_llm,
-                self.docstore,
-                name=f"SimpleEvolution-{i}",
-            )
+    def generate(self, test_size: int, distributions: Distributions = {}):
+        # init filters and evolutions
+        for evolution in distributions.keys():
+            if evolution.generator_llm is None:
+                evolution.generator_llm = self.generator_llm
+            if evolution.docstore is None:
+                evolution.docstore = self.docstore
+
+            if evolution.question_filter is None:
+                evolution.question_filter = QuestionFilter(llm=self.critic_llm)
+            if evolution.node_filter is None:
+                evolution.node_filter = NodeFilter(llm=self.critic_llm)
+
+            if isinstance(evolution, ComplexEvolution):
+                evolution.init_evolution()
+                if evolution.evolution_filter is None:
+                    evolution.evolution_filter = EvolutionFilter(llm=self.critic_llm)
+
+        exec = Executor(raise_exceptions=True, is_async=True)
+
+        current_nodes = [
+            CurrentNodes(root_node=n, nodes=[n])
+            for n in self.docstore.get_random_nodes(k=test_size)
+        ]
+        for evolution, probability in distributions.items():
+            for i in range(round(probability * test_size)):
+                exec.submit(
+                    evolution.aevolve,
+                    current_nodes[i],
+                    name=f"{evolution.__class__.__name__}-{i}",
+                )
 
         try:
-            qs = exec.results()
+            test_data_rows = exec.results()
         except ValueError as e:
             raise e
-        return qs
+        return TestDataset(test_data=test_data_rows)
