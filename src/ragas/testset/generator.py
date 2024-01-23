@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from dataclasses import dataclass
 
@@ -15,6 +16,7 @@ from ragas.testset.docstore import Document, DocumentStore, InMemoryDocumentStor
 from ragas.testset.evolutions import ComplexEvolution, CurrentNodes, DataRow, Evolution
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 
+logger = logging.getLogger(__name__)
 Distributions = t.Dict[Evolution, float]
 
 
@@ -88,6 +90,7 @@ class TestsetGenerator:
         documents: t.Sequence[LlamaindexDocument],
         test_size: int,
         distributions: Distributions = {},
+        **kwargs,
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
@@ -96,9 +99,11 @@ class TestsetGenerator:
 
         return self.generate(test_size=test_size, distributions=distributions)
 
-    def generate(self, test_size: int, distributions: Distributions = {}):
+    def generate(
+        self, test_size: int, distributions: Distributions = {}, show_debug_logs=False
+    ):
         # init filters and evolutions
-        for evolution in distributions.keys():
+        for evolution in distributions:
             if evolution.generator_llm is None:
                 evolution.generator_llm = self.generator_llm
             if evolution.docstore is None:
@@ -113,8 +118,12 @@ class TestsetGenerator:
                 evolution.init_evolution()
                 if evolution.evolution_filter is None:
                     evolution.evolution_filter = EvolutionFilter(llm=self.critic_llm)
+        if show_debug_logs:
+            from ragas.utils import patch_logger
 
-        exec = Executor(raise_exceptions=True, is_async=True)
+            patch_logger("ragas.testset.evolutions", logging.DEBUG)
+
+        exec = Executor(desc="Generating", raise_exceptions=True, is_async=True)
 
         current_nodes = [
             CurrentNodes(root_node=n, nodes=[n])

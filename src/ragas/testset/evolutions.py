@@ -152,7 +152,7 @@ class Evolution:
         )
 
 
-@dataclass(unsafe_hash=True)
+@dataclass
 class SimpleEvolution(Evolution):
     async def _aevolve(self, current_tries: int, current_nodes: CurrentNodes) -> str:
         assert self.docstore is not None, "docstore cannot be None"
@@ -185,6 +185,9 @@ class SimpleEvolution(Evolution):
             # if valid question
             return seed_question
 
+    def __hash__(self):
+        return hash(self.__class__.__name__)
+
 
 @dataclass
 class ComplexEvolution(Evolution):
@@ -204,7 +207,7 @@ class ComplexEvolution(Evolution):
         self.evolution_filter = EvolutionFilter(self.node_filter.llm)
 
 
-@dataclass(unsafe_hash=True)
+@dataclass
 class MultiContextEvolution(ComplexEvolution):
     async def _aevolve(self, current_tries: int, current_nodes: CurrentNodes) -> str:
         assert self.docstore is not None, "docstore cannot be None"
@@ -253,8 +256,11 @@ class MultiContextEvolution(ComplexEvolution):
 
         return compressed_question
 
+    def __hash__(self):
+        return hash(self.__class__.__name__)
 
-@dataclass(unsafe_hash=True)
+
+@dataclass
 class ReasoningEvolution(ComplexEvolution):
     async def _aevolve(self, current_tries: int, current_nodes: CurrentNodes) -> str:
         assert self.generator_llm is not None, "generator_llm cannot be None"
@@ -299,6 +305,9 @@ class ReasoningEvolution(ComplexEvolution):
             return await self.aretry_evolve(current_tries, current_nodes)
 
         return reasoning_question
+
+    def __hash__(self):
+        return hash(self.__class__.__name__)
 
 
 simple = SimpleEvolution()
