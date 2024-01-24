@@ -1,3 +1,3 @@
-from ragas.testset.testset_generator import TestsetGenerator
+from ragas.testset.generator import TestsetGenerator
 
 __all__ = ["TestsetGenerator"]

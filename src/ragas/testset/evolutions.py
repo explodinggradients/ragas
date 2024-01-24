@@ -31,6 +31,7 @@ class CurrentNodes:
     nodes: t.List[Node] = field(default_factory=list)
 
 
+# (question, current_nodes, evolution_type)
 EvolutionOutput = t.Tuple[str, CurrentNodes, str]
 
 
@@ -221,7 +222,7 @@ class MultiContextEvolution(ComplexEvolution):
         assert self.question_filter is not None, "question_filter cannot be None"
         assert self.se is not None, "simple evolution cannot be None"
 
-        simple_question = await self.se._aevolve(current_tries, current_nodes)
+        simple_question, _, _ = await self.se._aevolve(current_tries, current_nodes)
         logger.debug(
             "[MultiContextEvolution] simple question generated: %s", simple_question
         )
@@ -275,7 +276,7 @@ class ReasoningEvolution(ComplexEvolution):
         assert self.question_filter is not None, "question_filter cannot be None"
         assert self.se is not None, "simple evolution cannot be None"
 
-        simple_question = await self.se._aevolve(current_tries, current_nodes)
+        simple_question, _, _ = await self.se._aevolve(current_tries, current_nodes)
         logger.debug(
             "[ReasoningEvolution] simple question generated: %s", simple_question
         )

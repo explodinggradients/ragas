@@ -5,8 +5,8 @@ import typing as t
 from dataclasses import dataclass
 
 import pandas as pd
-from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_openai.chat_models import ChatOpenAI
+from langchain_openai.embeddings import OpenAIEmbeddings
 from llama_index.readers.schema import Document as LlamaindexDocument
 
 from ragas.embeddings import BaseRagasEmbeddings
