@@ -5,7 +5,7 @@ import typing as t
 from dataclasses import dataclass
 
 import pandas as pd
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_openai.chat_models import ChatOpenAI
 from llama_index.readers.schema import Document as LlamaindexDocument
 
@@ -31,16 +31,9 @@ class TestDataset:
     def to_pandas(self) -> pd.DataFrame:
         data_samples = []
         for data in self.test_data:
-            question_type = data.question_type
-            data = {
-                "question": data.question,
-                "context": data.context,
-                "answer": "" if data.answer is None else data.answer,
-                "question_type": question_type,
-                "episode_done": True,
-                "evolution_elimination": data.evolution_elimination,
-            }
-            data_samples.append(data)
+            data_dict = dict(data)
+            data_dict["episode_done"] = True
+            data_samples.append(data_dict)
 
         return pd.DataFrame.from_records(data_samples)
 
