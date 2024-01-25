@@ -9,6 +9,7 @@ from langchain_openai.chat_models import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
 from llama_index.readers.schema import Document as LlamaindexDocument
 
+from ragas._analytics import TesetGenerationEvent, track
 from ragas.embeddings import BaseRagasEmbeddings
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
@@ -143,4 +144,15 @@ class TestsetGenerator:
             test_data_rows = exec.results()
         except ValueError as e:
             raise e
-        return TestDataset(test_data=test_data_rows)
+        test_dataset = TestDataset(test_data=test_data_rows)
+        track(
+            TesetGenerationEvent(
+                event_type="testset_generation",
+                evolutions={
+                    k.__class__.__name__.lower(): v for k, v in distributions.items()
+                },
+                num_rows=len(test_dataset.test_data),
+            )
+        )
+
+        return test_dataset

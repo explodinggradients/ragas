@@ -87,3 +87,31 @@ def test_load_userid_from_json_file(tmp_path, monkeypatch):
     get_userid.cache_clear()
 
     assert get_userid() == "test-userid"
+
+
+def test_testset_generation_tracking(monkeypatch):
+
+    import ragas._analytics as analyticsmodule
+    from ragas._analytics import TesetGenerationEvent, track
+    from ragas.testset.evolutions import multi_context, reasoning, simple
+
+    distributions = {simple: 0.5, multi_context: 0.3, reasoning: 0.2}
+
+    testset_event_payload = TesetGenerationEvent(
+        event_type="testset_generation",
+        evolutions={k.__class__.__name__.lower(): v for k, v in distributions.items()},
+        num_rows=10,
+    )
+
+    assert dict(testset_event_payload)["evolutions"] == {
+        "simpleevolution": 0.5,
+        "multicontextevolution": 0.3,
+        "reasoningevolution": 0.2,
+    }
+
+    # just in the case you actually want to check if tracking is working in the
+    # dashboard
+    if False:
+        monkeypatch.setattr(analyticsmodule, "do_not_track", lambda: False)
+        monkeypatch.setattr(analyticsmodule, "_usage_event_debugging", lambda: False)
+        track(testset_event_payload)
