@@ -57,40 +57,25 @@ Checkout [llama-index](https://gpt-index.readthedocs.io/en/stable/core_modules/d
 
 
 ```{code-block} python
-:caption: Customising test set generation 
-from ragas.testset import TestsetGenerator
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.chat_models import ChatOpenAI
-from ragas.llms import LangchainLLM
+:caption: Customising test data distribution 
+from ragas.testset.generator import TestsetGenerator
+from ragas.testset.evolutions import simple, reasoning, multi_context
 
 # documents = load your documents
 
-# Add custom llms and embeddings
-generator_llm = LangchainLLM(llm=ChatOpenAI(model="gpt-3.5-turbo"))
-critic_llm = LangchainLLM(llm=ChatOpenAI(model="gpt-4"))
-embeddings_model = OpenAIEmbeddings()
+# generator with openai models
+generator = TestsetGenerator.with_openai()
 
 # Change resulting question type distribution
-testset_distribution = {
-    "simple": 0.25,
-    "reasoning": 0.5,
-    "multi_context": 0.0,
-    "conditional": 0.25,
+distributions = {
+    simple: 0.5,
+    multi_context: 0.4,
+    reasoning: 0.1
 }
 
-# percentage of conversational question
-chat_qa = 0.2
-
-
-test_generator = TestsetGenerator(
-    generator_llm=generator_llm,
-    critic_llm=critic_llm,
-    embeddings_model=embeddings_model,
-    testset_distribution=testset_distribution,
-    chat_qa=chat_qa,
-)
-
-testset = test_generator.generate(documents, test_size=5)
+# use generator.generate_with_llamaindex_docs if you use llama-index as document loader
+testset = generator.generate_with_langchain_docs(documents, 10, distributions) 
+testset.to_pandas()
 
 ```
 
@@ -109,16 +94,6 @@ test_df.head()
 
  Analyze the frequency of different question types in the created dataset
 
- ```{code-block} python
- :caption: bar graph of question types
-import seaborn as sns
-sns.set(rc={'figure.figsize':(9,6)})
-
-test_data_dist = test_df.question_type.value_counts().to_frame().reset_index()
-sns.set_theme(style="whitegrid")
-g = sns.barplot(y='count',x='question_type', data=test_data_dist)
-g.set_title("Question type distribution",fontdict = { 'fontsize': 20})
- ```
 
 <p align="left">
 <img src="../_static/imgs/question_types.png" alt="test-outputs" width="450" height="400" />
