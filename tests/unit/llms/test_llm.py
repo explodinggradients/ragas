@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from langchain.schema import Generation, LLMResult
+from langchain_core.outputs import Generation, LLMResult
 
 from ragas.llms.base import BaseRagasLLM
 

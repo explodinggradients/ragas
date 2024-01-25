@@ -5,10 +5,10 @@ import typing as t
 from dataclasses import dataclass
 
 import pandas as pd
-from langchain.embeddings import OpenAIEmbeddings
 from langchain_openai.chat_models import ChatOpenAI
-from llama_index.readers.schema import Document as LlamaindexDocument
+from langchain_openai.embeddings import OpenAIEmbeddings
 
+from ragas._analytics import TesetGenerationEvent, track
 from ragas.embeddings import BaseRagasEmbeddings
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
@@ -23,9 +23,13 @@ from ragas.testset.evolutions import (
 )
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 
-logger = logging.getLogger(__name__)
-Distributions = t.Dict[t.Any, float]
+if t.TYPE_CHECKING:
+    from llama_index.readers.schema import Document as LlamaindexDocument
+    from langchain_core.documents import Document as LCDocument
 
+logger = logging.getLogger(__name__)
+
+Distributions = t.Dict[t.Any, float]
 DEFAULT_DISTRIBUTION = {simple: 0.5, reasoning: 0.25, multi_context: 0.25}
 
 
@@ -40,16 +44,9 @@ class TestDataset:
     def to_pandas(self) -> pd.DataFrame:
         data_samples = []
         for data in self.test_data:
-            question_type = data.question_type
-            data = {
-                "question": data.question,
-                "context": data.context,
-                "answer": "" if data.answer is None else data.answer,
-                "question_type": question_type,
-                "episode_done": True,
-                "evolution_elimination": data.evolution_elimination,
-            }
-            data_samples.append(data)
+            data_dict = dict(data)
+            data_dict["episode_done"] = True
+            data_samples.append(data_dict)
 
         return pd.DataFrame.from_records(data_samples)
 
@@ -94,25 +91,51 @@ class TestsetGenerator:
                 docstore=docstore,
             )
 
+    # if you add any arguments to this function, make sure to add them to
+    # generate_with_langchain_docs as well
     def generate_with_llamaindex_docs(
         self,
         documents: t.Sequence[LlamaindexDocument],
         test_size: int,
         distributions: Distributions = {},
-        **kwargs,
+        with_debugging_logs=False,
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
             [Document.from_llamaindex_document(doc) for doc in documents]
         )
 
-        return self.generate(test_size=test_size, distributions=distributions)
+        return self.generate(
+            test_size=test_size,
+            distributions=distributions,
+            with_debugging_logs=with_debugging_logs,
+        )
+
+    # if you add any arguments to this function, make sure to add them to
+    # generate_with_langchain_docs as well
+    def generate_with_langchain_docs(
+        self,
+        documents: t.Sequence[LCDocument],
+        test_size: int,
+        distributions: Distributions = {},
+        with_debugging_logs=False,
+    ):
+        # chunk documents and add to docstore
+        self.docstore.add_documents(
+            [Document.from_langchain_document(doc) for doc in documents]
+        )
+
+        return self.generate(
+            test_size=test_size,
+            distributions=distributions,
+            with_debugging_logs=with_debugging_logs,
+        )
 
     def generate(
         self,
         test_size: int,
         distributions: Distributions = DEFAULT_DISTRIBUTION,
-        show_debug_logs=False,
+        with_debugging_logs=False,
     ):
         # init filters and evolutions
         for evolution in distributions:
@@ -130,12 +153,17 @@ class TestsetGenerator:
                 evolution.init_evolution()
                 if evolution.evolution_filter is None:
                     evolution.evolution_filter = EvolutionFilter(llm=self.critic_llm)
-        if show_debug_logs:
+        if with_debugging_logs:
             from ragas.utils import patch_logger
 
             patch_logger("ragas.testset.evolutions", logging.DEBUG)
 
-        exec = Executor(desc="Generating", raise_exceptions=True, is_async=True)
+        exec = Executor(
+            desc="Generating",
+            keep_progress_bar=True,
+            raise_exceptions=True,
+            is_async=True,
+        )
 
         current_nodes = [
             CurrentNodes(root_node=n, nodes=[n])
@@ -153,4 +181,15 @@ class TestsetGenerator:
             test_data_rows = exec.results()
         except ValueError as e:
             raise e
-        return TestDataset(test_data=test_data_rows)
+        test_dataset = TestDataset(test_data=test_data_rows)
+        track(
+            TesetGenerationEvent(
+                event_type="testset_generation",
+                evolutions={
+                    k.__class__.__name__.lower(): v for k, v in distributions.items()
+                },
+                num_rows=len(test_dataset.test_data),
+            )
+        )
+
+        return test_dataset

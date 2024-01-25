@@ -10,7 +10,7 @@ from ragas.embeddings.base import HuggingfaceEmbeddings
 from ragas.metrics.base import EvaluationMode, MetricWithEmbeddings, MetricWithLLM
 
 if t.TYPE_CHECKING:
-    from langchain.callbacks.base import Callbacks
+    from langchain_core.callbacks.base import Callbacks
 
 
 logger = logging.getLogger(__name__)

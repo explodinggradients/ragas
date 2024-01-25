@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import heapq
 import logging
 import typing as t
@@ -12,10 +14,12 @@ import numpy.typing as npt
 from langchain.text_splitter import TextSplitter
 from langchain_core.documents import Document as LCDocument
 from langchain_core.pydantic_v1 import Field
-from llama_index.readers.schema import Document as LlamaindexDocument
 
-from ragas.async_utils import run_async_tasks
 from ragas.embeddings.base import BaseRagasEmbeddings
+from ragas.executor import Executor
+
+if t.TYPE_CHECKING:
+    from llama_index.readers.schema import Document as LlamaindexDocument
 
 Embedding = t.Union[t.List[float], npt.NDArray[np.float64]]
 logger = logging.getLogger(__name__)
@@ -204,22 +208,29 @@ class InMemoryDocumentStore(DocumentStore):
         assert self.embeddings is not None, "Embeddings must be set"
 
         # NOTE: Adds everything in async mode for now.
-        embed_tasks = []
-        docs_to_embed = []
+        nodes_to_embed = []
         # get embeddings for the docs
-        for n in nodes:
+        executor = Executor(
+            desc="embedding nodes",
+            keep_progress_bar=False,
+            is_async=True,
+            raise_exceptions=True,
+        )
+        for i, n in enumerate(nodes):
             if n.embedding is None:
-                embed_tasks.append(self.embeddings.aembed_query(n.page_content))
-                docs_to_embed.append(n)
+                nodes_to_embed.append(n)
+                executor.submit(
+                    self.embeddings.aembed_query,
+                    n.page_content,
+                    name=f"embed_node_task[{i}]",
+                )
             else:
                 self.nodes.append(n)
                 self.node_map[n.doc_id] = n
                 self.node_embeddings_list.append(n.embedding)
 
-        embeddings = run_async_tasks(
-            embed_tasks, show_progress=show_progress, progress_bar_desc=desc
-        )
-        for n, embedding in zip(docs_to_embed, embeddings):
+        embeddings = executor.results()
+        for n, embedding in zip(nodes_to_embed, embeddings):
             n.embedding = embedding
             self.nodes.append(n)
             self.node_map[n.doc_id] = n

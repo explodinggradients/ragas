@@ -89,6 +89,11 @@ class EvaluationEvent(BaseEvent):
     num_rows: int
 
 
+class TesetGenerationEvent(BaseEvent):
+    evolutions: t.Dict[str, float]
+    num_rows: int
+
+
 @silent
 def track(event_properties: BaseEvent):
     if do_not_track():
