@@ -19,7 +19,7 @@ from ragas.metrics.critique import harmfulness
 # data
 ds = load_dataset("explodinggradients/amnesty_qa", "english")
 assert isinstance(ds, DatasetDict)
-eval_dataset = ds["train"]
+eval_dataset = ds["eval"]
 
 # metrics
 metrics = [

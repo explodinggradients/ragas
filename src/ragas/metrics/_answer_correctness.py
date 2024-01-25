@@ -104,6 +104,8 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
         if not all([w >= 0 for w in self.weights]):
             raise ValueError("Weights must be non-negative")
 
+    def init_model(self):
+        super().init_model()
         if self.answer_similarity is None and self.weights[1] != 0:
             self.answer_similarity = AnswerSimilarity(
                 llm=self.llm, batch_size=self.batch_size, embeddings=self.embeddings
