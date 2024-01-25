@@ -13,11 +13,20 @@ from ragas.embeddings import BaseRagasEmbeddings
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
 from ragas.testset.docstore import Document, DocumentStore, InMemoryDocumentStore
-from ragas.testset.evolutions import ComplexEvolution, CurrentNodes, DataRow
+from ragas.testset.evolutions import (
+    ComplexEvolution,
+    CurrentNodes,
+    DataRow,
+    multi_context,
+    reasoning,
+    simple,
+)
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 
 logger = logging.getLogger(__name__)
 Distributions = t.Dict[t.Any, float]
+
+DEFAULT_DISTRIBUTION = {simple: 0.5, reasoning: 0.25, multi_context: 0.25}
 
 
 @dataclass
@@ -100,7 +109,10 @@ class TestsetGenerator:
         return self.generate(test_size=test_size, distributions=distributions)
 
     def generate(
-        self, test_size: int, distributions: Distributions = {}, show_debug_logs=False
+        self,
+        test_size: int,
+        distributions: Distributions = DEFAULT_DISTRIBUTION,
+        show_debug_logs=False,
     ):
         # init filters and evolutions
         for evolution in distributions:
