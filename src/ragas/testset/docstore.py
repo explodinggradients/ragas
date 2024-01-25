@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import heapq
 import logging
 import typing as t
@@ -12,10 +14,12 @@ import numpy.typing as npt
 from langchain.text_splitter import TextSplitter
 from langchain_core.documents import Document as LCDocument
 from langchain_core.pydantic_v1 import Field
-from llama_index.readers.schema import Document as LlamaindexDocument
 
 from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.executor import Executor
+
+if t.TYPE_CHECKING:
+    from llama_index.readers.schema import Document as LlamaindexDocument
 
 Embedding = t.Union[t.List[float], npt.NDArray[np.float64]]
 logger = logging.getLogger(__name__)
