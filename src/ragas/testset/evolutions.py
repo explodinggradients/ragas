@@ -3,12 +3,14 @@ from __future__ import annotations
 import logging
 import typing as t
 from abc import abstractmethod
-from collections import namedtuple
 from dataclasses import dataclass, field
 
 from fsspec.exceptions import asyncio
+from langchain_core.pydantic_v1 import BaseModel
 from numpy.random import default_rng
 
+from ragas.llms import BaseRagasLLM
+from ragas.llms.prompt import Prompt
 from ragas.testset.docstore import Direction, DocumentStore, Node
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 from ragas.testset.prompts import (
@@ -22,10 +24,6 @@ from ragas.testset.prompts import (
 rng = default_rng()
 logger = logging.getLogger(__name__)
 
-if t.TYPE_CHECKING:
-    from ragas.llms import BaseRagasLLM
-    from ragas.llms.prompt import Prompt
-
 
 @dataclass
 class CurrentNodes:
@@ -33,21 +31,20 @@ class CurrentNodes:
     nodes: t.List[Node] = field(default_factory=list)
 
 
-DataRow = namedtuple(
-    "DataRow",
-    [
-        "question",
-        "context",
-        "answer",
-        "question_type",
-        "evolution_elimination",
-    ],
-)
+# (question, current_nodes, evolution_type)
+EvolutionOutput = t.Tuple[str, CurrentNodes, str]
+
+
+class DataRow(BaseModel):
+    question: str
+    context: str
+    answer: str
+    evolution_type: str
 
 
 @dataclass
 class Evolution:
-    generator_llm: t.Optional[BaseRagasLLM] = None
+    generator_llm: BaseRagasLLM = t.cast(BaseRagasLLM, None)
     docstore: t.Optional[DocumentStore] = None
     node_filter: t.Optional[NodeFilter] = None
     question_filter: t.Optional[QuestionFilter] = None
@@ -61,7 +58,7 @@ class Evolution:
 
     async def aretry_evolve(
         self, current_tries: int, current_nodes: CurrentNodes, update_count: bool = True
-    ) -> str:
+    ) -> EvolutionOutput:
         if update_count:
             current_tries += 1
         logger.info("retrying evolution: %s times", current_tries)
@@ -112,22 +109,29 @@ class Evolution:
     async def aevolve(self, current_nodes: CurrentNodes) -> DataRow:
         # init tries with 0 when first called
         current_tries = 0
-        evolved_question = await self._aevolve(current_tries, current_nodes)
+        (
+            evolved_question,
+            current_nodes,
+            evolution_type,
+        ) = await self._aevolve(current_tries, current_nodes)
+
         return self.generate_datarow(
             question=evolved_question,
             current_nodes=current_nodes,
+            evolution_type=evolution_type,
         )
 
     @abstractmethod
-    async def _aevolve(self, current_tries: int, current_nodes: CurrentNodes) -> str:
+    async def _aevolve(
+        self, current_tries: int, current_nodes: CurrentNodes
+    ) -> EvolutionOutput:
         ...
 
     def generate_datarow(
         self,
         question: str,
         current_nodes: CurrentNodes,
-        question_type: str = "",
-        evolution_elimination: bool = False,
+        evolution_type: str,
     ):
         assert self.generator_llm is not None, "generator_llm cannot be None"
 
@@ -146,15 +150,16 @@ class Evolution:
         return DataRow(
             question=question,
             context=merged_nodes.page_content,
-            answer=answer,
-            question_type=question_type,
-            evolution_elimination=evolution_elimination,
+            answer="" if answer is None else answer,
+            evolution_type=evolution_type,
         )
 
 
 @dataclass
 class SimpleEvolution(Evolution):
-    async def _aevolve(self, current_tries: int, current_nodes: CurrentNodes) -> str:
+    async def _aevolve(
+        self, current_tries: int, current_nodes: CurrentNodes
+    ) -> EvolutionOutput:
         assert self.docstore is not None, "docstore cannot be None"
         assert self.node_filter is not None, "node filter cannot be None"
         assert self.generator_llm is not None, "generator_llm cannot be None"
@@ -183,7 +188,7 @@ class SimpleEvolution(Evolution):
             return await self.aretry_evolve(current_tries, current_nodes)
         else:
             # if valid question
-            return seed_question
+            return seed_question, current_nodes, "simple"
 
     def __hash__(self):
         return hash(self.__class__.__name__)
@@ -209,13 +214,15 @@ class ComplexEvolution(Evolution):
 
 @dataclass
 class MultiContextEvolution(ComplexEvolution):
-    async def _aevolve(self, current_tries: int, current_nodes: CurrentNodes) -> str:
+    async def _aevolve(
+        self, current_tries: int, current_nodes: CurrentNodes
+    ) -> EvolutionOutput:
         assert self.docstore is not None, "docstore cannot be None"
         assert self.generator_llm is not None, "generator_llm cannot be None"
         assert self.question_filter is not None, "question_filter cannot be None"
         assert self.se is not None, "simple evolution cannot be None"
 
-        simple_question = await self.se._aevolve(current_tries, current_nodes)
+        simple_question, _, _ = await self.se._aevolve(current_tries, current_nodes)
         logger.debug(
             "[MultiContextEvolution] simple question generated: %s", simple_question
         )
@@ -254,7 +261,7 @@ class MultiContextEvolution(ComplexEvolution):
             current_nodes = self.se._get_more_adjacent_nodes(current_nodes)
             return await self.aretry_evolve(current_tries, current_nodes)
 
-        return compressed_question
+        return compressed_question, current_nodes, "multi_context"
 
     def __hash__(self):
         return hash(self.__class__.__name__)
@@ -262,12 +269,14 @@ class MultiContextEvolution(ComplexEvolution):
 
 @dataclass
 class ReasoningEvolution(ComplexEvolution):
-    async def _aevolve(self, current_tries: int, current_nodes: CurrentNodes) -> str:
+    async def _aevolve(
+        self, current_tries: int, current_nodes: CurrentNodes
+    ) -> EvolutionOutput:
         assert self.generator_llm is not None, "generator_llm cannot be None"
         assert self.question_filter is not None, "question_filter cannot be None"
         assert self.se is not None, "simple evolution cannot be None"
 
-        simple_question = await self.se._aevolve(current_tries, current_nodes)
+        simple_question, _, _ = await self.se._aevolve(current_tries, current_nodes)
         logger.debug(
             "[ReasoningEvolution] simple question generated: %s", simple_question
         )
@@ -304,7 +313,7 @@ class ReasoningEvolution(ComplexEvolution):
             )
             return await self.aretry_evolve(current_tries, current_nodes)
 
-        return reasoning_question
+        return reasoning_question, current_nodes, "reasoning"
 
     def __hash__(self):
         return hash(self.__class__.__name__)

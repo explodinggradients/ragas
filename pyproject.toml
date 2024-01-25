@@ -6,6 +6,7 @@ dependencies = [
     "tiktoken",
     "langchain",
     "langchain-core",
+    "langchain-community",
     "langchain_openai",
     "openai>1",
     "pysbd>=0.3.4",

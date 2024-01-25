@@ -10,6 +10,7 @@ from tqdm.auto import tqdm
 @dataclass
 class Executor:
     desc: str = "Evaluating"
+    keep_progress_bar: bool = True
     is_async: bool = True
     max_workers: t.Optional[int] = None
     futures: t.List[t.Any] = field(default_factory=list, repr=False)
@@ -74,6 +75,8 @@ class Executor:
             asyncio.as_completed(self.futures),
             desc=self.desc,
             total=len(self.futures),
+            # whether you want to keep the progress bar after completion
+            leave=self.keep_progress_bar,
         ):
             r = (-1, np.nan)
             try:
@@ -109,6 +112,8 @@ class Executor:
                     as_completed(self.futures),
                     desc=self.desc,
                     total=len(self.futures),
+                    # whether you want to keep the progress bar after completion
+                    leave=self.keep_progress_bar,
                 ):
                     r = (-1, np.nan)
                     try:

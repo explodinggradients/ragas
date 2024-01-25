@@ -5,8 +5,8 @@ import typing as t
 from dataclasses import dataclass
 
 import pandas as pd
-from langchain.embeddings import OpenAIEmbeddings
 from langchain_openai.chat_models import ChatOpenAI
+from langchain_openai.embeddings import OpenAIEmbeddings
 from llama_index.readers.schema import Document as LlamaindexDocument
 
 from ragas.embeddings import BaseRagasEmbeddings
@@ -31,16 +31,9 @@ class TestDataset:
     def to_pandas(self) -> pd.DataFrame:
         data_samples = []
         for data in self.test_data:
-            question_type = data.question_type
-            data = {
-                "question": data.question,
-                "context": data.context,
-                "answer": "" if data.answer is None else data.answer,
-                "question_type": question_type,
-                "episode_done": True,
-                "evolution_elimination": data.evolution_elimination,
-            }
-            data_samples.append(data)
+            data_dict = dict(data)
+            data_dict["episode_done"] = True
+            data_samples.append(data_dict)
 
         return pd.DataFrame.from_records(data_samples)
 
@@ -90,14 +83,18 @@ class TestsetGenerator:
         documents: t.Sequence[LlamaindexDocument],
         test_size: int,
         distributions: Distributions = {},
-        **kwargs,
+        show_debug_logs=False,
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
             [Document.from_llamaindex_document(doc) for doc in documents]
         )
 
-        return self.generate(test_size=test_size, distributions=distributions)
+        return self.generate(
+            test_size=test_size,
+            distributions=distributions,
+            show_debug_logs=show_debug_logs,
+        )
 
     def generate(
         self, test_size: int, distributions: Distributions = {}, show_debug_logs=False
@@ -123,7 +120,12 @@ class TestsetGenerator:
 
             patch_logger("ragas.testset.evolutions", logging.DEBUG)
 
-        exec = Executor(desc="Generating", raise_exceptions=True, is_async=True)
+        exec = Executor(
+            desc="Generating",
+            keep_progress_bar=True,
+            raise_exceptions=True,
+            is_async=True,
+        )
 
         current_nodes = [
             CurrentNodes(root_node=n, nodes=[n])

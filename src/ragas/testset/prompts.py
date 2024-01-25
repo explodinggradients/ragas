@@ -1,4 +1,4 @@
-from langchain.prompts import HumanMessagePromptTemplate
+from langchain_core.prompts import HumanMessagePromptTemplate
 
 from ragas.llms.prompt import Prompt
 
