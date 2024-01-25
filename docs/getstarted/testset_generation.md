@@ -11,30 +11,23 @@ os.environ["OPENAI_API_KEY"] = "your-openai-key"
 
 ## Documents
 
-To begin, we require a collection of documents to generate synthetic Question/Context/Answer samples. Here, we will employ the llama-index document loaders to retrieve documents.
+To begin, we require a collection of documents to generate synthetic Question/Context/Answer samples. Here, we will employ the langchain document loader to load documents.
 
 ```{code-block} python
-:caption: Load documents from Semantic Scholar
-from llama_index import download_loader
-
-SemanticScholarReader = download_loader("SemanticScholarReader")
-loader = SemanticScholarReader()
-# Narrow down the search space
-query_space = "large language models"
-# Increase the limit to obtain more documents
-documents = loader.load_data(query=query_space, limit=10)
+:caption: Load documents from directory
+from langchain.document_loaders import DirectoryLoader
+loader = DirectoryLoader("your-directory")
+documents = loader.load()
 ```
 
 :::{note}
 Each Document object contains a metadata dictionary, which can be used to store additional information about the document which can be accessed with  `Document.metadata`. Please ensure that the metadata dictionary contains a key called `file_name` as this will be used in the generation process. The `file_name` attribute in metadata is used to identify chunks belonging to the same document. For example, pages belonging to the same research publication can be identifies using filename.
 
-An example of how to do this for `SemanticScholarReader` is shown below.
+An example of how to do this is shown below.
 
 ```{code-block} python
-for d in documents:
-    d.metadata["file_name"] = d.metadata["title"]
-
-documents[0].metadata
+for document in documents:
+    document.metadata['file_name'] = document.metadata['source']
 ```
 :::
 
@@ -46,11 +39,15 @@ We will now import and use Ragas' `Testsetgenerator` to promptly generate a synt
 
 ```{code-block} python
 :caption: Create 10 samples using default configuration
-from ragas.testset import TestsetGenerator
+from ragas.testset.generator import TestsetGenerator
+from ragas.testset.evolutions import simple, reasoning, multi_context
 
-testsetgenerator = TestsetGenerator.from_default()
-test_size = 10
-testset = testsetgenerator.generate(documents, test_size=test_size)
+# generator with openai models
+generator = TestsetGenerator.with_openai()
+
+# generate testset
+testset = generator.generate_with_langchain_docs(documents, test_size=10)
+testset.to_pandas()
 ```
 
 Subsequently, we can export the results into a Pandas DataFrame.

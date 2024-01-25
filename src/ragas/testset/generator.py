@@ -13,16 +13,24 @@ from ragas.embeddings import BaseRagasEmbeddings
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
 from ragas.testset.docstore import Document, DocumentStore, InMemoryDocumentStore
-from ragas.testset.evolutions import ComplexEvolution, CurrentNodes, DataRow
+from ragas.testset.evolutions import (
+    ComplexEvolution,
+    CurrentNodes,
+    DataRow,
+    multi_context,
+    reasoning,
+    simple,
+)
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 
 if t.TYPE_CHECKING:
     from llama_index.readers.schema import Document as LlamaindexDocument
     from langchain_core.documents import Document as LCDocument
 
-Distributions = t.Dict[t.Any, float]
-
 logger = logging.getLogger(__name__)
+
+Distributions = t.Dict[t.Any, float]
+DEFAULT_DISTRIBUTION = {simple: 0.5, reasoning: 0.25, multi_context: 0.25}
 
 
 @dataclass
@@ -126,7 +134,7 @@ class TestsetGenerator:
     def generate(
         self,
         test_size: int,
-        distributions: Distributions = {},
+        distributions: Distributions = DEFAULT_DISTRIBUTION,
         with_debugging_logs=False,
     ):
         # init filters and evolutions
