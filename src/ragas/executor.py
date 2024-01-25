@@ -76,7 +76,7 @@ class Executor:
             desc=self.desc,
             total=len(self.futures),
             # whether you want to keep the progress bar after completion
-            leave=not self.keep_progress_bar,
+            leave=self.keep_progress_bar,
         ):
             r = (-1, np.nan)
             try:
@@ -113,7 +113,7 @@ class Executor:
                     desc=self.desc,
                     total=len(self.futures),
                     # whether you want to keep the progress bar after completion
-                    leave=not self.keep_progress_bar,
+                    leave=self.keep_progress_bar,
                 ):
                     r = (-1, np.nan)
                     try:

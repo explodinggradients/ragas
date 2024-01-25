@@ -154,7 +154,11 @@ def evaluate(
     [m.init_model() for m in metrics]
 
     executor = Executor(
-        is_async=is_async, max_workers=max_workers, raise_exceptions=raise_exceptions
+        desc="Evaluating",
+        keep_progress_bar=True,
+        is_async=is_async,
+        max_workers=max_workers,
+        raise_exceptions=raise_exceptions,
     )
     # new evaluation chain
     row_run_managers = []

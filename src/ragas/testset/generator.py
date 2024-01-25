@@ -83,14 +83,18 @@ class TestsetGenerator:
         documents: t.Sequence[LlamaindexDocument],
         test_size: int,
         distributions: Distributions = {},
-        **kwargs,
+        show_debug_logs=False,
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
             [Document.from_llamaindex_document(doc) for doc in documents]
         )
 
-        return self.generate(test_size=test_size, distributions=distributions)
+        return self.generate(
+            test_size=test_size,
+            distributions=distributions,
+            show_debug_logs=show_debug_logs,
+        )
 
     def generate(
         self, test_size: int, distributions: Distributions = {}, show_debug_logs=False
@@ -116,7 +120,12 @@ class TestsetGenerator:
 
             patch_logger("ragas.testset.evolutions", logging.DEBUG)
 
-        exec = Executor(desc="Generating", raise_exceptions=True, is_async=True)
+        exec = Executor(
+            desc="Generating",
+            keep_progress_bar=True,
+            raise_exceptions=True,
+            is_async=True,
+        )
 
         current_nodes = [
             CurrentNodes(root_node=n, nodes=[n])

@@ -207,12 +207,19 @@ class InMemoryDocumentStore(DocumentStore):
         nodes_to_embed = []
         # get embeddings for the docs
         executor = Executor(
-            desc="embedding nodes", is_async=True, raise_exceptions=True
+            desc="embedding nodes",
+            keep_progress_bar=False,
+            is_async=True,
+            raise_exceptions=True,
         )
-        for n in nodes:
+        for i, n in enumerate(nodes):
             if n.embedding is None:
                 nodes_to_embed.append(n)
-                executor.submit(self.embeddings.aembed_query, n.page_content)
+                executor.submit(
+                    self.embeddings.aembed_query,
+                    n.page_content,
+                    name=f"embed_node_task[{i}]",
+                )
             else:
                 self.nodes.append(n)
                 self.node_map[n.doc_id] = n
