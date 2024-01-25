@@ -90,7 +90,6 @@ def test_load_userid_from_json_file(tmp_path, monkeypatch):
 
 
 def test_testset_generation_tracking(monkeypatch):
-
     import ragas._analytics as analyticsmodule
     from ragas._analytics import TesetGenerationEvent, track
     from ragas.testset.evolutions import multi_context, reasoning, simple

@@ -7,7 +7,6 @@ from dataclasses import dataclass
 import pandas as pd
 from langchain_openai.chat_models import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
-from llama_index.readers.schema import Document as LlamaindexDocument
 
 from ragas._analytics import TesetGenerationEvent, track
 from ragas.embeddings import BaseRagasEmbeddings
@@ -17,8 +16,13 @@ from ragas.testset.docstore import Document, DocumentStore, InMemoryDocumentStor
 from ragas.testset.evolutions import ComplexEvolution, CurrentNodes, DataRow
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 
-logger = logging.getLogger(__name__)
+if t.TYPE_CHECKING:
+    from llama_index.readers.schema import Document as LlamaindexDocument
+    from langchain_core.documents import Document as LCDocument
+
 Distributions = t.Dict[t.Any, float]
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -79,12 +83,14 @@ class TestsetGenerator:
                 docstore=docstore,
             )
 
+    # if you add any arguments to this function, make sure to add them to
+    # generate_with_langchain_docs as well
     def generate_with_llamaindex_docs(
         self,
         documents: t.Sequence[LlamaindexDocument],
         test_size: int,
         distributions: Distributions = {},
-        show_debug_logs=False,
+        with_debugging_logs=False,
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
@@ -94,11 +100,34 @@ class TestsetGenerator:
         return self.generate(
             test_size=test_size,
             distributions=distributions,
-            show_debug_logs=show_debug_logs,
+            with_debugging_logs=with_debugging_logs,
+        )
+
+    # if you add any arguments to this function, make sure to add them to
+    # generate_with_langchain_docs as well
+    def generate_with_langchain_docs(
+        self,
+        documents: t.Sequence[LCDocument],
+        test_size: int,
+        distributions: Distributions = {},
+        with_debugging_logs=False,
+    ):
+        # chunk documents and add to docstore
+        self.docstore.add_documents(
+            [Document.from_langchain_document(doc) for doc in documents]
+        )
+
+        return self.generate(
+            test_size=test_size,
+            distributions=distributions,
+            with_debugging_logs=with_debugging_logs,
         )
 
     def generate(
-        self, test_size: int, distributions: Distributions = {}, show_debug_logs=False
+        self,
+        test_size: int,
+        distributions: Distributions = {},
+        with_debugging_logs=False,
     ):
         # init filters and evolutions
         for evolution in distributions:
@@ -116,7 +145,7 @@ class TestsetGenerator:
                 evolution.init_evolution()
                 if evolution.evolution_filter is None:
                     evolution.evolution_filter = EvolutionFilter(llm=self.critic_llm)
-        if show_debug_logs:
+        if with_debugging_logs:
             from ragas.utils import patch_logger
 
             patch_logger("ragas.testset.evolutions", logging.DEBUG)
