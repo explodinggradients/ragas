@@ -46,8 +46,7 @@ from ragas.testset.evolutions import simple, reasoning, multi_context
 generator = TestsetGenerator.with_openai()
 
 # generate testset
-testset = generator.generate_with_langchain_docs(documents, test_size=10)
-testset.to_pandas()
+testset = generator.generate_with_langchain_docs(documents, test_size=10, distributions={simple: 0.5, reasoning: 0.25, multi_context: 0.25})
 ```
 
 Subsequently, we can export the results into a Pandas DataFrame.
