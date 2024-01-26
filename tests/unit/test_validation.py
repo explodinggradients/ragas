@@ -16,15 +16,15 @@ CaseToTest = namedtuple(
 
 TEST_CASES = [
     CaseToTest("a", "b", ["c"], None, True, [faithfulness], True),
-    CaseToTest("a", "b", ["c"], ["g"], True, [faithfulness], True),
-    CaseToTest("a", None, ["c"], ["g"], True, [context_precision], True),
-    CaseToTest("a", "b", "c", ["g"], False, [context_precision], True),
+    CaseToTest("a", "b", ["c"], "g", True, [faithfulness], True),
+    CaseToTest("a", None, ["c"], "g", True, [context_precision], True),
+    CaseToTest("a", "b", "c", "g", False, [context_precision], True),
     CaseToTest(
         "a", None, [["c"]], None, False, [context_precision, answer_relevancy], False
     ),
-    CaseToTest("a", None, ["c"], "g", False, [context_precision], True),
+    CaseToTest("a", None, ["c"], ["g"], False, [context_precision], True),
     CaseToTest("a", None, ["c"], [["g"]], False, [context_precision], True),
-    CaseToTest(1, None, ["c"], ["g"], False, [context_precision], True),
+    CaseToTest(1, None, ["c"], "g", False, [context_precision], True),
     CaseToTest(1, None, None, None, False, [context_precision], False),
 ]
 
@@ -39,7 +39,7 @@ def test_validate_column_dtypes(testcase):
     if testcase.c is not None:
         dataset_dict["contexts"] = [testcase.c]
     if testcase.g is not None:
-        dataset_dict["ground_truths"] = [testcase.g]
+        dataset_dict["ground_truth"] = [testcase.g]
 
     test_dataset = Dataset.from_dict(dataset_dict)
     if testcase.is_valid_columns:
@@ -59,7 +59,7 @@ def test_validate_columns_and_metrics(testcase):
     if testcase.c is not None:
         dataset_dict["contexts"] = [testcase.c]
     if testcase.g is not None:
-        dataset_dict["ground_truths"] = [testcase.g]
+        dataset_dict["ground_truth"] = [testcase.g]
     test_dataset = Dataset.from_dict(dataset_dict)
 
     if testcase.is_valid_metrics:
@@ -74,7 +74,7 @@ column_maps = [
         "question": "query",
         "answer": "rag_answer",
         "contexts": "rag_contexts",
-        "ground_truths": "original_answer",
+        "ground_truth": "original_answer",
     },  # all columns present
     {
         "question": "query",
