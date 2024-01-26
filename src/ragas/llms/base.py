@@ -8,6 +8,11 @@ from langchain_community.chat_models import AzureChatOpenAI, ChatOpenAI, ChatVer
 from langchain_community.llms import AzureOpenAI, OpenAI, VertexAI
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import LLMResult
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_random_exponential,
+)  # for exponential backoff
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -73,6 +78,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
 
     langchain_llm: BaseLanguageModel
 
+    @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
     def generate_text(
         self,
         prompt: PromptValue,
@@ -103,6 +109,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
             result.generations = generations
             return result
 
+    @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
     async def agenerate_text(
         self,
         prompt: PromptValue,
