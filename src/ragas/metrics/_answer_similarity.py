@@ -59,15 +59,15 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
     def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.embeddings is not None, "embeddings must be set"
 
-        ground_truths, answers = row["ground_truths"], row["answer"]
-        ground_truths = [item[0] for item in ground_truths]
+        ground_truth, answers = row["ground_truths"], row["answer"]
+        ground_truth = [item[0] for item in ground_truth]
 
         if self.is_cross_encoder and isinstance(self.embeddings, HuggingfaceEmbeddings):
             raise NotImplementedError(
                 "async score [ascore()] not implemented for HuggingFace embeddings"
             )
         else:
-            embeddings_1 = np.array(self.embeddings.embed_documents(ground_truths))
+            embeddings_1 = np.array(self.embeddings.embed_documents(ground_truth))
             embeddings_2 = np.array(self.embeddings.embed_documents(answers))
             similarity = embeddings_1 @ embeddings_2.T
             if similarity.size == 1:
@@ -86,8 +86,8 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks = []) -> float:
         assert self.embeddings is not None, "embeddings must be set"
 
-        ground_truths, answers = row["ground_truths"], row["answer"]
-        ground_truths = [item[0] for item in ground_truths]
+        ground_truth, answers = row["ground_truths"], row["answer"]
+        ground_truth = [item[0] for item in ground_truth]
 
         if self.is_cross_encoder and isinstance(self.embeddings, HuggingfaceEmbeddings):
             raise NotImplementedError(
@@ -95,7 +95,7 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
             )
         else:
             embeddings_1 = np.array(
-                await self.embeddings.aembed_documents(ground_truths)
+                await self.embeddings.aembed_documents(ground_truth)
             )
             embeddings_2 = np.array(await self.embeddings.aembed_documents(answers))
             similarity = embeddings_1 @ embeddings_2.T

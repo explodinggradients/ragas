@@ -73,7 +73,7 @@ class ContextPrecision(MetricWithLLM):
     batch_size: int = 15
 
     def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:
-        answer = "ground_truths"
+        answer = "ground_truth"
         if answer not in row.keys():
             logger.warning(
                 "Using 'context_precision' without ground truth will be soon depreciated. Use 'context_utilization' instead"
