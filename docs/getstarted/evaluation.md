@@ -36,8 +36,9 @@ Ideally your list of questions should reflect the questions your users give, inc
 :caption: import sample dataset
 from datasets import load_dataset
 
-fiqa_eval = load_dataset("explodinggradients/fiqa", "ragas_eval")
-fiqa_eval
+# loading the V2 dataset
+amnesty_qa = load_dataset("explodinggradients/amnesty_qa", "english_v2")
+amnesty_qa
 ```
 
 :::{seealso}
@@ -85,7 +86,7 @@ Running the evaluation is as simple as calling evaluate on the `Dataset` with th
 from ragas import evaluate
 
 result = evaluate(
-    fiqa_eval["baseline"].select(range(3)), # selecting only 3
+    amnesty_qa["eval"],
     metrics=[
         context_precision,
         faithfulness,
