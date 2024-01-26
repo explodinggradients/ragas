@@ -10,9 +10,9 @@ from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import LLMResult
 from tenacity import (
     retry,
-    stop_after_attempt,
+    stop_after_attempt,  # for exponential backoff
     wait_random_exponential,
-)  # for exponential backoff
+)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks

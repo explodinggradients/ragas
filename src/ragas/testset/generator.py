@@ -5,9 +5,9 @@ import typing as t
 from dataclasses import dataclass
 
 import pandas as pd
+from datasets import Dataset
 from langchain_openai.chat_models import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
-from datasets import Dataset
 
 from ragas._analytics import TesetGenerationEvent, track
 from ragas.embeddings import BaseRagasEmbeddings
@@ -25,8 +25,8 @@ from ragas.testset.evolutions import (
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 
 if t.TYPE_CHECKING:
-    from llama_index.readers.schema import Document as LlamaindexDocument
     from langchain_core.documents import Document as LCDocument
+    from llama_index.readers.schema import Document as LlamaindexDocument
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class TestDataset:
 
     test_data: t.List[DataRow]
 
-    def _to_records(self)-> t.List[t.Dict]:
+    def _to_records(self) -> t.List[t.Dict]:
         data_samples = []
         for data in self.test_data:
             data_dict = dict(data)
@@ -53,7 +53,7 @@ class TestDataset:
     def to_pandas(self) -> pd.DataFrame:
         return pd.DataFrame.from_records(self._to_records())
 
-    def to_dataset(self)-> Dataset:
+    def to_dataset(self) -> Dataset:
         return Dataset.from_list(self._to_records())
 
 
