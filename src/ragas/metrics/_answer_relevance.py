@@ -85,7 +85,7 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
         question_vec = np.asarray(self.embeddings.embed_query(question)).reshape(1, -1)
         gen_question_vec = np.asarray(
             self.embeddings.embed_documents(generated_questions)
-        )
+        ).reshape(len(generated_questions), -1)
         norm = np.linalg.norm(gen_question_vec, axis=1) * np.linalg.norm(
             question_vec, axis=1
         )
