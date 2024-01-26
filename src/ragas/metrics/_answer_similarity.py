@@ -59,7 +59,7 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
     def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.embeddings is not None, "embeddings must be set"
 
-        ground_truth, answers = row["ground_truths"], row["answer"]
+        ground_truth, answers = row["ground_truth"], row["answer"]
         ground_truth = [item[0] for item in ground_truth]
 
         if self.is_cross_encoder and isinstance(self.embeddings, HuggingfaceEmbeddings):
@@ -86,7 +86,7 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks = []) -> float:
         assert self.embeddings is not None, "embeddings must be set"
 
-        ground_truth, answers = row["ground_truths"], row["answer"]
+        ground_truth, answers = row["ground_truth"], row["answer"]
         ground_truth = [item[0] for item in ground_truth]
 
         if self.is_cross_encoder and isinstance(self.embeddings, HuggingfaceEmbeddings):
