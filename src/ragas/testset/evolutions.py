@@ -37,7 +37,7 @@ EvolutionOutput = t.Tuple[str, CurrentNodes, str]
 
 class DataRow(BaseModel):
     question: str
-    contexts: list[str]
+    contexts: t.List[str]
     ground_truth: str
     evolution_type: str
 
