@@ -37,8 +37,8 @@ EvolutionOutput = t.Tuple[str, CurrentNodes, str]
 
 class DataRow(BaseModel):
     question: str
-    context: str
-    answer: str
+    contexts: list[str]
+    ground_truth: str
     evolution_type: str
 
 
@@ -149,8 +149,8 @@ class Evolution:
 
         return DataRow(
             question=question,
-            context=merged_nodes.page_content,
-            answer="" if answer is None else answer,
+            contexts=[n.page_content for n in current_nodes.nodes],
+            ground_truth="" if answer is None else answer,
             evolution_type=evolution_type,
         )
 

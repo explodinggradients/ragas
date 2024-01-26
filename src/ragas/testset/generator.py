@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import pandas as pd
 from langchain_openai.chat_models import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
+from datasets import Dataset
 
 from ragas._analytics import TesetGenerationEvent, track
 from ragas.embeddings import BaseRagasEmbeddings
@@ -41,14 +42,19 @@ class TestDataset:
 
     test_data: t.List[DataRow]
 
-    def to_pandas(self) -> pd.DataFrame:
+    def _to_records(self)-> t.List[t.Dict]:
         data_samples = []
         for data in self.test_data:
             data_dict = dict(data)
             data_dict["episode_done"] = True
             data_samples.append(data_dict)
+        return data_samples
 
-        return pd.DataFrame.from_records(data_samples)
+    def to_pandas(self) -> pd.DataFrame:
+        return pd.DataFrame.from_records(self._to_records())
+
+    def to_dataset(self)-> Dataset:
+        return Dataset.from_list(self._to_records())
 
 
 @dataclass
