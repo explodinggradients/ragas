@@ -322,7 +322,9 @@ class MultiContextEvolution(ComplexEvolution):
 
 @dataclass
 class ReasoningEvolution(ComplexEvolution):
-    reasoning_question_prompt: Prompt = field(default=reasoning_question_prompt)
+    reasoning_question_prompt: Prompt = field(
+        default_factory=lambda: reasoning_question_prompt
+    )
 
     async def _aevolve(
         self, current_tries: int, current_nodes: CurrentNodes
@@ -337,7 +339,9 @@ class ReasoningEvolution(ComplexEvolution):
 
 @dataclass
 class ConditionalEvolution(ComplexEvolution):
-    conditional_question_prompt: Prompt = field(default=conditional_question_prompt)
+    conditional_question_prompt: Prompt = field(
+        default_factory=lambda: conditional_question_prompt
+    )
 
     async def _aevolve(
         self, current_tries: int, current_nodes: CurrentNodes
