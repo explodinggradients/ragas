@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 
 from fsspec.exceptions import asyncio
 from langchain_core.pydantic_v1 import BaseModel
-from numpy.random import default_rng
 
 from ragas.llms import BaseRagasLLM
 from ragas.llms.json_load import json_loader
@@ -25,7 +24,6 @@ from ragas.testset.prompts import (
     seed_question_prompt,
 )
 
-rng = default_rng()
 logger = logging.getLogger(__name__)
 
 
