@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 from dataclasses import dataclass, field
+from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 from datasets import Dataset, concatenate_datasets
@@ -176,12 +177,17 @@ def evaluate(
         row_run_managers.append((row_rm, row_group_cm))
 
         if is_async:
-            [
-                executor.submit(
-                    metric.ascore, row, row_group_cm, name=f"{metric.name}-{i}"
-                )
-                for metric in metrics
-            ]
+            with ThreadPoolExecutor() as executor_internal:
+                [
+                    executor.submit(
+                        metric.ascore,
+                        row,
+                        row_group_cm,
+                        executor_internal,
+                        name=f"{metric.name}-{i}",
+                    )
+                    for metric in metrics
+                ]
         else:
             [executor.submit(metric.score, row, row_group_cm) for metric in metrics]
 

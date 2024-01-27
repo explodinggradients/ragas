@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import typing as t
+import asyncio
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -171,18 +172,19 @@ class Faithfulness(MetricWithLLM):
         """
         returns the NLI score for each (q, c, a) pair
         """
+        loop = asyncio.get_running_loop()
         assert self.llm is not None, "LLM is not set"
         p = self._create_answer_prompt(row)
         answer_result = await self.llm.agenerate_text(p, callbacks=callbacks)
 
-        statements = await json_loader.asafe_load(
-            answer_result.generations[0][0].text, self.llm
+        statements = await loop.run_in_executor(
+            None, json_loader.safe_load, answer_result.generations[0][0].text, self.llm
         )
         p = self._create_nli_prompt(row, statements.get("statements", []))
-        result = await self.llm.agenerate_text(p, callbacks=callbacks)
+        result = await loop.run_in_executor(None, self.llm.generate_text, p)
 
-        json_output = await json_loader.asafe_load(
-            result.generations[0][0].text, self.llm
+        json_output = await loop.run_in_executor(
+            None, json_loader.safe_load, result.generations[0][0].text, self.llm
         )
         return self._compute_score(json_output)
 
