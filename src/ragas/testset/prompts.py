@@ -352,3 +352,34 @@ seed_question_prompt = Prompt(
     output_key="question",
     output_type="string",
 )
+
+find_relevent_context_prompt = Prompt(
+    name="find_relevent_context",
+    instruction="Given a question and set of contexts, find the most relevant contexts to answer the question.",
+    examples=[
+        {
+            "question": "What is the capital of France?",
+            "contexts": [
+                "1. France is a country in Western Europe. It has several cities, including Paris, Lyon, and Marseille. Paris is not only known for its cultural landmarks like the Eiffel Tower and the Louvre Museum but also as the administrative center.",
+                "2. The capital of France is Paris. It is also the most populous city in France, with a population of over 2 million people. Paris is known for its cultural landmarks like the Eiffel Tower and the Louvre Museum.",
+                "3. Paris is the capital of France. It is also the most populous city in France, with a population of over 2 million people. Paris is known for its cultural landmarks like the Eiffel Tower and the Louvre Museum.",
+            ],
+            "output": {
+                "relevent_contexts": [1, 2],
+            },
+        },
+        {
+            "question": "How does caffeine affect the body and what are its common sources?",
+            "contexts": [
+                "1. Caffeine is a central nervous system stimulant. It can temporarily ward off drowsiness and restore alertness. It primarily affects the brain, where it alters the function of neurotransmitters.",
+                "2. Regular physical activity is essential for maintaining good health. It can help control weight, combat health conditions, boost energy, and promote better sleep.",
+                "3. Common sources of caffeine include coffee, tea, cola, and energy drinks. These beverages are consumed worldwide and are known for providing a quick boost of energy.",
+            ],
+            "output": {"relevant_contexts": [1, 2]},
+        },
+    ],
+    input_keys=["question", "contexts"],
+    output_key="output",
+    output_type="json",
+    language="english",
+)

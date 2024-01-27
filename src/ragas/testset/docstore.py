@@ -7,7 +7,6 @@ import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from random import choices
 
 import numpy as np
 import numpy.typing as npt
@@ -20,13 +19,13 @@ from ragas.executor import Executor
 from ragas.llms.base import BaseRagasLLM
 from ragas.llms.json_load import json_loader
 from ragas.testset.prompts import keyphrase_extraction_prompt
+from ragas.testset.utils import rng
 
 if t.TYPE_CHECKING:
     from llama_index.readers.schema import Document as LlamaindexDocument
 
 Embedding = t.Union[t.List[float], npt.NDArray[np.float64]]
 logger = logging.getLogger(__name__)
-rng = np.random.default_rng()
 
 
 class Document(LCDocument):
@@ -268,7 +267,7 @@ class InMemoryDocumentStore(DocumentStore):
         raise NotImplementedError
 
     def get_random_nodes(self, k=1) -> t.List[Node]:
-        return choices(self.nodes, k=k)
+        return rng.choice(np.array(self.nodes), size=k).tolist()
 
     def get_similar(
         self, node: Node, threshold: float = 0.7, top_k: int = 3

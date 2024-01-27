@@ -152,9 +152,10 @@ class TestsetGenerator:
                 evolution.node_filter = NodeFilter(llm=self.critic_llm)
 
             if isinstance(evolution, ComplexEvolution):
-                evolution.init_evolution()
                 if evolution.evolution_filter is None:
                     evolution.evolution_filter = EvolutionFilter(llm=self.critic_llm)
+
+            evolution.init_evolution()
         if with_debugging_logs:
             from ragas.utils import patch_logger
 

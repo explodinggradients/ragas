@@ -3,12 +3,12 @@ import time
 
 from llama_index import download_loader
 
-from ragas.testset.evolutions import multi_context, reasoning, simple
+from ragas.testset.evolutions import conditional, multi_context, reasoning, simple
 from ragas.testset.generator import TestsetGenerator
 
 generator = TestsetGenerator.with_openai()
 
-distributions = {simple: 0.5, multi_context: 0.4, reasoning: 0.1}
+distributions = {simple: 0.5, multi_context: 0.3, reasoning: 0.1, conditional: 0.1}
 
 
 def get_documents():

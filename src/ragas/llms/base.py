@@ -8,11 +8,8 @@ from langchain_community.chat_models import AzureChatOpenAI, ChatOpenAI, ChatVer
 from langchain_community.llms import AzureOpenAI, OpenAI, VertexAI
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import LLMResult
-from tenacity import (
-    retry,
-    stop_after_attempt,  # for exponential backoff
-    wait_random_exponential,
-)
+from tenacity import stop_after_attempt  # for exponential backoff
+from tenacity import retry, wait_random_exponential
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
