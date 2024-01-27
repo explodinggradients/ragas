@@ -5,7 +5,6 @@ import typing as t
 from dataclasses import dataclass
 
 import pandas as pd
-from datasets import Dataset
 from langchain_openai.chat_models import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
 
@@ -42,19 +41,14 @@ class TestDataset:
 
     test_data: t.List[DataRow]
 
-    def _to_records(self) -> t.List[t.Dict]:
+    def to_pandas(self) -> pd.DataFrame:
         data_samples = []
         for data in self.test_data:
             data_dict = dict(data)
             data_dict["episode_done"] = True
             data_samples.append(data_dict)
-        return data_samples
 
-    def to_pandas(self) -> pd.DataFrame:
-        return pd.DataFrame.from_records(self._to_records())
-
-    def to_dataset(self) -> Dataset:
-        return Dataset.from_list(self._to_records())
+        return pd.DataFrame.from_records(data_samples)
 
 
 @dataclass
@@ -81,7 +75,9 @@ class TestsetGenerator:
 
             splitter = TokenTextSplitter(chunk_size=chunk_size, chunk_overlap=0)
             docstore = InMemoryDocumentStore(
-                splitter=splitter, embeddings=embeddings_model
+                splitter=splitter,
+                embeddings=embeddings_model,
+                generator_llm=generator_llm_model,
             )
             return cls(
                 generator_llm=generator_llm_model,
