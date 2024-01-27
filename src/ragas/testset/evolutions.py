@@ -10,11 +10,13 @@ from langchain_core.pydantic_v1 import BaseModel
 from numpy.random import default_rng
 
 from ragas.llms import BaseRagasLLM
+from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.testset.docstore import Direction, DocumentStore, Node
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 from ragas.testset.prompts import (
     compress_question_prompt,
+    find_relevent_context_prompt,
     multi_context_question_prompt,
     question_answer_prompt,
     reasoning_question_prompt,
@@ -135,7 +137,25 @@ class Evolution:
     ):
         assert self.generator_llm is not None, "generator_llm cannot be None"
 
-        merged_nodes = self.merge_nodes(current_nodes)
+        node_content = [
+            f"{i}\t{n.page_content}" for i, n in enumerate(current_nodes.nodes)
+        ]
+        results = self.generator_llm.generate_text(
+            prompt=find_relevent_context_prompt.format(
+                question=question, contexts=node_content
+            )
+        )
+        relevant_context_indices = json_loader.safe_load(
+            results.generations[0][0].text.strip(), llm=self.generator_llm
+        ).get("relevant_context", None)
+        if relevant_context_indices is None:
+            relevant_context = CurrentNodes(
+                root_node=current_nodes.root_node, nodes=current_nodes.nodes
+            )
+        else:
+            relevant_context = current_nodes
+
+        merged_nodes = self.merge_nodes(relevant_context)
         results = self.generator_llm.generate_text(
             prompt=question_answer_prompt.format(
                 question=question, context=merged_nodes.page_content
