@@ -15,6 +15,7 @@ from ragas.testset.docstore import Direction, DocumentStore, Node
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 from ragas.testset.prompts import (
     compress_question_prompt,
+    conditional_question_prompt,
     multi_context_question_prompt,
     question_answer_prompt,
     reasoning_question_prompt,
@@ -55,6 +56,9 @@ class Evolution:
         return Node(
             doc_id="merged", page_content="\n".join(n.page_content for n in nodes.nodes)
         )
+
+    def init_evolution(self):
+        ...
 
     async def aretry_evolve(
         self, current_tries: int, current_nodes: CurrentNodes, update_count: bool = True
@@ -211,6 +215,55 @@ class ComplexEvolution(Evolution):
         assert self.node_filter is not None, "node filter cannot be None"
         self.evolution_filter = EvolutionFilter(self.node_filter.llm)
 
+    async def _acomplex_evolution(
+        self, current_tries: int, current_nodes: CurrentNodes, question_prompt: Prompt
+    ):
+        assert self.generator_llm is not None, "generator_llm cannot be None"
+        assert self.question_filter is not None, "question_filter cannot be None"
+        assert self.se is not None, "simple evolution cannot be None"
+
+        simple_question, _, _ = await self.se._aevolve(current_tries, current_nodes)
+        logger.debug(
+            "[%s] simple question generated: %s",
+            self.__class__.__name__,
+            simple_question,
+        )
+
+        result = await self.generator_llm.agenerate_text(
+            prompt=question_prompt.format(
+                question=simple_question, context=current_nodes.root_node.page_content
+            )
+        )
+        reasoning_question = result.generations[0][0].text.strip()
+
+        # compress the question
+        compressed_question = self._transform_question(
+            prompt=compress_question_prompt, question=reasoning_question
+        )
+        logger.debug(
+            "[%s] multicontext question compressed: %s",
+            self.__class__.__name__,
+            reasoning_question,
+        )
+
+        if not await self.question_filter.afilter(compressed_question):
+            # retry
+            current_nodes = self.se._get_more_adjacent_nodes(current_nodes)
+            return await self.aretry_evolve(current_tries, current_nodes)
+
+        assert self.evolution_filter is not None, "evolution filter cannot be None"
+        if not await self.evolution_filter.afilter(
+            simple_question, compressed_question
+        ):
+            # retry
+            current_nodes = self.se._get_more_adjacent_nodes(current_nodes)
+            logger.debug(
+                "evolution_filter failed, retrying with %s", len(current_nodes.nodes)
+            )
+            return await self.aretry_evolve(current_tries, current_nodes)
+
+        return reasoning_question, current_nodes, "reasoning"
+
 
 @dataclass
 class MultiContextEvolution(ComplexEvolution):
@@ -269,51 +322,33 @@ class MultiContextEvolution(ComplexEvolution):
 
 @dataclass
 class ReasoningEvolution(ComplexEvolution):
+    reasoning_question_prompt: Prompt = field(
+        default_factory=lambda: reasoning_question_prompt
+    )
+
     async def _aevolve(
         self, current_tries: int, current_nodes: CurrentNodes
     ) -> EvolutionOutput:
-        assert self.generator_llm is not None, "generator_llm cannot be None"
-        assert self.question_filter is not None, "question_filter cannot be None"
-        assert self.se is not None, "simple evolution cannot be None"
-
-        simple_question, _, _ = await self.se._aevolve(current_tries, current_nodes)
-        logger.debug(
-            "[ReasoningEvolution] simple question generated: %s", simple_question
+        return await self._acomplex_evolution(
+            current_tries, current_nodes, self.reasoning_question_prompt
         )
 
-        result = await self.generator_llm.agenerate_text(
-            prompt=reasoning_question_prompt.format(
-                question=simple_question, context=current_nodes.root_node.page_content
-            )
-        )
-        reasoning_question = result.generations[0][0].text.strip()
-        #
-        # compress the question
-        compressed_question = self._transform_question(
-            prompt=compress_question_prompt, question=reasoning_question
-        )
-        logger.debug(
-            "[ReasoningEvolution] multicontext question compressed: %s",
-            reasoning_question,
-        )
+    def __hash__(self):
+        return hash(self.__class__.__name__)
 
-        if not await self.question_filter.afilter(compressed_question):
-            # retry
-            current_nodes = self.se._get_more_adjacent_nodes(current_nodes)
-            return await self.aretry_evolve(current_tries, current_nodes)
 
-        assert self.evolution_filter is not None, "evolution filter cannot be None"
-        if not await self.evolution_filter.afilter(
-            simple_question, compressed_question
-        ):
-            # retry
-            current_nodes = self.se._get_more_adjacent_nodes(current_nodes)
-            logger.debug(
-                "evolution_filter failed, retrying with %s", len(current_nodes.nodes)
-            )
-            return await self.aretry_evolve(current_tries, current_nodes)
+@dataclass
+class ConditionalEvolution(ComplexEvolution):
+    conditional_question_prompt: Prompt = field(
+        default_factory=lambda: conditional_question_prompt
+    )
 
-        return reasoning_question, current_nodes, "reasoning"
+    async def _aevolve(
+        self, current_tries: int, current_nodes: CurrentNodes
+    ) -> EvolutionOutput:
+        return await self._acomplex_evolution(
+            current_tries, current_nodes, self.conditional_question_prompt
+        )
 
     def __hash__(self):
         return hash(self.__class__.__name__)
@@ -322,3 +357,4 @@ class ReasoningEvolution(ComplexEvolution):
 simple = SimpleEvolution()
 multi_context = MultiContextEvolution()
 reasoning = ReasoningEvolution()
+conditional = ConditionalEvolution()

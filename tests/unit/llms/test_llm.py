@@ -10,7 +10,7 @@ if t.TYPE_CHECKING:
     from ragas.llms.prompt import PromptValue
 
 
-class TestLLM(BaseRagasLLM):
+class FakeTestLLM(BaseRagasLLM):
     def llm(self):
         return self
 
