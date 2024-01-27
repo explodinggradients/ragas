@@ -53,7 +53,9 @@ class Evolution:
     @staticmethod
     def merge_nodes(nodes: CurrentNodes) -> Node:
         return Node(
-            doc_id="merged", page_content="\n".join(n.page_content for n in nodes.nodes)
+            doc_id="merged",
+            page_content="\n".join(n.page_content for n in nodes.nodes),
+            keyphrases=[phrase for n in nodes.nodes for phrase in n.keyphrases],
         )
 
     async def aretry_evolve(
@@ -175,7 +177,10 @@ class SimpleEvolution(Evolution):
             )
 
         results = self.generator_llm.generate_text(
-            prompt=seed_question_prompt.format(context=merged_node.page_content)
+            prompt=seed_question_prompt.format(
+                context=merged_node.page_content,
+                keyphrases=merged_node.keyphrases,
+            )
         )
         seed_question = results.generations[0][0].text
         # NOTE: might need improvement
