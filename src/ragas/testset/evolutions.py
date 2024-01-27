@@ -211,6 +211,18 @@ class ComplexEvolution(Evolution):
         assert self.node_filter is not None, "node filter cannot be None"
         self.evolution_filter = EvolutionFilter(self.node_filter.llm)
 
+    def _acomplex_evolution():
+        # this is copy of RasoningEvolution._aevolve
+
+@dataclass
+class ConditionalEvolution(ComplexEvolution):
+    conditional_question: Prompt = field(default=question_answer_prompt)
+
+    async def _aevolve(
+        self, current_tries: int, current_nodes: CurrentNodes
+    ) -> EvolutionOutput:
+        return await self._acomplex_evolution(current_tries, current_nodes, self.)
+
 
 @dataclass
 class MultiContextEvolution(ComplexEvolution):
@@ -287,7 +299,7 @@ class ReasoningEvolution(ComplexEvolution):
             )
         )
         reasoning_question = result.generations[0][0].text.strip()
-        #
+        
         # compress the question
         compressed_question = self._transform_question(
             prompt=compress_question_prompt, question=reasoning_question
