@@ -242,7 +242,7 @@ class InMemoryDocumentStore(DocumentStore):
         raise NotImplementedError
 
     def get_random_nodes(self, k=1) -> t.List[Node]:
-        return rng.choice(self.nodes, size=k).tolist()
+        return rng.choice(np.array(self.nodes), size=k).tolist()
 
     def get_similar(
         self, node: Node, threshold: float = 0.7, top_k: int = 3
