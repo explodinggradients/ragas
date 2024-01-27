@@ -3,7 +3,7 @@ import time
 
 from llama_index import download_loader
 
-from ragas.testset.evolutions import multi_context, reasoning, simple, conditional
+from ragas.testset.evolutions import conditional, multi_context, reasoning, simple
 from ragas.testset.generator import TestsetGenerator
 
 generator = TestsetGenerator.with_openai()

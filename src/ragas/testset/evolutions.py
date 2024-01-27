@@ -15,11 +15,11 @@ from ragas.testset.docstore import Direction, DocumentStore, Node
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 from ragas.testset.prompts import (
     compress_question_prompt,
+    conditional_question_prompt,
     multi_context_question_prompt,
     question_answer_prompt,
     reasoning_question_prompt,
     seed_question_prompt,
-    conditional_question_prompt,
 )
 
 rng = default_rng()
