@@ -87,8 +87,7 @@ class ContextRecall(MetricWithLLM):
     batch_size: int = 15
 
     def _create_context_recall_prompt(self, row: t.Dict) -> PromptValue:
-        qstn, ctx, gt = row["question"], row["contexts"], row["ground_truths"]
-        gt = "\n".join(gt) if isinstance(gt, list) else gt
+        qstn, ctx, gt = row["question"], row["contexts"], row["ground_truth"]
         ctx = "\n".join(ctx) if isinstance(ctx, list) else ctx
 
         return self.context_recall_prompt.format(question=qstn, context=ctx, answer=gt)

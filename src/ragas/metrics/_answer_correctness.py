@@ -141,7 +141,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
 
     def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM must be set"
-        q, a, g = row["question"], row["answer"], row["ground_truths"][0]
+        q, a, g = row["question"], row["answer"], row["ground_truth"]
         p_value = self.correctness_prompt.format(question=q, ground_truth=g, answer=a)
         is_statement_present = self.llm.generate_text(p_value, callbacks=callbacks)
 
@@ -165,7 +165,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM must be set"
 
-        q, a, g = row["question"], row["answer"], row["ground_truths"][0]
+        q, a, g = row["question"], row["answer"], row["ground_truth"]
         p_value = self.correctness_prompt.format(question=q, ground_truth=g, answer=a)
         is_statement_present = await self.llm.agenerate_text(
             p_value, callbacks=callbacks
