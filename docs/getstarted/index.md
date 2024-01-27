@@ -10,7 +10,7 @@ testset_generation.md
 monitoring.md
 :::
 
-Welcome to the Ragas tutorials! These begineer-friendly tutorials will guide you
+Welcome to the Ragas tutorials! These beginner-friendly tutorials will guide you
 through the fundamentals of working with Ragas. These tutorials do assume basic
 knowledge of Python and Retrieval Augmented Generation (RAG) pipelines. 
 
@@ -18,7 +18,7 @@ Before you go further make sure you have [Ragas installed](./install.md)!
 
 :::{note}
 The tutorials only give you on overview of what you can do with ragas and the
-basic skill you need to use it. If you want an in-depth explaination of the
+basic skill you need to use it. If you want an in-depth explanation of the
 core-concepts behind Ragas, check out the [Core Concepts](../concepts/index.md) page. You can also checkout the [How-to Guides](../howtos/index.md) if you want to specific applications of Ragas.
 :::
 
@@ -35,11 +35,11 @@ Let’s get started! 🏁
 How to use the Ragas Metrics to evaluate your RAG pipelines.
 :::
 
-:::{card} Synthetic Testset Generation
+:::{card} Synthetic Test data Generation
 :link: get-started-testset-generation
 :link-type: ref
 
-How to generate testset to assess your RAG pipelines
+How to generate test set to assess your RAG pipelines
 :::
 :::{card} Monitoring
 :link: get-started-monitoring
