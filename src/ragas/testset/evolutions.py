@@ -5,8 +5,8 @@ import typing as t
 from abc import abstractmethod
 from dataclasses import dataclass, field
 
-from langchain_core.pydantic_v1 import BaseModel
 import numpy as np
+from langchain_core.pydantic_v1 import BaseModel
 
 from ragas.llms import BaseRagasLLM
 from ragas.llms.json_load import json_loader

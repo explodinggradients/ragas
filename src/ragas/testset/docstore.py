@@ -252,12 +252,16 @@ class InMemoryDocumentStore(DocumentStore):
             if i in nodes_to_extract.keys():
                 result = results[nodes_to_extract[i]]
                 keyphrase_dict = json_loader._safe_load(
-                    result.generations[0][0].text, llm=self.llm,
+                    result.generations[0][0].text,
+                    llm=self.llm,
                 )
                 n.keyphrases = keyphrase_dict.get("keyphrases", [])
 
             self.nodes.append(n)
             self.node_map[n.doc_id] = n
+            assert isinstance(
+                n.embedding, (list, np.ndarray)
+            ), "Embedding must be list or np.ndarray"
             self.node_embeddings_list.append(n.embedding)
 
     def get_node(self, node_id: str) -> Node:
