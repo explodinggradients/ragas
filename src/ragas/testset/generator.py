@@ -107,6 +107,7 @@ class TestsetGenerator:
         test_size: int,
         distributions: Distributions = {},
         with_debugging_logs=False,
+        is_async: bool = True,
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
@@ -117,6 +118,7 @@ class TestsetGenerator:
             test_size=test_size,
             distributions=distributions,
             with_debugging_logs=with_debugging_logs,
+            is_async=is_async,
         )
 
     # if you add any arguments to this function, make sure to add them to
@@ -127,6 +129,7 @@ class TestsetGenerator:
         test_size: int,
         distributions: Distributions = {},
         with_debugging_logs=False,
+        is_async: bool = True,
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
@@ -137,6 +140,7 @@ class TestsetGenerator:
             test_size=test_size,
             distributions=distributions,
             with_debugging_logs=with_debugging_logs,
+            is_async=is_async,
         )
 
     def generate(
