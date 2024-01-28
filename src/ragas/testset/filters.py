@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 import typing as t
 from abc import ABC
@@ -31,10 +30,7 @@ class NodeFilter(Filter):
     llm: BaseRagasLLM
     threshold: float = 7.5
 
-    def filter(self, node: Node) -> t.Dict:
-        return asyncio.get_event_loop().run_until_complete(self.afilter(node))
-
-    async def afilter(self, node: Node) -> t.Dict:
+    async def filter(self, node: Node) -> t.Dict:
         prompt = context_scoring_prompt.format(context=node.page_content)
         results = await self.llm.agenerate_text(prompt=prompt)
         output = results.generations[0][0].text.strip()
@@ -47,10 +43,7 @@ class NodeFilter(Filter):
 class QuestionFilter(Filter):
     llm: BaseRagasLLM
 
-    def filter(self, question: str) -> bool:
-        return asyncio.get_event_loop().run_until_complete(self.afilter(question))
-
-    async def afilter(self, question: str) -> bool:
+    async def filter(self, question: str) -> bool:
         prompt = filter_question_prompt.format(question=question)
         results = await self.llm.agenerate_text(prompt=prompt)
         results = results.generations[0][0].text.strip()
@@ -63,12 +56,7 @@ class QuestionFilter(Filter):
 class EvolutionFilter(Filter):
     llm: BaseRagasLLM
 
-    def filter(self, simple_question: str, compressed_question: str) -> bool:
-        return asyncio.get_event_loop().run_until_complete(
-            self.afilter(simple_question, compressed_question)
-        )
-
-    async def afilter(self, simple_question: str, compressed_question: str) -> bool:
+    async def filter(self, simple_question: str, compressed_question: str) -> bool:
         prompt = evolution_elimination_prompt.format(
             question1=simple_question, question2=compressed_question
         )

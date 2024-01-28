@@ -69,7 +69,7 @@ class ContextRelevancy(MetricWithLLM):
         else:
             return min(len(indices) / len(context_sents), 1)
 
-    def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
         assert self.llm is not None, "LLM is not initialized"
 
         if self.show_deprecation_warning:
@@ -78,25 +78,7 @@ class ContextRelevancy(MetricWithLLM):
             )
 
         question, contexts = row["question"], row["contexts"]
-        result = self.llm.generate_text(
-            self.context_relevancy_prompt.format(
-                question=question, context="\n".join(contexts)
-            ),
-            callbacks=callbacks,
-        )
-
-        return self._compute_score(result.generations[0][0].text, row)
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        assert self.llm is not None, "LLM is not initialized"
-
-        if self.show_deprecation_warning:
-            logger.warning(
-                "The 'context_relevancy' metric is going to be deprecated soon! Please use the 'context_precision' metric instead. It is a drop-in replacement just a simple search and replace should work."  # noqa
-            )
-
-        question, contexts = row["question"], row["contexts"]
-        result = await self.llm.agenerate_text(
+        result = await self.llm.generate(
             self.context_relevancy_prompt.format(
                 question=question, context="\n".join(contexts)
             ),
