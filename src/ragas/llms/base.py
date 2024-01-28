@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import typing as t
+import asyncio
 from abc import ABC, abstractmethod
+from functools import partial
 from dataclasses import dataclass
 
 from langchain_community.chat_models import AzureChatOpenAI, ChatOpenAI, ChatVertexAI
@@ -62,6 +64,37 @@ class BaseRagasLLM(ABC):
         callbacks: Callbacks = [],
     ) -> LLMResult:
         ...
+
+    async def generate(
+        self,
+        prompt: PromptValue,
+        n: int = 1,
+        temperature: float = 1e-8,
+        stop: t.Optional[t.List[str]] = None,
+        callbacks: Callbacks = [],
+        is_async: bool = True,
+    ) -> LLMResult:
+        """Generate text using the given event loop."""
+        loop = asyncio.get_event_loop()
+
+        if is_async:
+            return await self.agenerate_text(
+                prompt=prompt,
+                n=n,
+                temperature=temperature,
+                stop=stop,
+                callbacks=callbacks,
+            )
+        else:
+            generate_text = partial(
+                self.generate_text,
+                prompt=prompt,
+                n=n,
+                temperature=temperature,
+                stop=stop,
+                callbacks=callbacks,
+            )
+            return await loop.run_in_executor(None, generate_text)
 
 
 @dataclass
