@@ -69,7 +69,7 @@ class Document(LCDocument):
 
 
 class Node(Document):
-    keyphrases: t.Optional[t.List[str]] = Field(default=None, repr=False)
+    keyphrases: t.List[str] = Field(default_factory=list, repr=False)
 
 
 class Direction(str, Enum):
@@ -234,7 +234,7 @@ class InMemoryDocumentStore(DocumentStore):
                     )
                     result_idx += 1
 
-                if n.keyphrases is None:
+                if not n.keyphrases:
                     nodes_to_extract.update({i: result_idx})
                     executor.submit(
                         self.llm.agenerate_text,
