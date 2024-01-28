@@ -185,7 +185,7 @@ def evaluate(
     try:
         # get the results
         results = executor.results()
-        return
+
         # convert results to dataset_like
         for i, _ in enumerate(dataset):
             s = {}
