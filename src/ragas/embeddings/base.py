@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import typing as t
 import asyncio
+import typing as t
 from abc import ABC
 from dataclasses import field
 from typing import List
@@ -10,8 +10,6 @@ import numpy as np
 from langchain_core.embeddings import Embeddings
 from langchain_openai.embeddings import OpenAIEmbeddings
 from pydantic.dataclasses import dataclass
-
-from ragas.llms.base import LangchainLLMWrapper
 
 DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
 

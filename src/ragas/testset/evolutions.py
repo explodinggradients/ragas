@@ -5,7 +5,6 @@ import typing as t
 from abc import abstractmethod
 from dataclasses import dataclass, field
 
-from fsspec.exceptions import asyncio
 from langchain_core.pydantic_v1 import BaseModel
 from numpy.random import default_rng
 
@@ -52,6 +51,7 @@ class Evolution:
     node_filter: t.Optional[NodeFilter] = None
     question_filter: t.Optional[QuestionFilter] = None
     max_tries: int = 5
+    is_async: bool = True
 
     @staticmethod
     def merge_nodes(nodes: CurrentNodes) -> Node:
@@ -59,11 +59,14 @@ class Evolution:
             doc_id="merged", page_content="\n".join(n.page_content for n in nodes.nodes)
         )
 
-    def init_evolution(self):
-        ...
+    def init_evolution(self, is_async: bool = True):
+        self.is_async = is_async
 
     async def aretry_evolve(
-        self, current_tries: int, current_nodes: CurrentNodes, update_count: bool = True
+        self,
+        current_tries: int,
+        current_nodes: CurrentNodes,
+        update_count: bool = True,
     ) -> EvolutionOutput:
         if update_count:
             current_tries += 1
@@ -73,11 +76,11 @@ class Evolution:
             raise ValueError("Max tries reached")
         return await self._aevolve(current_tries, current_nodes)
 
-    def _transform_question(self, prompt: Prompt, question: str) -> str:
+    async def _transform_question(self, prompt: Prompt, question: str) -> str:
         assert self.generator_llm is not None, "generator_llm cannot be None"
 
-        results = self.generator_llm.generate_text(
-            prompt=prompt.format(question=question)
+        results = await self.generator_llm.generate(
+            prompt=prompt.format(question=question), is_async=self.is_async
         )
         return results.generations[0][0].text.strip()
 
@@ -109,9 +112,6 @@ class Evolution:
 
         return current_nodes
 
-    def evolve(self, current_nodes: CurrentNodes) -> DataRow:
-        return asyncio.get_event_loop().run_until_complete(self.aevolve(current_nodes))
-
     async def aevolve(self, current_nodes: CurrentNodes) -> DataRow:
         # init tries with 0 when first called
         current_tries = 0
@@ -121,7 +121,7 @@ class Evolution:
             evolution_type,
         ) = await self._aevolve(current_tries, current_nodes)
 
-        return self.generate_datarow(
+        return await self.generate_datarow(
             question=evolved_question,
             current_nodes=current_nodes,
             evolution_type=evolution_type,
@@ -133,7 +133,7 @@ class Evolution:
     ) -> EvolutionOutput:
         ...
 
-    def generate_datarow(
+    async def generate_datarow(
         self,
         question: str,
         current_nodes: CurrentNodes,
@@ -144,14 +144,17 @@ class Evolution:
         node_content = [
             f"{i}\t{n.page_content}" for i, n in enumerate(current_nodes.nodes)
         ]
-        results = self.generator_llm.generate_text(
+        results = await self.generator_llm.generate(
             prompt=find_relevent_context_prompt.format(
                 question=question, contexts=node_content
             )
         )
-        relevant_context_indices = json_loader.safe_load(
+        relevent_contexts_result = await json_loader.safe_load(
             results.generations[0][0].text.strip(), llm=self.generator_llm
-        ).get("relevant_context", None)
+        )
+        relevant_context_indices = relevent_contexts_result.get(
+            "relevant_context", None
+        )
         if relevant_context_indices is None:
             relevant_context = CurrentNodes(
                 root_node=current_nodes.root_node, nodes=current_nodes.nodes
@@ -160,7 +163,7 @@ class Evolution:
             relevant_context = current_nodes
 
         merged_nodes = self.merge_nodes(relevant_context)
-        results = self.generator_llm.generate_text(
+        results = await self.generator_llm.generate(
             prompt=question_answer_prompt.format(
                 question=question, context=merged_nodes.page_content
             )
@@ -190,7 +193,7 @@ class SimpleEvolution(Evolution):
         assert self.question_filter is not None, "question_filter cannot be None"
 
         merged_node = self.merge_nodes(current_nodes)
-        passed = await self.node_filter.afilter(current_nodes.root_node)
+        passed = await self.node_filter.filter(current_nodes.root_node)
         if not passed["score"]:
             nodes = self.docstore.get_random_nodes(k=1)
             new_current_nodes = CurrentNodes(root_node=nodes[0], nodes=nodes)
@@ -198,13 +201,13 @@ class SimpleEvolution(Evolution):
                 current_tries, new_current_nodes, update_count=False
             )
 
-        results = self.generator_llm.generate_text(
+        results = await self.generator_llm.generate(
             prompt=seed_question_prompt.format(context=merged_node.page_content)
         )
         seed_question = results.generations[0][0].text
         # NOTE: might need improvement
         # select only one seed question here
-        is_valid_question = await self.question_filter.afilter(seed_question)
+        is_valid_question = await self.question_filter.filter(seed_question)
         if not is_valid_question:
             # get more context to rewrite question
             current_nodes = self._get_more_adjacent_nodes(current_nodes)
@@ -223,7 +226,9 @@ class ComplexEvolution(Evolution):
     se: t.Optional[SimpleEvolution] = field(default=None, repr=False)
     evolution_filter: t.Optional[EvolutionFilter] = field(default=None, repr=False)
 
-    def init_evolution(self):
+    def init_evolution(self, is_async: bool = True):
+        super().init_evolution(is_async=is_async)
+
         # init simple evolution to get seed question
         self.se = SimpleEvolution(
             generator_llm=self.generator_llm,
@@ -249,7 +254,7 @@ class ComplexEvolution(Evolution):
             simple_question,
         )
 
-        result = await self.generator_llm.agenerate_text(
+        result = await self.generator_llm.generate(
             prompt=question_prompt.format(
                 question=simple_question, context=current_nodes.root_node.page_content
             )
@@ -257,7 +262,7 @@ class ComplexEvolution(Evolution):
         reasoning_question = result.generations[0][0].text.strip()
 
         # compress the question
-        compressed_question = self._transform_question(
+        compressed_question = await self._transform_question(
             prompt=compress_question_prompt, question=reasoning_question
         )
         logger.debug(
@@ -266,15 +271,13 @@ class ComplexEvolution(Evolution):
             reasoning_question,
         )
 
-        if not await self.question_filter.afilter(compressed_question):
+        if not await self.question_filter.filter(compressed_question):
             # retry
             current_nodes = self.se._get_more_adjacent_nodes(current_nodes)
             return await self.aretry_evolve(current_tries, current_nodes)
 
         assert self.evolution_filter is not None, "evolution filter cannot be None"
-        if not await self.evolution_filter.afilter(
-            simple_question, compressed_question
-        ):
+        if not await self.evolution_filter.filter(simple_question, compressed_question):
             # retry
             current_nodes = self.se._get_more_adjacent_nodes(current_nodes)
             logger.debug(
@@ -307,29 +310,27 @@ class MultiContextEvolution(ComplexEvolution):
             context1=current_nodes.root_node.page_content,
             context2=similar_node,
         )
-        results = await self.generator_llm.agenerate_text(prompt=prompt)
+        results = await self.generator_llm.generate(prompt=prompt)
         question = results.generations[0][0].text.strip()
         logger.debug(
             "[MultiContextEvolution] multicontext question generated: %s", question
         )
 
         # compress the question
-        compressed_question = self._transform_question(
+        compressed_question = await self._transform_question(
             prompt=compress_question_prompt, question=question
         )
         logger.debug(
             "[MultiContextEvolution] multicontext question compressed: %s", question
         )
 
-        if not await self.question_filter.afilter(compressed_question):
+        if not await self.question_filter.filter(compressed_question):
             # retry
             current_nodes = self.se._get_more_adjacent_nodes(current_nodes)
             return await self.aretry_evolve(current_tries, current_nodes)
 
         assert self.evolution_filter is not None, "evolution filter cannot be None"
-        if not await self.evolution_filter.afilter(
-            simple_question, compressed_question
-        ):
+        if not await self.evolution_filter.filter(simple_question, compressed_question):
             # retry
             current_nodes = self.se._get_more_adjacent_nodes(current_nodes)
             return await self.aretry_evolve(current_tries, current_nodes)

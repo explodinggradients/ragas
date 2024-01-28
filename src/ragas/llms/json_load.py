@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import json
 import asyncio
-from functools import partial
+import json
 import logging
 import typing as t
 from dataclasses import dataclass
+from functools import partial
 
 logger = logging.getLogger(__name__)
 
@@ -124,10 +124,10 @@ class JsonLoader:
         callbacks: Callbacks = None,
         is_async: bool = True,
     ):
-        loop = asyncio.get_event_loop()
         if is_async:
             return await self._asafe_load(text=text, llm=llm, callbacks=callbacks)
         else:
+            loop = asyncio.get_event_loop()
             safe_load = partial(
                 self._safe_load, text=text, llm=llm, callbacks=callbacks
             )

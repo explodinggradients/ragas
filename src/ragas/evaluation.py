@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import typing as t
 from dataclasses import dataclass, field
-from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 from datasets import Dataset, concatenate_datasets
