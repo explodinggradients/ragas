@@ -182,7 +182,7 @@ def get_top_k_embeddings(
 @dataclass
 class InMemoryDocumentStore(DocumentStore):
     splitter: TextSplitter
-    generator_llm: t.Optional[BaseRagasLLM] = field(default=None, repr=False)
+    llm: t.Optional[BaseRagasLLM] = field(default=None, repr=False)
     embeddings: t.Optional[BaseRagasEmbeddings] = field(default=None, repr=False)
     nodes: t.List[Node] = field(default_factory=list)
     node_embeddings_list: t.List[Embedding] = field(default_factory=list)
@@ -209,7 +209,7 @@ class InMemoryDocumentStore(DocumentStore):
         self, nodes: t.Sequence[Node], show_progress=True, desc: str = "embedding nodes"
     ):
         assert self.embeddings is not None, "Embeddings must be set"
-        assert self.generator_llm is not None, "Generator must be set"
+        assert self.llm is not None, "Generator must be set"
 
         # NOTE: Adds everything in async mode for now.
         nodes_to_embed = {}
@@ -237,7 +237,7 @@ class InMemoryDocumentStore(DocumentStore):
                 if n.keyphrases is None:
                     nodes_to_extract.update({i: result_idx})
                     executor.submit(
-                        self.generator_llm.agenerate_text,
+                        self.llm.agenerate_text,
                         keyphrase_extraction_prompt.format(text=n.page_content),
                         name=f"keyphrase-extraction[{i}]",
                     )
@@ -252,7 +252,7 @@ class InMemoryDocumentStore(DocumentStore):
             if i in nodes_to_extract.keys():
                 result = results[nodes_to_extract[i]]
                 keyphrase_dict = json_loader.safe_load(
-                    result.generations[0][0].text, llm=self.generator_llm
+                    result.generations[0][0].text, llm=self.llm
                 )
                 n.keyphrases = keyphrase_dict.get("keyphrases", [])
 
