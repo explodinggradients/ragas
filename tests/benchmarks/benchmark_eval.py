@@ -1,7 +1,6 @@
-import os
 import time
 
-from datasets import DatasetDict, load_dataset, concatenate_datasets
+from datasets import DatasetDict, load_dataset
 
 from ragas import evaluate
 from ragas.metrics import (
@@ -20,18 +19,17 @@ from ragas.metrics.critique import harmfulness
 ds = load_dataset("explodinggradients/amnesty_qa", "english_v2")
 assert isinstance(ds, DatasetDict)
 eval_dataset = ds["eval"]
-eval_dataset = concatenate_datasets([eval_dataset] * 3)
 
 # metrics
 metrics = [
     faithfulness,
-    # context_recall,
-    # answer_relevancy,
+    context_recall,
+    answer_relevancy,
     answer_correctness,
-    # harmfulness,
-    # context_relevancy,
-    # context_precision,
-    # context_utilization,
+    harmfulness,
+    context_relevancy,
+    context_precision,
+    context_utilization,
     answer_similarity,
 ]
 

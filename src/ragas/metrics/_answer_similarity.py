@@ -69,7 +69,7 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
                 "async score [ascore()] not implemented for HuggingFace embeddings"
             )
         else:
-            embeddings_1 = np.array(await self.embeddings.embed_texts(ground_truths))
+            embeddings_1 = np.array(await self.embeddings.embed_texts(ground_truth))
             embeddings_2 = np.array(await self.embeddings.embed_texts(answers))
             similarity = embeddings_1 @ embeddings_2.T
             if similarity.size == 1:
