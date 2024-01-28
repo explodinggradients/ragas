@@ -27,15 +27,15 @@ metrics = [
     faithfulness,
     # context_recall,
     # answer_relevancy,
-    # answer_correctness,
+    answer_correctness,
     # harmfulness,
     # context_relevancy,
     # context_precision,
     # context_utilization,
-    # answer_similarity,
+    answer_similarity,
 ]
 
-os.environ["PYTHONASYNCIODEBUG"] = "1"
+# os.environ["PYTHONASYNCIODEBUG"] = "1"
 IGNORE_THREADS = False
 IGNORE_ASYNCIO = False
 

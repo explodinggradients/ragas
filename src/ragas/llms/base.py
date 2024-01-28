@@ -86,6 +86,7 @@ class BaseRagasLLM(ABC):
                 callbacks=callbacks,
             )
         else:
+            loop = asyncio.get_event_loop()
             generate_text = partial(
                 self.generate_text,
                 prompt=prompt,

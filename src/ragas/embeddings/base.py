@@ -1,15 +1,47 @@
 from __future__ import annotations
 
 import typing as t
+import asyncio
+from abc import ABC
 from dataclasses import field
 from typing import List
 
 import numpy as np
-from langchain_core.embeddings import Embeddings as BaseRagasEmbeddings
+from langchain_core.embeddings import Embeddings
 from langchain_openai.embeddings import OpenAIEmbeddings
 from pydantic.dataclasses import dataclass
 
+from ragas.llms.base import LangchainLLMWrapper
+
 DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
+
+
+class BaseRagasEmbeddings(Embeddings, ABC):
+    async def embed_texts(
+        self, texts: List[str], is_async: bool = True
+    ) -> t.List[t.List[float]]:
+        if is_async:
+            return await self.aembed_documents(texts)
+        else:
+            loop = asyncio.get_event_loop()
+            return await loop.run_in_executor(None, self.embed_documents, texts)
+
+
+class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
+    def __init__(self, embeddings: Embeddings):
+        self.embeddings = embeddings
+
+    def embed_query(self, text: str) -> List[float]:
+        return self.embeddings.embed_query(text)
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        return self.embeddings.embed_documents(texts)
+
+    async def aembed_query(self, text: str) -> List[float]:
+        return await self.embeddings.aembed_query(text)
+
+    async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
+        return await self.embeddings.aembed_documents(texts)
 
 
 @dataclass
@@ -89,4 +121,4 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
 
 def embedding_factory() -> BaseRagasEmbeddings:
     openai_embeddings = OpenAIEmbeddings()
-    return openai_embeddings
+    return LangchainEmbeddingsWrapper(openai_embeddings)
