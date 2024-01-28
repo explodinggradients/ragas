@@ -56,7 +56,9 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
     def init_model(self):
         super().init_model()
 
-    def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
+    async def _ascore(
+        self: t.Self, row: t.Dict, callbacks: Callbacks, is_async: bool
+    ) -> float:
         assert self.embeddings is not None, "embeddings must be set"
 
         ground_truth, answers = row["ground_truth"], row["answer"]
@@ -67,37 +69,8 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
                 "async score [ascore()] not implemented for HuggingFace embeddings"
             )
         else:
-            embeddings_1 = np.array(self.embeddings.embed_documents(ground_truth))
-            embeddings_2 = np.array(self.embeddings.embed_documents(answers))
-            similarity = embeddings_1 @ embeddings_2.T
-            if similarity.size == 1:
-                # If similarity has only one value, directly use this value as scores
-                scores = similarity.flatten()
-            else:
-                # If similarity contains multiple values, extract the diagonal as scores
-                scores = np.diagonal(similarity)
-
-        assert isinstance(scores, np.ndarray), "Expects ndarray"
-        if self.threshold:
-            scores = scores >= self.threshold
-
-        return scores.tolist()[0]
-
-    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks = []) -> float:
-        assert self.embeddings is not None, "embeddings must be set"
-
-        ground_truth: t.List[str] = row["ground_truth"]
-        answer: t.List[str] = row["answer"]
-
-        if self.is_cross_encoder and isinstance(self.embeddings, HuggingfaceEmbeddings):
-            raise NotImplementedError(
-                "async score [ascore()] not implemented for HuggingFace embeddings"
-            )
-        else:
-            embeddings_1 = np.array(
-                await self.embeddings.aembed_documents(ground_truth)
-            )
-            embeddings_2 = np.array(await self.embeddings.aembed_documents(answer))
+            embeddings_1 = np.array(await self.embeddings.embed_texts(ground_truth))
+            embeddings_2 = np.array(await self.embeddings.embed_texts(answers))
             similarity = embeddings_1 @ embeddings_2.T
             if similarity.size == 1:
                 scores = similarity.flatten()

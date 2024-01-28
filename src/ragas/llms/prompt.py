@@ -190,7 +190,7 @@ class Prompt(BaseModel):
                 {k: v for k, v in zip(self.input_keys, example[: len(self.input_keys)])}
             )
             example_dict[self.output_key] = (
-                json_loader.safe_load(example[-1], llm)
+                json_loader._safe_load(example[-1], llm)
                 if self.output_type.lower() == "json"
                 else example[-1]
             )

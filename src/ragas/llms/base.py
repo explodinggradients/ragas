@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from functools import partial
 
 from langchain_community.chat_models import AzureChatOpenAI, ChatOpenAI, ChatVertexAI
 from langchain_community.llms import AzureOpenAI, OpenAI, VertexAI
@@ -63,6 +65,38 @@ class BaseRagasLLM(ABC):
     ) -> LLMResult:
         ...
 
+    async def generate(
+        self,
+        prompt: PromptValue,
+        n: int = 1,
+        temperature: float = 1e-8,
+        stop: t.Optional[t.List[str]] = None,
+        callbacks: Callbacks = [],
+        is_async: bool = True,
+    ) -> LLMResult:
+        """Generate text using the given event loop."""
+        loop = asyncio.get_event_loop()
+
+        if is_async:
+            return await self.agenerate_text(
+                prompt=prompt,
+                n=n,
+                temperature=temperature,
+                stop=stop,
+                callbacks=callbacks,
+            )
+        else:
+            loop = asyncio.get_event_loop()
+            generate_text = partial(
+                self.generate_text,
+                prompt=prompt,
+                n=n,
+                temperature=temperature,
+                stop=stop,
+                callbacks=callbacks,
+            )
+            return await loop.run_in_executor(None, generate_text)
+
 
 @dataclass
 class LangchainLLMWrapper(BaseRagasLLM):
@@ -75,7 +109,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
 
     langchain_llm: BaseLanguageModel
 
-    @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
+    @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(15))
     def generate_text(
         self,
         prompt: PromptValue,
@@ -106,7 +140,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
             result.generations = generations
             return result
 
-    @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
+    @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(15))
     async def agenerate_text(
         self,
         prompt: PromptValue,

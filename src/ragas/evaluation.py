@@ -156,7 +156,7 @@ def evaluate(
     executor = Executor(
         desc="Evaluating",
         keep_progress_bar=True,
-        is_async=is_async,
+        is_async=True,
         max_workers=max_workers,
         raise_exceptions=raise_exceptions,
     )
@@ -174,21 +174,18 @@ def evaluate(
             is_async=is_async,
         )
         row_run_managers.append((row_rm, row_group_cm))
-
-        if is_async:
-            [
-                executor.submit(
-                    metric.ascore, row, row_group_cm, name=f"{metric.name}-{i}"
-                )
-                for metric in metrics
-            ]
-        else:
-            [executor.submit(metric.score, row, row_group_cm) for metric in metrics]
+        [
+            executor.submit(
+                metric.ascore, row, row_group_cm, is_async, name=f"{metric.name}-{i}"
+            )
+            for metric in metrics
+        ]
 
     scores = []
     try:
         # get the results
         results = executor.results()
+
         # convert results to dataset_like
         for i, _ in enumerate(dataset):
             s = {}

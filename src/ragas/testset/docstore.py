@@ -251,8 +251,8 @@ class InMemoryDocumentStore(DocumentStore):
                 n.embedding = results[nodes_to_embed[i]]
             if i in nodes_to_extract.keys():
                 result = results[nodes_to_extract[i]]
-                keyphrase_dict = json_loader.safe_load(
-                    result.generations[0][0].text, llm=self.llm
+                keyphrase_dict = json_loader._safe_load(
+                    result.generations[0][0].text, llm=self.llm,
                 )
                 n.keyphrases = keyphrase_dict.get("keyphrases", [])
 
