@@ -1,23 +1,5 @@
 from ragas.llms.prompt import Prompt
 
-seed_question_prompt = Prompt(
-    name="seed_question",
-    instruction="""Generate a question from given context satisfying the rules given below:
-    2.The question should be framed such that it must be clearly understood without providing context.
-    3.The question should be fully answerable from information present in given context.""",
-    examples=[
-        {
-            "context": "The Eiffel Tower in Paris was originally intended as a temporary structure, built for the 1889 World's Fair. It was almost dismantled in 1909 but was saved because it was repurposed as a giant radio antenna.",
-            "output": "Who built the Eiffel Tower?",
-        },
-    ],
-    input_keys=["context"],
-    output_key="output",
-    output_type="string",
-    language="english",
-)
-
-
 reasoning_question_prompt = Prompt(
     name="reasoning_question",
     instruction="""Complicate the given question by rewriting question into a multi-hop reasoning question based on the provided context.
@@ -298,6 +280,78 @@ question_answer_prompt = Prompt(
     language="english",
 )
 
+keyphrase_extraction_prompt = Prompt(
+    name="keyphrase_extraction",
+    instruction="Extract the top 3 to 5 keyphrases from the provided text, focusing on the most significant and distinctive aspects. ",
+    examples=[
+        {
+            "text": "A black hole is a region of spacetime where gravity is so strong that nothing, including light and other electromagnetic waves, has enough energy to escape it. The theory of general relativity predicts that a sufficiently compact mass can deform spacetime to form a black hole.",
+            "output": {
+                "keyphrases": [
+                    "Black hole",
+                    "Region of spacetime",
+                    "Strong gravity",
+                    "Light and electromagnetic waves",
+                    "Theory of general relativity",
+                ]
+            },
+        },
+        {
+            "text": "The Great Wall of China is an ancient series of walls and fortifications located in northern China, built around 500 years ago. This immense wall stretches over 13,000 miles and is a testament to the skill and persistence of ancient Chinese engineers.",
+            "output": {
+                "keyphrases": [
+                    "Great Wall of China",
+                    "Ancient fortifications",
+                    "Northern China",
+                ]
+            },
+        },
+    ],
+    input_keys=["text"],
+    output_key="output",
+    output_type="json",
+)
+
+
+seed_question_prompt = Prompt(
+    name="seed_question",
+    instruction="generate a question that can be fully answered from given context. The question should contain atleast two of the given keyphrases",
+    examples=[
+        {
+            "context": "Photosynthesis in plants involves converting light energy into chemical energy, using chlorophyll and other pigments to absorb light. This process is crucial for plant growth and the production of oxygen.",
+            "keyphrases": [
+                "Photosynthesis",
+                "Light energy",
+                "Chlorophyll",
+                "Oxygen production",
+            ],
+            "question": "How does chlorophyll aid in converting light energy into chemical energy during photosynthesis?",
+        },
+        {
+            "context": "The Industrial Revolution, starting in the 18th century, marked a major turning point in history as it led to the development of factories and urbanization.",
+            "keyphrases": [
+                "Industrial Revolution",
+                "18th century",
+                "Factories",
+                "Urbanization",
+            ],
+            "question": "Why did the Industrial Revolution significantly contribute to the development of factories and urbanization?",
+        },
+        {
+            "context": "A black hole is a region of spacetime where gravity is so strong that nothing, including light and other electromagnetic waves, has enough energy to escape it. The theory of general relativity predicts that a sufficiently compact mass can deform spacetime to form a black hole.",
+            "keyphrases": [
+                "Black hole",
+                "region of spacetime",
+                "Sufficiently compact mass",
+                "Energy to escape",
+            ],
+            "question": "What is a black hole and how does it relate to a region of spacetime?",
+        },
+    ],
+    input_keys=["context", "keyphrases"],
+    output_key="question",
+    output_type="string",
+)
 
 find_relevent_context_prompt = Prompt(
     name="find_relevent_context",

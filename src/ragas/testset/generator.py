@@ -83,7 +83,9 @@ class TestsetGenerator:
 
             splitter = TokenTextSplitter(chunk_size=chunk_size, chunk_overlap=0)
             docstore = InMemoryDocumentStore(
-                splitter=splitter, embeddings=embeddings_model
+                splitter=splitter,
+                embeddings=embeddings_model,
+                llm=generator_llm_model,
             )
             return cls(
                 generator_llm=generator_llm_model,

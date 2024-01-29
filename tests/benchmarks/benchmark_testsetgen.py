@@ -1,4 +1,3 @@
-import os
 import time
 
 from llama_index import download_loader

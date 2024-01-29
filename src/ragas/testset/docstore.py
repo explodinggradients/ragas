@@ -16,6 +16,9 @@ from langchain_core.pydantic_v1 import Field
 
 from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.executor import Executor
+from ragas.llms.base import BaseRagasLLM
+from ragas.llms.json_load import json_loader
+from ragas.testset.prompts import keyphrase_extraction_prompt
 from ragas.testset.utils import rng
 
 if t.TYPE_CHECKING:
@@ -66,7 +69,7 @@ class Document(LCDocument):
 
 
 class Node(Document):
-    ...
+    keyphrases: t.List[str] = Field(default_factory=list, repr=False)
 
 
 class Direction(str, Enum):
@@ -179,6 +182,7 @@ def get_top_k_embeddings(
 @dataclass
 class InMemoryDocumentStore(DocumentStore):
     splitter: TextSplitter
+    llm: t.Optional[BaseRagasLLM] = field(default=None, repr=False)
     embeddings: t.Optional[BaseRagasEmbeddings] = field(default=None, repr=False)
     nodes: t.List[Node] = field(default_factory=list)
     node_embeddings_list: t.List[Embedding] = field(default_factory=list)
@@ -205,9 +209,12 @@ class InMemoryDocumentStore(DocumentStore):
         self, nodes: t.Sequence[Node], show_progress=True, desc: str = "embedding nodes"
     ):
         assert self.embeddings is not None, "Embeddings must be set"
+        assert self.llm is not None, "LLM must be set"
 
         # NOTE: Adds everything in async mode for now.
-        nodes_to_embed = []
+        nodes_to_embed = {}
+        nodes_to_extract = {}
+
         # get embeddings for the docs
         executor = Executor(
             desc="embedding nodes",
@@ -215,25 +222,45 @@ class InMemoryDocumentStore(DocumentStore):
             is_async=True,
             raise_exceptions=True,
         )
+        result_idx = 0
         for i, n in enumerate(nodes):
             if n.embedding is None:
-                nodes_to_embed.append(n)
+                nodes_to_embed.update({i: result_idx})
                 executor.submit(
                     self.embeddings.aembed_query,
                     n.page_content,
                     name=f"embed_node_task[{i}]",
                 )
-            else:
+                result_idx += 1
+
+            if n.keyphrases == []:
+                nodes_to_extract.update({i: result_idx})
+                executor.submit(
+                    self.llm.agenerate_text,
+                    keyphrase_extraction_prompt.format(text=n.page_content),
+                    name=f"keyphrase-extraction[{i}]",
+                )
+                result_idx += 1
+
+        results = executor.results()
+        for i, n in enumerate(nodes):
+            if i in nodes_to_embed.keys():
+                n.embedding = results[nodes_to_embed[i]]
+            if i in nodes_to_extract.keys():
+                result = results[nodes_to_extract[i]]
+                keyphrase_dict = json_loader._safe_load(
+                    result.generations[0][0].text,
+                    llm=self.llm,
+                )
+                n.keyphrases = keyphrase_dict.get("keyphrases", [])
+
+            if n.embedding is not None and n.keyphrases != []:
                 self.nodes.append(n)
                 self.node_map[n.doc_id] = n
+                assert isinstance(
+                    n.embedding, (list, np.ndarray)
+                ), "Embedding must be list or np.ndarray"
                 self.node_embeddings_list.append(n.embedding)
-
-        embeddings = executor.results()
-        for n, embedding in zip(nodes_to_embed, embeddings):
-            n.embedding = embedding
-            self.nodes.append(n)
-            self.node_map[n.doc_id] = n
-            self.node_embeddings_list.append(n.embedding)
 
     def get_node(self, node_id: str) -> Node:
         return self.node_map[node_id]

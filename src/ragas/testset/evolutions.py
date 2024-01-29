@@ -5,8 +5,8 @@ import typing as t
 from abc import abstractmethod
 from dataclasses import dataclass, field
 
+import numpy as np
 from langchain_core.pydantic_v1 import BaseModel
-from numpy.random import default_rng
 
 from ragas.llms import BaseRagasLLM
 from ragas.llms.json_load import json_loader
@@ -22,8 +22,8 @@ from ragas.testset.prompts import (
     reasoning_question_prompt,
     seed_question_prompt,
 )
+from ragas.testset.utils import rng
 
-rng = default_rng()
 logger = logging.getLogger(__name__)
 
 
@@ -56,7 +56,9 @@ class Evolution:
     @staticmethod
     def merge_nodes(nodes: CurrentNodes) -> Node:
         return Node(
-            doc_id="merged", page_content="\n".join(n.page_content for n in nodes.nodes)
+            doc_id="merged",
+            page_content="\n".join(n.page_content for n in nodes.nodes),
+            keyphrases=[phrase for n in nodes.nodes for phrase in n.keyphrases],
         )
 
     def init_evolution(self, is_async: bool = True):
@@ -202,7 +204,12 @@ class SimpleEvolution(Evolution):
             )
 
         results = await self.generator_llm.generate(
-            prompt=seed_question_prompt.format(context=merged_node.page_content)
+            prompt=seed_question_prompt.format(
+                context=merged_node.page_content,
+                keyphrases=rng.choice(
+                    np.array(merged_node.keyphrases), size=3
+                ).tolist(),
+            )
         )
         seed_question = results.generations[0][0].text
         # NOTE: might need improvement
