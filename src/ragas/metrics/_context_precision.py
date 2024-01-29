@@ -109,42 +109,28 @@ class ContextPrecision(MetricWithLLM):
         score = numerator / denominator
         return score
 
-    def _score(self, row: t.Dict, callbacks: Callbacks = []) -> float:
-        assert self.llm is not None, "LLM is not set"
-
-        human_prompts = self._context_precision_prompt(row)
-        responses: t.List[str] = []
-        for hp in human_prompts:
-            result = self.llm.generate_text(
-                hp,
-                n=1,
-                callbacks=callbacks,
-            )
-            responses.append(result.generations[0][0].text)
-
-        json_responses = [json_loader.safe_load(item, self.llm) for item in responses]
-        score = self._calculate_average_precision(json_responses)
-        return score
-
     async def _ascore(
         self: t.Self,
         row: t.Dict,
-        callbacks: Callbacks = [],
+        callbacks: Callbacks,
+        is_async: bool,
     ) -> float:
         assert self.llm is not None, "LLM is not set"
 
         human_prompts = self._context_precision_prompt(row)
         responses: t.List[str] = []
         for hp in human_prompts:
-            result = await self.llm.agenerate_text(
+            result = await self.llm.generate(
                 hp,
                 n=1,
                 callbacks=callbacks,
+                is_async=is_async,
             )
             responses.append(result.generations[0][0].text)
 
         json_responses = [
-            await json_loader.asafe_load(item, self.llm) for item in responses
+            await json_loader.safe_load(item, self.llm, is_async=is_async)
+            for item in responses
         ]
         score = self._calculate_average_precision(json_responses)
         return score

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
+import pytest
 from langchain_core.outputs import Generation, LLMResult
 
 from ragas.llms.base import BaseRagasLLM
@@ -24,3 +25,8 @@ class FakeTestLLM(BaseRagasLLM):
         self, prompt: PromptValue, n=1, temperature=1e-8, stop=None, callbacks=[]
     ):
         return self.generate_text(prompt, n, temperature, stop, callbacks)
+
+
+@pytest.fixture
+def fake_llm():
+    return FakeTestLLM()

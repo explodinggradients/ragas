@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import typing as t
 from dataclasses import dataclass
+from functools import partial
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +77,7 @@ Output:
 class JsonLoader:
     max_retries: int = 2
 
-    def safe_load(self, text: str, llm: BaseRagasLLM, callbacks: Callbacks = None):
+    def _safe_load(self, text: str, llm: BaseRagasLLM, callbacks: Callbacks = None):
         retry = 0
         while retry <= self.max_retries:
             try:
@@ -94,7 +96,7 @@ class JsonLoader:
 
         return {}
 
-    async def asafe_load(
+    async def _asafe_load(
         self, text: str, llm: BaseRagasLLM, callbacks: Callbacks = None
     ):
         retry = 0
@@ -114,6 +116,25 @@ class JsonLoader:
             retry += 1
 
         return {}
+
+    async def safe_load(
+        self,
+        text: str,
+        llm: BaseRagasLLM,
+        callbacks: Callbacks = None,
+        is_async: bool = True,
+    ):
+        if is_async:
+            return await self._asafe_load(text=text, llm=llm, callbacks=callbacks)
+        else:
+            loop = asyncio.get_event_loop()
+            safe_load = partial(
+                self._safe_load, text=text, llm=llm, callbacks=callbacks
+            )
+            return await loop.run_in_executor(
+                None,
+                safe_load,
+            )
 
     def _find_outermost_json(self, text):
         stack = []

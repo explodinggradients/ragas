@@ -10,7 +10,7 @@ from langchain_openai.chat_models import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
 
 from ragas._analytics import TesetGenerationEvent, track
-from ragas.embeddings import BaseRagasEmbeddings
+from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
 from ragas.testset.docstore import Document, DocumentStore, InMemoryDocumentStore
@@ -75,13 +75,17 @@ class TestsetGenerator:
     ) -> "TestsetGenerator":
         generator_llm_model = LangchainLLMWrapper(ChatOpenAI(model=generator_llm))
         critic_llm_model = LangchainLLMWrapper(ChatOpenAI(model=critic_llm))
-        embeddings_model = OpenAIEmbeddings(model=embeddings)
+        embeddings_model = LangchainEmbeddingsWrapper(
+            OpenAIEmbeddings(model=embeddings)
+        )
         if docstore is None:
             from langchain.text_splitter import TokenTextSplitter
 
             splitter = TokenTextSplitter(chunk_size=chunk_size, chunk_overlap=0)
             docstore = InMemoryDocumentStore(
-                splitter=splitter, embeddings=embeddings_model
+                splitter=splitter,
+                embeddings=embeddings_model,
+                llm=generator_llm_model,
             )
             return cls(
                 generator_llm=generator_llm_model,
@@ -105,6 +109,7 @@ class TestsetGenerator:
         test_size: int,
         distributions: Distributions = {},
         with_debugging_logs=False,
+        is_async: bool = True,
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
@@ -115,6 +120,7 @@ class TestsetGenerator:
             test_size=test_size,
             distributions=distributions,
             with_debugging_logs=with_debugging_logs,
+            is_async=is_async,
         )
 
     # if you add any arguments to this function, make sure to add them to
@@ -125,6 +131,7 @@ class TestsetGenerator:
         test_size: int,
         distributions: Distributions = {},
         with_debugging_logs=False,
+        is_async: bool = True,
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
@@ -135,6 +142,7 @@ class TestsetGenerator:
             test_size=test_size,
             distributions=distributions,
             with_debugging_logs=with_debugging_logs,
+            is_async=is_async,
         )
 
     def generate(
@@ -142,6 +150,7 @@ class TestsetGenerator:
         test_size: int,
         distributions: Distributions = DEFAULT_DISTRIBUTION,
         with_debugging_logs=False,
+        is_async: bool = True,
     ):
         # init filters and evolutions
         for evolution in distributions:
@@ -156,9 +165,10 @@ class TestsetGenerator:
                 evolution.node_filter = NodeFilter(llm=self.critic_llm)
 
             if isinstance(evolution, ComplexEvolution):
-                evolution.init_evolution()
                 if evolution.evolution_filter is None:
                     evolution.evolution_filter = EvolutionFilter(llm=self.critic_llm)
+
+            evolution.init_evolution(is_async=is_async)
         if with_debugging_logs:
             from ragas.utils import patch_logger
 

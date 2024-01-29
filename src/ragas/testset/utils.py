@@ -3,6 +3,10 @@ from __future__ import annotations
 import re
 import warnings
 
+import numpy as np
+
+rng = np.random.default_rng(seed=42)
+
 
 def load_as_score(text):
     """

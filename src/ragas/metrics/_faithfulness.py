@@ -167,37 +167,32 @@ class Faithfulness(MetricWithLLM):
 
         return score
 
-    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+    async def _ascore(
+        self: t.Self, row: t.Dict, callbacks: Callbacks, is_async: bool
+    ) -> float:
         """
         returns the NLI score for each (q, c, a) pair
         """
         assert self.llm is not None, "LLM is not set"
         p = self._create_answer_prompt(row)
-        answer_result = await self.llm.agenerate_text(p, callbacks=callbacks)
-
-        statements = await json_loader.asafe_load(
-            answer_result.generations[0][0].text, self.llm
+        answer_result = await self.llm.generate(
+            p, callbacks=callbacks, is_async=is_async
         )
+        statements = await json_loader.safe_load(
+            text=answer_result.generations[0][0].text,
+            llm=self.llm,
+            callbacks=callbacks,
+            is_async=is_async,
+        )
+
         p = self._create_nli_prompt(row, statements.get("statements", []))
-        result = await self.llm.agenerate_text(p, callbacks=callbacks)
-
-        json_output = await json_loader.asafe_load(
-            result.generations[0][0].text, self.llm
+        nli_result = await self.llm.generate(p, callbacks=callbacks, is_async=is_async)
+        json_output = await json_loader.safe_load(
+            text=nli_result.generations[0][0].text,
+            llm=self.llm,
+            callbacks=callbacks,
+            is_async=is_async,
         )
-        return self._compute_score(json_output)
-
-    def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
-        assert self.llm is not None, "LLM is not set"
-        p = self._create_answer_prompt(row)
-        answer_result = self.llm.generate_text(p, callbacks=callbacks)
-
-        statements = json_loader.safe_load(
-            answer_result.generations[0][0].text, self.llm
-        )
-        p = self._create_nli_prompt(row, statements.get("statements", []))
-        result = self.llm.generate_text(p, callbacks=callbacks)
-
-        json_output = json_loader.safe_load(result.generations[0][0].text, self.llm)
         return self._compute_score(json_output)
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:

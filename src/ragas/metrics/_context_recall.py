@@ -106,24 +106,15 @@ class ContextRecall(MetricWithLLM):
         else:
             return np.nan
 
-    def _score(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
         assert self.llm is not None, "set LLM before use"
 
-        result = self.llm.generate_text(
+        result = await self.llm.generate(
             self._create_context_recall_prompt(row), callbacks=callbacks
         )
-        response = json_loader.safe_load(result.generations[0][0].text, self.llm)
-        response = [response] if isinstance(response, dict) else response
-
-        return self._compute_score(response)
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        assert self.llm is not None, "set LLM before use"
-
-        result = await self.llm.agenerate_text(
-            self._create_context_recall_prompt(row), callbacks=callbacks
+        response = await json_loader.safe_load(
+            result.generations[0][0].text, self.llm, is_async=is_async
         )
-        response = await json_loader.asafe_load(result.generations[0][0].text, self.llm)
 
         return self._compute_score(response)
 
