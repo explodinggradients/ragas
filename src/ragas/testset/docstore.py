@@ -224,26 +224,23 @@ class InMemoryDocumentStore(DocumentStore):
         )
         result_idx = 0
         for i, n in enumerate(nodes):
-            if n.embedding is None or n.keyphrases is None:
-                if n.embedding is None:
-                    nodes_to_embed.update({i: result_idx})
-                    executor.submit(
-                        self.embeddings.aembed_query,
-                        n.page_content,
-                        name=f"embed_node_task[{i}]",
-                    )
-                    result_idx += 1
+            if n.embedding is None:
+                nodes_to_embed.update({i: result_idx})
+                executor.submit(
+                    self.embeddings.aembed_query,
+                    n.page_content,
+                    name=f"embed_node_task[{i}]",
+                )
+                result_idx += 1
 
-                if not n.keyphrases:
-                    nodes_to_extract.update({i: result_idx})
-                    executor.submit(
-                        self.llm.agenerate_text,
-                        keyphrase_extraction_prompt.format(text=n.page_content),
-                        name=f"keyphrase-extraction[{i}]",
-                    )
-                    result_idx += 1
-            else:
-                pass
+            if n.keyphrases == []:
+                nodes_to_extract.update({i: result_idx})
+                executor.submit(
+                    self.llm.agenerate_text,
+                    keyphrase_extraction_prompt.format(text=n.page_content),
+                    name=f"keyphrase-extraction[{i}]",
+                )
+                result_idx += 1
 
         results = executor.results()
         for i, n in enumerate(nodes):
@@ -257,12 +254,13 @@ class InMemoryDocumentStore(DocumentStore):
                 )
                 n.keyphrases = keyphrase_dict.get("keyphrases", [])
 
-            self.nodes.append(n)
-            self.node_map[n.doc_id] = n
-            assert isinstance(
-                n.embedding, (list, np.ndarray)
-            ), "Embedding must be list or np.ndarray"
-            self.node_embeddings_list.append(n.embedding)
+            if n.embedding is not None and n.keyphrases != []:
+                self.nodes.append(n)
+                self.node_map[n.doc_id] = n
+                assert isinstance(
+                    n.embedding, (list, np.ndarray)
+                ), "Embedding must be list or np.ndarray"
+                self.node_embeddings_list.append(n.embedding)
 
     def get_node(self, node_id: str) -> Node:
         return self.node_map[node_id]
