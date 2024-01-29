@@ -209,7 +209,7 @@ class InMemoryDocumentStore(DocumentStore):
         self, nodes: t.Sequence[Node], show_progress=True, desc: str = "embedding nodes"
     ):
         assert self.embeddings is not None, "Embeddings must be set"
-        assert self.llm is not None, "Generator must be set"
+        assert self.llm is not None, "LLM must be set"
 
         # NOTE: Adds everything in async mode for now.
         nodes_to_embed = {}
