@@ -8,7 +8,7 @@ Our project thrives on the vibrant energy, diverse skills, and shared passion of
 :::{note}
 **📅 Upcomming Events**
 
-- [Greg Loughnane's](https://www.youtube.com/@AI-Makerspace) YT live event on RAG eval with LangChain and RAGAS on [Jan 31](https://lu.ma/theartofrag)
+- [Greg Loughnane's](https://www.youtube.com/@AI-Makerspace) YT live event on RAG eval with LangChain and RAGAS on [Feb 7](https://lu.ma/theartofrag)
 :::
 
 
@@ -18,6 +18,7 @@ Meet some of our outstanding members who made significant contributions !
 
 - [Tino Max Thayil](https://github.com/tinomaxthayil)
 - [Da Chen](https://github.com/yuukidach)
+- [Yongtae Hwang](https://github.com/Yongtae723)
 
 ## **📚 Blog & Insights**
 
