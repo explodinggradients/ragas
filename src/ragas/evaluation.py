@@ -140,15 +140,19 @@ def evaluate(
     validate_column_dtypes(dataset)
 
     binary_metrics = []
-    for metric in metrics:
+    llm_changed: t.List[int] = []
+    embeddings_changed: t.List[int] = []
+    for i, metric in enumerate(metrics):
         if isinstance(metric, AspectCritique):
             binary_metrics.append(metric.name)
         if isinstance(metric, MetricWithLLM):
             if metric.llm is None:
                 metric.llm = llm
+                llm_changed.append(i)
         if isinstance(metric, MetricWithEmbeddings):
             if metric.embeddings is None:
                 metric.embeddings = embeddings
+                embeddings_changed.append(i)
 
     # initialize all the models in the metrics
     [m.init_model() for m in metrics]
@@ -211,6 +215,12 @@ def evaluate(
         )
         if not evaluation_group_cm.ended:
             evaluation_rm.on_chain_end(result)
+    finally:
+        # reset llms and embeddings if changed
+        for i in llm_changed:
+            t.cast(MetricWithLLM, metrics[i]).llm = None
+        for i in embeddings_changed:
+            t.cast(MetricWithEmbeddings, metrics[i]).embeddings = None
 
     # log the evaluation event
     metrics_names = [m.name for m in metrics]
