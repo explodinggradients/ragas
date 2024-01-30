@@ -77,7 +77,7 @@ Output:
 class JsonLoader:
     max_retries: int = 2
 
-    def _safe_load(self, text: str, llm: BaseRagasLLM, callbacks: Callbacks = None):
+    def sync_safe_load(self, text: str, llm: BaseRagasLLM, callbacks: Callbacks = None):
         retry = 0
         while retry <= self.max_retries:
             try:
@@ -129,7 +129,7 @@ class JsonLoader:
         else:
             loop = asyncio.get_event_loop()
             safe_load = partial(
-                self._safe_load, text=text, llm=llm, callbacks=callbacks
+                self.sync_safe_load, text=text, llm=llm, callbacks=callbacks
             )
             return await loop.run_in_executor(
                 None,

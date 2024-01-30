@@ -25,7 +25,7 @@ class keyphraseExtractor(Extractor):
     async def extract(self, node: Node) -> t.List[str]:
         prompt = keyphrase_extraction_prompt.format(text=node.page_content)
         results = await self.llm.agenerate_text(prompt=prompt)
-        keyphrases = json_loader._safe_load(
+        keyphrases = json_loader.sync_safe_load(
             results.generations[0][0].text.strip(), llm=self.llm
         )
         return keyphrases.get("keyphrases", [])
