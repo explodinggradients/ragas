@@ -22,6 +22,7 @@ from ragas.testset.evolutions import (
     reasoning,
     simple,
 )
+from ragas.testset.extractor import keyphraseExtractor
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 
 if t.TYPE_CHECKING:
@@ -78,6 +79,7 @@ class TestsetGenerator:
         embeddings_model = LangchainEmbeddingsWrapper(
             OpenAIEmbeddings(model=embeddings)
         )
+        keyphrase_extractor = keyphraseExtractor(llm=generator_llm_model)
         if docstore is None:
             from langchain.text_splitter import TokenTextSplitter
 
@@ -85,7 +87,7 @@ class TestsetGenerator:
             docstore = InMemoryDocumentStore(
                 splitter=splitter,
                 embeddings=embeddings_model,
-                llm=generator_llm_model,
+                extractor=keyphrase_extractor,
             )
             return cls(
                 generator_llm=generator_llm_model,
