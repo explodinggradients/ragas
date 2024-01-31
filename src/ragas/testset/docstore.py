@@ -18,6 +18,7 @@ from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.executor import Executor
 from ragas.llms.base import BaseRagasLLM
 from ragas.llms.json_load import json_loader
+from ragas.run_config import RunConfig
 from ragas.testset.prompts import keyphrase_extraction_prompt
 from ragas.testset.utils import rng
 
@@ -113,6 +114,9 @@ class DocumentStore(ABC):
     def get_adjacent(
         self, node: Node, direction: Direction = Direction.NEXT
     ) -> t.Optional[Node]:
+        ...
+
+    def set_run_config(self, run_config: RunConfig):
         ...
 
 
@@ -315,3 +319,9 @@ class InMemoryDocumentStore(DocumentStore):
                     return None
             else:
                 return None
+
+    def set_run_config(self, run_config: RunConfig):
+        if self.embeddings:
+            self.embeddings.set_run_config(run_config)
+        if self.llm:
+            self.llm.set_run_config(run_config)

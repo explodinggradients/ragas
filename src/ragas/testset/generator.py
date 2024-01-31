@@ -13,6 +13,7 @@ from ragas._analytics import TesetGenerationEvent, track
 from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
+from ragas.run_config import RunConfig
 from ragas.testset.docstore import Document, DocumentStore, InMemoryDocumentStore
 from ragas.testset.evolutions import (
     ComplexEvolution,
@@ -110,6 +111,7 @@ class TestsetGenerator:
         distributions: Distributions = {},
         with_debugging_logs=False,
         is_async: bool = True,
+        run_config: t.Optional[RunConfig] = None,
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
@@ -121,6 +123,7 @@ class TestsetGenerator:
             distributions=distributions,
             with_debugging_logs=with_debugging_logs,
             is_async=is_async,
+            run_config=run_config,
         )
 
     # if you add any arguments to this function, make sure to add them to
@@ -132,6 +135,7 @@ class TestsetGenerator:
         distributions: Distributions = {},
         with_debugging_logs=False,
         is_async: bool = True,
+        run_config: t.Optional[RunConfig] = None,
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
@@ -143,6 +147,7 @@ class TestsetGenerator:
             distributions=distributions,
             with_debugging_logs=with_debugging_logs,
             is_async=is_async,
+            run_config=run_config,
         )
 
     def generate(
@@ -151,7 +156,13 @@ class TestsetGenerator:
         distributions: Distributions = DEFAULT_DISTRIBUTION,
         with_debugging_logs=False,
         is_async: bool = True,
+        run_config: t.Optional[RunConfig] = None,
     ):
+        # configure run_config for docstore
+        if run_config is None:
+            run_config = RunConfig()
+        self.docstore.set_run_config(run_config)
+
         # init filters and evolutions
         for evolution in distributions:
             if evolution.generator_llm is None:
@@ -168,7 +179,7 @@ class TestsetGenerator:
                 if evolution.evolution_filter is None:
                     evolution.evolution_filter = EvolutionFilter(llm=self.critic_llm)
 
-            evolution.init_evolution(is_async=is_async)
+            evolution.init(is_async=is_async, run_config=run_config)
         if with_debugging_logs:
             from ragas.utils import patch_logger
 

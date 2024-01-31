@@ -6,6 +6,7 @@ from abc import ABC
 from dataclasses import dataclass
 
 from ragas.llms.json_load import load_as_json
+from ragas.run_config import RunConfig
 from ragas.testset.prompts import (
     context_scoring_prompt,
     evolution_elimination_prompt,
@@ -22,12 +23,14 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Filter(ABC):
-    ...
+    llm: BaseRagasLLM
+
+    def set_run_config(self, run_config: RunConfig):
+        self.llm.set_run_config(run_config)
 
 
 @dataclass
 class NodeFilter(Filter):
-    llm: BaseRagasLLM
     threshold: float = 7.5
 
     async def filter(self, node: Node) -> t.Dict:
@@ -41,8 +44,6 @@ class NodeFilter(Filter):
 
 @dataclass
 class QuestionFilter(Filter):
-    llm: BaseRagasLLM
-
     async def filter(self, question: str) -> bool:
         prompt = filter_question_prompt.format(question=question)
         results = await self.llm.agenerate_text(prompt=prompt)
@@ -54,8 +55,6 @@ class QuestionFilter(Filter):
 
 @dataclass
 class EvolutionFilter(Filter):
-    llm: BaseRagasLLM
-
     async def filter(self, simple_question: str, compressed_question: str) -> bool:
         prompt = evolution_elimination_prompt.format(
             question1=simple_question, question2=compressed_question
