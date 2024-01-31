@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import typing as t
 from abc import ABC
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from ragas.llms.json_load import load_as_json
 from ragas.testset.prompts import (
@@ -14,6 +14,7 @@ from ragas.testset.prompts import (
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import BaseRagasLLM
+    from ragas.llms.prompt import Prompt
     from ragas.testset.docstore import Node
 
 
@@ -24,40 +25,89 @@ logger = logging.getLogger(__name__)
 class Filter(ABC):
     ...
 
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Adapt the filter to a different language.
+        """
+        raise NotImplementedError("adapt() is not implemented for {} Filter")
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Save the filter prompts to a path.
+        """
+        raise NotImplementedError("save() is not implemented for {} Filter")
+
 
 @dataclass
 class NodeFilter(Filter):
     llm: BaseRagasLLM
     threshold: float = 7.5
+    context_scoring_prompt: Prompt = field(
+        default_factory=lambda: context_scoring_prompt
+    )
 
     async def filter(self, node: Node) -> t.Dict:
-        prompt = context_scoring_prompt.format(context=node.page_content)
+        prompt = self.context_scoring_prompt.format(context=node.page_content)
         results = await self.llm.agenerate_text(prompt=prompt)
         output = results.generations[0][0].text.strip()
         score = load_as_json(output)
         score.update({"score": score.get("score", 0) >= self.threshold})
         return score
 
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Adapt the filter to a different language.
+        """
+        self.context_scoring_prompt = self.context_scoring_prompt.adapt(
+            language, self.llm, cache_dir
+        )
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Save the filter prompts to a path.
+        """
+        self.context_scoring_prompt.save(cache_dir)
+
 
 @dataclass
 class QuestionFilter(Filter):
     llm: BaseRagasLLM
+    filter_question_prompt: Prompt = field(
+        default_factory=lambda: filter_question_prompt
+    )
 
     async def filter(self, question: str) -> bool:
-        prompt = filter_question_prompt.format(question=question)
+        prompt = self.filter_question_prompt.format(question=question)
         results = await self.llm.agenerate_text(prompt=prompt)
         results = results.generations[0][0].text.strip()
         json_results = load_as_json(results)
         logger.debug("filtered question: %s", json_results)
         return json_results.get("verdict") != "No"
 
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Adapt the filter to a different language.
+        """
+        self.filter_question_prompt = self.filter_question_prompt.adapt(
+            language, self.llm, cache_dir
+        )
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Save the filter prompts to a path.
+        """
+        self.filter_question_prompt.save(cache_dir)
+
 
 @dataclass
 class EvolutionFilter(Filter):
     llm: BaseRagasLLM
+    evolution_elimination_prompt: Prompt = field(
+        default_factory=lambda: evolution_elimination_prompt
+    )
 
     async def filter(self, simple_question: str, compressed_question: str) -> bool:
-        prompt = evolution_elimination_prompt.format(
+        prompt = self.evolution_elimination_prompt.format(
             question1=simple_question, question2=compressed_question
         )
         results = await self.llm.agenerate_text(prompt=prompt)
@@ -65,3 +115,17 @@ class EvolutionFilter(Filter):
         json_results = load_as_json(results)
         logger.debug("filtered question: %s", json_results)
         return json_results.get("verdict") != "No"
+
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Adapt the filter to a different language.
+        """
+        self.evolution_elimination_prompt = self.evolution_elimination_prompt.adapt(
+            language, self.llm, cache_dir
+        )
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Save the filter prompts to a path.
+        """
+        self.evolution_elimination_prompt.save(cache_dir)
