@@ -14,6 +14,7 @@ from ragas.executor import Executor
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics.base import Metric, MetricWithEmbeddings, MetricWithLLM
 from ragas.metrics.critique import AspectCritique
+from ragas.run_config import RunConfig
 
 # from ragas.metrics.critique import AspectCritique
 from ragas.validation import (
@@ -34,6 +35,7 @@ def evaluate(
     callbacks: Callbacks = [],
     is_async: bool = False,
     max_workers: t.Optional[int] = None,
+    run_config: RunConfig = RunConfig(),
     raise_exceptions: bool = True,
     column_map: t.Dict[str, str] = {},
 ) -> Result:
@@ -68,6 +70,9 @@ def evaluate(
     max_workers: int, optional
         The number of workers to use for the evaluation. This is used by the
         `ThreadpoolExecutor` to run the evaluation in sync mode.
+    run_config: RunConfig
+        Configuration for runtime settings like timeout and retries. If not provided,
+        default values are used.
     raise_exceptions: bool, optional
         Whether to raise exceptions or not. If set to True then the evaluation will
         raise an exception if any of the metrics fail. If set to False then the
@@ -127,7 +132,7 @@ def evaluate(
 
         llm = llm_factory()
     elif isinstance(llm, BaseLanguageModel):
-        llm = LangchainLLMWrapper(llm)
+        llm = LangchainLLMWrapper(llm, run_config=run_config)
     if embeddings is None:
         from ragas.embeddings.base import embedding_factory
 
@@ -155,7 +160,7 @@ def evaluate(
                 embeddings_changed.append(i)
 
     # initialize all the models in the metrics
-    [m.init_model() for m in metrics]
+    [m.init(run_config) for m in metrics]
 
     executor = Executor(
         desc="Evaluating",

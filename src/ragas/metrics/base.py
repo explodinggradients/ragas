@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from ragas.callbacks import new_group
+from ragas.run_config import RunConfig
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -39,7 +40,7 @@ class Metric(ABC):
         ...
 
     @abstractmethod
-    def init_model(self):
+    def init(self, run_config: RunConfig):
         """
         This method will lazy initialize the model.
         """
@@ -83,7 +84,10 @@ class Metric(ABC):
         return score
 
     async def ascore(
-        self: t.Self, row: t.Dict, callbacks: Callbacks = [], is_async: bool = True
+        self: t.Self,
+        row: t.Dict,
+        callbacks: Callbacks = [],
+        is_async: bool = True,
     ) -> float:
         rm, group_cm = new_group(
             self.name, inputs=row, callbacks=callbacks, is_async=True
@@ -100,7 +104,12 @@ class Metric(ABC):
         return score
 
     @abstractmethod
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
+    async def _ascore(
+        self,
+        row: t.Dict,
+        callbacks: Callbacks,
+        is_async: bool,
+    ) -> float:
         ...
 
 
@@ -108,7 +117,7 @@ class Metric(ABC):
 class MetricWithLLM(Metric):
     llm: t.Optional[BaseRagasLLM] = None
 
-    def init_model(self):
+    def init(self, run_config: RunConfig):
         """
         Init any models in the metric, this is invoked before evaluate()
         to load all the models
@@ -118,13 +127,14 @@ class MetricWithLLM(Metric):
             raise ValueError(
                 f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please initantiate a the metric with an LLM to run."  # noqa
             )
+        self.llm.set_run_config(run_config)
 
 
 @dataclass
 class MetricWithEmbeddings(Metric):
     embeddings: t.Optional[BaseRagasEmbeddings] = None
 
-    def init_model(self):
+    def init(self, run_config: RunConfig):
         """
         Init any models in the metric, this is invoked before evaluate()
         to load all the models
@@ -134,3 +144,4 @@ class MetricWithEmbeddings(Metric):
             raise ValueError(
                 f"Metric '{self.name}' has no valid embeddings provided (self.embeddings is None). Please initantiate a the metric with an embeddings to run."  # noqa
             )
+        self.embeddings.set_run_config(run_config)
