@@ -128,15 +128,15 @@ class JsonLoader:
         run_config: RunConfig = RunConfig(),
     ):
         if is_async:
-            with_retry = make_async_retry_wrapper(run_config)
-            return await with_retry(
-                self._asafe_load, text=text, llm=llm, callbacks=callbacks
+            _asafe_load_with_retry = make_async_retry_wrapper(
+                run_config, self._asafe_load
             )
+            return await _asafe_load_with_retry(text=text, llm=llm, callbacks=callbacks)
         else:
-            with_retry = make_retry_wrapper(run_config)
+            _safe_load_with_retry = make_retry_wrapper(run_config, self._safe_load)
             loop = asyncio.get_event_loop()
             safe_load = partial(
-                self._safe_load, text=text, llm=llm, callbacks=callbacks
+                _safe_load_with_retry, text=text, llm=llm, callbacks=callbacks
             )
             return await loop.run_in_executor(
                 None,

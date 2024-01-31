@@ -84,9 +84,10 @@ class BaseRagasLLM(ABC):
     ) -> LLMResult:
         """Generate text using the given event loop."""
         if is_async:
-            with_retry = make_async_retry_wrapper(self.run_config)
-            return await with_retry(
-                self.agenerate_text,
+            agenerate_text_with_retry = make_async_retry_wrapper(
+                self.run_config, self.agenerate_text
+            )
+            return await agenerate_text_with_retry(
                 prompt=prompt,
                 n=n,
                 temperature=temperature,
@@ -95,9 +96,11 @@ class BaseRagasLLM(ABC):
             )
         else:
             loop = asyncio.get_event_loop()
-            with_retry = make_retry_wrapper(self.run_config)
+            generate_text_with_retry = make_retry_wrapper(
+                self.run_config, self.generate_text
+            )
             generate_text = partial(
-                with_retry(self.generate_text),
+                generate_text_with_retry,
                 prompt=prompt,
                 n=n,
                 temperature=temperature,
