@@ -14,7 +14,7 @@ from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI
 from langchain_openai.llms import AzureOpenAI, OpenAI
 from langchain_openai.llms.base import BaseOpenAI
 
-from ragas.run_config import RunConfig, make_async_retry_wrapper, make_retry_wrapper
+from ragas.run_config import RunConfig, add_async_retry, add_retry
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -84,7 +84,7 @@ class BaseRagasLLM(ABC):
     ) -> LLMResult:
         """Generate text using the given event loop."""
         if is_async:
-            agenerate_text_with_retry = make_async_retry_wrapper(
+            agenerate_text_with_retry = add_async_retry(
                 self.run_config, self.agenerate_text
             )
             return await agenerate_text_with_retry(
@@ -96,9 +96,7 @@ class BaseRagasLLM(ABC):
             )
         else:
             loop = asyncio.get_event_loop()
-            generate_text_with_retry = make_retry_wrapper(
-                self.run_config, self.generate_text
-            )
+            generate_text_with_retry = add_retry(self.run_config, self.generate_text)
             generate_text = partial(
                 generate_text_with_retry,
                 prompt=prompt,
