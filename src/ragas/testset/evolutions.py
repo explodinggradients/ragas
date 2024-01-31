@@ -183,9 +183,31 @@ class Evolution:
             evolution_type=evolution_type,
         )
 
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Adapt the filter to a different language.
+        """
+        assert self.node_filter is not None, "node filter cannot be None"
+        assert self.question_filter is not None, "question_filter cannot be None"
+
+        self.node_filter.adapt(language, cache_dir)
+        self.question_filter.adapt(language, cache_dir)
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Save the filter prompts to a path.
+        """
+        assert self.node_filter is not None, "node filter cannot be None"
+        assert self.question_filter is not None, "question_filter cannot be None"
+
+        self.node_filter.save(cache_dir)
+        self.question_filter.save(cache_dir)
+
 
 @dataclass
 class SimpleEvolution(Evolution):
+    seed_question_prompt: Prompt = field(default_factory=lambda: seed_question_prompt)
+
     async def _aevolve(
         self, current_tries: int, current_nodes: CurrentNodes
     ) -> EvolutionOutput:
@@ -226,6 +248,16 @@ class SimpleEvolution(Evolution):
 
     def __hash__(self):
         return hash(self.__class__.__name__)
+
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        super().adapt(language, cache_dir)
+        self.seed_question_prompt = seed_question_prompt.adapt(
+            language, self.generator_llm, cache_dir
+        )
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        super().save(cache_dir)
+        self.seed_question_prompt.save(cache_dir)
 
 
 @dataclass
@@ -294,9 +326,28 @@ class ComplexEvolution(Evolution):
 
         return reasoning_question, current_nodes, "reasoning"
 
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        assert self.evolution_filter is not None, "evolution filter cannot be None"
+
+        super().adapt(language, cache_dir)
+        self.evolution_filter.adapt(language, cache_dir)
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        assert self.evolution_filter is not None, "evolution filter cannot be None"
+
+        super().save(cache_dir)
+        self.evolution_filter.save(cache_dir)
+
 
 @dataclass
 class MultiContextEvolution(ComplexEvolution):
+    multi_context_question_prompt: Prompt = field(
+        default_factory=lambda: multi_context_question_prompt
+    )
+    compress_question_prompt: Prompt = field(
+        default_factory=lambda: compress_question_prompt
+    )
+
     async def _aevolve(
         self, current_tries: int, current_nodes: CurrentNodes
     ) -> EvolutionOutput:
@@ -347,6 +398,20 @@ class MultiContextEvolution(ComplexEvolution):
     def __hash__(self):
         return hash(self.__class__.__name__)
 
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        super().adapt(language, cache_dir)
+        self.multi_context_question_prompt = multi_context_question_prompt.adapt(
+            language, self.generator_llm, cache_dir
+        )
+        self.compress_question_prompt = compress_question_prompt.adapt(
+            language, self.generator_llm, cache_dir
+        )
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        super().save(cache_dir)
+        self.multi_context_question_prompt.save(cache_dir)
+        self.compress_question_prompt.save(cache_dir)
+
 
 @dataclass
 class ReasoningEvolution(ComplexEvolution):
@@ -364,6 +429,16 @@ class ReasoningEvolution(ComplexEvolution):
     def __hash__(self):
         return hash(self.__class__.__name__)
 
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        super().adapt(language, cache_dir)
+        self.reasoning_question_prompt = reasoning_question_prompt.adapt(
+            language, self.generator_llm, cache_dir
+        )
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        super().save(cache_dir)
+        self.reasoning_question_prompt.save(cache_dir)
+
 
 @dataclass
 class ConditionalEvolution(ComplexEvolution):
@@ -380,6 +455,16 @@ class ConditionalEvolution(ComplexEvolution):
 
     def __hash__(self):
         return hash(self.__class__.__name__)
+
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        super().adapt(language, cache_dir)
+        self.conditional_question_prompt = conditional_question_prompt.adapt(
+            language, self.generator_llm, cache_dir
+        )
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        super().save(cache_dir)
+        self.conditional_question_prompt.save(cache_dir)
 
 
 simple = SimpleEvolution()
