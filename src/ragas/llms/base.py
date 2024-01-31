@@ -3,18 +3,18 @@ from __future__ import annotations
 import asyncio
 import typing as t
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import partial
 
 from langchain_community.chat_models import ChatVertexAI
 from langchain_community.llms import VertexAI
-from langchain_openai.llms import AzureOpenAI, OpenAI
-from langchain_openai.llms.base import BaseOpenAI
-from langchain_openai.chat_models import ChatOpenAI, AzureChatOpenAI
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import LLMResult
+from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI
+from langchain_openai.llms import AzureOpenAI, OpenAI
+from langchain_openai.llms.base import BaseOpenAI
 
-from ragas.run_config import RunConfig, make_retry_wrapper, make_async_retry_wrapper
+from ragas.run_config import RunConfig, make_async_retry_wrapper, make_retry_wrapper
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -116,7 +116,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
     """
 
     def __init__(
-        self, langchain_llm: BaseLanguageModel, run_config: t.Optional[RunConfig]
+        self, langchain_llm: BaseLanguageModel, run_config: t.Optional[RunConfig] = None
     ):
         self.langchain_llm = langchain_llm
         if run_config is None:

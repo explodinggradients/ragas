@@ -10,6 +10,7 @@ from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics.base import EvaluationMode, MetricWithEmbeddings, MetricWithLLM
+from ragas.run_config import RunConfig
 
 logger = logging.getLogger(__name__)
 
@@ -104,8 +105,8 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
         if not all([w >= 0 for w in self.weights]):
             raise ValueError("Weights must be non-negative")
 
-    def init_model(self):
-        super().init_model()
+    def init(self, run_config: RunConfig):
+        super().init(run_config)
         if self.answer_similarity is None and self.weights[1] != 0:
             self.answer_similarity = AnswerSimilarity(
                 llm=self.llm, batch_size=self.batch_size, embeddings=self.embeddings

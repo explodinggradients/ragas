@@ -1,12 +1,7 @@
 import typing as t
 from dataclasses import dataclass
 
-from tenacity import (
-    AsyncRetrying,
-    Retrying,
-    wait_exponential,
-    stop_after_attempt,
-)
+from tenacity import AsyncRetrying, Retrying, stop_after_attempt, wait_exponential
 
 
 @dataclass

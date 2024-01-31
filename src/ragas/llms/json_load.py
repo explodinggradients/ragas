@@ -7,7 +7,7 @@ import typing as t
 from dataclasses import dataclass
 from functools import partial
 
-from ragas.run_config import RunConfig, make_retry_wrapper, make_async_retry_wrapper
+from ragas.run_config import RunConfig, make_async_retry_wrapper, make_retry_wrapper
 
 logger = logging.getLogger(__name__)
 
