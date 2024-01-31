@@ -24,13 +24,13 @@ class BaseRagasEmbeddings(Embeddings, ABC):
     ) -> t.List[t.List[float]]:
         if is_async:
             aembed_documents_with_retry = add_async_retry(
-                self.run_config, self.aembed_documents
+                self.aembed_documents, self.run_config
             )
             return await aembed_documents_with_retry(texts)
         else:
             loop = asyncio.get_event_loop()
             embed_documents_with_retry = add_retry(
-                self.run_config, self.embed_documents
+                self.embed_documents, self.run_config
             )
             return await loop.run_in_executor(None, embed_documents_with_retry, texts)
 

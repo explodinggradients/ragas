@@ -85,7 +85,7 @@ class BaseRagasLLM(ABC):
         """Generate text using the given event loop."""
         if is_async:
             agenerate_text_with_retry = add_async_retry(
-                self.run_config, self.agenerate_text
+                self.agenerate_text, self.run_config
             )
             return await agenerate_text_with_retry(
                 prompt=prompt,
@@ -96,7 +96,7 @@ class BaseRagasLLM(ABC):
             )
         else:
             loop = asyncio.get_event_loop()
-            generate_text_with_retry = add_retry(self.run_config, self.generate_text)
+            generate_text_with_retry = add_retry(self.generate_text, self.run_config)
             generate_text = partial(
                 generate_text_with_retry,
                 prompt=prompt,
