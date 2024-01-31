@@ -18,6 +18,7 @@ from ragas.testset.evolutions import (
     ComplexEvolution,
     CurrentNodes,
     DataRow,
+    Evolution,
     multi_context,
     reasoning,
     simple,
@@ -147,17 +148,9 @@ class TestsetGenerator:
             is_async=is_async,
         )
 
-    def generate(
-        self,
-        test_size: int,
-        distributions: Distributions = DEFAULT_DISTRIBUTION,
-        with_debugging_logs=False,
-        is_async: bool = True,
-    ):
-        # init filters and evolutions
-        for evolution in distributions:
-            if evolution.generator_llm is None:
-                evolution.generator_llm = self.generator_llm
+    def init_evolution(self, evolution: Evolution) -> None:
+        if evolution.generator_llm is None:
+            evolution.generator_llm = self.generator_llm
             if evolution.docstore is None:
                 evolution.docstore = self.docstore
 
@@ -170,7 +163,18 @@ class TestsetGenerator:
                 if evolution.evolution_filter is None:
                     evolution.evolution_filter = EvolutionFilter(llm=self.critic_llm)
 
+    def generate(
+        self,
+        test_size: int,
+        distributions: Distributions = DEFAULT_DISTRIBUTION,
+        with_debugging_logs=False,
+        is_async: bool = True,
+    ):
+        # init filters and evolutions
+        for evolution in distributions:
+            self.init_evolution(evolution)
             evolution.init_evolution(is_async=is_async)
+
         if with_debugging_logs:
             from ragas.utils import patch_logger
 
@@ -211,3 +215,36 @@ class TestsetGenerator:
         )
 
         return test_dataset
+
+    def adapt(
+        self,
+        language: str,
+        evolutions: t.List[Evolution],
+        cache_dir: t.Optional[str] = None,
+    ) -> None:
+        assert isinstance(self.docstore, InMemoryDocumentStore), "Must be an instance of in-memory docstore"
+        assert self.docstore.extractor is not None, "Extractor is not set"
+
+        self.docstore.extractor.adapt(language, cache_dir=cache_dir)
+        for evolution in evolutions:
+            self.init_evolution(evolution)
+            evolution.adapt(language, cache_dir=cache_dir)
+
+    def save(
+        self, evolutions: t.List[Evolution], cache_dir: t.Optional[str] = None
+    ) -> None:
+        """
+        Save the docstore prompts to a path.
+        """
+        assert isinstance(self.docstore, InMemoryDocumentStore), "Must be an instance of in-memory docstore"
+        assert self.docstore.extractor is not None, "Extractor is not set"
+
+        self.docstore.extractor.save(cache_dir)
+        for evolution in evolutions:
+            assert evolution.node_filter is not None, "NodeFilter is not set"
+            assert evolution.question_filter is not None, "QuestionFilter is not set"
+            if isinstance(evolution, ComplexEvolution):
+                assert (
+                    evolution.evolution_filter is not None
+                ), "EvolutionFilter is not set"
+            evolution.save(cache_dir=cache_dir)
