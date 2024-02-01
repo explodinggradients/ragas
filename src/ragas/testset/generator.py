@@ -174,13 +174,19 @@ class TestsetGenerator:
         distributions: Distributions = DEFAULT_DISTRIBUTION,
         with_debugging_logs=False,
         is_async: bool = True,
+        run_config: t.Optional[RunConfig] = None,
     ):
+        
+        # configure run_config for docstore
+        if run_config is None:
+            run_config = RunConfig()
+        self.docstore.set_run_config(run_config)
+        
         # init filters and evolutions
         for evolution in distributions:
             self.init_evolution(evolution)
-            evolution.init_evolution(is_async=is_async)
-
             evolution.init(is_async=is_async, run_config=run_config)
+            
         if with_debugging_logs:
             from ragas.utils import patch_logger
 
@@ -189,10 +195,6 @@ class TestsetGenerator:
             patch_logger("ragas.testset.filters", logging.DEBUG)
             patch_logger("ragas.testset.docstore", logging.DEBUG)
             patch_logger("ragas.llms.prompt", logging.DEBUG)
-
-
-
-
 
         exec = Executor(
             desc="Generating",
@@ -241,7 +243,7 @@ class TestsetGenerator:
         self.docstore.extractor.adapt(language, cache_dir=cache_dir)
         for evolution in evolutions:
             self.init_evolution(evolution)
-            evolution.init_evolution()
+            evolution.init()
             evolution.adapt(language, cache_dir=cache_dir)
 
     def save(
