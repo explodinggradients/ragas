@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 import typing as t
@@ -14,7 +16,7 @@ class Runner(Thread):
     def __init__(
         self,
         name: str,
-        jobs: list[t.Tuple[t.Coroutine, str]],
+        jobs: t.List[t.Tuple[t.Coroutine, str]],
         desc: str,
         keep_progress_bar: bool = True,
         raise_exceptions: bool = True,
