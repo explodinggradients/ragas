@@ -157,6 +157,7 @@ class Prompt(BaseModel):
         if os.path.exists(os.path.join(cache_dir, language, f"{self.name}.json")):
             return self._load(language, self.name, cache_dir)
 
+        logger.info("Adapting %s to %s", self.name, language)
         prompts = []
         for example in self.examples:
             prompts.extend(
