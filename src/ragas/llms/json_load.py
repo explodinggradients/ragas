@@ -7,6 +7,8 @@ import typing as t
 from dataclasses import dataclass
 from functools import partial
 
+from ragas.run_config import RunConfig, add_async_retry, add_retry
+
 logger = logging.getLogger(__name__)
 
 if t.TYPE_CHECKING:
@@ -123,13 +125,16 @@ class JsonLoader:
         llm: BaseRagasLLM,
         callbacks: Callbacks = None,
         is_async: bool = True,
+        run_config: RunConfig = RunConfig(),
     ):
         if is_async:
-            return await self._asafe_load(text=text, llm=llm, callbacks=callbacks)
+            _asafe_load_with_retry = add_async_retry(self._asafe_load, run_config)
+            return await _asafe_load_with_retry(text=text, llm=llm, callbacks=callbacks)
         else:
+            _safe_load_with_retry = add_retry(self._safe_load, run_config)
             loop = asyncio.get_event_loop()
             safe_load = partial(
-                self._safe_load, text=text, llm=llm, callbacks=callbacks
+                _safe_load_with_retry, text=text, llm=llm, callbacks=callbacks
             )
             return await loop.run_in_executor(
                 None,

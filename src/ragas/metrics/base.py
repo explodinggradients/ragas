@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from ragas.callbacks import new_group
+from ragas.run_config import RunConfig
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -39,7 +40,7 @@ class Metric(ABC):
         ...
 
     @abstractmethod
-    def init_model(self):
+    def init(self, run_config: RunConfig):
         """
         This method will lazy initialize the model.
         """
@@ -61,11 +62,7 @@ class Metric(ABC):
             "adapt() is not implemented for {} metric".format(self.name)
         )
 
-    def score(
-        self: t.Self,
-        row: t.Dict,
-        callbacks: Callbacks = [],
-    ) -> float:
+    def score(self: t.Self, row: t.Dict, callbacks: Callbacks = []) -> float:
         rm, group_cm = new_group(
             self.name, inputs=row, callbacks=callbacks, is_async=False
         )
@@ -108,7 +105,7 @@ class Metric(ABC):
 class MetricWithLLM(Metric):
     llm: t.Optional[BaseRagasLLM] = None
 
-    def init_model(self):
+    def init(self, run_config: RunConfig):
         """
         Init any models in the metric, this is invoked before evaluate()
         to load all the models
@@ -118,13 +115,14 @@ class MetricWithLLM(Metric):
             raise ValueError(
                 f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please initantiate a the metric with an LLM to run."  # noqa
             )
+        self.llm.set_run_config(run_config)
 
 
 @dataclass
 class MetricWithEmbeddings(Metric):
     embeddings: t.Optional[BaseRagasEmbeddings] = None
 
-    def init_model(self):
+    def init(self, run_config: RunConfig):
         """
         Init any models in the metric, this is invoked before evaluate()
         to load all the models
@@ -134,3 +132,4 @@ class MetricWithEmbeddings(Metric):
             raise ValueError(
                 f"Metric '{self.name}' has no valid embeddings provided (self.embeddings is None). Please initantiate a the metric with an embeddings to run."  # noqa
             )
+        self.embeddings.set_run_config(run_config)

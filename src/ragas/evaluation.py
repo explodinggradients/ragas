@@ -14,6 +14,7 @@ from ragas.executor import Executor
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics.base import Metric, MetricWithEmbeddings, MetricWithLLM
 from ragas.metrics.critique import AspectCritique
+from ragas.run_config import RunConfig
 
 # from ragas.metrics.critique import AspectCritique
 from ragas.validation import (
@@ -34,6 +35,7 @@ def evaluate(
     callbacks: Callbacks = [],
     is_async: bool = False,
     max_workers: t.Optional[int] = None,
+    run_config: t.Optional[RunConfig] = None,
     raise_exceptions: bool = True,
     column_map: t.Dict[str, str] = {},
 ) -> Result:
@@ -68,6 +70,9 @@ def evaluate(
     max_workers: int, optional
         The number of workers to use for the evaluation. This is used by the
         `ThreadpoolExecutor` to run the evaluation in sync mode.
+    run_config: RunConfig, optional
+        Configuration for runtime settings like timeout and retries. If not provided,
+        default values are used.
     raise_exceptions: bool, optional
         Whether to raise exceptions or not. If set to True then the evaluation will
         raise an exception if any of the metrics fail. If set to False then the
@@ -112,6 +117,10 @@ def evaluate(
     if dataset is None:
         raise ValueError("Provide dataset!")
 
+    # default run_config
+    if run_config is None:
+        run_config = RunConfig()
+    # default metrics
     if metrics is None:
         from ragas.metrics import (
             answer_relevancy,
@@ -121,17 +130,6 @@ def evaluate(
         )
 
         metrics = [answer_relevancy, context_precision, faithfulness, context_recall]
-    # set the llm and embeddings
-    if llm is None:
-        from ragas.llms import llm_factory
-
-        llm = llm_factory()
-    elif isinstance(llm, BaseLanguageModel):
-        llm = LangchainLLMWrapper(llm)
-    if embeddings is None:
-        from ragas.embeddings.base import embedding_factory
-
-        embeddings = embedding_factory()
 
     # remap column names from the dataset
     dataset = remap_column_names(dataset, column_map)
@@ -139,19 +137,35 @@ def evaluate(
     validate_evaluation_modes(dataset, metrics)
     validate_column_dtypes(dataset)
 
+    # set the llm and embeddings
+    if llm is None:
+        from ragas.llms import llm_factory
+
+        llm = llm_factory()
+    elif isinstance(llm, BaseLanguageModel):
+        llm = LangchainLLMWrapper(llm, run_config=run_config)
+    if embeddings is None:
+        from ragas.embeddings.base import embedding_factory
+
+        embeddings = embedding_factory()
+    # init llms and embeddings
     binary_metrics = []
-    for metric in metrics:
+    llm_changed: t.List[int] = []
+    embeddings_changed: t.List[int] = []
+    for i, metric in enumerate(metrics):
         if isinstance(metric, AspectCritique):
             binary_metrics.append(metric.name)
         if isinstance(metric, MetricWithLLM):
             if metric.llm is None:
                 metric.llm = llm
+                llm_changed.append(i)
         if isinstance(metric, MetricWithEmbeddings):
             if metric.embeddings is None:
                 metric.embeddings = embeddings
+                embeddings_changed.append(i)
 
     # initialize all the models in the metrics
-    [m.init_model() for m in metrics]
+    [m.init(run_config) for m in metrics]
 
     executor = Executor(
         desc="Evaluating",
@@ -211,6 +225,12 @@ def evaluate(
         )
         if not evaluation_group_cm.ended:
             evaluation_rm.on_chain_end(result)
+    finally:
+        # reset llms and embeddings if changed
+        for i in llm_changed:
+            t.cast(MetricWithLLM, metrics[i]).llm = None
+        for i in embeddings_changed:
+            t.cast(MetricWithEmbeddings, metrics[i]).embeddings = None
 
     # log the evaluation event
     metrics_names = [m.name for m in metrics]
