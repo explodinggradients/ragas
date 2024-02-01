@@ -45,7 +45,7 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
         self.embeddings = embeddings
         if run_config is None:
             run_config = RunConfig()
-        self.run_config = run_config
+        self.set_run_config(run_config)
 
     def embed_query(self, text: str) -> List[float]:
         return self.embeddings.embed_query(text)

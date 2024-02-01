@@ -122,7 +122,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
         self.langchain_llm = langchain_llm
         if run_config is None:
             run_config = RunConfig()
-        self.run_config = run_config
+        self.set_run_config(run_config)
 
     def generate_text(
         self,
@@ -199,5 +199,5 @@ def llm_factory(
     timeout = None
     if run_config is not None:
         timeout = run_config.timeout
-    openai_model = ChatOpenAI(model=model, request_timeout=timeout)  # type: ignore
+    openai_model = ChatOpenAI(model=model, timeout=timeout)
     return LangchainLLMWrapper(openai_model, run_config)

@@ -35,7 +35,7 @@ def evaluate(
     callbacks: Callbacks = [],
     is_async: bool = False,
     max_workers: t.Optional[int] = None,
-    run_config: RunConfig = RunConfig(),
+    run_config: t.Optional[RunConfig] = None,
     raise_exceptions: bool = True,
     column_map: t.Dict[str, str] = {},
 ) -> Result:
@@ -70,7 +70,7 @@ def evaluate(
     max_workers: int, optional
         The number of workers to use for the evaluation. This is used by the
         `ThreadpoolExecutor` to run the evaluation in sync mode.
-    run_config: RunConfig
+    run_config: RunConfig, optional
         Configuration for runtime settings like timeout and retries. If not provided,
         default values are used.
     raise_exceptions: bool, optional
@@ -117,6 +117,10 @@ def evaluate(
     if dataset is None:
         raise ValueError("Provide dataset!")
 
+    # default run_config
+    if run_config is None:
+        run_config = RunConfig()
+    # default metrics
     if metrics is None:
         from ragas.metrics import (
             answer_relevancy,
@@ -126,6 +130,13 @@ def evaluate(
         )
 
         metrics = [answer_relevancy, context_precision, faithfulness, context_recall]
+
+    # remap column names from the dataset
+    dataset = remap_column_names(dataset, column_map)
+    # validation
+    validate_evaluation_modes(dataset, metrics)
+    validate_column_dtypes(dataset)
+
     # set the llm and embeddings
     if llm is None:
         from ragas.llms import llm_factory
@@ -137,13 +148,7 @@ def evaluate(
         from ragas.embeddings.base import embedding_factory
 
         embeddings = embedding_factory()
-
-    # remap column names from the dataset
-    dataset = remap_column_names(dataset, column_map)
-    # validation
-    validate_evaluation_modes(dataset, metrics)
-    validate_column_dtypes(dataset)
-
+    # init llms and embeddings
     binary_metrics = []
     llm_changed: t.List[int] = []
     embeddings_changed: t.List[int] = []
