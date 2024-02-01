@@ -11,6 +11,7 @@ from langchain_core.pydantic_v1 import BaseModel
 from ragas.llms import BaseRagasLLM
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
+from ragas.run_config import RunConfig
 from ragas.testset.docstore import Direction, DocumentStore, Node
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 from ragas.testset.prompts import (
@@ -65,8 +66,21 @@ class Evolution:
             keyphrases=[phrase for n in nodes.nodes for phrase in n.keyphrases],
         )
 
-    def init_evolution(self, is_async: bool = True):
+    def init(self, is_async: bool = True, run_config: t.Optional[RunConfig] = None):
         self.is_async = is_async
+        if run_config is None:
+            run_config = RunConfig()
+        self.set_run_config(run_config)
+
+    def set_run_config(self, run_config: RunConfig):
+        if self.docstore:
+            self.docstore.set_run_config(run_config)
+        if self.generator_llm:
+            self.generator_llm.set_run_config(run_config)
+        if self.node_filter:
+            self.node_filter.set_run_config(run_config)
+        if self.question_filter:
+            self.question_filter.set_run_config(run_config)
 
     async def aretry_evolve(
         self,
@@ -280,8 +294,10 @@ class ComplexEvolution(Evolution):
         default_factory=lambda: compress_question_prompt
     )
 
-    def init_evolution(self, is_async: bool = True):
-        super().init_evolution(is_async=is_async)
+    def init(self, is_async: bool = True, run_config: t.Optional[RunConfig] = None):
+        if run_config is None:
+            run_config = RunConfig()
+        super().init(is_async=is_async, run_config=run_config)
 
         # init simple evolution to get seed question
         self.se = SimpleEvolution(
@@ -293,6 +309,10 @@ class ComplexEvolution(Evolution):
         # init evolution filter with critic llm from another filter
         assert self.node_filter is not None, "node filter cannot be None"
         self.evolution_filter = EvolutionFilter(self.node_filter.llm)
+
+        # set run configs
+        self.se.set_run_config(run_config)
+        self.evolution_filter.set_run_config(run_config)
 
     async def _acomplex_evolution(
         self, current_tries: int, current_nodes: CurrentNodes, question_prompt: Prompt

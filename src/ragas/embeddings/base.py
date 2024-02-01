@@ -11,23 +11,41 @@ from langchain_core.embeddings import Embeddings
 from langchain_openai.embeddings import OpenAIEmbeddings
 from pydantic.dataclasses import dataclass
 
+from ragas.run_config import RunConfig, add_async_retry, add_retry
+
 DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
 
 
 class BaseRagasEmbeddings(Embeddings, ABC):
+    run_config: RunConfig
+
     async def embed_texts(
         self, texts: List[str], is_async: bool = True
     ) -> t.List[t.List[float]]:
         if is_async:
-            return await self.aembed_documents(texts)
+            aembed_documents_with_retry = add_async_retry(
+                self.aembed_documents, self.run_config
+            )
+            return await aembed_documents_with_retry(texts)
         else:
             loop = asyncio.get_event_loop()
-            return await loop.run_in_executor(None, self.embed_documents, texts)
+            embed_documents_with_retry = add_retry(
+                self.embed_documents, self.run_config
+            )
+            return await loop.run_in_executor(None, embed_documents_with_retry, texts)
+
+    def set_run_config(self, run_config: RunConfig):
+        self.run_config = run_config
 
 
 class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
-    def __init__(self, embeddings: Embeddings):
+    def __init__(
+        self, embeddings: Embeddings, run_config: t.Optional[RunConfig] = None
+    ):
         self.embeddings = embeddings
+        if run_config is None:
+            run_config = RunConfig()
+        self.set_run_config(run_config)
 
     def embed_query(self, text: str) -> List[float]:
         return self.embeddings.embed_query(text)
@@ -40,6 +58,11 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
 
     async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
         return await self.embeddings.aembed_documents(texts)
+
+    def set_run_config(self, run_config: RunConfig):
+        self.run_config = run_config
+        if isinstance(self.embeddings, OpenAIEmbeddings):
+            self.embeddings.request_timeout = run_config.timeout
 
 
 @dataclass
@@ -117,6 +140,10 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
         return predictions.tolist()
 
 
-def embedding_factory() -> BaseRagasEmbeddings:
+def embedding_factory(run_config: t.Optional[RunConfig] = None) -> BaseRagasEmbeddings:
     openai_embeddings = OpenAIEmbeddings()
-    return LangchainEmbeddingsWrapper(openai_embeddings)
+    if run_config is not None:
+        openai_embeddings.request_timeout = run_config.timeout
+    else:
+        run_config = RunConfig()
+    return LangchainEmbeddingsWrapper(openai_embeddings, run_config=run_config)

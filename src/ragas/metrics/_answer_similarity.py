@@ -53,9 +53,6 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
                 "batch_size": self.batch_size,
             }
 
-    def init_model(self):
-        super().init_model()
-
     async def _ascore(
         self: t.Self, row: t.Dict, callbacks: Callbacks, is_async: bool
     ) -> float:

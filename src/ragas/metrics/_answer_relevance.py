@@ -75,9 +75,6 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
     batch_size: int = 15
     strictness: int = 3
 
-    def init_model(self):
-        super().init_model()
-
     def calculate_similarity(
         self: t.Self, question: str, generated_questions: list[str]
     ):

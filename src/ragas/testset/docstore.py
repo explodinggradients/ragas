@@ -16,6 +16,7 @@ from langchain_core.pydantic_v1 import Field
 
 from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.executor import Executor
+from ragas.run_config import RunConfig
 from ragas.testset.utils import rng
 
 if t.TYPE_CHECKING:
@@ -112,6 +113,9 @@ class DocumentStore(ABC):
     def get_adjacent(
         self, node: Node, direction: Direction = Direction.NEXT
     ) -> t.Optional[Node]:
+        ...
+
+    def set_run_config(self, run_config: RunConfig):
         ...
 
 
@@ -218,7 +222,6 @@ class InMemoryDocumentStore(DocumentStore):
         executor = Executor(
             desc="embedding nodes",
             keep_progress_bar=False,
-            is_async=True,
             raise_exceptions=True,
         )
         result_idx = 0
@@ -310,3 +313,9 @@ class InMemoryDocumentStore(DocumentStore):
                     return None
             else:
                 return None
+
+    def set_run_config(self, run_config: RunConfig):
+        if self.embeddings:
+            self.embeddings.set_run_config(run_config)
+        if self.llm:
+            self.llm.set_run_config(run_config)
