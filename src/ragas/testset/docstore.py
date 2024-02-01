@@ -223,7 +223,6 @@ class InMemoryDocumentStore(DocumentStore):
         executor = Executor(
             desc="embedding nodes",
             keep_progress_bar=False,
-            is_async=True,
             raise_exceptions=True,
         )
         result_idx = 0
