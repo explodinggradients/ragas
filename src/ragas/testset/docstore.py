@@ -317,5 +317,3 @@ class InMemoryDocumentStore(DocumentStore):
     def set_run_config(self, run_config: RunConfig):
         if self.embeddings:
             self.embeddings.set_run_config(run_config)
-        if self.llm:
-            self.llm.set_run_config(run_config)
