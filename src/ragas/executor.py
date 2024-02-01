@@ -1,8 +1,8 @@
 import asyncio
+import logging
 import typing as t
 from dataclasses import dataclass, field
 from threading import Thread
-import logging
 
 import numpy as np
 from tqdm.auto import tqdm
