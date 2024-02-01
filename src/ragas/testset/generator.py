@@ -182,6 +182,8 @@ class TestsetGenerator:
             patch_logger("ragas.testset.extractor", logging.DEBUG)
             patch_logger("ragas.testset.filters", logging.DEBUG)
             patch_logger("ragas.testset.docstore", logging.DEBUG)
+            patch_logger("ragas.llms.prompt", logging.DEBUG)
+
 
 
 
@@ -234,6 +236,7 @@ class TestsetGenerator:
         self.docstore.extractor.adapt(language, cache_dir=cache_dir)
         for evolution in evolutions:
             self.init_evolution(evolution)
+            evolution.init_evolution()
             evolution.adapt(language, cache_dir=cache_dir)
 
     def save(
