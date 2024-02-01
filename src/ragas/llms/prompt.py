@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import typing as t
+import logging
 
 from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.prompt_values import PromptValue as BasePromptValue
@@ -15,6 +16,7 @@ from ragas.utils import get_cache_dir
 
 Example = t.Dict[str, t.Any]
 
+logger = logging.getLogger(__name__)
 
 class PromptValue(BasePromptValue):
     prompt_str: str
@@ -147,6 +149,9 @@ class Prompt(BaseModel):
     def adapt(
         self, language: str, llm: BaseRagasLLM, cache_dir: t.Optional[str] = None
     ) -> Prompt:
+        
+        if self.language == language:
+            return self
         # TODO: Add callbacks
         cache_dir = cache_dir if cache_dir else get_cache_dir()
         if os.path.exists(os.path.join(cache_dir, language, f"{self.name}.json")):
@@ -215,7 +220,7 @@ class Prompt(BaseModel):
 
     @classmethod
     def _load(cls, language: str, name: str, cache_dir: str) -> Prompt:
-        logging.log(logging.INFO, f"Loading {name} from {cache_dir}")
+        logger.info("Loading %s from %s", name, cache_dir)
         path = os.path.join(cache_dir, language, f"{name}.json")
         return cls(**json.load(open(path)))
 
