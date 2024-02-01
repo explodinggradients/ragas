@@ -179,6 +179,12 @@ class TestsetGenerator:
             from ragas.utils import patch_logger
 
             patch_logger("ragas.testset.evolutions", logging.DEBUG)
+            patch_logger("ragas.testset.extractor", logging.DEBUG)
+            patch_logger("ragas.testset.filters", logging.DEBUG)
+            patch_logger("ragas.testset.docstore", logging.DEBUG)
+
+
+
 
         exec = Executor(
             desc="Generating",
