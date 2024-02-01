@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
@@ -12,6 +13,8 @@ if t.TYPE_CHECKING:
     from ragas.llms.prompt import Prompt
     from ragas.testset.docstore import Node
 
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class Extractor(ABC):
@@ -46,6 +49,7 @@ class keyphraseExtractor(Extractor):
         keyphrases = json_loader.sync_safe_load(
             results.generations[0][0].text.strip(), llm=self.llm
         )
+        logger.debug("keyphrases: %s", keyphrases)
         return keyphrases.get("keyphrases", [])
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
