@@ -189,7 +189,6 @@ class TestsetGenerator:
             desc="Generating",
             keep_progress_bar=True,
             raise_exceptions=True,
-            is_async=True,
         )
 
         current_nodes = [

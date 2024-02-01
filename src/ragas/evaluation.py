@@ -170,8 +170,6 @@ def evaluate(
     executor = Executor(
         desc="Evaluating",
         keep_progress_bar=True,
-        is_async=True,
-        max_workers=max_workers,
         raise_exceptions=raise_exceptions,
     )
     # new evaluation chain
