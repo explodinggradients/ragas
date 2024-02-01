@@ -209,7 +209,8 @@ class Evolution:
         """
         assert self.node_filter is not None, "node filter cannot be None"
         assert self.question_filter is not None, "question_filter cannot be None"
-
+        self.question_answer_prompt.save(cache_dir)
+        self.find_relevent_context_prompt.save(cache_dir)
         self.node_filter.save(cache_dir)
         self.question_filter.save(cache_dir)
 
@@ -344,6 +345,7 @@ class ComplexEvolution(Evolution):
         assert self.evolution_filter is not None, "evolution filter cannot be None"
 
         super().adapt(language, cache_dir)
+        self.se.adapt(language, cache_dir)
         self.compress_question_prompt = compress_question_prompt.adapt(
             language, self.generator_llm, cache_dir
         )
@@ -353,6 +355,7 @@ class ComplexEvolution(Evolution):
         assert self.evolution_filter is not None, "evolution filter cannot be None"
 
         super().save(cache_dir)
+        self.se.save(cache_dir)
         self.evolution_filter.save(cache_dir)
         self.compress_question_prompt.save(cache_dir)
 
