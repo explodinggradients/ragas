@@ -5,7 +5,7 @@ import typing as t
 from abc import ABC
 from dataclasses import dataclass, field
 
-from ragas.llms.json_load import load_as_json
+from ragas.llms.json_load import json_loader
 from ragas.testset.prompts import (
     context_scoring_prompt,
     evolution_elimination_prompt,
@@ -50,7 +50,7 @@ class NodeFilter(Filter):
         prompt = self.context_scoring_prompt.format(context=node.page_content)
         results = await self.llm.agenerate_text(prompt=prompt)
         output = results.generations[0][0].text.strip()
-        score = load_as_json(output)
+        score = json_loader.sync_safe_load(output, llm=self.llm)
         score.update({"score": score.get("score", 0) >= self.threshold})
         return score
 
@@ -80,9 +80,9 @@ class QuestionFilter(Filter):
         prompt = self.filter_question_prompt.format(question=question)
         results = await self.llm.agenerate_text(prompt=prompt)
         results = results.generations[0][0].text.strip()
-        json_results = load_as_json(results)
+        json_results = json_loader.sync_safe_load(results, llm=self.llm)
         logger.debug("filtered question: %s", json_results)
-        return json_results.get("verdict") != "No"
+        return json_results.get("verdict") == "1"
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         """
@@ -112,9 +112,9 @@ class EvolutionFilter(Filter):
         )
         results = await self.llm.agenerate_text(prompt=prompt)
         results = results.generations[0][0].text.strip()
-        json_results = load_as_json(results)
+        json_results = json_loader.sync_safe_load(results, llm=self.llm)
         logger.debug("filtered question: %s", json_results)
-        return json_results.get("verdict") != "No"
+        return json_results.get("verdict") == "1"
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         """
