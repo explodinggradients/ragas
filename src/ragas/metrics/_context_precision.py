@@ -26,7 +26,7 @@ CONTEXT_PRECISION = Prompt(
             "answer": """Albert Einstein born in 14 March 1879 was German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time. He received the 1921 Nobel Prize in Physics for his services to theoretical physics. He published 4 papers in 1905. Einstein moved to Switzerland in 1895""",
             "verification": {
                 "reason": "The provided context was indeed useful in arriving at the given answer. The context includes key information about Albert Einstein's life and contributions, which are reflected in the answer.",
-                "Verdict": "1",
+                "verdict": "1",
             },
         },
         {
