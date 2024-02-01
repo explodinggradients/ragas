@@ -1,43 +1,36 @@
 import asyncio
 import typing as t
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
+from threading import Thread
+import logging
 
 import numpy as np
 from tqdm.auto import tqdm
 
+logger = logging.getLogger(__name__)
 
-@dataclass
-class Executor:
-    desc: str = "Evaluating"
-    keep_progress_bar: bool = True
-    futures: t.List[t.Any] = field(default_factory=list, repr=False)
-    raise_exceptions: bool = False
-    _is_new_eventloop: bool = False
 
-    def __post_init__(self):
-        try:
-            self.executor = asyncio.get_running_loop()
-        except RuntimeError:
-            self.executor = asyncio.new_event_loop()
-            self._is_new_eventloop = True
-
-    def wrap_callable_with_index(self, callable: t.Callable, counter):
-        async def wrapped_callable_async(*args, **kwargs):
-            return counter, await callable(*args, **kwargs)
-
-        return wrapped_callable_async
-
-    def submit(
-        self, callable: t.Callable, *args, name: t.Optional[str] = None, **kwargs
+class Runner(Thread):
+    def __init__(
+        self,
+        name: str,
+        jobs: list[t.Tuple[t.Coroutine, str]],
+        desc: str,
+        keep_progress_bar: bool = True,
+        raise_exceptions: bool = True,
     ):
-        self.executor = t.cast(asyncio.AbstractEventLoop, self.executor)
-        callable_with_index = self.wrap_callable_with_index(callable, len(self.futures))
-        # is type correct?
-        callable_with_index = t.cast(t.Callable, callable_with_index)
-        self.futures.append(
-            self.executor.create_task(callable_with_index(*args, **kwargs), name=name)
-        )
+        super().__init__(name=name)
+        self.jobs = jobs
+        self.desc = desc
+        self.keep_progress_bar = keep_progress_bar
+        self.raise_exceptions = raise_exceptions
+        self.futures = []
+
+        # create task
+        self.loop = asyncio.new_event_loop()
+        for job in self.jobs:
+            coroutine, name = job
+            self.futures.append(self.loop.create_task(coroutine, name=name))
 
     async def _aresults(self) -> t.List[t.Any]:
         results = []
@@ -58,15 +51,62 @@ class Executor:
 
         return results
 
-    def results(self) -> t.List[t.Any]:
+    def run(self):
         results = []
-        self.executor = t.cast(asyncio.AbstractEventLoop, self.executor)
         try:
-            if self._is_new_eventloop:
-                results = self.executor.run_until_complete(self._aresults())
+            results = self.loop.run_until_complete(self._aresults())
+        except Exception as e:
+            if self.raise_exceptions:
+                raise e
             else:
-                results = self.executor.create_task(self._aresults())
+                logger.error("Runner in Executor raised an exception", exc_info=True)
+                results = None
         finally:
+            self.results = results
             [f.cancel() for f in self.futures]
-        sorted_results = sorted(results, key=lambda x: x[0])
+            self.loop.stop()
+
+
+@dataclass
+class Executor:
+    desc: str = "Evaluating"
+    keep_progress_bar: bool = True
+    jobs: t.List[t.Any] = field(default_factory=list, repr=False)
+    raise_exceptions: bool = False
+
+    def wrap_callable_with_index(self, callable: t.Callable, counter):
+        async def wrapped_callable_async(*args, **kwargs):
+            return counter, await callable(*args, **kwargs)
+
+        return wrapped_callable_async
+
+    def submit(
+        self, callable: t.Callable, *args, name: t.Optional[str] = None, **kwargs
+    ):
+        callable_with_index = self.wrap_callable_with_index(callable, len(self.jobs))
+        self.jobs.append((callable_with_index(*args, **kwargs), name))
+
+    def results(self) -> t.List[t.Any]:
+        executor_job = Runner(
+            name="ExecutorRunner",
+            jobs=self.jobs,
+            desc=self.desc,
+            keep_progress_bar=self.keep_progress_bar,
+            raise_exceptions=self.raise_exceptions,
+        )
+        executor_job.start()
+        try:
+            executor_job.join()
+        finally:
+            ...
+
+        if executor_job.results is None:
+            if self.raise_exceptions:
+                raise RuntimeError(
+                    "Executor failed to complete. Please check logs above for full info."
+                )
+            else:
+                logger.error("Executor failed to complete. Please check logs above.")
+                return []
+        sorted_results = sorted(executor_job.results, key=lambda x: x[0])
         return [r[1] for r in sorted_results]
