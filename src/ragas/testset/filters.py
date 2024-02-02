@@ -51,9 +51,9 @@ class NodeFilter(Filter):
 
     async def filter(self, node: Node) -> t.Dict:
         prompt = self.context_scoring_prompt.format(context=node.page_content)
-        results = await self.llm.agenerate_text(prompt=prompt)
+        results = await self.llm.generate(prompt=prompt)
         output = results.generations[0][0].text.strip()
-        score = json_loader.sync_safe_load(output, llm=self.llm)
+        score = await json_loader.safe_load(output, llm=self.llm)
         score.update({"score": score.get("score", 0) >= self.threshold})
         return score
 
@@ -81,9 +81,9 @@ class QuestionFilter(Filter):
 
     async def filter(self, question: str) -> bool:
         prompt = self.filter_question_prompt.format(question=question)
-        results = await self.llm.agenerate_text(prompt=prompt)
+        results = await self.llm.generate(prompt=prompt)
         results = results.generations[0][0].text.strip()
-        json_results = json_loader.sync_safe_load(results, llm=self.llm)
+        json_results = await json_loader.safe_load(results, llm=self.llm)
         logger.debug("filtered question: %s", json_results)
         return json_results.get("verdict") == "1"
 
@@ -113,9 +113,9 @@ class EvolutionFilter(Filter):
         prompt = self.evolution_elimination_prompt.format(
             question1=simple_question, question2=compressed_question
         )
-        results = await self.llm.agenerate_text(prompt=prompt)
+        results = await self.llm.generate(prompt=prompt)
         results = results.generations[0][0].text.strip()
-        json_results = json_loader.sync_safe_load(results, llm=self.llm)
+        json_results = await json_loader.safe_load(results, llm=self.llm)
         logger.debug("filtered question: %s", json_results)
         return json_results.get("verdict") == "1"
 

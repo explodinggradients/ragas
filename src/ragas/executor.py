@@ -17,13 +17,12 @@ logger = logging.getLogger(__name__)
 class Runner(Thread):
     def __init__(
         self,
-        name: str,
         jobs: t.List[t.Tuple[t.Coroutine, str]],
         desc: str,
         keep_progress_bar: bool = True,
         raise_exceptions: bool = True,
     ):
-        super().__init__(name=name)
+        super().__init__()
         self.jobs = jobs
         self.desc = desc
         self.keep_progress_bar = keep_progress_bar
@@ -92,7 +91,6 @@ class Executor:
 
     def results(self) -> t.List[t.Any]:
         executor_job = Runner(
-            name="ExecutorRunner",
             jobs=self.jobs,
             desc=self.desc,
             keep_progress_bar=self.keep_progress_bar,

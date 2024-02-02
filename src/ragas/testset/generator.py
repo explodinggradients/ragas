@@ -5,6 +5,7 @@ import typing as t
 from dataclasses import dataclass
 
 import pandas as pd
+import numpy as np
 from datasets import Dataset
 from langchain_openai.chat_models import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
@@ -176,17 +177,16 @@ class TestsetGenerator:
         is_async: bool = True,
         run_config: t.Optional[RunConfig] = None,
     ):
-        
         # configure run_config for docstore
         if run_config is None:
             run_config = RunConfig()
         self.docstore.set_run_config(run_config)
-        
+
         # init filters and evolutions
         for evolution in distributions:
             self.init_evolution(evolution)
             evolution.init(is_async=is_async, run_config=run_config)
-            
+
         if with_debugging_logs:
             from ragas.utils import patch_logger
 
@@ -218,6 +218,9 @@ class TestsetGenerator:
             test_data_rows = exec.results()
         except ValueError as e:
             raise e
+        # make sure to ignore any NaNs that might have been returned
+        # due to failed evolutions. MaxRetriesExceeded is a common reason
+        test_data_rows = [r for r in test_data_rows if not np.isnan(r)]
         test_dataset = TestDataset(test_data=test_data_rows)
         track(
             TesetGenerationEvent(
@@ -237,7 +240,9 @@ class TestsetGenerator:
         evolutions: t.List[Evolution],
         cache_dir: t.Optional[str] = None,
     ) -> None:
-        assert isinstance(self.docstore, InMemoryDocumentStore), "Must be an instance of in-memory docstore"
+        assert isinstance(
+            self.docstore, InMemoryDocumentStore
+        ), "Must be an instance of in-memory docstore"
         assert self.docstore.extractor is not None, "Extractor is not set"
 
         self.docstore.extractor.adapt(language, cache_dir=cache_dir)
@@ -252,7 +257,9 @@ class TestsetGenerator:
         """
         Save the docstore prompts to a path.
         """
-        assert isinstance(self.docstore, InMemoryDocumentStore), "Must be an instance of in-memory docstore"
+        assert isinstance(
+            self.docstore, InMemoryDocumentStore
+        ), "Must be an instance of in-memory docstore"
         assert self.docstore.extractor is not None, "Extractor is not set"
 
         self.docstore.extractor.save(cache_dir)
