@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import typing as t
 from dataclasses import dataclass
+from random import choices
 
 import numpy as np
 import pandas as pd
@@ -59,6 +60,12 @@ class TestDataset:
 
     def to_dataset(self) -> Dataset:
         return Dataset.from_list(self._to_records())
+
+
+def validate_distribution(
+    distributions: Distributions = {},
+):
+    ...
 
 
 @dataclass
@@ -211,13 +218,26 @@ class TestsetGenerator:
             CurrentNodes(root_node=n, nodes=[n])
             for n in self.docstore.get_random_nodes(k=test_size)
         ]
+        total_evolutions = 0
         for evolution, probability in distributions.items():
             for i in range(round(probability * test_size)):
                 exec.submit(
-                    evolution.aevolve,
+                    evolution.evolve,
                     current_nodes[i],
                     name=f"{evolution.__class__.__name__}-{i}",
                 )
+                total_evolutions += 1
+        if total_evolutions <= test_size:
+            filler_evolutions = choices(
+                list(distributions), k=test_size - total_evolutions
+            )
+            for evolution in filler_evolutions:
+                exec.submit(
+                    evolution.evolve,
+                    current_nodes[total_evolutions],
+                    name=f"{evolution.__class__.__name__}-{total_evolutions}",
+                )
+                total_evolutions += 1
 
         try:
             test_data_rows = exec.results()
