@@ -51,13 +51,15 @@ class Evolution:
     docstore: t.Optional[DocumentStore] = None
     node_filter: t.Optional[NodeFilter] = None
     question_filter: t.Optional[QuestionFilter] = None
-    question_answer_prompt: Prompt = field(default_factory=lambda: question_answer_prompt)
+    question_answer_prompt: Prompt = field(
+        default_factory=lambda: question_answer_prompt
+    )
     find_relevent_context_prompt: Prompt = field(
         default_factory=lambda: find_relevent_context_prompt
     )
     max_tries: int = 5
     is_async: bool = True
-    
+
     @staticmethod
     def merge_nodes(nodes: CurrentNodes) -> Node:
         return Node(
@@ -131,6 +133,11 @@ class Evolution:
             current_nodes.nodes.insert(0, prev_adjacent_node)
 
         return current_nodes
+
+    def _get_new_random_node(self):
+        assert self.docstore is not None, "docstore cannot be None"
+        new_node = self.docstore.get_random_nodes(k=1)[0]
+        return CurrentNodes(root_node=new_node, nodes=[new_node])
 
     async def aevolve(self, current_nodes: CurrentNodes) -> DataRow:
         # init tries with 0 when first called
@@ -300,7 +307,7 @@ class ComplexEvolution(Evolution):
         super().init(is_async=is_async, run_config=run_config)
 
         if self.se is None:
-        # init simple evolution to get seed question
+            # init simple evolution to get seed question
             self.se = SimpleEvolution(
                 generator_llm=self.generator_llm,
                 docstore=self.docstore,
@@ -325,10 +332,9 @@ class ComplexEvolution(Evolution):
 
         simple_question, _, _ = await self.se._aevolve(current_tries, current_nodes)
         logger.debug(
-            "[%s] simple question generated: %s using %s",
+            "[%s] simple question generated: %s",
             self.__class__.__name__,
             simple_question,
-            self.se.seed_question_prompt.to_string()
         )
 
         result = await self.generator_llm.generate(
@@ -354,18 +360,19 @@ class ComplexEvolution(Evolution):
             return await self.aretry_evolve(current_tries, current_nodes)
 
         assert self.evolution_filter is not None, "evolution filter cannot be None"
-        if not await self.evolution_filter.filter(simple_question, compressed_question):
+        if await self.evolution_filter.filter(simple_question, compressed_question):
             # retry
-            current_nodes = self.se._get_more_adjacent_nodes(current_nodes)
+            current_nodes = self.se._get_new_random_node()
             logger.debug(
                 "evolution_filter failed, retrying with %s", len(current_nodes.nodes)
             )
             return await self.aretry_evolve(current_tries, current_nodes)
 
-        return reasoning_question, current_nodes, "reasoning"
+        return reasoning_question, current_nodes
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         assert self.evolution_filter is not None, "evolution filter cannot be None"
+        assert self.se is not None, "simple evolution cannot be None"
 
         super().adapt(language, cache_dir)
         self.se.adapt(language, cache_dir)
@@ -376,12 +383,12 @@ class ComplexEvolution(Evolution):
 
     def save(self, cache_dir: t.Optional[str] = None) -> None:
         assert self.evolution_filter is not None, "evolution filter cannot be None"
+        assert self.se is not None, "simple evolution cannot be None"
 
         super().save(cache_dir)
         self.se.save(cache_dir)
         self.evolution_filter.save(cache_dir)
         self.compress_question_prompt.save(cache_dir)
-
 
 
 @dataclass
@@ -418,7 +425,7 @@ class MultiContextEvolution(ComplexEvolution):
 
         # compress the question
         compressed_question = await self._transform_question(
-            prompt=compress_question_prompt, question=question
+            prompt=self.compress_question_prompt, question=question
         )
         logger.debug(
             "[MultiContextEvolution] multicontext question compressed: %s", question
@@ -430,9 +437,9 @@ class MultiContextEvolution(ComplexEvolution):
             return await self.aretry_evolve(current_tries, current_nodes)
 
         assert self.evolution_filter is not None, "evolution filter cannot be None"
-        if not await self.evolution_filter.filter(simple_question, compressed_question):
+        if await self.evolution_filter.filter(simple_question, compressed_question):
             # retry
-            current_nodes = self.se._get_more_adjacent_nodes(current_nodes)
+            current_nodes = self.se._get_new_random_node()
             return await self.aretry_evolve(current_tries, current_nodes)
 
         return compressed_question, current_nodes, "multi_context"
