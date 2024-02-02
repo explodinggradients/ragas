@@ -21,6 +21,7 @@ from ragas.validation import (
     remap_column_names,
     validate_column_dtypes,
     validate_evaluation_modes,
+    handle_deprecated_ground_truths,
 )
 
 if t.TYPE_CHECKING:
@@ -134,6 +135,7 @@ def evaluate(
     # remap column names from the dataset
     dataset = remap_column_names(dataset, column_map)
     # validation
+    dataset = handle_deprecated_ground_truths(dataset)
     validate_evaluation_modes(dataset, metrics)
     validate_column_dtypes(dataset)
 
