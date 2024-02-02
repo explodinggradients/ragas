@@ -176,7 +176,6 @@ class TestsetGenerator:
         is_async: bool = True,
         run_config: t.Optional[RunConfig] = None,
     ):
-        assert sum(distributions.values()) == 1.0, "Distributions must sum to 1.0"
         # configure run_config for docstore
         if run_config is None:
             run_config = RunConfig(max_retries=15, max_wait=90)
