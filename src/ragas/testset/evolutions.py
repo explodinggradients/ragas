@@ -467,9 +467,10 @@ class ReasoningEvolution(ComplexEvolution):
     async def _aevolve(
         self, current_tries: int, current_nodes: CurrentNodes
     ) -> EvolutionOutput:
-        return await self._acomplex_evolution(
+        result = await self._acomplex_evolution(
             current_tries, current_nodes, self.reasoning_question_prompt
         )
+        return result[0], result[1], "reasoning"
 
     def __hash__(self):
         return hash(self.__class__.__name__)
@@ -494,9 +495,10 @@ class ConditionalEvolution(ComplexEvolution):
     async def _aevolve(
         self, current_tries: int, current_nodes: CurrentNodes
     ) -> EvolutionOutput:
-        return await self._acomplex_evolution(
+        result = await self._acomplex_evolution(
             current_tries, current_nodes, self.conditional_question_prompt
         )
+        return result[0], result[1], "conditional"
 
     def __hash__(self):
         return hash(self.__class__.__name__)
