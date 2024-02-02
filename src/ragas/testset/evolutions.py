@@ -24,6 +24,7 @@ from ragas.testset.prompts import (
     seed_question_prompt,
 )
 from ragas.testset.utils import rng
+from ragas.exceptions import MaxRetriesExceeded
 
 logger = logging.getLogger(__name__)
 
@@ -51,13 +52,15 @@ class Evolution:
     docstore: t.Optional[DocumentStore] = None
     node_filter: t.Optional[NodeFilter] = None
     question_filter: t.Optional[QuestionFilter] = None
-    question_answer_prompt: Prompt = field(default_factory=lambda: question_answer_prompt)
+    question_answer_prompt: Prompt = field(
+        default_factory=lambda: question_answer_prompt
+    )
     find_relevent_context_prompt: Prompt = field(
         default_factory=lambda: find_relevent_context_prompt
     )
     max_tries: int = 5
     is_async: bool = True
-    
+
     @staticmethod
     def merge_nodes(nodes: CurrentNodes) -> Node:
         return Node(
@@ -93,7 +96,7 @@ class Evolution:
         logger.info("retrying evolution: %s times", current_tries)
         if current_tries > self.max_tries:
             # TODO: make this into a custom exception
-            raise ValueError("Max tries reached")
+            raise MaxRetriesExceeded(self)
         return await self._aevolve(current_tries, current_nodes)
 
     async def _transform_question(self, prompt: Prompt, question: str) -> str:
@@ -378,7 +381,6 @@ class ComplexEvolution(Evolution):
         self.se.save(cache_dir)
         self.evolution_filter.save(cache_dir)
         self.compress_question_prompt.save(cache_dir)
-
 
 
 @dataclass
