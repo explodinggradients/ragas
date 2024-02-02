@@ -251,7 +251,7 @@ class TestsetGenerator:
         track(
             TesetGenerationEvent(
                 event_type="testset_generation",
-                evolution_names=[e.__class__.__name__ for e in distributions],
+                evolution_names=[e.__class__.__name__.lower() for e in distributions],
                 evolution_percentages=[distributions[e] for e in distributions],
                 num_rows=len(test_dataset.test_data),
             )
