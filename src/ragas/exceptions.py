@@ -19,5 +19,6 @@ class MaxRetriesExceeded(RagasException):
     """
 
     def __init__(self, evolution: Evolution):
+        self.evolution = evolution
         msg = f"Max retries exceeded for evolution {evolution.__class__.__name__}."
         super().__init__(msg)
