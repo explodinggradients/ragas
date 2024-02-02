@@ -206,9 +206,10 @@ class Prompt(BaseModel):
                 else example[-1]
             )
 
-            assert (
-                set(example_dict[self.output_key].keys()) == output_keys[i]
-            ), "Adapted output keys do not match with the original output keys"
+            if self.output_type.lower() == "json":
+                assert (
+                    set(example_dict[self.output_key].keys()) == output_keys[i]
+                ), "Adapted output keys do not match with the original output keys"
 
             self.examples[i] = example_dict
 
