@@ -28,6 +28,7 @@ from ragas.testset.evolutions import (
 )
 from ragas.testset.extractor import keyphraseExtractor
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
+from ragas.utils import check_if_sum_is_close
 
 if t.TYPE_CHECKING:
     from langchain_core.documents import Document as LCDocument
@@ -60,12 +61,6 @@ class TestDataset:
 
     def to_dataset(self) -> Dataset:
         return Dataset.from_list(self._to_records())
-
-
-def validate_distribution(
-    distributions: Distributions = {},
-):
-    ...
 
 
 @dataclass
@@ -189,6 +184,12 @@ class TestsetGenerator:
         raise_exceptions: bool = True,
         run_config: t.Optional[RunConfig] = None,
     ):
+        # validate distributions
+        if not check_if_sum_is_close(list(distributions.values()), 1.0, 3):
+            raise ValueError(
+                f"distributions passed do not sum to 1.0 [got {sum(list(distributions.values()))}]. Please check the distributions."
+            )
+
         # configure run_config for docstore
         if run_config is None:
             run_config = RunConfig()
