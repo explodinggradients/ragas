@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -21,6 +22,7 @@ if t.TYPE_CHECKING:
 
     from ragas.llms.prompt import PromptValue
 
+logger = logging.getLogger(__name__)
 
 MULTIPLE_COMPLETION_SUPPORTED = [
     OpenAI,
@@ -186,11 +188,19 @@ class LangchainLLMWrapper(BaseRagasLLM):
 
     def set_run_config(self, run_config: RunConfig):
         self.run_config = run_config
-        # configure timeout for the underlying LLM in case of OpenAI
+
+        # configure if using OpenAI API
         if isinstance(self.langchain_llm, BaseOpenAI) or isinstance(
             self.langchain_llm, ChatOpenAI
         ):
+            try:
+                from openai import RateLimitError
+            except ImportError:
+                raise ImportError(
+                    "openai.error.RateLimitError not found. Please install openai package as `pip install openai`"
+                )
             self.langchain_llm.request_timeout = run_config.timeout
+            self.run_config.exception_types = RateLimitError
 
 
 def llm_factory(

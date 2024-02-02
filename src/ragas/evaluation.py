@@ -18,6 +18,7 @@ from ragas.run_config import RunConfig
 
 # from ragas.metrics.critique import AspectCritique
 from ragas.validation import (
+    handle_deprecated_ground_truths,
     remap_column_names,
     validate_column_dtypes,
     validate_evaluation_modes,
@@ -134,6 +135,7 @@ def evaluate(
     # remap column names from the dataset
     dataset = remap_column_names(dataset, column_map)
     # validation
+    dataset = handle_deprecated_ground_truths(dataset)
     validate_evaluation_modes(dataset, metrics)
     validate_column_dtypes(dataset)
 

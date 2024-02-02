@@ -229,7 +229,7 @@ class InMemoryDocumentStore(DocumentStore):
             if n.embedding is None:
                 nodes_to_embed.update({i: result_idx})
                 executor.submit(
-                    self.embeddings.aembed_query,
+                    self.embeddings.embed_text,
                     n.page_content,
                     name=f"embed_node_task[{i}]",
                 )

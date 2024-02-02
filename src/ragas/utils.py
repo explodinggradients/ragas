@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import typing as t
 from functools import lru_cache
 
 DEBUG_ENV_VAR = "RAGAS_DEBUG"
@@ -22,6 +23,14 @@ def get_debug_mode() -> bool:
         return True
     else:
         return False
+
+
+def check_if_sum_is_close(
+    values: t.List[float], close_to: float, num_places: int
+) -> bool:
+    multiplier = 10**num_places
+    total = sum(int(round(v * multiplier)) for v in values)
+    return total == int(round(close_to * multiplier))
 
 
 def patch_logger(module: str, level: int):

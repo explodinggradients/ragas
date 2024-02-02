@@ -3,7 +3,9 @@ from __future__ import annotations
 import logging
 import typing as t
 from dataclasses import dataclass
+from random import choices
 
+import numpy as np
 import pandas as pd
 from datasets import Dataset
 from langchain_openai.chat_models import ChatOpenAI
@@ -26,6 +28,7 @@ from ragas.testset.evolutions import (
 )
 from ragas.testset.extractor import keyphraseExtractor
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
+from ragas.utils import check_if_sum_is_close
 
 if t.TYPE_CHECKING:
     from langchain_core.documents import Document as LCDocument
@@ -114,6 +117,7 @@ class TestsetGenerator:
         distributions: Distributions = {},
         with_debugging_logs=False,
         is_async: bool = True,
+        raise_exceptions: bool = True,
         run_config: t.Optional[RunConfig] = None,
     ):
         # chunk documents and add to docstore
@@ -127,6 +131,7 @@ class TestsetGenerator:
             with_debugging_logs=with_debugging_logs,
             is_async=is_async,
             run_config=run_config,
+            raise_exceptions=raise_exceptions,
         )
 
     # if you add any arguments to this function, make sure to add them to
@@ -138,6 +143,7 @@ class TestsetGenerator:
         distributions: Distributions = {},
         with_debugging_logs=False,
         is_async: bool = True,
+        raise_exceptions: bool = True,
         run_config: t.Optional[RunConfig] = None,
     ):
         # chunk documents and add to docstore
@@ -150,6 +156,7 @@ class TestsetGenerator:
             distributions=distributions,
             with_debugging_logs=with_debugging_logs,
             is_async=is_async,
+            raise_exceptions=raise_exceptions,
             run_config=run_config,
         )
 
@@ -174,8 +181,15 @@ class TestsetGenerator:
         distributions: Distributions = DEFAULT_DISTRIBUTION,
         with_debugging_logs=False,
         is_async: bool = True,
+        raise_exceptions: bool = True,
         run_config: t.Optional[RunConfig] = None,
     ):
+        # validate distributions
+        if not check_if_sum_is_close(list(distributions.values()), 1.0, 3):
+            raise ValueError(
+                f"distributions passed do not sum to 1.0 [got {sum(list(distributions.values()))}]. Please check the distributions."
+            )
+
         # configure run_config for docstore
         if run_config is None:
             run_config = RunConfig(max_retries=15, max_wait=90)
@@ -198,32 +212,47 @@ class TestsetGenerator:
         exec = Executor(
             desc="Generating",
             keep_progress_bar=True,
-            raise_exceptions=True,
+            raise_exceptions=raise_exceptions,
         )
 
         current_nodes = [
             CurrentNodes(root_node=n, nodes=[n])
             for n in self.docstore.get_random_nodes(k=test_size)
         ]
+        total_evolutions = 0
         for evolution, probability in distributions.items():
             for i in range(round(probability * test_size)):
                 exec.submit(
-                    evolution.aevolve,
+                    evolution.evolve,
                     current_nodes[i],
                     name=f"{evolution.__class__.__name__}-{i}",
                 )
+                total_evolutions += 1
+        if total_evolutions <= test_size:
+            filler_evolutions = choices(
+                list(distributions), k=test_size - total_evolutions
+            )
+            for evolution in filler_evolutions:
+                exec.submit(
+                    evolution.evolve,
+                    current_nodes[total_evolutions],
+                    name=f"{evolution.__class__.__name__}-{total_evolutions}",
+                )
+                total_evolutions += 1
 
         try:
             test_data_rows = exec.results()
         except ValueError as e:
             raise e
+        # make sure to ignore any NaNs that might have been returned
+        # due to failed evolutions. MaxRetriesExceeded is a common reason
+        test_data_rows = [r for r in test_data_rows if not np.isnan(r)]
         test_dataset = TestDataset(test_data=test_data_rows)
         track(
             TesetGenerationEvent(
                 event_type="testset_generation",
-                evolutions={
-                    k.__class__.__name__.lower(): v for k, v in distributions.items()
-                },
+                evolution_names=[e.__class__.__name__.lower() for e in distributions],
+                evolution_percentages=[distributions[e] for e in distributions],
                 num_rows=len(test_dataset.test_data),
             )
         )

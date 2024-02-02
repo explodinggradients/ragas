@@ -59,8 +59,6 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
     ----------
     name: string
         The name of the metrics
-    batch_size: int
-        batch size for evaluation
     strictness: int
         Here indicates the number questions generated per answer.
         Ideal range between 3 to 5.
@@ -72,7 +70,6 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
     name: str = "answer_relevancy"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
     question_generation: Prompt = field(default_factory=lambda: QUESTION_GEN)
-    batch_size: int = 15
     strictness: int = 3
 
     def calculate_similarity(

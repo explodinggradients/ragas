@@ -27,8 +27,6 @@ EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg")
 
 @dataclass
 class Metric(ABC):
-    batch_size: int
-
     @property
     @abstractmethod
     def name(self) -> str:

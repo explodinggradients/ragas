@@ -77,14 +77,11 @@ class ContextRecall(MetricWithLLM):
     Attributes
     ----------
     name : str
-    batch_size : int
-        Batch size for openai completion.
     """
 
     name: str = "context_recall"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
     context_recall_prompt: Prompt = field(default_factory=lambda: CONTEXT_RECALL_RA)
-    batch_size: int = 15
 
     def _create_context_recall_prompt(self, row: t.Dict) -> PromptValue:
         qstn, ctx, gt = row["question"], row["contexts"], row["ground_truth"]

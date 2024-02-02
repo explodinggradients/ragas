@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel
 
+from ragas.exceptions import MaxRetriesExceeded
 from ragas.llms import BaseRagasLLM
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
@@ -95,7 +96,7 @@ class Evolution:
         logger.info("retrying evolution: %s times", current_tries)
         if current_tries > self.max_tries:
             # TODO: make this into a custom exception
-            raise ValueError("Max tries reached")
+            raise MaxRetriesExceeded(self)
         return await self._aevolve(current_tries, current_nodes)
 
     async def _transform_question(self, prompt: Prompt, question: str) -> str:

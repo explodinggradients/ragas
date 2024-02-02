@@ -123,7 +123,6 @@ class Faithfulness(MetricWithLLM):
     nli_statements_message: Prompt = field(
         default_factory=lambda: NLI_STATEMENTS_MESSAGE
     )
-    batch_size: int = 15
 
     def _create_answer_prompt(self, row: t.Dict) -> PromptValue:
         question, answer = row["question"], row["answer"]

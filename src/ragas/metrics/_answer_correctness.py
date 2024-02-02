@@ -79,8 +79,6 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
     ----------
     name: string
         The name of the metrics
-    batch_size: int
-        batch size for evaluation
     weights:
         a list of two weights corresponding to factuality and semantic similarity
         Defaults [0.75, 0.25]
@@ -91,7 +89,6 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
     name: str = "answer_correctness"  # type: ignore[reportIncompatibleMethodOverride]
     evaluation_mode: EvaluationMode = EvaluationMode.qga  # type: ignore[reportIncompatibleMethodOverride]
     correctness_prompt: Prompt = field(default_factory=lambda: CORRECTNESS_PROMPT)
-    batch_size: int = 15
     weights: list[float] = field(default_factory=lambda: [0.75, 0.25])
     answer_similarity: AnswerSimilarity | None = None
 
@@ -109,7 +106,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
         super().init(run_config)
         if self.answer_similarity is None and self.weights[1] != 0:
             self.answer_similarity = AnswerSimilarity(
-                llm=self.llm, batch_size=self.batch_size, embeddings=self.embeddings
+                llm=self.llm, embeddings=self.embeddings
             )
 
     def _compute_statement_presence(self, prediction: t.Any) -> float:
