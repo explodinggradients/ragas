@@ -4,8 +4,8 @@ import logging
 import typing as t
 from dataclasses import dataclass
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from datasets import Dataset
 from langchain_openai.chat_models import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings

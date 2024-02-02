@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import typing as t
 import logging
+import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 

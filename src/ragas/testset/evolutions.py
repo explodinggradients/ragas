@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel
 
+from ragas.exceptions import MaxRetriesExceeded
 from ragas.llms import BaseRagasLLM
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
@@ -24,7 +25,6 @@ from ragas.testset.prompts import (
     seed_question_prompt,
 )
 from ragas.testset.utils import rng
-from ragas.exceptions import MaxRetriesExceeded
 
 logger = logging.getLogger(__name__)
 
