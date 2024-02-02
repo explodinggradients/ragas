@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from ragas.testset.evolutions import Evolution
+import typing as t
+
+if t.TYPE_CHECKING:
+    from ragas.testset.evolutions import Evolution
 
 
 class RagasException(Exception):

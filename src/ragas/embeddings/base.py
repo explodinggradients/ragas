@@ -64,6 +64,9 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
         return await self.embeddings.aembed_documents(texts)
 
     def set_run_config(self, run_config: RunConfig):
+        self.run_config = run_config
+
+        # run configurations specially for OpenAI
         if isinstance(self.embeddings, OpenAIEmbeddings):
             try:
                 from openai import RateLimitError
@@ -73,7 +76,6 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
                 )
             self.embeddings.request_timeout = run_config.timeout
             self.run_config.exception_types = RateLimitError
-        self.run_config = run_config
 
 
 @dataclass

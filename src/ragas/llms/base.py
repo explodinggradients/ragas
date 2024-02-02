@@ -187,6 +187,8 @@ class LangchainLLMWrapper(BaseRagasLLM):
             return result
 
     def set_run_config(self, run_config: RunConfig):
+        self.run_config = run_config
+
         # configure if using OpenAI API
         if isinstance(self.langchain_llm, BaseOpenAI) or isinstance(
             self.langchain_llm, ChatOpenAI
@@ -199,7 +201,6 @@ class LangchainLLMWrapper(BaseRagasLLM):
                 )
             self.langchain_llm.request_timeout = run_config.timeout
             self.run_config.exception_types = RateLimitError
-        self.run_config = run_config
 
 
 def llm_factory(
