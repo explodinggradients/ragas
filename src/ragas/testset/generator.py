@@ -70,7 +70,7 @@ class TestsetGenerator:
     @classmethod
     def with_openai(
         cls,
-        generator_llm: str = "gpt-3.5-turbo",
+        generator_llm: str = "gpt-3.5-turbo-16k",
         critic_llm: str = "gpt-4",
         embeddings: str = "text-embedding-ada-002",
         docstore: t.Optional[DocumentStore] = None,
@@ -176,17 +176,17 @@ class TestsetGenerator:
         is_async: bool = True,
         run_config: t.Optional[RunConfig] = None,
     ):
-        
+        assert sum(distributions.values()) == 1.0, "Distributions must sum to 1.0"
         # configure run_config for docstore
         if run_config is None:
             run_config = RunConfig(max_retries=15, max_wait=90)
         self.docstore.set_run_config(run_config)
-        
+
         # init filters and evolutions
         for evolution in distributions:
             self.init_evolution(evolution)
             evolution.init(is_async=is_async, run_config=run_config)
-            
+
         if with_debugging_logs:
             from ragas.utils import patch_logger
 
@@ -237,7 +237,9 @@ class TestsetGenerator:
         evolutions: t.List[Evolution],
         cache_dir: t.Optional[str] = None,
     ) -> None:
-        assert isinstance(self.docstore, InMemoryDocumentStore), "Must be an instance of in-memory docstore"
+        assert isinstance(
+            self.docstore, InMemoryDocumentStore
+        ), "Must be an instance of in-memory docstore"
         assert self.docstore.extractor is not None, "Extractor is not set"
 
         self.docstore.extractor.adapt(language, cache_dir=cache_dir)
@@ -252,7 +254,9 @@ class TestsetGenerator:
         """
         Save the docstore prompts to a path.
         """
-        assert isinstance(self.docstore, InMemoryDocumentStore), "Must be an instance of in-memory docstore"
+        assert isinstance(
+            self.docstore, InMemoryDocumentStore
+        ), "Must be an instance of in-memory docstore"
         assert self.docstore.extractor is not None, "Extractor is not set"
 
         self.docstore.extractor.save(cache_dir)
