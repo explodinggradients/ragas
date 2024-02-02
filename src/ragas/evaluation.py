@@ -18,10 +18,10 @@ from ragas.run_config import RunConfig
 
 # from ragas.metrics.critique import AspectCritique
 from ragas.validation import (
+    handle_deprecated_ground_truths,
     remap_column_names,
     validate_column_dtypes,
     validate_evaluation_modes,
-    handle_deprecated_ground_truths,
 )
 
 if t.TYPE_CHECKING:
