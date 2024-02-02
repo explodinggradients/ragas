@@ -115,6 +115,7 @@ class TestsetGenerator:
         distributions: Distributions = {},
         with_debugging_logs=False,
         is_async: bool = True,
+        raise_exceptions: bool = True,
         run_config: t.Optional[RunConfig] = None,
     ):
         # chunk documents and add to docstore
@@ -128,6 +129,7 @@ class TestsetGenerator:
             with_debugging_logs=with_debugging_logs,
             is_async=is_async,
             run_config=run_config,
+            raise_exceptions=raise_exceptions,
         )
 
     # if you add any arguments to this function, make sure to add them to
@@ -139,6 +141,7 @@ class TestsetGenerator:
         distributions: Distributions = {},
         with_debugging_logs=False,
         is_async: bool = True,
+        raise_exceptions: bool = True,
         run_config: t.Optional[RunConfig] = None,
     ):
         # chunk documents and add to docstore
@@ -151,6 +154,7 @@ class TestsetGenerator:
             distributions=distributions,
             with_debugging_logs=with_debugging_logs,
             is_async=is_async,
+            raise_exceptions=raise_exceptions,
             run_config=run_config,
         )
 
@@ -175,6 +179,7 @@ class TestsetGenerator:
         distributions: Distributions = DEFAULT_DISTRIBUTION,
         with_debugging_logs=False,
         is_async: bool = True,
+        raise_exceptions: bool = True,
         run_config: t.Optional[RunConfig] = None,
     ):
         # configure run_config for docstore
@@ -199,7 +204,7 @@ class TestsetGenerator:
         exec = Executor(
             desc="Generating",
             keep_progress_bar=True,
-            raise_exceptions=True,
+            raise_exceptions=raise_exceptions,
         )
 
         current_nodes = [
