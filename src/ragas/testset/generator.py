@@ -179,7 +179,7 @@ class TestsetGenerator:
         
         # configure run_config for docstore
         if run_config is None:
-            run_config = RunConfig()
+            run_config = RunConfig(max_retries=15, max_wait=90)
         self.docstore.set_run_config(run_config)
         
         # init filters and evolutions
