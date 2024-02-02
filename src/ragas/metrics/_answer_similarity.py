@@ -68,7 +68,12 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
         else:
             embeddings_1 = np.array(await self.embeddings.embed_texts(ground_truth))
             embeddings_2 = np.array(await self.embeddings.embed_texts(answers))
-            similarity = embeddings_1 @ embeddings_2.T
+            # Normalization factors of the above embeddings
+            norms_1 = np.linalg.norm(embeddings_1, axis=1, keepdims=True)
+            norms_2 = np.linalg.norm(embeddings_2, axis=1, keepdims=True)
+            embeddings_1_normalized = embeddings_1 / norms_1
+            embeddings_2_normalized = embeddings_2 / norms_2
+            similarity = embeddings_1_normalized @ embeddings_2_normalized.T
             if similarity.size == 1:
                 scores = similarity.flatten()
             else:
