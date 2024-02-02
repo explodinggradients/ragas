@@ -299,16 +299,18 @@ class ComplexEvolution(Evolution):
             run_config = RunConfig()
         super().init(is_async=is_async, run_config=run_config)
 
+        if self.se is None:
         # init simple evolution to get seed question
-        self.se = SimpleEvolution(
-            generator_llm=self.generator_llm,
-            docstore=self.docstore,
-            node_filter=self.node_filter,
-            question_filter=self.question_filter,
-        )
+            self.se = SimpleEvolution(
+                generator_llm=self.generator_llm,
+                docstore=self.docstore,
+                node_filter=self.node_filter,
+                question_filter=self.question_filter,
+            )
         # init evolution filter with critic llm from another filter
         assert self.node_filter is not None, "node filter cannot be None"
-        self.evolution_filter = EvolutionFilter(self.node_filter.llm)
+        if self.evolution_filter is None:
+            self.evolution_filter = EvolutionFilter(self.node_filter.llm)
 
         # set run configs
         self.se.set_run_config(run_config)
@@ -323,9 +325,10 @@ class ComplexEvolution(Evolution):
 
         simple_question, _, _ = await self.se._aevolve(current_tries, current_nodes)
         logger.debug(
-            "[%s] simple question generated: %s",
+            "[%s] simple question generated: %s using %s",
             self.__class__.__name__,
             simple_question,
+            self.se.seed_question_prompt.to_string()
         )
 
         result = await self.generator_llm.generate(
@@ -366,7 +369,7 @@ class ComplexEvolution(Evolution):
 
         super().adapt(language, cache_dir)
         self.se.adapt(language, cache_dir)
-        self.compress_question_prompt = compress_question_prompt.adapt(
+        self.compress_question_prompt = self.compress_question_prompt.adapt(
             language, self.generator_llm, cache_dir
         )
         self.evolution_filter.adapt(language, cache_dir)
