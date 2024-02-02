@@ -19,6 +19,10 @@ DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
 class BaseRagasEmbeddings(Embeddings, ABC):
     run_config: RunConfig
 
+    async def embed_text(self, text: str) -> List[float]:
+        embs = await self.embed_texts([text])
+        return embs[0]
+
     async def embed_texts(
         self, texts: List[str], is_async: bool = True
     ) -> t.List[t.List[float]]:

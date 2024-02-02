@@ -16,6 +16,7 @@ if t.TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class Extractor(ABC):
     llm: BaseRagasLLM
@@ -45,8 +46,8 @@ class keyphraseExtractor(Extractor):
 
     async def extract(self, node: Node) -> t.List[str]:
         prompt = keyphrase_extraction_prompt.format(text=node.page_content)
-        results = await self.llm.agenerate_text(prompt=prompt)
-        keyphrases = json_loader.sync_safe_load(
+        results = await self.llm.generate(prompt=prompt)
+        keyphrases = await json_loader.safe_load(
             results.generations[0][0].text.strip(), llm=self.llm
         )
         logger.debug("keyphrases: %s", keyphrases)
