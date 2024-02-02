@@ -54,6 +54,7 @@ class NodeFilter(Filter):
         results = await self.llm.agenerate_text(prompt=prompt)
         output = results.generations[0][0].text.strip()
         score = json_loader.sync_safe_load(output, llm=self.llm)
+        logger.debug("node filter: %s", score)
         score.update({"score": score.get("score", 0) >= self.threshold})
         return score
 
@@ -116,7 +117,7 @@ class EvolutionFilter(Filter):
         results = await self.llm.agenerate_text(prompt=prompt)
         results = results.generations[0][0].text.strip()
         json_results = json_loader.sync_safe_load(results, llm=self.llm)
-        logger.debug("filtered question: %s", json_results)
+        logger.debug("evolution filter: %s", json_results)
         return json_results.get("verdict") == "1"
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import typing as t
 import logging
+import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
@@ -15,6 +15,7 @@ if t.TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class Extractor(ABC):
