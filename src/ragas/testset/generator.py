@@ -73,7 +73,7 @@ class TestsetGenerator:
     @classmethod
     def with_openai(
         cls,
-        generator_llm: str = "gpt-3.5-turbo",
+        generator_llm: str = "gpt-3.5-turbo-16k",
         critic_llm: str = "gpt-4",
         embeddings: str = "text-embedding-ada-002",
         docstore: t.Optional[DocumentStore] = None,
@@ -192,7 +192,7 @@ class TestsetGenerator:
 
         # configure run_config for docstore
         if run_config is None:
-            run_config = RunConfig()
+            run_config = RunConfig(max_retries=15, max_wait=90)
         self.docstore.set_run_config(run_config)
 
         # init filters and evolutions
