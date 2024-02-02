@@ -147,12 +147,21 @@ class Prompt(BaseModel):
     def adapt(
         self, language: str, llm: BaseRagasLLM, cache_dir: t.Optional[str] = None
     ) -> Prompt:
+        def get_all_keys(nested_json):
+            keys = set()
+            for key, value in nested_json.items():
+                keys.add(key)
+                if isinstance(value, dict):
+                    keys = keys.union(get_all_keys(value))
+            return keys
+
         # TODO: Add callbacks
         cache_dir = cache_dir if cache_dir else get_cache_dir()
         if os.path.exists(os.path.join(cache_dir, language, f"{self.name}.json")):
             return self._load(language, self.name, cache_dir)
 
         prompts = []
+        output_keys = []
         for example in self.examples:
             prompts.extend(
                 [
@@ -171,6 +180,8 @@ class Prompt(BaseModel):
                     translate_to=language, input=example.get(self.output_key)
                 )
             )
+            if self.output_type.lower() == "json":
+                output_keys.append(get_all_keys(example.get(self.output_key)))
 
         # NOTE: this is a slow loop, consider Executor to fasten this
         results = []
@@ -194,6 +205,10 @@ class Prompt(BaseModel):
                 if self.output_type.lower() == "json"
                 else example[-1]
             )
+
+            assert (
+                set(example_dict[self.output_key].keys()) == output_keys[i]
+            ), "Adapted output keys do not match with the original output keys"
 
             self.examples[i] = example_dict
 
