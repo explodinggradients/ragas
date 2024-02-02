@@ -258,10 +258,9 @@ evolution_elimination_prompt = Prompt(
             "question2": "Can you list the advantages of exercising regularly for health?",
             "output": {
                 "reason": "Both questions seek information about the positive effects of regular exercise on health. They require a similar level of detail in listing the health benefits.",
-                "verdict": "1"
-            }
+                "verdict": "1",
+            },
         },
-
     ],
     input_keys=["question1", "question2"],
     output_key="output",
