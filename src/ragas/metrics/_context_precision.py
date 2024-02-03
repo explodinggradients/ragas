@@ -93,6 +93,9 @@ class ContextPrecision(MetricWithLLM):
 
     def _calculate_average_precision(self, json_responses: t.List[t.Dict]) -> float:
         score = np.nan
+        json_responses = [
+            item if isinstance(item, dict) else {} for item in json_responses
+        ]
         verdict_list = [
             int("1" == resp.get("verdict", "0").strip())
             if resp.get("verdict")
