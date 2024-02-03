@@ -172,55 +172,55 @@ question_rewrite_prompt = Prompt(
 
 filter_question_prompt = Prompt(
     name="filter_question",
-    instruction="""Given a question, classify it based on clarity and specificity""",
+    instruction="""Given a question, classify it based on clarity and specificity. Use only 'Clear' (1) and 'Unclear' (0) as verdict.""",
     examples=[
         {
             "question": "What is the discovery about space?",
             "output": {
                 "reason": "The question is too vague and does not specify which discovery about space it is referring to.",
-                "verdit": "No",
+                "verdit": "0",
             },
         },
         {
             "question": "What caused the Great Depression?",
             "output": {
                 "reason": "The question is specific and refers to a well-known historical economic event, making it clear and answerable.",
-                "verdict": "Yes",
+                "verdict": "1",
             },
         },
         {
             "question": "What is the keyword that best describes the paper's focus in natural language understanding tasks?",
             "output": {
                 "reason": "The question mentions a 'paper' in it without referring it's name which makes it unclear without it",
-                "verdict": "No",
+                "verdict": "0",
             },
         },
         {
             "question": "Who wrote 'Romeo and Juliet'?",
             "output": {
                 "reason": "The question is clear and refers to a specific work by name therefore it is clear",
-                "verdict": "Yes",
+                "verdict": "1",
             },
         },
         {
             "question": "What did the study mention?",
             "output": {
                 "reason": "The question is vague and does not specify which study it is referring to",
-                "verdict": "No",
+                "verdict": "0",
             },
         },
         {
             "question": "What is the focus of the REPLUG paper?",
             "output": {
                 "reason": "The question refers to a specific work by it's name hence can be understood",
-                "verdict": "Yes",
+                "verdict": "1",
             },
         },
         {
             "question": "What is the purpose of the reward-driven stage in the training process?",
             "output": {
                 "reason": "The question lacks specific context regarding the type of training process, making it potentially ambiguous and open to multiple interpretations.",
-                "verdict": "No",
+                "verdict": "0",
             },
         },
     ],
@@ -234,14 +234,15 @@ evolution_elimination_prompt = Prompt(
     name="evolution_elimination",
     instruction="""Check if the given two questions are equal based on following requirements:
     1. They have same constraints and requirements.
-    2. They have same depth and breadth of the inquiry.""",
+    2. They have same depth and breadth of the inquiry.
+    Output verdict as 1 if they are equal and 0 if they are not""",
     examples=[
         {
             "question1": "What are the primary causes of climate change?",
             "question2": "What factors contribute to global warming?",
             "output": {
                 "reason": "While both questions deal with environmental issues, 'climate change' encompasses broader changes than 'global warming', leading to different depths of inquiry.",
-                "verdict": "Not Equal",
+                "verdict": "0",
             },
         },
         {
@@ -249,7 +250,15 @@ evolution_elimination_prompt = Prompt(
             "question2": "Can you explain the process of photosynthesis in plants?",
             "output": {
                 "reason": "Both questions ask for an explanation of the photosynthesis process in plants, sharing the same depth, breadth, and requirements for the answer.",
-                "verdict": "Equal",
+                "verdict": "1",
+            },
+        },
+        {
+            "question1": "What are the health benefits of regular exercise?",
+            "question2": "Can you list the advantages of exercising regularly for health?",
+            "output": {
+                "reason": "Both questions seek information about the positive effects of regular exercise on health. They require a similar level of detail in listing the health benefits.",
+                "verdict": "1",
             },
         },
     ],

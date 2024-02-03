@@ -45,14 +45,11 @@ class ContextRelevancy(MetricWithLLM):
     Attributes
     ----------
     name : str
-    batch_size : int
-        Batch size for openai completion.
     """
 
     name: str = "context_relevancy"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qc  # type: ignore
     context_relevancy_prompt: Prompt = field(default_factory=lambda: CONTEXT_RELEVANCE)
-    batch_size: int = 15
     show_deprecation_warning: bool = False
 
     def _compute_score(self, response: str, row: t.Dict) -> float:

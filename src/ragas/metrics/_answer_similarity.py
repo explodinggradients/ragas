@@ -26,8 +26,6 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
     Attributes
     ----------
     name : str
-    batch_size : int
-        Batch size.
     model_name:
         The model to be used for calculating semantic similarity
         Defaults open-ai-embeddings
@@ -40,7 +38,6 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
 
     name: str = "answer_similarity"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.ga  # type: ignore
-    batch_size: int = 15
     is_cross_encoder: bool = False
     threshold: t.Optional[float] = None
 
@@ -50,7 +47,6 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
             self.is_cross_encoder = True if self.embeddings.is_cross_encoder else False
             self.embeddings.encode_kwargs = {
                 **self.embeddings.encode_kwargs,
-                "batch_size": self.batch_size,
             }
 
     async def _ascore(

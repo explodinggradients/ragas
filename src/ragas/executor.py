@@ -9,19 +9,20 @@ from threading import Thread
 import numpy as np
 from tqdm.auto import tqdm
 
+from ragas.exceptions import MaxRetriesExceeded
+
 logger = logging.getLogger(__name__)
 
 
 class Runner(Thread):
     def __init__(
         self,
-        name: str,
         jobs: t.List[t.Tuple[t.Coroutine, str]],
         desc: str,
         keep_progress_bar: bool = True,
         raise_exceptions: bool = True,
     ):
-        super().__init__(name=name)
+        super().__init__()
         self.jobs = jobs
         self.desc = desc
         self.keep_progress_bar = keep_progress_bar
@@ -46,9 +47,15 @@ class Runner(Thread):
             r = (-1, np.nan)
             try:
                 r = await future
+            except MaxRetriesExceeded as e:
+                logger.warning(f"max retries exceeded for {e.evolution}")
             except Exception as e:
                 if self.raise_exceptions:
                     raise e
+                else:
+                    logger.error(
+                        "Runner in Executor raised an exception", exc_info=True
+                    )
             results.append(r)
 
         return results
@@ -57,12 +64,6 @@ class Runner(Thread):
         results = []
         try:
             results = self.loop.run_until_complete(self._aresults())
-        except Exception as e:
-            if self.raise_exceptions:
-                raise e
-            else:
-                logger.error("Runner in Executor raised an exception", exc_info=True)
-                results = None
         finally:
             self.results = results
             [f.cancel() for f in self.futures]
@@ -90,7 +91,6 @@ class Executor:
 
     def results(self) -> t.List[t.Any]:
         executor_job = Runner(
-            name="ExecutorRunner",
             jobs=self.jobs,
             desc=self.desc,
             keep_progress_bar=self.keep_progress_bar,

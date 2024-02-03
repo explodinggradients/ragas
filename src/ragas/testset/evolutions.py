@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel
 
+from ragas.exceptions import MaxRetriesExceeded
 from ragas.llms import BaseRagasLLM
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
@@ -51,6 +52,12 @@ class Evolution:
     docstore: t.Optional[DocumentStore] = None
     node_filter: t.Optional[NodeFilter] = None
     question_filter: t.Optional[QuestionFilter] = None
+    question_answer_prompt: Prompt = field(
+        default_factory=lambda: question_answer_prompt
+    )
+    find_relevent_context_prompt: Prompt = field(
+        default_factory=lambda: find_relevent_context_prompt
+    )
     max_tries: int = 5
     is_async: bool = True
 
@@ -89,7 +96,7 @@ class Evolution:
         logger.info("retrying evolution: %s times", current_tries)
         if current_tries > self.max_tries:
             # TODO: make this into a custom exception
-            raise ValueError("Max tries reached")
+            raise MaxRetriesExceeded(self)
         return await self._aevolve(current_tries, current_nodes)
 
     async def _transform_question(self, prompt: Prompt, question: str) -> str:
@@ -128,7 +135,12 @@ class Evolution:
 
         return current_nodes
 
-    async def aevolve(self, current_nodes: CurrentNodes) -> DataRow:
+    def _get_new_random_node(self):
+        assert self.docstore is not None, "docstore cannot be None"
+        new_node = self.docstore.get_random_nodes(k=1)[0]
+        return CurrentNodes(root_node=new_node, nodes=[new_node])
+
+    async def evolve(self, current_nodes: CurrentNodes) -> DataRow:
         # init tries with 0 when first called
         current_tries = 0
         (
@@ -161,7 +173,7 @@ class Evolution:
             f"{i}\t{n.page_content}" for i, n in enumerate(current_nodes.nodes)
         ]
         results = await self.generator_llm.generate(
-            prompt=find_relevent_context_prompt.format(
+            prompt=self.find_relevent_context_prompt.format(
                 question=question, contexts=node_content
             )
         )
@@ -180,7 +192,7 @@ class Evolution:
 
         merged_nodes = self.merge_nodes(relevant_context)
         results = await self.generator_llm.generate(
-            prompt=question_answer_prompt.format(
+            prompt=self.question_answer_prompt.format(
                 question=question, context=merged_nodes.page_content
             )
         )
@@ -197,9 +209,38 @@ class Evolution:
             evolution_type=evolution_type,
         )
 
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Adapt the filter to a different language.
+        """
+        assert self.node_filter is not None, "node filter cannot be None"
+        assert self.question_filter is not None, "question_filter cannot be None"
+
+        self.question_answer_prompt = self.question_answer_prompt.adapt(
+            language, self.generator_llm, cache_dir
+        )
+        self.find_relevent_context_prompt = self.find_relevent_context_prompt.adapt(
+            language, self.generator_llm, cache_dir
+        )
+        self.node_filter.adapt(language, cache_dir)
+        self.question_filter.adapt(language, cache_dir)
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Save the filter prompts to a path.
+        """
+        assert self.node_filter is not None, "node filter cannot be None"
+        assert self.question_filter is not None, "question_filter cannot be None"
+        self.question_answer_prompt.save(cache_dir)
+        self.find_relevent_context_prompt.save(cache_dir)
+        self.node_filter.save(cache_dir)
+        self.question_filter.save(cache_dir)
+
 
 @dataclass
 class SimpleEvolution(Evolution):
+    seed_question_prompt: Prompt = field(default_factory=lambda: seed_question_prompt)
+
     async def _aevolve(
         self, current_tries: int, current_nodes: CurrentNodes
     ) -> EvolutionOutput:
@@ -217,8 +258,9 @@ class SimpleEvolution(Evolution):
                 current_tries, new_current_nodes, update_count=False
             )
 
+        logger.debug("keyphrases in merged node: %s", merged_node.keyphrases)
         results = await self.generator_llm.generate(
-            prompt=seed_question_prompt.format(
+            prompt=self.seed_question_prompt.format(
                 context=merged_node.page_content,
                 keyphrases=rng.choice(
                     np.array(merged_node.keyphrases), size=3
@@ -241,27 +283,42 @@ class SimpleEvolution(Evolution):
     def __hash__(self):
         return hash(self.__class__.__name__)
 
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        super().adapt(language, cache_dir)
+        self.seed_question_prompt = self.seed_question_prompt.adapt(
+            language, self.generator_llm, cache_dir
+        )
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        super().save(cache_dir)
+        self.seed_question_prompt.save(cache_dir)
+
 
 @dataclass
 class ComplexEvolution(Evolution):
     se: t.Optional[SimpleEvolution] = field(default=None, repr=False)
     evolution_filter: t.Optional[EvolutionFilter] = field(default=None, repr=False)
+    compress_question_prompt: Prompt = field(
+        default_factory=lambda: compress_question_prompt
+    )
 
     def init(self, is_async: bool = True, run_config: t.Optional[RunConfig] = None):
         if run_config is None:
             run_config = RunConfig()
         super().init(is_async=is_async, run_config=run_config)
 
-        # init simple evolution to get seed question
-        self.se = SimpleEvolution(
-            generator_llm=self.generator_llm,
-            docstore=self.docstore,
-            node_filter=self.node_filter,
-            question_filter=self.question_filter,
-        )
+        if self.se is None:
+            # init simple evolution to get seed question
+            self.se = SimpleEvolution(
+                generator_llm=self.generator_llm,
+                docstore=self.docstore,
+                node_filter=self.node_filter,
+                question_filter=self.question_filter,
+            )
         # init evolution filter with critic llm from another filter
         assert self.node_filter is not None, "node filter cannot be None"
-        self.evolution_filter = EvolutionFilter(self.node_filter.llm)
+        if self.evolution_filter is None:
+            self.evolution_filter = EvolutionFilter(self.node_filter.llm)
 
         # set run configs
         self.se.set_run_config(run_config)
@@ -290,7 +347,7 @@ class ComplexEvolution(Evolution):
 
         # compress the question
         compressed_question = await self._transform_question(
-            prompt=compress_question_prompt, question=reasoning_question
+            prompt=self.compress_question_prompt, question=reasoning_question
         )
         logger.debug(
             "[%s] multicontext question compressed: %s",
@@ -304,19 +361,43 @@ class ComplexEvolution(Evolution):
             return await self.aretry_evolve(current_tries, current_nodes)
 
         assert self.evolution_filter is not None, "evolution filter cannot be None"
-        if not await self.evolution_filter.filter(simple_question, compressed_question):
+        if await self.evolution_filter.filter(simple_question, compressed_question):
             # retry
-            current_nodes = self.se._get_more_adjacent_nodes(current_nodes)
+            current_nodes = self.se._get_new_random_node()
             logger.debug(
                 "evolution_filter failed, retrying with %s", len(current_nodes.nodes)
             )
             return await self.aretry_evolve(current_tries, current_nodes)
 
-        return reasoning_question, current_nodes, "reasoning"
+        return reasoning_question, current_nodes
+
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        assert self.evolution_filter is not None, "evolution filter cannot be None"
+        assert self.se is not None, "simple evolution cannot be None"
+
+        super().adapt(language, cache_dir)
+        self.se.adapt(language, cache_dir)
+        self.compress_question_prompt = self.compress_question_prompt.adapt(
+            language, self.generator_llm, cache_dir
+        )
+        self.evolution_filter.adapt(language, cache_dir)
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        assert self.evolution_filter is not None, "evolution filter cannot be None"
+        assert self.se is not None, "simple evolution cannot be None"
+
+        super().save(cache_dir)
+        self.se.save(cache_dir)
+        self.evolution_filter.save(cache_dir)
+        self.compress_question_prompt.save(cache_dir)
 
 
 @dataclass
 class MultiContextEvolution(ComplexEvolution):
+    multi_context_question_prompt: Prompt = field(
+        default_factory=lambda: multi_context_question_prompt
+    )
+
     async def _aevolve(
         self, current_tries: int, current_nodes: CurrentNodes
     ) -> EvolutionOutput:
@@ -332,7 +413,7 @@ class MultiContextEvolution(ComplexEvolution):
 
         # find a similar node and generate a question based on both
         similar_node = self.docstore.get_similar(current_nodes.root_node)[0]
-        prompt = multi_context_question_prompt.format(
+        prompt = self.multi_context_question_prompt.format(
             question=simple_question,
             context1=current_nodes.root_node.page_content,
             context2=similar_node,
@@ -345,7 +426,7 @@ class MultiContextEvolution(ComplexEvolution):
 
         # compress the question
         compressed_question = await self._transform_question(
-            prompt=compress_question_prompt, question=question
+            prompt=self.compress_question_prompt, question=question
         )
         logger.debug(
             "[MultiContextEvolution] multicontext question compressed: %s", question
@@ -357,15 +438,25 @@ class MultiContextEvolution(ComplexEvolution):
             return await self.aretry_evolve(current_tries, current_nodes)
 
         assert self.evolution_filter is not None, "evolution filter cannot be None"
-        if not await self.evolution_filter.filter(simple_question, compressed_question):
+        if await self.evolution_filter.filter(simple_question, compressed_question):
             # retry
-            current_nodes = self.se._get_more_adjacent_nodes(current_nodes)
+            current_nodes = self.se._get_new_random_node()
             return await self.aretry_evolve(current_tries, current_nodes)
 
         return compressed_question, current_nodes, "multi_context"
 
     def __hash__(self):
         return hash(self.__class__.__name__)
+
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        super().adapt(language, cache_dir)
+        self.multi_context_question_prompt = self.multi_context_question_prompt.adapt(
+            language, self.generator_llm, cache_dir
+        )
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        super().save(cache_dir)
+        self.multi_context_question_prompt.save(cache_dir)
 
 
 @dataclass
@@ -377,12 +468,23 @@ class ReasoningEvolution(ComplexEvolution):
     async def _aevolve(
         self, current_tries: int, current_nodes: CurrentNodes
     ) -> EvolutionOutput:
-        return await self._acomplex_evolution(
+        result = await self._acomplex_evolution(
             current_tries, current_nodes, self.reasoning_question_prompt
         )
+        return result[0], result[1], "reasoning"
 
     def __hash__(self):
         return hash(self.__class__.__name__)
+
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        super().adapt(language, cache_dir)
+        self.reasoning_question_prompt = self.reasoning_question_prompt.adapt(
+            language, self.generator_llm, cache_dir
+        )
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        super().save(cache_dir)
+        self.reasoning_question_prompt.save(cache_dir)
 
 
 @dataclass
@@ -394,12 +496,23 @@ class ConditionalEvolution(ComplexEvolution):
     async def _aevolve(
         self, current_tries: int, current_nodes: CurrentNodes
     ) -> EvolutionOutput:
-        return await self._acomplex_evolution(
+        result = await self._acomplex_evolution(
             current_tries, current_nodes, self.conditional_question_prompt
         )
+        return result[0], result[1], "conditional"
 
     def __hash__(self):
         return hash(self.__class__.__name__)
+
+    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        super().adapt(language, cache_dir)
+        self.conditional_question_prompt = self.conditional_question_prompt.adapt(
+            language, self.generator_llm, cache_dir
+        )
+
+    def save(self, cache_dir: t.Optional[str] = None) -> None:
+        super().save(cache_dir)
+        self.conditional_question_prompt.save(cache_dir)
 
 
 simple = SimpleEvolution()

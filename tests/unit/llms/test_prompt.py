@@ -1,3 +1,7 @@
+import importlib
+import pkgutil
+
+import ragas
 from ragas.llms.prompt import Prompt
 
 TESTCASES = [
@@ -97,3 +101,23 @@ def test_prompt_object():
             assert isinstance(
                 prompt.get_example_str(0), str
             ), "get_example_str should return a string"
+
+
+def test_prompt_object_names():
+    "ensure that all prompt objects have unique names"
+
+    prompt_object_names = []
+    # Iterate through all modules in the ragas package
+    for module_info in pkgutil.iter_modules(ragas.__path__):
+        module = importlib.import_module(f"ragas.{module_info.name}")
+
+        # Iterate through all objects in the module
+        for obj_name in dir(module):
+            obj = getattr(module, obj_name)
+
+            # Check if the object is an instance of Prompt
+            if isinstance(obj, Prompt):
+                assert (
+                    obj.name not in prompt_object_names
+                ), f"Duplicate prompt name: {obj.name}"
+                prompt_object_names.append(obj.name)

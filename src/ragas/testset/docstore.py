@@ -16,14 +16,13 @@ from langchain_core.pydantic_v1 import Field
 
 from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.executor import Executor
-from ragas.llms.base import BaseRagasLLM
-from ragas.llms.json_load import json_loader
 from ragas.run_config import RunConfig
-from ragas.testset.prompts import keyphrase_extraction_prompt
 from ragas.testset.utils import rng
 
 if t.TYPE_CHECKING:
     from llama_index.readers.schema import Document as LlamaindexDocument
+
+    from ragas.testset.extractor import Extractor
 
 Embedding = t.Union[t.List[float], npt.NDArray[np.float64]]
 logger = logging.getLogger(__name__)
@@ -186,7 +185,7 @@ def get_top_k_embeddings(
 @dataclass
 class InMemoryDocumentStore(DocumentStore):
     splitter: TextSplitter
-    llm: t.Optional[BaseRagasLLM] = field(default=None, repr=False)
+    extractor: t.Optional[Extractor] = field(default=None, repr=False)
     embeddings: t.Optional[BaseRagasEmbeddings] = field(default=None, repr=False)
     nodes: t.List[Node] = field(default_factory=list)
     node_embeddings_list: t.List[Embedding] = field(default_factory=list)
@@ -213,7 +212,7 @@ class InMemoryDocumentStore(DocumentStore):
         self, nodes: t.Sequence[Node], show_progress=True, desc: str = "embedding nodes"
     ):
         assert self.embeddings is not None, "Embeddings must be set"
-        assert self.llm is not None, "LLM must be set"
+        assert self.extractor is not None, "Extractor must be set"
 
         # NOTE: Adds everything in async mode for now.
         nodes_to_embed = {}
@@ -230,7 +229,7 @@ class InMemoryDocumentStore(DocumentStore):
             if n.embedding is None:
                 nodes_to_embed.update({i: result_idx})
                 executor.submit(
-                    self.embeddings.aembed_query,
+                    self.embeddings.embed_text,
                     n.page_content,
                     name=f"embed_node_task[{i}]",
                 )
@@ -239,8 +238,8 @@ class InMemoryDocumentStore(DocumentStore):
             if n.keyphrases == []:
                 nodes_to_extract.update({i: result_idx})
                 executor.submit(
-                    self.llm.agenerate_text,
-                    keyphrase_extraction_prompt.format(text=n.page_content),
+                    self.extractor.extract,
+                    n,
                     name=f"keyphrase-extraction[{i}]",
                 )
                 result_idx += 1
@@ -250,12 +249,8 @@ class InMemoryDocumentStore(DocumentStore):
             if i in nodes_to_embed.keys():
                 n.embedding = results[nodes_to_embed[i]]
             if i in nodes_to_extract.keys():
-                result = results[nodes_to_extract[i]]
-                keyphrase_dict = json_loader._safe_load(
-                    result.generations[0][0].text,
-                    llm=self.llm,
-                )
-                n.keyphrases = keyphrase_dict.get("keyphrases", [])
+                keyphrases = results[nodes_to_extract[i]]
+                n.keyphrases = keyphrases
 
             if n.embedding is not None and n.keyphrases != []:
                 self.nodes.append(n)
@@ -322,5 +317,3 @@ class InMemoryDocumentStore(DocumentStore):
     def set_run_config(self, run_config: RunConfig):
         if self.embeddings:
             self.embeddings.set_run_config(run_config)
-        if self.llm:
-            self.llm.set_run_config(run_config)

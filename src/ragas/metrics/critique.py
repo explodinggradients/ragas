@@ -54,8 +54,6 @@ class AspectCritique(MetricWithLLM):
     strictness: int
         The number of times self consistency checks is made. Final judgement is
         made using majority vote.
-    batch_size: int
-        Batch size for openai completion.
     llm : LangchainLLM
         llm API of your choice
     """
@@ -65,7 +63,6 @@ class AspectCritique(MetricWithLLM):
     critic_prompt: Prompt = field(default_factory=lambda: CRITIQUE_PROMPT)
     definition: str = field(default="", repr=True)
     strictness: int = field(default=1, repr=False)
-    batch_size: int = field(default=15, repr=False)
     llm: BaseRagasLLM | None = field(
         default=None,
         repr=False,
