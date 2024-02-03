@@ -20,7 +20,7 @@ def remap_column_names(dataset: Dataset, column_map: dict[str, str]) -> Dataset:
 
 
 def handle_deprecated_ground_truths(ds: Dataset) -> Dataset:
-    if "ground_truths" in ds.features:
+    if "ground_truths" in ds.features and "ground_truth" not in ds.features:
         column_names = "ground_truths"
         if (
             isinstance(ds.features[column_names], Sequence)

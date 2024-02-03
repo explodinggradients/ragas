@@ -22,7 +22,7 @@ class Extractor(ABC):
     llm: BaseRagasLLM
 
     @abstractmethod
-    def extract(self, node: Node) -> t.Any:
+    async def extract(self, node: Node, is_async: bool = True) -> t.Any:
         ...
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
@@ -44,11 +44,11 @@ class keyphraseExtractor(Extractor):
         default_factory=lambda: keyphrase_extraction_prompt
     )
 
-    async def extract(self, node: Node) -> t.List[str]:
+    async def extract(self, node: Node, is_async: bool = True) -> t.List[str]:
         prompt = keyphrase_extraction_prompt.format(text=node.page_content)
-        results = await self.llm.generate(prompt=prompt)
+        results = await self.llm.generate(prompt=prompt, is_async=is_async)
         keyphrases = await json_loader.safe_load(
-            results.generations[0][0].text.strip(), llm=self.llm
+            results.generations[0][0].text.strip(), llm=self.llm, is_async=is_async
         )
         logger.debug("keyphrases: %s", keyphrases)
         return keyphrases.get("keyphrases", [])

@@ -48,7 +48,7 @@ class Runner(Thread):
             try:
                 r = await future
             except MaxRetriesExceeded as e:
-                logger.warning(f"max retries exceeded for {e.evolution}", exc_info=True)
+                logger.warning(f"max retries exceeded for {e.evolution}")
             except Exception as e:
                 if self.raise_exceptions:
                     raise e
