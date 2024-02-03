@@ -140,7 +140,7 @@ class Evolution:
         new_node = self.docstore.get_random_nodes(k=1)[0]
         return CurrentNodes(root_node=new_node, nodes=[new_node])
 
-    async def aevolve(self, current_nodes: CurrentNodes) -> DataRow:
+    async def evolve(self, current_nodes: CurrentNodes) -> DataRow:
         # init tries with 0 when first called
         current_tries = 0
         (

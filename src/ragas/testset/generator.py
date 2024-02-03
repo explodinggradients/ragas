@@ -5,7 +5,6 @@ import typing as t
 from dataclasses import dataclass
 from random import choices
 
-import numpy as np
 import pandas as pd
 from datasets import Dataset
 from langchain_openai.chat_models import ChatOpenAI
@@ -28,7 +27,7 @@ from ragas.testset.evolutions import (
 )
 from ragas.testset.extractor import keyphraseExtractor
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
-from ragas.utils import check_if_sum_is_close
+from ragas.utils import check_if_sum_is_close, is_nan
 
 if t.TYPE_CHECKING:
     from langchain_core.documents import Document as LCDocument
@@ -246,7 +245,7 @@ class TestsetGenerator:
             raise e
         # make sure to ignore any NaNs that might have been returned
         # due to failed evolutions. MaxRetriesExceeded is a common reason
-        test_data_rows = [r for r in test_data_rows if not np.isnan(r)]
+        test_data_rows = [r for r in test_data_rows if not is_nan(r)]
         test_dataset = TestDataset(test_data=test_data_rows)
         track(
             TesetGenerationEvent(

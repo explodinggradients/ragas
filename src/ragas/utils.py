@@ -5,6 +5,8 @@ import os
 import typing as t
 from functools import lru_cache
 
+import numpy as np
+
 DEBUG_ENV_VAR = "RAGAS_DEBUG"
 
 
@@ -47,3 +49,11 @@ def patch_logger(module: str, level: int):
     patched_logger.addHandler(handler)
     # Set propagate to False if you don't want it to log to the root logger's handlers as well
     patched_logger.propagate = False
+
+
+# Function to check if an element is NaN
+def is_nan(x):
+    try:
+        return np.isnan(x)
+    except TypeError:
+        return False
