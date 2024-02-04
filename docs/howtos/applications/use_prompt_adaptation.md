@@ -108,7 +108,7 @@ Now you can load the documents using a document loader, here I am using `Directo
 ```{code-block} python
 from langchain.document_loaders import DirectoryLoader
 
-loader = DirectoryLoader("/Users/shahules/Myprojects/ragas/hindi-wikipedia/")
+loader = DirectoryLoader("./hindi-wikipedia/")
 documents = loader.load()
 
 # add metadata
