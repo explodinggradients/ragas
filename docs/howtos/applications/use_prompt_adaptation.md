@@ -1,9 +1,13 @@
 # Automatic language adaptation
 
+1. [Metrics](#language-adaptation-for-metrics)
+2. [Testset generation](#language-adaptation-for-testset-generation)
+
+## Language Adaptation for Metrics
 
 This is a tutorial notebook showcasing how to successfully use ragas with data from any given language. This is achieved using Ragas prompt adaptation feature. The tutorial specifically applies ragas metrics to a Hindi RAG evaluation dataset.
 
-## Dataset
+### Dataset
 Here I’m using a dataset containing all the relevant columns in Hindi language. 
 
 ```{code-block} python
@@ -75,7 +79,7 @@ Extracted statements:
 
 The instruction and key objects are kept unchanged intentionally to allow consuming and processing results in ragas.  During inspection, if any of the demonstrations seem faulty translated you can always correct it by going to the saved location. 
 
-## Evaluate
+### Evaluate
 
 ```{code-block} python
 from ragas import evaluate
@@ -85,3 +89,68 @@ ragas_score = evaluate(dataset['train'], metrics=[faithfulness,answer_correctnes
 
 You will observe much better performance now with Hindi language as prompts are tailored to it.
 
+
+## Language Adaptation for Testset Generation
+
+This is a tutorial notebook showcasing how to successfully use ragas test data generation feature to generate data samples of any language using list of documents. This is achieved using Ragas prompt adaptation feature. The tutorial specifically applies ragas test set generation to a Hindi to produce a question answer dataset in Hindi.
+
+### Documents
+Here I'm using a corpus of wikipedia articles written in Hindi. You can download the articles by 
+
+
+```{code-block} bash
+git lfs install
+git clone https://huggingface.co/datasets/explodinggradients/hindi-wikipedia
+```
+
+Now you can load the documents using a document loader, here I am using `DirectoryLoader`
+
+```{code-block} python
+from langchain.document_loaders import DirectoryLoader
+
+loader = DirectoryLoader("./hindi-wikipedia/")
+documents = loader.load()
+
+# add metadata
+for document in documents:
+    document.metadata['file_name'] = document.metadata['source']
+
+```
+
+### Import and adapt evolutions
+Now we can import all the required evolutions and adapt it using `generator.adapt`. This will also adapt all the necessary filters required for the corresponding evolutions. Once adapted, it's better to save and inspect the adapted prompts. 
+
+
+```{code-block} python
+
+from ragas.testset.generator import TestsetGenerator
+from ragas.testset.evolutions import simple, reasoning, multi_context,conditional
+
+# generator with openai models
+generator = TestsetGenerator.with_openai()
+
+# adapt to language
+language = "hindi"
+
+generator.adapt(language, evolutions=[simple, reasoning,conditional,multi_context])
+generator.save(evolutions=[simple, reasoning, multi_context,conditional])
+```
+
+### Generate dataset
+Once adapted you can use the evolutions and generator just like before to generate data samples for any given distribution.
+
+```{code-block} python
+# determine distribution
+
+distributions = {
+    simple:0.4,
+    reasoning:0.2,
+    multi_context:0.2,
+    conditional:0.2
+    }
+
+
+# generate testset
+testset = generator.generate_with_langchain_docs(documents, 10,distributions,with_debugging_logs=True)
+testset.to_pandas()
+```
