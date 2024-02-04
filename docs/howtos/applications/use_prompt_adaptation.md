@@ -1,9 +1,9 @@
 # Automatic language adaptation
 
-1. [Metrics](#metrics)
-2. [Testset generation](#testset-generation)
+1. [Metrics](#language-adaptation-for-metrics)
+2. [Testset generation](#language-adaptation-for-testset-generation)
 
-## Metrics
+## Language Adaptation for Metrics
 
 This is a tutorial notebook showcasing how to successfully use ragas with data from any given language. This is achieved using Ragas prompt adaptation feature. The tutorial specifically applies ragas metrics to a Hindi RAG evaluation dataset.
 
@@ -90,7 +90,7 @@ ragas_score = evaluate(dataset['train'], metrics=[faithfulness,answer_correctnes
 You will observe much better performance now with Hindi language as prompts are tailored to it.
 
 
-## Testset Generation
+## Language Adaptation for Testset Generation
 
 This is a tutorial notebook showcasing how to successfully use ragas test data generation feature to generate data samples of any language using list of documents. This is achieved using Ragas prompt adaptation feature. The tutorial specifically applies ragas test set generation to a Hindi to produce a question answer dataset in Hindi.
 
