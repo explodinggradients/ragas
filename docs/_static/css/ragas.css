@@ -1,24 +1,37 @@
 /* Base Theme */
 div.cell_input {
-    background: var(--background) !important;
+    background: #272822 !important;
+    color: #f8f8f2;
+    border: none !important;
+}
+
+.cell_output {
+  background: #272822;
+  color: #f8f8f2;
+
 }
 
 .cell_output .output.text_plain,
 .cell_output .output.stream {
   background: var(--background);
-  border: 1px solid grey;
+  border: none;
   border-radius: var(--mystnb-source-border-radius);
+}
+
+.cell_output .output.stream {
+  margin-top: 0px;
 }
 
 .cell_output .output.stderr {
   background: var(--background);
-  border: 1px solid #fbc7c7;
+  border: none;
   border-radius: var(--mystnb-source-border-radius);
+  margin-top: 0px;
 }
 
 .cell_output .output.traceback {
   background: var(--background);
-  border: 1px solid #fbc7c7;
+  border: none;
   border-radius: var(--mystnb-source-border-radius);
 }
 
