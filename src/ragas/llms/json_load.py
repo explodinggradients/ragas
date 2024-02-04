@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import typing as t
 from dataclasses import dataclass
+from functools import partial
+
+from ragas.run_config import RunConfig, add_async_retry, add_retry
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +79,7 @@ Output:
 class JsonLoader:
     max_retries: int = 2
 
-    def safe_load(self, text: str, llm: BaseRagasLLM, callbacks: Callbacks = None):
+    def _safe_load(self, text: str, llm: BaseRagasLLM, callbacks: Callbacks = None):
         retry = 0
         while retry <= self.max_retries:
             try:
@@ -94,7 +98,7 @@ class JsonLoader:
 
         return {}
 
-    async def asafe_load(
+    async def _asafe_load(
         self, text: str, llm: BaseRagasLLM, callbacks: Callbacks = None
     ):
         retry = 0
@@ -114,6 +118,28 @@ class JsonLoader:
             retry += 1
 
         return {}
+
+    async def safe_load(
+        self,
+        text: str,
+        llm: BaseRagasLLM,
+        callbacks: Callbacks = None,
+        is_async: bool = True,
+        run_config: RunConfig = RunConfig(),
+    ):
+        if is_async:
+            _asafe_load_with_retry = add_async_retry(self._asafe_load, run_config)
+            return await _asafe_load_with_retry(text=text, llm=llm, callbacks=callbacks)
+        else:
+            _safe_load_with_retry = add_retry(self._safe_load, run_config)
+            loop = asyncio.get_event_loop()
+            safe_load = partial(
+                _safe_load_with_retry, text=text, llm=llm, callbacks=callbacks
+            )
+            return await loop.run_in_executor(
+                None,
+                safe_load,
+            )
 
     def _find_outermost_json(self, text):
         stack = []

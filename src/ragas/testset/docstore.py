@@ -7,7 +7,6 @@ import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from random import choices
 
 import numpy as np
 import numpy.typing as npt
@@ -17,13 +16,16 @@ from langchain_core.pydantic_v1 import Field
 
 from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.executor import Executor
+from ragas.run_config import RunConfig
+from ragas.testset.utils import rng
 
 if t.TYPE_CHECKING:
     from llama_index.readers.schema import Document as LlamaindexDocument
 
+    from ragas.testset.extractor import Extractor
+
 Embedding = t.Union[t.List[float], npt.NDArray[np.float64]]
 logger = logging.getLogger(__name__)
-rng = np.random.default_rng()
 
 
 class Document(LCDocument):
@@ -67,7 +69,7 @@ class Document(LCDocument):
 
 
 class Node(Document):
-    ...
+    keyphrases: t.List[str] = Field(default_factory=list, repr=False)
 
 
 class Direction(str, Enum):
@@ -111,6 +113,9 @@ class DocumentStore(ABC):
     def get_adjacent(
         self, node: Node, direction: Direction = Direction.NEXT
     ) -> t.Optional[Node]:
+        ...
+
+    def set_run_config(self, run_config: RunConfig):
         ...
 
 
@@ -180,6 +185,7 @@ def get_top_k_embeddings(
 @dataclass
 class InMemoryDocumentStore(DocumentStore):
     splitter: TextSplitter
+    extractor: t.Optional[Extractor] = field(default=None, repr=False)
     embeddings: t.Optional[BaseRagasEmbeddings] = field(default=None, repr=False)
     nodes: t.List[Node] = field(default_factory=list)
     node_embeddings_list: t.List[Embedding] = field(default_factory=list)
@@ -206,35 +212,53 @@ class InMemoryDocumentStore(DocumentStore):
         self, nodes: t.Sequence[Node], show_progress=True, desc: str = "embedding nodes"
     ):
         assert self.embeddings is not None, "Embeddings must be set"
+        assert self.extractor is not None, "Extractor must be set"
 
         # NOTE: Adds everything in async mode for now.
-        nodes_to_embed = []
+        nodes_to_embed = {}
+        nodes_to_extract = {}
+
         # get embeddings for the docs
         executor = Executor(
             desc="embedding nodes",
             keep_progress_bar=False,
-            is_async=True,
             raise_exceptions=True,
         )
+        result_idx = 0
         for i, n in enumerate(nodes):
             if n.embedding is None:
-                nodes_to_embed.append(n)
+                nodes_to_embed.update({i: result_idx})
                 executor.submit(
-                    self.embeddings.aembed_query,
+                    self.embeddings.embed_text,
                     n.page_content,
                     name=f"embed_node_task[{i}]",
                 )
-            else:
+                result_idx += 1
+
+            if n.keyphrases == []:
+                nodes_to_extract.update({i: result_idx})
+                executor.submit(
+                    self.extractor.extract,
+                    n,
+                    name=f"keyphrase-extraction[{i}]",
+                )
+                result_idx += 1
+
+        results = executor.results()
+        for i, n in enumerate(nodes):
+            if i in nodes_to_embed.keys():
+                n.embedding = results[nodes_to_embed[i]]
+            if i in nodes_to_extract.keys():
+                keyphrases = results[nodes_to_extract[i]]
+                n.keyphrases = keyphrases
+
+            if n.embedding is not None and n.keyphrases != []:
                 self.nodes.append(n)
                 self.node_map[n.doc_id] = n
+                assert isinstance(
+                    n.embedding, (list, np.ndarray)
+                ), "Embedding must be list or np.ndarray"
                 self.node_embeddings_list.append(n.embedding)
-
-        embeddings = executor.results()
-        for n, embedding in zip(nodes_to_embed, embeddings):
-            n.embedding = embedding
-            self.nodes.append(n)
-            self.node_map[n.doc_id] = n
-            self.node_embeddings_list.append(n.embedding)
 
     def get_node(self, node_id: str) -> Node:
         return self.node_map[node_id]
@@ -243,7 +267,7 @@ class InMemoryDocumentStore(DocumentStore):
         raise NotImplementedError
 
     def get_random_nodes(self, k=1) -> t.List[Node]:
-        return choices(self.nodes, k=k)
+        return rng.choice(np.array(self.nodes), size=k).tolist()
 
     def get_similar(
         self, node: Node, threshold: float = 0.7, top_k: int = 3
@@ -289,3 +313,7 @@ class InMemoryDocumentStore(DocumentStore):
                     return None
             else:
                 return None
+
+    def set_run_config(self, run_config: RunConfig):
+        if self.embeddings:
+            self.embeddings.set_run_config(run_config)

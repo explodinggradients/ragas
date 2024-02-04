@@ -14,9 +14,11 @@ from ragas.executor import Executor
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics.base import Metric, MetricWithEmbeddings, MetricWithLLM
 from ragas.metrics.critique import AspectCritique
+from ragas.run_config import RunConfig
 
 # from ragas.metrics.critique import AspectCritique
 from ragas.validation import (
+    handle_deprecated_ground_truths,
     remap_column_names,
     validate_column_dtypes,
     validate_evaluation_modes,
@@ -34,6 +36,7 @@ def evaluate(
     callbacks: Callbacks = [],
     is_async: bool = False,
     max_workers: t.Optional[int] = None,
+    run_config: t.Optional[RunConfig] = None,
     raise_exceptions: bool = True,
     column_map: t.Dict[str, str] = {},
 ) -> Result:
@@ -68,6 +71,9 @@ def evaluate(
     max_workers: int, optional
         The number of workers to use for the evaluation. This is used by the
         `ThreadpoolExecutor` to run the evaluation in sync mode.
+    run_config: RunConfig, optional
+        Configuration for runtime settings like timeout and retries. If not provided,
+        default values are used.
     raise_exceptions: bool, optional
         Whether to raise exceptions or not. If set to True then the evaluation will
         raise an exception if any of the metrics fail. If set to False then the
@@ -112,6 +118,10 @@ def evaluate(
     if dataset is None:
         raise ValueError("Provide dataset!")
 
+    # default run_config
+    if run_config is None:
+        run_config = RunConfig()
+    # default metrics
     if metrics is None:
         from ragas.metrics import (
             answer_relevancy,
@@ -121,43 +131,47 @@ def evaluate(
         )
 
         metrics = [answer_relevancy, context_precision, faithfulness, context_recall]
+
+    # remap column names from the dataset
+    dataset = remap_column_names(dataset, column_map)
+    # validation
+    dataset = handle_deprecated_ground_truths(dataset)
+    validate_evaluation_modes(dataset, metrics)
+    validate_column_dtypes(dataset)
+
     # set the llm and embeddings
     if llm is None:
         from ragas.llms import llm_factory
 
         llm = llm_factory()
     elif isinstance(llm, BaseLanguageModel):
-        llm = LangchainLLMWrapper(llm)
+        llm = LangchainLLMWrapper(llm, run_config=run_config)
     if embeddings is None:
         from ragas.embeddings.base import embedding_factory
 
         embeddings = embedding_factory()
-
-    # remap column names from the dataset
-    dataset = remap_column_names(dataset, column_map)
-    # validation
-    validate_evaluation_modes(dataset, metrics)
-    validate_column_dtypes(dataset)
-
+    # init llms and embeddings
     binary_metrics = []
-    for metric in metrics:
+    llm_changed: t.List[int] = []
+    embeddings_changed: t.List[int] = []
+    for i, metric in enumerate(metrics):
         if isinstance(metric, AspectCritique):
             binary_metrics.append(metric.name)
         if isinstance(metric, MetricWithLLM):
             if metric.llm is None:
                 metric.llm = llm
+                llm_changed.append(i)
         if isinstance(metric, MetricWithEmbeddings):
             if metric.embeddings is None:
                 metric.embeddings = embeddings
+                embeddings_changed.append(i)
 
     # initialize all the models in the metrics
-    [m.init_model() for m in metrics]
+    [m.init(run_config) for m in metrics]
 
     executor = Executor(
         desc="Evaluating",
         keep_progress_bar=True,
-        is_async=is_async,
-        max_workers=max_workers,
         raise_exceptions=raise_exceptions,
     )
     # new evaluation chain
@@ -174,21 +188,18 @@ def evaluate(
             is_async=is_async,
         )
         row_run_managers.append((row_rm, row_group_cm))
-
-        if is_async:
-            [
-                executor.submit(
-                    metric.ascore, row, row_group_cm, name=f"{metric.name}-{i}"
-                )
-                for metric in metrics
-            ]
-        else:
-            [executor.submit(metric.score, row, row_group_cm) for metric in metrics]
+        [
+            executor.submit(
+                metric.ascore, row, row_group_cm, is_async, name=f"{metric.name}-{i}"
+            )
+            for metric in metrics
+        ]
 
     scores = []
     try:
         # get the results
         results = executor.results()
+
         # convert results to dataset_like
         for i, _ in enumerate(dataset):
             s = {}
@@ -214,6 +225,12 @@ def evaluate(
         )
         if not evaluation_group_cm.ended:
             evaluation_rm.on_chain_end(result)
+    finally:
+        # reset llms and embeddings if changed
+        for i in llm_changed:
+            t.cast(MetricWithLLM, metrics[i]).llm = None
+        for i in embeddings_changed:
+            t.cast(MetricWithEmbeddings, metrics[i]).embeddings = None
 
     # log the evaluation event
     metrics_names = [m.name for m in metrics]

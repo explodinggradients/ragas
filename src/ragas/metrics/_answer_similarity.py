@@ -26,8 +26,6 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
     Attributes
     ----------
     name : str
-    batch_size : int
-        Batch size.
     model_name:
         The model to be used for calculating semantic similarity
         Defaults open-ai-embeddings
@@ -40,7 +38,6 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
 
     name: str = "answer_similarity"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.ga  # type: ignore
-    batch_size: int = 15
     is_cross_encoder: bool = False
     threshold: t.Optional[float] = None
 
@@ -50,13 +47,11 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
             self.is_cross_encoder = True if self.embeddings.is_cross_encoder else False
             self.embeddings.encode_kwargs = {
                 **self.embeddings.encode_kwargs,
-                "batch_size": self.batch_size,
             }
 
-    def init_model(self):
-        super().init_model()
-
-    def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
+    async def _ascore(
+        self: t.Self, row: t.Dict, callbacks: Callbacks, is_async: bool
+    ) -> float:
         assert self.embeddings is not None, "embeddings must be set"
 
         ground_truth, answers = row["ground_truth"], row["answer"]
@@ -67,38 +62,14 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
                 "async score [ascore()] not implemented for HuggingFace embeddings"
             )
         else:
-            embeddings_1 = np.array(self.embeddings.embed_documents(ground_truth))
-            embeddings_2 = np.array(self.embeddings.embed_documents(answers))
-            similarity = embeddings_1 @ embeddings_2.T
-            if similarity.size == 1:
-                # If similarity has only one value, directly use this value as scores
-                scores = similarity.flatten()
-            else:
-                # If similarity contains multiple values, extract the diagonal as scores
-                scores = np.diagonal(similarity)
-
-        assert isinstance(scores, np.ndarray), "Expects ndarray"
-        if self.threshold:
-            scores = scores >= self.threshold
-
-        return scores.tolist()[0]
-
-    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks = []) -> float:
-        assert self.embeddings is not None, "embeddings must be set"
-
-        ground_truth: t.List[str] = row["ground_truth"]
-        answer: t.List[str] = row["answer"]
-
-        if self.is_cross_encoder and isinstance(self.embeddings, HuggingfaceEmbeddings):
-            raise NotImplementedError(
-                "async score [ascore()] not implemented for HuggingFace embeddings"
-            )
-        else:
-            embeddings_1 = np.array(
-                await self.embeddings.aembed_documents(ground_truth)
-            )
-            embeddings_2 = np.array(await self.embeddings.aembed_documents(answer))
-            similarity = embeddings_1 @ embeddings_2.T
+            embeddings_1 = np.array(await self.embeddings.embed_texts(ground_truth))
+            embeddings_2 = np.array(await self.embeddings.embed_texts(answers))
+            # Normalization factors of the above embeddings
+            norms_1 = np.linalg.norm(embeddings_1, axis=1, keepdims=True)
+            norms_2 = np.linalg.norm(embeddings_2, axis=1, keepdims=True)
+            embeddings_1_normalized = embeddings_1 / norms_1
+            embeddings_2_normalized = embeddings_2 / norms_2
+            similarity = embeddings_1_normalized @ embeddings_2_normalized.T
             if similarity.size == 1:
                 scores = similarity.flatten()
             else:

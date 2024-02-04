@@ -10,6 +10,7 @@ from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics.base import EvaluationMode, MetricWithEmbeddings, MetricWithLLM
+from ragas.run_config import RunConfig
 
 logger = logging.getLogger(__name__)
 
@@ -78,8 +79,6 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
     ----------
     name: string
         The name of the metrics
-    batch_size: int
-        batch size for evaluation
     weights:
         a list of two weights corresponding to factuality and semantic similarity
         Defaults [0.75, 0.25]
@@ -90,7 +89,6 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
     name: str = "answer_correctness"  # type: ignore[reportIncompatibleMethodOverride]
     evaluation_mode: EvaluationMode = EvaluationMode.qga  # type: ignore[reportIncompatibleMethodOverride]
     correctness_prompt: Prompt = field(default_factory=lambda: CORRECTNESS_PROMPT)
-    batch_size: int = 15
     weights: list[float] = field(default_factory=lambda: [0.75, 0.25])
     answer_similarity: AnswerSimilarity | None = None
 
@@ -104,11 +102,11 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
         if not all([w >= 0 for w in self.weights]):
             raise ValueError("Weights must be non-negative")
 
-    def init_model(self):
-        super().init_model()
+    def init(self, run_config: RunConfig):
+        super().init(run_config)
         if self.answer_similarity is None and self.weights[1] != 0:
             self.answer_similarity = AnswerSimilarity(
-                llm=self.llm, batch_size=self.batch_size, embeddings=self.embeddings
+                llm=self.llm, embeddings=self.embeddings
             )
 
     def _compute_statement_presence(self, prediction: t.Any) -> float:
@@ -139,40 +137,17 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
 
         return score
 
-    def _score(self, row: t.Dict, callbacks: Callbacks) -> float:
-        assert self.llm is not None, "LLM must be set"
-        q, a, g = row["question"], row["answer"], row["ground_truth"]
-        p_value = self.correctness_prompt.format(question=q, ground_truth=g, answer=a)
-        is_statement_present = self.llm.generate_text(p_value, callbacks=callbacks)
-
-        prediction = json_loader.safe_load(
-            is_statement_present.generations[0][0].text, self.llm
-        )
-        f1_score = self._compute_statement_presence(prediction)
-
-        if self.weights[1] == 0:
-            similarity_score = 0
-        else:
-            similarity_score = self.answer_similarity.score(row, callbacks=callbacks)  # type: ignore
-
-        score = np.average(
-            [f1_score, similarity_score],
-            weights=self.weights,
-        )
-
-        return float(score)
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
         assert self.llm is not None, "LLM must be set"
 
         q, a, g = row["question"], row["answer"], row["ground_truth"]
         p_value = self.correctness_prompt.format(question=q, ground_truth=g, answer=a)
-        is_statement_present = await self.llm.agenerate_text(
-            p_value, callbacks=callbacks
+        is_statement_present = await self.llm.generate(
+            p_value, callbacks=callbacks, is_async=is_async
         )
 
-        prediction = await json_loader.asafe_load(
-            is_statement_present.generations[0][0].text, self.llm
+        prediction = await json_loader.safe_load(
+            is_statement_present.generations[0][0].text, self.llm, is_async=is_async
         )
         f1_score = self._compute_statement_presence(prediction)
 
@@ -182,7 +157,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
             assert self.answer_similarity is not None, "AnswerSimilarity must be set"
 
             similarity_score = await self.answer_similarity.ascore(
-                row, callbacks=callbacks
+                row, callbacks=callbacks, is_async=is_async
             )
 
         score = np.average(

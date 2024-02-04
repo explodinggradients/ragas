@@ -15,6 +15,8 @@ from ragas.utils import get_cache_dir
 
 Example = t.Dict[str, t.Any]
 
+logger = logging.getLogger(__name__)
+
 
 class PromptValue(BasePromptValue):
     prompt_str: str
@@ -147,11 +149,14 @@ class Prompt(BaseModel):
     def adapt(
         self, language: str, llm: BaseRagasLLM, cache_dir: t.Optional[str] = None
     ) -> Prompt:
+        if self.language == language:
+            return self
         # TODO: Add callbacks
         cache_dir = cache_dir if cache_dir else get_cache_dir()
         if os.path.exists(os.path.join(cache_dir, language, f"{self.name}.json")):
             return self._load(language, self.name, cache_dir)
 
+        logger.info("Adapting %s to %s", self.name, language)
         prompts = []
         for example in self.examples:
             prompts.extend(
@@ -190,7 +195,7 @@ class Prompt(BaseModel):
                 {k: v for k, v in zip(self.input_keys, example[: len(self.input_keys)])}
             )
             example_dict[self.output_key] = (
-                json_loader.safe_load(example[-1], llm)
+                json_loader._safe_load(example[-1], llm)
                 if self.output_type.lower() == "json"
                 else example[-1]
             )
@@ -215,7 +220,7 @@ class Prompt(BaseModel):
 
     @classmethod
     def _load(cls, language: str, name: str, cache_dir: str) -> Prompt:
-        logging.log(logging.INFO, f"Loading {name} from {cache_dir}")
+        logger.info("Loading %s from %s", name, cache_dir)
         path = os.path.join(cache_dir, language, f"{name}.json")
         return cls(**json.load(open(path)))
 

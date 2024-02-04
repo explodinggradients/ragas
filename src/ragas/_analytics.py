@@ -90,7 +90,8 @@ class EvaluationEvent(BaseEvent):
 
 
 class TesetGenerationEvent(BaseEvent):
-    evolutions: t.Dict[str, float]
+    evolution_names: t.List[str]
+    evolution_percentages: t.List[float]
     num_rows: int
 
 

@@ -98,15 +98,18 @@ def test_testset_generation_tracking(monkeypatch):
 
     testset_event_payload = TesetGenerationEvent(
         event_type="testset_generation",
-        evolutions={k.__class__.__name__.lower(): v for k, v in distributions.items()},
+        evolution_names=[e.__class__.__name__.lower() for e in distributions],
+        evolution_percentages=[distributions[e] for e in distributions],
         num_rows=10,
     )
 
-    assert dict(testset_event_payload)["evolutions"] == {
-        "simpleevolution": 0.5,
-        "multicontextevolution": 0.3,
-        "reasoningevolution": 0.2,
-    }
+    assert dict(testset_event_payload)["evolution_names"] == [
+        "simpleevolution",
+        "multicontextevolution",
+        "reasoningevolution",
+    ]
+
+    assert dict(testset_event_payload)["evolution_percentages"] == [0.5, 0.3, 0.2]
 
     # just in the case you actually want to check if tracking is working in the
     # dashboard

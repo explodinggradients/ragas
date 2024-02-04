@@ -2,6 +2,7 @@ import os
 import pickle
 import typing as t
 
+import numpy as np
 import pytest
 from langchain.text_splitter import TokenTextSplitter
 from langchain_core.embeddings import Embeddings
@@ -105,18 +106,22 @@ def test_similar_nodes_scaled():
     assert store.get_similar(a2)[0] == a1
 
 
-def test_docstore_add():
+@pytest.fixture
+def test_docstore_add(fake_llm):
     a1, a2, b = create_test_nodes()
 
     fake_embeddings = FakeEmbeddings()
     splitter = TokenTextSplitter(chunk_size=100, chunk_overlap=0)
-    store = InMemoryDocumentStore(splitter=splitter, embeddings=fake_embeddings)
+    store = InMemoryDocumentStore(
+        splitter=splitter, embeddings=fake_embeddings, llm=fake_llm
+    )
     docs_added = []
     for doc in [a1, a2, b]:
         store.add_nodes([doc])
         docs_added.append(doc)
         assert store.nodes == docs_added
         assert store.node_embeddings_list == [d.embedding for d in docs_added]
+        assert np.all([node.keyphrases != [] for node in store.nodes])
 
     assert store.get_node(a1.doc_id) == a1
 
@@ -135,10 +140,11 @@ async def test_fake_embeddings():
     )
 
 
-def test_docstore_add_batch():
+@pytest.fixture
+def test_docstore_add_batch(fake_llm):
     # create a dummy embeddings with support for async aembed_query()
     fake_embeddings = FakeEmbeddings()
-    store = InMemoryDocumentStore(splitter=None, embeddings=fake_embeddings)  # type: ignore
+    store = InMemoryDocumentStore(splitter=None, embeddings=fake_embeddings, llm=fake_llm)  # type: ignore
 
     # add documents in batch
     nodes = create_test_nodes(with_embeddings=False)
@@ -152,8 +158,10 @@ def test_docstore_add_batch():
     d = Node(doc_id="d", page_content="d", filename="d", embedding=[0.0] * 768)
     store.add_nodes([c, d])
 
-    # test get() and that embeddings are correct
+    # test get() and that embeddings and keyphrases are correct
     assert store.get_node(c.doc_id).embedding == [0.0] * 768
+    assert len(store.get_node(c.doc_id).keyphrases) == 1
+    assert len(store.get_node(d.doc_id).keyphrases) == 1
     assert store.get_node(d.doc_id).embedding == [0.0] * 768
     assert len(store.nodes) == 5
     assert len(store.node_embeddings_list) == 5
