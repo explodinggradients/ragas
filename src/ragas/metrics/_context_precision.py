@@ -26,7 +26,7 @@ CONTEXT_PRECISION = Prompt(
             "answer": """Albert Einstein born in 14 March 1879 was German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time. He received the 1921 Nobel Prize in Physics for his services to theoretical physics. He published 4 papers in 1905. Einstein moved to Switzerland in 1895""",
             "verification": {
                 "reason": "The provided context was indeed useful in arriving at the given answer. The context includes key information about Albert Einstein's life and contributions, which are reflected in the answer.",
-                "Verdict": "1",
+                "verdict": "1",
             },
         },
         {
@@ -70,7 +70,6 @@ class ContextPrecision(MetricWithLLM):
     name: str = "context_precision"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
     context_precision_prompt: Prompt = field(default_factory=lambda: CONTEXT_PRECISION)
-    batch_size: int = 15
 
     def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:
         answer = "ground_truth"
@@ -93,6 +92,9 @@ class ContextPrecision(MetricWithLLM):
 
     def _calculate_average_precision(self, json_responses: t.List[t.Dict]) -> float:
         score = np.nan
+        json_responses = [
+            item if isinstance(item, dict) else {} for item in json_responses
+        ]
         verdict_list = [
             int("1" == resp.get("verdict", "0").strip())
             if resp.get("verdict")
@@ -109,42 +111,28 @@ class ContextPrecision(MetricWithLLM):
         score = numerator / denominator
         return score
 
-    def _score(self, row: t.Dict, callbacks: Callbacks = []) -> float:
-        assert self.llm is not None, "LLM is not set"
-
-        human_prompts = self._context_precision_prompt(row)
-        responses: t.List[str] = []
-        for hp in human_prompts:
-            result = self.llm.generate_text(
-                hp,
-                n=1,
-                callbacks=callbacks,
-            )
-            responses.append(result.generations[0][0].text)
-
-        json_responses = [json_loader.safe_load(item, self.llm) for item in responses]
-        score = self._calculate_average_precision(json_responses)
-        return score
-
     async def _ascore(
         self: t.Self,
         row: t.Dict,
-        callbacks: Callbacks = [],
+        callbacks: Callbacks,
+        is_async: bool,
     ) -> float:
         assert self.llm is not None, "LLM is not set"
 
         human_prompts = self._context_precision_prompt(row)
         responses: t.List[str] = []
         for hp in human_prompts:
-            result = await self.llm.agenerate_text(
+            result = await self.llm.generate(
                 hp,
                 n=1,
                 callbacks=callbacks,
+                is_async=is_async,
             )
             responses.append(result.generations[0][0].text)
 
         json_responses = [
-            await json_loader.asafe_load(item, self.llm) for item in responses
+            await json_loader.safe_load(item, self.llm, is_async=is_async)
+            for item in responses
         ]
         score = self._calculate_average_precision(json_responses)
         return score

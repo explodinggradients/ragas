@@ -54,8 +54,6 @@ class AspectCritique(MetricWithLLM):
     strictness: int
         The number of times self consistency checks is made. Final judgement is
         made using majority vote.
-    batch_size: int
-        Batch size for openai completion.
     llm : LangchainLLM
         llm API of your choice
     """
@@ -65,7 +63,6 @@ class AspectCritique(MetricWithLLM):
     critic_prompt: Prompt = field(default_factory=lambda: CRITIQUE_PROMPT)
     definition: str = field(default="", repr=True)
     strictness: int = field(default=1, repr=False)
-    batch_size: int = field(default=15, repr=False)
     llm: BaseRagasLLM | None = field(
         default=None,
         repr=False,
@@ -112,32 +109,21 @@ class AspectCritique(MetricWithLLM):
 
         return score
 
-    def _score(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+    async def _ascore(
+        self: t.Self, row: t.Dict, callbacks: Callbacks, is_async: bool
+    ) -> float:
         assert self.llm is not None, "set LLM before use"
 
         q, c, a = row["question"], row["contexts"], row["answer"]
 
-        result = self.llm.generate_text(
-            self.prompt_format(q, a, c), callbacks=callbacks
-        )
-
-        responses = [r.text for r in result.generations[0]]
-        safe_loaded_responses = [json_loader.safe_load(r, self.llm) for r in responses]
-
-        return self._compute_score(safe_loaded_responses)
-
-    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
-        assert self.llm is not None, "set LLM before use"
-
-        q, c, a = row["question"], row["contexts"], row["answer"]
-
-        result = await self.llm.agenerate_text(
-            self.prompt_format(q, a, c), callbacks=callbacks
+        result = await self.llm.generate(
+            self.prompt_format(q, a, c), callbacks=callbacks, is_async=is_async
         )
 
         responses = [r.text for r in result.generations[0]]
         safe_loaded_responses = [
-            await json_loader.asafe_load(r, self.llm) for r in responses
+            await json_loader.safe_load(r, self.llm, is_async=is_async)
+            for r in responses
         ]
 
         return self._compute_score(safe_loaded_responses)

@@ -59,8 +59,6 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
     ----------
     name: string
         The name of the metrics
-    batch_size: int
-        batch size for evaluation
     strictness: int
         Here indicates the number questions generated per answer.
         Ideal range between 3 to 5.
@@ -72,11 +70,7 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
     name: str = "answer_relevancy"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
     question_generation: Prompt = field(default_factory=lambda: QUESTION_GEN)
-    batch_size: int = 15
     strictness: int = 3
-
-    def init_model(self):
-        super().init_model()
 
     def calculate_similarity(
         self: t.Self, question: str, generated_questions: list[str]
@@ -117,32 +111,18 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
         ans, ctx = row["answer"], row["contexts"]
         return self.question_generation.format(answer=ans, context="\n".join(ctx))
 
-    def _score(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
         assert self.llm is not None, "LLM is not set"
 
         prompt = self._create_question_gen_prompt(row)
-        result = self.llm.generate_text(
+        result = await self.llm.generate(
             prompt,
             n=self.strictness,
             callbacks=callbacks,
+            is_async=is_async,
         )
         response = [
-            json_loader.safe_load(r.text, self.llm) for r in result.generations[0]
-        ]
-
-        return self._calculate_score(response, row)
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        assert self.llm is not None, "LLM is not set"
-
-        prompt = self._create_question_gen_prompt(row)
-        result = await self.llm.agenerate_text(
-            prompt,
-            n=self.strictness,
-            callbacks=callbacks,
-        )
-        response = [
-            await json_loader.asafe_load(r.text, self.llm)
+            await json_loader.safe_load(r.text, self.llm, is_async=is_async)
             for r in result.generations[0]
         ]
 

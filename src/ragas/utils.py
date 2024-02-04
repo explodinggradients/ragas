@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import logging
 import os
+import typing as t
 from functools import lru_cache
+
+import numpy as np
 
 DEBUG_ENV_VAR = "RAGAS_DEBUG"
 
@@ -24,6 +27,14 @@ def get_debug_mode() -> bool:
         return False
 
 
+def check_if_sum_is_close(
+    values: t.List[float], close_to: float, num_places: int
+) -> bool:
+    multiplier = 10**num_places
+    total = sum(int(round(v * multiplier)) for v in values)
+    return total == int(round(close_to * multiplier))
+
+
 def patch_logger(module: str, level: int):
     # enable debug logging
     patched_logger = logging.getLogger(module)
@@ -38,3 +49,11 @@ def patch_logger(module: str, level: int):
     patched_logger.addHandler(handler)
     # Set propagate to False if you don't want it to log to the root logger's handlers as well
     patched_logger.propagate = False
+
+
+# Function to check if an element is NaN
+def is_nan(x):
+    try:
+        return np.isnan(x)
+    except TypeError:
+        return False
