@@ -28,18 +28,25 @@ For this tutorial notebook, I am using papers from Semantic Scholar that is rela
 ```{code-block} python
 :caption: load documents using llama-hub and create test data
 from llama_index import download_loader
-from ragas.testset import TestsetGenerator
+from ragas.testset.evolutions import simple, reasoning, multi_context
 
 SemanticScholarReader = download_loader("SemanticScholarReader")
 loader = SemanticScholarReader()
 query_space = "large language models"
 documents = loader.load_data(query=query_space, limit=100)
 
-testsetgenerator = TestsetGenerator.from_default()
-test_size = 30
-testset = testsetgenerator.generate(documents, test_size=test_size)
-test_df = testset.to_pandas()
-test_df.head()
+# generator with openai models
+generator = TestsetGenerator.with_openai()
+
+distributions = {
+    simple: 0.5,
+    multi_context: 0.4,
+    reasoning: 0.1
+}
+
+# generate testset
+testset = generator.generate_with_llama_index_docs(documents, 100,distributions)
+testset.to_pandas()
 ```
 
 <p align="left">
