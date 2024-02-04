@@ -1,14 +1,14 @@
 /* Base Theme */
 div.cell_input {
-    background: #272822 !important;
-    color: #f8f8f2;
+    /* background: #272822 !important; */
+    /* color: #f8f8f2; */
     border: none !important;
 }
 
 .cell_output {
-  background: #272822;
-  color: #f8f8f2;
-
+  /* background: #272822; */
+  /* color: #f8f8f2; */
+  padding-left: 0px !important;
 }
 
 .cell_output .output.text_plain,
