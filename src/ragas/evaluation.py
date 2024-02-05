@@ -5,11 +5,12 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import Dataset, concatenate_datasets
-from langchain_core.language_models import BaseLanguageModel
+from langchain_core.language_models import BaseLanguageModel as LangchainLLM
+from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 
 from ragas._analytics import EvaluationEvent, track
 from ragas.callbacks import new_group
-from ragas.embeddings.base import BaseRagasEmbeddings
+from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
 from ragas.executor import Executor
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics.base import Metric, MetricWithEmbeddings, MetricWithLLM
@@ -144,12 +145,14 @@ def evaluate(
         from ragas.llms import llm_factory
 
         llm = llm_factory()
-    elif isinstance(llm, BaseLanguageModel):
+    elif isinstance(llm, LangchainLLM):
         llm = LangchainLLMWrapper(llm, run_config=run_config)
     if embeddings is None:
         from ragas.embeddings.base import embedding_factory
 
         embeddings = embedding_factory()
+    elif isinstance(embeddings, LangchainEmbeddings):
+        embeddings = LangchainEmbeddingsWrapper(embeddings)
     # init llms and embeddings
     binary_metrics = []
     llm_changed: t.List[int] = []
