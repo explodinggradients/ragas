@@ -9,6 +9,7 @@ happy to look into it 🙂
 llamaindex.ipynb
 langchain.ipynb
 langsmith.ipynb
+athina.ipynb
 langfuse.ipynb
 zeno.ipynb
 :::
