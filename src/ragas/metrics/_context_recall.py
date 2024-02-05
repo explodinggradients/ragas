@@ -101,6 +101,9 @@ class ContextRecall(MetricWithLLM):
             numerator = sum(response)
             return numerator / denom
         else:
+            logger.warning(
+                "Invalid JSON response. Expected dictionary with key 'Attributed'"
+            )
             return np.nan
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
