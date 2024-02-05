@@ -1,0 +1,85 @@
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.highlight-ipython3 .hll { background-color: #49483e }
+.highlight-ipython3 { background: #232629; color: #cccccc }
+.highlight-ipython3 .c { color: #777777; font-style: italic } /* Comment */
+.highlight-ipython3 .err { color: #a61717; background-color: #e3d2d2 } /* Error */
+.highlight-ipython3 .esc { color: #cccccc } /* Escape */
+.highlight-ipython3 .g { color: #cccccc } /* Generic */
+.highlight-ipython3 .k { color: #7686bb; font-weight: bold } /* Keyword */
+.highlight-ipython3 .l { color: #cccccc } /* Literal */
+.highlight-ipython3 .n { color: #cccccc } /* Name */
+.highlight-ipython3 .o { color: #cccccc } /* Operator */
+.highlight-ipython3 .x { color: #cccccc } /* Other */
+.highlight-ipython3 .p { color: #cccccc } /* Punctuation */
+.highlight-ipython3 .ch { color: #777777; font-style: italic } /* Comment.Hashbang */
+.highlight-ipython3 .cm { color: #777777; font-style: italic } /* Comment.Multiline */
+.highlight-ipython3 .cp { color: #777777; font-style: italic } /* Comment.Preproc */
+.highlight-ipython3 .cpf { color: #777777; font-style: italic } /* Comment.PreprocFile */
+.highlight-ipython3 .c1 { color: #777777; font-style: italic } /* Comment.Single */
+.highlight-ipython3 .cs { color: #777777; font-style: italic } /* Comment.Special */
+.highlight-ipython3 .gd { color: #cccccc } /* Generic.Deleted */
+.highlight-ipython3 .ge { color: #cccccc } /* Generic.Emph */
+.highlight-ipython3 .ges { color: #cccccc } /* Generic.EmphStrong */
+.highlight-ipython3 .gr { color: #cccccc } /* Generic.Error */
+.highlight-ipython3 .gh { color: #cccccc } /* Generic.Heading */
+.highlight-ipython3 .gi { color: #cccccc } /* Generic.Inserted */
+.highlight-ipython3 .go { color: #cccccc } /* Generic.Output */
+.highlight-ipython3 .gp { color: #ffffff } /* Generic.Prompt */
+.highlight-ipython3 .gs { color: #cccccc } /* Generic.Strong */
+.highlight-ipython3 .gu { color: #cccccc } /* Generic.Subheading */
+.highlight-ipython3 .gt { color: #cccccc } /* Generic.Traceback */
+.highlight-ipython3 .kc { color: #7686bb; font-weight: bold } /* Keyword.Constant */
+.highlight-ipython3 .kd { color: #7686bb; font-weight: bold } /* Keyword.Declaration */
+.highlight-ipython3 .kn { color: #7686bb; font-weight: bold } /* Keyword.Namespace */
+.highlight-ipython3 .kp { color: #7686bb; font-weight: bold } /* Keyword.Pseudo */
+.highlight-ipython3 .kr { color: #7686bb; font-weight: bold } /* Keyword.Reserved */
+.highlight-ipython3 .kt { color: #7686bb; font-weight: bold } /* Keyword.Type */
+.highlight-ipython3 .ld { color: #cccccc } /* Literal.Date */
+.highlight-ipython3 .m { color: #4FB8CC } /* Literal.Number */
+.highlight-ipython3 .s { color: #51cc99 } /* Literal.String */
+.highlight-ipython3 .na { color: #cccccc } /* Name.Attribute */
+.highlight-ipython3 .nb { color: #cccccc } /* Name.Builtin */
+.highlight-ipython3 .nc { color: #cccccc } /* Name.Class */
+.highlight-ipython3 .no { color: #cccccc } /* Name.Constant */
+.highlight-ipython3 .nd { color: #cccccc } /* Name.Decorator */
+.highlight-ipython3 .ni { color: #cccccc } /* Name.Entity */
+.highlight-ipython3 .ne { color: #cccccc } /* Name.Exception */
+.highlight-ipython3 .nf { color: #6a6aff } /* Name.Function */
+.highlight-ipython3 .nl { color: #cccccc } /* Name.Label */
+.highlight-ipython3 .nn { color: #cccccc } /* Name.Namespace */
+.highlight-ipython3 .nx { color: #e2828e } /* Name.Other */
+.highlight-ipython3 .py { color: #cccccc } /* Name.Property */
+.highlight-ipython3 .nt { color: #cccccc } /* Name.Tag */
+.highlight-ipython3 .nv { color: #7AB4DB; font-weight: bold } /* Name.Variable */
+.highlight-ipython3 .ow { color: #cccccc } /* Operator.Word */
+.highlight-ipython3 .pm { color: #cccccc } /* Punctuation.Marker */
+.highlight-ipython3 .w { color: #bbbbbb } /* Text.Whitespace */
+.highlight-ipython3 .mb { color: #4FB8CC } /* Literal.Number.Bin */
+.highlight-ipython3 .mf { color: #4FB8CC } /* Literal.Number.Float */
+.highlight-ipython3 .mh { color: #4FB8CC } /* Literal.Number.Hex */
+.highlight-ipython3 .mi { color: #4FB8CC } /* Literal.Number.Integer */
+.highlight-ipython3 .mo { color: #4FB8CC } /* Literal.Number.Oct */
+.highlight-ipython3 .sa { color: #51cc99 } /* Literal.String.Affix */
+.highlight-ipython3 .sb { color: #51cc99 } /* Literal.String.Backtick */
+.highlight-ipython3 .sc { color: #51cc99 } /* Literal.String.Char */
+.highlight-ipython3 .dl { color: #51cc99 } /* Literal.String.Delimiter */
+.highlight-ipython3 .sd { color: #51cc99 } /* Literal.String.Doc */
+.highlight-ipython3 .s2 { color: #51cc99 } /* Literal.String.Double */
+.highlight-ipython3 .se { color: #51cc99 } /* Literal.String.Escape */
+.highlight-ipython3 .sh { color: #51cc99 } /* Literal.String.Heredoc */
+.highlight-ipython3 .si { color: #51cc99 } /* Literal.String.Interpol */
+.highlight-ipython3 .sx { color: #51cc99 } /* Literal.String.Other */
+.highlight-ipython3 .sr { color: #51cc99 } /* Literal.String.Regex */
+.highlight-ipython3 .s1 { color: #51cc99 } /* Literal.String.Single */
+.highlight-ipython3 .ss { color: #51cc99 } /* Literal.String.Symbol */
+.highlight-ipython3 .bp { color: #cccccc } /* Name.Builtin.Pseudo */
+.highlight-ipython3 .fm { color: #6a6aff } /* Name.Function.Magic */
+.highlight-ipython3 .vc { color: #7AB4DB; font-weight: bold } /* Name.Variable.Class */
+.highlight-ipython3 .vg { color: #BE646C; font-weight: bold } /* Name.Variable.Global */
+.highlight-ipython3 .vi { color: #7AB4DB; font-weight: bold } /* Name.Variable.Instance */
+.highlight-ipython3 .vm { color: #7AB4DB; font-weight: bold } /* Name.Variable.Magic */
+.highlight-ipython3 .il { color: #4FB8CC } /* Literal.Number.Integer.Long */

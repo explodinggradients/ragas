@@ -1,25 +1,33 @@
 /* Base Theme */
 div.cell_input {
-    background: var(--background) !important;
+    border: none !important;
+}
+
+.cell_output {
+  padding-left: 0px !important;
+  border: 1px solid #8b8b8b;
+  border-radius: var(--mystnb-source-border-radius);
 }
 
 .cell_output .output.text_plain,
 .cell_output .output.stream {
   background: var(--background);
-  border: 1px solid grey;
-  border-radius: var(--mystnb-source-border-radius);
+  border: none;
+}
+
+.cell_output .output.stream {
+  margin-top: 0px;
 }
 
 .cell_output .output.stderr {
   background: var(--background);
-  border: 1px solid #fbc7c7;
-  border-radius: var(--mystnb-source-border-radius);
+  border: none;
+  margin-top: 0px;
 }
 
 .cell_output .output.traceback {
   background: var(--background);
-  border: 1px solid #fbc7c7;
-  border-radius: var(--mystnb-source-border-radius);
+  border: none;
 }
 
 /* Pandas tables. Pulled from the Jupyter / nbsphinx CSS */
