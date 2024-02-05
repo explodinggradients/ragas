@@ -5,13 +5,14 @@ div.cell_input {
 
 .cell_output {
   padding-left: 0px !important;
+  border: 1px solid #8b8b8b;
+  border-radius: var(--mystnb-source-border-radius);
 }
 
 .cell_output .output.text_plain,
 .cell_output .output.stream {
   background: var(--background);
   border: none;
-  border-radius: var(--mystnb-source-border-radius);
 }
 
 .cell_output .output.stream {
@@ -21,14 +22,12 @@ div.cell_input {
 .cell_output .output.stderr {
   background: var(--background);
   border: none;
-  border-radius: var(--mystnb-source-border-radius);
   margin-top: 0px;
 }
 
 .cell_output .output.traceback {
   background: var(--background);
   border: none;
-  border-radius: var(--mystnb-source-border-radius);
 }
 
 /* Pandas tables. Pulled from the Jupyter / nbsphinx CSS */
