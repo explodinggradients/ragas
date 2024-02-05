@@ -102,8 +102,14 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
                 if isinstance(item, dict)
             ]
         )
-        cosine_sim = self.calculate_similarity(question, gen_questions)
-        score = cosine_sim.mean() * int(not committal)
+        if all(q == "" for q in gen_questions):
+            logger.warning(
+                "Invalid JSON response. Expected dictionary with key 'question'"
+            )
+            score = np.nan
+        else:
+            cosine_sim = self.calculate_similarity(question, gen_questions)
+            score = cosine_sim.mean() * int(not committal)
 
         return score
 

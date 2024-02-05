@@ -130,6 +130,9 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
             ]
             if any([np.isnan(i) for i in [tp, fp, fn]]):
                 score = np.nan
+                logger.warning(
+                    "Invalid prediction format. Expected a list of dictionaries with keys 'TP', 'FP', 'FN'"
+                )
             else:
                 score = tp / (tp + 0.5 * (fp + fn)) if tp > 0 else 0
         else:

@@ -109,6 +109,10 @@ class ContextPrecision(MetricWithLLM):
             ]
         )
         score = numerator / denominator
+        if np.isnan(score):
+            logger.warning(
+                "Invalid response format. Expected a list of dictionaries with keys 'verdict'"
+            )
         return score
 
     async def _ascore(
