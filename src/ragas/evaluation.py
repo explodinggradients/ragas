@@ -5,16 +5,18 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import Dataset, concatenate_datasets
-from langchain_core.language_models import BaseLanguageModel
+from langchain_core.language_models import BaseLanguageModel as LangchainLLM
+from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 
 from ragas._analytics import EvaluationEvent, track
 from ragas.callbacks import new_group
-from ragas.embeddings.base import BaseRagasEmbeddings
+from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
 from ragas.executor import Executor
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics.base import Metric, MetricWithEmbeddings, MetricWithLLM
 from ragas.metrics.critique import AspectCritique
 from ragas.run_config import RunConfig
+from ragas.exceptions import ExceptionInRunner
 
 # from ragas.metrics.critique import AspectCritique
 from ragas.validation import (
@@ -144,12 +146,14 @@ def evaluate(
         from ragas.llms import llm_factory
 
         llm = llm_factory()
-    elif isinstance(llm, BaseLanguageModel):
+    elif isinstance(llm, LangchainLLM):
         llm = LangchainLLMWrapper(llm, run_config=run_config)
     if embeddings is None:
         from ragas.embeddings.base import embedding_factory
 
         embeddings = embedding_factory()
+    elif isinstance(embeddings, LangchainEmbeddings):
+        embeddings = LangchainEmbeddingsWrapper(embeddings)
     # init llms and embeddings
     binary_metrics = []
     llm_changed: t.List[int] = []
@@ -199,6 +203,8 @@ def evaluate(
     try:
         # get the results
         results = executor.results()
+        if results == []:
+            raise ExceptionInRunner()
 
         # convert results to dataset_like
         for i, _ in enumerate(dataset):

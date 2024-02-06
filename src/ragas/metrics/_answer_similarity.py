@@ -54,32 +54,29 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
     ) -> float:
         assert self.embeddings is not None, "embeddings must be set"
 
-        ground_truth, answers = row["ground_truth"], row["answer"]
-        ground_truth = [item[0] for item in ground_truth]
+        ground_truth = t.cast(str, row["ground_truth"])
+        answer = t.cast(str, row["answer"])
 
         if self.is_cross_encoder and isinstance(self.embeddings, HuggingfaceEmbeddings):
             raise NotImplementedError(
                 "async score [ascore()] not implemented for HuggingFace embeddings"
             )
         else:
-            embeddings_1 = np.array(await self.embeddings.embed_texts(ground_truth))
-            embeddings_2 = np.array(await self.embeddings.embed_texts(answers))
+            embedding_1 = np.array(await self.embeddings.embed_text(ground_truth))
+            embedding_2 = np.array(await self.embeddings.embed_text(answer))
             # Normalization factors of the above embeddings
-            norms_1 = np.linalg.norm(embeddings_1, axis=1, keepdims=True)
-            norms_2 = np.linalg.norm(embeddings_2, axis=1, keepdims=True)
-            embeddings_1_normalized = embeddings_1 / norms_1
-            embeddings_2_normalized = embeddings_2 / norms_2
-            similarity = embeddings_1_normalized @ embeddings_2_normalized.T
-            if similarity.size == 1:
-                scores = similarity.flatten()
-            else:
-                scores = np.diagonal(similarity)
+            norms_1 = np.linalg.norm(embedding_1, keepdims=True)
+            norms_2 = np.linalg.norm(embedding_2, keepdims=True)
+            embedding_1_normalized = embedding_1 / norms_1
+            embedding_2_normalized = embedding_2 / norms_2
+            similarity = embedding_1_normalized @ embedding_2_normalized.T
+            score = similarity.flatten()
 
-        assert isinstance(scores, np.ndarray), "Expects ndarray"
+        assert isinstance(score, np.ndarray), "Expects ndarray"
         if self.threshold:
-            scores = scores >= self.threshold
+            score = score >= self.threshold
 
-        return scores.tolist()[0]
+        return score.tolist()[0]
 
 
 answer_similarity = AnswerSimilarity()

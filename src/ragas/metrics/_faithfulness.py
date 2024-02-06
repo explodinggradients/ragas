@@ -162,6 +162,9 @@ class Faithfulness(MetricWithLLM):
         if num_statements:
             score = faithful_statements / num_statements
         else:
+            logger.warning(
+                "Invalid JSON response. Expected dictionary with key 'verdict'"
+            )
             score = np.nan
 
         return score
