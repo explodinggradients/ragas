@@ -16,6 +16,7 @@ from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics.base import Metric, MetricWithEmbeddings, MetricWithLLM
 from ragas.metrics.critique import AspectCritique
 from ragas.run_config import RunConfig
+from ragas.exceptions import ExceptionInRunner
 
 # from ragas.metrics.critique import AspectCritique
 from ragas.validation import (
@@ -202,6 +203,8 @@ def evaluate(
     try:
         # get the results
         results = executor.results()
+        if results == []:
+            raise ExceptionInRunner()
 
         # convert results to dataset_like
         for i, _ in enumerate(dataset):
