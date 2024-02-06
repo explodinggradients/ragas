@@ -149,7 +149,6 @@ class Prompt(BaseModel):
     def adapt(
         self, language: str, llm: BaseRagasLLM, cache_dir: t.Optional[str] = None
     ) -> Prompt:
-      
         def get_all_keys(nested_json):
             keys = set()
             for key, value in nested_json.items():
@@ -160,7 +159,7 @@ class Prompt(BaseModel):
 
         if self.language == language:
             return self
-          
+
         # TODO: Add callbacks
         cache_dir = cache_dir if cache_dir else get_cache_dir()
         if os.path.exists(os.path.join(cache_dir, language, f"{self.name}.json")):
