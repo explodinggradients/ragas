@@ -15,6 +15,7 @@ from ragas.executor import Executor
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics.base import Metric, MetricWithEmbeddings, MetricWithLLM
 from ragas.metrics.critique import AspectCritique
+from ragas.metrics._answer_correctness import AnswerCorrectness
 from ragas.run_config import RunConfig
 from ragas.exceptions import ExceptionInRunner
 
@@ -158,6 +159,7 @@ def evaluate(
     binary_metrics = []
     llm_changed: t.List[int] = []
     embeddings_changed: t.List[int] = []
+    answer_correctness_is_set = -1
     for i, metric in enumerate(metrics):
         if isinstance(metric, AspectCritique):
             binary_metrics.append(metric.name)
@@ -169,6 +171,9 @@ def evaluate(
             if metric.embeddings is None:
                 metric.embeddings = embeddings
                 embeddings_changed.append(i)
+        if isinstance(metric, AnswerCorrectness):
+            if metric.answer_similarity is None:
+                answer_correctness_is_set = i
 
     # initialize all the models in the metrics
     [m.init(run_config) for m in metrics]
@@ -237,6 +242,10 @@ def evaluate(
             t.cast(MetricWithLLM, metrics[i]).llm = None
         for i in embeddings_changed:
             t.cast(MetricWithEmbeddings, metrics[i]).embeddings = None
+        if answer_correctness_is_set != -1:
+            t.cast(
+                AnswerCorrectness, metrics[answer_correctness_is_set]
+            ).answer_similarity = None
 
     # log the evaluation event
     metrics_names = [m.name for m in metrics]
