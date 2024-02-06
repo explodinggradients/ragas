@@ -4,7 +4,7 @@ import asyncio
 import logging
 import typing as t
 from dataclasses import dataclass, field
-from threading import Thread
+import threading
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -14,7 +14,16 @@ from ragas.exceptions import MaxRetriesExceeded
 logger = logging.getLogger(__name__)
 
 
-class Runner(Thread):
+def runner_exception_hook(args: threading.ExceptHookArgs):
+    print(args)
+    raise args.exc_type
+
+
+# set a custom exception hook
+# threading.excepthook = runner_exception_hook
+
+
+class Runner(threading.Thread):
     def __init__(
         self,
         jobs: t.List[t.Tuple[t.Coroutine, str]],

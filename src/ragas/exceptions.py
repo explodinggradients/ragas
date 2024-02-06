@@ -25,3 +25,13 @@ class MaxRetriesExceeded(RagasException):
         self.evolution = evolution
         msg = f"Max retries exceeded for evolution {evolution.__class__.__name__}."
         super().__init__(msg)
+
+
+class ExceptionInRunner(RagasException):
+    """
+    Exception raised when an exception is raised in the executor.
+    """
+
+    def __init__(self):
+        msg = "The runner thread which was running the jobs raised an exeception. Read the traceback above to debug it. You can also pass `raise_exception=False` incase you want to show only a warning message instead."
+        super().__init__(msg)
