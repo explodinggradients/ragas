@@ -12,6 +12,7 @@ from langchain_openai.embeddings import OpenAIEmbeddings
 
 from ragas._analytics import TesetGenerationEvent, track
 from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
+from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
 from ragas.run_config import RunConfig
@@ -25,7 +26,7 @@ from ragas.testset.evolutions import (
     reasoning,
     simple,
 )
-from ragas.testset.extractor import keyphraseExtractor
+from ragas.testset.extractor import KeyphraseExtractor
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 from ragas.utils import check_if_sum_is_close, is_nan
 
@@ -83,7 +84,7 @@ class TestsetGenerator:
         embeddings_model = LangchainEmbeddingsWrapper(
             OpenAIEmbeddings(model=embeddings)
         )
-        keyphrase_extractor = keyphraseExtractor(llm=generator_llm_model)
+        keyphrase_extractor = KeyphraseExtractor(llm=generator_llm_model)
         if docstore is None:
             from langchain.text_splitter import TokenTextSplitter
 
@@ -241,6 +242,9 @@ class TestsetGenerator:
 
         try:
             test_data_rows = exec.results()
+            if test_data_rows == []:
+                raise ExceptionInRunner()
+
         except ValueError as e:
             raise e
         # make sure to ignore any NaNs that might have been returned

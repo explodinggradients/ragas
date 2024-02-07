@@ -39,7 +39,7 @@ class Extractor(ABC):
 
 
 @dataclass
-class keyphraseExtractor(Extractor):
+class KeyphraseExtractor(Extractor):
     keyphrase_extraction_prompt: Prompt = field(
         default_factory=lambda: keyphrase_extraction_prompt
     )
