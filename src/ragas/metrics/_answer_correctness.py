@@ -119,6 +119,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
         }
 
         prediction = prediction if isinstance(prediction, list) else [prediction]
+        prediction = [item if isinstance(item, dict) else {} for item in prediction]
         if prediction:
             prediction = [
                 item.get(key_map[k], np.nan)
