@@ -15,5 +15,4 @@ Share code to reproduce the issue
 **Additional context**
 Add any other context about the feature you want to share with us.
 
-
-PS: Thanks for your valuable feedback. Really! Its feedback from valuable community members like you that help us make Ragas event better for the whole community. So thanks again for taking the time to improve our community 🙂
+<!-- PS: Thanks for your valuable feedback. Really! Its feedback from valuable community members like you that help us make Ragas event better for the whole community. So thanks again for taking the time to improve our community 🙂 -->
