@@ -37,7 +37,7 @@ QUESTION_GEN = Prompt(
             "output": """{"question":"What is the tallest mountain on Earth?","noncommittal":false}""",
         },
         {
-            "answer": """I don't know about the  groundbreaking feature of the smartphone invented in 2023 as am unware of information beyond 2022. """,
+            "answer": """I don't know about the  groundbreaking feature of the smartphone invented in 2023 as am unaware of information beyond 2022. """,
             "context": """In 2023, a groundbreaking invention was announced: a smartphone with a battery life of one month, revolutionizing the way people use mobile technology.""",
             "output": """{"question":"What was the groundbreaking feature of the smartphone invented in 2023?", "noncommittal":true}""",
         },
