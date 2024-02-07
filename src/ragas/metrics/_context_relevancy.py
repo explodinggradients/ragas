@@ -40,7 +40,7 @@ def sent_tokenize(text: str) -> List[str]:
 class ContextRelevancy(MetricWithLLM):
     """
     Extracts sentences from the context that are relevant to the question with
-    self-consistancy checks. The number of relevant sentences and is used as the score.
+    self-consistency checks. The number of relevant sentences and is used as the score.
 
     Attributes
     ----------
