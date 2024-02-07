@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 import typing as t
 from dataclasses import dataclass, field
-import threading
 
 import numpy as np
 from tqdm.auto import tqdm
