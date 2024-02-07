@@ -25,7 +25,7 @@ from ragas.testset.evolutions import (
     reasoning,
     simple,
 )
-from ragas.testset.extractor import keyphraseExtractor
+from ragas.testset.extractor import KeyphraseExtractor
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 from ragas.utils import check_if_sum_is_close, is_nan
 
@@ -83,7 +83,7 @@ class TestsetGenerator:
         embeddings_model = LangchainEmbeddingsWrapper(
             OpenAIEmbeddings(model=embeddings)
         )
-        keyphrase_extractor = keyphraseExtractor(llm=generator_llm_model)
+        keyphrase_extractor = KeyphraseExtractor(llm=generator_llm_model)
         if docstore is None:
             from langchain.text_splitter import TokenTextSplitter
 
