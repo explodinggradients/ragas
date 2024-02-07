@@ -15,6 +15,7 @@ from langchain_core.documents import Document as LCDocument
 from langchain_core.pydantic_v1 import Field
 
 from ragas.embeddings.base import BaseRagasEmbeddings
+from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
 from ragas.run_config import RunConfig
 from ragas.testset.utils import rng
@@ -245,6 +246,9 @@ class InMemoryDocumentStore(DocumentStore):
                 result_idx += 1
 
         results = executor.results()
+        if results == []:
+            raise ExceptionInRunner()
+
         for i, n in enumerate(nodes):
             if i in nodes_to_embed.keys():
                 n.embedding = results[nodes_to_embed[i]]

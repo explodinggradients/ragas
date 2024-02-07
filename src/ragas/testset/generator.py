@@ -12,6 +12,7 @@ from langchain_openai.embeddings import OpenAIEmbeddings
 
 from ragas._analytics import TesetGenerationEvent, track
 from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
+from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
 from ragas.run_config import RunConfig
@@ -241,6 +242,9 @@ class TestsetGenerator:
 
         try:
             test_data_rows = exec.results()
+            if test_data_rows == []:
+                raise ExceptionInRunner()
+
         except ValueError as e:
             raise e
         # make sure to ignore any NaNs that might have been returned
