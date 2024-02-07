@@ -39,7 +39,6 @@ Create a sample prompt using `Prompt` class.
 ```{code-block} python
 
 from langchain.chat_models import ChatOpenAI
-from ragas.llms import LangchainLLMWrapper
 from ragas.llms.prompt import Prompt
 
 noun_extractor = Prompt(
@@ -55,7 +54,6 @@ examples=[{
 )
 
 openai_model = ChatOpenAI(model_name="gpt-4")
-openai_model = LangchainLLMWrapper(llm=openai_model)
 ```
 
 Prompt adaption is done using the `.adapt` method: 
