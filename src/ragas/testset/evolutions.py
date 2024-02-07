@@ -412,7 +412,12 @@ class MultiContextEvolution(ComplexEvolution):
         )
 
         # find a similar node and generate a question based on both
-        similar_node = self.docstore.get_similar(current_nodes.root_node)[0]
+        similar_node = self.docstore.get_similar(current_nodes.root_node)
+        if similar_node == []:
+            # retry
+            current_nodes = self.se._get_more_adjacent_nodes(current_nodes)
+            return await self.aretry_evolve(current_tries, current_nodes)
+
         prompt = self.multi_context_question_prompt.format(
             question=simple_question,
             context1=current_nodes.root_node.page_content,
