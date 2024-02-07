@@ -90,21 +90,24 @@ class ContextRecall(MetricWithLLM):
         return self.context_recall_prompt.format(question=qstn, context=ctx, answer=gt)
 
     def _compute_score(self, response: t.Any) -> float:
-        if response:
-            response = [
-                int(item.get("Attributed", "0").strip() == "1")
-                if item.get("Attributed")
-                else np.nan
-                for item in response
-            ]
-            denom = len(response)
-            numerator = sum(response)
-            return numerator / denom
-        else:
+        response = response if isinstance(response, list) else [response]
+        response = [item if isinstance(item, dict) else {} for item in response]
+        response = [
+            int(item.get("Attributed").strip() == "1")
+            if item.get("Attributed")
+            else np.nan
+            for item in response
+        ]
+        denom = len(response)
+        numerator = sum(response)
+        score = numerator / denom
+
+        if np.isnan(score):
             logger.warning(
                 "Invalid JSON response. Expected dictionary with key 'Attributed'"
             )
-            return np.nan
+
+        return score
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
         assert self.llm is not None, "set LLM before use"

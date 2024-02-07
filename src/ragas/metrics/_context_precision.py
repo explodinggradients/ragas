@@ -96,7 +96,7 @@ class ContextPrecision(MetricWithLLM):
             item if isinstance(item, dict) else {} for item in json_responses
         ]
         verdict_list = [
-            int("1" == resp.get("verdict", "0").strip())
+            int("1" == resp.get("verdict", "").strip())
             if resp.get("verdict")
             else np.nan
             for resp in json_responses
