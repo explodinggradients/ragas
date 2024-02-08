@@ -33,8 +33,6 @@ class Prompt(BaseModel):
     """
     Prompt is a class that represents a prompt for the ragas metrics.
 
-    Prompt is a class that represents a prompt for the ragas metrics.
-
     Attributes:
         name (str): The name of the prompt.
         instruction (str): The instruction for the prompt.
