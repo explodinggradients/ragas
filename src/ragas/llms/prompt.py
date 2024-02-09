@@ -186,6 +186,8 @@ class Prompt(BaseModel):
             )
             if self.output_type.lower() == "json":
                 output = example.get(self.output_key)
+                if isinstance(output, str):
+                    output = json.loads(output)
                 if isinstance(output, dict):
                     output_keys.append(get_all_keys(output))
                 elif isinstance(output, list):
