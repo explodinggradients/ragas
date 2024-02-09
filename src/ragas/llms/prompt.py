@@ -91,7 +91,12 @@ class Prompt(BaseModel):
         """
         Generate the prompt string from the variables.
         """
-        prompt_str = self.instruction + "\n"
+        added_json_instruction = (
+            "\nOutput in only valid JSON format."
+            if self.output_type.lower() == "json"
+            else ""
+        )
+        prompt_str = self.instruction + added_json_instruction + "\n"
 
         if self.examples:
             # Format the examples to match the Langchain prompt template
