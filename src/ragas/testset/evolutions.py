@@ -180,9 +180,12 @@ class Evolution:
         relevent_contexts_result = await json_loader.safe_load(
             results.generations[0][0].text.strip(), llm=self.generator_llm
         )
-        relevant_context_indices = relevent_contexts_result.get(
-            "relevant_context", None
+        relevant_context_indices = (
+            relevent_contexts_result.get("relevant_context", None)
+            if isinstance(relevent_contexts_result, dict)
+            else None
         )
+
         if relevant_context_indices is None:
             relevant_context = CurrentNodes(
                 root_node=current_nodes.root_node, nodes=current_nodes.nodes
