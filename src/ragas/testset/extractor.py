@@ -50,6 +50,7 @@ class KeyphraseExtractor(Extractor):
         keyphrases = await json_loader.safe_load(
             results.generations[0][0].text.strip(), llm=self.llm, is_async=is_async
         )
+        keyphrases = keyphrases if isinstance(keyphrases, dict) else {}
         logger.debug("keyphrases: %s", keyphrases)
         return keyphrases.get("keyphrases", [])
 
