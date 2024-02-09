@@ -55,12 +55,11 @@ class NodeFilter(Filter):
         prompt = self.context_scoring_prompt.format(context=node.page_content)
         results = await self.llm.generate(prompt=prompt)
         output = results.generations[0][0].text.strip()
-        output = await context_scoring_parser.aparse(output, prompt, self.llm)
-        output = output.dict() if output is not None else {}
-        output["score"] = sum(output.values()) / len(output.values())
-        logger.debug("context scoring: %s", output)
-        output.update({"score": output.get("score", 0) >= self.threshold})
-        return output
+        score = await json_loader.safe_load(output, llm=self.llm)
+        score = score if isinstance(score, dict) else {}
+        logger.debug("node filter: %s", score)
+        score.update({"score": score.get("score", 0) >= self.threshold})
+        return score
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         """
@@ -88,10 +87,10 @@ class QuestionFilter(Filter):
         prompt = self.filter_question_prompt.format(question=question)
         results = await self.llm.generate(prompt=prompt)
         results = results.generations[0][0].text.strip()
-        results = await question_filter_parser.aparse(results, prompt, self.llm)
-        results = results.dict() if results is not None else {}
-        logger.debug("filtered question: %s", results)
-        return results.get("verdict") == 1, results.get("feedback", "")
+        json_results = await json_loader.safe_load(results, llm=self.llm)
+        json_results = json_results if isinstance(json_results, dict) else {}
+        logger.debug("filtered question: %s", json_results)
+        return json_results.get("verdict") == "1"
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         """
@@ -121,10 +120,10 @@ class EvolutionFilter(Filter):
         )
         results = await self.llm.generate(prompt=prompt)
         results = results.generations[0][0].text.strip()
-        results = await evolution_elimination_parser.aparse(results, prompt, self.llm)
-        results = results.dict() if results is not None else {}
-        logger.debug("evolution filter: %s", results)
-        return results.get("verdict") == 1
+        json_results = await json_loader.safe_load(results, llm=self.llm)
+        json_results = json_results if isinstance(json_results, dict) else {}
+        logger.debug("evolution filter: %s", json_results)
+        return json_results.get("verdict") == "1"
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         """
