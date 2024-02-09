@@ -198,10 +198,11 @@ class Evolution:
             results.generations[0][0].text.strip(), llm=self.generator_llm
         )
         relevant_context_indices = (
-            relevant_contexts_result.get("relevant_contexts", None)
-            if isinstance(relevant_contexts_result, dict)
+            relevent_contexts_result.get("relevant_context", None)
+            if isinstance(relevent_contexts_result, dict)
             else None
         )
+
         if relevant_context_indices is None:
             relevant_context = CurrentNodes(
                 root_node=current_nodes.root_node, nodes=current_nodes.nodes
