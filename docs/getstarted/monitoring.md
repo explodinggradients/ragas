@@ -1,14 +1,20 @@
 (get-started-monitoring)=
-# Monitoring
+# Monitor Your RAG in Production
 
-Maintaining the quality and performance of an LLM application in a production environment can be challenging. Ragas provides with basic building blocks that you can use for production quality monitoring, offering valuable insights into your application's performance. This is achieved by constructing custom, smaller, more cost-effective, and faster models.
+Maintaining the quality and performance of a RAG application in a production environment can be challenging. Ragas currently provides the basic building blocks that you can use for production quality monitoring, offering valuable insights into your application's performance. But we are also working towards building more advanced production monitoring solution by trying to tackle 3 questions
+
+1. How can we keep the distribution of your production dataset consistent with your testset.
+2. How can we effectively extract insights from explicit and implicit signals your users provide to infer the quality of your RAG application and the areas that need your attention.
+3. Constructing custom, smaller, more cost-effective, and faster models for evalution and more more advanced testset generation.
 
 :::{note}
-This is feature is still in beta access. You can requests for 
-[**early access**](https://calendly.com/shahules/30min) to try it out.
+We are still building out and gathering feedback in upcoming releases. You can requests for 
+[**early access**](https://calendly.com/shahules/30min) to try it out or share the challenges you face in this area, we would love your to hear your thoughts/challenges here.
 :::
 
-The Ragas metrics can also be used with other LLM observability tools like
+#TODO: add list of monitoring integration.
+
+You can also use the Ragas metrics with other LLM observability tools like
 [Langsmith](https://www.langchain.com/langsmith) and
 [Langfuse](https://langfuse.com/) to get model-based feedback about various
 aspects of you application like those mentioned below
