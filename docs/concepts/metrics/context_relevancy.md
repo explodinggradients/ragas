@@ -7,7 +7,7 @@ Ideally, the retrieved context should exclusively contain essential information 
 
 ```{math}
 :label: context_relevancy
-\text{context relevancy} = {|S| \over |\text{Total number of sentences in retrived context}|}
+\text{context relevancy} = {|S| \over |\text{Total number of sentences in retrieved context}|}
 ```
 
 ```{hint}
