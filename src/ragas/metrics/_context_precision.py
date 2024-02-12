@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 CONTEXT_PRECISION = Prompt(
     name="context_precision",
-    instruction="""Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "1" if useful and "0" if not. """,
+    instruction="""Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "1" if useful and "0" if not with json output. """,
     examples=[
         {
             "question": """What can you tell me about albert Albert Einstein?""",
