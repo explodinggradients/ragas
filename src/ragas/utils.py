@@ -7,6 +7,9 @@ from functools import lru_cache
 
 import numpy as np
 
+if t.TYPE_CHECKING:
+    pass
+
 DEBUG_ENV_VAR = "RAGAS_DEBUG"
 
 
@@ -57,3 +60,14 @@ def is_nan(x):
         return np.isnan(x)
     except TypeError:
         return False
+
+
+def get_feature_language(feature):
+    from ragas.llms.prompt import Prompt
+
+    languags = [
+        value.language
+        for name, value in vars(feature).items()
+        if isinstance(value, Prompt)
+    ]
+    return languags[0] if len(languags) > 0 else None
