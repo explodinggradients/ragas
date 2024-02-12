@@ -21,13 +21,18 @@ def test_evaluation_event():
     from ragas._analytics import EvaluationEvent
 
     evaluation_event = EvaluationEvent(
-        event_type="evaluation", metrics=["harmfulness"], num_rows=1, evaluation_mode=""
+        event_type="evaluation",
+        metrics=["harmfulness"],
+        num_rows=1,
+        evaluation_mode="",
+        language="english",
     )
 
     payload = dict(evaluation_event)
     assert isinstance(payload.get("user_id"), str)
     assert isinstance(payload.get("evaluation_mode"), str)
     assert isinstance(payload.get("metrics"), list)
+    assert isinstance(payload.get("language"), str)
 
 
 def setup_user_id_filepath(tmp_path, monkeypatch):
@@ -101,6 +106,7 @@ def test_testset_generation_tracking(monkeypatch):
         evolution_names=[e.__class__.__name__.lower() for e in distributions],
         evolution_percentages=[distributions[e] for e in distributions],
         num_rows=10,
+        language="english",
     )
 
     assert dict(testset_event_payload)["evolution_names"] == [
