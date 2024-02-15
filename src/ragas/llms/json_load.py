@@ -83,8 +83,8 @@ class JsonLoader:
         retry = 0
         while retry <= self.max_retries:
             try:
-                start, end = self._find_outermost_json(text)
-                return json.loads(text[start:end])
+                _json = self._load_all_jsons(text)
+                return _json[0] if len(_json) == 1 else _json
             except ValueError:
                 from ragas.llms.prompt import PromptValue
 
@@ -104,8 +104,8 @@ class JsonLoader:
         retry = 0
         while retry <= self.max_retries:
             try:
-                start, end = self._find_outermost_json(text)
-                return json.loads(text[start:end])
+                _json = self._load_all_jsons(text)
+                return _json[0] if len(_json) == 1 else _json
             except ValueError:
                 from ragas.llms.prompt import PromptValue
 
@@ -126,7 +126,7 @@ class JsonLoader:
         callbacks: Callbacks = None,
         is_async: bool = True,
         run_config: RunConfig = RunConfig(),
-    ):
+    ) -> t.Union[t.Dict, t.List]:
         if is_async:
             _asafe_load_with_retry = add_async_retry(self._asafe_load, run_config)
             return await _asafe_load_with_retry(text=text, llm=llm, callbacks=callbacks)
@@ -140,6 +140,16 @@ class JsonLoader:
                 None,
                 safe_load,
             )
+
+    def _load_all_jsons(self, text):
+        start, end = self._find_outermost_json(text)
+        _json = json.loads(text[start:end])
+        text = text.replace(text[start:end], "", 1)
+        start, end = self._find_outermost_json(text)
+        if (start, end) == (-1, -1):
+            return [_json]
+        else:
+            return [_json] + self._load_all_jsons(text)
 
     def _find_outermost_json(self, text):
         stack = []
