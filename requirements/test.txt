@@ -1,4 +1,4 @@
 pytest
 pytest-xdist[psutil]
 pytest-asyncio
-llama_index==0.9.44
+llama_index
