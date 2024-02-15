@@ -32,7 +32,7 @@ from ragas.utils import check_if_sum_is_close, get_feature_language, is_nan
 
 if t.TYPE_CHECKING:
     from langchain_core.documents import Document as LCDocument
-    from llama_index.readers.schema import Document as LlamaindexDocument
+    from llama_index.core.schema import Document as LlamaindexDocument
 
 logger = logging.getLogger(__name__)
 
