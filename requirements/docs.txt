@@ -4,4 +4,4 @@ myst-parser[linkify]
 sphinx_design
 astroid<3
 myst-nb
-llama_index==0.9.44
+llama_index
