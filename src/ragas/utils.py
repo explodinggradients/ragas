@@ -7,6 +7,10 @@ from functools import lru_cache
 
 import numpy as np
 
+if t.TYPE_CHECKING:
+    from ragas.metrics.base import Metric
+    from ragas.testset.evolutions import Evolution
+
 DEBUG_ENV_VAR = "RAGAS_DEBUG"
 
 
@@ -57,3 +61,14 @@ def is_nan(x):
         return np.isnan(x)
     except TypeError:
         return False
+
+
+def get_feature_language(feature: t.Union[Metric, Evolution]) -> t.Optional[str]:
+    from ragas.llms.prompt import Prompt
+
+    languags = [
+        value.language
+        for _, value in vars(feature).items()
+        if isinstance(value, Prompt)
+    ]
+    return languags[0] if len(languags) > 0 else None
