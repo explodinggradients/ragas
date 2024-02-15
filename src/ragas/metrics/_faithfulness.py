@@ -187,6 +187,7 @@ class Faithfulness(MetricWithLLM):
             is_async=is_async,
         )
 
+        assert isinstance(statements, dict), "Invalid JSON response"
         p = self._create_nli_prompt(row, statements.get("statements", []))
         nli_result = await self.llm.generate(p, callbacks=callbacks, is_async=is_async)
         json_output = await json_loader.safe_load(

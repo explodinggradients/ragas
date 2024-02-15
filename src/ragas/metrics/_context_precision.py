@@ -138,6 +138,7 @@ class ContextPrecision(MetricWithLLM):
             await json_loader.safe_load(item, self.llm, is_async=is_async)
             for item in responses
         ]
+        json_responses = t.cast(t.List[t.Dict], json_responses)
         score = self._calculate_average_precision(json_responses)
         return score
 

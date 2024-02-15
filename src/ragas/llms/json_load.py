@@ -126,7 +126,7 @@ class JsonLoader:
         callbacks: Callbacks = None,
         is_async: bool = True,
         run_config: RunConfig = RunConfig(),
-    ):
+    ) -> t.Union[t.Dict, t.List]:
         if is_async:
             _asafe_load_with_retry = add_async_retry(self._asafe_load, run_config)
             return await _asafe_load_with_retry(text=text, llm=llm, callbacks=callbacks)
