@@ -21,7 +21,7 @@ from ragas.run_config import RunConfig
 from ragas.testset.utils import rng
 
 if t.TYPE_CHECKING:
-    from llama_index.readers.schema import Document as LlamaindexDocument
+    from llama_index.core.schema import Document as LlamaindexDocument
 
     from ragas.testset.extractor import Extractor
 
