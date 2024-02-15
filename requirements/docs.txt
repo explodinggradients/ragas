@@ -1,0 +1,7 @@
+sphinx
+git+https://github.com/jjmachan/sphinxawesome-theme.git
+myst-parser[linkify]
+sphinx_design
+astroid<3
+myst-nb
+llama_index

@@ -2,21 +2,32 @@
 name = "ragas"
 dependencies = [
     "numpy",
-    "transformers",
-    "sentence-transformers",
     "datasets",
-    "protobuf<=3.20.0",
-    "langchain>=0.0.218",
-    "openai",
-    "pydantic<2.0"
+    "tiktoken",
+    "langchain",
+    "langchain-core",
+    "langchain-community",
+    "langchain_openai",
+    "openai>1",
+    "pysbd>=0.3.4",
+    "nest-asyncio",
+    "appdirs",
 ]
 dynamic = ["version", "readme"]
+
+[project.optional-dependencies]
+all = [
+    "sentence-transformers",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/plain"}
+
+[tool.ruff.lint]
+ignore = ["E501"]
 
 [build-system]
 requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]

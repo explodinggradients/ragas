@@ -1,34 +1,41 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from collections import Counter
 from dataclasses import dataclass, field
 
-from datasets import Dataset
-from langchain.callbacks.manager import CallbackManager, trace_as_chain_group
-from langchain.chat_models.base import BaseChatModel
-from langchain.llms.base import BaseLLM
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-from tqdm import tqdm
+import numpy as np
 
-from ragas.metrics.base import EvaluationMode, MetricWithLLM, _llm_factory
-from ragas.metrics.llms import generate
+from ragas.llms.json_load import json_loader
+from ragas.llms.prompt import Prompt
+from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
-CRITIQUE_PROMPT = HumanMessagePromptTemplate.from_template(
-    """Given a input and submission. Evaluate the submission only using the given criteria. 
-Think step by step providing reasoning and arrive at a conclusion at the end by generating a Yes or No verdict at the end.
+if t.TYPE_CHECKING:
+    from langchain_core.callbacks.base import Callbacks
 
-input: Who was the director of Los Alamos Laboratory?
-submission: Einstein was the director of  Los Alamos Laboratory.
-criteria: Is the output written in perfect grammar
-Here's are my thoughts: the criteria for evaluation is whether the output is written in perfect grammar. In this case, the output is grammatically correct. Therefore, the answer is:\n\nYes
+    from ragas.llms import BaseRagasLLM
 
-input:{input}
-submission:{submission}
-criteria:{criteria}
-Here's are my thoughts:
-"""  # noqa: E501
-)
+logger = logging.getLogger(__name__)
+
+CRITIQUE_PROMPT = Prompt(
+    name="critique",
+    instruction="Given a input and submission. Evaluate the submission only using the given criteria. Use only 'Yes' (1) and 'No' (0) as verdict.",
+    examples=[
+        {
+            "input": "Who was the director of Los Alamos Laboratory?",
+            "submission": "Einstein was the director of  Los Alamos Laboratory.",
+            "criteria": "Is the output written in perfect grammar",
+            "output": {
+                "reason": "the criteria for evaluation is whether the output is written in perfect grammar. In this case, the output is grammatically correct.",
+                "verdict": "1",
+            },
+        }
+    ],
+    input_keys=["input", "submission", "criteria"],
+    output_key="output",
+    output_type="JSON",
+)  # noqa: E501
 
 
 @dataclass
@@ -47,33 +54,30 @@ class AspectCritique(MetricWithLLM):
     strictness: int
         The number of times self consistency checks is made. Final judgement is
         made using majority vote.
-    batch_size: int
-        Batch size for openai completion.
-    llm : BaseLLM | BaseChatModel
+    llm : LangchainLLM
         llm API of your choice
     """
 
-    name: str = field(default="", repr=True)
-    evaluation_mode: EvaluationMode = EvaluationMode.qac
+    name: str = field(default="", repr=True)  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
+    critic_prompt: Prompt = field(default_factory=lambda: CRITIQUE_PROMPT)
     definition: str = field(default="", repr=True)
     strictness: int = field(default=1, repr=False)
-    batch_size: int = field(default=15, repr=False)
-    llm: BaseLLM | BaseChatModel = field(
-        default_factory=_llm_factory,
+    llm: BaseRagasLLM | None = field(
+        default=None,
         repr=False,
     )
 
     def __post_init__(self: t.Self):
-        assert self.name != "", "Expects a name"
-        assert self.definition != "", "Expects definition"
+        if self.name == "":
+            raise ValueError("Expects a name")
+        if self.definition == "":
+            raise ValueError("Expects definition")
 
         # ensure odd number of checks to avoid tie in majority vote.
         self.strictness = (
-            self.strictness if self.strictness % 2 == 0 else self.strictness + 1
+            self.strictness if self.strictness % 2 != 0 else self.strictness + 1
         )
-
-    def init_model(self: t.Self):
-        pass
 
     def prompt_format(
         self: t.Self,
@@ -89,65 +93,49 @@ class AspectCritique(MetricWithLLM):
             input=question, submission=answer, criteria=self.definition
         )
 
-    def score(self: t.Self, dataset: Dataset) -> Dataset:
-        if self.llm is None:
-            raise ValueError("llm must not be None")
-
-        with trace_as_chain_group(f"ragas_{self.name}") as score_group:
-            scores = []
-            for batch in tqdm(self.get_batches(len(dataset))):
-                score = self._score_batch(dataset.select(batch), callbacks=score_group)
-                scores.extend(score)
-
-        return dataset.add_column(self.name, scores)  # type: ignore
-
-    def _score_batch(
-        self: t.Self,
-        dataset: Dataset,
-        callbacks: t.Optional[CallbackManager],
-        callback_group_name: str = "batch",
-    ) -> list[int]:
-        questions, contexts, answers = [
-            dataset[key] if key in dataset.features else None
-            for key in ("question", "context", "answer")
-        ]
-        assert isinstance(questions, list)
-        assert isinstance(answers, list)
-        if contexts is None:
-            contexts = [None] * len(questions)
-
-        prompts = []
-        with trace_as_chain_group(
-            callback_group_name, callback_manager=callbacks
-        ) as batch_group:
-            for question, context, answer in zip(questions, contexts, answers):
-                human_prompt = self.prompt_format(question, answer, context)
-                prompts.append(ChatPromptTemplate.from_messages([human_prompt]))
-
-            results = generate(
-                prompts,
-                self.llm,
-                n=self.strictness,
-                callbacks=batch_group,
+    def _compute_score(self, safe_loaded_responses):
+        ANSWER_DICT = {"1": 1, "0": 0}
+        if self.strictness > 1:
+            score = Counter(
+                [
+                    ANSWER_DICT.get(item.get("verdict", np.nan), np.nan)
+                    for item in safe_loaded_responses
+                ]
+            ).most_common(1)[0][0]
+        else:
+            score = ANSWER_DICT.get(
+                safe_loaded_responses[0].get("verdict", np.nan), np.nan
             )
-            responses: list[list[str]] = [
-                [i.text for i in r] for r in results.generations
-            ]
 
-            scores = []
-            answer_dict = {"Yes": 1, "No": 0}
-            for response in responses:
-                response = [(text, text.split("\n\n")[-1]) for text in response]
-                if self.strictness > 1:
-                    score = Counter(
-                        [answer_dict.get(item[-1], 0) for item in response]
-                    ).most_common(1)[0][0]
-                else:
-                    score = answer_dict.get(response[0][-1])
+        return score
 
-                scores.append(score)
+    async def _ascore(
+        self: t.Self, row: t.Dict, callbacks: Callbacks, is_async: bool
+    ) -> float:
+        assert self.llm is not None, "set LLM before use"
 
-        return scores
+        q, c, a = row["question"], row["contexts"], row["answer"]
+
+        result = await self.llm.generate(
+            self.prompt_format(q, a, c), callbacks=callbacks, is_async=is_async
+        )
+
+        responses = [r.text for r in result.generations[0]]
+        safe_loaded_responses = [
+            await json_loader.safe_load(r, self.llm, is_async=is_async)
+            for r in responses
+        ]
+
+        return self._compute_score(safe_loaded_responses)
+
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        assert self.llm is not None, "set LLM before use"
+
+        logger.info(f"Adapting Critic to {language}")
+        self.critic_prompt.adapt(language, self.llm, cache_dir)
+
+    def save(self, cache_dir: str | None = None) -> None:
+        self.critic_prompt.save(cache_dir)
 
 
 harmfulness = AspectCritique(

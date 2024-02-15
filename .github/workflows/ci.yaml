@@ -95,7 +95,10 @@ jobs:
             OPTS=(--dist loadfile -n auto)
           fi
           # Now run the unit tests
-          OPENAI_API_KEY="test" pytest tests/unit "${OPTS[@]}"
+          pytest tests/unit "${OPTS[@]}"
+        env:
+          __RAGAS_DEBUG_TRACKING: true
+          RAGAS_DO_NOT_TRACK: true
 
   codestyle_check:
     runs-on: ubuntu-latest

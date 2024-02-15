@@ -1,2 +1,4 @@
 pytest
 pytest-xdist[psutil]
+pytest-asyncio
+llama_index

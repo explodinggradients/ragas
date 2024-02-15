@@ -1,38 +1,97 @@
 from __future__ import annotations
 
+import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import Dataset, concatenate_datasets
+from langchain_core.embeddings import Embeddings as LangchainEmbeddings
+from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
 from ragas._analytics import EvaluationEvent, track
-from ragas.metrics.base import Metric
+from ragas.callbacks import new_group
+from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
+from ragas.exceptions import ExceptionInRunner
+from ragas.executor import Executor
+from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
+from ragas.metrics._answer_correctness import AnswerCorrectness
+from ragas.metrics.base import Metric, MetricWithEmbeddings, MetricWithLLM
 from ragas.metrics.critique import AspectCritique
-from ragas.validation import validate_column_dtypes, validate_evaluation_modes
+from ragas.run_config import RunConfig
+
+# from ragas.metrics.critique import AspectCritique
+from ragas.validation import (
+    handle_deprecated_ground_truths,
+    remap_column_names,
+    validate_column_dtypes,
+    validate_evaluation_modes,
+)
+
+if t.TYPE_CHECKING:
+    from langchain_core.callbacks import Callbacks
 
 
 def evaluate(
     dataset: Dataset,
     metrics: list[Metric] | None = None,
+    llm: t.Optional[BaseRagasLLM] = None,
+    embeddings: t.Optional[BaseRagasEmbeddings] = None,
+    callbacks: Callbacks = [],
+    is_async: bool = False,
+    max_workers: t.Optional[int] = None,
+    run_config: t.Optional[RunConfig] = None,
+    raise_exceptions: bool = True,
+    column_map: t.Dict[str, str] = {},
 ) -> Result:
     """
     Run the evaluation on the dataset with different metrics
 
     Parameters
     ----------
-    dataset : Dataset[question: list[str], contexts: list[list[str]], answer: list[str]]
+    dataset : Dataset[question: list[str], contexts: list[list[str]], answer: list[str], ground_truths: list[list[str]]]
         The dataset in the format of ragas which the metrics will use to score the RAG
         pipeline with
     metrics : list[Metric] , optional
         List of metrics to use for evaluation. If not provided then ragas will run the
         evaluation on the best set of metrics to give a complete view.
+    llm: BaseRagasLLM, optional
+        The language model to use for the metrics. If not provided then ragas will use
+        the default language model. This can we overridden by the llm specified in
+        the metric level with `metric.llm`.
+    embeddings: BaseRagasEmbeddings, optional
+        The embeddings to use for the metrics. If not provided then ragas will use
+        the default embeddings. This can we overridden by the embeddings specified in
+        the metric level with `metric.embeddings`.
+    callbacks: Callbacks, optional
+        Lifecycle Langchain Callbacks to run during evaluation. Check the
+        [langchain documentation](https://python.langchain.com/docs/modules/callbacks/)
+        for more information.
+    is_async: bool, optional
+        Whether to run the evaluation in async mode or not. If set to True then the
+        evaluation is run by calling the `metric.ascore` method. In case the llm or
+        embeddings does not support async then the evaluation can be run in sync mode
+        with `is_async=False`. Default is False.
+    max_workers: int, optional
+        The number of workers to use for the evaluation. This is used by the
+        `ThreadpoolExecutor` to run the evaluation in sync mode.
+    run_config: RunConfig, optional
+        Configuration for runtime settings like timeout and retries. If not provided,
+        default values are used.
+    raise_exceptions: bool, optional
+        Whether to raise exceptions or not. If set to True then the evaluation will
+        raise an exception if any of the metrics fail. If set to False then the
+        evaluation will return `np.nan` for the row that failed. Default is True.
+    column_map : dict[str, str], optional
+        The column names of the dataset to use for evaluation. If the column names of
+        the dataset are different from the default ones then you can provide the
+        mapping as a dictionary here. Example: If the dataset column name is contexts_v1,
+        column_map can be given as {"contexts":"contexts_v1"}
 
     Returns
     -------
     Result
         Result object containing the scores of each metric. You can use this do analysis
-        later. If the top 3 metrics are provided then it also returns the `ragas_score`
-        for the entire pipeline.
+        later.
 
     Raises
     ------
@@ -53,34 +112,140 @@ def evaluate(
     })
 
     >>> result = evaluate(dataset)
-    >>> print(result["ragas_score"])
-    {'ragas_score': 0.860, 'context_relavency': 0.817, 'faithfulness': 0.892,
+    >>> print(result)
+    {'context_precision': 0.817,
+    'faithfulness': 0.892,
     'answer_relevancy': 0.874}
     ```
     """
     if dataset is None:
         raise ValueError("Provide dataset!")
 
+    # default run_config
+    if run_config is None:
+        run_config = RunConfig()
+    # default metrics
     if metrics is None:
-        from ragas.metrics import answer_relevancy, context_relevancy, faithfulness
+        from ragas.metrics import (
+            answer_relevancy,
+            context_precision,
+            context_recall,
+            faithfulness,
+        )
 
-        metrics = [answer_relevancy, context_relevancy, faithfulness]
+        metrics = [answer_relevancy, context_precision, faithfulness, context_recall]
 
+    # remap column names from the dataset
+    dataset = remap_column_names(dataset, column_map)
     # validation
+    dataset = handle_deprecated_ground_truths(dataset)
     validate_evaluation_modes(dataset, metrics)
     validate_column_dtypes(dataset)
 
-    # run the evaluation on dataset with different metrics
-    # initialize all the models in the metrics
-    [m.init_model() for m in metrics]
+    # set the llm and embeddings
+    if llm is None:
+        from ragas.llms import llm_factory
 
-    scores = []
+        llm = llm_factory()
+    elif isinstance(llm, LangchainLLM):
+        llm = LangchainLLMWrapper(llm, run_config=run_config)
+    if embeddings is None:
+        from ragas.embeddings.base import embedding_factory
+
+        embeddings = embedding_factory()
+    elif isinstance(embeddings, LangchainEmbeddings):
+        embeddings = LangchainEmbeddingsWrapper(embeddings)
+    # init llms and embeddings
     binary_metrics = []
-    for metric in metrics:
+    llm_changed: t.List[int] = []
+    embeddings_changed: t.List[int] = []
+    answer_correctness_is_set = -1
+    for i, metric in enumerate(metrics):
         if isinstance(metric, AspectCritique):
             binary_metrics.append(metric.name)
-        print(f"evaluating with [{metric.name}]")
-        scores.append(metric.score(dataset).select_columns(metric.name))
+        if isinstance(metric, MetricWithLLM):
+            if metric.llm is None:
+                metric.llm = llm
+                llm_changed.append(i)
+        if isinstance(metric, MetricWithEmbeddings):
+            if metric.embeddings is None:
+                metric.embeddings = embeddings
+                embeddings_changed.append(i)
+        if isinstance(metric, AnswerCorrectness):
+            if metric.answer_similarity is None:
+                answer_correctness_is_set = i
+
+    # initialize all the models in the metrics
+    [m.init(run_config) for m in metrics]
+
+    executor = Executor(
+        desc="Evaluating",
+        keep_progress_bar=True,
+        raise_exceptions=raise_exceptions,
+    )
+    # new evaluation chain
+    row_run_managers = []
+    evaluation_rm, evaluation_group_cm = new_group(
+        name="ragas evaluation", inputs={}, callbacks=callbacks, is_async=is_async
+    )
+    for i, row in enumerate(dataset):
+        row = t.cast(t.Dict[str, t.Any], row)
+        row_rm, row_group_cm = new_group(
+            name=f"row {i}",
+            inputs=row,
+            callbacks=evaluation_group_cm,
+            is_async=is_async,
+        )
+        row_run_managers.append((row_rm, row_group_cm))
+        [
+            executor.submit(
+                metric.ascore, row, row_group_cm, is_async, name=f"{metric.name}-{i}"
+            )
+            for metric in metrics
+        ]
+
+    scores = []
+    try:
+        # get the results
+        results = executor.results()
+        if results == []:
+            raise ExceptionInRunner()
+
+        # convert results to dataset_like
+        for i, _ in enumerate(dataset):
+            s = {}
+            for j, m in enumerate(metrics):
+                s[m.name] = results[len(metrics) * i + j]
+            scores.append(s)
+            # close the row chain
+            row_rm, row_group_cm = row_run_managers[i]
+            if not row_group_cm.ended:
+                row_rm.on_chain_end(s)
+
+    # run evaluation task
+    except Exception as e:
+        if not evaluation_group_cm.ended:
+            evaluation_rm.on_chain_error(e)
+
+        raise e
+    else:
+        result = Result(
+            scores=Dataset.from_list(scores),
+            dataset=dataset,
+            binary_columns=binary_metrics,
+        )
+        if not evaluation_group_cm.ended:
+            evaluation_rm.on_chain_end(result)
+    finally:
+        # reset llms and embeddings if changed
+        for i in llm_changed:
+            t.cast(MetricWithLLM, metrics[i]).llm = None
+        for i in embeddings_changed:
+            t.cast(MetricWithEmbeddings, metrics[i]).embeddings = None
+        if answer_correctness_is_set != -1:
+            t.cast(
+                AnswerCorrectness, metrics[answer_correctness_is_set]
+            ).answer_similarity = None
 
     # log the evaluation event
     metrics_names = [m.name for m in metrics]
@@ -92,32 +257,23 @@ def evaluate(
             num_rows=dataset.shape[0],
         )
     )
-
-    return Result(
-        scores=concatenate_datasets(scores, axis=1),
-        dataset=dataset,
-        binary_columns=binary_metrics,
-    )
+    return result
 
 
 @dataclass
 class Result(dict):
     scores: Dataset
-    dataset: Dataset | None = None
-    ragas_score: float | None = None
-    binary_columns: list[str] = field(default_factory=list)
+    dataset: t.Optional[Dataset] = None
+    binary_columns: t.List[str] = field(default_factory=list)
 
     def __post_init__(self):
         values = []
-        for cn in self.scores.column_names:
-            value = np.mean(self.scores[cn])
+        for cn in self.scores[0].keys():
+            value = np.nanmean(self.scores[cn])
             self[cn] = value
             if cn not in self.binary_columns:
-                values.append(value)
-
-        # harmonic mean of all the scores we have
-        if len(values) > 1:
-            self["ragas_score"] = len(values) / np.sum(1.0 / np.array(values))
+                value = t.cast(float, value)
+                values.append(value + 1e-10)
 
     def to_pandas(self, batch_size: int | None = None, batched: bool = False):
         if self.dataset is None:
@@ -129,9 +285,5 @@ class Result(dict):
 
     def __repr__(self) -> str:
         scores = self.copy()
-        score_strs = []
-        if "ragas_score" in scores:
-            ragas_score = scores.pop("ragas_score")
-            score_strs.append(f"'ragas_score': {ragas_score:0.4f}")
-        score_strs.extend([f"'{k}': {v:0.4f}" for k, v in scores.items()])
+        score_strs = [f"'{k}': {v:0.4f}" for k, v in scores.items()]
         return "{" + ", ".join(score_strs) + "}"
