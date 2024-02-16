@@ -14,7 +14,7 @@ We are still developing and gathering feedback for upcoming releases. You can re
 
 Additionally, you can use the RAG metrics with other Machine Learning Model (MLM) observability tools like
 - [Langsmith](../howtos/integrations/langsmith.ipynb)
-- [Phoenix (Arize)](https://github.com/Arize-ai/phoenix)
+- [Phoenix (Arize)](../howtos/integrations/ragas-arize.ipynb)
 - [Langfuse](../howtos/integrations/langfuse.ipynb)
 - [OpenLayer](https://openlayer.com/)
 

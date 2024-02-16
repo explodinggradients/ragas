@@ -1,5 +1,5 @@
 (get-started)=
-# Get Started
+# 🚀 Get Started
 
 :::{toctree}
 :maxdepth: 1
