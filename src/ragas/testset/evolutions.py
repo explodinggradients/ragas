@@ -72,7 +72,7 @@ class Evolution:
             keyphrases=[phrase for n in nodes.nodes for phrase in n.keyphrases],
         )
 
-        embed_dim = len(nodes.nodes[0].embedding) if nodes.nodes[0].embedding else None
+        embed_dim = len(nodes.nodes[0].embedding) if nodes.nodes[0].embedding is not None else None
         if embed_dim:
             node_embeddings = np.array([n.embedding for n in nodes.nodes]).reshape(
                 -1, embed_dim
