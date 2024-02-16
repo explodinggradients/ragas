@@ -8,9 +8,9 @@ from ragas import __version__
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "ragas"
-copyright = "2023, ExplodingGradients"
+copyright = "2024, ExplodingGradients"
 author = "ExplodingGradients"
-release = "0.0.16"
+release = __version__
 print("RAGAS VERSION", __version__)
 
 # -- General configuration ---------------------------------------------------
@@ -34,7 +34,6 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx_design",
     "sphinxawesome_theme.highlighting",
-    # "sphinxawesome_theme.docsearch",
     "myst_nb",
 ]
 

@@ -31,7 +31,7 @@ for document in documents:
 ```
 :::
 
-At this stage, we have a set of documents ready, which will be used as the foundation for creating synthetic Question/Context/Answer/Ground_Truth samples.
+At this stage, we have a set of documents ready, which will be used as the foundation for creating synthetic `Question/Context/Answer/Ground_Truth` samples.
 
 ## Data Generation
 
