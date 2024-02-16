@@ -87,12 +87,14 @@ class EvaluationEvent(BaseEvent):
     metrics: t.List[str]
     evaluation_mode: str
     num_rows: int
+    language: str
 
 
 class TesetGenerationEvent(BaseEvent):
     evolution_names: t.List[str]
     evolution_percentages: t.List[float]
     num_rows: int
+    language: str
 
 
 @silent

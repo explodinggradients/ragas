@@ -19,27 +19,39 @@ if t.TYPE_CHECKING:
 
 QUESTION_GEN = Prompt(
     name="question_generation",
-    instruction="""Generate a question for the given answer and Identify if answer is noncommittal""",
+    instruction="""Generate a question for the given answer and Identify if answer is noncommittal. Give noncommittal as 1 if the answer is noncommittal and 0 if the answer is committal. A noncommittal answer is one that is evasive, vague, or ambiguous. For example, "I don't know" or "I'm not sure" are noncommittal answers.""",
     examples=[
         {
             "answer": """Albert Einstein was born in Germany.""",
             "context": """Albert Einstein was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time""",
-            "output": """{"question":"Where was Albert Einstein born?","noncommittal":false}""",
+            "output": {
+                "question": "Where was Albert Einstein born?",
+                "noncommittal": 0,
+            },
         },
         {
             "answer": """It can change its skin color based on the temperature of its environment.""",
             "context": """A recent scientific study has discovered a new species of frog in the Amazon rainforest that has the unique ability to change its skin color based on the temperature of its environment.""",
-            "output": """{"question":"What unique ability does the newly discovered species of frog have?","noncommittal":false}""",
+            "output": {
+                "question": "What unique ability does the newly discovered species of frog have?",
+                "noncommittal": 0,
+            },
         },
         {
             "answer": """Everest""",
             "context": """The tallest mountain on Earth, measured from sea level, is a renowned peak located in the Himalayas.""",
-            "output": """{"question":"What is the tallest mountain on Earth?","noncommittal":false}""",
+            "output": {
+                "question": "What is the tallest mountain on Earth?",
+                "noncommittal": 0,
+            },
         },
         {
             "answer": """I don't know about the  groundbreaking feature of the smartphone invented in 2023 as am unaware of information beyond 2022. """,
             "context": """In 2023, a groundbreaking invention was announced: a smartphone with a battery life of one month, revolutionizing the way people use mobile technology.""",
-            "output": """{"question":"What was the groundbreaking feature of the smartphone invented in 2023?", "noncommittal":true}""",
+            "output": {
+                "question": "What was the groundbreaking feature of the smartphone invented in 2023?",
+                "noncommittal": 1,
+            },
         },
     ],
     input_keys=["answer", "context"],
@@ -97,7 +109,7 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
         ]
         committal = np.any(
             [
-                item.get("noncommittal", False)
+                bool(item.get("noncommittal", 0))
                 for item in response
                 if isinstance(item, dict)
             ]
