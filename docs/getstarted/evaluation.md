@@ -1,5 +1,5 @@
 (get-started-evaluation)=
-# Evaluate Your Testset
+# Evaluate your Testset
 
 Welcome to the ragas quickstart. We're going to get you up and running with ragas as quickly as you can so that you can go back to improving your Retrieval Augmented Generation pipelines while this library makes sure your changes are improving your entire pipeline.
 

@@ -25,21 +25,21 @@ If you have any questions about Ragas, feel free to join and ask in the
 
 Let’s get started! 🏁
 
-:::{card} Synthetic Test data Generation
+:::{card} Generate a Synthetic Testset
 :link: get-started-testset-generation
 :link-type: ref
 
 If you want to learn how to generate a synthetic testset to get started.
 :::
 
-:::{card} Ragas Metrics and Evaluation
+:::{card} Evaluate your Testset
 :link: get-started-evaluation
 :link-type: ref
 
 If your are looking to evaluate your RAG pipeline against your testset (your own dataset or synthetic).
 :::
 
-:::{card} Monitoring
+:::{card} Monitor your RAG in Production
 :link: get-started-monitoring
 :link-type: ref
 

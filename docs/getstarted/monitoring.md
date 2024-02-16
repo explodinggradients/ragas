@@ -1,5 +1,5 @@
 (get-started-monitoring)=
-# Monitor Your RAG in Production
+# Monitor your RAG in Production
 
 Maintaining the quality and performance of a RAG application in a production environment can be challenging. Ragas currently provides the basic building blocks that you can use for production quality monitoring, offering valuable insights into your application's performance. But we are also working towards building more advanced production monitoring solution by trying to tackle 3 questions
 
