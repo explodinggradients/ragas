@@ -1,7 +1,7 @@
 (get-started-testset-generation)=
-# Generate a Synthetic Testset
+# Generate a Synthetic Test Set
 
-This tutorial is designed to help you create a synthetic evaluation dataset for assessing your RAG pipeline. To achieve this, we will utilize open-ai models, so please ensure you have your OpenAI API key ready and accessible within your environment.
+This tutorial is designed to help you create a synthetic evaluation dataset for assessing your RAG pipeline. To accomplish this, we will utilize OpenAI models. Please ensure you have your OpenAI API key ready and accessible within your environment.
 
 ```{code-block} python
 import os
@@ -11,7 +11,7 @@ os.environ["OPENAI_API_KEY"] = "your-openai-key"
 
 ## Documents
 
-To begin, we require a collection of documents to generate synthetic Question/Context/Answer samples. Here, we will employ the langchain document loader to load documents.
+We first need a collection of documents to generate synthetic `Question/Context/Answer/Ground_Truth` samples. For this, we'll use the LangChain document loader to load documents.
 
 ```{code-block} python
 :caption: Load documents from directory
@@ -21,9 +21,9 @@ documents = loader.load()
 ```
 
 :::{note}
-Each Document object contains a metadata dictionary, which can be used to store additional information about the document which can be accessed with  `Document.metadata`. Please ensure that the metadata dictionary contains a key called `file_name` as this will be used in the generation process. The `file_name` attribute in metadata is used to identify chunks belonging to the same document. For example, pages belonging to the same research publication can be identifies using filename.
+Each Document object contains a metadata dictionary, which can be used to store additional information about the document accessible via `Document.metadata`. Please ensure that the metadata dictionary contains a key called `file_name`, as this will be used in the generation process. The `file_name` attribute in metadata is used to identify chunks belonging to the same document. For instance, pages belonging to the same research publication can be identified using filename.
 
-An example of how to do this is shown below.
+Here's an example of how to do this:
 
 ```{code-block} python
 for document in documents:
@@ -31,11 +31,11 @@ for document in documents:
 ```
 :::
 
-At this point, we have a set of documents at our disposal, which will serve as the basis for creating synthetic Question/Context/Answer triplets.
+At this stage, we have a set of documents ready, which will be used as the foundation for creating synthetic Question/Context/Answer/Ground_Truth samples.
 
 ## Data Generation
 
-We will now import and use Ragas' `Testsetgenerator` to promptly generate a synthetic test set from the loaded documents.
+We will now import and use Ragas' `TestsetGenerator` to swiftly generate a synthetic test set from the loaded documents.
 
 ```{code-block} python
 :caption: Create 10 samples using default configuration
