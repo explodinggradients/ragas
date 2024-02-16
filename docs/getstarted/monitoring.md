@@ -1,33 +1,29 @@
 (get-started-monitoring)=
 # Monitor your RAG in Production
 
-Maintaining the quality and performance of a RAG application in a production environment can be challenging. Ragas currently provides the basic building blocks that you can use for production quality monitoring, offering valuable insights into your application's performance. But we are also working towards building more advanced production monitoring solution by trying to tackle 3 questions
+Maintaining the quality and performance of a RAG application in a production environment can be challenging. RAG currently provides the essential building blocks that you can use for production-quality monitoring, offering valuable insights into your application's performance. However, we are also working towards building a more advanced production monitoring solution by addressing three questions:
 
-1. How can we keep the distribution of your production dataset consistent with your testset.
-2. How can we effectively extract insights from explicit and implicit signals your users provide to infer the quality of your RAG application and the areas that need your attention.
-3. Constructing custom, smaller, more cost-effective, and faster models for evalution and more more advanced testset generation.
+1. How can we ensure the distribution of your production dataset remains consistent with your test set?
+2. How can we effectively extract insights from explicit and implicit signals your users provide to infer the quality of your RAG application and identify areas that require attention?
+3. How can we construct custom, smaller, more cost-effective and faster models for evaluation and more advanced test set generation?
 
 :::{note}
-We are still building out and gathering feedback in upcoming releases. You can requests for 
-[**early access**](https://calendly.com/shahules/30min) to try it out or share the challenges you face in this area, we would love your to hear your thoughts/challenges here.
+We are still developing and gathering feedback for upcoming releases. You can request 
+[**early access**](https://calendly.com/shahules/30min) to try it out or share the challenges you face in this area. We would love to hear your thoughts and challenges.
 :::
 
-#TODO: add list of monitoring integration.
+Additionally, you can use the RAG metrics with other Machine Learning Model (MLM) observability tools like
+- [Langsmith](../howtos/integrations/langsmith.ipynb)
+- [Phoenix (Arize)](https://github.com/Arize-ai/phoenix)
+- [Langfuse](../howtos/integrations/langfuse.ipynb)
+- [OpenLayer](https://openlayer.com/)
 
-You can also use the Ragas metrics with other LLM observability tools like
-[Langsmith](https://www.langchain.com/langsmith) and
-[Langfuse](https://langfuse.com/) to get model-based feedback about various
-aspects of you application like those mentioned below
-
-:::{seealso}
-[Langfuse Integration](../howtos/integrations/langfuse.ipynb) to see Ragas
-monitoring in action within the Langfuse dashboard and how to set it up
-:::
+to get model-based feedback about various aspects of your application, such as those mentioned below:
 
 ## Aspects to Monitor
 
 1. Faithfulness: This feature assists in identifying and quantifying instances of hallucinations.
 2. Bad retrieval: This feature helps identify and quantify poor context retrievals.
-3. Bad response: This feature helps in recognizing and quantifying evasive, harmful, or toxic responses.
-4. Bad format: This feature helps in detecting and quantifying responses with incorrect formatting.
-5. Custom use-case: For monitoring other critical aspects that are specific to your use case. [Talk to founders](https://calendly.com/shahules/30min)
+3. Bad response: This feature assists in recognizing and quantifying evasive, harmful, or toxic responses.
+4. Bad format: This feature enables the detection and quantification of responses with incorrect formatting.
+5. Custom use-case: For monitoring other critical aspects that are specific to your use case, [Talk to founders](https://calendly.com/shahules/30min).
