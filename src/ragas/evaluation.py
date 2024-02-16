@@ -18,6 +18,7 @@ from ragas.metrics._answer_correctness import AnswerCorrectness
 from ragas.metrics.base import Metric, MetricWithEmbeddings, MetricWithLLM
 from ragas.metrics.critique import AspectCritique
 from ragas.run_config import RunConfig
+from ragas.utils import get_feature_language
 
 # from ragas.metrics.critique import AspectCritique
 from ragas.validation import (
@@ -249,12 +250,15 @@ def evaluate(
 
     # log the evaluation event
     metrics_names = [m.name for m in metrics]
+    metric_lang = [get_feature_language(m) for m in metrics]
+    metric_lang = np.unique([m for m in metric_lang if m is not None])
     track(
         EvaluationEvent(
             event_type="evaluation",
             metrics=metrics_names,
             evaluation_mode="",
             num_rows=dataset.shape[0],
+            language=metric_lang[0] if len(metric_lang) > 0 else "",
         )
     )
     return result

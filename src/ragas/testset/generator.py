@@ -28,11 +28,11 @@ from ragas.testset.evolutions import (
 )
 from ragas.testset.extractor import KeyphraseExtractor
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
-from ragas.utils import check_if_sum_is_close, is_nan
+from ragas.utils import check_if_sum_is_close, get_feature_language, is_nan
 
 if t.TYPE_CHECKING:
     from langchain_core.documents import Document as LCDocument
-    from llama_index.readers.schema import Document as LlamaindexDocument
+    from llama_index.core.schema import Document as LlamaindexDocument
 
 logger = logging.getLogger(__name__)
 
@@ -251,12 +251,15 @@ class TestsetGenerator:
         # due to failed evolutions. MaxRetriesExceeded is a common reason
         test_data_rows = [r for r in test_data_rows if not is_nan(r)]
         test_dataset = TestDataset(test_data=test_data_rows)
+        evol_lang = [get_feature_language(e) for e in distributions]
+        evol_lang = [e for e in evol_lang if e is not None]
         track(
             TesetGenerationEvent(
                 event_type="testset_generation",
                 evolution_names=[e.__class__.__name__.lower() for e in distributions],
                 evolution_percentages=[distributions[e] for e in distributions],
                 num_rows=len(test_dataset.test_data),
+                language=evol_lang[0] if len(evol_lang) > 0 else "",
             )
         )
 

@@ -195,7 +195,9 @@ class Prompt(BaseModel):
                     output = json.loads(output)
                 if isinstance(output, dict):
                     output_keys.append(get_all_keys(output))
-                elif isinstance(output, list):
+                elif isinstance(output, list) and all(
+                    isinstance(item, dict) for item in output
+                ):
                     output_keys.append([get_all_keys(item) for item in output])
 
         # NOTE: this is a slow loop, consider Executor to fasten this
@@ -223,11 +225,14 @@ class Prompt(BaseModel):
 
             if self.output_type.lower() == "json":
                 output = example_dict[self.output_key]
+                print(output)
                 if isinstance(output, dict):
                     assert (
                         set(output.keys()) == output_keys[i]
                     ), "Adapted output keys do not match with the original output keys"
-                elif isinstance(output, list):
+                elif isinstance(output, list) and all(
+                    isinstance(item, dict) for item in output
+                ):
                     assert all(
                         set(item.keys()) in output_keys[i] for item in output
                     ), "Adapted output keys do not match with the original output keys"
