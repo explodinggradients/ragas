@@ -1,27 +1,26 @@
 (get-started-evaluation)=
-# Evaluate Your Testset
+# Evaluating Your Test Set
 
-Once you have your testset ready (ether you create your own or you can use the [sythetic testset_generation module](get-started-testset-generation)), it's time to evaluate your RAG pipeline. Our aim is to get you up and running with Ragas as quickly as possible, so that you can focus on improving your Retrieval Augmented Generation pipelines while this library ensures your changes are enhancing your entire pipeline.
+Once your test set is ready (whether you've created your own or used the [synthetic test set generation module](get-started-testset-generation)), it's time to evaluate your RAG pipeline. Our aim is to help you set up with Ragas as quickly as possible so that you can focus on enhancing your Retrieval Augmented Generation pipelines while this library ensures your changes are improving the entire pipeline.
 
-
-This guide uses OpenAI for running some metrics, so ensure you have your OpenAI key ready and available in your environment.
+This guide uses OpenAI for running some metrics, so make sure you have your OpenAI key ready and available in your environment.
 
 ```python
 import os
 os.environ["OPENAI_API_KEY"] = "your-openai-key"
 ```
 :::{note}
-By default, these metrics are using OpenAI's API to compute the score. If you are using this metric, make sure you set the environment key `OPENAI_API_KEY` with your API key. You can also try other LLMs for evaluation, check the [LLM guide](../howtos/customisations/llms.ipynb) to learn more.
+By default, these metrics use OpenAI's API to compute the score. If you're using this metric, ensure that you've set the environment key `OPENAI_API_KEY` with your API key. You can also try other LLMs for evaluation, check the [LLM guide](../howtos/customisations/llms.ipynb) to learn more.
 :::
 
-To kick things off, let's start with the data.
+Let's start with the data.
 
 ## The Data
 
-For this tutorial, we are going to use an example dataset from one of the baselines we created for the [Amnesty QA](https://huggingface.co/datasets/explodinggradients/amnesty_qa) dataset. The dataset has the following columns:
+For this tutorial, we'll use an example dataset from one of the baselines we created for the [Amnesty QA](https://huggingface.co/datasets/explodinggradients/amnesty_qa) dataset. The dataset contains the following columns:
 
 - question: `list[str]` - These are the questions your RAG pipeline will be evaluated on.
-- answer: `list[str]` - The answer generated from the RAG pipeline and given to the user.
+- answer: `list[str]` - The answer generated from the RAG pipeline and provided to the user.
 - contexts: `list[list[str]]` - The contexts which were passed into the LLM to answer the question.
 - ground_truth: `list[str]` - The ground truth answer to the questions.
 
@@ -37,17 +36,17 @@ amnesty_qa
 ```
 
 :::{seealso}
-See [testset generation](./testset_generation.md) to learn how to generate your own synthetic data for evaluation.
+See [test set generation](./testset_generation.md) to learn how to generate your own synthetic data for evaluation.
 :::
 
 ## Metrics
 
-Ragas provides you with a few metrics to evaluate the different aspects of your RAG systems. 
+Ragas provides several metrics to evaluate various aspects of your RAG systems:
 
-1. Retriever: Offers `context_precision` and `context_recall` which measure the performance of your retrieval system.
-2. Generator (LLM): Offers `faithfulness` which measures hallucinations and `answer_relevancy` which measures how to the point the answers are to the question.
+1. Retriever: Offers `context_precision` and `context_recall` that measure the performance of your retrieval system.
+2. Generator (LLM): Provides `faithfulness` that measures hallucinations and `answer_relevancy` that measures how on point the answers are to the question.
 
-There are a lot more metrics availble in Ragas, check the [metrics guide](ragas-metrics) to learn more.
+There are numerous other metrics available in Ragas, check the [metrics guide](ragas-metrics) to learn more.
 
 Now, let's import these metrics and understand more about what they denote.
 
@@ -60,19 +59,18 @@ from ragas.metrics import (
     context_precision,
 )
 ```
-Here you can see that we are using 4 metrics, but what do they represent?
+Here we're using four metrics, but what do they represent?
 
-1. Faithfulness - The factual consistency of the answer to the context based on the question.
-2. Context_precision - A measure of how relevant the retrieved context is to the question. Conveys quality of the retrieval pipeline.
-3. Answer_relevancy - A measure of how relevant the answer is to the question.
-4. Context_recall - Measures the ability of the retriever to retrieve all the necessary information needed to answer the question.
+1. Faithfulness - Measures the factual consistency of the answer to the context based on the question.
+2. Context_precision - Measures how relevant the retrieved context is to the question, conveying the quality of the retrieval pipeline.
+3. Answer_relevancy - Measures how relevant the answer is to the question.
+4. Context_recall - Measures the retriever's ability to retrieve all necessary information required to answer the question.
 
-Again, if you want to explore other metrics, check the [metrics guide](ragas-metrics).
-
+To explore other metrics, check the [metrics guide](ragas-metrics).
 
 ## Evaluation
 
-Running the evaluation is as simple as calling `evaluate` on the `Dataset` with the metrics of your choice.
+Running the evaluation is as simple as calling `evaluate` on the `Dataset` with your chosen metrics.
 
 ```{code-block} python
 :caption: evaluate using sample dataset
@@ -90,9 +88,9 @@ result = evaluate(
 
 result
 ```
-And there you have it, all the scores you need.
+There you have it, all the scores you need.
 
-If you want to dig into the results and figure out examples where your pipeline performed poorly or exceptionally well, you can easily convert it into a pandas DataFrame and use your standard analytics tools too!
+If you want to delve deeper into the results and identify examples where your pipeline performed poorly or exceptionally well, you can convert it into a pandas DataFrame and use your standard analytics tools!
 
 ```{code-block} python
 :caption: export results
@@ -103,6 +101,6 @@ df.head()
 <img src="../_static/imgs/quickstart-output.png" alt="quickstart-outputs" width="800" height="600" />
 </p>
 
-And that's it!
+That's all!
 
-If you have any suggestions, feedback, or issues, please share them in the [issue section](https://github.com/explodinggradients/ragas/issues). We value your input.
+If you have any suggestions, feedback or issues, please share them in the [issue section](https://github.com/explodinggradients/ragas/issues). We value your input.
