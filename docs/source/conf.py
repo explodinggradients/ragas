@@ -39,7 +39,14 @@ extensions = [
 
 source_suffix = [".rst", ".md"]
 templates_path = ["_templates"]
-exclude_patterns = ["_build"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "README.md",
+    ".ipynb_checkpoints",
+]
+
 myst_number_code_blocks = ["typescript"]
 
 # algolia search

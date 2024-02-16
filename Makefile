@@ -34,10 +34,12 @@ test-e2e: ## Run end2end tests
 	
 # Docs
 docs-site: ## Build and serve documentation
-	@sphinx-build -nW --keep-going -j 4 -b html $(GIT_ROOT)/docs/ $(GIT_ROOT)/docs/_build/html
-	@python -m http.server --directory $(GIT_ROOT)/docs/_build/html
+	@sphinx-build -nW --keep-going -j 4 -b html $(GIT_ROOT)/docs/source $(GIT_ROOT)/docs/build/html
+	@python -m http.server --directory $(GIT_ROOT)/docs/build/html
 watch-docs: ## Build and watch documentation
-	sphinx-autobuild docs docs/_build/html --watch $(GIT_ROOT)/src/ --ignore ".ipynb"
+	rm -rf $(GIT_ROOT)/docs/_build
+	echo "building doc site..."
+	sphinx-reload docs/
 
 # Benchmarks
 run-benchmarks-eval: ## Run benchmarks for Evaluation
