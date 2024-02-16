@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 CONTEXT_RECALL_RA = Prompt(
     name="context_recall",
-    instruction="""Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not. Use only "Yes" (1) or "No" (0) as a binary classification. Output json with reason.""",
+    instruction="""Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not. Return a json object with keys "attributed" and "reason". Set "attributed" to "1" if the answer can be attributed to the context, "0" if not. Set "reason" to the reason for the decision.""",
     examples=[
         {
             "question": """What can you tell me about albert Albert Einstein?""",
@@ -29,22 +29,22 @@ CONTEXT_RECALL_RA = Prompt(
                 {
                     "statement_1": "Albert Einstein, born on 14 March 1879, was a German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time.",
                     "reason": "The date of birth of Einstein is mentioned clearly in the context.",
-                    "Attributed": "1",
+                    "attributed": "1",
                 },
                 {
                     "statement_2": "He received the 1921 Nobel Prize in Physics 'for his services to theoretical physics.",
                     "reason": "The exact sentence is present in the given context.",
-                    "Attributed": "1",
+                    "attributed": "1",
                 },
                 {
                     "statement_3": "He published 4 papers in 1905.",
                     "reason": "There is no mention about papers he wrote in the given context.",
-                    "Attributed": "0",
+                    "attributed": "0",
                 },
                 {
                     "statement_4": "Einstein moved to Switzerland in 1895.",
                     "reason": "There is no supporting evidence for this in the given context.",
-                    "Attributed": "0",
+                    "attributed": "0",
                 },
             ],
         },
@@ -52,11 +52,13 @@ CONTEXT_RECALL_RA = Prompt(
             "question": """who won 2020 icc world cup?""",
             "context": """The 2022 ICC Men's T20 World Cup, held from October 16 to November 13, 2022, in Australia, was the eighth edition of the tournament. Originally scheduled for 2020, it was postponed due to the COVID-19 pandemic. England emerged victorious, defeating Pakistan by five wickets in the final to clinch their second ICC Men's T20 World Cup title.""",
             "answer": """England""",
-            "classification": {
-                "statement_1": "England won the 2022 ICC Men's T20 World Cup.",
-                "reason": "From context it is clear that England defeated Pakistan to win the World Cup.",
-                "Attributed": "1",
-            },
+            "classification": [
+                {
+                    "statement_1": "England won the 2022 ICC Men's T20 World Cup.",
+                    "reason": "From context it is clear that England defeated Pakistan to win the World Cup.",
+                    "attributed": "1",
+                }
+            ],
         },
     ],
     input_keys=["question", "context", "answer"],
@@ -67,7 +69,6 @@ CONTEXT_RECALL_RA = Prompt(
 
 @dataclass
 class ContextRecall(MetricWithLLM):
-
     """
     Estimates context recall by estimating TP and FN using annotated answer and
     retrieved context.
@@ -88,28 +89,31 @@ class ContextRecall(MetricWithLLM):
         return self.context_recall_prompt.format(question=qstn, context=ctx, answer=gt)
 
     def _compute_score(self, response: t.Any) -> float:
-        response = response if isinstance(response, list) else [response]
-        response = [item if isinstance(item, dict) else {} for item in response]
-        response = [
-            int(item.get("Attributed").strip() == "1")
-            if item.get("Attributed")
-            else np.nan
-            for item in response
+        if "classification" in response:
+            response = response["classification"]
+        data = response if isinstance(response, list) else [response]
+        data = [item if isinstance(item, dict) else {} for item in data]
+        data = [
+            (
+                int(item.get("attributed").strip() == "1")
+                if item.get("attributed")
+                else np.nan
+            )
+            for item in data
         ]
-        denom = len(response)
-        numerator = sum(response)
+        denom = len(data)
+        numerator = sum(data)
         score = numerator / denom
 
         if np.isnan(score):
             logger.warning(
-                "Invalid JSON response. Expected dictionary with key 'Attributed'"
+                f"Invalid JSON response. Expected dictionary with key 'attributed'\nResponse:\n{response}"
             )
 
         return score
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
         assert self.llm is not None, "set LLM before use"
-
         result = await self.llm.generate(
             self._create_context_recall_prompt(row), callbacks=callbacks
         )

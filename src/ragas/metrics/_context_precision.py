@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 CONTEXT_PRECISION = Prompt(
     name="context_precision",
-    instruction="""Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "1" if useful and "0" if not with json output. """,
+    instruction="""Given the question, answer and context verify if the context was useful in arriving at the given answer. Give a json object with keys verdict and reason. Set the key "verdict" to "1" if useful and "0" if not. Set the key "reason" with an explanation for the verdict. Only give one json object.""",
     examples=[
         {
             "question": """What can you tell me about albert Albert Einstein?""",
@@ -92,14 +92,15 @@ class ContextPrecision(MetricWithLLM):
 
     def _calculate_average_precision(self, json_responses: t.List[t.Dict]) -> float:
         score = np.nan
-        json_responses = [
-            item if isinstance(item, dict) else {} for item in json_responses
-        ]
+        data = [item if isinstance(item, dict) else {} for item in json_responses]
+
         verdict_list = [
-            int("1" == resp.get("verdict", "").strip())
-            if resp.get("verdict")
-            else np.nan
-            for resp in json_responses
+            (
+                int("1" == resp.get("verdict", "").strip())
+                if resp.get("verdict")
+                else np.nan
+            )
+            for resp in data
         ]
         denominator = sum(verdict_list) + 1e-10
         numerator = sum(
@@ -111,7 +112,7 @@ class ContextPrecision(MetricWithLLM):
         score = numerator / denominator
         if np.isnan(score):
             logger.warning(
-                "Invalid response format. Expected a list of dictionaries with keys 'verdict'"
+                f"Invalid response format. Expected a list of dictionaries with keys 'verdict'.\nResponses\n{json_responses}"
             )
         return score
 
