@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 CONTEXT_PRECISION = Prompt(
     name="context_precision",
-    instruction="""Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "1" if useful and "0" if not. """,
+    instruction="""Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "1" if useful and "0" if not with json output. """,
     examples=[
         {
             "question": """What can you tell me about albert Albert Einstein?""",
@@ -138,6 +138,7 @@ class ContextPrecision(MetricWithLLM):
             await json_loader.safe_load(item, self.llm, is_async=is_async)
             for item in responses
         ]
+        json_responses = t.cast(t.List[t.Dict], json_responses)
         score = self._calculate_average_precision(json_responses)
         return score
 

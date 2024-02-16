@@ -19,47 +19,45 @@ if t.TYPE_CHECKING:
 
 CORRECTNESS_PROMPT = Prompt(
     name="answer_correctness",
-    instruction="""Extract following from given question and ground truth""",
+    instruction="""Extract following from given question and ground truth
+            "TP": statements that are present in both the answer and the ground truth,
+            "FP": statements present in the answer but not found in the ground truth,
+            "FN": relevant statements found in the ground truth but omitted in the answer, 
+        """,
     examples=[
         {
             "question": """What powers the sun and what is its primary function?""",
             "answer": """The sun is powered by nuclear fission, similar to nuclear reactors on Earth, and its primary function is to provide light to the solar system.""",
             "ground_truth": """The sun is actually powered by nuclear fusion, not fission. In its core, hydrogen atoms fuse to form helium, releasing a tremendous amount of energy. This energy is what lights up the sun and provides heat and light, essential for life on Earth. The sun's light also plays a critical role in Earth's climate system and helps to drive the weather and ocean currents.""",
-            "Extracted statements": [
-                {
-                    "statements that are present in both the answer and the ground truth": [
-                        "The sun's primary function is to provide light"
-                    ],
-                    "statements present in the answer but not found in the ground truth": [
-                        "The sun is powered by nuclear fission",
-                        "similar to nuclear reactors on Earth",
-                    ],
-                    "relevant statements found in the ground truth but omitted in the answer": [
-                        "The sun is powered by nuclear fusion, not fission",
-                        "In its core, hydrogen atoms fuse to form helium, releasing a tremendous amount of energy",
-                        "This energy provides heat and light, essential for life on Earth",
-                        "The sun's light plays a critical role in Earth's climate system",
-                        "The sun helps to drive the weather and ocean currents",
-                    ],
-                }
-            ],
+            "Extracted statements": {
+                "TP": ["The sun's primary function is to provide light"],
+                "FP": [
+                    "The sun is powered by nuclear fission",
+                    "similar to nuclear reactors on Earth",
+                ],
+                "FN": [
+                    "The sun is powered by nuclear fusion, not fission",
+                    "In its core, hydrogen atoms fuse to form helium, releasing a tremendous amount of energy",
+                    "This energy provides heat and light, essential for life on Earth",
+                    "The sun's light plays a critical role in Earth's climate system",
+                    "The sun helps to drive the weather and ocean currents",
+                ],
+            },
         },
         {
             "question": """What is the boiling point of water?""",
             "answer": """The boiling point of water is 100 degrees Celsius at sea level.""",
             "ground_truth": """The boiling point of water is 100 degrees Celsius (212 degrees Fahrenheit) at sea level, but it can change with altitude.""",
-            "Extracted statements": [
-                {
-                    "statements that are present in both the answer and the ground truth": [
-                        "The boiling point of water is 100 degrees Celsius at sea level"
-                    ],
-                    "statements present in the answer but not found in the ground truth": [],
-                    "relevant statements found in the ground truth but omitted in the answer": [
-                        "The boiling point can change with altitude",
-                        "The boiling point of water is 212 degrees Fahrenheit at sea level",
-                    ],
-                }
-            ],
+            "Extracted statements": {
+                "TP": [
+                    "The boiling point of water is 100 degrees Celsius at sea level"
+                ],
+                "FP": [],
+                "FN": [
+                    "The boiling point can change with altitude",
+                    "The boiling point of water is 212 degrees Fahrenheit at sea level",
+                ],
+            },
         },
     ],
     input_keys=["question", "answer", "ground_truth"],
@@ -112,20 +110,13 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
     def _compute_statement_presence(self, prediction: t.Any) -> float:
         assert self.llm is not None, "LLM must be set"
 
-        key_map = {
-            "TP": "statements that are present in both the answer and the ground truth",
-            "FP": "statements present in the answer but not found in the ground truth",
-            "FN": "relevant statements found in the ground truth but omitted in the answer",  # noqa: E501
-        }
-
-        prediction = prediction if isinstance(prediction, list) else [prediction]
-        prediction = [item if isinstance(item, dict) else {} for item in prediction]
+        key_map = [
+            "TP",
+            "FP",
+            "FN",
+        ]
         if prediction:
-            prediction = [
-                item.get(key_map[k], np.nan)
-                for item in prediction
-                for k in key_map.keys()
-            ]
+            prediction = [prediction.get(k, np.nan) for k in key_map]
             tp, fp, fn = [
                 len(item) if isinstance(item, list) else np.nan for item in prediction
             ]

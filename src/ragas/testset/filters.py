@@ -54,6 +54,7 @@ class NodeFilter(Filter):
         results = await self.llm.generate(prompt=prompt)
         output = results.generations[0][0].text.strip()
         score = await json_loader.safe_load(output, llm=self.llm)
+        score = score if isinstance(score, dict) else {}
         logger.debug("node filter: %s", score)
         score.update({"score": score.get("score", 0) >= self.threshold})
         return score
@@ -85,6 +86,7 @@ class QuestionFilter(Filter):
         results = await self.llm.generate(prompt=prompt)
         results = results.generations[0][0].text.strip()
         json_results = await json_loader.safe_load(results, llm=self.llm)
+        json_results = json_results if isinstance(json_results, dict) else {}
         logger.debug("filtered question: %s", json_results)
         return json_results.get("verdict") == "1"
 
@@ -117,6 +119,7 @@ class EvolutionFilter(Filter):
         results = await self.llm.generate(prompt=prompt)
         results = results.generations[0][0].text.strip()
         json_results = await json_loader.safe_load(results, llm=self.llm)
+        json_results = json_results if isinstance(json_results, dict) else {}
         logger.debug("evolution filter: %s", json_results)
         return json_results.get("verdict") == "1"
 

@@ -52,13 +52,11 @@ CONTEXT_RECALL_RA = Prompt(
             "question": """who won 2020 icc world cup?""",
             "context": """The 2022 ICC Men's T20 World Cup, held from October 16 to November 13, 2022, in Australia, was the eighth edition of the tournament. Originally scheduled for 2020, it was postponed due to the COVID-19 pandemic. England emerged victorious, defeating Pakistan by five wickets in the final to clinch their second ICC Men's T20 World Cup title.""",
             "answer": """England""",
-            "classification": [
-                {
-                    "statement_1": "England won the 2022 ICC Men's T20 World Cup.",
-                    "reason": "From context it is clear that England defeated Pakistan to win the World Cup.",
-                    "Attributed": "1",
-                }
-            ],
+            "classification": {
+                "statement_1": "England won the 2022 ICC Men's T20 World Cup.",
+                "reason": "From context it is clear that England defeated Pakistan to win the World Cup.",
+                "Attributed": "1",
+            },
         },
     ],
     input_keys=["question", "context", "answer"],
