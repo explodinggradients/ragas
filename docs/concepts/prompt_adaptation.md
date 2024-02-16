@@ -50,7 +50,7 @@ examples=[{
 }],
     input_keys=["sentence"],
     output_key="nouns",
-    output_type="json"
+    output_type="array"
 )
 
 openai_model = ChatOpenAI(model_name="gpt-4")
