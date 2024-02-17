@@ -1,5 +1,5 @@
 (how-to-guides)=
-# How-to Guides
+# 🛠️ How-to Guides
 
 
 The how-to guides offer a more comprehensive overview of all the tools Ragas

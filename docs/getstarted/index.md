@@ -1,49 +1,44 @@
 (get-started)=
-# Get Started
+# 🚀 Get Started
 
 :::{toctree}
 :maxdepth: 1
 :hidden:
 install.md
-evaluation.md
 testset_generation.md
+evaluation.md
 monitoring.md
 :::
 
-Welcome to the Ragas tutorials! These beginner-friendly tutorials will guide you
-through the fundamentals of working with Ragas. These tutorials do assume basic
-knowledge of Python and Retrieval Augmented Generation (RAG) pipelines. 
+Welcome to the Ragas tutorials! If you're new to Ragas, the Get Started guides will walk you through the fundamentals of working with Ragas. These tutorials assume basic knowledge of Python and Retrieval Augmented Generation (RAG) pipelines. 
 
-Before you go further make sure you have [Ragas installed](./install.md)!
+Before you proceed further, ensure that you have [Ragas installed](./install.md)!
 
 :::{note}
-The tutorials only give you on overview of what you can do with ragas and the
-basic skill you need to use it. If you want an in-depth explanation of the
-core-concepts behind Ragas, check out the [Core Concepts](../concepts/index.md) page. You can also checkout the [How-to Guides](../howtos/index.md) if you want to specific applications of Ragas.
+The tutorials only provide an overview of what you can accomplish with Ragas and the basic skills needed to utilize it effectively. For an in-depth explanation of the core concepts behind Ragas, check out the [Core Concepts](../concepts/index.md) page. You can also explore the [How-to Guides](../howtos/index.md) for specific applications of Ragas.
 :::
 
+If you have any questions about Ragas, feel free to join and ask in the `#questions` channel in our Discord community.
 
-If you have any questions about Ragas, feel free to join and ask in the
-`#questions` channel in our discord community ❤ .
+Let's get started!
 
-Let’s get started! 🏁
-
-:::{card} Ragas Metrics and Evaluation
-:link: get-started-evaluation
-:link-type: ref
-
-How to use the Ragas Metrics to evaluate your RAG pipelines.
-:::
-
-:::{card} Synthetic Test data Generation
+:::{card} Generate a Synthetic Testset
 :link: get-started-testset-generation
 :link-type: ref
 
-How to generate test set to assess your RAG pipelines
+Learn how to generate `Question/Context/Ground_Truth` triplets to get started.
 :::
-:::{card} Monitoring
+
+:::{card} Evaluate Using Your Testset
+:link: get-started-evaluation
+:link-type: ref
+
+Find out how to evaluate your RAG pipeline using your test set (your own dataset or synthetic).
+:::
+
+:::{card} Monitor Your RAG in Production
 :link: get-started-monitoring
 :link-type: ref
 
-How to monitor your RAG systems in production.
+Discover how to monitor the performance and quality of your RAG application in production.
 :::

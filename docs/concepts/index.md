@@ -1,5 +1,5 @@
 (core-concepts)=
-# Core Concepts
+# 📚 Core Concepts
 :::{toctree}
 :caption: Concepts
 :hidden:

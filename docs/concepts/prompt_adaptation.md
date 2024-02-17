@@ -38,22 +38,24 @@ Create a sample prompt using `Prompt` class.
 
 ```{code-block} python
 
-from langchain.chat_models import ChatOpenAI
 from ragas.llms.prompt import Prompt
+from langchain_openai.chat_models import ChatOpenAI
+from ragas.llms.base import LangchainLLMWrapper
 
+openai_model = ChatOpenAI(model="gpt-3.5-turbo")
+
+openai_model = LangchainLLMWrapper(openai_model)
 noun_extractor = Prompt(
-name="noun_extractor",
-instruction="Extract the noun from given sentence",
-examples=[{
-    "sentence":"The sun sets over the mountains.",
-    "nouns":["sun", "mountains"]
-}],
+    name="noun_extractor",
+    instruction="Extract the noun from given sentence",
+    examples=[{
+        "sentence":"The sun sets over the mountains.",
+        "output":{"nouns":["sun", "mountains"]}
+    }],
     input_keys=["sentence"],
-    output_key="nouns",
+    output_key="output",
     output_type="json"
 )
-
-openai_model = ChatOpenAI(model_name="gpt-4")
 ```
 
 Prompt adaption is done using the `.adapt` method: 
@@ -63,11 +65,20 @@ Prompt adaption is done using the `.adapt` method:
 The adapt method takes in a target language, LLM and adapts the prompts to the given target language. In case the adapted prompt is already present in `cache_dir` it is loaded.
 
 ```{code-block} python
-noun_extractor.adapt(language="hindi",llm=openai_model)
+adapted_prompt = noun_extractor.adapt(language="hindi",llm=openai_model)
+print(adapted_prompt.to_string())
 ```
 
 ```{code-block}
-Prompt(name='noun_extractor', instruction='Extract the noun from given sentence', examples=[{'sentence': 'सूरज पहाड़ों के पार डूबता है।', 'nouns': ['सूरज', 'पहाड़']}], input_keys=['sentence'], output_key='nouns')
+{'nouns': ['सूर्य', 'पहाड़']}
+Extract the noun from given sentence
+Output in only valid JSON format.
+
+sentence: "सूरज पहाड़ों पर अस्त होता है।"
+output: {{"nouns": ["सूर्य", "पहाड़"]}}
+
+sentence: {sentence}
+output: 
 ```
 
 The quality of the adapted prompt depends on the quality of LLM, so we advise you to use the best you have with prompt adaptation.
