@@ -1,7 +1,7 @@
 (get-started-testset-generation)=
 # Generate a Synthetic Test Set
 
-This tutorial is designed to help you create a synthetic evaluation dataset for assessing your RAG pipeline. To accomplish this, we will utilize OpenAI models. Please ensure you have your OpenAI API key ready and accessible within your environment.
+This tutorial is designed to assist you in creating a synthetic evaluation dataset for assessing your RAG pipeline. For this purpose, we will utilize OpenAI models. Ensure that you have your OpenAI API key readily accessible within your environment.
 
 ```{code-block} python
 import os
@@ -11,7 +11,7 @@ os.environ["OPENAI_API_KEY"] = "your-openai-key"
 
 ## Documents
 
-We first need a collection of documents to generate synthetic `Question/Context/Answer/Ground_Truth` samples. For this, we'll use the LangChain document loader to load documents.
+Firstly, we require a collection of documents to generate synthetic `Question/Context/Ground_Truth` samples. For this, we will use the LangChain document loader to load documents.
 
 ```{code-block} python
 :caption: Load documents from directory
@@ -21,7 +21,7 @@ documents = loader.load()
 ```
 
 :::{note}
-Each Document object contains a metadata dictionary, which can be used to store additional information about the document accessible via `Document.metadata`. Please ensure that the metadata dictionary contains a key called `file_name`, as this will be used in the generation process. The `file_name` attribute in metadata is used to identify chunks belonging to the same document. For instance, pages belonging to the same research publication can be identified using filename.
+Each Document object contains a metadata dictionary, which can be used to store supplementary information about the document accessible via `Document.metadata`. Ensure that the metadata dictionary contains a key called `file_name`, as this will be utilized in the generation process. The `file_name` attribute in metadata is employed to identify chunks belonging to the same document. For instance, pages belonging to the same research publication can be identified using the filename.
 
 Here's an example of how to do this:
 
@@ -31,7 +31,7 @@ for document in documents:
 ```
 :::
 
-At this stage, we have a set of documents ready, which will be used as the foundation for creating synthetic `Question/Context/Answer/Ground_Truth` samples.
+At this stage, we have a set of documents ready, which will be employed as the basis for creating synthetic `Question/Context/Ground_Truth` samples.
 
 ## Data Generation
 

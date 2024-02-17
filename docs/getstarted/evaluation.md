@@ -1,9 +1,9 @@
 (get-started-evaluation)=
-# Evaluating Your Test Set
+# Evaluating Using Your Test Set
 
-Once your test set is ready (whether you've created your own or used the [synthetic test set generation module](get-started-testset-generation)), it's time to evaluate your RAG pipeline. Our aim is to help you set up with Ragas as quickly as possible so that you can focus on enhancing your Retrieval Augmented Generation pipelines while this library ensures your changes are improving the entire pipeline.
+Once your test set is ready (whether you've created your own or used the [synthetic test set generation module](get-started-testset-generation)), it's time to evaluate your RAG pipeline. The purpose of this guide is to assist you in setting up with Ragas as quickly as possible, enabling you to concentrate on enhancing your Retrieval Augmented Generation pipelines while this library ensures your modifications are improving the entire pipeline.
 
-This guide uses OpenAI for running some metrics, so make sure you have your OpenAI key ready and available in your environment.
+This guide utilizes OpenAI for running some metrics, so ensure you have your OpenAI key ready and available in your environment.
 
 ```python
 import os
@@ -13,7 +13,7 @@ os.environ["OPENAI_API_KEY"] = "your-openai-key"
 By default, these metrics use OpenAI's API to compute the score. If you're using this metric, ensure that you've set the environment key `OPENAI_API_KEY` with your API key. You can also try other LLMs for evaluation, check the [LLM guide](../howtos/customisations/llms.ipynb) to learn more.
 :::
 
-Let's start with the data.
+Let's begin with the data.
 
 ## The Data
 
@@ -24,7 +24,7 @@ For this tutorial, we'll use an example dataset from one of the baselines we cre
 - contexts: `list[list[str]]` - The contexts which were passed into the LLM to answer the question.
 - ground_truth: `list[str]` - The ground truth answer to the questions.
 
-Ideally, your list of questions should reflect the questions your users ask, including those that have been problematic in the past.
+An ideal test data set should contain samples that closely mirror your real-world use case.
 
 ```{code-block} python
 :caption: import sample dataset
@@ -36,7 +36,7 @@ amnesty_qa
 ```
 
 :::{seealso}
-See [test set generation](./testset_generation.md) to learn how to generate your own synthetic data for evaluation.
+See [test set generation](./testset_generation.md) to learn how to generate your own `Question/Context/Ground_Truth` triplets for evaluation.
 :::
 
 ## Metrics
@@ -44,7 +44,7 @@ See [test set generation](./testset_generation.md) to learn how to generate your
 Ragas provides several metrics to evaluate various aspects of your RAG systems:
 
 1. Retriever: Offers `context_precision` and `context_recall` that measure the performance of your retrieval system.
-2. Generator (LLM): Provides `faithfulness` that measures hallucinations and `answer_relevancy` that measures how on point the answers are to the question.
+2. Generator (LLM): Provides `faithfulness` that measures hallucinations and `answer_relevancy` that measures how relevant the answers are to the question.
 
 There are numerous other metrics available in Ragas, check the [metrics guide](ragas-metrics) to learn more.
 
