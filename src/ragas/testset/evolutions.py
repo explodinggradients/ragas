@@ -72,7 +72,11 @@ class Evolution:
             keyphrases=[phrase for n in nodes.nodes for phrase in n.keyphrases],
         )
 
-        embed_dim = len(nodes.nodes[0].embedding) if nodes.nodes[0].embedding is not None else None
+        embed_dim = (
+            len(nodes.nodes[0].embedding)
+            if nodes.nodes[0].embedding is not None
+            else None
+        )
         if embed_dim:
             node_embeddings = np.array([n.embedding for n in nodes.nodes]).reshape(
                 -1, embed_dim
@@ -444,9 +448,7 @@ class MultiContextEvolution(ComplexEvolution):
             return await self.aretry_evolve(current_tries, current_nodes)
         else:
             assert isinstance(similar_node[0], Node), "similar_node must be a Node"
-            current_nodes = CurrentNodes(
-                root_node=merged_node, nodes=[merged_node, similar_node[0]]
-            )
+            current_nodes.nodes.append(similar_node[0])
 
         prompt = self.multi_context_question_prompt.format(
             question=simple_question,
