@@ -37,7 +37,8 @@ docs-site: ## Build and serve documentation
 	@sphinx-build -nW --keep-going -j 4 -b html $(GIT_ROOT)/docs/ $(GIT_ROOT)/docs/_build/html
 	@python -m http.server --directory $(GIT_ROOT)/docs/_build/html
 watch-docs: ## Build and watch documentation
-	sphinx-autobuild docs docs/_build/html --watch $(GIT_ROOT)/src/ --ignore ".ipynb"
+	rm -rf $(GIT_ROOT)/docs/_build/{html, jupyter_execute}
+	sphinx-autobuild docs docs/_build/html --watch $(GIT_ROOT)/src/ --ignore "_build" --open-browser
 
 # Benchmarks
 run-benchmarks-eval: ## Run benchmarks for Evaluation

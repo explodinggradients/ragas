@@ -1,5 +1,5 @@
 .. _references:
-References
+📖 References
 ==========
 
 Reference documents for the ``ragas`` package.
