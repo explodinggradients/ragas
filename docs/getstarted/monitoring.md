@@ -28,8 +28,3 @@ These tools can provide model-based feedback about various aspects of your appli
 3. Bad Response: This feature assists in recognizing and quantifying evasive, harmful, or toxic responses.
 4. Bad Format: This feature enables the detection and quantification of responses with incorrect formatting.
 5. Custom Use-Case: For monitoring other critical aspects that are specific to your use-case, [Talk to the founders](https://calendly.com/shahules/30min).
-
-Note:
-- "Evaluate your test set" has been replaced with "Evaluate using your test set" to clarify that the evaluation is conducted using the test set, not on the quality of the test set itself.
-- Phrases such as "How can we" have been replaced with "How to" to make the content more direct and actionable.
-- The term "Answer using synthetic data generation" has been replaced with "Question/Context/Ground Truth triplets".
