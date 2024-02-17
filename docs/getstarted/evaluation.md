@@ -1,7 +1,7 @@
 (get-started-evaluation)=
 # Evaluating Using Your Test Set
 
-Once your test set is ready (whether you've created your own or used the [synthetic test set generation module](get-started-testset-generation)), it's time to evaluate your RAG pipeline. The purpose of this guide is to assist you in setting up with Ragas as quickly as possible, enabling you to concentrate on enhancing your Retrieval Augmented Generation pipelines while this library ensures your modifications are improving the entire pipeline.
+Once your test set is ready (whether you've created your own or used the [synthetic test set generation module](get-started-testset-generation)), it's time to evaluate your RAG pipeline. This guide assists you in setting up Ragas as quickly as possible, enabling you to focus on enhancing your Retrieval Augmented Generation pipelines while this library ensures that your modifications are improving the entire pipeline.
 
 This guide utilizes OpenAI for running some metrics, so ensure you have your OpenAI key ready and available in your environment.
 
@@ -20,8 +20,7 @@ Let's begin with the data.
 For this tutorial, we'll use an example dataset from one of the baselines we created for the [Amnesty QA](https://huggingface.co/datasets/explodinggradients/amnesty_qa) dataset. The dataset contains the following columns:
 
 - question: `list[str]` - These are the questions your RAG pipeline will be evaluated on.
-- answer: `list[str]` - The answer generated from the RAG pipeline and provided to the user.
-- contexts: `list[list[str]]` - The contexts which were passed into the LLM to answer the question.
+- context: `list[list[str]]` - The contexts which were passed into the LLM to answer the question.
 - ground_truth: `list[str]` - The ground truth answer to the questions.
 
 An ideal test data set should contain samples that closely mirror your real-world use case.
@@ -103,4 +102,4 @@ df.head()
 
 That's all!
 
-If you have any suggestions, feedback or issues, please share them in the [issue section](https://github.com/explodinggradients/ragas/issues). We value your input.
+If you have any suggestions, feedback, or issues, please share them in the [issue section](https://github.com/explodinggradients/ragas/issues). We value your input.

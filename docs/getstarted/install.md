@@ -1,22 +1,23 @@
-# Install
+# Installation
 
-To get started, install ragas with `pip` as
+To get started, install Ragas using `pip` with the following command:
+
 ```bash
 pip install ragas
 ```
 
-If you want to play around with the latest and greatest, install the latest version (from the main branch)
+If you'd like to experiment with the latest features, install the most recent version from the main branch:
+
 ```bash
 pip install git+https://github.com/explodinggradients/ragas.git
 ```
 
-If you are looking to contribute and make changes to the code, make sure you
-clone the repo and install it as [editable
-install](https://pip.pypa.io/en/stable/topics/local-project-installs/#editable-installs).
+If you're planning to contribute and make modifications to the code, ensure that you clone the repository and set it up as an [editable install](https://pip.pypa.io/en/stable/topics/local-project-installs/#editable-installs).
+
 ```bash
 git clone https://github.com/explodinggradients/ragas.git 
 cd ragas 
 pip install -e .
 ```
 
-Next let's build a [synthetic testset](get-started-testset-generation) with your own data or If you brought your own testset, lets learn how you can [evaluate it](get-started-evaluation) with Ragas.
+Next, let's construct a [synthetic test set](get-started-testset-generation) using your own data. If you've brought your own test set, you can learn how to [evaluate it](get-started-evaluation) using Ragas.

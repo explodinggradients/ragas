@@ -20,20 +20,20 @@ The tutorials only provide an overview of what you can accomplish with Ragas and
 
 If you have any questions about Ragas, feel free to join and ask in the `#questions` channel in our Discord community.
 
-Let’s get started!
+Let's get started!
 
 :::{card} Generate a Synthetic Testset
 :link: get-started-testset-generation
 :link-type: ref
 
-Learn how to generate a synthetic testset to get started.
+Learn how to generate `Question/Context/Ground_Truth` triplets to get started.
 :::
 
 :::{card} Evaluate Using Your Testset
 :link: get-started-evaluation
 :link-type: ref
 
-Find out how to evaluate your RAG pipeline against your testset (your own dataset or synthetic).
+Find out how to evaluate your RAG pipeline using your test set (your own dataset or synthetic).
 :::
 
 :::{card} Monitor Your RAG in Production

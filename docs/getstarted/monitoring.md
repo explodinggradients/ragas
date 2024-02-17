@@ -12,24 +12,24 @@ We are still developing and gathering feedback for upcoming releases. You can re
 [**early access**](https://calendly.com/shahules/30min) to try it out or share the challenges you face in this area. We would love to hear your thoughts and challenges.
 :::
 
-Additionally, you can use the RAG metrics with other Machine Learning Model (MLM) observability tools like:
+In addition, you can use the RAG metrics with other LLM observability tools like:
 
 - [Langsmith](../howtos/integrations/langsmith.ipynb)
 - [Phoenix (Arize)](../howtos/integrations/ragas-arize.ipynb)
 - [Langfuse](../howtos/integrations/langfuse.ipynb)
 - [OpenLayer](https://openlayer.com/)
 
-These tools can provide model-based feedback about various aspects of your application, such as those mentioned below:
+These tools can provide model-based feedback about various aspects of your application, such as the ones mentioned below:
 
 ## Aspects to Monitor
 
-1. Faithfulness: This feature assists in identifying and quantifying instances of hallucinations.
+1. Faithfulness: This feature assists in identifying and quantifying instances of hallucination.
 2. Bad Retrieval: This feature helps identify and quantify poor context retrievals.
 3. Bad Response: This feature assists in recognizing and quantifying evasive, harmful, or toxic responses.
 4. Bad Format: This feature enables the detection and quantification of responses with incorrect formatting.
-5. Custom Use-Case: For monitoring other critical aspects that are specific to your use-case, [Talk to founders](https://calendly.com/shahules/30min).
+5. Custom Use-Case: For monitoring other critical aspects that are specific to your use-case, [Talk to the founders](https://calendly.com/shahules/30min).
 
 Note:
 - "Evaluate your test set" has been replaced with "Evaluate using your test set" to clarify that the evaluation is conducted using the test set, not on the quality of the test set itself.
 - Phrases such as "How can we" have been replaced with "How to" to make the content more direct and actionable.
-- The term "Answer using synthetic data generation" has been replaced with "Question/Context/Ground_Truth triplets".
+- The term "Answer using synthetic data generation" has been replaced with "Question/Context/Ground Truth triplets".
