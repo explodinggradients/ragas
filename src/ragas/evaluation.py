@@ -271,6 +271,8 @@ class Result(dict):
     binary_columns: t.List[str] = field(default_factory=list)
 
     def __post_init__(self):
+        """Calculates the mean of scores for each column and assigns it to the corresponding column in the object. If the column is not in the binary columns list, the mean is cast to a float and added to a list of values. This function does not return any value."""
+        
         values = []
         for cn in self.scores[0].keys():
             value = np.nanmean(self.scores[cn])
@@ -280,6 +282,18 @@ class Result(dict):
                 values.append(value + 1e-10)
 
     def to_pandas(self, batch_size: int | None = None, batched: bool = False):
+        """Converts the results class to a pandas dataframe, optionally batching the data.
+        Parameters:
+            - batch_size (int | None): The batch size for the dataframe, if desired. Defaults to None.
+            - batched (bool): Whether to batch the data or not. Defaults to False.
+        Returns:
+            - pandas.DataFrame: A dataframe containing the results class data and scores.
+        Processing Logic:
+            - Raises a ValueError if the dataset is not provided for the results class.
+            - Asserts that the number of scores matches the number of rows in the dataset.
+            - Concatenates the dataset and scores along the columns.
+            - Converts the concatenated dataset to a pandas dataframe, optionally batching the data."""
+        
         if self.dataset is None:
             raise ValueError("dataset is not provided for the results class")
         assert self.scores.shape[0] == self.dataset.shape[0]
