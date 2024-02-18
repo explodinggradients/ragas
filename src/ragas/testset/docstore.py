@@ -36,6 +36,18 @@ class Document(LCDocument):
 
     @classmethod
     def from_langchain_document(cls, doc: LCDocument):
+        """Function:
+        def from_langchain_document(cls, doc: LCDocument):
+            Creates a new instance of the given class using the provided LCDocument.
+            Parameters:
+                - doc (LCDocument): The LCDocument to be used to create the new instance.
+            Returns:
+                - cls: A new instance of the given class.
+            Processing Logic:
+                - Generate a unique document ID using uuid.uuid4().
+                - If the document has a filename in its metadata, use that as the filename.
+                - If the document does not have a filename, use the document ID as the filename."""
+        
         doc_id = str(uuid.uuid4())
         if doc.metadata.get("filename"):
             filename = doc.metadata["filename"]
@@ -53,6 +65,17 @@ class Document(LCDocument):
 
     @classmethod
     def from_llamaindex_document(cls, doc: LlamaindexDocument):
+        """Creates a new instance of the class from a LlamaindexDocument.
+        Parameters:
+            - doc (LlamaindexDocument): A LlamaindexDocument object containing the document's text and metadata.
+        Returns:
+            - cls (Class): A new instance of the class with the specified page content, metadata, doc_id, and filename.
+        Processing Logic:
+            - Generates a unique document ID using the uuid.uuid4() function.
+            - Checks if the document has a filename in its metadata, and if so, assigns it to the variable 'filename'.
+            - If the document does not have a filename, logs a message and assigns the document ID as the filename.
+            - Returns a new instance of the class with the specified page content, metadata, doc_id, and filename."""
+        
         doc_id = str(uuid.uuid4())
         if doc.metadata.get("filename"):
             filename = doc.metadata["filename"]
@@ -117,6 +140,17 @@ class DocumentStore(ABC):
         ...
 
     def set_run_config(self, run_config: RunConfig):
+        """Sets the run configuration for the experiment.
+        Parameters:
+            - run_config (RunConfig): The run configuration to be set.
+        Returns:
+            - None: This function does not return any value.
+        Processing Logic:
+            - This function sets the run configuration for the experiment.
+            - The run configuration is passed as a parameter to the function.
+            - The function does not return any value.
+            - The run configuration is set for the experiment."""
+        
         ...
 
 
@@ -212,6 +246,20 @@ class InMemoryDocumentStore(DocumentStore):
     def add_nodes(
         self, nodes: t.Sequence[Node], show_progress=True, desc: str = "embedding nodes"
     ):
+        """Function to add nodes to the graph and extract their embeddings and keyphrases.
+        Parameters:
+            - nodes (t.Sequence[Node]): A sequence of Node objects to be added to the graph.
+            - show_progress (bool): Whether or not to show a progress bar while adding nodes. Default is True.
+            - desc (str): Description to be displayed on the progress bar. Default is "embedding nodes".
+        Returns:
+            - None: This function does not return any value.
+        Processing Logic:
+            - Checks if embeddings and extractor are set, raises exceptions if not.
+            - Creates two dictionaries to keep track of nodes that need to be embedded and extracted.
+            - Uses an Executor to run embedding and extraction tasks asynchronously.
+            - Adds the results of the tasks to the nodes.
+            - Adds the nodes to the graph and their embeddings to the list of node embeddings."""
+        
         assert self.embeddings is not None, "Embeddings must be set"
         assert self.extractor is not None, "Extractor must be set"
 
@@ -275,6 +323,8 @@ class InMemoryDocumentStore(DocumentStore):
 
     def get_similar(
         self, node: Node, threshold: float = 0.7, top_k: int = 3
+        """Returns a list of similar documents or nodes to the given input node, based on their embeddings and a given similarity threshold. The top k most similar items are returned, with a default value of 3. If the input node has no embedding, a ValueError is raised. Processing Logic: The function first checks if the input node has an embedding. Then, it uses the get_top_k_embeddings function to find the top k most similar embeddings to the input node's embedding, based on the given similarity function and threshold. The top result is removed as it is the input node itself. Finally, a list of the top k most similar nodes or documents is returned."""
+        
     ) -> t.Union[t.List[Document], t.List[Node]]:
         items = []
         doc = node
@@ -295,6 +345,18 @@ class InMemoryDocumentStore(DocumentStore):
 
     def get_adjacent(
         self, node: Node, direction: Direction = Direction.NEXT
+        """Returns the adjacent node in the specified direction if it exists, otherwise returns None.
+        Parameters:
+            - node (Node): The node to find the adjacent node for.
+            - direction (Direction): The direction to search for the adjacent node in. Defaults to Direction.NEXT.
+        Returns:
+            - Node: The adjacent node in the specified direction if it exists, otherwise None.
+        Processing Logic:
+            - Finds the index of the given node in the list of nodes.
+            - If the direction is NEXT, checks if there is a node after the given node and if it has the same filename. If so, returns that node. Otherwise, returns None.
+            - If the direction is PREV, checks if there is a node before the given node and if it has the same filename. If so, returns that node. Otherwise, returns None.
+            - If the index is out of bounds, returns None."""
+        
     ) -> t.Optional[Node]:
         # linear search for doc_id of doc in documents_list
         index = self.nodes.index(node)
