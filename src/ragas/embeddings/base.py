@@ -70,10 +70,8 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
         if isinstance(self.embeddings, OpenAIEmbeddings):
             try:
                 from openai import RateLimitError
-            except ImportError:
-                raise ImportError(
-                    "openai.error.RateLimitError not found. Please install openai package as `pip install openai`"
-                )
+            except ImportError as error:
+                raise ImportError("openai.error.RateLimitError not found. Please install openai package as `pip install openai`") from error
             self.embeddings.request_timeout = run_config.timeout
             self.run_config.exception_types = RateLimitError
 
