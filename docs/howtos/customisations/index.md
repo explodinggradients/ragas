@@ -1,6 +1,6 @@
-# Customisations
+# Customizations
 
-How to customize Ragas for your needs
+How to Customize Ragas for Your Needs
 
 :::{toctree}
 llms.ipynb
