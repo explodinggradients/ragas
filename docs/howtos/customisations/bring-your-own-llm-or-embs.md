@@ -4,7 +4,9 @@ Ragas uses LLMs and Embeddings for both evaluation and test set generation. By d
 
 After understanding the basics, feel free to check out the specific guides here
 
-- #TODO: list of llms and embeddings supported
+- [Azure OpenAI](./azure-openai.ipynb)
+- [AWS Bedrock](./aws-bedrock.ipynb)
+- [Google Cloud](./gcp-vertexai.ipynb)
 
 ## `BaseRagasLLM` and `BaseRagasEmbeddings`
 
