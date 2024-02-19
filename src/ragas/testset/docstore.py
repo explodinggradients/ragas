@@ -71,6 +71,8 @@ class Document(LCDocument):
 
 class Node(Document):
     keyphrases: t.List[str] = Field(default_factory=list, repr=False)
+    doc_similarity: t.Optional[float] = Field(default=None, repr=False)
+    wins: int = 0
 
 
 class Direction(str, Enum):
@@ -263,6 +265,27 @@ class InMemoryDocumentStore(DocumentStore):
                     n.embedding, (list, np.ndarray)
                 ), "Embedding must be list or np.ndarray"
                 self.node_embeddings_list.append(n.embedding)
+                
+        self.calculate_nodes_docs_similarity()
+                
+    def calculate_nodes_docs_similarity(self):
+        
+        doc_embeddings = {}
+        filename_ids = set([node.filename for node in self.nodes])
+        node_ids = set([node.doc_id for node in self.nodes])
+        
+        if len(filename_ids) == len(node_ids):
+            logger.warning("Filename and doc_id are the same for all nodes.")
+            
+            # TODO - don't compute similarity for nodes with the same filename
+        else:
+            
+            for file_id in filename_ids:
+                nodes_embedding = [node.embedding for node in self.nodes if node.filename == file_id]
+                doc_embeddings[file_id] = np.mean(nodes_embedding, axis=0)
+                
+            for node in self.nodes:
+                node.doc_similarity = similarity(node.embedding, doc_embeddings[node.filename])
 
     def get_node(self, node_id: str) -> Node:
         return self.node_map[node_id]
@@ -270,8 +293,23 @@ class InMemoryDocumentStore(DocumentStore):
     def get_document(self, doc_id: str) -> Node:
         raise NotImplementedError
 
-    def get_random_nodes(self, k=1) -> t.List[Node]:
-        return rng.choice(np.array(self.nodes), size=k).tolist()
+    def get_random_nodes(self, k=1, alpha=0.1) -> t.List[Node]:
+        
+        def adjustment_factor(wins, alpha):
+            return np.exp(-alpha * wins)
+        
+        scores = [adjustment_factor(node.wins, alpha) for node in self.nodes]
+        similarity_scores = [node.doc_similarity for node in self.nodes]
+        prob = np.array(scores) * np.array(similarity_scores)
+        prob = prob / np.sum(prob)
+        
+        nodes = rng.choice(np.array(self.nodes), size=k, p=prob).tolist()
+        
+        for node in nodes:
+            idx = self.nodes.index(node)
+            self.nodes[idx].wins += 1
+            
+        return nodes
 
     def get_similar(
         self, node: Node, threshold: float = 0.7, top_k: int = 3
