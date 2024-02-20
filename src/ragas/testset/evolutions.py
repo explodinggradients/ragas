@@ -132,6 +132,7 @@ class Evolution:
         prev_adjacent_node = self.docstore.get_adjacent(
             current_nodes.nodes[0], Direction.PREV
         )
+        # TODO: fix this. No need to get random nodes if there are no adjacent nodes
         if prev_adjacent_node is None:
             # get more nodes from below the context window
             next_adjacent_node = self.docstore.get_adjacent(
@@ -217,16 +218,16 @@ class Evolution:
                 question=question, context=merged_nodes.page_content
             )
         )
-        answer = results.generations[0][0].text.strip()
+        answer = await json_loader.safe_load(
+            results.generations[0][0].text.strip(), self.generator_llm
+        )
         logger.debug("answer generated: %s", answer)
-
-        if answer == "-1":
-            answer = None
+        answer = np.nan if answer["verdict"] == "-1" else answer["answer"]
 
         return DataRow(
             question=question,
             contexts=[n.page_content for n in relevant_context.nodes],
-            ground_truth="" if answer is None else answer,
+            ground_truth=answer,
             evolution_type=evolution_type,
         )
 
@@ -283,9 +284,7 @@ class SimpleEvolution(Evolution):
         results = await self.generator_llm.generate(
             prompt=self.seed_question_prompt.format(
                 context=merged_node.page_content,
-                keyphrases=rng.choice(
-                    np.array(merged_node.keyphrases), size=3
-                ).tolist(),
+                keyphrase=rng.choice(np.array(merged_node.keyphrases), size=1)[0],
             )
         )
         seed_question = results.generations[0][0].text
@@ -294,6 +293,7 @@ class SimpleEvolution(Evolution):
         is_valid_question = await self.question_filter.filter(seed_question)
         if not is_valid_question:
             # get more context to rewrite question
+            # TODO: add rewrite_question_prompt
             current_nodes = self._get_more_adjacent_nodes(current_nodes)
             # retry with new nodes added
             return await self.aretry_evolve(current_tries, current_nodes)
@@ -381,6 +381,7 @@ class ComplexEvolution(Evolution):
 
         if not await self.question_filter.filter(compressed_question):
             # retry
+            # TODO: same as simple evolution, use question_rewrite_prompt
             current_nodes = self.se._get_more_adjacent_nodes(current_nodes)
             return await self.aretry_evolve(current_tries, current_nodes)
 
