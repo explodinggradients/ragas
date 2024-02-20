@@ -16,7 +16,7 @@ from langchain_core.pydantic_v1 import Field
 
 from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.exceptions import ExceptionInRunner
-from ragas.executor import Executor
+from ragas.executor import Executor, DEFAULT_MAX_CONCURRENCY
 from ragas.run_config import RunConfig
 from ragas.testset.utils import rng
 
@@ -89,11 +89,11 @@ class DocumentStore(ABC):
         self.documents = {}
 
     @abstractmethod
-    def add_documents(self, docs: t.Sequence[Document], show_progress=True):
+    def add_documents(self, docs: t.Sequence[Document], show_progress=True, max_concurrency: int=DEFAULT_MAX_CONCURRENCY):
         ...
 
     @abstractmethod
-    def add_nodes(self, nodes: t.Sequence[Node], show_progress=True):
+    def add_nodes(self, nodes: t.Sequence[Node], show_progress=True, max_concurrency: int=DEFAULT_MAX_CONCURRENCY):
         ...
 
     @abstractmethod
@@ -195,7 +195,12 @@ class InMemoryDocumentStore(DocumentStore):
     def _embed_items(self, items: t.Union[t.Sequence[Document], t.Sequence[Node]]):
         ...
 
-    def add_documents(self, docs: t.Sequence[Document], show_progress=True):
+    def add_documents(
+            self,
+            docs: t.Sequence[Document],
+            show_progress=True,
+            max_concurrency: int=DEFAULT_MAX_CONCURRENCY
+        ):
         """
         Add documents in batch mode.
         """
@@ -207,10 +212,14 @@ class InMemoryDocumentStore(DocumentStore):
             for d in self.splitter.transform_documents(docs)
         ]
 
-        self.add_nodes(nodes, show_progress=show_progress)
+        self.add_nodes(nodes, show_progress=show_progress, max_concurrency=max_concurrency)
 
     def add_nodes(
-        self, nodes: t.Sequence[Node], show_progress=True, desc: str = "embedding nodes"
+        self,
+        nodes: t.Sequence[Node],
+        show_progress=True,
+        desc: str = "embedding nodes",
+        max_concurrency: int = DEFAULT_MAX_CONCURRENCY,
     ):
         assert self.embeddings is not None, "Embeddings must be set"
         assert self.extractor is not None, "Extractor must be set"
@@ -224,6 +233,7 @@ class InMemoryDocumentStore(DocumentStore):
             desc="embedding nodes",
             keep_progress_bar=False,
             raise_exceptions=True,
+            max_concurrency=max_concurrency,
         )
         result_idx = 0
         for i, n in enumerate(nodes):

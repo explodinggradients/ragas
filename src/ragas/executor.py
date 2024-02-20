@@ -14,6 +14,8 @@ from ragas.exceptions import MaxRetriesExceeded
 logger = logging.getLogger(__name__)
 
 
+DEFAULT_MAX_CONCURRENCY = 16
+
 def runner_exception_hook(args: threading.ExceptHookArgs):
     print(args)
     raise args.exc_type
@@ -22,6 +24,16 @@ def runner_exception_hook(args: threading.ExceptHookArgs):
 # set a custom exception hook
 # threading.excepthook = runner_exception_hook
 
+def as_completed(loop, coros, max_concurrency):
+    if max_concurrency == -1:
+        return asyncio.as_completed(coros, loop=loop)
+    
+    semaphore = asyncio.Semaphore(max_concurrency, loop=loop)
+    async def sem_coro(coro):
+        async with semaphore:
+            return await coro
+    
+    return asyncio.as_completed([sem_coro(c) for c in coros], loop=loop)
 
 class Runner(threading.Thread):
     def __init__(
@@ -30,26 +42,29 @@ class Runner(threading.Thread):
         desc: str,
         keep_progress_bar: bool = True,
         raise_exceptions: bool = True,
+        max_concurrency: int = DEFAULT_MAX_CONCURRENCY,
     ):
         super().__init__()
         self.jobs = jobs
         self.desc = desc
         self.keep_progress_bar = keep_progress_bar
         self.raise_exceptions = raise_exceptions
-        self.futures = []
+        self.max_concurrency = max_concurrency
 
         # create task
         self.loop = asyncio.new_event_loop()
-        for job in self.jobs:
-            coroutine, name = job
-            self.futures.append(self.loop.create_task(coroutine, name=name))
+        self.futures = as_completed(
+            self.loop,
+            [coro for coro, _ in self.jobs],
+            self.max_concurrency)
 
     async def _aresults(self) -> t.List[t.Any]:
         results = []
+
         for future in tqdm(
-            asyncio.as_completed(self.futures),
+            self.futures,
             desc=self.desc,
-            total=len(self.futures),
+            total=len(self.jobs),
             # whether you want to keep the progress bar after completion
             leave=self.keep_progress_bar,
         ):
@@ -85,6 +100,7 @@ class Executor:
     keep_progress_bar: bool = True
     jobs: t.List[t.Any] = field(default_factory=list, repr=False)
     raise_exceptions: bool = False
+    max_concurrency: int = DEFAULT_MAX_CONCURRENCY
 
     def wrap_callable_with_index(self, callable: t.Callable, counter):
         async def wrapped_callable_async(*args, **kwargs):
@@ -104,6 +120,7 @@ class Executor:
             desc=self.desc,
             keep_progress_bar=self.keep_progress_bar,
             raise_exceptions=self.raise_exceptions,
+            max_concurrency=self.max_concurrency,
         )
         executor_job.start()
         try:

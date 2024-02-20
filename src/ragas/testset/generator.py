@@ -13,7 +13,7 @@ from langchain_openai.embeddings import OpenAIEmbeddings
 from ragas._analytics import TesetGenerationEvent, track
 from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
 from ragas.exceptions import ExceptionInRunner
-from ragas.executor import Executor
+from ragas.executor import Executor, DEFAULT_MAX_CONCURRENCY
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
 from ragas.run_config import RunConfig
 from ragas.testset.docstore import Document, DocumentStore, InMemoryDocumentStore
@@ -119,10 +119,12 @@ class TestsetGenerator:
         is_async: bool = True,
         raise_exceptions: bool = True,
         run_config: t.Optional[RunConfig] = None,
+        max_concurrency: int = DEFAULT_MAX_CONCURRENCY,
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
-            [Document.from_llamaindex_document(doc) for doc in documents]
+            [Document.from_llamaindex_document(doc) for doc in documents],
+            max_concurrency=max_concurrency,
         )
 
         return self.generate(
@@ -132,6 +134,7 @@ class TestsetGenerator:
             is_async=is_async,
             run_config=run_config,
             raise_exceptions=raise_exceptions,
+            max_concurrency=max_concurrency,
         )
 
     # if you add any arguments to this function, make sure to add them to
@@ -145,10 +148,12 @@ class TestsetGenerator:
         is_async: bool = True,
         raise_exceptions: bool = True,
         run_config: t.Optional[RunConfig] = None,
+        max_concurrency: int = DEFAULT_MAX_CONCURRENCY,
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
-            [Document.from_langchain_document(doc) for doc in documents]
+            [Document.from_langchain_document(doc) for doc in documents],
+            max_concurrency=max_concurrency,
         )
 
         return self.generate(
@@ -158,6 +163,7 @@ class TestsetGenerator:
             is_async=is_async,
             raise_exceptions=raise_exceptions,
             run_config=run_config,
+            max_concurrency=max_concurrency,
         )
 
     def init_evolution(self, evolution: Evolution) -> None:
@@ -183,6 +189,7 @@ class TestsetGenerator:
         is_async: bool = True,
         raise_exceptions: bool = True,
         run_config: t.Optional[RunConfig] = None,
+        max_concurrency: int = DEFAULT_MAX_CONCURRENCY,
     ):
         # validate distributions
         if not check_if_sum_is_close(list(distributions.values()), 1.0, 3):
@@ -213,6 +220,7 @@ class TestsetGenerator:
             desc="Generating",
             keep_progress_bar=True,
             raise_exceptions=raise_exceptions,
+            max_concurrency=max_concurrency,
         )
 
         current_nodes = [

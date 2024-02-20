@@ -13,7 +13,7 @@ from ragas.callbacks import new_group
 from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper, embedding_factory
 from ragas.llms import llm_factory
 from ragas.exceptions import ExceptionInRunner
-from ragas.executor import Executor
+from ragas.executor import Executor, DEFAULT_MAX_CONCURRENCY
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics._answer_correctness import AnswerCorrectness
 from ragas.metrics.base import Metric, MetricWithEmbeddings, MetricWithLLM
@@ -44,6 +44,7 @@ def evaluate(
     run_config: t.Optional[RunConfig] = None,
     raise_exceptions: bool = True,
     column_map: t.Dict[str, str] = {},
+    max_concurrency: int = DEFAULT_MAX_CONCURRENCY,
 ) -> Result:
     """
     Run the evaluation on the dataset with different metrics
@@ -180,6 +181,7 @@ def evaluate(
         desc="Evaluating",
         keep_progress_bar=True,
         raise_exceptions=raise_exceptions,
+        max_concurrency=max_concurrency,
     )
     # new evaluation chain
     row_run_managers = []
