@@ -41,9 +41,9 @@ class Document(LCDocument):
             filename = doc.metadata["filename"]
         else:
             logger.info(
-                "Document [ID: %s] has no filename. Using doc_id as filename.", doc_id
+                "Document [ID: %s] has no filename.",
             )
-            filename = doc_id
+            filename = None
         return cls(
             page_content=doc.page_content,
             metadata=doc.metadata,
@@ -60,19 +60,13 @@ class Document(LCDocument):
             logger.info(
                 "Document [ID: %s] has no filename. Using doc_id as filename.", doc_id
             )
-            filename = doc_id
+            filename = None
         return cls(
             page_content=doc.text,
             metadata=doc.metadata,
             doc_id=doc_id,
             filename=filename,
         )
-
-
-class Node(Document):
-    keyphrases: t.List[str] = Field(default_factory=list, repr=False)
-    doc_similarity: t.Optional[float] = Field(default=None, repr=False)
-    wins: int = 0
 
 
 class Direction(str, Enum):
@@ -84,6 +78,21 @@ class Direction(str, Enum):
     PREV = "prev"
     UP = "up"
     DOWN = "down"
+
+
+class Node(Document):
+    keyphrases: t.List[str] = Field(default_factory=list, repr=False)
+    relationships: t.Dict[Direction, t.Any] = Field(default_factory=dict, repr=False)
+    doc_similarity: t.Optional[float] = Field(default=None, repr=False)
+    wins: int = 0
+
+    @property
+    def next(self):
+        return self.relationships[Direction.NEXT]
+
+    @property
+    def prev(self):
+        return self.relationships[Direction.PREV]
 
 
 class DocumentStore(ABC):
@@ -265,27 +274,46 @@ class InMemoryDocumentStore(DocumentStore):
                     n.embedding, (list, np.ndarray)
                 ), "Embedding must be list or np.ndarray"
                 self.node_embeddings_list.append(n.embedding)
-                
+
         self.calculate_nodes_docs_similarity()
-                
+        self.set_node_relataionships()
+
+    def set_node_relataionships(self):
+        for i, node in enumerate(self.nodes):
+            if i > 0:
+                prev_node = self.nodes[i - 1]
+                if prev_node.filename == node.filename:
+                    node.relationships[Direction.PREV] = prev_node
+                    prev_node.relationships[Direction.NEXT] = node
+                else:
+                    node.relationships[Direction.PREV] = None
+                    prev_node.relationships[Direction.NEXT] = None
+            if i == len(self.nodes) - 1:
+                node.relationships[Direction.NEXT] = None
+
     def calculate_nodes_docs_similarity(self):
-        
         doc_embeddings = {}
-        filename_ids = set([node.filename for node in self.nodes])
+        filename_ids = set(
+            [node.filename for node in self.nodes if node.filename is not None]
+        )
         node_ids = set([node.doc_id for node in self.nodes])
-        
+
         if len(filename_ids) == len(node_ids):
             logger.warning("Filename and doc_id are the same for all nodes.")
-            
-            # TODO - don't compute similarity for nodes with the same filename
-        else:
-            
-            for file_id in filename_ids:
-                nodes_embedding = [node.embedding for node in self.nodes if node.filename == file_id]
-                doc_embeddings[file_id] = np.mean(nodes_embedding, axis=0)
-                
             for node in self.nodes:
-                node.doc_similarity = similarity(node.embedding, doc_embeddings[node.filename])
+                node.doc_similarity = 1.0
+
+        else:
+            for file_id in filename_ids:
+                nodes_embedding = [
+                    node.embedding for node in self.nodes if node.filename == file_id
+                ]
+                doc_embeddings[file_id] = np.mean(nodes_embedding, axis=0)
+
+            for node in self.nodes:
+                node.doc_similarity = similarity(
+                    node.embedding, doc_embeddings[node.filename]
+                )
 
     def get_node(self, node_id: str) -> Node:
         return self.node_map[node_id]
@@ -294,21 +322,20 @@ class InMemoryDocumentStore(DocumentStore):
         raise NotImplementedError
 
     def get_random_nodes(self, k=1, alpha=0.1) -> t.List[Node]:
-        
         def adjustment_factor(wins, alpha):
             return np.exp(-alpha * wins)
-        
+
         scores = [adjustment_factor(node.wins, alpha) for node in self.nodes]
         similarity_scores = [node.doc_similarity for node in self.nodes]
         prob = np.array(scores) * np.array(similarity_scores)
         prob = prob / np.sum(prob)
-        
+
         nodes = rng.choice(np.array(self.nodes), size=k, p=prob).tolist()
-        
+
         for node in nodes:
             idx = self.nodes.index(node)
             self.nodes[idx].wins += 1
-            
+
         return nodes
 
     def get_similar(
