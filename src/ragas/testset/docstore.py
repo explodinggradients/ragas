@@ -89,11 +89,21 @@ class DocumentStore(ABC):
         self.documents = {}
 
     @abstractmethod
-    def add_documents(self, docs: t.Sequence[Document], show_progress=True, max_concurrency: int=DEFAULT_MAX_CONCURRENCY):
+    def add_documents(
+        self,
+        docs: t.Sequence[Document],
+        show_progress=True,
+        max_concurrency: t.Optional[int]=DEFAULT_MAX_CONCURRENCY
+    ):
         ...
 
     @abstractmethod
-    def add_nodes(self, nodes: t.Sequence[Node], show_progress=True, max_concurrency: int=DEFAULT_MAX_CONCURRENCY):
+    def add_nodes(
+        self,
+        nodes: t.Sequence[Node],
+        show_progress=True,
+        max_concurrency: t.Optional[int]=DEFAULT_MAX_CONCURRENCY
+    ):
         ...
 
     @abstractmethod
@@ -199,7 +209,7 @@ class InMemoryDocumentStore(DocumentStore):
             self,
             docs: t.Sequence[Document],
             show_progress=True,
-            max_concurrency: int=DEFAULT_MAX_CONCURRENCY
+            max_concurrency: t.Optional[int] = DEFAULT_MAX_CONCURRENCY
         ):
         """
         Add documents in batch mode.
@@ -219,7 +229,7 @@ class InMemoryDocumentStore(DocumentStore):
         nodes: t.Sequence[Node],
         show_progress=True,
         desc: str = "embedding nodes",
-        max_concurrency: int = DEFAULT_MAX_CONCURRENCY,
+        max_concurrency: t.Optional[int] = DEFAULT_MAX_CONCURRENCY,
     ):
         assert self.embeddings is not None, "Embeddings must be set"
         assert self.extractor is not None, "Extractor must be set"

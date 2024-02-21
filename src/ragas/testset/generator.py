@@ -119,7 +119,7 @@ class TestsetGenerator:
         is_async: bool = True,
         raise_exceptions: bool = True,
         run_config: t.Optional[RunConfig] = None,
-        max_concurrency: int = DEFAULT_MAX_CONCURRENCY,
+        max_concurrency: t.Optional[int] = DEFAULT_MAX_CONCURRENCY,
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
@@ -148,7 +148,7 @@ class TestsetGenerator:
         is_async: bool = True,
         raise_exceptions: bool = True,
         run_config: t.Optional[RunConfig] = None,
-        max_concurrency: int = DEFAULT_MAX_CONCURRENCY,
+        max_concurrency: t.Optional[int] = DEFAULT_MAX_CONCURRENCY,
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
@@ -189,7 +189,7 @@ class TestsetGenerator:
         is_async: bool = True,
         raise_exceptions: bool = True,
         run_config: t.Optional[RunConfig] = None,
-        max_concurrency: int = DEFAULT_MAX_CONCURRENCY,
+        max_concurrency: t.Optional[int] = DEFAULT_MAX_CONCURRENCY,
     ):
         # validate distributions
         if not check_if_sum_is_close(list(distributions.values()), 1.0, 3):

@@ -42,7 +42,7 @@ class Runner(threading.Thread):
         desc: str,
         keep_progress_bar: bool = True,
         raise_exceptions: bool = True,
-        max_concurrency: int = DEFAULT_MAX_CONCURRENCY,
+        max_concurrency: t.Optional[int] = DEFAULT_MAX_CONCURRENCY,
     ):
         super().__init__()
         self.jobs = jobs
@@ -100,7 +100,7 @@ class Executor:
     keep_progress_bar: bool = True
     jobs: t.List[t.Any] = field(default_factory=list, repr=False)
     raise_exceptions: bool = False
-    max_concurrency: int = DEFAULT_MAX_CONCURRENCY
+    max_concurrency: t.Optional[int] = DEFAULT_MAX_CONCURRENCY
 
     def wrap_callable_with_index(self, callable: t.Callable, counter):
         async def wrapped_callable_async(*args, **kwargs):

@@ -40,11 +40,10 @@ def evaluate(
     embeddings: t.Optional[BaseRagasEmbeddings] = None,
     callbacks: Callbacks = [],
     is_async: bool = False,
-    max_workers: t.Optional[int] = None,
+    max_concurrency: t.Optional[int] = DEFAULT_MAX_CONCURRENCY,
     run_config: t.Optional[RunConfig] = None,
     raise_exceptions: bool = True,
     column_map: t.Dict[str, str] = {},
-    max_concurrency: int = DEFAULT_MAX_CONCURRENCY,
 ) -> Result:
     """
     Run the evaluation on the dataset with different metrics
@@ -74,7 +73,7 @@ def evaluate(
         evaluation is run by calling the `metric.ascore` method. In case the llm or
         embeddings does not support async then the evaluation can be run in sync mode
         with `is_async=False`. Default is False.
-    max_workers: int, optional
+    max_concurrency: int, optional
         The number of workers to use for the evaluation. This is used by the
         `ThreadpoolExecutor` to run the evaluation in sync mode.
     run_config: RunConfig, optional
