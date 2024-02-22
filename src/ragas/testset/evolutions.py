@@ -13,7 +13,7 @@ from ragas.llms import BaseRagasLLM
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.run_config import RunConfig
-from ragas.testset.docstore import Direction, DocumentStore, Node
+from ragas.testset.docstore import DocumentStore, Node
 from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 from ragas.testset.prompts import (
     compress_question_prompt,
@@ -21,6 +21,7 @@ from ragas.testset.prompts import (
     find_relevent_context_prompt,
     multi_context_question_prompt,
     question_answer_prompt,
+    question_rewrite_prompt,
     reasoning_question_prompt,
     seed_question_prompt,
 )
@@ -57,6 +58,9 @@ class Evolution:
     )
     find_relevent_context_prompt: Prompt = field(
         default_factory=lambda: find_relevent_context_prompt
+    )
+    rewrite_invalid_question_prompt: Prompt = field(
+        default_factory=lambda: question_rewrite_prompt
     )
     max_tries: int = 5
     is_async: bool = True
@@ -128,27 +132,41 @@ class Evolution:
         """
         assert self.docstore is not None, "docstore cannot be None"
 
-        # get more nodes from above the context window
-        prev_adjacent_node = self.docstore.get_adjacent(
-            current_nodes.nodes[0], Direction.PREV
-        )
-        # TODO: fix this. No need to get random nodes if there are no adjacent nodes
-        if prev_adjacent_node is None:
+        # # get more nodes from above the context window
+        # prev_adjacent_node = self.docstore.get_adjacent(
+        #     current_nodes.nodes[0], Direction.PREV
+        # )
+        # # TODO: fix this. No need to get random nodes if there are no adjacent nodes
+        # if prev_adjacent_node is None:
+        #     # get more nodes from below the context window
+        #     next_adjacent_node = self.docstore.get_adjacent(
+        #         current_nodes.nodes[-1], Direction.NEXT
+        #     )
+        #     if next_adjacent_node is not None:
+        #         # add next nodes towards the end
+        #         current_nodes.nodes.append(next_adjacent_node)
+        #     else:
+        #         # retry with new base node
+        #         nodes = self.docstore.get_random_nodes(k=1)
+        #         return CurrentNodes(root_node=nodes[0], nodes=nodes)
+        # else:
+        #     # add prev nodes in index 0
+        #     current_nodes.nodes.insert(0, prev_adjacent_node)
+        # TODO: remove/rewrite - this is temp fix
+        prev_node = current_nodes.root_node.prev
+        if prev_node is not None:
+            current_nodes.nodes.insert(0, prev_node)
+            current_nodes.root_node = prev_node
+        else:
             # get more nodes from below the context window
-            next_adjacent_node = self.docstore.get_adjacent(
-                current_nodes.nodes[-1], Direction.NEXT
-            )
-            if next_adjacent_node is not None:
-                # add next nodes towards the end
-                current_nodes.nodes.append(next_adjacent_node)
+            next_node = current_nodes.root_node.next
+            if next_node is not None:
+                current_nodes.nodes.append(next_node)
+                current_nodes.root_node = next_node
             else:
                 # retry with new base node
                 nodes = self.docstore.get_random_nodes(k=1)
                 return CurrentNodes(root_node=nodes[0], nodes=nodes)
-        else:
-            # add prev nodes in index 0
-            current_nodes.nodes.insert(0, prev_adjacent_node)
-
         return current_nodes
 
     def _get_new_random_node(self):
@@ -170,6 +188,26 @@ class Evolution:
             current_nodes=current_nodes,
             evolution_type=evolution_type,
         )
+
+    async def fix_invalid_question(self, question: str, current_nodes: CurrentNodes):
+        """
+        if the question is invalid, get more nodes and retry
+        """
+        prev_node = current_nodes.root_node.prev
+        if prev_node is not None:
+            current_nodes.nodes.insert(0, prev_node)
+            current_nodes.root_node = prev_node
+            prompt = self.rewrite_invalid_question_prompt.format(
+                question=question, context=self.merge_nodes(current_nodes).page_content
+            )
+            results = await self.generator_llm.generate(
+                prompt=prompt, is_async=self.is_async
+            )
+            question = await json_loader.safe_load(
+                results.generations[0][0].text.strip(), self.generator_llm
+            )
+
+        return question, current_nodes
 
     @abstractmethod
     async def _aevolve(
@@ -288,15 +326,25 @@ class SimpleEvolution(Evolution):
             )
         )
         seed_question = results.generations[0][0].text
+        logger.info("seed question generated: %s", seed_question)
         # NOTE: might need improvement
         # select only one seed question here
         is_valid_question = await self.question_filter.filter(seed_question)
         if not is_valid_question:
             # get more context to rewrite question
             # TODO: add rewrite_question_prompt
-            current_nodes = self._get_more_adjacent_nodes(current_nodes)
-            # retry with new nodes added
-            return await self.aretry_evolve(current_tries, current_nodes)
+            seed_question, current_nodes = await self.fix_invalid_question(
+                seed_question, current_nodes
+            )
+            logger.info("rewritten question: %s", seed_question)
+            is_valid_question = await self.question_filter.filter(seed_question)
+            if not is_valid_question:
+                # retry with new nodes added
+                nodes = self.docstore.get_random_nodes(k=1)
+                current_nodes = CurrentNodes(root_node=nodes[0], nodes=nodes)
+                return await self.aretry_evolve(current_tries, current_nodes)
+            else:
+                return seed_question, current_nodes, "simple"
         else:
             # if valid question
             return seed_question, current_nodes, "simple"
