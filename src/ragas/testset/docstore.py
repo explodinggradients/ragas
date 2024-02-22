@@ -29,48 +29,58 @@ Embedding = t.Union[t.List[float], npt.NDArray[np.float64]]
 logger = logging.getLogger(__name__)
 
 
-class Document(LCDocument):
-    doc_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    filename: t.Optional[str] = None
-    embedding: t.Optional[t.List[float]] = Field(default=None, repr=False)
+@dataclass
+class Document:
+    page_content: str
+    metadata: dict = field(default_factory=dict)
+    doc_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    type: t.Literal["Document"] = "Document"
+
+    @property
+    def filename(self):
+        filename = self.metadata.get("filename")
+        if filename is not None:
+            return filename
+        else:
+            logger.info(
+                "Document [ID: %s] has no filename. Using doc_id as filename.",
+                self.doc_id,
+            )
+            return self.doc_id
+
+    @filename.setter
+    def filename(self, value):
+        self.metadata["filename"] = value
 
     @classmethod
     def from_langchain_document(cls, doc: LCDocument):
         doc_id = str(uuid.uuid4())
-        if doc.metadata.get("filename"):
-            filename = doc.metadata["filename"]
-        else:
-            logger.info(
-                "Document [ID: %s] has no filename. Using doc_id as filename.", doc_id
-            )
-            filename = doc_id
         return cls(
             page_content=doc.page_content,
             metadata=doc.metadata,
             doc_id=doc_id,
-            filename=filename,
+        )
+
+    def to_langchain_document(self) -> LCDocument:
+        return LCDocument(
+            page_content=self.page_content,
+            metadata=self.metadata,
         )
 
     @classmethod
     def from_llamaindex_document(cls, doc: LlamaindexDocument):
         doc_id = str(uuid.uuid4())
-        if doc.metadata.get("filename"):
-            filename = doc.metadata["filename"]
-        else:
-            logger.info(
-                "Document [ID: %s] has no filename. Using doc_id as filename.", doc_id
-            )
-            filename = doc_id
         return cls(
             page_content=doc.text,
             metadata=doc.metadata,
             doc_id=doc_id,
-            filename=filename,
         )
 
 
+@dataclass
 class Node(Document):
     keyphrases: t.List[str] = Field(default_factory=list, repr=False)
+    embedding: Embedding = Field(default=t.cast(Embedding, None), repr=False)
 
 
 class Direction(str, Enum):
@@ -204,7 +214,9 @@ class InMemoryDocumentStore(DocumentStore):
         # split documents with self.splitter into smaller nodes
         nodes = [
             Node.from_langchain_document(d)
-            for d in self.splitter.transform_documents(docs)
+            for d in self.splitter.transform_documents(
+                [doc.to_langchain_document() for doc in docs]
+            )
         ]
 
         self.add_nodes(nodes, show_progress=show_progress)
