@@ -31,42 +31,42 @@ logger = logging.getLogger(__name__)
 
 class Document(LCDocument):
     doc_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    filename: t.Optional[str] = None
     embedding: t.Optional[t.List[float]] = Field(default=None, repr=False)
+
+    @property
+    def filename(self):
+        filename = self.metadata.get("filename")
+        if filename is not None:
+            filename = self.metadata["filename"]
+        else:
+            logger.info(
+                "Document [ID: %s] has no filename, using `doc_id` instead", self.doc_id
+            )
+            filename = self.doc_id
+
+        return filename
 
     @classmethod
     def from_langchain_document(cls, doc: LCDocument):
         doc_id = str(uuid.uuid4())
-        if doc.metadata.get("filename"):
-            filename = doc.metadata["filename"]
-        else:
-            logger.info(
-                "Document [ID: %s] has no filename.",
-            )
-            filename = None
         return cls(
             page_content=doc.page_content,
             metadata=doc.metadata,
             doc_id=doc_id,
-            filename=filename,
         )
 
     @classmethod
     def from_llamaindex_document(cls, doc: LlamaindexDocument):
         doc_id = str(uuid.uuid4())
-        if doc.metadata.get("filename"):
-            filename = doc.metadata["filename"]
-        else:
-            logger.info(
-                "Document [ID: %s] has no filename. Using doc_id as filename.", doc_id
-            )
-            filename = None
         return cls(
             page_content=doc.text,
             metadata=doc.metadata,
             doc_id=doc_id,
-            filename=filename,
         )
+
+    def __eq__(self, other) -> bool:
+        # if the doc_id's are same then the Document objects are same
+        return self.doc_id == other.doc_id
 
 
 class Direction(str, Enum):
@@ -211,7 +211,6 @@ class InMemoryDocumentStore(DocumentStore):
             Node.from_langchain_document(d)
             for d in self.splitter.transform_documents(docs)
         ]
-
         self.add_nodes(nodes, show_progress=show_progress)
 
     def add_nodes(
