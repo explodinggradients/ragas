@@ -121,12 +121,6 @@ class DocumentStore(ABC):
     ) -> t.Union[t.List[Document], t.List[Node]]:
         ...
 
-    @abstractmethod
-    def get_adjacent(
-        self, node: Node, direction: Direction = Direction.NEXT
-    ) -> t.Optional[Node]:
-        ...
-
     def set_run_config(self, run_config: RunConfig):
         ...
 
@@ -357,31 +351,6 @@ class InMemoryDocumentStore(DocumentStore):
         scores, doc_ids = scores[1:], doc_ids[1:]
         items = [self.nodes[doc_id] for doc_id in doc_ids]
         return items
-
-    def get_adjacent(
-        self, node: Node, direction: Direction = Direction.NEXT
-    ) -> t.Optional[Node]:
-        # linear search for doc_id of doc in documents_list
-        index = self.nodes.index(node)
-
-        if direction == Direction.NEXT:
-            if len(self.nodes) > index + 1:
-                next_doc = self.nodes[index + 1]
-                if next_doc.filename == node.filename:
-                    return next_doc
-                else:
-                    return None
-            else:
-                return None
-        if direction == Direction.PREV:
-            if index > 0:
-                prev_doc = self.nodes[index - 1]
-                if prev_doc.filename == node.filename:
-                    return prev_doc
-                else:
-                    return None
-            else:
-                return None
 
     def set_run_config(self, run_config: RunConfig):
         if self.embeddings:
