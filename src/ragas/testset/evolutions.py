@@ -126,49 +126,6 @@ class Evolution:
         )
         return results.generations[0][0].text.strip()
 
-    def _get_more_adjacent_nodes(self, current_nodes: CurrentNodes):
-        """
-        if the evolutions doesn't have enough nodes to frame a question, get more nodes
-        """
-        assert self.docstore is not None, "docstore cannot be None"
-
-        # # get more nodes from above the context window
-        # prev_adjacent_node = self.docstore.get_adjacent(
-        #     current_nodes.nodes[0], Direction.PREV
-        # )
-        # # TODO: fix this. No need to get random nodes if there are no adjacent nodes
-        # if prev_adjacent_node is None:
-        #     # get more nodes from below the context window
-        #     next_adjacent_node = self.docstore.get_adjacent(
-        #         current_nodes.nodes[-1], Direction.NEXT
-        #     )
-        #     if next_adjacent_node is not None:
-        #         # add next nodes towards the end
-        #         current_nodes.nodes.append(next_adjacent_node)
-        #     else:
-        #         # retry with new base node
-        #         nodes = self.docstore.get_random_nodes(k=1)
-        #         return CurrentNodes(root_node=nodes[0], nodes=nodes)
-        # else:
-        #     # add prev nodes in index 0
-        #     current_nodes.nodes.insert(0, prev_adjacent_node)
-        # TODO: remove/rewrite - this is temp fix
-        prev_node = current_nodes.root_node.prev
-        if prev_node is not None:
-            current_nodes.nodes.insert(0, prev_node)
-            current_nodes.root_node = prev_node
-        else:
-            # get more nodes from below the context window
-            next_node = current_nodes.root_node.next
-            if next_node is not None:
-                current_nodes.nodes.append(next_node)
-                current_nodes.root_node = next_node
-            else:
-                # retry with new base node
-                nodes = self.docstore.get_random_nodes(k=1)
-                return CurrentNodes(root_node=nodes[0], nodes=nodes)
-        return current_nodes
-
     def _get_new_random_node(self):
         assert self.docstore is not None, "docstore cannot be None"
         new_node = self.docstore.get_random_nodes(k=1)[0]
@@ -203,9 +160,7 @@ class Evolution:
             results = await self.generator_llm.generate(
                 prompt=prompt, is_async=self.is_async
             )
-            question = await json_loader.safe_load(
-                results.generations[0][0].text.strip(), self.generator_llm
-            )
+            question = results.generations[0][0].text.strip()   
 
         return question, current_nodes
 
@@ -282,6 +237,7 @@ class Evolution:
         self.find_relevent_context_prompt = self.find_relevent_context_prompt.adapt(
             language, self.generator_llm, cache_dir
         )
+        self.rewrite_invalid_question_prompt = self.rewrite_invalid_question_prompt.adapt(language, self.generator_llm, cache_dir)
         self.node_filter.adapt(language, cache_dir)
         self.question_filter.adapt(language, cache_dir)
 
@@ -332,7 +288,6 @@ class SimpleEvolution(Evolution):
         is_valid_question = await self.question_filter.filter(seed_question)
         if not is_valid_question:
             # get more context to rewrite question
-            # TODO: add rewrite_question_prompt
             seed_question, current_nodes = await self.fix_invalid_question(
                 seed_question, current_nodes
             )
@@ -416,6 +371,23 @@ class ComplexEvolution(Evolution):
             )
         )
         reasoning_question = result.generations[0][0].text.strip()
+        
+        if not await self.question_filter.filter(reasoning_question):
+            # retry
+            # get more context to rewrite question
+            reasoning_question, current_nodes = await self.fix_invalid_question(
+                reasoning_question, current_nodes
+            )
+            logger.info("rewritten question: %s", reasoning_question)
+            is_valid_question = await self.question_filter.filter(reasoning_question)
+            if not is_valid_question:
+                # retry with new nodes added
+                current_nodes = self.se._get_new_random_node()
+                return await self.aretry_evolve(current_tries, current_nodes)
+        else:    
+            # retry with new nodes added
+            current_nodes = self.se._get_new_random_node()
+            return await self.aretry_evolve(current_tries, current_nodes)
 
         # compress the question
         compressed_question = await self._transform_question(
@@ -427,11 +399,6 @@ class ComplexEvolution(Evolution):
             reasoning_question,
         )
 
-        if not await self.question_filter.filter(compressed_question):
-            # retry
-            # TODO: same as simple evolution, use question_rewrite_prompt
-            current_nodes = self.se._get_more_adjacent_nodes(current_nodes)
-            return await self.aretry_evolve(current_tries, current_nodes)
 
         assert self.evolution_filter is not None, "evolution filter cannot be None"
         if await self.evolution_filter.filter(simple_question, compressed_question):
@@ -512,7 +479,19 @@ class MultiContextEvolution(ComplexEvolution):
 
         if not await self.question_filter.filter(question):
             # retry
-            current_nodes = self.se._get_more_adjacent_nodes(current_nodes)
+            # get more context to rewrite question
+            question, current_nodes = await self.fix_invalid_question(
+                question, current_nodes
+            )
+            logger.info("rewritten question: %s", question)
+            is_valid_question = await self.question_filter.filter(question)
+            if not is_valid_question:
+                # retry with new nodes added
+                current_nodes = self.se._get_new_random_node()
+                return await self.aretry_evolve(current_tries, current_nodes)
+        else:    
+            # retry with new nodes added
+            current_nodes = self.se._get_new_random_node()
             return await self.aretry_evolve(current_tries, current_nodes)
 
         # compress the question
