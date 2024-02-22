@@ -160,7 +160,7 @@ class Evolution:
             results = await self.generator_llm.generate(
                 prompt=prompt, is_async=self.is_async
             )
-            question = results.generations[0][0].text.strip()   
+            question = results.generations[0][0].text.strip()
 
         return question, current_nodes
 
@@ -237,7 +237,11 @@ class Evolution:
         self.find_relevent_context_prompt = self.find_relevent_context_prompt.adapt(
             language, self.generator_llm, cache_dir
         )
-        self.rewrite_invalid_question_prompt = self.rewrite_invalid_question_prompt.adapt(language, self.generator_llm, cache_dir)
+        self.rewrite_invalid_question_prompt = (
+            self.rewrite_invalid_question_prompt.adapt(
+                language, self.generator_llm, cache_dir
+            )
+        )
         self.node_filter.adapt(language, cache_dir)
         self.question_filter.adapt(language, cache_dir)
 
@@ -298,11 +302,8 @@ class SimpleEvolution(Evolution):
                 nodes = self.docstore.get_random_nodes(k=1)
                 current_nodes = CurrentNodes(root_node=nodes[0], nodes=nodes)
                 return await self.aretry_evolve(current_tries, current_nodes)
-            else:
-                return seed_question, current_nodes, "simple"
-        else:
-            # if valid question
-            return seed_question, current_nodes, "simple"
+
+        return seed_question, current_nodes, "simple"
 
     def __hash__(self):
         return hash(self.__class__.__name__)
@@ -371,10 +372,9 @@ class ComplexEvolution(Evolution):
             )
         )
         reasoning_question = result.generations[0][0].text.strip()
-        
+
         if not await self.question_filter.filter(reasoning_question):
             # retry
-            # get more context to rewrite question
             reasoning_question, current_nodes = await self.fix_invalid_question(
                 reasoning_question, current_nodes
             )
@@ -384,21 +384,16 @@ class ComplexEvolution(Evolution):
                 # retry with new nodes added
                 current_nodes = self.se._get_new_random_node()
                 return await self.aretry_evolve(current_tries, current_nodes)
-        else:    
-            # retry with new nodes added
-            current_nodes = self.se._get_new_random_node()
-            return await self.aretry_evolve(current_tries, current_nodes)
 
         # compress the question
         compressed_question = await self._transform_question(
             prompt=self.compress_question_prompt, question=reasoning_question
         )
         logger.debug(
-            "[%s] multicontext question compressed: %s",
+            "[%s] question compressed: %s",
             self.__class__.__name__,
             reasoning_question,
         )
-
 
         assert self.evolution_filter is not None, "evolution filter cannot be None"
         if await self.evolution_filter.filter(simple_question, compressed_question):
@@ -485,14 +480,11 @@ class MultiContextEvolution(ComplexEvolution):
             )
             logger.info("rewritten question: %s", question)
             is_valid_question = await self.question_filter.filter(question)
+
             if not is_valid_question:
                 # retry with new nodes added
                 current_nodes = self.se._get_new_random_node()
                 return await self.aretry_evolve(current_tries, current_nodes)
-        else:    
-            # retry with new nodes added
-            current_nodes = self.se._get_new_random_node()
-            return await self.aretry_evolve(current_tries, current_nodes)
 
         # compress the question
         compressed_question = await self._transform_question(
