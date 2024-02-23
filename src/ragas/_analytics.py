@@ -90,7 +90,7 @@ class EvaluationEvent(BaseEvent):
     language: str
 
 
-class TesetGenerationEvent(BaseEvent):
+class TestsetGenerationEvent(BaseEvent):
     evolution_names: t.List[str]
     evolution_percentages: t.List[float]
     num_rows: int
