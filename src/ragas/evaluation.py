@@ -10,7 +10,11 @@ from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
 from ragas._analytics import EvaluationEvent, track
 from ragas.callbacks import new_group
-from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper, embedding_factory
+from ragas.embeddings.base import (
+    BaseRagasEmbeddings,
+    LangchainEmbeddingsWrapper,
+    embedding_factory,
+)
 from ragas.llms import llm_factory
 from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
@@ -36,8 +40,8 @@ if t.TYPE_CHECKING:
 def evaluate(
     dataset: Dataset,
     metrics: list[Metric] | None = None,
-    llm: t.Optional[BaseRagasLLM] = None,
-    embeddings: t.Optional[BaseRagasEmbeddings] = None,
+    llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
+    embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
     callbacks: Callbacks = [],
     is_async: bool = False,
     max_workers: t.Optional[int] = None,
@@ -79,7 +83,7 @@ def evaluate(
     run_config: RunConfig, optional
         Configuration for runtime settings like timeout and retries. If not provided,
         default values are used.
-    raise_exceptions: bool, optional
+    raise_exceptions: True
         Whether to raise exceptions or not. If set to True then the evaluation will
         raise an exception if any of the metrics fail. If set to False then the
         evaluation will return `np.nan` for the row that failed. Default is True.
