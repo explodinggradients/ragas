@@ -20,6 +20,7 @@ class RunConfig:
     timeout: int = 60
     max_retries: int = 10
     max_wait: int = 60
+    max_workers: int = 16
     exception_types: t.Union[
         t.Type[BaseException],
         t.Tuple[t.Type[BaseException], ...],
