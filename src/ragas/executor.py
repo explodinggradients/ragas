@@ -1,4 +1,5 @@
 from __future__ import annotations
+import sys
 
 import asyncio
 import logging
@@ -28,7 +29,11 @@ def as_completed(loop, coros, max_concurrency):
     if max_concurrency == -1:
         return asyncio.as_completed(coros, loop=loop)
     
-    semaphore = asyncio.Semaphore(max_concurrency, loop=loop)
+    # loop argument is removed since Python 3.10
+    semaphore = asyncio.Semaphore(
+        max_concurrency,
+        **({"loop": loop} if sys.version_info[:2] < (3, 10) else {})
+    )
     async def sem_coro(coro):
         async with semaphore:
             return await coro
