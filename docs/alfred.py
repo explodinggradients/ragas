@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from collections import namedtuple
+import argparse
 import asyncio
 from tqdm.asyncio import tqdm
 import typing as t
@@ -21,6 +22,7 @@ def load_docs(path: str) -> t.List[File]:
     docs = []
     for file in files:
         with open(file, "r") as f:
+            print("fixing: ", file)
             docs.append(File(file, f.read()))
     return docs
 
@@ -54,8 +56,15 @@ if __name__ == "__main__":
     """
     Helpful assistant for documentation review and more (hopefully in the future).
     """
+    # Create an argument parser
+    parser = argparse.ArgumentParser(
+        description="Helpful assistant for documentation review."
+    )
+    parser.add_argument("-d", "--directory", help="Directory to run the script against")
+    args = parser.parse_args()
+    directory = args.directory
+    docs = load_docs(directory)
     gpt4 = ChatOpenAI(model="gpt-4")
-    docs = load_docs("./getstarted/")
     fix_docs = asyncio.run(main(docs, gpt4))
     for doc in fix_docs:
         with open(doc.name, "w") as f:

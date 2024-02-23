@@ -39,6 +39,9 @@ docs-site: ## Build and serve documentation
 watch-docs: ## Build and watch documentation
 	rm -rf $(GIT_ROOT)/docs/_build/{html, jupyter_execute}
 	sphinx-autobuild docs docs/_build/html --watch $(GIT_ROOT)/src/ --ignore "_build" --open-browser
+rewrite-docs: ## Use GPT4 to rewrite the documentation
+	@echo "Rewriting the documentation in directory $(DIR)..."
+	@python $(GIT_ROOT)/docs/python alphred.py --directory $(DIR)
 
 # Benchmarks
 run-benchmarks-eval: ## Run benchmarks for Evaluation

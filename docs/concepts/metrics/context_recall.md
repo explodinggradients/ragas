@@ -37,7 +37,7 @@ context_recall = ContextRecall(
 
 )
 # Dataset({
-#     features: ['contexts','ground_truths'],
+#     features: ['contexts','ground_truth'],
 #     num_rows: 25
 # })
 dataset: Dataset

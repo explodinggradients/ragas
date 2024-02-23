@@ -17,7 +17,7 @@ amnesty_dataset
 ```{code-block} bash
 DatasetDict({
     train: Dataset({
-        features: ['question', 'ground_truths', 'answer', 'contexts'],
+        features: ['question', 'ground_truth', 'answer', 'contexts'],
         num_rows: 20
     })
 })

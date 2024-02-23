@@ -110,7 +110,7 @@ def generate_responses(query_engine, test_questions, test_answers):
         "contexts": contexts,
   }
   if test_answers is not None:
-    dataset_dict["ground_truths"] = test_answers
+    dataset_dict["ground_truth"] = test_answers
   ds = Dataset.from_dict(dataset_dict)
   return ds
 ```
