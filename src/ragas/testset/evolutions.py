@@ -43,7 +43,7 @@ EvolutionOutput = t.Tuple[str, CurrentNodes, str]
 class DataRow(BaseModel):
     question: str
     contexts: t.List[str]
-    ground_truth: str
+    ground_truth: t.Union[str, float] = np.nan
     evolution_type: str
 
 
@@ -170,6 +170,9 @@ class Evolution:
     ) -> EvolutionOutput:
         ...
 
+    async def filter_and_retry(self, question):
+        ...
+
     async def generate_datarow(
         self,
         question: str,
@@ -214,8 +217,11 @@ class Evolution:
         answer = await json_loader.safe_load(
             results.generations[0][0].text.strip(), self.generator_llm
         )
+        answer = answer if isinstance(answer, dict) else {}
         logger.debug("answer generated: %s", answer)
-        answer = np.nan if answer["verdict"] == "-1" else answer["answer"]
+        answer = (
+            np.nan if answer.get("verdict") == "-1" else answer.get("answer", np.nan)
+        )
 
         return DataRow(
             question=question,
@@ -287,9 +293,8 @@ class SimpleEvolution(Evolution):
         )
         seed_question = results.generations[0][0].text
         logger.info("seed question generated: %s", seed_question)
-        # NOTE: might need improvement
-        # select only one seed question here
         is_valid_question = await self.question_filter.filter(seed_question)
+
         if not is_valid_question:
             # get more context to rewrite question
             seed_question, current_nodes = await self.fix_invalid_question(
@@ -299,8 +304,7 @@ class SimpleEvolution(Evolution):
             is_valid_question = await self.question_filter.filter(seed_question)
             if not is_valid_question:
                 # retry with new nodes added
-                nodes = self.docstore.get_random_nodes(k=1)
-                current_nodes = CurrentNodes(root_node=nodes[0], nodes=nodes)
+                current_nodes = self._get_new_random_node()
                 return await self.aretry_evolve(current_tries, current_nodes)
 
         return seed_question, current_nodes, "simple"

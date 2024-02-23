@@ -298,12 +298,14 @@ class InMemoryDocumentStore(DocumentStore):
 
         else:
             for file_id in filename_ids:
-                nodes_embedding = [
-                    node.embedding for node in self.nodes if node.filename == file_id
-                ]
+                nodes_embedding = np.array(
+                    [node.embedding for node in self.nodes if node.filename == file_id]
+                )
+                nodes_embedding = nodes_embedding.reshape(len(nodes_embedding), -1)
                 doc_embeddings[file_id] = np.mean(nodes_embedding, axis=0)
 
             for node in self.nodes:
+                assert node.embedding is not None, "Embedding cannot be None"
                 node.doc_similarity = similarity(
                     node.embedding, doc_embeddings[node.filename]
                 )
