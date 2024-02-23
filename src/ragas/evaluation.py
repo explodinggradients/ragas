@@ -83,7 +83,7 @@ def evaluate(
     run_config: RunConfig, optional
         Configuration for runtime settings like timeout and retries. If not provided,
         default values are used.
-    raise_exceptions: bool, optional
+    raise_exceptions: True
         Whether to raise exceptions or not. If set to True then the evaluation will
         raise an exception if any of the metrics fail. If set to False then the
         evaluation will return `np.nan` for the row that failed. Default is True.
