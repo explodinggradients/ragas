@@ -10,7 +10,11 @@ from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
 from ragas._analytics import EvaluationEvent, track
 from ragas.callbacks import new_group
-from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper, embedding_factory
+from ragas.embeddings.base import (
+    BaseRagasEmbeddings,
+    LangchainEmbeddingsWrapper,
+    embedding_factory,
+)
 from ragas.llms import llm_factory
 from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
@@ -36,8 +40,8 @@ if t.TYPE_CHECKING:
 def evaluate(
     dataset: Dataset,
     metrics: list[Metric] | None = None,
-    llm: t.Optional[BaseRagasLLM] = None,
-    embeddings: t.Optional[BaseRagasEmbeddings] = None,
+    llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
+    embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
     callbacks: Callbacks = [],
     is_async: bool = False,
     max_workers: t.Optional[int] = None,
