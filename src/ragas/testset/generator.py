@@ -78,7 +78,7 @@ class TestsetGenerator:
         embeddings: str = "text-embedding-ada-002",
         docstore: t.Optional[DocumentStore] = None,
         chunk_size: int = 512,
-        run_config: RunConfig = None,
+        run_config: t.Optional[RunConfig] = None,
     ) -> "TestsetGenerator":
         generator_llm_model = LangchainLLMWrapper(ChatOpenAI(model=generator_llm))
         critic_llm_model = LangchainLLMWrapper(ChatOpenAI(model=critic_llm))
@@ -120,7 +120,7 @@ class TestsetGenerator:
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
-        run_config: t.Optional[RunConfig] = None,
+        run_config: t.Optional[RunConfig] = None
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
@@ -146,7 +146,7 @@ class TestsetGenerator:
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
-        run_config: t.Optional[RunConfig] = None,
+        run_config: t.Optional[RunConfig] = None
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
@@ -184,7 +184,7 @@ class TestsetGenerator:
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
-        run_config: t.Optional[RunConfig] = None,
+        run_config: t.Optional[RunConfig] = None
     ):
         # validate distributions
         if not check_if_sum_is_close(list(distributions.values()), 1.0, 3):

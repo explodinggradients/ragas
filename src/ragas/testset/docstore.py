@@ -190,7 +190,7 @@ class InMemoryDocumentStore(DocumentStore):
     nodes: t.List[Node] = field(default_factory=list)
     node_embeddings_list: t.List[Embedding] = field(default_factory=list)
     node_map: t.Dict[str, Node] = field(default_factory=dict)
-    run_config: RunConfig = None
+    run_config: t.Optional[RunConfig] = None
 
     def _embed_items(self, items: t.Union[t.Sequence[Document], t.Sequence[Node]]):
         ...

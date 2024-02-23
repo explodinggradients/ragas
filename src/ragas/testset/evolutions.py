@@ -84,7 +84,11 @@ class Evolution:
             new_node.embedding = np.average(node_embeddings, axis=0)
         return new_node
 
-    def init(self, is_async: bool = True, run_config: t.Optional[RunConfig] = None):
+    def init(
+        self,
+        is_async: bool = True,
+        run_config: t.Optional[RunConfig] = None
+    ):
         self.is_async = is_async
         if run_config is None:
             run_config = RunConfig()
@@ -323,7 +327,11 @@ class ComplexEvolution(Evolution):
         default_factory=lambda: compress_question_prompt
     )
 
-    def init(self, is_async: bool = True, run_config: t.Optional[RunConfig] = None):
+    def init(
+        self,
+        is_async: bool = True,
+        run_config: t.Optional[RunConfig] = None
+    ):
         if run_config is None:
             run_config = RunConfig()
         super().init(is_async=is_async, run_config=run_config)

@@ -25,19 +25,18 @@ def runner_exception_hook(args: threading.ExceptHookArgs):
 # threading.excepthook = runner_exception_hook
 
 def as_completed(loop, coros, max_workers):
+    loop_arg_dict = {"loop": loop} if sys.version_info[:2] < (3, 10) else {}
     if max_workers == -1:
-        return asyncio.as_completed(coros, loop=loop)
+        return asyncio.as_completed(coros, **loop_arg_dict)
     
     # loop argument is removed since Python 3.10
-    semaphore = asyncio.Semaphore(
-        max_workers,
-        **({"loop": loop} if sys.version_info[:2] < (3, 10) else {})
-    )
-    async def sem_coro(coro):
+    semaphore = asyncio.Semaphore(max_workers, **loop_arg_dict)
+    async def sema_coro(coro):
         async with semaphore:
             return await coro
     
-    return asyncio.as_completed([sem_coro(c) for c in coros], loop=loop)
+    sema_coros = [sema_coro(c) for c in coros]
+    return asyncio.as_completed(sema_coros, **loop_arg_dict)
 
 class Runner(threading.Thread):
     def __init__(
@@ -46,7 +45,7 @@ class Runner(threading.Thread):
         desc: str,
         keep_progress_bar: bool = True,
         raise_exceptions: bool = True,
-        run_config: RunConfig = None,
+        run_config: t.Optional[RunConfig] = None
     ):
         super().__init__()
         self.jobs = jobs
@@ -103,7 +102,7 @@ class Executor:
     keep_progress_bar: bool = True
     jobs: t.List[t.Any] = field(default_factory=list, repr=False)
     raise_exceptions: bool = False
-    run_config: RunConfig = None
+    run_config: t.Optional[RunConfig] = field(default_factory=RunConfig, repr=False)
 
     def wrap_callable_with_index(self, callable: t.Callable, counter):
         async def wrapped_callable_async(*args, **kwargs):
