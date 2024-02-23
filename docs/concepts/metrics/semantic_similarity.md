@@ -24,7 +24,7 @@ answer_similarity = AnswerSimilarity()
 
 
 # Dataset({
-#     features: ['answer','ground_truths'],
+#     features: ['answer','ground_truth'],
 #     num_rows: 25
 # })
 dataset: Dataset
