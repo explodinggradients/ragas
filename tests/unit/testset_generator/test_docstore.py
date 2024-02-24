@@ -7,7 +7,7 @@ import pytest
 from langchain.text_splitter import TokenTextSplitter
 from langchain_core.embeddings import Embeddings
 
-from ragas.testset.docstore import Direction, InMemoryDocumentStore, Node
+from ragas.testset.docstore import InMemoryDocumentStore, Node
 
 
 class FakeEmbeddings(Embeddings):
@@ -39,18 +39,13 @@ def test_adjacent_nodes():
 
     fake_embeddings = FakeEmbeddings()
     splitter = TokenTextSplitter(chunk_size=100, chunk_overlap=0)
-
     store = InMemoryDocumentStore(splitter=splitter, embeddings=fake_embeddings)
     store.nodes = [a1, a2, b]
+    store.set_node_relataionships()
 
-    assert store.get_adjacent(a1) == a2
-    assert store.get_adjacent(a2, Direction.PREV) == a1
-    assert store.get_adjacent(a2, Direction.NEXT) is None
-    assert store.get_adjacent(b, Direction.PREV) is None
-
-    # raise ValueError if doc not in store
-    c = Node(doc_id="c", page_content="c", metadata={"filename": "c"})
-    pytest.raises(ValueError, store.get_adjacent, c)
+    assert store.nodes[0].next == a2
+    assert store.nodes[1].prev == a1
+    assert store.nodes[2].next is None
 
 
 def create_test_nodes(with_embeddings=True):
