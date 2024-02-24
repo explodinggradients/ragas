@@ -17,6 +17,21 @@ Low relevance answer: France is in western Europe.
 High relevance answer: France is in western Europe and Paris is its capital.
 ```
 
+:::{dropdown} How was this calculated?
+To calculate how relevant is the answer to the given question, we perform following two steps.
+
+- Step 1: Reverse engineer n variants of question from only the generated answer using the LLM. 
+For example, for the first answer the LLM can generate
+    - possible questions given answer : 
+        - question 1: "In which part of Europe is France located?"
+        - question 2: "What is the geographical location of France within Europe"
+        - question 3: "Can you identify the region of Europe where France is situated?"
+
+- Step 2: Calculate the mean cosine similarity of the generated question with actual question.
+
+The idea here is that if the answer addresses the question correctly, it is highly likely that the question can be recreated from just the answer. 
+:::
+
 ## Example
 
 ```{code-block} python
