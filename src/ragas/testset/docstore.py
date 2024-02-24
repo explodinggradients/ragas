@@ -88,11 +88,11 @@ class Node(Document):
 
     @property
     def next(self):
-        return self.relationships[Direction.NEXT]
+        return self.relationships.get(Direction.NEXT)
 
     @property
     def prev(self):
-        return self.relationships[Direction.PREV]
+        return self.relationships.get(Direction.PREV)
 
 
 class DocumentStore(ABC):
@@ -274,6 +274,7 @@ class InMemoryDocumentStore(DocumentStore):
     def set_node_relataionships(self):
         for i, node in enumerate(self.nodes):
             if i > 0:
+                print("inside set_node_relataionships")
                 prev_node = self.nodes[i - 1]
                 if prev_node.filename == node.filename:
                     node.relationships[Direction.PREV] = prev_node
