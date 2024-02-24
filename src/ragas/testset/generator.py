@@ -77,7 +77,7 @@ class TestsetGenerator:
         critic_llm: str = "gpt-4",
         embeddings: str = "text-embedding-ada-002",
         docstore: t.Optional[DocumentStore] = None,
-        chunk_size: int = 512,
+        chunk_size: int = 1024,
     ) -> "TestsetGenerator":
         generator_llm_model = LangchainLLMWrapper(ChatOpenAI(model=generator_llm))
         critic_llm_model = LangchainLLMWrapper(ChatOpenAI(model=critic_llm))

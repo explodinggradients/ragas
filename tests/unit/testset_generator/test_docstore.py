@@ -7,7 +7,7 @@ import pytest
 from langchain.text_splitter import TokenTextSplitter
 from langchain_core.embeddings import Embeddings
 
-from ragas.testset.docstore import Direction, InMemoryDocumentStore, Node
+from ragas.testset.docstore import InMemoryDocumentStore, Node
 
 
 class FakeEmbeddings(Embeddings):
@@ -33,24 +33,19 @@ class FakeEmbeddings(Embeddings):
 
 
 def test_adjacent_nodes():
-    a1 = Node(doc_id="a1", page_content="a1", filename="a")
-    a2 = Node(doc_id="a2", page_content="a2", filename="a")
-    b = Node(doc_id="b", page_content="b", filename="b")
+    a1 = Node(doc_id="a1", page_content="a1", metadata={"filename": "a"})
+    a2 = Node(doc_id="a2", page_content="a2", metadata={"filename": "a"})
+    b = Node(doc_id="b", page_content="b", metadata={"filename": "a"})
 
     fake_embeddings = FakeEmbeddings()
     splitter = TokenTextSplitter(chunk_size=100, chunk_overlap=0)
-
     store = InMemoryDocumentStore(splitter=splitter, embeddings=fake_embeddings)
     store.nodes = [a1, a2, b]
+    store.set_node_relataionships()
 
-    assert store.get_adjacent(a1) == a2
-    assert store.get_adjacent(a2, Direction.PREV) == a1
-    assert store.get_adjacent(a2, Direction.NEXT) is None
-    assert store.get_adjacent(b, Direction.PREV) is None
-
-    # raise ValueError if doc not in store
-    c = Node(doc_id="c", page_content="c", filename="c")
-    pytest.raises(ValueError, store.get_adjacent, c)
+    assert store.nodes[0].next == a2
+    assert store.nodes[1].prev == a1
+    assert store.nodes[2].next is None
 
 
 def create_test_nodes(with_embeddings=True):
@@ -63,10 +58,16 @@ def create_test_nodes(with_embeddings=True):
 
         embeddings = defaultdict(lambda: None)
     a1 = Node(
-        doc_id="a1", page_content="cat", filename="a", embedding=embeddings["cat"]
+        doc_id="a1",
+        page_content="cat",
+        metadata={"filename": "a"},
+        embedding=embeddings["cat"],
     )
     a2 = Node(
-        doc_id="a2", page_content="mouse", filename="a", embedding=embeddings["mouse"]
+        doc_id="a2",
+        page_content="mouse",
+        metadata={"filename": "a"},
+        embedding=embeddings["mouse"],
     )
     b = Node(
         doc_id="b",
@@ -144,7 +145,9 @@ async def test_fake_embeddings():
 def test_docstore_add_batch(fake_llm):
     # create a dummy embeddings with support for async aembed_query()
     fake_embeddings = FakeEmbeddings()
-    store = InMemoryDocumentStore(splitter=None, embeddings=fake_embeddings, llm=fake_llm)  # type: ignore
+    store = InMemoryDocumentStore(
+        splitter=None, embeddings=fake_embeddings, llm=fake_llm
+    )  # type: ignore
 
     # add documents in batch
     nodes = create_test_nodes(with_embeddings=False)
@@ -154,8 +157,12 @@ def test_docstore_add_batch(fake_llm):
         == fake_embeddings.embeddings[nodes[0].page_content]
     )
     # add documents in batch that have some embeddings
-    c = Node(doc_id="c", page_content="c", filename="c", embedding=[0.0] * 768)
-    d = Node(doc_id="d", page_content="d", filename="d", embedding=[0.0] * 768)
+    c = Node(
+        doc_id="c", page_content="c", metadata={"filename": "c"}, embedding=[0.0] * 768
+    )
+    d = Node(
+        doc_id="d", page_content="d", metadata={"filename": "d"}, embedding=[0.0] * 768
+    )
     store.add_nodes([c, d])
 
     # test get() and that embeddings and keyphrases are correct
