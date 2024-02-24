@@ -71,7 +71,7 @@ os.environ["OPENAI_API_KEY"] = "your-openai-key"
 
 # prepare your huggingface dataset in the format
 # Dataset({
-#     features: ['question', 'contexts', 'answer', 'ground_truths'],
+#     features: ['question', 'contexts', 'answer', 'ground_truth'],
 #     num_rows: 25
 # })
 

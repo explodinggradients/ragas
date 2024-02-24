@@ -10,7 +10,7 @@ from datasets import Dataset
 from langchain_openai.chat_models import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
 
-from ragas._analytics import TesetGenerationEvent, track
+from ragas._analytics import TestsetGenerationEvent, track
 from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
 from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
@@ -77,7 +77,7 @@ class TestsetGenerator:
         critic_llm: str = "gpt-4",
         embeddings: str = "text-embedding-ada-002",
         docstore: t.Optional[DocumentStore] = None,
-        chunk_size: int = 512,
+        chunk_size: int = 1024,
     ) -> "TestsetGenerator":
         generator_llm_model = LangchainLLMWrapper(ChatOpenAI(model=generator_llm))
         critic_llm_model = LangchainLLMWrapper(ChatOpenAI(model=critic_llm))
@@ -254,7 +254,7 @@ class TestsetGenerator:
         evol_lang = [get_feature_language(e) for e in distributions]
         evol_lang = [e for e in evol_lang if e is not None]
         track(
-            TesetGenerationEvent(
+            TestsetGenerationEvent(
                 event_type="testset_generation",
                 evolution_names=[e.__class__.__name__.lower() for e in distributions],
                 evolution_percentages=[distributions[e] for e in distributions],

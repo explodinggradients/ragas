@@ -96,12 +96,12 @@ def test_load_userid_from_json_file(tmp_path, monkeypatch):
 
 def test_testset_generation_tracking(monkeypatch):
     import ragas._analytics as analyticsmodule
-    from ragas._analytics import TesetGenerationEvent, track
+    from ragas._analytics import TestsetGenerationEvent, track
     from ragas.testset.evolutions import multi_context, reasoning, simple
 
     distributions = {simple: 0.5, multi_context: 0.3, reasoning: 0.2}
 
-    testset_event_payload = TesetGenerationEvent(
+    testset_event_payload = TestsetGenerationEvent(
         event_type="testset_generation",
         evolution_names=[e.__class__.__name__.lower() for e in distributions],
         evolution_percentages=[distributions[e] for e in distributions],
