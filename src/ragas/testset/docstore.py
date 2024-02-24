@@ -274,7 +274,6 @@ class InMemoryDocumentStore(DocumentStore):
     def set_node_relataionships(self):
         for i, node in enumerate(self.nodes):
             if i > 0:
-                print("inside set_node_relataionships")
                 prev_node = self.nodes[i - 1]
                 if prev_node.filename == node.filename:
                     node.relationships[Direction.PREV] = prev_node
