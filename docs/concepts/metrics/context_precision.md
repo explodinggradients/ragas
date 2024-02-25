@@ -12,6 +12,38 @@ Context Precision is a metric that evaluates whether all of the ground-truth rel
 
 
 Where k is the total number of chunks in `contexts`
+
+```{hint}
+Question: Where is France and what is it's capital?
+Ground truth: France is in Western Europe and its capital is Paris.
+
+High context precision: ["France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. Paris, its capital, is famed for its fashion houses, classical art museums including the Louvre and monuments like the Eiffel Tower", "The country is also renowned for its wines and sophisticated cuisine. Lascaux’s ancient cave drawings, Lyon’s Roman theater and the vast Palace of Versailles attest to its rich history."]  
+
+Low context precision: ["The country is also renowned for its wines and sophisticated cuisine. Lascaux’s ancient cave drawings, Lyon’s Roman theater and", "France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. Paris, its capital, is famed for its fashion houses, classical art museums including the Louvre and monuments like the Eiffel Tower",]
+```
+
+:::{dropdown} How was this calculated?
+Let's examine how context precision was calculated using the low context precision example:
+
+**Step 1**: For each chunk in retrieved context, check if it is relevant or not relevant to arrive at the ground truth for the given question.
+
+**Step 2**: Calculate precision@k for each chunk in the context.
+
+```{math}
+\text{Precision@1} = {\text{0} \over \text{1}} = 1
+````
+
+```{math}
+\text{Precision@2} = {\text{1} \over \text{2}} = 0.5
+````
+
+**Step 3**: Calculate the mean of precision@k to arrive at the final context precision score.
+
+```{math}
+ \text{Context Precision} = {\text{(1+0.5)} \over \text{2}} = 0.75
+```
+
+:::
 ## Example
 
 ```{code-block} python
