@@ -58,6 +58,16 @@ CONTEXT_RECALL_RA = Prompt(
                 "Attributed": "1",
             },
         },
+        {
+            "question": """What is the primary fuel for the Sun?""",
+            "context": """NULL""",
+            "answer": """Hydrogen""",
+            "classification": {
+                "statement_1": "The Sun's primary fuel is hydrogen.",
+                "reason": "The context contains no information",
+                "Attributed": "0",
+            },
+        },
     ],
     input_keys=["question", "context", "answer"],
     output_key="classification",
