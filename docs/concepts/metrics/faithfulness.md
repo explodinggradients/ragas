@@ -19,6 +19,25 @@ The generated answer is regarded as faithful if all the claims that are made in 
 
 **Low faithfulness answer**:  Einstein was born in Germany on 20th March 1879.
 ```
+:::{dropdown} How was this calculated?
+Let's examine how faithfulness was calculated using the low faithfulness answer:
+
+- **Step 1:** Break the generated answer into individual statements.
+    - Statements:
+        - Statement 1: "Einstein was born in Germany."
+        - Statement 2: "Einstein was born on 20th March 1879."
+
+- **Step 2:** For each of the generated statements, verify if it can be inferred from the given context.
+    - Statement 1: Yes
+    - Statement 2: No
+
+- **Step 3:** Use the formula depicted above to calculate faithfulness.
+    ```{math}
+    \text{Faithfulness} = { \text{1} \over \text{2} } = 0.5
+    ```
+
+:::
+
 
 
 ## Example
