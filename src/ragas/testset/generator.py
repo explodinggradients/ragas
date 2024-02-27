@@ -7,8 +7,8 @@ from random import choices
 
 import pandas as pd
 from datasets import Dataset
-from langchain_openai.chat_models import ChatOpenAI
-from langchain_openai.embeddings import OpenAIEmbeddings
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai.llms.base import BaseOpenAI
 
 from ragas._analytics import TestsetGenerationEvent, track
 from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
@@ -73,17 +73,20 @@ class TestsetGenerator:
     @classmethod
     def with_openai(
         cls,
-        generator_llm: str = "gpt-3.5-turbo-16k",
-        critic_llm: str = "gpt-4",
-        embeddings: str = "text-embedding-ada-002",
+        generator_llm: t.Union[BaseOpenAI, ChatOpenAI],
+        critic_llm: t.Union[BaseOpenAI, ChatOpenAI],
+        embeddings: OpenAIEmbeddings,
         docstore: t.Optional[DocumentStore] = None,
         chunk_size: int = 1024,
     ) -> "TestsetGenerator":
-        generator_llm_model = LangchainLLMWrapper(ChatOpenAI(model=generator_llm))
-        critic_llm_model = LangchainLLMWrapper(ChatOpenAI(model=critic_llm))
-        embeddings_model = LangchainEmbeddingsWrapper(
-            OpenAIEmbeddings(model=embeddings)
-        )
+        """
+        Class method to initialize a TestsetGenerator from a Langchain
+        OpenAI or AzureOpenAI LLM
+        """
+        generator_llm_model = LangchainLLMWrapper(generator_llm)
+        critic_llm_model = LangchainLLMWrapper(critic_llm)
+        embeddings_model = LangchainEmbeddingsWrapper(embeddings)
+
         keyphrase_extractor = KeyphraseExtractor(llm=generator_llm_model)
         if docstore is None:
             from langchain.text_splitter import TokenTextSplitter
@@ -114,12 +117,13 @@ class TestsetGenerator:
         self,
         documents: t.Sequence[LlamaindexDocument],
         test_size: int,
-        distributions: Distributions = {},
+        distributions: t.Optional[Distributions] = None,
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
         run_config: t.Optional[RunConfig] = None,
     ):
+        distributions = distributions or {}
         # chunk documents and add to docstore
         self.docstore.add_documents(
             [Document.from_llamaindex_document(doc) for doc in documents]
@@ -140,12 +144,13 @@ class TestsetGenerator:
         self,
         documents: t.Sequence[LCDocument],
         test_size: int,
-        distributions: Distributions = {},
+        distributions: t.Optional[Distributions] = None,
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
         run_config: t.Optional[RunConfig] = None,
     ):
+        distributions = distributions or {}
         # chunk documents and add to docstore
         self.docstore.add_documents(
             [Document.from_langchain_document(doc) for doc in documents]
@@ -178,16 +183,18 @@ class TestsetGenerator:
     def generate(
         self,
         test_size: int,
-        distributions: Distributions = DEFAULT_DISTRIBUTION,
+        distributions: t.Optional[Distributions] = None,
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
         run_config: t.Optional[RunConfig] = None,
     ):
+        distributions = distributions or DEFAULT_DISTRIBUTION
         # validate distributions
         if not check_if_sum_is_close(list(distributions.values()), 1.0, 3):
             raise ValueError(
-                f"distributions passed do not sum to 1.0 [got {sum(list(distributions.values()))}]. Please check the distributions."
+                f"distributions passed do not sum to 1.0 [got {sum(list(distributions.values()))}]. Please check the "
+                f"distributions."
             )
 
         # configure run_config for docstore
@@ -242,7 +249,7 @@ class TestsetGenerator:
 
         try:
             test_data_rows = exec.results()
-            if test_data_rows == []:
+            if not test_data_rows:
                 raise ExceptionInRunner()
 
         except ValueError as e:
