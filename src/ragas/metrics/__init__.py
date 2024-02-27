@@ -12,6 +12,8 @@ from ragas.metrics._context_relevancy import ContextRelevancy, context_relevancy
 from ragas.metrics._faithfulness import Faithfulness, faithfulness
 from ragas.metrics.critique import AspectCritique
 
+from ragas.metrics._context_entities_recall import ContextEntityRecall, context_entity_recall
+
 __all__ = [
     "AnswerCorrectness",
     "answer_correctness",
@@ -30,4 +32,6 @@ __all__ = [
     "ContextRelevancy",
     "AnswerRelevancy",
     "answer_relevancy",
+    "ContextEntityRecall",
+    "context_entity_recall"
 ]
