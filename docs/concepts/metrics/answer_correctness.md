@@ -6,13 +6,40 @@ Answer correctness encompasses two critical aspects: semantic similarity between
 
 
 ```{hint}
-Ground truth: Einstein was born in 1879 at Germany .
+Ground truth: Einstein was born in 1879 in Germany.
 
-High answer correctness: In 1879, in Germany, Einstein was born. 
+High answer correctness: In 1879, Einstein was born in Germany.
 
-Low answer correctness: In Spain, Einstein was born in 1879. 
+Low answer correctness: Einstein was born in Spain in 1879.
+
 ```
 
+
+:::{dropdown} How was this calculated?
+Let's calculate the answer correctness for the answer with low answer correctness. It is computed as the sum of factual correctness and the semantic similarity between the given answer and the ground truth.
+
+Factual correctness quantifies the factual overlap between the generated answer and the ground truth answer. This is done using the concepts of:
+- TP (True Positive): Facts or statements that are present in both the ground truth and the generated answer.
+- FP (False Positive): Facts or statements that are present in the generated answer but not in the ground truth.
+- FN (False Negative): Facts or statements that are present in the ground truth but not in the generated answer.
+
+In the second example:
+- TP: `[Einstein was born in 1879]`
+- FP: `[Einstein was born in Spain]`
+- FN: `[Einstein was born in Germany]`
+
+Now, we can use the formula for the F1 score to quantify correctness based on the number of statements in each of these lists:
+
+
+```{math}
+\text{F1 Score} = {|\text{TP} \over {(|\text{TP}| + 0.5 \times (|\text{FP}| + |\text{FN}|))}}
+```
+
+Next, we calculate the semantic similarity between the generated answer and the ground truth. Read more about it [here](./semantic_similarity.md).
+
+
+Once we have the semantic similarity, we take a weighted average of the semantic similarity and the factual similarity calculated above to arrive at the final score. You can adjust this weightage by modifying the `weights` parameter.
+:::
 
 ## Example
 
@@ -24,7 +51,7 @@ answer_correctness = AnswerCorrectness(
 )
 
 # Dataset({
-#     features: ['answer','ground_truths'],
+#     features: ['answer','ground_truth'],
 #     num_rows: 25
 # })
 dataset: Dataset

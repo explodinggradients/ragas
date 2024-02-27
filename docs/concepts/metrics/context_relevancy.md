@@ -24,8 +24,8 @@ Low context relevancy: France, in Western Europe, encompasses medieval cities, a
 
 ```{code-block} python
 :caption: Context relevancy
-from ragas.metrics import ContextRelevance
-context_relevancy = ContextRelevance()
+from ragas.metrics import ContextRelevancy
+context_relevancy = ContextRelevancy()
 
 
 # Dataset({

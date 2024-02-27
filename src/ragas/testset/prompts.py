@@ -270,22 +270,28 @@ evolution_elimination_prompt = Prompt(
 
 question_answer_prompt = Prompt(
     name="answer_formulate",
-    instruction="""Answer the question using the information from the given context. Answer '-1' if answer is not present in the context.""",
+    instruction="""Answer the question using the information from the given context. Output verdict as '1' if answer is present '-1' if answer is not present in the context.""",
     examples=[
         {
             "context": """The novel '1984' by George Orwell is set in a dystopian future where the world is divided into three superstates. The story follows the life of Winston Smith, who lives in Oceania, a superstate constantly at war.""",
             "question": "In which superstate does Winston Smith live in the novel '1984'?",
-            "answer": "Winston Smith lives in the superstate of Oceania in the novel '1984'.",
+            "answer": {
+                "answer": "Winston Smith lives in the superstate of Oceania in the novel '1984'.",
+                "verdict": "1",
+            },
         },
         {
             "context": """The novel "Pride and Prejudice" by Jane Austen revolves around the character Elizabeth Bennet and her family. The story is set in the 19th century in rural England and deals with issues of marriage, morality, and misconceptions.""",
             "question": "What year was 'Pride and Prejudice' published?",
-            "answer": "-1",
+            "answer": {
+                "answer": "The answer to given question is not present in context",
+                "verdict": "-1",
+            },
         },
     ],
     input_keys=["context", "question"],
     output_key="answer",
-    output_type="string",
+    output_type="json",
     language="english",
 )
 
@@ -324,40 +330,25 @@ keyphrase_extraction_prompt = Prompt(
 
 seed_question_prompt = Prompt(
     name="seed_question",
-    instruction="generate a question that can be fully answered from given context. The question should contain atleast two of the given keyphrases",
+    instruction="generate a question that can be fully answered from given context. The question should contain the given keyphrase",
     examples=[
         {
             "context": "Photosynthesis in plants involves converting light energy into chemical energy, using chlorophyll and other pigments to absorb light. This process is crucial for plant growth and the production of oxygen.",
-            "keyphrases": [
-                "Photosynthesis",
-                "Light energy",
-                "Chlorophyll",
-                "Oxygen production",
-            ],
-            "question": "How does chlorophyll aid in converting light energy into chemical energy during photosynthesis?",
+            "keyphrase": "Photosynthesis",
+            "question": "What is the role of photosynthesis in plant growth?",
         },
         {
             "context": "The Industrial Revolution, starting in the 18th century, marked a major turning point in history as it led to the development of factories and urbanization.",
-            "keyphrases": [
-                "Industrial Revolution",
-                "18th century",
-                "Factories",
-                "Urbanization",
-            ],
-            "question": "Why did the Industrial Revolution significantly contribute to the development of factories and urbanization?",
+            "keyphrase": "Industrial Revolution",
+            "question": "How did the Industrial Revolution mark a major turning point in history?",
         },
         {
-            "context": "A black hole is a region of spacetime where gravity is so strong that nothing, including light and other electromagnetic waves, has enough energy to escape it. The theory of general relativity predicts that a sufficiently compact mass can deform spacetime to form a black hole.",
-            "keyphrases": [
-                "Black hole",
-                "region of spacetime",
-                "Sufficiently compact mass",
-                "Energy to escape",
-            ],
-            "question": "What is a black hole and how does it relate to a region of spacetime?",
+            "context": "The process of evaporation plays a crucial role in the water cycle, converting water from liquid to vapor and allowing it to rise into the atmosphere.",
+            "keyphrase": "Evaporation",
+            "question": "Why is evaporation important in the water cycle?",
         },
     ],
-    input_keys=["context", "keyphrases"],
+    input_keys=["context", "keyphrase"],
     output_key="question",
     output_type="string",
 )

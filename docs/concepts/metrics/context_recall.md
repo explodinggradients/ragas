@@ -19,14 +19,26 @@ Question: Where is France and what is it's capital?
 Ground truth: France is in Western Europe and its capital is Paris. 
 
 High context recall: France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. Paris, its capital, is famed for its fashion houses, classical art museums including the Louvre and monuments like the Eiffel Tower.
-    Explanation: The context answers both: (1) Where is France: Western Europe, (2) what is it's capital: Paris
 
 Low context recall: France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. The country is also renowned for its wines and sophisticated cuisine. Lascaux’s ancient cave drawings, Lyon’s Roman theater and the vast Palace of Versailles attest to its rich history.
-    Explanation: The context answers only: (1) Where is France: Western Europe, but not (2) what is it's capital: Paris
-
 ```
 
+:::{dropdown} How was this calculated?
+Let's examine how context recall was calculated using the low context recall example:
 
+- **Step 1:** Break the ground truth answer into individual statements.
+    - Statements:
+        - Statement 1: "France is in Western Europe."
+        - Statement 2: "Its capital is Paris."
+- **Step 2:** For each of the ground truth statements, verify if it can be attributed to the retrieved context.
+    - Statement 1: Yes
+    - Statement 2: No
+
+- **Step 3:** Use the formula depicted above to calculate context recall.
+    ```{math}
+    \text{context recall} = { \text{1} \over \text{2} } = 0.5
+    ``` 
+:::
 ## Example
 
 ```{code-block} python
@@ -37,7 +49,7 @@ context_recall = ContextRecall(
 
 )
 # Dataset({
-#     features: ['contexts','ground_truths'],
+#     features: ['contexts','ground_truth'],
 #     num_rows: 25
 # })
 dataset: Dataset
