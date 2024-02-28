@@ -197,7 +197,6 @@ class Evolution:
             if isinstance(relevent_contexts_result, dict)
             else None
         )
-
         if relevant_context_indices is None:
             relevant_context = CurrentNodes(
                 root_node=current_nodes.root_node, nodes=current_nodes.nodes
@@ -208,9 +207,11 @@ class Evolution:
                 for i in relevant_context_indices
                 if i - 1 < len(current_nodes.nodes)
             ]
-            relevant_context = CurrentNodes(
-                root_node=selected_nodes[0], nodes=selected_nodes
-            ) if selected_nodes else current_nodes
+            relevant_context = (
+                CurrentNodes(root_node=selected_nodes[0], nodes=selected_nodes)
+                if selected_nodes
+                else current_nodes
+            )
 
         merged_nodes = self.merge_nodes(relevant_context)
         results = await self.generator_llm.generate(
@@ -282,10 +283,9 @@ class SimpleEvolution(Evolution):
         merged_node = self.merge_nodes(current_nodes)
         passed = await self.node_filter.filter(merged_node)
         if not passed["score"]:
-            nodes = self.docstore.get_random_nodes(k=1)
-            new_current_nodes = CurrentNodes(root_node=nodes[0], nodes=nodes)
+            current_nodes = self._get_new_random_node()
             return await self.aretry_evolve(
-                current_tries, new_current_nodes, update_count=False
+                current_tries, current_nodes, update_count=False
             )
 
         logger.debug("keyphrases in merged node: %s", merged_node.keyphrases)
@@ -404,7 +404,7 @@ class ComplexEvolution(Evolution):
         )
 
         assert self.evolution_filter is not None, "evolution filter cannot be None"
-        if not await self.evolution_filter.filter(simple_question, compressed_question):
+        if await self.evolution_filter.filter(simple_question, compressed_question):
             # retry
             current_nodes = self.se._get_new_random_node()
             logger.debug(
@@ -504,7 +504,7 @@ class MultiContextEvolution(ComplexEvolution):
         )
 
         assert self.evolution_filter is not None, "evolution filter cannot be None"
-        if not await self.evolution_filter.filter(simple_question, compressed_question):
+        if await self.evolution_filter.filter(simple_question, compressed_question):
             # retry
             current_nodes = self.se._get_new_random_node()
             return await self.aretry_evolve(current_tries, current_nodes)
