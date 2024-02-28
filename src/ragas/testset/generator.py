@@ -97,6 +97,7 @@ class TestsetGenerator:
             generator_llm_model=generator_llm_model,
             embeddings_model=embeddings_model,
             critic_llm_model=critic_llm_model,
+            docstore=docstore,
             run_config=run_config,
         )
 
@@ -146,7 +147,7 @@ class TestsetGenerator:
         cls,
         chunk_size: int,
         generator_llm_model: LangchainLLMWrapper,
-        embeddings_model: LangchainLLMWrapper,
+        embeddings_model: BaseRagasEmbeddings,
         critic_llm_model: LangchainLLMWrapper,
         docstore: t.Optional[DocumentStore],
         run_config: t.Optional[RunConfig],
