@@ -119,19 +119,19 @@ class TestsetGenerator:
             HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
         }
         generator_llm_model = LangchainLLMWrapper(
-            ChatGoogleGenerativeAI(
+            ChatGoogleGenerativeAI(  # type: ignore
                 model=generator_llm,
                 safety_settings=safety_blocknone,
             )
         )
         critic_llm_model = LangchainLLMWrapper(
-            ChatGoogleGenerativeAI(
+            ChatGoogleGenerativeAI(  # type: ignore
                 model=critic_llm,
                 safety_settings=safety_blocknone,
             )
         )
         embeddings_model = LangchainEmbeddingsWrapper(
-            GoogleGenerativeAIEmbeddings(model=embeddings)
+            GoogleGenerativeAIEmbeddings(model=embeddings)  # type: ignore
         )
         return cls._common_constructor(
             chunk_size=chunk_size,
