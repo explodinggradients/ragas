@@ -178,7 +178,7 @@ filter_question_prompt = Prompt(
             "question": "What is the discovery about space?",
             "output": {
                 "reason": "The question is too vague and does not specify which discovery about space it is referring to.",
-                "verdit": "0",
+                "verdict": "0",
             },
         },
         {
