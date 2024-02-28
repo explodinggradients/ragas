@@ -182,7 +182,7 @@ class Evolution:
         assert self.generator_llm is not None, "generator_llm cannot be None"
 
         node_content = [
-            f"{i}\t{n.page_content}" for i, n in enumerate(current_nodes.nodes)
+            f"{i+1}\t{n.page_content}" for i, n in enumerate(current_nodes.nodes)
         ]
         results = await self.generator_llm.generate(
             prompt=self.find_relevent_context_prompt.format(
@@ -203,10 +203,14 @@ class Evolution:
                 root_node=current_nodes.root_node, nodes=current_nodes.nodes
             )
         else:
-            selected_nodes = [current_nodes.nodes[i] for i in relevant_context_indices]
+            selected_nodes = [
+                current_nodes.nodes[i - 1]
+                for i in relevant_context_indices
+                if i - 1 < len(current_nodes.nodes)
+            ]
             relevant_context = CurrentNodes(
                 root_node=selected_nodes[0], nodes=selected_nodes
-            )
+            ) if selected_nodes else current_nodes
 
         merged_nodes = self.merge_nodes(relevant_context)
         results = await self.generator_llm.generate(
