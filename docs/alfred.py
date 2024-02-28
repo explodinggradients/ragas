@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-import os
-from collections import namedtuple
 import argparse
 import asyncio
-from tqdm.asyncio import tqdm
+import os
 import typing as t
-from langchain_openai.chat_models import ChatOpenAI
-from langchain_core.language_models.chat_models import BaseChatModel
+from collections import namedtuple
+
 from langchain.prompts import ChatPromptTemplate
+from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_openai.chat_models import ChatOpenAI
+from tqdm.asyncio import tqdm
 
 File = namedtuple("File", "name content")
 

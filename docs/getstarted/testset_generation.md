@@ -41,9 +41,18 @@ Now, we'll import and use Ragas' `TestsetGenerator` to quickly generate a synthe
 :caption: Create 10 samples using default configuration
 from ragas.testset.generator import TestsetGenerator
 from ragas.testset.evolutions import simple, reasoning, multi_context
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 # generator with openai models
-generator = TestsetGenerator.with_openai()
+generator_llm = ChatOpenAI(model="gpt-3.5-turbo-16k")
+critic_llm = ChatOpenAI(model="gpt-4")
+embeddings = OpenAIEmbeddings()
+
+generator = TestsetGenerator.from_langchain(
+    generator_llm,
+    critic_llm,
+    embeddings
+)
 
 # generate testset
 testset = generator.generate_with_langchain_docs(documents, test_size=10, distributions={simple: 0.5, reasoning: 0.25, multi_context: 0.25})

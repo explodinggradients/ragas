@@ -7,8 +7,8 @@ from random import choices
 
 import pandas as pd
 from datasets import Dataset
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_openai.llms.base import BaseOpenAI
+from langchain_core.embeddings import Embeddings
+from langchain_core.language_models import BaseLanguageModel
 
 from ragas._analytics import TestsetGenerationEvent, track
 from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
@@ -71,18 +71,14 @@ class TestsetGenerator:
     docstore: DocumentStore
 
     @classmethod
-    def with_openai(
+    def from_langchain(
         cls,
-        generator_llm: t.Union[BaseOpenAI, ChatOpenAI],
-        critic_llm: t.Union[BaseOpenAI, ChatOpenAI],
-        embeddings: OpenAIEmbeddings,
+        generator_llm: BaseLanguageModel,
+        critic_llm: BaseLanguageModel,
+        embeddings: Embeddings,
         docstore: t.Optional[DocumentStore] = None,
         chunk_size: int = 1024,
     ) -> "TestsetGenerator":
-        """
-        Class method to initialize a TestsetGenerator from a Langchain
-        OpenAI or AzureOpenAI LLM
-        """
         generator_llm_model = LangchainLLMWrapper(generator_llm)
         critic_llm_model = LangchainLLMWrapper(critic_llm)
         embeddings_model = LangchainEmbeddingsWrapper(embeddings)

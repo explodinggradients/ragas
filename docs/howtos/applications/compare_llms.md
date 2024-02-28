@@ -35,6 +35,7 @@ from llama_index import download_loader, SimpleDirectoryReader
 from ragas.testset import TestsetGenerator
 from ragas.testset.generator import TestsetGenerator
 from ragas.testset.evolutions import simple, reasoning, multi_context
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 os.environ['OPENAI_API_KEY'] = 'Your OPEN AI key'
 
@@ -43,7 +44,15 @@ reader = SimpleDirectoryReader("./arxiv-papers/",num_files_limit=30)
 documents = reader.load_data()
 
 # generator with openai models
-generator = TestsetGenerator.with_openai()
+generator_llm = ChatOpenAI(model="gpt-3.5-turbo-16k")
+critic_llm = ChatOpenAI(model="gpt-4")
+embeddings = OpenAIEmbeddings()
+
+generator = TestsetGenerator.from_langchain(
+    generator_llm,
+    critic_llm,
+    embeddings
+)
 
 distributions = {
     simple: 0.5,
