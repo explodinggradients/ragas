@@ -136,19 +136,17 @@ class LangchainLLMWrapper(BaseRagasLLM):
         stop: t.Optional[t.List[str]] = None,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
-        temperature = self.get_temperature(n=n)
+        self.langchain_llm.temperature = self.get_temperature(n=n)
         if is_multiple_completion_supported(self.langchain_llm):
             return self.langchain_llm.generate_prompt(
                 prompts=[prompt],
                 n=n,
-                temperature=temperature,
                 stop=stop,
                 callbacks=callbacks,
             )
         else:
             result = self.langchain_llm.generate_prompt(
                 prompts=[prompt] * n,
-                temperature=temperature,
                 stop=stop,
                 callbacks=callbacks,
             )
@@ -166,19 +164,17 @@ class LangchainLLMWrapper(BaseRagasLLM):
         stop: t.Optional[t.List[str]] = None,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
-        temperature = self.get_temperature(n=n)
+        self.langchain_llm.temperature = self.get_temperature(n=n)
         if is_multiple_completion_supported(self.langchain_llm):
             return await self.langchain_llm.agenerate_prompt(
                 prompts=[prompt],
                 n=n,
-                temperature=temperature,
                 stop=stop,
                 callbacks=callbacks,
             )
         else:
             result = await self.langchain_llm.agenerate_prompt(
                 prompts=[prompt] * n,
-                temperature=temperature,
                 stop=stop,
                 callbacks=callbacks,
             )

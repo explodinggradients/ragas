@@ -8,6 +8,7 @@ dependencies = [
     "langchain-core",
     "langchain-community",
     "langchain_openai",
+    "langchain-google-genai",
     "openai>1",
     "pysbd>=0.3.4",
     "nest-asyncio",
