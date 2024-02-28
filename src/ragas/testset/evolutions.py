@@ -193,7 +193,7 @@ class Evolution:
             results.generations[0][0].text.strip(), llm=self.generator_llm
         )
         relevant_context_indices = (
-            relevent_contexts_result.get("relevant_context", None)
+            relevent_contexts_result.get("relevant_contexts", None)
             if isinstance(relevent_contexts_result, dict)
             else None
         )
@@ -400,7 +400,7 @@ class ComplexEvolution(Evolution):
         )
 
         assert self.evolution_filter is not None, "evolution filter cannot be None"
-        if await self.evolution_filter.filter(simple_question, compressed_question):
+        if not await self.evolution_filter.filter(simple_question, compressed_question):
             # retry
             current_nodes = self.se._get_new_random_node()
             logger.debug(
@@ -408,7 +408,7 @@ class ComplexEvolution(Evolution):
             )
             return await self.aretry_evolve(current_tries, current_nodes)
 
-        return reasoning_question, current_nodes
+        return compressed_question, current_nodes
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         assert self.evolution_filter is not None, "evolution filter cannot be None"
@@ -500,7 +500,7 @@ class MultiContextEvolution(ComplexEvolution):
         )
 
         assert self.evolution_filter is not None, "evolution filter cannot be None"
-        if await self.evolution_filter.filter(simple_question, compressed_question):
+        if not await self.evolution_filter.filter(simple_question, compressed_question):
             # retry
             current_nodes = self.se._get_new_random_node()
             return await self.aretry_evolve(current_tries, current_nodes)
