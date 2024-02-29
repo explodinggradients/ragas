@@ -178,7 +178,7 @@ filter_question_prompt = Prompt(
             "question": "What is the discovery about space?",
             "output": {
                 "reason": "The question is too vague and does not specify which discovery about space it is referring to.",
-                "verdit": "0",
+                "verdict": "0",
             },
         },
         {
@@ -353,8 +353,8 @@ seed_question_prompt = Prompt(
     output_type="string",
 )
 
-find_relevent_context_prompt = Prompt(
-    name="find_relevent_context",
+find_relevant_context_prompt = Prompt(
+    name="find_relevant_context",
     instruction="Given a question and set of contexts, find the most relevant contexts to answer the question.",
     examples=[
         {
@@ -365,7 +365,7 @@ find_relevent_context_prompt = Prompt(
                 "3. Paris is the capital of France. It is also the most populous city in France, with a population of over 2 million people. Paris is known for its cultural landmarks like the Eiffel Tower and the Louvre Museum.",
             ],
             "output": {
-                "relevent_contexts": [1, 2],
+                "relevant_contexts": [1, 2],
             },
         },
         {

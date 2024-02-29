@@ -1,6 +1,10 @@
 from ragas.metrics._answer_correctness import AnswerCorrectness, answer_correctness
 from ragas.metrics._answer_relevance import AnswerRelevancy, answer_relevancy
 from ragas.metrics._answer_similarity import AnswerSimilarity, answer_similarity
+from ragas.metrics._context_entities_recall import (
+    ContextEntityRecall,
+    context_entity_recall,
+)
 from ragas.metrics._context_precision import (
     ContextPrecision,
     ContextUtilization,
@@ -30,4 +34,6 @@ __all__ = [
     "ContextRelevancy",
     "AnswerRelevancy",
     "answer_relevancy",
+    "ContextEntityRecall",
+    "context_entity_recall",
 ]

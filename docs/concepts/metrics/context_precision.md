@@ -30,7 +30,7 @@ Let's examine how context precision was calculated using the low context precisi
 **Step 2**: Calculate precision@k for each chunk in the context.
 
 ```{math}
-\text{Precision@1} = {\text{0} \over \text{1}} = 1
+\text{Precision@1} = {\text{0} \over \text{1}} = 0
 ````
 
 ```{math}
@@ -40,7 +40,7 @@ Let's examine how context precision was calculated using the low context precisi
 **Step 3**: Calculate the mean of precision@k to arrive at the final context precision score.
 
 ```{math}
- \text{Context Precision} = {\text{(1+0.5)} \over \text{2}} = 0.75
+ \text{Context Precision} = {\text{(0+0.5)} \over \text{2}} = 0.25
 ```
 
 :::
