@@ -18,7 +18,7 @@ from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 from ragas.testset.prompts import (
     compress_question_prompt,
     conditional_question_prompt,
-    find_relevent_context_prompt,
+    find_relevant_context_prompt,
     multi_context_question_prompt,
     question_answer_prompt,
     question_rewrite_prompt,
@@ -56,8 +56,8 @@ class Evolution:
     question_answer_prompt: Prompt = field(
         default_factory=lambda: question_answer_prompt
     )
-    find_relevent_context_prompt: Prompt = field(
-        default_factory=lambda: find_relevent_context_prompt
+    find_relevant_context_prompt: Prompt = field(
+        default_factory=lambda: find_relevant_context_prompt
     )
     rewrite_invalid_question_prompt: Prompt = field(
         default_factory=lambda: question_rewrite_prompt
@@ -189,16 +189,16 @@ class Evolution:
             f"{i+1}\t{n.page_content}" for i, n in enumerate(current_nodes.nodes)
         ]
         results = await self.generator_llm.generate(
-            prompt=self.find_relevent_context_prompt.format(
+            prompt=self.find_relevant_context_prompt.format(
                 question=question, contexts=node_content
             )
         )
-        relevent_contexts_result = await json_loader.safe_load(
+        relevant_contexts_result = await json_loader.safe_load(
             results.generations[0][0].text.strip(), llm=self.generator_llm
         )
         relevant_context_indices = (
-            relevent_contexts_result.get("relevant_contexts", None)
-            if isinstance(relevent_contexts_result, dict)
+            relevant_contexts_result.get("relevant_contexts", None)
+            if isinstance(relevant_contexts_result, dict)
             else None
         )
         if relevant_context_indices is None:
@@ -249,7 +249,7 @@ class Evolution:
         self.question_answer_prompt = self.question_answer_prompt.adapt(
             language, self.generator_llm, cache_dir
         )
-        self.find_relevent_context_prompt = self.find_relevent_context_prompt.adapt(
+        self.find_relevant_context_prompt = self.find_relevant_context_prompt.adapt(
             language, self.generator_llm, cache_dir
         )
         self.rewrite_invalid_question_prompt = (
@@ -267,7 +267,7 @@ class Evolution:
         assert self.node_filter is not None, "node filter cannot be None"
         assert self.question_filter is not None, "question_filter cannot be None"
         self.question_answer_prompt.save(cache_dir)
-        self.find_relevent_context_prompt.save(cache_dir)
+        self.find_relevant_context_prompt.save(cache_dir)
         self.node_filter.save(cache_dir)
         self.question_filter.save(cache_dir)
 
