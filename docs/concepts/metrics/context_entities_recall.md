@@ -18,6 +18,31 @@ To compute this metric, we use two sets, $GE$ and $CE$, as set of entities prese
 
 ````
 
+:::{dropdown} How was this calculated?
+Let us consider the ground truth and the contexts given above.
+
+- **Step-1**: Find entities present in the ground truths.
+    - Entities in ground truth (GE) - ['Taj Mahal', 'Yamuna', 'Agra', '1631', 'Shah Jahan', 'Mumtaz Mahal']
+- **Step-2**: Find entities present in the context.
+    - Entities in context (CE1) - ['Taj Mahal', 'Agra', 'Shah Jahan', 'Mumtaz Mahal', 'India']
+    - Entities in context (CE2) - ['Taj Mahal', 'UNESCO', 'India']
+- **Step-3**: Use the formula given above to calculate entity-recall
+    ```{math}
+    :label: context_entity_recall
+    \text{context entity recall - 1} = \frac{| CE1 \cap GE |}{| GE |}
+                                 = 4/6
+                                 = 0.666
+    ```
+
+    ```{math}
+    :label: context_entity_recall
+    \text{context entity recall - 2} = \frac{| CE2 \cap GE |}{| GE |}
+                                 = 1/6
+                                 = 0.166
+    ```
+
+    We can see that the first context had a high entity recall, because it has a better entity coverage given the ground truth. If these two contexts were fetched by two retrieval mechanisms on same set of documents, we could say that the first mechanism was better than the other in use-cases where entities are of importance.
+:::
 
 ## Example
 
