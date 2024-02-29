@@ -78,7 +78,7 @@ class Direction(str, Enum):
     PREV = "prev"
     UP = "up"
     DOWN = "down"
-    
+
 
 class Node(Document):
     keyphrases: t.List[str] = Field(default_factory=list, repr=False)
@@ -240,7 +240,7 @@ class InMemoryDocumentStore(DocumentStore):
                 )
                 result_idx += 1
 
-            if n.keyphrases == []:
+            if not n.keyphrases:
                 nodes_to_extract.update({i: result_idx})
                 executor.submit(
                     self.extractor.extract,
@@ -250,7 +250,7 @@ class InMemoryDocumentStore(DocumentStore):
                 result_idx += 1
 
         results = executor.results()
-        if results == []:
+        if not results:
             raise ExceptionInRunner()
 
         for i, n in enumerate(nodes):
@@ -336,7 +336,6 @@ class InMemoryDocumentStore(DocumentStore):
     def get_similar(
         self, node: Node, threshold: float = 0.7, top_k: int = 3
     ) -> t.Union[t.List[Document], t.List[Node]]:
-        items = []
         doc = node
         if doc.embedding is None:
             raise ValueError("Document has no embedding.")

@@ -88,11 +88,7 @@ class Evolution:
             new_node.embedding = np.average(node_embeddings, axis=0)
         return new_node
 
-    def init(
-        self,
-        is_async: bool = True,
-        run_config: t.Optional[RunConfig] = None
-    ):
+    def init(self, is_async: bool = True, run_config: t.Optional[RunConfig] = None):
         self.is_async = is_async
         if run_config is None:
             run_config = RunConfig()
@@ -339,11 +335,7 @@ class ComplexEvolution(Evolution):
         default_factory=lambda: compress_question_prompt
     )
 
-    def init(
-        self,
-        is_async: bool = True,
-        run_config: t.Optional[RunConfig] = None
-    ):
+    def init(self, is_async: bool = True, run_config: t.Optional[RunConfig] = None):
         if run_config is None:
             run_config = RunConfig()
         super().init(is_async=is_async, run_config=run_config)
@@ -466,7 +458,7 @@ class MultiContextEvolution(ComplexEvolution):
         # find a similar node and generate a question based on both
         merged_node = self.merge_nodes(current_nodes)
         similar_node = self.docstore.get_similar(merged_node, top_k=1)
-        if similar_node == []:
+        if not similar_node:
             # retry
             new_random_nodes = self.docstore.get_random_nodes(k=1)
             current_nodes = CurrentNodes(
