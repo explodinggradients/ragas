@@ -1,5 +1,4 @@
 from __future__ import annotations
-from concurrent.futures import Future
 import sys
 
 import asyncio
@@ -16,12 +15,16 @@ from ragas.run_config import RunConfig
 logger = logging.getLogger(__name__)
 
 
-def as_completed(loop, coros, max_workers):
+def as_completed(
+        loop: asyncio.AbstractEventLoop,
+        coros: t.Iterable[asyncio.Future],
+        max_workers: int
+    ):
+    # support Python < 3.10 where loop argument is still required
     loop_arg_dict = {"loop": loop} if sys.version_info[:2] < (3, 10) else {}
     if max_workers == -1:
         return asyncio.as_completed(coros, **loop_arg_dict)
     
-    # loop argument is removed since Python 3.10
     semaphore = asyncio.Semaphore(max_workers, **loop_arg_dict)
     async def sema_coro(coro):
         async with semaphore:
@@ -36,7 +39,7 @@ class Executor:
     keep_progress_bar: bool = True
     jobs: t.List[t.Any] = field(default_factory=list, repr=False)
     raise_exceptions: bool = False
-    run_config: t.Optional[RunConfig] = field(default_factory=RunConfig, repr=False)
+    run_config: t.Optional[RunConfig] = None
 
     def wrap_callable_with_index(self, callable: t.Callable, counter):
         async def wrapped_callable_async(*args, **kwargs):
@@ -56,7 +59,7 @@ class Executor:
         futures = as_completed(
             loop=loop,
             coros=[afunc(*args, **kwargs) for afunc, args, kwargs, _ in self.jobs],
-            max_workers=self.run_config.max_workers
+            max_workers=(self.run_config or RunConfig()).max_workers
         )
         results = loop.run_until_complete(self._aresults(futures))
 
@@ -73,7 +76,7 @@ class Executor:
 
     async def _aresults(
             self,
-            futures: t.Iterator[Future]
+            futures: t.Iterator[asyncio.Future]
         ) -> t.List[t.Any]:
         results = []
         for future in tqdm(
