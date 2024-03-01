@@ -23,15 +23,15 @@ def as_completed(
     # support Python < 3.10 where loop argument is still required
     loop_arg_dict = {"loop": loop} if sys.version_info[:2] < (3, 10) else {}
     if max_workers == -1:
-        return asyncio.as_completed(coros, **loop_arg_dict)
+        return asyncio.as_completed(coros, **loop_arg_dict)  # type: ignore
     
     semaphore = asyncio.Semaphore(max_workers, **loop_arg_dict)
-    async def sema_coro(coro):
+    async def sema_coro(coro: asyncio.Future):
         async with semaphore:
             return await coro
     
     sema_coros = [sema_coro(c) for c in coros]
-    return asyncio.as_completed(sema_coros, **loop_arg_dict)
+    return asyncio.as_completed(sema_coros, **loop_arg_dict)  # type: ignore
 
 @dataclass
 class Executor:
