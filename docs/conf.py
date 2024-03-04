@@ -24,7 +24,7 @@ html_css_files = [
     "css/highlight_python_dark.css",
     "css/highlight_ipython3_dark.css",
 ]
-html_js_files = ["js/mendable_chat_bubble.js"]
+html_js_files = ["js/mendable_chat_bubble.js", "js/octolane.js"]
 html_favicon = "./_static/favicon.ico"
 
 extensions = [
