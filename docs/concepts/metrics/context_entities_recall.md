@@ -18,7 +18,23 @@ To compute this metric, we use two sets, $GE$ and $CE$, as set of entities prese
 
 ````
 
-:::{dropdown} How was this calculated?
+## Example
+
+```{code-block} python
+from ragas.metrics import ContextEntityRecall
+context_entity_recall = ContextEntityRecall()
+
+# Dataset({
+#     features: ['ground_truths','contexts'],
+#     num_rows: 25
+# })
+dataset: Dataset
+
+results = context_entity_recall.score(dataset)
+```
+
+## Calculation
+
 Let us consider the ground truth and the contexts given above.
 
 - **Step-1**: Find entities present in the ground truths.
@@ -42,19 +58,4 @@ Let us consider the ground truth and the contexts given above.
     ```
 
     We can see that the first context had a high entity recall, because it has a better entity coverage given the ground truth. If these two contexts were fetched by two retrieval mechanisms on same set of documents, we could say that the first mechanism was better than the other in use-cases where entities are of importance.
-:::
 
-## Example
-
-```{code-block} python
-from ragas.metrics import ContextEntityRecall
-context_entity_recall = ContextEntityRecall()
-
-# Dataset({
-#     features: ['ground_truths','contexts'],
-#     num_rows: 25
-# })
-dataset: Dataset
-
-results = context_entity_recall.score(dataset)
-```
