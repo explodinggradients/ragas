@@ -14,8 +14,27 @@ Low answer correctness: Einstein was born in Spain in 1879.
 
 ```
 
+## Example
 
-:::{dropdown} How was this calculated?
+```{code-block} python
+:caption: Answer correctness with custom weights for each variable
+from ragas.metrics import AnswerCorrectness
+answer_correctness = AnswerCorrectness(
+    weights=[0.4,0.6]
+)
+
+# Dataset({
+#     features: ['answer','ground_truth'],
+#     num_rows: 25
+# })
+dataset: Dataset
+
+results = answer_correctness.score(dataset)
+
+```
+
+## Calculation
+
 Let's calculate the answer correctness for the answer with low answer correctness. It is computed as the sum of factual correctness and the semantic similarity between the given answer and the ground truth.
 
 Factual correctness quantifies the factual overlap between the generated answer and the ground truth answer. This is done using the concepts of:
@@ -39,23 +58,4 @@ Next, we calculate the semantic similarity between the generated answer and the 
 
 
 Once we have the semantic similarity, we take a weighted average of the semantic similarity and the factual similarity calculated above to arrive at the final score. You can adjust this weightage by modifying the `weights` parameter.
-:::
 
-## Example
-
-```{code-block} python
-:caption: Answer correctness with custom weights for each variable
-from ragas.metrics import AnswerCorrectness
-answer_correctness = AnswerCorrectness(
-    weights=[0.4,0.6]
-)
-
-# Dataset({
-#     features: ['answer','ground_truth'],
-#     num_rows: 25
-# })
-dataset: Dataset
-
-results = answer_correctness.score(dataset)
-
-```

@@ -15,14 +15,6 @@ Low similarity answer: Isaac Newton's laws of motion greatly influenced classica
 
 ```
 
-:::{dropdown} How was this calculated?
-Let's examine how answer similarity was calculated for the first answer:
-
-- **Step 1:** Vectorize the ground truth answer using the specified embedding model.
-- **Step 2:** Vectorize the generated answer using the same embedding model.
-- **Step 3:** Compute the cosine similarity between the two vectors.
-:::
-
 ## Example
 
 ```{code-block} python
@@ -38,3 +30,12 @@ dataset: Dataset
 
 results = answer_similarity.score(dataset)
 ```
+
+## Calculation 
+
+Let's examine how answer similarity was calculated for the first answer:
+
+- **Step 1:** Vectorize the ground truth answer using the specified embedding model.
+- **Step 2:** Vectorize the generated answer using the same embedding model.
+- **Step 3:** Compute the cosine similarity between the two vectors.
+

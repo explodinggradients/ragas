@@ -23,7 +23,25 @@ High context precision: ["France, in Western Europe, encompasses medieval cities
 Low context precision: ["The country is also renowned for its wines and sophisticated cuisine. Lascaux’s ancient cave drawings, Lyon’s Roman theater and", "France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. Paris, its capital, is famed for its fashion houses, classical art museums including the Louvre and monuments like the Eiffel Tower",]
 ```
 
-:::{dropdown} How was this calculated?
+## Example
+
+```{code-block} python
+:caption: Context precision
+from ragas.metrics import ContextPrecision
+context_precision = ContextPrecision()
+
+
+# Dataset({
+#     features: ['question','contexts'],
+#     num_rows: 25
+# })
+dataset: Dataset
+
+results = context_precision.score(dataset)
+```
+
+## Calculation 
+
 Let's examine how context precision was calculated using the low context precision example:
 
 **Step 1**: For each chunk in retrieved context, check if it is relevant or not relevant to arrive at the ground truth for the given question.
@@ -42,22 +60,4 @@ Let's examine how context precision was calculated using the low context precisi
 
 ```{math}
  \text{Context Precision} = {\text{(0+0.5)} \over \text{1}} = 0.5
-```
-
-:::
-## Example
-
-```{code-block} python
-:caption: Context precision
-from ragas.metrics import ContextPrecision
-context_precision = ContextPrecision()
-
-
-# Dataset({
-#     features: ['question','contexts'],
-#     num_rows: 25
-# })
-dataset: Dataset
-
-results = context_precision.score(dataset)
 ```
