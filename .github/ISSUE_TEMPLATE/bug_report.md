@@ -6,7 +6,7 @@ labels: 'bug'
 assignees: ''
 ---
 
-[] I have checked the [documentation](https://docs.ragas.io/) and related resources and couldn't resolve my bug.
+[ ] I have checked the [documentation](https://docs.ragas.io/) and related resources and couldn't resolve my bug.
 
 **Describe the bug**
 A clear and concise description of what the bug is.
