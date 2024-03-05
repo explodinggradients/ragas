@@ -18,18 +18,18 @@ Low answer correctness: Einstein was born in Spain in 1879.
 
 ```{code-block} python
 :caption: Answer correctness with custom weights for each variable
-from ragas.metrics import AnswerCorrectness
-answer_correctness = AnswerCorrectness(
-    weights=[0.4,0.6]
-)
+from datasets import Dataset 
+from ragas.metrics import faithfulness, answer_correctness
+from ragas import evaluate
 
-# Dataset({
-#     features: ['answer','ground_truth'],
-#     num_rows: 25
-# })
-dataset: Dataset
-
-results = answer_correctness.score(dataset)
+data_samples = {
+    'question': ['When was the first super bowl?', 'Who won the most super bowls?'],
+    'answer': ['The first superbowl was held on Jan 15, 1967', 'The most super bowls have been won by The New England Patriots'],
+    'ground_truth': ['The first superbowl was held on January 15, 1967', 'The New England Patriots have won the Super Bowl a record six times']
+}
+dataset = Dataset.from_dict(data_samples)
+score = evaluate(dataset,metrics=[answer_correctness])
+score.to_pandas()
 
 ```
 

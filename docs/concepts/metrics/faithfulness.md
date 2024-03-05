@@ -23,18 +23,20 @@ The generated answer is regarded as faithful if all the claims that are made in 
 ## Example
 
 ```{code-block} python
-:caption: Faithfulness metric with batch size 10
-from ragas.metrics.faithfulness import Faithfulness
-faithfulness = Faithfulness(
-    batch_size = 10
-)
-# Dataset({
-#     features: ['question','contexts','answer'],
-#     num_rows: 25
-# })
-dataset: Dataset
+:caption: Faithfulness 
+from datasets import Dataset 
+from ragas.metrics import faithfulness
+from ragas import evaluate
 
-results = faithfulness.score(dataset)
+data_samples = {
+    'question': ['When was the first super bowl?', 'Who won the most super bowls?'],
+    'answer': ['The first superbowl was held on Jan 15, 1967', 'The most super bowls have been won by The New England Patriots'],
+    'contexts' : [['The First AFL–NFL World Championship Game was an American football game played on January 15, 1967, at the Los Angeles Memorial Coliseum in Los Angeles,'], 
+    ['The Green Bay Packers...Green Bay, Wisconsin.','The Packers compete...Football Conference']],
+}
+dataset = Dataset.from_dict(data_samples)
+score = evaluate(dataset,metrics=[faithfulness])
+score.to_pandas()
 ```
 
 ## Calculation 
