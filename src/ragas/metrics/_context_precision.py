@@ -92,23 +92,39 @@ class ContextPrecision(MetricWithLLM):
 
     def _calculate_average_precision(self, json_responses: t.List[t.Dict]) -> float:
         score = np.nan
-        json_responses = [
-            item if isinstance(item, dict) else {} for item in json_responses
-        ]
-        verdict_list = [
-            int("1" == resp.get("verdict", "").strip())
-            if resp.get("verdict")
-            else np.nan
-            for resp in json_responses
-        ]
-        denominator = sum(verdict_list) + 1e-10
-        numerator = sum(
+        processed_json_responses = []  # To store processed responses for debugging
+        for item in json_responses:
+            if isinstance(item, dict):
+                processed_json_responses.append(item)
+            else:
+                processed_json_responses.append({})
+                print("context_precision: Non-dict item found, replacing with empty dict.")  # Handle non-dict items
+
+        verdict_list = []
+        for resp in processed_json_responses:
+            # Adjusted logic to handle both formats
+            if "verification" in resp and isinstance(resp["verification"], dict):
+                verdict_info = resp["verification"]
+            else:
+                verdict_info = resp  # Handle the case where "verification" is not a separate key
+            
+            verdict_str = verdict_info.get("verdict")
+            if verdict_str in ["0", "1"]:
+                verdict_value = int(verdict_str)
+                verdict_list.append(verdict_value)
+            else:
+                verdict_list.append(np.nan)
+                print(f"context_precision: Missing 'verdict' in response: {resp}")  # Handle missing verdicts
+
+        denominator = np.nansum(verdict_list) + 1e-10
+        numerator = np.nansum(
             [
-                (sum(verdict_list[: i + 1]) / (i + 1)) * verdict_list[i]
+                (np.nansum(verdict_list[: i + 1]) / (i + 1)) * verdict_list[i]
                 for i in range(len(verdict_list))
             ]
         )
         score = numerator / denominator
+
         if np.isnan(score):
             logger.warning(
                 "Invalid response format. Expected a list of dictionaries with keys 'verdict'"
