@@ -68,10 +68,7 @@ import os
 from ragas import evaluate
 from ragas.metrics import faithfulness, answer_correctness
 
-
-
 os.environ["OPENAI_API_KEY"] = "your-openai-key"
-
 
 data_samples = {
     'question': ['When was the first super bowl?', 'Who won the most super bowls?'],
@@ -80,6 +77,7 @@ data_samples = {
     ['The Green Bay Packers...Green Bay, Wisconsin.','The Packers compete...Football Conference']],
     'ground_truth': ['The first superbowl was held on January 15, 1967', 'The New England Patriots have won the Super Bowl a record six times']
 }
+
 dataset = Dataset.from_dict(data_samples)
 
 score = evaluate(dataset,metrics=[faithfulness,answer_correctness])
