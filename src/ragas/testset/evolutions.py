@@ -233,7 +233,7 @@ class Evolution:
         )
 
         return DataRow(
-            question=question,
+            question=question.strip('"'),
             contexts=[n.page_content for n in relevant_context.nodes],
             ground_truth=answer,
             evolution_type=evolution_type,
