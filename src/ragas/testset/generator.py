@@ -77,6 +77,7 @@ class TestsetGenerator:
         critic_llm: str = "gpt-4",
         embeddings: str = "text-embedding-ada-002",
         docstore: t.Optional[DocumentStore] = None,
+        run_config: t.Optional[RunConfig] = None,
         chunk_size: int = 1024,
     ) -> "TestsetGenerator":
         generator_llm_model = LangchainLLMWrapper(ChatOpenAI(model=generator_llm))
@@ -93,6 +94,7 @@ class TestsetGenerator:
                 splitter=splitter,
                 embeddings=embeddings_model,
                 extractor=keyphrase_extractor,
+                run_config=run_config,
             )
             return cls(
                 generator_llm=generator_llm_model,
@@ -118,7 +120,7 @@ class TestsetGenerator:
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
-        run_config: t.Optional[RunConfig] = None,
+        run_config: t.Optional[RunConfig] = None
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
@@ -144,7 +146,7 @@ class TestsetGenerator:
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
-        run_config: t.Optional[RunConfig] = None,
+        run_config: t.Optional[RunConfig] = None
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
@@ -182,7 +184,7 @@ class TestsetGenerator:
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
-        run_config: t.Optional[RunConfig] = None,
+        run_config: t.Optional[RunConfig] = None
     ):
         # validate distributions
         if not check_if_sum_is_close(list(distributions.values()), 1.0, 3):
@@ -213,6 +215,7 @@ class TestsetGenerator:
             desc="Generating",
             keep_progress_bar=True,
             raise_exceptions=raise_exceptions,
+            run_config=run_config,
         )
 
         current_nodes = [

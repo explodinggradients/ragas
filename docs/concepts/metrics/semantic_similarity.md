@@ -15,26 +15,29 @@ Low similarity answer: Isaac Newton's laws of motion greatly influenced classica
 
 ```
 
-:::{dropdown} How was this calculated?
+## Example
+
+```{code-block} python
+from datasets import Dataset 
+from ragas.metrics import answer_similarity
+from ragas import evaluate
+
+
+data_samples = {
+    'question': ['When was the first super bowl?', 'Who won the most super bowls?'],
+    'answer': ['The first superbowl was held on Jan 15, 1967', 'The most super bowls have been won by The New England Patriots'],
+    'ground_truth': ['The first superbowl was held on January 15, 1967', 'The New England Patriots have won the Super Bowl a record six times']
+}
+dataset = Dataset.from_dict(data_samples)
+score = evaluate(dataset,metrics=[answer_similarity])
+score.to_pandas()
+```
+
+## Calculation 
+
 Let's examine how answer similarity was calculated for the first answer:
 
 - **Step 1:** Vectorize the ground truth answer using the specified embedding model.
 - **Step 2:** Vectorize the generated answer using the same embedding model.
 - **Step 3:** Compute the cosine similarity between the two vectors.
-:::
 
-## Example
-
-```{code-block} python
-from ragas.metrics import AnswerSimilarity
-answer_similarity = AnswerSimilarity()
-
-
-# Dataset({
-#     features: ['answer','ground_truth'],
-#     num_rows: 25
-# })
-dataset: Dataset
-
-results = answer_similarity.score(dataset)
-```

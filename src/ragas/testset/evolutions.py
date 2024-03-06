@@ -18,7 +18,7 @@ from ragas.testset.filters import EvolutionFilter, NodeFilter, QuestionFilter
 from ragas.testset.prompts import (
     compress_question_prompt,
     conditional_question_prompt,
-    find_relevent_context_prompt,
+    find_relevant_context_prompt,
     multi_context_question_prompt,
     question_answer_prompt,
     question_rewrite_prompt,
@@ -56,8 +56,8 @@ class Evolution:
     question_answer_prompt: Prompt = field(
         default_factory=lambda: question_answer_prompt
     )
-    find_relevent_context_prompt: Prompt = field(
-        default_factory=lambda: find_relevent_context_prompt
+    find_relevant_context_prompt: Prompt = field(
+        default_factory=lambda: find_relevant_context_prompt
     )
     rewrite_invalid_question_prompt: Prompt = field(
         default_factory=lambda: question_rewrite_prompt
@@ -88,7 +88,11 @@ class Evolution:
             new_node.embedding = np.average(node_embeddings, axis=0)
         return new_node
 
-    def init(self, is_async: bool = True, run_config: t.Optional[RunConfig] = None):
+    def init(
+        self,
+        is_async: bool = True,
+        run_config: t.Optional[RunConfig] = None
+    ):
         self.is_async = is_async
         if run_config is None:
             run_config = RunConfig()
@@ -182,30 +186,35 @@ class Evolution:
         assert self.generator_llm is not None, "generator_llm cannot be None"
 
         node_content = [
-            f"{i}\t{n.page_content}" for i, n in enumerate(current_nodes.nodes)
+            f"{i+1}\t{n.page_content}" for i, n in enumerate(current_nodes.nodes)
         ]
         results = await self.generator_llm.generate(
-            prompt=self.find_relevent_context_prompt.format(
+            prompt=self.find_relevant_context_prompt.format(
                 question=question, contexts=node_content
             )
         )
-        relevent_contexts_result = await json_loader.safe_load(
+        relevant_contexts_result = await json_loader.safe_load(
             results.generations[0][0].text.strip(), llm=self.generator_llm
         )
         relevant_context_indices = (
-            relevent_contexts_result.get("relevant_contexts", None)
-            if isinstance(relevent_contexts_result, dict)
+            relevant_contexts_result.get("relevant_contexts", None)
+            if isinstance(relevant_contexts_result, dict)
             else None
         )
-
         if relevant_context_indices is None:
             relevant_context = CurrentNodes(
                 root_node=current_nodes.root_node, nodes=current_nodes.nodes
             )
         else:
-            selected_nodes = [current_nodes.nodes[i] for i in relevant_context_indices]
-            relevant_context = CurrentNodes(
-                root_node=selected_nodes[0], nodes=selected_nodes
+            selected_nodes = [
+                current_nodes.nodes[i - 1]
+                for i in relevant_context_indices
+                if i - 1 < len(current_nodes.nodes)
+            ]
+            relevant_context = (
+                CurrentNodes(root_node=selected_nodes[0], nodes=selected_nodes)
+                if selected_nodes
+                else current_nodes
             )
 
         merged_nodes = self.merge_nodes(relevant_context)
@@ -224,7 +233,7 @@ class Evolution:
         )
 
         return DataRow(
-            question=question,
+            question=question.strip('"'),
             contexts=[n.page_content for n in relevant_context.nodes],
             ground_truth=answer,
             evolution_type=evolution_type,
@@ -240,7 +249,7 @@ class Evolution:
         self.question_answer_prompt = self.question_answer_prompt.adapt(
             language, self.generator_llm, cache_dir
         )
-        self.find_relevent_context_prompt = self.find_relevent_context_prompt.adapt(
+        self.find_relevant_context_prompt = self.find_relevant_context_prompt.adapt(
             language, self.generator_llm, cache_dir
         )
         self.rewrite_invalid_question_prompt = (
@@ -258,7 +267,7 @@ class Evolution:
         assert self.node_filter is not None, "node filter cannot be None"
         assert self.question_filter is not None, "question_filter cannot be None"
         self.question_answer_prompt.save(cache_dir)
-        self.find_relevent_context_prompt.save(cache_dir)
+        self.find_relevant_context_prompt.save(cache_dir)
         self.node_filter.save(cache_dir)
         self.question_filter.save(cache_dir)
 
@@ -278,10 +287,9 @@ class SimpleEvolution(Evolution):
         merged_node = self.merge_nodes(current_nodes)
         passed = await self.node_filter.filter(merged_node)
         if not passed["score"]:
-            nodes = self.docstore.get_random_nodes(k=1)
-            new_current_nodes = CurrentNodes(root_node=nodes[0], nodes=nodes)
+            current_nodes = self._get_new_random_node()
             return await self.aretry_evolve(
-                current_tries, new_current_nodes, update_count=False
+                current_tries, current_nodes, update_count=False
             )
 
         logger.debug("keyphrases in merged node: %s", merged_node.keyphrases)
@@ -331,7 +339,11 @@ class ComplexEvolution(Evolution):
         default_factory=lambda: compress_question_prompt
     )
 
-    def init(self, is_async: bool = True, run_config: t.Optional[RunConfig] = None):
+    def init(
+        self,
+        is_async: bool = True,
+        run_config: t.Optional[RunConfig] = None
+    ):
         if run_config is None:
             run_config = RunConfig()
         super().init(is_async=is_async, run_config=run_config)
@@ -400,7 +412,7 @@ class ComplexEvolution(Evolution):
         )
 
         assert self.evolution_filter is not None, "evolution filter cannot be None"
-        if not await self.evolution_filter.filter(simple_question, compressed_question):
+        if await self.evolution_filter.filter(simple_question, compressed_question):
             # retry
             current_nodes = self.se._get_new_random_node()
             logger.debug(
@@ -500,7 +512,7 @@ class MultiContextEvolution(ComplexEvolution):
         )
 
         assert self.evolution_filter is not None, "evolution filter cannot be None"
-        if not await self.evolution_filter.filter(simple_question, compressed_question):
+        if await self.evolution_filter.filter(simple_question, compressed_question):
             # retry
             current_nodes = self.se._get_new_random_node()
             return await self.aretry_evolve(current_tries, current_nodes)
