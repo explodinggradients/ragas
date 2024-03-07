@@ -88,11 +88,7 @@ class Evolution:
             new_node.embedding = np.average(node_embeddings, axis=0)
         return new_node
 
-    def init(
-        self,
-        is_async: bool = True,
-        run_config: t.Optional[RunConfig] = None
-    ):
+    def init(self, is_async: bool = True, run_config: t.Optional[RunConfig] = None):
         self.is_async = is_async
         if run_config is None:
             run_config = RunConfig()
@@ -150,7 +146,9 @@ class Evolution:
             evolution_type=evolution_type,
         )
 
-    async def fix_invalid_question(self, question: str, current_nodes: CurrentNodes):
+    async def fix_invalid_question(
+        self, question: str, current_nodes: CurrentNodes, feedback: str
+    ):
         """
         if the question is invalid, get more nodes and retry
         """
@@ -159,7 +157,9 @@ class Evolution:
             current_nodes.nodes.insert(0, prev_node)
             current_nodes.root_node = prev_node
             prompt = self.rewrite_invalid_question_prompt.format(
-                question=question, context=self.merge_nodes(current_nodes).page_content
+                question=question,
+                context=self.merge_nodes(current_nodes).page_content,
+                feedback=feedback,
             )
             results = await self.generator_llm.generate(
                 prompt=prompt, is_async=self.is_async
@@ -233,7 +233,7 @@ class Evolution:
         )
 
         return DataRow(
-            question=question,
+            question=question.strip('"'),
             contexts=[n.page_content for n in relevant_context.nodes],
             ground_truth=answer,
             evolution_type=evolution_type,
@@ -296,20 +296,20 @@ class SimpleEvolution(Evolution):
         results = await self.generator_llm.generate(
             prompt=self.seed_question_prompt.format(
                 context=merged_node.page_content,
-                keyphrase=rng.choice(np.array(merged_node.keyphrases), size=1)[0],
+                topic=rng.choice(np.array(merged_node.keyphrases), size=1)[0],
             )
         )
         seed_question = results.generations[0][0].text
         logger.info("seed question generated: %s", seed_question)
-        is_valid_question = await self.question_filter.filter(seed_question)
+        is_valid_question, feedback = await self.question_filter.filter(seed_question)
 
         if not is_valid_question:
             # get more context to rewrite question
             seed_question, current_nodes = await self.fix_invalid_question(
-                seed_question, current_nodes
+                seed_question, current_nodes, feedback
             )
             logger.info("rewritten question: %s", seed_question)
-            is_valid_question = await self.question_filter.filter(seed_question)
+            is_valid_question, _ = await self.question_filter.filter(seed_question)
             if not is_valid_question:
                 # retry with new nodes added
                 current_nodes = self._get_new_random_node()
@@ -339,11 +339,7 @@ class ComplexEvolution(Evolution):
         default_factory=lambda: compress_question_prompt
     )
 
-    def init(
-        self,
-        is_async: bool = True,
-        run_config: t.Optional[RunConfig] = None
-    ):
+    def init(self, is_async: bool = True, run_config: t.Optional[RunConfig] = None):
         if run_config is None:
             run_config = RunConfig()
         super().init(is_async=is_async, run_config=run_config)
@@ -388,14 +384,16 @@ class ComplexEvolution(Evolution):
             )
         )
         reasoning_question = result.generations[0][0].text.strip()
-
-        if not await self.question_filter.filter(reasoning_question):
+        is_valid_question, feedback = await self.question_filter.filter(
+            reasoning_question
+        )
+        if not is_valid_question:
             # retry
             reasoning_question, current_nodes = await self.fix_invalid_question(
-                reasoning_question, current_nodes
+                reasoning_question, current_nodes, feedback
             )
             logger.info("rewritten question: %s", reasoning_question)
-            is_valid_question = await self.question_filter.filter(reasoning_question)
+            is_valid_question, _ = await self.question_filter.filter(reasoning_question)
             if not is_valid_question:
                 # retry with new nodes added
                 current_nodes = self.se._get_new_random_node()
@@ -487,15 +485,15 @@ class MultiContextEvolution(ComplexEvolution):
         logger.debug(
             "[MultiContextEvolution] multicontext question generated: %s", question
         )
-
-        if not await self.question_filter.filter(question):
+        is_valid_question, feedback = await self.question_filter.filter(question)
+        if not is_valid_question:
             # retry
             # get more context to rewrite question
             question, current_nodes = await self.fix_invalid_question(
-                question, current_nodes
+                question, current_nodes, feedback
             )
             logger.info("rewritten question: %s", question)
-            is_valid_question = await self.question_filter.filter(question)
+            is_valid_question, _ = await self.question_filter.filter(question)
 
             if not is_valid_question:
                 # retry with new nodes added

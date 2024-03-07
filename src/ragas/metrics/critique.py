@@ -89,7 +89,7 @@ class AspectCritique(MetricWithLLM):
             if isinstance(context, list):
                 context = "\n".join(context)
             question = f"{question } answer using context: {context}"
-        return CRITIQUE_PROMPT.format(
+        return self.critic_prompt.format(
             input=question, submission=answer, criteria=self.definition
         )
 

@@ -98,7 +98,7 @@ class QuestionFilter(Filter):
         default_factory=lambda: filter_question_prompt
     )
 
-    async def filter(self, question: str) -> bool:
+    async def filter(self, question: str) -> t.Tuple[bool, str]:
         prompt = self.filter_question_prompt.format(question=question)
         results = await self.llm.generate(prompt=prompt)
         results = results.generations[0][0].text.strip()
@@ -107,7 +107,7 @@ class QuestionFilter(Filter):
         json_results.update({"question": question})
         patch_save_json(json_results, "question_filter")
         logger.debug("filtered question: %s", json_results)
-        return json_results.get("verdict") == "1"
+        return json_results.get("verdict") == "1", json_results.get("feedback", "")
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         """

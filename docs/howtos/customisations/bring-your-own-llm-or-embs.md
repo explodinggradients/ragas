@@ -1,6 +1,10 @@
 # Bring Your Own LLMs and Embeddings
 
-Ragas uses LLMs and Embeddings for both evaluation and test set generation. By default, the LLM and Embedding models of choice are OpenAI but you can easily customize the `evaluation` and `TestsetGenerator` with the LLMs and Embeddings of your choice. In this tutorial, we will go through the basics of how to do it.
+Ragas uses LLMs and Embeddings for both evaluation and test set generation. By default, the LLM and Embedding models of choice are OpenAI models.
+
+- [Customizing Evaluations](#customizing-evaluations)
+- [Customizing Testset Generation](#customizing-testset-generation)
+
 
 :::{note}
 `BaseRagasLLM` and `BaseRagasEmbeddings` are the base classes Ragas uses internally for LLMs and Embeddings. Any custom LLM or Embeddings should be a subclass of these base classes. 
@@ -26,11 +30,22 @@ Depending on which metric you use for evaluations, it will use LLMs and/or Embed
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.embeddings import Embeddings
 
-langchain_llm = BaseLanguageModel(model="my_model") # any langchain LLM instance
-langchain_embeddings = Embeddings(model="my_model") # any langchain Embeddings instance
+langchain_llm =  # any langchain LLM instance
+langchain_embeddings = # any langchain Embeddings instance
 
 results = evaluate(metrics=[], llm=langchain_llm, embeddings=embeddings)
 ```
+
+Checkout list of embeddings supported by langchain [here](https://python.langchain.com/docs/integrations/text_embedding/)
+Checkout list of llms supported by langchain [here](https://python.langchain.com/docs/integrations/language_model/)
+
+For example, to use `VertexAI embeddings` you can do the following:
+```{code-block} python
+from langchain_comunnity.embeddings import VertexAIEmbeddings
+embeddings = VertexAIEmbeddings()
+
+results = evaluate(metrics=[], embeddings=embeddings)
+``` 
 
 2. Attaching it to `metrics`: You can attach the LLM and Embeddings to the `metrics` object directly.
 ```{code-block} python
