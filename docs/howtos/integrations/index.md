@@ -6,6 +6,7 @@ want is not supported feel free to raise an [issue](https://github.com/exploding
 happy to look into it 🙂
 
 :::{toctree}
+tonic-validate.ipynb
 llamaindex.ipynb
 langchain.ipynb
 langsmith.ipynb
