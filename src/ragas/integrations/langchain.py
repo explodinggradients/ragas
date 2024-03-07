@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import typing as t
 
-from langchain.callbacks.manager import CallbackManagerForChainRun
 from langchain.chains.base import Chain
 from langchain.schema import RUN_KEY
 from langsmith.evaluation import EvaluationResult, RunEvaluator
@@ -21,7 +20,11 @@ from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.run_config import RunConfig
 
-__all__ = ["EvaluatorChain"]
+if t.TYPE_CHECKING:
+    from langchain.callbacks.manager import (
+        CallbackManagerForChainRun,
+        AsyncCallbackManagerForChainRun,
+    )
 
 
 class EvaluatorChain(Chain, RunEvaluator):
@@ -50,10 +53,34 @@ class EvaluatorChain(Chain, RunEvaluator):
 
     @property
     def input_keys(self) -> list[str]:
-        keys = ["question", "answer"]
-        if self.metric.evaluation_mode in [EvaluationMode.qac, EvaluationMode.qc]:
+        keys = []
+        if self.metric.evaluation_mode in [
+            EvaluationMode.qac,
+            EvaluationMode.qa,
+            EvaluationMode.qc,
+            EvaluationMode.qga,
+            EvaluationMode.qcg,
+        ]:
+            keys += ["question"]
+        if self.metric.evaluation_mode in [
+            EvaluationMode.qac,
+            EvaluationMode.qa,
+            EvaluationMode.ga,
+            EvaluationMode.qga,
+        ]:
+            keys += ["answer"]
+        if self.metric.evaluation_mode in [
+            EvaluationMode.qac,
+            EvaluationMode.gc,
+            EvaluationMode.gc,
+            EvaluationMode.qcg,
+        ]:
             keys += ["contexts"]
-        if self.metric.evaluation_mode in [EvaluationMode.gc]:
+        if self.metric.evaluation_mode in [
+            EvaluationMode.gc,
+            EvaluationMode.qga,
+            EvaluationMode.qcg,
+        ]:
             keys += ["ground_truth"]
         return keys
 
@@ -85,6 +112,34 @@ class EvaluatorChain(Chain, RunEvaluator):
                 "ground_truth": g,
             },
             callbacks=callbacks,
+        )
+        return {self.metric.name: score}
+
+    async def _acall(
+        self,
+        inputs: t.Dict[str, t.Any],
+        run_manager: t.Optional[AsyncCallbackManagerForChainRun] = None,
+    ) -> t.Dict[str, t.Any]:
+        """
+        Call the evaluation chain.
+        """
+        self._validate(inputs)
+        _run_manager = run_manager or AsyncCallbackManagerForChainRun.get_noop_manager()
+        # TODO: currently AsyncCallbacks are not supported in ragas
+        callbacks = _run_manager.get_child()
+
+        c = inputs.get("contexts", [""])
+        g = inputs.get("ground_truth", "")
+        q = inputs.get("question", "")
+        a = inputs.get("answer", "")
+        score = await self.metric.ascore(
+            {
+                "question": q,
+                "answer": a,
+                "contexts": c,
+                "ground_truth": g,
+            },
+            callbacks=[],
         )
         return {self.metric.name: score}
 
