@@ -22,6 +22,21 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def patch_save_json(data, filename):
+    import json
+    import os
+
+    path = f"/Users/shahules/Myprojects/ragas/experiments/{filename}.json"
+    if os.path.exists(path):
+        database = json.load(open(path))
+        database = database if isinstance(database, list) else [database]
+        database.append(data)
+    else:
+        database = [data]
+    with open(path, "w") as f:
+        json.dump(database, f, indent=4)
+
+
 @dataclass
 class Filter(ABC):
     llm: BaseRagasLLM
@@ -56,6 +71,8 @@ class NodeFilter(Filter):
         score = await json_loader.safe_load(output, llm=self.llm)
         score = score if isinstance(score, dict) else {}
         logger.debug("node filter: %s", score)
+        score.update({"context": node.page_content})
+        patch_save_json(score, "node_filter")
         score.update({"score": score.get("score", 0) >= self.threshold})
         return score
 
@@ -87,6 +104,8 @@ class QuestionFilter(Filter):
         results = results.generations[0][0].text.strip()
         json_results = await json_loader.safe_load(results, llm=self.llm)
         json_results = json_results if isinstance(json_results, dict) else {}
+        json_results.update({"question": question})
+        patch_save_json(json_results, "question_filter")
         logger.debug("filtered question: %s", json_results)
         return json_results.get("verdict") == "1", json_results.get("feedback", "")
 
@@ -120,6 +139,8 @@ class EvolutionFilter(Filter):
         results = results.generations[0][0].text.strip()
         json_results = await json_loader.safe_load(results, llm=self.llm)
         json_results = json_results if isinstance(json_results, dict) else {}
+        json_results.update({"questions": [simple_question, compressed_question]})
+        patch_save_json(json_results, "evolution_filter")
         logger.debug("evolution filter: %s", json_results)
         return json_results.get("verdict") == "1"
 

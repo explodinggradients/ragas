@@ -108,7 +108,7 @@ class ContextRecall(MetricWithLLM):
         ]
         denom = len(response)
         numerator = sum(response)
-        score = numerator / denom
+        score = numerator / denom if denom > 0 else np.nan
 
         if np.isnan(score):
             logger.warning(
