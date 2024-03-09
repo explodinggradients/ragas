@@ -7,8 +7,8 @@ from random import choices
 
 import pandas as pd
 from datasets import Dataset
-from langchain_openai.chat_models import ChatOpenAI
-from langchain_openai.embeddings import OpenAIEmbeddings
+from langchain_openai.chat_models import ChatOpenAI, AzureChatOpenAI
+from langchain_openai.embeddings import OpenAIEmbeddings, AzureOpenAIEmbeddings
 
 from ragas._analytics import TestsetGenerationEvent, track
 from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
@@ -84,6 +84,52 @@ class TestsetGenerator:
         critic_llm_model = LangchainLLMWrapper(ChatOpenAI(model=critic_llm))
         embeddings_model = LangchainEmbeddingsWrapper(
             OpenAIEmbeddings(model=embeddings)
+        )
+        keyphrase_extractor = KeyphraseExtractor(llm=generator_llm_model)
+        if docstore is None:
+            from langchain.text_splitter import TokenTextSplitter
+
+            splitter = TokenTextSplitter(chunk_size=chunk_size, chunk_overlap=0)
+            docstore = InMemoryDocumentStore(
+                splitter=splitter,
+                embeddings=embeddings_model,
+                extractor=keyphrase_extractor,
+                run_config=run_config,
+            )
+            return cls(
+                generator_llm=generator_llm_model,
+                critic_llm=critic_llm_model,
+                embeddings=embeddings_model,
+                docstore=docstore,
+            )
+        else:
+            return cls(
+                generator_llm=generator_llm_model,
+                critic_llm=critic_llm_model,
+                embeddings=embeddings_model,
+                docstore=docstore,
+            )
+        
+    @classmethod
+    def with_azureopenai(
+        cls,
+        generator_deployment: str,
+        generator_api_version:str,
+        critic_deployment: str,
+        critic_api_version: str,
+        embeddings_deployment: str,
+        embeddings_api_version: str,
+        docstore: t.Optional[DocumentStore] = None,
+        run_config: t.Optional[RunConfig] = None,
+        chunk_size: int = 1024,
+    ) -> "TestsetGenerator":
+        generator_llm_model = LangchainLLMWrapper(AzureChatOpenAI(openai_api_version=generator_api_version,
+                                                                    azure_deployment=generator_deployment))
+        critic_llm_model = LangchainLLMWrapper(AzureChatOpenAI(openai_api_version=critic_api_version,
+                                                                    azure_deployment=critic_deployment))
+        embeddings_model = LangchainEmbeddingsWrapper(
+            AzureOpenAIEmbeddings(openai_api_version=embeddings_api_version, 
+                                  azure_deployment=embeddings_deployment)
         )
         keyphrase_extractor = KeyphraseExtractor(llm=generator_llm_model)
         if docstore is None:
