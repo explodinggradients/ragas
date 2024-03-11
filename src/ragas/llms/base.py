@@ -81,7 +81,7 @@ class BaseRagasLLM(ABC):
         n: int = 1,
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
-        callbacks: Callbacks = [],
+        callbacks: Callbacks = None,
         is_async: bool = True,
     ) -> LLMResult:
         """Generate text using the given event loop."""

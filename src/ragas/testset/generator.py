@@ -75,20 +75,12 @@ class TestsetGenerator:
     @classmethod
     def from_default(
         cls,
-        generator_llm: t.Optional[BaseLanguageModel] = None,
-        critic_llm: t.Optional[BaseLanguageModel] = None,
-        embeddings: t.Optional[Embeddings] = None,
+        generator_llm: t.Optional[BaseLanguageModel],
+        critic_llm: t.Optional[BaseLanguageModel],
+        embeddings: t.Optional[Embeddings],
         docstore: t.Optional[DocumentStore] = None,
         chunk_size: int = 1024,
     ) -> "TestsetGenerator":
-        
-        if generator_llm is None:
-            generator_llm = ChatOpenAI(model="gpt-3.5-turbo-16k")
-        if critic_llm is None:
-            critic_llm = ChatOpenAI(model="gpt-4")
-        if embeddings is None:
-            embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
-            
         generator_llm_model = LangchainLLMWrapper(generator_llm)
         critic_llm_model = LangchainLLMWrapper(critic_llm)
         embeddings_model = LangchainEmbeddingsWrapper(embeddings)
@@ -129,7 +121,7 @@ class TestsetGenerator:
         generator_llm_model = ChatOpenAI(model=generator_llm)
         critic_llm_model = ChatOpenAI(model=critic_llm)
         embeddings_model = OpenAIEmbeddings(model=embeddings)
-        
+
         return cls.from_default(
             generator_llm=generator_llm_model,
             critic_llm=critic_llm_model,
@@ -137,7 +129,6 @@ class TestsetGenerator:
             docstore=docstore,
             chunk_size=chunk_size,
         )
-        
 
     def generate_with_llamaindex_docs(
         self,
