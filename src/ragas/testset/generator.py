@@ -9,6 +9,8 @@ import pandas as pd
 from datasets import Dataset
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseLanguageModel
+from langchain_openai.chat_models import ChatOpenAI
+from langchain_openai.embeddings import OpenAIEmbeddings
 
 from ragas._analytics import TestsetGenerationEvent, track
 from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
@@ -71,14 +73,22 @@ class TestsetGenerator:
     docstore: DocumentStore
 
     @classmethod
-    def from_langchain(
+    def from_default(
         cls,
-        generator_llm: BaseLanguageModel,
-        critic_llm: BaseLanguageModel,
-        embeddings: Embeddings,
+        generator_llm: t.Optional[BaseLanguageModel] = None,
+        critic_llm: t.Optional[BaseLanguageModel] = None,
+        embeddings: t.Optional[Embeddings] = None,
         docstore: t.Optional[DocumentStore] = None,
         chunk_size: int = 1024,
     ) -> "TestsetGenerator":
+        
+        if generator_llm is None:
+            generator_llm = ChatOpenAI(model="gpt-3.5-turbo-16k")
+        if critic_llm is None:
+            critic_llm = ChatOpenAI(model="gpt-4")
+        if embeddings is None:
+            embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
+            
         generator_llm_model = LangchainLLMWrapper(generator_llm)
         critic_llm_model = LangchainLLMWrapper(critic_llm)
         embeddings_model = LangchainEmbeddingsWrapper(embeddings)
@@ -107,8 +117,28 @@ class TestsetGenerator:
                 docstore=docstore,
             )
 
-    # if you add any arguments to this function, make sure to add them to
-    # generate_with_langchain_docs as well
+    @classmethod
+    def with_openai(
+        cls,
+        generator_llm: str = "gpt-3.5-turbo-16k",
+        critic_llm: str = "gpt-4",
+        embeddings: str = "text-embedding-ada-002",
+        docstore: t.Optional[DocumentStore] = None,
+        chunk_size: int = 1024,
+    ) -> "TestsetGenerator":
+        generator_llm_model = ChatOpenAI(model=generator_llm)
+        critic_llm_model = ChatOpenAI(model=critic_llm)
+        embeddings_model = OpenAIEmbeddings(model=embeddings)
+        
+        return cls.from_default(
+            generator_llm=generator_llm_model,
+            critic_llm=critic_llm_model,
+            embeddings=embeddings_model,
+            docstore=docstore,
+            chunk_size=chunk_size,
+        )
+        
+
     def generate_with_llamaindex_docs(
         self,
         documents: t.Sequence[LlamaindexDocument],
