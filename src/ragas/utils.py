@@ -75,9 +75,6 @@ def get_feature_language(feature: t.Union[Metric, Evolution]) -> t.Optional[str]
     return languags[0] if len(languags) > 0 else None
 
 
-T = t.TypeVar("T", t.Type, t.Callable)
-
-
 def deprecated(
     since: str,
     *,
@@ -85,7 +82,7 @@ def deprecated(
     alternative: t.Optional[str] = None,
     addendum: t.Optional[str] = None,
     pending: bool = False,
-) -> t.Callable[[T], T]:
+):
     """
     Decorator to mark functions or classes as deprecated.
 
