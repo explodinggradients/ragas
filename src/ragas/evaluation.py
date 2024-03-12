@@ -15,9 +15,9 @@ from ragas.embeddings.base import (
     LangchainEmbeddingsWrapper,
     embedding_factory,
 )
-from ragas.llms import llm_factory
 from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
+from ragas.llms import llm_factory
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics._answer_correctness import AnswerCorrectness
 from ragas.metrics.base import Metric, MetricWithEmbeddings, MetricWithLLM
@@ -42,11 +42,11 @@ def evaluate(
     metrics: list[Metric] | None = None,
     llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
-    callbacks: Callbacks = [],
+    callbacks: Callbacks = None,
     is_async: bool = False,
     run_config: t.Optional[RunConfig] = None,
     raise_exceptions: bool = True,
-    column_map: t.Dict[str, str] = {},
+    column_map: t.Optional[t.Dict[str, str]] = None,
 ) -> Result:
     """
     Run the evaluation on the dataset with different metrics
@@ -120,6 +120,9 @@ def evaluate(
     'answer_relevancy': 0.874}
     ```
     """
+    column_map = column_map or {}
+    callbacks = callbacks or []
+
     if dataset is None:
         raise ValueError("Provide dataset!")
 

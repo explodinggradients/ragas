@@ -464,7 +464,7 @@ class MultiContextEvolution(ComplexEvolution):
         # find a similar node and generate a question based on both
         merged_node = self.merge_nodes(current_nodes)
         similar_node = self.docstore.get_similar(merged_node, top_k=1)
-        if similar_node == []:
+        if not similar_node:
             # retry
             new_random_nodes = self.docstore.get_random_nodes(k=1)
             current_nodes = CurrentNodes(

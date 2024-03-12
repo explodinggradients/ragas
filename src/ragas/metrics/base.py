@@ -60,7 +60,8 @@ class Metric(ABC):
             "adapt() is not implemented for {} metric".format(self.name)
         )
 
-    def score(self: t.Self, row: t.Dict, callbacks: Callbacks = []) -> float:
+    def score(self: t.Self, row: t.Dict, callbacks: Callbacks = None) -> float:
+        callbacks = callbacks or []
         rm, group_cm = new_group(
             self.name, inputs=row, callbacks=callbacks, is_async=False
         )
@@ -78,8 +79,9 @@ class Metric(ABC):
         return score
 
     async def ascore(
-        self: t.Self, row: t.Dict, callbacks: Callbacks = [], is_async: bool = True
+        self: t.Self, row: t.Dict, callbacks: Callbacks = None, is_async: bool = True
     ) -> float:
+        callbacks = callbacks or []
         rm, group_cm = new_group(
             self.name, inputs=row, callbacks=callbacks, is_async=True
         )
