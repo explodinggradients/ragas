@@ -72,3 +72,32 @@ def get_feature_language(feature: t.Union[Metric, Evolution]) -> t.Optional[str]
         if isinstance(value, Prompt)
     ]
     return languags[0] if len(languags) > 0 else None
+
+
+def deprecated(version):
+    """
+    This is a decorator which can be used to mark functions as deprecated. It will result in a warning being emitted when the function is used.
+
+    ```py
+    # Example usage
+    @deprecated("2.0")
+    def some_old_function():
+        print("This is an old function.")
+
+    some_old_function()
+    ```
+    """
+
+    def decorator(func: t.Callable, logger: t.Optional[logging.Logger] = None):
+        if logger is None:
+            logger = logging.getLogger(func.__module__)
+
+        def wrapper(*args, **kwargs):
+            logger.warning(
+                f"Warning: The function {func.__name__} is deprecated and will be removed in version {version}."
+            )
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
