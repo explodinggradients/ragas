@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import typing as t
+import warnings
 from functools import lru_cache
 
 import numpy as np
@@ -74,30 +75,75 @@ def get_feature_language(feature: t.Union[Metric, Evolution]) -> t.Optional[str]
     return languags[0] if len(languags) > 0 else None
 
 
-def deprecated(version):
+T = t.TypeVar("T", t.Type, t.Callable)
+
+
+def deprecated(
+    since: str,
+    *,
+    removal: t.Optional[str] = None,
+    alternative: t.Optional[str] = None,
+    addendum: t.Optional[str] = None,
+    pending: bool = False,
+) -> t.Callable[[T], T]:
     """
-    This is a decorator which can be used to mark functions as deprecated. It will result in a warning being emitted when the function is used.
+    Decorator to mark functions or classes as deprecated.
 
-    ```py
-    # Example usage
-    @deprecated("2.0")
-    def some_old_function():
-        print("This is an old function.")
+    Args:
+        since: str
+             The release at which this API became deprecated.
+        removal: str, optional
+            The expected removal version. Cannot be used with pending=True.
+            Must be specified with pending=False.
+        alternative: str, optional
+            The alternative API or function to be used instead
+            of the deprecated function.
+        addendum: str, optional
+            Additional text appended directly to the final message.
+        pending: bool
+            Whether the deprecation version is already scheduled or not.
+            Cannot be used with removal.
 
-    some_old_function()
-    ```
+
+    Examples
+    --------
+
+        .. code-block:: python
+
+            @deprecated("0.1", removal="0.2", alternative="some_new_function")
+            def some_old_function():
+                print("This is an old function.")
+
     """
 
-    def decorator(func: t.Callable, logger: t.Optional[logging.Logger] = None):
-        if logger is None:
-            logger = logging.getLogger(func.__module__)
+    def deprecate(func: t.Callable):
+        def emit_warning(*args, **kwargs):
+            if pending and removal:
+                raise ValueError(
+                    "A pending deprecation cannot have a scheduled removal"
+                )
 
-        def wrapper(*args, **kwargs):
-            logger.warning(
-                f"Warning: The function {func.__name__} is deprecated and will be removed in version {version}."
-            )
+            message = f"The function {func.__name__} was deprecated in {since},"
+
+            if not pending:
+                if removal:
+                    message += " and will be removed in a future release."
+                else:
+                    raise ValueError(
+                        "A non-pending deprecation must have a scheduled removal."
+                    )
+            else:
+                message += " and will be removed in a future release."
+
+            if alternative:
+                message += f" Use {alternative} instead."
+
+            if addendum:
+                message += f" {addendum}"
+
+            warnings.warn(message, stacklevel=2, category=DeprecationWarning)
             return func(*args, **kwargs)
 
-        return wrapper
+        return emit_warning
 
-    return decorator
+    return deprecate
