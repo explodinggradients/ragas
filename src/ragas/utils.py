@@ -124,7 +124,7 @@ def deprecated(
 
             if not pending:
                 if removal:
-                    message += " and will be removed in a future release."
+                    message += f" and will be removed in the {removal} release."
                 else:
                     raise ValueError(
                         "A non-pending deprecation must have a scheduled removal."

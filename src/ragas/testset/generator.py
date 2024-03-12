@@ -110,7 +110,7 @@ class TestsetGenerator:
             )
 
     @classmethod
-    @deprecated("0.1.4", pending=True, alternative="from_langchain")
+    @deprecated("0.1.4", removal="0.2.0", alternative="from_langchain")
     def with_openai(
         cls,
         generator_llm: str = "gpt-3.5-turbo-16k",
