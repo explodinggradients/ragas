@@ -21,13 +21,13 @@ documents = loader.load()
 ```
 
 :::{note}
-Each Document object contains a metadata dictionary, which can be used to store additional information about the document accessible via `Document.metadata`. Ensure that the metadata dictionary includes a key called `file_name`, as it will be utilized in the generation process. The `file_name` attribute in metadata is used to identify chunks belonging to the same document. For instance, pages belonging to the same research publication can be identified using the filename.
+Each Document object contains a metadata dictionary, which can be used to store additional information about the document accessible via `Document.metadata`. Ensure that the metadata dictionary includes a key called `filename`, as it will be utilized in the generation process. The `filename` attribute in metadata is used to identify chunks belonging to the same document. For instance, pages belonging to the same research publication can be identified using the filename.
 
 Here's an example of how to do this:
 
 ```{code-block} python
 for document in documents:
-    document.metadata['file_name'] = document.metadata['source']
+    document.metadata['filename'] = document.metadata['source']
 ```
 :::
 

@@ -150,12 +150,14 @@ class Faithfulness(MetricWithLLM):
 
     def _compute_score(self, output: t.Any):
         # check the verdicts and compute the score
-        verdict_score_map = {"1": 1, "0": 0, "null": np.nan}
+        verdict_score_map = {"1": 1, "0": 0, "-1": np.nan}
         output = output if isinstance(output, list) else [output]
         faithful_statements = sum(
             verdict_score_map.get(
                 statement_with_validation.get("verdict", "").lower(), np.nan
             )
+            if isinstance(statement_with_validation, dict)
+            else np.nan
             for statement_with_validation in output
         )
         num_statements = len(output)
@@ -187,7 +189,7 @@ class Faithfulness(MetricWithLLM):
             is_async=is_async,
         )
 
-        assert isinstance(statements, dict), "Invalid JSON response"
+        statements = statements if isinstance(statements, dict) else {}
         p = self._create_nli_prompt(row, statements.get("statements", []))
         nli_result = await self.llm.generate(p, callbacks=callbacks, is_async=is_async)
         json_output = await json_loader.safe_load(

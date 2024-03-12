@@ -79,6 +79,7 @@ class TestsetGenerator:
         critic_llm: BaseLanguageModel,
         embeddings: Embeddings,
         docstore: t.Optional[DocumentStore] = None,
+        run_config: t.Optional[RunConfig] = None,
         chunk_size: int = 1024,
     ) -> "TestsetGenerator":
         generator_llm_model = LangchainLLMWrapper(generator_llm)
@@ -94,6 +95,7 @@ class TestsetGenerator:
                 splitter=splitter,
                 embeddings=embeddings_model,
                 extractor=keyphrase_extractor,
+                run_config=run_config,
             )
             return cls(
                 generator_llm=generator_llm_model,
@@ -139,7 +141,7 @@ class TestsetGenerator:
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
-        run_config: t.Optional[RunConfig] = None,
+        run_config: t.Optional[RunConfig] = None
     ):
         distributions = distributions or {}
         # chunk documents and add to docstore
@@ -166,7 +168,7 @@ class TestsetGenerator:
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
-        run_config: t.Optional[RunConfig] = None,
+        run_config: t.Optional[RunConfig] = None
     ):
         distributions = distributions or {}
         # chunk documents and add to docstore
@@ -205,7 +207,7 @@ class TestsetGenerator:
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
-        run_config: t.Optional[RunConfig] = None,
+        run_config: t.Optional[RunConfig] = None
     ):
         distributions = distributions or DEFAULT_DISTRIBUTION
         # validate distributions
@@ -238,6 +240,7 @@ class TestsetGenerator:
             desc="Generating",
             keep_progress_bar=True,
             raise_exceptions=raise_exceptions,
+            run_config=run_config,
         )
 
         current_nodes = [

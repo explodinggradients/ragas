@@ -8,6 +8,7 @@ Metrics
    ragas.metrics.answer_correctness
    ragas.metrics.context_precision
    ragas.metrics.context_recall
+   ragas.metrics.context_entity_recall
 
 .. automodule:: ragas.metrics
    :members:

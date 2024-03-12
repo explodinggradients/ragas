@@ -229,7 +229,7 @@ class Prompt(BaseModel):
                 if isinstance(output, dict):
                     assert (
                         set(output.keys()) == output_keys[i]
-                    ), "Adapted output keys do not match with the original output keys"
+                    ), f"Adapted output keys {set(output.keys())=} do not match with the original output keys: {output_keys[i]=}"
                 elif isinstance(output, list) and all(
                     isinstance(item, dict) for item in output
                 ):

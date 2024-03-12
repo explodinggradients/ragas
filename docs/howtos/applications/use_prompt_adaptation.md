@@ -113,7 +113,7 @@ documents = loader.load()
 
 # add metadata
 for document in documents:
-    document.metadata['file_name'] = document.metadata['source']
+    document.metadata['filename'] = document.metadata['source']
 
 ```
 
