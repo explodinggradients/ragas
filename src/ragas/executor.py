@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sys
 import threading
 import typing as t
 from dataclasses import dataclass, field
@@ -10,6 +11,7 @@ import numpy as np
 from tqdm.auto import tqdm
 
 from ragas.exceptions import MaxRetriesExceeded
+from ragas.run_config import RunConfig
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,22 @@ def runner_exception_hook(args: threading.ExceptHookArgs):
 # threading.excepthook = runner_exception_hook
 
 
+def as_completed(loop, coros, max_workers):
+    loop_arg_dict = {"loop": loop} if sys.version_info[:2] < (3, 10) else {}
+    if max_workers == -1:
+        return asyncio.as_completed(coros, **loop_arg_dict)
+
+    # loop argument is removed since Python 3.10
+    semaphore = asyncio.Semaphore(max_workers, **loop_arg_dict)
+
+    async def sema_coro(coro):
+        async with semaphore:
+            return await coro
+
+    sema_coros = [sema_coro(c) for c in coros]
+    return asyncio.as_completed(sema_coros, **loop_arg_dict)
+
+
 class Runner(threading.Thread):
     def __init__(
         self,
@@ -30,26 +48,29 @@ class Runner(threading.Thread):
         desc: str,
         keep_progress_bar: bool = True,
         raise_exceptions: bool = True,
+        run_config: t.Optional[RunConfig] = None,
     ):
         super().__init__()
         self.jobs = jobs
         self.desc = desc
         self.keep_progress_bar = keep_progress_bar
         self.raise_exceptions = raise_exceptions
-        self.futures = []
+        self.run_config = run_config or RunConfig()
 
         # create task
         self.loop = asyncio.new_event_loop()
-        for job in self.jobs:
-            coroutine, name = job
-            self.futures.append(self.loop.create_task(coroutine, name=name))
+        self.futures = as_completed(
+            loop=self.loop,
+            coros=[coro for coro, _ in self.jobs],
+            max_workers=self.run_config.max_workers,
+        )
 
     async def _aresults(self) -> t.List[t.Any]:
         results = []
         for future in tqdm(
-            asyncio.as_completed(self.futures),
+            self.futures,
             desc=self.desc,
-            total=len(self.futures),
+            total=len(self.jobs),
             # whether you want to keep the progress bar after completion
             leave=self.keep_progress_bar,
         ):
@@ -75,7 +96,6 @@ class Runner(threading.Thread):
             results = self.loop.run_until_complete(self._aresults())
         finally:
             self.results = results
-            [f.cancel() for f in self.futures]
             self.loop.stop()
 
 
@@ -85,6 +105,7 @@ class Executor:
     keep_progress_bar: bool = True
     jobs: t.List[t.Any] = field(default_factory=list, repr=False)
     raise_exceptions: bool = False
+    run_config: t.Optional[RunConfig] = field(default_factory=RunConfig, repr=False)
 
     def wrap_callable_with_index(self, callable: t.Callable, counter):
         async def wrapped_callable_async(*args, **kwargs):
@@ -104,6 +125,7 @@ class Executor:
             desc=self.desc,
             keep_progress_bar=self.keep_progress_bar,
             raise_exceptions=self.raise_exceptions,
+            run_config=self.run_config,
         )
         executor_job.start()
         try:

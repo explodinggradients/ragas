@@ -196,6 +196,7 @@ class InMemoryDocumentStore(DocumentStore):
     nodes: t.List[Node] = field(default_factory=list)
     node_embeddings_list: t.List[Embedding] = field(default_factory=list)
     node_map: t.Dict[str, Node] = field(default_factory=dict)
+    run_config: t.Optional[RunConfig] = None
 
     def _embed_items(self, items: t.Union[t.Sequence[Document], t.Sequence[Node]]):
         ...
@@ -213,9 +214,7 @@ class InMemoryDocumentStore(DocumentStore):
         ]
         self.add_nodes(nodes, show_progress=show_progress)
 
-    def add_nodes(
-        self, nodes: t.Sequence[Node], show_progress=True, desc: str = "embedding nodes"
-    ):
+    def add_nodes(self, nodes: t.Sequence[Node], show_progress=True):
         assert self.embeddings is not None, "Embeddings must be set"
         assert self.extractor is not None, "Extractor must be set"
 
@@ -228,6 +227,7 @@ class InMemoryDocumentStore(DocumentStore):
             desc="embedding nodes",
             keep_progress_bar=False,
             raise_exceptions=True,
+            run_config=self.run_config,
         )
         result_idx = 0
         for i, n in enumerate(nodes):
@@ -240,7 +240,7 @@ class InMemoryDocumentStore(DocumentStore):
                 )
                 result_idx += 1
 
-            if n.keyphrases == []:
+            if not n.keyphrases:
                 nodes_to_extract.update({i: result_idx})
                 executor.submit(
                     self.extractor.extract,
@@ -250,7 +250,7 @@ class InMemoryDocumentStore(DocumentStore):
                 result_idx += 1
 
         results = executor.results()
-        if results == []:
+        if not results:
             raise ExceptionInRunner()
 
         for i, n in enumerate(nodes):
@@ -336,7 +336,6 @@ class InMemoryDocumentStore(DocumentStore):
     def get_similar(
         self, node: Node, threshold: float = 0.7, top_k: int = 3
     ) -> t.Union[t.List[Document], t.List[Node]]:
-        items = []
         doc = node
         if doc.embedding is None:
             raise ValueError("Document has no embedding.")
@@ -356,3 +355,4 @@ class InMemoryDocumentStore(DocumentStore):
     def set_run_config(self, run_config: RunConfig):
         if self.embeddings:
             self.embeddings.set_run_config(run_config)
+        self.run_config = run_config

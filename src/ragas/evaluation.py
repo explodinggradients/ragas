@@ -15,9 +15,9 @@ from ragas.embeddings.base import (
     LangchainEmbeddingsWrapper,
     embedding_factory,
 )
-from ragas.llms import llm_factory
 from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
+from ragas.llms import llm_factory
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics._answer_correctness import AnswerCorrectness
 from ragas.metrics.base import Metric, MetricWithEmbeddings, MetricWithLLM
@@ -42,12 +42,11 @@ def evaluate(
     metrics: list[Metric] | None = None,
     llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
-    callbacks: Callbacks = [],
+    callbacks: Callbacks = None,
     is_async: bool = False,
-    max_workers: t.Optional[int] = None,
     run_config: t.Optional[RunConfig] = None,
     raise_exceptions: bool = True,
-    column_map: t.Dict[str, str] = {},
+    column_map: t.Optional[t.Dict[str, str]] = None,
 ) -> Result:
     """
     Run the evaluation on the dataset with different metrics
@@ -77,9 +76,6 @@ def evaluate(
         evaluation is run by calling the `metric.ascore` method. In case the llm or
         embeddings does not support async then the evaluation can be run in sync mode
         with `is_async=False`. Default is False.
-    max_workers: int, optional
-        The number of workers to use for the evaluation. This is used by the
-        `ThreadpoolExecutor` to run the evaluation in sync mode.
     run_config: RunConfig, optional
         Configuration for runtime settings like timeout and retries. If not provided,
         default values are used.
@@ -124,12 +120,14 @@ def evaluate(
     'answer_relevancy': 0.874}
     ```
     """
+    column_map = column_map or {}
+    callbacks = callbacks or []
+
     if dataset is None:
         raise ValueError("Provide dataset!")
 
     # default run_config
-    if run_config is None:
-        run_config = RunConfig()
+    run_config = run_config or RunConfig()
     # default metrics
     if metrics is None:
         from ragas.metrics import (
@@ -184,6 +182,7 @@ def evaluate(
         desc="Evaluating",
         keep_progress_bar=True,
         raise_exceptions=raise_exceptions,
+        run_config=run_config,
     )
     # new evaluation chain
     row_run_managers = []

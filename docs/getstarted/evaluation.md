@@ -36,6 +36,7 @@ amnesty_qa
 
 :::{seealso}
 See [test set generation](./testset_generation.md) to learn how to generate your own `Question/Context/Ground_Truth` triplets for evaluation.
+See [preparing your own dataset](/docs/howtos/applications/data_preparation.md) to learn how to prepare your own dataset for evaluation.
 :::
 
 ## Metrics

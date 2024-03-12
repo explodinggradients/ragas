@@ -23,7 +23,28 @@ High context recall: France, in Western Europe, encompasses medieval cities, alp
 Low context recall: France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. The country is also renowned for its wines and sophisticated cuisine. Lascaux’s ancient cave drawings, Lyon’s Roman theater and the vast Palace of Versailles attest to its rich history.
 ```
 
-:::{dropdown} How was this calculated?
+## Example
+
+```{code-block} python
+:caption: Context recall
+from datasets import Dataset 
+from ragas.metrics import context_recall
+from ragas import evaluate
+
+data_samples = {
+    'question': ['When was the first super bowl?', 'Who won the most super bowls?'],
+    'answer': ['The first superbowl was held on Jan 15, 1967', 'The most super bowls have been won by The New England Patriots'],
+    'contexts' : [['The First AFL–NFL World Championship Game was an American football game played on January 15, 1967, at the Los Angeles Memorial Coliseum in Los Angeles,'], 
+    ['The Green Bay Packers...Green Bay, Wisconsin.','The Packers compete...Football Conference']],
+    'ground_truth': ['The first superbowl was held on January 15, 1967', 'The New England Patriots have won the Super Bowl a record six times']
+}
+dataset = Dataset.from_dict(data_samples)
+score = evaluate(dataset,metrics=[context_recall])
+score.to_pandas()
+```
+
+## Calculation
+
 Let's examine how context recall was calculated using the low context recall example:
 
 - **Step 1:** Break the ground truth answer into individual statements.
@@ -38,21 +59,4 @@ Let's examine how context recall was calculated using the low context recall exa
     ```{math}
     \text{context recall} = { \text{1} \over \text{2} } = 0.5
     ``` 
-:::
-## Example
 
-```{code-block} python
-:caption: Context recall with batch_size 10
-from ragas.metrics import ContextRecall
-context_recall = ContextRecall(
-    batch_size=10
-
-)
-# Dataset({
-#     features: ['contexts','ground_truth'],
-#     num_rows: 25
-# })
-dataset: Dataset
-
-results = context_recall.score(dataset)
-```

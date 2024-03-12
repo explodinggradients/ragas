@@ -60,7 +60,7 @@ class BaseRagasLLM(ABC):
         n: int = 1,
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
-        callbacks: Callbacks = [],
+        callbacks: Callbacks = None,
     ) -> LLMResult:
         ...
 
@@ -71,7 +71,7 @@ class BaseRagasLLM(ABC):
         n: int = 1,
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
-        callbacks: Callbacks = [],
+        callbacks: Callbacks = None,
     ) -> LLMResult:
         ...
 
@@ -81,7 +81,7 @@ class BaseRagasLLM(ABC):
         n: int = 1,
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
-        callbacks: Callbacks = [],
+        callbacks: Callbacks = None,
         is_async: bool = True,
     ) -> LLMResult:
         """Generate text using the given event loop."""
@@ -132,7 +132,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
         n: int = 1,
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
-        callbacks: t.Optional[Callbacks] = None,
+        callbacks: Callbacks = None,
     ) -> LLMResult:
         temperature = self.get_temperature(n=n)
         if is_multiple_completion_supported(self.langchain_llm):
@@ -162,7 +162,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
         n: int = 1,
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
-        callbacks: t.Optional[Callbacks] = None,
+        callbacks: Callbacks = None,
     ) -> LLMResult:
         temperature = self.get_temperature(n=n)
         if is_multiple_completion_supported(self.langchain_llm):

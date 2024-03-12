@@ -6,6 +6,8 @@ labels: 'question'
 assignees: ''
 ---
 
+[ ] I checked the [documentation](https://docs.ragas.io/) and related resources and couldn't find an answer to my question.
+
 **Your Question**
 what is unclear to you? What would you like to know?
 

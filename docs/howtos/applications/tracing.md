@@ -1,5 +1,5 @@
 
-# Logging and tracing
+# Explainability through Logging and tracing
 
 Logging and tracing results from llm are important for any language model-based application. This is a tutorial on how to do tracing with Ragas. Ragas provides `callbacks` functionality which allows you to hook various tracers like Langmsith, wandb, etc easily.  In this notebook, I will be using Langmith for tracing
 

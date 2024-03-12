@@ -156,6 +156,8 @@ class Faithfulness(MetricWithLLM):
             verdict_score_map.get(
                 statement_with_validation.get("verdict", "").lower(), np.nan
             )
+            if isinstance(statement_with_validation, dict)
+            else np.nan
             for statement_with_validation in output
         )
         num_statements = len(output)
