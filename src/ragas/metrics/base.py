@@ -25,6 +25,27 @@ if t.TYPE_CHECKING:
 EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg")
 
 
+def get_required_columns(
+    eval_mod: EvaluationMode, ignore_columns: t.List[str] = []
+) -> t.List[str]:
+    if eval_mod == EvaluationMode.qac:
+        keys = ["question", "answer", "contexts"]
+    elif eval_mod == EvaluationMode.qa:
+        keys = ["question", "answer"]
+    elif eval_mod == EvaluationMode.qc:
+        keys = ["question", "contexts"]
+    elif eval_mod == EvaluationMode.gc:
+        keys = ["contexts", "ground_truth"]
+    elif eval_mod == EvaluationMode.ga:
+        keys = ["answer", "ground_truth"]
+    elif eval_mod == EvaluationMode.qga:
+        keys = ["question", "contexts", "answer", "ground_truth"]
+    elif eval_mod == EvaluationMode.qcg:
+        keys = ["question", "contexts", "ground_truth"]
+
+    return [k for k in keys if k not in ignore_columns]
+
+
 @dataclass
 class Metric(ABC):
     @property

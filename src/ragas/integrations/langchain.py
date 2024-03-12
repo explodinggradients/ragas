@@ -14,6 +14,7 @@ from ragas.metrics.base import (
     Metric,
     MetricWithLLM,
     MetricWithEmbeddings,
+    get_required_columns,
 )
 from ragas.validation import EVALMODE_TO_COLUMNS
 from ragas.llms import LangchainLLMWrapper
@@ -53,36 +54,7 @@ class EvaluatorChain(Chain, RunEvaluator):
 
     @property
     def input_keys(self) -> list[str]:
-        keys = []
-        if self.metric.evaluation_mode in [
-            EvaluationMode.qac,
-            EvaluationMode.qa,
-            EvaluationMode.qc,
-            EvaluationMode.qga,
-            EvaluationMode.qcg,
-        ]:
-            keys += ["question"]
-        if self.metric.evaluation_mode in [
-            EvaluationMode.qac,
-            EvaluationMode.qa,
-            EvaluationMode.ga,
-            EvaluationMode.qga,
-        ]:
-            keys += ["answer"]
-        if self.metric.evaluation_mode in [
-            EvaluationMode.qac,
-            EvaluationMode.gc,
-            EvaluationMode.gc,
-            EvaluationMode.qcg,
-        ]:
-            keys += ["contexts"]
-        if self.metric.evaluation_mode in [
-            EvaluationMode.gc,
-            EvaluationMode.qga,
-            EvaluationMode.qcg,
-        ]:
-            keys += ["ground_truth"]
-        return keys
+        return get_required_columns(self.metric.evaluation_mode)
 
     @property
     def output_keys(self) -> list[str]:
@@ -198,7 +170,10 @@ class EvaluatorChain(Chain, RunEvaluator):
         assert (
             run.outputs is not None
         ), "the current run has no outputs. The chain should output 'answer' and 'contexts' keys."
-        missing_keys = self._keys_are_present(["answer", "contexts"], run.outputs)
+        output_keys = get_required_columns(
+            self.metric.evaluation_mode, ["question", "ground_truth"]
+        )
+        missing_keys = self._keys_are_present(output_keys, run.outputs)
         if missing_keys:
             raise ValueError(
                 "Expected 'answer' and 'contexts' in run.outputs."
