@@ -73,11 +73,11 @@ class TestsetGenerator:
     docstore: DocumentStore
 
     @classmethod
-    def from_default(
+    def from_langchain(
         cls,
-        generator_llm: t.Optional[BaseLanguageModel],
-        critic_llm: t.Optional[BaseLanguageModel],
-        embeddings: t.Optional[Embeddings],
+        generator_llm: BaseLanguageModel,
+        critic_llm: BaseLanguageModel,
+        embeddings: Embeddings,
         docstore: t.Optional[DocumentStore] = None,
         chunk_size: int = 1024,
     ) -> "TestsetGenerator":
@@ -122,7 +122,7 @@ class TestsetGenerator:
         critic_llm_model = ChatOpenAI(model=critic_llm)
         embeddings_model = OpenAIEmbeddings(model=embeddings)
 
-        return cls.from_default(
+        return cls.from_langchain(
             generator_llm=generator_llm_model,
             critic_llm=critic_llm_model,
             embeddings=embeddings_model,
