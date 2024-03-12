@@ -10,7 +10,7 @@ This tutorial assumes that you have the 4 required data points from your RAG pip
 1. Question: A set of questions. 
 2. Contexts: Retrieved contexts corresponding to each question. This is a `list[list]` since each question can retrieve multiple text chunks.
 3. Answer: Generated answer corresponding to each question.
-4. Ground truths: Ground truths corresponding to each question. This is also a `list[list]` since each question may have multiple ground truths. 
+4. Ground truths: Ground truths corresponding to each question. This is a `str` which corresponds to the expected answer for each question.
 
 
 ## Example dataset
