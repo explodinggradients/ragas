@@ -150,7 +150,7 @@ class Faithfulness(MetricWithLLM):
 
     def _compute_score(self, output: t.Any):
         # check the verdicts and compute the score
-        verdict_score_map = {"1": 1, "0": 0, "null": np.nan}
+        verdict_score_map = {"1": 1, "0": 0, "-1": np.nan}
         output = output if isinstance(output, list) else [output]
         faithful_statements = sum(
             verdict_score_map.get(
