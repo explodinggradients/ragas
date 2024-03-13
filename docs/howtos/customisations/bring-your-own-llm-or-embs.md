@@ -3,7 +3,7 @@
 Ragas uses LLMs and Embeddings for both evaluation and test set generation. By default, the LLM and Embedding models of choice are OpenAI models.
 
 - [Evaluations](#evaluations)
-- [Testset Generation](#testset-generation)
+- [Testset Generation](#test-set-generation)
 
 
 :::{note}
