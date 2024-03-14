@@ -5,6 +5,7 @@ import typing as t
 from abc import ABC
 from dataclasses import dataclass, field
 
+
 from ragas.llms.json_load import json_loader
 from ragas.run_config import RunConfig
 from ragas.testset.prompts import (
@@ -54,10 +55,15 @@ class NodeFilter(Filter):
         results = await self.llm.generate(prompt=prompt)
         output = results.generations[0][0].text.strip()
         score = await json_loader.safe_load(output, llm=self.llm)
-        score = score if isinstance(score, dict) else {}
+        score_dict = score if isinstance(score, dict) else {}
         logger.debug("node filter: %s", score)
-        score.update({"score": score.get("score", 0) >= self.threshold})
-        return score
+        score = score_dict.get("score", 0)
+        try:
+            score = float(score)
+        except Exception as _:
+            score = 0
+        score_dict.update({"score": score >= self.threshold})
+        return score_dict
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         """
