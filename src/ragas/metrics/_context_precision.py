@@ -90,21 +90,42 @@ class ContextPrecision(MetricWithLLM):
             for c in contexts
         ]
 
+    def _extract_verdict_value(self, item):
+        """get 'verdict' recursively"""
+        if isinstance(item, dict):
+            if "verdict" in item:
+                verdict_value = item["verdict"]
+                if isinstance(verdict_value, int):
+                    return 1 if verdict_value == 1 else 0
+                elif isinstance(verdict_value, str):
+                    verdict = verdict_value.strip()
+                    return 1 if verdict == "1" else 0
+            for key in item:
+                result = self._extract_verdict_value(item[key])
+                if result is not None:
+                    return result
+        elif isinstance(item, list):
+            for subitem in item:
+                result = self._extract_verdict_value(subitem)
+                if result is not None:
+                    return result
+        return None
+
     def _calculate_average_precision(self, json_responses: t.List[t.Dict]) -> float:
         score = np.nan
-        json_responses = [
-            item if isinstance(item, dict) else {} for item in json_responses
+        data = [
+            self._extract_verdict_value(item)
+            if isinstance(item, (dict, list))
+            else None
+            for item in json_responses
         ]
-        verdict_list = [
-            int("1" == resp.get("verdict", "").strip())
-            if resp.get("verdict")
-            else np.nan
-            for resp in json_responses
-        ]
-        denominator = sum(verdict_list) + 1e-10
+
+        verdict_list = [verdict if verdict is not None else np.nan for verdict in data]
+        denominator = np.nansum(verdict_list) + 1e-10
         numerator = sum(
             [
-                (sum(verdict_list[: i + 1]) / (i + 1)) * verdict_list[i]
+                (np.nansum(verdict_list[: i + 1]) / (i + 1))
+                * (verdict_list[i] if not np.isnan(verdict_list[i]) else 0)
                 for i in range(len(verdict_list))
             ]
         )

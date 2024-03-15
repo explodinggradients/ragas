@@ -77,7 +77,6 @@ CONTEXT_RECALL_RA = Prompt(
 
 @dataclass
 class ContextRecall(MetricWithLLM):
-
     """
     Estimates context recall by estimating TP and FN using annotated answer and
     retrieved context.
@@ -97,17 +96,39 @@ class ContextRecall(MetricWithLLM):
 
         return self.context_recall_prompt.format(question=qstn, context=ctx, answer=gt)
 
+    def _extract_attributed_value(self, item):
+        """get 'Attributed' recursively"""
+        if isinstance(item, dict):
+            if "attributed" in item:
+                attributed_value = item["attributed"]
+                if isinstance(attributed_value, int):
+                    return 1 if attributed_value == 1 else 0
+                elif isinstance(attributed_value, str):
+                    attributed = attributed_value.strip()
+                    return 1 if attributed == "1" else 0
+            for key in item:
+                result = self._extract_attributed_value(item[key])
+                if result is not None:
+                    return result
+        elif isinstance(item, list):
+            for subitem in item:
+                result = self._extract_attributed_value(subitem)
+                if result is not None:
+                    return result
+        return None
+
     def _compute_score(self, response: t.Any) -> float:
         response = response if isinstance(response, list) else [response]
-        response = [item if isinstance(item, dict) else {} for item in response]
         response = [
-            int(item.get("Attributed").strip() == "1")
-            if item.get("Attributed")
-            else np.nan
+            self._extract_attributed_value(item)
+            if isinstance(item, (dict, list))
+            else None
             for item in response
         ]
+        response = [item if item is not None else np.nan for item in response]
+
         denom = len(response)
-        numerator = sum(response)
+        numerator = sum(item for item in response if not np.isnan(item))
         score = numerator / denom if denom > 0 else np.nan
 
         if np.isnan(score):
