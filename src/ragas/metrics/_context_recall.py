@@ -99,7 +99,7 @@ class ContextRecall(MetricWithLLM):
     def _extract_attributed_value(self, item):
         """get 'Attributed' recursively"""
         if isinstance(item, dict):
-            if "attributed" in item:
+            if "Attributed" in item:
                 attributed_value = item["Attributed"]
                 if isinstance(attributed_value, int):
                     return 1 if attributed_value == 1 else 0
