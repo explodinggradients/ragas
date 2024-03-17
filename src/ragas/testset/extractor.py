@@ -55,7 +55,12 @@ class KeyphraseExtractor(Extractor):
         )
         keyphrases = keyphrases if isinstance(keyphrases, dict) else {}
         logger.debug("topics: %s", keyphrases)
-        return keyphrases.get("topics", [])
+        if "topics" in keyphrases:
+            return keyphrases["topics"]
+        elif "keyphrases" in keyphrases:
+            return keyphrases["keyphrases"]
+        else:
+            return []
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         """
