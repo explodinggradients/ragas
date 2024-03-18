@@ -6,12 +6,13 @@ want is not supported feel free to raise an [issue](https://github.com/exploding
 happy to look into it 🙂
 
 :::{toctree}
-tonic-validate.ipynb
 llamaindex.ipynb
 langchain.ipynb
 langsmith.ipynb
 ragas-arize.ipynb
-athina.ipynb
 langfuse.ipynb
+athina.ipynb
 zeno.ipynb
+tonic-validate.ipynb
+ragas_haystack.ipynb
 :::
