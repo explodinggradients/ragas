@@ -121,7 +121,7 @@ class ContextRecall(MetricWithLLM):
         assert self.llm is not None, "set LLM before use"
 
         result = await self.llm.generate(
-            self._create_context_recall_prompt(row), callbacks=callbacks
+            self._create_context_recall_prompt(row), callbacks=callbacks, is_async=is_async
         )
         response = await json_loader.safe_load(
             result.generations[0][0].text, self.llm, is_async=is_async
