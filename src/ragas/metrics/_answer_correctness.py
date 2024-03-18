@@ -115,6 +115,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
             "FP",
             "FN",
         ]
+        prediction = prediction if isinstance(prediction, dict) else {}
         if prediction:
             prediction = [prediction.get(k, np.nan) for k in key_map]
             tp, fp, fn = [
