@@ -143,7 +143,16 @@ class JsonLoader:
 
     def _load_all_jsons(self, text):
         start, end = self._find_outermost_json(text)
-        _json = json.loads(text[start:end])
+        try:
+            _json = json.loads(text[start:end])
+        except Exception as e:
+            error_msg = str(e)
+            if('Invalid \escape' in error_msg):
+                _json = json.loads(text[start:end].replace('\\', '\\\\'))
+            elif('the JSON object must be str, bytes or bytearray, not dict' in error_msg):
+                _json = json.loads(text[start:end].replace("'", "\""))
+            else:
+                raise e
         text = text.replace(text[start:end], "", 1)
         start, end = self._find_outermost_json(text)
         if (start, end) == (-1, -1):
