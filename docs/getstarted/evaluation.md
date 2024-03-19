@@ -10,7 +10,7 @@ import os
 os.environ["OPENAI_API_KEY"] = "your-openai-key"
 ```
 :::{note}
-By default, these metrics use OpenAI's API to compute the score. If you're using this metric, ensure that you've set the environment key `OPENAI_API_KEY` with your API key. You can also try other LLMs for evaluation, check the [LLM guide](../howtos/customisations/llms.ipynb) to learn more.
+By default, these metrics use OpenAI's API to compute the score. If you're using this metric, ensure that you've set the environment key `OPENAI_API_KEY` with your API key. You can also try other LLMs for evaluation, check the [Bring your own LLM guide](../howtos/customisations/bring-your-own-llm-or-embs.md) to learn more.
 :::
 
 Let's begin with the data.
