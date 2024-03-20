@@ -144,7 +144,7 @@ class Faithfulness(MetricWithLLM):
         output = output if isinstance(output, list) else [output]
         faithful_statements = sum(
             verdict_score_map.get(
-                statement_with_validation.get("verdict", "").lower(), np.nan
+                str(statement_with_validation.get("verdict", "")), np.nan
             )
             if isinstance(statement_with_validation, dict)
             else np.nan
