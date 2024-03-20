@@ -132,14 +132,25 @@ conversational_question_prompt = Prompt(
 
 context_scoring_prompt = Prompt(
     name="score_context",
-    instruction="""Given a context, complete the two following tasks and output answer valid json format
-1.Evaluate the provided context and assign a numerical score between 0 and 10 based on the following criteria:
-    - Award a high score to context that thoroughly delves into and explains concepts.
-    - Assign a lower score to context that contains excessive references, acknowledgments, personal information, or other non-essential elements.""",
+    instruction="""Given a context, perform the following task and output the answer in VALID JSON format:
+    Evaluate the provided context and assign a numerical score between 0 and 10 based on the following criteria:
+      - Clarity and Accuracy: Award a high score to the context that provides accurate and non-misleading information with clarity.
+      - Depth and Innovation: Give extra points to the context that thoroughly delves into the concepts or includes new perspectives and unique insights.
+      - Structure: Award a high score to the context with clear structure and logical flow.
+      - Relevance: Assign a lower score to the context that contains excessive references, acknowledgments, personal information, or other non-essential elements.
+    """,
     examples=[
+        {
+            "context": "The Pythagorean theorem is a fundamental principle in geometry. It states that in a right-angled triangle, the square of the length of the hypotenuse (the side opposite the right angle) is equal to the sum of the squares of the lengths of the other two sides. This can be written as a^2 + b^2 = c^2 where c represents the length of the hypotenuse, and a and b represent the lengths of the other two sides.",
+            "output": {"score": 8.5},
+        },
         {
             "context": "Albert Einstein (14 March 1879 - 18 April 1955) was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time.",
             "output": {"score": 6.0},
+        },
+        {
+            "context": "I love chocolate. It's really tasty. Oh, and by the way, the earth orbits the sun, not the other way around. Also, my favorite color is blue.",
+            "output": {"score": 2.0},
         }
     ],
     input_keys=["context"],
