@@ -334,7 +334,7 @@ class InMemoryDocumentStore(DocumentStore):
         return nodes
 
     def get_similar(
-        self, node: Node, threshold: float = 0.7, top_k: int = 3
+        self, node: Node, threshold: float = 0.85, top_k: int = 3
     ) -> t.Union[t.List[Document], t.List[Node]]:
         doc = node
         if doc.embedding is None:
