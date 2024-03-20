@@ -69,7 +69,7 @@ LONG_FORM_ANSWER_PROMPT = Prompt(
 
 class StatementFaithfulnessAnswer(BaseModel):
     statement: str = Field(..., description="the original statement, word-by-word")
-    verdict: t.Literal["faithful", "unfaithful", "invalid"] = Field(
+    verdict: t.Literal["faithful", "unfaithful"] = Field(
         ..., description="the verdict of the faithfulness."
     )
     reason: str = Field(..., description="the reason of the verdict")
@@ -86,7 +86,7 @@ _faithfulness_output_parser = PydanticOutputParser(pydantic_object=StatementFait
 
 NLI_STATEMENTS_MESSAGE = Prompt(
     name="nli_statements",
-    instruction="Your task is to judge the faithfulness of a series of statements based on a given context. For each statement you must return 'faithful' if the statement can be verified based on the context, 'unfaithful' if the statement can not be verified based on the context, or 'invalid' if the statement contains invalid information. Provide a reason for your verdict.",
+    instruction="Your task is to judge the faithfulness of a series of statements based on a given context. For each statement you must return 'faithful' if the statement can be verified based on the context, 'unfaithful' if the statement can not be verified based on the context.",
     output_format_instruction=_faithfulness_output_instructions,
     examples=[
         {
@@ -131,17 +131,6 @@ NLI_STATEMENTS_MESSAGE = Prompt(
                 },
             ]).dicts(),
         },
-        {
-            "context": """Albert Einstein was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time.""",
-            "statements": ["Nil"],
-            "answer": StatementFaithfulnessAnswers.parse_obj([
-                {
-                    "statement": "Nil",
-                    "reason": "The statement is invalid",
-                    "verdict": "invalid",
-                },
-            ]).dicts(),
-        },
     ],
     input_keys=["context", "statements"],
     output_key="answer",
@@ -176,8 +165,6 @@ class Faithfulness(MetricWithLLM):
         contexts = row["contexts"]
         # check if the statements are support in the contexts
         contexts_str: str = "\n".join(contexts)
-        if not statements:
-            statements = ["Nil"]
         statements_str: str = json.dumps(statements)
         prompt_value = self.nli_statements_message.format(
             context=contexts_str, statements=statements_str
@@ -186,7 +173,7 @@ class Faithfulness(MetricWithLLM):
 
     def _compute_score(self, answers: StatementFaithfulnessAnswers):
         # check the verdicts and compute the score
-        verdict_score_map = {"faithful": 1, "unfaithful": 0, "invalid": np.nan}
+        verdict_score_map = {"faithful": 1, "unfaithful": 0}
         faithful_statements = sum(
             verdict_score_map.get(answer.verdict, np.nan)
             for answer in answers.__root__
