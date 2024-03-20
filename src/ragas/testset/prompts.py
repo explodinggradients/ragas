@@ -335,22 +335,22 @@ seed_question_prompt = Prompt(
     instruction="Generate a question that can be fully answered from given context. The question should be formed using topic",
     examples=[
         {
-            "context": "The ecosystem of the Amazon rainforest is incredibly diverse, hosting thousands of species that are not found anywhere else on Earth. This biodiversity is crucial for the stability of the global climate and helps regulate the Earth's air and water cycles.",
-            "topic": "biodiversity in the Amazon rainforest",
-            "question": "Why is the biodiversity in the Amazon rainforest considered crucial for global climate stability?",
+            "context": "Photosynthesis in plants involves converting light energy into chemical energy, using chlorophyll and other pigments to absorb light. This process is crucial for plant growth and the production of oxygen.",
+            "keyphrase": "Photosynthesis",
+            "question": "What is the role of photosynthesis in plant growth?",
         },
         {
-            "context": "Quantum computing represents a significant leap forward in computational capability, utilizing the principles of quantum mechanics to process information in ways that traditional computers cannot. This technology has the potential to revolutionize various fields by performing complex calculations at unprecedented speeds.",
-            "topic": "potential applications of quantum computing",
-            "question": "What fields could potentially be revolutionized by the applications of quantum computing?",
+            "context": "The Industrial Revolution, starting in the 18th century, marked a major turning point in history as it led to the development of factories and urbanization.",
+            "keyphrase": "Industrial Revolution",
+            "question": "How did the Industrial Revolution mark a major turning point in history?",
         },
         {
-            "context": "Renewable energy sources, such as solar and wind power, are essential for transitioning to a more sustainable energy system. They offer the potential to reduce greenhouse gas emissions and dependency on fossil fuels, addressing key environmental and economic challenges.",
-            "topic": "benefits of renewable energy sources",
-            "question": "What are the primary benefits of transitioning to renewable energy sources?",
+            "context": "The process of evaporation plays a crucial role in the water cycle, converting water from liquid to vapor and allowing it to rise into the atmosphere.",
+            "keyphrase": "Evaporation",
+            "question": "Why is evaporation important in the water cycle?",
         },
     ],
-    input_keys=["context", "topic"],
+    input_keys=["context", "keyphrase"],
     output_key="question",
     output_type="string",
 )
