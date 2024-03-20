@@ -6,10 +6,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 from ragas.llms.json_load import json_loader
-from ragas.testset.prompts import (
-    keyphrase_extraction_prompt,
-    main_topic_extraction_prompt,
-)
+from ragas.testset.prompts import keyphrase_extraction_prompt
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import BaseRagasLLM
@@ -43,30 +40,25 @@ class Extractor(ABC):
 
 @dataclass
 class KeyphraseExtractor(Extractor):
-    keyphrase_extraction_prompt: Prompt = field(
-        default_factory=lambda: main_topic_extraction_prompt
+    extractor_prompt: Prompt = field(
+        default_factory=lambda: keyphrase_extraction_prompt
     )
 
     async def extract(self, node: Node, is_async: bool = True) -> t.List[str]:
-        prompt = self.keyphrase_extraction_prompt.format(text=node.page_content)
+        prompt = self.extractor_prompt.format(text=node.page_content)
         results = await self.llm.generate(prompt=prompt, is_async=is_async)
         keyphrases = await json_loader.safe_load(
             results.generations[0][0].text.strip(), llm=self.llm, is_async=is_async
         )
         keyphrases = keyphrases if isinstance(keyphrases, dict) else {}
         logger.debug("topics: %s", keyphrases)
-        if "topics" in keyphrases:
-            return keyphrases["topics"]
-        elif "keyphrases" in keyphrases:
-            return keyphrases["keyphrases"]
-        else:
-            return []
+        return keyphrases.get("keyphrases", [])
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         """
         Adapt the extractor to a different language.
         """
-        self.keyphrase_extraction_prompt = keyphrase_extraction_prompt.adapt(
+        self.extractor_prompt = self.extractor_prompt.adapt(
             language, self.llm, cache_dir
         )
 
@@ -74,4 +66,4 @@ class KeyphraseExtractor(Extractor):
         """
         Save the extractor prompts to a path.
         """
-        self.keyphrase_extraction_prompt.save(cache_dir)
+        self.extractor_prompt.save(cache_dir)

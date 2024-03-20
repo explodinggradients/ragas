@@ -296,7 +296,7 @@ class SimpleEvolution(Evolution):
         results = await self.generator_llm.generate(
             prompt=self.seed_question_prompt.format(
                 context=merged_node.page_content,
-                topic=rng.choice(np.array(merged_node.keyphrases), size=1)[0],
+                keyphrase=rng.choice(np.array(merged_node.keyphrases), size=1)[0],
             )
         )
         seed_question = results.generations[0][0].text
