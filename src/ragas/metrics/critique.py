@@ -34,7 +34,7 @@ CRITIQUE_PROMPT = Prompt(
     ],
     input_keys=["input", "submission", "criteria"],
     output_key="output",
-    output_type="JSON",
+    output_type="json",
 )  # noqa: E501
 
 

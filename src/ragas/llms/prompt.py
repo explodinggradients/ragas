@@ -39,7 +39,7 @@ class Prompt(BaseModel):
         examples (List[Dict[str, Any]]): List of example inputs and outputs for the prompt.
         input_keys (List[str]): List of input variable names.
         output_key (str): The output variable name.
-        output_type (str): The type of the output (default: "json").
+        output_type (Literal["json", "str"]): The type of the output (default: "json").
         language (str): The language of the prompt (default: "en").
     """
 
@@ -48,7 +48,7 @@ class Prompt(BaseModel):
     examples: t.List[Example] = []
     input_keys: t.List[str]
     output_key: str
-    output_type: str = "json"
+    output_type: t.Literal["json", "str"] = "json"
     language: str = "english"
 
     @root_validator
@@ -299,5 +299,6 @@ json_translatation = Prompt(
     ],
     input_keys=["translate_to", "input"],
     output_key="output",
-    output_type="JSON",
+    output_type="json",
 )
+

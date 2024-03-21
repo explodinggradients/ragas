@@ -49,7 +49,7 @@ LONG_FORM_ANSWER_PROMPT = Prompt(
     ],
     input_keys=["question", "answer"],
     output_key="statements",
-    output_type="JSON",
+    output_type="json",
 )  # noqa: E501
 
 
@@ -109,7 +109,7 @@ NLI_STATEMENTS_MESSAGE = Prompt(
     ],
     input_keys=["context", "statements"],
     output_key="answer",
-    output_type="JSON",
+    output_type="json",
 )  # noqa: E501
 
 
