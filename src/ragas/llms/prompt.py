@@ -101,7 +101,7 @@ class Prompt(BaseModel):
         prompt_str = "\n".join(prompt_elements) + "\n"
 
         if self.examples:
-            prompt_str += "\nExamples:\n\n"
+            prompt_str += "\nExamples:\n"
             # Format the examples to match the Langchain prompt template
             for example in self.examples:
                 for key, value in example.items():
@@ -116,7 +116,7 @@ class Prompt(BaseModel):
                     prompt_str += f"\n{key}: {value}"
                 prompt_str += "\n"
 
-        prompt_str += "\nYour actual task:\n\n"
+        prompt_str += "\nYour actual task:\n"
 
         if self.input_keys:
             prompt_str += "".join(f"\n{key}: {{{key}}}" for key in self.input_keys)

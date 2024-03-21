@@ -5,7 +5,7 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from langchain_core.pydantic_v1 import BaseModel, ValidationError
+from langchain_core.pydantic_v1 import BaseModel, Field, ValidationError
 
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
@@ -21,47 +21,58 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ClassificationAnswer(BaseModel):
-    statement: str
-    reason: str
-    attributed: bool
+class ContextRecallClassificationAnswer(BaseModel):
+    """The answer for a single sentence classification."""
+    statement: str = Field(
+        ...,
+        description="the sentence extracted from the answer"
+    )
+    attributed: bool = Field(
+        ...,
+        description="whether the sentence can be attributed to the context"
+    )
+    reason: str = Field(
+        ...,
+        description="the reason why the sentence can or can not be attributed to the context"
+    )
 
-class ClassificationAnswers(BaseModel):
-    __root__: t.List[ClassificationAnswer]
+class ContextRecallClassificationAnswers(BaseModel):
+    """List of classification answers for all sentences."""
+    __root__: t.List[ContextRecallClassificationAnswer]
 
     def dicts(self):
         return self.dict()["__root__"]
 
 
-_classification_answers_instructions = get_json_format_instructions(ClassificationAnswers)
+_classification_output_instructions = get_json_format_instructions(ContextRecallClassificationAnswers)
 
 
 CONTEXT_RECALL_RA = Prompt(
     name="context_recall",
     instruction="""Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not. Use only "true" or "false" as a binary classification. Output json with reason.""",
-    output_format_instruction=_classification_answers_instructions,
+    output_format_instruction=_classification_output_instructions,
     examples=[
         {
             "question": """What can you tell me about albert Albert Einstein?""",
             "context": """Albert Einstein (14 March 1879 - 18 April 1955) was a German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time. Best known for developing the theory of relativity, he also made important contributions to quantum mechanics, and was thus a central figure in the revolutionary reshaping of the scientific understanding of nature that modern physics accomplished in the first decades of the twentieth century. His mass-energy equivalence formula E = mc2, which arises from relativity theory, has been called 'the world's most famous equation'. He received the 1921 Nobel Prize in Physics 'for his services to theoretical physics, and especially for his discovery of the law of the photoelectric effect', a pivotal step in the development of quantum theory. His work is also known for its influence on the philosophy of science. In a 1999 poll of 130 leading physicists worldwide by the British journal Physics World, Einstein was ranked the greatest physicist of all time. His intellectual achievements and originality have made Einstein synonymous with genius.""",
             "answer": """Albert Einstein born in 14 March 1879 was  German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time. He received the 1921 Nobel Prize in Physics for his services to theoretical physics. He published 4 papers in 1905.  Einstein moved to Switzerland in 1895""",
-            "classification": ClassificationAnswers.parse_obj([
-                ClassificationAnswer(
+            "classification": ContextRecallClassificationAnswers.parse_obj([
+                ContextRecallClassificationAnswer(
                     statement="Albert Einstein, born on 14 March 1879, was a German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time.",
                     reason="The date of birth of Einstein is mentioned clearly in the context.",
                     attributed=True,
                 ),
-                ClassificationAnswer(
+                ContextRecallClassificationAnswer(
                     statement="He received the 1921 Nobel Prize in Physics for his services to theoretical physics.",
                     reason="The exact sentence is present in the given context.",
                     attributed=True,
                 ),
-                ClassificationAnswer(
+                ContextRecallClassificationAnswer(
                     statement="He published 4 papers in 1905.",
                     reason="There is no mention about papers he wrote in the given context.",
                     attributed=False,
                 ),
-                ClassificationAnswer(
+                ContextRecallClassificationAnswer(
                     statement="Einstein moved to Switzerland in 1895.",
                     reason="There is no supporting evidence for this in the given context.",
                     attributed=False,
@@ -72,8 +83,8 @@ CONTEXT_RECALL_RA = Prompt(
             "question": """who won 2020 icc world cup?""",
             "context": """The 2022 ICC Men's T20 World Cup, held from October 16 to November 13, 2022, in Australia, was the eighth edition of the tournament. Originally scheduled for 2020, it was postponed due to the COVID-19 pandemic. England emerged victorious, defeating Pakistan by five wickets in the final to clinch their second ICC Men's T20 World Cup title.""",
             "answer": """England""",
-            "classification": ClassificationAnswers.parse_obj([
-                ClassificationAnswer(
+            "classification": ContextRecallClassificationAnswers.parse_obj([
+                ContextRecallClassificationAnswer(
                     statement="England won the 2022 ICC Men's T20 World Cup.",
                     reason="From context it is clear that England defeated Pakistan to win the World Cup.",
                     attributed=True,
@@ -84,8 +95,8 @@ CONTEXT_RECALL_RA = Prompt(
             "question": """What is the primary fuel for the Sun?""",
             "context": """NULL""",
             "answer": """Hydrogen""",
-            "classification": ClassificationAnswers.parse_obj([
-                ClassificationAnswer(
+            "classification": ContextRecallClassificationAnswers.parse_obj([
+                ContextRecallClassificationAnswer(
                     statement="The Sun's primary fuel is hydrogen.",
                     reason="The context contains no information",
                     attributed=False,
@@ -126,11 +137,11 @@ class ContextRecall(MetricWithLLM):
             response = response["classification"]
 
         try:
-            response = ClassificationAnswers.parse_obj(response)
+            response = ContextRecallClassificationAnswers.parse_obj(response)
         except ValidationError as err:
-            print("Could not parse LLM response:")
-            print(response)
-            raise err
+            logger.warning(f"Could not parse LLM response: {response}")
+            logger.warning(f"Error: {err}")
+            return np.nan
 
         # TODO: real error handling and retry?
         # https://python.langchain.com/docs/modules/model_io/output_parsers/types/retry
@@ -145,7 +156,7 @@ class ContextRecall(MetricWithLLM):
 
         if np.isnan(score):
             logger.warning(
-                "Invalid JSON response. Expected dictionary with key 'Attributed'"
+                "The LLM did not return a valid classification."
             )
 
         return score
