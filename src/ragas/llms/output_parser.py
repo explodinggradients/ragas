@@ -21,4 +21,6 @@ def get_json_format_instructions(pydantic_object: t.Type[TBaseModel]) -> str:
     # Ensure json in context is well-formed with double quotes.
     schema_str = json.dumps(reduced_schema)
 
-    return JSON_FORMAT_INSTRUCTIONS.format(schema=schema_str)
+    resp = JSON_FORMAT_INSTRUCTIONS.format(schema=schema_str)
+    resp += "\n\nSkip the preamble, return only a valid json string."
+    return resp
