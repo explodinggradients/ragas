@@ -36,6 +36,7 @@ class Prompt(BaseModel):
     Attributes:
         name (str): The name of the prompt.
         instruction (str): The instruction for the prompt.
+        output_format_instruction (str): The output format instruction for the prompt.
         examples (List[Dict[str, Any]]): List of example inputs and outputs for the prompt.
         input_keys (List[str]): List of input variable names.
         output_key (str): The output variable name.
@@ -45,6 +46,7 @@ class Prompt(BaseModel):
 
     name: str
     instruction: str
+    output_format_instruction: str = ""
     examples: t.List[Example] = []
     input_keys: t.List[str]
     output_key: str
@@ -91,14 +93,15 @@ class Prompt(BaseModel):
         """
         Generate the prompt string from the variables.
         """
-        added_json_instruction = (
-            "\nOutput in only valid JSON format."
-            if self.output_type.lower() == "json"
-            else ""
-        )
-        prompt_str = self.instruction + added_json_instruction + "\n"
+        prompt_elements = [self.instruction]
+        if self.output_format_instruction:
+            prompt_elements.append(
+                "\n" + self.output_format_instruction.replace("{", "{{").replace("}", "}}")
+            )
+        prompt_str = "\n".join(prompt_elements) + "\n"
 
         if self.examples:
+            prompt_str += "\nExamples:\n\n"
             # Format the examples to match the Langchain prompt template
             for example in self.examples:
                 for key, value in example.items():
@@ -112,6 +115,8 @@ class Prompt(BaseModel):
                     )
                     prompt_str += f"\n{key}: {value}"
                 prompt_str += "\n"
+
+        prompt_str += "\nYour actual task:\n\n"
 
         if self.input_keys:
             prompt_str += "".join(f"\n{key}: {{{key}}}" for key in self.input_keys)
