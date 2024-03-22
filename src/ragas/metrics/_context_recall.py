@@ -5,12 +5,16 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from langchain_core.pydantic_v1 import BaseModel, Field, ValidationError
+from langchain_core.pydantic_v1 import BaseModel, ValidationError
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.exceptions import OutputParserException
 
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.llms.output_parser import get_json_format_instructions
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+
+from ragas.llms import USE_LANGCHAIN_PARSER
 
 
 if t.TYPE_CHECKING:
@@ -22,22 +26,11 @@ logger = logging.getLogger(__name__)
 
 
 class ContextRecallClassificationAnswer(BaseModel):
-    """The answer for a single sentence classification."""
-    statement: str = Field(
-        ...,
-        description="the sentence extracted from the answer"
-    )
-    attributed: bool = Field(
-        ...,
-        description="whether the sentence can be attributed to the context"
-    )
-    reason: str = Field(
-        ...,
-        description="the reason why the sentence can or can not be attributed to the context"
-    )
+    statement: str
+    attributed: bool
+    reason: str
 
 class ContextRecallClassificationAnswers(BaseModel):
-    """List of classification answers for all sentences."""
     __root__: t.List[ContextRecallClassificationAnswer]
 
     def dicts(self):
@@ -45,7 +38,7 @@ class ContextRecallClassificationAnswers(BaseModel):
 
 
 _classification_output_instructions = get_json_format_instructions(ContextRecallClassificationAnswers)
-
+_output_parser = PydanticOutputParser(pydantic_object=ContextRecallClassificationAnswers)
 
 CONTEXT_RECALL_RA = Prompt(
     name="context_recall",
@@ -133,19 +126,6 @@ class ContextRecall(MetricWithLLM):
         return self.context_recall_prompt.format(question=qstn, context=ctx, answer=gt)
 
     def _compute_score(self, response: t.Any) -> float:
-        if isinstance(response, dict) and "classification" in response:
-            response = response["classification"]
-
-        try:
-            response = ContextRecallClassificationAnswers.parse_obj(response)
-        except ValidationError as err:
-            logger.warning(f"Could not parse LLM response: {response}")
-            logger.warning(f"Error: {err}")
-            return np.nan
-
-        # TODO: real error handling and retry?
-        # https://python.langchain.com/docs/modules/model_io/output_parsers/types/retry
-
         response = [
             1 if item.attributed else 0
             for item in response.__root__
@@ -167,11 +147,28 @@ class ContextRecall(MetricWithLLM):
         result = await self.llm.generate(
             self._create_context_recall_prompt(row), callbacks=callbacks
         )
-        response = await json_loader.safe_load(
-            result.generations[0][0].text, self.llm, is_async=is_async
-        )
+        result_text = result.generations[0][0].text
 
-        return self._compute_score(response)
+        try:
+
+            if USE_LANGCHAIN_PARSER:
+                answers = _output_parser.parse(result_text)
+                # TODO: real error handling and retry?
+                # https://python.langchain.com/docs/modules/model_io/output_parsers/types/retry
+            else:
+                response = await json_loader.safe_load(
+                    result_text, self.llm, is_async=is_async
+                )
+                if isinstance(response, dict) and "classification" in response:
+                    response = response["classification"]
+                answers = ContextRecallClassificationAnswers.parse_obj(response)
+
+        except (OutputParserException, ValidationError) as err:
+            print(f"Could not parse LLM response: {result_text}")
+            print(f"Error: {err}")
+            return np.nan
+
+        return self._compute_score(answers)
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
         assert self.llm is not None, "set LLM before use"

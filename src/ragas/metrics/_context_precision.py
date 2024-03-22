@@ -7,11 +7,15 @@ from dataclasses import dataclass, field
 import numpy as np
 from datasets import Dataset
 from langchain.pydantic_v1 import BaseModel, Field, ValidationError
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.exceptions import OutputParserException
 
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt, PromptValue
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.llms.output_parser import get_json_format_instructions
+
+from ragas.llms import USE_LANGCHAIN_PARSER
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -28,7 +32,7 @@ class ContextPrecisionVerifications(BaseModel):
     __root__: t.List[ContextPrecisionVerification]
 
 _verification_output_instructions = get_json_format_instructions(ContextPrecisionVerification)
-
+_output_parser = PydanticOutputParser(pydantic_object=ContextPrecisionVerification)
 
 CONTEXT_PRECISION = Prompt(
     name="context_precision",
@@ -105,24 +109,12 @@ class ContextPrecision(MetricWithLLM):
             for c in contexts
         ]
 
-    def _calculate_average_precision(self, json_responses: t.List[t.Dict]) -> float:
+    def _calculate_average_precision(self, verifications: t.List[ContextPrecisionVerification]) -> float:
         score = np.nan
 
-        try:
-            responses = ContextPrecisionVerifications.parse_obj(json_responses).__root__
-        except ValidationError as err:
-            logger.warning(f"Could not parse LLM response: {json_responses}")
-            logger.warning(f"Error: {err}")
-            return np.nan
-
-        # TODO: real error handling and retry?
-        # https://python.langchain.com/docs/modules/model_io/output_parsers/types/retry
-
-
-
         verdict_list = [
-            1 if resp.verdict else 0
-            for resp in responses
+            1 if ver.verdict else 0
+            for ver in verifications
         ]
         denominator = sum(verdict_list) + 1e-10
         numerator = sum(
@@ -157,12 +149,26 @@ class ContextPrecision(MetricWithLLM):
             )
             responses.append(result.generations[0][0].text)
 
-        json_responses = [
-            await json_loader.safe_load(item, self.llm, is_async=is_async)
-            for item in responses
-        ]
-        json_responses = t.cast(t.List[t.Dict], json_responses)
-        score = self._calculate_average_precision(json_responses)
+        try:
+
+            if USE_LANGCHAIN_PARSER:
+                items = [_output_parser.parse(item) for item in responses]
+                answers = ContextPrecisionVerifications(__root__=items)
+                # TODO: real error handling and retry?
+                # https://python.langchain.com/docs/modules/model_io/output_parsers/types/retry
+            else:
+                json_objs = [
+                    await json_loader.safe_load(item, self.llm, is_async=is_async)
+                    for item in responses
+                ]
+                answers = ContextPrecisionVerifications.parse_obj(json_objs)
+
+        except (OutputParserException, ValidationError) as err:
+            logger.warning(f"Could not parse LLM responses: {responses}")
+            logger.warning(f"Error: {err}")
+            return np.nan
+
+        score = self._calculate_average_precision(answers.__root__)
         return score
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:

@@ -41,7 +41,7 @@ class Prompt(BaseModel):
         input_keys (List[str]): List of input variable names.
         output_key (str): The output variable name.
         output_type (Literal["json", "str"]): The type of the output (default: "json").
-        language (str): The language of the prompt (default: "en").
+        language (str): The language of the prompt (default: "english").
     """
 
     name: str
@@ -105,6 +105,7 @@ class Prompt(BaseModel):
             # Format the examples to match the Langchain prompt template
             for example in self.examples:
                 for key, value in example.items():
+                    is_json = isinstance(value, (dict, list))
                     value = (
                         json.dumps(value, ensure_ascii=False).encode("utf8").decode()
                     )
@@ -113,7 +114,7 @@ class Prompt(BaseModel):
                         if self.output_type.lower() == "json"
                         else value
                     )
-                    prompt_str += f"\n{key}: {value}"
+                    prompt_str += f"\n{key}: {value}" if not is_json else f"\n{key}: ```{value}```"
                 prompt_str += "\n"
 
         prompt_str += "\nYour actual task:\n"
@@ -141,7 +142,7 @@ class Prompt(BaseModel):
                 else value
             )
             example_str += f"\n{key}: {value}"
-        return example_str
+        return "```" + example_str + "```"
 
     def format(self, **kwargs: t.Any) -> PromptValue:
         """
