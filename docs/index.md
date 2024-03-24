@@ -26,7 +26,7 @@ against and setting up online monitoring for your RAG apps.
 :link: core-concepts
 :link-type: ref
 
-The high-level explainations for building a better understand about the
+The high-level explanations for building a better understand about the
 important topics such how to think about metrics-driven development, how the Ragas metrics work under the hood and synthetic dataset generation.
 :::
 :::{grid-item-card} 🛠️ How-to Guides
