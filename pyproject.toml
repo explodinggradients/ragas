@@ -35,3 +35,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 write_to = "src/ragas/_version.py"
+
+
+[tool.mypy]
+ignore_missing_imports = true
