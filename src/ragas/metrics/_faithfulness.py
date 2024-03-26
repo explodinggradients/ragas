@@ -55,7 +55,7 @@ LONG_FORM_ANSWER_PROMPT = Prompt(
 
 NLI_STATEMENTS_MESSAGE = Prompt(
     name="nli_statements",
-    instruction="Natural language inference. Use only 'Yes' (1), 'No' (0) and 'Null' (-1) as verdict.",
+    instruction="Natural language inference. Use only 'Yes' (1), 'No' (0)",
     examples=[
         {
             "context": """John is a student at XYZ University. He is pursuing a degree in Computer Science. He is enrolled in several courses this semester, including Data Structures, Algorithms, and Database Management. John is a diligent student and spends a significant amount of time studying and completing assignments. He often stays late in the library to work on his projects.""",
@@ -97,15 +97,6 @@ NLI_STATEMENTS_MESSAGE = Prompt(
                 "verdict": "0",
             },
         },
-        {
-            "context": """Albert Einstein was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time.""",
-            "statements": """statement_1: Nil""",
-            "answer": {
-                "statement_1": "Nil",
-                "reason": "The statement is invalid",
-                "verdict": "-1",
-            },
-        },
     ],
     input_keys=["context", "statements"],
     output_key="answer",
@@ -139,7 +130,6 @@ class Faithfulness(MetricWithLLM):
         contexts = row["contexts"]
         # check if the statements are support in the contexts
         contexts_str: str = "\n".join(contexts)
-        statements = statements if statements != [] else ["Nil"]
         statements_str: str = "\n".join(
             [f"statement_{i+1}: {st}" for i, st in enumerate(statements)]
         )
@@ -150,11 +140,11 @@ class Faithfulness(MetricWithLLM):
 
     def _compute_score(self, output: t.Any):
         # check the verdicts and compute the score
-        verdict_score_map = {"1": 1, "0": 0, "-1": np.nan}
+        verdict_score_map = {"1": 1, "0": 0}
         output = output if isinstance(output, list) else [output]
         faithful_statements = sum(
             verdict_score_map.get(
-                statement_with_validation.get("verdict", "").lower(), np.nan
+                str(statement_with_validation.get("verdict", "")), np.nan
             )
             if isinstance(statement_with_validation, dict)
             else np.nan
@@ -190,14 +180,20 @@ class Faithfulness(MetricWithLLM):
         )
 
         statements = statements if isinstance(statements, dict) else {}
-        p = self._create_nli_prompt(row, statements.get("statements", []))
-        nli_result = await self.llm.generate(p, callbacks=callbacks, is_async=is_async)
-        json_output = await json_loader.safe_load(
-            text=nli_result.generations[0][0].text,
-            llm=self.llm,
-            callbacks=callbacks,
-            is_async=is_async,
-        )
+        statements = statements.get("statements", [])
+        if statements:
+            p = self._create_nli_prompt(row, statements)
+            nli_result = await self.llm.generate(
+                p, callbacks=callbacks, is_async=is_async
+            )
+            json_output = await json_loader.safe_load(
+                text=nli_result.generations[0][0].text,
+                llm=self.llm,
+                callbacks=callbacks,
+                is_async=is_async,
+            )
+        else:
+            json_output = [{}]
         return self._compute_score(json_output)
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:

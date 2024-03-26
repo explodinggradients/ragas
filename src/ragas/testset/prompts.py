@@ -132,14 +132,25 @@ conversational_question_prompt = Prompt(
 
 context_scoring_prompt = Prompt(
     name="score_context",
-    instruction="""Given a context, complete the two following tasks and output answer valid json format
-1.Evaluate the provided context and assign a numerical score between 0 and 10 based on the following criteria:
-    - Award a high score to context that thoroughly delves into and explains concepts.
-    - Assign a lower score to context that contains excessive references, acknowledgments, personal information, or other non-essential elements.""",
+    instruction="""Given a context, perform the following task and output the answer in VALID JSON format:
+    Evaluate the provided context and assign a numerical score between 0 and 10 based on the following criteria:
+      - Clarity and Accuracy: Award a high score to the context that provides accurate and non-misleading information with clarity.
+      - Depth and Innovation: Give extra points to the context that thoroughly delves into the concepts or includes new perspectives and unique insights.
+      - Structure: Award a high score to the context with clear structure and logical flow.
+      - Relevance: Assign a lower score to the context that contains excessive references, acknowledgments, personal information, or other non-essential elements.
+    """,
     examples=[
+        {
+            "context": "The Pythagorean theorem is a fundamental principle in geometry. It states that in a right-angled triangle, the square of the length of the hypotenuse (the side opposite the right angle) is equal to the sum of the squares of the lengths of the other two sides. This can be written as a^2 + b^2 = c^2 where c represents the length of the hypotenuse, and a and b represent the lengths of the other two sides.",
+            "output": {"score": 8.5},
+        },
         {
             "context": "Albert Einstein (14 March 1879 - 18 April 1955) was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time.",
             "output": {"score": 6.0},
+        },
+        {
+            "context": "I love chocolate. It's really tasty. Oh, and by the way, the earth orbits the sun, not the other way around. Also, my favorite color is blue.",
+            "output": {"score": 2.0},
         }
     ],
     input_keys=["context"],
@@ -335,22 +346,22 @@ seed_question_prompt = Prompt(
     instruction="Generate a question that can be fully answered from given context. The question should be formed using topic",
     examples=[
         {
-            "context": "The ecosystem of the Amazon rainforest is incredibly diverse, hosting thousands of species that are not found anywhere else on Earth. This biodiversity is crucial for the stability of the global climate and helps regulate the Earth's air and water cycles.",
-            "topic": "biodiversity in the Amazon rainforest",
-            "question": "Why is the biodiversity in the Amazon rainforest considered crucial for global climate stability?",
+            "context": "Photosynthesis in plants involves converting light energy into chemical energy, using chlorophyll and other pigments to absorb light. This process is crucial for plant growth and the production of oxygen.",
+            "keyphrase": "Photosynthesis",
+            "question": "What is the role of photosynthesis in plant growth?",
         },
         {
-            "context": "Quantum computing represents a significant leap forward in computational capability, utilizing the principles of quantum mechanics to process information in ways that traditional computers cannot. This technology has the potential to revolutionize various fields by performing complex calculations at unprecedented speeds.",
-            "topic": "potential applications of quantum computing",
-            "question": "What fields could potentially be revolutionized by the applications of quantum computing?",
+            "context": "The Industrial Revolution, starting in the 18th century, marked a major turning point in history as it led to the development of factories and urbanization.",
+            "keyphrase": "Industrial Revolution",
+            "question": "How did the Industrial Revolution mark a major turning point in history?",
         },
         {
-            "context": "Renewable energy sources, such as solar and wind power, are essential for transitioning to a more sustainable energy system. They offer the potential to reduce greenhouse gas emissions and dependency on fossil fuels, addressing key environmental and economic challenges.",
-            "topic": "benefits of renewable energy sources",
-            "question": "What are the primary benefits of transitioning to renewable energy sources?",
+            "context": "The process of evaporation plays a crucial role in the water cycle, converting water from liquid to vapor and allowing it to rise into the atmosphere.",
+            "keyphrase": "Evaporation",
+            "question": "Why is evaporation important in the water cycle?",
         },
     ],
-    input_keys=["context", "topic"],
+    input_keys=["context", "keyphrase"],
     output_key="question",
     output_type="string",
 )
