@@ -147,7 +147,6 @@ class ContextRecall(MetricWithLLM):
 
         result = await self.llm.generate(
             self._create_context_recall_prompt(row), callbacks=callbacks, is_async=is_async
-            self._create_context_recall_prompt(row), callbacks=callbacks, is_async=is_async
         )
         result_text = result.generations[0][0].text
 
