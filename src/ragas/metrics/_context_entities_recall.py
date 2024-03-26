@@ -5,14 +5,29 @@ import typing as t
 from dataclasses import dataclass, field
 from typing import Dict
 
+import numpy as np
+from langchain.pydantic_v1 import BaseModel, Field, ValidationError
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.exceptions import OutputParserException
+
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.llms.output_parser import get_json_format_instructions
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
 
 logger = logging.getLogger(__name__)
+
+
+class ContextEntitiesResponse(BaseModel):
+    entities: t.List[str]
+
+
+_output_instructions = get_json_format_instructions(pydantic_object=ContextEntitiesResponse)
+_output_parser = PydanticOutputParser(pydantic_object=ContextEntitiesResponse)
+
 
 TEXT_ENTITY_EXTRACTION = Prompt(
     name="text_entity_extraction",
@@ -20,20 +35,21 @@ TEXT_ENTITY_EXTRACTION = Prompt(
     input_keys=["text"],
     output_key="output",
     output_type="json",
+    output_format_instruction=_output_instructions,
     examples=[
         {
-            "text": """The Eiffel Tower, located in Paris, France, is one of the most iconic landmarks globally. 
-            Millions of visitors are attracted to it each year for its breathtaking views of the city. 
+            "text": """The Eiffel Tower, located in Paris, France, is one of the most iconic landmarks globally.
+            Millions of visitors are attracted to it each year for its breathtaking views of the city.
             Completed in 1889, it was constructed in time for the 1889 World's Fair.""",
-            "output": {
+            "output": ContextEntitiesResponse.parse_obj({
                 "entities": ["Eiffel Tower", "Paris", "France", "1889", "World's Fair"],
-            },
+            }).dict(),
         },
         {
-            "text": """The Colosseum in Rome, also known as the Flavian Amphitheatre, stands as a monument to Roman architectural and engineering achievement. 
-            Construction began under Emperor Vespasian in AD 70 and was completed by his son Titus in AD 80. 
+            "text": """The Colosseum in Rome, also known as the Flavian Amphitheatre, stands as a monument to Roman architectural and engineering achievement.
+            Construction began under Emperor Vespasian in AD 70 and was completed by his son Titus in AD 80.
             It could hold between 50,000 and 80,000 spectators who watched gladiatorial contests and public spectacles.""",
-            "output": {
+            "output": ContextEntitiesResponse.parse_obj({
                 "entities": [
                     "Colosseum",
                     "Rome",
@@ -43,26 +59,26 @@ TEXT_ENTITY_EXTRACTION = Prompt(
                     "Titus",
                     "AD 80",
                 ],
-            },
+            }).dict(),
         },
         {
-            "text": """The Great Wall of China, stretching over 21,196 kilometers from east to west, is a marvel of ancient defensive architecture. 
-            Built to protect against invasions from the north, its construction started as early as the 7th century BC. 
+            "text": """The Great Wall of China, stretching over 21,196 kilometers from east to west, is a marvel of ancient defensive architecture.
+            Built to protect against invasions from the north, its construction started as early as the 7th century BC.
             Today, it is a UNESCO World Heritage Site and a major tourist attraction.""",
-            "output": {
+            "output": ContextEntitiesResponse.parse_obj({
                 "entities": [
                     "Great Wall of China",
                     "21,196 kilometers",
                     "7th century BC",
                     "UNESCO World Heritage Site",
                 ],
-            },
+            }).dict(),
         },
         {
-            "text": """The Apollo 11 mission, which launched on July 16, 1969, marked the first time humans landed on the Moon. 
-            Astronauts Neil Armstrong, Buzz Aldrin, and Michael Collins made history, with Armstrong being the first man to step on the lunar surface. 
+            "text": """The Apollo 11 mission, which launched on July 16, 1969, marked the first time humans landed on the Moon.
+            Astronauts Neil Armstrong, Buzz Aldrin, and Michael Collins made history, with Armstrong being the first man to step on the lunar surface.
             This event was a significant milestone in space exploration.""",
-            "output": {
+            "output": ContextEntitiesResponse.parse_obj({
                 "entities": [
                     "Apollo 11 mission",
                     "July 16, 1969",
@@ -71,7 +87,7 @@ TEXT_ENTITY_EXTRACTION = Prompt(
                     "Buzz Aldrin",
                     "Michael Collins",
                 ],
-            },
+            }).dict(),
         },
     ],
 )
@@ -106,9 +122,10 @@ class ContextEntityRecall(MetricWithLLM):
         default_factory=lambda: TEXT_ENTITY_EXTRACTION
     )
     batch_size: int = 15
+    use_langchain_parser: bool = False
 
     def _compute_score(
-        self, ground_truth_entities: set, context_entities: set
+        self, ground_truth_entities: t.Sequence[str], context_entities: t.Sequence[str]
     ) -> float:
         num_entities_in_both = len(
             set(context_entities).intersection(set(ground_truth_entities))
@@ -120,7 +137,7 @@ class ContextEntityRecall(MetricWithLLM):
         text: str,
         callbacks: Callbacks,
         is_async: bool,
-    ) -> Dict:
+    ) -> t.Optional[ContextEntitiesResponse]:
         assert self.llm is not None, "LLM is not initialized"
 
         result = await self.llm.generate(
@@ -130,11 +147,27 @@ class ContextEntityRecall(MetricWithLLM):
             callbacks=callbacks,
             is_async=is_async,
         )
-        response_dict = await json_loader.safe_load(
-            result.generations[0][0].text, self.llm, is_async=is_async
-        )
-        response_dict = response_dict if isinstance(response_dict, dict) else {}
-        return response_dict
+
+        result_text = result.generations[0][0].text
+
+        try:
+
+            if self.use_langchain_parser:
+                answer = _output_parser.parse(result_text)
+                # TODO: real error handling and retry?
+                # https://python.langchain.com/docs/modules/model_io/output_parsers/types/retry
+            else:
+                json_objs = await json_loader.safe_load(
+                    result_text, self.llm, is_async=is_async
+                )
+                answer = ContextEntitiesResponse.parse_obj(json_objs)
+
+        except (OutputParserException, ValidationError) as err:
+            logger.warning(f"Could not parse LLM responses: {result_text}")
+            logger.warning(f"Error: {err}")
+            return None
+
+        return answer
 
     async def _ascore(
         self,
@@ -149,8 +182,10 @@ class ContextEntityRecall(MetricWithLLM):
         contexts = await self.get_entities(
             "\n".join(contexts), callbacks=callbacks, is_async=is_async
         )
+        if ground_truth is None or contexts is None:
+            return np.nan
         return self._compute_score(
-            ground_truth.get("entities", []), contexts.get("entities", [])
+            ground_truth.entities, contexts.entities
         )
 
     def save(self, cache_dir: str | None = None) -> None:
