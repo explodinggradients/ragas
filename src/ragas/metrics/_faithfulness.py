@@ -69,9 +69,7 @@ LONG_FORM_ANSWER_PROMPT = Prompt(
 
 class StatementFaithfulnessAnswer(BaseModel):
     statement: str = Field(..., description="the original statement, word-by-word")
-    verdict: t.Literal["faithful", "unfaithful"] = Field(
-        ..., description="the verdict of the faithfulness."
-    )
+    verdict: bool = Field(..., description="the verdict of the faithfulness.")
     reason: str = Field(..., description="the reason of the verdict")
 
 
@@ -86,7 +84,7 @@ _faithfulness_output_parser = PydanticOutputParser(pydantic_object=StatementFait
 
 NLI_STATEMENTS_MESSAGE = Prompt(
     name="nli_statements",
-    instruction="Your task is to judge the faithfulness of a series of statements based on a given context. For each statement you must return 'faithful' if the statement can be verified based on the context, 'unfaithful' if the statement can not be verified based on the context.",
+    instruction="Your task is to judge the faithfulness of a series of statements based on a given context. For each statement you must return 'true' if the statement can be verified based on the context or 'false' if the statement can not be verified based on the context.",
     output_format_instruction=_faithfulness_output_instructions,
     examples=[
         {
@@ -101,22 +99,22 @@ NLI_STATEMENTS_MESSAGE = Prompt(
                 {
                     "statement": "John is majoring in Biology.",
                     "reason": "John's major is explicitly mentioned as Computer Science. There is no information suggesting he is majoring in Biology.",
-                    "verdict": "unfaithful",
+                    "verdict": False,
                 },
                 {
                     "statement": "John is taking a course on Artificial Intelligence.",
                     "reason": "The context mentions the courses John is currently enrolled in, and Artificial Intelligence is not mentioned. Therefore, it cannot be deduced that John is taking a course on AI.",
-                    "verdict": "unfaithful",
+                    "verdict": False,
                 },
                 {
                     "statement": "John is a dedicated student.",
                     "reason": "The context states that he spends a significant amount of time studying and completing assignments. Additionally, it mentions that he often stays late in the library to work on his projects, which implies dedication.",
-                    "verdict": "faithful",
+                    "verdict": True,
                 },
                 {
                     "statement": "John has a part-time job.",
                     "reason": "There is no information given in the context about John having a part-time job.",
-                    "verdict": "unfaithful",
+                    "verdict": False,
                 },
             ]).dicts(),
         },
@@ -127,7 +125,7 @@ NLI_STATEMENTS_MESSAGE = Prompt(
                 {
                     "statement": "Albert Einstein was a genius.",
                     "reason": "The context and statement are unrelated",
-                    "verdict": "unfaithful",
+                    "verdict": False,
                 },
             ]).dicts(),
         },
@@ -175,7 +173,7 @@ class Faithfulness(MetricWithLLM):
         # check the verdicts and compute the score
         verdict_score_map = {"faithful": 1, "unfaithful": 0}
         faithful_statements = sum(
-            verdict_score_map.get(answer.verdict, np.nan)
+            1 if answer.verdict else 0
             for answer in answers.__root__
         )
         num_statements = len(answers.__root__)
@@ -183,7 +181,7 @@ class Faithfulness(MetricWithLLM):
             score = faithful_statements / num_statements
         else:
             logger.warning(
-                "Invalid JSON response. Expected dictionary with key 'verdict'"
+                "No statements were generated from the answer."
             )
             score = np.nan
 
