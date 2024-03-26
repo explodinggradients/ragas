@@ -16,8 +16,6 @@ from ragas.metrics.base import EvaluationMode, MetricWithEmbeddings, MetricWithL
 from ragas.run_config import RunConfig
 from ragas.llms.output_parser import get_json_format_instructions
 
-from ragas.llms import USE_LANGCHAIN_PARSER
-
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
@@ -109,6 +107,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
     correctness_prompt: Prompt = field(default_factory=lambda: CORRECTNESS_PROMPT)
     weights: list[float] = field(default_factory=lambda: [0.75, 0.25])
     answer_similarity: AnswerSimilarity | None = None
+    use_langchain_parser: bool = False
 
     def __post_init__(self: t.Self):
         if len(self.weights) != 2:
@@ -146,7 +145,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
 
         try:
 
-            if USE_LANGCHAIN_PARSER:
+            if self.use_langchain_parser:
                 answers = _output_parser.parse(result_text)
                 # TODO: real error handling and retry?
                 # https://python.langchain.com/docs/modules/model_io/output_parsers/types/retry

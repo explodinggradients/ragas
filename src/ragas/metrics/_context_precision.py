@@ -15,8 +15,6 @@ from ragas.llms.prompt import Prompt, PromptValue
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 from ragas.llms.output_parser import get_json_format_instructions
 
-from ragas.llms import USE_LANGCHAIN_PARSER
-
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
@@ -89,6 +87,7 @@ class ContextPrecision(MetricWithLLM):
     name: str = "context_precision"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
     context_precision_prompt: Prompt = field(default_factory=lambda: CONTEXT_PRECISION)
+    use_langchain_parser: bool = False
 
     def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:
         answer = "ground_truth"
@@ -151,7 +150,7 @@ class ContextPrecision(MetricWithLLM):
 
         try:
 
-            if USE_LANGCHAIN_PARSER:
+            if self.use_langchain_parser:
                 items = [_output_parser.parse(item) for item in responses]
                 answers = ContextPrecisionVerifications(__root__=items)
                 # TODO: real error handling and retry?

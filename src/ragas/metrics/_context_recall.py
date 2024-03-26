@@ -14,8 +14,6 @@ from ragas.llms.prompt import Prompt
 from ragas.llms.output_parser import get_json_format_instructions
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
-from ragas.llms import USE_LANGCHAIN_PARSER
-
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -118,6 +116,7 @@ class ContextRecall(MetricWithLLM):
     name: str = "context_recall"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
     context_recall_prompt: Prompt = field(default_factory=lambda: CONTEXT_RECALL_RA)
+    use_langchain_parser: bool = False
 
     def _create_context_recall_prompt(self, row: t.Dict) -> PromptValue:
         qstn, ctx, gt = row["question"], row["contexts"], row["ground_truth"]
@@ -151,7 +150,7 @@ class ContextRecall(MetricWithLLM):
 
         try:
 
-            if USE_LANGCHAIN_PARSER:
+            if self.use_langchain_parser:
                 answers = _output_parser.parse(result_text)
                 # TODO: real error handling and retry?
                 # https://python.langchain.com/docs/modules/model_io/output_parsers/types/retry
