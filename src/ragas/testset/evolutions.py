@@ -238,7 +238,7 @@ class Evolution:
             contexts=[n.page_content for n in relevant_context.nodes],
             ground_truth=answer,
             evolution_type=evolution_type,
-            metadata=[n.metadata for n in relevant_context.nodes]
+            metadata=[n.metadata for n in relevant_context.nodes],
         )
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:

@@ -141,7 +141,7 @@ class TestsetGenerator:
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
-        run_config: t.Optional[RunConfig] = None
+        run_config: t.Optional[RunConfig] = None,
     ):
         distributions = distributions or {}
         # chunk documents and add to docstore
@@ -168,7 +168,7 @@ class TestsetGenerator:
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
-        run_config: t.Optional[RunConfig] = None
+        run_config: t.Optional[RunConfig] = None,
     ):
         distributions = distributions or {}
         # chunk documents and add to docstore
@@ -207,7 +207,7 @@ class TestsetGenerator:
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
-        run_config: t.Optional[RunConfig] = None
+        run_config: t.Optional[RunConfig] = None,
     ):
         distributions = distributions or DEFAULT_DISTRIBUTION
         # validate distributions
