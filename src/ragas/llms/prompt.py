@@ -96,7 +96,8 @@ class Prompt(BaseModel):
         prompt_elements = [self.instruction]
         if self.output_format_instruction:
             prompt_elements.append(
-                "\n" + self.output_format_instruction.replace("{", "{{").replace("}", "}}")
+                "\n"
+                + self.output_format_instruction.replace("{", "{{").replace("}", "}}")
             )
         prompt_str = "\n".join(prompt_elements) + "\n"
 
@@ -114,7 +115,11 @@ class Prompt(BaseModel):
                         if self.output_type.lower() == "json"
                         else value
                     )
-                    prompt_str += f"\n{key}: {value}" if not is_json else f"\n{key}: ```{value}```"
+                    prompt_str += (
+                        f"\n{key}: {value}"
+                        if not is_json
+                        else f"\n{key}: ```{value}```"
+                    )
                 prompt_str += "\n"
 
         prompt_str += "\nYour actual task:\n"
@@ -307,4 +312,3 @@ json_translatation = Prompt(
     output_key="output",
     output_type="json",
 )
-
