@@ -5,29 +5,29 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from langchain_core.pydantic_v1 import BaseModel, ValidationError
-from langchain_core.output_parsers import PydanticOutputParser
-from langchain_core.exceptions import OutputParserException
+from langchain_core.pydantic_v1 import BaseModel
 
-from ragas.llms.json_load import json_loader
+from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
 from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics.base import EvaluationMode, MetricWithEmbeddings, MetricWithLLM
 from ragas.run_config import RunConfig
-from ragas.llms.output_parser import get_json_format_instructions
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
+
 logger = logging.getLogger(__name__)
+
 
 class AnswerCorrectnessClassification(BaseModel):
     TP: t.List[str]
     FP: t.List[str]
     FN: t.List[str]
 
+
 _output_instructions = get_json_format_instructions(AnswerCorrectnessClassification)
-_output_parser = PydanticOutputParser(pydantic_object=AnswerCorrectnessClassification)
+_output_parser = RagasoutputParser(pydantic_object=AnswerCorrectnessClassification)
 
 CORRECTNESS_INSTRUCTIONS = """\
 Given a ground truth and an answer, analyze each statement in the answer and classify them in one of the following categories:
@@ -47,35 +47,39 @@ CORRECTNESS_PROMPT = Prompt(
             "question": """What powers the sun and what is its primary function?""",
             "answer": """The sun is powered by nuclear fission, similar to nuclear reactors on Earth, and its primary function is to provide light to the solar system.""",
             "ground_truth": """The sun is actually powered by nuclear fusion, not fission. In its core, hydrogen atoms fuse to form helium, releasing a tremendous amount of energy. This energy is what lights up the sun and provides heat and light, essential for life on Earth. The sun's light also plays a critical role in Earth's climate system and helps to drive the weather and ocean currents.""",
-            "extracted_statements": AnswerCorrectnessClassification.parse_obj({
-                "TP": ["The sun's primary function is to provide light"],
-                "FP": [
-                    "The sun is powered by nuclear fission",
-                    "similar to nuclear reactors on Earth",
-                ],
-                "FN": [
-                    "The sun is powered by nuclear fusion, not fission",
-                    "In its core, hydrogen atoms fuse to form helium, releasing a tremendous amount of energy",
-                    "This energy provides heat and light, essential for life on Earth",
-                    "The sun's light plays a critical role in Earth's climate system",
-                    "The sun helps to drive the weather and ocean currents",
-                ]
-            }).dict(),
+            "extracted_statements": AnswerCorrectnessClassification.parse_obj(
+                {
+                    "TP": ["The sun's primary function is to provide light"],
+                    "FP": [
+                        "The sun is powered by nuclear fission",
+                        "similar to nuclear reactors on Earth",
+                    ],
+                    "FN": [
+                        "The sun is powered by nuclear fusion, not fission",
+                        "In its core, hydrogen atoms fuse to form helium, releasing a tremendous amount of energy",
+                        "This energy provides heat and light, essential for life on Earth",
+                        "The sun's light plays a critical role in Earth's climate system",
+                        "The sun helps to drive the weather and ocean currents",
+                    ],
+                }
+            ).dict(),
         },
         {
             "question": """What is the boiling point of water?""",
             "answer": """The boiling point of water is 100 degrees Celsius at sea level.""",
             "ground_truth": """The boiling point of water is 100 degrees Celsius (212 degrees Fahrenheit) at sea level, but it can change with altitude.""",
-            "extracted_statements": AnswerCorrectnessClassification.parse_obj({
-                "TP": [
-                    "The boiling point of water is 100 degrees Celsius at sea level"
-                ],
-                "FP": [],
-                "FN": [
-                    "The boiling point can change with altitude",
-                    "The boiling point of water is 212 degrees Fahrenheit at sea level",
-                ],
-            }).dict(),
+            "extracted_statements": AnswerCorrectnessClassification.parse_obj(
+                {
+                    "TP": [
+                        "The boiling point of water is 100 degrees Celsius at sea level"
+                    ],
+                    "FP": [],
+                    "FN": [
+                        "The boiling point can change with altitude",
+                        "The boiling point of water is 212 degrees Fahrenheit at sea level",
+                    ],
+                }
+            ).dict(),
         },
     ],
     input_keys=["question", "answer", "ground_truth"],
@@ -107,7 +111,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
     correctness_prompt: Prompt = field(default_factory=lambda: CORRECTNESS_PROMPT)
     weights: list[float] = field(default_factory=lambda: [0.75, 0.25])
     answer_similarity: AnswerSimilarity | None = None
-    use_langchain_parser: bool = False
+    max_retries: int = 1
 
     def __post_init__(self: t.Self):
         if len(self.weights) != 2:
@@ -126,7 +130,9 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
                 llm=self.llm, embeddings=self.embeddings
             )
 
-    def _compute_statement_presence(self, prediction: AnswerCorrectnessClassification) -> float:
+    def _compute_statement_presence(
+        self, prediction: AnswerCorrectnessClassification
+    ) -> float:
         tp = len(prediction.TP)
         fp = len(prediction.FP)
         fn = len(prediction.FN)
@@ -143,21 +149,10 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
         )
         result_text = is_statement_present.generations[0][0].text
 
-        try:
-
-            if self.use_langchain_parser:
-                answers = _output_parser.parse(result_text)
-                # TODO: real error handling and retry?
-                # https://python.langchain.com/docs/modules/model_io/output_parsers/types/retry
-            else:
-                response = await json_loader.safe_load(
-                    result_text, self.llm, is_async=is_async
-                )
-                answers = AnswerCorrectnessClassification.parse_obj(response)
-
-        except (OutputParserException, ValidationError) as err:
-            print(f"Could not parse LLM response: {result_text}")
-            print(f"Error: {err}")
+        answers = await _output_parser.aparse(
+            result_text, p_value, self.llm, self.max_retries
+        )
+        if answers is None:
             return np.nan
 
         f1_score = self._compute_statement_presence(answers)

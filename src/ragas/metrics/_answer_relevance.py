@@ -5,14 +5,11 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from langchain_core.pydantic_v1 import BaseModel, ValidationError
-from langchain_core.output_parsers import PydanticOutputParser
-from langchain_core.exceptions import OutputParserException
+from langchain_core.pydantic_v1 import BaseModel
 
-from ragas.llms.json_load import json_loader
+from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithEmbeddings, MetricWithLLM
-from ragas.llms.output_parser import get_json_format_instructions
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +24,10 @@ class AnswerRelevanceClassification(BaseModel):
     noncommittal: bool
 
 
-_output_instructions = get_json_format_instructions(pydantic_object=AnswerRelevanceClassification)
-_output_parser = PydanticOutputParser(pydantic_object=AnswerRelevanceClassification)
+_output_instructions = get_json_format_instructions(
+    pydantic_object=AnswerRelevanceClassification
+)
+_output_parser = RagasoutputParser(pydantic_object=AnswerRelevanceClassification)
 
 
 QUESTION_GEN = Prompt(
@@ -39,34 +38,42 @@ QUESTION_GEN = Prompt(
         {
             "answer": """Albert Einstein was born in Germany.""",
             "context": """Albert Einstein was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time""",
-            "output": AnswerRelevanceClassification.parse_obj({
-                "question": "Where was Albert Einstein born?",
-                "noncommittal": False,
-            }).dict(),
+            "output": AnswerRelevanceClassification.parse_obj(
+                {
+                    "question": "Where was Albert Einstein born?",
+                    "noncommittal": False,
+                }
+            ).dict(),
         },
         {
             "answer": """It can change its skin color based on the temperature of its environment.""",
             "context": """A recent scientific study has discovered a new species of frog in the Amazon rainforest that has the unique ability to change its skin color based on the temperature of its environment.""",
-            "output": AnswerRelevanceClassification.parse_obj({
-                "question": "What unique ability does the newly discovered species of frog have?",
-                "noncommittal": False,
-            }).dict(),
+            "output": AnswerRelevanceClassification.parse_obj(
+                {
+                    "question": "What unique ability does the newly discovered species of frog have?",
+                    "noncommittal": False,
+                }
+            ).dict(),
         },
         {
             "answer": """Everest""",
             "context": """The tallest mountain on Earth, measured from sea level, is a renowned peak located in the Himalayas.""",
-            "output": AnswerRelevanceClassification.parse_obj({
-                "question": "What is the tallest mountain on Earth?",
-                "noncommittal": False,
-            }).dict(),
+            "output": AnswerRelevanceClassification.parse_obj(
+                {
+                    "question": "What is the tallest mountain on Earth?",
+                    "noncommittal": False,
+                }
+            ).dict(),
         },
         {
             "answer": """I don't know about the  groundbreaking feature of the smartphone invented in 2023 as am unaware of information beyond 2022. """,
             "context": """In 2023, a groundbreaking invention was announced: a smartphone with a battery life of one month, revolutionizing the way people use mobile technology.""",
-            "output": AnswerRelevanceClassification.parse_obj({
-                "question": "What was the groundbreaking feature of the smartphone invented in 2023?",
-                "noncommittal": True,
-            }).dict(),
+            "output": AnswerRelevanceClassification.parse_obj(
+                {
+                    "question": "What was the groundbreaking feature of the smartphone invented in 2023?",
+                    "noncommittal": True,
+                }
+            ).dict(),
         },
     ],
     input_keys=["answer", "context"],
@@ -118,17 +125,12 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
             / norm
         )
 
-    def _calculate_score(self, answers: t.Sequence[AnswerRelevanceClassification], row: t.Dict) -> float:
+    def _calculate_score(
+        self, answers: t.Sequence[AnswerRelevanceClassification], row: t.Dict
+    ) -> float:
         question = row["question"]
-        gen_questions = [
-            answer.question for answer in answers
-        ]
-        committal = np.any(
-            [
-                answer.noncommittal
-                for answer in answers
-            ]
-        )
+        gen_questions = [answer.question for answer in answers]
+        committal = np.any([answer.noncommittal for answer in answers])
         if all(q == "" for q in gen_questions):
             logger.warning(
                 "Invalid JSON response. Expected dictionary with key 'question'"
@@ -155,27 +157,10 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
             is_async=is_async,
         )
 
-        try:
-
-            if self.use_langchain_parser:
-                answers = [
-                    _output_parser.parse(result.text)
-                    for result in result.generations[0]
-                ]
-                # TODO: real error handling and retry?
-                # https://python.langchain.com/docs/modules/model_io/output_parsers/types/retry
-            else:
-                responses = [
-                    await json_loader.safe_load(r.text, self.llm, is_async=is_async)
-                    for r in result.generations[0]
-                ]
-                answers = [
-                    AnswerRelevanceClassification.parse_obj(response)
-                    for response in responses
-                ]
-        except (OutputParserException, ValidationError) as err:
-            print(f"Could not parse LLM response: {[result.text for result in result.generations[0]]}")
-            print(f"Error: {err}")
+        answers = [
+            _output_parser.parse(result.text) for result in result.generations[0]
+        ]
+        if any(answer is None for answer in answers):
             return np.nan
 
         return self._calculate_score(answers, row)

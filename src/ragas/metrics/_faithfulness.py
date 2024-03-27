@@ -1,19 +1,17 @@
 from __future__ import annotations
 
+import json
 import logging
 import typing as t
 from dataclasses import dataclass, field
-import json
 
 import numpy as np
-from langchain_core.pydantic_v1 import BaseModel, ValidationError, Field
 from langchain_core.output_parsers import PydanticOutputParser
-from langchain_core.exceptions import OutputParserException
+from langchain_core.pydantic_v1 import BaseModel, Field
 
-from ragas.llms.json_load import json_loader
+from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
-from ragas.llms.output_parser import get_json_format_instructions
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -22,14 +20,16 @@ if t.TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class StatementsAnswers(BaseModel):
     __root__: t.List[str] = Field(..., description="the list of extracted statements")
 
     def dicts(self) -> t.List[t.Dict]:
         return self.dict()["__root__"]
 
+
 _statements_output_instructions = get_json_format_instructions(StatementsAnswers)
-_statements_output_parser = PydanticOutputParser(pydantic_object=StatementsAnswers)
+_statements_output_parser = RagasoutputParser(pydantic_object=StatementsAnswers)
 
 
 LONG_FORM_ANSWER_PROMPT = Prompt(
@@ -40,20 +40,22 @@ LONG_FORM_ANSWER_PROMPT = Prompt(
         {
             "question": "Who was  Albert Einstein and what is he best known for?",
             "answer": "He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.",
-            "statements": StatementsAnswers.parse_obj([
-                "Albert Einstein, a German-born theoretical physicist, is renowned for being one of the most influential physicists in history.",
-                "Albert Einstein was best known for his theory of relativity.",
-                "Einstein's contributions significantly advanced the field of quantum mechanics",
-                "Recognized globally, Einstein's work has profoundly impacted the scientific community",
-                "Einstein's groundbreaking theories continue to shape our understanding of physics today.",
-            ]).dicts(),
+            "statements": StatementsAnswers.parse_obj(
+                [
+                    "Albert Einstein, a German-born theoretical physicist, is renowned for being one of the most influential physicists in history.",
+                    "Albert Einstein was best known for his theory of relativity.",
+                    "Einstein's contributions significantly advanced the field of quantum mechanics",
+                    "Recognized globally, Einstein's work has profoundly impacted the scientific community",
+                    "Einstein's groundbreaking theories continue to shape our understanding of physics today.",
+                ]
+            ).dicts(),
         },
         {
             "question": "Cadmium Chloride is slightly soluble in this chemical, it is also called what?",
             "answer": "alcohol",
-            "statements": StatementsAnswers.parse_obj([
-                "Cadmium Chloride is slightly soluble in alcohol."
-            ]).dicts(),
+            "statements": StatementsAnswers.parse_obj(
+                ["Cadmium Chloride is slightly soluble in alcohol."]
+            ).dicts(),
         },
         {
             "question": "Were Hitler and Benito Mussolini of the same nationality?",
@@ -79,8 +81,13 @@ class StatementFaithfulnessAnswers(BaseModel):
     def dicts(self) -> t.List[t.Dict]:
         return self.dict()["__root__"]
 
-_faithfulness_output_instructions = get_json_format_instructions(StatementFaithfulnessAnswers)
-_faithfulness_output_parser = PydanticOutputParser(pydantic_object=StatementFaithfulnessAnswers)
+
+_faithfulness_output_instructions = get_json_format_instructions(
+    StatementFaithfulnessAnswers
+)
+_faithfulness_output_parser = PydanticOutputParser(
+    pydantic_object=StatementFaithfulnessAnswers
+)
 
 NLI_STATEMENTS_MESSAGE = Prompt(
     name="nli_statements",
@@ -95,39 +102,43 @@ NLI_STATEMENTS_MESSAGE = Prompt(
                 "John is a dedicated student.",
                 "John has a part-time job.",
             ],
-            "answer": StatementFaithfulnessAnswers.parse_obj([
-                {
-                    "statement": "John is majoring in Biology.",
-                    "reason": "John's major is explicitly mentioned as Computer Science. There is no information suggesting he is majoring in Biology.",
-                    "verdict": False,
-                },
-                {
-                    "statement": "John is taking a course on Artificial Intelligence.",
-                    "reason": "The context mentions the courses John is currently enrolled in, and Artificial Intelligence is not mentioned. Therefore, it cannot be deduced that John is taking a course on AI.",
-                    "verdict": False,
-                },
-                {
-                    "statement": "John is a dedicated student.",
-                    "reason": "The context states that he spends a significant amount of time studying and completing assignments. Additionally, it mentions that he often stays late in the library to work on his projects, which implies dedication.",
-                    "verdict": True,
-                },
-                {
-                    "statement": "John has a part-time job.",
-                    "reason": "There is no information given in the context about John having a part-time job.",
-                    "verdict": False,
-                },
-            ]).dicts(),
+            "answer": StatementFaithfulnessAnswers.parse_obj(
+                [
+                    {
+                        "statement": "John is majoring in Biology.",
+                        "reason": "John's major is explicitly mentioned as Computer Science. There is no information suggesting he is majoring in Biology.",
+                        "verdict": False,
+                    },
+                    {
+                        "statement": "John is taking a course on Artificial Intelligence.",
+                        "reason": "The context mentions the courses John is currently enrolled in, and Artificial Intelligence is not mentioned. Therefore, it cannot be deduced that John is taking a course on AI.",
+                        "verdict": False,
+                    },
+                    {
+                        "statement": "John is a dedicated student.",
+                        "reason": "The context states that he spends a significant amount of time studying and completing assignments. Additionally, it mentions that he often stays late in the library to work on his projects, which implies dedication.",
+                        "verdict": True,
+                    },
+                    {
+                        "statement": "John has a part-time job.",
+                        "reason": "There is no information given in the context about John having a part-time job.",
+                        "verdict": False,
+                    },
+                ]
+            ).dicts(),
         },
         {
             "context": """Photosynthesis is a process used by plants, algae, and certain bacteria to convert light energy into chemical energy.""",
             "statements": ["Albert Einstein was a genius."],
-            "answer": StatementFaithfulnessAnswers.parse_obj([
-                {
-                    "statement": "Albert Einstein was a genius.",
-                    "reason": "The context and statement are unrelated",
-                    "verdict": False,
-                },
-            ]).dicts(),
+            "answer": StatementFaithfulnessAnswers.parse_obj(
+                [
+                    {
+                        "statement": "Albert Einstein was a genius.",
+                        "reason": "The context and statement are unrelated",
+                        "verdict": False,
+                    },
+                ]
+            ).dicts(),
         },
     ],
     input_keys=["context", "statements"],
@@ -171,18 +182,14 @@ class Faithfulness(MetricWithLLM):
 
     def _compute_score(self, answers: StatementFaithfulnessAnswers):
         # check the verdicts and compute the score
-        verdict_score_map = {"faithful": 1, "unfaithful": 0}
         faithful_statements = sum(
-            1 if answer.verdict else 0
-            for answer in answers.__root__
+            1 if answer.verdict else 0 for answer in answers.__root__
         )
         num_statements = len(answers.__root__)
         if num_statements:
             score = faithful_statements / num_statements
         else:
-            logger.warning(
-                "No statements were generated from the answer."
-            )
+            logger.warning("No statements were generated from the answer.")
             score = np.nan
 
         return score
@@ -199,49 +206,16 @@ class Faithfulness(MetricWithLLM):
             p, callbacks=callbacks, is_async=is_async
         )
         answer_result_text = answer_result.generations[0][0].text
-
-        try:
-
-            if self.use_langchain_parser:
-                statements = _statements_output_parser.parse(answer_result_text)
-                # TODO: real error handling and retry?
-                # https://python.langchain.com/docs/modules/model_io/output_parsers/types/retry
-            else:
-                json_obj = await json_loader.safe_load(
-                    text=answer_result_text,
-                    llm=self.llm,
-                    callbacks=callbacks,
-                    is_async=is_async,
-                )
-                statements = StatementsAnswers.parse_obj(json_obj)
-
-        except (OutputParserException, ValidationError) as err:
-            print(f"Could not parse LLM response: {answer_result_text}")
-            print(f"Error: {err}")
+        statements = _statements_output_parser.parse(answer_result_text)
+        if statements is None:
             return np.nan
 
         p = self._create_nli_prompt(row, statements.__root__)
         nli_result = await self.llm.generate(p, callbacks=callbacks, is_async=is_async)
         nli_result_text = nli_result.generations[0][0].text
 
-        try:
-
-            if self.use_langchain_parser:
-                faithfulness = _faithfulness_output_parser.parse(nli_result_text)
-                # TODO: real error handling and retry?
-                # https://python.langchain.com/docs/modules/model_io/output_parsers/types/retry
-            else:
-                json_obj = await json_loader.safe_load(
-                    text=nli_result_text,
-                    llm=self.llm,
-                    callbacks=callbacks,
-                    is_async=is_async,
-                )
-                faithfulness = StatementFaithfulnessAnswers.parse_obj(json_obj)
-
-        except (OutputParserException, ValidationError) as err:
-            print(f"Could not parse LLM response: {nli_result_text}")
-            print(f"Error: {err}")
+        faithfulness = _faithfulness_output_parser.parse(nli_result_text)
+        if faithfulness is None:
             return np.nan
 
         return self._compute_score(faithfulness)
