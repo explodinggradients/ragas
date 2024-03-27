@@ -22,7 +22,7 @@ class ContextPrecisionVerification(BaseModel):
     """Answer for the verification task wether the context was useful."""
 
     reason: str = Field(..., description="Reason for verification")
-    verdict: bool = Field(..., description="Verdict of verification")
+    verdict: int = Field(..., description="Binary (0/1) verdict of verification")
 
 
 class ContextPrecisionVerifications(BaseModel):
@@ -36,7 +36,7 @@ _output_parser = RagasoutputParser(pydantic_object=ContextPrecisionVerification)
 
 CONTEXT_PRECISION = Prompt(
     name="context_precision",
-    instruction="""Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "true" if useful and "false" if not with json output. Give a reason for your verdict.""",
+    instruction="""Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "1" if useful and "0" if not with json output.""",
     output_format_instruction=_verification_output_instructions,
     examples=[
         {
@@ -45,7 +45,7 @@ CONTEXT_PRECISION = Prompt(
             "answer": """Albert Einstein born in 14 March 1879 was German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time. He received the 1921 Nobel Prize in Physics for his services to theoretical physics. He published 4 papers in 1905. Einstein moved to Switzerland in 1895""",
             "verification": ContextPrecisionVerification(
                 reason="The provided context was indeed useful in arriving at the given answer. The context includes key information about Albert Einstein's life and contributions, which are reflected in the answer.",
-                verdict=True,
+                verdict=1,
             ).dict(),
         },
         {
@@ -54,7 +54,7 @@ CONTEXT_PRECISION = Prompt(
             "answer": """England""",
             "verification": ContextPrecisionVerification(
                 reason="the context was useful in clarifying the situation regarding the 2020 ICC World Cup and indicating that England was the winner of the tournament that was intended to be held in 2020 but actually took place in 2022.",
-                verdict=True,
+                verdict=1,
             ).dict(),
         },
         {
@@ -63,7 +63,7 @@ CONTEXT_PRECISION = Prompt(
             "answer": """Mount Everest.""",
             "verification": ContextPrecisionVerification(
                 reason="the provided context discusses the Andes mountain range, which, while impressive, does not include Mount Everest or directly relate to the question about the world's tallest mountain.",
-                verdict=False,
+                verdict=0,
             ).dict(),
         },
     ],
@@ -89,7 +89,6 @@ class ContextPrecision(MetricWithLLM):
     name: str = "context_precision"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
     context_precision_prompt: Prompt = field(default_factory=lambda: CONTEXT_PRECISION)
-    use_langchain_parser: bool = False
 
     def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:
         answer = "ground_truth"

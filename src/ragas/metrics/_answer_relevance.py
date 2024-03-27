@@ -21,7 +21,7 @@ if t.TYPE_CHECKING:
 
 class AnswerRelevanceClassification(BaseModel):
     question: str
-    noncommittal: bool
+    noncommittal: int
 
 
 _output_instructions = get_json_format_instructions(
@@ -32,7 +32,7 @@ _output_parser = RagasoutputParser(pydantic_object=AnswerRelevanceClassification
 
 QUESTION_GEN = Prompt(
     name="question_generation",
-    instruction="""Generate a question for the given answer and information context, and identify if the answer is noncommittal. A noncommittal answer is one that is evasive, vague, or ambiguous. For example, "I don't know" or "I'm not sure" are noncommittal answers. Give noncommittal as "true" if the answer is noncommittal and "false" if the answer is committal.""",
+    instruction="""Generate a question for the given answer and Identify if answer is noncommittal. Give noncommittal as 1 if the answer is noncommittal and 0 if the answer is committal. A noncommittal answer is one that is evasive, vague, or ambiguous. For example, "I don't know" or "I'm not sure" are noncommittal answers""",
     output_format_instruction=_output_instructions,
     examples=[
         {
@@ -41,7 +41,7 @@ QUESTION_GEN = Prompt(
             "output": AnswerRelevanceClassification.parse_obj(
                 {
                     "question": "Where was Albert Einstein born?",
-                    "noncommittal": False,
+                    "noncommittal": 0,
                 }
             ).dict(),
         },
@@ -51,7 +51,7 @@ QUESTION_GEN = Prompt(
             "output": AnswerRelevanceClassification.parse_obj(
                 {
                     "question": "What unique ability does the newly discovered species of frog have?",
-                    "noncommittal": False,
+                    "noncommittal": 0,
                 }
             ).dict(),
         },
@@ -61,7 +61,7 @@ QUESTION_GEN = Prompt(
             "output": AnswerRelevanceClassification.parse_obj(
                 {
                     "question": "What is the tallest mountain on Earth?",
-                    "noncommittal": False,
+                    "noncommittal": 0,
                 }
             ).dict(),
         },
@@ -71,7 +71,7 @@ QUESTION_GEN = Prompt(
             "output": AnswerRelevanceClassification.parse_obj(
                 {
                     "question": "What was the groundbreaking feature of the smartphone invented in 2023?",
-                    "noncommittal": True,
+                    "noncommittal": 1,
                 }
             ).dict(),
         },
@@ -105,7 +105,6 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
     question_generation: Prompt = field(default_factory=lambda: QUESTION_GEN)
     strictness: int = 3
-    use_langchain_parser: bool = False
 
     def calculate_similarity(
         self: t.Self, question: str, generated_questions: list[str]

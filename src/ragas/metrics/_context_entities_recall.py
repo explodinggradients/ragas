@@ -135,7 +135,6 @@ class ContextEntityRecall(MetricWithLLM):
         default_factory=lambda: TEXT_ENTITY_EXTRACTION
     )
     batch_size: int = 15
-    use_langchain_parser: bool = False
 
     def _compute_score(
         self, ground_truth_entities: t.Sequence[str], context_entities: t.Sequence[str]

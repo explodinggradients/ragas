@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class ContextRecallClassificationAnswer(BaseModel):
     statement: str
-    attributed: bool
+    attributed: int
     reason: str
 
 
@@ -40,7 +40,7 @@ _output_parser = RagasoutputParser(pydantic_object=ContextRecallClassificationAn
 
 CONTEXT_RECALL_RA = Prompt(
     name="context_recall",
-    instruction="""Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not. Use only "true" or "false" as a binary classification. Output json with reason.""",
+    instruction="""Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not. Use only "Yes" (1) or "No" (0) as a binary classification. Output json with reason.""",
     output_format_instruction=_classification_output_instructions,
     examples=[
         {
@@ -52,22 +52,22 @@ CONTEXT_RECALL_RA = Prompt(
                     {
                         "statement": "Albert Einstein, born on 14 March 1879, was a German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time.",
                         "reason": "The date of birth of Einstein is mentioned clearly in the context.",
-                        "attributed": True,
+                        "attributed": 1,
                     },
                     {
                         "statement": "He received the 1921 Nobel Prize in Physics for his services to theoretical physics.",
                         "reason": "The exact sentence is present in the given context.",
-                        "attributed": True,
+                        "attributed": 1,
                     },
                     {
                         "statement": "He published 4 papers in 1905.",
                         "reason": "There is no mention about papers he wrote in the given context.",
-                        "attributed": False,
+                        "attributed": 0,
                     },
                     {
                         "statement": "Einstein moved to Switzerland in 1895.",
                         "reason": "There is no supporting evidence for this in the given context.",
-                        "attributed": False,
+                        "attributed": 0,
                     },
                 ]
             ).dicts(),
@@ -81,7 +81,7 @@ CONTEXT_RECALL_RA = Prompt(
                     {
                         "statement": "England won the 2022 ICC Men's T20 World Cup.",
                         "reason": "From context it is clear that England defeated Pakistan to win the World Cup.",
-                        "attributed": True,
+                        "attributed": 1,
                     },
                 ]
             ).dicts(),
@@ -95,7 +95,7 @@ CONTEXT_RECALL_RA = Prompt(
                     {
                         "statement": "The Sun's primary fuel is hydrogen.",
                         "reason": "The context contains no information",
-                        "attributed": False,
+                        "attributed": 0,
                     },
                 ]
             ).dicts(),
@@ -122,7 +122,6 @@ class ContextRecall(MetricWithLLM):
     name: str = "context_recall"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
     context_recall_prompt: Prompt = field(default_factory=lambda: CONTEXT_RECALL_RA)
-    use_langchain_parser: bool = False
 
     def _create_context_recall_prompt(self, row: t.Dict) -> PromptValue:
         qstn, ctx, gt = row["question"], row["contexts"], row["ground_truth"]
