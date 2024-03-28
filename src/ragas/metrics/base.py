@@ -26,7 +26,7 @@ EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg")
 
 
 def get_required_columns(
-    eval_mod: EvaluationMode, ignore_columns: t.List[str] = []
+    eval_mod: EvaluationMode, ignore_columns: t.Oprional[t.List[str]] = None
 ) -> t.List[str]:
     if eval_mod == EvaluationMode.qac:
         keys = ["question", "answer", "contexts"]
