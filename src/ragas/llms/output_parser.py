@@ -52,7 +52,7 @@ def get_json_format_instructions(pydantic_object: t.Type[TBaseModel]) -> str:
 
 
 class RagasoutputParser(PydanticOutputParser):
-    async def aparse(
+    async def aparse(  # type: ignore
         self, result: str, prompt: PromptValue, llm: BaseRagasLLM, max_retries: int
     ):
         try:

@@ -236,7 +236,6 @@ class Prompt(BaseModel):
 
             if self.output_type.lower() == "json":
                 output = example_dict[self.output_key]
-                print(output)
                 if isinstance(output, dict):
                     assert (
                         set(output.keys()) == output_keys[i]
