@@ -11,8 +11,8 @@ from langchain_community.chat_models import ChatVertexAI
 from langchain_community.llms import VertexAI
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import LLMResult
-from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI
-from langchain_openai.llms import AzureOpenAI, OpenAI
+from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI, SolarChat
+from langchain_openai.llms import AzureOpenAI, OpenAI, Solar
 from langchain_openai.llms.base import BaseOpenAI
 
 from ragas.run_config import RunConfig, add_async_retry, add_retry
@@ -31,6 +31,8 @@ MULTIPLE_COMPLETION_SUPPORTED = [
     AzureChatOpenAI,
     ChatVertexAI,
     VertexAI,
+    Solar,
+    SolarChat
 ]
 
 
@@ -209,5 +211,10 @@ def llm_factory(
     timeout = None
     if run_config is not None:
         timeout = run_config.timeout
-    openai_model = ChatOpenAI(model=model, timeout=timeout)
-    return LangchainLLMWrapper(openai_model, run_config)
+    if 'solar' in model.lower():
+        model = Solar(model_name=model)
+    else:
+        model = ChatOpenAI(model=model, timeout=timeout)
+
+
+    return LangchainLLMWrapper(model, run_config)
