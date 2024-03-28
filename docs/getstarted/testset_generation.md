@@ -1,13 +1,9 @@
 (get-started-testset-generation)=
-# Generate a Synthetic Test Set
+# Generate synthetic test data
+The first roadblock to evaluating your RAG system is the lack of a test set. This tutorial guides you in creating a synthetic Question and Ground truth pairs for assessing your RAG pipeline. The key idea here that to synthesize a test set, we need to generate a set of questions and their corresponding ground truths. The ground truths are the expected answers to the questions.
 
-This tutorial guides you in creating a synthetic Question and Ground truth pairs for assessing your RAG pipeline. The key idea here that to synthesize a test set, we need to generate a set of questions and their corresponding ground truths. The ground truths are the expected answers to the questions.
 
-
-<p align="left">
-<img src="../_static/imgs/synthetic_gs.png" alt="test-outputs" width="800" height="600" />
-</p>
-
+Once we have the Question/Ground truth pairs we can feed questions into your RAG to get the contexts and answers. We can then evaluate the RAG pipeline using any metrics of your choice.
 
 For this purpose, we will utilize OpenAI models. Ensure that your OpenAI API key is readily accessible within your environment.
 
@@ -77,4 +73,7 @@ testset.to_pandas()
 <img src="../_static/imgs/testset_output.png" alt="test-outputs" width="800" height="600" />
 </p>
 
-Now you have a synthetic test set ready for evaluation, which contains `question` and `ground_truth`. As shown in the first figure you can now use these questions as input to your RAG pipeline to get `contexts` and `answer`. You can then evaluate your RAG pipeline using any metrics of your choice.
+Now you have a synthetic test set ready for evaluation, which contains `question` and `ground_truth`. 
+
+Next you can input these into your RAG to collect `contexts` and `answers` and evaluate your RAG pipeline using any metrics of your choice. Let's do a simple example using llama-index here. Check the [prepare your evaluation data](./prepare_data.ipynb) to know how.
+
