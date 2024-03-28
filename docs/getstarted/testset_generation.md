@@ -1,7 +1,16 @@
 (get-started-testset-generation)=
 # Generate a Synthetic Test Set
 
-This tutorial guides you in creating a synthetic evaluation dataset for assessing your RAG pipeline. For this purpose, we will utilize OpenAI models. Ensure that your OpenAI API key is readily accessible within your environment.
+This tutorial guides you in creating a synthetic Question and Ground truth pairs for assessing your RAG pipeline. The key idea here that to synthesize a test set, we need to generate a set of questions and their corresponding ground truths. The ground truths are the expected answers to the questions.
+
+
+<p align="left">
+<img src="../_static/imgs/synthetic_gs.png" alt="test-outputs" width="800" height="600" />
+</p>
+
+
+For this purpose, we will utilize OpenAI models. Ensure that your OpenAI API key is readily accessible within your environment.
+
 
 ```{code-block} python
 import os
@@ -67,3 +76,5 @@ testset.to_pandas()
 <p align="left">
 <img src="../_static/imgs/testset_output.png" alt="test-outputs" width="800" height="600" />
 </p>
+
+Now you have a synthetic test set ready for evaluation, which contains `question` and `ground_truth`. As shown in the first figure you can now use these questions as input to your RAG pipeline to get `contexts` and `answer`. You can then evaluate your RAG pipeline using any metrics of your choice.
