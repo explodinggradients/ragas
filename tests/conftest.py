@@ -16,15 +16,15 @@ class FakeTestLLM(BaseRagasLLM):
         return self
 
     def generate_text(
-        self, prompt: PromptValue, n=1, temperature=1e-8, stop=None, callbacks=[]
+        self, prompt: PromptValue, n=1, stop=None, callbacks=[]
     ):
         generations = [[Generation(text=prompt.prompt_str)] * n]
         return LLMResult(generations=generations)
 
     async def agenerate_text(
-        self, prompt: PromptValue, n=1, temperature=1e-8, stop=None, callbacks=[]
+        self, prompt: PromptValue, n=1, stop=None, callbacks=[]
     ):
-        return self.generate_text(prompt, n, temperature, stop, callbacks)
+        return self.generate_text(prompt, n, stop, callbacks)
 
 
 @pytest.fixture
