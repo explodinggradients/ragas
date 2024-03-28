@@ -42,7 +42,6 @@ EvolutionOutput = t.Tuple[str, CurrentNodes, str]
 
 class DataRow(BaseModel):
     question: str
-    contexts: t.List[str]
     ground_truth: t.Union[str, float] = np.nan
     evolution_type: str
     metadata: t.List[dict]
@@ -232,13 +231,16 @@ class Evolution:
         answer = (
             np.nan if answer.get("verdict") == "-1" else answer.get("answer", np.nan)
         )
+        metadata = [
+            {"text": n.page_content, "metadata": n.metadata}
+            for n in relevant_context.nodes
+        ]
 
         return DataRow(
             question=question.strip('"'),
-            contexts=[n.page_content for n in relevant_context.nodes],
             ground_truth=answer,
             evolution_type=evolution_type,
-            metadata=[n.metadata for n in relevant_context.nodes]
+            metadata=metadata,
         )
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
