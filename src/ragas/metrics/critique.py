@@ -6,8 +6,9 @@ from collections import Counter
 from dataclasses import dataclass, field
 
 import numpy as np
+from langchain_core.pydantic_v1 import BaseModel
 
-from ragas.llms.json_load import json_loader
+from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
@@ -18,18 +19,30 @@ if t.TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
+class CriticClassification(BaseModel):
+    reason: str
+    verdict: int
+
+
+_output_instructions = get_json_format_instructions(CriticClassification)
+_output_parser = RagasoutputParser(pydantic_object=CriticClassification)
+
 CRITIQUE_PROMPT = Prompt(
     name="critique",
     instruction="Given a input and submission. Evaluate the submission only using the given criteria. Use only 'Yes' (1) and 'No' (0) as verdict.",
+    output_format_instruction=_output_instructions,
     examples=[
         {
             "input": "Who was the director of Los Alamos Laboratory?",
             "submission": "Einstein was the director of  Los Alamos Laboratory.",
             "criteria": "Is the output written in perfect grammar",
-            "output": {
-                "reason": "the criteria for evaluation is whether the output is written in perfect grammar. In this case, the output is grammatically correct.",
-                "verdict": "1",
-            },
+            "output": CriticClassification.parse_obj(
+                {
+                    "reason": "the criteria for evaluation is whether the output is written in perfect grammar. In this case, the output is grammatically correct.",
+                    "verdict": 1,
+                }
+            ).dict(),
         }
     ],
     input_keys=["input", "submission", "criteria"],
@@ -67,6 +80,7 @@ class AspectCritique(MetricWithLLM):
         default=None,
         repr=False,
     )
+    max_retries: int = 1
 
     def __post_init__(self: t.Self):
         if self.name == "":
@@ -93,19 +107,13 @@ class AspectCritique(MetricWithLLM):
             input=question, submission=answer, criteria=self.definition
         )
 
-    def _compute_score(self, safe_loaded_responses):
-        ANSWER_DICT = {"1": 1, "0": 0}
+    def _compute_score(self, safe_loaded_responses: t.List[CriticClassification]):
         if self.strictness > 1:
             score = Counter(
-                [
-                    ANSWER_DICT.get(item.get("verdict", np.nan), np.nan)
-                    for item in safe_loaded_responses
-                ]
+                [item.verdict for item in safe_loaded_responses]
             ).most_common(1)[0][0]
         else:
-            score = ANSWER_DICT.get(
-                safe_loaded_responses[0].get("verdict", np.nan), np.nan
-            )
+            score = safe_loaded_responses[0].verdict
 
         return score
 
@@ -116,16 +124,22 @@ class AspectCritique(MetricWithLLM):
 
         q, c, a = row["question"], row["contexts"], row["answer"]
 
+        p_value = self.prompt_format(q, a, c)
         result = await self.llm.generate(
-            self.prompt_format(q, a, c), callbacks=callbacks, is_async=is_async
+            p_value, callbacks=callbacks, is_async=is_async
         )
 
         responses = [r.text for r in result.generations[0]]
         safe_loaded_responses = [
-            await json_loader.safe_load(r, self.llm, is_async=is_async)
+            await _output_parser.aparse(r, p_value, self.llm, self.max_retries)
             for r in responses
         ]
+        if any(item is None for item in safe_loaded_responses):
+            return np.nan
 
+        safe_loaded_responses = [
+            item for item in safe_loaded_responses if item is not None
+        ]
         return self._compute_score(safe_loaded_responses)
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
