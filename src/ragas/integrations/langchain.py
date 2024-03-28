@@ -4,27 +4,27 @@ import typing as t
 
 from langchain.chains.base import Chain
 from langchain.schema import RUN_KEY
-from langsmith.evaluation import EvaluationResult, RunEvaluator
-from langsmith.schemas import Example, Run
 from langchain_openai.chat_models import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
+from langsmith.evaluation import EvaluationResult, RunEvaluator
+from langsmith.schemas import Example, Run
 
+from ragas.embeddings import LangchainEmbeddingsWrapper
+from ragas.llms import LangchainLLMWrapper
 from ragas.metrics.base import (
     EvaluationMode,
     Metric,
-    MetricWithLLM,
     MetricWithEmbeddings,
+    MetricWithLLM,
     get_required_columns,
 )
-from ragas.validation import EVALMODE_TO_COLUMNS
-from ragas.llms import LangchainLLMWrapper
-from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.run_config import RunConfig
+from ragas.validation import EVALMODE_TO_COLUMNS
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.manager import (
-        CallbackManagerForChainRun,
         AsyncCallbackManagerForChainRun,
+        CallbackManagerForChainRun,
     )
 
 
@@ -98,7 +98,7 @@ class EvaluatorChain(Chain, RunEvaluator):
         self._validate(inputs)
         _run_manager = run_manager or AsyncCallbackManagerForChainRun.get_noop_manager()
         # TODO: currently AsyncCallbacks are not supported in ragas
-        callbacks = _run_manager.get_child()
+        _run_manager.get_child()
 
         c = inputs.get("contexts", [""])
         g = inputs.get("ground_truth", "")

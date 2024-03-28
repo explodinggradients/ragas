@@ -7,8 +7,9 @@ from langchain.smith import RunEvalConfig
 from ragas.integrations.langchain import EvaluatorChain
 
 if t.TYPE_CHECKING:
-    from ragas.testset.generator import TestDataset
     from langsmith.schemas import Dataset as LangsmithDataset
+
+    from ragas.testset.generator import TestDataset
 
 try:
     from langsmith import Client

@@ -119,9 +119,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
     """
 
     def __init__(
-        self,
-        langchain_llm: BaseLanguageModel,
-        run_config: t.Optional[RunConfig] = None
+        self, langchain_llm: BaseLanguageModel, run_config: t.Optional[RunConfig] = None
     ):
         self.langchain_llm = langchain_llm
         if run_config is None:
@@ -206,8 +204,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
 
 
 def llm_factory(
-    model: str = "gpt-3.5-turbo-16k",
-    run_config: t.Optional[RunConfig] = None
+    model: str = "gpt-3.5-turbo-16k", run_config: t.Optional[RunConfig] = None
 ) -> BaseRagasLLM:
     timeout = None
     if run_config is not None:

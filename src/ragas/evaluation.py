@@ -15,9 +15,9 @@ from ragas.embeddings.base import (
     LangchainEmbeddingsWrapper,
     embedding_factory,
 )
-from ragas.llms import llm_factory
 from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
+from ragas.llms import llm_factory
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics._answer_correctness import AnswerCorrectness
 from ragas.metrics.base import Metric, MetricWithEmbeddings, MetricWithLLM

@@ -120,7 +120,7 @@ class TestsetGenerator:
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
-        run_config: t.Optional[RunConfig] = None
+        run_config: t.Optional[RunConfig] = None,
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
@@ -146,7 +146,7 @@ class TestsetGenerator:
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
-        run_config: t.Optional[RunConfig] = None
+        run_config: t.Optional[RunConfig] = None,
     ):
         # chunk documents and add to docstore
         self.docstore.add_documents(
@@ -184,7 +184,7 @@ class TestsetGenerator:
         with_debugging_logs=False,
         is_async: bool = True,
         raise_exceptions: bool = True,
-        run_config: t.Optional[RunConfig] = None
+        run_config: t.Optional[RunConfig] = None,
     ):
         # validate distributions
         if not check_if_sum_is_close(list(distributions.values()), 1.0, 3):

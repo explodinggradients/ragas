@@ -78,7 +78,7 @@ class Direction(str, Enum):
     PREV = "prev"
     UP = "up"
     DOWN = "down"
-    
+
 
 class Node(Document):
     keyphrases: t.List[str] = Field(default_factory=list, repr=False)

@@ -44,9 +44,7 @@ class BaseRagasEmbeddings(Embeddings, ABC):
 
 class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
     def __init__(
-        self,
-        embeddings: Embeddings,
-        run_config: t.Optional[RunConfig] = None
+        self, embeddings: Embeddings, run_config: t.Optional[RunConfig] = None
     ):
         self.embeddings = embeddings
         if run_config is None:
