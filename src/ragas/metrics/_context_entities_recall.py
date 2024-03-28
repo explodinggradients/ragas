@@ -163,7 +163,7 @@ class ContextEntityRecall(MetricWithLLM):
         result_text = result.generations[0][0].text
         answer = _output_parser.parse(result_text)
         if answer is None:
-            return np.nan
+            return ContextEntitiesResponse(entities=[])
 
         return answer
 
