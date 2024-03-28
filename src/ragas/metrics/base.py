@@ -4,6 +4,7 @@ A - answer: generated_text from RAG pipeline
 C - contexts: context used for generation
 G - ground_truth: ground truth answer
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -26,7 +27,7 @@ EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg")
 
 
 def get_required_columns(
-    eval_mod: EvaluationMode, ignore_columns: t.Oprional[t.List[str]] = None
+    eval_mod: EvaluationMode, ignore_columns: t.Optional[t.List[str]] = None
 ) -> t.List[str]:
     if eval_mod == EvaluationMode.qac:
         keys = ["question", "answer", "contexts"]
@@ -42,6 +43,7 @@ def get_required_columns(
         keys = ["question", "contexts", "answer", "ground_truth"]
     elif eval_mod == EvaluationMode.qcg:
         keys = ["question", "contexts", "ground_truth"]
+    ignore_columns = ignore_columns or []
 
     return [k for k in keys if k not in ignore_columns]
 
