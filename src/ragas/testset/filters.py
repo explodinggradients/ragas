@@ -5,7 +5,6 @@ import typing as t
 from abc import ABC
 from dataclasses import dataclass, field
 
-
 from ragas.llms.json_load import json_loader
 from ragas.run_config import RunConfig
 from ragas.testset.prompts import (

@@ -5,8 +5,9 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
+from langchain_core.pydantic_v1 import BaseModel
 
-from ragas.llms.json_load import json_loader
+from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithEmbeddings, MetricWithLLM
 
@@ -17,41 +18,62 @@ if t.TYPE_CHECKING:
 
     from ragas.llms.prompt import PromptValue
 
+
+class AnswerRelevanceClassification(BaseModel):
+    question: str
+    noncommittal: int
+
+
+_output_instructions = get_json_format_instructions(
+    pydantic_object=AnswerRelevanceClassification
+)
+_output_parser = RagasoutputParser(pydantic_object=AnswerRelevanceClassification)
+
+
 QUESTION_GEN = Prompt(
     name="question_generation",
-    instruction="""Generate a question for the given answer and Identify if answer is noncommittal. Give noncommittal as 1 if the answer is noncommittal and 0 if the answer is committal. A noncommittal answer is one that is evasive, vague, or ambiguous. For example, "I don't know" or "I'm not sure" are noncommittal answers.""",
+    instruction="""Generate a question for the given answer and Identify if answer is noncommittal. Give noncommittal as 1 if the answer is noncommittal and 0 if the answer is committal. A noncommittal answer is one that is evasive, vague, or ambiguous. For example, "I don't know" or "I'm not sure" are noncommittal answers""",
+    output_format_instruction=_output_instructions,
     examples=[
         {
             "answer": """Albert Einstein was born in Germany.""",
             "context": """Albert Einstein was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time""",
-            "output": {
-                "question": "Where was Albert Einstein born?",
-                "noncommittal": 0,
-            },
+            "output": AnswerRelevanceClassification.parse_obj(
+                {
+                    "question": "Where was Albert Einstein born?",
+                    "noncommittal": 0,
+                }
+            ).dict(),
         },
         {
             "answer": """It can change its skin color based on the temperature of its environment.""",
             "context": """A recent scientific study has discovered a new species of frog in the Amazon rainforest that has the unique ability to change its skin color based on the temperature of its environment.""",
-            "output": {
-                "question": "What unique ability does the newly discovered species of frog have?",
-                "noncommittal": 0,
-            },
+            "output": AnswerRelevanceClassification.parse_obj(
+                {
+                    "question": "What unique ability does the newly discovered species of frog have?",
+                    "noncommittal": 0,
+                }
+            ).dict(),
         },
         {
             "answer": """Everest""",
             "context": """The tallest mountain on Earth, measured from sea level, is a renowned peak located in the Himalayas.""",
-            "output": {
-                "question": "What is the tallest mountain on Earth?",
-                "noncommittal": 0,
-            },
+            "output": AnswerRelevanceClassification.parse_obj(
+                {
+                    "question": "What is the tallest mountain on Earth?",
+                    "noncommittal": 0,
+                }
+            ).dict(),
         },
         {
             "answer": """I don't know about the  groundbreaking feature of the smartphone invented in 2023 as am unaware of information beyond 2022. """,
             "context": """In 2023, a groundbreaking invention was announced: a smartphone with a battery life of one month, revolutionizing the way people use mobile technology.""",
-            "output": {
-                "question": "What was the groundbreaking feature of the smartphone invented in 2023?",
-                "noncommittal": 1,
-            },
+            "output": AnswerRelevanceClassification.parse_obj(
+                {
+                    "question": "What was the groundbreaking feature of the smartphone invented in 2023?",
+                    "noncommittal": 1,
+                }
+            ).dict(),
         },
     ],
     input_keys=["answer", "context"],
@@ -102,18 +124,12 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
             / norm
         )
 
-    def _calculate_score(self, response: t.Sequence[t.Any], row: t.Dict) -> float:
+    def _calculate_score(
+        self, answers: t.Sequence[AnswerRelevanceClassification], row: t.Dict
+    ) -> float:
         question = row["question"]
-        gen_questions = [
-            item.get("question", "") for item in response if isinstance(item, dict)
-        ]
-        committal = np.any(
-            [
-                bool(item.get("noncommittal", 0))
-                for item in response
-                if isinstance(item, dict)
-            ]
-        )
+        gen_questions = [answer.question for answer in answers]
+        committal = np.any([answer.noncommittal for answer in answers])
         if all(q == "" for q in gen_questions):
             logger.warning(
                 "Invalid JSON response. Expected dictionary with key 'question'"
@@ -139,12 +155,14 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
             callbacks=callbacks,
             is_async=is_async,
         )
-        response = [
-            await json_loader.safe_load(r.text, self.llm, is_async=is_async)
-            for r in result.generations[0]
-        ]
 
-        return self._calculate_score(response, row)
+        answers = [
+            _output_parser.parse(result.text) for result in result.generations[0]
+        ]
+        if any(answer is None for answer in answers):
+            return np.nan
+
+        return self._calculate_score(answers, row)
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
         assert self.llm is not None, "LLM is not set"
