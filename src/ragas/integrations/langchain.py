@@ -206,7 +206,7 @@ class EvaluatorChain(Chain, RunEvaluator):
             if example.outputs is None or "ground_truth" not in example.outputs:
                 raise ValueError("expected `ground_truth` in example outputs.")
             chain_eval["ground_truth"] = example.outputs["ground_truth"]
-        eval_output = self(chain_eval, include_run_info=True)
+        eval_output = self.invoke(chain_eval, include_run_info=True)
 
         evaluation_result = EvaluationResult(
             key=self.metric.name, score=eval_output[self.metric.name]
