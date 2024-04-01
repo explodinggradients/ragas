@@ -1,4 +1,5 @@
 import json
+import logging
 import typing as t
 
 from langchain_core.exceptions import OutputParserException
@@ -8,6 +9,7 @@ from langchain_core.pydantic_v1 import BaseModel
 from ragas.llms import BaseRagasLLM
 from ragas.llms.prompt import Prompt, PromptValue
 
+logger = logging.getLogger(__name__)
 # The get_format_instructions function is a modified version from
 # langchain_core.output_parser.pydantic. The original version removed the "type" json schema
 # property that confused some older LLMs.
@@ -53,7 +55,7 @@ def get_json_format_instructions(pydantic_object: t.Type[TBaseModel]) -> str:
 
 class RagasoutputParser(PydanticOutputParser):
     async def aparse(  # type: ignore
-        self, result: str, prompt: PromptValue, llm: BaseRagasLLM, max_retries: int
+        self, result: str, prompt: PromptValue, llm: BaseRagasLLM, max_retries: int = 1
     ):
         try:
             output = super().parse(result)
@@ -66,5 +68,6 @@ class RagasoutputParser(PydanticOutputParser):
                 result = output.generations[0][0].text
                 return await self.aparse(result, prompt, llm, max_retries - 1)
             else:
+                logger.warning("Failed to parse output. Returning None.")
                 return None
         return output

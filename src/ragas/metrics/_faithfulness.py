@@ -6,7 +6,6 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.pydantic_v1 import BaseModel, Field
 
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
@@ -85,7 +84,7 @@ class StatementFaithfulnessAnswers(BaseModel):
 _faithfulness_output_instructions = get_json_format_instructions(
     StatementFaithfulnessAnswers
 )
-_faithfulness_output_parser = PydanticOutputParser(
+_faithfulness_output_parser = RagasoutputParser(
     pydantic_object=StatementFaithfulnessAnswers
 )
 
@@ -157,6 +156,7 @@ class Faithfulness(MetricWithLLM):
     nli_statements_message: Prompt = field(
         default_factory=lambda: NLI_STATEMENTS_MESSAGE
     )
+    max_retries: int = 1
 
     def _create_answer_prompt(self, row: t.Dict) -> PromptValue:
         question, answer = row["question"], row["answer"]
@@ -200,20 +200,26 @@ class Faithfulness(MetricWithLLM):
         returns the NLI score for each (q, c, a) pair
         """
         assert self.llm is not None, "LLM is not set"
-        p = self._create_answer_prompt(row)
+        p_value = self._create_answer_prompt(row)
         answer_result = await self.llm.generate(
-            p, callbacks=callbacks, is_async=is_async
+            p_value, callbacks=callbacks, is_async=is_async
         )
         answer_result_text = answer_result.generations[0][0].text
-        statements = _statements_output_parser.parse(answer_result_text)
+        statements = await _statements_output_parser.aparse(
+            answer_result_text, p_value, self.llm, self.max_retries
+        )
         if statements is None:
             return np.nan
 
-        p = self._create_nli_prompt(row, statements.__root__)
-        nli_result = await self.llm.generate(p, callbacks=callbacks, is_async=is_async)
+        p_value = self._create_nli_prompt(row, statements.__root__)
+        nli_result = await self.llm.generate(
+            p_value, callbacks=callbacks, is_async=is_async
+        )
         nli_result_text = nli_result.generations[0][0].text
 
-        faithfulness = _faithfulness_output_parser.parse(nli_result_text)
+        faithfulness = await _faithfulness_output_parser.aparse(
+            nli_result_text, p_value, self.llm, self.max_retries
+        )
         if faithfulness is None:
             return np.nan
 

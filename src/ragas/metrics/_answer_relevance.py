@@ -157,11 +157,13 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
         )
 
         answers = [
-            _output_parser.parse(result.text) for result in result.generations[0]
+            await _output_parser.aparse(result.text, prompt, self.llm)
+            for result in result.generations[0]
         ]
         if any(answer is None for answer in answers):
             return np.nan
 
+        answers = [answer for answer in answers if answer is not None]
         return self._calculate_score(answers, row)
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
