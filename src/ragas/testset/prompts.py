@@ -23,7 +23,7 @@ reasoning_question_prompt = Prompt(
     ],
     input_keys=["question", "context"],
     output_key="output",
-    output_type="string",
+    output_type="str",
     language="english",
 )
 
@@ -54,7 +54,7 @@ multi_context_question_prompt = Prompt(
     ],
     input_keys=["question", "context1", "context2"],
     output_key="output",
-    output_type="string",
+    output_type="str",
     language="english",
 )
 
@@ -81,7 +81,7 @@ conditional_question_prompt = Prompt(
     ],
     input_keys=["question", "context"],
     output_key="output",
-    output_type="string",
+    output_type="str",
     language="english",
 )
 
@@ -102,7 +102,7 @@ compress_question_prompt = Prompt(
     ],
     input_keys=["question"],
     output_key="output",
-    output_type="string",
+    output_type="str",
     language="english",
 )
 
@@ -151,7 +151,7 @@ context_scoring_prompt = Prompt(
         {
             "context": "I love chocolate. It's really tasty. Oh, and by the way, the earth orbits the sun, not the other way around. Also, my favorite color is blue.",
             "output": {"score": 2.0},
-        }
+        },
     ],
     input_keys=["context"],
     output_key="output",
@@ -178,7 +178,7 @@ question_rewrite_prompt = Prompt(
     ],
     input_keys=["context", "question", "feedback"],
     output_key="output",
-    output_type="string",
+    output_type="str",
     language="english",
 )
 
@@ -363,7 +363,7 @@ seed_question_prompt = Prompt(
     ],
     input_keys=["context", "keyphrase"],
     output_key="question",
-    output_type="string",
+    output_type="str",
 )
 
 main_topic_extraction_prompt = Prompt(

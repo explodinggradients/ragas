@@ -6,7 +6,6 @@
 :hidden:
 install.md
 testset_generation.md
-prepare_data.md
 evaluation.md
 monitoring.md
 :::
@@ -27,15 +26,7 @@ Let's get started!
 :link: get-started-testset-generation
 :link-type: ref
 
-Learn how to generate high quality and diverse `Question/Ground_Truth` pairs to get started.
-:::
-
-:::{card} Prepare data for evaluation
-:link: dataset-preparation
-:link-type: ref
-
-Learn how to prepare a complete test dataset for evaluating using ragas metrics.
-
+Learn how to generate `Question/Context/Ground_Truth` triplets to get started.
 :::
 
 :::{card} Evaluate Using Your Testset
