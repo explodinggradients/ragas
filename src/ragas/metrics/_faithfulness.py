@@ -6,7 +6,6 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.pydantic_v1 import BaseModel, Field
 
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
@@ -206,15 +205,21 @@ class Faithfulness(MetricWithLLM):
             p_value, callbacks=callbacks, is_async=is_async
         )
         answer_result_text = answer_result.generations[0][0].text
-        statements = await _statements_output_parser.aparse(answer_result_text,p_value,self.llm, self.max_retries )
+        statements = await _statements_output_parser.aparse(
+            answer_result_text, p_value, self.llm, self.max_retries
+        )
         if statements is None:
             return np.nan
 
         p_value = self._create_nli_prompt(row, statements.__root__)
-        nli_result = await self.llm.generate(p_value, callbacks=callbacks, is_async=is_async)
+        nli_result = await self.llm.generate(
+            p_value, callbacks=callbacks, is_async=is_async
+        )
         nli_result_text = nli_result.generations[0][0].text
 
-        faithfulness = await _faithfulness_output_parser.aparse(nli_result_text, p_value, self.llm, self.max_retries)
+        faithfulness = await _faithfulness_output_parser.aparse(
+            nli_result_text, p_value, self.llm, self.max_retries
+        )
         if faithfulness is None:
             return np.nan
 

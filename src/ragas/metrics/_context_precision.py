@@ -139,7 +139,7 @@ class ContextPrecision(MetricWithLLM):
         assert self.llm is not None, "LLM is not set"
 
         human_prompts = self._context_precision_prompt(row)
-        responses: t.List[str] = []
+        responses = []
         for hp in human_prompts:
             result = await self.llm.generate(
                 hp,
@@ -147,12 +147,16 @@ class ContextPrecision(MetricWithLLM):
                 callbacks=callbacks,
                 is_async=is_async,
             )
-            responses.append(result.generations[0][0].text)
+            responses.append([result.generations[0][0].text, hp])
 
-        items = [await _output_parser.aparse(item, hp, self.llm, self.max_retries) for item in responses]
+        items = [
+            await _output_parser.aparse(item, hp, self.llm, self.max_retries)
+            for item, hp in responses
+        ]
         if any(item is None for item in items):
             return np.nan
 
+        items = [item for item in items if item is not None]
         answers = ContextPrecisionVerifications(__root__=items)
         score = self._calculate_average_precision(answers.__root__)
         return score

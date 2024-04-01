@@ -153,8 +153,8 @@ class ContextEntityRecall(MetricWithLLM):
     ) -> t.Optional[ContextEntitiesResponse]:
         assert self.llm is not None, "LLM is not initialized"
         p_value = self.context_entity_recall_prompt.format(
-                text=text,
-            )
+            text=text,
+        )
         result = await self.llm.generate(
             prompt=p_value,
             callbacks=callbacks,
@@ -162,7 +162,9 @@ class ContextEntityRecall(MetricWithLLM):
         )
 
         result_text = result.generations[0][0].text
-        answer = await _output_parser.aparse(result_text, p_value, self.llm, self.max_retries)
+        answer = await _output_parser.aparse(
+            result_text, p_value, self.llm, self.max_retries
+        )
         if answer is None:
             return ContextEntitiesResponse(entities=[])
 

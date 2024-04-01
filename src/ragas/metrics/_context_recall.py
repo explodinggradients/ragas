@@ -151,7 +151,9 @@ class ContextRecall(MetricWithLLM):
         )
         result_text = result.generations[0][0].text
 
-        answers = await _output_parser.aparse(result_text, p_value, self.llm, self.max_retries)
+        answers = await _output_parser.aparse(
+            result_text, p_value, self.llm, self.max_retries
+        )
         if answers is None:
             return np.nan
 
