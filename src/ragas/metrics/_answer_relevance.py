@@ -157,7 +157,7 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
         )
 
         answers = [
-            _output_parser.parse(result.text) for result in result.generations[0]
+            await _output_parser.aparse(result.text, prompt, self.llm) for result in result.generations[0]
         ]
         if any(answer is None for answer in answers):
             return np.nan

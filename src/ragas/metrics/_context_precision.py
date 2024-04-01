@@ -89,6 +89,7 @@ class ContextPrecision(MetricWithLLM):
     name: str = "context_precision"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
     context_precision_prompt: Prompt = field(default_factory=lambda: CONTEXT_PRECISION)
+    max_retries: int = 1
 
     def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:
         answer = "ground_truth"
@@ -148,7 +149,7 @@ class ContextPrecision(MetricWithLLM):
             )
             responses.append(result.generations[0][0].text)
 
-        items = [_output_parser.parse(item) for item in responses]
+        items = [await _output_parser.aparse(item, hp, self.llm, self.max_retries) for item in responses]
         if any(item is None for item in items):
             return np.nan
 
