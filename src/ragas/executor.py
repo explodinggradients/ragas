@@ -96,7 +96,7 @@ class Runner(threading.Thread):
             results = self.loop.run_until_complete(self._aresults())
         finally:
             self.results = results
-            self.loop.close()
+            self.loop.stop()
 
 
 @dataclass

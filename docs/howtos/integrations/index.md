@@ -12,7 +12,6 @@ langsmith.ipynb
 ragas-arize.ipynb
 langfuse.ipynb
 athina.ipynb
-openlayer.ipynb
 zeno.ipynb
 tonic-validate.ipynb
 ragas_haystack.ipynb
