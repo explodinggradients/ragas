@@ -281,6 +281,11 @@ str_translation = Prompt(
             "input": "Who was  Albert Einstein and what is he best known for?",
             "output": "अल्बर्ट आइंस्टीन कौन थे और वे किसके लिए सबसे ज्यादा प्रसिद्ध हैं?",
         },
+        {
+            "translate_to": "dutch",
+            "input": "Who was queen Elizabeth and what is she best known for?",
+            "output": "Wie was koningin Elizabeth en waar is zij het meest bekend om?",
+        },
     ],
     input_keys=["translate_to", "input"],
     output_key="output",
@@ -305,7 +310,22 @@ json_translatation = Prompt(
                     "अल्बर्ट आइंस्टीन अपने सापेक्षता के सिद्धांत के लिए सबसे अधिक प्रसिद्ध थे।",
                 ]
             },
-        }
+        },
+        {
+            "translate_to": "dutch",
+            "input": {
+                "statements": [
+                    "Paris is the capital of France.",
+                    "Croissants are a popular French pastry.",
+                ]
+            },
+            "output": {
+                "statements": [
+                    "Parijs is de hoofdstad van Frankrijk.",
+                    "Croissants zijn een populair Frans gebak.",
+                ]
+            },
+        },
     ],
     input_keys=["translate_to", "input"],
     output_key="output",
