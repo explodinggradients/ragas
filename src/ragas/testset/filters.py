@@ -5,13 +5,14 @@ import typing as t
 from abc import ABC
 from dataclasses import dataclass, field
 
-from ragas.llms.json_load import json_loader
 from ragas.run_config import RunConfig
 from ragas.testset.prompts import (
     context_scoring_prompt,
     evolution_elimination_prompt,
     filter_question_prompt,
 )
+
+from ragas.testset.prompts import context_scoring_parser, evolution_elimination_parser, filter_question_parser
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import BaseRagasLLM
@@ -20,6 +21,8 @@ if t.TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
 
 
 @dataclass
@@ -53,14 +56,10 @@ class NodeFilter(Filter):
         prompt = self.context_scoring_prompt.format(context=node.page_content)
         results = await self.llm.generate(prompt=prompt)
         output = results.generations[0][0].text.strip()
-        score = await json_loader.safe_load(output, llm=self.llm)
-        score_dict = score if isinstance(score, dict) else {}
-        logger.debug("node filter: %s", score)
-        score = score_dict.get("score", 0)
-        try:
-            score = float(score)
-        except Exception as _:
-            score = 0
+        score = await context_scoring_parser.aparse(output, prompt, self.llm)
+        if score is None:
+            score = 0.0
+        score_dict = {"score": score}
         score_dict.update({"score": score >= self.threshold})
         return score_dict
 
