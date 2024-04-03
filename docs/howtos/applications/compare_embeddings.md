@@ -55,7 +55,7 @@ distributions = {
 }
 
 # generate testset
-testset = generator.generate_with_llama_index_docs(documents, 100,distributions)
+testset = generator.generate_with_llamaindex_docs(documents, 100,distributions)
 testset.to_pandas()
 ```
 
