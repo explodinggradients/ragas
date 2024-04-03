@@ -44,6 +44,7 @@ def add_async_retry(fn: WrappedFn, run_config: RunConfig) -> WrappedFn:
     r = AsyncRetrying(
         wait=wait_random_exponential(multiplier=1, max=run_config.max_wait),
         stop=stop_after_attempt(run_config.max_retries),
+        retry=retry_if_exception_type(run_config.exception_types),
         reraise=True,
     )
     return r.wraps(fn)
