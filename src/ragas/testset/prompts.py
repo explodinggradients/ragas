@@ -1,3 +1,6 @@
+from langchain_core.pydantic_v1 import BaseModel
+
+from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
 
 reasoning_question_prompt = Prompt(
@@ -310,26 +313,23 @@ question_rewrite_prompt = Prompt(
 
 ### Filters
 
-from langchain_core.pydantic_v1 import BaseModel
-from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
-
 
 class ContextScoring(BaseModel):
     score: float
-    
-    
-class QuestionFeedback(BaseModel):
+
+
+class QuestionFilter(BaseModel):
     feedback: str
     verdict: int
-    
-    
+
+
 class EvolutionElimination(BaseModel):
     reason: str
     verdict: int
 
 
 context_scoring_parser = RagasoutputParser(pydantic_object=ContextScoring)
-question_feedback_parser = RagasoutputParser(pydantic_object=QuestionFeedback)
+question_filter_parser = RagasoutputParser(pydantic_object=QuestionFilter)
 evolution_elimination_parser = RagasoutputParser(pydantic_object=EvolutionElimination)
 
 context_scoring_prompt = Prompt(
@@ -345,15 +345,15 @@ context_scoring_prompt = Prompt(
     examples=[
         {
             "context": "The Pythagorean theorem is a fundamental principle in geometry. It states that in a right-angled triangle, the square of the length of the hypotenuse (the side opposite the right angle) is equal to the sum of the squares of the lengths of the other two sides. This can be written as a^2 + b^2 = c^2 where c represents the length of the hypotenuse, and a and b represent the lengths of the other two sides.",
-            "output": ContextScoring.parse_obj({"score": 8.5}),
+            "output": ContextScoring.parse_obj({"score": 8.5}).dict(),
         },
         {
             "context": "Albert Einstein (14 March 1879 - 18 April 1955) was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time.",
-            "output":  ContextScoring.parse_obj({"score": 6.0}),
+            "output": ContextScoring.parse_obj({"score": 6.0}).dict(),
         },
         {
             "context": "I love chocolate. It's really tasty. Oh, and by the way, the earth orbits the sun, not the other way around. Also, my favorite color is blue.",
-            "output":  ContextScoring.parse_obj({"score": 2.0}),
+            "output": ContextScoring.parse_obj({"score": 2.0}).dict(),
         },
     ],
     input_keys=["context"],
@@ -372,42 +372,52 @@ Asses the given question for clarity and answerability given enough domain knowl
 Based on these criteria, assign a verdict of "1" if a question is specific, independent, and has a clear intent, making it understandable and answerable based on the details provided. Assign "0" if it fails to meet one or more of these criteria due to vagueness, reliance on external references, or ambiguity in intent.
 Provide feedback and a verdict in JSON format, including suggestions for improvement if the question is deemed unclear. Highlight aspects of the question that contribute to its clarity or lack thereof, and offer advice on how it could be reframed or detailed for better understanding and answerability.
 """,
-output_format_instruction=get_json_format_instructions(QuestionFeedback),
+    output_format_instruction=get_json_format_instructions(QuestionFilter),
     examples=[
         {
             "question": "What is the discovery about space?",
-            "output": QuestionFeedback.parse_obj({
-                "feedback": "The question is too vague and broad, asking for a 'discovery about space' without specifying any particular aspect, time frame, or context of interest. This could refer to a wide range of topics, from the discovery of new celestial bodies to advancements in space travel technology. To improve clarity and answerability, the question could specify the type of discovery (e.g., astronomical, technological), the time frame (e.g., recent, historical), or the context (e.g., within a specific research study or space mission).",
-                "verdict": "0",
-            }),
+            "output": QuestionFilter.parse_obj(
+                {
+                    "feedback": "The question is too vague and broad, asking for a 'discovery about space' without specifying any particular aspect, time frame, or context of interest. This could refer to a wide range of topics, from the discovery of new celestial bodies to advancements in space travel technology. To improve clarity and answerability, the question could specify the type of discovery (e.g., astronomical, technological), the time frame (e.g., recent, historical), or the context (e.g., within a specific research study or space mission).",
+                    "verdict": "0",
+                }
+            ).dict(),
         },
         {
             "question": "How does ALMA-13B-R perform compared to other translation models in the WMT'23 study, based on the results in context1 and context2?",
-            "output": QuestionFeedback.parse_obj({
-                "feedback": "This question asks for a comparison of the ALMA-13B-R model's performance against other translation models within the WMT'23 study, specifically referring to results in 'context1' and 'context2'. While it clearly specifies the model of interest (ALMA-13B-R) and the study (WMT'23), it assumes access to and understanding of 'context1' and 'context2' without explaining what these contexts entail. This makes the question unclear for those not familiar with the WMT'23 study or these specific contexts. To improve clarity and answerability for a broader audience, the question could benefit from defining or describing 'context1' and 'context2' or explaining the criteria used for comparison in these contexts.",
-                "verdict": "0",
-            }),
+            "output": QuestionFilter.parse_obj(
+                {
+                    "feedback": "This question asks for a comparison of the ALMA-13B-R model's performance against other translation models within the WMT'23 study, specifically referring to results in 'context1' and 'context2'. While it clearly specifies the model of interest (ALMA-13B-R) and the study (WMT'23), it assumes access to and understanding of 'context1' and 'context2' without explaining what these contexts entail. This makes the question unclear for those not familiar with the WMT'23 study or these specific contexts. To improve clarity and answerability for a broader audience, the question could benefit from defining or describing 'context1' and 'context2' or explaining the criteria used for comparison in these contexts.",
+                    "verdict": "0",
+                }
+            ).dict(),
         },
         {
             "question": "How do KIWI-XXL and XCOMET compare to the gold standard references in Table 1 in terms of evaluation scores, translation model performance, and success rate in surpassing the references?",
-            "output": QuestionFeedback.parse_obj({
-                "feedback": "The question requests a comparison between KIWI-XXL and XCOMET models and gold standard references in 'Table 1', focusing on evaluation scores, translation model performance, and success rates in surpassing the references. It specifies the models and criteria for comparison, making the intent clear. However, the question assumes access to 'Table 1' without providing its content or context, making it unclear for those without direct access to the source material. To be clearer and more answerable for a general audience, the question could include a brief description of the content or key findings of 'Table 1', or alternatively, frame the question in a way that does not rely on specific, unpublished documents.",
-                "verdict": 0,
-            }),
+            "output": QuestionFilter.parse_obj(
+                {
+                    "feedback": "The question requests a comparison between KIWI-XXL and XCOMET models and gold standard references in 'Table 1', focusing on evaluation scores, translation model performance, and success rates in surpassing the references. It specifies the models and criteria for comparison, making the intent clear. However, the question assumes access to 'Table 1' without providing its content or context, making it unclear for those without direct access to the source material. To be clearer and more answerable for a general audience, the question could include a brief description of the content or key findings of 'Table 1', or alternatively, frame the question in a way that does not rely on specific, unpublished documents.",
+                    "verdict": 0,
+                }
+            ).dict(),
         },
         {
             "question": "What is the configuration of UL2 training objective in OpenMoE and why is it a better choice for pre-training?",
-            "output": QuestionFeedback.parse_obj({
-                "feedback": "The question asks for the configuration of the UL2 training objective within the OpenMoE framework and the rationale behind its suitability for pre-training. It is clear in specifying the topic of interest (UL2 training objective, OpenMoE) and seeks detailed information on both the configuration and the reasons for its effectiveness in pre-training. However, the question might be challenging for those unfamiliar with the specific terminology or the context of OpenMoE and UL2. For broader clarity and answerability, it would be helpful if the question included a brief explanation or context about OpenMoE and the UL2 training objective, or clarified the aspects of pre-training effectiveness it refers to (e.g., efficiency, accuracy, generalization).",
-                "verdict": 1,
-            }),
+            "output": QuestionFilter.parse_obj(
+                {
+                    "feedback": "The question asks for the configuration of the UL2 training objective within the OpenMoE framework and the rationale behind its suitability for pre-training. It is clear in specifying the topic of interest (UL2 training objective, OpenMoE) and seeks detailed information on both the configuration and the reasons for its effectiveness in pre-training. However, the question might be challenging for those unfamiliar with the specific terminology or the context of OpenMoE and UL2. For broader clarity and answerability, it would be helpful if the question included a brief explanation or context about OpenMoE and the UL2 training objective, or clarified the aspects of pre-training effectiveness it refers to (e.g., efficiency, accuracy, generalization).",
+                    "verdict": 1,
+                }
+            ).dict(),
         },
         {
             "question": "What is the detailed configuration of the UL2 training objective in OpenMoE, based on the provided context?",
-            "output": QuestionFeedback.parse_obj({
-                "feedback": "The question seeks detailed information on the UL2 training objective's configuration within the OpenMoE framework, mentioning 'the provided context' without actually including or describing this context within the query. This makes the question unclear for those who do not have access to the unspecified context. For the question to be clear and answerable, it needs to either include the relevant context directly within the question or be framed in a way that does not require external information. Detailing the specific aspects of the configuration of interest (e.g., loss functions, data augmentation techniques) could also help clarify the query.",
-                "verdict": 0,
-            }),
+            "output": QuestionFilter.parse_obj(
+                {
+                    "feedback": "The question seeks detailed information on the UL2 training objective's configuration within the OpenMoE framework, mentioning 'the provided context' without actually including or describing this context within the query. This makes the question unclear for those who do not have access to the unspecified context. For the question to be clear and answerable, it needs to either include the relevant context directly within the question or be framed in a way that does not require external information. Detailing the specific aspects of the configuration of interest (e.g., loss functions, data augmentation techniques) could also help clarify the query.",
+                    "verdict": 0,
+                }
+            ).dict(),
         },
     ],
     input_keys=["question"],
@@ -427,26 +437,32 @@ evolution_elimination_prompt = Prompt(
         {
             "question1": "What are the primary causes of climate change?",
             "question2": "What factors contribute to global warming?",
-            "output": EvolutionElimination.parse_obj({
-                "reason": "While both questions deal with environmental issues, 'climate change' encompasses broader changes than 'global warming', leading to different depths of inquiry.",
-                "verdict": 0,
-            }),
+            "output": EvolutionElimination.parse_obj(
+                {
+                    "reason": "While both questions deal with environmental issues, 'climate change' encompasses broader changes than 'global warming', leading to different depths of inquiry.",
+                    "verdict": 0,
+                }
+            ).dict(),
         },
         {
             "question1": "How does photosynthesis work in plants?",
             "question2": "Can you explain the process of photosynthesis in plants?",
-            "output": EvolutionElimination.parse_obj({
-                "reason": "Both questions ask for an explanation of the photosynthesis process in plants, sharing the same depth, breadth, and requirements for the answer.",
-                "verdict": 1,
-            }),
+            "output": EvolutionElimination.parse_obj(
+                {
+                    "reason": "Both questions ask for an explanation of the photosynthesis process in plants, sharing the same depth, breadth, and requirements for the answer.",
+                    "verdict": 1,
+                }
+            ).dict(),
         },
         {
             "question1": "What are the health benefits of regular exercise?",
             "question2": "Can you list the advantages of exercising regularly for health?",
-            "output": EvolutionElimination.parse_obj({
-                "reason": "Both questions seek information about the positive effects of regular exercise on health. They require a similar level of detail in listing the health benefits.",
-                "verdict": 1,
-            }),
+            "output": EvolutionElimination.parse_obj(
+                {
+                    "reason": "Both questions seek information about the positive effects of regular exercise on health. They require a similar level of detail in listing the health benefits.",
+                    "verdict": 1,
+                }
+            ).dict(),
         },
     ],
     input_keys=["question1", "question2"],
@@ -454,4 +470,3 @@ evolution_elimination_prompt = Prompt(
     output_type="json",
     language="english",
 )
-
