@@ -315,7 +315,10 @@ question_rewrite_prompt = Prompt(
 
 
 class ContextScoring(BaseModel):
-    score: float
+    clarity: int
+    depth: int
+    structure: int
+    relevance: int
 
 
 class QuestionFilter(BaseModel):
@@ -334,26 +337,34 @@ evolution_elimination_parser = RagasoutputParser(pydantic_object=EvolutionElimin
 
 context_scoring_prompt = Prompt(
     name="score_context",
-    instruction="""Given a context, perform the following task and output the answer in VALID JSON format:
-    Evaluate the provided context and assign a numerical score between 0 and 10 based on the following criteria:
-      - Clarity and Accuracy: Award a high score to the context that provides accurate and non-misleading information with clarity.
-      - Depth and Innovation: Give extra points to the context that thoroughly delves into the concepts or includes new perspectives and unique insights.
-      - Structure: Award a high score to the context with clear structure and logical flow.
-      - Relevance: Assign a lower score to the context that contains excessive references, acknowledgments, personal information, or other non-essential elements.
+    instruction="""
+    Given a context, perform the following task and output the answer in VALID JSON format: Assess the provided context and assign a numerical score of 1 (Low), 2 (Medium), or 3 (High) for each of the following criteria in your JSON response:
+
+clarity: Evaluate the precision and understandability of the information presented. High scores (3) are reserved for contexts that are both precise in their information and easy to understand. Low scores (1) are for contexts where the information is vague or hard to comprehend.
+depth: Determine the level of detailed examination and the inclusion of innovative insights within the context. A high score indicates a comprehensive and insightful analysis, while a low score suggests a superficial treatment of the topic.
+structure: Assess how well the content is organized and whether it flows logically. High scores are awarded to contexts that demonstrate coherent organization and logical progression, whereas low scores indicate a lack of structure or clarity in progression.
+relevance: Judge the pertinence of the content to the main topic, awarding high scores to contexts tightly focused on the subject without unnecessary digressions, and low scores to those that are cluttered with irrelevant information.
+Structure your JSON output to reflect these criteria as keys with their corresponding scores as values
     """,
     output_format_instruction=get_json_format_instructions(ContextScoring),
     examples=[
         {
             "context": "The Pythagorean theorem is a fundamental principle in geometry. It states that in a right-angled triangle, the square of the length of the hypotenuse (the side opposite the right angle) is equal to the sum of the squares of the lengths of the other two sides. This can be written as a^2 + b^2 = c^2 where c represents the length of the hypotenuse, and a and b represent the lengths of the other two sides.",
-            "output": ContextScoring.parse_obj({"score": 8.5}).dict(),
+            "output": ContextScoring.parse_obj(
+                {"clarity": 3, "depth": 1, "structure": 3, "relevance": 3}
+            ).dict(),
         },
         {
             "context": "Albert Einstein (14 March 1879 - 18 April 1955) was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time.",
-            "output": ContextScoring.parse_obj({"score": 6.0}).dict(),
+            "output": ContextScoring.parse_obj(
+                {"clarity": 3, "depth": 2, "structure": 3, "relevance": 3}
+            ).dict(),
         },
         {
             "context": "I love chocolate. It's really tasty. Oh, and by the way, the earth orbits the sun, not the other way around. Also, my favorite color is blue.",
-            "output": ContextScoring.parse_obj({"score": 2.0}).dict(),
+            "output": ContextScoring.parse_obj(
+                {"clarity": 2, "depth": 1, "structure": 1, "relevance": 1}
+            ).dict(),
         },
     ],
     input_keys=["context"],

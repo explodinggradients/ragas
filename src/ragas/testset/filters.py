@@ -46,7 +46,7 @@ class Filter(ABC):
 
 @dataclass
 class NodeFilter(Filter):
-    threshold: float = 7.5
+    threshold: float = 1.5
     context_scoring_prompt: Prompt = field(
         default_factory=lambda: context_scoring_prompt
     )
@@ -57,6 +57,7 @@ class NodeFilter(Filter):
         output = results.generations[0][0].text.strip()
         output = await context_scoring_parser.aparse(output, prompt, self.llm)
         output = output.dict() if output is not None else {}
+        output["score"] = sum(output.values()) / len(output.values())
         logger.debug("context scoring: %s", output)
         output.update({"score": output.get("score", 0) >= self.threshold})
         return output
