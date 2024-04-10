@@ -200,7 +200,12 @@ def evaluate(
         row_run_managers.append((row_rm, row_group_cm))
         [
             executor.submit(
-                metric.ascore, row, row_group_cm, is_async, name=f"{metric.name}-{i}"
+                metric.ascore,
+                row,
+                row_group_cm,
+                is_async,
+                name=f"{metric.name}-{i}",
+                thread_timeout=run_config.thread_timeout,
             )
             for metric in metrics
         ]
