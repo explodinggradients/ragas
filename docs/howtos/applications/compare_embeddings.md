@@ -55,7 +55,7 @@ distributions = {
 }
 
 # generate testset
-testset = generator.generate_with_llama_index_docs(documents, 100,distributions)
+testset = generator.generate_with_llamaindex_docs(documents, 100,distributions)
 testset.to_pandas()
 ```
 
@@ -81,8 +81,8 @@ refer to [langchain-tutorial](../integrations/langchain.ipynb) see how to evalua
 ```{code-block} python
 
 import nest_asyncio
-from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext,OpenAIEmbedding
-from langchain.embeddings import HuggingFaceEmbeddings
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, ServiceContext
+from langchain.embeddings import HuggingFaceEmbeddings, OpenAIEmbeddings
 import pandas as pd
 
 nest_asyncio.apply()

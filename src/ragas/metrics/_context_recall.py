@@ -122,6 +122,7 @@ class ContextRecall(MetricWithLLM):
     name: str = "context_recall"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
     context_recall_prompt: Prompt = field(default_factory=lambda: CONTEXT_RECALL_RA)
+    max_retries: int = 1
 
     def _create_context_recall_prompt(self, row: t.Dict) -> PromptValue:
         qstn, ctx, gt = row["question"], row["contexts"], row["ground_truth"]
@@ -142,15 +143,17 @@ class ContextRecall(MetricWithLLM):
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
         assert self.llm is not None, "set LLM before use"
-
+        p_value = self._create_context_recall_prompt(row)
         result = await self.llm.generate(
-            self._create_context_recall_prompt(row),
+            p_value,
             callbacks=callbacks,
             is_async=is_async,
         )
         result_text = result.generations[0][0].text
 
-        answers = _output_parser.parse(result_text)
+        answers = await _output_parser.aparse(
+            result_text, p_value, self.llm, self.max_retries
+        )
         if answers is None:
             return np.nan
 

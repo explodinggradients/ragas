@@ -135,6 +135,7 @@ class ContextEntityRecall(MetricWithLLM):
         default_factory=lambda: TEXT_ENTITY_EXTRACTION
     )
     batch_size: int = 15
+    max_retries: int = 1
 
     def _compute_score(
         self, ground_truth_entities: t.Sequence[str], context_entities: t.Sequence[str]
@@ -151,17 +152,19 @@ class ContextEntityRecall(MetricWithLLM):
         is_async: bool,
     ) -> t.Optional[ContextEntitiesResponse]:
         assert self.llm is not None, "LLM is not initialized"
-
+        p_value = self.context_entity_recall_prompt.format(
+            text=text,
+        )
         result = await self.llm.generate(
-            prompt=self.context_entity_recall_prompt.format(
-                text=text,
-            ),
+            prompt=p_value,
             callbacks=callbacks,
             is_async=is_async,
         )
 
         result_text = result.generations[0][0].text
-        answer = _output_parser.parse(result_text)
+        answer = await _output_parser.aparse(
+            result_text, p_value, self.llm, self.max_retries
+        )
         if answer is None:
             return ContextEntitiesResponse(entities=[])
 

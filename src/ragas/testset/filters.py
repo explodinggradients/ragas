@@ -5,12 +5,14 @@ import typing as t
 from abc import ABC
 from dataclasses import dataclass, field
 
-from ragas.llms.json_load import json_loader
 from ragas.run_config import RunConfig
 from ragas.testset.prompts import (
+    context_scoring_parser,
     context_scoring_prompt,
+    evolution_elimination_parser,
     evolution_elimination_prompt,
     filter_question_prompt,
+    question_filter_parser,
 )
 
 if t.TYPE_CHECKING:
@@ -44,7 +46,7 @@ class Filter(ABC):
 
 @dataclass
 class NodeFilter(Filter):
-    threshold: float = 7.5
+    threshold: float = 1.5
     context_scoring_prompt: Prompt = field(
         default_factory=lambda: context_scoring_prompt
     )
@@ -53,16 +55,12 @@ class NodeFilter(Filter):
         prompt = self.context_scoring_prompt.format(context=node.page_content)
         results = await self.llm.generate(prompt=prompt)
         output = results.generations[0][0].text.strip()
-        score = await json_loader.safe_load(output, llm=self.llm)
-        score_dict = score if isinstance(score, dict) else {}
-        logger.debug("node filter: %s", score)
-        score = score_dict.get("score", 0)
-        try:
-            score = float(score)
-        except Exception as _:
-            score = 0
-        score_dict.update({"score": score >= self.threshold})
-        return score_dict
+        output = await context_scoring_parser.aparse(output, prompt, self.llm)
+        output = output.dict() if output is not None else {}
+        output["score"] = sum(output.values()) / len(output.values())
+        logger.debug("context scoring: %s", output)
+        output.update({"score": output.get("score", 0) >= self.threshold})
+        return output
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         """
@@ -90,10 +88,10 @@ class QuestionFilter(Filter):
         prompt = self.filter_question_prompt.format(question=question)
         results = await self.llm.generate(prompt=prompt)
         results = results.generations[0][0].text.strip()
-        json_results = await json_loader.safe_load(results, llm=self.llm)
-        json_results = json_results if isinstance(json_results, dict) else {}
-        logger.debug("filtered question: %s", json_results)
-        return json_results.get("verdict") == "1", json_results.get("feedback", "")
+        results = await question_filter_parser.aparse(results, prompt, self.llm)
+        results = results.dict() if results is not None else {}
+        logger.debug("filtered question: %s", results)
+        return results.get("verdict") == 1, results.get("feedback", "")
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         """
@@ -123,10 +121,10 @@ class EvolutionFilter(Filter):
         )
         results = await self.llm.generate(prompt=prompt)
         results = results.generations[0][0].text.strip()
-        json_results = await json_loader.safe_load(results, llm=self.llm)
-        json_results = json_results if isinstance(json_results, dict) else {}
-        logger.debug("evolution filter: %s", json_results)
-        return json_results.get("verdict") == "1"
+        results = await evolution_elimination_parser.aparse(results, prompt, self.llm)
+        results = results.dict() if results is not None else {}
+        logger.debug("evolution filter: %s", results)
+        return results.get("verdict") == 1
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         """
