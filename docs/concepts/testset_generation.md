@@ -37,7 +37,7 @@ Moving forward, we are will be expanding the range of evolution techniques to of
 
 ```{code-block} python
 :caption: loading documents using langchain
-from langchain.document_loaders import PubMedLoader
+from langchain_community.document_loaders import PubMedLoader
 
 loader = PubMedLoader("liver", load_max_docs=10)
 documents = loader.load()

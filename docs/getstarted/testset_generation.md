@@ -15,7 +15,7 @@ Initially, a collection of documents is needed to generate synthetic `Question/C
 
 ```{code-block} python
 :caption: Load documents from directory
-from langchain.document_loaders import DirectoryLoader
+from langchain_community.document_loaders import DirectoryLoader
 loader = DirectoryLoader("your-directory")
 documents = loader.load()
 ```
