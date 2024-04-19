@@ -51,7 +51,7 @@ def validate_column_dtypes(ds: Dataset):
         if column_names in ds.features:
             if not (
                 isinstance(ds.features[column_names], Sequence)
-                and ds.features[column_names].feature.dtype == "string"
+                and (ds.features[column_names].feature.dtype == "string" or ds.features[column_names].length < 1)
             ):
                 raise ValueError(
                     f'Dataset feature "{column_names}" should be of type'
