@@ -248,15 +248,19 @@ class TestsetGenerator:
             for n in self.docstore.get_random_nodes(k=test_size)
         ]
         total_evolutions = 0
+        start_index = 0
         for evolution, probability in distributions.items():
-            for i in range(round(probability * test_size)):
+            end_index = start_index + round(probability * test_size)
+            for i in range(start_index, end_index):
                 exec.submit(
                     evolution.evolve,
                     current_nodes[i],
                     name=f"{evolution.__class__.__name__}-{i}",
                 )
                 total_evolutions += 1
-        if total_evolutions <= test_size:
+            start_index = end_index
+        
+        if total_evolutions < test_size:
             filler_evolutions = choices(
                 list(distributions), k=test_size - total_evolutions
             )
