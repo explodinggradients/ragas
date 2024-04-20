@@ -140,7 +140,8 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
         return score
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
-        assert self.llm is not None, "LLM must be set"
+        if self.llm is None:
+            raise ValueError("LLM must be set.")
 
         q, a, g = row["question"], row["answer"], row["ground_truth"]
         p_value = self.correctness_prompt.format(question=q, ground_truth=g, answer=a)
@@ -174,7 +175,8 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
         return float(score)
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
-        assert self.llm is not None, "llm must be set to compute score"
+        if self.llm is None:
+            raise ValueError("llm must be set to compute score.")
 
         logger.info(f"Adapting AnswerCorrectness metric to {language}")
         self.correctness_prompt = self.correctness_prompt.adapt(

@@ -146,7 +146,8 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
         return self.question_generation.format(answer=ans, context="\n".join(ctx))
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
-        assert self.llm is not None, "LLM is not set"
+        if self.llm is None:
+            raise ValueError("LLM is not set")
 
         prompt = self._create_question_gen_prompt(row)
         result = await self.llm.generate(
@@ -167,7 +168,8 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
         return self._calculate_score(answers, row)
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
-        assert self.llm is not None, "LLM is not set"
+        if self.llm is None:
+            raise ValueError("LLM is not set")
 
         logger.info(f"Adapting AnswerRelevancy metric to {language}")
         self.question_generation = self.question_generation.adapt(

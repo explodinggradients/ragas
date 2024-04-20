@@ -67,7 +67,8 @@ class ContextRelevancy(MetricWithLLM):
             return min(len(indices) / len(context_sents), 1)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
-        assert self.llm is not None, "LLM is not initialized"
+        if self.llm is None:
+            raise ValueError("LLM is not initialized")
 
         if self.show_deprecation_warning:
             logger.warning(
@@ -84,7 +85,8 @@ class ContextRelevancy(MetricWithLLM):
         return self._compute_score(result.generations[0][0].text, row)
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
-        assert self.llm is not None, "set LLM before use"
+        if self.llm is None:
+            raise ValueError("set LLM before use")
 
         logger.info(f"Adapting Context Relevancy to {language}")
         self.context_relevancy_prompt = self.context_relevancy_prompt.adapt(

@@ -120,7 +120,8 @@ class AspectCritique(MetricWithLLM):
     async def _ascore(
         self: t.Self, row: t.Dict, callbacks: Callbacks, is_async: bool
     ) -> float:
-        assert self.llm is not None, "set LLM before use"
+        if self.llm is None:
+            raise ValueError("set LLM before use")
 
         q, c, a = row["question"], row["contexts"], row["answer"]
 
@@ -143,7 +144,8 @@ class AspectCritique(MetricWithLLM):
         return self._compute_score(safe_loaded_responses)
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
-        assert self.llm is not None, "set LLM before use"
+        if self.llm is None:
+            raise ValueError("set LLM before use")
 
         logger.info(f"Adapting Critic to {language}")
         self.critic_prompt.adapt(language, self.llm, cache_dir)

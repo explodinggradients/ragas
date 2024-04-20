@@ -168,7 +168,8 @@ class Faithfulness(MetricWithLLM):
         return prompt_value
 
     def _create_nli_prompt(self, row: t.Dict, statements: t.List[str]) -> PromptValue:
-        assert self.llm is not None, "llm must be set to compute score"
+        if self.llm is None:
+            raise ValueError("llm must be set to compute score")
 
         contexts = row["contexts"]
         # check if the statements are support in the contexts
@@ -199,7 +200,8 @@ class Faithfulness(MetricWithLLM):
         """
         returns the NLI score for each (q, c, a) pair
         """
-        assert self.llm is not None, "LLM is not set"
+        if self.llm is None:
+            raise ValueError("LLM is not set")
         p_value = self._create_answer_prompt(row)
         answer_result = await self.llm.generate(
             p_value, callbacks=callbacks, is_async=is_async
@@ -226,7 +228,8 @@ class Faithfulness(MetricWithLLM):
         return self._compute_score(faithfulness)
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
-        assert self.llm is not None, "LLM is not set"
+        if self.llm is None:
+            raise ValueError("LLM is not set")
 
         logger.info(f"Adapting Faithfulness metric to {language}")
         self.long_form_answer_prompt = self.long_form_answer_prompt.adapt(

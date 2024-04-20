@@ -151,7 +151,8 @@ class ContextEntityRecall(MetricWithLLM):
         callbacks: Callbacks,
         is_async: bool,
     ) -> t.Optional[ContextEntitiesResponse]:
-        assert self.llm is not None, "LLM is not initialized"
+        if self.llm is None:
+            raise ValueError("LLM is not initialized")
         p_value = self.context_entity_recall_prompt.format(
             text=text,
         )

@@ -136,7 +136,8 @@ class ContextPrecision(MetricWithLLM):
         callbacks: Callbacks,
         is_async: bool,
     ) -> float:
-        assert self.llm is not None, "LLM is not set"
+        if self.llm is None:
+            raise ValueError("LLM is not set")
 
         human_prompts = self._context_precision_prompt(row)
         responses = []
@@ -162,7 +163,8 @@ class ContextPrecision(MetricWithLLM):
         return score
 
     def adapt(self, language: str, cache_dir: str | None = None) -> None:
-        assert self.llm is not None, "LLM is not set"
+        if self.llm is None:
+            raise ValueError("LLM is not set")
 
         logging.info(f"Adapting Context Precision to {language}")
         self.context_precision_prompt = self.context_precision_prompt.adapt(
