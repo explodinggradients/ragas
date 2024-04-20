@@ -193,37 +193,49 @@ class Faithfulness(MetricWithLLM):
 
         return score
 
-    async def _ascore(
-        self: t.Self, row: t.Dict, callbacks: Callbacks, is_async: bool
-    ) -> float:
-        """
-        returns the NLI score for each (q, c, a) pair
-        """
-        assert self.llm is not None, "LLM is not set"
-        p_value = self._create_answer_prompt(row)
-        answer_result = await self.llm.generate(
-            p_value, callbacks=callbacks, is_async=is_async
-        )
-        answer_result_text = answer_result.generations[0][0].text
-        statements = await _statements_output_parser.aparse(
-            answer_result_text, p_value, self.llm, self.max_retries
-        )
-        if statements is None:
-            return np.nan
+    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
+        """  
+        returns the NLI score for each (q, c, a) pair  
+        """  
+        assert self.llm is not None, "LLM is not set"  
 
-        p_value = self._create_nli_prompt(row, statements.__root__)
-        nli_result = await self.llm.generate(
-            p_value, callbacks=callbacks, is_async=is_async
-        )
-        nli_result_text = nli_result.generations[0][0].text
+        for prompt_type in [('answer', self.long_form_answer_prompt, _statements_output_parser), 
+                            ('nli', self.nli_statements_message, _faithfulness_output_parser)]:
 
-        faithfulness = await _faithfulness_output_parser.aparse(
-            nli_result_text, p_value, self.llm, self.max_retries
-        )
-        if faithfulness is None:
-            return np.nan
+            logger.info(f"Processing: {prompt_type[0]}")
+
+            p_value = self._create_prompt(row, prompt_type[0])  
+            result = await self.llm.generate(  
+                p_value, callbacks=callbacks, is_async=is_async  
+            )  
+            result_text = result.generations[0][0].text  
+
+            output = await prompt_type[2].aparse(  
+                result_text, p_value, self.llm, self.max_retries  
+            )  
+
+            if output is None:  
+                return np.nan
+        
+            if prompt_type[0] == 'answer':
+                statements = output
+                row = {**row, 'statements': statements.__root__}  # update row with statements to be used in NLI prompt
+            else:
+                faithfulness = output
 
         return self._compute_score(faithfulness)
+    
+    def _create_prompt(self, row: t.Dict, prompt_type: str) -> PromptValue:  
+        if prompt_type == 'answer':
+            question, answer = row["question"], row["answer"]
+            prompt_value = self.long_form_answer_prompt.format(question=question, answer=answer)
+        else:  # nli
+            contexts = row["contexts"]
+            contexts_str: str = "\n".join(contexts)  
+            statements_str: str = json.dumps(row['statements'])
+            prompt_value = self.nli_statements_message.format(context=contexts_str, statements=statements_str)
+
+        return prompt_value
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         assert self.llm is not None, "LLM is not set"
