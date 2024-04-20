@@ -148,6 +148,10 @@ NLI_STATEMENTS_MESSAGE = Prompt(
 
 @dataclass
 class Faithfulness(MetricWithLLM):
+    """
+    This class is a metric for evaluating faithfulness of data.
+    It follows the EvaluationMode method defined in the MetricWithLLM base class.
+    """
     name: str = "faithfulness"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
     long_form_answer_prompt: Prompt = field(
@@ -226,6 +230,13 @@ class Faithfulness(MetricWithLLM):
         return self._compute_score(faithfulness)
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Adapts Faithfulness metric to specific language.
+        
+        Args:
+        language(str): The language to adapt the Faithfulness metric to
+        cache_dir(t.Optional[str]): Optional directory to cache data
+        """
         assert self.llm is not None, "LLM is not set"
 
         logger.info(f"Adapting Faithfulness metric to {language}")
@@ -237,6 +248,12 @@ class Faithfulness(MetricWithLLM):
         )
 
     def save(self, cache_dir: t.Optional[str] = None) -> None:
+        """
+        Save function for the Faithfulness metric.
+        
+        Args:
+        cache_dir(t.Optional[str]): Optional directory to save data
+        """
         self.long_form_answer_prompt.save(cache_dir)
         self.nli_statements_message.save(cache_dir)
 
