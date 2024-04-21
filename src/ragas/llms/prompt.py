@@ -177,7 +177,12 @@ class Prompt(BaseModel):
         # TODO: Add callbacks
         cache_dir = cache_dir if cache_dir else get_cache_dir()
         if os.path.exists(os.path.join(cache_dir, language, f"{self.name}.json")):
-            return self._load(language, self.name, cache_dir)
+            self_cp = self._load(language, self.name, cache_dir)
+
+            self.language = self_cp.language
+            self.examples = self_cp.examples
+
+            return self_cp
 
         logger.info("Adapting %s to %s", self.name, language)
         prompts = []
@@ -252,6 +257,8 @@ class Prompt(BaseModel):
         self.language = language
 
         # TODO:Validate the prompt after adaptation
+
+        self.save(cache_dir=cache_dir)
 
         return self
 
