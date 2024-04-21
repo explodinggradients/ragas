@@ -69,7 +69,7 @@ class BaseRagasLLM(ABC):
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: float = 1e-8,
+        temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ) -> LLMResult:
@@ -79,11 +79,13 @@ class BaseRagasLLM(ABC):
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: float = 1e-8,
+        temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
         is_async: bool = True,
     ) -> LLMResult:
+        if temperature is None:
+            temperature = 1e-8
         """Generate text using the given event loop."""
         if is_async:
             agenerate_text_with_retry = add_async_retry(
@@ -130,11 +132,12 @@ class LangchainLLMWrapper(BaseRagasLLM):
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: float = 1e-8,
+        temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ) -> LLMResult:
-        temperature = self.get_temperature(n=n)
+        if temperature is None:
+            temperature = self.get_temperature(n=n)
         if is_multiple_completion_supported(self.langchain_llm):
             return self.langchain_llm.generate_prompt(
                 prompts=[prompt],
@@ -160,11 +163,12 @@ class LangchainLLMWrapper(BaseRagasLLM):
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: float = 1e-8,
+        temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ) -> LLMResult:
-        temperature = self.get_temperature(n=n)
+        if temperature is None:
+            temperature = self.get_temperature(n=n)
         if is_multiple_completion_supported(self.langchain_llm):
             return await self.langchain_llm.agenerate_prompt(
                 prompts=[prompt],
