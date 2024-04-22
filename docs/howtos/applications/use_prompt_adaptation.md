@@ -106,7 +106,7 @@ git clone https://huggingface.co/datasets/explodinggradients/hindi-wikipedia
 Now you can load the documents using a document loader, here I am using `DirectoryLoader`
 
 ```{code-block} python
-from langchain.document_loaders import DirectoryLoader
+from langchain_community.document_loaders import DirectoryLoader
 
 loader = DirectoryLoader("./hindi-wikipedia/")
 documents = loader.load()
