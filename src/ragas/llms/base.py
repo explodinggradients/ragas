@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
 
-from langchain_community.chat_models import ChatVertexAI
+from langchain_community.chat_models.vertexai import ChatVertexAI
 from langchain_community.llms import VertexAI
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import LLMResult
