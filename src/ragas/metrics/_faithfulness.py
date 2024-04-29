@@ -9,15 +9,22 @@ import numpy as np
 from langchain_core.pydantic_v1 import BaseModel, Field
 from pysbd import Segmenter
 
-from ragas.llms.ensembler import ensembler
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.metrics.base import EvaluationMode, MetricWithLLM, ensembler
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
     from ragas.llms.prompt import PromptValue
+
+from typing import Any, Protocol
+
+
+class HasSegmentMethod(Protocol):
+    def segment(self, text) -> Any:
+        ...
+
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +173,7 @@ class Faithfulness(MetricWithLLM):
         default_factory=lambda: NLI_STATEMENTS_MESSAGE
     )
     statement_prompt: Prompt = field(default_factory=lambda: LONG_FORM_ANSWER_PROMPT)
-    sentence_segmenter: t.Optional[t.Callable] = None
+    sentence_segmenter: t.Optional[HasSegmentMethod] = None
     max_retries: int = 1
     reproducibility: int = 1
 
@@ -188,6 +195,8 @@ class Faithfulness(MetricWithLLM):
         return prompt_value
 
     def _create_statements_prompt(self, row: t.Dict) -> PromptValue:
+        assert self.sentence_segmenter is not None, "sentence_segmenter is not set"
+
         text, question = row["answer"], row["question"]
         sentences = self.sentence_segmenter.segment(text)
         sentences = [
@@ -230,6 +239,8 @@ class Faithfulness(MetricWithLLM):
         statements = await _statements_output_parser.aparse(
             statements.generations[0][0].text, p_value, self.llm, self.max_retries
         )
+
+        assert isinstance(statements, t.List), "statements must be a list"
 
         p_value = self._create_nli_prompt(row, statements)
         nli_result = await self.llm.generate(
