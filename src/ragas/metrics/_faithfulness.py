@@ -9,6 +9,7 @@ import numpy as np
 from langchain_core.pydantic_v1 import BaseModel, Field
 from pysbd import Segmenter
 
+from ragas.llms.ensembler import ensembler
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM, ensembler
