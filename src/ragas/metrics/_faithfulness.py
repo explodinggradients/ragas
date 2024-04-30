@@ -250,10 +250,7 @@ class Faithfulness(MetricWithLLM):
             statements.generations[0][0].text, p_value, self.llm, self.max_retries
         )
 
-        if statements is None:
-            return np.nan
-
-        statements = [item["simpler_statements"] for item in statements.dicts()]
+        statements = [item['simpler_statements'] for item in statements.dicts()]
         statements = [item for sublist in statements for item in sublist]
 
         assert isinstance(statements, t.List), "statements must be a list"

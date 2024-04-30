@@ -158,6 +158,7 @@ class MetricWithEmbeddings(Metric):
             )
         self.embeddings.set_run_config(run_config)
 
+
 class Ensember:
     def from_discrete(self, inputs: list[list[t.Dict]], attribute: str):
         assert all(
