@@ -158,17 +158,8 @@ class MetricWithEmbeddings(Metric):
             )
         self.embeddings.set_run_config(run_config)
 
-
 class Ensember:
-    """
-    Combine multiple llm outputs for same input (n>1) to a single output
-    """
-
     def from_discrete(self, inputs: list[list[t.Dict]], attribute: str):
-        """
-        Simple majority voting for binary values, ie [0,0,1] -> 0
-        inputs: list of list of dicts each containing verdict for a single input
-        """
         assert all(
             len(item) == len(inputs[0]) for item in inputs
         ), "all inputs must have the same length"
