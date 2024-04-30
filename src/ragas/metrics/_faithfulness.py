@@ -88,7 +88,6 @@ LONG_FORM_ANSWER_PROMPT = Prompt(
 class StatementFaithfulnessAnswer(BaseModel):
     statement: str = Field(..., description="the original statement, word-by-word")
     reason: str = Field(..., description="the reason of the verdict")
-    inference_level: int = Field(..., description="the level of inference")
     verdict: int = Field(..., description="the verdict(0/1) of the faithfulness.")
 
 
@@ -240,6 +239,9 @@ class Faithfulness(MetricWithLLM):
             statements.generations[0][0].text, p_value, self.llm, self.max_retries
         )
 
+        statements = [item['simpler_statements'] for item in statements.dicts()]
+        statements = [item for sublist in statements for item in sublist]
+        
         assert isinstance(statements, t.List), "statements must be a list"
 
         p_value = self._create_nli_prompt(row, statements)
