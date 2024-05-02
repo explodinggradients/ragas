@@ -223,7 +223,12 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
                 self.llm,
                 self.max_retries,
             )
-            statements[item] = statements[item].dicts()
+            statements[item] = (
+                statements[item].dicts() if statements[item] is not None else []
+            )
+
+        if any(val is [] for val in statements.values()):
+            return np.nan
 
         p_value = self.correctness_prompt.format(
             question=question,
