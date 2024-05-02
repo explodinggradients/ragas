@@ -208,9 +208,9 @@ class Evolution:
             )
         else:
             selected_nodes = [
-                current_nodes.nodes[i - 1]
+                current_nodes.nodes[int(i) - 1]
                 for i in relevant_context_indices
-                if i - 1 < len(current_nodes.nodes)
+                if int(i) - 1 < len(current_nodes.nodes)
             ]
             relevant_context = (
                 CurrentNodes(root_node=selected_nodes[0], nodes=selected_nodes)
