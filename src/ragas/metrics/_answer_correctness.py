@@ -6,12 +6,14 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel
+from pysbd import Segmenter
 
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt, PromptValue
 from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics._faithfulness import (
     LONG_FORM_ANSWER_PROMPT,
+    HasSegmentMethod,
     _statements_output_parser,
 )
 from ragas.metrics.base import EvaluationMode, MetricWithEmbeddings, MetricWithLLM
@@ -159,6 +161,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
     )
     weights: list[float] = field(default_factory=lambda: [0.75, 0.25])
     answer_similarity: AnswerSimilarity | None = None
+    sentence_segmenter: t.Optional[HasSegmentMethod] = None
     max_retries: int = 1
 
     def __post_init__(self: t.Self):
@@ -170,6 +173,10 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
             raise ValueError("At least one weight must be non-zero")
         if not all([w >= 0 for w in self.weights]):
             raise ValueError("Weights must be non-negative")
+
+        if self.sentence_segmenter is None:
+            language = self.long_form_answer_prompt.language
+            self.sentence_segmenter = Segmenter(language=language, clean=False)
 
     def init(self, run_config: RunConfig):
         super().init(run_config)
@@ -187,10 +194,16 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
         score = tp / (tp + 0.5 * (fp + fn)) if tp > 0 else 0
         return score
 
-    def _create_statements_prompt(self, question: str, answer: str) -> PromptValue:
-        # extract statements from answer given the question
+    def _create_statements_prompt(self, question: str, text: str) -> PromptValue:
+        assert self.sentence_segmenter is not None, "sentence_segmenter is not set"
+
+        sentences = self.sentence_segmenter.segment(text)
+        sentences = [
+            sentence for sentence in sentences if sentence.strip().endswith(".")
+        ]
+        sentences = "\n".join([f"{i}:{x}" for i, x in enumerate(sentences)])
         prompt_value = self.long_form_answer_prompt.format(
-            question=question, answer=answer
+            question=question, answer=text, sentences=sentences
         )
         return prompt_value
 
@@ -210,7 +223,12 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
                 self.llm,
                 self.max_retries,
             )
-            statements[item] = statements[item].dicts()
+            statements[item] = (
+                statements[item].dicts() if statements[item] is not None else []
+            )
+
+        if any(val is [] for val in statements.values()):
+            return np.nan
 
         p_value = self.correctness_prompt.format(
             question=question,
