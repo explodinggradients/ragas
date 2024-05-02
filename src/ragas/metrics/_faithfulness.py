@@ -174,7 +174,18 @@ class Faithfulness(MetricWithLLM):
     statement_prompt: Prompt = field(default_factory=lambda: LONG_FORM_ANSWER_PROMPT)
     sentence_segmenter: t.Optional[HasSegmentMethod] = None
     max_retries: int = 1
-    reproducibility: int = 1
+    _reproducibility: int = 1
+
+    @property
+    def reproducibility(self):
+        return self._reproducibility
+
+    @reproducibility.setter
+    def reproducibility(self, value):
+        if value < 1:
+            logger.warning("reproducibility cannot be less than 1, setting to 1")
+            value = 1
+        self._reproducibility = value
 
     def __post_init__(self):
         if self.sentence_segmenter is None:
@@ -252,11 +263,11 @@ class Faithfulness(MetricWithLLM):
             p_value,
             callbacks=callbacks,
             is_async=is_async,
-            n=self.reproducibility,
+            n=self._reproducibility,
         )
 
         nli_result_text = [
-            nli_result.generations[0][i].text for i in range(self.reproducibility)
+            nli_result.generations[0][i].text for i in range(self._reproducibility)
         ]
         faithfulness_list = [
             await _faithfulness_output_parser.aparse(
