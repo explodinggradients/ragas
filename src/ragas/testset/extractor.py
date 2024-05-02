@@ -51,7 +51,7 @@ class KeyphraseExtractor(Extractor):
             results.generations[0][0].text.strip(), llm=self.llm, is_async=is_async
         )
         keyphrases = keyphrases if isinstance(keyphrases, dict) else {}
-        logger.debug("keyphrases: %s", keyphrases)
+        logger.debug("topics: %s", keyphrases)
         return keyphrases.get("keyphrases", [])
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
