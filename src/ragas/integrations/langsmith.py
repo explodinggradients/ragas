@@ -57,13 +57,15 @@ def upload_dataset(
     client = Client()
     try:
         # check if dataset exists
-        dataset = client.read_dataset(dataset_name=dataset_name)
+        langsmith_dataset: LangsmithDataset = client.read_dataset(
+            dataset_name=dataset_name
+        )
         raise ValueError(
-            f"Dataset {dataset_name} already exists in langsmith. [{dataset}]"
+            f"Dataset {dataset_name} already exists in langsmith. [{langsmith_dataset}]"
         )
     except LangSmithNotFoundError:
         # if not create a new one with the generated query examples
-        dataset = client.upload_dataframe(
+        langsmith_dataset: LangsmithDataset = client.upload_dataframe(
             df=dataset.to_pandas(),
             name=dataset_name,
             input_keys=["question"],
@@ -72,9 +74,9 @@ def upload_dataset(
         )
 
         print(
-            f"Created a new dataset '{dataset.name}'. Dataset is accessible at {dataset.url}"
+            f"Created a new dataset '{langsmith_dataset.name}'. Dataset is accessible at {langsmith_dataset.url}"
         )
-        return dataset
+        return langsmith_dataset
 
 
 def evaluate(
