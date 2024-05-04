@@ -91,8 +91,8 @@ conditional_question_prompt = Prompt(
 
 compress_question_prompt = Prompt(
     name="compress_question",
-    instruction="""Rewrite the following question to make it more indirect and shorter while retaining the essence of the original question.
-    The goal is to create a question that conveys the same meaning but in a less direct manner. The rewritten question should shorter so use abbreviation wherever possible.""",
+    instruction="""Rewrite the following question to make it more indirect and shorter while retaining full essence of the original question so the same answer satisfies both questions.
+    The goal is to create a question that conveys the same meaning but in a less direct manner. The rewritten question should be concise so use shorter forms and words wherever possible.""",
     examples=[
         {
             "question": "What is the distance between the Earth and the Moon?",
@@ -171,11 +171,11 @@ question_answer_prompt = Prompt(
 
 keyphrase_extraction_prompt = Prompt(
     name="keyphrase_extraction",
-    instruction="Extract the top 3 to 5 keyphrases from the provided text, focusing on the most significant and distinctive aspects. ",
+    instruction="Extract the most important 3 to 5 general key-phrases to summarise the content value of 'Your actual INPUT'. Provide just single output response strictly in valid JSON format that follows examples structure. No any other output is allowed.",
     examples=[
         {
             "text": "A black hole is a region of spacetime where gravity is so strong that nothing, including light and other electromagnetic waves, has enough energy to escape it. The theory of general relativity predicts that a sufficiently compact mass can deform spacetime to form a black hole.",
-            "output": {
+            "json_output": {
                 "keyphrases": [
                     "Black hole",
                     "Region of spacetime",
@@ -187,7 +187,7 @@ keyphrase_extraction_prompt = Prompt(
         },
         {
             "text": "The Great Wall of China is an ancient series of walls and fortifications located in northern China, built around 500 years ago. This immense wall stretches over 13,000 miles and is a testament to the skill and persistence of ancient Chinese engineers.",
-            "output": {
+            "json_output": {
                 "keyphrases": [
                     "Great Wall of China",
                     "Ancient fortifications",
@@ -197,14 +197,14 @@ keyphrase_extraction_prompt = Prompt(
         },
     ],
     input_keys=["text"],
-    output_key="output",
+    output_key="json_output",
     output_type="json",
 )
 
 
 seed_question_prompt = Prompt(
     name="seed_question",
-    instruction="Generate a question that can be fully answered from given context. The question should be formed using topic",
+    instruction="Generate a question that can be fully answered referring to the given context. The question should be formed using specific topic.",
     examples=[
         {
             "context": "Photosynthesis in plants involves converting light energy into chemical energy, using chlorophyll and other pigments to absorb light. This process is crucial for plant growth and the production of oxygen.",
@@ -274,11 +274,11 @@ find_relevant_context_prompt = Prompt(
         {
             "question": "How does caffeine affect the body and what are its common sources?",
             "contexts": [
-                "1. Caffeine is a central nervous system stimulant. It can temporarily ward off drowsiness and restore alertness. It primarily affects the brain, where it alters the function of neurotransmitters.",
-                "2. Regular physical activity is essential for maintaining good health. It can help control weight, combat health conditions, boost energy, and promote better sleep.",
-                "3. Common sources of caffeine include coffee, tea, cola, and energy drinks. These beverages are consumed worldwide and are known for providing a quick boost of energy.",
+                "1. Regular physical activity is essential for maintaining good health. It can help control weight, combat health conditions, boost energy, and promote better sleep.",
+                "2. Common sources of caffeine include coffee, tea, cola, and energy drinks. These beverages are consumed worldwide and are known for providing a quick boost of energy.",
+                "3. Caffeine is a central nervous system stimulant. It can temporarily ward off drowsiness and restore alertness. It primarily affects the brain, where it alters the function of neurotransmitters.",
             ],
-            "output": {"relevant_contexts": [1, 2]},
+            "output": {"relevant_contexts": [2, 3]},
         },
     ],
     input_keys=["question", "contexts"],
@@ -442,6 +442,7 @@ evolution_elimination_prompt = Prompt(
     instruction="""Check if the given two questions are equal based on following requirements:
     1. They have same constraints and requirements.
     2. They have same depth and breadth of the inquiry.
+    3. They are mostly equivalent and so a correct answer should satisfy both questions. 
     Output verdict as 1 if they are equal and 0 if they are not""",
     output_format_instruction=get_json_format_instructions(EvolutionElimination),
     examples=[

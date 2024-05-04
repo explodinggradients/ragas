@@ -233,6 +233,9 @@ class Evolution:
             np.nan if answer.get("verdict") == "-1" else answer.get("answer", np.nan)
         )
 
+        if answer != answer:
+            logger.warning(f"answer is NaN for question: {question}")
+
         return DataRow(
             question=question.strip('"'),
             contexts=[n.page_content for n in relevant_context.nodes],

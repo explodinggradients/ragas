@@ -16,6 +16,8 @@ from langchain_openai.llms import AzureOpenAI, OpenAI
 from langchain_openai.llms.base import BaseOpenAI
 
 from ragas.run_config import RunConfig, add_async_retry, add_retry
+import re
+import traceback
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -84,6 +86,7 @@ class BaseRagasLLM(ABC):
         callbacks: Callbacks = None,
         is_async: bool = True,
     ) -> LLMResult:
+        # traceback.print_stack()
         """Generate text using the given event loop."""
         if is_async:
             agenerate_text_with_retry = add_async_retry(
@@ -161,18 +164,25 @@ class LangchainLLMWrapper(BaseRagasLLM):
         prompt: PromptValue,
         n: int = 1,
         temperature: float = 1e-8,
-        stop: t.Optional[t.List[str]] = None,
+        stop: t.Optional[t.List[str]] = None, #["<|eot_id|>"], #None,
         callbacks: Callbacks = None,
     ) -> LLMResult:
+        # traceback.print_stack()
+        logger.debug(f"Generating text with prompt: {str(prompt).encode('utf-8').decode('unicode_escape')}...")
+        stop = ["<|eot_id|>"]
+        # ["</s>", "[/INST]"] #
+        prompt.prompt_str =f"<human>: {prompt.prompt_str}\n<bot>:"
         temperature = self.get_temperature(n=n)
         if is_multiple_completion_supported(self.langchain_llm):
-            return await self.langchain_llm.agenerate_prompt(
+            response = await self.langchain_llm.agenerate_prompt(
                 prompts=[prompt],
                 n=n,
                 temperature=temperature,
                 stop=stop,
                 callbacks=callbacks,
             )
+            logger.debug(f"got result (m): {response.generations[0][0].text}")
+            return response
         else:
             result = await self.langchain_llm.agenerate_prompt(
                 prompts=[prompt] * n,
@@ -184,6 +194,13 @@ class LangchainLLMWrapper(BaseRagasLLM):
             # note that LLMResult.runs is still a list that represents each run
             generations = [[g[0] for g in result.generations]]
             result.generations = generations
+            if len(result.generations[0][0].text) > 0:
+                # while the <human>/<bot> tags improves answer quality, I observed sometimes the </bit> to leak into the response
+                result.generations[0][0].text = re.sub(r"</?bot>", '', result.generations[0][0].text)
+            logger.debug(f"got result: {result.generations[0][0].text}")
+            # todo configure on question?
+            if len(result.generations[0][0].text) < 24:
+                logger.warn(f"truncated response?: {result.generations}")
             return result
 
     def set_run_config(self, run_config: RunConfig):
