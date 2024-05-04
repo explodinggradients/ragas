@@ -9,7 +9,7 @@ from langchain_core.pydantic_v1 import BaseModel
 
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.metrics.base import EvaluationMode, MetricWithLLM, ensembler
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -123,6 +123,23 @@ class ContextRecall(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
     context_recall_prompt: Prompt = field(default_factory=lambda: CONTEXT_RECALL_RA)
     max_retries: int = 1
+    _reproducibility: int = 1
+
+    @property
+    def reproducibility(self):
+        return self._reproducibility
+
+    @reproducibility.setter
+    def reproducibility(self, value):
+        if value < 1:
+            logger.warning("reproducibility cannot be less than 1, setting to 1")
+            value = 1
+        self._reproducibility = value
+
+    def __post_init__(self) -> None:
+        if self.reproducibility < 1:
+            logger.warning("reproducibility cannot be less than 1, setting to 1")
+            self.reproducibility = 1
 
     def _create_context_recall_prompt(self, row: t.Dict) -> PromptValue:
         qstn, ctx, gt = row["question"], row["contexts"], row["ground_truth"]
@@ -144,18 +161,25 @@ class ContextRecall(MetricWithLLM):
     async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
         assert self.llm is not None, "set LLM before use"
         p_value = self._create_context_recall_prompt(row)
-        result = await self.llm.generate(
+        results = await self.llm.generate(
             p_value,
             callbacks=callbacks,
             is_async=is_async,
+            n=self.reproducibility,
         )
-        result_text = result.generations[0][0].text
+        results = [results.generations[0][i].text for i in range(self.reproducibility)]
 
-        answers = await _output_parser.aparse(
-            result_text, p_value, self.llm, self.max_retries
-        )
-        if answers is None:
+        answers = [
+            await _output_parser.aparse(text, p_value, self.llm, self.max_retries)
+            for text in results
+        ]
+
+        answers = [answer.dicts() for answer in answers if answer is not None]
+        if all(answer is None for answer in answers):
             return np.nan
+
+        answers = ensembler.from_discrete(answers, "attributed")
+        answers = ContextRecallClassificationAnswers.parse_obj(answers)
 
         return self._compute_score(answers)
 
