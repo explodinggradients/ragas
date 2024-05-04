@@ -9,7 +9,7 @@ Maintaining the quality and performance of a RAG application in a production env
 
 :::{note}
 We are still developing and gathering feedback for upcoming releases. You can request 
-[**early access**](https://calendly.com/shahules/30min) to try it out or share the challenges you face in this area. We would love to hear your thoughts and challenges.
+[**early access**](https://cal.com/shahul-ragas/30min) to try it out or share the challenges you face in this area. We would love to hear your thoughts and challenges.
 :::
 
 In addition, you can use the RAG metrics with other LLM observability tools like:
@@ -27,4 +27,4 @@ These tools can provide model-based feedback about various aspects of your appli
 2. Bad Retrieval: This feature helps identify and quantify poor context retrievals.
 3. Bad Response: This feature assists in recognizing and quantifying evasive, harmful, or toxic responses.
 4. Bad Format: This feature enables the detection and quantification of responses with incorrect formatting.
-5. Custom Use-Case: For monitoring other critical aspects that are specific to your use-case, [Talk to the founders](https://calendly.com/shahules/30min).
+5. Custom Use-Case: For monitoring other critical aspects that are specific to your use-case, [Talk to the founders](https://cal.com/shahul-ragas/30min).

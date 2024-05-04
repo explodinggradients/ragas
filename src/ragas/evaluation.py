@@ -43,7 +43,7 @@ def evaluate(
     llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
     callbacks: Callbacks = None,
-    is_async: bool = False,
+    is_async: bool = True,
     run_config: t.Optional[RunConfig] = None,
     raise_exceptions: bool = True,
     column_map: t.Optional[t.Dict[str, str]] = None,
