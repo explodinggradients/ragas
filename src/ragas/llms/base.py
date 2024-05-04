@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
 
-from langchain_community.chat_models import ChatVertexAI
+from langchain_community.chat_models.vertexai import ChatVertexAI
 from langchain_community.llms import VertexAI
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import LLMResult
@@ -63,8 +63,7 @@ class BaseRagasLLM(ABC):
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
-    ) -> LLMResult:
-        ...
+    ) -> LLMResult: ...
 
     @abstractmethod
     async def agenerate_text(
@@ -74,8 +73,7 @@ class BaseRagasLLM(ABC):
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
-    ) -> LLMResult:
-        ...
+    ) -> LLMResult: ...
 
     async def generate(
         self,

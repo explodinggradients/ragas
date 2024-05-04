@@ -1,0 +1,49 @@
+name: Issue Manager
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  issue_comment:
+    types:
+      - created
+      - edited
+  issues:
+    types:
+      - labeled
+  pull_request_target:
+    types:
+      - labeled
+  workflow_dispatch:
+
+jobs:
+  issue-manager:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: tiangolo/issue-manager@0.4.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config: >
+            {
+                "$schema": "https://raw.githubusercontent.com/tiangolo/issue-manager/master/schema.json",
+                "answered": {
+                    "delay": "P3DT12H30M5S",
+                    "message": "It seems the issue was answered, closing this now.",
+                    "remove_label_on_comment": false,
+                    "remove_label_on_close": false
+                },
+                "validated": {
+                    "delay": 300,
+                    "message": "The issue could not be validated after 5 minutes. Closing now.",
+                    "remove_label_on_comment": true,
+                    "remove_label_on_close": false
+                },
+                "waiting": {
+                    "delay": 691200,
+                    "message": "Closing after 8 days of waiting for the additional info requested.",
+                    "remove_label_on_comment": true,
+                    "remove_label_on_close": true
+                }
+            }
