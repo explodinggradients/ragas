@@ -10,7 +10,7 @@ from langchain.pydantic_v1 import BaseModel, Field
 
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt, PromptValue
-from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.metrics.base import EvaluationMode, MetricWithLLM, ensembler
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -90,6 +90,18 @@ class ContextPrecision(MetricWithLLM):
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
     context_precision_prompt: Prompt = field(default_factory=lambda: CONTEXT_PRECISION)
     max_retries: int = 1
+    _reproducibility: int = 1
+
+    @property
+    def reproducibility(self):
+        return self._reproducibility
+
+    @reproducibility.setter
+    def reproducibility(self, value):
+        if value < 1:
+            logger.warning("reproducibility cannot be less than 1, setting to 1")
+            value = 1
+        self._reproducibility = value
 
     def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:
         answer = "ground_truth"
@@ -141,23 +153,29 @@ class ContextPrecision(MetricWithLLM):
         human_prompts = self._context_precision_prompt(row)
         responses = []
         for hp in human_prompts:
-            result = await self.llm.generate(
+            results = await self.llm.generate(
                 hp,
-                n=1,
                 callbacks=callbacks,
                 is_async=is_async,
+                n=self.reproducibility,
             )
-            responses.append([result.generations[0][0].text, hp])
+            results = [
+                await _output_parser.aparse(item.text, hp, self.llm, self.max_retries)
+                for item in results.generations[0]
+            ]
 
-        items = [
-            await _output_parser.aparse(item, hp, self.llm, self.max_retries)
-            for item, hp in responses
-        ]
-        if any(item is None for item in items):
-            return np.nan
+            responses.append(
+                [result.dict() for result in results if result is not None]
+            )
 
-        items = [item for item in items if item is not None]
-        answers = ContextPrecisionVerifications(__root__=items)
+        answers = []
+        for response in responses:
+            agg_answer = ensembler.from_discrete([response], "verdict")
+            if agg_answer:
+                agg_answer = ContextPrecisionVerification.parse_obj(agg_answer[0])
+            answers.append(agg_answer)
+
+        answers = ContextPrecisionVerifications(__root__=answers)
         score = self._calculate_average_precision(answers.__root__)
         return score
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import typing as t
 from abc import ABC, abstractmethod
+from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
 
@@ -156,3 +157,38 @@ class MetricWithEmbeddings(Metric):
                 f"Metric '{self.name}' has no valid embeddings provided (self.embeddings is None). Please initantiate a the metric with an embeddings to run."  # noqa
             )
         self.embeddings.set_run_config(run_config)
+
+
+class Ensember:
+    """
+    Combine multiple llm outputs for same input (n>1) to a single output
+    """
+
+    def from_discrete(self, inputs: list[list[t.Dict]], attribute: str):
+        """
+        Simple majority voting for binary values, ie [0,0,1] -> 0
+        inputs: list of list of dicts each containing verdict for a single input
+        """
+        assert all(
+            len(item) == len(inputs[0]) for item in inputs
+        ), "all inputs must have the same length"
+
+        assert all(
+            attribute in item for input in inputs for item in input
+        ), "attribute not found in all items"
+
+        if len(inputs) == 1:
+            return inputs[0]
+
+        verdict_agg = []
+        for i in range(len(inputs[0])):
+            item = inputs[0][i]
+            verdicts = [inputs[k][i][attribute] for k in range(len(inputs))]
+            verdict_counts = dict(Counter(verdicts).most_common())
+            item[attribute] = list(verdict_counts.keys())[0]
+            verdict_agg.append(item)
+
+        return verdict_agg
+
+
+ensembler = Ensember()
