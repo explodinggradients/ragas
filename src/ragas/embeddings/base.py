@@ -14,10 +14,7 @@ from pydantic.dataclasses import dataclass
 from ragas.run_config import RunConfig, add_async_retry, add_retry
 import logging
 
-# logging.basicConfig(level=logging.DEBUG)
-
 DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
-
 
 
 class BaseRagasEmbeddings(Embeddings, ABC):
