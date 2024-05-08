@@ -97,19 +97,13 @@ class TestsetGenerator:
                 extractor=keyphrase_extractor,
                 run_config=run_config,
             )
-            return cls(
-                generator_llm=generator_llm_model,
-                critic_llm=critic_llm_model,
-                embeddings=embeddings_model,
-                docstore=docstore,
-            )
-        else:
-            return cls(
-                generator_llm=generator_llm_model,
-                critic_llm=critic_llm_model,
-                embeddings=embeddings_model,
-                docstore=docstore,
-            )
+        return cls(
+            generator_llm=generator_llm_model,
+            critic_llm=critic_llm_model,
+            embeddings=embeddings_model,
+            docstore=docstore,
+        )
+
 
     @classmethod
     @deprecated("0.1.4", removal="0.2.0", alternative="from_langchain")
