@@ -160,7 +160,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
         default_factory=lambda: LONG_FORM_ANSWER_PROMPT
     )
     weights: list[float] = field(default_factory=lambda: [0.75, 0.25])
-    answer_similarity: AnswerSimilarity | None = None
+    answer_similarity: t.Optional[AnswerSimilarity] = None
     sentence_segmenter: t.Optional[HasSegmentMethod] = None
     max_retries: int = 1
 
