@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel
-from pysbd import Segmenter
 
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt, PromptValue
@@ -16,7 +15,12 @@ from ragas.metrics._faithfulness import (
     HasSegmentMethod,
     _statements_output_parser,
 )
-from ragas.metrics.base import EvaluationMode, MetricWithEmbeddings, MetricWithLLM
+from ragas.metrics.base import (
+    EvaluationMode,
+    MetricWithEmbeddings,
+    MetricWithLLM,
+    get_segmenter,
+)
 from ragas.run_config import RunConfig
 
 if t.TYPE_CHECKING:
@@ -176,7 +180,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
 
         if self.sentence_segmenter is None:
             language = self.long_form_answer_prompt.language
-            self.sentence_segmenter = Segmenter(language=language, clean=False)
+            self.sentence_segmenter = get_segmenter(language=language, clean=False)
 
     def init(self, run_config: RunConfig):
         super().init(run_config)

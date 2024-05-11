@@ -23,6 +23,10 @@ if t.TYPE_CHECKING:
     from ragas.embeddings import BaseRagasEmbeddings
     from ragas.llms import BaseRagasLLM
 
+from pysbd import Segmenter
+from pysbd.languages import LANGUAGE_CODES
+
+LANGUAGE_CODES = {v.__name__.lower(): k for k, v in LANGUAGE_CODES.items()}
 
 EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg")
 
@@ -191,5 +195,20 @@ class Ensember:
         return verdict_agg
 
 
-ensembler = Ensember()
+def get_segmenter(
+    language: str = "english", clean: bool = False, char_span: bool = False
+):
+    """
+    Get a sentence segmenter for a given language
+    """
+    language = language.lower()
+    if language not in LANGUAGE_CODES:
+        raise ValueError(
+            f"Language '{language}' not supported. Supported languages: {LANGUAGE_CODES.keys()}"
+        )
+    return Segmenter(
+        language=LANGUAGE_CODES[language], clean=clean, char_span=char_span
+    )
 
+
+ensembler = Ensember()

@@ -7,11 +7,10 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel, Field
-from pysbd import Segmenter
 
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM, ensembler
+from ragas.metrics.base import EvaluationMode, MetricWithLLM, ensembler, get_segmenter
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -81,7 +80,7 @@ LONG_FORM_ANSWER_PROMPT = Prompt(
     ],
     input_keys=["question", "answer", "sentences"],
     output_key="analysis",
-    language="en",
+    language="english",
 )
 
 
@@ -160,7 +159,7 @@ NLI_STATEMENTS_MESSAGE = Prompt(
     input_keys=["context", "statements"],
     output_key="answer",
     output_type="json",
-    language="en",
+    language="english",
 )  # noqa: E501
 
 
@@ -190,7 +189,7 @@ class Faithfulness(MetricWithLLM):
     def __post_init__(self):
         if self.sentence_segmenter is None:
             language = self.nli_statements_message.language
-            self.sentence_segmenter = Segmenter(language=language, clean=False)
+            self.sentence_segmenter = get_segmenter(language=language, clean=False)
 
     def _create_nli_prompt(self, row: t.Dict, statements: t.List[str]) -> PromptValue:
         assert self.llm is not None, "llm must be set to compute score"
