@@ -23,8 +23,10 @@ def adapt(
         llm_wraper = llm_factory()
     elif isinstance(llm, BaseLanguageModel):
         llm_wraper = LangchainLLMWrapper(llm)
+    elif isinstance(llm, LangchainLLMWrapper):
+        llm_wraper = llm
     else:
-        raise ValueError("llm must be either None or a BaseLanguageModel")
+        raise ValueError("llm must be either None or a BaseLanguageModel or a LangchainLLMWrapper")
 
     for metric in metrics:
         metric_llm = metric.llm
