@@ -90,7 +90,7 @@ Refer to our [documentation](https://docs.ragas.io/) to learn more.
 
 ## 🫂 Community
 
-If you want to get more involved with Ragas, check out our [discord server](https://discord.gg/5djav8GGNZ). It's a fun community where we geek out about LLM, Retrieval, Production issues, and more.
+If you want to get more involved with Ragas, check out our [discord server](https://discord.gg/5qGUJ6mh7C). It's a fun community where we geek out about LLM, Retrieval, Production issues, and more.
 
 ## 🔍 Open Analytics
 
