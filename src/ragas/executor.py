@@ -74,18 +74,7 @@ class Runner(threading.Thread):
             # whether you want to keep the progress bar after completion
             leave=self.keep_progress_bar,
         ):
-            r = (-1, np.nan)
-            try:
-                r = await future
-            except MaxRetriesExceeded as e:
-                logger.warning(f"max retries exceeded for {e.evolution}")
-            except Exception as e:
-                if self.raise_exceptions:
-                    raise e
-                else:
-                    logger.error(
-                        "Runner in Executor raised an exception", exc_info=True
-                    )
+            r = await future
             results.append(r)
 
         return results
@@ -109,7 +98,20 @@ class Executor:
 
     def wrap_callable_with_index(self, callable: t.Callable, counter):
         async def wrapped_callable_async(*args, **kwargs):
-            return counter, await callable(*args, **kwargs)
+            result = np.nan
+            try:
+                result = await callable(*args, **kwargs)
+            except MaxRetriesExceeded as e:
+                logger.warning(f"max retries exceeded for {e.evolution}")
+            except Exception as e:
+                if self.raise_exceptions:
+                    raise e
+                else:
+                    logger.error(
+                        "Runner in Executor raised an exception", exc_info=True
+                    )
+
+            return counter, result
 
         return wrapped_callable_async
 
