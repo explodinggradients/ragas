@@ -269,9 +269,9 @@ class InMemoryDocumentStore(DocumentStore):
                 self.node_embeddings_list.append(n.embedding)
 
         self.calculate_nodes_docs_similarity()
-        self.set_node_relataionships()
+        self.set_node_relationships()
 
-    def set_node_relataionships(self):
+    def set_node_relationships(self):
         for i, node in enumerate(self.nodes):
             if i > 0:
                 prev_node = self.nodes[i - 1]
