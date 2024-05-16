@@ -47,6 +47,8 @@ def evaluate(
     run_config: t.Optional[RunConfig] = None,
     raise_exceptions: bool = True,
     column_map: t.Optional[t.Dict[str, str]] = None,
+    name: str = "ragas evaluation",
+    **kwargs,
 ) -> Result:
     """
     Run the evaluation on the dataset with different metrics
@@ -187,7 +189,7 @@ def evaluate(
     # new evaluation chain
     row_run_managers = []
     evaluation_rm, evaluation_group_cm = new_group(
-        name="ragas evaluation", inputs={}, callbacks=callbacks, is_async=is_async
+        name=name, inputs={}, callbacks=callbacks, is_async=is_async
     )
     for i, row in enumerate(dataset):
         row = t.cast(t.Dict[str, t.Any], row)
