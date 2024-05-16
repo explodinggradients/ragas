@@ -57,6 +57,10 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
         ground_truth = t.cast(str, row["ground_truth"])
         answer = t.cast(str, row["answer"])
 
+        # Handle embeddings for empty strings
+        ground_truth = ground_truth or " "
+        answer = answer or " "
+
         if self.is_cross_encoder and isinstance(self.embeddings, HuggingfaceEmbeddings):
             raise NotImplementedError(
                 "async score [ascore()] not implemented for HuggingFace embeddings"
