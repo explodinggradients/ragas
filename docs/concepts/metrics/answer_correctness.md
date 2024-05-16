@@ -51,7 +51,7 @@ Now, we can use the formula for the F1 score to quantify correctness based on th
 
 
 ```{math}
-\text{F1 Score} = {|\text{TP} \over {(|\text{TP}| + 0.5 \times (|\text{FP}| + |\text{FN}|))}}
+\text{F1 Score} = {|\text{TP}| \over {(|\text{TP}| + 0.5 \times (|\text{FP}| + |\text{FN}|))}}
 ```
 
 Next, we calculate the semantic similarity between the generated answer and the ground truth. Read more about it [here](./semantic_similarity.md).
