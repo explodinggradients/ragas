@@ -170,7 +170,7 @@ correctness = AspectCritique(
 )
 conciseness = AspectCritique(
     name="conciseness",
-    definition="Does the submission conveys information or ideas clearly and efficiently, without unnecessary or redundant details",  # noqa: E501
+    definition="Does the submission convey information or ideas clearly and efficiently, without unnecessary or redundant details?",  # noqa: E501
 )
 
 SUPPORTED_ASPECTS = [
