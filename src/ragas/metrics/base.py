@@ -8,6 +8,7 @@ G - ground_truth: ground truth answer
 from __future__ import annotations
 
 import asyncio
+import logging
 import typing as t
 from abc import ABC, abstractmethod
 from collections import Counter
@@ -23,6 +24,13 @@ if t.TYPE_CHECKING:
     from ragas.embeddings import BaseRagasEmbeddings
     from ragas.llms import BaseRagasLLM
 
+from pysbd import Segmenter
+from pysbd.languages import LANGUAGE_CODES
+
+logger = logging.getLogger(__name__)
+
+
+LANGUAGE_CODES = {v.__name__.lower(): k for k, v in LANGUAGE_CODES.items()}
 
 EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg")
 
@@ -168,13 +176,17 @@ class Ensember:
         Simple majority voting for binary values, ie [0,0,1] -> 0
         inputs: list of list of dicts each containing verdict for a single input
         """
-        assert all(
-            len(item) == len(inputs[0]) for item in inputs
-        ), "all inputs must have the same length"
 
-        assert all(
-            attribute in item for input in inputs for item in input
-        ), "attribute not found in all items"
+        if not isinstance(inputs, list):
+            inputs = [inputs]
+
+        if not all(len(item) == len(inputs[0]) for item in inputs):
+            logger.warning("All inputs must have the same length")
+            return inputs[0]
+
+        if not all(attribute in item for input in inputs for item in input):
+            logger.warning(f"All inputs must have {attribute} attribute")
+            return inputs[0]
 
         if len(inputs) == 1:
             return inputs[0]
@@ -190,8 +202,24 @@ class Ensember:
         return verdict_agg
 
 
-ensembler = Ensember()
+def get_segmenter(
+    language: str = "english", clean: bool = False, char_span: bool = False
+):
+    """
+    Get a sentence segmenter for a given language
+    """
+    language = language.lower()
+    if language not in LANGUAGE_CODES:
+        raise ValueError(
+            f"Language '{language}' not supported. Supported languages: {LANGUAGE_CODES.keys()}"
+        )
+    return Segmenter(
+        language=LANGUAGE_CODES[language], clean=clean, char_span=char_span
+    )
 
 
 def is_reproducable(metric: Metric) -> bool:
     return hasattr(metric, "_reproducibility")
+
+
+ensembler = Ensember()
