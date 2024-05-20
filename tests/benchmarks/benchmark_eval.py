@@ -34,7 +34,7 @@ metrics = [
 ]
 
 # os.environ["PYTHONASYNCIODEBUG"] = "1"
-IGNORE_THREADS = False
+IGNORE_THREADS = True
 IGNORE_ASYNCIO = False
 
 if __name__ == "__main__":
