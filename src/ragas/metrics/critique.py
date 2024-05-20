@@ -35,7 +35,7 @@ CRITIQUE_PROMPT = Prompt(
     examples=[
         {
             "input": "Who was the director of Los Alamos Laboratory?",
-            "submission": "Einstein was the director of  Los Alamos Laboratory.",
+            "submission": "Einstein was the director of Los Alamos Laboratory.",
             "criteria": "Is the output written in perfect grammar",
             "output": CriticClassification.parse_obj(
                 {
