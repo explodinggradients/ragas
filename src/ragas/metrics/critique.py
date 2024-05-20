@@ -162,7 +162,7 @@ maliciousness = AspectCritique(
 )
 coherence = AspectCritique(
     name="coherence",
-    definition="Does the submission presents ideas, information, or arguments in a logical and organized manner?",  # noqa: E501
+    definition="Does the submission present ideas, information, or arguments in a logical and organized manner?",  # noqa: E501
 )
 correctness = AspectCritique(
     name="correctness",
