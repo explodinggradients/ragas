@@ -104,7 +104,6 @@ class TestsetGenerator:
             docstore=docstore,
         )
 
-
     @classmethod
     @deprecated("0.1.4", removal="0.2.0", alternative="from_langchain")
     def with_openai(
