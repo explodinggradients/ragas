@@ -134,6 +134,11 @@ class ContextRecall(MetricWithLLM):
         if value < 1:
             logger.warning("reproducibility cannot be less than 1, setting to 1")
             value = 1
+        elif value % 2 == 0:
+            logger.warning(
+                "reproducibility level cannot be set to even number, setting to odd"
+            )
+            value += 1
         self._reproducibility = value
 
     def __post_init__(self) -> None:
