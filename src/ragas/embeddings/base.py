@@ -153,7 +153,9 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
         return predictions.tolist()
 
 
-def embedding_factory(run_config: t.Optional[RunConfig] = None) -> BaseRagasEmbeddings:
+def embedding_factory(
+    model: str = "text-embedding-3-small", run_config: t.Optional[RunConfig] = None
+) -> BaseRagasEmbeddings:
     openai_embeddings = OpenAIEmbeddings()
     if run_config is not None:
         openai_embeddings.request_timeout = run_config.timeout
