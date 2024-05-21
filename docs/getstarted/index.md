@@ -7,7 +7,6 @@
 install.md
 testset_generation.md
 evaluation.md
-ci.md
 monitoring.md
 :::
 
