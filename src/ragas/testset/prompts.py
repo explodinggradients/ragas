@@ -377,7 +377,7 @@ Structure your JSON output to reflect these criteria as keys with their correspo
 filter_question_prompt = Prompt(
     name="filter_question",
     instruction="""
-Asses the given question for clarity and answerability given enough domain knowledge, consider the following criteria:
+Assess the given question for clarity and answerability given enough domain knowledge, consider the following criteria:
 1.Independence: Can the question be understood and answered without needing additional context or access to external references not provided within the question itself? Questions should be self-contained, meaning they do not rely on specific documents, tables, or prior knowledge not shared within the question.
 2.Clear Intent: Is it clear what type of answer or information the question seeks? The question should convey its purpose without ambiguity, allowing for a direct and relevant response.
 Based on these criteria, assign a verdict of "1" if a question is specific, independent, and has a clear intent, making it understandable and answerable based on the details provided. Assign "0" if it fails to meet one or more of these criteria due to vagueness, reliance on external references, or ambiguity in intent.
