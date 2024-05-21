@@ -281,6 +281,7 @@ def evaluate(
             evaluation_mode="",
             num_rows=dataset.shape[0],
             language=metric_lang[0] if len(metric_lang) > 0 else "",
+            in_ci=in_ci,
         )
     )
     return result
