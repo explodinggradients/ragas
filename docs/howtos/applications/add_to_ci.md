@@ -76,7 +76,7 @@ now you can use `ragas_ci` to mark all the tests that are part of Ragas CI.
 ```{code-block} python
 :caption: tests/e2e/test_amnesty_e2e.py
 :linenos:
-:emphasize-added: 3
+:emphasize-added: 19
 import pytest
 from datasets import load_dataset
 
