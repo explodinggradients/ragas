@@ -35,7 +35,7 @@ Here is the output JSON schema:
 {schema}
 ```
 
-Do not return any preamble or explanations, return only a pure JSON string surrounded by triple backticks (```)."""
+Do not return any preamble or explanations, return only a pure JSON string surrounded by triple backticks (```). Please output your response in the demanded json format."""
 
 
 def get_json_format_instructions(pydantic_object: t.Type[TBaseModel]) -> str:
