@@ -58,7 +58,10 @@ class Runner(threading.Thread):
         self.run_config = run_config or RunConfig()
 
         # create task
-        self.loop = asyncio.new_event_loop()
+        try:
+            self.loop = asyncio.get_event_loop()
+        except RuntimeError:
+            self.loop = asyncio.new_event_loop()
         self.futures = as_completed(
             loop=self.loop,
             coros=[coro for coro, _ in self.jobs],
@@ -96,7 +99,6 @@ class Runner(threading.Thread):
             results = self.loop.run_until_complete(self._aresults())
         finally:
             self.results = results
-            self.loop.stop()
 
 
 @dataclass
