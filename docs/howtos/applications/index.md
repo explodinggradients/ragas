@@ -12,4 +12,5 @@ compare_llms
 custom_prompts
 use_prompt_adaptation
 tracing
+add_to_ci
 ```
