@@ -1,7 +1,7 @@
 import time
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from llama_index import download_loader
+from llama_index.core import download_loader
 
 from ragas.testset.evolutions import conditional, multi_context, reasoning, simple
 from ragas.testset.generator import TestsetGenerator
