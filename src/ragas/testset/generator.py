@@ -242,7 +242,7 @@ class TestsetGenerator:
         ]
         total_evolutions = 0
         for evolution, probability in distributions.items():
-            for i in sample(range(test_size),round(probability * test_size)):
+            for i in sample(range(test_size), round(probability * test_size)):
                 exec.submit(
                     evolution.evolve,
                     current_nodes[i],

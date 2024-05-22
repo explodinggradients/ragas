@@ -1,24 +1,17 @@
-import typing
 from uuid import UUID
 
-import pytest
 import pandas as pd
-from langsmith import Client
-
-
+import pytest
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import (
     Runnable,
     RunnableLambda,
-    RunnablePassthrough,
     RunnableParallel,
+    RunnablePassthrough,
 )
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.prompts import PromptTemplate
-
 from langchain_openai import ChatOpenAI
-
+from langsmith import Client
 
 client = Client()
 
@@ -110,8 +103,8 @@ def test_langsmith_evaluate(langsmith_dataset):
     # setup
     just_llm = llm_chain_factory()
 
-    from ragas.metrics import answer_correctness
     from ragas.integrations.langsmith import evaluate
+    from ragas.metrics import answer_correctness
 
     # evaluate just llms
     _ = evaluate(
