@@ -15,9 +15,16 @@ def pytest_configure(config):
     """
     configure pytest
     """
-    # adda
+    # Extra Pytest Markers
+    # add `ragas_ci`
     config.addinivalue_line(
-        "markers", "ragas_ci: Set of tests that will be run as part of Ragas CI"
+        "markers",
+        "ragas_ci: Set of tests that will be run as part of Ragas CI",
+    )
+    # add `e2e`
+    config.addinivalue_line(
+        "markers",
+        "e2e: End-to-End tests for Ragas",
     )
 
 
