@@ -37,6 +37,11 @@ Explore insightful articles, tutorials, and stories written by and for our commu
     - [RAG Evaluation: Necessity and Challenge](https://tech.beatrust.com/entry/2024/05/02/RAG_Evaluation%3A_Necessity_and_Challenge)
     - [RAG Evaluation : Computational Metrics in RAG and Calculation Methods in Ragas](https://tech.beatrust.com/entry/2024/05/02/RAG_Evaluation_%3A_Computational_Metrics_in_RAG_and_Calculation_Methods_in_Ragas)
     - [RAG Evaluation: Assessing the Usefulness of Ragas](https://tech.beatrust.com/entry/2024/05/02/RAG_Evaluation%3A_Assessing_the_Usefulness_of_Ragas)
+- [Atita Arora](https://www.linkedin.com/in/atitaarora/) writes about [Evaluating Retrieval Augmented Generation using RAGAS](https://superlinked.com/vectorhub/articles/retrieval-augmented-generation-eval-qdrant-ragas), an end-to-end tutorial on building RAG using [Qdrant](https://qdrant.tech/) and [Langchain](https://www.langchain.com/) and evaluating it with RAGAS. 
+  - *Bonus content* : Learn how to create an evaluation dataset that serves as a reference point for evaluating our RAG pipeline, Understand the RAGAS evaluation metrics and how to make sense of them and putting them in action to test a Naive RAG pipeline and measure its performance using RAGAS metrics. 
+  - *Code walkthrough* : https://github.com/qdrant/qdrant-rag-eval/tree/master/workshop-rag-eval-qdrant-ragas
+  - *Code walkthrough using [Deepset Haystack](https://haystack.deepset.ai/) and [Mixedbread.ai](https://www.mixedbread.ai/)* : https://github.com/qdrant/qdrant-rag-eval/tree/master/workshop-rag-eval-qdrant-ragas-haystack
+
 
 ## **📅 Events**
 
