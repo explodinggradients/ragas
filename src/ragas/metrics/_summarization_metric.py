@@ -142,11 +142,11 @@ class SummarizationMetric(MetricWithLLM):
     conciseness score.
     """
 
-    name: str = "summary_score"
+    name: str = "summary_score" # type: ignore
     n_questions: int = 5
     max_retries: int = 1
     length_penalty: bool = True
-    evaluation_mode: EvaluationMode = EvaluationMode.ts
+    evaluation_mode: EvaluationMode = EvaluationMode.ts # type: ignore
     question_generation_prompt: Prompt = field(default_factory=lambda: TEXT_GENERATE_QUESTIONS)
     answer_generation_prompt: Prompt = field(default_factory=lambda: TEXT_GENERATE_ANSWERS)
 
@@ -174,7 +174,7 @@ class SummarizationMetric(MetricWithLLM):
             return (qa_score + conciseness_score)/2
         return qa_score
     
-    def _compute_qa_score(self, answers: t.Dict) -> float:
+    def _compute_qa_score(self, answers: t.List) -> float:
         """Returns a score between 0 and 1 reflecting the fraction of
         correct answers, ie with a value 'yes'
         """
