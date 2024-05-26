@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 LANGUAGE_CODES = {v.__name__.lower(): k for k, v in LANGUAGE_CODES.items()}
 
-EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg")
+EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg ts")
 
 
 def get_required_columns(
@@ -52,6 +52,8 @@ def get_required_columns(
         keys = ["question", "contexts", "answer", "ground_truth"]
     elif eval_mod == EvaluationMode.qcg:
         keys = ["question", "contexts", "ground_truth"]
+    elif eval_mod == EvaluationMode.ts:
+        keys = ["text", "summary"]
     ignore_columns = ignore_columns or []
 
     return [k for k in keys if k not in ignore_columns]
