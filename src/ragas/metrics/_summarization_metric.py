@@ -36,9 +36,9 @@ _output_parser_question_generation = RagasoutputParser(pydantic_object=GenerateQ
 _output_parser_answer_generation = RagasoutputParser(pydantic_object=GenerateAnswersResponse)
 
 GENERATE_QUESTION_INSTRUCTION = """\
-Based on the given text, generate "n" closed-ended questions that can be answered with either a 'yes' or 'no'. The questions generated should ALWAYS result in a 'yes' based on the given text.    
+Based on the given text, generate "n" closed-ended questions that can be answered with either a '1' if the question can be answered using the text, or '0' if it cannot be answered using the text. The questions generated should ALWAYS result in a '1' based on the given text.    
 ** IMPORTANT
-Only return a JSON with a 'questions' key, which is a list of strings. The questions have to be STRICTLY closed ended. The given text should be able to answer 'yes' for each question.
+Only return a JSON with a 'questions' key, which is a list of strings. The questions have to be STRICTLY closed ended. The given text should be able to answer '1' for each question.
 **
 """
 TEXT_GENERATE_QUESTIONS = Prompt(
@@ -85,7 +85,7 @@ TEXT_GENERATE_QUESTIONS = Prompt(
 
 
 GENERATE_ANSWER_INSTRUCTION = """\
-Based on the list of close-ended 'yes' or 'no' questions, generate a JSON with key 'answers', which is a list of strings that determines whether the provided summary contains sufficient information to answer EACH question. Answers should STRICTLY be either 'yes' or 'no'. Answer 'no' if the provided summary does not contain enough information to answer the question.
+Based on the list of close-ended '1' or '0' questions, generate a JSON with key 'answers', which is a list of strings that determines whether the provided summary contains sufficient information to answer EACH question. Answers should STRICTLY be either '1' or '0'. Answer '0' if the provided summary does not contain enough information to answer the question and answer '1' if the provided summary can answer the question.
 ** IMPORTANT 
 Please make sure to ONLY return in JSON format, with the 'answers' key as a list of strings. Only return the JSON with the 'answers' key. The length of 'answers' SHOULD BE STRICTLY EQUAL to that of questions.
 **
@@ -107,7 +107,7 @@ TEXT_GENERATE_ANSWERS = Prompt(
                 "Is JPMorgan Chase considered systemically important by the Financial Stability Board?",
                 "Is JPMorgan Chase headquartered in New York City?"
             ],
-            "answers": ["yes", "yes", "yes", "yes", "yes"]
+            "answers": ["1", "1", "1", "1", "1"]
         },
         {
             "summary": """Photosynthesis is the process by which green plants and certain organisms convert light energy into chemical energy, producing oxygen and organic compounds. Its importance is crucial as its cessation would lead to a lack of food and organic matter, and a near-absence of atmospheric oxygen. Photosynthesis from past ages has resulted in fossil fuels, which power modern society, but their rapid consumption is causing a rapid increase in carbon dioxide levels, with significant implications for Earth's climate.""",
@@ -120,7 +120,7 @@ TEXT_GENERATE_ANSWERS = Prompt(
                 "Is the energy produced by photosynthesis responsible for fossil fuels that power industrial society?",
                 "Is the carbon dioxide concentration in Earth’s atmosphere rising at the fastest rate in Earth’s history?"
             ],
-            "answers": ["yes", "yes", "no", "yes", "no", "yes", "yes"]
+            "answers": ["1", "1", "0", "1", "0", "1", "1"]
         }
     ]
 )
@@ -130,7 +130,7 @@ class SummarizationMetric(MetricWithLLM):
     """Given a text and its generated summary, calculates a score for 
     quantifying the quality of the summary. Currently we use the following method
     to quantify it:
-    - Given the original text, generate a set of 'yes'/'no' questions based on it.
+    - Given the original text, generate a set of 'yes'/'no'(1/0) questions based on it.
     - Ask those questions to the generated summary and find out how many of them
     are answered correctly.
     - Return the fraction of correctly answered questions as the score.
@@ -178,7 +178,7 @@ class SummarizationMetric(MetricWithLLM):
         """Returns a score between 0 and 1 reflecting the fraction of
         correct answers, ie with a value 'yes'
         """
-        correct = sum([1 for a in answers if a.lower() == "yes"])
+        correct = sum([1 for a in answers if a.lower() == "1"])
         return correct / len(answers)
     
     def _compute_conciseness_score(self, text, summary) -> float:
