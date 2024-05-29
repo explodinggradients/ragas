@@ -111,7 +111,7 @@ TEXT_GENERATE_ANSWERS = Prompt(
             "answers": ["1", "1", "1", "1", "1"]
         },
         {
-            "summary": """Photosynthesis is the process by which green plants and certain organisms convert light energy into chemical energy, producing oxygen and organic compounds. Its importance is crucial as its cessation would lead to a lack of food and organic matter, and a near-absence of atmospheric oxygen. Photosynthesis from past ages has resulted in fossil fuels, which power modern society, but their rapid consumption is causing a rapid increase in carbon dioxide levels, with significant implications for Earth's climate.""",
+            "summary": """Photosynthesis is the process by which green plants and certain organisms convert light energy into chemical energy, producing oxygen and organic compounds from water, carbon dioxide, and minerals. It is crucial for life on Earth, as its absence would result in a lack of food and oxygen, causing most organisms to disappear. Only chemosynthetic bacteria, which use chemical energy from inorganic compounds, would survive. Photosynthesis from millions of years ago created fossil fuels, essential for modern society, but their rapid consumption is increasing carbon dioxide levels at an unprecedented rate, significantly impacting Earth's climate.""",
             "questions": [
                 "Is photosynthesis the process by which green plants and certain other organisms transform light energy into chemical energy?",
                 "Would there be little food or other organic matter on Earth if photosynthesis ceased?",
