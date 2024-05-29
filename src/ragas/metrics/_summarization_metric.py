@@ -311,6 +311,58 @@ class SummarizationMetric(MetricWithLLM):
         """
         return 1-(len(summary) / len(text))
     
+    async def _compute_topic_distribution_score(self, text, summary, callbacks, is_async) -> float:
+        """Returns the topic distribution score of the summary. This is calculated as 
+        the Jensen-Shannon divergence between the topic distribution of the text and the summary.
+        """
+        from scipy.spatial.distance import jensenshannon
+        text_topics = await self._extract_topics(text, callbacks, is_async)
+        summary_topics = await self._link_summary_topics(summary, list(text_topics.keys()), callbacks, is_async)
+        text_topic_distribution = self._topic_distribution(text_topics)
+        summary_topic_distribution = self._topic_distribution(summary_topics)
+        return 1 - jensenshannon(text_topic_distribution, summary_topic_distribution)**2
+    
+    def _topic_distribution(self, topic_text_dict):
+        """Returns the distribution of topics in the text. This is calculated
+        as list of values where each value is the ratio of length of text associated 
+        with each topic to the total length of text.
+        """
+        total_len = 0
+        topic_distribution = []
+        for top, txt in topic_text_dict.items():
+            _l = len(txt)
+            total_len += _l
+            topic_distribution.append(_l)
+        return [l/total_len for l in topic_distribution]
+    
+    async def _extract_topics(self, text: str, callbacks: Callbacks, is_async: bool) -> t.List[str]:
+        assert self.llm is not None, "LLM is not initialized"
+        p_value = self._get_extract_topics_prompt(text)
+        result = await self.llm.generate(
+            prompt=p_value,
+            callbacks=callbacks,
+            is_async=is_async,
+        )
+        result_text = result.generations[0][0].text
+        answer = await _output_parser_topics_extraction.aparse(
+            result_text, p_value, self.llm, self.max_retries
+        )
+        return answer.topics
+    
+    async def _link_summary_topics(self, summary: str, topics: t.List[str], callbacks: Callbacks, is_async: bool) -> t.List[str]:
+        assert self.llm is not None, "LLM is not initialized"
+        p_value = self._get_link_topic_summary_prompt(summary, topics)
+        result = await self.llm.generate(
+            prompt=p_value,
+            callbacks=callbacks,
+            is_async=is_async,
+        )
+        result_text = result.generations[0][0].text
+        answer = await _output_parser_link_summary_topics.aparse(
+            result_text, p_value, self.llm, self.max_retries
+        )
+        return answer.summary_topics
+    
     async def _get_questions(self, text: str, callbacks: Callbacks, is_async: bool) -> t.List[str]:
         assert self.llm is not None, "LLM is not initialized"
         p_value = self._get_question_generation_prompt(text)
