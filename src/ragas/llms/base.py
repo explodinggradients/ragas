@@ -61,7 +61,8 @@ class BaseRagasLLM(ABC):
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
-    ) -> LLMResult: ...
+    ) -> LLMResult:
+        ...
 
     @abstractmethod
     async def agenerate_text(
@@ -71,7 +72,8 @@ class BaseRagasLLM(ABC):
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
-    ) -> LLMResult: ...
+    ) -> LLMResult:
+        ...
 
     async def generate(
         self,
@@ -202,7 +204,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
 
 
 def llm_factory(
-    model: str = "gpt-3.5-turbo-16k", run_config: t.Optional[RunConfig] = None
+    model: str = "gpt-3.5-turbo", run_config: t.Optional[RunConfig] = None
 ) -> BaseRagasLLM:
     timeout = None
     if run_config is not None:

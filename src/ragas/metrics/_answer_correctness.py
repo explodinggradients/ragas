@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel
-from pysbd import Segmenter
 
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt, PromptValue
@@ -16,7 +15,12 @@ from ragas.metrics._faithfulness import (
     HasSegmentMethod,
     _statements_output_parser,
 )
-from ragas.metrics.base import EvaluationMode, MetricWithEmbeddings, MetricWithLLM
+from ragas.metrics.base import (
+    EvaluationMode,
+    MetricWithEmbeddings,
+    MetricWithLLM,
+    get_segmenter,
+)
 from ragas.run_config import RunConfig
 
 if t.TYPE_CHECKING:
@@ -62,7 +66,7 @@ CORRECTNESS_PROMPT = Prompt(
                 "The sun's light plays a critical role in Earth's climate system.",
                 "Sunlight helps to drive the weather and ocean currents.",
             ],
-            "extracted_statements": AnswerCorrectnessClassification.parse_obj(
+            "classification": AnswerCorrectnessClassification.parse_obj(
                 {
                     "TP": [
                         {
@@ -110,7 +114,7 @@ CORRECTNESS_PROMPT = Prompt(
                 "The boiling point of water is 100 degrees Celsius (212 degrees Fahrenheit) at sea level.",
                 "The boiling point of water can change with altitude.",
             ],
-            "extracted_statements": AnswerCorrectnessClassification.parse_obj(
+            "classification": AnswerCorrectnessClassification.parse_obj(
                 {
                     "TP": [
                         {
@@ -130,7 +134,7 @@ CORRECTNESS_PROMPT = Prompt(
         },
     ],
     input_keys=["question", "answer", "ground_truth"],
-    output_key="extracted_statements",
+    output_key="classification",
     output_type="json",
 )
 
@@ -176,7 +180,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
 
         if self.sentence_segmenter is None:
             language = self.long_form_answer_prompt.language
-            self.sentence_segmenter = Segmenter(language=language, clean=False)
+            self.sentence_segmenter = get_segmenter(language=language, clean=False)
 
     def init(self, run_config: RunConfig):
         super().init(run_config)
@@ -227,26 +231,36 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
                 statements[item].dicts() if statements[item] is not None else []
             )
 
-        if any(val is [] for val in statements.values()):
-            return np.nan
+        if not all([val == [] for val in statements.values()]):
+            ground_truth = [
+                statement
+                for item in statements["ground_truth"]
+                for statement in item["simpler_statements"]
+            ]
+            answer = [
+                statement
+                for item in statements["answer"]
+                for statement in item["simpler_statements"]
+            ]
+            p_value = self.correctness_prompt.format(
+                question=question,
+                ground_truth=ground_truth,
+                answer=answer,
+            )
+            is_statement_present = await self.llm.generate(
+                p_value, callbacks=callbacks, is_async=is_async
+            )
+            result_text = is_statement_present.generations[0][0].text
 
-        p_value = self.correctness_prompt.format(
-            question=question,
-            ground_truth=statements["ground_truth"],
-            answer=statements["answer"],
-        )
-        is_statement_present = await self.llm.generate(
-            p_value, callbacks=callbacks, is_async=is_async
-        )
-        result_text = is_statement_present.generations[0][0].text
+            answers = await _output_parser.aparse(
+                result_text, p_value, self.llm, self.max_retries
+            )
+            if answers is None:
+                return np.nan
 
-        answers = await _output_parser.aparse(
-            result_text, p_value, self.llm, self.max_retries
-        )
-        if answers is None:
-            return np.nan
-
-        f1_score = self._compute_statement_presence(answers)
+            f1_score = self._compute_statement_presence(answers)
+        else:
+            f1_score = 1.0
 
         if self.weights[1] == 0:
             similarity_score = 0.0

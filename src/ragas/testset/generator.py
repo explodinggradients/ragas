@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import typing as t
 from dataclasses import dataclass
-from random import choices
+from random import choices, sample
 
 import pandas as pd
 from datasets import Dataset
@@ -103,7 +103,6 @@ class TestsetGenerator:
             embeddings=embeddings_model,
             docstore=docstore,
         )
-
 
     @classmethod
     @deprecated("0.1.4", removal="0.2.0", alternative="from_langchain")
@@ -243,7 +242,7 @@ class TestsetGenerator:
         ]
         total_evolutions = 0
         for evolution, probability in distributions.items():
-            for i in range(round(probability * test_size)):
+            for i in sample(range(test_size), round(probability * test_size)):
                 exec.submit(
                     evolution.evolve,
                     current_nodes[i],

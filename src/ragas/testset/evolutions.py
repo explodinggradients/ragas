@@ -202,7 +202,13 @@ class Evolution:
             if isinstance(relevant_contexts_result, dict)
             else None
         )
-        if relevant_context_indices is None:
+
+        if relevant_context_indices is not None:
+            relevant_context_indices = [
+                idx for idx in relevant_context_indices if isinstance(idx, int)
+            ]
+
+        if relevant_context_indices is None or not relevant_context_indices:
             relevant_context = CurrentNodes(
                 root_node=current_nodes.root_node, nodes=current_nodes.nodes
             )

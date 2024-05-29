@@ -20,7 +20,12 @@ from ragas.executor import Executor
 from ragas.llms import llm_factory
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics._answer_correctness import AnswerCorrectness
-from ragas.metrics.base import Metric, MetricWithEmbeddings, MetricWithLLM
+from ragas.metrics.base import (
+    Metric,
+    MetricWithEmbeddings,
+    MetricWithLLM,
+    is_reproducable,
+)
 from ragas.metrics.critique import AspectCritique
 from ragas.run_config import RunConfig
 from ragas.utils import get_feature_language
@@ -43,6 +48,7 @@ def evaluate(
     llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
     callbacks: Callbacks = None,
+    in_ci: bool = False,
     is_async: bool = True,
     run_config: t.Optional[RunConfig] = None,
     raise_exceptions: bool = True,
@@ -73,7 +79,11 @@ def evaluate(
         Lifecycle Langchain Callbacks to run during evaluation. Check the
         [langchain documentation](https://python.langchain.com/docs/modules/callbacks/)
         for more information.
-    is_async: bool, optional
+    in_ci: bool
+        Whether the evaluation is running in CI or not. If set to True then some
+        metrics will be run to increase the reproducability of the evaluations. This
+        will increase the runtime and cost of evaluations. Default is False.
+    is_async: bool
         Whether to run the evaluation in async mode or not. If set to True then the
         evaluation is run by calling the `metric.ascore` method. In case the llm or
         embeddings does not support async then the evaluation can be run in sync mode
@@ -158,9 +168,12 @@ def evaluate(
     binary_metrics = []
     llm_changed: t.List[int] = []
     embeddings_changed: t.List[int] = []
+    reproducable_metrics: t.List[int] = []
     answer_correctness_is_set = -1
 
+    # loop through the metrics and perform initializations
     for i, metric in enumerate(metrics):
+        # set llm and embeddings if not set
         if isinstance(metric, AspectCritique):
             binary_metrics.append(metric.name)
         if isinstance(metric, MetricWithLLM) and metric.llm is None:
@@ -176,9 +189,15 @@ def evaluate(
         if isinstance(metric, AnswerCorrectness):
             if metric.answer_similarity is None:
                 answer_correctness_is_set = i
+        # set reproducibility for metrics if in CI
+        if in_ci and is_reproducable(metric):
+            if metric.reproducibility == 1:  # type: ignore
+                # only set a value if not already set
+                metric.reproducibility = 3  # type: ignore
+                reproducable_metrics.append(i)
 
-    # initialize all the models in the metrics
-    [m.init(run_config) for m in metrics]
+        # init all the models
+        metric.init(run_config)
 
     executor = Executor(
         desc="Evaluating",
@@ -250,6 +269,9 @@ def evaluate(
                 AnswerCorrectness, metrics[answer_correctness_is_set]
             ).answer_similarity = None
 
+        for i in reproducable_metrics:
+            metrics[i].reproducibility = 1  # type: ignore
+
     # log the evaluation event
     metrics_names = [m.name for m in metrics]
     metric_lang = [get_feature_language(m) for m in metrics]
@@ -261,6 +283,7 @@ def evaluate(
             evaluation_mode="",
             num_rows=dataset.shape[0],
             language=metric_lang[0] if len(metric_lang) > 0 else "",
+            in_ci=in_ci,
         )
     )
     return result
