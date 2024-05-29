@@ -278,7 +278,7 @@ class SummarizationMetric(MetricWithLLM):
     
     def _get_link_topic_summary_prompt(self, summary, topics) -> PromptValue:
         return TEXT_LINK_SUMMARY_TOPICS.format(summary=summary, topics=topics)
-    
+        
     def _get_question_generation_prompt(self, text) -> PromptValue:
         return TEXT_GENERATE_QUESTIONS.format(text=text, n=self.n_questions)
     
@@ -290,17 +290,21 @@ class SummarizationMetric(MetricWithLLM):
         questions = await self._get_questions(text, callbacks, is_async)
         answers = await self._get_answers(questions, summary, callbacks, is_async)
 
+        scores = []
         qa_score = self._compute_qa_score(answers)
-        conciseness_score = self._compute_conciseness_score(text, summary)
-        return self._compute_score(qa_score, conciseness_score)
-    
-    def _compute_score(self, qa_score, conciseness_score) -> float:
-        """Returns the QA score if length_penalty is False else
-        returns the averaged score of the QA and conciseness scores.
-        """
+        scores.append(qa_score)
         if self.length_penalty:
-            return (qa_score + conciseness_score)/2
-        return qa_score
+            conciseness_score = self._compute_conciseness_score(text, summary)
+            scores.append(conciseness_score)
+        if self.consider_topic_distribution:
+            topic_distribution_score = await self._compute_topic_distribution_score(text, summary, callbacks, is_async)
+            scores.append(topic_distribution_score)
+        return self._compute_score(scores)
+    
+    def _compute_score(self, scores) -> float:
+        """Returns average score of the different scores.
+        """
+        return sum(scores)/len(scores)
     
     def _compute_qa_score(self, answers: t.List) -> float:
         """Returns a score between 0 and 1 reflecting the fraction of
