@@ -38,7 +38,8 @@ _output_parser_answer_generation = RagasoutputParser(pydantic_object=GenerateAns
 GENERATE_QUESTION_INSTRUCTION = """\
 Based on the given text, generate "n" closed-ended questions that can be answered with either a '1' if the question can be answered using the text, or '0' if it cannot be answered using the text. The questions generated should ALWAYS result in a '1' based on the given text.    
 ** IMPORTANT
-Only return a JSON with a 'questions' key, which is a list of strings. The questions have to be STRICTLY closed ended. The given text should be able to answer '1' for each question.
+1. Generate questions based on 'keyphrases', 'important topics', 'events', 'entities', 'concepts' etc in the text. Prioritize more important concepts or topics.
+2. Only return a JSON with a 'questions' key, which is a list of strings. The questions have to be STRICTLY closed ended. The given text should be able to answer '1' for each question.
 **
 """
 TEXT_GENERATE_QUESTIONS = Prompt(
