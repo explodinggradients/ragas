@@ -268,10 +268,16 @@ class SummarizationMetric(MetricWithLLM):
     n_questions: int = 5
     max_retries: int = 1
     length_penalty: bool = True
+    consider_topic_distribution: bool = True
     evaluation_mode: EvaluationMode = EvaluationMode.ts # type: ignore
     question_generation_prompt: Prompt = field(default_factory=lambda: TEXT_GENERATE_QUESTIONS)
     answer_generation_prompt: Prompt = field(default_factory=lambda: TEXT_GENERATE_ANSWERS)
 
+    def _get_extract_topics_prompt(self, text) -> PromptValue:
+        return TEXT_EXTRACTION_TOPICS.format(text=text)
+    
+    def _get_link_topic_summary_prompt(self, summary, topics) -> PromptValue:
+        return TEXT_LINK_SUMMARY_TOPICS.format(summary=summary, topics=topics)
     
     def _get_question_generation_prompt(self, text) -> PromptValue:
         return TEXT_GENERATE_QUESTIONS.format(text=text, n=self.n_questions)
