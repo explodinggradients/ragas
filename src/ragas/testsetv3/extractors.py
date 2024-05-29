@@ -3,6 +3,7 @@ import typing as t
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
+from langchain_core.documents import Document as LCDocument
 
 from ragas.llms.base import BaseRagasLLM, llm_factory
 from ragas.llms.json_load import json_loader
@@ -67,7 +68,8 @@ class Regex:
             raise TypeError("Group name must be a string.")
 
         # Add the named group to the pattern
-        return f"(?P<{self.name}>{self.pattern})"
+        return f"(?P<{self.name}>{self.pattern})" if self.name != "merged_extractor" else self.pattern
+
 
 
 class Extractor(ABC):
@@ -75,11 +77,10 @@ class Extractor(ABC):
     def extract(self, text) -> t.Any:
         pass
 
-    @classmethod
-    def merge_extractors(cls, *extractors):
+    @abstractmethod
+    def merge_extractors(self, *extractors):
         pass
-
-
+    
 @dataclass
 class RulebasedExtractor(Extractor):
     regex: Regex
@@ -87,17 +88,20 @@ class RulebasedExtractor(Extractor):
     def extract(self, text):
         matches = re.finditer(self.regex(), text)
         result = defaultdict(list)
-        for match in matches:
-            key, val = match.groupdict()
-            result[key].append(val)
-
+        for m in matches:
+            m = {k:v for k, v in m.groupdict().items() if v is not None}
+            for key in m:
+                result[key].append(m[key])
+            
         return result
 
-    @classmethod
-    def merge_extractor(cls, *extractors):
+    def merge_extractors(self, *extractors):  # Instance-level method
+        if isinstance(self, RulebasedExtractor):  # Check if called by an initiated class
+            extractors = (self,) + extractors
         pattern = "|".join([extractor.regex() for extractor in extractors])
         updated_regex = Regex(name="merged_extractor", pattern=pattern)
-        return cls(regex=updated_regex)
+        return RulebasedExtractor(regex=updated_regex)
+
 
 
 @dataclass
@@ -118,9 +122,12 @@ class LLMbasedExtractor(Extractor):
                 output, self.llm
             )
         else:
-            return output
-    @classmethod
-    def merge_extractors(cls, *extractors):
+            return {self.prompt.name: output}
+
+    def merge_extractors(self, *extractors):
+        
+        if isinstance(self, LLMbasedExtractor):
+            extractors = (self,) + extractors
         if not any(hasattr(extractor, "prompt") for extractor in extractors):
             raise ValueError("Both extractors should have a prompt attribute.")
 
@@ -158,19 +165,40 @@ class LLMbasedExtractor(Extractor):
             output_type="json",
         )
 
-        return cls(prompt=prompt)
+        return LLMbasedExtractor(prompt=prompt)
 
 
+@dataclass
+class DocumentExtractor():
+    extractors: t.List[Extractor]
+    
+    def __post_init__(self):
+        llm_extractor = [extractor for extractor in self.extractors if isinstance(extractor, LLMbasedExtractor)]
+        rule_extractor = [extractor for extractor in self.extractors if isinstance(extractor, RulebasedExtractor)]
+        self.llm_extractors = LLMbasedExtractor.merge_extractors(*llm_extractor) if llm_extractor else None
+        self.regex_extractors = RulebasedExtractor.merge_extractors(*rule_extractor) if rule_extractor else None
+        
+    async def __call__(self, documents: t.Sequence[LCDocument]):
+        
+        for doc in documents:
+            if self.llm_extractors:
+                output = await self.llm_extractors.extract(doc.page_content)
+                doc.metadata.update(output)
+            if self.regex_extractors:
+                output = self.regex_extractors.extract(doc.page_content)
+                doc.metadata.update(output)
+            
+        return documents
+    
+            
 summary_extractor = LLMbasedExtractor(prompt=summary_extactor_prompt)
 headline_extractor = LLMbasedExtractor(prompt=headline_extractor_prompt)
-merged_extractor = LLMbasedExtractor.merge_extractors(
-    summary_extractor, headline_extractor
-)
 
 email_extractor = RulebasedExtractor(
     Regex(name="email", pattern=emails_extractor_pattern)
 )
 link_extractor = RulebasedExtractor(Regex(name="link", pattern=links_extractor_pattern))
-merged_rule_extractor = RulebasedExtractor.merge_extractor(
-    email_extractor, link_extractor
-)
+
+
+if __name__ == "__main__":
+    doc_extractor = DocumentExtractor(extractors=[summary_extractor, link_extractor, headline_extractor])
