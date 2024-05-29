@@ -5,6 +5,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 from ragas.llms.base import BaseRagasLLM, llm_factory
+from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 
 RULE_BASED_EXTRACTORS = [
@@ -71,7 +72,7 @@ class Regex:
 
 class Extractor(ABC):
     @abstractmethod
-    def extract(self, text) -> t.Dict[t.Any, t.Any]:
+    def extract(self, text) -> t.Any:
         pass
 
     @classmethod
@@ -104,21 +105,20 @@ class LLMbasedExtractor(Extractor):
     prompt: Prompt
     llm: t.Optional[BaseRagasLLM] = None
 
-    def extract(self, text, is_asycn=True):
+    async def extract(self, text, is_asycn=True):
         if self.llm is None:
             self.llm = llm_factory()
 
-        output = self._extract_async(text, is_asycn=is_asycn)
-
-        return output.generations[0][0].text.strip()
-
-    async def _extract_async(self, text, is_asycn):
-        assert self.llm is not None, "LLM model is not initialized."
-
-        return await self.llm.generate(
+        output = await self.llm.generate(
             prompt=self.prompt.format(text=text), is_async=is_asycn
         )
-
+        output = output.generations[0][0].text.strip()
+        if self.prompt.output_type == "json":
+            return await json_loader.safe_load(
+                output, self.llm
+            )
+        else:
+            return output
     @classmethod
     def merge_extractors(cls, *extractors):
         if not any(hasattr(extractor, "prompt") for extractor in extractors):
