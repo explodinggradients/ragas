@@ -210,11 +210,13 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
     def __init__(
         self,
         llm: BaseLLM,
-        essential_kwargs_only: bool = False,
         run_config: t.Optional[RunConfig] = None,
     ):
         self.llm = llm
-        self.essential_kwargs_only = essential_kwargs_only
+
+        self._signature = ""
+        if type(self.llm).__name__.lower() == "bedrock":
+            self._signature = "bedrock"
         if run_config is None:
             run_config = RunConfig()
         self.set_run_config(run_config)
@@ -236,14 +238,13 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
             logger.info(
                 "callbacks not supported for LlamaIndex LLMs, ignoring callbacks"
             )
-        if self.essential_kwargs_only:
+        if self._signature == "bedrock":
             return {"temperature": temperature}
         else:
             return {
                 "n": n,
                 "temperature": temperature,
                 "stop": stop,
-                "callbacks": callbacks,
             }
 
     def generate_text(
