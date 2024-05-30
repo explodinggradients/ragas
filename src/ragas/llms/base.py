@@ -207,19 +207,25 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
     A Adaptor for LlamaIndex LLMs
     """
 
-    def __init__(self, llm: BaseLLM, run_config: t.Optional[RunConfig] = None):
+    def __init__(
+        self,
+        llm: BaseLLM,
+        essential_kwargs_only: bool = False,
+        run_config: t.Optional[RunConfig] = None,
+    ):
         self.llm = llm
+        self.essential_kwargs_only = essential_kwargs_only
         if run_config is None:
             run_config = RunConfig()
         self.set_run_config(run_config)
 
-    @staticmethod
     def check_args(
+        self,
         n: int,
         temperature: float,
         stop: t.Optional[t.List[str]],
         callbacks: Callbacks,
-    ):
+    ) -> dict[str, t.Any]:
         if n != 1:
             logger.warning("n values greater than 1 not support for LlamaIndex LLMs")
         if temperature != 1e-8:
@@ -230,6 +236,15 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
             logger.info(
                 "callbacks not supported for LlamaIndex LLMs, ignoring callbacks"
             )
+        if self.essential_kwargs_only:
+            return {"temperature": temperature}
+        else:
+            return {
+                "n": n,
+                "temperature": temperature,
+                "stop": stop,
+                "callbacks": callbacks,
+            }
 
     def generate_text(
         self,
@@ -239,10 +254,8 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ) -> LLMResult:
-        self.check_args(n, temperature, stop, callbacks)
-        li_response = self.llm.complete(
-            prompt.to_string(), n=n, temperature=temperature, stop=stop
-        )
+        kwargs = self.check_args(n, temperature, stop, callbacks)
+        li_response = self.llm.complete(prompt.to_string(), **kwargs)
 
         return LLMResult(generations=[[Generation(text=li_response.text)]])
 
@@ -254,10 +267,8 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ) -> LLMResult:
-        self.check_args(n, temperature, stop, callbacks)
-        li_response = await self.llm.acomplete(
-            prompt.to_string(), n=n, temperature=temperature, stop=stop
-        )
+        kwargs = self.check_args(n, temperature, stop, callbacks)
+        li_response = await self.llm.acomplete(prompt.to_string(), **kwargs)
 
         return LLMResult(generations=[[Generation(text=li_response.text)]])
 
