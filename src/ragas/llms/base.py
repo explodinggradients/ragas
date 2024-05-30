@@ -10,7 +10,7 @@ from functools import partial
 from langchain_community.chat_models.vertexai import ChatVertexAI
 from langchain_community.llms import VertexAI
 from langchain_core.language_models import BaseLanguageModel
-from langchain_core.outputs import LLMResult
+from langchain_core.outputs import LLMResult, Generation
 from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI
 from langchain_openai.llms import AzureOpenAI, OpenAI
 from langchain_openai.llms.base import BaseOpenAI
@@ -19,6 +19,7 @@ from ragas.run_config import RunConfig, add_async_retry, add_retry
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
+    from llama_index.core.base.llms.base import BaseLLM
 
     from ragas.llms.prompt import PromptValue
 
@@ -61,8 +62,7 @@ class BaseRagasLLM(ABC):
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
-    ) -> LLMResult:
-        ...
+    ) -> LLMResult: ...
 
     @abstractmethod
     async def agenerate_text(
@@ -72,8 +72,7 @@ class BaseRagasLLM(ABC):
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
-    ) -> LLMResult:
-        ...
+    ) -> LLMResult: ...
 
     async def generate(
         self,
@@ -201,6 +200,66 @@ class LangchainLLMWrapper(BaseRagasLLM):
                 )
             self.langchain_llm.request_timeout = run_config.timeout
             self.run_config.exception_types = RateLimitError
+
+
+class LlamaIndexLLMWrapper(BaseRagasLLM):
+    """
+    A Adaptor for LlamaIndex LLMs
+    """
+
+    def __init__(self, llm: BaseLLM, run_config: t.Optional[RunConfig] = None):
+        self.llm = llm
+        if run_config is None:
+            run_config = RunConfig()
+        self.set_run_config(run_config)
+
+    @staticmethod
+    def check_args(
+        n: int,
+        temperature: float,
+        stop: t.Optional[t.List[str]],
+        callbacks: Callbacks,
+    ):
+        if n != 1:
+            logger.warning("n values greater than 1 not support for LlamaIndex LLMs")
+        if temperature != 1e-8:
+            logger.info("temperature kwarg passed to LlamaIndex LLM")
+        if stop is not None:
+            logger.info("stop kwarg passed to LlamaIndex LLM")
+        if callbacks is not None:
+            logger.info(
+                "callbacks not supported for LlamaIndex LLMs, ignoring callbacks"
+            )
+
+    def generate_text(
+        self,
+        prompt: PromptValue,
+        n: int = 1,
+        temperature: float = 1e-8,
+        stop: t.Optional[t.List[str]] = None,
+        callbacks: Callbacks = None,
+    ) -> LLMResult:
+        self.check_args(n, temperature, stop, callbacks)
+        li_response = self.llm.complete(
+            prompt.to_string(), n=n, temperature=temperature, stop=stop
+        )
+
+        return LLMResult(generations=[[Generation(text=li_response.text)]])
+
+    async def agenerate_text(
+        self,
+        prompt: PromptValue,
+        n: int = 1,
+        temperature: float = 1e-8,
+        stop: t.Optional[t.List[str]] = None,
+        callbacks: Callbacks = None,
+    ) -> LLMResult:
+        self.check_args(n, temperature, stop, callbacks)
+        li_response = await self.llm.acomplete(
+            prompt.to_string(), n=n, temperature=temperature, stop=stop
+        )
+
+        return LLMResult(generations=[[Generation(text=li_response.text)]])
 
 
 def llm_factory(
