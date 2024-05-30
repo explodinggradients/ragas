@@ -1,8 +1,8 @@
 from ragas.llms.base import (
     BaseRagasLLM,
     LangchainLLMWrapper,
-    llm_factory,
     LlamaIndexLLMWrapper,
+    llm_factory,
 )
 
 __all__ = [

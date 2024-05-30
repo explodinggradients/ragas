@@ -36,13 +36,13 @@ from ragas.utils import check_if_sum_is_close, deprecated, get_feature_language,
 
 if t.TYPE_CHECKING:
     from langchain_core.documents import Document as LCDocument
-    from langchain_core.language_models import BaseLanguageModel as LangchainLLM
     from langchain_core.embeddings import Embeddings as LangchainEmbeddings
-    from llama_index.core.schema import Document as LlamaindexDocument
-    from llama_index.core.base.llms.base import BaseLLM as LlamaindexLLM
+    from langchain_core.language_models import BaseLanguageModel as LangchainLLM
     from llama_index.core.base.embeddings.base import (
         BaseEmbedding as LlamaIndexEmbeddings,
     )
+    from llama_index.core.base.llms.base import BaseLLM as LlamaindexLLM
+    from llama_index.core.schema import Document as LlamaindexDocument
 
 logger = logging.getLogger(__name__)
 

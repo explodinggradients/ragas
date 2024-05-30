@@ -4,9 +4,9 @@ from datasets import load_dataset
 from ragas import evaluate
 from ragas.metrics import (
     answer_relevancy,
-    faithfulness,
-    context_recall,
     context_precision,
+    context_recall,
+    faithfulness,
 )
 
 # loading the V2 dataset

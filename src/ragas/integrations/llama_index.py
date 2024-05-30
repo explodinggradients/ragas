@@ -1,26 +1,27 @@
 from __future__ import annotations
 
-from copy import copy
 import logging
 import typing as t
+from copy import copy
 from uuid import uuid4
 
 from datasets import Dataset
-from ragas.exceptions import ExceptionInRunner
+
+from ragas.embeddings import LlamaIndexEmbeddingsWrapper
 from ragas.evaluation import evaluate as ragas_evaluate
+from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
 from ragas.llms import LlamaIndexLLMWrapper
-from ragas.embeddings import LlamaIndexEmbeddingsWrapper
 from ragas.validation import EVALMODE_TO_COLUMNS, validate_evaluation_modes
 
 if t.TYPE_CHECKING:
-    from ragas.metrics.base import Metric
-    from llama_index.core.base.llms.base import BaseLLM as LlamaindexLLM
     from llama_index.core.base.embeddings.base import (
         BaseEmbedding as LlamaIndexEmbeddings,
     )
+    from llama_index.core.base.llms.base import BaseLLM as LlamaindexLLM
 
     from ragas.evaluation import Result
+    from ragas.metrics.base import Metric
 
 
 logger = logging.getLogger(__name__)
