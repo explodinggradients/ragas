@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import copy
 import logging
 import typing as t
 from uuid import uuid4
@@ -8,26 +9,54 @@ from datasets import Dataset
 from ragas.exceptions import ExceptionInRunner
 from ragas.evaluation import evaluate as ragas_evaluate
 from ragas.executor import Executor
+from ragas.llms import LlamaIndexLLMWrapper
+from ragas.embeddings import LlamaIndexEmbeddingsWrapper
+from ragas.validation import EVALMODE_TO_COLUMNS, validate_evaluation_modes
 
 if t.TYPE_CHECKING:
     from ragas.metrics.base import Metric
-    from ragas.llms import LlamaIndexLLMWrapper
-    from ragas.embeddings import LlamaIndexEmbeddingsWrapper
+    from llama_index.core.base.llms.base import BaseLLM as LlamaindexLLM
+    from llama_index.core.base.embeddings.base import (
+        BaseEmbedding as LlamaIndexEmbeddings,
+    )
+
+    from ragas.evaluation import Result
 
 
 logger = logging.getLogger(__name__)
+
+
+def validate_dataset(dataset: dict, metrics: list[Metric]):
+    # change EVALMODE_TO_COLUMNS for usecase with no contexts and answer
+    evalmod_to_columns_llamaindex = copy(EVALMODE_TO_COLUMNS)
+    for mode in EVALMODE_TO_COLUMNS:
+        if "answer" in EVALMODE_TO_COLUMNS[mode]:
+            EVALMODE_TO_COLUMNS[mode].remove("answer")
+        if "contexts" in EVALMODE_TO_COLUMNS[mode]:
+            EVALMODE_TO_COLUMNS[mode].remove("contexts")
+
+    hf_dataset = Dataset.from_dict(dataset)
+    validate_evaluation_modes(hf_dataset, metrics, evalmod_to_columns_llamaindex)
 
 
 def evaluate(
     query_engine,
     dataset: dict,
     metrics: list[Metric],
-    llm: t.Optional[LlamaIndexLLMWrapper] = None,
-    embeddings: t.Optional[LlamaIndexEmbeddingsWrapper] = None,
+    llm: t.Optional[LlamaindexLLM] = None,
+    embeddings: t.Optional[LlamaIndexEmbeddings] = None,
     raise_exceptions: bool = True,
     column_map: t.Optional[t.Dict[str, str]] = None,
-):
+) -> Result:
     column_map = column_map or {}
+
+    # wrap llms and embeddings
+    li_llm = None
+    if llm is not None:
+        li_llm = LlamaIndexLLMWrapper(llm)
+    li_embeddings = None
+    if embeddings is not None:
+        li_embeddings = LlamaIndexEmbeddingsWrapper(embeddings)
 
     # validate and transform dataset
     if dataset is None:
@@ -75,7 +104,9 @@ def evaluate(
     results = ragas_evaluate(
         dataset=hf_dataset,
         metrics=metrics,
-        llm=llm,
-        embeddings=embeddings,
+        llm=li_llm,
+        embeddings=li_embeddings,
         raise_exceptions=raise_exceptions,
     )
+
+    return results
