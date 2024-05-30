@@ -95,7 +95,7 @@ def evaluate(
         }
     )
     if "ground_truth" in dataset:
-        hf_dataset.add_column(
+        hf_dataset = hf_dataset.add_column(
             name="ground_truth",
             column=dataset["ground_truth"],
             new_fingerprint=str(uuid4()),
