@@ -44,12 +44,12 @@ class Prompt(BaseModel):
         language (str): The language of the prompt (default: "english").
     """
 
-    name: str
+    name: str = ""
     instruction: str
     output_format_instruction: str = ""
     examples: t.List[Example] = []
-    input_keys: t.List[str]
-    output_key: str
+    input_keys: t.List[str] = [""]
+    output_key: str = ""
     output_type: t.Literal["json", "str"] = "json"
     language: str = "english"
 
