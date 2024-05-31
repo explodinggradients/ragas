@@ -89,7 +89,7 @@ class RulebasedExtractor(Extractor):
         matches = re.finditer(self.regex(), text)
         result = defaultdict(list)
         for m in matches:
-            m = {k:v for k, v in m.groupdict().items() if v is not None}
+            m = {k: v for k, v in m.groupdict().items() if v is not None}
             for key in m:
                 result[key].append(m[key])
             
