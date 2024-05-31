@@ -426,14 +426,11 @@ class SummarizationMetric(MetricWithLLM):
     question_generation_prompt: Prompt = field(default_factory=lambda: TEXT_GENERATE_QUESTIONS)
     answer_generation_prompt: Prompt = field(default_factory=lambda: TEXT_GENERATE_ANSWERS)
 
-    def _get_extract_topics_prompt(self, text) -> PromptValue:
-        return TEXT_EXTRACTION_TOPICS.format(text=text)
-    
-    def _get_link_topic_summary_prompt(self, summary, topics) -> PromptValue:
-        return TEXT_LINK_SUMMARY_TOPICS.format(summary=summary, topics=topics)
+    def _get_extract_keyphrases_prompt(self, text) -> PromptValue:
+        return TEXT_EXTRACT_KEYPHRASES.format(text=text)
         
-    def _get_question_generation_prompt(self, text) -> PromptValue:
-        return TEXT_GENERATE_QUESTIONS.format(text=text, n=self.n_questions)
+    def _get_question_generation_prompt(self, text, keyphrases) -> PromptValue:
+        return TEXT_GENERATE_QUESTIONS.format(text=text, keyphrases=keyphrases)
     
     def _get_answer_generation_prompt(self, questions: t.List, summary: str) -> PromptValue:
         return TEXT_GENERATE_ANSWERS.format(summary=summary, questions=questions)
@@ -472,23 +469,23 @@ class SummarizationMetric(MetricWithLLM):
         return 1-(len(summary) / len(text))
     
     
-    async def _link_summary_topics(self, summary: str, topics: t.List[str], callbacks: Callbacks, is_async: bool) -> t.List[str]:
+    async def _extract_keyphrases(self, text: str, callbacks: Callbacks, is_async: bool) -> t.List[str]:
         assert self.llm is not None, "LLM is not initialized"
-        p_value = self._get_link_topic_summary_prompt(summary, topics)
+        p_value = self._get_extract_keyphrases_prompt(text)
         result = await self.llm.generate(
             prompt=p_value,
             callbacks=callbacks,
             is_async=is_async,
         )
         result_text = result.generations[0][0].text
-        answer = await _output_parser_link_summary_topics.aparse(
+        answer = await _output_parser_keyphrase_extraction.aparse(
             result_text, p_value, self.llm, self.max_retries
         )
-        return answer.summary_topics
+        return answer.keyphrases
     
-    async def _get_questions(self, text: str, callbacks: Callbacks, is_async: bool) -> t.List[str]:
+    async def _get_questions(self, text: str, keyphrases: list[str], callbacks: Callbacks, is_async: bool) -> t.List[str]:
         assert self.llm is not None, "LLM is not initialized"
-        p_value = self._get_question_generation_prompt(text)
+        p_value = self._get_question_generation_prompt(text, keyphrases)
         result = await self.llm.generate(
             prompt=p_value,
             callbacks=callbacks,
