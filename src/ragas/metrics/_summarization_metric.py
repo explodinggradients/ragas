@@ -21,8 +21,6 @@ logger = logging.getLogger(__name__)
 class ExtractTopicsResponse(BaseModel):
     topics: t.Dict[str, str]
 
-class LinkSummaryTopicsResponse(BaseModel):
-    summary_topics: t.Dict[str, str]
 
 class GenerateQuestionsResponse(BaseModel):
     questions: t.List[str]
@@ -40,10 +38,6 @@ _output_instructions_answer_generation = get_json_format_instructions(
 _output_instructions_topics_extraction = get_json_format_instructions(
     pydantic_object=ExtractTopicsResponse
 )
-_outpyt_instructions_link_summary_topics = get_json_format_instructions(
-    pydantic_object=LinkSummaryTopicsResponse
-)
-
 _output_parser_question_generation = RagasoutputParser(pydantic_object=GenerateQuestionsResponse)
 _output_parser_answer_generation = RagasoutputParser(pydantic_object=GenerateAnswersResponse)
 _output_parser_topics_extraction = RagasoutputParser(pydantic_object=ExtractTopicsResponse)
