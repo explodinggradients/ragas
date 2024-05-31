@@ -18,8 +18,8 @@ if t.TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class ExtractTopicsResponse(BaseModel):
-    topics: t.Dict[str, str]
+class ExtractKeyphrasesResponse(BaseModel):
+    keyphrases: t.List[str]
 
 
 class GenerateQuestionsResponse(BaseModel):
@@ -35,13 +35,12 @@ _output_instructions_question_generation = get_json_format_instructions(
 _output_instructions_answer_generation = get_json_format_instructions(
     pydantic_object=GenerateAnswersResponse
 )
-_output_instructions_topics_extraction = get_json_format_instructions(
-    pydantic_object=ExtractTopicsResponse
+_output_instructions_keyphrase_extraction = get_json_format_instructions(
+    pydantic_object=ExtractKeyphrasesResponse
 )
 _output_parser_question_generation = RagasoutputParser(pydantic_object=GenerateQuestionsResponse)
 _output_parser_answer_generation = RagasoutputParser(pydantic_object=GenerateAnswersResponse)
-_output_parser_topics_extraction = RagasoutputParser(pydantic_object=ExtractTopicsResponse)
-_output_parser_link_summary_topics = RagasoutputParser(pydantic_object=LinkSummaryTopicsResponse)
+_output_parser_keyphrase_extraction = RagasoutputParser(pydantic_object=ExtractKeyphrasesResponse)
 
 EXTRACT_TOPICS_INSTRUCTION = """\
 Based on the given text, extract some broad opics, events, concepts or other important broader areas. Then for each of those extracted topic, associate chunks of text that are related to it and make topic-chunk pairs.
