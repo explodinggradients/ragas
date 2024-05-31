@@ -1,64 +1,76 @@
 import typing as t
 from dataclasses import dataclass
-
 from langchain_core.documents import Document as LCDocument
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from abc import ABC, abstractmethod
+import numpy as np
 
 
 @dataclass
-class DocumentSplitter:
-    """
-    reponsible for splitting the document into multiple parts and reassinging extracted metadata to the parts
-    """
-
-    separators: t.List[str]
-
-    def __post_init__(self):
-        self.text_splitter = RecursiveCharacterTextSplitter(separators=self.separators)
-
-    def create_docs(self, text_chunks: t.Sequence[str], doc: LCDocument):
-        text_chunks_docs = []
-        extractive_metadata_keys = doc.metadata.get("extractive_metadata_keys", [])
-        for idx, text_chunk in enumerate(text_chunks):
-            text_chunk_metadata = {}
-            for metadata_key in extractive_metadata_keys:
-                metadata = doc.metadata[metadata_key]
-                if isinstance(metadata, str):
-                    idx = text_chunk.find(metadata)
-                    if idx != -1:
-                        text_chunk_metadata[metadata_key] = metadata
-
-                elif isinstance(metadata, list):
-                    metadata_match_idx = [text_chunk.find(item) for item in metadata]
-                    metadata_idx = [
-                        idx
-                        for idx, match_idx in enumerate(metadata_match_idx)
-                        if match_idx != -1
-                    ]
-                    if metadata_idx:
-                        text_chunk_metadata[metadata_key] = [
-                            metadata[i] for i in metadata_idx
-                        ]
-
-            text_chunk_doc = LCDocument(
-                page_content=text_chunk, metadata=text_chunk_metadata
-            )
-            text_chunks_docs.append(text_chunk_doc)
-
-        return text_chunks_docs
-
-    def split_documents(self, documents: t.Sequence[LCDocument]):
-        for doc in documents:
-            text_chunks = self.text_splitter.split_text(doc.page_content)
-            text_chunks_docs = self.create_docs(text_chunks, doc)
-            return text_chunks_docs
-
-
-class UnstructuredRelationExtractor:
-    def __init__(self):
+class RelationExtractor(ABC):
+    name: str
+    attribute1: str
+    attribute2: str
+    
+    def get_attribute(self, doc: LCDocument, attribute: str):
+        
+        if hasattr(doc, self.attribute1):
+            return getattr(doc, attribute)
+        elif attribute in doc.metadata:
+            return doc.metadata[attribute]
+        else:
+            return None
+        
+    @abstractmethod
+    def extract(self, doc1: LCDocument, doc2: LCDocument) -> t.Any:
         pass
+    
+    
+@dataclass
+class Jaccardsimilarity(RelationExtractor):
 
-    def __call__(
-        self,
-    ):
-        pass
+    def extract(self, doc1: LCDocument, doc2: LCDocument): 
+    
+        a = self.get_attribute(doc1, self.attribute1)
+        b = self.get_attribute(doc2, self.attribute2)
+        if not isinstance(a, list) or not isinstance(b, list): 
+            raise ValueError("Attributes must be lists")
+        a = set(a)
+        b = set(b)
+        return len(a.intersection(b)) / len(a.union(b))
+    
+
+@dataclass
+class EmbeddingSimilarity(RelationExtractor):
+    
+    def extract(self, doc1: LCDocument, doc2: LCDocument) -> t.Any:
+        
+        embedding1 = getattr(doc1, self.attribute1)
+        embedding2 = getattr(doc2, self.attribute2)
+        embedding1 = np.array(embedding1)
+        embedding2 = np.array(embedding2)
+        
+        dot_product = np.dot(embedding1, embedding2)
+        norm1 = np.linalg.norm(embedding1)
+        norm2 = np.linalg.norm(embedding2)
+        
+        similarity = dot_product / (norm1 * norm2)
+        
+        return similarity
+    
+    
+
+
+
+if __name__ == "__main__":
+    
+    from langchain_core.documents import Document as LCDocument
+    text = """
+    Contact us at info@example.com or visit https://www.example.com for more information.
+    Alternatively, email support@service.com or check http://service.com.
+    You can also visit our second site at www.secondary-site.org or email us at secondary-info@secondary-site.org.
+    """
+    
+    docs = [LCDocument(page_content=text, metadata={'headlines':['one','two']})]
+    
+    jaccard_overlap = Jaccardsimilarity(name="jaccard", attribute1="headlines", attribute2="headlines")
+    score = jaccard_overlap.extract(docs[0], docs[0])
