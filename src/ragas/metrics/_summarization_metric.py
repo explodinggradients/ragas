@@ -97,64 +97,7 @@ TEXT_EXTRACTION_TOPICS = Prompt(
     ]
 )
 
-LINK_SUMMARY_TOPICS_INSTRUCTION = """\
-Based on the given summary and the extracted topics from the text, link chunks of the summary to the topics which they are related to and make topic-chunk pairs.
 
-** Important
-Return in JSON format with key as 'summary_topics' and a dictionary of topic-chunk pairs as the value. Only return the JSON.
-"""
-TEXT_LINK_SUMMARY_TOPICS = Prompt(
-    name="link_summary_topics",
-    instruction=LINK_SUMMARY_TOPICS_INSTRUCTION,
-    output_format_instruction=_outpyt_instructions_link_summary_topics,
-    input_keys=["summary", "topics"],
-    output_key="summary_topics",
-    output_type="json",
-    examples=[
-        {
-            "summary": """JPMorgan Chase & Co., headquartered in New York City and incorporated in Delaware, is the largest bank in the US and the world's largest by market capitalization as of 2023. It is systemically important by the Financial Stability Board, leading to enhanced regulatory oversight and maintaining a 'Fortress Balance Sheet'. The firm, originally founded in 1799, was formed in its current state through a merger in 2000. It offers extensive investment, private, asset management, and retail banking services, and has $3.9 trillion in assets, making it the fifth-largest bank globally. JPMorgan Chase also operates the world's largest investment bank by revenue, ranks 24th on the Fortune 500 list, and was ranked #1 in the 2023 Forbes Global 2000. It faces criticism for risk management and legal issues.""",
-            "topics": [
-                "Company Overview",
-                "Regulatory Importance",
-                "Headquarters",
-                "Historical Background",
-                "Banking Services",
-                "Financial Status",
-                "Criticism and Challenges",
-            ],
-            "summary_topics": {
-                "Company Overview": "JPMorgan Chase & Co., headquartered in New York City and incorporated in Delaware, is the largest bank in the US and the world's largest by market capitalization as of 2023.",
-                "Regulatory Importance": "It is systemically important by the Financial Stability Board, leading to enhanced regulatory oversight and maintaining a 'Fortress Balance Sheet'.",
-                "Headquarters": "JPMorgan Chase & Co., headquartered in New York City and incorporated in Delaware.",
-                "Historical Background": "The firm, originally founded in 1799, was formed in its current state through a merger in 2000.",
-                "Banking Services": "It offers extensive investment, private, asset management, and retail banking services.",
-                "Financial Status": "It has $3.9 trillion in assets, making it the fifth-largest bank globally. JPMorgan Chase also operates the world's largest investment bank by revenue, ranks 24th on the Fortune 500 list, and was ranked #1 in the 2023 Forbes Global 2000.",
-                "Criticism and Challenges": "It faces criticism for risk management and legal issues."
-            }
-        },
-        {
-            "summary": """Photosynthesis is the process by which green plants and certain organisms convert light energy into chemical energy, producing oxygen and organic compounds from water, carbon dioxide, and minerals. It is crucial for life on Earth, as its absence would result in a lack of food and oxygen, causing most organisms to disappear. Only chemosynthetic bacteria, which use chemical energy from inorganic compounds, would survive. Photosynthesis from millions of years ago created fossil fuels, essential for modern society, but their rapid consumption is increasing carbon dioxide levels at an unprecedented rate, significantly impacting Earth's climate.""",
-            "topics": [
-                "Photosynthesis process",
-                "Importance of photosynthesis for life on Earth",
-                "Impact of photosynthesis on atmospheric oxygen",
-                "Chemosynthetic bacteria and their role",
-                "Energy production from photosynthesis and fossil fuels",
-                "Formation of fossil fuels and their significance",
-                "Environmental implications of rapid carbon dioxide rise",
-            ],
-            "summary_topics": {
-                "Photosynthesis process": "Photosynthesis is the process by which green plants and certain organisms convert light energy into chemical energy, producing oxygen and organic compounds from water, carbon dioxide, and minerals.",
-                "Importance of photosynthesis for life on Earth": "It is crucial for life on Earth, as its absence would result in a lack of food and oxygen, causing most organisms to disappear.",
-                "Impact of photosynthesis on atmospheric oxygen": "It is crucial for life on Earth, as its absence would result in a lack of food and oxygen, causing most organisms to disappear.",
-                "Chemosynthetic bacteria and their role": "Only chemosynthetic bacteria, which use chemical energy from inorganic compounds, would survive.",
-                "Energy production from photosynthesis and fossil fuels": "Photosynthesis from millions of years ago created fossil fuels, essential for modern society.",
-                "Formation of fossil fuels and their significance": "Photosynthesis from millions of years ago created fossil fuels, essential for modern society.",
-                "Environmental implications of rapid carbon dioxide rise": "Their rapid consumption is increasing carbon dioxide levels at an unprecedented rate, significantly impacting Earth's climate."
-            }
-        }
-    ]
-)
 
 GENERATE_QUESTION_INSTRUCTION = """\
 Based on the given text, generate "n" closed-ended questions that can be answered with either a '1' if the question can be answered using the text, or '0' if it cannot be answered using the text. The questions generated should ALWAYS result in a '1' based on the given text.    
@@ -265,10 +208,8 @@ class SummarizationMetric(MetricWithLLM):
     """
 
     name: str = "summary_score" # type: ignore
-    n_questions: int = 5
     max_retries: int = 1
     length_penalty: bool = True
-    consider_topic_distribution: bool = True
     evaluation_mode: EvaluationMode = EvaluationMode.ts # type: ignore
     question_generation_prompt: Prompt = field(default_factory=lambda: TEXT_GENERATE_QUESTIONS)
     answer_generation_prompt: Prompt = field(default_factory=lambda: TEXT_GENERATE_ANSWERS)
@@ -296,9 +237,6 @@ class SummarizationMetric(MetricWithLLM):
         if self.length_penalty:
             conciseness_score = self._compute_conciseness_score(text, summary)
             scores.append(conciseness_score)
-        if self.consider_topic_distribution:
-            topic_distribution_score = await self._compute_topic_distribution_score(text, summary, callbacks, is_async)
-            scores.append(topic_distribution_score)
         return self._compute_score(scores)
     
     def _compute_score(self, scores) -> float:
@@ -321,43 +259,6 @@ class SummarizationMetric(MetricWithLLM):
         """
         return 1-(len(summary) / len(text))
     
-    async def _compute_topic_distribution_score(self, text, summary, callbacks, is_async) -> float:
-        """Returns the topic distribution score of the summary. This is calculated as 
-        the Jensen-Shannon divergence between the topic distribution of the text and the summary.
-        """
-        from scipy.spatial.distance import jensenshannon
-        text_topics = await self._extract_topics(text, callbacks, is_async)
-        summary_topics = await self._link_summary_topics(summary, list(text_topics.keys()), callbacks, is_async)
-        text_topic_distribution = self._topic_distribution(text_topics)
-        summary_topic_distribution = self._topic_distribution(summary_topics)
-        return 1 - jensenshannon(text_topic_distribution, summary_topic_distribution)**2
-    
-    def _topic_distribution(self, topic_text_dict):
-        """Returns the distribution of topics in the text. This is calculated
-        as list of values where each value is the ratio of length of text associated 
-        with each topic to the total length of text.
-        """
-        total_len = 0
-        topic_distribution = []
-        for top, txt in topic_text_dict.items():
-            _l = len(txt)
-            total_len += _l
-            topic_distribution.append(_l)
-        return [l/total_len for l in topic_distribution]
-    
-    async def _extract_topics(self, text: str, callbacks: Callbacks, is_async: bool) -> t.List[str]:
-        assert self.llm is not None, "LLM is not initialized"
-        p_value = self._get_extract_topics_prompt(text)
-        result = await self.llm.generate(
-            prompt=p_value,
-            callbacks=callbacks,
-            is_async=is_async,
-        )
-        result_text = result.generations[0][0].text
-        answer = await _output_parser_topics_extraction.aparse(
-            result_text, p_value, self.llm, self.max_retries
-        )
-        return answer.topics
     
     async def _link_summary_topics(self, summary: str, topics: t.List[str], callbacks: Callbacks, is_async: bool) -> t.List[str]:
         assert self.llm is not None, "LLM is not initialized"
