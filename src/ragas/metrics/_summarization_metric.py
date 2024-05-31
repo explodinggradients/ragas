@@ -407,7 +407,9 @@ class SummarizationMetric(MetricWithLLM):
     """Given a text and its generated summary, calculates a score for 
     quantifying the quality of the summary. Currently we use the following method
     to quantify it:
-    - Given the original text, generate a set of 'yes'/'no'(1/0) questions based on it.
+    - Given the original text, extract a set of entities, events, or concepts, which
+    we call keyphrases, from it
+    - Generate a set of 'yes'/'no'(1/0) questions based on the text and the extracted keyphrases.
     - Ask those questions to the generated summary and find out how many of them
     are answered correctly.
     - Return the fraction of correctly answered questions as the score.
@@ -437,7 +439,8 @@ class SummarizationMetric(MetricWithLLM):
     
     async def _ascore(self, row: Dict, callbacks: Callbacks, is_async: bool) -> float:
         text, summary = row["text"], row["summary"]
-        questions = await self._get_questions(text, callbacks, is_async)
+        keyphrases = await self._extract_keyphrases(text, callbacks, is_async)
+        questions = await self._get_questions(text, keyphrases, callbacks, is_async)
         answers = await self._get_answers(questions, summary, callbacks, is_async)
 
         scores = []
