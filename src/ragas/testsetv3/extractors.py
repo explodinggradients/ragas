@@ -3,6 +3,7 @@ import typing as t
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
+
 from langchain_core.documents import Document as LCDocument
 
 from ragas.llms.base import BaseRagasLLM, llm_factory
@@ -68,8 +69,11 @@ class Regex:
             raise TypeError("Group name must be a string.")
 
         # Add the named group to the pattern
-        return f"(?P<{self.name}>{self.pattern})" if self.name != "merged_extractor" else self.pattern
-
+        return (
+            f"(?P<{self.name}>{self.pattern})"
+            if self.name != "merged_extractor"
+            else self.pattern
+        )
 
 
 class Extractor(ABC):
@@ -80,7 +84,8 @@ class Extractor(ABC):
     @abstractmethod
     def merge_extractors(self, *extractors):
         pass
-    
+
+
 @dataclass
 class RulebasedExtractor(Extractor):
     regex: Regex
@@ -92,16 +97,17 @@ class RulebasedExtractor(Extractor):
             m = {k: v for k, v in m.groupdict().items() if v is not None}
             for key in m:
                 result[key].append(m[key])
-            
+
         return result
 
     def merge_extractors(self, *extractors):  # Instance-level method
-        if isinstance(self, RulebasedExtractor):  # Check if called by an initiated class
+        if isinstance(
+            self, RulebasedExtractor
+        ):  # Check if called by an initiated class
             extractors = (self,) + extractors
         pattern = "|".join([extractor.regex() for extractor in extractors])
         updated_regex = Regex(name="merged_extractor", pattern=pattern)
         return RulebasedExtractor(regex=updated_regex)
-
 
 
 @dataclass
@@ -118,14 +124,11 @@ class LLMbasedExtractor(Extractor):
         )
         output = output.generations[0][0].text.strip()
         if self.prompt.output_type == "json":
-            return await json_loader.safe_load(
-                output, self.llm
-            )
+            return await json_loader.safe_load(output, self.llm)
         else:
             return {self.prompt.name: output}
 
     def merge_extractors(self, *extractors):
-        
         if isinstance(self, LLMbasedExtractor):
             extractors = (self,) + extractors
         if not any(hasattr(extractor, "prompt") for extractor in extractors):
@@ -169,17 +172,32 @@ class LLMbasedExtractor(Extractor):
 
 
 @dataclass
-class DocumentExtractor():
+class DocumentExtractor:
     extractors: t.List[Extractor]
-    
+
     def __post_init__(self):
-        llm_extractor = [extractor for extractor in self.extractors if isinstance(extractor, LLMbasedExtractor)]
-        rule_extractor = [extractor for extractor in self.extractors if isinstance(extractor, RulebasedExtractor)]
-        self.llm_extractors = LLMbasedExtractor.merge_extractors(*llm_extractor) if llm_extractor else None
-        self.regex_extractors = RulebasedExtractor.merge_extractors(*rule_extractor) if rule_extractor else None
-        
+        llm_extractor = [
+            extractor
+            for extractor in self.extractors
+            if isinstance(extractor, LLMbasedExtractor)
+        ]
+        rule_extractor = [
+            extractor
+            for extractor in self.extractors
+            if isinstance(extractor, RulebasedExtractor)
+        ]
+        self.llm_extractors = (
+            LLMbasedExtractor.merge_extractors(*llm_extractor)
+            if llm_extractor
+            else None
+        )
+        self.regex_extractors = (
+            RulebasedExtractor.merge_extractors(*rule_extractor)
+            if rule_extractor
+            else None
+        )
+
     async def __call__(self, documents: t.Sequence[LCDocument]):
-        
         for doc in documents:
             if self.llm_extractors:
                 output = await self.llm_extractors.extract(doc.page_content)
@@ -187,10 +205,25 @@ class DocumentExtractor():
             if self.regex_extractors:
                 output = self.regex_extractors.extract(doc.page_content)
                 doc.metadata.update(output)
-            
+
+        doc = documents[0]
+        extractive_metadata_keys = []
+        for metadata in doc.metadata:
+            if isinstance(doc.metadata[metadata], str):
+                idx = doc.page_content.find(doc.metadata[metadata])
+                if idx != -1:
+                    extractive_metadata_keys.append(metadata)
+            elif isinstance(doc.metadata[metadata], list):
+                idx = [doc.page_content.find(item) for item in doc.metadata[metadata]]
+                if all(i != -1 for i in idx):
+                    extractive_metadata_keys.append(metadata)
+
+        for doc in documents:
+            doc.metadata["extractive_metadata_keys"] = extractive_metadata_keys
+
         return documents
-    
-            
+
+
 summary_extractor = LLMbasedExtractor(prompt=summary_extactor_prompt)
 headline_extractor = LLMbasedExtractor(prompt=headline_extractor_prompt)
 
@@ -201,4 +234,6 @@ link_extractor = RulebasedExtractor(Regex(name="link", pattern=links_extractor_p
 
 
 if __name__ == "__main__":
-    doc_extractor = DocumentExtractor(extractors=[summary_extractor, link_extractor, headline_extractor])
+    doc_extractor = DocumentExtractor(
+        extractors=[summary_extractor, link_extractor, headline_extractor]
+    )
