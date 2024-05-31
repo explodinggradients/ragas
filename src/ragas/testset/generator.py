@@ -179,11 +179,11 @@ class TestsetGenerator:
         )
 
     def init_evolution(self, evolution: Evolution) -> None:
+        # if evolution.docstore is None:
+        evolution.docstore = self.docstore
+        
         if evolution.generator_llm is None:
             evolution.generator_llm = self.generator_llm
-            if evolution.docstore is None:
-                evolution.docstore = self.docstore
-
             if evolution.question_filter is None:
                 evolution.question_filter = QuestionFilter(llm=self.critic_llm)
             if evolution.node_filter is None:
