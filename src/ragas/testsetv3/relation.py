@@ -3,31 +3,32 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 import numpy as np
-from langchain_core.documents import Document as LCDocument
-
+from ragas.testsetv3.graph import Node, NodeType, Relationship
+from graphene.types.schema import Schema
 
 @dataclass
 class Similarity(ABC):
     name: str
     attribute1: str
     attribute2: str
+    is_symmetric: bool = True
 
-    def get_attribute(self, doc: LCDocument, attribute: str):
-        if hasattr(doc, self.attribute1):
-            return getattr(doc, attribute)
-        elif attribute in doc.metadata:
-            return doc.metadata[attribute]
+    def get_attribute(self, doc: Node, attribute: str):
+        if attribute == "page_content":
+            return doc.properties["page_content"]
+        elif attribute in doc.properties["metadata"]:
+            return doc.properties["metadata"][attribute]
         else:
-            return None
+            raise ValueError(f"Attribute {attribute} not found in node")
 
     @abstractmethod
-    def extract(self, doc1: t.List[LCDocument], doc2: t.List[LCDocument]) -> t.Any:
+    def extract(self, doc1: t.List[Node], doc2: t.List[Node]) -> t.Any:
         pass
 
 
 @dataclass
 class Jaccard(Similarity):
-    def extract(self, doc1: t.List[LCDocument], doc2: t.List[LCDocument]):
+    def extract(self, doc1: t.List[Node], doc2: t.List[Node]):
         jaccard_similarity_matrix = np.zeros((len(doc1), len(doc2)))
 
         doc1_items = [self.get_attribute(doc, self.attribute1) for doc in doc1]
@@ -46,9 +47,9 @@ class Jaccard(Similarity):
 
 @dataclass
 class Cosine(Similarity):
-    def extract(self, doc1: t.List[LCDocument], doc2: t.List[LCDocument]) -> t.Any:
-        embeddings_1 = [getattr(doc, self.attribute1) for doc in doc1]
-        embeddings_2 = [getattr(doc, self.attribute2) for doc in doc2]
+    def extract(self, doc1: t.List[Node], doc2: t.List[Node]) -> t.Any:
+        embeddings_1 = [self.get_attribute(doc, self.attribute1) for doc in doc1]
+        embeddings_2 = [self.get_attribute(doc, self.attribute2) for doc in doc2]
         embeddings_1 = np.array(embeddings_1)
         embeddings_2 = np.array(embeddings_2)
         cosine_similarity_matrix = np.dot(embeddings_1, embeddings_2.T) / (
@@ -57,8 +58,66 @@ class Cosine(Similarity):
         return cosine_similarity_matrix
 
 
+
+# @dataclass
+# class Embeddedlinkextractor:
+    
+#     def extract(self, doc: Node):
+        
+#         for path in doc.metadata["paths"]:
+#             base_path, title = path.split('#')
+#             #find all nodes with type document and matches the base_path as source
+#             #from this go through each node with relationship type child and find the node that matches title
+#             #connect current node to the found node with new relation 
+#             pass
+
+@dataclass
+class Graph:
+    schema: Schema
+    extractors: t.List[Similarity]
+    score_threshold: float = 0.5
+    
+    def form_relation(self, query, nodes: t.List[Node], relationships: t.List[Relationship]):
+        
+        result = self.schema.execute(query, context={"nodes":nodes, "relationships":relationships})
+        if result is None:
+            return None
+        node_ids = [item.get("id") for item in result.data['nodesByLabel']]
+        nodes_ = [node for node in nodes if node.id in node_ids]
+        for extractor in self.extractors:
+            new_relationships = []
+            similarity_matrix = extractor.extract(nodes_, nodes_)
+            if extractor.is_symmetric:
+                upper_triangle_indices = np.triu_indices(similarity_matrix.shape[0], k=1)
+                similarity_matrix[upper_triangle_indices] = -1
+
+            for i, row in enumerate(similarity_matrix):
+                for j, score in enumerate(row):
+                    if i!=j and score > self.score_threshold:
+                        relationship = Relationship(
+                            source=nodes_[i],
+                            target=nodes_[j],
+                            label=extractor.name,
+                            properties={"score":score}
+                        )
+                        new_relationships.append(relationship)
+                        relationship.source.relationships.append(relationship)
+                        if extractor.is_symmetric:
+                            relationship = Relationship(
+                                source=nodes_[j],
+                                target=nodes_[i],
+                                label=extractor.name,
+                                properties={"score":score}
+                            )
+                            new_relationships.append(relationship)
+                            relationship.target.relationships.append(relationship)
+                    
+                relationships.extend(new_relationships)
+                
+        return nodes, relationships
+                    
+
 if __name__ == "__main__":
-    from langchain_core.documents import Document as LCDocument
 
     text = """
     Contact us at info@example.com or visit https://www.example.com for more information.
@@ -66,9 +125,8 @@ if __name__ == "__main__":
     You can also visit our second site at www.secondary-site.org or email us at secondary-info@secondary-site.org.
     """
 
-    docs = [LCDocument(page_content=text, metadata={"headlines": ["one", "two"]})]
-
-    jaccard_overlap = Jaccardsimilarity(
+    docs = [Node(id="1", label=NodeType.DOC, properties={"headlines": ["Doc 1"]})]
+    jaccard_overlap = Jaccard(
         name="jaccard", attribute1="headlines", attribute2="headlines"
     )
-    score = jaccard_overlap.extract(docs, docs)
+    _ = jaccard_overlap.extract(docs, docs)
