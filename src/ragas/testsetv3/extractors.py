@@ -10,6 +10,8 @@ from ragas.llms.base import BaseRagasLLM, llm_factory
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 
+from ragas.embeddings.base import embedding_factory, BaseRagasEmbeddings
+
 RULE_BASED_EXTRACTORS = [
     "email_extractor",
     "link_extractor",
@@ -28,8 +30,8 @@ summary_extactor_prompt = Prompt(
     instruction="Summarize the given text in less than 10 sentences.",
     examples=[
         {
-            "text": "The quick brown fox jumps over the lazy dog.",
-            "summary": "The quick brown fox jumps over the lazy dog.",
+            "text": "Artificial intelligence\n\nArtificial intelligence is transforming various industries by automating tasks that previously required human intelligence. From healthcare to finance, AI is being used to analyze vast amounts of data quickly and accurately. This technology is also driving innovations in areas like self-driving cars and personalized recommendations.",
+            "summary": "AI is revolutionizing industries by automating tasks, analyzing data, and driving innovations like self-driving cars and personalized recommendations.",
         }
     ],
     input_keys=["text"],
@@ -42,12 +44,26 @@ headline_extractor_prompt = Prompt(
     instruction="Extract H1 headlines from the given text.",
     examples=[
         {
-            "text": "The quick brown fox jumps over the lazy dog.",
-            "headlines": ["headline1", "headline2"],
+            "text": "Artificial intelligence\n\nArtificial intelligence is transforming various industries by automating tasks that previously required human intelligence. From healthcare to finance, AI is being used to analyze vast amounts of data quickly and accurately. This technology is also driving innovations in areas like self-driving cars and personalized recommendations.",
+            "headlines": ["Artificial intelligence"],
         }
     ],
     input_keys=["text"],
     output_key="headlines",
+    output_type="json",
+)
+
+keyphrase_extractor_prompt = Prompt(
+    name="keyphrase_extractor",
+    instruction="Extract keyphrases from the given text.",
+    examples=[
+        {
+            "text": "Artificial intelligence\n\nArtificial intelligence is transforming various industries by automating tasks that previously required human intelligence. From healthcare to finance, AI is being used to analyze vast amounts of data quickly and accurately. This technology is also driving innovations in areas like self-driving cars and personalized recommendations.",
+            "keyphrases": ["Artificial intelligence", "automating tasks", "healthcare", "finance", "analyze data", "self-driving cars", "personalized recommendations"],
+        }
+    ],
+    input_keys=["text"],
+    output_key="keyphrases",
     output_type="json",
 )
 
@@ -171,9 +187,11 @@ class LLMbasedExtractor(Extractor):
         return LLMbasedExtractor(prompt=prompt)
 
 
+
 @dataclass
 class DocumentExtractor:
     extractors: t.List[Extractor]
+    embedding: t.Optional[BaseRagasEmbeddings] = None
 
     def __post_init__(self):
         llm_extractor = [
@@ -197,7 +215,7 @@ class DocumentExtractor:
             else None
         )
 
-    async def __call__(self, documents: t.Sequence[LCDocument]):
+    async def extract(self, documents: t.Sequence[LCDocument]):
         for doc in documents:
             if self.llm_extractors:
                 output = await self.llm_extractors.extract(doc.page_content)
@@ -215,17 +233,34 @@ class DocumentExtractor:
                     extractive_metadata_keys.append(metadata)
             elif isinstance(doc.metadata[metadata], list):
                 idx = [doc.page_content.find(item) for item in doc.metadata[metadata]]
-                if all(i != -1 for i in idx):
+                if sum(i != -1 for i in idx) > len(idx) / 2:
                     extractive_metadata_keys.append(metadata)
-
+                    
         for doc in documents:
             doc.metadata["extractive_metadata_keys"] = extractive_metadata_keys
 
+        return documents
+    
+    async def embed(self, documents: t.Sequence[LCDocument], attributes=t.List[str]):
+        
+        self.embedding = self.embedding if self.embedding is not None else embedding_factory()
+        for attr in attributes:
+            if attr == "page_content":
+                items_to_embed = [doc.page_content for doc in documents]
+            else:
+                items_to_embed = [doc.metadata.get(attr,"") for doc in documents]
+                
+            embeddings_list = await self.embedding.aembed_documents(items_to_embed)
+            assert len(embeddings_list) == len(items_to_embed), "Embeddings and document must be of equal length"
+            for doc, embedding in zip(documents, embeddings_list):
+                doc.metadata[f"{attr}_embedding"] = embedding
+            
         return documents
 
 
 summary_extractor = LLMbasedExtractor(prompt=summary_extactor_prompt)
 headline_extractor = LLMbasedExtractor(prompt=headline_extractor_prompt)
+keyphrase_extractor = LLMbasedExtractor(prompt=keyphrase_extractor_prompt)
 
 email_extractor = RulebasedExtractor(
     Regex(name="email", pattern=emails_extractor_pattern)
