@@ -3,13 +3,16 @@ import typing as t
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
+import numpy as np
 
 from langchain_core.documents import Document as LCDocument
 
 from ragas.llms.base import BaseRagasLLM, llm_factory
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
+from ragas.testsetv3.utils import merge_dicts, MODEL_MAX_LENGTHS
 
+import tiktoken
 from ragas.embeddings.base import embedding_factory, BaseRagasEmbeddings
 
 RULE_BASED_EXTRACTORS = [
@@ -41,7 +44,7 @@ summary_extactor_prompt = Prompt(
 
 headline_extractor_prompt = Prompt(
     name="headline_extractor",
-    instruction="Extract H1 headlines from the given text.",
+    instruction="Extract H2 headlines from the given text.",
     examples=[
         {
             "text": "Artificial intelligence\n\nArtificial intelligence is transforming various industries by automating tasks that previously required human intelligence. From healthcare to finance, AI is being used to analyze vast amounts of data quickly and accurately. This technology is also driving innovations in areas like self-driving cars and personalized recommendations.",
@@ -130,19 +133,47 @@ class RulebasedExtractor(Extractor):
 class LLMbasedExtractor(Extractor):
     prompt: Prompt
     llm: t.Optional[BaseRagasLLM] = None
+    
+    
+    async def _generate_output(self, p_value, is_asycn=True):
+        assert self.llm is not None, "LLM is not initialized"
+        
+        output = await self.llm.generate(
+                prompt=p_value, is_async=is_asycn
+            )
+        output = output.generations[0][0].text.strip()
+        if self.prompt.output_type == "json":
+            return await json_loader.safe_load(output, self.llm)
+        
+        return {self.prompt.name: output}
+    
 
     async def extract(self, text, is_asycn=True):
         if self.llm is None:
             self.llm = llm_factory()
-
-        output = await self.llm.generate(
-            prompt=self.prompt.format(text=text), is_async=is_asycn
-        )
-        output = output.generations[0][0].text.strip()
-        if self.prompt.output_type == "json":
-            return await json_loader.safe_load(output, self.llm)
+            
+        model_name = self.llm.langchain_llm.model_name or "gpt-2"
+        model_max_length = MODEL_MAX_LENGTHS.get(model_name, 8000)
+        model_input_length = model_max_length - (model_max_length//4)
+        
+        enc = tiktoken.encoding_for_model(model_name)
+        p_value = self.prompt.format(text=text)
+        tokens = enc.encode(p_value.to_string())
+        prompt_length = len(tokens) 
+        ratio = prompt_length / model_input_length
+        
+        #TODO modify to suit abstractive tasks as well
+        if ratio > 1:
+            max_tokens_per_run = int(np.ceil(prompt_length / np.ceil(ratio)))
+            inputs = [enc.decode(tokens[i:i+max_tokens_per_run]) for i in range(0, len(tokens), max_tokens_per_run)]
+            inputs = [self.prompt.format(text=inp) for inp in inputs]
+            outputs = [await self._generate_output(inp, is_asycn) for inp in inputs]
+            output = merge_dicts(*outputs)
+            
         else:
-            return {self.prompt.name: output}
+            output = await self._generate_output(p_value, is_asycn)
+            
+        return output
 
     def merge_extractors(self, *extractors):
         if isinstance(self, LLMbasedExtractor):
