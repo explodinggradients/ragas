@@ -11,6 +11,7 @@ from ragas.llms.base import BaseRagasLLM, llm_factory
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.testsetv3.utils import merge_dicts, MODEL_MAX_LENGTHS
+from ragas.testsetv3.graph import Node
 
 import tiktoken
 from ragas.embeddings.base import embedding_factory, BaseRagasEmbeddings
@@ -62,7 +63,7 @@ keyphrase_extractor_prompt = Prompt(
     examples=[
         {
             "text": "Artificial intelligence\n\nArtificial intelligence is transforming various industries by automating tasks that previously required human intelligence. From healthcare to finance, AI is being used to analyze vast amounts of data quickly and accurately. This technology is also driving innovations in areas like self-driving cars and personalized recommendations.",
-            "keyphrases": ["Artificial intelligence", "automating tasks", "healthcare", "finance", "analyze data", "self-driving cars", "personalized recommendations"],
+            "keyphrases": ["Artificial intelligence", "automating tasks", "healthcare","self-driving cars", "personalized recommendations"],
         }
     ],
     input_keys=["text"],
@@ -246,7 +247,7 @@ class DocumentExtractor:
             else None
         )
 
-    async def extract(self, documents: t.Sequence[LCDocument]):
+    async def extract_from_documents(self, documents: t.Sequence[LCDocument]):
         for doc in documents:
             if self.llm_extractors:
                 output = await self.llm_extractors.extract(doc.page_content)
@@ -272,7 +273,18 @@ class DocumentExtractor:
 
         return documents
     
-    async def embed(self, documents: t.Sequence[LCDocument], attributes=t.List[str]):
+    async def extract_from_nodes(self, nodes: t.List[Node]):
+        for node in nodes:
+            if self.llm_extractors:
+                output = await self.llm_extractors.extract(node.properties["page_content"])
+                node.properties["metadata"].update(output)
+            if self.regex_extractors:
+                output = self.regex_extractors.extract(node.properties.page_content)
+                node.properties["metadata"].update(output)
+            
+        return nodes
+        
+    async def embed_from_documents(self, documents: t.Sequence[LCDocument], attributes=t.List[str]):
         
         self.embedding = self.embedding if self.embedding is not None else embedding_factory()
         for attr in attributes:
@@ -287,6 +299,25 @@ class DocumentExtractor:
                 doc.metadata[f"{attr}_embedding"] = embedding
             
         return documents
+    
+    async def embed_from_nodes(self, nodes: t.List[Node], attributes=t.List[str])
+    
+        self.embedding = self.embedding if self.embedding is not None else embedding_factory()
+        for attr in attributes:
+            if attr == "page_content":
+                items_to_embed = [node.properties["page_content"] for node in nodes]
+            else:
+                items_to_embed = [node.properties["metadata"].get(attr,"") for node in nodes]
+                
+            embeddings_list = await self.embedding.aembed_documents(items_to_embed)
+            assert len(embeddings_list) == len(items_to_embed), "Embeddings and document must be of equal length"
+            for node, embedding in zip(nodes, embeddings_list):
+                node.properties["metadata"][f"{attr}_embedding"] = embedding
+            
+        return nodes
+    
+    
+    
 
 
 summary_extractor = LLMbasedExtractor(prompt=summary_extactor_prompt)
