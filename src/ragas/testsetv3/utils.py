@@ -1,7 +1,13 @@
+import numpy as np
+
 
 MODEL_MAX_LENGTHS = {
     "gpt-3.5-turbo": 16385,
 }
+
+
+rng = np.random.default_rng(seed=42)
+
 def merge_dicts(*dicts):
     merged_dict = {}
     
