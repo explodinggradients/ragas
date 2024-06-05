@@ -59,25 +59,22 @@ class Cosine(Similarity):
 
 
 
-# @dataclass
-# class Embeddedlinkextractor:
+@dataclass
+class Graph(ABC):
+    schema: Schema
     
-#     def extract(self, doc: Node):
-        
-#         for path in doc.metadata["paths"]:
-#             base_path, title = path.split('#')
-#             #find all nodes with type document and matches the base_path as source
-#             #from this go through each node with relationship type child and find the node that matches title
-#             #connect current node to the found node with new relation 
-#             pass
+    @abstractmethod
+    def form_relation(self, query, nodes: t.List[Node], relationships: t.List[Relationship], kwargs) -> t.Tuple[t.List[Node], t.List[Relationship]]:
+        pass
+    
 
 @dataclass
-class Graph:
+class SimilarityGraph(Graph):
     schema: Schema
     extractors: t.List[Similarity]
     score_threshold: float = 0.5
     
-    def form_relation(self, query, nodes: t.List[Node], relationships: t.List[Relationship]):
+    def form_relation(self, query, nodes: t.List[Node], relationships: t.List[Relationship], kwargs):
         
         result = self.schema.execute(query, context={"nodes":nodes, "relationships":relationships})
         if result is None:
