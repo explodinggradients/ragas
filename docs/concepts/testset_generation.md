@@ -29,7 +29,7 @@ Moreover, our paradigm extends its capabilities to create conversational questio
 - **Conversational:** A portion of the questions, following the evolution process, can be transformed into conversational samples. These questions simulate a chat-based question-and-follow-up interaction, mimicking a chat-Q&A pipeline.
 
 ```{note}
-Moving forward, we are will be expanding the range of evolution techniques to offer even more diverse evaluation possibilities
+Moving forward, we will be expanding the range of evolution techniques to offer even more diverse evaluation possibilities
 ```
 
 
