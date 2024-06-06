@@ -61,13 +61,11 @@ def get_required_columns(
 class Metric(ABC):
     @property
     @abstractmethod
-    def name(self) -> str:
-        ...
+    def name(self) -> str: ...
 
     @property
     @abstractmethod
-    def evaluation_mode(self) -> EvaluationMode:
-        ...
+    def evaluation_mode(self) -> EvaluationMode: ...
 
     @abstractmethod
     def init(self, run_config: RunConfig):
@@ -111,14 +109,21 @@ class Metric(ABC):
         return score
 
     async def ascore(
-        self: t.Self, row: t.Dict, callbacks: Callbacks = None, is_async: bool = True
+        self: t.Self,
+        row: t.Dict,
+        callbacks: Callbacks = None,
+        is_async: bool = True,
+        thread_timeout: float = None,
     ) -> float:
         callbacks = callbacks or []
         rm, group_cm = new_group(
             self.name, inputs=row, callbacks=callbacks, is_async=True
         )
         try:
-            score = await self._ascore(row=row, callbacks=group_cm, is_async=is_async)
+            score = await asyncio.wait_for(
+                self._ascore(row=row, callbacks=group_cm, is_async=is_async),
+                timeout=thread_timeout,
+            )
         except Exception as e:
             if not group_cm.ended:
                 rm.on_chain_error(e)
@@ -129,8 +134,9 @@ class Metric(ABC):
         return score
 
     @abstractmethod
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
-        ...
+    async def _ascore(
+        self, row: t.Dict, callbacks: Callbacks, is_async: bool
+    ) -> float: ...
 
 
 @dataclass
