@@ -34,14 +34,26 @@ class EvaluatorChain(Chain, RunEvaluator):
     """
 
     metric: Metric
+    column_map: dict[str, str]
 
     def __init__(self, metric: Metric, **kwargs: t.Any):
         kwargs["metric"] = metric
+
+        # chek if column_map is provided
+        if "column_map" in kwargs:
+            _column_map = kwargs["column_map"]
+        else:
+            _column_map = {}
+        kwargs["column_map"] = _column_map
+
         super().__init__(**kwargs)
+
+        # set up the run config
         if "run_config" in kwargs:
             run_config = kwargs["run_config"]
         else:
             run_config = RunConfig()
+
         if isinstance(self.metric, MetricWithLLM):
             llm = kwargs.get("llm", ChatOpenAI())
             t.cast(MetricWithLLM, self.metric).llm = LangchainLLMWrapper(llm)
@@ -54,7 +66,10 @@ class EvaluatorChain(Chain, RunEvaluator):
 
     @property
     def input_keys(self) -> list[str]:
-        return get_required_columns(self.metric.evaluation_mode)
+        return [
+            self.column_map.get(column_name, column_name)
+            for column_name in get_required_columns(self.metric.evaluation_mode)
+        ]
 
     @property
     def output_keys(self) -> list[str]:
@@ -68,14 +83,10 @@ class EvaluatorChain(Chain, RunEvaluator):
         """
         Call the evaluation chain.
         """
-        self._validate(inputs)
+        q, c, a, g = self._validate(inputs)
         _run_manager = run_manager or CallbackManagerForChainRun.get_noop_manager()
         callbacks = _run_manager.get_child()
 
-        c = inputs.get("contexts", [""])
-        g = inputs.get("ground_truth", "")
-        q = inputs.get("question", "")
-        a = inputs.get("answer", "")
         score = self.metric.score(
             {
                 "question": q,
@@ -95,15 +106,11 @@ class EvaluatorChain(Chain, RunEvaluator):
         """
         Call the evaluation chain.
         """
-        self._validate(inputs)
+        q, c, a, g = self._validate(inputs)
         _run_manager = run_manager or AsyncCallbackManagerForChainRun.get_noop_manager()
         # TODO: currently AsyncCallbacks are not supported in ragas
         _run_manager.get_child()
 
-        c = inputs.get("contexts", [""])
-        g = inputs.get("ground_truth", "")
-        q = inputs.get("question", "")
-        a = inputs.get("answer", "")
         score = await self.metric.ascore(
             {
                 "question": q,
@@ -118,10 +125,13 @@ class EvaluatorChain(Chain, RunEvaluator):
     def _validate(
         self,
         input: dict[str, t.Any],
-        question_key: str = "question",
-        prediction_key: str = "answer",
-        context_key: str = "contexts",
-    ) -> None:
+    ) -> tuple[str, list[str], str, str]:
+        # remap the keys
+        question_key = self.column_map.get("question", "question")
+        prediction_key = self.column_map.get("answer", "answer")
+        context_key = self.column_map.get("contexts", "contexts")
+        ground_truth_key = self.column_map.get("ground_truth", "ground_truth")
+
         # validate each example
         required_columns = EVALMODE_TO_COLUMNS[self.metric.evaluation_mode]
         if "question" in required_columns and question_key not in input:
@@ -144,6 +154,13 @@ class EvaluatorChain(Chain, RunEvaluator):
                 f'"ground_truth" is required in each prediction for the '
                 f"metric[{self.metric.name}] you have chosen."
             )
+
+        q = input.get(question_key, "")
+        c = input.get(context_key, [""])
+        a = input.get(prediction_key, "")
+        g = input.get(ground_truth_key, "")
+
+        return q, c, a, g
 
     @staticmethod
     def _keys_are_present(keys_to_check: list, dict_to_check: dict) -> list[str]:
