@@ -1,4 +1,4 @@
-from ragas.metrics import get_available_metrics
+from ragas.metrics.utils import get_available_metrics
 from ragas.metrics.base import EvaluationMode
 
 
