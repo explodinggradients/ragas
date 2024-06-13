@@ -16,7 +16,6 @@ from ragas.metrics._context_relevancy import ContextRelevancy, context_relevancy
 from ragas.metrics._faithfulness import Faithfulness, faithfulness
 from ragas.metrics.critique import AspectCritique
 
-
 __all__ = [
     "AnswerCorrectness",
     "answer_correctness",
