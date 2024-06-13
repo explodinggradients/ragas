@@ -53,7 +53,7 @@ def get_required_columns(
     elif eval_mod == EvaluationMode.qcg:
         keys = ["question", "contexts", "ground_truth"]
     elif eval_mod == EvaluationMode.ts:
-        keys = ["text", "summary"]
+        keys = ["contexts", "summary"]
     ignore_columns = ignore_columns or []
 
     return [k for k in keys if k not in ignore_columns]

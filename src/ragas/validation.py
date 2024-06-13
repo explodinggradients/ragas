@@ -67,7 +67,7 @@ EVALMODE_TO_COLUMNS = {
     EvaluationMode.ga: ["ground_truth", "answer"],
     EvaluationMode.qga: ["question", "ground_truth", "answer"],
     EvaluationMode.qcg: ["question", "contexts", "ground_truth"],
-    EvaluationMode.ts: ["text", "summary"],
+    EvaluationMode.ts: ["contexts", "summary"],
 }
 
 
