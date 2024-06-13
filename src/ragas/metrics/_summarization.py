@@ -165,7 +165,7 @@ class SummarizationScore(MetricWithLLM):
         return TEXT_GENERATE_ANSWERS.format(summary=summary, questions=questions)
 
     async def _ascore(self, row: Dict, callbacks: Callbacks, is_async: bool) -> float:
-        text, summary = row["contexts"], row["summary"]
+        text, summary = "\n".join(row["contexts"]), row["summary"]
         keyphrases = await self._extract_keyphrases(text, callbacks, is_async)
         questions = await self._get_questions(text, keyphrases, callbacks, is_async)
         answers = await self._get_answers(questions, summary, callbacks, is_async)
