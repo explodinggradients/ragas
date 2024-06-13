@@ -3,6 +3,7 @@ import logging
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from enum import Enum
 
 import numpy as np
 import tiktoken
@@ -21,6 +22,7 @@ from ragas.testsetv3.query_prompts import (
     comparative_question,
     critic_question,
     question_answering,
+    question_modification,
 )
 from ragas.testsetv3.utils import rng
 
@@ -31,16 +33,34 @@ logger = logging.getLogger(__name__)
 class QAC:
     question: str
     answer: str
-    source: t.List[str]
+    source: t.List[LCDocument]
+
+
+class QuestionLength(Enum):
+    LONG = "long"
+    MEDIUM = "medium"
+    SHORT = "short"
+
+
+class QuestionStyle(Enum):
+    MISSPELLED = "Misspelled queries"
+    PERFECT_GRAMMAR = "Perfect grammar"
+    POOR_GRAMMAR = "Poor grammar"
+    WEB_SEARCH_LIKE = "Web search like queries"
 
 
 @dataclass
-class QueryGenerator(ABC):
+class QAGenerator(ABC):
     llm: BaseRagasLLM
     embedding: BaseRagasEmbeddings
     schema: Schema
     nodes: t.List[Node]
     relationships: t.List[Relationship]
+    style: QuestionStyle = QuestionStyle.PERFECT_GRAMMAR
+    length: QuestionLength = QuestionLength.MEDIUM
+    question_modification_prompt: Prompt = field(
+        default_factory=lambda: question_modification
+    )
 
     @abstractmethod
     def generate_question(
@@ -49,12 +69,31 @@ class QueryGenerator(ABC):
         pass
 
     @abstractmethod
-    def critic_question(self, query: str) -> bool:
+    def critic_question(self, question: str) -> bool:
         pass
 
     @abstractmethod
-    def generate_answer(self, query: str) -> t.Any:
+    def generate_answer(self, question: str, chunks: t.List[LCDocument]) -> t.Any:
         pass
+
+    @abstractmethod
+    def retrieve_chunks(self, question: str, kwargs: t.Optional[dict] = None) -> t.Any:
+        pass
+
+    async def modify_question(self, question: str) -> str:
+        question_modification_prompt_ = self.question_modification_prompt
+        examples = [
+            example
+            for example in self.question_modification_prompt.examples
+            if example["style"] == self.style.value
+            and example["length"] == self.length.value
+        ]
+        question_modification_prompt_.examples = examples
+        p_value = question_modification_prompt_.format(
+                question=question, style=self.style.value, length=self.length.value
+            )
+        question = await self.llm.generate(p_value)
+        return question.generations[0][0].text
 
     def query_nodes(self, query: str, kwargs) -> t.Any:
         query = query.format(**kwargs)
@@ -70,7 +109,7 @@ class QueryGenerator(ABC):
 
 
 @dataclass
-class AbstractQueries(QueryGenerator):
+class AbtractQA(QAGenerator):
     generate_question_prompt: Prompt = field(
         default_factory=lambda: abstract_question_from_theme
     )
@@ -153,21 +192,23 @@ class AbstractQueries(QueryGenerator):
         abstract_question = abstract_question.generations[0][0].text
         critic_verdict = await self.critic_question(abstract_question)
         if critic_verdict:
-            answer, source = await self.generate_answer(
-                abstract_question, current_nodes
-            )
+            source = await self.retrieve_chunks(abstract_question, current_nodes)
+            abstract_question = await self.modify_question(abstract_question)
+            answer = await self.generate_answer(abstract_question, source)
             return QAC(question=abstract_question, answer=answer, source=source)
         else:
             logger.warning("Critic rejected the question: %s", abstract_question)
 
-    async def critic_question(self, query: str) -> bool:
-        output = await self.llm.generate(critic_question.format(question=query))
+    async def critic_question(self, question: str) -> bool:
+        output = await self.llm.generate(critic_question.format(question=question))
         output = json.loads(output.generations[0][0].text)
         return all(score >= 2 for score in output.values())
 
-    async def generate_answer(
-        self, question: str, nodes: t.List[Node], max_tokens=4000
-    ) -> t.Any:
+    async def retrieve_chunks(
+        self, question: str, nodes: t.List[Node], kwargs: t.Optional[dict] = None
+    ) -> t.List[LCDocument]:
+        kwargs = kwargs or {}
+        max_tokens = kwargs.get("max_tokens", 4024)
         node_ids = [node.id for node in nodes]
         node_ids = json.dumps(node_ids)
         query = """
@@ -192,8 +233,12 @@ class AbstractQueries(QueryGenerator):
         if results is None:
             return None
         nodes = [Node(**node) for node in results["filterNodes"]]
-        summary_chunks = [
-            json.loads(node.properties)["metadata"]["summary"] for node in nodes
+        output_documents = [
+            LCDocument(
+                page_content=json.loads(node.properties)["metadata"]["summary"],
+                metadata={"source": json.loads(node.properties)["metadata"]["source"]},
+            )
+            for node in nodes
         ]
 
         # query to get all child nodes of nodes
@@ -213,6 +258,7 @@ class AbstractQueries(QueryGenerator):
             json.loads(node.properties)["metadata"]["page_content_embedding"]
             for node in nodes
         ]
+
         question_embedding = await self.embedding.aembed_query(question)
         similarity_matrix = cosine_similarity([question_embedding], chunks_embeddings)
         most_similar = np.flip(np.argsort(similarity_matrix[0]))
@@ -224,23 +270,25 @@ class AbstractQueries(QueryGenerator):
         ]
         ranked_chunks_length = np.cumsum(ranked_chunks_length)
         index = np.argmax(np.argwhere(np.cumsum(ranked_chunks_length) < max_tokens)) + 1
-        ranked_chunks = ranked_chunks[:index]
+        output_documents.extend(ranked_chunks[:index])
+
+        return output_documents
+
+    async def generate_answer(
+        self,
+        question: str,
+        chunks: t.List[LCDocument],
+    ) -> str:
         # TODO : add title+summary of each node + title + content from most relevant chunk
-        text = (
-            "\n\n".join(summary_chunks)
-            + "\n\n"
-            + "\n\n".join([chunk.page_content for chunk in ranked_chunks])
-        )
+        text = "\n\n".join([chunk.page_content for chunk in chunks])
         output = await self.llm.generate(
             self.generate_answer_prompt.format(question=question, text=text)
         )
-        answer = output.generations[0][0].text
-
-        return (answer, ranked_chunks + summary_chunks)
+        return output.generations[0][0].text
 
 
 @dataclass
-class ComparitiveAbstractQueries(AbstractQueries):
+class ComparitiveAbtractQA(AbtractQA):
     common_topic_prompt: Prompt = field(
         default_factory=lambda: common_topic_from_keyphrases
     )
@@ -323,7 +371,7 @@ class ComparitiveAbstractQueries(AbstractQueries):
         return question
 
 
-class SpecificQuestion(QueryGenerator):
+class SpecificQuestion(QAGenerator):
 
     """
     specic questions from particular sections of particular document
