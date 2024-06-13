@@ -7,14 +7,14 @@ from enum import Enum
 
 import numpy as np
 import tiktoken
-from graphene.types.schema import Schema
 from langchain.utils.math import cosine_similarity
 from langchain_core.documents import Document as LCDocument
 
-from ragas.embeddings import BaseRagasEmbeddings
-from ragas.llms.base import BaseRagasLLM
+from ragas.embeddings import BaseRagasEmbeddings, embedding_factory
+from ragas.llms.base import BaseRagasLLM, llm_factory
 from ragas.llms.prompt import Prompt
 from ragas.testsetv3.graph import Node, Relationship
+from ragas.testsetv3.graph import schema as myschema
 from ragas.testsetv3.query_prompts import (
     abstract_question_from_theme,
     common_theme_from_summaries,
@@ -27,13 +27,6 @@ from ragas.testsetv3.query_prompts import (
 from ragas.testsetv3.utils import rng
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class QAC:
-    question: str
-    answer: str
-    source: t.List[LCDocument]
 
 
 class QuestionLength(Enum):
@@ -50,17 +43,32 @@ class QuestionStyle(Enum):
 
 
 @dataclass
+class QAC:
+    question: str
+    answer: str
+    source: t.List[LCDocument]
+    name: str
+    style: QuestionStyle
+    length: QuestionLength
+
+
+@dataclass
 class QAGenerator(ABC):
-    llm: BaseRagasLLM
-    embedding: BaseRagasEmbeddings
-    schema: Schema
     nodes: t.List[Node]
     relationships: t.List[Relationship]
+
+    llm: t.Optional[BaseRagasLLM] = None
+    embedding: t.Optional[BaseRagasEmbeddings] = None
+    name: t.Optional[str] = None
     style: QuestionStyle = QuestionStyle.PERFECT_GRAMMAR
     length: QuestionLength = QuestionLength.MEDIUM
     question_modification_prompt: Prompt = field(
         default_factory=lambda: question_modification
     )
+
+    def __post_init__(self):
+        self.llm = self.llm or llm_factory()
+        self.embedding = self.embedding or embedding_factory()
 
     @abstractmethod
     def generate_question(
@@ -90,14 +98,14 @@ class QAGenerator(ABC):
         ]
         question_modification_prompt_.examples = examples
         p_value = question_modification_prompt_.format(
-                question=question, style=self.style.value, length=self.length.value
-            )
+            question=question, style=self.style.value, length=self.length.value
+        )
         question = await self.llm.generate(p_value)
         return question.generations[0][0].text
 
     def query_nodes(self, query: str, kwargs) -> t.Any:
         query = query.format(**kwargs)
-        results = self.schema.execute(
+        results = myschema.execute(
             query, context={"nodes": self.nodes, "relationships": self.relationships}
         )
         if results.errors:
@@ -110,6 +118,7 @@ class QAGenerator(ABC):
 
 @dataclass
 class AbtractQA(QAGenerator):
+    name: str = "AbstractQA"
     generate_question_prompt: Prompt = field(
         default_factory=lambda: abstract_question_from_theme
     )
@@ -160,8 +169,12 @@ class AbtractQA(QAGenerator):
             }
 
         results = self.query_nodes(query, kwargs)
+
         if results is None:
             return None
+        else:
+            if not results["filterNodes"]:
+                return None
 
         result_nodes = [Node(**item) for item in results["filterNodes"]]
         current_nodes = self.get_random_node(result_nodes)
@@ -195,7 +208,14 @@ class AbtractQA(QAGenerator):
             source = await self.retrieve_chunks(abstract_question, current_nodes)
             abstract_question = await self.modify_question(abstract_question)
             answer = await self.generate_answer(abstract_question, source)
-            return QAC(question=abstract_question, answer=answer, source=source)
+            return QAC(
+                question=abstract_question,
+                answer=answer,
+                source=source,
+                name=self.name,
+                style=self.style,
+                length=self.length,
+            )
         else:
             logger.warning("Critic rejected the question: %s", abstract_question)
 
@@ -289,6 +309,7 @@ class AbtractQA(QAGenerator):
 
 @dataclass
 class ComparitiveAbtractQA(AbtractQA):
+    name: str = "ComparitiveAbtractQA"
     common_topic_prompt: Prompt = field(
         default_factory=lambda: common_topic_from_keyphrases
     )
