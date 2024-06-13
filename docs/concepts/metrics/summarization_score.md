@@ -16,7 +16,25 @@ graph LR
     D --> F[Summarization Score]
 ````
 
+We compute the question-answer score using the answers, which is a list of `1`s and `0`s. The question-answer score is then calculated as the ratio of correctly answered questions(answer = `1`) to the total number of questions.
+
 ```{math}
+:label: question-answer-score
+\text{QA score} = \frac{|\text{correctly answered questions}|}{|\text{total questions}|}
+````
+
+We also introduce an option to penalize larger summaries by proving a conciseness score. If this option is enabled, the final score is calculated as the average of the summarization score and the conciseness score. This conciseness scores ensures that summaries that are just copies of the text do not get a high score, because they will obviously answer all questions correctly.
+
+```{math}
+:label: conciseness-score
+\text{conciseness score} = \frac{\text{length of summary}}{\text{length of context}}
+````
+
+The final summarization score is then calculated as:
+
+```{math}
+:label: summarization-score
+\text{Summarization Score} = \frac{\text{QA score} + \text{conciseness score}}{2}
 ````
 
 ```{hint}
@@ -52,24 +70,19 @@ graph LR
 **Answers**: ["0", "1", "1", "1", "0", "0", "1", "1", "1", "1", "1"]
 ````
 
+## Example
 
-We compute the question-answer score using the answers, which is a list of `1`s and `0`s. The question-answer score is then calculated as the ratio of correctly answered questions(answer = `1`) to the total number of questions.
+```{code-block} python
+from datasets import Dataset 
+from ragas.metrics import summarization_score
+from ragas import evaluate
 
-```{math}
-:label: question-answer-score
-\text{QA score} = \frac{|\text{correctly answered questions}|}{|\text{total questions}|}
-````
+data_samples = {
+    'contexts' : [[c1], [c2]],
+    'summary': [s1, s2]
+}
+dataset = Dataset.from_dict(data_samples)
+score = evaluate(dataset,metrics=[summarization_score])
+score.to_pandas()
+```
 
-We also introduce an option to penalize larger summaries by proving a conciseness score. If this option is enabled, the final score is calculated as the average of the summarization score and the conciseness score. This conciseness scores ensures that summaries that are just copies of the text do not get a high score, because they will obviously answer all questions correctly.
-
-```{math}
-:label: conciseness-score
-\text{conciseness score} = \frac{\text{length of summary}}{\text{length of context}}
-````
-
-The final summarization score is then calculated as:
-
-```{math}
-:label: summarization-score
-\text{Summarization Score} = \frac{\text{QA score} + \text{conciseness score}}{2}
-````
