@@ -36,6 +36,7 @@ extensions = [
     "sphinxawesome_theme.highlighting",
     # "sphinxawesome_theme.docsearch",
     "myst_nb",
+    "sphinxcontrib.mermaid",
 ]
 
 source_suffix = [".rst", ".md"]
