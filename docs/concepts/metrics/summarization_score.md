@@ -2,19 +2,7 @@
 
 This metric gives a measure of how well the `summary` captures the important information from the `contexts`. The intuition behind this metric is that a good summary shall contain all the important information present in the context(or text so to say).
 
-We first extract a set of important keyphrases from the context. These keyphrases are then used to generate a set of questions. The answers to these questions are always `yes(1)` for the context. We then ask these questions to the summary and calculate the summarization score as the ratio of correctly answered questions to the total number of questions. The flowchart below illustrates the process:
-
-
-```{mermaid}
-graph LR
-    A[Context] --> B[Keyphrases]
-    B ---> C[Questions]
-    A --> C
-
-    C --> D[Answers]
-    E[Summary] ----> D
-    D --> F[Summarization Score]
-````
+We first extract a set of important keyphrases from the context. These keyphrases are then used to generate a set of questions. The answers to these questions are always `yes(1)` for the context. We then ask these questions to the summary and calculate the summarization score as the ratio of correctly answered questions to the total number of questions. 
 
 We compute the question-answer score using the answers, which is a list of `1`s and `0`s. The question-answer score is then calculated as the ratio of correctly answered questions(answer = `1`) to the total number of questions.
 
