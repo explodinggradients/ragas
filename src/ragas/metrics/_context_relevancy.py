@@ -60,7 +60,6 @@ class ContextRelevancy(MetricWithLLM):
             if response.lower() != "insufficient information."
             else []
         )
-        # print(len(indices))
         if len(context_sents) == 0:
             return 0
         else:

@@ -13,6 +13,9 @@ from pydantic.dataclasses import dataclass
 
 from ragas.run_config import RunConfig, add_async_retry, add_retry
 
+if t.TYPE_CHECKING:
+    from llama_index.core.base.embeddings.base import BaseEmbedding
+
 DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
 
 
@@ -151,6 +154,28 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
 
         assert isinstance(predictions, Tensor)
         return predictions.tolist()
+
+
+class LlamaIndexEmbeddingsWrapper(BaseRagasEmbeddings):
+    def __init__(
+        self, embeddings: BaseEmbedding, run_config: t.Optional[RunConfig] = None
+    ):
+        self.embeddings = embeddings
+        if run_config is None:
+            run_config = RunConfig()
+        self.set_run_config(run_config)
+
+    def embed_query(self, text: str) -> t.List[float]:
+        return self.embeddings.get_query_embedding(text)
+
+    def embed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
+        return self.embeddings.get_text_embedding_batch(texts)
+
+    async def aembed_query(self, text: str) -> t.List[float]:
+        return await self.embeddings.aget_query_embedding(text)
+
+    async def aembed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
+        return await self.embeddings.aget_text_embedding_batch(texts)
 
 
 def embedding_factory(
