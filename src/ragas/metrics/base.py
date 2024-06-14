@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 LANGUAGE_CODES = {v.__name__.lower(): k for k, v in LANGUAGE_CODES.items()}
 
-EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg ts")
+EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg ca")
 
 
 def get_required_columns(
@@ -52,8 +52,8 @@ def get_required_columns(
         keys = ["question", "contexts", "answer", "ground_truth"]
     elif eval_mod == EvaluationMode.qcg:
         keys = ["question", "contexts", "ground_truth"]
-    elif eval_mod == EvaluationMode.ts:
-        keys = ["contexts", "summary"]
+    elif eval_mod == EvaluationMode.ca:
+        keys = ["contexts", "answer"]
     ignore_columns = ignore_columns or []
 
     return [k for k in keys if k not in ignore_columns]
@@ -63,13 +63,11 @@ def get_required_columns(
 class Metric(ABC):
     @property
     @abstractmethod
-    def name(self) -> str:
-        ...
+    def name(self) -> str: ...
 
     @property
     @abstractmethod
-    def evaluation_mode(self) -> EvaluationMode:
-        ...
+    def evaluation_mode(self) -> EvaluationMode: ...
 
     @abstractmethod
     def init(self, run_config: RunConfig):
@@ -138,8 +136,9 @@ class Metric(ABC):
         return score
 
     @abstractmethod
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
-        ...
+    async def _ascore(
+        self, row: t.Dict, callbacks: Callbacks, is_async: bool
+    ) -> float: ...
 
 
 @dataclass
