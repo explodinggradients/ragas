@@ -21,6 +21,7 @@ from ragas.testsetv3.query_prompts import (
     common_topic_from_keyphrases,
     comparative_question,
     critic_question,
+    order_sections_by_relevance,
     question_answering,
     question_modification,
 )
@@ -44,12 +45,12 @@ class QuestionStyle(Enum):
 
 @dataclass
 class QAC:
-    question: str
-    answer: str
-    source: t.List[LCDocument]
-    name: str
-    style: QuestionStyle
-    length: QuestionLength
+    question: t.Optional[str] = None
+    answer: t.Optional[str] = None
+    source: t.Optional[t.List[LCDocument]] = None
+    name: t.Optional[str] = None
+    style: t.Optional[QuestionStyle] = None
+    length: t.Optional[QuestionLength] = None
 
 
 @dataclass
@@ -85,7 +86,9 @@ class QAGenerator(ABC):
         pass
 
     @abstractmethod
-    def retrieve_chunks(self, question: str, kwargs: t.Optional[dict] = None) -> t.Any:
+    def retrieve_chunks(
+        self, question: str, nodes: t.List[Node], kwargs: t.Optional[dict] = None
+    ) -> t.Any:
         pass
 
     async def modify_question(self, question: str) -> str:
@@ -115,6 +118,16 @@ class QAGenerator(ABC):
             return None
         return results.data
 
+    def get_random_node(self, nodes) -> t.List[Node]:
+        nodes = [node for node in nodes if node.relationships]
+        nodes_weights = np.array(
+            [json.loads(node.properties).get("chances", 0) for node in nodes]
+        )
+        if all(nodes_weights == 0):
+            nodes_weights = np.ones(len(nodes_weights))
+        nodes_weights = nodes_weights / sum(nodes_weights)
+        return rng.choice(np.array(nodes), p=nodes_weights, size=1).tolist()
+
 
 @dataclass
 class AbtractQA(QAGenerator):
@@ -128,19 +141,9 @@ class AbtractQA(QAGenerator):
         default_factory=lambda: common_theme_from_summaries
     )
 
-    def get_random_node(self, nodes) -> t.List[Node]:
-        nodes = [node for node in nodes if node.relationships]
-        nodes_weights = np.array(
-            [json.loads(node.properties).get("chances", 0) for node in nodes]
-        )
-        if all(nodes_weights == 0):
-            nodes_weights = np.ones(len(nodes_weights))
-        nodes_weights = nodes_weights / sum(nodes_weights)
-        return rng.choice(np.array(nodes), p=nodes_weights, size=1).tolist()
-
     async def generate_question(
         self, query: t.Optional[str] = None, kwargs: t.Optional[dict] = None
-    ) -> t.Any:
+    ) -> QAC:
         if query is None:
             query = """
             {{
@@ -171,10 +174,10 @@ class AbtractQA(QAGenerator):
         results = self.query_nodes(query, kwargs)
 
         if results is None:
-            return None
+            return QAC()
         else:
             if not results["filterNodes"]:
-                return None
+                return QAC()
 
         result_nodes = [Node(**item) for item in results["filterNodes"]]
         current_nodes = self.get_random_node(result_nodes)
@@ -185,7 +188,7 @@ class AbtractQA(QAGenerator):
             if rel["target"]["label"] == "DOC"
         ]
         if not related_nodes:
-            return None
+            return QAC()
         current_nodes.extend(related_nodes)
         summaries = [
             json.loads(item.properties)["metadata"]["summary"] for item in current_nodes
@@ -218,6 +221,7 @@ class AbtractQA(QAGenerator):
             )
         else:
             logger.warning("Critic rejected the question: %s", abstract_question)
+            return QAC()
 
     async def critic_question(self, question: str) -> bool:
         output = await self.llm.generate(critic_question.format(question=question))
@@ -319,7 +323,7 @@ class ComparitiveAbtractQA(AbtractQA):
 
     async def generate_question(
         self, query: t.Optional[str] = None, kwargs: t.Optional[dict] = None
-    ) -> t.Any:
+    ) -> QAC:
         query = """
         {{
         filterNodes(label: DOC) {{
@@ -392,18 +396,74 @@ class ComparitiveAbtractQA(AbtractQA):
         return question
 
 
+@dataclass
 class SpecificQuestion(QAGenerator):
+    name: str = "SpecificQuestion"
+    order_sections_prompt: Prompt = field(
+        default_factory=lambda: order_sections_by_relevance
+    )
 
     """
     specic questions from particular sections of particular document
     for example, what are model architecture details used in OpenMoE paper?
     """
 
-    async def generate_question(self, query: str) -> t.Any:
+    async def generate_question(
+        self, query: str | None = None, kwargs: dict | None = None
+    ) -> QAC:
+        query = """
+        {{
+        filterNodes(label: DOC) {{
+            id
+            label
+            properties
+            relationships(label: "{label}") {{
+            label
+            properties
+            target {{
+                id
+                label
+                properties
+            }}
+            }}
+        }}
+        }}
+        """
+        kwargs = {
+            "label": "contains",
+        }
+        result_nodes = self.query_nodes(query, kwargs)
+        result_nodes = [Node(**node) for node in result_nodes["filterNodes"]]
+        current_node = self.get_random_node(result_nodes)
+
+        headings = json.loads(current_node[0].properties)["metadata"]["headlines"]
+        p_vlaue = self.order_sections_prompt.format(sections=list(headings.keys()))
+        output = await self.llm.generate(p_vlaue)
+        output = json.loads(output.generations[0][0].text)
+        headings_array = np.array(output.get("high") + output.get("medium"))
+        selected_heading = rng.choice(headings_array, size=1)[0]
+        subheadings = headings[selected_heading]
+        if subheadings:
+            subheading = rng.choice(np.array(subheadings), size=1)[0]
+            selected_heading = [selected_heading, subheading]
+
+        return current_node[0], selected_heading
+        nodes = [
+            Node(**relation["target"])
+            for relation in current_node[0].relationships
+            if relation["label"] == "contains"
+            and json.loads(relation["properties"]) in selected_heading
+        ]
+
+        return nodes
+
+    def critic_question(self, question: str) -> bool:
         pass
 
-    async def critic_question(self, query: str) -> bool:
+    def retrieve_chunks(
+        self, question: str, nodes: t.List[Node], kwargs: dict | None = None
+    ) -> t.Any:
         pass
 
-    async def generate_answer(self, query: str) -> t.Any:
+    def generate_answer(self, question: str, chunks: t.List[LCDocument]) -> t.Any:
         pass
