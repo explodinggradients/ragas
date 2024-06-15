@@ -1,11 +1,34 @@
 import uuid
 
-from graphene import Argument, Enum, Field, JSONString, List, ObjectType, Schema, String
+from graphene import (
+    Argument,
+    Enum,
+    Field,
+    JSONString,
+    List,
+    ObjectType,
+    Schema,
+    String,
+)
 
 
 class NodeType(Enum):
     DOC = "doc"
     CHUNK = "chunk"
+
+
+class NodeLevel(Enum):
+    LEVEL_0 = 0
+    LEVEL_1 = 1
+    LEVEL_2 = 2
+
+    def next_level(self):
+        level_values = list(NodeLevel)
+        current_index = level_values.index(self)
+        next_index = current_index + 1
+        if next_index < len(level_values):
+            return level_values[next_index]
+        return None  # or raise an exception if there's no next level
 
 
 class Relationship(ObjectType):
@@ -47,6 +70,7 @@ class Node(ObjectType):
         property_value=Argument(String),
         comparison=Argument(String),
     )
+    level = Field(NodeLevel)
 
     def __init__(self, id=None, **kwargs):
         if id is None:
