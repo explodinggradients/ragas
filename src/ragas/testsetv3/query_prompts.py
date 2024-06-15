@@ -220,3 +220,34 @@ question_modification = Prompt(
     output_key="modified_question",
     output_type="str",
 )
+
+
+order_sections_by_relevance = order_sections_by_relevance = Prompt(
+    name="order_sections_by_relevance",
+    instruction="Classify each section based on its ability to create good specific questions from it, using 'low', 'medium', or 'high' as the classification.",
+    examples=[
+        {
+            "sections": [
+                "Abstract",
+                "Introduction",
+                "Literature Review",
+                "Methodology",
+                "Results",
+                "Discussion",
+                "Conclusion",
+                "Future Work",
+                "References",
+                "Appendix",
+            ],
+            "ordered_sections": {
+                "high": ["Methodology", "Results", "Discussion"],
+                "medium": ["Literature Review", "Future Work", "Conclusion"],
+                "low": ["Introduction", "Abstract", "References", "Appendix"],
+            },
+        }
+    ],
+    input_keys=["sections"],
+    output_key="ordered_sections",
+    output_type="json",
+    language="english",
+)
