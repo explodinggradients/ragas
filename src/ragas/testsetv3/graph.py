@@ -1,15 +1,6 @@
 import uuid
 
-from graphene import (
-    Argument,
-    Enum,
-    Field,
-    JSONString,
-    List,
-    ObjectType,
-    Schema,
-    String,
-)
+from graphene import Argument, Enum, Field, JSONString, List, ObjectType, Schema, String
 
 
 class NodeType(Enum):
@@ -126,12 +117,19 @@ class Query(ObjectType):
         Node,
         ids=Argument(List(String)),
         label=Argument(NodeType),
+        level=Argument(NodeLevel),
         property_key=Argument(String),
         property_value=Argument(String),
     )
 
     def resolve_filter_nodes(
-        parent, info, ids=None, label=None, property_key=None, property_value=None
+        parent,
+        info,
+        ids=None,
+        label=None,
+        level=None,
+        property_key=None,
+        property_value=None,
     ):
         nodes = info.context.get("nodes", [])
         filtered_nodes = nodes
@@ -144,6 +142,9 @@ class Query(ObjectType):
 
         if label:
             filtered_nodes = [node for node in nodes if node.label == label]
+
+        if level:
+            filtered_nodes = [node for node in nodes if node.level == level]
 
         if property_key and property_value:
             filtered_nodes = [
