@@ -251,3 +251,24 @@ order_sections_by_relevance = order_sections_by_relevance = Prompt(
     output_type="json",
     language="english",
 )
+
+
+specific_question_from_keyphrase = Prompt(
+    name="specific_question_from_keyphrase",
+    instruction="Given the title of a text and a text chunk, along with a keyphrase from the chunk, generate a specific question related to the keyphrase.\n\n"
+    "1. Read the title and the text chunk.\n"
+    "2. Identify the context of the keyphrase within the text chunk.\n"
+    "3. Formulate a question that directly relates to the keyphrase and its context within the chunk.\n"
+    "4. Ensure the question is clear, specific, and relevant to the keyphrase.",
+    examples=[
+        {
+            "title": "The Impact of Artificial Intelligence on Modern Healthcare",
+            "keyphrase": "personalized treatment plans",
+            "text": "Artificial intelligence (AI) is revolutionizing healthcare by improving diagnostic accuracy and enabling personalized treatment plans. AI algorithms analyze vast amounts of medical data to identify patterns and predict patient outcomes, which enhances the decision-making process for healthcare professionals.",
+            "question": "How does artificial intelligence contribute to the development of personalized treatment plans in healthcare?",
+        }
+    ],
+    input_keys=["title", "keyphrase", "text"],
+    output_key="question",
+    output_type="str",
+)
