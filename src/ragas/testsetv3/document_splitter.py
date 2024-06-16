@@ -208,6 +208,16 @@ class HeadlineSplitter:
 
         return nodes, relationships
 
+    def split_documents(self, documents: t.Sequence[LCDocument], attribute: str):
+        nodes = []
+        relationships = []
+        for doc in documents:
+            doc_nodes, doc_relationships = self.split_nodes_by_attribute(doc, attribute)
+            nodes.extend(doc_nodes)
+            relationships.extend(doc_relationships)
+
+        return nodes, relationships
+
 
 @dataclass
 class DocumentSplitter:
