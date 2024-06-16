@@ -12,7 +12,7 @@ from ragas.embeddings.base import BaseRagasEmbeddings, embedding_factory
 from ragas.llms.base import BaseRagasLLM, llm_factory
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
-from ragas.testsetv3.graph import Node
+from ragas.testsetv3.graph import Node, NodeLevel
 from ragas.testsetv3.utils import MODEL_MAX_LENGTHS, merge_dicts
 
 RULE_BASED_EXTRACTORS = [
@@ -48,39 +48,40 @@ headline_extractor_prompt = Prompt(
     examples=[
         {
             "text": """
-            SOME TITLE
-1. INTRODUCTION AND RELATED WORK
+            Some Title
+1. Introduction and Related Work
 
-1.1 CONDITIONAL COMPUTATION
-Exploiting scale in both training data and model size has been central to the success of deep learn- ing...
-1.2 OUR APPROACH: THE SPARSELY-GATED MIXTURE-OF-EXPERTS LAYER
-Our approach to conditional computation is to introduce a new type of general purpose neural net- work component...
-1.3 RELATED WORK ON MIXTURES OF EXPERTS
+1.1 Conditional Computation
+Exploiting scale in both training data and model size has been central to the success of deep learning...
+1.2 Our Approach: The Sparsely-Gated Mixture-of-Experts Layer
+Our approach to conditional computation is to introduce a new type of general purpose neural network component...
+1.3 Related Work on Mixtures of Experts
 Since its introduction more than two decades ago (Jacobs et al., 1991; Jordan & Jacobs, 1994), the mixture-of-experts approach..
 
-2. THE SPARSELY-GATED MIXTURE-OF-EXPERTS LAYER
-2.1 ARCHITECTURE
+2. The Sparsely-Gated Mixture-of-Experts Layer
+2.1 Architecture
 The sparsely-gated mixture-of-experts layer is a feedforward neural network layer that consists of a number of expert networks and a single gating network...
             """,
             "headlines": {
-                "INTRODUCTION AND RELATED WORK": [
-                    "CONDITIONAL COMPUTATION",
-                    "OUR APPROACH: THE SPARSELY-GATED MIXTURE-OF-EXPERTS LAYER",
-                    "RELATED WORK ON MIXTURES OF EXPERTS",
+                "1. Introduction and Related Work": [
+                    "1.1 Conditional Computation",
+                    "1.2 Our Approach: The Sparsely-Gated Mixture-of-Experts Layer",
+                    "1.3 Related Work on Mixtures of Experts",
                 ],
-                "THE SPARSELY-GATED MIXTURE-OF-EXPERTS LAYER": ["ARCHITECTURE"],
+                "2. The Sparsely-Gated Mixture-of-Experts Layer": ["2.1 Architecture"],
             },
         }
     ],
     input_keys=["text"],
     output_key="headlines",
     output_type="json",
+    language="english",
 )
 
 
 keyphrase_extractor_prompt = Prompt(
     name="keyphrase_extractor",
-    instruction="Extract top 5 unique keyphrases from the given text.",
+    instruction="Extract top 5 keyphrases from the given text.",
     examples=[
         {
             "text": "Artificial intelligence\n\nArtificial intelligence is transforming various industries by automating tasks that previously required human intelligence. From healthcare to finance, AI is being used to analyze vast amounts of data quickly and accurately. This technology is also driving innovations in areas like self-driving cars and personalized recommendations.",
@@ -229,6 +230,9 @@ class LLMbasedExtractor(Extractor):
         if len({len(extractor.prompt.examples) for extractor in extractors}) != 1:
             raise ValueError("All extractors should have the same number of examples.")
 
+        # TODO: every example should have same input keys and values to be merged
+        # find and merge extractors that satisfy this condition
+
         instruction = "\n".join(
             [
                 f"{i}:{extractor.prompt.instruction}"
@@ -313,21 +317,22 @@ class DocumentExtractor:
 
         return documents
 
-    async def extract_from_nodes(self, nodes: t.List[Node]):
+    async def extract_from_nodes(self, nodes: t.List[Node], levels: t.List[NodeLevel]):
         for node in nodes:
-            if self.llm_extractors:
-                output = await self.llm_extractors.extract(
-                    node.properties["page_content"]
-                )
-                node.properties["metadata"].update(output)
-            if self.regex_extractors:
-                output = self.regex_extractors.extract(node.properties.page_content)
-                node.properties["metadata"].update(output)
+            if node.level in levels:
+                if self.llm_extractors:
+                    output = await self.llm_extractors.extract(
+                        node.properties["page_content"]
+                    )
+                    node.properties["metadata"].update(output)
+                if self.regex_extractors:
+                    output = self.regex_extractors.extract(node.properties.page_content)
+                    node.properties["metadata"].update(output)
 
         return nodes
 
     async def embed_from_documents(
-        self, documents: t.Sequence[LCDocument], attributes=t.List[str]
+        self, documents: t.Sequence[LCDocument], attributes: t.List[str]
     ):
         self.embedding = (
             self.embedding if self.embedding is not None else embedding_factory()
@@ -349,21 +354,24 @@ class DocumentExtractor:
 
         return documents
 
-    async def embed_from_nodes(self, nodes: t.List[Node], attributes=t.List[str]):
+    async def embed_from_nodes(
+        self, nodes: t.List[Node], attributes: t.List[str], levels: t.List[NodeLevel]
+    ):
         self.embedding = (
             self.embedding if self.embedding is not None else embedding_factory()
         )
+        nodes_ = [node for node in nodes if node.level in levels]
         for attr in attributes:
             if attr == "page_content":
-                items_to_embed = [node.properties["page_content"] for node in nodes]
+                items_to_embed = [node.properties["page_content"] for node in nodes_]
             else:
-                items_to_embed = [node.properties["metadata"][attr] for node in nodes]
+                items_to_embed = [node.properties["metadata"][attr] for node in nodes_]
 
             embeddings_list = await self.embedding.aembed_documents(items_to_embed)
             assert len(embeddings_list) == len(
                 items_to_embed
             ), "Embeddings and document must be of equal length"
-            for node, embedding in zip(nodes, embeddings_list):
+            for node, embedding in zip(nodes_, embeddings_list):
                 node.properties["metadata"][f"{attr}_embedding"] = embedding
 
         return nodes
