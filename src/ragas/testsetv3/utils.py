@@ -2,7 +2,7 @@ import json
 
 import numpy as np
 
-from ragas.testsetv3.graph import Node, NodeType, Relationship, NodeLevel
+from ragas.testsetv3.graph import Node, NodeLevel, NodeType, Relationship
 
 MODEL_MAX_LENGTHS = {
     "gpt-3.5-turbo": 16385,
@@ -71,5 +71,10 @@ class GraphConverter:
             raise ValueError("Unknown item type")
 
     @staticmethod
-    def convert_dicts_to_objects(data):
-        return [GraphConverter.convert_dict_to_object(item) for item in data]
+    def convert(data):
+        if isinstance(data, dict):
+            return GraphConverter.convert_dict_to_object(data)
+        elif isinstance(data, list):
+            return [GraphConverter.convert_dict_to_object(item) for item in data]
+        else:
+            raise ValueError("Unknown data type")
