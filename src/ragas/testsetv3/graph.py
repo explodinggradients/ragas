@@ -34,10 +34,16 @@ class Relationship(ObjectType):
         for relationship in node if target.id == node.id then it means that the relationship is incoming to the node
     """
 
+    id = String(required=True)
     source = Field(lambda: Node)
     target = Field(lambda: Node)
     label = String()
     properties = Field(JSONString)
+
+    def __init__(self, id=None, **kwargs):
+        if id is None:
+            id = str(uuid.uuid4())
+        super().__init__(id=id, **kwargs)
 
 
 class Node(ObjectType):
