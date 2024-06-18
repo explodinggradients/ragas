@@ -1,7 +1,7 @@
 import uuid
-
-from graphene import Argument, Enum, Field, JSONString, List, ObjectType, Schema, String
-
+import typing as t
+from graphene import Argument, Field, JSONString, List, ObjectType, Schema, String
+from enum import Enum
 
 class NodeType(Enum):
     DOC = "doc"
@@ -13,7 +13,7 @@ class NodeLevel(Enum):
     LEVEL_1 = 1
     LEVEL_2 = 2
 
-    def next_level(self):
+    def next_level(self) -> t.Optional['NodeLevel']:
         level_values = list(NodeLevel)
         current_index = level_values.index(self)
         next_index = current_index + 1

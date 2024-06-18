@@ -290,15 +290,19 @@ class ComparitiveAbtractQA(AbtractQA):
         if critic_verdict:
             source = await self.retrieve_chunks(question, current_nodes, kwargs)
             question = await self.modify_question(question)
-            answer = await self.generate_answer(question, source)
-            return QAC(
-                question=question,
-                answer=answer,
-                source=source,
-                name=self.name,
-                style=self.style,
-                length=self.length,
-            )
+            if source:
+                answer = await self.generate_answer(question, source)
+                return QAC(
+                    question=question,
+                    answer=answer,
+                    source=source,
+                    name=self.name,
+                    style=self.style,
+                    length=self.length,
+                )
+            else:
+                logger.warning("source not found: %s", question)
+                return QAC()
         else:
             logger.warning("Critic rejected the question: %s", question)
             return QAC()

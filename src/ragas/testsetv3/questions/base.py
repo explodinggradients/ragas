@@ -79,7 +79,7 @@ class QAGenerator(ABC):
 
     async def modify_question(self, question: str) -> str:
         assert self.llm is not None, "LLM is not initialized"
-        question_modification_prompt_ = self.question_modification_prompt
+        question_modification_prompt_ = self.question_modification_prompt.copy()
         examples = [
             example
             for example in self.question_modification_prompt.examples
