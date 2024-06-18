@@ -26,7 +26,7 @@ from ragas.testsetv3.query_prompts import (
     question_modification,
     specific_question_from_keyphrase,
 )
-from ragas.testsetv3.utils import rng
+from ragas.testsetv3.utils import GraphConverter, rng
 
 logger = logging.getLogger(__name__)
 
@@ -117,13 +117,12 @@ class QAGenerator(ABC):
         if results.data is None:
             logger.warning("result for %s is None", query)
             return None
-        return results.data
+
+        return GraphConverter.convert(results.data["filterNodes"])
 
     def get_random_node(self, nodes) -> t.List[Node]:
         nodes = [node for node in nodes if node.relationships]
-        nodes_weights = np.array(
-            [json.loads(node.properties).get("chances", 0) for node in nodes]
-        )
+        nodes_weights = np.array([node.properties.get("chances", 0) for node in nodes])
         if all(nodes_weights == 0):
             nodes_weights = np.ones(len(nodes_weights))
         nodes_weights = nodes_weights / sum(nodes_weights)
@@ -173,27 +172,22 @@ class AbtractQA(QAGenerator):
             }
 
         results = self.query_nodes(query, kwargs)
-
         if results is None:
             return QAC()
-        else:
-            if not results["filterNodes"]:
-                return QAC()
 
-        result_nodes = [Node(**item) for item in results["filterNodes"]]
-        current_nodes = self.get_random_node(result_nodes)
+        current_nodes = self.get_random_node(results)
 
         related_nodes = [
-            Node(**rel["target"])
+            rel.target
             for rel in current_nodes[0].relationships
-            if rel["target"]["label"] == "DOC"
+            if rel.target.label.name == "DOC"
         ]
+
         if not related_nodes:
             return QAC()
+
         current_nodes.extend(related_nodes)
-        summaries = [
-            json.loads(item.properties)["metadata"]["summary"] for item in current_nodes
-        ]
+        summaries = [item.properties["metadata"]["summary"] for item in current_nodes]
         summaries = "\n".join(
             [f"{i+1}. {summary}" for i, summary in enumerate(summaries)]
         )
@@ -257,31 +251,29 @@ class AbtractQA(QAGenerator):
         results = self.query_nodes(query, {"node_ids": node_ids})
         if results is None:
             return None
-        nodes = [Node(**node) for node in results["filterNodes"]]
+
+        nodes = results
         output_documents = [
             LCDocument(
-                page_content=json.loads(node.properties)["metadata"]["summary"],
-                metadata={"source": json.loads(node.properties)["metadata"]["source"]},
+                page_content=node.properties["metadata"]["summary"],
+                metadata={"source": node.properties["metadata"]["source"]},
             )
             for node in nodes
         ]
 
         # query to get all child nodes of nodes
         nodes = [
-            Node(**relationship["target"])
-            for node in nodes
-            for relationship in node.relationships
+            relationship.target for node in nodes for relationship in node.relationships
         ]
         chunks = [
             LCDocument(
-                page_content=json.loads(node.properties)["page_content"],
-                metadata=json.loads(node.properties)["metadata"],
+                page_content=node.properties["page_content"],
+                metadata=node.properties["metadata"],
             )
             for node in nodes
         ]
         chunks_embeddings = [
-            json.loads(node.properties)["metadata"]["page_content_embedding"]
-            for node in nodes
+            node.properties["metadata"]["page_content_embedding"] for node in nodes
         ]
 
         question_embedding = await self.embedding.aembed_query(question)
@@ -353,25 +345,17 @@ class ComparitiveAbtractQA(AbtractQA):
             "comparison": "gt",
         }
         result_nodes = self.query_nodes(query, kwargs)
-        result_nodes = [Node(**node) for node in result_nodes["filterNodes"]]
         current_nodes = self.get_random_node(result_nodes)
 
         indices = np.flip(
             np.argsort(
-                [
-                    json.loads(rel["properties"])["score"]
-                    for rel in current_nodes[0].relationships
-                ]
+                [rel.properties["score"] for rel in current_nodes[0].relationships]
             )
         )[:3]
-        related_nodes = [
-            Node(**current_nodes[0].relationships[i]["target"]) for i in indices
-        ]
+        related_nodes = [current_nodes[0].relationships[i].target for i in indices]
         current_nodes.extend(related_nodes)
 
-        summaries = [
-            json.loads(item.properties)["metadata"]["summary"] for item in current_nodes
-        ]
+        summaries = [item.properties["metadata"]["summary"] for item in current_nodes]
         summaries = "\n".join(
             [f"{i+1}. {summary}" for i, summary in enumerate(summaries)]
         )
@@ -381,8 +365,7 @@ class ComparitiveAbtractQA(AbtractQA):
         common_theme = common_theme.generations[0][0].text
 
         keyphrases = [
-            json.loads(node.properties)["metadata"]["keyphrases"]
-            for node in current_nodes
+            node.properties["metadata"]["keyphrases"] for node in current_nodes
         ]
         keyphrases = [phrase for phrases in keyphrases for phrase in phrases]
         comparison_topic = await self.llm.generate(
@@ -457,29 +440,26 @@ class ComparitiveAbtractQA(AbtractQA):
         }}
         """
         kwargs = {"node_ids": node_ids}
-        result_nodes = self.query_nodes(query, kwargs)
-        if not result_nodes:
+        target_nodes = self.query_nodes(query, kwargs)
+        if not target_nodes:
             return None
 
-        target_nodes = [Node(**node) for node in result_nodes["filterNodes"]]
         target_nodes = [
-            Node(**relation["target"])
-            for node in target_nodes
-            for relation in node.relationships
+            relation.target for node in target_nodes for relation in node.relationships
         ]
         target_nodes = [
             node for node in target_nodes if node.level == NodeLevel.LEVEL_1.name
         ]
         context_embedding = [
-            json.loads(node.properties)["metadata"]["page_content_embedding"]
+            node.properties["metadata"]["page_content_embedding"]
             for node in target_nodes
         ]
         idxs, _ = cosine_similarity_top_k([query_emebdding], context_embedding, top_k=2)
         target_nodes = [target_nodes[idx[1]] for idx in idxs]
         documents = [
             LCDocument(
-                page_content=json.loads(node.properties)["page_content"],
-                metadata=json.loads(node.properties)["metadata"],
+                page_content=node.properties["page_content"],
+                metadata=node.properties["metadata"],
             )
             for node in target_nodes
         ]
@@ -531,13 +511,12 @@ class SpecificQuestion(QAGenerator):
             "label": "contains",
         }
         result_nodes = self.query_nodes(query, kwargs)
-        result_nodes = [Node(**node) for node in result_nodes["filterNodes"]]
         current_node = self.get_random_node(result_nodes)
 
         seperators = [
-            json.loads(rel["properties"])["seperator"]
+            rel.properties["seperator"]
             for rel in current_node[0].relationships
-            if rel["label"] == "contains"
+            if rel.label == "contains"
         ]
         if len(seperators) > 1:
             p_vlaue = self.order_sections_prompt.format(sections=seperators)
@@ -551,26 +530,23 @@ class SpecificQuestion(QAGenerator):
             selected_heading = seperators[0:1]
 
         nodes = [
-            Node(**relation["target"])
+            relation.target
             for relation in current_node[0].relationships
-            if relation["label"] == "contains"
-            and relation["source"]["id"] == current_node[0].id
+            if relation.label == "contains"
+            and relation.source.id == current_node[0].id
             and any(
-                text in json.loads(relation["properties"])["seperator"]
-                for text in selected_heading
+                text in relation.properties["seperator"] for text in selected_heading
             )
         ]
 
         if not nodes:
             return QAC()
 
-        keyphrases = [
-            json.loads(node.properties)["metadata"]["keyphrases"] for node in nodes
-        ]
+        keyphrases = [node.properties["metadata"]["keyphrases"] for node in nodes]
         keyphrases = list(set([phrase for phrases in keyphrases for phrase in phrases]))
         keyphrase = rng.choice(np.array(keyphrases), size=1)[0]
-        title = json.loads(current_node[0].properties)["metadata"]["title"]
-        text = json.loads(nodes[0].properties)["page_content"]
+        title = current_node[0].properties["metadata"]["title"]
+        text = nodes[0].properties["page_content"]
         p_value = self.generate_question_prompt.format(
             title=title, keyphrase=keyphrase, text=text
         )
@@ -579,7 +555,7 @@ class SpecificQuestion(QAGenerator):
 
         critic_verdict = await self.critic_question(question)
         if critic_verdict:
-            source = await self.retrieve_chunks(question, nodes)
+            source = self.retrieve_chunks(question, nodes)
             question = await self.modify_question(question)
             answer = await self.generate_answer(question, source)
             return QAC(
@@ -604,8 +580,8 @@ class SpecificQuestion(QAGenerator):
     ) -> t.Any:
         documents = [
             LCDocument(
-                page_content=json.loads(node.properties)["metadata"]["page_content"],
-                metadata=json.loads(node.properties)["metadata"],
+                page_content=node.properties["page_content"],
+                metadata=node.properties["metadata"],
             )
             for node in nodes
         ]
