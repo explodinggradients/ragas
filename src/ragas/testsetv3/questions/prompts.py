@@ -139,7 +139,14 @@ question_answering = Prompt(
 question_modification = Prompt(
     name="question_modification",
     instruction="Modify the given question in order to fit the given style and length",
-    examples=[
+    examples=[],
+    input_keys=["question", "style", "length"],
+    output_key="modified_question",
+    output_type="str",
+)
+
+
+EXAMPLES_FOR_QUESTION_MODIFICATION = [
         # Short Length Examples
         {
             "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
@@ -215,12 +222,7 @@ question_modification = Prompt(
             "length": "long",
             "modified_question": "How do various energy storage solutions compare efficiency cost sustainability renewable energy systems?",
         },
-    ],
-    input_keys=["question", "style", "length"],
-    output_key="modified_question",
-    output_type="str",
-)
-
+    ]
 
 order_sections_by_relevance = order_sections_by_relevance = Prompt(
     name="order_sections_by_relevance",

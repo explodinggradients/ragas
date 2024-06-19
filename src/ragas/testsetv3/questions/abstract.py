@@ -100,16 +100,20 @@ class AbtractQA(QAGenerator):
         critic_verdict = await self.critic_question(abstract_question)
         if critic_verdict:
             source = await self.retrieve_chunks(abstract_question, current_nodes)
-            abstract_question = await self.modify_question(abstract_question)
-            answer = await self.generate_answer(abstract_question, source)
-            return QAC(
-                question=abstract_question,
-                answer=answer,
-                source=source,
-                name=self.name,
-                style=self.style,
-                length=self.length,
-            )
+            if source:
+                abstract_question = await self.modify_question(abstract_question)
+                answer = await self.generate_answer(abstract_question, source)
+                return QAC(
+                    question=abstract_question,
+                    answer=answer,
+                    source=source,
+                    name=self.name,
+                    style=self.style,
+                    length=self.length,
+                )
+            else:
+                logger.warning("source was not detected %s", abstract_question)
+                return QAC()
         else:
             logger.warning("Critic rejected the question: %s", abstract_question)
             return QAC()
@@ -198,6 +202,7 @@ class AbtractQA(QAGenerator):
         question: str,
         chunks: t.List[LCDocument],
     ) -> str:
+        assert self.llm is not None, "LLM is not initialized"
         # TODO : add title+summary of each node + title + content from most relevant chunk
         text = "\n\n".join([chunk.page_content for chunk in chunks])
         output = await self.llm.generate(
