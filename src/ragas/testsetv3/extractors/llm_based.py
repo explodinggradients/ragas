@@ -66,47 +66,71 @@ class LLMbasedExtractor(Extractor):
     def merge_extractors(self, *extractors):
         if isinstance(self, LLMbasedExtractor):
             extractors = (self,) + extractors
-        if not any(hasattr(extractor, "prompt") for extractor in extractors):
-            raise ValueError("Both extractors should have a prompt attribute.")
 
-        if len({tuple(extractor.prompt.input_keys) for extractor in extractors}) != 1:
-            raise ValueError("All extractors should have the same input keys.")
+        final_extractors: t.List[t.List[LLMbasedExtractor]] = []
+        added_indices = []
 
-        if len({len(extractor.prompt.examples) for extractor in extractors}) != 1:
-            raise ValueError("All extractors should have the same number of examples.")
-
-        # TODO: every example should have same input keys and values to be merged
-        # find and merge extractors that satisfy this condition
-
-        instruction = "\n".join(
-            [
-                f"{i}:{extractor.prompt.instruction}"
-                for i, extractor in enumerate(extractors)
-            ]
-        )
-
-        examples = []
-        for idx, example in enumerate(extractors[0].prompt.examples):
-            example = {key: example[key] for key in extractors[0].prompt.input_keys}
-            output = {
-                extractor.prompt.output_key: extractor.prompt.examples[idx][
-                    extractor.prompt.output_key
+        extractors = list(extractors)
+        for idx, extractor in enumerate(extractors):
+            if idx not in added_indices:
+                final_extractors.append([extractor])
+                added_indices.append(idx)
+                other_extractors = [
+                    ext for i, ext in enumerate(extractors) if i not in added_indices
                 ]
-                for extractor in extractors
-            }
-            example.update({"output": output})
-            examples.append(example)
+                input_keys = extractor.prompt.input_keys
+                filtered_extractors = [
+                    ext
+                    for ext in other_extractors
+                    if ext.prompt.input_keys == input_keys
+                    and len(ext.prompt.examples) == len(extractor.prompt.examples)
+                ]
+                for ext in filtered_extractors:
+                    input_values = [
+                        ext.prompt.examples[i][key]
+                        for i in range(len(ext.prompt.examples))
+                        for key in input_keys
+                    ]
+                    if all(
+                        extractor.prompt.examples[i][key] == input_values[i]
+                        for i in range(len(ext.prompt.examples))
+                        for key in input_keys
+                    ):
+                        final_extractors[-1].append(ext)
+                        added_indices.append(extractors.index(ext))
 
-        prompt = Prompt(
-            name="merged_extractor",
-            instruction=instruction,
-            examples=examples,
-            input_keys=extractors[0].prompt.input_keys,
-            output_key="output",
-            output_type="json",
-        )
+        extractors_to_return = []
+        for extractors in final_extractors:
+            instruction = "\n".join(
+                [
+                    f"{i}:{extractor.prompt.instruction}"
+                    for i, extractor in enumerate(extractors)
+                ]
+            )
 
-        return LLMbasedExtractor(prompt=prompt)
+            examples = []
+            for idx, example in enumerate(extractors[0].prompt.examples):
+                example = {key: example[key] for key in extractors[0].prompt.input_keys}
+                output = {
+                    extractor.prompt.output_key: extractor.prompt.examples[idx][
+                        extractor.prompt.output_key
+                    ]
+                    for extractor in extractors
+                }
+                example.update({"output": output})
+                examples.append(example)
+
+            prompt = Prompt(
+                name="merged_extractor",
+                instruction=instruction,
+                examples=examples,
+                input_keys=extractors[0].prompt.input_keys,
+                output_key="output",
+                output_type="json",
+            )
+            extractors_to_return.append(LLMbasedExtractor(prompt=prompt))
+
+        return extractors_to_return
 
 
 summary_extractor = LLMbasedExtractor(prompt=summary_extactor_prompt)
