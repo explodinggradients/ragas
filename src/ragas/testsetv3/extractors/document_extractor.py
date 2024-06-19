@@ -16,7 +16,7 @@ class DocumentExtractor:
     embedding: t.Optional[BaseRagasEmbeddings] = None
 
     def __post_init__(self):
-        llm_extractor = [
+        llm_extractors = [
             extractor
             for extractor in self.extractors
             if isinstance(extractor, LLMbasedExtractor)
@@ -27,8 +27,8 @@ class DocumentExtractor:
             if isinstance(extractor, RulebasedExtractor)
         ]
         self.llm_extractors = (
-            LLMbasedExtractor.merge_extractors(*llm_extractor)
-            if llm_extractor
+            LLMbasedExtractor.merge_extractors(*llm_extractors)
+            if llm_extractors
             else None
         )
         self.regex_extractors = (

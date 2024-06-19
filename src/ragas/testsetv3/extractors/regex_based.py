@@ -19,14 +19,14 @@ class RulebasedExtractor(Extractor):
 
         return result
 
-    def merge_extractors(self, *extractors):  # Instance-level method
+    def merge_extractors(self, *extractors):
         if isinstance(
             self, RulebasedExtractor
         ):  # Check if called by an initiated class
             extractors = (self,) + extractors
         pattern = "|".join([extractor.regex() for extractor in extractors])
         updated_regex = Regex(name="merged_extractor", pattern=pattern)
-        return RulebasedExtractor(regex=updated_regex)
+        return [RulebasedExtractor(regex=updated_regex)]
 
 
 links_extractor_pattern = r"(?i)\b(?:https?://|www\.)\S+\b"

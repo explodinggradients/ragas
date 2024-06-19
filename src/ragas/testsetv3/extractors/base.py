@@ -3,13 +3,13 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 
+@dataclass
 class Extractor(ABC):
     @abstractmethod
     def extract(self, text) -> t.Any:
         pass
 
-    @abstractmethod
-    def merge_extractors(self, *extractors) -> "Extractor":
+    def merge_extractors(self, *extractors) -> t.List["Extractor"]:
         pass
 
 
