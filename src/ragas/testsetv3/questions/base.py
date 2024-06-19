@@ -12,7 +12,7 @@ from ragas.llms.base import BaseRagasLLM, llm_factory
 from ragas.llms.prompt import Prompt
 from ragas.testsetv3.graph import Node, Relationship
 from ragas.testsetv3.graph import schema as myschema
-from ragas.testsetv3.questions.prompts import question_modification
+from ragas.testsetv3.questions.prompts import question_modification, EXAMPLES_FOR_QUESTION_MODIFICATION
 from ragas.testsetv3.utils import GraphConverter, rng
 
 logger = logging.getLogger(__name__)
@@ -79,19 +79,20 @@ class QAGenerator(ABC):
 
     async def modify_question(self, question: str) -> str:
         assert self.llm is not None, "LLM is not initialized"
-        question_modification_prompt_ = self.question_modification_prompt.copy()
         examples = [
             example
-            for example in self.question_modification_prompt.examples
+            for example in EXAMPLES_FOR_QUESTION_MODIFICATION
             if example["style"] == self.style.value
             and example["length"] == self.length.value
         ]
-        question_modification_prompt_.examples = examples
-        p_value = question_modification_prompt_.format(
+        self.question_modification_prompt.examples.extend(examples)
+        p_value = self.question_modification_prompt.format(
             question=question, style=self.style.value, length=self.length.value
         )
-        question = await self.llm.generate(p_value)
-        return question.generations[0][0].text
+        self.question_modification_prompt.examples = []
+        result = await self.llm.generate(prompt=p_value)
+        modified_question = result.generations[0][0].text
+        return modified_question
 
     def query_nodes(self, query: str, kwargs) -> t.Any:
         query = query.format(**kwargs)
