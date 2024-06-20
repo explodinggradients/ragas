@@ -40,11 +40,13 @@ class DocumentExtractor:
     async def extract_from_documents(self, documents: t.Sequence[LCDocument]):
         for doc in documents:
             if self.llm_extractors:
-                output = await self.llm_extractors.extract(doc.page_content)
-                doc.metadata.update(output)
+                for llm_ext in self.llm_extractors:
+                    output = await llm_ext.extract(doc.page_content)
+                    doc.metadata.update(output)
             if self.regex_extractors:
-                output = self.regex_extractors.extract(doc.page_content)
-                doc.metadata.update(output)
+                for reg_ext in self.regex_extractors:
+                    output = reg_ext.extract(doc.page_content)
+                    doc.metadata.update(output)
 
         doc = documents[0]
         extractive_metadata_keys = []
@@ -67,15 +69,17 @@ class DocumentExtractor:
         for node in nodes:
             if node.level in levels:
                 if self.llm_extractors:
-                    output = await self.llm_extractors.extract(
-                        node.properties["page_content"]
-                    )
-                    node.properties["metadata"].update(output)
+                    for llm_ext in self.llm_extractors:
+                        output = await llm_ext.extract(
+                            node.properties["page_content"]
+                        )
+                        node.properties["metadata"].update(output)
                 if self.regex_extractors:
-                    output = self.regex_extractors.extract(
-                        node.properties["page_content"]
-                    )
-                    node.properties["metadata"].update(output)
+                    for reg_ext in self.regex_extractors:
+                        output = reg_ext.extract(
+                            node.properties["page_content"]
+                        )
+                        node.properties["metadata"].update(output)
 
         return nodes
 
