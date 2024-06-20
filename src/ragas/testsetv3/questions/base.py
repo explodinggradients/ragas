@@ -12,7 +12,10 @@ from ragas.llms.base import BaseRagasLLM, llm_factory
 from ragas.llms.prompt import Prompt
 from ragas.testsetv3.graph import Node, Relationship
 from ragas.testsetv3.graph import schema as myschema
-from ragas.testsetv3.questions.prompts import question_modification, EXAMPLES_FOR_QUESTION_MODIFICATION
+from ragas.testsetv3.questions.prompts import (
+    EXAMPLES_FOR_QUESTION_MODIFICATION,
+    question_modification,
+)
 from ragas.testsetv3.utils import GraphConverter, rng
 
 logger = logging.getLogger(__name__)
@@ -42,10 +45,30 @@ class QAC:
 
 
 @dataclass
+class Distribution:
+    style_length_distribution: t.Dict[t.Tuple[QuestionStyle, QuestionLength], float] = field(
+        default_factory=lambda: {
+            (QuestionStyle.PERFECT_GRAMMAR, QuestionLength.MEDIUM): 1.0
+        }
+    )
+
+    def __post_init__(self):
+        self.validate()
+        
+    def validate(self):
+        total = sum(self.style_length_distribution.values())
+        if not abs(total - 1.0) < 1e-6:
+            raise ValueError("The distribution proportions must sum up to 1.0")
+
+    def get_num_samples(self, total_samples: int, style: QuestionStyle, length: QuestionLength) -> int:
+        proportion = self.style_length_distribution.get((style, length), 0)
+        return int(total_samples * proportion)
+
+@dataclass
 class QAGenerator(ABC):
     nodes: t.List[Node]
     relationships: t.List[Relationship]
-
+    num_samples: int
     llm: t.Optional[BaseRagasLLM] = None
     embedding: t.Optional[BaseRagasEmbeddings] = None
     style: QuestionStyle = QuestionStyle.PERFECT_GRAMMAR
@@ -114,3 +137,13 @@ class QAGenerator(ABC):
             nodes_weights = np.ones(len(nodes_weights))
         nodes_weights = nodes_weights / sum(nodes_weights)
         return rng.choice(np.array(nodes), p=nodes_weights, size=1).tolist()
+
+
+default_distribution = Distribution(
+    {
+        (QuestionStyle.PERFECT_GRAMMAR, QuestionLength.MEDIUM): 0.25,
+        (QuestionStyle.POOR_GRAMMAR, QuestionLength.MEDIUM): 0.25,
+        (QuestionStyle.WEB_SEARCH_LIKE, QuestionLength.MEDIUM): 0.25,
+        (QuestionStyle.MISSPELLED, QuestionLength.MEDIUM): 0.25,
+    }
+)
