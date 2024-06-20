@@ -132,7 +132,6 @@ class HeadlineSplitter:
                     node.properties["metadata"]["headline"], []
                 )
                 if subheadings:
-                    print(subheadings)
                     nodes, relationships = self._get_nodes_relationships(
                         node, subheadings, nodes, relationships
                     )
