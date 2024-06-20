@@ -9,17 +9,18 @@ from ragas.testsetv3.relationships.base import Similarity
 class RelationshipBuilder:
     @staticmethod
     def form_relations(
-        node_level: NodeLevel,
-        similarity_functions: t.List[Similarity],
         nodes: t.List[Node],
         relationships: t.List[Relationship],
-        kwargs,
+        similarity_functions: t.List[Similarity],
+        node_level: NodeLevel,
+        kwargs: t.Optional[t.Dict[str, t.Any]] = None,
     ):
+        kwargs = kwargs or {}
         score_threshold = kwargs.get("score_threshold", 0.0)
 
         query = """
             {{
-            filterNodes(level: "{node_level}") {{
+            filterNodes(level: {node_level}) {{
                 id
                 label
                 properties
