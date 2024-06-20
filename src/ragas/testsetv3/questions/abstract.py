@@ -23,6 +23,45 @@ from ragas.testsetv3.questions.prompts import (
 logger = logging.getLogger(__name__)
 
 
+class AbstractQANew(QAGenerator):
+    
+    def query_nodes(self, query: str, kwargs) -> t.Any:
+        results = super().query_nodes(query, kwargs)
+        
+        sets = []
+        for cluster in results:
+            ids = [cluster.id]
+            ids.extend([rel.target.id for rel in cluster.relationships])
+            sets.append(set(ids))
+        
+        sets = np.unique(sets)
+        # Convert tuples to sets for easy comparison
+        sets_as_sets = [set(s) for s in sets]
+        supersets = []
+        for s in sets_as_sets:
+            is_subset = False
+            for other in sets_as_sets:
+                if other != s and other.issuperset(s):
+                    is_subset = True
+                    break
+            if not is_subset:
+                supersets.append(s)
+            
+        nodes_to_return = []    
+        for subset in supersets:
+            nodes_to_return.append([node for node in self.nodes if node.id in subset])
+            
+        return nodes_to_return or None
+    
+    async def critic_question(self, question: str):
+        raise NotImplementedError("critic_question is not implemented")
+    
+    async def generate_answer(self, question: str, chunks: t.List[LCDocument]):
+        raise NotImplementedError("generate_answer is not implemented")
+    
+    async def generate_question(self, query: str | None = None, kwargs: dict | None = None):
+        raise NotImplementedError("generate_question is not implemented")
+
 @dataclass
 class AbtractQA(QAGenerator):
     name: str = "AbstractQA"
@@ -40,6 +79,8 @@ class AbtractQA(QAGenerator):
     ) -> QAC:
         assert self.llm is not None, "LLM is not initialized"
 
+        final_qacs = []
+        
         if query is None:
             query = """
             {{
@@ -47,7 +88,7 @@ class AbtractQA(QAGenerator):
                 id
                 label
                 properties
-                relationships(label: "{label}", propertyKey: "{property}", propertyValue: "{value}", comparison: "{comparison}") {{
+                relationships(label: "{label}", propertyKey: "{property}", propertyValue: "{value}", comparison: "{comparison}", targetFilter: {{label: DOC}} ) {{
                 label
                 properties
                 target {{
@@ -66,57 +107,59 @@ class AbtractQA(QAGenerator):
                 "value": 0.5,
                 "comparison": "gt",
             }
-
+            
         results = self.query_nodes(query, kwargs)
         if results is None:
+            logging.warning("No nodes satisfy the query")
             return QAC()
 
-        current_nodes = self.get_random_node(results)
-
-        related_nodes = [
-            rel.target
-            for rel in current_nodes[0].relationships
-            if rel.target.label.name == "DOC"
-        ]
-
-        if not related_nodes:
-            return QAC()
-
-        current_nodes.extend(related_nodes)
-        summaries = [item.properties["metadata"]["summary"] for item in current_nodes]
-        summaries = "\n".join(
-            [f"{i+1}. {summary}" for i, summary in enumerate(summaries)]
-        )
-        common_theme = await self.llm.generate(
-            self.generate_common_theme_prompt.format(summaries=summaries)
-        )
-        common_theme = common_theme.generations[0][0].text
-        abstract_question = await self.llm.generate(
-            self.generate_question_prompt.format(
-                theme=common_theme, summaries=summaries
+        num_results = min(self.num_samples, len(results))
+        seed_per_results = self.num_samples // len(results)
+        reminder = self.num_samples - seed_per_results * num_results
+        seeds = [seed_per_results] * num_results
+        seeds[-1] += reminder
+        
+        #TODO: parallalize the process
+        for result, num_seeds in zip(results, seeds):
+              
+            summaries = [item.properties["metadata"]["summary"] for item in result]
+            summaries = "\n".join(
+                [f"{i+1}. {summary}" for i, summary in enumerate(summaries)]
             )
-        )
-        abstract_question = abstract_question.generations[0][0].text
-        critic_verdict = await self.critic_question(abstract_question)
-        if critic_verdict:
-            source = await self.retrieve_chunks(abstract_question, current_nodes)
-            if source:
-                abstract_question = await self.modify_question(abstract_question)
-                answer = await self.generate_answer(abstract_question, source)
-                return QAC(
-                    question=abstract_question,
-                    answer=answer,
-                    source=source,
-                    name=self.name,
-                    style=self.style,
-                    length=self.length,
+            common_themes = await self.llm.generate(
+                self.generate_common_theme_prompt.format(summaries=summaries, num_seeds=num_seeds)
+            )
+            common_themes = json.loads(common_themes.generations[0][0].text)
+            
+            for common_theme in common_themes:
+                abstract_question = await self.llm.generate(
+                    self.generate_question_prompt.format(
+                        theme=common_theme, summaries=summaries
+                    )
                 )
-            else:
-                logger.warning("source was not detected %s", abstract_question)
-                return QAC()
-        else:
-            logger.warning("Critic rejected the question: %s", abstract_question)
-            return QAC()
+                abstract_question = abstract_question.generations[0][0].text
+                critic_verdict = await self.critic_question(abstract_question)
+                if critic_verdict:
+                    source = await self.retrieve_chunks(abstract_question, result)
+                    if source:
+                        abstract_question = await self.modify_question(abstract_question)
+                        answer = await self.generate_answer(abstract_question, source)
+                        final_qacs.append(QAC(
+                            question=abstract_question,
+                            answer=answer,
+                            source=source,
+                            name=self.name,
+                            style=self.style,
+                            length=self.length,
+                        ))
+                    else:
+                        logger.warning("source was not detected %s", abstract_question)
+                        return final_qacs.append(QAC())
+                else:
+                    logger.warning("Critic rejected the question: %s", abstract_question)
+                    return final_qacs.append(QAC())
+                
+        return final_qacs
 
     async def critic_question(self, question: str) -> bool:
         assert self.llm is not None, "LLM is not initialized"
