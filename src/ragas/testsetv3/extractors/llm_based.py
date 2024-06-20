@@ -37,7 +37,7 @@ class LLMbasedExtractor(Extractor):
             self.llm = llm_factory()
 
         # TODO: handle different models
-        model_name = "gpt-2"
+        model_name = "gpt-3.5-turbo-"
         model_max_length = MODEL_MAX_LENGTHS.get(model_name, 8000)
         model_input_length = model_max_length - (model_max_length // 4)
 
