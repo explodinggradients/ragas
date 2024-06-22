@@ -2,7 +2,7 @@ from ragas.llms.prompt import Prompt
 
 common_theme_from_summaries = Prompt(
     name="get_common_themes",
-    instruction="Analyze the following summaries and identify one common theme. The theme should be concise, descriptive, and highlight a key aspect shared across the summaries.",
+    instruction="Analyze the following summaries and identify given number of common themes. The themes should be concise, descriptive, and highlight a key aspect shared across the summaries.",
     examples=[
         {
             "summaries": """
@@ -12,12 +12,13 @@ common_theme_from_summaries = Prompt(
 
                 Summary 3: Financial technology, or fintech, has seen a surge in AI applications. Algorithms for fraud detection, risk management, and automated trading are some of the key innovations in this sector. AI-driven analytics are helping companies to understand market trends better and make informed decisions. The use of AI in fintech is not only enhancing security but also increasing efficiency and profitability.
             """,
-            "theme": "AI enhances efficiency and accuracy in various industries.",
+            "num_themes": 2,
+            "themes": ["AI enhances efficiency and accuracy in various industries", "AI-powered tools improve decision-making and outcomes"],
         }
     ],
-    input_keys=["summaries"],
-    output_key="theme",
-    output_type="str",
+    input_keys=["summaries", "num_themes"],
+    output_key="themes",
+    output_type="json",
     language="english",
 )
 
@@ -147,82 +148,82 @@ question_modification = Prompt(
 
 
 EXAMPLES_FOR_QUESTION_MODIFICATION = [
-        # Short Length Examples
-        {
-            "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            "style": "Misspelled queries",
-            "length": "short",
-            "modified_question": "How do enrgy storag solutions compare on efficincy?",
-        },
-        {
-            "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            "style": "Perfect grammar",
-            "length": "short",
-            "modified_question": "How do energy storage solutions compare?",
-        },
-        {
-            "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            "style": "Poor grammar",
-            "length": "short",
-            "modified_question": "How do storag solutions compare on efficiency?",
-        },
-        {
-            "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            "style": "Web search like queries",
-            "length": "short",
-            "modified_question": "compare energy storage solutions efficiency cost sustainability",
-        },
-        # Medium Length Examples
-        {
-            "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            "style": "Misspelled queries",
-            "length": "medium",
-            "modified_question": "How do enrgy storag solutions compare on efficincy n cost?",
-        },
-        {
-            "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            "style": "Perfect grammar",
-            "length": "medium",
-            "modified_question": "How do energy storage solutions compare in efficiency and cost?",
-        },
-        {
-            "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            "style": "Poor grammar",
-            "length": "medium",
-            "modified_question": "How energy storag solutions compare on efficiency and cost?",
-        },
-        {
-            "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            "style": "Web search like queries",
-            "length": "medium",
-            "modified_question": "comparison of energy storage solutions efficiency cost sustainability",
-        },
-        # Long Length Examples
-        {
-            "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            "style": "Misspelled queries",
-            "length": "long",
-            "modified_question": "How do various enrgy storag solutions compare in terms of efficincy, cost, and sustanbility in rnewable energy systems?",
-        },
-        {
-            "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            "style": "Perfect grammar",
-            "length": "long",
-            "modified_question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-        },
-        {
-            "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            "style": "Poor grammar",
-            "length": "long",
-            "modified_question": "How various energy storag solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-        },
-        {
-            "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            "style": "Web search like queries",
-            "length": "long",
-            "modified_question": "How do various energy storage solutions compare efficiency cost sustainability renewable energy systems?",
-        },
-    ]
+    # Short Length Examples
+    {
+        "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        "style": "Misspelled queries",
+        "length": "short",
+        "modified_question": "How do enrgy storag solutions compare on efficincy?",
+    },
+    {
+        "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        "style": "Perfect grammar",
+        "length": "short",
+        "modified_question": "How do energy storage solutions compare?",
+    },
+    {
+        "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        "style": "Poor grammar",
+        "length": "short",
+        "modified_question": "How do storag solutions compare on efficiency?",
+    },
+    {
+        "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        "style": "Web search like queries",
+        "length": "short",
+        "modified_question": "compare energy storage solutions efficiency cost sustainability",
+    },
+    # Medium Length Examples
+    {
+        "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        "style": "Misspelled queries",
+        "length": "medium",
+        "modified_question": "How do enrgy storag solutions compare on efficincy n cost?",
+    },
+    {
+        "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        "style": "Perfect grammar",
+        "length": "medium",
+        "modified_question": "How do energy storage solutions compare in efficiency and cost?",
+    },
+    {
+        "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        "style": "Poor grammar",
+        "length": "medium",
+        "modified_question": "How energy storag solutions compare on efficiency and cost?",
+    },
+    {
+        "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        "style": "Web search like queries",
+        "length": "medium",
+        "modified_question": "comparison of energy storage solutions efficiency cost sustainability",
+    },
+    # Long Length Examples
+    {
+        "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        "style": "Misspelled queries",
+        "length": "long",
+        "modified_question": "How do various enrgy storag solutions compare in terms of efficincy, cost, and sustanbility in rnewable energy systems?",
+    },
+    {
+        "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        "style": "Perfect grammar",
+        "length": "long",
+        "modified_question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+    },
+    {
+        "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        "style": "Poor grammar",
+        "length": "long",
+        "modified_question": "How various energy storag solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+    },
+    {
+        "question": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        "style": "Web search like queries",
+        "length": "long",
+        "modified_question": "How do various energy storage solutions compare efficiency cost sustainability renewable energy systems?",
+    },
+]
 
 order_sections_by_relevance = order_sections_by_relevance = Prompt(
     name="order_sections_by_relevance",

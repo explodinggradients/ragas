@@ -10,7 +10,7 @@ from langchain_core.documents import Document as LCDocument
 
 from ragas.llms.prompt import Prompt
 from ragas.testsetv3.graph import Node, NodeLevel
-from ragas.testsetv3.questions.base import QAC, QAGenerator
+from ragas.testsetv3.questions.base import QAC, QAGenerator, DEFAULT_DISTRIBUTION
 from ragas.testsetv3.questions.prompts import (
     abstract_question_from_theme,
     common_theme_from_summaries,
@@ -19,14 +19,22 @@ from ragas.testsetv3.questions.prompts import (
     critic_question,
     question_answering,
 )
+from ragas.testsetv3.questions.queries import ABSTRACT_QUERY
+from ragas.executor import Executor
+from ragas.testsetv3.utils import rng
+
 
 logger = logging.getLogger(__name__)
 
 
 class AbstractQANew(QAGenerator):
     
+    
     def query_nodes(self, query: str, kwargs) -> t.Any:
-        results = super().query_nodes(query, kwargs)
+        return super().query_nodes(query, kwargs)
+    
+    def filter_nodes(self, query: str, kwargs) -> t.Any:
+        results = self.query_nodes(query, kwargs)
         
         sets = []
         for cluster in results:
@@ -62,9 +70,11 @@ class AbstractQANew(QAGenerator):
     async def generate_question(self, query: str | None = None, kwargs: dict | None = None):
         raise NotImplementedError("generate_question is not implemented")
 
+
 @dataclass
-class AbtractQA(QAGenerator):
+class AbtractQA(AbstractQANew):
     name: str = "AbstractQA"
+    distribution = DEFAULT_DISTRIBUTION
     generate_question_prompt: Prompt = field(
         default_factory=lambda: abstract_question_from_theme
     )
@@ -73,33 +83,10 @@ class AbtractQA(QAGenerator):
     generate_common_theme_prompt: Prompt = field(
         default_factory=lambda: common_theme_from_summaries
     )
-
-    async def generate_question(
-        self, query: t.Optional[str] = None, kwargs: t.Optional[dict] = None
-    ) -> QAC:
-        assert self.llm is not None, "LLM is not initialized"
-
-        final_qacs = []
+    
+    async def run(self, query, kwargs):
         
-        if query is None:
-            query = """
-            {{
-            filterNodes(label: DOC) {{
-                id
-                label
-                properties
-                relationships(label: "{label}", propertyKey: "{property}", propertyValue: "{value}", comparison: "{comparison}", targetFilter: {{label: DOC}} ) {{
-                label
-                properties
-                target {{
-                    id
-                    label
-                    properties
-                }}
-                }}
-            }}
-            }}
-            """
+        query = query or ABSTRACT_QUERY
         if kwargs is None:
             kwargs = {
                 "label": "summary_similarity",
@@ -108,59 +95,99 @@ class AbtractQA(QAGenerator):
                 "comparison": "gt",
             }
             
-        results = self.query_nodes(query, kwargs)
-        if results is None:
+        node_clusters = self.filter_nodes(query, kwargs)
+        if node_clusters is None:
             logging.warning("No nodes satisfy the query")
             return QAC()
 
-        num_results = min(self.num_samples, len(results))
-        seed_per_results = self.num_samples // len(results)
-        reminder = self.num_samples - seed_per_results * num_results
-        seeds = [seed_per_results] * num_results
+        num_clusters = min(self.num_samples, len(node_clusters))
+        seed_per_results = self.num_samples // len(node_clusters)
+        reminder = self.num_samples - seed_per_results * num_clusters
+        seeds = [seed_per_results] * num_clusters
         seeds[-1] += reminder
         
-        #TODO: parallalize the process
-        for result, num_seeds in zip(results, seeds):
+        nodes_themes = []
+        for cluster, num_seeds in zip(node_clusters, seeds):
               
-            summaries = [item.properties["metadata"]["summary"] for item in result]
+            summaries = [item.properties["metadata"]["summary"] for item in cluster]
             summaries = "\n".join(
                 [f"{i+1}. {summary}" for i, summary in enumerate(summaries)]
             )
             common_themes = await self.llm.generate(
-                self.generate_common_theme_prompt.format(summaries=summaries, num_seeds=num_seeds)
+                self.generate_common_theme_prompt.format(summaries=summaries, num_themes=num_seeds)
             )
+            print(common_themes.generations[0][0].text)
             common_themes = json.loads(common_themes.generations[0][0].text)
+            nodes_themes.extend([(cluster, theme) for theme in common_themes])
             
-            for common_theme in common_themes:
-                abstract_question = await self.llm.generate(
-                    self.generate_question_prompt.format(
-                        theme=common_theme, summaries=summaries
-                    )
-                )
-                abstract_question = abstract_question.generations[0][0].text
-                critic_verdict = await self.critic_question(abstract_question)
-                if critic_verdict:
-                    source = await self.retrieve_chunks(abstract_question, result)
-                    if source:
-                        abstract_question = await self.modify_question(abstract_question)
-                        answer = await self.generate_answer(abstract_question, source)
-                        final_qacs.append(QAC(
-                            question=abstract_question,
-                            answer=answer,
-                            source=source,
-                            name=self.name,
-                            style=self.style,
-                            length=self.length,
-                        ))
-                    else:
-                        logger.warning("source was not detected %s", abstract_question)
-                        return final_qacs.append(QAC())
-                else:
-                    logger.warning("Critic rejected the question: %s", abstract_question)
-                    return final_qacs.append(QAC())
+            
+        exec = Executor(
+            desc="Generating",
+            keep_progress_bar=True,
+            raise_exceptions=True,
+            run_config=None,
+        )
+        
+        index = 0
+        for distribution, prob in self.distribution.items():
+            style, length = distribution
+            for i in range(int(prob * self.num_samples)):
+                exec.submit(self.generate_question,
+                            nodes_themes[index][0], style, length, {"common_theme": nodes_themes[index][1]})
+                index += 1
                 
-        return final_qacs
 
+        remaining_size = self.num_samples - index    
+        if remaining_size != 0:
+            choices = np.array(self.distribution.keys())
+            prob = np.array(self.distribution.values())
+            random_distribution = rng.choice(choices, p=prob, size=remaining_size)
+            for distribution in random_distribution:
+                style, length = distribution
+                exec.submit(self.generate_question,
+                            nodes_themes[index][0], style, length, {"common_theme": nodes_themes[index][1]})
+                index += 1
+                
+        return exec.results()
+
+    async def generate_question(
+        self, nodes, style, length, kwargs: t.Optional[dict] = None
+    ) -> QAC:
+        assert self.llm is not None, "LLM is not initialized"
+        kwargs = kwargs or {}
+        common_theme = kwargs.get("common_theme", "")
+        summaries = [item.properties["metadata"]["summary"] for item in nodes]
+        summaries = "\n".join(
+            [f"{i+1}. {summary}" for i, summary in enumerate(summaries)]
+        )
+        
+        abstract_question = await self.llm.generate(
+            self.generate_question_prompt.format(
+                theme=common_theme, summaries=summaries
+            )
+        )
+        abstract_question = abstract_question.generations[0][0].text
+        critic_verdict = await self.critic_question(abstract_question)
+        if critic_verdict:
+            source = await self.retrieve_chunks(abstract_question, nodes)
+            if source:
+                abstract_question = await self.modify_question(abstract_question, style, length)
+                answer = await self.generate_answer(abstract_question, source)
+                return QAC(
+                    question=abstract_question,
+                    answer=answer,
+                    source=source,
+                    name=self.name,
+                    style=style,
+                    length=length,
+                )
+            else:
+                logger.warning("source was not detected %s", abstract_question)
+                return QAC()
+        else:
+            logger.warning("Critic rejected the question: %s", abstract_question)
+            return QAC()
+        
     async def critic_question(self, question: str) -> bool:
         assert self.llm is not None, "LLM is not initialized"
 
@@ -199,7 +226,6 @@ class AbtractQA(QAGenerator):
         results = self.query_nodes(query, {"node_ids": node_ids})
         if results is None:
             return None
-
         nodes = results
         output_documents = [
             LCDocument(
@@ -208,7 +234,7 @@ class AbtractQA(QAGenerator):
             )
             for node in nodes
         ]
-
+        # TODO: take level 1 and 2 nodes of doc cluster and rank them based on similarity to question
         # query to get all child nodes of nodes
         nodes = [
             relationship.target for node in nodes for relationship in node.relationships
@@ -229,11 +255,12 @@ class AbtractQA(QAGenerator):
         most_similar = np.flip(np.argsort(similarity_matrix[0]))
         ranked_chunks = [chunks[i] for i in most_similar]
         # TODO: allow for different models
-        model_name = "gpt-2"
+        model_name = "gpt-3.5-turbo-"
         enc = tiktoken.encoding_for_model(model_name)
         ranked_chunks_length = [
             len(enc.encode(chunk.page_content)) for chunk in ranked_chunks
         ]
+        print(ranked_chunks_length)
         ranked_chunks_length = np.cumsum(ranked_chunks_length)
         index = np.argmax(np.argwhere(np.cumsum(ranked_chunks_length) < max_tokens)) + 1
         output_documents.extend(ranked_chunks[:index])
