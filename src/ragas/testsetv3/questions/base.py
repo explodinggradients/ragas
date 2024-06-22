@@ -63,16 +63,24 @@ class Distribution:
     def get_num_samples(self, total_samples: int, style: QuestionStyle, length: QuestionLength) -> int:
         proportion = self.style_length_distribution.get((style, length), 0)
         return int(total_samples * proportion)
+    
+    def items(self):
+        return list(self.style_length_distribution.items())
+    
+    def values(self):
+        return list(self.style_length_distribution.values())
+
+    def keys(self):
+        return list(self.style_length_distribution.keys())
 
 @dataclass
 class QAGenerator(ABC):
     nodes: t.List[Node]
     relationships: t.List[Relationship]
-    num_samples: int
+    num_samples: t.Optional[int] = None
+    distribution: t.Optional[Distribution] = None
     llm: t.Optional[BaseRagasLLM] = None
     embedding: t.Optional[BaseRagasEmbeddings] = None
-    style: QuestionStyle = QuestionStyle.PERFECT_GRAMMAR
-    length: QuestionLength = QuestionLength.MEDIUM
     question_modification_prompt: Prompt = field(
         default_factory=lambda: question_modification
     )
@@ -80,6 +88,8 @@ class QAGenerator(ABC):
     def __post_init__(self):
         self.llm = self.llm or llm_factory()
         self.embedding = self.embedding or embedding_factory()
+        self.num_samples = self.num_samples or 1
+        self.distribution = self.distribution or DEFAULT_DISTRIBUTION
 
     @abstractmethod
     async def generate_question(
@@ -100,17 +110,17 @@ class QAGenerator(ABC):
     ) -> t.Any:
         pass
 
-    async def modify_question(self, question: str) -> str:
+    async def modify_question(self, question: str, style: QuestionStyle, length: QuestionLength) -> str:
         assert self.llm is not None, "LLM is not initialized"
         examples = [
             example
             for example in EXAMPLES_FOR_QUESTION_MODIFICATION
-            if example["style"] == self.style.value
-            and example["length"] == self.length.value
+            if example["style"] == style.value
+            and example["length"] == length.value
         ]
         self.question_modification_prompt.examples.extend(examples)
         p_value = self.question_modification_prompt.format(
-            question=question, style=self.style.value, length=self.length.value
+            question=question, style=style.value, length=length.value
         )
         self.question_modification_prompt.examples = []
         result = await self.llm.generate(prompt=p_value)
@@ -139,7 +149,7 @@ class QAGenerator(ABC):
         return rng.choice(np.array(nodes), p=nodes_weights, size=1).tolist()
 
 
-default_distribution = Distribution(
+DEFAULT_DISTRIBUTION = Distribution(
     {
         (QuestionStyle.PERFECT_GRAMMAR, QuestionLength.MEDIUM): 0.25,
         (QuestionStyle.POOR_GRAMMAR, QuestionLength.MEDIUM): 0.25,
