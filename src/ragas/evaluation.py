@@ -154,7 +154,7 @@ def evaluate(
     # validation
     dataset = handle_deprecated_ground_truths(dataset)
     validate_evaluation_modes(dataset, metrics)
-    validate_column_dtypes(dataset)
+    validate_column_dtypes(dataset, column_map)
 
     # set the llm and embeddings
     if isinstance(llm, LangchainLLM):

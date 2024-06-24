@@ -132,7 +132,7 @@ class EvaluatorChain(Chain, RunEvaluator):
         context_key = self.column_map.get("contexts", "contexts")
         ground_truth_key = self.column_map.get("ground_truth", "ground_truth")
 
-        # validate each example
+        # validate if the required columns are present
         required_columns = EVALMODE_TO_COLUMNS[self.metric.evaluation_mode]
         if "question" in required_columns and question_key not in input:
             raise ValueError(
@@ -155,11 +155,26 @@ class EvaluatorChain(Chain, RunEvaluator):
                 f"metric[{self.metric.name}] you have chosen."
             )
 
+        # validate if the columns are of the correct datatype
+        for column_name in [question_key, prediction_key, ground_truth_key]:
+            if column_name in input:
+                if not isinstance(input[column_name], str):
+                    raise ValueError(
+                        f'Input feature "{column_name}" should be of type string'
+                    )
+
+        for column_name in [context_key]:
+            if column_name in input:
+                if not (isinstance(input[column_name], list)):
+                    raise ValueError(
+                        f'Input feature "{column_name}" should be of type'
+                        f" list[str], got {type(input[column_name])}"
+                    )
+
         q = input.get(question_key, "")
         c = input.get(context_key, [""])
         a = input.get(prediction_key, "")
         g = input.get(ground_truth_key, "")
-
         return q, c, a, g
 
     @staticmethod
