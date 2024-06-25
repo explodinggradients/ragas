@@ -44,7 +44,7 @@ class GraphConverter:
             label=NodeType[node_dict["label"]],
             properties=json.loads(node_dict["properties"]),
             relationships=relationships,
-            level=NodeLevel(node_dict["level"]) if "level" in node_dict else None,
+            level=NodeLevel[node_dict["level"]] if "level" in node_dict else None,
         )
 
     @staticmethod
