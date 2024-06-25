@@ -11,7 +11,10 @@ class NodeLevel(Enum):
     LEVEL_0 = 0
     LEVEL_1 = 1
     LEVEL_2 = 2
-
+    LEVEL_3 = 3
+    LEVEL_4 = 4
+    LEVEL_5 = 5
+    
     def next_level(self) -> t.Optional["NodeLevel"]:
         level_values = list(NodeLevel)
         current_index = level_values.index(self)
@@ -133,7 +136,35 @@ class Query(ObjectType):
         property_key=Argument(String),
         property_value=Argument(String),
     )
+    
+    leaf_nodes = List(Node, id=Argument(String))
+    
+    def resolve_leaf_nodes(parent, info, id):
+        
+        def get_all_leaf_nodes(node):
+            leaf_nodes = []
+            next_level = node.level.next_level()
+            child_relationships = []
+            if node.relationships:
+                child_relationships = [relationship for relationship in node.relationships if relationship.label == "child" and relationship.target.level == next_level and relationship.source.id == node.id]
+            
+            if not child_relationships:
+                return [node]
 
+            for relationship in child_relationships:
+                leaf_nodes.extend(get_all_leaf_nodes(relationship.target))
+
+            return leaf_nodes
+        
+        nodes = info.context.get("nodes", [])
+        node = [node for node in nodes if node.id == id]
+        if node:
+            node = node[0]
+            return get_all_leaf_nodes(node)
+        else:
+            return []
+        
+        
     def resolve_filter_nodes(
         parent,
         info,
