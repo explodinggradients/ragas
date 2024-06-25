@@ -8,6 +8,7 @@ import tiktoken
 from langchain.utils.math import cosine_similarity, cosine_similarity_top_k
 from langchain_core.documents import Document as LCDocument
 
+from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.testsetv3.graph import Node, NodeLevel
 from ragas.testsetv3.questions.base import QAC, QAGenerator, DEFAULT_DISTRIBUTION
@@ -19,7 +20,7 @@ from ragas.testsetv3.questions.prompts import (
     critic_question,
     question_answering,
 )
-from ragas.testsetv3.questions.queries import ABSTRACT_QUERY
+from ragas.testsetv3.questions.queries import CLUSTER_OF_RELATED_NODES_QUERY, LEAF_NODE_QUERY
 from ragas.executor import Executor
 from ragas.testsetv3.utils import rng
 
@@ -35,7 +36,6 @@ class AbstractQANew(QAGenerator):
     
     def filter_nodes(self, query: str, kwargs) -> t.Any:
         results = self.query_nodes(query, kwargs)
-        
         sets = []
         for cluster in results:
             ids = [cluster.id]
@@ -86,7 +86,7 @@ class AbtractQA(AbstractQANew):
     
     async def run(self, query, kwargs):
         
-        query = query or ABSTRACT_QUERY
+        query = query or CLUSTER_OF_RELATED_NODES_QUERY
         if kwargs is None:
             kwargs = {
                 "label": "summary_similarity",
@@ -111,13 +111,12 @@ class AbtractQA(AbstractQANew):
               
             summaries = [item.properties["metadata"]["summary"] for item in cluster]
             summaries = "\n".join(
-                [f"{i+1}. {summary}" for i, summary in enumerate(summaries)]
+                [f"summary {i+1}: {summary}" for i, summary in enumerate(summaries)]
             )
             common_themes = await self.llm.generate(
                 self.generate_common_theme_prompt.format(summaries=summaries, num_themes=num_seeds)
             )
-            print(common_themes.generations[0][0].text)
-            common_themes = json.loads(common_themes.generations[0][0].text)
+            common_themes = await json_loader.safe_load(common_themes.generations[0][0].text, llm=self.llm)
             nodes_themes.extend([(cluster, theme) for theme in common_themes])
             
             
@@ -156,24 +155,21 @@ class AbtractQA(AbstractQANew):
         assert self.llm is not None, "LLM is not initialized"
         kwargs = kwargs or {}
         common_theme = kwargs.get("common_theme", "")
-        summaries = [item.properties["metadata"]["summary"] for item in nodes]
-        summaries = "\n".join(
-            [f"{i+1}. {summary}" for i, summary in enumerate(summaries)]
-        )
-        
-        abstract_question = await self.llm.generate(
-            self.generate_question_prompt.format(
-                theme=common_theme, summaries=summaries
-            )
-        )
-        abstract_question = abstract_question.generations[0][0].text
-        critic_verdict = await self.critic_question(abstract_question)
-        if critic_verdict:
-            source = await self.retrieve_chunks(abstract_question, nodes)
+        try:
+            source = await self.retrieve_chunks(nodes,{"max_tokens": 4024, "topic": common_theme.get("description")})
             if source:
-                abstract_question = await self.modify_question(abstract_question, style, length)
-                answer = await self.generate_answer(abstract_question, source)
-                return QAC(
+                source_text = "\n\n".join([chunk.page_content for chunk in source])
+                abstract_question = await self.llm.generate(
+                    self.generate_question_prompt.format(
+                        theme=common_theme["theme"], context=source_text
+                    )
+                )
+                abstract_question = abstract_question.generations[0][0].text
+                critic_verdict = await self.critic_question(abstract_question)
+                if critic_verdict:
+                    abstract_question = await self.modify_question(abstract_question, style, length)
+                    answer = await self.generate_answer(abstract_question, source)
+                    return QAC(
                     question=abstract_question,
                     answer=answer,
                     source=source,
@@ -181,12 +177,16 @@ class AbtractQA(AbstractQANew):
                     style=style,
                     length=length,
                 )
+                else:
+                    logger.warning("Critic rejected the question: %s", abstract_question)
+                    return QAC()
             else:
-                logger.warning("source was not detected %s", abstract_question)
+                logger.warning("source was not detected %s", common_theme)
                 return QAC()
-        else:
-            logger.warning("Critic rejected the question: %s", abstract_question)
-            return QAC()
+            
+        except Exception as e:
+            logger.error("Error while generating question: %s", e)
+            raise e
         
     async def critic_question(self, question: str) -> bool:
         assert self.llm is not None, "LLM is not initialized"
@@ -196,75 +196,64 @@ class AbtractQA(AbstractQANew):
         return all(score >= 2 for score in output.values())
 
     async def retrieve_chunks(
-        self, question: str, nodes: t.List[Node], kwargs: t.Optional[dict] = None
+        self, nodes: t.List[Node], kwargs: t.Optional[dict] = None
     ) -> t.List[LCDocument] | None:
         assert self.embedding is not None, "Embedding is not initialized"
         assert self.llm is not None, "LLLM is not initialized"
 
         kwargs = kwargs or {}
-        max_tokens = kwargs.get("max_tokens", 4024)
+        max_tokens = kwargs.get("max_tokens", 3000)
+        topic = kwargs.get("topic", "")
         node_ids = [node.id for node in nodes]
-        node_ids = json.dumps(node_ids)
-        query = """
-        {{
-        filterNodes(ids: {node_ids}) {{
-            id
-            label
-            properties
-            relationships(label: "contains") {{
-            label
-            properties
-            target {{
-                id
-                label
-                properties
-            }}
-            }}
-        }}
-        }}
-        """
-        results = self.query_nodes(query, {"node_ids": node_ids})
-        if results is None:
+        
+        query = LEAF_NODE_QUERY
+        leaf_nodes = [self.query_nodes(query, {"id": json.dumps(id)}) for id in node_ids]
+        leaf_nodes = [node for nodes in leaf_nodes for node in nodes]
+        if leaf_nodes is None:
             return None
-        nodes = results
-        output_documents = [
-            LCDocument(
-                page_content=node.properties["metadata"]["summary"],
-                metadata={"source": node.properties["metadata"]["source"]},
-            )
-            for node in nodes
-        ]
-        # TODO: take level 1 and 2 nodes of doc cluster and rank them based on similarity to question
-        # query to get all child nodes of nodes
-        nodes = [
-            relationship.target for node in nodes for relationship in node.relationships
-        ]
-        chunks = [
-            LCDocument(
-                page_content=node.properties["page_content"],
-                metadata=node.properties["metadata"],
-            )
-            for node in nodes
-        ]
-        chunks_embeddings = [
-            node.properties["metadata"]["page_content_embedding"] for node in nodes
+        
+        output_documents = []
+        #TODO: also filter summaries using cosine
+        summaries = [f"{node.properties['metadata']['title']}: {node.properties['metadata']['summary']}" for node in nodes]
+        output_documents.append(LCDocument(page_content="\n".join(summaries), metadata={"source": "summary"}))
+        
+        page_embeddings = [
+            node.properties["metadata"]["page_content_embedding"] for node in leaf_nodes
         ]
 
-        question_embedding = await self.embedding.embed_text(question)
-        similarity_matrix = cosine_similarity([question_embedding], chunks_embeddings)
+        topic_embedding = await self.embedding.embed_text(topic)
+        
+        # TODO: replace with similarity top-k with threshold cutoff
+        # print(cosine_similarity_top_k([topic_embedding], page_embeddings, score_threshold=0.7))
+        similarity_matrix = cosine_similarity([topic_embedding], page_embeddings)
         most_similar = np.flip(np.argsort(similarity_matrix[0]))
-        ranked_chunks = [chunks[i] for i in most_similar]
+        ranked_lead_nodes = [leaf_nodes[i] for i in most_similar]
         # TODO: allow for different models
         model_name = "gpt-3.5-turbo-"
         enc = tiktoken.encoding_for_model(model_name)
         ranked_chunks_length = [
-            len(enc.encode(chunk.page_content)) for chunk in ranked_chunks
+            len(enc.encode(node.properties["page_content"])) for node in ranked_lead_nodes
         ]
-        print(ranked_chunks_length)
         ranked_chunks_length = np.cumsum(ranked_chunks_length)
         index = np.argmax(np.argwhere(np.cumsum(ranked_chunks_length) < max_tokens)) + 1
-        output_documents.extend(ranked_chunks[:index])
-
+        top_leaf_nodes = ranked_lead_nodes[:index]
+        dict = {}
+        
+        for node in top_leaf_nodes:
+            if node.properties["metadata"]["source"] in dict:
+                dict[node.properties["metadata"]["source"]].append({node.level.value: node})
+            else:
+                dict[node.properties["metadata"]["source"]] = [{node.level.value: node}]          
+        
+        for source, nodes in dict.items():
+            sorted_nodes = sorted(nodes, key=lambda x: list(x.keys())[0])
+            dict[source] = sorted_nodes
+            current_nodes = [elem for item in sorted_nodes for elem in item.values()]
+            title, source_file = current_nodes[0].properties["metadata"].get("title"), current_nodes[0].properties["metadata"].get("source")
+            text = "\n\n".join([node.properties["page_content"] for node in current_nodes])
+            text = f"Document title: {title}\n\n{text}"
+            output_documents.append(LCDocument(page_content=text, metadata={"source": source_file}))
+        
         return output_documents
 
     async def generate_answer(
@@ -296,33 +285,15 @@ class ComparitiveAbtractQA(AbtractQA):
     ) -> QAC:
         assert self.llm is not None, "LLM is not initialized"
 
-        query = """
-        {{
-        filterNodes(label: DOC) {{
-            id
-            label
-            properties
-            relationships(label: "{label}", propertyKey: "{property}", propertyValue: "{value}", comparison: "{comparison}") {{
-            label
-            properties
-            target {{
-                id
-                label
-                properties
-            }}
-            source {{
-                id
-            }}
-            }}
-        }}
-        }}
-        """
-        kwargs = {
+        query = query or CLUSTER_OF_RELATED_NODES_QUERY
+        
+        kwargs = kwargs or {
             "label": "jaccard_over_keyphrases",
             "property": "score",
             "value": 0.2,
             "comparison": "gt",
         }
+        
         result_nodes = self.query_nodes(query, kwargs)
         current_nodes = self.get_random_node(result_nodes)
 
@@ -416,7 +387,7 @@ class ComparitiveAbtractQA(AbtractQA):
             id
             label
             properties
-            relationships(label: "contains") {{
+            relationships(label: "child") {{
             label
             properties
             target {{
