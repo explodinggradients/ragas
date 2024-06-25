@@ -65,9 +65,10 @@ class DocumentExtractor:
 
         return documents
 
-    async def extract_from_nodes(self, nodes: t.List[Node], levels: t.List[NodeLevel]):
+    async def extract_from_nodes(self, nodes: t.List[Node], levels: t.Union[str,t.List[NodeLevel]]):
+        
         for node in nodes:
-            if node.level in levels:
+            if node.level in levels or levels == "any":
                 if self.llm_extractors:
                     for llm_ext in self.llm_extractors:
                         output = await llm_ext.extract(
@@ -107,8 +108,12 @@ class DocumentExtractor:
         return documents
 
     async def embed_from_nodes(
-        self, nodes: t.List[Node], attributes: t.List[str], levels: t.List[NodeLevel]
+        self, nodes: t.List[Node], attributes: t.List[str], levels: t.Union[str, t.List[NodeLevel]]
     ):
+        if levels == "any":
+            nodes_ = nodes
+        else:
+            nodes_ = [node for node in nodes if node.level in levels]
         self.embedding = (
             self.embedding if self.embedding is not None else embedding_factory()
         )
