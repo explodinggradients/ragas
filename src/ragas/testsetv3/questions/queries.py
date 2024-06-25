@@ -1,6 +1,6 @@
 
 
-ABSTRACT_QUERY =  """
+CLUSTER_OF_RELATED_NODES_QUERY = """
             {{
             filterNodes(label: DOC) {{
                 id
@@ -18,3 +18,14 @@ ABSTRACT_QUERY =  """
             }}
             }}
             """
+                      
+LEAF_NODE_QUERY = """
+{{
+leafNodes(id: {id}){{
+id
+label
+level
+properties
+}}
+}}
+"""
