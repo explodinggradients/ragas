@@ -88,6 +88,7 @@ class AbtractQA(AbstractQANew):
     async def generate_questions(
         self, query, kwargs, distribution=DEFAULT_DISTRIBUTION, num_samples=5
     ):
+        assert self.llm is not None, "LLM is not initialized"
         query = query or CLUSTER_OF_RELATED_NODES_QUERY
         if kwargs is None:
             kwargs = {
@@ -316,6 +317,7 @@ class ComparitiveAbtractQA(AbstractQANew):
     generate_question_prompt: Prompt = field(
         default_factory=lambda: abstract_comparative_question
     )
+    generate_answer_prompt: Prompt = field(default_factory=lambda: question_answering)
 
     async def generate_questions(
         self, query, kwargs, distribution=DEFAULT_DISTRIBUTION, num_samples=5
@@ -398,19 +400,19 @@ class ComparitiveAbtractQA(AbstractQANew):
         assert self.llm is not None, "LLM is not initialized"
 
         kwargs = kwargs or {}
-        common_theme = kwargs.get("common_theme", "")
-        print(common_theme)
+        themes_and_keyphrases = kwargs.get("common_theme",{})
+        common_themes = np.array(list(themes_and_keyphrases.keys()))
         # TODO: implement a better way to select the comparison topic
-        comparison_topic = rng.choice(np.array(common_theme.keys()), size=1)[0]
-        comparison_topic = common_theme[comparison_topic]
+        selected_theme = rng.choice(common_themes, size=1)[0]
+        keyphrases = themes_and_keyphrases[selected_theme]
 
         try:
-            kwargs = {"max_tokens": 4024, "topic": comparison_topic}
+            kwargs = {"max_tokens": 4024, "keyphrases": keyphrases, "common_theme": selected_theme}
             source = await self.retrieve_chunks(nodes, kwargs)
             if source:
                 question = await self.llm.generate(
                     self.generate_question_prompt.format(
-                        theme=comparison_topic, context=source[0].page_content
+                        concept=selected_theme, keyphrases=keyphrases, summaries=source[0].page_content
                     )
                 )
                 question = question.generations[0][0].text
@@ -457,7 +459,9 @@ class ComparitiveAbtractQA(AbstractQANew):
         kwargs = kwargs or {}
         assert self.embedding is not None, "Embedding is not initialized"
 
-        common_theme = kwargs.get("topic", {}).values()
+        common_keyphrases = kwargs.get("keyphrases", [])
+        common_theme = kwargs.get("common_theme", "")
+        max_tokens = kwargs.get("max_tokens", 4000)
         node_ids = [node.id for node in nodes]
 
         query = LEAF_NODE_QUERY
@@ -470,9 +474,10 @@ class ComparitiveAbtractQA(AbstractQANew):
             for node in leaf_nodes
             if any(
                 phrase in node.properties["metadata"]["keyphrases"]
-                for phrase in common_theme
+                for phrase in common_keyphrases
             )
         ]
+        
         if leaf_nodes is None:
             logging.warning("No leaf nodes with given keyphrases")
             return None
@@ -487,15 +492,45 @@ class ComparitiveAbtractQA(AbstractQANew):
                 page_content="\n".join(summaries), metadata={"source": "summary"}
             )
         )
+        
+        page_embeddings = [node.properties["metadata"]["page_content_embedding"] for node in leaf_nodes]
+        common_theme_embedding = await self.embedding.embed_text(common_theme)
+        similarity_matrix = cosine_similarity([common_theme_embedding], page_embeddings)
+        most_similar = np.flip(np.argsort(similarity_matrix[0]))
+        ranked_lead_nodes = [leaf_nodes[i] for i in most_similar]
+        # TODO: allow for different models
+        model_name = "gpt-3.5-turbo-"
+        enc = tiktoken.encoding_for_model(model_name)
+        ranked_chunks_length = [
+            len(enc.encode(node.properties["page_content"]))
+            for node in ranked_lead_nodes
+        ]
+        ranked_chunks_length = np.cumsum(ranked_chunks_length)
+        index = np.argmax(np.argwhere(np.cumsum(ranked_chunks_length) < max_tokens)) + 1
+        top_leaf_nodes = ranked_lead_nodes[:index]
+        dict = {}
 
-        output_documents.extend(
-            [
-                LCDocument(
-                    page_content=node.properties["page_content"],
-                    metadata=node.properties["metadata"],
+        for node in top_leaf_nodes:
+            if node.properties["metadata"]["source"] in dict:
+                dict[node.properties["metadata"]["source"]].append(
+                    {node.level.value: node}
                 )
-                for node in leaf_nodes
-            ]
-        )
+            else:
+                dict[node.properties["metadata"]["source"]] = [{node.level.value: node}]
+
+        for source, nodes in dict.items():
+            sorted_nodes = sorted(nodes, key=lambda x: list(x.keys())[0])
+            dict[source] = sorted_nodes
+            current_nodes = [elem for item in sorted_nodes for elem in item.values()]
+            title, source_file = current_nodes[0].properties["metadata"].get(
+                "title"
+            ), current_nodes[0].properties["metadata"].get("source")
+            text = "\n\n".join(
+                [node.properties["page_content"] for node in current_nodes]
+            )
+            text = f"Document title: {title}\n\n{text}"
+            output_documents.append(
+                LCDocument(page_content=text, metadata={"source": source_file})
+            )
 
         return output_documents
