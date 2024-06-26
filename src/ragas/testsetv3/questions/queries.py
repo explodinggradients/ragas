@@ -1,5 +1,3 @@
-
-
 CLUSTER_OF_RELATED_NODES_QUERY = """
             {{
             filterNodes(label: DOC) {{
@@ -18,7 +16,7 @@ CLUSTER_OF_RELATED_NODES_QUERY = """
             }}
             }}
             """
-                      
+
 LEAF_NODE_QUERY = """
 {{
 leafNodes(id: {id}){{
@@ -29,3 +27,25 @@ properties
 }}
 }}
 """
+
+LEVEL_1_NODES_QUERY = """
+        {{
+        filterNodes(label: DOC, level : LEVEL_0) {{
+            id
+            label
+            properties
+            relationships(label: "child", targetFilter: {{level: LEVEL_1}}  ) {{
+            label
+            properties
+            target {{
+                id
+                label
+                properties
+            }}
+            source {{
+                id
+            }}
+            }}
+        }}
+        }}
+        """
