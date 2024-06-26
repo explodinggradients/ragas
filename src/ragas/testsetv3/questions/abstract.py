@@ -400,19 +400,25 @@ class ComparitiveAbtractQA(AbstractQANew):
         assert self.llm is not None, "LLM is not initialized"
 
         kwargs = kwargs or {}
-        themes_and_keyphrases = kwargs.get("common_theme",{})
+        themes_and_keyphrases = kwargs.get("common_theme", {})
         common_themes = np.array(list(themes_and_keyphrases.keys()))
         # TODO: implement a better way to select the comparison topic
         selected_theme = rng.choice(common_themes, size=1)[0]
         keyphrases = themes_and_keyphrases[selected_theme]
 
         try:
-            kwargs = {"max_tokens": 4024, "keyphrases": keyphrases, "common_theme": selected_theme}
+            kwargs = {
+                "max_tokens": 4024,
+                "keyphrases": keyphrases,
+                "common_theme": selected_theme,
+            }
             source = await self.retrieve_chunks(nodes, kwargs)
             if source:
                 question = await self.llm.generate(
                     self.generate_question_prompt.format(
-                        concept=selected_theme, keyphrases=keyphrases, summaries=source[0].page_content
+                        concept=selected_theme,
+                        keyphrases=keyphrases,
+                        summaries=source[0].page_content,
                     )
                 )
                 question = question.generations[0][0].text
@@ -477,7 +483,7 @@ class ComparitiveAbtractQA(AbstractQANew):
                 for phrase in common_keyphrases
             )
         ]
-        
+
         if leaf_nodes is None:
             logging.warning("No leaf nodes with given keyphrases")
             return None
@@ -492,8 +498,10 @@ class ComparitiveAbtractQA(AbstractQANew):
                 page_content="\n".join(summaries), metadata={"source": "summary"}
             )
         )
-        
-        page_embeddings = [node.properties["metadata"]["page_content_embedding"] for node in leaf_nodes]
+
+        page_embeddings = [
+            node.properties["metadata"]["page_content_embedding"] for node in leaf_nodes
+        ]
         common_theme_embedding = await self.embedding.embed_text(common_theme)
         similarity_matrix = cosine_similarity([common_theme_embedding], page_embeddings)
         most_similar = np.flip(np.argsort(similarity_matrix[0]))

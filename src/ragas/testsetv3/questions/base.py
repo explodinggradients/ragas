@@ -96,7 +96,11 @@ class QAGenerator(ABC):
 
     @abstractmethod
     async def generate_question(
-        self, query: t.Optional[str] = None, kwargs: t.Optional[dict] = None
+        self,
+        nodes,
+        style: QuestionStyle,
+        length: QuestionLength,
+        kwargs: t.Optional[dict] = None,
     ) -> t.Any:
         pass
 
