@@ -9,7 +9,13 @@ from langchain_core.documents import Document as LCDocument
 from ragas.executor import Executor
 from ragas.llms.prompt import Prompt
 from ragas.testsetv3.graph import Node
-from ragas.testsetv3.questions.base import DEFAULT_DISTRIBUTION, QAC, QAGenerator
+from ragas.testsetv3.questions.base import (
+    DEFAULT_DISTRIBUTION,
+    QAC,
+    QAGenerator,
+    QuestionLength,
+    QuestionStyle,
+)
 from ragas.testsetv3.questions.prompts import (
     critic_question,
     order_sections_by_relevance,
@@ -43,9 +49,8 @@ class SpecificQuestion(QAGenerator):
         self, query, kwargs, distribution=DEFAULT_DISTRIBUTION, num_samples=5
     ):
         query = query or LEVEL_1_NODES_QUERY
-        kwargs = kwargs or {"label": "child"}
+        kwargs = kwargs or {}
         nodes = self.query_nodes(query, kwargs)
-
         num_nodes = min(num_samples, len(nodes))
         nodes = rng.choice(nodes, size=num_nodes, replace=False)
         seed_per_results = num_samples // len(nodes)
@@ -132,10 +137,15 @@ class SpecificQuestion(QAGenerator):
         return exec.results()
 
     async def generate_question(
-        self, nodes: t.List[Node], style, length, kwargs: dict
+        self,
+        nodes: t.List[Node],
+        style: QuestionStyle,
+        length: QuestionLength,
+        kwargs: t.Optional[dict] = None,
     ) -> QAC:
         assert self.llm is not None, "LLM is not initialized"
         assert self.embedding is not None, "Embedding is not initialized"
+        kwargs = kwargs or {}
 
         keyphrase = kwargs["keyphrase"]
         title = nodes[0].properties["metadata"]["title"]
@@ -164,6 +174,9 @@ class SpecificQuestion(QAGenerator):
                 else:
                     logger.warning("Critic rejected the question: %s", question)
                     return QAC()
+            else:
+                logger.warning("Failed to retrieve chunks for nodes: %s", nodes)
+                return QAC()
 
         except Exception as e:
             logging.warning("Failed to generate question: %s", e)

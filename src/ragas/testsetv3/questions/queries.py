@@ -28,13 +28,13 @@ properties
 }}
 """
 
-LEVEL_1_NODES_QUERY = """
+CHILD_NODES_QUERY = """
         {{
         filterNodes(label: DOC, level : LEVEL_0) {{
             id
             label
             properties
-            relationships(label: "child", targetFilter: {{level: LEVEL_1}}  ) {{
+            relationships(label: "child") {{
             label
             properties
             target {{
