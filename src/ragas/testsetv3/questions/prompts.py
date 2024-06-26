@@ -13,7 +13,16 @@ common_theme_from_summaries = Prompt(
                 Summary 3: Financial technology, or fintech, has seen a surge in AI applications. Algorithms for fraud detection, risk management, and automated trading are some of the key innovations in this sector. AI-driven analytics are helping companies to understand market trends better and make informed decisions. The use of AI in fintech is not only enhancing security but also increasing efficiency and profitability.
             """,
             "num_themes": 2,
-            "themes": ["AI enhances efficiency and accuracy in various industries", "AI-powered tools improve decision-making and outcomes"],
+            "themes": [
+                {
+                    "theme": "AI enhances efficiency and accuracy in various industries",
+                    "description": "AI algorithms are improving processes across healthcare, finance, and more by increasing efficiency and accuracy.",
+                },
+                {
+                    "theme": "AI-powered tools improve decision-making and outcomes",
+                    "description": "AI applications in diagnostic tools, personalized treatment plans, and fintech analytics are enhancing decision-making and outcomes.",
+                },
+            ],
         }
     ],
     input_keys=["summaries", "num_themes"],
@@ -22,72 +31,134 @@ common_theme_from_summaries = Prompt(
     language="english",
 )
 
+
 common_topic_from_keyphrases = Prompt(
     name="get_common_topic",
-    instruction="Identify a list of common topics from the given list of key phrases for comparing the given theme across reports.",
+    instruction="Identify a list of common concepts from the given list of key phrases for comparing the given theme across reports.",
     examples=[
         {
-            "theme": "Renewable Energy Technologies",
             "keyphrases": [
-                "solar panels",
-                "photovoltaic cells",
-                "energy conversion efficiency",
-                "wind turbines",
-                "offshore wind farms",
-                "renewable energy storage",
-                "battery technology",
-                "energy grid integration",
-                "sustainable energy sources",
-                "hydropower systems",
+                ["fast charging", "long battery life", "OLED display", "waterproof"],
+                ["quick charge", "extended battery", "HD display", "dust resistant"],
+                ["rapid charging", "durable battery", "AMOLED display", "splash proof"],
+                [
+                    "fast charge",
+                    "prolonged battery",
+                    "retina display",
+                    "water resistant",
+                ],
             ],
-            "topics": [
-                "Energy Conversion Efficiency",
-                "Renewable Energy Storage",
-                "Energy Grid Integration",
-                "Sustainable Energy Sources",
+            "num_concepts": 4,
+            "concepts": [
+                {
+                    "Charging": [
+                        "fast charging",
+                        "quick charge",
+                        "rapid charging",
+                        "fast charge",
+                    ]
+                },
+                {
+                    "Battery Life": [
+                        "long battery life",
+                        "extended battery",
+                        "durable battery",
+                        "prolonged battery",
+                    ]
+                },
+                {
+                    "Display": [
+                        "OLED display",
+                        "HD display",
+                        "AMOLED display",
+                        "retina display",
+                    ]
+                },
+                {
+                    "Water/Dust Resistance": [
+                        "waterproof",
+                        "dust resistant",
+                        "splash proof",
+                        "water resistant",
+                    ]
+                },
             ],
         }
     ],
-    input_keys=["theme", "keyphrases"],
-    output_key="topics",
+    input_keys=["keyphrases", "num_concepts"],
+    output_key="concepts",
     output_type="json",
     language="english",
 )
 
 
-comparative_question = Prompt(
-    name="comparative_question",
-    instruction="Formulate a abstract comparative query based on the given theme and topic. The query should be aimed at comparing different aspects or techniques related to the theme.",
+# comparative_question = Prompt(
+#     name="comparative_question",
+#     instruction="Generate a comparative question based on the given themes that can be answered by comparing the information in the provided contexts.",
+#     examples=[
+#         {
+#             "themes": [
+#                 "AI enhances efficiency and accuracy in various industries",
+#                 "AI-powered tools improve decision-making and outcomes"
+#             ],
+#             "contexts": [
+#                 """
+#                 Context 1: Advances in artificial intelligence have revolutionized many industries. From healthcare to finance, AI algorithms are making processes more efficient and accurate. Machine learning models are being used to predict diseases, optimize investment strategies, and even recommend personalized content to users. The integration of AI into daily operations is becoming increasingly indispensable for modern businesses.
+#                 """,
+#                 """
+#                 Context 2: The healthcare industry is witnessing a significant transformation due to AI advancements. AI-powered diagnostic tools are improving the accuracy of medical diagnoses, reducing human error, and enabling early detection of diseases. Additionally, AI is streamlining administrative tasks, allowing healthcare professionals to focus more on patient care. Personalized treatment plans driven by AI analytics are enhancing patient outcomes.
+#                 """
+#             ],
+#             "question": "How do AI-powered tools improve decision-making and outcomes compared to enhancing efficiency and accuracy in various industries?",
+#         }
+#     ],
+#     input_keys=["themes", "contexts"],
+#     output_key="question",
+#     output_type="str",
+#     language="english",
+# )
+
+abstract_comparative_question = Prompt(
+    name="create_comparative_question",
+    instruction="Generate an abstract comparative question based on the given concept, keyphrases belonging to that concept, and summaries of reports.",
     examples=[
         {
-            "theme": "Renewable Energy Technologies",
-            "topic": "Energy Storage Solutions",
-            "query": "How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-        },
+            "concept": "Battery Life",
+            "keyphrases": [
+                "long battery life",
+                "extended battery",
+                "durable battery",
+                "prolonged battery",
+            ],
+            "summaries": [
+                "Report 1: The device offers a long battery life, capable of lasting up to 24 hours on a single charge.",
+                "Report 2: Featuring an extended battery, the product can function for 20 hours with heavy usage.",
+                "Report 3: With a durable battery, this model ensures 22 hours of operation under normal conditions.",
+                "Report 4: The battery life is prolonged, allowing the gadget to be used for up to 18 hours on one charge.",
+            ],
+            "question": "How do the battery life claims and performance metrics compare across different reports for devices featuring long battery life, extended battery, durable battery, and prolonged battery?",
+        }
     ],
-    input_keys=["theme", "topic"],
-    output_key="query",
+    input_keys=["concept", "keyphrases", "summaries"],
+    output_key="question",
     output_type="str",
     language="english",
 )
 
+
 abstract_question_from_theme = Prompt(
     name="abstract_question_generation",
-    instruction="Generate an abstract conceptual question for the given theme using that can be answered from the information in the provided summaries.",
+    instruction="Generate an abstract conceptual question using the given theme that can be answered from the information in the provided context.",
     examples=[
         {
             "theme": "AI enhances efficiency and accuracy in various industries.",
-            "summaries": """
-                Summary 1: Advances in artificial intelligence have revolutionized many industries. From healthcare to finance, AI algorithms are making processes more efficient and accurate. Machine learning models are being used to predict diseases, optimize investment strategies, and even recommend personalized content to users. The integration of AI into daily operations is becoming increasingly indispensable for modern businesses.
-
-                Summary 2: The healthcare industry is witnessing a significant transformation due to AI advancements. AI-powered diagnostic tools are improving the accuracy of medical diagnoses, reducing human error, and enabling early detection of diseases. Additionally, AI is streamlining administrative tasks, allowing healthcare professionals to focus more on patient care. Personalized treatment plans driven by AI analytics are enhancing patient outcomes.
-
-                Summary 3: Financial technology, or fintech, has seen a surge in AI applications. Algorithms for fraud detection, risk management, and automated trading are some of the key innovations in this sector. AI-driven analytics are helping companies to understand market trends better and make informed decisions. The use of AI in fintech is not only enhancing security but also increasing efficiency and profitability.
+            "context": """
+            AI is transforming various industries by improving efficiency and accuracy. For instance, in manufacturing, AI-powered robots automate repetitive tasks with high precision, reducing errors and increasing productivity. In healthcare, AI algorithms analyze medical images and patient data to provide accurate diagnoses and personalized treatment plans. Financial services leverage AI for fraud detection and risk management, ensuring quicker and more reliable decision-making. Overall, AI's ability to process vast amounts of data and learn from it enables industries to optimize operations, reduce costs, and deliver better outcomes.
             """,
             "question": "How does AI improve efficiency and accuracy across different industries?",
         }
     ],
-    input_keys=["theme", "summaries"],
+    input_keys=["theme", "context"],
     output_key="question",
     output_type="str",
     language="english",
