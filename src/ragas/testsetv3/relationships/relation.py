@@ -31,7 +31,7 @@ class RelationshipBuilder:
         )
 
         results = schema.execute(
-            query, context={"nodes": nodes, "relatiosnships": relationships}
+            query, context={"nodes": nodes, "relationships": relationships}
         )
 
         if results.errors:

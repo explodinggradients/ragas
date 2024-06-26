@@ -1,17 +1,22 @@
 import re
 import typing as t
 
-import comm
+import numpy as np
 from langchain_core.documents import Document as LCDocument
 
 from ragas.testsetv3.graph import Node, NodeLevel, NodeType, Relationship
 from ragas.testsetv3.utils import merge_dicts
-#from langchain.text_splitter
 
-import numpy as np
+# from langchain.text_splitter
+
 
 class HeadlineSplitter:
-    def __init__(self, max_leaf_size: int = 4000, length_function=len, common_metadata_keys: t.List[str] = ["source"]):
+    def __init__(
+        self,
+        max_leaf_size: int = 4000,
+        length_function=len,
+        common_metadata_keys: t.List[str] = ["source"],
+    ):
         self._length_function = length_function
         self._max_leaf_size = max_leaf_size
         self._common_metadata_keys = common_metadata_keys
@@ -150,19 +155,23 @@ class HeadlineSplitter:
 
         nodes, relationships = self._ensure_leaf_node_size(nodes, relationships)
         return nodes, relationships
-    
+
     def get_all_leaf_nodes(self, nodes: t.List[Node]) -> t.List[Node]:
         leaf_nodes = []
         for node in nodes:
-            child_relationships = [relation for relation in node.relationships if relation.label == "child" and relation.source.id == node.id]
+            child_relationships = [
+                relation
+                for relation in node.relationships
+                if relation.label == "child" and relation.source.id == node.id
+            ]
             if not child_relationships:
                 leaf_nodes.append(node)
-                
+
         return leaf_nodes
-    
-    
-    def _ensure_leaf_node_size(self, nodes: t.List[Node], relationships: t.List[Relationship]) -> t.List[Node]:
-        
+
+    def _ensure_leaf_node_size(
+        self, nodes: t.List[Node], relationships: t.List[Relationship]
+    ) -> t.List[Node]:
         leaf_nodes = self.get_all_leaf_nodes(nodes)
         for leaf_node in leaf_nodes:
             chunks = []
@@ -175,15 +184,24 @@ class HeadlineSplitter:
             content_length = self._length_function(page_content)
             if content_length > self._max_leaf_size:
                 num_chunks = np.ceil(content_length / self._max_leaf_size)
-                start_idx = [max(0,i*self._max_leaf_size - 200) for i in range(int(num_chunks))]
-                end_idx = [(i+1)*self._max_leaf_size for i in range(int(num_chunks))]
-                for start, end in zip(start_idx, end_idx):                       
-                    chunks.append(LCDocument(
+                start_idx = [
+                    max(0, i * self._max_leaf_size - 200)
+                    for i in range(int(num_chunks))
+                ]
+                end_idx = [
+                    (i + 1) * self._max_leaf_size for i in range(int(num_chunks))
+                ]
+                for start, end in zip(start_idx, end_idx):
+                    chunks.append(
+                        LCDocument(
                             page_content=page_content[start:end],
                             metadata={},
-                        ))
+                        )
+                    )
                 chunks = self._reassign_metadata(doc, chunks)
-                leaf_node_idx = [idx for idx, n in enumerate(nodes) if n.id == leaf_node.id][0]
+                leaf_node_idx = [
+                    idx for idx, n in enumerate(nodes) if n.id == leaf_node.id
+                ][0]
                 for chunk in chunks:
                     nodes.append(
                         Node(
@@ -212,8 +230,9 @@ class HeadlineSplitter:
                     )
                     nodes[-1].relationships.append(relationship)
                     relationships.append(relationship)
-         
+
         return nodes, relationships
+
     def split_documents(self, documents: t.Sequence[LCDocument], attribute: str):
         nodes = []
         relationships = []

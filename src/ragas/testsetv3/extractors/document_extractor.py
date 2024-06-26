@@ -65,21 +65,18 @@ class DocumentExtractor:
 
         return documents
 
-    async def extract_from_nodes(self, nodes: t.List[Node], levels: t.Union[str,t.List[NodeLevel]]):
-        
+    async def extract_from_nodes(
+        self, nodes: t.List[Node], levels: t.Union[str, t.List[NodeLevel]]
+    ):
         for node in nodes:
             if node.level in levels or levels == "any":
                 if self.llm_extractors:
                     for llm_ext in self.llm_extractors:
-                        output = await llm_ext.extract(
-                            node.properties["page_content"]
-                        )
+                        output = await llm_ext.extract(node.properties["page_content"])
                         node.properties["metadata"].update(output)
                 if self.regex_extractors:
                     for reg_ext in self.regex_extractors:
-                        output = reg_ext.extract(
-                            node.properties["page_content"]
-                        )
+                        output = reg_ext.extract(node.properties["page_content"])
                         node.properties["metadata"].update(output)
 
         return nodes
@@ -108,7 +105,10 @@ class DocumentExtractor:
         return documents
 
     async def embed_from_nodes(
-        self, nodes: t.List[Node], attributes: t.List[str], levels: t.Union[str, t.List[NodeLevel]]
+        self,
+        nodes: t.List[Node],
+        attributes: t.List[str],
+        levels: t.Union[str, t.List[NodeLevel]],
     ):
         if levels == "any":
             nodes_ = nodes
