@@ -46,7 +46,9 @@ class QAC:
 
 @dataclass
 class Distribution:
-    style_length_distribution: t.Dict[t.Tuple[QuestionStyle, QuestionLength], float] = field(
+    style_length_distribution: t.Dict[
+        t.Tuple[QuestionStyle, QuestionLength], float
+    ] = field(
         default_factory=lambda: {
             (QuestionStyle.PERFECT_GRAMMAR, QuestionLength.MEDIUM): 1.0
         }
@@ -54,30 +56,32 @@ class Distribution:
 
     def __post_init__(self):
         self.validate()
-        
+
     def validate(self):
         total = sum(self.style_length_distribution.values())
         if not abs(total - 1.0) < 1e-6:
             raise ValueError("The distribution proportions must sum up to 1.0")
 
-    def get_num_samples(self, total_samples: int, style: QuestionStyle, length: QuestionLength) -> int:
+    def get_num_samples(
+        self, total_samples: int, style: QuestionStyle, length: QuestionLength
+    ) -> int:
         proportion = self.style_length_distribution.get((style, length), 0)
         return int(total_samples * proportion)
-    
+
     def items(self):
         return list(self.style_length_distribution.items())
-    
+
     def values(self):
         return list(self.style_length_distribution.values())
 
     def keys(self):
         return list(self.style_length_distribution.keys())
 
+
 @dataclass
 class QAGenerator(ABC):
     nodes: t.List[Node]
     relationships: t.List[Relationship]
-    num_samples: t.Optional[int] = None
     distribution: t.Optional[Distribution] = None
     llm: t.Optional[BaseRagasLLM] = None
     embedding: t.Optional[BaseRagasEmbeddings] = None
@@ -88,7 +92,6 @@ class QAGenerator(ABC):
     def __post_init__(self):
         self.llm = self.llm or llm_factory()
         self.embedding = self.embedding or embedding_factory()
-        self.num_samples = self.num_samples or 1
         self.distribution = self.distribution or DEFAULT_DISTRIBUTION
 
     @abstractmethod
@@ -106,17 +109,18 @@ class QAGenerator(ABC):
         pass
 
     def retrieve_chunks(
-        self, question: str, nodes: t.List[Node], kwargs: t.Optional[dict] = None
+        self, nodes: t.List[Node], kwargs: t.Optional[dict] = None
     ) -> t.Any:
         pass
 
-    async def modify_question(self, question: str, style: QuestionStyle, length: QuestionLength) -> str:
+    async def modify_question(
+        self, question: str, style: QuestionStyle, length: QuestionLength
+    ) -> str:
         assert self.llm is not None, "LLM is not initialized"
         examples = [
             example
             for example in EXAMPLES_FOR_QUESTION_MODIFICATION
-            if example["style"] == style.value
-            and example["length"] == length.value
+            if example["style"] == style.value and example["length"] == length.value
         ]
         self.question_modification_prompt.examples.extend(examples)
         p_value = self.question_modification_prompt.format(
@@ -137,8 +141,8 @@ class QAGenerator(ABC):
         if results.data is None:
             logger.warning("result for %s is None", query)
             return None
-
-        return GraphConverter.convert(results.data["filterNodes"])
+        results = list(results.data.values())[0]
+        return GraphConverter.convert(results)
 
     def get_random_node(self, nodes) -> t.List[Node]:
         nodes = [node for node in nodes if node.relationships]
