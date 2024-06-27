@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import tiktoken
+from langchain_core.documents import Document as LCDocument
 
 from ragas.llms.base import BaseRagasLLM, llm_factory
 from ragas.llms.json_load import json_loader
@@ -14,16 +15,29 @@ from ragas.testsetv3.extractors.prompts import (
     summary_extactor_prompt,
     title_extractor_prompt,
 )
+from ragas.testsetv3.graph import Node
 from ragas.testsetv3.utils import MODEL_MAX_LENGTHS, merge_dicts
 
 
 @dataclass
 class LLMbasedExtractor(Extractor):
-    prompt: Prompt
+    prompt: t.Optional[Prompt] = None
     llm: t.Optional[BaseRagasLLM] = None
+
+    def __post_init__(self):
+        if self.llm is None:
+            self.llm = llm_factory()
+        assert self.prompt is not None, "Prompt is not initialized"
+
+    def extract_text(self, text: str) -> t.Any:
+        raise NotImplementedError("extract() is not implemented for LLMbasedExtractor")
+
+    async def aextract(self, node: t.Union[Node, LCDocument]) -> t.Any:
+        return await super().aextract(node)
 
     async def _generate_output(self, p_value, is_asycn=True):
         assert self.llm is not None, "LLM is not initialized"
+        assert self.prompt is not None, "Prompt must not be None"
 
         output = await self.llm.generate(prompt=p_value, is_async=is_asycn)
         output = output.generations[0][0].text.strip()
@@ -32,9 +46,12 @@ class LLMbasedExtractor(Extractor):
 
         return {self.prompt.name: output}
 
-    async def extract(self, text, is_asycn=True):
+    async def aextract_text(self, text):
+        is_asycn = True
         if self.llm is None:
             self.llm = llm_factory()
+
+        assert self.prompt is not None, "Prompt is not initialized"
 
         # TODO: handle different models
         model_name = "gpt-3.5-turbo-"
@@ -78,12 +95,19 @@ class LLMbasedExtractor(Extractor):
                 other_extractors = [
                     ext for i, ext in enumerate(extractors) if i not in added_indices
                 ]
+
+                assert extractor.prompt is not None, "Input keys are not defined"
+                assert all(
+                    ext.prompt is not None for ext in other_extractors
+                ), "Input keys are not defined"
+
                 input_keys = extractor.prompt.input_keys
                 filtered_extractors = [
                     ext
                     for ext in other_extractors
                     if ext.prompt.input_keys == input_keys
                     and len(ext.prompt.examples) == len(extractor.prompt.examples)
+                    and extractor.attribute == ext.attribute
                 ]
                 for ext in filtered_extractors:
                     input_values = [
@@ -128,7 +152,9 @@ class LLMbasedExtractor(Extractor):
                 output_key="output",
                 output_type="json",
             )
-            extractors_to_return.append(LLMbasedExtractor(prompt=prompt))
+            extractors_to_return.append(
+                LLMbasedExtractor(attribute=extractors[0].attribute, prompt=prompt)
+            )
 
         return extractors_to_return
 

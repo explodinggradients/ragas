@@ -1,16 +1,29 @@
 import re
+import typing as t
 from collections import defaultdict
 from dataclasses import dataclass
 
+from langchain_core.documents import Document as LCDocument
+
 from ragas.testsetv3.extractors.base import Extractor, Regex
+from ragas.testsetv3.graph import Node
 
 
 @dataclass
 class RulebasedExtractor(Extractor):
-    regex: Regex
+    regex: t.Optional[Regex] = None
 
-    def extract(self, text):
-        matches = re.finditer(self.regex(), text)
+    def __post_init__(self):
+        assert self.regex is not None, "Regex pattern is not initialized"
+        self.pattern = self.regex()
+
+    async def aextract_text(self, text):
+        raise NotImplementedError(
+            "aextract() is not implemented for RulebasedExtractor"
+        )
+
+    def extract_text(self, text):
+        matches = re.finditer(self.pattern, text)
         result = defaultdict(list)
         for m in matches:
             m = {k: v for k, v in m.groupdict().items() if v is not None}
@@ -19,20 +32,59 @@ class RulebasedExtractor(Extractor):
 
         return result
 
-    def merge_extractors(self, *extractors):
+    def extract(self, node: t.Union[Node, LCDocument]) -> t.Any:
+        return super().extract(node)
+
+    def merge_extractors(self, *extractors) -> t.List["RulebasedExtractor"]:
         if isinstance(
             self, RulebasedExtractor
         ):  # Check if called by an initiated class
             extractors = (self,) + extractors
-        pattern = "|".join([extractor.regex() for extractor in extractors])
-        updated_regex = Regex(name="merged_extractor", pattern=pattern)
-        return [RulebasedExtractor(regex=updated_regex)]
+
+        assert all(
+            isinstance(extractor, RulebasedExtractor) for extractor in extractors
+        ), "All extractors must be of type RulebasedExtractor"
+
+        final_extractors: t.List[t.List[RulebasedExtractor]] = []
+        added_indices = []
+        for idx, extractor in enumerate(extractors):
+            if idx not in added_indices:
+                final_extractors.append([extractor])
+                added_indices.append(idx)
+                other_extractors = [
+                    ext for i, ext in enumerate(extractors) if i not in added_indices
+                ]
+                filtered_extractors = [
+                    ext
+                    for ext in other_extractors
+                    if extractor.attribute == ext.attribute
+                ]
+                for ext in filtered_extractors:
+                    final_extractors[-1].append(ext)
+                    added_indices.append(extractors.index(ext))
+
+        extractors_to_return = []
+        for extractors in final_extractors:
+            pattern = "|".join([extractor.pattern for extractor in extractors])
+            updated_regex = Regex(name="merged_extractor", pattern=pattern)
+            extractors_to_return.append(
+                RulebasedExtractor(
+                    attribute=extractors[0].attribute, regex=updated_regex
+                )
+            )
+        return extractors_to_return
 
 
 links_extractor_pattern = r"(?i)\b(?:https?://|www\.)\S+\b"
 emails_extractor_pattern = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"
+markdown_headings = r"^(#{1,6})\s+(.*)"
 
 email_extractor = RulebasedExtractor(
-    Regex(name="email", pattern=emails_extractor_pattern)
+    regex=Regex(name="email", pattern=emails_extractor_pattern)
 )
-link_extractor = RulebasedExtractor(Regex(name="link", pattern=links_extractor_pattern))
+link_extractor = RulebasedExtractor(
+    regex=Regex(name="link", pattern=links_extractor_pattern)
+)
+markdown_headings = RulebasedExtractor(
+    regex=Regex(name="markdown_headings", pattern=markdown_headings)
+)
