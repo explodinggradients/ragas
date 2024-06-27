@@ -144,3 +144,12 @@ def deprecated(
         return emit_warning
 
     return deprecate
+
+
+def get_or_init(
+    dictionary: t.Dict[str, t.Any], key: str, default: t.Callable[[], t.Any]
+) -> t.Any:    
+    _value = dictionary.get("key")
+    value = _value if _value is not None else default()
+    
+    return value

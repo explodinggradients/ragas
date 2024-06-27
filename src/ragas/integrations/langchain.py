@@ -19,6 +19,7 @@ from ragas.metrics.base import (
     get_required_columns,
 )
 from ragas.run_config import RunConfig
+from ragas.utils import get_or_init
 from ragas.validation import EVALMODE_TO_COLUMNS
 
 if t.TYPE_CHECKING:
@@ -43,10 +44,10 @@ class EvaluatorChain(Chain, RunEvaluator):
         else:
             run_config = RunConfig()
         if isinstance(self.metric, MetricWithLLM):
-            llm = kwargs.get("llm", ChatOpenAI())
+            llm = get_or_init(kwargs, "llm", ChatOpenAI)
             t.cast(MetricWithLLM, self.metric).llm = LangchainLLMWrapper(llm)
         if isinstance(self.metric, MetricWithEmbeddings):
-            embeddings = kwargs.get("embeddings", OpenAIEmbeddings())
+            embeddings = get_or_init(kwargs, "embeddings", OpenAIEmbeddings)
             t.cast(
                 MetricWithEmbeddings, self.metric
             ).embeddings = LangchainEmbeddingsWrapper(embeddings)
