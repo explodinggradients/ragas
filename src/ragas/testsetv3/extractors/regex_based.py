@@ -12,6 +12,7 @@ from ragas.testsetv3.graph import Node
 @dataclass
 class RulebasedExtractor(Extractor):
     regex: t.Optional[Regex] = None
+    is_multiline: bool = False
 
     def __post_init__(self):
         assert self.regex is not None, "Regex pattern is not initialized"
@@ -23,7 +24,11 @@ class RulebasedExtractor(Extractor):
         )
 
     def extract_text(self, text):
-        matches = re.finditer(self.pattern, text)
+        matches = (
+            re.finditer(self.pattern, text, re.MULTILINE)
+            if self.is_multiline
+            else re.finditer(self.pattern, text)
+        )
         result = defaultdict(list)
         for m in matches:
             m = {k: v for k, v in m.groupdict().items() if v is not None}
@@ -58,6 +63,7 @@ class RulebasedExtractor(Extractor):
                     ext
                     for ext in other_extractors
                     if extractor.attribute == ext.attribute
+                    if extractor.is_multiline == ext.is_multiline
                 ]
                 for ext in filtered_extractors:
                     final_extractors[-1].append(ext)
@@ -65,11 +71,17 @@ class RulebasedExtractor(Extractor):
 
         extractors_to_return = []
         for extractors in final_extractors:
-            pattern = "|".join([extractor.pattern for extractor in extractors])
-            updated_regex = Regex(name="merged_extractor", pattern=pattern)
+            if len(extractors) > 1:
+                pattern = "|".join([extractor.pattern for extractor in extractors])
+                updated_regex = Regex(name="merged_extractor", pattern=pattern)
+            else:
+                pattern = extractors[0].pattern
+                updated_regex = extractors[0].regex
             extractors_to_return.append(
                 RulebasedExtractor(
-                    attribute=extractors[0].attribute, regex=updated_regex
+                    attribute=extractors[0].attribute,
+                    regex=updated_regex,
+                    is_multiline=extractors[0].is_multiline,
                 )
             )
         return extractors_to_return
@@ -86,5 +98,5 @@ link_extractor = RulebasedExtractor(
     regex=Regex(name="link", pattern=links_extractor_pattern)
 )
 markdown_headings = RulebasedExtractor(
-    regex=Regex(name="markdown_headings", pattern=markdown_headings)
+    regex=Regex(name="markdown_headings", pattern=markdown_headings), is_multiline=True
 )
