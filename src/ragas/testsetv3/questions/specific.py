@@ -22,7 +22,7 @@ from ragas.testsetv3.questions.prompts import (
     question_answering,
     specific_question_from_keyphrase,
 )
-from ragas.testsetv3.questions.queries import LEVEL_1_NODES_QUERY
+from ragas.testsetv3.questions.queries import CHILD_NODES_QUERY
 from ragas.testsetv3.utils import rng
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ class SpecificQuestion(QAGenerator):
     async def generate_questions(
         self, query, kwargs, distribution=DEFAULT_DISTRIBUTION, num_samples=5
     ):
-        query = query or LEVEL_1_NODES_QUERY
+        query = query or CHILD_NODES_QUERY
         kwargs = kwargs or {}
         nodes = self.query_nodes(query, kwargs)
         num_nodes = min(num_samples, len(nodes))

@@ -437,7 +437,7 @@ class ComparitiveAbtractQA(AbstractQANew):
                 else:
                     logger.warning("question failed critic %s", question)
             else:
-                logger.warning("source was not detected %s", comparison_topic)
+                logger.warning("source was not detected %s", selected_theme)
                 return QAC()
         except Exception as e:
             logger.error("Error while generating question: %s", e)
