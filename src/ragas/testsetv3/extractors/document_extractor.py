@@ -1,42 +1,50 @@
 import typing as t
-from dataclasses import dataclass
 
 from langchain_core.documents import Document as LCDocument
 
 from ragas.embeddings.base import BaseRagasEmbeddings, embedding_factory
 from ragas.executor import Executor
+from ragas.llms.base import BaseRagasLLM, llm_factory
 from ragas.testsetv3.extractors.base import Extractor
 from ragas.testsetv3.extractors.llm_based import LLMbasedExtractor
 from ragas.testsetv3.extractors.regex_based import RulebasedExtractor
 from ragas.testsetv3.graph import Node, NodeLevel
 
 
-@dataclass
 class DocumentExtractor:
-    extractors: t.List[Extractor]
-    embedding: t.Optional[BaseRagasEmbeddings] = None
+    def __init__(
+        self,
+        extractors: t.List[Extractor],
+        llm: t.Optional[BaseRagasLLM] = None,
+        embedding: t.Optional[BaseRagasEmbeddings] = None,
+    ):
+        self.extractors = extractors
+        self.llm = llm or llm_factory()
+        self.embedding = embedding or embedding_factory()
 
-    def __post_init__(self):
+    @property
+    def extractors(self):
+        return self._extractors
+
+    @extractors.setter
+    def extractors(self, extractors):
+        self._extractors = []
         llm_extractors = [
             extractor
-            for extractor in self.extractors
+            for extractor in extractors
             if isinstance(extractor, LLMbasedExtractor)
         ]
         rule_extractor = [
             extractor
-            for extractor in self.extractors
+            for extractor in extractors
             if isinstance(extractor, RulebasedExtractor)
         ]
-        self.llm_extractors = (
-            LLMbasedExtractor.merge_extractors(*llm_extractors)
-            if llm_extractors
-            else None
-        )
-        self.regex_extractors = (
-            RulebasedExtractor.merge_extractors(*rule_extractor)
-            if rule_extractor
-            else None
-        )
+        if llm_extractors:
+            self._extractors.extend(LLMbasedExtractor.merge_extractors(*llm_extractors))
+        if rule_extractor:
+            self._extractors.extend(
+                RulebasedExtractor.merge_extractors(*rule_extractor)
+            )
 
     async def extract(
         self, inputs: t.Union[t.Sequence[Node], t.Sequence[LCDocument]], **args
@@ -84,14 +92,15 @@ class DocumentExtractor:
         return exec.results()
 
     async def _extract_from_document(self, doc: LCDocument) -> LCDocument:
-        if self.llm_extractors:
-            for llm_ext in self.llm_extractors:
-                output = await llm_ext.aextract(doc)
+        for extractor in self._extractors:
+            if isinstance(extractor, LLMbasedExtractor):
+                output = await extractor.aextract(doc)
                 doc.metadata.update(output)
-        if self.regex_extractors:
-            for reg_ext in self.regex_extractors:
-                output = reg_ext.extract(doc)
+            elif isinstance(extractor, RulebasedExtractor):
+                output = extractor.extract(doc)
                 doc.metadata.update(output)
+            else:
+                raise ValueError("Extractor not supported")
 
         extractive_metadata_keys = []
         for metadata in doc.metadata:
@@ -113,15 +122,16 @@ class DocumentExtractor:
     async def _extract_from_node(
         self, node: Node, levels: t.Union[str, t.List[NodeLevel]] = "any"
     ) -> Node:
-        if node.level in levels or levels == "any":
-            if self.llm_extractors:
-                for llm_ext in self.llm_extractors:
-                    output = await llm_ext.aextract_from_node(node)
+        if levels == "any" or (isinstance(levels, list) and node.level in levels):
+            for extractor in self._extractors:
+                if isinstance(extractor, LLMbasedExtractor):
+                    output = await extractor.aextract(node)
                     node.properties["metadata"].update(output)
-            if self.regex_extractors:
-                for reg_ext in self.regex_extractors:
-                    output = reg_ext.extract_from_node(node)
+                elif isinstance(extractor, RulebasedExtractor):
+                    output = extractor.extract(node)
                     node.properties["metadata"].update(output)
+                else:
+                    raise ValueError("Extractor not supported")
 
         return node
 
