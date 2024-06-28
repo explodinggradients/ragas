@@ -85,6 +85,7 @@ def evaluate(
     experiment_name: t.Optional[str] = None,
     metrics: t.Optional[list] = None,
     verbose: bool = False,
+    column_map: t.Optional[dict[str, str]] = None,
 ) -> t.Dict[str, t.Any]:
     """
     Evaluates a language model or a chain factory on a specified dataset using
@@ -144,6 +145,9 @@ def evaluate(
     returning the results. Custom evaluation metrics can be specified, or a default set
     will be used if none are provided.
     """
+    # setup column_map
+    column_map = {} if not column_map else column_map
+
     # init client and validate dataset
     client = Client()
     try:
@@ -164,7 +168,7 @@ def evaluate(
 
         metrics = [answer_relevancy, context_precision, faithfulness, context_recall]
 
-    metrics = [EvaluatorChain(m) for m in metrics]
+    metrics = [EvaluatorChain(m, column_map=column_map) for m in metrics]
     eval_config = RunEvalConfig(
         custom_evaluators=metrics,
     )

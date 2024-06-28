@@ -149,7 +149,7 @@ class EvaluatorChain(Chain, RunEvaluator):
                 f'"{context_key}" is required in each prediction for the '
                 f"metric[{self.metric.name}] you have chosen."
             )
-        if "ground_truth" in required_columns and "ground_truth" not in input:
+        if "ground_truth" in required_columns and ground_truth_key not in input:
             raise ValueError(
                 f'"ground_truth" is required in each prediction for the '
                 f"metric[{self.metric.name}] you have chosen."
@@ -182,6 +182,12 @@ class EvaluatorChain(Chain, RunEvaluator):
         return [k for k in keys_to_check if k not in dict_to_check]
 
     def _validate_langsmith_eval(self, run: Run, example: t.Optional[Example]) -> None:
+        # remap column names
+        question_key = self.column_map.get("question", "question")
+        ground_truth_key = self.column_map.get("ground_truth", "ground_truth")
+        answer_key = self.column_map.get("answer", "answer")
+        context_key = self.column_map.get("contexts", "contexts")
+
         if example is None:
             raise ValueError(
                 "expected example to be provided. Please check langsmith dataset and ensure valid dataset is uploaded."
@@ -194,21 +200,30 @@ class EvaluatorChain(Chain, RunEvaluator):
             raise ValueError(
                 "expected example.inputs to be provided. Please check langsmith dataset and ensure valid dataset is uploaded."
             )
-        if "question" not in example.inputs or "ground_truth" not in example.outputs:
+        if (
+            question_key not in example.inputs
+            or ground_truth_key not in example.outputs
+        ):
             raise ValueError(
-                "Expected 'question' and 'ground_truth' in example."
+                f"Expected '{question_key}' and {ground_truth_key} in example."
                 f"Got: {[k for k in example.inputs.keys()]}"
             )
         assert (
             run.outputs is not None
         ), "the current run has no outputs. The chain should output 'answer' and 'contexts' keys."
         output_keys = get_required_columns(
-            self.metric.evaluation_mode, ["question", "ground_truth"]
+            eval_mod=self.metric.evaluation_mode,
+            ignore_columns=["question", "ground_truth"],
         )
+        # remap output keys with column_map
+        output_keys = [
+            self.column_map.get(column_name, column_name) for column_name in output_keys
+        ]
+        # check for missing keys
         missing_keys = self._keys_are_present(output_keys, run.outputs)
         if missing_keys:
             raise ValueError(
-                "Expected 'answer' and 'contexts' in run.outputs."
+                f"Expected {answer_key} and {context_key} in run.outputs."
                 f"Got: {[k for k in run.outputs.keys()]}"
             )
 
@@ -227,17 +242,21 @@ class EvaluatorChain(Chain, RunEvaluator):
         assert example.inputs is not None
         assert example.outputs is not None
 
+        # remap column key
+        ground_truth_key = self.column_map.get("ground_truth", "ground_truth")
+        question_key = self.column_map.get("question", "question")
+
         chain_eval = run.outputs
-        chain_eval["question"] = example.inputs["question"]
+        chain_eval[question_key] = example.inputs[question_key]
         if self.metric.evaluation_mode in [
             EvaluationMode.gc,
             EvaluationMode.ga,
             EvaluationMode.qcg,
             EvaluationMode.qga,
         ]:
-            if example.outputs is None or "ground_truth" not in example.outputs:
-                raise ValueError("expected `ground_truth` in example outputs.")
-            chain_eval["ground_truth"] = example.outputs["ground_truth"]
+            if example.outputs is None or ground_truth_key not in example.outputs:
+                raise ValueError(f"expected `{ground_truth_key}` in example outputs.")
+            chain_eval[ground_truth_key] = example.outputs[ground_truth_key]
         eval_output = self.invoke(chain_eval, include_run_info=True)
 
         evaluation_result = EvaluationResult(
