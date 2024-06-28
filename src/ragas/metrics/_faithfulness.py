@@ -213,9 +213,6 @@ class Faithfulness(MetricWithLLM):
 
         text, question = row["answer"], row["question"]
         sentences = self.sentence_segmenter.segment(text)
-        sentences = [
-            sentence for sentence in sentences if sentence.strip().endswith(".")
-        ]
         sentences = "\n".join([f"{i}:{x}" for i, x in enumerate(sentences)])
         prompt_value = self.statement_prompt.format(
             question=question, answer=text, sentences=sentences

@@ -11,7 +11,8 @@ reasoning_question_prompt = Prompt(
     1. Ensure that the rewritten question can be answered entirely from the information present in the contexts.
     2. Do not frame questions that contains more than 15 words. Use abbreviation wherever possible.
     3. Make sure the question is clear and unambiguous.
-    4. phrases like 'based on the provided context','according to the context',etc are not allowed to appear in the question.""",
+    4. phrases like 'based on the provided context','according to the context',etc are not allowed to appear in the question. 
+    5. MAKE SURE TO ONLY WRITE THE QUESTION ITSELF! Do not mention context or any explanation of any kind""",
     examples=[
         {
             "question": "What is the capital of France?",
@@ -40,7 +41,8 @@ multi_context_question_prompt = Prompt(
         2. The rewritten question must be reasonable and must be understood and responded by humans.
         3. The rewritten question must be fully answerable from information present in context1 and context2. 
         4. Read and understand both contexts and rewrite the question so that answering requires insight from both context1 and context2.
-        5. phrases like 'based on the provided context','according to the context?',etc are not allowed to appear in the question.""",
+        5. phrases like 'based on the provided context','according to the context?',etc are not allowed to appear in the question.
+        6. MAKE SURE TO ONLY WRITE THE QUESTION ITSELF! Do not mention context or any explanation of any kind""",
     examples=[
         {
             "question": "What process turns plants green?",
@@ -69,7 +71,8 @@ conditional_question_prompt = Prompt(
         1. The rewritten question should not be longer than 25 words. Use abbreviation wherever possible.
         2. The rewritten question must be reasonable and must be understood and responded by humans.
         3. The rewritten question must be fully answerable from information present context.
-        4. phrases like 'provided context','according to the context?',etc are not allowed to appear in the question.""",
+        4. phrases like 'provided context','according to the context?',etc are not allowed to appear in the question.
+        5. MAKE SURE TO ONLY WRITE THE QUESTION ITSELF! Do not mention context or any explanation of any kind""",
     examples=[
         {
             "question": "What is the function of the roots of a plant?",
@@ -92,7 +95,8 @@ conditional_question_prompt = Prompt(
 compress_question_prompt = Prompt(
     name="compress_question",
     instruction="""Rewrite the following question to make it more indirect and shorter while retaining the essence of the original question.
-    The goal is to create a question that conveys the same meaning but in a less direct manner. The rewritten question should shorter so use abbreviation wherever possible.""",
+    The goal is to create a question that conveys the same meaning but in a less direct manner. The rewritten question should shorter so use abbreviation wherever possible.
+    MAKE SURE TO ONLY WRITE THE QUESTION ITSELF! Do not mention context or any explanation of any kind""",
     examples=[
         {
             "question": "What is the distance between the Earth and the Moon?",
@@ -204,7 +208,7 @@ keyphrase_extraction_prompt = Prompt(
 
 seed_question_prompt = Prompt(
     name="seed_question",
-    instruction="Generate a question that can be fully answered from given context. The question should be formed using topic",
+    instruction="Generate a question that can be fully answered from given context. The question should be formed using topic.\nMAKE SURE TO ONLY WRITE THE QUESTION ITSELF! Do not mention context or any explanation of any kind",
     examples=[
         {
             "context": "Photosynthesis in plants involves converting light energy into chemical energy, using chlorophyll and other pigments to absorb light. This process is crucial for plant growth and the production of oxygen.",
@@ -290,7 +294,8 @@ find_relevant_context_prompt = Prompt(
 
 question_rewrite_prompt = Prompt(
     name="rewrite_question",
-    instruction="""Given a context, question and feedback, rewrite the question to improve its clarity and answerability based on the feedback provided.""",
+    instruction="""Given a context, question and feedback, rewrite the question to improve its clarity and answerability based on the feedback provided.
+    MAKE SURE TO ONLY WRITE THE QUESTION ITSELF! Do not mention context or any explanation of any kind""",
     examples=[
         {
             "context": "The Eiffel Tower was constructed using iron and was originally intended as a temporary exhibit for the 1889 World's Fair held in Paris. Despite its initial temporary purpose, the Eiffel Tower quickly became a symbol of Parisian ingenuity and an iconic landmark of the city, attracting millions of visitors each year. The tower's design, created by Gustave Eiffel, was initially met with criticism from some French artists and intellectuals, but it has since been celebrated as a masterpiece of structural engineering and architectural design.",
