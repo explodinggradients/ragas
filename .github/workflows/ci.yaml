@@ -39,6 +39,8 @@ jobs:
               - *related
               - "src/ragas/**"
               - "tests/**"
+            ragas_experimental:
+              - "src/experimental/**"
             docs:
               - *related
               - requirements/docs-requirements.txt
