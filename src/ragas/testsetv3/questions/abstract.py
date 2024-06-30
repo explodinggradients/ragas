@@ -12,7 +12,13 @@ from ragas.executor import Executor
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
 from ragas.testsetv3.graph import Node
-from ragas.testsetv3.questions.base import DEFAULT_DISTRIBUTION, QAC, QAGenerator
+from ragas.testsetv3.questions.base import (
+    DEFAULT_DISTRIBUTION,
+    QAC,
+    QAGenerator,
+    QuestionLength,
+    QuestionStyle,
+)
 from ragas.testsetv3.questions.prompts import (
     abstract_comparative_question,
     abstract_question_from_theme,
@@ -30,7 +36,7 @@ from ragas.testsetv3.utils import rng
 logger = logging.getLogger(__name__)
 
 
-class AbstractQANew(QAGenerator):
+class AbstractQuestions(QAGenerator):
     def query_nodes(self, query: str, kwargs) -> t.Any:
         return super().query_nodes(query, kwargs)
 
@@ -68,13 +74,18 @@ class AbstractQANew(QAGenerator):
         raise NotImplementedError("generate_answer is not implemented")
 
     async def generate_question(
-        self, query: str | None = None, kwargs: dict | None = None
-    ):
+        self,
+        nodes: t.List[Node],
+        style: QuestionStyle,
+        length: QuestionLength,
+        kwargs: t.Optional[dict] = None,
+    ) -> t.Any:
+        pass
         raise NotImplementedError("generate_question is not implemented")
 
 
 @dataclass
-class AbtractQA(AbstractQANew):
+class AbtractQA(AbstractQuestions):
     name: str = "AbstractQA"
     generate_question_prompt: Prompt = field(
         default_factory=lambda: abstract_question_from_theme
@@ -277,8 +288,8 @@ class AbtractQA(AbstractQANew):
             else:
                 dict[node.properties["metadata"]["source"]] = [{node.level.value: node}]
 
-        for source, nodes in dict.items():
-            sorted_nodes = sorted(nodes, key=lambda x: list(x.keys())[0])
+        for source, level_to_node in dict.items():
+            sorted_nodes = sorted(level_to_node, key=lambda x: list(x.keys())[0])
             dict[source] = sorted_nodes
             current_nodes = [elem for item in sorted_nodes for elem in item.values()]
             title, source_file = current_nodes[0].properties["metadata"].get(
@@ -309,7 +320,7 @@ class AbtractQA(AbstractQANew):
 
 
 @dataclass
-class ComparitiveAbtractQA(AbstractQANew):
+class ComparitiveAbtractQA(AbstractQuestions):
     name: str = "ComparitiveAbtractQA"
     common_topic_prompt: Prompt = field(
         default_factory=lambda: common_topic_from_keyphrases
@@ -322,6 +333,7 @@ class ComparitiveAbtractQA(AbstractQANew):
     async def generate_questions(
         self, query, kwargs, distribution=DEFAULT_DISTRIBUTION, num_samples=5
     ):
+        assert self.llm is not None, "LLM is not initialized"
         query = query or CLUSTER_OF_RELATED_NODES_QUERY
         if kwargs is None:
             kwargs = {
@@ -436,6 +448,7 @@ class ComparitiveAbtractQA(AbstractQANew):
                     )
                 else:
                     logger.warning("question failed critic %s", question)
+                    return QAC()
             else:
                 logger.warning("source was not detected %s", selected_theme)
                 return QAC()
@@ -526,8 +539,8 @@ class ComparitiveAbtractQA(AbstractQANew):
             else:
                 dict[node.properties["metadata"]["source"]] = [{node.level.value: node}]
 
-        for source, nodes in dict.items():
-            sorted_nodes = sorted(nodes, key=lambda x: list(x.keys())[0])
+        for source, level_to_node in dict.items():
+            sorted_nodes = sorted(level_to_node, key=lambda x: list(x.keys())[0])
             dict[source] = sorted_nodes
             current_nodes = [elem for item in sorted_nodes for elem in item.values()]
             title, source_file = current_nodes[0].properties["metadata"].get(

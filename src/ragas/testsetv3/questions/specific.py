@@ -48,6 +48,7 @@ class SpecificQuestion(QAGenerator):
     async def generate_questions(
         self, query, kwargs, distribution=DEFAULT_DISTRIBUTION, num_samples=5
     ):
+        assert self.llm is not None, "LLM is not initialized"
         query = query or CHILD_NODES_QUERY
         kwargs = kwargs or {}
         nodes = self.query_nodes(query, kwargs)
