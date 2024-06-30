@@ -7,8 +7,6 @@ from langchain_core.documents import Document as LCDocument
 from ragas.testsetv3.graph import Node, NodeLevel, NodeType, Relationship
 from ragas.testsetv3.utils import merge_dicts
 
-# from langchain.text_splitter
-
 
 class HeadlineSplitter:
     def __init__(
@@ -171,7 +169,7 @@ class HeadlineSplitter:
 
     def _ensure_leaf_node_size(
         self, nodes: t.List[Node], relationships: t.List[Relationship]
-    ) -> t.List[Node]:
+    ) -> t.Tuple[t.List[Node], t.List[Relationship]]:
         leaf_nodes = self.get_all_leaf_nodes(nodes)
         for leaf_node in leaf_nodes:
             chunks = []

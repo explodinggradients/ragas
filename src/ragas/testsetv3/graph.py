@@ -41,6 +41,7 @@ class TargetFilter(InputObjectType):
     property_key = String()
     property_value = String()
     comparison = String()
+    level = Argument(NodeLevel)
 
 
 class Relationship(ObjectType):
@@ -55,7 +56,6 @@ class Relationship(ObjectType):
     def __init__(self, id=None, **kwargs):
         if id is None:
             id = str(uuid.uuid4())
-        super().__init__(id=id, **kwargs)
 
 
 class Node(ObjectType):
@@ -79,7 +79,6 @@ class Node(ObjectType):
     def __init__(self, id=None, **kwargs):
         if id is None:
             id = str(uuid.uuid4())
-        super().__init__(id=id, **kwargs)
 
     def resolve_relationships(
         self,
@@ -133,6 +132,7 @@ class Node(ObjectType):
             target_property_key = target_filter.get("property_key")
             target_property_value = target_filter.get("property_value")
             target_comparison = target_filter.get("comparison")
+            target_level = target_filter.get("level")
 
             filtered_relationships = [
                 rel
@@ -166,6 +166,7 @@ class Node(ObjectType):
                             )
                         )
                     )
+                    and (not target_level or rel.target.level == target_level)
                 )
             ]
 
