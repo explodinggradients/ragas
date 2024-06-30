@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 LANGUAGE_CODES = {v.__name__.lower(): k for k, v in LANGUAGE_CODES.items()}
 
-EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg")
+EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg ca")
 
 
 def get_required_columns(
@@ -52,6 +52,8 @@ def get_required_columns(
         keys = ["question", "contexts", "answer", "ground_truth"]
     elif eval_mod == EvaluationMode.qcg:
         keys = ["question", "contexts", "ground_truth"]
+    elif eval_mod == EvaluationMode.ca:
+        keys = ["contexts", "answer"]
     ignore_columns = ignore_columns or []
 
     return [k for k in keys if k not in ignore_columns]
@@ -109,14 +111,21 @@ class Metric(ABC):
         return score
 
     async def ascore(
-        self: t.Self, row: t.Dict, callbacks: Callbacks = None, is_async: bool = True
+        self: t.Self,
+        row: t.Dict,
+        callbacks: Callbacks = None,
+        is_async: bool = True,
+        thread_timeout: t.Optional[float] = None,
     ) -> float:
         callbacks = callbacks or []
         rm, group_cm = new_group(
             self.name, inputs=row, callbacks=callbacks, is_async=True
         )
         try:
-            score = await self._ascore(row=row, callbacks=group_cm, is_async=is_async)
+            score = await asyncio.wait_for(
+                self._ascore(row=row, callbacks=group_cm, is_async=is_async),
+                timeout=thread_timeout,
+            )
         except Exception as e:
             if not group_cm.ended:
                 rm.on_chain_error(e)

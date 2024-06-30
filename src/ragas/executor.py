@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 
 def runner_exception_hook(args: threading.ExceptHookArgs):
-    print(args)
     raise args.exc_type
 
 
