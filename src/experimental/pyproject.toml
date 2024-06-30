@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "experimental"
-version = "0.0.2"
+name = "ragas_experimental"
+version = "0.0.3"
 description = "Experimental work in Ragas that has the bleeding edge work"
 authors = ["jjmachan <jithin@explodinggradients.com>"]
 license = "Apache 2"
