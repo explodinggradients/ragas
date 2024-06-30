@@ -97,19 +97,18 @@ class LLMbasedExtractor(Extractor):
                 ]
 
                 assert extractor.prompt is not None, "Input keys are not defined"
-                assert all(
-                    ext.prompt is not None for ext in other_extractors
-                ), "Input keys are not defined"
 
                 input_keys = extractor.prompt.input_keys
                 filtered_extractors = [
                     ext
                     for ext in other_extractors
-                    if ext.prompt.input_keys == input_keys
+                    if ext.prompt
+                    and ext.prompt.input_keys == input_keys
                     and len(ext.prompt.examples) == len(extractor.prompt.examples)
                     and extractor.attribute == ext.attribute
                 ]
                 for ext in filtered_extractors:
+                    assert ext.prompt is not None, "Prompt is not defined for extractor"
                     input_values = [
                         ext.prompt.examples[i][key]
                         for i in range(len(ext.prompt.examples))
@@ -129,32 +128,38 @@ class LLMbasedExtractor(Extractor):
                 [
                     f"{i}:{extractor.prompt.instruction}"
                     for i, extractor in enumerate(extractors)
+                    if extractor.prompt
                 ]
             )
 
             examples = []
-            for idx, example in enumerate(extractors[0].prompt.examples):
-                example = {key: example[key] for key in extractors[0].prompt.input_keys}
-                output = {
-                    extractor.prompt.output_key: extractor.prompt.examples[idx][
-                        extractor.prompt.output_key
-                    ]
-                    for extractor in extractors
-                }
-                example.update({"output": output})
-                examples.append(example)
+            extractor_prompt1 = extractors[0].prompt if extractors[0].prompt else None
+            if extractor_prompt1 is not None:
+                for idx, example in enumerate(extractor_prompt1.examples):
+                    example = {
+                        key: example[key] for key in extractor_prompt1.input_keys
+                    }
+                    output = {
+                        extractor.prompt.output_key: extractor.prompt.examples[idx][
+                            extractor.prompt.output_key
+                        ]
+                        for extractor in extractors
+                        if extractor.prompt
+                    }
+                    example.update({"output": output})
+                    examples.append(example)
 
-            prompt = Prompt(
-                name="merged_extractor",
-                instruction=instruction,
-                examples=examples,
-                input_keys=extractors[0].prompt.input_keys,
-                output_key="output",
-                output_type="json",
-            )
-            extractors_to_return.append(
-                LLMbasedExtractor(attribute=extractors[0].attribute, prompt=prompt)
-            )
+                prompt = Prompt(
+                    name="merged_extractor",
+                    instruction=instruction,
+                    examples=examples,
+                    input_keys=extractor_prompt1.input_keys,
+                    output_key="output",
+                    output_type="json",
+                )
+                extractors_to_return.append(
+                    LLMbasedExtractor(attribute=extractors[0].attribute, prompt=prompt)
+                )
 
         return extractors_to_return
 

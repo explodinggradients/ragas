@@ -40,7 +40,7 @@ class RulebasedExtractor(Extractor):
     def extract(self, node: t.Union[Node, LCDocument]) -> t.Any:
         return super().extract(node)
 
-    def merge_extractors(self, *extractors) -> t.List["RulebasedExtractor"]:
+    def merge_extractors(self, *extractors) -> t.List[Extractor]:
         if isinstance(
             self, RulebasedExtractor
         ):  # Check if called by an initiated class

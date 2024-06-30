@@ -10,6 +10,7 @@ from ragas.testsetv3.extractors.regex_based import (
     RulebasedExtractor,
     email_extractor,
     link_extractor,
+    markdown_headings,
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "RulebasedExtractor",
     "email_extractor",
     "link_extractor",
+    "markdown_headings",
 ]
