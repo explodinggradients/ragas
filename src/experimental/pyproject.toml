@@ -2,7 +2,7 @@
 name = "experimental"
 version = "0.0.2"
 description = "Experimental work in Ragas that has the bleeding edge work"
-authors = ["jjmachan <jamesjithin97@gmail.com>"]
+authors = ["jjmachan <jithin@explodinggradients.com>"]
 license = "Apache 2"
 readme = "README.md"
 
