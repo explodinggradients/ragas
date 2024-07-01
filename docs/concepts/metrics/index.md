@@ -15,6 +15,9 @@ Just like in any machine learning system, the performance of individual componen
 - [Context precision](context_precision.md)
 - [Context relevancy](context_relevancy.md)
 - [Context entity recall](context_entities_recall.md)
+- [Summarization Score](summarization_score.md)
+
+```{toctree}
 
 ## End-to-End Evaluation
 
@@ -36,5 +39,6 @@ context_entities_recall
 semantic_similarity
 answer_correctness
 critique
+summarization_score
 
 ```
