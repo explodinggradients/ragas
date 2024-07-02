@@ -352,14 +352,13 @@ class ComplexEvolution(Evolution):
             run_config = RunConfig()
         super().init(is_async=is_async, run_config=run_config)
 
-        if self.se is None:
-            # init simple evolution to get seed question
-            self.se = SimpleEvolution(
-                generator_llm=self.generator_llm,
-                docstore=self.docstore,
-                node_filter=self.node_filter,
-                question_filter=self.question_filter,
-            )
+        # init simple evolution to get seed question
+        self.se = SimpleEvolution(
+            generator_llm=self.generator_llm,
+            docstore=self.docstore,
+            node_filter=self.node_filter,
+            question_filter=self.question_filter,
+        )
         # init evolution filter with critic llm from another filter
         assert self.node_filter is not None, "node filter cannot be None"
         if self.evolution_filter is None:
