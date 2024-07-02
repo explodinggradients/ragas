@@ -1,5 +1,5 @@
-from ragas.metrics.utils import get_available_metrics
 from ragas.metrics.base import EvaluationMode
+from ragas.metrics.utils import get_available_metrics
 
 
 def test_get_available_metrics():
