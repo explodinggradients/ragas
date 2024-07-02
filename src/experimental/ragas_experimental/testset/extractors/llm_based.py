@@ -8,15 +8,15 @@ from langchain_core.documents import Document as LCDocument
 from ragas.llms.base import BaseRagasLLM, llm_factory
 from ragas.llms.json_load import json_loader
 from ragas.llms.prompt import Prompt
-from ragas.testsetv3.extractors.base import Extractor
-from ragas.testsetv3.extractors.prompts import (
+from ragas_experimental.testset.extractors.base import Extractor
+from ragas_experimental.testset.extractors.prompts import (
     headline_extractor_prompt,
     keyphrase_extractor_prompt,
     summary_extactor_prompt,
     title_extractor_prompt,
 )
-from ragas.testsetv3.graph import Node
-from ragas.testsetv3.utils import MODEL_MAX_LENGTHS, merge_dicts
+from ragas_experimental.testset.graph import Node
+from ragas_experimental.testset.utils import MODEL_MAX_LENGTHS, merge_dicts
 
 
 @dataclass

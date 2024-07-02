@@ -2,7 +2,7 @@ import json
 
 import numpy as np
 
-from ragas.testsetv3.graph import Node, NodeLevel, NodeType, Relationship
+from ragas_experimental.testset.graph import Node, NodeLevel, NodeType, Relationship
 
 MODEL_MAX_LENGTHS = {
     "gpt-3.5-turbo-": 16385,

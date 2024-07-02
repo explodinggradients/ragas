@@ -1,8 +1,8 @@
 import typing as t
 from dataclasses import dataclass
 
-from ragas.testsetv3.graph import Node, NodeLevel, Relationship, schema
-from ragas.testsetv3.relationships.base import Similarity
+from ragas_experimental.testset.graph import Node, NodeLevel, Relationship, schema
+from ragas_experimental.testset.relationships.base import Similarity
 
 
 @dataclass

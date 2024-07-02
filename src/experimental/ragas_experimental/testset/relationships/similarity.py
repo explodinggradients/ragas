@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from ragas.testsetv3.graph import Node
-from ragas.testsetv3.relationships.base import Similarity
+from ragas_experimental.testset.graph import Node
+from ragas_experimental.testset.relationships.base import Similarity
 
 
 @dataclass

@@ -1,6 +1,13 @@
-from ragas.testsetv3.questions.abstract import AbtractQA, ComparitiveAbtractQA
-from ragas.testsetv3.questions.base import QAGenerator, QuestionLength, QuestionStyle
-from ragas.testsetv3.questions.specific import SpecificQuestion
+from ragas_experimental.testset.questions.abstract import (
+    AbtractQA,
+    ComparitiveAbtractQA,
+)
+from ragas_experimental.testset.questions.base import (
+    QAGenerator,
+    QuestionLength,
+    QuestionStyle,
+)
+from ragas_experimental.testset.questions.specific import SpecificQuestion
 
 __all__ = [
     "AbtractQA",

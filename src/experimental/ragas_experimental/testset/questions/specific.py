@@ -8,22 +8,22 @@ from langchain_core.documents import Document as LCDocument
 
 from ragas.executor import Executor
 from ragas.llms.prompt import Prompt
-from ragas.testsetv3.graph import Node
-from ragas.testsetv3.questions.base import (
+from ragas_experimental.testset.graph import Node
+from ragas_experimental.testset.questions.base import (
     DEFAULT_DISTRIBUTION,
     QAC,
     QAGenerator,
     QuestionLength,
     QuestionStyle,
 )
-from ragas.testsetv3.questions.prompts import (
+from ragas_experimental.testset.questions.prompts import (
     critic_question,
     order_sections_by_relevance,
     question_answering,
     specific_question_from_keyphrase,
 )
-from ragas.testsetv3.questions.queries import CHILD_NODES_QUERY
-from ragas.testsetv3.utils import rng
+from ragas_experimental.testset.questions.queries import CHILD_NODES_QUERY
+from ragas_experimental.testset.utils import rng
 
 logger = logging.getLogger(__name__)
 

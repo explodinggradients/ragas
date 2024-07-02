@@ -10,13 +10,13 @@ from langchain_core.documents import Document as LCDocument
 from ragas.embeddings import BaseRagasEmbeddings, embedding_factory
 from ragas.llms.base import BaseRagasLLM, llm_factory
 from ragas.llms.prompt import Prompt
-from ragas.testsetv3.graph import Node, Relationship
-from ragas.testsetv3.graph import schema as myschema
-from ragas.testsetv3.questions.prompts import (
+from ragas_experimental.testset.graph import Node, Relationship
+from ragas_experimental.testset.graph import schema as myschema
+from ragas_experimental.testset.questions.prompts import (
     EXAMPLES_FOR_QUESTION_MODIFICATION,
     question_modification,
 )
-from ragas.testsetv3.utils import GraphConverter, rng
+from ragas_experimental.testset.utils import GraphConverter, rng
 
 logger = logging.getLogger(__name__)
 

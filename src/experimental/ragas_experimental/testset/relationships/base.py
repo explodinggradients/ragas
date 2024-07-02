@@ -2,7 +2,7 @@ import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from ragas.testsetv3.graph import Node
+from ragas_experimental.testset.graph import Node
 
 
 @dataclass

@@ -5,8 +5,8 @@ from dataclasses import dataclass
 
 from langchain_core.documents import Document as LCDocument
 
-from ragas.testsetv3.extractors.base import Extractor, Regex
-from ragas.testsetv3.graph import Node
+from ragas_experimental.testset.extractors.base import Extractor, Regex
+from ragas_experimental.testset.graph import Node
 
 
 @dataclass

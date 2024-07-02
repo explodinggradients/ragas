@@ -5,10 +5,10 @@ from langchain_core.documents import Document as LCDocument
 from ragas.embeddings.base import BaseRagasEmbeddings, embedding_factory
 from ragas.executor import Executor
 from ragas.llms.base import BaseRagasLLM, llm_factory
-from ragas.testsetv3.extractors.base import Extractor
-from ragas.testsetv3.extractors.llm_based import LLMbasedExtractor
-from ragas.testsetv3.extractors.regex_based import RulebasedExtractor
-from ragas.testsetv3.graph import Node, NodeLevel
+from ragas_experimental.testset.extractors.base import Extractor
+from ragas_experimental.testset.extractors.llm_based import LLMbasedExtractor
+from ragas_experimental.testset.extractors.regex_based import RulebasedExtractor
+from ragas_experimental.testset.graph import Node, NodeLevel
 
 
 class DocumentExtractor:

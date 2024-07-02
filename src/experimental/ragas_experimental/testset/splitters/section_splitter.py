@@ -4,8 +4,8 @@ import typing as t
 import numpy as np
 from langchain_core.documents import Document as LCDocument
 
-from ragas.testsetv3.graph import Node, NodeLevel, NodeType, Relationship
-from ragas.testsetv3.utils import merge_dicts
+from ragas_experimental.testset.graph import Node, NodeLevel, NodeType, Relationship
+from ragas_experimental.testset.utils import merge_dicts
 
 
 class HeadlineSplitter:
