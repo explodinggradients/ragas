@@ -185,6 +185,7 @@ class Query(ObjectType):
 
     leaf_nodes = List(Node, id=Argument(String))
 
+    @staticmethod
     def resolve_leaf_nodes(parent, info, id):
         def get_all_leaf_nodes(node):
             leaf_nodes = []
@@ -215,6 +216,7 @@ class Query(ObjectType):
         else:
             return []
 
+    @staticmethod
     def resolve_filter_nodes(
         parent,
         info,
