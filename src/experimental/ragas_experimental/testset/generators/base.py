@@ -2,7 +2,10 @@ import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+import pandas as pd
 from langchain_core.documents import Document
+from llama_index.core.schema import Document as LlamaindexDocument
+from ragas_experimental.testset.questions import QAC
 
 from ragas.embeddings import BaseRagasEmbeddings, embedding_factory
 from ragas.llms.base import BaseRagasLLM, llm_factory
@@ -24,6 +27,17 @@ class QADistribution:
 
 
 @dataclass
+class TestDataset:
+    qac: t.List[QAC]
+
+    def to_pandas(self):
+        data = []
+        for row in self.qac:
+            data.append(row.to_dict())
+        return pd.DataFrame(data)
+
+
+@dataclass
 class TestGenerator(ABC):
     llm: BaseRagasLLM = llm_factory()
     embedding: BaseRagasEmbeddings = embedding_factory()
@@ -34,7 +48,7 @@ class TestGenerator(ABC):
         docs: t.Sequence[Document],
         test_size: int,
         distribution: QADistribution,
-    ) -> t.Any:
+    ) -> TestDataset:
         ...
 
     def generate_with_langchain_docs(
@@ -42,13 +56,14 @@ class TestGenerator(ABC):
         docs: t.Sequence[Document],
         test_size: int,
         distribution: QADistribution,
-    ) -> t.Any:
-        ...
+    ) -> TestDataset:
+        return self.generate(docs, test_size, distribution)
 
     def generate_with_llamaindex_docs(
         self,
-        docs: t.List[Document],
+        docs: t.Sequence[LlamaindexDocument],
         test_size: int,
         distribution: QADistribution,
-    ) -> t.Any:
-        ...
+    ) -> TestDataset:
+        docs = [doc.to_langchain_format() for doc in docs]
+        return self.generate(docs, test_size, distribution)

@@ -11,7 +11,11 @@ from ragas_experimental.testset.extractors import (
     summary_extractor,
     title_extractor,
 )
-from ragas_experimental.testset.generators import QADistribution, TestGenerator
+from ragas_experimental.testset.generators import (
+    QADistribution,
+    TestDataset,
+    TestGenerator,
+)
 from ragas_experimental.testset.graph import Node, NodeLevel
 from ragas_experimental.testset.questions import (
     DEFAULT_DISTRIBUTION,
@@ -72,7 +76,7 @@ class SimpleTestGenerator(TestGenerator):
         docs: t.Sequence[Document],
         test_size: int,
         distribution: QADistribution = QA_DISTRIBUTION,
-    ) -> t.Any:
+    ) -> TestDataset:
         if not check_if_sum_is_close(list(distribution.values()), 1.0, 3):
             raise ValueError(
                 f"distribution passed do not sum to 1.0 [got {sum(list(distribution.values()))}]. Please check the "
@@ -162,7 +166,7 @@ class SimpleTestGenerator(TestGenerator):
             index += num_samples
 
         remaining_size = test_size - index
-        if remaining_size != 0:
+        if remaining_size > 0:
             choices = np.array(distribution.keys())
             prob = np.array(distribution.values())
             random_distribution = rng.choice(choices, p=prob, size=remaining_size)
@@ -170,4 +174,6 @@ class SimpleTestGenerator(TestGenerator):
                 exec.submit(
                     qa.generate_questions, query=None, kwargs=None, num_samples=1
                 )
-        return exec.results()
+        results = exec.results()
+        results = TestDataset([result for result in results if result is not None])
+        return results
