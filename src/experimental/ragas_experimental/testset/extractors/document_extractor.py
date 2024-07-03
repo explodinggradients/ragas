@@ -1,14 +1,14 @@
 import typing as t
 
 from langchain_core.documents import Document as LCDocument
-
-from ragas.embeddings.base import BaseRagasEmbeddings, embedding_factory
-from ragas.executor import Executor
-from ragas.llms.base import BaseRagasLLM, llm_factory
 from ragas_experimental.testset.extractors.base import Extractor
 from ragas_experimental.testset.extractors.llm_based import LLMbasedExtractor
 from ragas_experimental.testset.extractors.regex_based import RulebasedExtractor
 from ragas_experimental.testset.graph import Node, NodeLevel
+
+from ragas.embeddings.base import BaseRagasEmbeddings, embedding_factory
+from ragas.executor import Executor
+from ragas.llms.base import BaseRagasLLM, llm_factory
 
 
 class DocumentExtractor:
@@ -46,9 +46,9 @@ class DocumentExtractor:
                 RulebasedExtractor.merge_extractors(*rule_extractor)
             )
 
-    async def extract(
-        self, inputs: t.Union[t.Sequence[Node], t.Sequence[LCDocument]], **args
-    ) -> t.Union[t.Sequence[Node], t.Sequence[LCDocument]]:
+    def extract(
+        self, inputs: t.Sequence[Node | LCDocument], *args
+    ) -> t.Sequence[Node | LCDocument]:
         exec = Executor(
             desc="Extraction..",
             keep_progress_bar=True,
@@ -58,7 +58,7 @@ class DocumentExtractor:
 
         if all(isinstance(item, Node) for item in inputs):
             for item in inputs:
-                exec.submit(self._extract_from_node, item, **args)
+                exec.submit(self._extract_from_node, item, *args)
         elif all(isinstance(item, LCDocument) for item in inputs):
             for item in inputs:
                 exec.submit(self._extract_from_document, item)
@@ -67,12 +67,12 @@ class DocumentExtractor:
 
         return exec.results()
 
-    async def embed(
+    def embed(
         self,
-        inputs: t.Union[t.Sequence[Node], t.Sequence[LCDocument]],
+        inputs: t.Sequence[Node | LCDocument],
         attributes: t.List[str],
-        **args,
-    ) -> t.Union[t.Sequence[Node], t.Sequence[LCDocument]]:
+        args: t.Dict[str, t.List[NodeLevel]] = {},
+    ) -> t.Sequence[Node | LCDocument]:
         exec = Executor(
             desc="Embeddding..",
             keep_progress_bar=True,
@@ -80,14 +80,17 @@ class DocumentExtractor:
             run_config=None,
         )
 
-        if all(isinstance(item, Node) for item in inputs):
-            for item in inputs:
-                exec.submit(self._embed_from_node, item, attributes, **args)
-        elif all(isinstance(item, LCDocument) for item in inputs):
-            for item in inputs:
-                exec.submit(self._embed_document, item, attributes)
-        else:
-            raise ValueError("Input must be a list of Nodes or Documents")
+        for attr in attributes:
+            if all(isinstance(item, Node) for item in inputs):
+                for item in inputs:
+                    exec.submit(
+                        self._embed_from_node, item, [attr], args.get(attr, "any")
+                    )
+            elif all(isinstance(item, LCDocument) for item in inputs):
+                for item in inputs:
+                    exec.submit(self._embed_document, item, [attr])
+            else:
+                raise ValueError("Input must be a list of Nodes or Documents")
 
         return exec.results()
 
@@ -167,10 +170,12 @@ class DocumentExtractor:
             for attr in attributes:
                 if attr == "page_content":
                     item_to_embed = node.properties["page_content"]
-                else:
+                elif attr in node.properties["metadata"]:
                     item_to_embed = node.properties["metadata"][attr]
+                else:
+                    raise ValueError(f"Attribute {attr} not found in document")
 
-                embedding = await self.embedding.aembed_documents(item_to_embed)
+                embedding = await self.embedding.aembed_query(item_to_embed)
                 node.properties["metadata"][f"{attr}_embedding"] = embedding
 
         return node
