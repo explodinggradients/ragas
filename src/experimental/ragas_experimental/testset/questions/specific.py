@@ -71,7 +71,11 @@ class SpecificQA(QAGenerator):
                 output = await self.llm.generate(p_vlaue)
                 output = json.loads(output.generations[0][0].text)
                 # TODO: make sure that prompt does not modify the seperator. Ideally ouput ordering by index
-                headings_array = np.array(output.get("high"))
+                headings_array = (
+                    np.array(output.get("high"))
+                    if output.get("high")
+                    else np.array(list(output.values()))
+                )
                 selected_heading = rng.choice(headings_array, size=seed)
             else:
                 # TODO: inspect and handle better

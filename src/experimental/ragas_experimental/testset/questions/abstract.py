@@ -476,7 +476,10 @@ class ComparativeAbstractQA(AbstractQuestions):
         assert self.embedding is not None, "Embedding is not initialized"
 
         common_keyphrases = kwargs.get("keyphrases", [])
-        common_theme = kwargs.get("common_theme", "")
+        common_theme = kwargs.get("common_theme", None)
+        if common_theme is None:
+            logging.warning("No common theme detected")
+            return None
         max_tokens = kwargs.get("max_tokens", 4000)
         node_ids = [node.id for node in nodes]
 
