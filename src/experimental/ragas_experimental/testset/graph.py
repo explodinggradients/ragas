@@ -54,8 +54,7 @@ class Relationship(ObjectType):
     properties = Field(JSONString)
 
     def __init__(self, id=None, **kwargs):
-        if id is None:
-            id = str(uuid.uuid4())
+        super().__init__(id=id or str(uuid.uuid4()), **kwargs)
 
 
 class Node(ObjectType):
@@ -77,8 +76,7 @@ class Node(ObjectType):
     level = Field(NodeLevel)
 
     def __init__(self, id=None, **kwargs):
-        if id is None:
-            id = str(uuid.uuid4())
+        super().__init__(id=id or str(uuid.uuid4()), **kwargs)
 
     def resolve_relationships(
         self,
@@ -239,7 +237,7 @@ class Query(ObjectType):
             filtered_nodes = [node for node in nodes if node.label == label]
 
         if level:
-            filtered_nodes = [node for node in nodes if node.level == level]
+            filtered_nodes = [node for node in nodes if node.level.name == level.name]
 
         if property_key and property_value:
             filtered_nodes = [
@@ -248,7 +246,6 @@ class Query(ObjectType):
                 if node.properties
                 and node.properties.get(property_key) == property_value
             ]
-
         return filtered_nodes
 
 
