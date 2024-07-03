@@ -5,9 +5,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from langchain_core.documents import Document as LCDocument
-
-from ragas.executor import Executor
-from ragas.llms.prompt import Prompt
 from ragas_experimental.testset.graph import Node
 from ragas_experimental.testset.questions.base import (
     DEFAULT_DISTRIBUTION,
@@ -25,11 +22,14 @@ from ragas_experimental.testset.questions.prompts import (
 from ragas_experimental.testset.questions.queries import CHILD_NODES_QUERY
 from ragas_experimental.testset.utils import rng
 
+from ragas.executor import Executor
+from ragas.llms.prompt import Prompt
+
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class SpecificQuestion(QAGenerator):
+class SpecificQA(QAGenerator):
     name: str = "SpecificQuestion"
     generate_question_prompt: Prompt = field(
         default_factory=lambda: specific_question_from_keyphrase

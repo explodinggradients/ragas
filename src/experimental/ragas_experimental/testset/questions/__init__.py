@@ -1,19 +1,23 @@
 from ragas_experimental.testset.questions.abstract import (
-    AbtractQA,
-    ComparitiveAbtractQA,
+    AbstractQA,
+    ComparativeAbstractQA,
 )
 from ragas_experimental.testset.questions.base import (
+    DEFAULT_DISTRIBUTION,
     QAGenerator,
     QuestionLength,
     QuestionStyle,
+    StyleLengthDistribution,
 )
-from ragas_experimental.testset.questions.specific import SpecificQuestion
+from ragas_experimental.testset.questions.specific import SpecificQA
 
 __all__ = [
-    "AbtractQA",
-    "ComparitiveAbtractQA",
-    "SpecificQuestion",
+    "AbstractQA",
+    "ComparativeAbstractQA",
+    "SpecificQA",
     "QAGenerator",
     "QuestionStyle",
     "QuestionLength",
+    "DEFAULT_DISTRIBUTION",
+    "StyleLengthDistribution",
 ]

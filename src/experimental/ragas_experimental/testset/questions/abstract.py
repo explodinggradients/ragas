@@ -7,13 +7,8 @@ import numpy as np
 import tiktoken
 from langchain.utils.math import cosine_similarity
 from langchain_core.documents import Document as LCDocument
-
-from ragas.executor import Executor
-from ragas.llms.json_load import json_loader
-from ragas.llms.prompt import Prompt
 from ragas_experimental.testset.graph import Node
 from ragas_experimental.testset.questions.base import (
-    DEFAULT_DISTRIBUTION,
     QAC,
     QAGenerator,
     QuestionLength,
@@ -33,9 +28,14 @@ from ragas_experimental.testset.questions.queries import (
 )
 from ragas_experimental.testset.utils import rng
 
+from ragas.executor import Executor
+from ragas.llms.json_load import json_loader
+from ragas.llms.prompt import Prompt
+
 logger = logging.getLogger(__name__)
 
 
+@dataclass
 class AbstractQuestions(QAGenerator):
     def query_nodes(self, query: str, kwargs) -> t.Any:
         return super().query_nodes(query, kwargs)
@@ -85,7 +85,7 @@ class AbstractQuestions(QAGenerator):
 
 
 @dataclass
-class AbtractQA(AbstractQuestions):
+class AbstractQA(AbstractQuestions):
     name: str = "AbstractQA"
     generate_question_prompt: Prompt = field(
         default_factory=lambda: abstract_question_from_theme
@@ -96,9 +96,7 @@ class AbtractQA(AbstractQuestions):
         default_factory=lambda: common_theme_from_summaries
     )
 
-    async def generate_questions(
-        self, query, kwargs, distribution=DEFAULT_DISTRIBUTION, num_samples=5
-    ):
+    async def generate_questions(self, query, kwargs, num_samples=5):
         assert self.llm is not None, "LLM is not initialized"
         query = query or CLUSTER_OF_RELATED_NODES_QUERY
         if kwargs is None:
@@ -144,7 +142,7 @@ class AbtractQA(AbstractQuestions):
         )
 
         index = 0
-        for dist, prob in distribution.items():
+        for dist, prob in self.distribution.items():
             style, length = dist
             for i in range(int(prob * num_samples)):
                 exec.submit(
@@ -158,8 +156,8 @@ class AbtractQA(AbstractQuestions):
 
         remaining_size = num_samples - index
         if remaining_size != 0:
-            choices = np.array(distribution.keys())
-            prob = np.array(distribution.values())
+            choices = np.array(self.distribution.keys())
+            prob = np.array(self.distribution.values())
             random_distribution = rng.choice(choices, p=prob, size=remaining_size)
             for dist in random_distribution:
                 style, length = dist
@@ -321,7 +319,7 @@ class AbtractQA(AbstractQuestions):
 
 
 @dataclass
-class ComparitiveAbtractQA(AbstractQuestions):
+class ComparativeAbstractQA(AbstractQuestions):
     name: str = "ComparitiveAbtractQA"
     common_topic_prompt: Prompt = field(
         default_factory=lambda: common_topic_from_keyphrases
@@ -331,9 +329,7 @@ class ComparitiveAbtractQA(AbstractQuestions):
     )
     generate_answer_prompt: Prompt = field(default_factory=lambda: question_answering)
 
-    async def generate_questions(
-        self, query, kwargs, distribution=DEFAULT_DISTRIBUTION, num_samples=5
-    ):
+    async def generate_questions(self, query, kwargs, num_samples=5):
         assert self.llm is not None, "LLM is not initialized"
         query = query or CLUSTER_OF_RELATED_NODES_QUERY
         if kwargs is None:
@@ -377,7 +373,7 @@ class ComparitiveAbtractQA(AbstractQuestions):
         )
 
         index = 0
-        for dist, prob in distribution.items():
+        for dist, prob in self.distribution.items():
             style, length = dist
             for i in range(int(prob * num_samples)):
                 exec.submit(
@@ -391,8 +387,8 @@ class ComparitiveAbtractQA(AbstractQuestions):
 
         remaining_size = num_samples - index
         if remaining_size != 0:
-            choices = np.array(distribution.keys())
-            prob = np.array(distribution.values())
+            choices = np.array(self.distribution.keys())
+            prob = np.array(self.distribution.values())
             random_distribution = rng.choice(choices, p=prob, size=remaining_size)
             for dist in random_distribution:
                 style, length = dist
@@ -435,7 +431,7 @@ class ComparitiveAbtractQA(AbstractQuestions):
                     )
                 )
                 question = question.generations[0][0].text
-                critic = self.critic_question(question)
+                critic = await self.critic_question(question)
                 if critic:
                     question = await self.modify_question(question, style, length)
                     answer = await self.generate_answer(question, source)

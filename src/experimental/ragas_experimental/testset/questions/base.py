@@ -6,10 +6,6 @@ from enum import Enum
 
 import numpy as np
 from langchain_core.documents import Document as LCDocument
-
-from ragas.embeddings import BaseRagasEmbeddings, embedding_factory
-from ragas.llms.base import BaseRagasLLM, llm_factory
-from ragas.llms.prompt import Prompt
 from ragas_experimental.testset.graph import Node, Relationship
 from ragas_experimental.testset.graph import schema as myschema
 from ragas_experimental.testset.questions.prompts import (
@@ -17,6 +13,10 @@ from ragas_experimental.testset.questions.prompts import (
     question_modification,
 )
 from ragas_experimental.testset.utils import GraphConverter, rng
+
+from ragas.embeddings import BaseRagasEmbeddings
+from ragas.llms.base import BaseRagasLLM
+from ragas.llms.prompt import Prompt
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class QAC:
 
 
 @dataclass
-class Distribution:
+class StyleLengthDistribution:
     style_length_distribution: t.Dict[
         t.Tuple[QuestionStyle, QuestionLength], float
     ] = field(
@@ -80,19 +80,14 @@ class Distribution:
 
 @dataclass
 class QAGenerator(ABC):
-    nodes: t.List[Node]
-    relationships: t.List[Relationship]
-    distribution: t.Optional[Distribution] = None
+    nodes: t.Optional[t.List[Node]] = None
+    relationships: t.Optional[t.List[Relationship]] = None
+    distribution: t.Optional[StyleLengthDistribution] = None
     llm: t.Optional[BaseRagasLLM] = None
     embedding: t.Optional[BaseRagasEmbeddings] = None
     question_modification_prompt: Prompt = field(
         default_factory=lambda: question_modification
     )
-
-    def __post_init__(self):
-        self.llm = self.llm or llm_factory()
-        self.embedding = self.embedding or embedding_factory()
-        self.distribution = self.distribution or DEFAULT_DISTRIBUTION
 
     @abstractmethod
     async def generate_question(
@@ -157,7 +152,7 @@ class QAGenerator(ABC):
         return rng.choice(np.array(nodes), p=nodes_weights, size=1).tolist()
 
 
-DEFAULT_DISTRIBUTION = Distribution(
+DEFAULT_DISTRIBUTION = StyleLengthDistribution(
     {
         (QuestionStyle.PERFECT_GRAMMAR, QuestionLength.MEDIUM): 0.25,
         (QuestionStyle.POOR_GRAMMAR, QuestionLength.MEDIUM): 0.25,
