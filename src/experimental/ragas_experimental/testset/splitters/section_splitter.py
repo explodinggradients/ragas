@@ -3,7 +3,6 @@ import typing as t
 
 import numpy as np
 from langchain_core.documents import Document as LCDocument
-
 from ragas_experimental.testset.graph import Node, NodeLevel, NodeType, Relationship
 from ragas_experimental.testset.utils import merge_dicts
 
@@ -84,7 +83,13 @@ class HeadlineSplitter:
         chunks = self._reassign_metadata(document, chunks)
         return chunks
 
-    def _get_nodes_relationships(self, node, headlines, nodes, relationships):
+    def _get_nodes_relationships(
+        self,
+        node: Node,
+        headlines: t.List[str],
+        nodes: t.List[Node],
+        relationships: t.List[Relationship],
+    ):
         document = LCDocument(
             page_content=node.properties["page_content"],
             metadata=node.properties["metadata"],
