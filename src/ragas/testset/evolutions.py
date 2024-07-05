@@ -276,6 +276,7 @@ class Evolution:
         assert self.question_filter is not None, "question_filter cannot be None"
         self.question_answer_prompt.save(cache_dir)
         self.find_relevant_context_prompt.save(cache_dir)
+        self.rewrite_invalid_question_prompt.save(cache_dir)
         self.node_filter.save(cache_dir)
         self.question_filter.save(cache_dir)
 
