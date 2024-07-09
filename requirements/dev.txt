@@ -8,3 +8,5 @@ notebook
 sphinx-autobuild
 sentence-transformers
 fastembed
+graphene
+fuzzywuzzy
