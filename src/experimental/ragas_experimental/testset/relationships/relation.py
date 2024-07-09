@@ -29,15 +29,21 @@ class RelationshipBuilder:
                 properties
                 }}
             }}
-                """.format(
-            node_level=node_level.name
-        )
+                """.format(node_level=node_level.name)
         results = schema.execute(
             query, context={"nodes": nodes, "relationships": relationships}
         )
 
-        if results.errors:
-            raise Exception(results.errors)
+        # check if there is any data returned from the query
+        if results.data is None:
+            if results.errors:
+                raise Exception(results.errors)
+            logger.error("No data returned from query.")
+
+        # since we already checked if there is any data returned from the query
+        # to fix the type errors
+        assert results.data, "No data returned from query."
+
         if not results.data.get("filterNodes"):
             logger.warning("No new relations created due to empty results.")
             return (nodes, relationships)
