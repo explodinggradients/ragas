@@ -4,6 +4,7 @@ from ragas_experimental.testset.questions.abstract import (
 )
 from ragas_experimental.testset.questions.base import (
     DEFAULT_DISTRIBUTION,
+    QAC,
     QAGenerator,
     QuestionLength,
     QuestionStyle,
@@ -18,6 +19,7 @@ __all__ = [
     "QAGenerator",
     "QuestionStyle",
     "QuestionLength",
+    "QAC",
     "DEFAULT_DISTRIBUTION",
     "StyleLengthDistribution",
 ]

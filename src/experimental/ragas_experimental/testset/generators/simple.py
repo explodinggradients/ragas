@@ -13,7 +13,6 @@ from ragas_experimental.testset.extractors import (
 )
 from ragas_experimental.testset.generators import (
     QADistribution,
-    TestDataset,
     TestGenerator,
 )
 from ragas_experimental.testset.graph import Node, NodeLevel
@@ -35,6 +34,7 @@ from ragas.embeddings import embedding_factory
 from ragas.executor import Executor
 from ragas.llms.base import llm_factory
 from ragas.utils import check_if_sum_is_close
+from ragas.testset.generator import TestDataset
 
 abstract_qa = AbstractQA(distribution=DEFAULT_DISTRIBUTION)
 comparative_qa = ComparativeAbstractQA(distribution=DEFAULT_DISTRIBUTION)
