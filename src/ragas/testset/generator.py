@@ -319,6 +319,7 @@ class TestsetGenerator:
                 evolution_percentages=[distributions[e] for e in distributions],
                 num_rows=len(test_dataset.test_data),
                 language=evol_lang[0] if len(evol_lang) > 0 else "",
+                is_experiment=False,
             )
         )
 
