@@ -1,6 +1,6 @@
 import typing as t
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pandas as pd
 from langchain_core.documents import Document
@@ -39,8 +39,8 @@ class TestDataset:
 
 @dataclass
 class TestGenerator(ABC):
-    llm: BaseRagasLLM = llm_factory()
-    embedding: BaseRagasEmbeddings = embedding_factory()
+    llm: BaseRagasLLM = field(default_factory=llm_factory)
+    embedding: BaseRagasEmbeddings = field(default_factory=embedding_factory)
 
     @abstractmethod
     def generate(
