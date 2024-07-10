@@ -96,6 +96,7 @@ class TestsetGenerationEvent(BaseEvent):
     evolution_percentages: t.List[float]
     num_rows: int
     language: str
+    is_experiment: bool = False
 
 
 @silent
