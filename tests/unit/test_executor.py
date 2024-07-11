@@ -23,7 +23,7 @@ def test_executor_in_script():
     from ragas.executor import Executor
 
     async def echo_order(index: int):
-        await sleep(index)
+        await sleep(0.1)
         return index
 
     # Arrange
@@ -43,9 +43,10 @@ def test_executor_with_running_loop():
     from ragas.executor import Executor
 
     loop = asyncio.new_event_loop()
+    loop.run_until_complete(asyncio.sleep(0.1))
 
     async def echo_order(index: int):
-        await sleep(1)
+        await sleep(0.1)
         return index
 
     # Arrange
