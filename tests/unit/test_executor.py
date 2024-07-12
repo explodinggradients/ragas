@@ -1,7 +1,9 @@
 import asyncio
+import pytest
 
 
-def test_order_of_execution():
+@pytest.mark.asyncio
+async def test_order_of_execution():
     from ragas.executor import Executor
 
     async def echo_order(index: int):
@@ -19,7 +21,8 @@ def test_order_of_execution():
     assert results == list(range(1, 11))
 
 
-def test_executor_in_script():
+@pytest.mark.asyncio
+async def test_executor_in_script():
     from ragas.executor import Executor
 
     async def echo_order(index: int):
@@ -38,7 +41,8 @@ def test_executor_in_script():
     assert results == list(range(1, 4))
 
 
-def test_executor_with_running_loop():
+@pytest.mark.asyncio
+async def test_executor_with_running_loop():
     import asyncio
     from ragas.executor import Executor
 
