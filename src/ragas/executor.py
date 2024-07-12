@@ -75,7 +75,12 @@ class Executor:
     def results(self) -> t.List[t.Any]:
         if is_event_loop_running():
             # an event loop is running so call nested_asyncio to fix this
-            import nest_asyncio
+            try:
+                import nest_asyncio
+            except ImportError:
+                raise ImportError(
+                    "It seems like your running this in a jupyter-like environment. Please install nest_asyncio with `pip install nest_asyncio` to make it work."
+                )
 
             nest_asyncio.apply()
 
