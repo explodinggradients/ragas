@@ -32,10 +32,26 @@ class TestDataset:
 
     def to_pandas(self):
         data = []
-        for row in self.qac:
-            data.append(row.to_dict())
-        return pd.DataFrame(data)
+        for item in self.qac:
+            if isinstance(item, list):
+                for subitem in item:
+                    if isinstance(subitem, QAC):
+                        data.append(subitem.to_dict())
+                    elif isinstance(subitem, dict):
+                        data.append(subitem)
+                    else:
+                        raise TypeError(f"Unexpected type in qac list: {type(subitem)}")
+            elif isinstance(item, QAC):
+                data.append(item.to_dict())
+            elif isinstance(item, dict):
+                data.append(item)
+            elif isinstance(item, type) and issubclass(item, QAC):
+                #data.append(QAC().to_dict())  # Create an instance and call to_dict()
+                pass
+            else:
+                raise TypeError(f"Unexpected type in qac: {type(item)}")
 
+        return pd.DataFrame(data)
 
 @dataclass
 class TestGenerator(ABC):
