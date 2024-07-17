@@ -19,12 +19,13 @@ class HeadlineSplitter:
         self._common_metadata_keys = common_metadata_keys
 
     def _find_headline_indices(self, text, headlines):
+        print(text)
+        print(headlines)
         index_dict = {}
         for headline in headlines:
             # Build a regex pattern to match the headline with newlines before and after
-            # pattern = rf"(?<=\n){re.escape(headline)}"
-            pattern = rf"(?<=\n)(#{1, 5})\s*{re.escape(headline)}"
-            matches = re.finditer(pattern, text)
+            pattern = rf"{re.escape(headline)}"
+            matches = re.finditer(pattern, text, re.MULTILINE | re.IGNORECASE)
             first_match = next(matches, None)
             if first_match:
                 index_dict[headline] = first_match.start()
