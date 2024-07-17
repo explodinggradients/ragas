@@ -19,8 +19,6 @@ class HeadlineSplitter:
         self._common_metadata_keys = common_metadata_keys
 
     def _find_headline_indices(self, text, headlines):
-        print(text)
-        print(headlines)
         index_dict = {}
         for headline in headlines:
             # Build a regex pattern to match the headline with newlines before and after
