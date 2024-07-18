@@ -30,7 +30,7 @@ test: ## Run tests
 	@pytest --nbmake tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 test-e2e: ## Run end2end tests
 	echo "running end2end tests..."
-	@pytest tests/e2e -s
+	@pytest --nbmake tests/e2e -s
 	
 # Docs
 docs-site: ## Build and serve documentation
