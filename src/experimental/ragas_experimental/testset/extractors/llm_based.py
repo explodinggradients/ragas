@@ -4,10 +4,6 @@ from dataclasses import dataclass
 import numpy as np
 import tiktoken
 from langchain_core.documents import Document as LCDocument
-
-from ragas.llms.base import BaseRagasLLM, llm_factory
-from ragas.llms.json_load import json_loader
-from ragas.llms.prompt import Prompt
 from ragas_experimental.testset.extractors.base import Extractor
 from ragas_experimental.testset.extractors.prompts import (
     headline_extractor_prompt,
@@ -17,6 +13,10 @@ from ragas_experimental.testset.extractors.prompts import (
 )
 from ragas_experimental.testset.graph import Node
 from ragas_experimental.testset.utils import MODEL_MAX_LENGTHS, merge_dicts
+
+from ragas.llms.base import BaseRagasLLM, llm_factory
+from ragas.llms.json_load import json_loader
+from ragas.llms.prompt import Prompt
 
 
 @dataclass

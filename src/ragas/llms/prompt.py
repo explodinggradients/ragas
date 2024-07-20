@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import ast
 import json
 import logging
 import os
-import ast
 import typing as t
 
 from langchain_core.messages import BaseMessage, HumanMessage
@@ -233,8 +233,8 @@ class Prompt(BaseModel):
                 example_dict[self.output_key] = json_loader._safe_load(example[-1], llm)
                 if example_dict[self.output_key] == {}:
                     # Extracting the dictionary part using string slicing
-                    dict_str = example[-1].split('(')[0].strip()
-                    example_dict[self.output_key ] = ast.literal_eval(dict_str)
+                    dict_str = example[-1].split("(")[0].strip()
+                    example_dict[self.output_key] = ast.literal_eval(dict_str)
                 else:
                     example_dict[self.output_key] = example[-1]
             if self.output_type.lower() == "json":

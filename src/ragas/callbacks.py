@@ -12,7 +12,7 @@ from langchain_core.callbacks import (
 
 
 def new_group(
-    name: str, inputs: t.Dict, callbacks: Callbacks, is_async=False
+    name: str, inputs: t.Dict, callbacks: Callbacks
 ) -> t.Tuple[CallbackManagerForChainRun, CallbackManagerForChainGroup]:
     # start evaluation chain
     if isinstance(callbacks, list):

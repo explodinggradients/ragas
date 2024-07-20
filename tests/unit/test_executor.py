@@ -1,4 +1,5 @@
 import asyncio
+
 import pytest
 
 
@@ -44,6 +45,7 @@ async def test_executor_in_script():
 @pytest.mark.asyncio
 async def test_executor_with_running_loop():
     import asyncio
+
     from ragas.executor import Executor
 
     loop = asyncio.new_event_loop()

@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from langchain_core.documents import Document as LCDocument
-
 from ragas_experimental.testset.graph import Node
 
 
