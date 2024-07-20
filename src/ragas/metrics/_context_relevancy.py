@@ -65,7 +65,7 @@ class ContextRelevancy(MetricWithLLM):
         else:
             return min(len(indices) / len(context_sents), 1)
 
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM is not initialized"
 
         if self.show_deprecation_warning:
