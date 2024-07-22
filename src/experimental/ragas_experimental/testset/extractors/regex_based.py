@@ -31,16 +31,19 @@ class RulebasedExtractor(Extractor):
         )
         result = defaultdict(list)
         for m in matches:
-            m_dict = {k: v for k, v in m.groupdict().items() if v is not None}
-            for key, value in m_dict.items():
-                result[key].append(value)
+            m = {k: v for k, v in m.groupdict().items() if v is not None}
+            for key in m:
+                result[key].append(m[key])
+
         return result
 
     def extract(self, node: t.Union[Node, LCDocument]) -> t.Any:
         return super().extract(node)
 
     def merge_extractors(self, *extractors) -> t.List[Extractor]:
-        if isinstance(self, RulebasedExtractor):
+        if isinstance(
+            self, RulebasedExtractor
+        ):  # Check if called by an initiated class
             extractors = (self,) + extractors
 
         assert all(
@@ -67,28 +70,13 @@ class RulebasedExtractor(Extractor):
                     added_indices.append(extractors.index(ext))
 
         extractors_to_return = []
-        for group_index, extractors in enumerate(final_extractors):
+        for extractors in final_extractors:
             if len(extractors) > 1:
-                # Process each pattern individually
-                processed_patterns = []
-                for extractor in extractors:
-                    pattern = extractor.pattern
-                    # Extract flags from the beginning of the pattern
-                    flags = ""
-                    if pattern.startswith("(?"):
-                        flag_end = pattern.index(")")
-                        flags = pattern[2:flag_end]
-                        pattern = pattern[flag_end + 1:]
-                    # Wrap the pattern in a non-capturing group with flags
-                    processed_patterns.append(f"(?{flags}:{pattern})")
-
-                # Join all processed patterns
-                merged_pattern = "|".join(processed_patterns)
-
-                updated_regex = Regex(name="merged_extractor", pattern=merged_pattern)
+                pattern = "|".join([extractor.pattern for extractor in extractors])
+                updated_regex = Regex(name="merged_extractor", pattern=pattern)
             else:
+                pattern = extractors[0].pattern
                 updated_regex = extractors[0].regex
-
             extractors_to_return.append(
                 RulebasedExtractor(
                     attribute=extractors[0].attribute,
@@ -98,9 +86,10 @@ class RulebasedExtractor(Extractor):
             )
         return extractors_to_return
 
+
 links_extractor_pattern = r"(?i)\b(?:https?://|www\.)\S+\b"
 emails_extractor_pattern = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"
-markdown_headings_pattern = r"^(#{1,6})\s+(.*)"
+markdown_headings = r"^(#{1,6})\s+(.*)"
 
 email_extractor = RulebasedExtractor(
     regex=Regex(name="email", pattern=emails_extractor_pattern)
@@ -109,6 +98,5 @@ link_extractor = RulebasedExtractor(
     regex=Regex(name="link", pattern=links_extractor_pattern)
 )
 markdown_headings = RulebasedExtractor(
-    regex=Regex(name="markdown_headings", pattern=markdown_headings_pattern),
-    is_multiline=True
+    regex=Regex(name="markdown_headings", pattern=markdown_headings), is_multiline=True
 )
