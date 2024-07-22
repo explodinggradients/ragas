@@ -8,7 +8,6 @@ def test_import_module():
         "answer_similarity",
         "context_recall",
         "context_precision",
-        "context_relevancy",
         "faithfulness",
     ]
 

@@ -24,6 +24,7 @@ Meet some of our outstanding members who made significant contributions !
 
 Explore insightful articles, tutorials, and stories written by and for our community members.
 
+- [Shanthi Vardhan](https://www.linkedin.com/in/shanthivardhan/) shares how his team at [Atomicwork uses ragas](https://www.atomicwork.com/blog/ragas-improving-atom-accuracy) to improve their AI system's ability to accurately identify and retrieve more precise information for enhanced service management.
 - [Pinecone's](https://pinecone.io/blog) study on how RAGs can enhance capabilities of LLMs in ["RAG makes LLMs better and equal"](https://www.pinecone.io/blog/rag-study/) uses ragas to proves context retrieval makes LLMs provide significantly better results, even when increasing the data size to 1 billion.
 - [Aishwarya Prabhat](https://www.linkedin.com/in/aishwaryaprabhat/) shares her expertise on advanced RAG techniques in her comprehensive guide, ["Performing, Evaluating & Tracking Advanced RAG (ft. AzureML, LlamaIndex & Ragas)"](https://www.linkedin.com/pulse/performing-evaluating-tracking-advanced-rag-ft-azureml-prabhat-i1rkc/).
 - Leonie (aka [@helloiamleonie](https://twitter.com/helloiamleonie?source=about_page-------------------------------------))  offers her perspective in the detailed article, ["Evaluating RAG Applications with RAGAs"](https://towardsdatascience.com/evaluating-rag-applications-with-ragas-81d67b0ee31a).
