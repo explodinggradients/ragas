@@ -109,19 +109,14 @@ class AbstractQA(AbstractQuestions):
 
         node_clusters = self.filter_nodes(query, kwargs)
         if node_clusters is None:
-            logging.warning("No nodes satisfy the query for AbstractQA")
+            logging.warning("No nodes satisfy the query")
             return QAC()
 
         num_clusters = min(num_samples, len(node_clusters))
-        if num_clusters == 0:
-            logging.warning("No clusters available for generating questions for AbstractQA")
-            return QAC()
-
         seed_per_results = num_samples // len(node_clusters)
         reminder = num_samples - seed_per_results * num_clusters
         seeds = [seed_per_results] * num_clusters
-        if seeds:
-            seeds[-1] += reminder
+        seeds[-1] += reminder
 
         nodes_themes = []
         for cluster, num_seeds in zip(node_clusters, seeds):
@@ -341,25 +336,20 @@ class ComparativeAbstractQA(AbstractQuestions):
             kwargs = {
                 "label": "summary_similarity",
                 "property": "score",
-                "value": 0.1,
+                "value": 0.5,
                 "comparison": "gt",
             }
 
         node_clusters = self.filter_nodes(query, kwargs)
         if node_clusters is None:
-            logging.warning("No nodes satisfy the query for ComparativeAbstractQA")
+            logging.warning("No nodes satisfy the query")
             return QAC()
 
         num_clusters = min(num_samples, len(node_clusters))
-
-        if num_clusters ==0:
-            logging.warning("No cluster formed for ComparativeAbstractQA")
-            return QAC()
         seed_per_results = num_samples // len(node_clusters)
         reminder = num_samples - seed_per_results * num_clusters
         seeds = [seed_per_results] * num_clusters
-        if seeds:
-            seeds[-1] += reminder
+        seeds[-1] += reminder
 
         nodes_themes = []
         for cluster, num_seeds in zip(node_clusters, seeds):
