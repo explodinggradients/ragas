@@ -151,7 +151,6 @@ class ContextPrecision(MetricWithLLM):
         self: t.Self,
         row: t.Dict,
         callbacks: Callbacks,
-        is_async: bool,
     ) -> float:
         assert self.llm is not None, "LLM is not set"
 
@@ -161,7 +160,6 @@ class ContextPrecision(MetricWithLLM):
             results = await self.llm.generate(
                 hp,
                 callbacks=callbacks,
-                is_async=is_async,
                 n=self.reproducibility,
             )
             results = [

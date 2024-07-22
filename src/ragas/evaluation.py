@@ -49,7 +49,6 @@ def evaluate(
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
     callbacks: Callbacks = None,
     in_ci: bool = False,
-    is_async: bool = True,
     run_config: t.Optional[RunConfig] = None,
     raise_exceptions: bool = True,
     column_map: t.Optional[t.Dict[str, str]] = None,
@@ -81,11 +80,6 @@ def evaluate(
         Whether the evaluation is running in CI or not. If set to True then some
         metrics will be run to increase the reproducability of the evaluations. This
         will increase the runtime and cost of evaluations. Default is False.
-    is_async: bool
-        Whether to run the evaluation in async mode or not. If set to True then the
-        evaluation is run by calling the `metric.ascore` method. In case the llm or
-        embeddings does not support async then the evaluation can be run in sync mode
-        with `is_async=False`. Default is False.
     run_config: RunConfig, optional
         Configuration for runtime settings like timeout and retries. If not provided,
         default values are used.
@@ -206,7 +200,7 @@ def evaluate(
     # new evaluation chain
     row_run_managers = []
     evaluation_rm, evaluation_group_cm = new_group(
-        name="ragas evaluation", inputs={}, callbacks=callbacks, is_async=is_async
+        name="ragas evaluation", inputs={}, callbacks=callbacks
     )
     for i, row in enumerate(dataset):
         row = t.cast(t.Dict[str, t.Any], row)
@@ -214,7 +208,6 @@ def evaluate(
             name=f"row {i}",
             inputs=row,
             callbacks=evaluation_group_cm,
-            is_async=is_async,
         )
         row_run_managers.append((row_rm, row_group_cm))
         [
@@ -222,7 +215,6 @@ def evaluate(
                 metric.ascore,
                 row,
                 row_group_cm,
-                is_async,
                 name=f"{metric.name}-{i}",
                 thread_timeout=run_config.thread_timeout,
             )
