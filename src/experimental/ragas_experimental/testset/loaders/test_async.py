@@ -2,7 +2,7 @@ from ragas_loader import RAGASLoader
 import traceback
 import asyncio
 async def main():
-    loader = RAGASLoader(file_path="./experimental_notebook", mode="single", autodetect_encoding=False)
+    loader = RAGASLoader(file_path="./path", mode="single", autodetect_encoding=False)
     try:
         docs = []
         async for doc in loader.lazy_aload():
