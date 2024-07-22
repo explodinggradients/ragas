@@ -22,8 +22,8 @@ class HeadlineSplitter:
         index_dict = {}
         for headline in headlines:
             # Build a regex pattern to match the headline with newlines before and after
-            pattern = rf"{re.escape(headline)}"
-            matches = re.finditer(pattern, text, re.MULTILINE | re.IGNORECASE)
+            pattern = rf"(?<=\n){re.escape(headline)}"
+            matches = re.finditer(pattern, text)
             first_match = next(matches, None)
             if first_match:
                 index_dict[headline] = first_match.start()

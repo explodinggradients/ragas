@@ -52,19 +52,12 @@ class SpecificQA(QAGenerator):
         query = query or CHILD_NODES_QUERY
         kwargs = kwargs or {}
         nodes = self.query_nodes(query, kwargs)
-        if nodes is None:
-            logging.warning("No nodes satisfy the query for SpecificQA")
-            return QAC
         num_nodes = min(num_samples, len(nodes))
-        if num_nodes == 0:
-            logging.warning("No nodes available for generating SpecificQA questions")
-            return QAC
         nodes = rng.choice(nodes, size=num_nodes, replace=False)
         seed_per_results = num_samples // len(nodes)
         reminder = num_samples - seed_per_results * num_nodes
         seeds = [seed_per_results] * num_nodes
-        if seeds:
-            seeds[-1] += reminder
+        seeds[-1] += reminder
 
         nodes_and_keyphraes = []
         for node, seed in zip(nodes, seeds):
