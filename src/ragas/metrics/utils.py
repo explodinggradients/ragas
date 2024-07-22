@@ -6,7 +6,6 @@ from ragas.metrics._answer_similarity import answer_similarity
 from ragas.metrics._context_entities_recall import context_entity_recall
 from ragas.metrics._context_precision import context_precision, context_utilization
 from ragas.metrics._context_recall import context_recall
-from ragas.metrics._context_relevancy import context_relevancy
 from ragas.metrics._faithfulness import faithfulness
 from ragas.metrics.base import Metric
 from ragas.validation import validate_evaluation_modes
@@ -18,7 +17,6 @@ ALL_METRICS = [
     context_precision,
     context_utilization,
     context_recall,
-    context_relevancy,
     answer_relevancy,
     context_entity_recall,
 ]
