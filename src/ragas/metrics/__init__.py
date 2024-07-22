@@ -12,7 +12,6 @@ from ragas.metrics._context_precision import (
     context_utilization,
 )
 from ragas.metrics._context_recall import ContextRecall, context_recall
-from ragas.metrics._context_relevancy import ContextRelevancy, context_relevancy
 from ragas.metrics._faithfulness import Faithfulness, faithfulness
 from ragas.metrics._summarization import SummarizationScore, summarization_score
 from ragas.metrics.critique import AspectCritique
@@ -31,8 +30,6 @@ __all__ = [
     "ContextRecall",
     "context_recall",
     "AspectCritique",
-    "context_relevancy",
-    "ContextRelevancy",
     "AnswerRelevancy",
     "answer_relevancy",
     "ContextEntityRecall",
