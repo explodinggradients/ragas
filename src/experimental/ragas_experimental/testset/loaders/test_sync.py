@@ -3,7 +3,7 @@ import traceback
 def main():
     loader = RAGASLoader(file_path="./path", mode="single", autodetect_encoding=False)
     try:
-        docs = list(loader.lazy_load())
+        docs = loader.load()
         print(len(docs))
         for i, doc in enumerate(docs):
             file_name = doc.metadata["source"].split("/")[-1]
