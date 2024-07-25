@@ -1,6 +1,7 @@
 from typing import Iterator, List, Dict, Any, Union, AsyncIterator
 from pathlib import Path
 import os
+import subprocess
 import asyncio
 import aiofiles
 from langchain_core.documents import Document
@@ -95,16 +96,63 @@ class RAGASLoader(UnstructuredBaseLoader):
             for file in files:
                 if any(file.endswith(ext) for ext in file_extensions):
                     file_path = Path(root) / file
+                    if file.endswith('pdf'):
+                        output_dir = Path("experimental_notebook/markdown")
+                        output_file = output_dir / file_path.stem /file.replace('.pdf', '.md')
+                        command = [
+                            "marker_single",
+                            str(file_path),
+                            str(output_dir),
+                            "--batch_multiplier", "2",
+                            "--max_pages", "10",
+                            "--langs", "English"
+                        ]
+                        try:
+                            result = subprocess.run(command, check=True, capture_output=True, text=True)
+                            print(f"Processed {file_path} to {output_file}")
+                            file_path = output_file
+                        except subprocess.CalledProcessError as e:
+                            print(f"An error occurred while processing {file_path}:")
+                            print(e.stderr)
+                            continue
+                        except FileNotFoundError:
+                            print(
+                                "The 'marker_single' command was not found. Make sure it's installed and in your PATH.")
+                            continue
+
                     if file_path.is_file():
                         yield from self._load_file(file_path)
 
-
     async def _aload_directory(self, directory: Path) -> AsyncIterator[Document]:
-        file_extensions = ['xml', 'md', 'txt', 'html', 'ppt', 'ppx','pdf']
+        file_extensions = ['xml', 'md', 'txt', 'html', 'ppt', 'ppx', 'pdf']
         for root, _, files in os.walk(directory):
             for file in files:
                 if any(file.endswith(ext) for ext in file_extensions):
                     file_path = Path(root) / file
+                    if file.endswith('pdf'):
+                        output_dir = Path("experimental_notebook/markdown")
+                        output_file = output_dir / file_path.stem /file.replace('.pdf', '.md')
+                        command = [
+                            "marker_single",
+                            str(file_path),
+                            str(output_dir),
+                            "--batch_multiplier", "2",
+                            "--max_pages", "10",
+                            "--langs", "English"
+                        ]
+                        try:
+                            result = subprocess.run(command, check=True, capture_output=True, text=True)
+                            print(f"Processed {file_path} to {output_file}")
+                            file_path = output_file
+                        except subprocess.CalledProcessError as e:
+                            print(f"An error occurred while processing {file_path}:")
+                            print(e.stderr)
+                            continue
+                        except FileNotFoundError:
+                            print(
+                                "The 'marker_single' command was not found. Make sure it's installed and in your PATH.")
+                            continue
+
                     if file_path.is_file():
                         async for document in self._aload_file(file_path):
                             yield document
