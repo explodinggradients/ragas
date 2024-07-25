@@ -151,23 +151,32 @@ question_answer_prompt = Prompt(
         {
             "context": """Climate change is significantly influenced by human activities, notably the emission of greenhouse gases from burning fossil fuels. The increased greenhouse gas concentration in the atmosphere traps more heat, leading to global warming and changes in weather patterns.""",
             "question": "How do human activities contribute to climate change?",
-            "answer": AnswerFormat.parse_obj({
-                "answer": "Human activities contribute to climate change primarily through the emission of greenhouse gases from burning fossil fuels. These emissions increase the concentration of greenhouse gases in the atmosphere, which traps more heat and leads to global warming and altered weather patterns.",
-                "verdict": "1",}).dict(),
+            "answer": AnswerFormat.parse_obj(
+                {
+                    "answer": "Human activities contribute to climate change primarily through the emission of greenhouse gases from burning fossil fuels. These emissions increase the concentration of greenhouse gases in the atmosphere, which traps more heat and leads to global warming and altered weather patterns.",
+                    "verdict": "1",
+                }
+            ).dict(),
         },
         {
             "context": """The concept of artificial intelligence (AI) has evolved over time, but it fundamentally refers to machines designed to mimic human cognitive functions. AI can learn, reason, perceive, and, in some instances, react like humans, making it pivotal in fields ranging from healthcare to autonomous vehicles.""",
             "question": "What are the key capabilities of artificial intelligence?",
-            "answer": AnswerFormat.parse_obj({ 
-                "answer": "Artificial intelligence is designed to mimic human cognitive functions, with key capabilities including learning, reasoning, perception, and reacting to the environment in a manner similar to humans. These capabilities make AI pivotal in various fields, including healthcare and autonomous driving.",
-                "verdict": "1",}).dict(),
+            "answer": AnswerFormat.parse_obj(
+                {
+                    "answer": "Artificial intelligence is designed to mimic human cognitive functions, with key capabilities including learning, reasoning, perception, and reacting to the environment in a manner similar to humans. These capabilities make AI pivotal in various fields, including healthcare and autonomous driving.",
+                    "verdict": "1",
+                }
+            ).dict(),
         },
         {
             "context": """The novel "Pride and Prejudice" by Jane Austen revolves around the character Elizabeth Bennet and her family. The story is set in the 19th century in rural England and deals with issues of marriage, morality, and misconceptions.""",
             "question": "What year was 'Pride and Prejudice' published?",
-            "answer": AnswerFormat.parse_obj({
-                "answer": "The answer to given question is not present in context",
-                "verdict": "-1",}).dict(),
+            "answer": AnswerFormat.parse_obj(
+                {
+                    "answer": "The answer to given question is not present in context",
+                    "verdict": "-1",
+                }
+            ).dict(),
         },
     ],
     input_keys=["context", "question"],

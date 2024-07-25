@@ -4,7 +4,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 from langchain_core.documents import Document as LCDocument
-
 from ragas_experimental.testset.extractors.base import Extractor, Regex
 from ragas_experimental.testset.graph import Node
 

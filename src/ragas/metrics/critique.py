@@ -117,17 +117,13 @@ class AspectCritique(MetricWithLLM):
 
         return score
 
-    async def _ascore(
-        self: t.Self, row: t.Dict, callbacks: Callbacks, is_async: bool
-    ) -> float:
+    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "set LLM before use"
 
         q, c, a = row["question"], row["contexts"], row["answer"]
 
         p_value = self.prompt_format(q, a, c)
-        result = await self.llm.generate(
-            p_value, callbacks=callbacks, is_async=is_async
-        )
+        result = await self.llm.generate(p_value, callbacks=callbacks)
 
         responses = [r.text for r in result.generations[0]]
         safe_loaded_responses = [

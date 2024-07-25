@@ -96,13 +96,9 @@ class Metric(ABC):
 
     def score(self: t.Self, row: t.Dict, callbacks: Callbacks = None) -> float:
         callbacks = callbacks or []
-        rm, group_cm = new_group(
-            self.name, inputs=row, callbacks=callbacks, is_async=False
-        )
+        rm, group_cm = new_group(self.name, inputs=row, callbacks=callbacks)
         try:
-            score = asyncio.run(
-                self._ascore(row=row, callbacks=group_cm, is_async=False)
-            )
+            score = asyncio.run(self._ascore(row=row, callbacks=group_cm))
         except Exception as e:
             if not group_cm.ended:
                 rm.on_chain_error(e)
@@ -116,16 +112,13 @@ class Metric(ABC):
         self: t.Self,
         row: t.Dict,
         callbacks: Callbacks = None,
-        is_async: bool = True,
         thread_timeout: t.Optional[float] = None,
     ) -> float:
         callbacks = callbacks or []
-        rm, group_cm = new_group(
-            self.name, inputs=row, callbacks=callbacks, is_async=True
-        )
+        rm, group_cm = new_group(self.name, inputs=row, callbacks=callbacks)
         try:
             score = await asyncio.wait_for(
-                self._ascore(row=row, callbacks=group_cm, is_async=is_async),
+                self._ascore(row=row, callbacks=group_cm),
                 timeout=thread_timeout,
             )
         except Exception as e:
@@ -138,7 +131,7 @@ class Metric(ABC):
         return score
 
     @abstractmethod
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         ...
 
 
