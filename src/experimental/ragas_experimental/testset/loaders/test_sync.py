@@ -1,29 +1,35 @@
-from ragas_loader import RAGASLoader
+import logging
 import traceback
+from ragas_loader import RAGASLoader
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 def main():
     loader = RAGASLoader(file_path="./path", mode="single", autodetect_encoding=False)
     try:
         docs = loader.load()
-        print(len(docs))
+        logger.info("Number of documents loaded: %d", len(docs))
         for i, doc in enumerate(docs):
             file_name = doc.metadata["source"].split("/")[-1]
 
-            print(f"\n{'=' * 80}")
-            print(f"File {i}: {file_name}")
-            print(f"{'=' * 80}")
+            logger.info("\n%s", '=' * 80)
+            logger.info("File %d: %s", i, file_name)
+            logger.info("%s", '=' * 80)
 
-            print("\nParsed Content (first 1000 characters):")
-            print("-" * 40)
-            print(doc.page_content[:1000])
+            logger.info("\nParsed Content (first 1000 characters):")
+            logger.info("%s", '-' * 40)
+            logger.info("%s", doc.page_content[:1000])
 
-            print("\nRaw Content (first 1000 characters):")
-            print("-" * 40)
-            print(doc.metadata["raw_content"][:1000])
+            logger.info("\nRaw Content (first 1000 characters):")
+            logger.info("%s", '-' * 40)
+            logger.info("%s", doc.metadata["raw_content"][:1000])
 
-            print(f"\n{'=' * 80}\n")
+            logger.info("\n%s\n", '=' * 80)
     except Exception as e:
-        print(f"Error in main execution: {e}")
-        print(traceback.format_exc())
+        logger.error("Error in main execution: %s", e)
+        logger.error("%s", traceback.format_exc())
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()
