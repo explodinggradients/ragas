@@ -3,7 +3,6 @@ import traceback
 from ragas_loader import RAGASLoader
 
 # Setup logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def main():
