@@ -4,10 +4,14 @@ import os
 import subprocess
 import asyncio
 import aiofiles
+import logging
 from langchain_core.documents import Document
 from langchain_community.document_loaders.unstructured import UnstructuredBaseLoader
 from langchain_community.document_loaders.helpers import detect_file_encodings
 
+# Setup logging
+
+logger = logging.getLogger(__name__)
 
 class RAGASLoader(UnstructuredBaseLoader):
     def __init__(
@@ -29,7 +33,7 @@ class RAGASLoader(UnstructuredBaseLoader):
         try:
             return partition(filename=str(file_path), **self.unstructured_kwargs)
         except Exception as e:
-            print(f"Error in _get_elements for file {file_path}: {e}")
+            logger.info("Error in _get_elements for file %s: %s", file_path, e)
             return []
 
     def _get_metadata(self, file_path: Path) -> Dict:
@@ -39,7 +43,7 @@ class RAGASLoader(UnstructuredBaseLoader):
                 "raw_content": self._read_file(file_path)
             }
         except Exception as e:
-            print(f"Error in _get_metadata for file {file_path}: {e}")
+            logger.info("Error in _get_metadata for file %s: %s", file_path, e)
             return {"source": str(file_path), "raw_content": ""}
 
     async def _aget_metadata(self, file_path: Path) -> Dict:
@@ -49,7 +53,7 @@ class RAGASLoader(UnstructuredBaseLoader):
                 "raw_content": await self._aread_file(file_path)
             }
         except Exception as e:
-            print(f"Error in _aget_metadata for file {file_path}: {e}")
+            logger.info("Error in _aget_metadata for file %s: %s", file_path, e)
             return {"source": str(file_path), "raw_content": ""}
 
     def _read_file(self, file_path: Path) -> str:
@@ -109,15 +113,14 @@ class RAGASLoader(UnstructuredBaseLoader):
                         ]
                         try:
                             result = subprocess.run(command, check=True, capture_output=True, text=True)
-                            print(f"Processed {file_path} to {output_file}")
+                            logger.info("Processed %s to %s", file_path, output_file)
                             file_path = output_file
                         except subprocess.CalledProcessError as e:
-                            print(f"An error occurred while processing {file_path}:")
-                            print(e.stderr)
+                            logger.info("An error occurred while processing %s:", file_path)
+                            logger.info(e.stderr)
                             continue
                         except FileNotFoundError:
-                            print(
-                                "The 'marker_single' command was not found. Make sure it's installed and in your PATH.")
+                            logger.info("The 'marker_single' command was not found. Make sure it's installed and in your PATH.")
                             continue
 
                     if file_path.is_file():
@@ -142,15 +145,14 @@ class RAGASLoader(UnstructuredBaseLoader):
                         ]
                         try:
                             result = subprocess.run(command, check=True, capture_output=True, text=True)
-                            print(f"Processed {file_path} to {output_file}")
+                            logger.info("Processed %s to %s", file_path, output_file)
                             file_path = output_file
                         except subprocess.CalledProcessError as e:
-                            print(f"An error occurred while processing {file_path}:")
-                            print(e.stderr)
+                            logger.info("An error occurred while processing %s:", file_path)
+                            logger.info(e.stderr)
                             continue
                         except FileNotFoundError:
-                            print(
-                                "The 'marker_single' command was not found. Make sure it's installed and in your PATH.")
+                            logger.info("The 'marker_single' command was not found. Make sure it's installed and in your PATH.")
                             continue
 
                     if file_path.is_file():
