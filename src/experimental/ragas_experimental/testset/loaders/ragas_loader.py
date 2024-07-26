@@ -10,7 +10,6 @@ from langchain_community.document_loaders.unstructured import UnstructuredBaseLo
 from langchain_community.document_loaders.helpers import detect_file_encodings
 
 # Setup logging
-
 logger = logging.getLogger(__name__)
 
 class RAGASLoader(UnstructuredBaseLoader):
@@ -33,7 +32,7 @@ class RAGASLoader(UnstructuredBaseLoader):
         try:
             return partition(filename=str(file_path), **self.unstructured_kwargs)
         except Exception as e:
-            logger.info("Error in _get_elements for file %s: %s", file_path, e)
+            logger.error("Error in _get_elements for file %s: %s", file_path, e)
             return []
 
     def _get_metadata(self, file_path: Path) -> Dict:
@@ -43,7 +42,7 @@ class RAGASLoader(UnstructuredBaseLoader):
                 "raw_content": self._read_file(file_path)
             }
         except Exception as e:
-            logger.info("Error in _get_metadata for file %s: %s", file_path, e)
+            logger.error("Error in _get_metadata for file %s: %s", file_path, e)
             return {"source": str(file_path), "raw_content": ""}
 
     async def _aget_metadata(self, file_path: Path) -> Dict:
@@ -53,7 +52,7 @@ class RAGASLoader(UnstructuredBaseLoader):
                 "raw_content": await self._aread_file(file_path)
             }
         except Exception as e:
-            logger.info("Error in _aget_metadata for file %s: %s", file_path, e)
+            logger.error("Error in _aget_metadata for file %s: %s", file_path, e)
             return {"source": str(file_path), "raw_content": ""}
 
     def _read_file(self, file_path: Path) -> str:
@@ -69,10 +68,13 @@ class RAGASLoader(UnstructuredBaseLoader):
                             return f.read()
                     except UnicodeDecodeError:
                         continue
+                logger.error("Failed to decode %s with detected encodings.", file_path)
                 raise RuntimeError(f"Failed to decode {file_path} with detected encodings.")
             else:
+                logger.error("Error loading %s due to encoding issue.", file_path, exc_info=e)
                 raise RuntimeError(f"Error loading {file_path} due to encoding issue.") from e
         except Exception as e:
+            logger.error("Error loading %s due to an unexpected error: %s", file_path, e)
             raise RuntimeError(f"Error loading {file_path} due to an unexpected error: {e}") from e
 
     async def _aread_file(self, file_path: Path) -> str:
@@ -88,10 +90,13 @@ class RAGASLoader(UnstructuredBaseLoader):
                             return await f.read()
                     except UnicodeDecodeError:
                         continue
+                logger.error("Failed to decode %s with detected encodings.", file_path)
                 raise RuntimeError(f"Failed to decode {file_path} with detected encodings.")
             else:
+                logger.error("Error loading %s due to encoding issue.", file_path, exc_info=e)
                 raise RuntimeError(f"Error loading {file_path} due to encoding issue.") from e
         except Exception as e:
+            logger.error("Error loading %s due to an unexpected error: %s", file_path, e)
             raise RuntimeError(f"Error loading {file_path} due to an unexpected error: {e}") from e
 
     def _load_directory(self, directory: Path) -> Iterator[Document]:
@@ -102,7 +107,7 @@ class RAGASLoader(UnstructuredBaseLoader):
                     file_path = Path(root) / file
                     if file.endswith('pdf'):
                         output_dir = Path("experimental_notebook/markdown")
-                        output_file = output_dir / file_path.stem /file.replace('.pdf', '.md')
+                        output_file = output_dir / file_path.stem / file.replace('.pdf', '.md')
                         command = [
                             "marker_single",
                             str(file_path),
@@ -116,11 +121,11 @@ class RAGASLoader(UnstructuredBaseLoader):
                             logger.info("Processed %s to %s", file_path, output_file)
                             file_path = output_file
                         except subprocess.CalledProcessError as e:
-                            logger.info("An error occurred while processing %s:", file_path)
-                            logger.info(e.stderr)
+                            logger.error("An error occurred while processing %s:", file_path)
+                            logger.error(e.stderr)
                             continue
                         except FileNotFoundError:
-                            logger.info("The 'marker_single' command was not found. Make sure it's installed and in your PATH.")
+                            logger.error("The 'marker_single' command was not found. Make sure it's installed and in your PATH.")
                             continue
 
                     if file_path.is_file():
@@ -134,7 +139,7 @@ class RAGASLoader(UnstructuredBaseLoader):
                     file_path = Path(root) / file
                     if file.endswith('pdf'):
                         output_dir = Path("experimental_notebook/markdown")
-                        output_file = output_dir / file_path.stem /file.replace('.pdf', '.md')
+                        output_file = output_dir / file_path.stem / file.replace('.pdf', '.md')
                         command = [
                             "marker_single",
                             str(file_path),
@@ -148,11 +153,11 @@ class RAGASLoader(UnstructuredBaseLoader):
                             logger.info("Processed %s to %s", file_path, output_file)
                             file_path = output_file
                         except subprocess.CalledProcessError as e:
-                            logger.info("An error occurred while processing %s:", file_path)
-                            logger.info(e.stderr)
+                            logger.error("An error occurred while processing %s:", file_path)
+                            logger.error(e.stderr)
                             continue
                         except FileNotFoundError:
-                            logger.info("The 'marker_single' command was not found. Make sure it's installed and in your PATH.")
+                            logger.error("The 'marker_single' command was not found. Make sure it's installed and in your PATH.")
                             continue
 
                     if file_path.is_file():
@@ -167,8 +172,10 @@ class RAGASLoader(UnstructuredBaseLoader):
                 elif file_path.is_file():
                     yield from self._load_file(file_path)
                 else:
+                    logger.error("The path %s does not exist or is neither a directory nor a file.", file_path)
                     raise ValueError(f"The path {file_path} does not exist or is neither a directory nor a file.")
         except Exception as e:
+            logger.error("Error loading file or directory: %s", e)
             raise RuntimeError(f"Error loading file or directory: {e}")
 
     async def lazy_aload(self) -> AsyncIterator[Document]:
@@ -181,8 +188,10 @@ class RAGASLoader(UnstructuredBaseLoader):
                     async for document in self._aload_file(file_path):
                         yield document
                 else:
+                    logger.error("The path %s does not exist or is neither a directory nor a file.", file_path)
                     raise ValueError(f"The path {file_path} does not exist or is neither a directory nor a file.")
         except Exception as e:
+            logger.error("Error loading file or directory: %s", e)
             raise RuntimeError(f"Error loading file or directory: {e}")
 
     def _load_file(self, file_path: Path) -> Iterator[Document]:
@@ -225,6 +234,7 @@ class RAGASLoader(UnstructuredBaseLoader):
             text = "\n\n".join([str(el) for el in elements])
             yield Document(page_content=text, metadata=metadata)
         else:
+            logger.error("Mode %s not supported.", self.mode)
             raise ValueError(f"mode of {self.mode} not supported.")
 
     async def _aload_file(self, file_path: Path) -> AsyncIterator[Document]:
@@ -261,4 +271,5 @@ class RAGASLoader(UnstructuredBaseLoader):
             text = "\n\n".join([str(el) for el in elements])
             yield Document(page_content=text, metadata=metadata)
         else:
+            logger.error("Mode %s not supported.", self.mode)
             raise ValueError(f"mode of {self.mode} not supported.")
