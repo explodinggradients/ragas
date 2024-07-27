@@ -1,6 +1,6 @@
 import pytest
 
-from ragas.utils import check_if_sum_is_close
+from ragas.utils import check_if_sum_is_close, get_from_dict
 
 
 @pytest.mark.parametrize(
@@ -15,3 +15,25 @@ from ragas.utils import check_if_sum_is_close
 )
 def test_check_if_sum_is_close(values, close_to, num_places):
     assert check_if_sum_is_close(values, close_to, num_places)
+
+
+data_dict = {
+    "something": {"nested": {"key": "value"}},
+    "other": {"key": "value"},
+    "key": "value",
+    "another_key": "value",
+    "nested_key": {"key": "value"},
+}
+
+
+@pytest.mark.parametrize(
+    ["data_dict", "key", "expected"],
+    [
+        (data_dict, "something.nested.key", "value"),
+        (data_dict, "other.key", "value"),
+        (data_dict, "something.not_there_in_key", None),
+        (data_dict, "something.nested.not_here", None),
+    ],
+)
+def test_get_from_dict(data_dict, key, expected):
+    assert get_from_dict(data_dict, key) == expected
