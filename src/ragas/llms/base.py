@@ -80,7 +80,7 @@ class BaseRagasLLM(ABC):
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: float = 1e-8,
+        temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
         is_async: bool = True,
@@ -131,11 +131,15 @@ class LangchainLLMWrapper(BaseRagasLLM):
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: float = 1e-8,
+        temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ) -> LLMResult:
-        temperature = self.get_temperature(n=n)
+        
+        if temperature is None:
+            temperature = self.langchain_llm.temperature if self.check_langchain_temperature() \
+                else self.get_temperature(n=n)
+            
         if is_multiple_completion_supported(self.langchain_llm):
             return self.langchain_llm.generate_prompt(
                 prompts=[prompt],
@@ -161,11 +165,15 @@ class LangchainLLMWrapper(BaseRagasLLM):
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: float = 1e-8,
+        temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ) -> LLMResult:
-        temperature = self.get_temperature(n=n)
+        
+        if temperature is None:
+            temperature = self.langchain_llm.temperature if self.check_langchain_temperature() \
+                else self.get_temperature(n=n)
+            
         if is_multiple_completion_supported(self.langchain_llm):
             return await self.langchain_llm.agenerate_prompt(
                 prompts=[prompt],
@@ -202,6 +210,10 @@ class LangchainLLMWrapper(BaseRagasLLM):
                 )
             self.langchain_llm.request_timeout = run_config.timeout
             self.run_config.exception_types = RateLimitError
+    
+    def check_langchain_temperature(self):
+        return hasattr(self.langchain_llm, "temperature") \
+            and isinstance(self.langchain_llm.temperature, float)
 
 
 class LlamaIndexLLMWrapper(BaseRagasLLM):
