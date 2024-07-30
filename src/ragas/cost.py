@@ -9,7 +9,7 @@ from ragas.utils import get_from_dict
 class TokenUsage(BaseModel):
     input_tokens: int
     output_tokens: int
-    model: t.Optional[str] = None
+    model: str = ""
 
     def __add__(self, y: "TokenUsage") -> "TokenUsage":
         if self.model == y.model or (self.model is None and y.model is None):
@@ -54,7 +54,7 @@ def parse_llm_result(llm_result: t.Union[LLMResult, ChatResult]) -> TokenUsage:
     if llm_result.llm_output != {} and llm_result.llm_output is not None:
         llm_output = llm_result.llm_output
         output_tokens = get_from_dict(llm_output, "token_usage.completion_tokens", 0)
-        input_tokens = get_from_dict(llm_output, "token_usage.input_tokens", 0)
+        input_tokens = get_from_dict(llm_output, "token_usage.prompt_tokens", 0)
 
         return TokenUsage(input_tokens=input_tokens, output_tokens=output_tokens)
 
@@ -94,6 +94,51 @@ class CostCallbackHandler(BaseCallbackHandler):
         self.usage_data.append(self.llm_result_parser(response))
 
     def total_cost(
-        self, cost_per_input_token: float, cost_per_output_token: float
+        self,
+        cost_per_input_token: t.Optional[float] = None,
+        cost_per_output_token: t.Optional[float] = None,
+        per_model_costs: t.Dict[str, t.Tuple[float, float]] = {},
     ) -> float:
-        pass
+        if (
+            per_model_costs == {}
+            and cost_per_input_token is None
+            and cost_per_output_token is None
+        ):
+            raise ValueError(
+                "No cost table or cost per token provided. Please provide a cost table if using multiple models or cost per token if using a single model"
+            )
+
+        # sum up everything
+        first_usage = self.usage_data[0]
+        total_table: t.Dict[str, TokenUsage] = {first_usage.model: first_usage}
+        for usage in self.usage_data[1:]:
+            if usage.model in total_table:
+                total_table[usage.model] += usage
+            else:
+                total_table[usage.model] = usage
+
+        # caculate total cost
+        # if only one model is used
+        if len(total_table) == 1:
+            model_name = list(total_table)[0]
+            # if per model cost is provided check that
+            if per_model_costs != {}:
+                if model_name not in per_model_costs:
+                    raise ValueError(f"Model {model_name} not found in per_model_costs")
+                cpit, cpot = per_model_costs[model_name]
+                return total_table[model_name].cost(cpit, cpot)
+            # else use the cost_per_token vals
+            else:
+                if cost_per_output_token is None:
+                    cost_per_output_token = cost_per_input_token
+                assert cost_per_input_token is not None
+                return total_table[model_name].cost(
+                    cost_per_input_token, cost_per_output_token
+                )
+        else:
+            total_cost = 0.0
+            for model, usage in total_table.items():
+                if model in per_model_costs:
+                    cpit, cpot = per_model_costs[model]
+                    total_cost += usage.cost(cpit, cpot)
+            return total_cost

@@ -5,7 +5,7 @@ from langchain_core.prompt_values import StringPromptValue
 from langchain_core.messages import AIMessage
 from langchain_openai.chat_models import ChatOpenAI
 
-from ragas.llms.cost import CostCallbackHandler, TokenUsage, parse_llm_result
+from ragas.cost import CostCallbackHandler, TokenUsage, parse_llm_result
 
 
 """
@@ -53,7 +53,7 @@ openai_llm_result = LLMResult(
     llm_output={
         "token_usage": {
             "completion_tokens": 10,
-            "input_tokens": 10,
+            "prompt_tokens": 10,
             "total_tokens": 20,
         },
         "model_name": "gpt-4o",
@@ -97,6 +97,8 @@ def test_parse_llm_result(llm_result, expected):
 def test_cost_callback_handler():
     cost_cb = CostCallbackHandler()
     cost_cb.on_llm_end(openai_llm_result)
-    cost_cb.total_cost(0.1)
-    cost_cb.total_cost(cost_per_input_token=0.1, cost_per_output_token=0.1)
-    cost_cb.total_cost(per_model_costs={"gpt-4o": (0.1, 0.1)})
+
+    assert cost_cb.total_cost(0.1) == 2.0
+    assert (
+        cost_cb.total_cost(cost_per_input_token=0.1, cost_per_output_token=0.1) == 2.0
+    )
