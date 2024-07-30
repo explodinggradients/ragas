@@ -80,7 +80,6 @@ def parse_llm_result(llm_result: t.Union[LLMResult, ChatResult]) -> TokenUsage:
                             )
                         )
 
-        print(token_usages)
         return sum(token_usages, TokenUsage(input_tokens=0, output_tokens=0))
     else:
         return TokenUsage(input_tokens=0, output_tokens=0)
@@ -91,8 +90,10 @@ class CostCallbackHandler(BaseCallbackHandler):
         self.usage_data: t.List[TokenUsage] = []
         self.llm_result_parser: t.Callable[[LLMResult], TokenUsage] = parse_llm_result
 
-    def on_llm_end(self, response: LLMResult, **kwargs: t.Any) -> None:
-        pass
+    def on_llm_end(self, response: LLMResult, **kwargs: t.Any):
+        self.usage_data.append(self.llm_result_parser(response))
 
-    def get_usage_data(self):
-        return self.usage_data
+    def total_cost(
+        self, cost_per_input_token: float, cost_per_output_token: float
+    ) -> float:
+        pass
