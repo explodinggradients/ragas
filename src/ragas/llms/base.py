@@ -139,11 +139,6 @@ class LangchainLLMWrapper(BaseRagasLLM):
     ) -> LLMResult:
         # figure out the temperature to set
         if temperature is None:
-            if hasattr(self.langchain_llm, "temperature") and isinstance(
-                self.langchain_llm.temperature,  # type: ignore
-                float,
-            ):
-                temperature = self.langchain_llm.temperature  # type: ignore
             temperature = self.get_temperature(n=n)
 
         if is_multiple_completion_supported(self.langchain_llm):
