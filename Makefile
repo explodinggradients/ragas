@@ -18,7 +18,7 @@ lint: ## Running lint checker: ruff
 	@ruff check src docs tests
 type: ## Running type checker: pyright
 	@echo "(pyright) Typechecking codebase..."
-	PYRIGHT_PYTHON_FORCE_VERSION=latest pyright src
+	PYRIGHT_PYTHON_FORCE_VERSION=latest pyright src/ragas
 clean: ## Clean all generated files
 	@echo "Cleaning all generated files..."
 	@cd $(GIT_ROOT)/docs && make clean
@@ -27,10 +27,10 @@ clean: ## Clean all generated files
 run-ci: format lint type ## Running all CI checks
 test: ## Run tests
 	@echo "Running tests..."
-	@pytest tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
+	@pytest --nbmake tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 test-e2e: ## Run end2end tests
 	echo "running end2end tests..."
-	@pytest tests/e2e -s
+	@pytest --nbmake tests/e2e -s
 	
 # Docs
 docs-site: ## Build and serve documentation

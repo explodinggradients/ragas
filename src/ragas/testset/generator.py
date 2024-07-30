@@ -3,20 +3,22 @@ from __future__ import annotations
 import logging
 import typing as t
 from dataclasses import dataclass
-from random import choices
+from random import choices, sample
 
 import pandas as pd
 from datasets import Dataset
-from langchain_core.embeddings import Embeddings
-from langchain_core.language_models import BaseLanguageModel
 from langchain_openai.chat_models import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
 
 from ragas._analytics import TestsetGenerationEvent, track
-from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
+from ragas.embeddings.base import (
+    BaseRagasEmbeddings,
+    LangchainEmbeddingsWrapper,
+    LlamaIndexEmbeddingsWrapper,
+)
 from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
-from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
+from ragas.llms import BaseRagasLLM, LangchainLLMWrapper, LlamaIndexLLMWrapper
 from ragas.run_config import RunConfig
 from ragas.testset.docstore import Document, DocumentStore, InMemoryDocumentStore
 from ragas.testset.evolutions import (
@@ -34,6 +36,12 @@ from ragas.utils import check_if_sum_is_close, deprecated, get_feature_language,
 
 if t.TYPE_CHECKING:
     from langchain_core.documents import Document as LCDocument
+    from langchain_core.embeddings import Embeddings as LangchainEmbeddings
+    from langchain_core.language_models import BaseLanguageModel as LangchainLLM
+    from llama_index.core.base.embeddings.base import (
+        BaseEmbedding as LlamaIndexEmbeddings,
+    )
+    from llama_index.core.base.llms.base import BaseLLM as LlamaindexLLM
     from llama_index.core.schema import Document as LlamaindexDocument
 
 logger = logging.getLogger(__name__)
@@ -75,9 +83,9 @@ class TestsetGenerator:
     @classmethod
     def from_langchain(
         cls,
-        generator_llm: BaseLanguageModel,
-        critic_llm: BaseLanguageModel,
-        embeddings: Embeddings,
+        generator_llm: LangchainLLM,
+        critic_llm: LangchainLLM,
+        embeddings: LangchainEmbeddings,
         docstore: t.Optional[DocumentStore] = None,
         run_config: t.Optional[RunConfig] = None,
         chunk_size: int = 1024,
@@ -97,19 +105,42 @@ class TestsetGenerator:
                 extractor=keyphrase_extractor,
                 run_config=run_config,
             )
-            return cls(
-                generator_llm=generator_llm_model,
-                critic_llm=critic_llm_model,
+        return cls(
+            generator_llm=generator_llm_model,
+            critic_llm=critic_llm_model,
+            embeddings=embeddings_model,
+            docstore=docstore,
+        )
+
+    @classmethod
+    def from_llama_index(
+        cls,
+        generator_llm: LlamaindexLLM,
+        critic_llm: LlamaindexLLM,
+        embeddings: LlamaIndexEmbeddings,
+        docstore: t.Optional[DocumentStore] = None,
+        run_config: t.Optional[RunConfig] = None,
+    ) -> "TestsetGenerator":
+        generator_llm_model = LlamaIndexLLMWrapper(generator_llm)
+        critic_llm_model = LlamaIndexLLMWrapper(critic_llm)
+        embeddings_model = LlamaIndexEmbeddingsWrapper(embeddings)
+        keyphrase_extractor = KeyphraseExtractor(llm=generator_llm_model)
+        if docstore is None:
+            from langchain.text_splitter import TokenTextSplitter
+
+            splitter = TokenTextSplitter(chunk_size=1024, chunk_overlap=0)
+            docstore = InMemoryDocumentStore(
+                splitter=splitter,
                 embeddings=embeddings_model,
-                docstore=docstore,
+                extractor=keyphrase_extractor,
+                run_config=run_config,
             )
-        else:
-            return cls(
-                generator_llm=generator_llm_model,
-                critic_llm=critic_llm_model,
-                embeddings=embeddings_model,
-                docstore=docstore,
-            )
+        return cls(
+            generator_llm=generator_llm_model,
+            critic_llm=critic_llm_model,
+            embeddings=embeddings_model,
+            docstore=docstore,
+        )
 
     @classmethod
     @deprecated("0.1.4", removal="0.2.0", alternative="from_langchain")
@@ -186,10 +217,10 @@ class TestsetGenerator:
         )
 
     def init_evolution(self, evolution: Evolution) -> None:
+        evolution.docstore = self.docstore
+
         if evolution.generator_llm is None:
             evolution.generator_llm = self.generator_llm
-            if evolution.docstore is None:
-                evolution.docstore = self.docstore
 
             if evolution.question_filter is None:
                 evolution.question_filter = QuestionFilter(llm=self.critic_llm)
@@ -249,7 +280,7 @@ class TestsetGenerator:
         ]
         total_evolutions = 0
         for evolution, probability in distributions.items():
-            for i in range(round(probability * test_size)):
+            for i in sample(range(test_size), round(probability * test_size)):
                 exec.submit(
                     evolution.evolve,
                     current_nodes[i],
@@ -288,6 +319,7 @@ class TestsetGenerator:
                 evolution_percentages=[distributions[e] for e in distributions],
                 num_rows=len(test_dataset.test_data),
                 language=evol_lang[0] if len(evol_lang) > 0 else "",
+                is_experiment=False,
             )
         )
 

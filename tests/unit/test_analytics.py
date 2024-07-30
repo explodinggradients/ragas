@@ -26,6 +26,7 @@ def test_evaluation_event():
         num_rows=1,
         evaluation_mode="",
         language="english",
+        in_ci=True,
     )
 
     payload = dict(evaluation_event)
@@ -33,6 +34,7 @@ def test_evaluation_event():
     assert isinstance(payload.get("evaluation_mode"), str)
     assert isinstance(payload.get("metrics"), list)
     assert isinstance(payload.get("language"), str)
+    assert isinstance(payload.get("in_ci"), bool)
 
 
 def setup_user_id_filepath(tmp_path, monkeypatch):

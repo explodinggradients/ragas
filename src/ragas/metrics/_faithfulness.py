@@ -7,11 +7,10 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel, Field
-from pysbd import Segmenter
 
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM, ensembler
+from ragas.metrics.base import EvaluationMode, MetricWithLLM, ensembler, get_segmenter
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -81,7 +80,7 @@ LONG_FORM_ANSWER_PROMPT = Prompt(
     ],
     input_keys=["question", "answer", "sentences"],
     output_key="analysis",
-    language="en",
+    language="english",
 )
 
 
@@ -160,7 +159,7 @@ NLI_STATEMENTS_MESSAGE = Prompt(
     input_keys=["context", "statements"],
     output_key="answer",
     output_type="json",
-    language="en",
+    language="english",
 )  # noqa: E501
 
 
@@ -185,12 +184,17 @@ class Faithfulness(MetricWithLLM):
         if value < 1:
             logger.warning("reproducibility cannot be less than 1, setting to 1")
             value = 1
+        elif value % 2 == 0:
+            logger.warning(
+                "reproducibility level cannot be set to even number, setting to odd"
+            )
+            value += 1
         self._reproducibility = value
 
     def __post_init__(self):
         if self.sentence_segmenter is None:
             language = self.nli_statements_message.language
-            self.sentence_segmenter = Segmenter(language=language, clean=False)
+            self.sentence_segmenter = get_segmenter(language=language, clean=False)
 
     def _create_nli_prompt(self, row: t.Dict, statements: t.List[str]) -> PromptValue:
         assert self.llm is not None, "llm must be set to compute score"
@@ -232,9 +236,7 @@ class Faithfulness(MetricWithLLM):
 
         return score
 
-    async def _ascore(
-        self: t.Self, row: t.Dict, callbacks: Callbacks, is_async: bool
-    ) -> float:
+    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
         """
         returns the NLI score for each (q, c, a) pair
         """
@@ -244,7 +246,6 @@ class Faithfulness(MetricWithLLM):
         statements = await self.llm.generate(
             p_value,
             callbacks=callbacks,
-            is_async=is_async,
         )
         statements = await _statements_output_parser.aparse(
             statements.generations[0][0].text, p_value, self.llm, self.max_retries
@@ -262,7 +263,6 @@ class Faithfulness(MetricWithLLM):
         nli_result = await self.llm.generate(
             p_value,
             callbacks=callbacks,
-            is_async=is_async,
             n=self._reproducibility,
         )
 

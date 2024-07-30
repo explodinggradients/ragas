@@ -12,9 +12,15 @@ from ragas.llms.prompt import Prompt, PromptValue
 from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics._faithfulness import (
     LONG_FORM_ANSWER_PROMPT,
+    HasSegmentMethod,
     _statements_output_parser,
 )
-from ragas.metrics.base import EvaluationMode, MetricWithEmbeddings, MetricWithLLM
+from ragas.metrics.base import (
+    EvaluationMode,
+    MetricWithEmbeddings,
+    MetricWithLLM,
+    get_segmenter,
+)
 from ragas.run_config import RunConfig
 
 if t.TYPE_CHECKING:
@@ -60,7 +66,7 @@ CORRECTNESS_PROMPT = Prompt(
                 "The sun's light plays a critical role in Earth's climate system.",
                 "Sunlight helps to drive the weather and ocean currents.",
             ],
-            "extracted_statements": AnswerCorrectnessClassification.parse_obj(
+            "classification": AnswerCorrectnessClassification.parse_obj(
                 {
                     "TP": [
                         {
@@ -108,7 +114,7 @@ CORRECTNESS_PROMPT = Prompt(
                 "The boiling point of water is 100 degrees Celsius (212 degrees Fahrenheit) at sea level.",
                 "The boiling point of water can change with altitude.",
             ],
-            "extracted_statements": AnswerCorrectnessClassification.parse_obj(
+            "classification": AnswerCorrectnessClassification.parse_obj(
                 {
                     "TP": [
                         {
@@ -128,14 +134,13 @@ CORRECTNESS_PROMPT = Prompt(
         },
     ],
     input_keys=["question", "answer", "ground_truth"],
-    output_key="extracted_statements",
+    output_key="classification",
     output_type="json",
 )
 
 
 @dataclass
 class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
-
     """
     Measures answer correctness compared to ground truth as a combination of
     factuality and semantic similarity.
@@ -158,7 +163,8 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
         default_factory=lambda: LONG_FORM_ANSWER_PROMPT
     )
     weights: list[float] = field(default_factory=lambda: [0.75, 0.25])
-    answer_similarity: AnswerSimilarity | None = None
+    answer_similarity: t.Optional[AnswerSimilarity] = None
+    sentence_segmenter: t.Optional[HasSegmentMethod] = None
     max_retries: int = 1
 
     def __post_init__(self: t.Self):
@@ -170,6 +176,10 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
             raise ValueError("At least one weight must be non-zero")
         if not all([w >= 0 for w in self.weights]):
             raise ValueError("Weights must be non-negative")
+
+        if self.sentence_segmenter is None:
+            language = self.long_form_answer_prompt.language
+            self.sentence_segmenter = get_segmenter(language=language, clean=False)
 
     def init(self, run_config: RunConfig):
         super().init(run_config)
@@ -187,48 +197,65 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
         score = tp / (tp + 0.5 * (fp + fn)) if tp > 0 else 0
         return score
 
-    def _create_statements_prompt(self, question: str, answer: str) -> PromptValue:
-        # extract statements from answer given the question
+    def _create_statements_prompt(self, question: str, text: str) -> PromptValue:
+        assert self.sentence_segmenter is not None, "sentence_segmenter is not set"
+
+        sentences = self.sentence_segmenter.segment(text)
+        sentences = [
+            sentence for sentence in sentences if sentence.strip().endswith(".")
+        ]
+        sentences = "\n".join([f"{i}:{x}" for i, x in enumerate(sentences)])
         prompt_value = self.long_form_answer_prompt.format(
-            question=question, answer=answer
+            question=question, answer=text, sentences=sentences
         )
         return prompt_value
 
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM must be set"
 
         question = row["question"]
         statements = {}
         for item in ["answer", "ground_truth"]:
             p_value = self._create_statements_prompt(question, row[item])
-            item_statement = await self.llm.generate(
-                p_value, callbacks=callbacks, is_async=is_async
-            )
+            item_statement = await self.llm.generate(p_value, callbacks=callbacks)
             statements[item] = await _statements_output_parser.aparse(
                 item_statement.generations[0][0].text,
                 p_value,
                 self.llm,
                 self.max_retries,
             )
-            statements[item] = statements[item].dicts()
+            statements[item] = (
+                statements[item].dicts() if statements[item] is not None else []
+            )
 
-        p_value = self.correctness_prompt.format(
-            question=question,
-            ground_truth=statements["ground_truth"],
-            answer=statements["answer"],
-        )
-        is_statement_present = await self.llm.generate(
-            p_value, callbacks=callbacks, is_async=is_async
-        )
-        result_text = is_statement_present.generations[0][0].text
+        if not all([val == [] for val in statements.values()]):
+            ground_truth = [
+                statement
+                for item in statements["ground_truth"]
+                for statement in item["simpler_statements"]
+            ]
+            answer = [
+                statement
+                for item in statements["answer"]
+                for statement in item["simpler_statements"]
+            ]
+            p_value = self.correctness_prompt.format(
+                question=question,
+                ground_truth=ground_truth,
+                answer=answer,
+            )
+            is_statement_present = await self.llm.generate(p_value, callbacks=callbacks)
+            result_text = is_statement_present.generations[0][0].text
 
-        answers = await _output_parser.aparse(
-            result_text, p_value, self.llm, self.max_retries
-        )
-        if answers is None:
-            return np.nan
+            answers = await _output_parser.aparse(
+                result_text, p_value, self.llm, self.max_retries
+            )
+            if answers is None:
+                return np.nan
 
-        f1_score = self._compute_statement_presence(answers)
+            f1_score = self._compute_statement_presence(answers)
+        else:
+            f1_score = 1.0
 
         if self.weights[1] == 0:
             similarity_score = 0.0
@@ -236,7 +263,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
             assert self.answer_similarity is not None, "AnswerSimilarity must be set"
 
             similarity_score = await self.answer_similarity.ascore(
-                row, callbacks=callbacks, is_async=is_async
+                row, callbacks=callbacks
             )
 
         score = np.average(

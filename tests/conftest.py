@@ -11,6 +11,23 @@ if t.TYPE_CHECKING:
     from ragas.llms.prompt import PromptValue
 
 
+def pytest_configure(config):
+    """
+    configure pytest
+    """
+    # Extra Pytest Markers
+    # add `ragas_ci`
+    config.addinivalue_line(
+        "markers",
+        "ragas_ci: Set of tests that will be run as part of Ragas CI",
+    )
+    # add `e2e`
+    config.addinivalue_line(
+        "markers",
+        "e2e: End-to-End tests for Ragas",
+    )
+
+
 class FakeTestLLM(BaseRagasLLM):
     def llm(self):
         return self

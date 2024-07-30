@@ -202,7 +202,13 @@ class Evolution:
             if isinstance(relevant_contexts_result, dict)
             else None
         )
-        if relevant_context_indices is None:
+
+        if relevant_context_indices is not None:
+            relevant_context_indices = [
+                idx for idx in relevant_context_indices if isinstance(idx, int)
+            ]
+
+        if relevant_context_indices is None or not relevant_context_indices:
             relevant_context = CurrentNodes(
                 root_node=current_nodes.root_node, nodes=current_nodes.nodes
             )
@@ -270,6 +276,7 @@ class Evolution:
         assert self.question_filter is not None, "question_filter cannot be None"
         self.question_answer_prompt.save(cache_dir)
         self.find_relevant_context_prompt.save(cache_dir)
+        self.rewrite_invalid_question_prompt.save(cache_dir)
         self.node_filter.save(cache_dir)
         self.question_filter.save(cache_dir)
 
@@ -346,14 +353,13 @@ class ComplexEvolution(Evolution):
             run_config = RunConfig()
         super().init(is_async=is_async, run_config=run_config)
 
-        if self.se is None:
-            # init simple evolution to get seed question
-            self.se = SimpleEvolution(
-                generator_llm=self.generator_llm,
-                docstore=self.docstore,
-                node_filter=self.node_filter,
-                question_filter=self.question_filter,
-            )
+        # init simple evolution to get seed question
+        self.se = SimpleEvolution(
+            generator_llm=self.generator_llm,
+            docstore=self.docstore,
+            node_filter=self.node_filter,
+            question_filter=self.question_filter,
+        )
         # init evolution filter with critic llm from another filter
         assert self.node_filter is not None, "node filter cannot be None"
         if self.evolution_filter is None:

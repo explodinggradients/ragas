@@ -24,6 +24,7 @@ Meet some of our outstanding members who made significant contributions !
 
 Explore insightful articles, tutorials, and stories written by and for our community members.
 
+- [Shanthi Vardhan](https://www.linkedin.com/in/shanthivardhan/) shares how his team at [Atomicwork uses ragas](https://www.atomicwork.com/blog/ragas-improving-atom-accuracy) to improve their AI system's ability to accurately identify and retrieve more precise information for enhanced service management.
 - [Pinecone's](https://pinecone.io/blog) study on how RAGs can enhance capabilities of LLMs in ["RAG makes LLMs better and equal"](https://www.pinecone.io/blog/rag-study/) uses ragas to proves context retrieval makes LLMs provide significantly better results, even when increasing the data size to 1 billion.
 - [Aishwarya Prabhat](https://www.linkedin.com/in/aishwaryaprabhat/) shares her expertise on advanced RAG techniques in her comprehensive guide, ["Performing, Evaluating & Tracking Advanced RAG (ft. AzureML, LlamaIndex & Ragas)"](https://www.linkedin.com/pulse/performing-evaluating-tracking-advanced-rag-ft-azureml-prabhat-i1rkc/).
 - Leonie (aka [@helloiamleonie](https://twitter.com/helloiamleonie?source=about_page-------------------------------------))  offers her perspective in the detailed article, ["Evaluating RAG Applications with RAGAs"](https://towardsdatascience.com/evaluating-rag-applications-with-ragas-81d67b0ee31a).
@@ -37,6 +38,11 @@ Explore insightful articles, tutorials, and stories written by and for our commu
     - [RAG Evaluation: Necessity and Challenge](https://tech.beatrust.com/entry/2024/05/02/RAG_Evaluation%3A_Necessity_and_Challenge)
     - [RAG Evaluation : Computational Metrics in RAG and Calculation Methods in Ragas](https://tech.beatrust.com/entry/2024/05/02/RAG_Evaluation_%3A_Computational_Metrics_in_RAG_and_Calculation_Methods_in_Ragas)
     - [RAG Evaluation: Assessing the Usefulness of Ragas](https://tech.beatrust.com/entry/2024/05/02/RAG_Evaluation%3A_Assessing_the_Usefulness_of_Ragas)
+- [Atita Arora](https://www.linkedin.com/in/atitaarora/) writes about [Evaluating Retrieval Augmented Generation using RAGAS](https://superlinked.com/vectorhub/articles/retrieval-augmented-generation-eval-qdrant-ragas), an end-to-end tutorial on building RAG using [Qdrant](https://qdrant.tech/) and [Langchain](https://www.langchain.com/) and evaluating it with RAGAS. 
+  - *Bonus content* : Learn how to create an evaluation dataset that serves as a reference point for evaluating our RAG pipeline, Understand the RAGAS evaluation metrics and how to make sense of them and putting them in action to test a Naive RAG pipeline and measure its performance using RAGAS metrics. 
+  - *Code walkthrough* : https://github.com/qdrant/qdrant-rag-eval/tree/master/workshop-rag-eval-qdrant-ragas
+  - *Code walkthrough using [Deepset Haystack](https://haystack.deepset.ai/) and [Mixedbread.ai](https://www.mixedbread.ai/)* : https://github.com/qdrant/qdrant-rag-eval/tree/master/workshop-rag-eval-qdrant-ragas-haystack
+
 
 ## **📅 Events**
 

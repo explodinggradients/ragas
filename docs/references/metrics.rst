@@ -9,6 +9,7 @@ Metrics
    ragas.metrics.context_precision
    ragas.metrics.context_recall
    ragas.metrics.context_entity_recall
+   ragas.metrics.summarization_score
 
 .. automodule:: ragas.metrics
    :members:

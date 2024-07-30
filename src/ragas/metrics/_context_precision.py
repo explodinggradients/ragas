@@ -101,6 +101,11 @@ class ContextPrecision(MetricWithLLM):
         if value < 1:
             logger.warning("reproducibility cannot be less than 1, setting to 1")
             value = 1
+        elif value % 2 == 0:
+            logger.warning(
+                "reproducibility level cannot be set to even number, setting to odd"
+            )
+            value += 1
         self._reproducibility = value
 
     def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:
@@ -146,7 +151,6 @@ class ContextPrecision(MetricWithLLM):
         self: t.Self,
         row: t.Dict,
         callbacks: Callbacks,
-        is_async: bool,
     ) -> float:
         assert self.llm is not None, "LLM is not set"
 
@@ -156,7 +160,6 @@ class ContextPrecision(MetricWithLLM):
             results = await self.llm.generate(
                 hp,
                 callbacks=callbacks,
-                is_async=is_async,
                 n=self.reproducibility,
             )
             results = [

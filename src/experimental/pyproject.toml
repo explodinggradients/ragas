@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "ragas_experimental"
+version = "0.0.3"
+description = "Experimental work in Ragas that has the bleeding edge work"
+authors = ["jjmachan <jithin@explodinggradients.com>"]
+license = "Apache 2"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.8, <3.13"
+ragas = "^0.1.9"
+fastembed = "^0.3.1"
+graphene = "^3.3"
+fuzzywuzzy = "^0.18.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

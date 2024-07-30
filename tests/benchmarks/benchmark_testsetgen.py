@@ -1,7 +1,7 @@
 import time
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from llama_index import download_loader
+from llama_index.core import download_loader
 
 from ragas.testset.evolutions import conditional, multi_context, reasoning, simple
 from ragas.testset.generator import TestsetGenerator
@@ -26,7 +26,6 @@ def get_documents():
     return documents
 
 
-IGNORE_THREADS = False
 IGNORE_ASYNCIO = False
 # os.environ["PYTHONASYNCIODEBUG"] = "1"
 
@@ -34,25 +33,12 @@ if __name__ == "__main__":
     documents = get_documents()
 
     # asyncio
-    if not IGNORE_ASYNCIO:
-        print("Starting [Asyncio]")
-        start = time.time()
-        generator.generate_with_llamaindex_docs(
-            documents=documents,
-            test_size=50,
-            distributions=distributions,
-            is_async=True,
-        )
-        print(f"Time taken: {time.time() - start:.2f}s")
-
-    # Threads
-    if not IGNORE_THREADS:
-        print("Starting [Threads]")
-        start = time.time()
-        generator.generate_with_llamaindex_docs(
-            documents=documents,
-            test_size=50,
-            distributions=distributions,
-            is_async=False,
-        )
-        print(f"Time taken [Threads]: {time.time() - start:.2f}s")
+    print("Starting [Asyncio]")
+    start = time.time()
+    generator.generate_with_llamaindex_docs(
+        documents=documents,
+        test_size=50,
+        distributions=distributions,
+        is_async=True,
+    )
+    print(f"Time taken: {time.time() - start:.2f}s")

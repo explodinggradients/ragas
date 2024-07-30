@@ -109,7 +109,6 @@ CONTEXT_RECALL_RA = Prompt(
 
 @dataclass
 class ContextRecall(MetricWithLLM):
-
     """
     Estimates context recall by estimating TP and FN using annotated answer and
     retrieved context.
@@ -134,6 +133,11 @@ class ContextRecall(MetricWithLLM):
         if value < 1:
             logger.warning("reproducibility cannot be less than 1, setting to 1")
             value = 1
+        elif value % 2 == 0:
+            logger.warning(
+                "reproducibility level cannot be set to even number, setting to odd"
+            )
+            value += 1
         self._reproducibility = value
 
     def __post_init__(self) -> None:
@@ -158,13 +162,12 @@ class ContextRecall(MetricWithLLM):
 
         return score
 
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "set LLM before use"
         p_value = self._create_context_recall_prompt(row)
         results = await self.llm.generate(
             p_value,
             callbacks=callbacks,
-            is_async=is_async,
             n=self.reproducibility,
         )
         results = [results.generations[0][i].text for i in range(self.reproducibility)]

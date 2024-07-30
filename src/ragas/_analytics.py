@@ -88,6 +88,7 @@ class EvaluationEvent(BaseEvent):
     evaluation_mode: str
     num_rows: int
     language: str
+    in_ci: bool
 
 
 class TestsetGenerationEvent(BaseEvent):
@@ -95,6 +96,7 @@ class TestsetGenerationEvent(BaseEvent):
     evolution_percentages: t.List[float]
     num_rows: int
     language: str
+    is_experiment: bool = False
 
 
 @silent

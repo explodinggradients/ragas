@@ -13,8 +13,10 @@ Just like in any machine learning system, the performance of individual componen
 - [Answer relevancy](answer_relevance.md)
 - [Context recall](context_recall.md)
 - [Context precision](context_precision.md)
-- [Context relevancy](context_relevancy.md)
 - [Context entity recall](context_entities_recall.md)
+- [Summarization Score](summarization_score.md)
+
+```{toctree}
 
 ## End-to-End Evaluation
 
@@ -30,11 +32,11 @@ Evaluating the end-to-end performance of a pipeline is also crucial, as it direc
 faithfulness
 answer_relevance
 context_precision
-context_relevancy
 context_recall
 context_entities_recall
 semantic_similarity
 answer_correctness
 critique
+summarization_score
 
 ```

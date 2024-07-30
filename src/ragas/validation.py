@@ -67,10 +67,13 @@ EVALMODE_TO_COLUMNS = {
     EvaluationMode.ga: ["ground_truth", "answer"],
     EvaluationMode.qga: ["question", "ground_truth", "answer"],
     EvaluationMode.qcg: ["question", "contexts", "ground_truth"],
+    EvaluationMode.ca: ["contexts", "summary"],
 }
 
 
-def validate_evaluation_modes(ds: Dataset, metrics: list[Metric]):
+def validate_evaluation_modes(
+    ds: Dataset, metrics: list[Metric], evalmode_to_columns: dict = EVALMODE_TO_COLUMNS
+):
     """
     validates the dataset and returns the evaluation type
 
@@ -81,7 +84,7 @@ def validate_evaluation_modes(ds: Dataset, metrics: list[Metric]):
     4. (g,a)
     """
     for m in metrics:
-        required_columns = set(EVALMODE_TO_COLUMNS[m.evaluation_mode])
+        required_columns = set(evalmode_to_columns[m.evaluation_mode])
         available_columns = set(ds.features.keys())
         if not required_columns.issubset(available_columns):
             extra_msg = ""

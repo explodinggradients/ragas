@@ -34,28 +34,15 @@ metrics = [
 ]
 
 # os.environ["PYTHONASYNCIODEBUG"] = "1"
-IGNORE_THREADS = False
 IGNORE_ASYNCIO = False
 
 if __name__ == "__main__":
     # asyncio
-    if not IGNORE_ASYNCIO:
-        print("Starting [Asyncio]")
-        start = time.time()
-        _ = evaluate(
-            eval_dataset,
-            metrics=metrics,
-            is_async=True,
-        )
-        print(f"Time taken [Asyncio]: {time.time() - start:.2f}s")
-
-    # Threads
-    if not IGNORE_THREADS:
-        print("Starting [Threads]")
-        start = time.time()
-        _ = evaluate(
-            eval_dataset,
-            metrics=metrics,
-            is_async=False,
-        )
-        print(f"Time taken [Threads]: {time.time() - start:.2f}s")
+    print("Starting [Asyncio]")
+    start = time.time()
+    _ = evaluate(
+        eval_dataset,
+        metrics=metrics,
+        is_async=True,
+    )
+    print(f"Time taken [Asyncio]: {time.time() - start:.2f}s")
