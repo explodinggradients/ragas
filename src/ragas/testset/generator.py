@@ -301,7 +301,7 @@ class TestsetGenerator:
 
         try:
             test_data_rows = exec.results()
-            if not test_data_rows:
+            if all(is_nan(row) for row in test_data_rows):
                 raise ExceptionInRunner()
 
         except ValueError as e:
