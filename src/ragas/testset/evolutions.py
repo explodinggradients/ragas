@@ -104,6 +104,8 @@ class Evolution:
             self.node_filter.set_run_config(run_config)
         if self.question_filter:
             self.question_filter.set_run_config(run_config)
+        
+        self.run_config = run_config
 
     async def aretry_evolve(
         self,
@@ -305,7 +307,7 @@ class SimpleEvolution(Evolution):
         results = await self.generator_llm.generate(
             prompt=self.seed_question_prompt.format(
                 context=merged_node.page_content,
-                keyphrase=rng.choice(np.array(merged_node.keyphrases), size=1)[0],
+                keyphrase=self.run_config.rng.choice(np.array(merged_node.keyphrases), size=1)[0],
             )
         )
         seed_question = results.generations[0][0].text
