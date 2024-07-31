@@ -1,9 +1,14 @@
 import typing as t
+import logging
 from langchain_core.callbacks.base import BaseCallbackHandler
 from langchain_core.outputs import ChatResult, LLMResult, ChatGeneration
 from langchain_core.pydantic_v1 import BaseModel, Field
 
 from ragas.utils import get_from_dict
+
+TokenUsageParser = t.Callable[[t.Union[LLMResult, ChatResult]], "TokenUsage"]
+
+logger = logging.getLogger(__name__)
 
 
 class TokenUsage(BaseModel):
@@ -49,36 +54,43 @@ class TokenUsage(BaseModel):
             return False
 
 
-def parse_llm_result(llm_result: t.Union[LLMResult, ChatResult]) -> TokenUsage:
+def get_token_usage_for_openai(
+    llm_result: t.Union[LLMResult, ChatResult],
+) -> TokenUsage:
     # OpenAI like interfaces
-    if llm_result.llm_output != {} and llm_result.llm_output is not None:
-        llm_output = llm_result.llm_output
-        output_tokens = get_from_dict(llm_output, "token_usage.completion_tokens", 0)
-        input_tokens = get_from_dict(llm_output, "token_usage.prompt_tokens", 0)
+    llm_output = llm_result.llm_output
+    if llm_output is None:
+        logger.info("No llm_output found in the LLMResult")
+        return TokenUsage(input_tokens=0, output_tokens=0)
+    output_tokens = get_from_dict(llm_output, "token_usage.completion_tokens", 0)
+    input_tokens = get_from_dict(llm_output, "token_usage.prompt_tokens", 0)
 
-        return TokenUsage(input_tokens=input_tokens, output_tokens=output_tokens)
+    return TokenUsage(input_tokens=input_tokens, output_tokens=output_tokens)
 
-    elif llm_result.llm_output == {}:
-        token_usages = []
-        for gs in llm_result.generations:
-            for g in gs:
-                if isinstance(g, ChatGeneration):
-                    if g.message.response_metadata != {}:
-                        # Anthropic
-                        token_usages.append(
-                            TokenUsage(
-                                input_tokens=get_from_dict(
-                                    g.message.response_metadata,
-                                    "usage.input_tokens",
-                                    0,
-                                ),
-                                output_tokens=get_from_dict(
-                                    g.message.response_metadata,
-                                    "usage.output_tokens",
-                                    0,
-                                ),
-                            )
+
+def get_token_usage_for_anthropic(
+    llm_result: t.Union[LLMResult, ChatResult],
+) -> TokenUsage:
+    token_usages = []
+    for gs in llm_result.generations:
+        for g in gs:
+            if isinstance(g, ChatGeneration):
+                if g.message.response_metadata != {}:
+                    # Anthropic
+                    token_usages.append(
+                        TokenUsage(
+                            input_tokens=get_from_dict(
+                                g.message.response_metadata,
+                                "usage.input_tokens",
+                                0,
+                            ),
+                            output_tokens=get_from_dict(
+                                g.message.response_metadata,
+                                "usage.output_tokens",
+                                0,
+                            ),
                         )
+                    )
 
         return sum(token_usages, TokenUsage(input_tokens=0, output_tokens=0))
     else:
@@ -86,12 +98,12 @@ def parse_llm_result(llm_result: t.Union[LLMResult, ChatResult]) -> TokenUsage:
 
 
 class CostCallbackHandler(BaseCallbackHandler):
-    def __init__(self):
+    def __init__(self, get_token_usage: TokenUsageParser):
+        self.get_token_usage = get_token_usage
         self.usage_data: t.List[TokenUsage] = []
-        self.llm_result_parser: t.Callable[[LLMResult], TokenUsage] = parse_llm_result
 
     def on_llm_end(self, response: LLMResult, **kwargs: t.Any):
-        self.usage_data.append(self.llm_result_parser(response))
+        self.usage_data.append(self.get_token_usage(response))
 
     def total_cost(
         self,
@@ -142,3 +154,9 @@ class CostCallbackHandler(BaseCallbackHandler):
                     cpit, cpot = per_model_costs[model]
                     total_cost += usage.cost(cpit, cpot)
             return total_cost
+
+    def total_tokens(self) -> TokenUsage:
+        """
+        Return the sum of tokens used by the callback handler
+        """
+        pass

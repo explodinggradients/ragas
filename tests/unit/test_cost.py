@@ -1,11 +1,14 @@
 import pytest
 
 from langchain_core.outputs import LLMResult, ChatGeneration
-from langchain_core.prompt_values import StringPromptValue
 from langchain_core.messages import AIMessage
-from langchain_openai.chat_models import ChatOpenAI
 
-from ragas.cost import CostCallbackHandler, TokenUsage, parse_llm_result
+from ragas.cost import (
+    CostCallbackHandler,
+    TokenUsage,
+    get_token_usage_for_openai,
+    get_token_usage_for_anthropic,
+)
 
 
 """
@@ -82,20 +85,18 @@ athropic_llm_result = LLMResult(
 )
 
 
-@pytest.mark.parametrize(
-    "llm_result, expected",
-    [
-        (openai_llm_result, TokenUsage(input_tokens=10, output_tokens=10)),
-        (athropic_llm_result, TokenUsage(input_tokens=9, output_tokens=12)),
-    ],
-)
-def test_parse_llm_result(llm_result, expected):
-    token_usage = parse_llm_result(llm_result)
-    assert token_usage == expected
+def test_parse_llm_results():
+    # openai
+    token_usage = get_token_usage_for_openai(openai_llm_result)
+    assert token_usage == TokenUsage(input_tokens=10, output_tokens=10)
+
+    # anthropic
+    token_usage = get_token_usage_for_anthropic(athropic_llm_result)
+    assert token_usage == TokenUsage(input_tokens=9, output_tokens=12)
 
 
 def test_cost_callback_handler():
-    cost_cb = CostCallbackHandler()
+    cost_cb = CostCallbackHandler(get_token_usage=get_token_usage_for_openai)
     cost_cb.on_llm_end(openai_llm_result)
 
     assert cost_cb.total_cost(0.1) == 2.0

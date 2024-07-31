@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass, field
 
+from langchain_core.callbacks import BaseCallbackHandler, BaseCallbackManager
 import numpy as np
 from datasets import Dataset, concatenate_datasets
 from langchain_core.embeddings import Embeddings as LangchainEmbeddings
@@ -16,6 +17,7 @@ from ragas.embeddings.base import (
     embedding_factory,
 )
 from ragas.exceptions import ExceptionInRunner
+from ragas.cost import get_token_usage_for_openai
 from ragas.executor import Executor
 from ragas.llms import llm_factory
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
@@ -40,6 +42,7 @@ from ragas.validation import (
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
+    from ragas.cost import TokenUsageParser
 
 
 def evaluate(
@@ -50,6 +53,7 @@ def evaluate(
     callbacks: Callbacks = None,
     in_ci: bool = False,
     run_config: t.Optional[RunConfig] = None,
+    get_token_usage: t.Optional[TokenUsageParser] = None,
     raise_exceptions: bool = True,
     column_map: t.Optional[t.Dict[str, str]] = None,
 ) -> Result:
@@ -83,6 +87,9 @@ def evaluate(
     run_config: RunConfig, optional
         Configuration for runtime settings like timeout and retries. If not provided,
         default values are used.
+    get_token_usage: TokenUsageParser, optional
+        Parser to get the token usage from the LLM result. If not provided then the
+        the cost and total tokens will not be calculated. Default is None.
     raise_exceptions: True
         Whether to raise exceptions or not. If set to True then the evaluation will
         raise an exception if any of the metrics fail. If set to False then the
@@ -197,6 +204,17 @@ def evaluate(
         raise_exceptions=raise_exceptions,
         run_config=run_config,
     )
+
+    # check if cost needs to be calculated
+    if get_token_usage is not None:
+        from ragas.cost import CostCallbackHandler
+
+        cost_cb = CostCallbackHandler(get_token_usage=get_token_usage)
+        if isinstance(callbacks, BaseCallbackManager):
+            callbacks.add_handler(cost_cb)
+        else:
+            callbacks.append(cost_cb)
+
     # new evaluation chain
     row_run_managers = []
     evaluation_rm, evaluation_group_cm = new_group(
