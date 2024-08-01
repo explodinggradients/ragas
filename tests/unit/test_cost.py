@@ -99,6 +99,9 @@ def test_cost_callback_handler():
     cost_cb = CostCallbackHandler(get_token_usage=get_token_usage_for_openai)
     cost_cb.on_llm_end(openai_llm_result)
 
+    # cost
+    assert cost_cb.total_tokens() == TokenUsage(input_tokens=10, output_tokens=10)
+
     assert cost_cb.total_cost(0.1) == 2.0
     assert (
         cost_cb.total_cost(cost_per_input_token=0.1, cost_per_output_token=0.1) == 2.0

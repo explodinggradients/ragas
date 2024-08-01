@@ -11,13 +11,13 @@ from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
 from ragas._analytics import EvaluationEvent, track
 from ragas.callbacks import new_group
+from ragas.cost import TokenUsage
 from ragas.embeddings.base import (
     BaseRagasEmbeddings,
     LangchainEmbeddingsWrapper,
     embedding_factory,
 )
 from ragas.exceptions import ExceptionInRunner
-from ragas.cost import get_token_usage_for_openai
 from ragas.executor import Executor
 from ragas.llms import llm_factory
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
@@ -42,7 +42,7 @@ from ragas.validation import (
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
-    from ragas.cost import TokenUsageParser
+    from ragas.cost import TokenUsageParser, CostCallbackHandler
 
 
 def evaluate(
@@ -205,15 +205,23 @@ def evaluate(
         run_config=run_config,
     )
 
+    # Ragas Callbacks
+    # init the callbacks we need for various tasks
+    ragas_callbacks: t.Dict[str, BaseCallbackHandler] = {}
+
     # check if cost needs to be calculated
     if get_token_usage is not None:
         from ragas.cost import CostCallbackHandler
 
         cost_cb = CostCallbackHandler(get_token_usage=get_token_usage)
+        ragas_callbacks["cost_cb"] = cost_cb
+
+    # append all the ragas_callbacks to the callbacks
+    for cb in ragas_callbacks.values():
         if isinstance(callbacks, BaseCallbackManager):
-            callbacks.add_handler(cost_cb)
+            callbacks.add_handler(cb)
         else:
-            callbacks.append(cost_cb)
+            callbacks.append(cb)
 
     # new evaluation chain
     row_run_managers = []
@@ -264,10 +272,16 @@ def evaluate(
 
         raise e
     else:
+        # evalution run was successful
+        # now lets process the results
+
         result = Result(
             scores=Dataset.from_list(scores),
             dataset=dataset,
             binary_columns=binary_metrics,
+            cost_cb=ragas_callbacks["cost_cb"]
+            if "cost_cb" in ragas_callbacks
+            else None,
         )
         if not evaluation_group_cm.ended:
             evaluation_rm.on_chain_end(result)
@@ -307,6 +321,7 @@ class Result(dict):
     scores: Dataset
     dataset: t.Optional[Dataset] = None
     binary_columns: t.List[str] = field(default_factory=list)
+    cost_cb: t.Optional[CostCallbackHandler] = None
 
     def __post_init__(self):
         values = []
@@ -324,6 +339,27 @@ class Result(dict):
         result_ds = concatenate_datasets([self.dataset, self.scores], axis=1)
 
         return result_ds.to_pandas(batch_size=batch_size, batched=batched)
+
+    def total_tokens(self) -> t.Union[t.List[TokenUsage], TokenUsage]:
+        if self.cost_cb is None:
+            raise ValueError(
+                "The evaluate() run was not configured for computing cost. Please provide a get_token_usage function to evaluate() to compute cost."
+            )
+        return self.cost_cb.total_tokens()
+
+    def total_cost(
+        self,
+        cost_per_input_token: t.Optional[float] = None,
+        cost_per_output_token: t.Optional[float] = None,
+        per_model_costs: t.Dict[str, t.Tuple[float, float]] = {},
+    ) -> float:
+        if self.cost_cb is None:
+            raise ValueError(
+                "The evaluate() run was not configured for computing cost. Please provide a get_token_usage function to evaluate() to compute cost."
+            )
+        return self.cost_cb.total_cost(
+            cost_per_input_token, cost_per_output_token, per_model_costs
+        )
 
     def __repr__(self) -> str:
         scores = self.copy()

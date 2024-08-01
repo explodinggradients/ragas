@@ -155,8 +155,19 @@ class CostCallbackHandler(BaseCallbackHandler):
                     total_cost += usage.cost(cpit, cpot)
             return total_cost
 
-    def total_tokens(self) -> TokenUsage:
+    def total_tokens(self) -> t.Union[TokenUsage, t.List[TokenUsage]]:
         """
         Return the sum of tokens used by the callback handler
         """
-        pass
+        first_usage = self.usage_data[0]
+        total_table: t.Dict[str, TokenUsage] = {first_usage.model: first_usage}
+        for usage in self.usage_data[1:]:
+            if usage.model in total_table:
+                total_table[usage.model] += usage
+            else:
+                total_table[usage.model] = usage
+
+        if len(total_table) == 1:
+            return list(total_table.values())[0]
+        else:
+            return list(total_table.values())
