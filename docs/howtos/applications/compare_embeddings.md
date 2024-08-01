@@ -27,8 +27,9 @@ For this tutorial notebook, I am using papers from Semantic Scholar that is rela
 
 ```{code-block} python
 :caption: load documents using llama-hub and create test data
-from llama_index import download_loader
+from llama_index.core import download_loader
 from ragas.testset.evolutions import simple, reasoning, multi_context
+from ragas.testset.generator import TestsetGenerator
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 SemanticScholarReader = download_loader("SemanticScholarReader")
@@ -56,7 +57,7 @@ distributions = {
 
 # generate testset
 testset = generator.generate_with_llamaindex_docs(documents, 100,distributions)
-testset.to_pandas()
+test_df = testset.to_pandas()
 ```
 
 <p align="left">
