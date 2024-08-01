@@ -2,6 +2,7 @@ import logging
 import typing as t
 from dataclasses import dataclass
 
+import numpy as np
 from tenacity import (
     AsyncRetrying,
     Retrying,
@@ -30,6 +31,10 @@ class RunConfig:
         t.Tuple[t.Type[BaseException], ...],
     ] = (Exception,)
     log_tenacity: bool = False
+    seed: t.Optional[int] = None
+
+    def __post__init(self):
+        self.rng : np.random.Generator = np.random.default_rng(seed=self.seed)
 
 
 def add_retry(fn: WrappedFn, run_config: RunConfig) -> WrappedFn:

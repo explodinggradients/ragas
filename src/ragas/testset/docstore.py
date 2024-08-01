@@ -325,7 +325,7 @@ class InMemoryDocumentStore(DocumentStore):
         prob = np.array(scores) * np.array(similarity_scores)
         prob = prob / np.sum(prob)
 
-        nodes = rng.choice(np.array(self.nodes), size=k, p=prob).tolist()
+        nodes = self.run_config.rng.choice(np.array(self.nodes), size=k, p=prob).tolist()
 
         for node in nodes:
             idx = self.nodes.index(node)
