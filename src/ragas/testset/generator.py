@@ -87,7 +87,7 @@ class TestsetGenerator:
         critic_llm: LangchainLLM,
         embeddings: LangchainEmbeddings,
         docstore: t.Optional[DocumentStore] = None,
-        run_config: t.Optional[RunConfig] = None,
+        run_config: RunConfig = RunConfig(),
         chunk_size: int = 1024,
     ) -> "TestsetGenerator":
         generator_llm_model = LangchainLLMWrapper(generator_llm)
@@ -119,7 +119,7 @@ class TestsetGenerator:
         critic_llm: LlamaindexLLM,
         embeddings: LlamaIndexEmbeddings,
         docstore: t.Optional[DocumentStore] = None,
-        run_config: t.Optional[RunConfig] = None,
+        run_config: RunConfig = RunConfig(),
     ) -> "TestsetGenerator":
         generator_llm_model = LlamaIndexLLMWrapper(generator_llm)
         critic_llm_model = LlamaIndexLLMWrapper(critic_llm)
