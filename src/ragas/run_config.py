@@ -34,7 +34,7 @@ class RunConfig:
     seed: t.Optional[int] = None
 
     def __post__init(self):
-        self.rng : np.random.Generator = np.random.default_rng(seed=self.seed)
+        self.rng: np.random.Generator = np.random.default_rng(seed=self.seed)
 
 
 def add_retry(fn: WrappedFn, run_config: RunConfig) -> WrappedFn:

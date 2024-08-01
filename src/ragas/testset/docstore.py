@@ -18,7 +18,6 @@ from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
 from ragas.run_config import RunConfig
-from ragas.testset.utils import rng
 
 if t.TYPE_CHECKING:
     from llama_index.core.schema import Document as LlamaindexDocument
@@ -325,7 +324,9 @@ class InMemoryDocumentStore(DocumentStore):
         prob = np.array(scores) * np.array(similarity_scores)
         prob = prob / np.sum(prob)
 
-        nodes = self.run_config.rng.choice(np.array(self.nodes), size=k, p=prob).tolist()
+        nodes = self.run_config.rng.choice(
+            np.array(self.nodes), size=k, p=prob
+        ).tolist()
 
         for node in nodes:
             idx = self.nodes.index(node)
