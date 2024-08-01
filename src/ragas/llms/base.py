@@ -62,8 +62,7 @@ class BaseRagasLLM(ABC):
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
-    ) -> LLMResult:
-        ...
+    ) -> LLMResult: ...
 
     @abstractmethod
     async def agenerate_text(
@@ -73,8 +72,7 @@ class BaseRagasLLM(ABC):
         temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
-    ) -> LLMResult:
-        ...
+    ) -> LLMResult: ...
 
     async def generate(
         self,
@@ -85,9 +83,11 @@ class BaseRagasLLM(ABC):
         callbacks: Callbacks = None,
         is_async: bool = True,
     ) -> LLMResult:
+        """Generate text using the given event loop."""
+
         if temperature is None:
             temperature = 1e-8
-        """Generate text using the given event loop."""
+
         if is_async:
             agenerate_text_with_retry = add_async_retry(
                 self.agenerate_text, self.run_config
@@ -172,6 +172,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
     ) -> LLMResult:
         if temperature is None:
             temperature = self.get_temperature(n=n)
+
         if is_multiple_completion_supported(self.langchain_llm):
             return await self.langchain_llm.agenerate_prompt(
                 prompts=[prompt],
@@ -272,10 +273,13 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: float = 1e-8,
+        temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ) -> LLMResult:
+        if temperature is None:
+            temperature = 1e-8
+
         kwargs = self.check_args(n, temperature, stop, callbacks)
         li_response = await self.llm.acomplete(prompt.to_string(), **kwargs)
 

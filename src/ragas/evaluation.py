@@ -53,7 +53,7 @@ def evaluate(
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
     callbacks: Callbacks = None,
     in_ci: bool = False,
-    run_config: t.Optional[RunConfig] = None,
+    run_config: RunConfig = field(default_factory=RunConfig),
     token_usage_parser: t.Optional[TokenUsageParser] = None,
     raise_exceptions: bool = True,
     column_map: t.Optional[t.Dict[str, str]] = None,
@@ -138,8 +138,6 @@ def evaluate(
     if dataset is None:
         raise ValueError("Provide dataset!")
 
-    # default run_config
-    run_config = run_config or RunConfig()
     # default metrics
     if metrics is None:
         from ragas.metrics import (
