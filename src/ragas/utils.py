@@ -153,3 +153,16 @@ def get_or_init(
     value = _value if _value is not None else default()
 
     return value
+
+
+def get_from_dict(data_dict: t.Dict, key: str, default=None) -> t.Any:
+    keys = key.split(".")
+    current = data_dict
+
+    for k in keys:
+        if isinstance(current, dict) and k in current:
+            current = current[k]
+        else:
+            return default
+
+    return current

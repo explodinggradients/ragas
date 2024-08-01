@@ -31,10 +31,10 @@ class RunConfig:
         t.Tuple[t.Type[BaseException], ...],
     ] = (Exception,)
     log_tenacity: bool = False
-    seed: t.Optional[int] = None
+    seed: int = 42
 
-    def __post__init(self):
-        self.rng : np.random.Generator = np.random.default_rng(seed=self.seed)
+    def __post__init__(self):
+        self.rng = np.random.default_rng(seed=self.seed)
 
 
 def add_retry(fn: WrappedFn, run_config: RunConfig) -> WrappedFn:

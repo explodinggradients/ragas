@@ -12,8 +12,8 @@ from ragas.evaluation import evaluate as ragas_evaluate
 from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
 from ragas.llms import LlamaIndexLLMWrapper
-from ragas.validation import EVALMODE_TO_COLUMNS, validate_evaluation_modes
 from ragas.run_config import RunConfig
+from ragas.validation import EVALMODE_TO_COLUMNS, validate_evaluation_modes
 
 if t.TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import (

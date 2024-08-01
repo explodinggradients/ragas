@@ -5,11 +5,13 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from datasets import Dataset, concatenate_datasets
+from langchain_core.callbacks import BaseCallbackHandler, BaseCallbackManager
 from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
 from ragas._analytics import EvaluationEvent, track
 from ragas.callbacks import new_group
+from ragas.cost import TokenUsage
 from ragas.embeddings.base import (
     BaseRagasEmbeddings,
     LangchainEmbeddingsWrapper,
@@ -41,6 +43,8 @@ from ragas.validation import (
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
+    from ragas.cost import CostCallbackHandler, TokenUsageParser
+
 
 def evaluate(
     dataset: Dataset,
@@ -49,7 +53,8 @@ def evaluate(
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
     callbacks: Callbacks = None,
     in_ci: bool = False,
-    run_config: t.Optional[RunConfig] = None,
+    run_config: RunConfig = field(default_factory=RunConfig),
+    token_usage_parser: t.Optional[TokenUsageParser] = None,
     raise_exceptions: bool = True,
     column_map: t.Optional[t.Dict[str, str]] = None,
 ) -> Result:
@@ -83,6 +88,9 @@ def evaluate(
     run_config: RunConfig, optional
         Configuration for runtime settings like timeout and retries. If not provided,
         default values are used.
+    token_usage_parser: TokenUsageParser, optional
+        Parser to get the token usage from the LLM result. If not provided then the
+        the cost and total tokens will not be calculated. Default is None.
     raise_exceptions: True
         Whether to raise exceptions or not. If set to True then the evaluation will
         raise an exception if any of the metrics fail. If set to False then the
@@ -130,8 +138,6 @@ def evaluate(
     if dataset is None:
         raise ValueError("Provide dataset!")
 
-    # default run_config
-    run_config = run_config or RunConfig()
     # default metrics
     if metrics is None:
         from ragas.metrics import (
@@ -197,6 +203,25 @@ def evaluate(
         raise_exceptions=raise_exceptions,
         run_config=run_config,
     )
+
+    # Ragas Callbacks
+    # init the callbacks we need for various tasks
+    ragas_callbacks: t.Dict[str, BaseCallbackHandler] = {}
+
+    # check if cost needs to be calculated
+    if token_usage_parser is not None:
+        from ragas.cost import CostCallbackHandler
+
+        cost_cb = CostCallbackHandler(token_usage_parser=token_usage_parser)
+        ragas_callbacks["cost_cb"] = cost_cb
+
+    # append all the ragas_callbacks to the callbacks
+    for cb in ragas_callbacks.values():
+        if isinstance(callbacks, BaseCallbackManager):
+            callbacks.add_handler(cb)
+        else:
+            callbacks.append(cb)
+
     # new evaluation chain
     row_run_managers = []
     evaluation_rm, evaluation_group_cm = new_group(
@@ -246,10 +271,17 @@ def evaluate(
 
         raise e
     else:
+        # evalution run was successful
+        # now lets process the results
+        cost_cb = ragas_callbacks["cost_cb"] if "cost_cb" in ragas_callbacks else None
         result = Result(
             scores=Dataset.from_list(scores),
             dataset=dataset,
             binary_columns=binary_metrics,
+            cost_cb=t.cast(
+                t.Union["CostCallbackHandler", None],
+                cost_cb,
+            ),
         )
         if not evaluation_group_cm.ended:
             evaluation_rm.on_chain_end(result)
@@ -289,6 +321,7 @@ class Result(dict):
     scores: Dataset
     dataset: t.Optional[Dataset] = None
     binary_columns: t.List[str] = field(default_factory=list)
+    cost_cb: t.Optional[CostCallbackHandler] = None
 
     def __post_init__(self):
         values = []
@@ -306,6 +339,27 @@ class Result(dict):
         result_ds = concatenate_datasets([self.dataset, self.scores], axis=1)
 
         return result_ds.to_pandas(batch_size=batch_size, batched=batched)
+
+    def total_tokens(self) -> t.Union[t.List[TokenUsage], TokenUsage]:
+        if self.cost_cb is None:
+            raise ValueError(
+                "The evaluate() run was not configured for computing cost. Please provide a token_usage_parser function to evaluate() to compute cost."
+            )
+        return self.cost_cb.total_tokens()
+
+    def total_cost(
+        self,
+        cost_per_input_token: t.Optional[float] = None,
+        cost_per_output_token: t.Optional[float] = None,
+        per_model_costs: t.Dict[str, t.Tuple[float, float]] = {},
+    ) -> float:
+        if self.cost_cb is None:
+            raise ValueError(
+                "The evaluate() run was not configured for computing cost. Please provide a token_usage_parser function to evaluate() to compute cost."
+            )
+        return self.cost_cb.total_cost(
+            cost_per_input_token, cost_per_output_token, per_model_costs
+        )
 
     def __repr__(self) -> str:
         scores = self.copy()
