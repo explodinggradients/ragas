@@ -29,6 +29,7 @@ For this tutorial notebook, I am using papers from Semantic Scholar that is rela
 :caption: load documents using llama-hub and create test data
 from llama_index import download_loader
 from ragas.testset.evolutions import simple, reasoning, multi_context
+from ragas.testset.generator import TestsetGenerator
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 SemanticScholarReader = download_loader("SemanticScholarReader")
