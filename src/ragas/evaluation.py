@@ -3,9 +3,9 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass, field
 
-from langchain_core.callbacks import BaseCallbackHandler, BaseCallbackManager
 import numpy as np
 from datasets import Dataset, concatenate_datasets
+from langchain_core.callbacks import BaseCallbackHandler, BaseCallbackManager
 from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
@@ -42,7 +42,8 @@ from ragas.validation import (
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
-    from ragas.cost import TokenUsageParser, CostCallbackHandler
+
+    from ragas.cost import CostCallbackHandler, TokenUsageParser
 
 
 def evaluate(
@@ -274,14 +275,15 @@ def evaluate(
     else:
         # evalution run was successful
         # now lets process the results
-
+        cost_cb = ragas_callbacks["cost_cb"] if "cost_cb" in ragas_callbacks else None
         result = Result(
             scores=Dataset.from_list(scores),
             dataset=dataset,
             binary_columns=binary_metrics,
-            cost_cb=ragas_callbacks["cost_cb"]
-            if "cost_cb" in ragas_callbacks
-            else None,
+            cost_cb=t.cast(
+                t.Union["CostCallbackHandler", None],
+                cost_cb,
+            ),
         )
         if not evaluation_group_cm.ended:
             evaluation_rm.on_chain_end(result)

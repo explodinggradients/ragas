@@ -1,15 +1,13 @@
 import pytest
-
-from langchain_core.outputs import LLMResult, ChatGeneration
 from langchain_core.messages import AIMessage
+from langchain_core.outputs import ChatGeneration, LLMResult
 
 from ragas.cost import (
     CostCallbackHandler,
     TokenUsage,
-    get_token_usage_for_openai,
     get_token_usage_for_anthropic,
+    get_token_usage_for_openai,
 )
-
 
 """
 TODO: things to test

@@ -1,8 +1,9 @@
-import typing as t
 import logging
+import typing as t
+
 from langchain_core.callbacks.base import BaseCallbackHandler
-from langchain_core.outputs import ChatResult, LLMResult, ChatGeneration
-from langchain_core.pydantic_v1 import BaseModel, Field
+from langchain_core.outputs import ChatGeneration, ChatResult, LLMResult
+from langchain_core.pydantic_v1 import BaseModel
 
 from ragas.utils import get_from_dict
 
