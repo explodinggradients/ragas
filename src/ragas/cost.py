@@ -98,12 +98,12 @@ def get_token_usage_for_anthropic(
 
 
 class CostCallbackHandler(BaseCallbackHandler):
-    def __init__(self, get_token_usage: TokenUsageParser):
-        self.get_token_usage = get_token_usage
+    def __init__(self, token_usage_parser: TokenUsageParser):
+        self.token_usage_parser = token_usage_parser
         self.usage_data: t.List[TokenUsage] = []
 
     def on_llm_end(self, response: LLMResult, **kwargs: t.Any):
-        self.usage_data.append(self.get_token_usage(response))
+        self.usage_data.append(self.token_usage_parser(response))
 
     def total_cost(
         self,

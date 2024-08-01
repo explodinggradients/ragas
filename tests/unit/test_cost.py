@@ -96,7 +96,7 @@ def test_parse_llm_results():
 
 
 def test_cost_callback_handler():
-    cost_cb = CostCallbackHandler(get_token_usage=get_token_usage_for_openai)
+    cost_cb = CostCallbackHandler(token_usage_parser=get_token_usage_for_openai)
     cost_cb.on_llm_end(openai_llm_result)
 
     # cost

@@ -53,7 +53,7 @@ def evaluate(
     callbacks: Callbacks = None,
     in_ci: bool = False,
     run_config: t.Optional[RunConfig] = None,
-    get_token_usage: t.Optional[TokenUsageParser] = None,
+    token_usage_parser: t.Optional[TokenUsageParser] = None,
     raise_exceptions: bool = True,
     column_map: t.Optional[t.Dict[str, str]] = None,
 ) -> Result:
@@ -87,7 +87,7 @@ def evaluate(
     run_config: RunConfig, optional
         Configuration for runtime settings like timeout and retries. If not provided,
         default values are used.
-    get_token_usage: TokenUsageParser, optional
+    token_usage_parser: TokenUsageParser, optional
         Parser to get the token usage from the LLM result. If not provided then the
         the cost and total tokens will not be calculated. Default is None.
     raise_exceptions: True
@@ -210,10 +210,10 @@ def evaluate(
     ragas_callbacks: t.Dict[str, BaseCallbackHandler] = {}
 
     # check if cost needs to be calculated
-    if get_token_usage is not None:
+    if token_usage_parser is not None:
         from ragas.cost import CostCallbackHandler
 
-        cost_cb = CostCallbackHandler(get_token_usage=get_token_usage)
+        cost_cb = CostCallbackHandler(token_usage_parser=token_usage_parser)
         ragas_callbacks["cost_cb"] = cost_cb
 
     # append all the ragas_callbacks to the callbacks
@@ -343,7 +343,7 @@ class Result(dict):
     def total_tokens(self) -> t.Union[t.List[TokenUsage], TokenUsage]:
         if self.cost_cb is None:
             raise ValueError(
-                "The evaluate() run was not configured for computing cost. Please provide a get_token_usage function to evaluate() to compute cost."
+                "The evaluate() run was not configured for computing cost. Please provide a token_usage_parser function to evaluate() to compute cost."
             )
         return self.cost_cb.total_tokens()
 
@@ -355,7 +355,7 @@ class Result(dict):
     ) -> float:
         if self.cost_cb is None:
             raise ValueError(
-                "The evaluate() run was not configured for computing cost. Please provide a get_token_usage function to evaluate() to compute cost."
+                "The evaluate() run was not configured for computing cost. Please provide a token_usage_parser function to evaluate() to compute cost."
             )
         return self.cost_cb.total_cost(
             cost_per_input_token, cost_per_output_token, per_model_costs
