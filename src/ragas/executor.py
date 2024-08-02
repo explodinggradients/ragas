@@ -59,8 +59,14 @@ class Executor:
                 if self.raise_exceptions:
                     raise e
                 else:
+                    exec_name = type(e).__name__
+                    exec_message = str(e)
                     logger.error(
-                        "Exception raised in Job[%s]: %s", counter, e, exc_info=False
+                        "Exception raised in Job[%s]: %s(%s)",
+                        counter,
+                        exec_name,
+                        exec_message,
+                        exc_info=False,
                     )
 
             return counter, result
