@@ -97,10 +97,7 @@ class Metric(ABC):
         rm, group_cm = new_group(self.name, inputs=row, callbacks=callbacks)
         try:
             loop = asyncio.get_event_loop()
-            if not loop.is_running():
-                score = asyncio.run(self._ascore(row=row, callbacks=group_cm))
-            else:
-                score = loop.run_until_complete(self._ascore(row=row, callbacks=group_cm))
+            score = loop.run_until_complete(self._ascore(row=row, callbacks=group_cm))
         except Exception as e:
             if not group_cm.ended:
                 rm.on_chain_error(e)
