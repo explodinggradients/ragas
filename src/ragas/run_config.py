@@ -33,7 +33,7 @@ class RunConfig:
     log_tenacity: bool = False
     seed: int = 42
 
-    def __post__init__(self):
+    def __post_init__(self):
         self.rng = np.random.default_rng(seed=self.seed)
 
 
