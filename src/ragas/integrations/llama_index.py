@@ -47,7 +47,7 @@ def evaluate(
     metrics: list[Metric],
     llm: t.Optional[LlamaindexLLM] = None,
     embeddings: t.Optional[LlamaIndexEmbeddings] = None,
-    raise_exceptions: bool = True,
+    raise_exceptions: bool = False,
     column_map: t.Optional[t.Dict[str, str]] = None,
     run_config: t.Optional[RunConfig] = None,
 ) -> Result:

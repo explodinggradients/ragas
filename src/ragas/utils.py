@@ -32,6 +32,18 @@ def get_debug_mode() -> bool:
         return False
 
 
+def safe_nanmean(arr):
+    if len(arr) == 0:
+        return np.nan  # or some other value or behavior for empty arrays
+
+    arr = np.asarray(arr)  # Ensure input is a numpy array
+
+    if np.isnan(arr).all():
+        return np.nan  # or some other value or behavior for all-NaN arrays
+
+    return np.nanmean(arr)
+
+
 def check_if_sum_is_close(
     values: t.List[float], close_to: float, num_places: int
 ) -> bool:

@@ -30,7 +30,7 @@ from ragas.metrics.base import (
 )
 from ragas.metrics.critique import AspectCritique
 from ragas.run_config import RunConfig
-from ragas.utils import get_feature_language
+from ragas.utils import get_feature_language, safe_nanmean
 
 # from ragas.metrics.critique import AspectCritique
 from ragas.validation import (
@@ -53,9 +53,9 @@ def evaluate(
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
     callbacks: Callbacks = None,
     in_ci: bool = False,
-    run_config: RunConfig = field(default_factory=RunConfig),
+    run_config: RunConfig = RunConfig(),
     token_usage_parser: t.Optional[TokenUsageParser] = None,
-    raise_exceptions: bool = True,
+    raise_exceptions: bool = False,
     column_map: t.Optional[t.Dict[str, str]] = None,
 ) -> Result:
     """
@@ -91,10 +91,10 @@ def evaluate(
     token_usage_parser: TokenUsageParser, optional
         Parser to get the token usage from the LLM result. If not provided then the
         the cost and total tokens will not be calculated. Default is None.
-    raise_exceptions: True
+    raise_exceptions: False
         Whether to raise exceptions or not. If set to True then the evaluation will
         raise an exception if any of the metrics fail. If set to False then the
-        evaluation will return `np.nan` for the row that failed. Default is True.
+        evaluation will return `np.nan` for the row that failed. Default is False.
     column_map : dict[str, str], optional
         The column names of the dataset to use for evaluation. If the column names of
         the dataset are different from the default ones then you can provide the
@@ -241,7 +241,7 @@ def evaluate(
                 row,
                 row_group_cm,
                 name=f"{metric.name}-{i}",
-                thread_timeout=run_config.thread_timeout,
+                timeout=run_config.timeout,
             )
             for metric in metrics
         ]
@@ -326,7 +326,7 @@ class Result(dict):
     def __post_init__(self):
         values = []
         for cn in self.scores[0].keys():
-            value = np.nanmean(self.scores[cn])
+            value = safe_nanmean(self.scores[cn])
             self[cn] = value
             if cn not in self.binary_columns:
                 value = t.cast(float, value)
