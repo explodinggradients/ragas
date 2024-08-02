@@ -241,7 +241,7 @@ def evaluate(
                 row,
                 row_group_cm,
                 name=f"{metric.name}-{i}",
-                thread_timeout=run_config.thread_timeout,
+                timeout=run_config.timeout,
             )
             for metric in metrics
         ]

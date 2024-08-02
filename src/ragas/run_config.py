@@ -30,8 +30,6 @@ class RunConfig:
         Maximum wait time (in seconds) between retries, by default 60.
     max_workers : int, optional
         Maximum number of concurrent workers, by default 16.
-    thread_timeout : float, optional
-        Timeout (in seconds) for individual threads, by default 80.0.
     exception_types : Union[Type[BaseException], Tuple[Type[BaseException], ...]], optional
         Exception types to catch and retry on, by default (Exception,).
     log_tenacity : bool, optional
@@ -54,7 +52,6 @@ class RunConfig:
     max_retries: int = 10
     max_wait: int = 60
     max_workers: int = 16
-    thread_timeout: float = 80.0
     exception_types: t.Union[
         t.Type[BaseException],
         t.Tuple[t.Type[BaseException], ...],
