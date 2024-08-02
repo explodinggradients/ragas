@@ -1,6 +1,7 @@
-from ragas.run_config import RunConfig
-import pytest
 import numpy as np
+import pytest
+
+from ragas.run_config import RunConfig
 
 
 def test_random_num_generator():
