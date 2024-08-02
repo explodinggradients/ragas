@@ -48,7 +48,7 @@ class RunConfig:
     number generator using the specified seed.
     """
 
-    timeout: int = 60
+    timeout: int = 180
     max_retries: int = 10
     max_wait: int = 60
     max_workers: int = 16

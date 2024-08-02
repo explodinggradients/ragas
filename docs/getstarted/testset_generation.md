@@ -60,7 +60,7 @@ testset = generator.generate_with_langchain_docs(documents, test_size=10, distri
 :::{note}
 Depending on which LLM provider you're using, you might have to configure the `llm` parameter in the `evaluate` function. Check the [Bring your own LLM guide](../howtos/customisations/bring-your-own-llm-or-embs.md) to learn more.
 
-And depending on the provider's, rate_limits, you might want to configure parameters like max_workers, rate_limits, timeouts, etc. Check the [Configuring the runs with RunConfig](../howtos/customisations/run_config.md) guide to learn more.
+And depending on the provider's, rate_limits, you might want to configure parameters like max_workers, rate_limits, timeouts, etc. Check the [Ragas Configuration](../howtos/customisations/run_config.ipynb) guide to learn more.
 :::
 
 Then, we can export the results into a Pandas DataFrame.
