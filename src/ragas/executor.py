@@ -45,6 +45,7 @@ class Executor:
     jobs: t.List[t.Any] = field(default_factory=list, repr=False)
     raise_exceptions: bool = False
     run_config: t.Optional[RunConfig] = field(default=None, repr=False)
+    _nest_asyncio_applied: bool = field(default=False, repr=False)
 
     def wrap_callable_with_index(self, callable: t.Callable, counter):
         async def wrapped_callable_async(*args, **kwargs):
@@ -58,8 +59,9 @@ class Executor:
                 if self.raise_exceptions:
                     raise e
                 else:
+                    logger.error("Error: {e}", e, exc_info=False)
                     logger.error(
-                        "Runner in Executor raised an exception", exc_info=False
+                        "Full traceback skipped because raise_exceptions=False"
                     )
 
             return counter, result
@@ -82,7 +84,9 @@ class Executor:
                     "It seems like your running this in a jupyter-like environment. Please install nest_asyncio with `pip install nest_asyncio` to make it work."
                 )
 
-            nest_asyncio.apply()
+            if not self._nest_asyncio_applied:
+                nest_asyncio.apply()
+                self._nest_asyncio_applied = True
 
         # create a generator for which returns tasks as they finish
         futures_as_they_finish = as_completed(
