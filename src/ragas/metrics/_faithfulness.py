@@ -308,6 +308,6 @@ class Faithfulness(MetricWithLLM):
 
     def save(self, cache_dir: t.Optional[str] = None) -> None:
         self.nli_statements_message.save(cache_dir)
-
+        self.statement_prompt.save(cache_dir)
 
 faithfulness = Faithfulness()
