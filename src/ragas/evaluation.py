@@ -53,9 +53,9 @@ def evaluate(
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
     callbacks: Callbacks = None,
     in_ci: bool = False,
-    run_config: RunConfig = field(default_factory=RunConfig),
+    run_config: RunConfig = RunConfig(),
     token_usage_parser: t.Optional[TokenUsageParser] = None,
-    raise_exceptions: bool = True,
+    raise_exceptions: bool = False,
     column_map: t.Optional[t.Dict[str, str]] = None,
 ) -> Result:
     """

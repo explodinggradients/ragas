@@ -90,3 +90,29 @@ def test_as_completed_in_script():
     results = asyncio.run(_run())
 
     assert results == [1, 2, 3]
+
+
+def test_executor_handling_errors():
+    from ragas.metrics.base import Metric, EvaluationMode
+    from ragas import evaluate
+    from datasets import Dataset
+
+    class FakeMetric(Metric):
+        name = "fake_metric"  # type: ignore
+        evaluation_mode = EvaluationMode.qc  # type: ignore
+
+        def init(self, run_config):
+            pass
+
+        async def _ascore(self, row, callbacks) -> float:
+            return 0
+
+    fm = FakeMetric()
+    ds = Dataset.from_dict(
+        {
+            "question": ["What is the capital of France?"],
+            "contexts": [["Paris is the capital of France."]],
+            "ground_truth": ["Paris"],
+        }
+    )
+    r = evaluate(ds, [fm])

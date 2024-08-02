@@ -59,9 +59,8 @@ class Executor:
                 if self.raise_exceptions:
                     raise e
                 else:
-                    logger.error("Error: {e}", e, exc_info=False)
                     logger.error(
-                        "Full traceback skipped because raise_exceptions=False"
+                        "Exception raised in Job[%s]: %s", counter, e, exc_info=False
                     )
 
             return counter, result
