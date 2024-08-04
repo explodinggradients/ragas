@@ -213,7 +213,7 @@ class SummarizationScore(MetricWithLLM):
             result_text, p_value, self.llm, self.max_retries
         )
         
-        assert response, "No keyphrases generated, unable to calculate the score."
+        assert response and response.keyphrases, "No keyphrases generated, unable to calculate the score."
         
         return response.keyphrases
 
@@ -232,7 +232,7 @@ class SummarizationScore(MetricWithLLM):
             result_text, p_value, self.llm, self.max_retries
         )
         
-        assert response, "No questions generated, unable to calculate the score."
+        assert response and response.questions, "No questions generated, unable to calculate the score."
 
         return response.questions
 
@@ -251,7 +251,7 @@ class SummarizationScore(MetricWithLLM):
             result_text, p_value, self.llm, self.max_retries
         )
         
-        assert response, "No answers generated, unable to calculate the score."
+        assert response and response.answers, "No answers generated, unable to calculate the score."
 
         return response.answers
 
