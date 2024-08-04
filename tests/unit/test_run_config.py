@@ -1,4 +1,4 @@
-from typing import Protocol
+from typing import TypeAlias, Callable
 import sys, importlib
 
 import pytest
@@ -6,22 +6,24 @@ from numpy.random import default_rng, Generator
 
 from ragas.run_config import RunConfig
 
-class RandomComparison(Protocol):
-    """Pytest fixture wrapper to check :py:cls:`numpy.random.Generator` object equivalence.
-    
-    Args:
-        rng_0 (numpy.random.Generator) : The first generator to compare with.
-        rng_1 (numpy.random.Generator) : The second generator to compare with.
-    
-    Returns:
-        bool: Whether the two generators are at the same state.
-
-    """
-    def __call__(self, a:Generator, b:Generator) -> bool: ...
+RandomComparison: TypeAlias = Callable[[Generator, Generator], bool]
 
 @pytest.fixture(scope="function")
-def compare_rng() -> RandomComparison:
+def compare_rng() -> Callable[[Generator, Generator], bool]:
+    """Pytest fixture wrapper to check :py:cls:`numpy.random.Generator` object equivalence.
+
+    """
     def _compare_rng(rng_0:Generator, rng_1:Generator) -> bool:
+        """Compare two :py:cls:`numpy.random.Generator`object.
+        
+        Args:
+            rng_0 (numpy.random.Generator) : The first generator to compare with.
+            rng_1 (numpy.random.Generator) : The second generator to compare with.
+
+        Returns:
+            bool: Whether the two generators are at the same state.
+                
+        """
         return rng_0.random() == rng_1.random()
     
     return _compare_rng
