@@ -111,3 +111,24 @@ def track(event_properties: BaseEvent):
         return
 
     requests.post(USAGE_TRACKING_URL, json=payload, timeout=USAGE_REQUESTS_TIMEOUT_SEC)
+
+
+class IsCompleteEvent(BaseEvent):
+    is_completed: bool = True  # True if the event was completed, False otherwise
+
+
+@silent
+def track_was_completed(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
+    """
+    Track if the function was completed. This helps us understand failure cases and improve the user experience. Disable tracking by setting the environment variable RAGAS_DO_NOT_TRACK to True as usual.
+    """
+
+    @wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> t.Any:
+        track(IsCompleteEvent(event_type=func.__name__, is_completed=False))
+        result = func(*args, **kwargs)
+        track(IsCompleteEvent(event_type=func.__name__, is_completed=True))
+
+        return result
+
+    return wrapper
