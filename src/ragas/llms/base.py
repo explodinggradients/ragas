@@ -289,7 +289,7 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
 
 
 def llm_factory(
-    model: str = "gpt-3.5-turbo", run_config: t.Optional[RunConfig] = None
+    model: str = "gpt-4o-mini", run_config: t.Optional[RunConfig] = None
 ) -> BaseRagasLLM:
     timeout = None
     if run_config is not None:
