@@ -1,12 +1,17 @@
-from typing import TypeAlias, Callable
 import sys, importlib
-
+from packaging.version import parse as parse_version
+from platform import python_version
 import pytest
 from numpy.random import default_rng, Generator
 
 from ragas.run_config import RunConfig
 
-RandomComparison: TypeAlias = Callable[[Generator, Generator], bool]
+if parse_version(python_version()) == parse_version("3.9"):
+    from typing import NewType, Callable
+    RandomComparison = NewType("RandomComparison", Callable[[Generator, Generator], bool])
+elif parse_version(python_version()) > parse_version("3.9"):
+    from typing import TypeAlias, Callable
+    RandomComparison: TypeAlias = Callable[[Generator, Generator], bool]
 
 @pytest.fixture(scope="function")
 def compare_rng() -> Callable[[Generator, Generator], bool]:
