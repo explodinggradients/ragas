@@ -10,7 +10,7 @@ from datasets import Dataset
 from langchain_openai.chat_models import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
 
-from ragas._analytics import TestsetGenerationEvent, track
+from ragas._analytics import TestsetGenerationEvent, track, track_was_completed
 from ragas.embeddings.base import (
     BaseRagasEmbeddings,
     LangchainEmbeddingsWrapper,
@@ -231,6 +231,7 @@ class TestsetGenerator:
                 if evolution.evolution_filter is None:
                     evolution.evolution_filter = EvolutionFilter(llm=self.critic_llm)
 
+    @track_was_completed
     def generate(
         self,
         test_size: int,

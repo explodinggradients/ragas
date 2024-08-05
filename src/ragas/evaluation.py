@@ -9,7 +9,7 @@ from langchain_core.callbacks import BaseCallbackHandler, BaseCallbackManager
 from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
-from ragas._analytics import EvaluationEvent, track
+from ragas._analytics import EvaluationEvent, track, track_was_completed
 from ragas.callbacks import new_group
 from ragas.cost import TokenUsage
 from ragas.embeddings.base import (
@@ -46,6 +46,7 @@ if t.TYPE_CHECKING:
     from ragas.cost import CostCallbackHandler, TokenUsageParser
 
 
+@track_was_completed
 def evaluate(
     dataset: Dataset,
     metrics: list[Metric] | None = None,
