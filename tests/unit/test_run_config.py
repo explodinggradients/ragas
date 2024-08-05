@@ -6,10 +6,10 @@ from numpy.random import default_rng, Generator
 
 from ragas.run_config import RunConfig
 
-if parse_version(python_version()) == parse_version("3.9"):
+if parse_version(python_version()) < parse_version("3.10"):
     from typing import NewType, Callable
     RandomComparison = NewType("RandomComparison", Callable[[Generator, Generator], bool])
-elif parse_version(python_version()) > parse_version("3.9"):
+elif parse_version(python_version()) >= parse_version("3.10"):
     from typing import TypeAlias, Callable
     RandomComparison: TypeAlias = Callable[[Generator, Generator], bool]
 
