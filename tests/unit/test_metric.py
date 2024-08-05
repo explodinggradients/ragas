@@ -27,3 +27,20 @@ def test_get_available_metrics():
             for metric in get_available_metrics(ds)
         ]
     ), "All metrics should have evaluation mode qa"
+
+
+def test_metric():
+    from ragas.metrics.base import Metric
+
+    class FakeMetric(Metric):
+        name = "fake_metric"  # type: ignore
+        evaluation_mode = EvaluationMode.qa  # type: ignore
+
+        def init(self, run_config):
+            pass
+
+        async def _ascore(self, row, callbacks) -> float:
+            return 0
+
+    fm = FakeMetric()
+    assert fm.score({"question": "a", "answer": "b"}) == 0
