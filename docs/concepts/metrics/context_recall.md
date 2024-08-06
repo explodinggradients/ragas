@@ -2,7 +2,7 @@
 
 # Context Recall
 
-Context recall measures the extent to which the retrieved context aligns with the annotated answer, treated as the ground truth. It is computed using `question`, `ground truth` and the retrieved `context`, and the values range between 0 and 1, with higher values indicating better performance. 
+Context recall measures the extent to which the retrieved context aligns with the annotated answer, treated as the ground truth. It is mainly computed based on the `question`, `ground truth` and the retrieved `context`, and the values range between 0 and 1, with higher values indicating better performance. 
 To estimate context recall from the ground truth answer, each claim in the ground truth answer is analyzed to determine whether it can be attributed to the retrieved context or not. In an ideal scenario, all claims in the ground truth answer should be attributable to the retrieved context.
 A reference free version of this is available as [context_utilization](context_utilization.md).
 
