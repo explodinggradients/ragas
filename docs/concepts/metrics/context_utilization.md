@@ -44,7 +44,7 @@ score.to_pandas()
 
 ## Calculation 
 
-Let's examine how context precision was calculated using the low context precision example:
+Let's examine how context utilization was calculated using the low context precision example:
 
 **Step 1**: For each chunk in retrieved context, check if it is relevant or not relevant to arrive at the answer for the given question.
 
