@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import typing as t
 from dataclasses import dataclass, field
 from typing import Dict
@@ -213,7 +214,9 @@ class SummarizationScore(MetricWithLLM):
             result_text, p_value, self.llm, self.max_retries
         )
         
-        assert response and response.keyphrases, "No keyphrases generated, unable to calculate the score."
+        if not response or not response.keyphrases:
+            logging.error("No keyphrases generated, unable to calculate the score.")
+            return math.nan
         
         return response.keyphrases
 
@@ -232,7 +235,9 @@ class SummarizationScore(MetricWithLLM):
             result_text, p_value, self.llm, self.max_retries
         )
         
-        assert response and response.questions, "No questions generated, unable to calculate the score."
+        if not response or not response.questions:
+            logging.error("No questions generated, unable to calculate the score.")
+            return math.nan
 
         return response.questions
 
@@ -251,8 +256,10 @@ class SummarizationScore(MetricWithLLM):
             result_text, p_value, self.llm, self.max_retries
         )
         
-        assert response and response.answers, "No answers generated, unable to calculate the score."
-
+        if not response or not response.answers:
+            logger.error("No answers generated, unable to calculate the score.")
+            return math.nan
+        
         return response.answers
 
 
