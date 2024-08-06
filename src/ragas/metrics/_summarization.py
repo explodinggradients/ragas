@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-import math
+import numpy as np
 import typing as t
 from dataclasses import dataclass, field
 from typing import Dict
@@ -216,7 +216,7 @@ class SummarizationScore(MetricWithLLM):
         
         if not response or not response.keyphrases:
             logging.error("No keyphrases generated, unable to calculate the score.")
-            return math.nan
+            return np.nan
         
         return response.keyphrases
 
@@ -237,7 +237,7 @@ class SummarizationScore(MetricWithLLM):
         
         if not response or not response.questions:
             logging.error("No questions generated, unable to calculate the score.")
-            return math.nan
+            return np.nan
 
         return response.questions
 
@@ -258,7 +258,7 @@ class SummarizationScore(MetricWithLLM):
         
         if not response or not response.answers:
             logger.error("No answers generated, unable to calculate the score.")
-            return math.nan
+            return np.nan
         
         return response.answers
 
