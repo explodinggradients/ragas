@@ -202,7 +202,7 @@ class SummarizationScore(MetricWithLLM):
         """
         return 1 - (len(summary) / len(text))
 
-    async def _extract_keyphrases(self, text: str, callbacks: Callbacks) -> t.List[str]:
+    async def _extract_keyphrases(self, text: str, callbacks: Callbacks) -> t.Union[t.List[str], float]:
         assert self.llm is not None, "LLM is not initialized"
         p_value = self._get_extract_keyphrases_prompt(text)
         result = await self.llm.generate(
@@ -222,7 +222,7 @@ class SummarizationScore(MetricWithLLM):
 
     async def _get_questions(
         self, text: str, keyphrases: list[str], callbacks: Callbacks
-    ) -> t.List[str]:
+    ) -> t.Union[t.List[str], float]:
         assert self.llm is not None, "LLM is not initialized"
         p_value = self._get_question_generation_prompt(text, keyphrases)
         result = await self.llm.generate(
@@ -243,7 +243,7 @@ class SummarizationScore(MetricWithLLM):
 
     async def _get_answers(
         self, questions: t.List[str], summary: str, callbacks: Callbacks
-    ) -> t.List[str]:
+    ) -> t.Union[t.List[str], float]:
         assert self.llm is not None, "LLM is not initialized"
         p_value = self._get_answer_generation_prompt(questions, summary)
         result = await self.llm.generate(
