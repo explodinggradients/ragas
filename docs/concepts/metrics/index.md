@@ -13,6 +13,7 @@ Just like in any machine learning system, the performance of individual componen
 - [Answer relevancy](answer_relevance.md)
 - [Context recall](context_recall.md)
 - [Context precision](context_precision.md)
+- [Context utilization](context_utilization.md)
 - [Context entity recall](context_entities_recall.md)
 - [Summarization Score](summarization_score.md)
 

@@ -7,6 +7,7 @@ usecases to solve problems you might encounter when your building.
 :caption: Applications
 
 data_preparation
+cost
 compare_embeddings
 compare_llms
 custom_prompts

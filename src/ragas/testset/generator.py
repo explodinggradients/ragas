@@ -10,7 +10,7 @@ from datasets import Dataset
 from langchain_openai.chat_models import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
 
-from ragas._analytics import TestsetGenerationEvent, track
+from ragas._analytics import TestsetGenerationEvent, track, track_was_completed
 from ragas.embeddings.base import (
     BaseRagasEmbeddings,
     LangchainEmbeddingsWrapper,
@@ -87,7 +87,7 @@ class TestsetGenerator:
         critic_llm: LangchainLLM,
         embeddings: LangchainEmbeddings,
         docstore: t.Optional[DocumentStore] = None,
-        run_config: t.Optional[RunConfig] = None,
+        run_config: RunConfig = RunConfig(),
         chunk_size: int = 1024,
     ) -> "TestsetGenerator":
         generator_llm_model = LangchainLLMWrapper(generator_llm)
@@ -119,7 +119,7 @@ class TestsetGenerator:
         critic_llm: LlamaindexLLM,
         embeddings: LlamaIndexEmbeddings,
         docstore: t.Optional[DocumentStore] = None,
-        run_config: t.Optional[RunConfig] = None,
+        run_config: RunConfig = RunConfig(),
     ) -> "TestsetGenerator":
         generator_llm_model = LlamaIndexLLMWrapper(generator_llm)
         critic_llm_model = LlamaIndexLLMWrapper(critic_llm)
@@ -146,8 +146,8 @@ class TestsetGenerator:
     @deprecated("0.1.4", removal="0.2.0", alternative="from_langchain")
     def with_openai(
         cls,
-        generator_llm: str = "gpt-3.5-turbo-16k",
-        critic_llm: str = "gpt-4",
+        generator_llm: str = "gpt-4o-mini",
+        critic_llm: str = "gpt-4o",
         embeddings: str = "text-embedding-ada-002",
         docstore: t.Optional[DocumentStore] = None,
         chunk_size: int = 1024,
@@ -231,6 +231,7 @@ class TestsetGenerator:
                 if evolution.evolution_filter is None:
                     evolution.evolution_filter = EvolutionFilter(llm=self.critic_llm)
 
+    @track_was_completed
     def generate(
         self,
         test_size: int,

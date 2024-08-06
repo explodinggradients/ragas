@@ -57,6 +57,11 @@ generator = TestsetGenerator.from_langchain(
 # generate testset
 testset = generator.generate_with_langchain_docs(documents, test_size=10, distributions={simple: 0.5, reasoning: 0.25, multi_context: 0.25})
 ```
+:::{note}
+Depending on which LLM provider you're using, you might have to configure the `llm` and `embeddings` parameter in the function. Check the [Bring your own LLM guide](../howtos/customisations/bring-your-own-llm-or-embs.md) to learn more.
+
+And depending on the provider's, rate_limits, you might want to configure parameters like max_workers, rate_limits, timeouts, etc. Check the [Ragas Configuration](../howtos/customisations/run_config.ipynb) guide to learn more.
+:::
 
 Then, we can export the results into a Pandas DataFrame.
 

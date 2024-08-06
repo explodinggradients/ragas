@@ -90,6 +90,12 @@ result
 ```
 There you have it, all the scores you need.
 
+:::{note}
+Depending on which LLM provider you're using, you might have to configure the `llm` and `embeddings` parameter in the `evaluate` function. Check the [Bring your own LLM guide](../howtos/customisations/bring-your-own-llm-or-embs.md) to learn more.
+
+And depending on the provider's, rate_limits, you might want to configure parameters like max_workers, rate_limits, timeouts, etc. Check the [Ragas Configuration](../howtos/customisations/run_config.ipynb) guide to learn more.
+:::
+
 If you want to delve deeper into the results and identify examples where your pipeline performed poorly or exceptionally well, you can convert it into a pandas DataFrame and use your standard analytics tools!
 
 ```{code-block} python
