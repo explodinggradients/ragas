@@ -63,11 +63,13 @@ def get_required_columns(
 class Metric(ABC):
     @property
     @abstractmethod
-    def name(self) -> str: ...
+    def name(self) -> str:
+        ...
 
     @property
     @abstractmethod
-    def evaluation_mode(self) -> EvaluationMode: ...
+    def evaluation_mode(self) -> EvaluationMode:
+        ...
 
     @abstractmethod
     def init(self, run_config: RunConfig):
@@ -130,7 +132,8 @@ class Metric(ABC):
         return score
 
     @abstractmethod
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float: ...
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        ...
 
 
 @dataclass
