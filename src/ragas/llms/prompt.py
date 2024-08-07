@@ -296,6 +296,11 @@ str_translation = Prompt(
             "input": "Who was queen Elizabeth and what is she best known for?",
             "output": "Wie was koningin Elizabeth en waar is zij het meest bekend om?",
         },
+        {
+            "translate_to": "french",
+            "input": "Who was queen Elizabeth and what is she best known for?",
+            "output": "Qui était la reine Elizabeth et pour quoi est-elle connue?",
+        },
     ],
     input_keys=["translate_to", "input"],
     output_key="output",
@@ -333,6 +338,21 @@ json_translatation = Prompt(
                 "statements": [
                     "Parijs is de hoofdstad van Frankrijk.",
                     "Croissants zijn een populair Frans gebak.",
+                ]
+            },
+        },
+        {
+            "translate_to": "french",
+            "input": {
+                "statements": [
+                    "Paris is the capital of France.",
+                    "Croissants are a popular French pastry.",
+                ]
+            },
+            "output": {
+                "statements": [
+                    "Paris est la capitale de la France.",
+                    "Les croissants sont des viennoiseries françaises populaire",
                 ]
             },
         },
