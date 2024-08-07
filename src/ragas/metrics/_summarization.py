@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import logging
-import numpy as np
 import typing as t
 from dataclasses import dataclass, field
 from typing import Dict
 
+import numpy as np
 from langchain.pydantic_v1 import BaseModel
 
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
@@ -202,7 +202,9 @@ class SummarizationScore(MetricWithLLM):
         """
         return 1 - (len(summary) / len(text))
 
-    async def _extract_keyphrases(self, text: str, callbacks: Callbacks) -> t.Union[t.List[str], float]:
+    async def _extract_keyphrases(
+        self, text: str, callbacks: Callbacks
+    ) -> t.Union[t.List[str], float]:
         assert self.llm is not None, "LLM is not initialized"
         p_value = self._get_extract_keyphrases_prompt(text)
         result = await self.llm.generate(
@@ -213,11 +215,11 @@ class SummarizationScore(MetricWithLLM):
         response = await _output_parser_keyphrase_extraction.aparse(
             result_text, p_value, self.llm, self.max_retries
         )
-        
+
         if not response or not response.keyphrases:
             logging.error("No keyphrases generated, unable to calculate the score.")
             return np.nan
-        
+
         return response.keyphrases
 
     async def _get_questions(
@@ -234,7 +236,7 @@ class SummarizationScore(MetricWithLLM):
         response = await _output_parser_question_generation.aparse(
             result_text, p_value, self.llm, self.max_retries
         )
-        
+
         if not response or not response.questions:
             logging.error("No questions generated, unable to calculate the score.")
             return np.nan
@@ -255,11 +257,11 @@ class SummarizationScore(MetricWithLLM):
         response = await _output_parser_answer_generation.aparse(
             result_text, p_value, self.llm, self.max_retries
         )
-        
+
         if not response or not response.answers:
             logger.error("No answers generated, unable to calculate the score.")
             return np.nan
-        
+
         return response.answers
 
 
