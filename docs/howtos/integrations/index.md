@@ -9,11 +9,11 @@ happy to look into it 🙂
 llamaindex.ipynb
 langchain.ipynb
 langsmith.ipynb
-ragas-arize.ipynb
+arize.ipynb
 langfuse.ipynb
 athina.ipynb
 zeno.ipynb
 tonic-validate.ipynb
-ragas_haystack.ipynb
+haystack.ipynb
 openlayer.ipynb
 :::
