@@ -244,7 +244,7 @@ class Prompt(BaseModel):
                     example_dict[self.output_key] = example[-1]
             if self.output_type.lower() == "json":
                 output = example_dict[self.output_key]
-                if isinstance(output, dict):
+                if isinstance(output, dict) and output_keys[i]:
                     assert (
                         set(output.keys()) == output_keys[i]
                     ), f"Adapted output keys {set(output.keys())=} do not match with the original output keys: {output_keys[i]=}"
