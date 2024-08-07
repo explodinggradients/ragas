@@ -41,7 +41,7 @@ def test_adjacent_nodes():
     splitter = TokenTextSplitter(chunk_size=100, chunk_overlap=0)
     store = InMemoryDocumentStore(splitter=splitter, embeddings=fake_embeddings)
     store.nodes = [a1, a2, b]
-    store.set_node_relataionships()
+    store.set_node_relationships()
 
     assert store.nodes[0].next == a2
     assert store.nodes[1].prev == a1
