@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import typing as t
 import json
 from ragas.llms.prompt import PromptValue
@@ -8,6 +9,15 @@ from pydantic import BaseModel
 import pydantic
 
 PYDANTIC_V2 = pydantic.VERSION.startswith("2.")
+
+
+class BasePrompt(ABC):
+    def __init__(self, llm):
+        self.llm = llm
+
+    @abstractmethod
+    async def generate(self, data: t.Any) -> t.Any:
+        pass
 
 
 def model_to_dict(
@@ -66,14 +76,11 @@ InputModel = t.TypeVar("InputModel", bound=BaseModel)
 OutputModel = t.TypeVar("OutputModel", bound=BaseModel)
 
 
-class Prompt(t.Generic[InputModel, OutputModel]):
+class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
     input_model: type[InputModel]
     output_model: type[OutputModel]
     instruction: str
     examples: t.List[t.Tuple[t.Any, t.Any]] = []
-
-    def __init__(self, llm):
-        self.llm = llm
 
     def generate_output_signature(self, model: BaseModel, indent: int = 4) -> str:
         model_name = model.__class__.__name__
@@ -124,3 +131,8 @@ class Prompt(t.Generic[InputModel, OutputModel]):
         prompt_value = PromptValue(prompt_str=self.to_string(data))
         result: OutputModel = await self.from_llm(prompt_value)
         return result
+
+
+class StringPrompt:
+    async def generate(self, data: str) -> str:
+        return await super().generate(data)
