@@ -187,7 +187,7 @@ class SummarizationScore(MetricWithLLM):
         """Returns average score of the different scores."""
         return sum(scores) / len(scores)
 
-    def _compute_qa_score(self, answers: t.List) -> float:
+    def _compute_qa_score(self, answers: t.List[str]) -> float:
         """Returns a score between 0 and 1 reflecting the fraction of
         correct answers, ie with a value 'yes'
         """
@@ -202,9 +202,7 @@ class SummarizationScore(MetricWithLLM):
         """
         return 1 - (len(summary) / len(text))
 
-    async def _extract_keyphrases(
-        self, text: str, callbacks: Callbacks
-    ) -> t.Union[t.List[str], float]:
+    async def _extract_keyphrases(self, text: str, callbacks: Callbacks) -> t.List[str]:
         assert self.llm is not None, "LLM is not initialized"
         p_value = self._get_extract_keyphrases_prompt(text)
         result = await self.llm.generate(
@@ -218,13 +216,13 @@ class SummarizationScore(MetricWithLLM):
 
         if not response or not response.keyphrases:
             logging.error("No keyphrases generated, unable to calculate the score.")
-            return np.nan
+            return []
 
         return response.keyphrases
 
     async def _get_questions(
         self, text: str, keyphrases: list[str], callbacks: Callbacks
-    ) -> t.Union[t.List[str], float]:
+    ) -> t.List[str]:
         assert self.llm is not None, "LLM is not initialized"
         p_value = self._get_question_generation_prompt(text, keyphrases)
         result = await self.llm.generate(
@@ -239,13 +237,13 @@ class SummarizationScore(MetricWithLLM):
 
         if not response or not response.questions:
             logging.error("No questions generated, unable to calculate the score.")
-            return np.nan
+            return []
 
         return response.questions
 
     async def _get_answers(
         self, questions: t.List[str], summary: str, callbacks: Callbacks
-    ) -> t.Union[t.List[str], float]:
+    ) -> t.List[str]:
         assert self.llm is not None, "LLM is not initialized"
         p_value = self._get_answer_generation_prompt(questions, summary)
         result = await self.llm.generate(
@@ -260,7 +258,7 @@ class SummarizationScore(MetricWithLLM):
 
         if not response or not response.answers:
             logger.error("No answers generated, unable to calculate the score.")
-            return np.nan
+            return []
 
         return response.answers
 
