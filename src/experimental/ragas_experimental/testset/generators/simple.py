@@ -1,10 +1,10 @@
 import typing as t
-
 import numpy as np
 from langchain_core.documents import Document
 from ragas_experimental.testset.extractors import (
     DocumentExtractor,
     email_extractor,
+    markdown_headings,
     headline_extractor,
     keyphrase_extractor,
     link_extractor,
@@ -63,6 +63,7 @@ class SimpleTestGenerator(TestGenerator):
             summary_extractor,
             link_extractor,
             email_extractor,
+            markdown_headings,
             keyphrase_extractor,
             title_extractor,
             headline_extractor,
@@ -89,6 +90,7 @@ class SimpleTestGenerator(TestGenerator):
             link_extractor,
             email_extractor,
             keyphrase_extractor,
+            markdown_headings,
             title_extractor,
             headline_extractor,
         ]
@@ -96,10 +98,8 @@ class SimpleTestGenerator(TestGenerator):
             extractors=extractors, llm=self.llm, embedding=self.embedding
         )
         docs = doc_extractor.extract(docs)
-
         splitter = HeadlineSplitter(common_metadata_keys=["source", "title"])
         nodes, relationships = splitter.split_documents(docs, "headlines")
-
         nodes = doc_extractor.embed(
             nodes,
             ["page_content", "summary"],
