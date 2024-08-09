@@ -1,5 +1,4 @@
-from ragas_experimental.testset.generators import SimpleTestGenerator
-from ragas_experimental.testset.generators import QADistribution
+from ragas_experimental.testset.generators import QADistribution, SimpleTestGenerator
 
 __all__ = [
     "SimpleTestGenerator",

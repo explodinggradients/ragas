@@ -145,7 +145,7 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
         ans, ctx = row["answer"], row["contexts"]
         return self.question_generation.format(answer=ans, context="\n".join(ctx))
 
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM is not set"
 
         prompt = self._create_question_gen_prompt(row)
@@ -153,7 +153,6 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
             prompt,
             n=self.strictness,
             callbacks=callbacks,
-            is_async=is_async,
         )
 
         answers = [

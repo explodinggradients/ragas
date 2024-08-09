@@ -149,7 +149,6 @@ class ContextEntityRecall(MetricWithLLM):
         self,
         text: str,
         callbacks: Callbacks,
-        is_async: bool,
     ) -> t.Optional[ContextEntitiesResponse]:
         assert self.llm is not None, "LLM is not initialized"
         p_value = self.context_entity_recall_prompt.format(
@@ -158,7 +157,6 @@ class ContextEntityRecall(MetricWithLLM):
         result = await self.llm.generate(
             prompt=p_value,
             callbacks=callbacks,
-            is_async=is_async,
         )
 
         result_text = result.generations[0][0].text
@@ -174,15 +172,10 @@ class ContextEntityRecall(MetricWithLLM):
         self,
         row: Dict,
         callbacks: Callbacks,
-        is_async: bool,
     ) -> float:
         ground_truth, contexts = row["ground_truth"], row["contexts"]
-        ground_truth = await self.get_entities(
-            ground_truth, callbacks=callbacks, is_async=is_async
-        )
-        contexts = await self.get_entities(
-            "\n".join(contexts), callbacks=callbacks, is_async=is_async
-        )
+        ground_truth = await self.get_entities(ground_truth, callbacks=callbacks)
+        contexts = await self.get_entities("\n".join(contexts), callbacks=callbacks)
         if ground_truth is None or contexts is None:
             return np.nan
         return self._compute_score(ground_truth.entities, contexts.entities)

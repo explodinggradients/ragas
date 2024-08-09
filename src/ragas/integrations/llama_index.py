@@ -12,6 +12,7 @@ from ragas.evaluation import evaluate as ragas_evaluate
 from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
 from ragas.llms import LlamaIndexLLMWrapper
+from ragas.run_config import RunConfig
 from ragas.validation import EVALMODE_TO_COLUMNS, validate_evaluation_modes
 
 if t.TYPE_CHECKING:
@@ -46,8 +47,9 @@ def evaluate(
     metrics: list[Metric],
     llm: t.Optional[LlamaindexLLM] = None,
     embeddings: t.Optional[LlamaIndexEmbeddings] = None,
-    raise_exceptions: bool = True,
+    raise_exceptions: bool = False,
     column_map: t.Optional[t.Dict[str, str]] = None,
+    run_config: t.Optional[RunConfig] = None,
 ) -> Result:
     column_map = column_map or {}
 
@@ -67,6 +69,7 @@ def evaluate(
         desc="Running Query Engine",
         keep_progress_bar=True,
         raise_exceptions=raise_exceptions,
+        run_config=run_config,
     )
 
     # get query

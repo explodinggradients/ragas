@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import ast
 import json
 import logging
 import os
-import ast
 import typing as t
 
 from langchain_core.messages import BaseMessage, HumanMessage
@@ -178,7 +178,12 @@ class Prompt(BaseModel):
         # TODO: Add callbacks
         cache_dir = cache_dir if cache_dir else get_cache_dir()
         if os.path.exists(os.path.join(cache_dir, language, f"{self.name}.json")):
-            return self._load(language, self.name, cache_dir)
+            self_cp = self._load(language, self.name, cache_dir)
+
+            self.language = self_cp.language
+            self.examples = self_cp.examples
+
+            return self_cp
 
         logger.info("Adapting %s to %s", self.name, language)
         prompts = []
@@ -233,8 +238,8 @@ class Prompt(BaseModel):
                 example_dict[self.output_key] = json_loader._safe_load(example[-1], llm)
                 if example_dict[self.output_key] == {}:
                     # Extracting the dictionary part using string slicing
-                    dict_str = example[-1].split('(')[0].strip()
-                    example_dict[self.output_key ] = ast.literal_eval(dict_str)
+                    dict_str = example[-1].split("(")[0].strip()
+                    example_dict[self.output_key] = ast.literal_eval(dict_str)
                 else:
                     example_dict[self.output_key] = example[-1]
             if self.output_type.lower() == "json":
@@ -255,6 +260,8 @@ class Prompt(BaseModel):
         self.language = language
 
         # TODO:Validate the prompt after adaptation
+
+        self.save(cache_dir=cache_dir)
 
         return self
 

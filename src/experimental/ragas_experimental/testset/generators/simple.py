@@ -11,10 +11,8 @@ from ragas_experimental.testset.extractors import (
     summary_extractor,
     title_extractor,
 )
-from ragas_experimental.testset.generators import (
-    QADistribution,
-    TestGenerator,
-)
+from ragas_experimental.testset.generators import QADistribution, TestGenerator
+from ragas_experimental.testset.generators.base import TestDataset
 from ragas_experimental.testset.graph import Node, NodeLevel
 from ragas_experimental.testset.questions import (
     DEFAULT_DISTRIBUTION,
@@ -29,11 +27,10 @@ from ragas_experimental.testset.relationships import (
 )
 from ragas_experimental.testset.splitters import HeadlineSplitter
 from ragas_experimental.testset.utils import rng
-from ragas_experimental.testset.generators.base import TestDataset
 
+from ragas._analytics import TestsetGenerationEvent, track
 from ragas.embeddings import embedding_factory
 from ragas.executor import Executor
-from ragas._analytics import TestsetGenerationEvent, track
 from ragas.llms.base import llm_factory
 from ragas.utils import check_if_sum_is_close
 

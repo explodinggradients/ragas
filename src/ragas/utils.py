@@ -32,6 +32,18 @@ def get_debug_mode() -> bool:
         return False
 
 
+def safe_nanmean(arr):
+    if len(arr) == 0:
+        return np.nan  # or some other value or behavior for empty arrays
+
+    arr = np.asarray(arr)  # Ensure input is a numpy array
+
+    if np.isnan(arr).all():
+        return np.nan  # or some other value or behavior for all-NaN arrays
+
+    return np.nanmean(arr)
+
+
 def check_if_sum_is_close(
     values: t.List[float], close_to: float, num_places: int
 ) -> bool:
@@ -149,7 +161,20 @@ def deprecated(
 def get_or_init(
     dictionary: t.Dict[str, t.Any], key: str, default: t.Callable[[], t.Any]
 ) -> t.Any:
-    _value = dictionary.get("key")
+    _value = dictionary.get(key)
     value = _value if _value is not None else default()
 
     return value
+
+
+def get_from_dict(data_dict: t.Dict, key: str, default=None) -> t.Any:
+    keys = key.split(".")
+    current = data_dict
+
+    for k in keys:
+        if isinstance(current, dict) and k in current:
+            current = current[k]
+        else:
+            return default
+
+    return current

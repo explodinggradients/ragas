@@ -29,7 +29,9 @@ class RelationshipBuilder:
                 properties
                 }}
             }}
-                """.format(node_level=node_level.name)
+                """.format(
+            node_level=node_level.name
+        )
         results = schema.execute(
             query, context={"nodes": nodes, "relationships": relationships}
         )

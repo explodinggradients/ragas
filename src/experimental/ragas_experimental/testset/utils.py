@@ -1,7 +1,6 @@
 import json
 
 import numpy as np
-
 from ragas_experimental.testset.graph import Node, NodeLevel, NodeType, Relationship
 
 MODEL_MAX_LENGTHS = {

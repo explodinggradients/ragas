@@ -5,7 +5,6 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from datasets import Dataset
 from langchain.pydantic_v1 import BaseModel, Field
 
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
@@ -109,14 +108,7 @@ class ContextPrecision(MetricWithLLM):
         self._reproducibility = value
 
     def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:
-        answer = "ground_truth"
-        if answer not in row.keys():
-            logger.warning(
-                "Using 'context_precision' without ground truth will be soon depreciated. Use 'context_utilization' instead"
-            )
-            answer = "answer"
-
-        return row["question"], row["contexts"], row[answer]
+        return row["question"], row["contexts"], row["ground_truth"]
 
     def _context_precision_prompt(self, row: t.Dict) -> t.List[PromptValue]:
         question, contexts, answer = self._get_row_attributes(row)
@@ -151,7 +143,6 @@ class ContextPrecision(MetricWithLLM):
         self: t.Self,
         row: t.Dict,
         callbacks: Callbacks,
-        is_async: bool,
     ) -> float:
         assert self.llm is not None, "LLM is not set"
 
@@ -161,7 +152,6 @@ class ContextPrecision(MetricWithLLM):
             results = await self.llm.generate(
                 hp,
                 callbacks=callbacks,
-                is_async=is_async,
                 n=self.reproducibility,
             )
             results = [
@@ -201,8 +191,8 @@ class ContextUtilization(ContextPrecision):
     name: str = "context_utilization"
     evaluation_mode: EvaluationMode = EvaluationMode.qac
 
-    def get_dataset_attributes(self, dataset: Dataset):
-        return dataset["question"], dataset["contexts"], dataset["answer"]
+    def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:
+        return row["question"], row["contexts"], row["answer"]
 
 
 context_precision = ContextPrecision()

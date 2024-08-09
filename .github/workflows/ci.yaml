@@ -97,7 +97,7 @@ jobs:
             OPTS=(--dist loadfile -n auto)
           fi
           # Now run the unit tests
-          pytest tests/unit "${OPTS[@]}"
+          pytest --nbmake tests/unit "${OPTS[@]}"
         env:
           __RAGAS_DEBUG_TRACKING: true
           RAGAS_DO_NOT_TRACK: true

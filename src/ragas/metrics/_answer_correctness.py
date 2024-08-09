@@ -141,7 +141,6 @@ CORRECTNESS_PROMPT = Prompt(
 
 @dataclass
 class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
-
     """
     Measures answer correctness compared to ground truth as a combination of
     factuality and semantic similarity.
@@ -211,16 +210,14 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
         )
         return prompt_value
 
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks, is_async: bool) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM must be set"
 
         question = row["question"]
         statements = {}
         for item in ["answer", "ground_truth"]:
             p_value = self._create_statements_prompt(question, row[item])
-            item_statement = await self.llm.generate(
-                p_value, callbacks=callbacks, is_async=is_async
-            )
+            item_statement = await self.llm.generate(p_value, callbacks=callbacks)
             statements[item] = await _statements_output_parser.aparse(
                 item_statement.generations[0][0].text,
                 p_value,
@@ -247,9 +244,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
                 ground_truth=ground_truth,
                 answer=answer,
             )
-            is_statement_present = await self.llm.generate(
-                p_value, callbacks=callbacks, is_async=is_async
-            )
+            is_statement_present = await self.llm.generate(p_value, callbacks=callbacks)
             result_text = is_statement_present.generations[0][0].text
 
             answers = await _output_parser.aparse(
@@ -268,7 +263,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
             assert self.answer_similarity is not None, "AnswerSimilarity must be set"
 
             similarity_score = await self.answer_similarity.ascore(
-                row, callbacks=callbacks, is_async=is_async
+                row, callbacks=callbacks
             )
 
         score = np.average(
@@ -285,6 +280,8 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
         self.correctness_prompt = self.correctness_prompt.adapt(
             language, self.llm, cache_dir
         )
+
+        self.sentence_segmenter = get_segmenter(language=language, clean=False)
 
     def save(self, cache_dir: t.Optional[str] = None) -> None:
         self.correctness_prompt.save(cache_dir)
