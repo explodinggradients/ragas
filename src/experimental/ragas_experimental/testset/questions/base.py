@@ -43,7 +43,15 @@ class QAC:
     style: t.Optional[QuestionStyle] = QuestionStyle.PERFECT_GRAMMAR
     length: t.Optional[QuestionLength] = QuestionLength.MEDIUM
 
-
+    def to_dict(self):
+        return {
+            "question": self.question,
+            "answer": self.answer,
+            "source": [self.source] if self.source else None,
+            "name": self.name,
+            "style": self.style,
+            "length": self.length
+        }
 @dataclass
 class StyleLengthDistribution:
     style_length_distribution: t.Dict[
