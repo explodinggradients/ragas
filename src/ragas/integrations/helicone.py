@@ -92,5 +92,9 @@ class HeliconeSingleton:
 
         return headers
 
+    @property
+    def is_enabled(self):
+        return self.api_key is not None
+
 
 helicone_config = HeliconeSingleton()
