@@ -15,7 +15,7 @@ We also introduce an option to penalize larger summaries by proving a concisenes
 
 ```{math}
 :label: conciseness-score
-\text{conciseness score} = \frac{\text{length of summary}}{\text{length of context}}
+\text{conciseness score} = 1 - \frac{\text{length of summary}}{\text{length of context}}
 ````
 
 The final summarization score is then calculated as:
