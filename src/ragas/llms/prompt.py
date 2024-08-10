@@ -158,6 +158,10 @@ class Prompt(BaseModel):
             raise ValueError(
                 f"Input variables {self.input_keys} do not match with the given parameters {list(kwargs.keys())}"
             )
+        for key, value in kwargs.items():
+            if isinstance(value, str):
+                kwargs[key] = json.dumps(value)
+
         prompt = self.to_string()
         return PromptValue(prompt_str=prompt.format(**kwargs))
 
