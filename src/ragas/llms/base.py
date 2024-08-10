@@ -4,7 +4,7 @@ import asyncio
 import logging
 import typing as t
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import partial
 
 from langchain_community.chat_models.vertexai import ChatVertexAI
@@ -45,7 +45,7 @@ def is_multiple_completion_supported(llm: BaseLanguageModel) -> bool:
 
 @dataclass
 class BaseRagasLLM(ABC):
-    run_config: RunConfig
+    run_config: RunConfig = field(default_factory=RunConfig)
 
     def set_run_config(self, run_config: RunConfig):
         self.run_config = run_config
@@ -62,8 +62,7 @@ class BaseRagasLLM(ABC):
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
-    ) -> LLMResult:
-        ...
+    ) -> LLMResult: ...
 
     @abstractmethod
     async def agenerate_text(
@@ -73,8 +72,7 @@ class BaseRagasLLM(ABC):
         temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
-    ) -> LLMResult:
-        ...
+    ) -> LLMResult: ...
 
     async def generate(
         self,
