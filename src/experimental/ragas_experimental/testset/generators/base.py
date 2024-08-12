@@ -48,8 +48,7 @@ class TestGenerator(ABC):
         docs: t.Sequence[Document],
         test_size: int,
         distribution: QADistribution,
-    ) -> TestDataset:
-        ...
+    ) -> TestDataset: ...
 
     def generate_with_langchain_docs(
         self,
