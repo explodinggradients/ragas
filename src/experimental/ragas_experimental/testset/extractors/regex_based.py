@@ -4,7 +4,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 from langchain_core.documents import Document as LCDocument
-
 from ragas_experimental.testset.extractors.base import Extractor, Regex
 from ragas_experimental.testset.graph import Node
 
@@ -78,7 +77,7 @@ class RulebasedExtractor(Extractor):
                     if pattern.startswith("(?"):
                         flag_end = pattern.index(")")
                         flags = pattern[2:flag_end]
-                        pattern = pattern[flag_end + 1:]
+                        pattern = pattern[flag_end + 1 :]
                     # Wrap the pattern in a non-capturing group with flags
                     processed_patterns.append(f"(?{flags}:{pattern})")
 
@@ -98,6 +97,7 @@ class RulebasedExtractor(Extractor):
             )
         return extractors_to_return
 
+
 links_extractor_pattern = r"(?i)\b(?:https?://|www\.)\S+\b"
 emails_extractor_pattern = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"
 markdown_headings_pattern = r"^(#{1,6})\s+(.*)"
@@ -110,5 +110,5 @@ link_extractor = RulebasedExtractor(
 )
 markdown_headings = RulebasedExtractor(
     regex=Regex(name="markdown_headings", pattern=markdown_headings_pattern),
-    is_multiline=True
+    is_multiline=True,
 )
