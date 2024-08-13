@@ -58,3 +58,23 @@ Let's examine how faithfulness was calculated using the low faithfulness answer:
     ```
 
 
+## Faithfullness with HHEM 2.1 Model
+
+[Vectara's HHEM 2.1](https://vectara.com/blog/hhem-2-1-a-better-hallucination-detection-model/) is a classifier model (T5) that is trained to detect halluccinations from LLM generated text. This model can be used in second step of calculating faithfullness, ie when claims are cross-checked with the given context to determine if it can be inferred from the context. The model is free, small and opensource making it very effient to use in production use-cases. To use the model to calculate faithfulness, you can use the following code snippet:
+
+```{code-block} python
+from datasets import Dataset 
+from ragas.metrics import faithfulness_with_hhem
+from ragas import evaluate
+
+data_samples = {
+    'question': ['When was the first super bowl?', 'Who won the most super bowls?'],
+    'answer': ['The first superbowl was held on Jan 15, 1967', 'The most super bowls have been won by The New England Patriots'],
+    'contexts' : [['The First AFL–NFL World Championship Game was an American football game played on January 15, 1967, at the Los Angeles Memorial Coliseum in Los Angeles,'], 
+    ['The Green Bay Packers...Green Bay, Wisconsin.','The Packers compete...Football Conference']],
+}
+dataset = Dataset.from_dict(data_samples)
+score = evaluate(dataset,metrics=[faithfulness_with_hhem])
+score.to_pandas()
+
+```
