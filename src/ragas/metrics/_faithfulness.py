@@ -313,4 +313,61 @@ class Faithfulness(MetricWithLLM):
         self.statement_prompt.save(cache_dir)
 
 
+@dataclass
+class FaithulnesswithHHEM(Faithfulness):
+    name: str = "faithfulness_with_hhem"  # type: ignore
+
+    def __post_init__(self):
+        try:
+            from transformers import AutoModelForSequenceClassification
+        except ImportError:
+            raise ImportError(
+                "Huggingface transformers must be installed to use this feature, try `pip install transformers`"
+            )
+        self.nli_classifier = AutoModelForSequenceClassification.from_pretrained(
+            "vectara/hallucination_evaluation_model", trust_remote_code=True
+        )
+        super().__post_init__()
+
+    def _create_pairs(
+        self, row: t.Dict, statements: t.List[str]
+    ) -> t.List[t.Tuple[str, str]]:
+        """
+        create pairs of (question, answer) from the row
+        """
+        premise = "\n".join(row["contexts"])
+        pairs = [(premise, statement) for statement in statements]
+        return pairs
+
+    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+        """
+        returns the NLI score for each (q, c, a) pair
+        """
+        assert self.llm is not None, "LLM is not set"
+
+        p_value = self._create_statements_prompt(row)
+        statements = await self.llm.generate(
+            p_value,
+            callbacks=callbacks,
+        )
+        statements = await _statements_output_parser.aparse(
+            statements.generations[0][0].text, p_value, self.llm, self.max_retries
+        )
+
+        if statements is None:
+            return np.nan
+
+        statements = [item["simpler_statements"] for item in statements.dicts()]
+        statements = [item for sublist in statements for item in sublist]
+
+        assert isinstance(statements, t.List), "statements must be a list"
+
+        pairs = self._create_pairs(row, statements)
+        scores = self.nli_classifier.predict(pairs).detach().numpy().round()
+        return scores.sum() / len(scores)
+
+
+faithfulness = Faithfulness()
+faithfulness_with_hhem = FaithulnesswithHHEM()
+
 faithfulness = Faithfulness()
