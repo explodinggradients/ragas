@@ -368,6 +368,3 @@ class FaithulnesswithHHEM(Faithfulness):
 
 
 faithfulness = Faithfulness()
-faithfulness_with_hhem = FaithulnesswithHHEM()
-
-faithfulness = Faithfulness()

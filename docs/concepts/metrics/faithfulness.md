@@ -64,9 +64,10 @@ Let's examine how faithfulness was calculated using the low faithfulness answer:
 
 ```{code-block} python
 from datasets import Dataset 
-from ragas.metrics import faithfulness_with_hhem
+from ragas.metrics import FaithulnesswithHHEM
 from ragas import evaluate
 
+faithfulness_with_hhem = FaithulnesswithHHEM()
 data_samples = {
     'question': ['When was the first super bowl?', 'Who won the most super bowls?'],
     'answer': ['The first superbowl was held on Jan 15, 1967', 'The most super bowls have been won by The New England Patriots'],
