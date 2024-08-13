@@ -62,7 +62,7 @@ make run-ci
 To run the test suite:
 
 ```bash
-make tests
+make test
 ```
 
 ## Documentation
