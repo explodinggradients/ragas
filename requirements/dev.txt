@@ -6,7 +6,7 @@ pyright
 llama_index
 notebook
 sphinx-autobuild
-sentence-transformer
+sentence-transformers
 transformers
 fastembed
 graphene
