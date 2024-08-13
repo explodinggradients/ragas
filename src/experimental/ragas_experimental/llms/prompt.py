@@ -8,12 +8,15 @@ from ragas.llms.output_parser import RagasoutputParser
 from pydantic import BaseModel
 import pydantic
 
+if t.TYPE_CHECKING:
+    from ragas.llms.base import BaseRagasLLM
+
 PYDANTIC_V2 = pydantic.VERSION.startswith("2.")
 
 
 class BasePrompt(ABC):
     def __init__(self, llm):
-        self.llm = llm
+        self.llm: BaseRagasLLM = llm
 
     @abstractmethod
     async def generate(self, data: t.Any) -> t.Any:
@@ -27,7 +30,7 @@ def model_to_dict(
     exclude_defaults: bool = False,
 ) -> t.Dict[str, t.Any]:
     if PYDANTIC_V2:
-        return model.model_dump(
+        return model.model_dump(  # type: ignore
             by_alias=by_alias,
             exclude_unset=exclude_unset,
             exclude_defaults=exclude_defaults,
@@ -133,6 +136,8 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         return result
 
 
-class StringPrompt:
+class StringPrompt(BasePrompt):
     async def generate(self, data: str) -> str:
-        return await super().generate(data)
+        prompt_value = PromptValue(prompt_str=data)
+        llm_result = await self.llm.agenerate_text(prompt_value)
+        return llm_result.generations[0][0].text
