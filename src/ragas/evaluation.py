@@ -19,6 +19,7 @@ from ragas.embeddings.base import (
 )
 from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
+from ragas.integrations.helicone import helicone_config
 from ragas.llms import llm_factory
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics._answer_correctness import AnswerCorrectness
@@ -135,6 +136,12 @@ def evaluate(
     """
     column_map = column_map or {}
     callbacks = callbacks or []
+
+    if helicone_config.is_enabled:
+        import uuid
+
+        helicone_config.session_name = "ragas-evaluation"
+        helicone_config.session_id = str(uuid.uuid4())
 
     if dataset is None:
         raise ValueError("Provide dataset!")
