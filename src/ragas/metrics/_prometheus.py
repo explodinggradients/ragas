@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import typing as t
-from enum import Enum
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel, Field
 
@@ -13,11 +12,6 @@ if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
     from ragas.llms.prompt import PromptValue
-
-
-class PrometheusMode(Enum):
-    ABSOLUTE = "absolute"
-    RELATIVE = "relative"
 
 
 class ScoreFeedback(BaseModel):
@@ -68,45 +62,25 @@ PROMETHEUS_ABSOLUTE_PROMPT = Prompt(
     language="english",
 )
 
-class Prometheus(MetricWithLLM):
-    name = "prometheus"
+class PrometheusAbsolute(MetricWithLLM):
+    name = "prometheus_absolute"
     evaluation_mode = EvaluationMode.qga  # Uses question, ground truth, answer
 
     def __init__(
             self,
-            mode: PrometheusMode = PrometheusMode.ABSOLUTE,
             rubrics: Optional[Dict] = None,
             llm: Optional[BaseRagasLLM] = None,
             max_retries: int = 1,
     ):
         super().__init__(llm=llm)
-        self.mode = mode
         self.rubrics = rubrics
         self.max_retries = max_retries
 
 
     async def _ascore(self, row: Dict, callbacks: t.Callbacks, is_async: bool = False) -> float:
-        if self.mode == PrometheusMode.ABSOLUTE:
-            return await self._absolute_score(row, callbacks)
-        elif self.mode == PrometheusMode.RELATIVE:
-            return await self._relative_score(row, callbacks)
-        else:
-            raise ValueError(f"Invalid mode: {self.mode}")
-
-    def _create_prompt(self, row: Dict) -> Prompt:
-        return PROMETHEUS_ABSOLUTE_PROMPT.format(
-            question=row.get('question', ''),
-            answer=row.get('answer', ''),
-            ground_truth=row.get('ground_truth', ''),
-            rubrics=self.rubrics,
-        )
-
-    async def _absolute_score(self, row: Dict, callbacks: t.Callbacks) -> float:
         prompt_value = self._create_prompt(row)
 
-
         response = await self.llm.generate(prompt_value, callbacks=callbacks)
-
 
         parsed_response = await _score_feedback_output_parser.aparse(
             response.generations[0][0].text, prompt_value, self.llm, self.max_retries
@@ -118,9 +92,13 @@ class Prometheus(MetricWithLLM):
         score = parsed_response.dicts()[0]['score']
         return score
 
-    async def _relative_score(self, row: Dict, callbacks: t.Callbacks) -> float:
-        # Implement relative scoring logic here, similar to absolute scoring
-        return 0.5
+    def _create_prompt(self, row: Dict) -> Prompt:
+        return PROMETHEUS_ABSOLUTE_PROMPT.format(
+            question=row.get('question', ''),
+            answer=row.get('answer', ''),
+            ground_truth=row.get('ground_truth', ''),
+            rubrics=self.rubrics,
+        )
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         PROMETHEUS_ABSOLUTE_PROMPT.adapt(language, self.llm, cache_dir)
