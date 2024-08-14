@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class NoiseSensitivity(MetricWithLLM):
     name: str = "noise_sensitivity"  # type: ignore
+    focus: str = "relevant"
     evaluation_mode: EvaluationMode = EvaluationMode.qga  # type: ignore
     nli_statements_message: Prompt = field(
         default_factory=lambda: NLI_STATEMENTS_MESSAGE
@@ -60,6 +61,10 @@ class NoiseSensitivity(MetricWithLLM):
         if self.sentence_segmenter is None:
             language = self.nli_statements_message.language
             self.sentence_segmenter = get_segmenter(language=language, clean=False)
+        if self.focus not in {"relevant", "irrelevant"}:  # "all"
+            raise ValueError(
+                f"Invalid argument passed for 'focus': {self.focus}. Must be 'relevant', 'irrelevant', or 'both'."
+            )
 
     def _create_nli_prompt(self, contexts: str, statements: t.List[str]) -> PromptValue:
         assert self.llm is not None, "llm must be set to compute score"
@@ -172,12 +177,32 @@ class NoiseSensitivity(MetricWithLLM):
 
     def _compute_score(self, answers: t.Dict):
         # check the verdicts and compute the score
-        relevant_retrieved = np.max(answers["retrieved2answer"], axis=0, keepdims=True)
-        relevant_faithful = np.max(
-            relevant_retrieved & answers["retrieved2response"], axis=1
+        # relevant retrievals
+        relevant_retrieved = np.max(
+            answers["retrieved2ground_truth"], axis=0, keepdims=True
         )
-        incorrect = ~answers["answer2response"]
+        relevant_faithful = np.max(
+            relevant_retrieved & answers["retrieved2answer"], axis=1
+        )
+
+        # irrelevant retrievals
+        irrelevant_retrieved = ~np.max(
+            answers["retrieved2ground_truth"], axis=0, keepdims=True
+        )
+        irrelevant_faithful = np.max(
+            irrelevant_retrieved & answers["retrieved2answer"], axis=1
+        )
+
+        irrelevant_faithful &= ~relevant_faithful  # to keep them exclusive
+
+        incorrect = ~answers["ground_truth2answer"]
         noise_sensitivity_in_relevant = np.mean(relevant_faithful & incorrect)
+        noise_sensitivity_in_irrelevant = np.mean(irrelevant_faithful & incorrect)
+
+        if self.focus == "irrelevant":
+            return noise_sensitivity_in_irrelevant
+        # elif self.focus == "all":
+        #     return noise_sensitivity_in_relevant, noise_sensitivity_in_irrelevant
         return noise_sensitivity_in_relevant
 
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
@@ -192,28 +217,27 @@ class NoiseSensitivity(MetricWithLLM):
         ans_statements = await self._decompose_answer_into_statements(
             row["answer"], row["question"], callbacks
         )
-
-        answers_verdictslist = []
-        response_verdictslist = []
+        gt_verdictslist = []
+        ans_verdictslist = []
 
         for ctx in row["contexts"]:
             verdicts = await self._evaluate_statement_faithfulness(
                 gt_statements, ctx, callbacks
             )
-            answers_verdictslist.append(verdicts)
+            gt_verdictslist.append(verdicts)
 
             verdicts = await self._evaluate_statement_faithfulness(
                 ans_statements, ctx, callbacks
             )
-            response_verdictslist.append(verdicts)
+            ans_verdictslist.append(verdicts)
 
         answers = {}
-        answers["retrieved2answer"] = np.array(answers_verdictslist).T
-        answers["retrieved2response"] = np.array(response_verdictslist).T
-        answers["answer2response"] = await self._evaluate_statement_faithfulness(
+        answers["retrieved2ground_truth"] = np.array(gt_verdictslist).T
+        answers["retrieved2answer"] = np.array(ans_verdictslist).T
+        answers["ground_truth2answer"] = await self._evaluate_statement_faithfulness(
             ans_statements, row["ground_truth"], callbacks
         )
-        answers["answer2response"] = np.array([answers["answer2response"]])
+        answers["ground_truth2answer"] = np.array([answers["ground_truth2answer"]])
         answers = {k: v.astype(bool) for k, v in answers.items()}
         return self._compute_score(answers)
 

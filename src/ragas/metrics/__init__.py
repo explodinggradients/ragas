@@ -13,7 +13,7 @@ from ragas.metrics._context_precision import (
 )
 from ragas.metrics._context_recall import ContextRecall, context_recall
 from ragas.metrics._faithfulness import Faithfulness, FaithulnesswithHHEM, faithfulness
-from ragas.metrics._noise_sensitivity import noise_sensitivity
+from ragas.metrics._noise_sensitivity import NoiseSensitivity, noise_sensitivity
 from ragas.metrics._summarization import SummarizationScore, summarization_score
 from ragas.metrics.critique import AspectCritique
 
@@ -39,4 +39,5 @@ __all__ = [
     "SummarizationScore",
     "summarization_score",
     "noise_sensitivity",
+    "NoiseSensitivity",
 ]
