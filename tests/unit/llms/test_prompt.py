@@ -121,3 +121,12 @@ def test_prompt_object_names():
                     obj.name not in prompt_object_names
                 ), f"Duplicate prompt name: {obj.name}"
                 prompt_object_names.append(obj.name)
+
+
+def test_save_and_load(tmp_path):
+    for testcase in TESTCASES:
+        prompt = Prompt(**testcase)
+        prompt.save(tmp_path)
+        loaded_prompt = prompt._load(prompt.language, prompt.name, tmp_path)
+
+        assert prompt == loaded_prompt
