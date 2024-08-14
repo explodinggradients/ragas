@@ -31,8 +31,7 @@ class ScoreFeedbackAnswers(BaseModel):
 _score_feedback_output_instructions = get_json_format_instructions(ScoreFeedbackAnswers)
 _score_feedback_output_parser = RagasoutputParser(pydantic_object=ScoreFeedbackAnswers)
 
-DEFAULT_RUBRICS = {
-    "criteria": "Is the response factually accurate and does it directly answer the question?",
+DEFAULT_REFERENCE_FREE_RUBRICS = {
     "score1_description": "The response is incorrect or does not answer the question.",
     "score2_description": "The response is partially correct but may include errors or incomplete information.",
     "score3_description": "The response is generally correct but lacks clarity or completeness.",
@@ -40,18 +39,28 @@ DEFAULT_RUBRICS = {
     "score5_description": "The response is completely accurate, clear, and answers the question directly.",
 }
 
-SCORING_PROMPT = Prompt(
+
+DEFAULT_WITH_REFERENCE_RUBRICS = {
+    "score1_description": "The response is incorrect, irrelevant, or does not align with the ground truth.",
+    "score2_description": "The response partially matches the ground truth but includes significant errors, omissions, or irrelevant information.",
+    "score3_description": "The response generally aligns with the ground truth but may lack detail, clarity, or have minor inaccuracies.",
+    "score4_description": "The response is mostly accurate and aligns well with the ground truth, with only minor issues or missing details.",
+    "score5_description": "The response is fully accurate, aligns completely with the ground truth, and is clear and detailed.",
+}
+
+
+WITH_REFERENCE_SCORING_PROMPT = Prompt(
     name="prometheus_score",
     output_format_instruction=_score_feedback_output_instructions,
-    instruction="""An instruction (might include an Input inside it), a response to evaluate, a reference answer that gets a score of 5, and a score rubric representing evaluation criteria are given.
-1. Write detailed feedback that assesses the quality of the response strictly based on the given score rubric, without evaluating in general.
+    instruction="""Given an question (which might contain an input along with it), a answer to evaluate, a ground_truth answer that gets a score of 5, and a score rubric representing evaluation criteria are given.
+1. Write detailed feedback that assesses the quality of the answer strictly based on the given score rubric, without evaluating in general.
 2. After writing the feedback, assign a score between 1 and 5, referring to the score rubric.""",
     examples=[
         {
             "question": "What is the capital of France?",
             "answer": "The capital of France is Paris.",
             "ground_truth": "The capital of France is Paris.",
-            "rubrics": DEFAULT_RUBRICS,
+            "rubrics": DEFAULT_WITH_REFERENCE_RUBRICS,
             "analysis": ScoreFeedbackAnswers.parse_obj(
                 [
                     {
@@ -68,16 +77,47 @@ SCORING_PROMPT = Prompt(
 )
 
 
+WITHOUT_REFERENCE_SCORING_PROMPT = Prompt(
+    name="prometheus_score",
+    output_format_instruction=_score_feedback_output_instructions,
+    instruction="""Given an question (which might contain an input along with it), a answer to evaluate, and a score rubric representing evaluation criteria are given.
+1. Write detailed feedback that assesses the quality of the answer strictly based on the given score rubric, without evaluating in general.
+2. After writing the feedback, assign a score between 1 and 5, referring to the score rubric.""",
+    examples=[
+        {
+            "question": "What is the capital of France?",
+            "answer": "The capital of France is Paris.",
+            "rubrics": DEFAULT_REFERENCE_FREE_RUBRICS,
+            "analysis": ScoreFeedbackAnswers.parse_obj(
+                [
+                    {
+                        "feedback": """The response is completely accurate and directly answers the question about the capital of France. It matches the reference answer perfectly and does not contain any errors or omissions. Given the rubric, this response deserves the highest score as it meets all the criteria for accuracy and clarity.""",
+                        "score": 5,
+                    }
+                ]
+            ).dicts(),
+        }
+    ],
+    input_keys=["question", "answer", "rubrics"],
+    output_key="analysis",
+    language="english",
+)
+
+
 @dataclass
-class RubricsBasedScore(MetricWithLLM):
-    name: str = "absolute_rubrics_score"  # type: ignore
-    evaluation_mode: EvaluationMode = EvaluationMode.qga  # type: ignore
+class LabelledRubricsScore(MetricWithLLM):
+    name: str = "labelled_rubrics_score"  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
     rubrics: t.Optional[t.Dict[str, str]] = None
-    scoring_prompt: Prompt = field(default_factory=lambda: SCORING_PROMPT)
+    scoring_prompt: Prompt = field(
+        default_factory=lambda: WITH_REFERENCE_SCORING_PROMPT
+    )
     max_retries: int = 1
 
     def __post_init__(self):
-        self.rubrics = DEFAULT_RUBRICS if self.rubrics is None else self.rubrics
+        self.rubrics = (
+            DEFAULT_WITH_REFERENCE_RUBRICS if self.rubrics is None else self.rubrics
+        )
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM is not set"
@@ -97,11 +137,14 @@ class RubricsBasedScore(MetricWithLLM):
         return score
 
     def _create_prompt(self, row: t.Dict) -> PromptValue:
-        question, answer, ground_truth = (
+        question, contexts, answer, ground_truth = (
             row["question"],
+            row["contexts"],
             row["answer"],
             row["ground_truth"],
         )
+        contexts = "\n".join(contexts)
+        question = f"{question} answer using context: {contexts}"
         return self.scoring_prompt.format(
             question=question,
             answer=answer,
@@ -117,4 +160,35 @@ class RubricsBasedScore(MetricWithLLM):
         self.scoring_prompt.save(cache_dir)
 
 
-absolute_rubrics_score = RubricsBasedScore()
+@dataclass
+class ReferenceFreeRubricsScore(LabelledRubricsScore):
+    name: str = "reference_free_rubrics_score"  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.qga  # type: ignore
+    rubrics: t.Optional[t.Dict[str, str]] = None
+    scoring_prompt: Prompt = field(
+        default_factory=lambda: WITHOUT_REFERENCE_SCORING_PROMPT
+    )
+    max_retries: int = 1
+
+    def __post_init__(self):
+        self.rubrics = (
+            DEFAULT_REFERENCE_FREE_RUBRICS if self.rubrics is None else self.rubrics
+        )
+
+    def _create_prompt(self, row: t.Dict) -> PromptValue:
+        question, contexts, answer = (
+            row["question"],
+            row["contexts"],
+            row["answer"],
+        )
+        contexts = "\n".join(contexts)
+        question = f"{question} answer using context: {contexts}"
+        return self.scoring_prompt.format(
+            question=question,
+            answer=answer,
+            rubrics=self.rubrics,
+        )
+
+
+labelled_rubrics_score = LabelledRubricsScore()
+reference_free_rubrics_score = ReferenceFreeRubricsScore()
