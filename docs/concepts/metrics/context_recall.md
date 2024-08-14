@@ -55,7 +55,7 @@ Let's examine how context recall was calculated using the low context recall exa
     - Statement 1: Yes
     - Statement 2: No
 
-- **Step 4:** Use the formula depicted above to calculate context recall.
+- **Step 3:** Use the formula depicted above to calculate context recall.
     ```{math}
     \text{context recall} = { \text{1} \over \text{2} } = 0.5
     ``` 
