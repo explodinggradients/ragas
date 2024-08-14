@@ -108,16 +108,13 @@ WITHOUT_REFERENCE_SCORING_PROMPT = Prompt(
 class LabelledRubricsScore(MetricWithLLM):
     name: str = "labelled_rubrics_score"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
-    rubrics: t.Optional[t.Dict[str, str]] = None
+    rubrics: t.Dict[str, str] = field(
+        default_factory=lambda: DEFAULT_WITH_REFERENCE_RUBRICS
+    )
     scoring_prompt: Prompt = field(
         default_factory=lambda: WITH_REFERENCE_SCORING_PROMPT
     )
     max_retries: int = 1
-
-    def __post_init__(self):
-        self.rubrics = (
-            DEFAULT_WITH_REFERENCE_RUBRICS if self.rubrics is None else self.rubrics
-        )
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM is not set"
@@ -164,16 +161,13 @@ class LabelledRubricsScore(MetricWithLLM):
 class ReferenceFreeRubricsScore(LabelledRubricsScore):
     name: str = "reference_free_rubrics_score"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qga  # type: ignore
-    rubrics: t.Optional[t.Dict[str, str]] = None
+    rubrics: t.Dict[str, str] = field(
+        default_factory=lambda: DEFAULT_REFERENCE_FREE_RUBRICS
+    )
     scoring_prompt: Prompt = field(
         default_factory=lambda: WITHOUT_REFERENCE_SCORING_PROMPT
     )
     max_retries: int = 1
-
-    def __post_init__(self):
-        self.rubrics = (
-            DEFAULT_REFERENCE_FREE_RUBRICS if self.rubrics is None else self.rubrics
-        )
 
     def _create_prompt(self, row: t.Dict) -> PromptValue:
         question, contexts, answer = (
