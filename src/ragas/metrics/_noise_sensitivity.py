@@ -177,7 +177,6 @@ class NoiseSensitivity(MetricWithLLM):
             relevant_retrieved & answers["retrieved2response"], axis=1
         )
         incorrect = ~answers["answer2response"]
-
         noise_sensitivity_in_relevant = np.mean(relevant_faithful & incorrect)
         return noise_sensitivity_in_relevant
 
@@ -214,6 +213,8 @@ class NoiseSensitivity(MetricWithLLM):
         answers["answer2response"] = await self._evaluate_statement_faithfulness(
             ans_statements, row["ground_truth"], callbacks
         )
+        answers["answer2response"] = np.array([answers["answer2response"]])
+        answers = {k: v.astype(bool) for k, v in answers.items()}
         return self._compute_score(answers)
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
