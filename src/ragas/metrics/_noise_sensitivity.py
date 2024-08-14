@@ -7,11 +7,16 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from langchain_core.pydantic_v1 import BaseModel, Field
 
-from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics._faithfulness import LONG_FORM_ANSWER_PROMPT, NLI_STATEMENTS_MESSAGE
+from ragas.metrics._faithfulness import (
+    LONG_FORM_ANSWER_PROMPT,
+    NLI_STATEMENTS_MESSAGE,
+    HasSegmentMethod,
+    StatementFaithfulnessAnswers,
+    _faithfulness_output_parser,
+    _statements_output_parser,
+)
 from ragas.metrics.base import EvaluationMode, MetricWithLLM, ensembler, get_segmenter
 
 if t.TYPE_CHECKING:
@@ -19,53 +24,8 @@ if t.TYPE_CHECKING:
 
     from ragas.llms.prompt import PromptValue
 
-from typing import Any, Protocol
-
-
-class HasSegmentMethod(Protocol):
-    def segment(self, text) -> Any: ...
-
 
 logger = logging.getLogger(__name__)
-
-
-class Statements(BaseModel):
-    sentence_index: int = Field(
-        ..., description="Index of the sentence from the statement list"
-    )
-    simpler_statements: t.List[str] = Field(..., description="the simpler statements")
-
-
-class StatementsAnswers(BaseModel):
-    __root__: t.List[Statements]
-
-    def dicts(self) -> t.List[t.Dict]:
-        return self.dict()["__root__"]
-
-
-# _statements_output_instructions = get_json_format_instructions(StatementsAnswers)
-_statements_output_parser = RagasoutputParser(pydantic_object=StatementsAnswers)
-
-
-class StatementFaithfulnessAnswer(BaseModel):
-    statement: str = Field(..., description="the original statement, word-by-word")
-    reason: str = Field(..., description="the reason of the verdict")
-    verdict: int = Field(..., description="the verdict(0/1) of the faithfulness.")
-
-
-class StatementFaithfulnessAnswers(BaseModel):
-    __root__: t.List[StatementFaithfulnessAnswer]
-
-    def dicts(self) -> t.List[t.Dict]:
-        return self.dict()["__root__"]
-
-
-_faithfulness_output_instructions = get_json_format_instructions(
-    StatementFaithfulnessAnswers
-)
-_faithfulness_output_parser = RagasoutputParser(
-    pydantic_object=StatementFaithfulnessAnswers
-)
 
 
 @dataclass
