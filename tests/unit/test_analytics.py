@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 import typing as t
+
 import pytest
 
 
@@ -130,7 +132,7 @@ def test_testset_generation_tracking(monkeypatch):
 
 
 def test_was_completed(monkeypatch):
-    from ragas._analytics import track_was_completed, IsCompleteEvent
+    from ragas._analytics import IsCompleteEvent, track_was_completed
 
     event_properties_list: t.List[IsCompleteEvent] = []
 

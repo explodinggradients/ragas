@@ -104,8 +104,7 @@ class BaseRagasLLM(ABC):
             )
         else:
             loop = asyncio.get_event_loop()
-            generate_text_with_retry = add_retry(
-                self.generate_text, self.run_config)
+            generate_text_with_retry = add_retry(self.generate_text, self.run_config)
             generate_text = partial(
                 generate_text_with_retry,
                 prompt=prompt,
@@ -242,8 +241,7 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
         callbacks: Callbacks,
     ) -> dict[str, t.Any]:
         if n != 1:
-            logger.warning(
-                "n values greater than 1 not support for LlamaIndex LLMs")
+            logger.warning("n values greater than 1 not support for LlamaIndex LLMs")
         if temperature != 1e-8:
             logger.info("temperature kwarg passed to LlamaIndex LLM")
         if stop is not None:
@@ -292,22 +290,21 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
 
 
 def llm_factory(
-    model: str = "gpt-4o-mini", run_config: t.Optional[RunConfig] = None
+    model: str = "gpt-4o-mini",
+    run_config: t.Optional[RunConfig] = None,
+    default_headers: t.Optional[t.Dict[str, str]] = None,
+    base_url: t.Optional[str] = None,
 ) -> BaseRagasLLM:
     timeout = None
     if run_config is not None:
         timeout = run_config.timeout
 
-    default_headers = None
-    base_url = None
-    if (helicone_config.api_key is not None):
+    # if helicone is enabled, use the helicone
+    if helicone_config.is_enabled:
         default_headers = helicone_config.default_headers()
         base_url = helicone_config.base_url
 
     openai_model = ChatOpenAI(
-        model=model,
-        timeout=timeout,
-        default_headers=default_headers,
-        base_url=base_url
+        model=model, timeout=timeout, default_headers=default_headers, base_url=base_url
     )
     return LangchainLLMWrapper(openai_model, run_config)

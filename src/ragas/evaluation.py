@@ -19,6 +19,7 @@ from ragas.embeddings.base import (
 )
 from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
+from ragas.integrations.helicone import helicone_config
 from ragas.llms import llm_factory
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics._answer_correctness import AnswerCorrectness
@@ -31,7 +32,6 @@ from ragas.metrics.base import (
 from ragas.metrics.critique import AspectCritique
 from ragas.run_config import RunConfig
 from ragas.utils import get_feature_language, safe_nanmean
-from ragas.integrations.helicone import helicone_config
 
 # from ragas.metrics.critique import AspectCritique
 from ragas.validation import (
@@ -137,8 +137,9 @@ def evaluate(
     column_map = column_map or {}
     callbacks = callbacks or []
 
-    if (helicone_config.is_enabled):
+    if helicone_config.is_enabled:
         import uuid
+
         helicone_config.session_name = "ragas-evaluation"
         helicone_config.session_id = str(uuid.uuid4())
 
@@ -154,8 +155,7 @@ def evaluate(
             faithfulness,
         )
 
-        metrics = [answer_relevancy, context_precision,
-                   faithfulness, context_recall]
+        metrics = [answer_relevancy, context_precision, faithfulness, context_recall]
 
     # remap column names from the dataset
     dataset = remap_column_names(dataset, column_map)

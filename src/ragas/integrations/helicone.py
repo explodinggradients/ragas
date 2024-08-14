@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 
 @dataclass
@@ -13,7 +13,7 @@ class HeliconeSingleton:
     api_key: Optional[str] = None
     base_url: Optional[str] = "https://oai.helicone.ai"
     cache_config: Optional[CacheConfig] = None
-    _instance: Optional['HeliconeSingleton'] = None
+    _instance: Optional["HeliconeSingleton"] = None
 
     # New fields for configurable headers
     target_url: Optional[str] = None
@@ -77,11 +77,12 @@ class HeliconeSingleton:
         for header, value in {
             "Helicone-Omit-Response": self.omit_response,
             "Helicone-Omit-Request": self.omit_request,
-            "Helicone-Cache-Enabled": (self.cache_enabled and "true") or (self.cache_config.maxsize or self.cache_config.ttl and "true"),
+            "Helicone-Cache-Enabled": (self.cache_enabled and "true")
+            or (self.cache_config.maxsize or self.cache_config.ttl and "true"),  # type: ignore
             "Helicone-Retry-Enabled": self.retry_enabled,
             "Helicone-Moderations-Enabled": self.moderations_enabled,
             "Helicone-LLM-Security-Enabled": self.llm_security_enabled,
-            "Helicone-Stream-Force-Format": self.stream_force_format
+            "Helicone-Stream-Force-Format": self.stream_force_format,
         }.items():
             if value is not None:
                 headers[header] = str(value).lower()
