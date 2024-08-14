@@ -42,7 +42,8 @@ class QAC:
     name: t.Optional[str] = None
     style: t.Optional[QuestionStyle] = QuestionStyle.PERFECT_GRAMMAR
     length: t.Optional[QuestionLength] = QuestionLength.MEDIUM
-    
+
+
 @dataclass
 class StyleLengthDistribution:
     style_length_distribution: t.Dict[
