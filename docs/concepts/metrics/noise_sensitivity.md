@@ -2,8 +2,10 @@
 
 # Noise Sensitivity
 
-Noise sensitivity measures how often the system makes a mistake (i.e., gives an incorrect response) when using the retrieved documents. It is computed using `question`, `ground truth`, `answer` and the retrieved `context`, and the values range between 0 and 1, with lower values indicating better performance.
-To estimate noise sensitivity, each claim in the answer is analyzed to determine whether it can be attributed to the relevant retrieved context or not. In an ideal scenario, all claims in the answer should be attributable to the relevant retrieved context.
+Noise sensitivity measures how often a system makes errors by providing incorrect responses when utilizing either relevant or irrelevant retrieved documents. The score ranges from 0 to 1, with lower values indicating better performance. Noise sensitivity is computed using the question, ground truth, answer, and the retrieved context.
+
+To estimate noise sensitivity, each claim in the generated answer is examined to determine whether it is correct based on the ground truth and whether it can be attributed to the relevant (or irrelevant) retrieved context. Ideally, all claims in the answer should be supported by the relevant retrieved context.
+
 
 ```{math}
 \text{noise sensitivity (relevant)} = {|\text{Number of incorrect claims in answer}| \over |\text{Number of claims in the Answer}|}
@@ -49,7 +51,7 @@ dataset = Dataset.from_dict(data_sample)
 score = evaluate(dataset,metrics=[noise_sensitivity])
 score.to_pandas()
 ```
-By default, the NoiseSensitivity metric evaluates the noise sensitivity for relevant retrievals. However, you can customize this behavior by specifying the focus parameter when instantiating the NoiseSensitivity class. The `focus` parameter allows you to choose whether to calculate the noise sensitivity for relevant retrievals, irrelevant retrievals, or both.
+By default, the NoiseSensitivity metric evaluates the noise sensitivity for relevant retrievals. However, you can customize this behavior by specifying the focus parameter when instantiating the NoiseSensitivity class. The `focus` parameter allows you to choose whether to calculate the noise sensitivity for relevant retrievals, irrelevant retrievals.
 
 ```{code-block} python
 from datasets import Dataset 
@@ -61,9 +63,6 @@ dataset = Dataset.from_dict(data_sample)
 
 # Calculate noise sensitivity for irrelevant retrievals
 noise_sensitivity = NoiseSensitivity(focus='irrelevant')
-
-# Alternatively, calculate noise sensitivity for both relevant and irrelevant retrievals
-# noise_sensitivity = NoiseSensitivity(focus='both')
 
 score = evaluate(dataset, metrics=[noise_sensitivity])
 score.to_pandas()
