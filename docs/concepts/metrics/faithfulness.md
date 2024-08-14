@@ -58,9 +58,9 @@ Let's examine how faithfulness was calculated using the low faithfulness answer:
     ```
 
 
-## Faithfullness with HHEM 2.1 Model
+## Faithfullness with HHEM-2.1-Open
 
-[Vectara's HHEM 2.1](https://vectara.com/blog/hhem-2-1-a-better-hallucination-detection-model/) is a classifier model (T5) that is trained to detect halluccinations from LLM generated text. This model can be used in second step of calculating faithfullness, ie when claims are cross-checked with the given context to determine if it can be inferred from the context. The model is free, small and opensource making it very effient to use in production use-cases. To use the model to calculate faithfulness, you can use the following code snippet:
+[Vectara's HHEM-2.1-Open](https://vectara.com/blog/hhem-2-1-a-better-hallucination-detection-model/) is a classifier model (T5) that is trained to detect halluccinations from LLM generated text. This model can be used in second step of calculating faithfullness, ie when claims are cross-checked with the given context to determine if it can be inferred from the context. The model is free, small and opensource making it very effient to use in production use-cases. To use the model to calculate faithfulness, you can use the following code snippet:
 
 ```{code-block} python
 from datasets import Dataset 
