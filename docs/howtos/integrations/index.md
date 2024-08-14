@@ -16,4 +16,5 @@ zeno.ipynb
 tonic-validate.ipynb
 haystack.ipynb
 openlayer.ipynb
+helicone.ipynb
 :::

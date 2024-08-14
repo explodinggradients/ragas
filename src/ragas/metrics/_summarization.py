@@ -186,7 +186,7 @@ class SummarizationScore(MetricWithLLM):
         """Returns average score of the different scores."""
         return sum(scores) / len(scores)
 
-    def _compute_qa_score(self, answers: t.List) -> float:
+    def _compute_qa_score(self, answers: t.List[str]) -> float:
         """Returns a score between 0 and 1 reflecting the fraction of
         correct answers, ie with a value 'yes'
         """
@@ -209,10 +209,15 @@ class SummarizationScore(MetricWithLLM):
             callbacks=callbacks,
         )
         result_text = result.generations[0][0].text
-        answer = await _output_parser_keyphrase_extraction.aparse(
+        response = await _output_parser_keyphrase_extraction.aparse(
             result_text, p_value, self.llm, self.max_retries
         )
-        return answer.keyphrases if answer else []
+
+        if not response or not response.keyphrases:
+            logging.error("No keyphrases generated, unable to calculate the score.")
+            return []
+
+        return response.keyphrases
 
     async def _get_questions(
         self, text: str, keyphrases: list[str], callbacks: Callbacks
@@ -225,13 +230,15 @@ class SummarizationScore(MetricWithLLM):
         )
 
         result_text = result.generations[0][0].text
-        answer = await _output_parser_question_generation.aparse(
+        response = await _output_parser_question_generation.aparse(
             result_text, p_value, self.llm, self.max_retries
         )
-        if answer is None:
+
+        if not response or not response.questions:
+            logging.error("No questions generated, unable to calculate the score.")
             return []
 
-        return answer.questions
+        return response.questions
 
     async def _get_answers(
         self, questions: t.List[str], summary: str, callbacks: Callbacks
@@ -244,13 +251,15 @@ class SummarizationScore(MetricWithLLM):
         )
 
         result_text = result.generations[0][0].text
-        answer = await _output_parser_answer_generation.aparse(
+        response = await _output_parser_answer_generation.aparse(
             result_text, p_value, self.llm, self.max_retries
         )
-        if answer is None:
+
+        if not response or not response.answers:
+            logger.error("No answers generated, unable to calculate the score.")
             return []
 
-        return answer.answers
+        return response.answers
 
 
 def adapt(self, language: str, cache_dir: str | None = None) -> None:
