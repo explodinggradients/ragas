@@ -13,7 +13,12 @@ from ragas.metrics._context_precision import (
 )
 from ragas.metrics._context_recall import ContextRecall, context_recall
 from ragas.metrics._faithfulness import Faithfulness, FaithulnesswithHHEM, faithfulness
-from ragas.metrics._rubrics_based import RubricsBasedScore, absolute_rubrics_score
+from ragas.metrics._rubrics_based import (
+    LabelledRubricsScore,
+    ReferenceFreeRubricsScore,
+    labelled_rubrics_score,
+    reference_free_rubrics_score,
+)
 from ragas.metrics._summarization import SummarizationScore, summarization_score
 from ragas.metrics.critique import AspectCritique
 
@@ -38,6 +43,8 @@ __all__ = [
     "context_entity_recall",
     "SummarizationScore",
     "summarization_score",
-    "RubricsBasedScore",
-    "absolute_rubrics_score",
+    "labelled_rubrics_score",
+    "reference_free_rubrics_score",
+    "ReferenceFreeRubricsScore",
+    "LabelledRubricsScore",
 ]
