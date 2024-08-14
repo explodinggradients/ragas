@@ -11,7 +11,7 @@ from ragas.metrics._context_precision import (
     context_precision,
     context_utilization,
 )
-from ragas.metrics._prometheus import Prometheus
+from ragas.metrics._prometheus import PrometheusAbsolute
 from ragas.metrics._context_recall import ContextRecall, context_recall
 from ragas.metrics._faithfulness import Faithfulness, faithfulness
 from ragas.metrics._summarization import SummarizationScore, summarization_score
@@ -37,5 +37,5 @@ __all__ = [
     "context_entity_recall",
     "SummarizationScore",
     "summarization_score",
-    "Prometheus",
+    "PrometheusAbsolute",
 ]
