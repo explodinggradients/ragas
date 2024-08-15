@@ -15,6 +15,7 @@ Just like in any machine learning system, the performance of individual componen
 - [Context precision](context_precision.md)
 - [Context utilization](context_utilization.md)
 - [Context entity recall](context_entities_recall.md)
+- [Noise Sensitivity](noise_sensitivity.md)
 - [Summarization Score](summarization_score.md)
 
 ```{toctree}
@@ -35,6 +36,7 @@ answer_relevance
 context_precision
 context_recall
 context_entities_recall
+noise_sensitivity
 semantic_similarity
 answer_correctness
 critique

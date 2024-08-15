@@ -52,22 +52,7 @@ metrics = [noise_sensitivity_relevant, noise_sensitivity_irrelevant]
 score = evaluate(dataset,metrics=metrics)
 score.to_pandas()
 ```
-By default, the NoiseSensitivity metric evaluates the noise sensitivity for relevant retrievals. However, you can customize this behavior by specifying the focus parameter when instantiating the NoiseSensitivity class. The `focus` parameter allows you to choose whether to calculate the noise sensitivity for relevant retrievals, irrelevant retrievals.
 
-```{code-block} python
-from datasets import Dataset 
-from ragas.metrics import NoiseSensitivity
-from ragas import evaluate
-
-# Sample dataset
-dataset = Dataset.from_dict(data_sample)
-
-# Calculate noise sensitivity for irrelevant retrievals
-noise_sensitivity = NoiseSensitivity(focus='irrelevant')
-
-score = evaluate(dataset, metrics=[noise_sensitivity])
-score.to_pandas()
-```
 ## Calculation
 
 Let's examine how noise sensitivity in relevant context was calculated:
@@ -112,3 +97,5 @@ Let's examine how noise sensitivity in relevant context was calculated:
     ``` 
 This results in a noise sensitivity score of 0.333, indicating that one out of three claims in the answer was incorrect.
 
+
+Credits: Noise senstivity was introduced in [RAGChecker](https://github.com/amazon-science/RAGChecker/tree/main/ragchecker)
