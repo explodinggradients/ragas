@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-import typing as t
+from dataclasses import dataclass
 import json
-from ragas.llms.prompt import PromptValue
+import typing as t
+
 from ragas.llms.output_parser import RagasoutputParser
+from ragas.llms.prompt import PromptValue
 
 # Check Pydantic version
 from pydantic import BaseModel
@@ -79,14 +83,18 @@ InputModel = t.TypeVar("InputModel", bound=BaseModel)
 OutputModel = t.TypeVar("OutputModel", bound=BaseModel)
 
 
+class StringIO(BaseModel):
+    text: str
+
+
 class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
-    input_model: type[InputModel]
-    output_model: type[OutputModel]
+    input_model: t.Type[InputModel]
+    output_model: t.Type[OutputModel]
     instruction: str
     examples: t.List[t.Tuple[t.Any, t.Any]] = []
 
     def generate_output_signature(self, model: BaseModel, indent: int = 4) -> str:
-        model_name = model.__class__.__name__
+        model_name = model.__name__
         fields = model.__fields__
 
         instruction = f"Please return the output in the following JSON format based on the {model_name} model:\n{{\n"
@@ -96,14 +104,11 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         return instruction
 
     async def from_llm(self, prompt_value: PromptValue) -> OutputModel:
-        # TODO: implement call to LLM and output parsing
-        # for openai, anthropic and ollama
-        resp = self.llm.invoke(prompt_value)
+        resp = await self.llm.generate(prompt_value)
+        resp_text = resp.generations[0][0].text
 
         parser = RagasoutputParser(pydantic_object=self.output_model)
-        answer = await parser.aparse(
-            resp.content, prompt_value, self.llm, max_retries=3
-        )
+        answer = await parser.aparse(resp_text, prompt_value, self.llm, max_retries=3)
 
         # TODO: make sure RagasOutputPraser returns the same type as OutputModel
         return answer  # type: ignore
