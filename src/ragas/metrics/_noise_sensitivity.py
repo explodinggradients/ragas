@@ -61,10 +61,11 @@ class NoiseSensitivity(MetricWithLLM):
         if self.sentence_segmenter is None:
             language = self.nli_statements_message.language
             self.sentence_segmenter = get_segmenter(language=language, clean=False)
-        if self.focus not in {"relevant", "irrelevant"}:  # "all"
+        if self.focus not in {"relevant", "irrelevant"}:
             raise ValueError(
-                f"Invalid argument passed for 'focus': {self.focus}. Must be 'relevant', 'irrelevant', or 'both'."
+                f"Invalid argument passed for 'focus': {self.focus}. Must be 'relevant' or 'irrelevant'."
             )
+        self.name = f"{self.name}_{self.focus}"  # type: ignore
 
     def _create_nli_prompt(self, contexts: str, statements: t.List[str]) -> PromptValue:
         assert self.llm is not None, "llm must be set to compute score"
@@ -175,8 +176,7 @@ class NoiseSensitivity(MetricWithLLM):
 
         return statements
 
-    def _compute_score(self, answers: t.Dict):
-        # check the verdicts and compute the score
+    def _compute_score(self, answers: t.Dict) -> float:
         # relevant retrievals
         relevant_retrieved = np.max(
             answers["retrieved2ground_truth"], axis=0, keepdims=True
@@ -193,7 +193,8 @@ class NoiseSensitivity(MetricWithLLM):
             irrelevant_retrieved & answers["retrieved2answer"], axis=1
         )
 
-        irrelevant_faithful &= ~relevant_faithful  # to keep them exclusive
+        # to keep them exclusive
+        irrelevant_faithful &= ~relevant_faithful
 
         incorrect = ~answers["ground_truth2answer"]
         noise_sensitivity_in_relevant = np.mean(relevant_faithful & incorrect)
@@ -201,8 +202,7 @@ class NoiseSensitivity(MetricWithLLM):
 
         if self.focus == "irrelevant":
             return noise_sensitivity_in_irrelevant
-        # elif self.focus == "all":
-        #     return noise_sensitivity_in_relevant, noise_sensitivity_in_irrelevant
+
         return noise_sensitivity_in_relevant
 
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
@@ -260,4 +260,5 @@ class NoiseSensitivity(MetricWithLLM):
         self.statement_prompt.save(cache_dir)
 
 
-noise_sensitivity = NoiseSensitivity()
+noise_sensitivity_relevant = NoiseSensitivity()
+noise_sensitivity_irrelevant = NoiseSensitivity(focus="irrelevant")
