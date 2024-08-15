@@ -91,9 +91,11 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
     input_model: t.Type[InputModel]
     output_model: t.Type[OutputModel]
     instruction: str
-    examples: t.List[t.Tuple[t.Any, t.Any]] = []
+    examples: t.List[t.Tuple[InputModel, OutputModel]] = []
 
-    def generate_output_signature(self, model: BaseModel, indent: int = 4) -> str:
+    def generate_output_signature(
+        self, model: t.Type[OutputModel], indent: int = 4
+    ) -> str:
         model_name = model.__name__
         fields = model.__fields__
 
@@ -114,19 +116,23 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         return answer  # type: ignore
 
     def generate_examples(self):
-        example_strings = []
-        for e in self.examples:
-            input_data, output_data = e
-            example_strings.append(
-                self.instruction.format(**model_to_dict(input_data))
-                + "\n"
-                + to_json(output_data, indent=4)
-            )
+        if self.examples:
+            example_strings = []
+            for e in self.examples:
+                input_data, output_data = e
+                example_strings.append(
+                    self.instruction.format(**model_to_dict(input_data))
+                    + "\n"
+                    + to_json(output_data, indent=4)
+                )
 
-        return (
-            "These are some examples to show how to perform the above instruction\n"
-            + "\n\n".join(example_strings)
-        )
+            return (
+                "These are some examples to show how to perform the above instruction\n"
+                + "\n\n".join(example_strings)
+            )
+        # if no examples are provided
+        else:
+            return ""
 
     def to_string(self, data: InputModel) -> str:
         # this needs a check
