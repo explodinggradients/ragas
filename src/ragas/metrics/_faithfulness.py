@@ -21,7 +21,8 @@ from typing import Any, Protocol
 
 
 class HasSegmentMethod(Protocol):
-    def segment(self, text) -> Any: ...
+    def segment(self, text) -> Any:
+        ...
 
 
 logger = logging.getLogger(__name__)
