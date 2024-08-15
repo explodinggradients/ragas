@@ -38,6 +38,7 @@ context_entities_recall
 semantic_similarity
 answer_correctness
 critique
+rubrics_based
 summarization_score
 
 ```
