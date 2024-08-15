@@ -199,6 +199,8 @@ class SummarizationScore(MetricWithLLM):
         ratio of the length of the summary to the length of the original text.
         This promotes shorter summaries.
         """
+        if len(summary)>len(text) or len(summary)==0:
+            return 0
         return 1 - (len(summary) / len(text))
 
     async def _extract_keyphrases(self, text: str, callbacks: Callbacks) -> t.List[str]:
