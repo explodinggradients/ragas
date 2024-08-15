@@ -17,6 +17,7 @@ from ragas.metrics._noise_sensitivity import (
     NoiseSensitivity,
     noise_sensitivity_irrelevant,
     noise_sensitivity_relevant,
+)
 from ragas.metrics._rubrics_based import (
     LabelledRubricsScore,
     ReferenceFreeRubricsScore,
