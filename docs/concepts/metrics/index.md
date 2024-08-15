@@ -33,6 +33,7 @@ Evaluating the end-to-end performance of a pipeline is also crucial, as it direc
 faithfulness
 answer_relevance
 context_precision
+context_utilization
 context_recall
 context_entities_recall
 semantic_similarity
