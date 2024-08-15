@@ -32,7 +32,7 @@ Irrelevant Retrieval:
 ```{code-block} python
 :caption: Noise Sensitivity
 from datasets import Dataset 
-from ragas.metrics import noise_sensitivity
+from ragas.metrics import noise_sensitivity_relevant, noise_sensitivity_irrelevant
 from ragas import evaluate
 
 data_sample = {
@@ -43,12 +43,13 @@ data_sample = {
         "The Life Insurance Corporation of India (LIC) was established in 1956 following the nationalization of the insurance industry in India.",
         "LIC is the largest insurance company in India, with a vast network of policyholders and a huge investments.",
         "As the largest institutional investor in India, LIC manages a substantial funds, contributing to the financial stability of the country.",
-        "The Indian economy is one of the fastest-growing major economies in the world, thanks to the secors like finance, technology, manufacturing etc".
+        "The Indian economy is one of the fastest-growing major economies in the world, thanks to the secors like finance, technology, manufacturing etc"
     ]]
 }
 
 dataset = Dataset.from_dict(data_sample)
-score = evaluate(dataset,metrics=[noise_sensitivity])
+metrics = [noise_sensitivity_relevant, noise_sensitivity_irrelevant]
+score = evaluate(dataset,metrics=metrics)
 score.to_pandas()
 ```
 By default, the NoiseSensitivity metric evaluates the noise sensitivity for relevant retrievals. However, you can customize this behavior by specifying the focus parameter when instantiating the NoiseSensitivity class. The `focus` parameter allows you to choose whether to calculate the noise sensitivity for relevant retrievals, irrelevant retrievals.
