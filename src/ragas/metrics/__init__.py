@@ -17,6 +17,11 @@ from ragas.metrics._noise_sensitivity import (
     NoiseSensitivity,
     noise_sensitivity_irrelevant,
     noise_sensitivity_relevant,
+from ragas.metrics._rubrics_based import (
+    LabelledRubricsScore,
+    ReferenceFreeRubricsScore,
+    labelled_rubrics_score,
+    reference_free_rubrics_score,
 )
 from ragas.metrics._summarization import SummarizationScore, summarization_score
 from ragas.metrics.critique import AspectCritique
@@ -45,4 +50,8 @@ __all__ = [
     "NoiseSensitivity",
     "noise_sensitivity_irrelevant",
     "noise_sensitivity_relevant",
+    "labelled_rubrics_score",
+    "reference_free_rubrics_score",
+    "ReferenceFreeRubricsScore",
+    "LabelledRubricsScore",
 ]
