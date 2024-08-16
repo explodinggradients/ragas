@@ -112,7 +112,7 @@ class LabelledRubricsScore(MetricWithLLM):
         default_factory=lambda: DEFAULT_WITH_REFERENCE_RUBRICS
     )
     scoring_prompt: Prompt = field(
-        default_factory=lambda: WITH_REFERENCE_SCORING_PROMPT
+        default_factory=WITH_REFERENCE_SCORING_PROMPT.factory
     )
     max_retries: int = 1
 
@@ -165,7 +165,7 @@ class ReferenceFreeRubricsScore(LabelledRubricsScore):
         default_factory=lambda: DEFAULT_REFERENCE_FREE_RUBRICS
     )
     scoring_prompt: Prompt = field(
-        default_factory=lambda: WITHOUT_REFERENCE_SCORING_PROMPT
+        default_factory=WITHOUT_REFERENCE_SCORING_PROMPT.factory
     )
     max_retries: int = 1
 

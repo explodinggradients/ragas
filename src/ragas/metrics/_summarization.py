@@ -147,10 +147,10 @@ class SummarizationScore(MetricWithLLM):
     length_penalty: bool = True
     evaluation_mode: EvaluationMode = EvaluationMode.ca  # type: ignore[reportIncompatibleMethodOverride]
     question_generation_prompt: Prompt = field(
-        default_factory=lambda: TEXT_GENERATE_QUESTIONS
+        default_factory=TEXT_GENERATE_QUESTIONS.factory
     )
     answer_generation_prompt: Prompt = field(
-        default_factory=lambda: TEXT_GENERATE_ANSWERS
+        default_factory=TEXT_GENERATE_ANSWERS.factory
     )
 
     def _get_extract_keyphrases_prompt(self, text) -> PromptValue:

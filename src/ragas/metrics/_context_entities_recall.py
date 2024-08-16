@@ -132,7 +132,7 @@ class ContextEntityRecall(MetricWithLLM):
     name: str = "context_entity_recall"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.gc  # type: ignore
     context_entity_recall_prompt: Prompt = field(
-        default_factory=lambda: TEXT_ENTITY_EXTRACTION
+        default_factory=TEXT_ENTITY_EXTRACTION.factory
     )
     batch_size: int = 15
     max_retries: int = 1

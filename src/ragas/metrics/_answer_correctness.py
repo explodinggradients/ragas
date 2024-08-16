@@ -158,9 +158,9 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
 
     name: str = "answer_correctness"  # type: ignore[reportIncompatibleMethodOverride]
     evaluation_mode: EvaluationMode = EvaluationMode.qga  # type: ignore[reportIncompatibleMethodOverride]
-    correctness_prompt: Prompt = field(default_factory=lambda: CORRECTNESS_PROMPT)
+    correctness_prompt: Prompt = field(default_factory=CORRECTNESS_PROMPT.factory)
     long_form_answer_prompt: Prompt = field(
-        default_factory=lambda: LONG_FORM_ANSWER_PROMPT
+        default_factory=LONG_FORM_ANSWER_PROMPT.factory
     )
     weights: list[float] = field(default_factory=lambda: [0.75, 0.25])
     answer_similarity: t.Optional[AnswerSimilarity] = None

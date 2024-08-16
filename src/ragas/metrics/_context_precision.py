@@ -87,7 +87,7 @@ class ContextPrecision(MetricWithLLM):
 
     name: str = "context_precision"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
-    context_precision_prompt: Prompt = field(default_factory=lambda: CONTEXT_PRECISION)
+    context_precision_prompt: Prompt = field(default_factory=CONTEXT_PRECISION.factory)
     max_retries: int = 1
     _reproducibility: int = 1
 

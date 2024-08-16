@@ -168,9 +168,9 @@ class Faithfulness(MetricWithLLM):
     name: str = "faithfulness"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
     nli_statements_message: Prompt = field(
-        default_factory=lambda: NLI_STATEMENTS_MESSAGE
+        default_factory=NLI_STATEMENTS_MESSAGE.factory
     )
-    statement_prompt: Prompt = field(default_factory=lambda: LONG_FORM_ANSWER_PROMPT)
+    statement_prompt: Prompt = field(default_factory=LONG_FORM_ANSWER_PROMPT.factory)
     sentence_segmenter: t.Optional[HasSegmentMethod] = None
     max_retries: int = 1
     _reproducibility: int = 1

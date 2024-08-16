@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import copy
 import json
 import logging
 import os
@@ -53,6 +54,12 @@ class Prompt(BaseModel):
     output_key: str = ""
     output_type: t.Literal["json", "str"] = "json"
     language: str = "english"
+
+    def factory(self):
+        """
+        Returns a new Prompt instance for this prompt.
+        """
+        return copy.deepcopy(self)
 
     @root_validator
     def validate_prompt(cls, values: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
@@ -305,6 +312,7 @@ str_translation = Prompt(
     output_key="output",
     output_type="str",
 )
+
 
 json_translatation = Prompt(
     name="json_translation",

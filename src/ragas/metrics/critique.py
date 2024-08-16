@@ -73,7 +73,7 @@ class AspectCritique(MetricWithLLM):
 
     name: str = field(default="", repr=True)  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
-    critic_prompt: Prompt = field(default_factory=lambda: CRITIQUE_PROMPT)
+    critic_prompt: Prompt = field(default_factory=CRITIQUE_PROMPT.factory)
     definition: str = field(default="", repr=True)
     strictness: int = field(default=1, repr=False)
     llm: BaseRagasLLM | None = field(

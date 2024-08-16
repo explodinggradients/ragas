@@ -103,7 +103,7 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
 
     name: str = "answer_relevancy"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
-    question_generation: Prompt = field(default_factory=lambda: QUESTION_GEN)
+    question_generation: Prompt = field(default_factory=QUESTION_GEN.factory)
     strictness: int = 3
 
     def calculate_similarity(

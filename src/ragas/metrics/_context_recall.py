@@ -120,7 +120,7 @@ class ContextRecall(MetricWithLLM):
 
     name: str = "context_recall"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
-    context_recall_prompt: Prompt = field(default_factory=lambda: CONTEXT_RECALL_RA)
+    context_recall_prompt: Prompt = field(default_factory=CONTEXT_RECALL_RA.factory)
     max_retries: int = 1
     _reproducibility: int = 1
 
