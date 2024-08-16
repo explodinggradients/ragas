@@ -145,6 +145,7 @@ class SummarizationScore(MetricWithLLM):
     name: str = "summary_score"  # type: ignore
     max_retries: int = 1
     length_penalty: bool = True
+    coeff: float = 0.5
     evaluation_mode: EvaluationMode = EvaluationMode.ca  # type: ignore[reportIncompatibleMethodOverride]
     question_generation_prompt: Prompt = field(
         default_factory=lambda: TEXT_GENERATE_QUESTIONS
@@ -152,6 +153,11 @@ class SummarizationScore(MetricWithLLM):
     answer_generation_prompt: Prompt = field(
         default_factory=lambda: TEXT_GENERATE_ANSWERS
     )
+
+    weights = {
+        "qa_score": coeff,
+        "conciseness_score": 1-coeff,
+    }
 
     def _get_extract_keyphrases_prompt(self, text) -> PromptValue:
         return TEXT_EXTRACT_KEYPHRASES.format(text=text)
@@ -174,17 +180,17 @@ class SummarizationScore(MetricWithLLM):
         questions = await self._get_questions(text, keyphrases, callbacks)
         answers = await self._get_answers(questions, summary, callbacks)
 
-        scores = []
+        scores = {}
         qa_score = self._compute_qa_score(answers)
-        scores.append(qa_score)
+        scores["qa_score"] = qa_score
         if self.length_penalty:
             conciseness_score = self._compute_conciseness_score(text, summary)
-            scores.append(conciseness_score)
+            scores["conciseness_score"] = conciseness_score
         return self._compute_score(scores)
 
     def _compute_score(self, scores) -> float:
-        """Returns average score of the different scores."""
-        return sum(scores) / len(scores)
+        """Returns weighted average of the different scores."""
+        return sum([scores[k] * self.weights[k] for k in scores])
 
     def _compute_qa_score(self, answers: t.List[str]) -> float:
         """Returns a score between 0 and 1 reflecting the fraction of
@@ -199,9 +205,7 @@ class SummarizationScore(MetricWithLLM):
         ratio of the length of the summary to the length of the original text.
         This promotes shorter summaries.
         """
-        if len(summary) > len(text) or len(summary) == 0:
-            return 0
-        return 1 - (len(summary) / len(text))
+        return 1 - min(len(summary), len(text)) / (len(text) + 1e-10)
 
     async def _extract_keyphrases(self, text: str, callbacks: Callbacks) -> t.List[str]:
         assert self.llm is not None, "LLM is not initialized"
