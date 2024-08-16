@@ -11,19 +11,31 @@ We compute the question-answer score using the answers, which is a list of `1`s 
 \text{QA score} = \frac{|\text{correctly answered questions}|}{|\text{total questions}|}
 ````
 
-We also introduce an option to penalize larger summaries by proving a conciseness score. If this option is enabled, the final score is calculated as the average of the summarization score and the conciseness score. This conciseness scores ensures that summaries that are just copies of the text do not get a high score, because they will obviously answer all questions correctly.
+We also introduce an option to penalize larger summaries by proving a conciseness score. If this option is enabled, the final score is calculated as the weighted average of the summarization score and the conciseness score. This conciseness scores ensures that summaries that are just copies of the text do not get a high score, because they will obviously answer all questions correctly. Also, we do not want the summaries that are empty. We add a small value `1e-10` to the denominator to avoid division by zero.
 
 ```{math}
 :label: conciseness-score
-\text{conciseness score} = 1 - \frac{\text{length of summary}}{\text{length of context}}
+\text{conciseness score} = 1 - \frac{\min(\text{length of summary}, \text{length of context})}{\text{length of context} + \text{1e-10}}
 ````
+
+We also provide a coefficient `coeff`(default value 0.5) to control the weightage of the scores. 
 
 The final summarization score is then calculated as:
 
 ```{math}
 :label: summarization-score
-\text{Summarization Score} = \frac{\text{QA score} + \text{conciseness score}}{2}
+\text{Summarization Score} = \text{QA score}*\text{coeff} + \\
+\text{conciseness score}*\text{(1-coeff)}
 ````
+
+Internally, we use a dictionary of weights:
+```{math}
+```{code-block} python
+weights = {
+    "qa_score": coeff,
+    "conciseness_score": 1-coeff
+}
+```
 
 ```{hint}
 **Summary**: JPMorgan Chase & Co. is an American multinational finance company headquartered in New York City. It is the largest bank in the United States and the world's largest by market capitalization as of 2023. Founded in 1799, it is a major provider of investment banking services, with US$3.9 trillion in total assets, and ranked #1 in the Forbes Global 2000 ranking in 2023.
