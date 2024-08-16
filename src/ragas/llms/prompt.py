@@ -160,7 +160,7 @@ class Prompt(BaseModel):
             )
         for key, value in kwargs.items():
             if isinstance(value, str):
-                kwargs[key] = json.dumps(value)
+                kwargs[key] = json.dumps(value, ensure_ascii=False)
 
         prompt = self.to_string()
         return PromptValue(prompt_str=prompt.format(**kwargs))
@@ -277,7 +277,7 @@ class Prompt(BaseModel):
 
         cache_path = os.path.join(cache_dir, f"{self.name}.json")
         with open(cache_path, "w") as file:
-            json.dump(self.dict(), file, indent=4)
+            json.dump(self.dict(), file, indent=4, ensure_ascii=False)
 
     @classmethod
     def _load(cls, language: str, name: str, cache_dir: str) -> Prompt:

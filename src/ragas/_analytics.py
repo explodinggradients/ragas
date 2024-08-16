@@ -74,7 +74,7 @@ def get_userid() -> str:
         user_id = "a-" + uuid.uuid4().hex
         os.makedirs(user_id_path)
         with open(uuid_filepath, "w") as f:
-            json.dump({"userid": user_id}, f)
+            json.dump({"userid": user_id}, f, ensure_ascii=False)
     return user_id
 
 
