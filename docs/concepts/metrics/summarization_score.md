@@ -29,7 +29,6 @@ The final summarization score is then calculated as:
 ````
 
 Internally, we use a dictionary of weights:
-```{math}
 ```{code-block} python
 weights = {
     "qa_score": coeff,
