@@ -76,22 +76,16 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
     instruction: str
     examples: t.List[t.Tuple[InputModel, OutputModel]] = []
 
+    def generate_instruction(self) -> str:
+        return self.instruction
+
     def generate_output_signature(self, indent: int = 4) -> str:
         schema = model_to_json_schema(self.output_model)
         return (
-            f"Please return the output in a JSON format that complies with the following schema as specified in JSON Schema and OpenAPI:\n"
+            f"Please return the output in a JSON format that complies with the "
+            f"following schema as specified in JSON Schema and OpenAPI specification:\n"
             f"{schema}"
         )
-
-    async def from_llm(self, prompt_value: PromptValue) -> OutputModel:
-        resp = await self.llm.generate(prompt_value)
-        resp_text = resp.generations[0][0].text
-        print(resp_text)
-        parser = RagasoutputParser(pydantic_object=self.output_model)
-        answer = await parser.aparse(resp_text, prompt_value, self.llm, max_retries=3)
-
-        # TODO: make sure RagasOutputPraser returns the same type as OutputModel
-        return answer  # type: ignore
 
     def generate_examples(self):
         if self.examples:
@@ -99,9 +93,11 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             for e in self.examples:
                 input_data, output_data = e
                 example_strings.append(
-                    self.instruction.format(**model_to_dict(input_data))
+                    self.instruction
                     + "\n"
-                    + to_json(output_data, indent=4)
+                    + "input: " + to_json(input_data, indent=4)
+                    + "\n"
+                    + "output: " + to_json(output_data, indent=4)
                 )
 
             return (
@@ -114,15 +110,27 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
 
     def to_string(self, data: InputModel) -> str:
         # this needs a check
-        instruction_str = self.instruction.format(**model_to_dict(data))
-        json_format = self.generate_output_signature(self.output_model)
-        examples_str = self.generate_examples()
-        return instruction_str + "\n" + examples_str + "\n" + json_format
+        return (
+            self.generate_instruction()
+            + "\n"
+            + self.generate_output_signature()
+            + "\n"
+            + self.generate_examples()
+            + "\nNow perform the above instruction with the following input\n"
+            + "input: " + to_json(data, indent=4)
+            + "\n"
+            + "output: "
+        )
 
     async def generate(self, data: InputModel) -> OutputModel:
         prompt_value = PromptValue(prompt_str=self.to_string(data))
-        result: OutputModel = await self.from_llm(prompt_value)
-        return result
+        resp = await self.llm.generate(prompt_value)
+        resp_text = resp.generations[0][0].text
+        parser = RagasoutputParser(pydantic_object=self.output_model)
+        answer = await parser.aparse(resp_text, prompt_value, self.llm, max_retries=3)
+
+        # TODO: make sure RagasOutputPraser returns the same type as OutputModel
+        return answer  # type: ignore
 
 
 class StringPrompt(BasePrompt):
