@@ -56,28 +56,11 @@ def to_json(model: t.Any, indent: int = 4) -> str:
         return model.json(indent=indent)
 
 
-def process_field(field_type: t.Any, level: int) -> str:
-    if hasattr(field_type, "__origin__"):
-        if field_type.__origin__ is list:
-            return f"List[{process_field(field_type.__args__[0], level)}]"
-        elif field_type.__origin__ is t.Optional:
-            return f"Optional[{process_field(field_type.__args__[0], level)}]"
-    elif hasattr(field_type, "__fields__"):
-        return (
-            "{\n" + process_fields(field_type.__fields__, level + 1) + " " * level + "}"
-        )
+def model_to_json_schema(model: t.Type[BaseModel]) -> dict:
+    if PYDANTIC_V2:
+        return model.model_json_schema()
     else:
-        return f"{field_type.__name__}"
-
-
-def process_fields(fields: t.Dict[str, t.Any], level: int) -> str:
-    field_str = ""
-    for field_name, field in fields.items():
-        field_str += (
-            " " * level + f'"{field_name}": "{process_field(field.type_, level)}",\n'
-        )
-    return field_str.rstrip(",\n") + "\n"
-
+        return model.schema_json()
 
 InputModel = t.TypeVar("InputModel", bound=BaseModel)
 OutputModel = t.TypeVar("OutputModel", bound=BaseModel)
@@ -93,22 +76,17 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
     instruction: str
     examples: t.List[t.Tuple[InputModel, OutputModel]] = []
 
-    def generate_output_signature(
-        self, model: t.Type[OutputModel], indent: int = 4
-    ) -> str:
-        model_name = model.__name__
-        fields = model.__fields__
-
-        instruction = f"Please return the output in the following JSON format based on the {model_name} model:\n{{\n"
-        instruction += process_fields(fields, indent)
-        instruction += "}"
-
-        return instruction
+    def generate_output_signature(self, indent: int = 4) -> str:
+        schema = model_to_json_schema(self.output_model)
+        return (
+            f"Please return the output in a JSON format that complies with the following schema as specified in JSON Schema and OpenAPI:\n"
+            f"{schema}"
+        )
 
     async def from_llm(self, prompt_value: PromptValue) -> OutputModel:
         resp = await self.llm.generate(prompt_value)
         resp_text = resp.generations[0][0].text
-
+        print(resp_text)
         parser = RagasoutputParser(pydantic_object=self.output_model)
         answer = await parser.aparse(resp_text, prompt_value, self.llm, max_retries=3)
 
