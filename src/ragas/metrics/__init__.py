@@ -13,6 +13,11 @@ from ragas.metrics._context_precision import (
 )
 from ragas.metrics._context_recall import ContextRecall, context_recall
 from ragas.metrics._faithfulness import Faithfulness, FaithulnesswithHHEM, faithfulness
+from ragas.metrics._noise_sensitivity import (
+    NoiseSensitivity,
+    noise_sensitivity_irrelevant,
+    noise_sensitivity_relevant,
+)
 from ragas.metrics._rubrics_based import (
     LabelledRubricsScore,
     ReferenceFreeRubricsScore,
@@ -43,6 +48,9 @@ __all__ = [
     "context_entity_recall",
     "SummarizationScore",
     "summarization_score",
+    "NoiseSensitivity",
+    "noise_sensitivity_irrelevant",
+    "noise_sensitivity_relevant",
     "labelled_rubrics_score",
     "reference_free_rubrics_score",
     "ReferenceFreeRubricsScore",
