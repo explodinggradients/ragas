@@ -28,14 +28,6 @@ The final summarization score is then calculated as:
 \text{conciseness score}*\text{(1-coeff)}
 ````
 
-Internally, we use a dictionary of weights:
-```{code-block} python
-weights = {
-    "qa_score": coeff,
-    "conciseness_score": 1-coeff
-}
-```
-
 ```{hint}
 **Summary**: JPMorgan Chase & Co. is an American multinational finance company headquartered in New York City. It is the largest bank in the United States and the world's largest by market capitalization as of 2023. Founded in 1799, it is a major provider of investment banking services, with US$3.9 trillion in total assets, and ranked #1 in the Forbes Global 2000 ranking in 2023.
 
@@ -72,13 +64,14 @@ weights = {
 ## Example
 
 ```{code-block} python
-from datasets import Dataset 
 from ragas.metrics import summarization_score
 from ragas import evaluate
+from datasets import Dataset 
+
 
 data_samples = {
-    'contexts' : [[c1], [c2]],
-    'summary': [s1, s2]
+    'contexts':[["A company is launching a new product, a smartphone app designed to help users track their fitness goals. The app allows users to set daily exercise targets, log their meals, and track their water intake. It also provides personalized workout recommendations and sends motivational reminders throughout the day."]],
+    'summary':['A company is launching a fitness tracking app that helps users set exercise goals, log meals, and track water intake, with personalized workout suggestions and motivational reminders.'],
 }
 dataset = Dataset.from_dict(data_samples)
 score = evaluate(dataset,metrics=[summarization_score])
