@@ -4,6 +4,7 @@ import logging
 
 from datasets import Dataset, Sequence
 
+from ragas.dataset_schema import EvaluationDataset
 from ragas.metrics._context_precision import ContextPrecision
 from ragas.metrics.base import EvaluationMode, Metric
 
@@ -98,4 +99,16 @@ def validate_evaluation_modes(
                 f"The metric [{m.name}] that that is used requires the following "
                 f"additional columns {list(required_columns - available_columns)} "
                 f"to be present in the dataset. {extra_msg}"
+            )
+
+
+def validate_required_columns(ds: EvaluationDataset, metrics: list[Metric]):
+    for m in metrics:
+        required_columns = set(m.required_columns)
+        available_columns = set(ds.features())
+        if not required_columns.issubset(available_columns):
+            raise ValueError(
+                f"The metric [{m.name}] that that is used requires the following "
+                f"additional columns {list(required_columns - available_columns)} "
+                f"to be present in the dataset."
             )
