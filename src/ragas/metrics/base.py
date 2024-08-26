@@ -12,7 +12,7 @@ import logging
 import typing as t
 from abc import ABC, abstractmethod
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 from ragas.callbacks import new_group
@@ -33,6 +33,14 @@ logger = logging.getLogger(__name__)
 LANGUAGE_CODES = {v.__name__.lower(): k for k, v in LANGUAGE_CODES.items()}
 
 EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg ca")
+VALID_COLUMNS = [
+    "user_input",
+    "retrieved_contexts",
+    "reference_contexts",
+    "response",
+    "reference",
+    "rubric",
+]
 
 
 def get_required_columns(
@@ -61,15 +69,34 @@ def get_required_columns(
 
 @dataclass
 class Metric(ABC):
+    _required_columns: t.Tuple[str, ...] = field(default_factory=tuple)
+
     @property
     @abstractmethod
     def name(self) -> str:
         ...
 
     @property
+    def required_columns(self) -> t.Tuple[str, ...]:
+        return self._required_columns
+
+    @required_columns.setter
+    def required_columns(self, columns: t.Tuple[str, ...]):
+        for column in columns:
+            if column not in VALID_COLUMNS:
+                raise ValueError(
+                    f"Invalid column '{column}'. Must be one of {VALID_COLUMNS}"
+                )
+        self._required_columns = columns
+
+    @property
     @abstractmethod
     def evaluation_mode(self) -> EvaluationMode:
         ...
+
+    # @abstractmethod
+    # def _required_columns(self) -> t.Tuple[str, ...]:
+    #     ...
 
     @abstractmethod
     def init(self, run_config: RunConfig):
