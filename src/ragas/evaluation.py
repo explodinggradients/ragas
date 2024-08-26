@@ -12,6 +12,7 @@ from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 from ragas._analytics import EvaluationEvent, track, track_was_completed
 from ragas.callbacks import new_group
 from ragas.cost import TokenUsage
+from ragas.dataset_schema import EvaluationDataset
 from ragas.embeddings.base import (
     BaseRagasEmbeddings,
     LangchainEmbeddingsWrapper,
@@ -32,13 +33,12 @@ from ragas.metrics.base import (
 from ragas.metrics.critique import AspectCritique
 from ragas.run_config import RunConfig
 from ragas.utils import get_feature_language, safe_nanmean
-
-# from ragas.metrics.critique import AspectCritique
 from ragas.validation import (
     handle_deprecated_ground_truths,
     remap_column_names,
     validate_column_dtypes,
     validate_evaluation_modes,
+    validate_required_columns,
 )
 
 if t.TYPE_CHECKING:
@@ -49,7 +49,7 @@ if t.TYPE_CHECKING:
 
 @track_was_completed
 def evaluate(
-    dataset: Dataset,
+    dataset: t.Union[Dataset, EvaluationDataset],
     metrics: list[Metric] | None = None,
     llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
@@ -157,12 +157,18 @@ def evaluate(
 
         metrics = [answer_relevancy, context_precision, faithfulness, context_recall]
 
-    # remap column names from the dataset
-    dataset = remap_column_names(dataset, column_map)
-    # validation
-    dataset = handle_deprecated_ground_truths(dataset)
-    validate_evaluation_modes(dataset, metrics)
-    validate_column_dtypes(dataset)
+    if isinstance(dataset, Dataset):
+        # remap column names from the dataset
+        dataset = remap_column_names(dataset, column_map)
+        # validation
+        dataset = handle_deprecated_ground_truths(dataset)
+        validate_evaluation_modes(dataset, metrics)
+        validate_column_dtypes(dataset)
+    elif isinstance(dataset, EvaluationDataset):
+        validate_required_columns(dataset, metrics)
+        dataset = dataset.to_hf_dataset()
+    else:
+        raise ValueError("Dataset should be of type Dataset or EvaluationDataset")
 
     # set the llm and embeddings
     if isinstance(llm, LangchainLLM):
