@@ -191,6 +191,7 @@ class Prompt(BaseModel):
 
         logger.info("Adapting %s to %s", self.name, language)
         prompts = []
+        prompt_types = []
         output_keys = []
         for example in self.examples:
             prompts.extend(
@@ -198,6 +199,12 @@ class Prompt(BaseModel):
                     str_translation.format(
                         translate_to=language, input=example.get(key)
                     )
+                    for key in self.input_keys
+                ]
+            )
+            prompt_types.extend(
+                [
+                    "str_translation"
                     for key in self.input_keys
                 ]
             )
@@ -209,6 +216,9 @@ class Prompt(BaseModel):
                 else str_translation.format(
                     translate_to=language, input=example.get(self.output_key)
                 )
+            )
+            prompt_types.append(
+                "json_translation" if self.output_type.lower() == "json" else "str_translation"
             )
             if self.output_type.lower() == "json":
                 output = example.get(self.output_key)
@@ -223,8 +233,16 @@ class Prompt(BaseModel):
 
         # NOTE: this is a slow loop, consider Executor to fasten this
         results = []
-        for p in prompts:
+        for p, p_type in zip(prompts, prompt_types):
+            # process translation result: output is the last line of the result
+            translation_output = llm.generate_text(p).generations[0][0].text.strip()
+            if p_type == 'str_translation':
+                translation_output = translation_output.split('\n')[-1].strip()
+                if translation_output.startswith('output:'):
+                    translation_output = translation_output[len("output:"):].strip()
+                translation_output = translation_output.strip('"')
             results.append(llm.generate_text(p).generations[0][0].text)
+
         per_example_items = len(self.input_keys) + 1
         grouped_results = [
             results[i : i + per_example_items]
