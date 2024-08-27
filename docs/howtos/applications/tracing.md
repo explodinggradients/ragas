@@ -1,7 +1,7 @@
 
 # Explainability through Logging and tracing
 
-Logging and tracing results from llm are important for any language model-based application. This is a tutorial on how to do tracing with Ragas. Ragas provides `callbacks` functionality which allows you to hook various tracers like Langmsith, wandb, etc easily.  In this notebook, I will be using Langmith for tracing
+Logging and tracing results from llm are important for any language model-based application. This is a tutorial on how to do tracing with Ragas. Ragas provides `callbacks` functionality which allows you to hook various tracers like Langmsith, wandb, Opik, etc easily.  In this notebook, I will be using Langmith for tracing.
 
 To set up Langsmith, we need to set some environment variables that it needs. For more information, you can refer to the [docs](https://docs.smith.langchain.com/)
 
@@ -12,7 +12,7 @@ export LANGCHAIN_API_KEY=<your-api-key>
 export LANGCHAIN_PROJECT=<your-project>  # if not specified, defaults to "default"
 ```
 
-Now we have to import the required tracer from langchain, here we are using `LangChainTracer` but you can similarly use any tracer supported by langchain like [WandbTracer](https://python.langchain.com/docs/integrations/providers/wandb_tracing)
+Now we have to import the required tracer from langchain, here we are using `LangChainTracer` but you can similarly use any tracer supported by langchain like [WandbTracer](https://python.langchain.com/docs/integrations/providers/wandb_tracing) or [OpikTracer](https://comet.com/docs/opik/tracing/integrations/ragas)
 
 ```{code-block} python
 # langsmith

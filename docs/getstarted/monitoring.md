@@ -18,6 +18,7 @@ In addition, you can use the RAG metrics with other LLM observability tools like
 - [Phoenix (Arize)](../howtos/integrations/ragas-arize.ipynb)
 - [Langfuse](../howtos/integrations/langfuse.ipynb)
 - [OpenLayer](https://openlayer.com/)
+- [Opik](../howtos/integrations/opik.ipynb)
 
 These tools can provide model-based feedback about various aspects of your application, such as the ones mentioned below:
 
