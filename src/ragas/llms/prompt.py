@@ -199,17 +199,23 @@ class Prompt(BaseModel):
                     str_translation.format(
                         translate_to=language, input=example.get(key)
                     )
+                    if isinstance(example[key], str)
+                    else str_translation.format(
+                        translate_to=language, input=example.get(key)
+                    )
                     for key in self.input_keys
                 ]
             )
             prompt_types.extend(
                 [
                     "str_translation"
+                    if isinstance(example[key], str)
+                    else "json_translation"
                     for key in self.input_keys
                 ]
             )
             prompts.append(
-                json_translatation.format(
+                json_translation.format(
                     translate_to=language, input=example.get(self.output_key)
                 )
                 if self.output_type.lower() == "json"
@@ -234,14 +240,14 @@ class Prompt(BaseModel):
         # NOTE: this is a slow loop, consider Executor to fasten this
         results = []
         for p, p_type in zip(prompts, prompt_types):
-            # process translation result: output is the last line of the result
             translation_output = llm.generate_text(p).generations[0][0].text.strip()
+            # process translation result for str_translation: output is the last line of the result
             if p_type == 'str_translation':
                 translation_output = translation_output.split('\n')[-1].strip()
                 if translation_output.startswith('output:'):
                     translation_output = translation_output[len("output:"):].strip()
                 translation_output = translation_output.strip('"')
-            results.append(llm.generate_text(p).generations[0][0].text)
+            results.append(translation_output)
 
         per_example_items = len(self.input_keys) + 1
         grouped_results = [
@@ -256,6 +262,17 @@ class Prompt(BaseModel):
             example_dict.update(
                 {k: v for k, v in zip(self.input_keys, example[: len(self.input_keys)])}
             )
+
+            # fix list, dict item in example_dict
+            for key in self.input_keys:
+                if not isinstance(self.examples[i][key], str):
+                    raw_str = example_dict[key]
+                    example_dict[key] = json_loader._safe_load(raw_str, llm)
+                    if example_dict[key] == {} or example_dict[key] == []:
+                        raise ValueError(
+                            f"Adapted input {key=} is empty or not in valid json format"
+                        )
+
             if self.output_type.lower() == "json":
                 example_dict[self.output_key] = json_loader._safe_load(example[-1], llm)
                 if example_dict[self.output_key] == {}:
@@ -324,7 +341,7 @@ str_translation = Prompt(
     output_type="str",
 )
 
-json_translatation = Prompt(
+json_translation = Prompt(
     name="json_translation",
     instruction="Translate values in given json to target language and output the translated json",
     examples=[
