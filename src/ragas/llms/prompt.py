@@ -244,8 +244,8 @@ class Prompt(BaseModel):
                     # Extracting the dictionary part using string slicing
                     dict_str = example[-1].split("(")[0].strip()
                     example_dict[self.output_key] = ast.literal_eval(dict_str)
-                else:
-                    example_dict[self.output_key] = example[-1]
+            else:
+                example_dict[self.output_key] = example[-1]
             if self.output_type.lower() == "json":
                 output = example_dict[self.output_key]
                 if isinstance(output, dict):
