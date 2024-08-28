@@ -53,10 +53,10 @@ class LabelledInstanceRubricsScore(MetricWithLLM):
 
     def _create_prompt(self, row: t.Dict) -> PromptValue:
         question, contexts, answer, ground_truth, rubrics = (
-            row["question"],
-            row.get("contexts"),
-            row["answer"],
-            row["ground_truth"],
+            row["user_input"],
+            row.get("retrieved_contexts"),
+            row["response"],
+            row["reference"],
             row["rubric"],
         )
         if contexts is not None:
@@ -89,9 +89,9 @@ class ReferenceFreeInstanceRubricsScore(LabelledInstanceRubricsScore):
 
     def _create_prompt(self, row: t.Dict) -> PromptValue:
         question, contexts, answer, rubrics = (
-            row["question"],
-            row.get("contexts"),
-            row["answer"],
+            row["user_input"],
+            row.get("retrieved_contexts"),
+            row["response"],
             row["rubric"],
         )
         if contexts is not None:
