@@ -40,13 +40,13 @@ _output_instructions = get_json_format_instructions(AnswerCorrectnessClassificat
 _output_parser = RagasoutputParser(pydantic_object=AnswerCorrectnessClassification)
 
 CORRECTNESS_INSTRUCTIONS = """\
-Given a ground truth and an answer statements, analyze each statement and classify them in one of the following categories:
+与えられた真の正解（ground truth） と回答文（answer）をもとに、それぞれの文を分析し、次のいずれかのカテゴリーに分類してください:
 
-- TP (true positive): statements that are present in answer that are also directly supported by the one or more statements in ground truth,
-- FP (false positive): statements present in the answer but not directly supported by any statement in ground truth,
-- FN (false negative): statements found in the ground truth but not present in answer.
+- TP（真陽性）：回答に含まれており、かつグラウンドトゥルースの1つ以上の文によって直接支持されている文
+- FP（偽陽性）：回答に含まれているが、グラウンドトゥルースのいずれの文からも直接支持されていない文
+- FN（偽陰性）：グラウンドトゥルースに含まれているが、回答には含まれていない文
 
-Each statement can only belong to one of the categories. Provide a reason for each classification.
+各文は1つのカテゴリーにのみ属することができます。それぞれの分類理由を記述してください。
 """
 CORRECTNESS_PROMPT = Prompt(
     name="answer_correctness",
@@ -54,79 +54,79 @@ CORRECTNESS_PROMPT = Prompt(
     output_format_instruction=_output_instructions,
     examples=[
         {
-            "question": """What powers the sun and what is its primary function?""",
+            "question": """太陽のエネルギー源は何で、その主な機能は何ですか？""",
             "answer": [
-                "The sun is powered by nuclear fission, similar to nuclear reactors on Earth.",
-                "The primary function of the sun is to provide light to the solar system.",
+                "太陽は地球上の原子炉に似た核分裂によってエネルギーを得ています。",
+                "太陽の主な機能は、太陽系に光を提供することです。",
             ],
             "ground_truth": [
-                "The sun is powered by nuclear fusion, where hydrogen atoms fuse to form helium.",
-                "This fusion process in the sun's core releases a tremendous amount of energy.",
-                "The energy from the sun provides heat and light, which are essential for life on Earth.",
-                "The sun's light plays a critical role in Earth's climate system.",
-                "Sunlight helps to drive the weather and ocean currents.",
+                "太陽は核融合によってエネルギーを得ており、水素原子が融合してヘリウムを形成します。",
+                "太陽の中心部でのこの融合過程は、莫大なエネルギーを放出します。",
+                "太陽からのエネルギーは、地球にとって不可欠な熱と光を提供します。",
+                "太陽光は地球の気候システムにおいて重要な役割を果たしています。",
+                "太陽光は天候や海流を駆動するのを助けます。",
             ],
             "classification": AnswerCorrectnessClassification.parse_obj(
                 {
                     "TP": [
                         {
-                            "statement": "The primary function of the sun is to provide light to the solar system.",
-                            "reason": "This statement is somewhat supported by the ground truth mentioning the sun providing light and its roles, though it focuses more broadly on the sun's energy.",
+                            "statement": "太陽の主な機能は、太陽系に光を提供することです。",
+                            "reason": "この記述は、太陽が光を提供することとその役割に言及している点で、ある程度真実と一致しますが、太陽のエネルギーにより広く焦点を当てています。",
                         }
                     ],
                     "FP": [
                         {
-                            "statement": "The sun is powered by nuclear fission, similar to nuclear reactors on Earth.",
-                            "reason": "This statement is incorrect and contradicts the ground truth which states that the sun is powered by nuclear fusion.",
+                            "statement": "太陽は地球上の原子炉に似た核分裂によってエネルギーを得ています。",
+                            "reason": "この記述は間違っており、太陽が核融合によってエネルギーを得ているとする真実に反しています。",
                         }
                     ],
                     "FN": [
                         {
-                            "statement": "The sun is powered by nuclear fusion, where hydrogen atoms fuse to form helium.",
-                            "reason": "This accurate description of the sun’s power source is not included in the answer.",
+                            "statement": "太陽は核融合によってエネルギーを得ており、水素原子が融合してヘリウムを形成します。",
+                            "reason": "太陽のエネルギー源についてのこの正確な説明は、回答に含まれていません。",
                         },
                         {
-                            "statement": "This fusion process in the sun's core releases a tremendous amount of energy.",
-                            "reason": "This process and its significance are not mentioned in the answer.",
+                            "statement": "太陽の中心部でのこの融合過程は、莫大なエネルギーを放出します。",
+                            "reason": "この過程とその重要性は回答に言及されていません。",
                         },
                         {
-                            "statement": "The energy from the sun provides heat and light, which are essential for life on Earth.",
-                            "reason": "The answer only mentions light, omitting the essential aspects of heat and its necessity for life, which the ground truth covers.",
+                            "statement": "太陽からのエネルギーは、地球にとって不可欠な熱と光を提供します。",
+                            "reason": "回答は光についてのみ言及しており、熱とその生命にとっての必要性については省略されています。",
                         },
                         {
-                            "statement": "The sun's light plays a critical role in Earth's climate system.",
-                            "reason": "This broader impact of the sun’s light on Earth's climate system is not addressed in the answer.",
+                            "statement": "太陽光は地球の気候システムにおいて重要な役割を果たしています。",
+                            "reason": "太陽光の地球の気候システムへのこの広い影響は、回答では触れられていません。",
                         },
                         {
-                            "statement": "Sunlight helps to drive the weather and ocean currents.",
-                            "reason": "The effect of sunlight on weather patterns and ocean currents is omitted in the answer.",
+                            "statement": "太陽光は天候や海流を駆動するのを助けます。",
+                            "reason": "太陽光が天候のパターンや海流に与える影響は、回答で省略されています。",
                         },
                     ],
                 }
             ).dict(),
         },
         {
-            "question": """What is the boiling point of water?""",
+            "question": """水の沸点は何ですか？""",
             "answer": [
-                "The boiling point of water is 100 degrees Celsius at sea level"
+                "水の沸点は海抜で100度セルシウスです"
             ],
             "ground_truth": [
-                "The boiling point of water is 100 degrees Celsius (212 degrees Fahrenheit) at sea level.",
-                "The boiling point of water can change with altitude.",
+                "水の沸点は海抜で100度セルシウス（212度ファーレンハイト）です。",
+                "水の沸点は高度によって変わることがあります。",
             ],
             "classification": AnswerCorrectnessClassification.parse_obj(
                 {
                     "TP": [
                         {
-                            "statement": "The boiling point of water is 100 degrees Celsius at sea level",
-                            "reason": "This statement is directly supported by the ground truth which specifies the boiling point of water as 100 degrees Celsius at sea level.",
+                            "statement": "水の沸点は海抜で100度セルシウスです",
+                            "reason": "この記述は、海抜で水の沸点が100度セルシウスと指定している点で真実に直接一致します。",
                         }
                     ],
                     "FP": [],
                     "FN": [
                         {
-                            "statement": "The boiling point of water can change with altitude.",
-                            "reason": "This additional information about how the boiling point of water can vary with altitude is not mentioned in the answer.",
+                            "statement": "水の沸点は高度によって変わることがあります。",
+                            "reason": "水の沸点が高度によって変わるという追加情報は回答に言及されていません。",
                         }
                     ],
                 }

@@ -35,33 +35,33 @@ _output_parser = RagasoutputParser(pydantic_object=ContextPrecisionVerification)
 
 CONTEXT_PRECISION = Prompt(
     name="context_precision",
-    instruction="""Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "1" if useful and "0" if not with json output.""",
+    instruction="""与えられたquestion、answer、およびcontextを基に、そのcontextが与えられたanswerを導き出すのに役立ったかどうかを検証してください。有用であれば"1"を、そうでなければ"0"を出力し、結果をJSON形式で出力してください。""",
     output_format_instruction=_verification_output_instructions,
     examples=[
         {
-            "question": """What can you tell me about albert Albert Einstein?""",
-            "context": """Albert Einstein (14 March 1879 – 18 April 1955) was a German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time. Best known for developing the theory of relativity, he also made important contributions to quantum mechanics, and was thus a central figure in the revolutionary reshaping of the scientific understanding of nature that modern physics accomplished in the first decades of the twentieth century. His mass–energy equivalence formula E = mc2, which arises from relativity theory, has been called "the world's most famous equation". He received the 1921 Nobel Prize in Physics "for his services to theoretical physics, and especially for his discovery of the law of the photoelectric effect", a pivotal step in the development of quantum theory. His work is also known for its influence on the philosophy of science. In a 1999 poll of 130 leading physicists worldwide by the British journal Physics World, Einstein was ranked the greatest physicist of all time. His intellectual achievements and originality have made Einstein synonymous with genius.""",
-            "answer": """Albert Einstein born in 14 March 1879 was German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time. He received the 1921 Nobel Prize in Physics for his services to theoretical physics. He published 4 papers in 1905. Einstein moved to Switzerland in 1895""",
+            "question": """アルベルト・アインシュタインについて教えてください。""",
+            "context": """アルベルト・アインシュタイン（1879年3月14日 - 1955年4月18日）は、ドイツ生まれの理論物理学者であり、史上最も偉大で影響力のある科学者の一人と広く見なされています。彼は相対性理論の開発で最もよく知られていますが、量子力学にも重要な貢献をし、20世紀初頭の現代物理学が達成した自然の科学的理解の革命的再編成の中心人物でもありました。彼の質量とエネルギーの等価性を示す公式 E = mc² は「世界で最も有名な方程式」と呼ばれています。彼は1921年に「理論物理学への貢献と特に光電効果の法則の発見のために」ノーベル物理学賞を受賞しました。彼の仕事はまた、科学の哲学にも影響を与えたことで知られています。1999年にイギリスの雑誌「Physics World」が世界中の130人の著名な物理学者に対して行った世論調査では、アインシュタインは史上最高の物理学者に選ばれました。彼の知的成果と独創性は、アインシュタインを「天才」の代名詞としています。""",
+            "answer": """アルベルト・アインシュタインは1879年3月14日に生まれたドイツ生まれの理論物理学者で、史上最も偉大で影響力のある科学者の一人と広く見なされています。彼は理論物理学への貢献により、1921年にノーベル物理学賞を受賞しました。彼は1905年に4本の論文を発表しました。アインシュタインは1895年にスイスに移住しました。""",
             "verification": ContextPrecisionVerification(
-                reason="The provided context was indeed useful in arriving at the given answer. The context includes key information about Albert Einstein's life and contributions, which are reflected in the answer.",
+                reason="提供されたコンテキストは、与えられた回答を得るために確かに有用でした。コンテキストには、アルベルト・アインシュタインの人生と貢献に関する重要な情報が含まれており、それらが回答に反映されています。",
                 verdict=1,
             ).dict(),
         },
         {
-            "question": """who won 2020 icc world cup?""",
-            "context": """The 2022 ICC Men's T20 World Cup, held from October 16 to November 13, 2022, in Australia, was the eighth edition of the tournament. Originally scheduled for 2020, it was postponed due to the COVID-19 pandemic. England emerged victorious, defeating Pakistan by five wickets in the final to clinch their second ICC Men's T20 World Cup title.""",
-            "answer": """England""",
+            "question": """2020年のICCワールドカップの優勝者は誰ですか？""",
+            "context": """2022年のICC男子T20ワールドカップは、2022年10月16日から11月13日までオーストラリアで開催され、トーナメントの第8回目でした。元々は2020年に予定されていましたが、COVID-19のパンデミックのため延期されました。イングランドが決勝でパキスタンを5ウィケットで破り、2度目のICC男子T20ワールドカップタイトルを獲得しました。""",
+            "answer": """イングランド""",
             "verification": ContextPrecisionVerification(
-                reason="the context was useful in clarifying the situation regarding the 2020 ICC World Cup and indicating that England was the winner of the tournament that was intended to be held in 2020 but actually took place in 2022.",
+                reason="コンテキストは、2020年のICCワールドカップに関する状況を明確にし、2020年に予定されていたトーナメントが実際には2022年に開催され、イングランドが優勝したことを示すのに役立ちました。",
                 verdict=1,
             ).dict(),
         },
         {
-            "question": """What is the tallest mountain in the world?""",
-            "context": """The Andes is the longest continental mountain range in the world, located in South America. It stretches across seven countries and features many of the highest peaks in the Western Hemisphere. The range is known for its diverse ecosystems, including the high-altitude Andean Plateau and the Amazon rainforest.""",
-            "answer": """Mount Everest.""",
+            "question": """世界で最も高い山は何ですか？""",
+            "context": """アンデス山脈は世界で最も長い大陸山脈で、南アメリカに位置しています。それは7つの国にまたがり、西半球で最も高い山々の多くを特徴としています。この山脈は、高地のアンデス高原やアマゾン熱帯雨林を含む多様な生態系で知られています。""",
+            "answer": """エベレスト山。""",
             "verification": ContextPrecisionVerification(
-                reason="the provided context discusses the Andes mountain range, which, while impressive, does not include Mount Everest or directly relate to the question about the world's tallest mountain.",
+                reason="提供されたコンテキストは、アンデス山脈について述べていますが、それは印象的であるものの、エベレスト山や世界で最も高い山に直接関係するものではありません。",
                 verdict=0,
             ).dict(),
         },

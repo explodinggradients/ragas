@@ -14,23 +14,23 @@ question_answer_parser = RagasoutputParser(pydantic_object=AnswerFormat)
 
 reasoning_question_prompt = Prompt(
     name="reasoning_question",
-    instruction="""Complicate the given question by rewriting question into a multi-hop reasoning question based on the provided context.
-    Answering the question should require the reader to make multiple logical connections or inferences using the information available in given context.
-    Rules to follow when rewriting question:
-    1. Ensure that the rewritten question can be answered entirely from the information present in the contexts.
-    2. Do not frame questions that contains more than 15 words. Use abbreviation wherever possible.
-    3. Make sure the question is clear and unambiguous.
-    4. phrases like 'based on the provided context','according to the context',etc are not allowed to appear in the question.""",
+    instruction="""与えられた質問を複雑化するために、提供されたコンテキストに基づいて質問をマルチホップ推論質問に書き換えてください。
+    質問に答えるためには、読者が与えられたコンテキストを使用して複数の論理的なつながりや推論を行う必要があります。
+    書き換えの際に従うべきルール：
+    1. 書き換えた質問が、コンテキストに存在する情報から完全に答えられることを確認してください。
+    2. 質問には15語以上を含めないでください。可能な限り略語を使用してください。
+    3. 質問が明確であいまいでないことを確認してください。
+    4. 「提供されたコンテキストに基づいて」や「コンテキストによると」といったフレーズを質問に含めないでください。""",
     examples=[
         {
-            "question": "What is the capital of France?",
-            "context": "France is a country in Western Europe. It has several cities, including Paris, Lyon, and Marseille. Paris is not only known for its cultural landmarks like the Eiffel Tower and the Louvre Museum but also as the administrative center.",
-            "output": "Linking the Eiffel Tower and administrative center, which city stands as both?",
+            "question": "フランスの首都はどこですか？",
+            "context": "フランスは西ヨーロッパにある国です。パリ、リヨン、マルセイユなどいくつかの都市があります。パリはエッフェル塔やルーブル美術館などの文化的ランドマークだけでなく、行政の中心地としても知られています。",
+            "output": "エッフェル塔と行政の中心を結びつける都市はどこですか？",
         },
         {
-            "question": "What does the append() method do in Python?",
-            "context": "In Python, lists are used to store multiple items in a single variable. Lists are one of 4 built-in data types used to store collections of data. The append() method adds a single item to the end of a list.",
-            "output": "If a list represents a variable collection, what method extends it by one item?",
+            "question": "Pythonでappend()メソッドは何をしますか？",
+            "context": "Pythonでは、リストは単一の変数に複数の項目を格納するために使用されます。リストはデータのコレクションを格納するための4つの組み込みデータ型の1つです。append()メソッドはリストの最後に単一の項目を追加します。",
+            "output": "リストが変数のコレクションを表す場合、どのメソッドが1つの項目でそれを拡張しますか？",
         },
     ],
     input_keys=["question", "context"],
@@ -43,25 +43,25 @@ reasoning_question_prompt = Prompt(
 multi_context_question_prompt = Prompt(
     name="multi_context_question",
     instruction="""
-    The task is to rewrite and complicate the given question in a way that answering it requires information derived from both context1 and context2. 
-    Follow the rules given below while rewriting the question.
-        1. The rewritten question should not be very long. Use abbreviation wherever possible.
-        2. The rewritten question must be reasonable and must be understood and responded by humans.
-        3. The rewritten question must be fully answerable from information present in context1 and context2. 
-        4. Read and understand both contexts and rewrite the question so that answering requires insight from both context1 and context2.
-        5. phrases like 'based on the provided context','according to the context?',etc are not allowed to appear in the question.""",
+    与えられた質問を再構成し複雑化するタスクです。質問に答えるには、context1とcontext2の両方から得られる情報が必要です。 
+    質問を書き換える際には、以下のルールに従ってください。
+        1. 書き換えた質問は非常に長くならないようにしてください。可能な限り略語を使用してください。
+        2. 書き換えた質問は合理的であり、人間が理解し応答できるものでなければなりません。
+        3. 書き換えた質問は、context1およびcontext2に含まれる情報から完全に答えられるものでなければなりません。 
+        4. 両方のcontextを読み理解し、回答には両方のcontextからの洞察が必要となるように質問を書き換えてください。
+        5. 「提供されたコンテキストに基づいて」や「コンテキストによると」といったフレーズを質問に含めないでください。""",
     examples=[
         {
-            "question": "What process turns plants green?",
-            "context1": "Chlorophyll is the pigment that gives plants their green color and helps them photosynthesize.",
-            "context2": "Photosynthesis in plants typically occurs in the leaves where chloroplasts are concentrated.",
-            "output": "In which plant structures does the pigment responsible for their verdancy facilitate energy production?",
+            "question": "植物を緑にするプロセスは何ですか？",
+            "context1": "クロロフィルは植物に緑色を与える色素で、光合成を助けます。",
+            "context2": "植物の光合成は、通常、葉に集中している葉緑体で行われます。",
+            "output": "緑色の原因となる色素がエネルギー生産を促進する植物の構造はどこですか？",
         },
         {
-            "question": "How do you calculate the area of a rectangle?",
-            "context1": "The area of a shape is calculated based on the shape's dimensions. For rectangles, this involves multiplying the length and width.",
-            "context2": "Rectangles have four sides with opposite sides being equal in length. They are a type of quadrilateral.",
-            "output": "What multiplication involving equal opposites yields a quadrilateral's area?",
+            "question": "長方形の面積をどのように計算しますか？",
+            "context1": "図形の面積は、図形の寸法に基づいて計算されます。長方形の場合、これは長さと幅を掛け合わせることを含みます。",
+            "context2": "長方形には4つの辺があり、対辺は等しい長さです。長方形は四辺形の一種です。",
+            "output": "等しい対辺を掛け合わせると、どの四辺形の面積が求まりますか？",
         },
     ],
     input_keys=["question", "context1", "context2"],
@@ -72,23 +72,23 @@ multi_context_question_prompt = Prompt(
 
 conditional_question_prompt = Prompt(
     name="conditional_question",
-    instruction="""Rewrite the provided question to increase its complexity by introducing a conditional element.
-    The goal is to make the question more intricate by incorporating a scenario or condition that affects the context of the question.
-    Follow the rules given below while rewriting the question.
-        1. The rewritten question should not be longer than 25 words. Use abbreviation wherever possible.
-        2. The rewritten question must be reasonable and must be understood and responded by humans.
-        3. The rewritten question must be fully answerable from information present context.
-        4. phrases like 'provided context','according to the context?',etc are not allowed to appear in the question.""",
+    instruction="""提供された質問を、条件要素を導入することで複雑さを増すように書き換えてください。
+    目標は、質問の文脈に影響を与えるシナリオや条件を取り入れることで、質問をより複雑にすることです。
+    質問を書き換える際には、以下のルールに従ってください。
+        1. 書き換えた質問は25語を超えてはいけません。可能な限り略語を使用してください。
+        2. 書き換えた質問は合理的であり、人間が理解し応答できるものでなければなりません。
+        3. 書き換えた質問は、コンテキストに存在する情報から完全に答えられるものでなければなりません。
+        4. 「提供されたコンテキスト」や「コンテキストによると」といったフレーズを質問に含めないでください。""",
     examples=[
         {
-            "question": "What is the function of the roots of a plant?",
-            "context": "The roots of a plant absorb water and nutrients from the soil, anchor the plant in the ground, and store food.",
-            "output": "What dual purpose do plant roots serve concerning soil nutrients and stability?",
+            "question": "植物の根の機能は何ですか？",
+            "context": "植物の根は土壌から水と栄養を吸収し、植物を地面に固定し、食物を蓄えます。",
+            "output": "植物の根は、土壌の栄養分と安定性に関してどのような二重の目的を果たしますか？",
         },
         {
-            "question": "How do vaccines protect against diseases?",
-            "context": "Vaccines protect against diseases by stimulating the body's immune response to produce antibodies, which recognize and combat pathogens.",
-            "output": "How do vaccines utilize the body's immune system to defend against pathogens?",
+            "question": "ワクチンはどのようにして病気から守るのですか？",
+            "context": "ワクチンは、体の免疫反応を刺激して抗体を生成し、病原体を認識して戦うことで病気から守ります。",
+            "output": "ワクチンはどのように体の免疫システムを利用して病原体から守りますか？",
         },
     ],
     input_keys=["question", "context"],
@@ -99,16 +99,16 @@ conditional_question_prompt = Prompt(
 
 compress_question_prompt = Prompt(
     name="compress_question",
-    instruction="""Rewrite the following question to make it more indirect and shorter while retaining the essence of the original question.
-    The goal is to create a question that conveys the same meaning but in a less direct manner. The rewritten question should shorter so use abbreviation wherever possible.""",
+    instruction="""以下の質問を、より間接的で短くなるように書き換えてください。ただし、元の質問の本質は維持してください。
+    目標は、同じ意味を伝えつつ、より直接的でない質問を作成することです。書き換えた質問は短くする必要があるため、可能な限り略語を使用してください。""",
     examples=[
         {
-            "question": "What is the distance between the Earth and the Moon?",
-            "output": "How far is the Moon from Earth?",
+            "question": "地球と月の距離はどれくらいですか？",
+            "output": "月は地球からどれくらい離れていますか？",
         },
         {
-            "question": "What ingredients are required to bake a chocolate cake?",
-            "output": "What's needed for a chocolate cake?",
+            "question": "チョコレートケーキを焼くのに必要な材料は何ですか？",
+            "output": "チョコケーキに何が必要ですか？",
         },
     ],
     input_keys=["question"],
@@ -119,18 +119,18 @@ compress_question_prompt = Prompt(
 
 conversational_question_prompt = Prompt(
     name="conversation_question",
-    instruction="""Reformat the provided question into two separate questions as if it were to be part of a conversation. Each question should focus on a specific aspect or subtopic related to the original question.
-    Follow the rules given below while rewriting the question.
-        1. The rewritten question should not be longer than 25 words. Use abbreviation wherever possible.
-        2. The rewritten question must be reasonable and must be understood and responded by humans.
-        3. The rewritten question must be fully answerable from information present context.
-        4. phrases like 'provided context','according to the context?',etc are not allowed to appear in the question.""",
+    instruction="""与えられた質問を、会話の一部として2つの別々の質問に書き換えてください。それぞれの質問は、元の質問に関連する特定の側面またはサブトピックに焦点を当てるべきです。
+    質問を書き換える際には、以下のルールに従ってください。
+        1. 書き換えた質問は25語を超えてはいけません。可能な限り略語を使用してください。
+        2. 書き換えた質問は合理的であり、人間が理解し応答できるものでなければなりません。
+        3. 書き換えた質問は、コンテキストに存在する情報から完全に答えられるものでなければなりません。
+        4. 「提供されたコンテキスト」や「コンテキストによると」といったフレーズを質問に含めないでください。""",
     examples=[
         {
-            "question": "What are the advantages and disadvantages of remote work?",
+            "question": "リモートワークの利点と欠点は何ですか？",
             "output": {
-                "first_question": "What are the benefits of remote work?",
-                "second_question": "On the flip side, what challenges are encountered when working remotely?",
+                "first_question": "リモートワークの利点は何ですか？",
+                "second_question": "一方で、リモートワークの課題は何ですか？",
             },
         }
     ],
@@ -142,35 +142,35 @@ conversational_question_prompt = Prompt(
 
 question_answer_prompt = Prompt(
     name="answer_formulate",
-    instruction="""Answer the question using the information from the given context. Output verdict as '1' if answer is present '-1' if answer is not present in the context.""",
+    instruction="""与えられたコンテキストの情報を使用して質問に答えてください。回答がコンテキストに存在する場合は '1'、存在しない場合は '-1' として出力してください。""",
     output_format_instruction=get_json_format_instructions(AnswerFormat),
     examples=[
         {
-            "context": """Climate change is significantly influenced by human activities, notably the emission of greenhouse gases from burning fossil fuels. The increased greenhouse gas concentration in the atmosphere traps more heat, leading to global warming and changes in weather patterns.""",
-            "question": "How do human activities contribute to climate change?",
+            "context": """気候変動は人間の活動、特に化石燃料の燃焼による温室効果ガスの排出によって大きく影響されます。大気中の温室効果ガスの濃度が増加すると、より多くの熱が閉じ込められ、地球温暖化と天候パターンの変化を引き起こします。""",
+            "question": "人間の活動はどのようにして気候変動に寄与していますか？",
             "answer": AnswerFormat.parse_obj(
                 {
-                    "answer": "Human activities contribute to climate change primarily through the emission of greenhouse gases from burning fossil fuels. These emissions increase the concentration of greenhouse gases in the atmosphere, which traps more heat and leads to global warming and altered weather patterns.",
+                    "answer": "人間の活動は主に化石燃料の燃焼による温室効果ガスの排出を通じて気候変動に寄与します。これらの排出物は大気中の温室効果ガスの濃度を高め、より多くの熱を閉じ込め、地球温暖化と気象パターンの変化を引き起こします。",
                     "verdict": "1",
                 }
             ).dict(),
         },
         {
-            "context": """The concept of artificial intelligence (AI) has evolved over time, but it fundamentally refers to machines designed to mimic human cognitive functions. AI can learn, reason, perceive, and, in some instances, react like humans, making it pivotal in fields ranging from healthcare to autonomous vehicles.""",
-            "question": "What are the key capabilities of artificial intelligence?",
+            "context": """人工知能（AI）の概念は時代とともに進化してきましたが、基本的には人間の認知機能を模倣するように設計された機械を指します。AIは学習、推論、知覚、そして場合によっては人間のように反応することができ、医療から自動運転車に至るまでの分野で重要な役割を果たしています。""",
+            "question": "人工知能の主な能力は何ですか？",
             "answer": AnswerFormat.parse_obj(
                 {
-                    "answer": "Artificial intelligence is designed to mimic human cognitive functions, with key capabilities including learning, reasoning, perception, and reacting to the environment in a manner similar to humans. These capabilities make AI pivotal in various fields, including healthcare and autonomous driving.",
+                    "answer": "人工知能は人間の認知機能を模倣するように設計されており、主な能力には学習、推論、知覚、そして環境に対する反応が含まれます。これらの能力により、AIは医療や自動運転などのさまざまな分野で重要な役割を果たしています。",
                     "verdict": "1",
                 }
             ).dict(),
         },
         {
-            "context": """The novel "Pride and Prejudice" by Jane Austen revolves around the character Elizabeth Bennet and her family. The story is set in the 19th century in rural England and deals with issues of marriage, morality, and misconceptions.""",
-            "question": "What year was 'Pride and Prejudice' published?",
+            "context": """ジェーン・オースティンの小説「高慢と偏見」は、エリザベス・ベネットと彼女の家族を中心に展開します。物語は19世紀のイギリスの田舎を舞台にしており、結婚、道徳、誤解の問題を扱っています。""",
+            "question": "『高慢と偏見』は何年に出版されましたか？",
             "answer": AnswerFormat.parse_obj(
                 {
-                    "answer": "The answer to given question is not present in context",
+                    "answer": "質問に対する答えはコンテキストに存在しません。",
                     "verdict": "-1",
                 }
             ).dict(),
@@ -184,27 +184,27 @@ question_answer_prompt = Prompt(
 
 keyphrase_extraction_prompt = Prompt(
     name="keyphrase_extraction",
-    instruction="Extract the top 3 to 5 keyphrases from the provided text, focusing on the most significant and distinctive aspects. ",
+    instruction="提供されたテキストから、最も重要で特徴的な側面に焦点を当てた上位3〜5のキーフレーズを抽出してください。",
     examples=[
         {
-            "text": "A black hole is a region of spacetime where gravity is so strong that nothing, including light and other electromagnetic waves, has enough energy to escape it. The theory of general relativity predicts that a sufficiently compact mass can deform spacetime to form a black hole.",
+            "text": "ブラックホールは、重力が非常に強く、光や他の電磁波を含む何もそれから逃れるエネルギーを持たない時空の領域です。一般相対性理論は、十分にコンパクトな質量が時空を変形させてブラックホールを形成できることを予測しています。",
             "output": {
                 "keyphrases": [
-                    "Black hole",
-                    "Region of spacetime",
-                    "Strong gravity",
-                    "Light and electromagnetic waves",
-                    "Theory of general relativity",
+                    "ブラックホール",
+                    "時空の領域",
+                    "強い重力",
+                    "光と電磁波",
+                    "一般相対性理論",
                 ]
             },
         },
         {
-            "text": "The Great Wall of China is an ancient series of walls and fortifications located in northern China, built around 500 years ago. This immense wall stretches over 13,000 miles and is a testament to the skill and persistence of ancient Chinese engineers.",
+            "text": "万里の長城は、約500年前に建てられた中国北部に位置する古代の一連の壁と要塞です。この巨大な壁は13,000マイル以上にわたり、古代中国の技術者たちの技術と忍耐の証です。",
             "output": {
                 "keyphrases": [
-                    "Great Wall of China",
-                    "Ancient fortifications",
-                    "Northern China",
+                    "万里の長城",
+                    "古代の要塞",
+                    "中国北部",
                 ]
             },
         },
@@ -216,22 +216,22 @@ keyphrase_extraction_prompt = Prompt(
 
 seed_question_prompt = Prompt(
     name="seed_question",
-    instruction="Generate a question that can be fully answered from given context. The question should be formed using topic",
+    instruction="与えられたコンテキストから完全に回答できる質問を作成してください。質問はトピックを使用して形成する必要があります。",
     examples=[
         {
-            "context": "Photosynthesis in plants involves converting light energy into chemical energy, using chlorophyll and other pigments to absorb light. This process is crucial for plant growth and the production of oxygen.",
-            "keyphrase": "Photosynthesis",
-            "question": "What is the role of photosynthesis in plant growth?",
+            "context": "光合成は、植物が光エネルギーを化学エネルギーに変換し、クロロフィルや他の色素を使用して光を吸収するプロセスです。このプロセスは、植物の成長や酸素の生成にとって重要です。",
+            "keyphrase": "光合成",
+            "question": "光合成は植物の成長にどのような役割を果たしますか？",
         },
         {
-            "context": "The Industrial Revolution, starting in the 18th century, marked a major turning point in history as it led to the development of factories and urbanization.",
-            "keyphrase": "Industrial Revolution",
-            "question": "How did the Industrial Revolution mark a major turning point in history?",
+            "context": "18世紀に始まった産業革命は、工場の発展と都市化をもたらし、歴史の大きな転換点となりました。",
+            "keyphrase": "産業革命",
+            "question": "産業革命はどのようにして歴史の大きな転換点となりましたか？",
         },
         {
-            "context": "The process of evaporation plays a crucial role in the water cycle, converting water from liquid to vapor and allowing it to rise into the atmosphere.",
-            "keyphrase": "Evaporation",
-            "question": "Why is evaporation important in the water cycle?",
+            "context": "蒸発のプロセスは、水を液体から蒸気に変え、それを大気中に上昇させることで、水循環において重要な役割を果たします。",
+            "keyphrase": "蒸発",
+            "question": "蒸発は水循環においてなぜ重要ですか？",
         },
     ],
     input_keys=["context", "keyphrase"],
@@ -242,23 +242,23 @@ seed_question_prompt = Prompt(
 
 main_topic_extraction_prompt = Prompt(
     name="main_topic_extraction",
-    instruction="Identify and extract the two main topics discussed in depth in the given text.",
+    instruction="与えられたテキストで詳しく説明されている2つの主要なトピックを特定して抽出してください。",
     examples=[
         {
-            "text": "Blockchain technology presents a decentralized ledger that ensures the integrity and transparency of data transactions. It underpins cryptocurrencies like Bitcoin, providing a secure and immutable record of all transactions. Beyond finance, blockchain has potential applications in supply chain management, where it can streamline operations, enhance traceability, and improve fraud prevention. It allows for real-time tracking of goods and transparent sharing of data among participants.",
+            "text": "ブロックチェーン技術は、データ取引の整合性と透明性を確保する分散型台帳を提供します。これは、ビットコインのような暗号通貨を支える技術であり、すべての取引の安全で変更不可能な記録を提供します。金融以外では、ブロックチェーンにはサプライチェーン管理における潜在的な応用があります。これにより、業務の効率化、トレーサビリティの向上、および不正防止が可能になります。また、商品をリアルタイムで追跡し、参加者間でデータを透明に共有することができます。",
             "output": {
                 "topics": [
-                    "Blockchain technology and its foundational role in cryptocurrencies",
-                    "Applications of blockchain in supply chain management",
+                    "ブロックチェーン技術と暗号通貨における基盤的役割",
+                    "ブロックチェーンのサプライチェーン管理への応用",
                 ]
             },
         },
         {
-            "text": "Telemedicine has revolutionized the way healthcare is delivered, particularly in rural and underserved areas. It allows patients to consult with doctors via video conferencing, improving access to care and reducing the need for travel. Another significant advancement in healthcare is precision medicine, which tailors treatments to individual genetic profiles. This approach has led to more effective therapies for a variety of conditions, including certain cancers and chronic diseases.",
+            "text": "遠隔医療は、特に農村部やサービスが不足している地域において、医療の提供方法を革新しました。これにより、患者はビデオ会議を通じて医師と相談することができ、ケアへのアクセスを改善し、移動の必要性を減らすことができます。医療におけるもう一つの重要な進歩は、個々の遺伝子プロファイルに合わせて治療を調整する精密医療です。このアプローチにより、特定の癌や慢性疾患などのさまざまな状態に対してより効果的な治療法が実現されています。",
             "output": {
                 "topics": [
-                    "Telemedicine and its impact on healthcare accessibility",
-                    "Precision medicine and its role in tailoring treatments to genetic profiles",
+                    "遠隔医療と医療アクセスへの影響",
+                    "精密医療と遺伝子プロファイルに合わせた治療の役割",
                 ]
             },
         },
@@ -271,25 +271,25 @@ main_topic_extraction_prompt = Prompt(
 
 find_relevant_context_prompt = Prompt(
     name="find_relevant_context",
-    instruction="Given a question and set of contexts, find the most relevant contexts to answer the question.",
+    instruction="質問と一連のコンテキストが与えられた場合、質問に答えるために最も関連性の高いコンテキストを見つけてください。",
     examples=[
         {
-            "question": "What is the capital of France?",
+            "question": "フランスの首都はどこですか？",
             "contexts": [
-                "1. France is a country in Western Europe. It has several cities, including Paris, Lyon, and Marseille. Paris is not only known for its cultural landmarks like the Eiffel Tower and the Louvre Museum but also as the administrative center.",
-                "2. The capital of France is Paris. It is also the most populous city in France, with a population of over 2 million people. Paris is known for its cultural landmarks like the Eiffel Tower and the Louvre Museum.",
-                "3. Paris is the capital of France. It is also the most populous city in France, with a population of over 2 million people. Paris is known for its cultural landmarks like the Eiffel Tower and the Louvre Museum.",
+                "1. フランスは西ヨーロッパにある国です。パリ、リヨン、マルセイユなどいくつかの都市があります。パリはエッフェル塔やルーブル美術館などの文化的ランドマークだけでなく、行政の中心地としても知られています。",
+                "2. フランスの首都はパリです。また、パリはフランスで最も人口の多い都市で、人口は200万人を超えています。パリはエッフェル塔やルーブル美術館などの文化的ランドマークで知られています。",
+                "3. パリはフランスの首都です。また、パリはフランスで最も人口の多い都市で、人口は200万人を超えています。パリはエッフェル塔やルーブル美術館などの文化的ランドマークで知られています。",
             ],
             "output": {
                 "relevant_contexts": [1, 2],
             },
         },
         {
-            "question": "How does caffeine affect the body and what are its common sources?",
+            "question": "カフェインは体にどのように影響し、一般的な供給源は何ですか？",
             "contexts": [
-                "1. Caffeine is a central nervous system stimulant. It can temporarily ward off drowsiness and restore alertness. It primarily affects the brain, where it alters the function of neurotransmitters.",
-                "2. Regular physical activity is essential for maintaining good health. It can help control weight, combat health conditions, boost energy, and promote better sleep.",
-                "3. Common sources of caffeine include coffee, tea, cola, and energy drinks. These beverages are consumed worldwide and are known for providing a quick boost of energy.",
+                "1. カフェインは中枢神経系の興奮剤です。一時的に眠気を防ぎ、注意力を回復させることができます。主に脳に影響を与え、神経伝達物質の機能を変えます。",
+                "2. 定期的な運動は健康を維持するために不可欠です。体重をコントロールし、健康状態を改善し、エネルギーを増やし、より良い睡眠を促進することができます。",
+                "3. カフェインの一般的な供給源には、コーヒー、紅茶、コーラ、エナジードリンクがあります。これらの飲料は世界中で消費されており、即座にエネルギーを供給することで知られています。",
             ],
             "output": {"relevant_contexts": [1, 2]},
         },
@@ -303,19 +303,19 @@ find_relevant_context_prompt = Prompt(
 
 question_rewrite_prompt = Prompt(
     name="rewrite_question",
-    instruction="""Given a context, question and feedback, rewrite the question to improve its clarity and answerability based on the feedback provided.""",
+    instruction="""与えられたコンテキスト、質問、およびフィードバックを考慮して、質問を明確にし、回答しやすくなるように書き直してください。""",
     examples=[
         {
-            "context": "The Eiffel Tower was constructed using iron and was originally intended as a temporary exhibit for the 1889 World's Fair held in Paris. Despite its initial temporary purpose, the Eiffel Tower quickly became a symbol of Parisian ingenuity and an iconic landmark of the city, attracting millions of visitors each year. The tower's design, created by Gustave Eiffel, was initially met with criticism from some French artists and intellectuals, but it has since been celebrated as a masterpiece of structural engineering and architectural design.",
-            "question": "Who created the design for the Tower?",
-            "feedback": "The question asks about the creator of the design for 'the Tower', but it does not specify which tower it refers to. There are many towers worldwide, and without specifying the exact tower, the question is unclear and unanswerable. To improve the question, it should include the name or a clear description of the specific tower in question.",
-            "output": "Who created the design for the Eiffel Tower?",
+            "context": "エッフェル塔は鉄を使用して建設され、元々は1889年にパリで開催された万国博覧会の一時的な展示物として意図されていました。その初期の一時的な目的にもかかわらず、エッフェル塔はすぐにパリの独創性の象徴となり、都市の象徴的なランドマークとなって毎年何百万人もの訪問者を引き寄せています。ギュスターヴ・エッフェルによって設計されたこの塔のデザインは、当初は一部のフランスの芸術家や知識人から批判されましたが、その後、構造工学と建築デザインの傑作として称賛されています。",
+            "question": "誰がタワーのデザインを作成しましたか？",
+            "feedback": "質問は「タワーのデザインの作成者」について尋ねていますが、どの塔を指しているのか明確にしていません。世界中には多くの塔があり、具体的な塔を指定しなければ、質問は不明瞭で答えられません。質問を改善するには、対象となる特定の塔の名前または明確な説明を含める必要があります。",
+            "output": "エッフェル塔のデザインを作成したのは誰ですか？",
         },
         {
-            "context": "'Exploring Zero-Shot Learning in Neural Networks' was published by Smith and Lee in 2021, focusing on the application of zero-shot learning techniques in artificial intelligence.",
-            "question": "What datasets were used for the zero-shot evaluations in this study?",
-            "feedback": "The question asks about the datasets used for zero-shot evaluations in 'this study', without specifying or providing any details about the study in question. This makes the question unclear for those who do not have access to or knowledge of the specific study. To improve clarity and answerability, the question should specify the study it refers to, or provide enough context about the study for the question to be understood and answered independently.",
-            "output": "What datasets were used for the zero-shot evaluations Exploring Zero-Shot Learning in Neural Networks paper?",
+            "context": "『ニューラルネットワークにおけるゼロショット学習の探求』は2021年にスミスとリーによって発表され、人工知能におけるゼロショット学習技術の応用に焦点を当てています。",
+            "question": "この研究ではゼロショット評価のためにどのデータセットが使用されましたか？",
+            "feedback": "質問は「この研究でゼロショット評価に使用されたデータセット」について尋ねていますが、具体的な研究についての詳細を提供していないため、研究が何を指しているのか不明確です。特定の研究にアクセスできない、またはその研究についての知識がない人には質問が不明瞭です。質問の明確さと回答可能性を向上させるためには、質問が参照する研究を明記するか、研究に関する十分なコンテキストを提供して、質問が独立して理解され回答されるようにする必要があります。",
+            "output": "『ニューラルネットワークにおけるゼロショット学習の探求』の論文でゼロショット評価に使用されたデータセットは何ですか？",
         },
     ],
     input_keys=["context", "question", "feedback"],
@@ -351,30 +351,29 @@ evolution_elimination_parser = RagasoutputParser(pydantic_object=EvolutionElimin
 context_scoring_prompt = Prompt(
     name="score_context",
     instruction="""
-    Given a context, perform the following task and output the answer in VALID JSON format: Assess the provided context and assign a numerical score of 1 (Low), 2 (Medium), or 3 (High) for each of the following criteria in your JSON response:
-
-clarity: Evaluate the precision and understandability of the information presented. High scores (3) are reserved for contexts that are both precise in their information and easy to understand. Low scores (1) are for contexts where the information is vague or hard to comprehend.
-depth: Determine the level of detailed examination and the inclusion of innovative insights within the context. A high score indicates a comprehensive and insightful analysis, while a low score suggests a superficial treatment of the topic.
-structure: Assess how well the content is organized and whether it flows logically. High scores are awarded to contexts that demonstrate coherent organization and logical progression, whereas low scores indicate a lack of structure or clarity in progression.
-relevance: Judge the pertinence of the content to the main topic, awarding high scores to contexts tightly focused on the subject without unnecessary digressions, and low scores to those that are cluttered with irrelevant information.
-Structure your JSON output to reflect these criteria as keys with their corresponding scores as values
+    コンテキストが与えられた場合、次のタスクを実行し、答えを有効なJSON形式で出力してください: 提供されたコンテキストを評価し、以下の各基準に対して1（低）、2（中）、または3（高）の数値スコアをJSONレスポンスに割り当ててください：
+clarity（明確さ）: 提示された情報の正確さと理解しやすさを評価します。高いスコア（3）は、情報が正確で理解しやすいコンテキストに対して予約されています。低いスコア（1）は、情報があいまいで理解しにくいコンテキストに対して与えられます。
+depth（深さ）: コンテキスト内での詳細な検討と革新的な洞察の包含のレベルを判断します。高いスコアは包括的で洞察に富んだ分析を示し、低いスコアはトピックの表面的な取り扱いを示します。
+structure（構造）: コンテンツがどれだけよく組織されていて、論理的に進行するかを評価します。高いスコアは、首尾一貫した組織と論理的な進行を示すコンテキストに与えられ、低いスコアは進行の構造や明確さの欠如を示します。
+relevance（関連性）: 主題に対するコンテンツの適切性を判断し、無駄な脱線なしに主題に密接に焦点を当てたコンテキストに高いスコアを与え、不要な情報が散らばっているコンテキストには低いスコアを与えます。
+これらの基準をキーとして、それぞれのスコアを値として反映するようにJSON出力を構成してください。
     """,
     output_format_instruction=get_json_format_instructions(ContextScoring),
     examples=[
         {
-            "context": "The Pythagorean theorem is a fundamental principle in geometry. It states that in a right-angled triangle, the square of the length of the hypotenuse (the side opposite the right angle) is equal to the sum of the squares of the lengths of the other two sides. This can be written as a^2 + b^2 = c^2 where c represents the length of the hypotenuse, and a and b represent the lengths of the other two sides.",
+            "context": "ピタゴラスの定理は幾何学の基本原理です。これは直角三角形において、斜辺（直角に対する辺）の長さの二乗は他の2辺の長さの二乗の和に等しいと述べています。これは、cが斜辺の長さを表し、aとbが他の2辺の長さを表すとき、a^2 + b^2 = c^2と書くことができます。",
             "output": ContextScoring.parse_obj(
                 {"clarity": 3, "depth": 1, "structure": 3, "relevance": 3}
             ).dict(),
         },
         {
-            "context": "Albert Einstein (14 March 1879 - 18 April 1955) was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time.",
+            "context": "アルベルト・アインシュタイン（1879年3月14日 - 1955年4月18日）は、ドイツ生まれの理論物理学者で、史上最も偉大で影響力のある科学者の一人と広く見なされています。",
             "output": ContextScoring.parse_obj(
                 {"clarity": 3, "depth": 2, "structure": 3, "relevance": 3}
             ).dict(),
         },
         {
-            "context": "I love chocolate. It's really tasty. Oh, and by the way, the earth orbits the sun, not the other way around. Also, my favorite color is blue.",
+            "context": "私はチョコレートが大好きです。本当においしいです。ところで、地球は太陽を周回していて、その逆ではありません。また、私の好きな色は青です。",
             "output": ContextScoring.parse_obj(
                 {"clarity": 2, "depth": 1, "structure": 1, "relevance": 1}
             ).dict(),
@@ -389,56 +388,55 @@ Structure your JSON output to reflect these criteria as keys with their correspo
 
 filter_question_prompt = Prompt(
     name="filter_question",
-    instruction="""
-Asses the given question for clarity and answerability given enough domain knowledge, consider the following criteria:
-1.Independence: Can the question be understood and answered without needing additional context or access to external references not provided within the question itself? Questions should be self-contained, meaning they do not rely on specific documents, tables, or prior knowledge not shared within the question.
-2.Clear Intent: Is it clear what type of answer or information the question seeks? The question should convey its purpose without ambiguity, allowing for a direct and relevant response.
-Based on these criteria, assign a verdict of "1" if a question is specific, independent, and has a clear intent, making it understandable and answerable based on the details provided. Assign "0" if it fails to meet one or more of these criteria due to vagueness, reliance on external references, or ambiguity in intent.
-Provide feedback and a verdict in JSON format, including suggestions for improvement if the question is deemed unclear. Highlight aspects of the question that contribute to its clarity or lack thereof, and offer advice on how it could be reframed or detailed for better understanding and answerability.
+    instruction="""質問が十分なドメイン知識を持つ場合に、明確さと回答可能性を評価し、以下の基準に基づいて評価してください：
+1.独立性: 質問が追加のコンテキストや質問自体に含まれていない外部参照にアクセスする必要なく、理解され回答できるか？質問は自己完結型であるべきで、特定の文書、表、または共有されていない事前知識に依存しないことが必要です。
+2.明確な意図: 質問が求めている回答または情報の種類は明確ですか？質問はその目的を曖昧にすることなく伝え、直接的で関連性のある応答を可能にするべきです。
+これらの基準に基づいて、質問が具体的で、独立していて、明確な意図を持ち、提供された詳細に基づいて理解し回答可能である場合は「1」との評決を割り当ててください。曖昧さ、不十分な外部参照依存、または意図の曖昧さのためにこれらの基準の1つ以上を満たさない場合は「0」と割り当ててください。
+質問が不明確であると判断された場合は、フィードバックと評決をJSON形式で提供し、改善のための提案を含めてください。質問の明確さまたはその欠如に寄与する側面を強調し、より良い理解と回答可能性のためにどのように再構成または詳細にすることができるかについてのアドバイスを提供してください。
 """,
     output_format_instruction=get_json_format_instructions(QuestionFilter),
     examples=[
         {
-            "question": "What is the discovery about space?",
+            "question": "宇宙に関する発見とは何ですか？",
             "output": QuestionFilter.parse_obj(
                 {
-                    "feedback": "The question is too vague and broad, asking for a 'discovery about space' without specifying any particular aspect, time frame, or context of interest. This could refer to a wide range of topics, from the discovery of new celestial bodies to advancements in space travel technology. To improve clarity and answerability, the question could specify the type of discovery (e.g., astronomical, technological), the time frame (e.g., recent, historical), or the context (e.g., within a specific research study or space mission).",
+                    "feedback": "質問は「宇宙に関する発見」について尋ねていますが、特定の側面、期間、または関心のあるコンテキストを指定せずに、あまりにも曖昧で広範囲です。これは、新しい天体の発見から宇宙旅行技術の進展まで、多岐にわたるトピックを指す可能性があります。明確さと回答可能性を向上させるためには、発見の種類（例：天文学的、技術的）、期間（例：最近、歴史的）、またはコンテキスト（例：特定の研究や宇宙ミッション内）を指定することができます。",
                     "verdict": "0",
                 }
             ).dict(),
         },
         {
-            "question": "How does ALMA-13B-R perform compared to other translation models in the WMT'23 study, based on the results in context1 and context2?",
+            "question": "WMT'23研究でALMA-13B-Rはcontext1とcontext2の結果に基づいて他の翻訳モデルと比較してどうですか？",
             "output": QuestionFilter.parse_obj(
                 {
-                    "feedback": "This question asks for a comparison of the ALMA-13B-R model's performance against other translation models within the WMT'23 study, specifically referring to results in 'context1' and 'context2'. While it clearly specifies the model of interest (ALMA-13B-R) and the study (WMT'23), it assumes access to and understanding of 'context1' and 'context2' without explaining what these contexts entail. This makes the question unclear for those not familiar with the WMT'23 study or these specific contexts. To improve clarity and answerability for a broader audience, the question could benefit from defining or describing 'context1' and 'context2' or explaining the criteria used for comparison in these contexts.",
+                    "feedback": "この質問は、ALMA-13B-RモデルのWMT'23研究における他の翻訳モデルとの比較を求めていますが、「context1」と「context2」の内容を説明せず、それらにアクセスし理解することを前提としています。これは、WMT'23研究またはこれらの特定のコンテキストを知らない人にとって不明確です。広い観客向けに明確さと回答可能性を向上させるために、「context1」と「context2」を定義または説明するか、これらのコンテキストで使用された比較基準を説明すると良いでしょう。",
                     "verdict": "0",
                 }
             ).dict(),
         },
         {
-            "question": "How do KIWI-XXL and XCOMET compare to the gold standard references in Table 1 in terms of evaluation scores, translation model performance, and success rate in surpassing the references?",
+            "question": "KIWI-XXLとXCOMETは表1の評価スコア、翻訳モデルのパフォーマンス、および参照を超える成功率に関してゴールドスタンダード参照とどう比較されますか？",
             "output": QuestionFilter.parse_obj(
                 {
-                    "feedback": "The question requests a comparison between KIWI-XXL and XCOMET models and gold standard references in 'Table 1', focusing on evaluation scores, translation model performance, and success rates in surpassing the references. It specifies the models and criteria for comparison, making the intent clear. However, the question assumes access to 'Table 1' without providing its content or context, making it unclear for those without direct access to the source material. To be clearer and more answerable for a general audience, the question could include a brief description of the content or key findings of 'Table 1', or alternatively, frame the question in a way that does not rely on specific, unpublished documents.",
+                    "feedback": "質問は、KIWI-XXLとXCOMETモデルを「表1」におけるゴールドスタンダード参照と比較し、評価スコア、翻訳モデルのパフォーマンス、および参照を超える成功率に焦点を当てています。モデルと比較基準を明確に指定しており、その意図は明確です。しかし、質問は「表1」へのアクセスを前提としており、その内容やコンテキストを提供していないため、ソース資料に直接アクセスできない人には不明確です。一般的な読者向けに質問を明確かつ回答可能にするためには、「表1」の内容または主な調査結果を簡単に説明するか、特定の未公開文書に依存しないように質問を構成する必要があります。",
                     "verdict": 0,
                 }
             ).dict(),
         },
         {
-            "question": "What is the configuration of UL2 training objective in OpenMoE and why is it a better choice for pre-training?",
+            "question": "OpenMoEにおけるUL2トレーニング目標の構成とそれが事前トレーニングに適している理由は何ですか？",
             "output": QuestionFilter.parse_obj(
                 {
-                    "feedback": "The question asks for the configuration of the UL2 training objective within the OpenMoE framework and the rationale behind its suitability for pre-training. It is clear in specifying the topic of interest (UL2 training objective, OpenMoE) and seeks detailed information on both the configuration and the reasons for its effectiveness in pre-training. However, the question might be challenging for those unfamiliar with the specific terminology or the context of OpenMoE and UL2. For broader clarity and answerability, it would be helpful if the question included a brief explanation or context about OpenMoE and the UL2 training objective, or clarified the aspects of pre-training effectiveness it refers to (e.g., efficiency, accuracy, generalization).",
+                    "feedback": "この質問は、OpenMoEフレームワーク内でのUL2トレーニング目標の構成と、その事前トレーニングに適している理由を尋ねています。質問は、関心のあるトピック（UL2トレーニング目標、OpenMoE）を明確にし、構成とその有効性の理由についての詳細な情報を求めています。しかし、特定の用語やOpenMoEとUL2の文脈を知らない人には難しいかもしれません。より広い明確さと回答可能性のためには、質問がOpenMoEとUL2トレーニング目標についての簡単な説明や文脈を含めるか、事前トレーニングの有効性の側面（例：効率性、精度、一般化）を明確にすると良いでしょう。",
                     "verdict": 1,
                 }
             ).dict(),
         },
         {
-            "question": "What is the detailed configuration of the UL2 training objective in OpenMoE, based on the provided context?",
+            "question": "提供されたコンテキストに基づいて、OpenMoEのUL2トレーニング目標の詳細な構成は何ですか？",
             "output": QuestionFilter.parse_obj(
                 {
-                    "feedback": "The question seeks detailed information on the UL2 training objective's configuration within the OpenMoE framework, mentioning 'the provided context' without actually including or describing this context within the query. This makes the question unclear for those who do not have access to the unspecified context. For the question to be clear and answerable, it needs to either include the relevant context directly within the question or be framed in a way that does not require external information. Detailing the specific aspects of the configuration of interest (e.g., loss functions, data augmentation techniques) could also help clarify the query.",
+                    "feedback": "質問は、提供されたコンテキストに基づいて、OpenMoEフレームワーク内でのUL2トレーニング目標の詳細な構成を求めていますが、このコンテキストが実際に含まれていないか、質問内で説明されていないため、質問が不明確です。質問を明確かつ回答可能にするには、関連するコンテキストを質問内に直接含めるか、外部情報を必要としないように質問を構成する必要があります。関心のある構成の具体的な側面（例：損失関数、データ拡張技術）を詳述することも、クエリを明確にするのに役立ちます。",
                     "verdict": 0,
                 }
             ).dict(),
@@ -452,38 +450,38 @@ Provide feedback and a verdict in JSON format, including suggestions for improve
 
 evolution_elimination_prompt = Prompt(
     name="evolution_elimination",
-    instruction="""Check if the given two questions are equal based on following requirements:
-    1. They have same constraints and requirements.
-    2. They have same depth and breadth of the inquiry.
-    Output verdict as 1 if they are equal and 0 if they are not""",
+    instruction="""与えられた2つの質問が以下の要件に基づいて等しいかどうかを確認してください：
+    1. 同じ制約と要件を持っている。
+    2. 問い合わせの深さと幅が同じである。
+    彼らが等しい場合は1を出力し、そうでない場合は0を出力してください。""",
     output_format_instruction=get_json_format_instructions(EvolutionElimination),
     examples=[
         {
-            "question1": "What are the primary causes of climate change?",
-            "question2": "What factors contribute to global warming?",
+            "question1": "気候変動の主な原因は何ですか？",
+            "question2": "地球温暖化に寄与する要因は何ですか？",
             "output": EvolutionElimination.parse_obj(
                 {
-                    "reason": "While both questions deal with environmental issues, 'climate change' encompasses broader changes than 'global warming', leading to different depths of inquiry.",
+                    "reason": "どちらの質問も環境問題を扱っていますが、「気候変動」は「地球温暖化」よりも幅広い変化を含むため、問い合わせの深さが異なります。",
                     "verdict": 0,
                 }
             ).dict(),
         },
         {
-            "question1": "How does photosynthesis work in plants?",
-            "question2": "Can you explain the process of photosynthesis in plants?",
+            "question1": "植物における光合成はどのように機能しますか？",
+            "question2": "植物における光合成のプロセスを説明できますか？",
             "output": EvolutionElimination.parse_obj(
                 {
-                    "reason": "Both questions ask for an explanation of the photosynthesis process in plants, sharing the same depth, breadth, and requirements for the answer.",
+                    "reason": "両方の質問は、植物における光合成のプロセスの説明を求めており、同じ深さ、幅、回答の要件を共有しています。",
                     "verdict": 1,
                 }
             ).dict(),
         },
         {
-            "question1": "What are the health benefits of regular exercise?",
-            "question2": "Can you list the advantages of exercising regularly for health?",
+            "question1": "定期的な運動の健康上の利点は何ですか？",
+            "question2": "健康のために定期的に運動することの利点を挙げられますか？",
             "output": EvolutionElimination.parse_obj(
                 {
-                    "reason": "Both questions seek information about the positive effects of regular exercise on health. They require a similar level of detail in listing the health benefits.",
+                    "reason": "両方の質問は、定期的な運動が健康に与える良い影響についての情報を求めています。彼らは健康上の利点を挙げるための同じレベルの詳細を必要とします。",
                     "verdict": 1,
                 }
             ).dict(),

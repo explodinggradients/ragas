@@ -52,9 +52,10 @@ DEFAULT_WITH_REFERENCE_RUBRICS = {
 WITH_REFERENCE_SCORING_PROMPT = Prompt(
     name="prometheus_score",
     output_format_instruction=_score_feedback_output_instructions,
-    instruction="""Given an question (which might contain an input along with it), a answer to evaluate, a ground_truth answer that gets a score of 5, and a score rubric representing evaluation criteria are given.
-1. Write detailed feedback that assesses the quality of the answer strictly based on the given score rubric, without evaluating in general.
-2. After writing the feedback, assign a score between 1 and 5, referring to the score rubric.""",
+    instruction="""与えられたquestion（入力を含む場合もある）、評価するanswer、スコア5を得るground_truthのanswer、および評価基準を示すスコアのルーブリックがあります。
+1. 提供されたスコアのルーブリックに基づいて、answerの質を厳密に評価する詳細なフィードバックを書いてください。一般的な評価を行わないでください。
+2. フィードバックを書いた後、スコアのルーブリックを参照して、1から5の間でスコアを割り当ててください。
+""",
     examples=[
         {
             "question": "What is the capital of France?",
@@ -80,9 +81,10 @@ WITH_REFERENCE_SCORING_PROMPT = Prompt(
 WITHOUT_REFERENCE_SCORING_PROMPT = Prompt(
     name="prometheus_score",
     output_format_instruction=_score_feedback_output_instructions,
-    instruction="""Given an question (which might contain an input along with it), a answer to evaluate, and a score rubric representing evaluation criteria are given.
-1. Write detailed feedback that assesses the quality of the answer strictly based on the given score rubric, without evaluating in general.
-2. After writing the feedback, assign a score between 1 and 5, referring to the score rubric.""",
+    instruction="""与えられたquestion（入力を含む場合もある）、評価するanswer、および評価基準を示すスコアのルーブリックがあります。
+1. 提供されたスコアのルーブリックに基づいて、answerの質を厳密に評価する詳細なフィードバックを書いてください。一般的な評価を行わないでください。
+2. フィードバックを書いた後、スコアのルーブリックを参照して、1から5の間でスコアを割り当ててください。
+""",
     examples=[
         {
             "question": "What is the capital of France?",

@@ -40,61 +40,61 @@ _output_parser = RagasoutputParser(pydantic_object=ContextRecallClassificationAn
 
 CONTEXT_RECALL_RA = Prompt(
     name="context_recall",
-    instruction="""Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not. Use only "Yes" (1) or "No" (0) as a binary classification. Output json with reason.""",
+    instruction="""与えられたcontextとanswerに基づき、answer内の各文を分析し、その文が与えられたcontextに帰属できるかどうかを分類してください。分類は"Yes" (1) または "No" (0) の二値分類のみを使用してください。理由とともにJSON形式で出力してください。""",
     output_format_instruction=_classification_output_instructions,
     examples=[
         {
-            "question": """What can you tell me about albert Albert Einstein?""",
-            "context": """Albert Einstein (14 March 1879 - 18 April 1955) was a German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time. Best known for developing the theory of relativity, he also made important contributions to quantum mechanics, and was thus a central figure in the revolutionary reshaping of the scientific understanding of nature that modern physics accomplished in the first decades of the twentieth century. His mass-energy equivalence formula E = mc2, which arises from relativity theory, has been called 'the world's most famous equation'. He received the 1921 Nobel Prize in Physics 'for his services to theoretical physics, and especially for his discovery of the law of the photoelectric effect', a pivotal step in the development of quantum theory. His work is also known for its influence on the philosophy of science. In a 1999 poll of 130 leading physicists worldwide by the British journal Physics World, Einstein was ranked the greatest physicist of all time. His intellectual achievements and originality have made Einstein synonymous with genius.""",
-            "answer": """Albert Einstein born in 14 March 1879 was  German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time. He received the 1921 Nobel Prize in Physics for his services to theoretical physics. He published 4 papers in 1905.  Einstein moved to Switzerland in 1895""",
+            "question": """アルベルト・アインシュタインについて教えてください。""",
+            "context": """アルベルト・アインシュタイン（1879年3月14日 - 1955年4月18日）は、ドイツ生まれの理論物理学者であり、史上最も偉大で影響力のある科学者の一人と広く見なされています。相対性理論の開発で最もよく知られている彼は、量子力学にも重要な貢献をし、20世紀初頭に現代物理学が成し遂げた自然の科学的理解の革命的再編成の中心人物でもありました。彼の質量-エネルギー等価の公式E=mc²は「世界で最も有名な方程式」と呼ばれています。彼は1921年に「理論物理学への貢献と特に光電効果の法則の発見のために」ノーベル物理学賞を受賞しました。彼の業績はまた、科学の哲学に対する影響でも知られています。1999年、イギリスのジャーナル「Physics World」が世界中の130人の著名な物理学者に対して行った世論調査では、アインシュタインは史上最高の物理学者に選ばれました。彼の知的成果と独創性により、アインシュタインは「天才」の代名詞となっています。""",
+            "answer": """アルベルト・アインシュタインは1879年3月14日に生まれたドイツ生まれの理論物理学者で、史上最も偉大で影響力のある科学者の一人と広く見なされています。彼は理論物理学への貢献により、1921年にノーベル物理学賞を受賞しました。彼は1905年に4本の論文を発表しました。アインシュタインは1895年にスイスに移住しました。""",
             "classification": ContextRecallClassificationAnswers.parse_obj(
                 [
                     {
-                        "statement": "Albert Einstein, born on 14 March 1879, was a German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time.",
-                        "reason": "The date of birth of Einstein is mentioned clearly in the context.",
+                        "statement": "アルベルト・アインシュタインは1879年3月14日に生まれたドイツ生まれの理論物理学者で、史上最も偉大で影響力のある科学者の一人と広く見なされています。",
+                        "reason": "アインシュタインの生年月日はコンテキストに明確に記載されています。",
                         "attributed": 1,
                     },
                     {
-                        "statement": "He received the 1921 Nobel Prize in Physics for his services to theoretical physics.",
-                        "reason": "The exact sentence is present in the given context.",
+                        "statement": "彼は理論物理学への貢献により、1921年にノーベル物理学賞を受賞しました。",
+                        "reason": "この正確な文は与えられたコンテキストに存在します。",
                         "attributed": 1,
                     },
                     {
-                        "statement": "He published 4 papers in 1905.",
-                        "reason": "There is no mention about papers he wrote in the given context.",
+                        "statement": "彼は1905年に4本の論文を発表しました。",
+                        "reason": "彼が書いた論文についての言及はコンテキストにはありません。",
                         "attributed": 0,
                     },
                     {
-                        "statement": "Einstein moved to Switzerland in 1895.",
-                        "reason": "There is no supporting evidence for this in the given context.",
+                        "statement": "アインシュタインは1895年にスイスに移住しました。",
+                        "reason": "このことを裏付ける証拠は与えられたコンテキストにはありません。",
                         "attributed": 0,
                     },
                 ]
             ).dicts(),
         },
         {
-            "question": """who won 2020 icc world cup?""",
-            "context": """The 2022 ICC Men's T20 World Cup, held from October 16 to November 13, 2022, in Australia, was the eighth edition of the tournament. Originally scheduled for 2020, it was postponed due to the COVID-19 pandemic. England emerged victorious, defeating Pakistan by five wickets in the final to clinch their second ICC Men's T20 World Cup title.""",
-            "answer": """England""",
+            "question": """2020年のICCワールドカップの優勝者は誰ですか？""",
+            "context": """2022年のICC男子T20ワールドカップは、2022年10月16日から11月13日までオーストラリアで開催され、トーナメントの第8回目でした。元々は2020年に予定されていましたが、COVID-19のパンデミックのため延期されました。イングランドが決勝でパキスタンを5ウィケットで破り、2度目のICC男子T20ワールドカップタイトルを獲得しました。""",
+            "answer": """イングランド""",
             "classification": ContextRecallClassificationAnswers.parse_obj(
                 [
                     {
-                        "statement": "England won the 2022 ICC Men's T20 World Cup.",
-                        "reason": "From context it is clear that England defeated Pakistan to win the World Cup.",
+                        "statement": "イングランドは2022年のICC男子T20ワールドカップで優勝しました。",
+                        "reason": "コンテキストから、イングランドがパキスタンを破ってワールドカップで優勝したことが明らかです。",
                         "attributed": 1,
                     },
                 ]
             ).dicts(),
         },
         {
-            "question": """What is the primary fuel for the Sun?""",
+            "question": """太陽の主な燃料は何ですか？""",
             "context": """NULL""",
-            "answer": """Hydrogen""",
+            "answer": """水素""",
             "classification": ContextRecallClassificationAnswers.parse_obj(
                 [
                     {
-                        "statement": "The Sun's primary fuel is hydrogen.",
-                        "reason": "The context contains no information",
+                        "statement": "太陽の主な燃料は水素です。",
+                        "reason": "コンテキストには情報が含まれていません。",
                         "attributed": 0,
                     },
                 ]

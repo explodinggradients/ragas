@@ -30,74 +30,74 @@ _output_parser = RagasoutputParser(pydantic_object=ContextEntitiesResponse)
 
 TEXT_ENTITY_EXTRACTION = Prompt(
     name="text_entity_extraction",
-    instruction="""Given a text, extract unique entities without repetition. Ensure you consider different forms or mentions of the same entity as a single entity.""",
+    instruction="""与えられたテキストから、重複なくユニークなエンティティを抽出してください。同じエンティティの異なる形や言及も、単一のエンティティとして扱うようにしてください。""",
     input_keys=["text"],
     output_key="output",
     output_type="json",
     output_format_instruction=_output_instructions,
     examples=[
         {
-            "text": """The Eiffel Tower, located in Paris, France, is one of the most iconic landmarks globally.
-            Millions of visitors are attracted to it each year for its breathtaking views of the city.
-            Completed in 1889, it was constructed in time for the 1889 World's Fair.""",
+            "text": """エッフェル塔は、フランスのパリに位置する世界的に最も象徴的なランドマークの一つです。
+            毎年何百万人もの訪問者が、その美しい市内の眺望を求めて訪れます。
+            1889年に完成し、1889年の万国博覧会に間に合うように建設されました。""",
             "output": ContextEntitiesResponse.parse_obj(
                 {
                     "entities": [
-                        "Eiffel Tower",
-                        "Paris",
-                        "France",
-                        "1889",
-                        "World's Fair",
+                        "エッフェル塔",
+                        "パリ",
+                        "フランス",
+                        "1889年",
+                        "万国博覧会",
                     ],
                 }
             ).dict(),
         },
         {
-            "text": """The Colosseum in Rome, also known as the Flavian Amphitheatre, stands as a monument to Roman architectural and engineering achievement.
-            Construction began under Emperor Vespasian in AD 70 and was completed by his son Titus in AD 80.
-            It could hold between 50,000 and 80,000 spectators who watched gladiatorial contests and public spectacles.""",
+            "text": """ローマのコロッセオは、フラヴィウス円形劇場としても知られており、ローマの建築と工学の偉業を示す記念碑です。
+            建設は紀元70年に皇帝ウェスパシアヌスの下で始まり、息子ティトゥスによって紀元80年に完成しました。
+            5万人から8万人の観客を収容でき、彼らは剣闘士の競技や公開スペクタクルを観戦しました。""",
             "output": ContextEntitiesResponse.parse_obj(
                 {
                     "entities": [
-                        "Colosseum",
-                        "Rome",
-                        "Flavian Amphitheatre",
-                        "Vespasian",
-                        "AD 70",
-                        "Titus",
-                        "AD 80",
+                        "コロッセオ",
+                        "ローマ",
+                        "フラヴィウス円形劇場",
+                        "ウェスパシアヌス",
+                        "紀元70年",
+                        "ティトゥス",
+                        "紀元80年",
                     ],
                 }
             ).dict(),
         },
         {
-            "text": """The Great Wall of China, stretching over 21,196 kilometers from east to west, is a marvel of ancient defensive architecture.
-            Built to protect against invasions from the north, its construction started as early as the 7th century BC.
-            Today, it is a UNESCO World Heritage Site and a major tourist attraction.""",
+            "text": """万里の長城は東から西へ21,196キロメートル以上にわたって伸びており、古代の防御建築の驚異です。
+            北からの侵略に対する防御として建てられ、その建設は紀元前7世紀に始まりました。
+            現在では、ユネスコ世界遺産に登録されており、大きな観光名所となっています。""",
             "output": ContextEntitiesResponse.parse_obj(
                 {
                     "entities": [
-                        "Great Wall of China",
-                        "21,196 kilometers",
-                        "7th century BC",
-                        "UNESCO World Heritage Site",
+                        "万里の長城",
+                        "21,196キロメートル",
+                        "紀元前7世紀",
+                        "ユネスコ世界遺産",
                     ],
                 }
             ).dict(),
         },
         {
-            "text": """The Apollo 11 mission, which launched on July 16, 1969, marked the first time humans landed on the Moon.
-            Astronauts Neil Armstrong, Buzz Aldrin, and Michael Collins made history, with Armstrong being the first man to step on the lunar surface.
-            This event was a significant milestone in space exploration.""",
+            "text": """アポロ11号のミッションは、1969年7月16日に打ち上げられ、人類が初めて月に着陸したことを記念しました。
+            宇宙飛行士ニール・アームストロング、バズ・オルドリン、マイケル・コリンズが歴史を作り、アームストロングは月面に最初に足を踏み入れた人間となりました。
+            この出来事は、宇宙探査における重要なマイルストーンでした。""",
             "output": ContextEntitiesResponse.parse_obj(
                 {
                     "entities": [
-                        "Apollo 11 mission",
-                        "July 16, 1969",
-                        "Moon",
-                        "Neil Armstrong",
-                        "Buzz Aldrin",
-                        "Michael Collins",
+                        "アポロ11号ミッション",
+                        "1969年7月16日",
+                        "月",
+                        "ニール・アームストロング",
+                        "バズ・オルドリン",
+                        "マイケル・コリンズ",
                     ],
                 }
             ).dict(),

@@ -7,6 +7,8 @@ from ragas.metrics._context_entities_recall import context_entity_recall
 from ragas.metrics._context_precision import context_precision, context_utilization
 from ragas.metrics._context_recall import context_recall
 from ragas.metrics._faithfulness import faithfulness
+from ragas.metrics._noise_sensitivity import noise_sensitivity_relevant, noise_sensitivity_irrelevant
+from ragas.metrics._rubrics_based import labelled_rubrics_score, reference_free_rubrics_score
 from ragas.metrics.base import Metric
 from ragas.validation import validate_evaluation_modes
 
@@ -19,6 +21,10 @@ ALL_METRICS = [
     context_recall,
     answer_relevancy,
     context_entity_recall,
+    noise_sensitivity_relevant,
+    noise_sensitivity_irrelevant,
+    labelled_rubrics_score,
+    reference_free_rubrics_score,
 ]
 
 

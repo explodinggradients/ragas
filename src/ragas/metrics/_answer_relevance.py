@@ -32,45 +32,45 @@ _output_parser = RagasoutputParser(pydantic_object=AnswerRelevanceClassification
 
 QUESTION_GEN = Prompt(
     name="question_generation",
-    instruction="""Generate a question for the given answer and Identify if answer is noncommittal. Give noncommittal as 1 if the answer is noncommittal and 0 if the answer is committal. A noncommittal answer is one that is evasive, vague, or ambiguous. For example, "I don't know" or "I'm not sure" are noncommittal answers""",
+    instruction="""与えられたanswerに対してquestionを生成し、そのanswerが非断定的であるかを識別してください。answerが非断定的であれば「1」を、断定的であれば「0」を与えてください。非断定的なanswerとは、回避的、曖昧、または曖昧な回答を指します。例えば、「わかりません」や「確かではありません」は非断定的なanswerです。""",
     output_format_instruction=_output_instructions,
     examples=[
         {
-            "answer": """Albert Einstein was born in Germany.""",
-            "context": """Albert Einstein was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time""",
+            "answer": """アルベルト・アインシュタインはドイツで生まれました。""",
+            "context": """アルベルト・アインシュタインはドイツ生まれの理論物理学者で、史上最も偉大で影響力のある科学者の一人と広く見なされています。""",
             "output": AnswerRelevanceClassification.parse_obj(
                 {
-                    "question": "Where was Albert Einstein born?",
+                    "question": "アルベルト・アインシュタインはどこで生まれましたか？",
                     "noncommittal": 0,
                 }
             ).dict(),
         },
         {
-            "answer": """It can change its skin color based on the temperature of its environment.""",
-            "context": """A recent scientific study has discovered a new species of frog in the Amazon rainforest that has the unique ability to change its skin color based on the temperature of its environment.""",
+            "answer": """それは環境の温度に応じて皮膚の色を変えることができます。""",
+            "context": """最近の科学的研究では、アマゾンの熱帯雨林で新種のカエルが発見されました。そのカエルには環境の温度に応じて皮膚の色を変えるユニークな能力があります。""",
             "output": AnswerRelevanceClassification.parse_obj(
                 {
-                    "question": "What unique ability does the newly discovered species of frog have?",
+                    "question": "新たに発見されたカエルの種にはどのような独自の能力がありますか？",
                     "noncommittal": 0,
                 }
             ).dict(),
         },
         {
-            "answer": """Everest""",
-            "context": """The tallest mountain on Earth, measured from sea level, is a renowned peak located in the Himalayas.""",
+            "answer": """エベレスト""",
+            "context": """海面からの高さで測定した場合、地球で最も高い山はヒマラヤにある有名な峰です。""",
             "output": AnswerRelevanceClassification.parse_obj(
                 {
-                    "question": "What is the tallest mountain on Earth?",
+                    "question": "地球で最も高い山は何ですか？",
                     "noncommittal": 0,
                 }
             ).dict(),
         },
         {
-            "answer": """I don't know about the  groundbreaking feature of the smartphone invented in 2023 as am unaware of information beyond 2022. """,
-            "context": """In 2023, a groundbreaking invention was announced: a smartphone with a battery life of one month, revolutionizing the way people use mobile technology.""",
+            "answer": """私は2023年に発明されたスマートフォンの画期的な機能については知りません。2022年以降の情報を持っていないためです。""",
+            "context": """2023年に画期的な発明が発表されました。それは1か月間のバッテリー寿命を持つスマートフォンで、モバイル技術の利用方法を一変させました。""",
             "output": AnswerRelevanceClassification.parse_obj(
                 {
-                    "question": "What was the groundbreaking feature of the smartphone invented in 2023?",
+                    "question": "2023年に発明されたスマートフォンの画期的な機能は何でしたか？",
                     "noncommittal": 1,
                 }
             ).dict(),

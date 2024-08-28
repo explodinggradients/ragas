@@ -49,29 +49,29 @@ _statements_output_parser = RagasoutputParser(pydantic_object=StatementsAnswers)
 LONG_FORM_ANSWER_PROMPT = Prompt(
     name="long_form_answer",
     output_format_instruction=_statements_output_instructions,
-    instruction="Given a question, an answer, and sentences from the answer analyze the complexity of each sentence given under 'sentences' and break down each sentence into one or more fully understandable statements while also ensuring no pronouns are used in each statement. Format the outputs in JSON.",
+    instruction="""与えられたquestion、answer、およびanswerの中の'sentences'から、それぞれの文の複雑さを分析し、各文を完全に理解できる1つ以上の文に分解してください。また、それぞれの文では代名詞を使用しないようにしてください。結果をJSON形式で出力してください。""",
     examples=[
         {
-            "question": "Who was Albert Einstein and what is he best known for?",
-            "answer": "He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.",
+            "question": "アルベルト・アインシュタインとは誰で、彼は何で最も知られていますか？",
+            "answer": "彼はドイツ生まれの理論物理学者であり、史上最も偉大で影響力のある物理学者の一人として広く認められています。彼は相対性理論の開発で最も知られており、量子力学の理論の発展にも重要な貢献をしました。",
             "sentences": """
-        0:He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. 
-        1:He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.
-        """,
+            0:彼はドイツ生まれの理論物理学者であり、史上最も偉大で影響力のある物理学者の一人として広く認められています。
+            1:彼は相対性理論の開発で最も知られており、量子力学の理論の発展にも重要な貢献をしました。
+            """,
             "analysis": StatementsAnswers.parse_obj(
                 [
                     {
                         "sentence_index": 0,
                         "simpler_statements": [
-                            "Albert Einstein was a German-born theoretical physicist.",
-                            "Albert Einstein is recognized as one of the greatest and most influential physicists of all time.",
+                            "アルベルト・アインシュタインはドイツ生まれの理論物理学者です。",
+                            "アルベルト・アインシュタインは史上最も偉大で影響力のある物理学者の一人として認められています。",
                         ],
                     },
                     {
                         "sentence_index": 1,
                         "simpler_statements": [
-                            "Albert Einstein was best known for developing the theory of relativity.",
-                            "Albert Einstein also made important contributions to the development of the theory of quantum mechanics.",
+                            "アルベルト・アインシュタインは相対性理論の開発で最も知られています。",
+                            "アルベルト・アインシュタインは量子力学の理論の発展にも重要な貢献をしました。",
                         ],
                     },
                 ]
@@ -106,7 +106,7 @@ _faithfulness_output_parser = RagasoutputParser(
 
 NLI_STATEMENTS_MESSAGE = Prompt(
     name="nli_statements",
-    instruction="Your task is to judge the faithfulness of a series of statements based on a given context. For each statement you must return verdict as 1 if the statement can be directly inferred based on the context or 0 if the statement can not be directly inferred based on the context.",
+    instruction="""与えられたcontextに基づいて、一連の文の忠実性を判断することがあなたのタスクです。各文について、その文がcontextに基づいて直接推測できる場合は1を返し、直接推測できない場合は0を返してください。""",
     output_format_instruction=_faithfulness_output_instructions,
     examples=[
         {
@@ -214,7 +214,7 @@ class Faithfulness(MetricWithLLM):
         text, question = row["answer"], row["question"]
         sentences = self.sentence_segmenter.segment(text)
         sentences = [
-            sentence for sentence in sentences if sentence.strip().endswith(".")
+            sentence for sentence in sentences if sentence.strip().endswith(".","。")
         ]
         sentences = "\n".join([f"{i}:{x}" for i, x in enumerate(sentences)])
         prompt_value = self.statement_prompt.format(

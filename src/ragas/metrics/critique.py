@@ -30,16 +30,16 @@ _output_parser = RagasoutputParser(pydantic_object=CriticClassification)
 
 CRITIQUE_PROMPT = Prompt(
     name="critique",
-    instruction="Given a input and submission. Evaluate the submission only using the given criteria. Use only 'Yes' (1) and 'No' (0) as verdict.",
+    instruction="与えられた入力と提出物に基づいて、提出物を評価してください。評価には指定された基準のみを使用してください。評決には 'Yes' (1) と 'No' (0) のみを使用してください。",
     output_format_instruction=_output_instructions,
     examples=[
         {
-            "input": "Who was the director of Los Alamos Laboratory?",
-            "submission": "Einstein was the director of Los Alamos Laboratory.",
-            "criteria": "Is the output written in perfect grammar",
+            "input": "ロスアラモス研究所のディレクターは誰でしたか？",
+            "submission": "アインシュタインはロスアラモス研究所のディレクターでした。",
+            "criteria": "出力が完璧な文法で書かれているか",
             "output": CriticClassification.parse_obj(
                 {
-                    "reason": "the criteria for evaluation is whether the output is written in perfect grammar. In this case, the output is grammatically correct.",
+                    "reason": "評価の基準は、出力が完璧な文法で書かれているかどうかです。この場合、出力は文法的に正しいです。",
                     "verdict": 1,
                 }
             ).dict(),
