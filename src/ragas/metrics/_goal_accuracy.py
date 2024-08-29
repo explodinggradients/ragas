@@ -6,12 +6,13 @@ from dataclasses import dataclass, field
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel, Field
 
-from ragas.dataset_schema import WorkflowEvaluationSample
+from ragas.dataset_schema import MultiTurnSample
 from ragas.llms.output_parser import RagasoutputParser
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import MetricWithLLM
+from ragas.metrics.base import EvaluationMode, MetricWithLLM
 
 if t.TYPE_CHECKING:
+    from langchain_core.callbacks.base import Callbacks
 
     from ragas.llms.prompt import PromptValue
 
@@ -54,12 +55,10 @@ GOAL_AND_STATE_PROMPT = Prompt(
             AI: Your table at Golden Dragon is booked for 8:00pm. Enjoy your meal!
             Human: thanks
             """,
-            "output": GoalAccuracy.parse_obj(
-                {
-                    "user_goal": "Book a table at the nearest best Chinese restaurant for 8:00pm.",
-                    "end_state": "A table is successfully booked at Golden Dragon (Chinese restaurant) for 8:00pm.",
-                }
-            ),
+            "output": {
+                "user_goal": "Book a table at the nearest best Chinese restaurant for 8:00pm.",
+                "end_state": "A table is successfully booked at Golden Dragon (Chinese restaurant) for 8:00pm.",
+            },
         }
     ],
     input_keys=["workflow"],
@@ -95,13 +94,15 @@ _outcome_comparison_parser = RagasoutputParser(pydantic_object=CompareOutcome)
 @dataclass
 class AgentGoalAccuracy(MetricWithLLM):
     name: str = "agent_goal_accuracy"  # type: ignore
-    _required_columns: t.Tuple[str, ...] = ("user_input",)
+    _required_columns: t.Tuple[str, ...] = ("user_input", "reference")  # type: ignore
+    evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
     workflow_prompt: Prompt = field(default_factory=lambda: GOAL_AND_STATE_PROMPT)
     compare_outcome_prompt: Prompt = field(
         default_factory=lambda: COMPARE_OUTCOME_PROMPT
     )
+    max_retries: int = 1
 
-    def _create_workflow_prompt(self, sample: WorkflowEvaluationSample) -> PromptValue:
+    def _create_workflow_prompt(self, sample: MultiTurnSample) -> PromptValue:
         workflow = sample.pretty_repr()
         return self.workflow_prompt.format(workflow=workflow)
 
@@ -114,11 +115,11 @@ class AgentGoalAccuracy(MetricWithLLM):
 
     async def _ascore(
         self,
-        sample: WorkflowEvaluationSample,
-        callbacks: t.List[BaseCallbackHandler] | BaseCallbackManager | None,
+        row: MultiTurnSample,
+        callbacks: Callbacks,
     ) -> float:
         assert self.llm is not None, "LLM is not set"
-        prompt_value = self._create_workflow_prompt(sample)
+        prompt_value = self._create_workflow_prompt(row)
         response = await self.llm.generate(prompt_value, callbacks=callbacks)
         response = response.generations[0][0].text
         parsed_response = await _goal_accuracy_output_parser.aparse(
@@ -127,13 +128,13 @@ class AgentGoalAccuracy(MetricWithLLM):
         if parsed_response is None:
             return np.nan
 
-        row = {
+        row_dict = {
             "goal": parsed_response.user_goal,
-            "desired_outcome": parsed_response.end_state,
-            "arrived_outcome": sample.reference,
+            "arrived_outcome": parsed_response.end_state,
+            "desired_outcome": row.reference,
         }
 
-        prompt = self._create_comparison_prompt(row)
+        prompt = self._create_comparison_prompt(row_dict)
         result = await self.llm.generate(prompt, callbacks=callbacks)
         result = result.generations[0][0].text
         parsed_response = await _outcome_comparison_parser.aparse(
@@ -143,3 +144,6 @@ class AgentGoalAccuracy(MetricWithLLM):
             return np.nan
         verdict = int(parsed_response.verdict)
         return verdict
+
+
+agent_goal_accuracy = AgentGoalAccuracy()
