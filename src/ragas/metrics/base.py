@@ -143,7 +143,7 @@ class Metric(ABC):
         timeout: t.Optional[float] = None,
     ) -> float:
         callbacks = callbacks or []
-        rm, group_cm = new_group(self.name, inputs=row, callbacks=callbacks)
+        rm, group_cm = new_group(self.name, inputs=row.dict(), callbacks=callbacks)
         try:
             score = await asyncio.wait_for(
                 self._ascore(row=row, callbacks=group_cm),

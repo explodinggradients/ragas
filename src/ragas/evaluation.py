@@ -34,10 +34,7 @@ from ragas.metrics.critique import AspectCritique
 from ragas.run_config import RunConfig
 from ragas.utils import get_feature_language, safe_nanmean
 from ragas.validation import (
-    handle_deprecated_ground_truths,
     remap_column_names,
-    validate_column_dtypes,
-    validate_evaluation_modes,
     validate_required_columns,
 )
 
@@ -161,14 +158,10 @@ def evaluate(
         # remap column names from the dataset
         dataset = remap_column_names(dataset, column_map)
         # validation
-        dataset = handle_deprecated_ground_truths(dataset)
-        validate_evaluation_modes(dataset, metrics)
-        validate_column_dtypes(dataset)
-    elif isinstance(dataset, EvaluationDataset):
+        dataset = EvaluationDataset.from_list(dataset.to_list())
+
+    if isinstance(dataset, EvaluationDataset):
         validate_required_columns(dataset, metrics)
-        dataset = dataset.to_hf_dataset()
-    else:
-        raise ValueError("Dataset should be of type Dataset or EvaluationDataset")
 
     # set the llm and embeddings
     if isinstance(llm, LangchainLLM):
@@ -241,8 +234,8 @@ def evaluate(
     evaluation_rm, evaluation_group_cm = new_group(
         name="ragas evaluation", inputs={}, callbacks=callbacks
     )
-    for i, row in enumerate(dataset):
-        row = t.cast(t.Dict[str, t.Any], row)
+    for i, sample in enumerate(dataset):
+        row = t.cast(t.Dict[str, t.Any], sample.dict())
         row_rm, row_group_cm = new_group(
             name=f"row {i}",
             inputs=row,
@@ -252,7 +245,7 @@ def evaluate(
         [
             executor.submit(
                 metric.ascore,
-                row,
+                sample,
                 row_group_cm,
                 name=f"{metric.name}-{i}",
                 timeout=run_config.timeout,
@@ -290,7 +283,7 @@ def evaluate(
         cost_cb = ragas_callbacks["cost_cb"] if "cost_cb" in ragas_callbacks else None
         result = Result(
             scores=Dataset.from_list(scores),
-            dataset=dataset,
+            dataset=dataset.to_hf_dataset(),
             binary_columns=binary_metrics,
             cost_cb=t.cast(
                 t.Union["CostCallbackHandler", None],
@@ -322,7 +315,7 @@ def evaluate(
             event_type="evaluation",
             metrics=metrics_names,
             evaluation_mode="",
-            num_rows=dataset.shape[0],
+            num_rows=len(dataset),
             language=metric_lang[0] if len(metric_lang) > 0 else "",
             in_ci=in_ci,
         )
