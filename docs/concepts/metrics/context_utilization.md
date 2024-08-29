@@ -4,7 +4,7 @@ Context utilization is like a reference free version of [context_precision](cont
 
 
 ```{math}
-\text{Context Precision@K} = \frac{\sum_{k=1}^{K} \left( \text{Precision@k} \times v_k \right)}{\text{Total number of relevant items in the top } K \text{ results}}
+\text{Context Utilization@K} = \frac{\sum_{k=1}^{K} \left( \text{Precision@k} \times v_k \right)}{\text{Total number of relevant items in the top } K \text{ results}}
 ````
 
 ```{math}
@@ -18,9 +18,9 @@ Where $K$ is the total number of chunks in `contexts` and $v_k \in \{0, 1\}$ is 
 Question: Where is France and what is it's capital?
 Answer: France is in Western Europe and its capital is Paris.
 
-High context precision: ["France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. Paris, its capital, is famed for its fashion houses, classical art museums including the Louvre and monuments like the Eiffel Tower", "The country is also renowned for its wines and sophisticated cuisine. Lascaux’s ancient cave drawings, Lyon’s Roman theater and the vast Palace of Versailles attest to its rich history."]  
+High context utilization: ["France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. Paris, its capital, is famed for its fashion houses, classical art museums including the Louvre and monuments like the Eiffel Tower", "The country is also renowned for its wines and sophisticated cuisine. Lascaux’s ancient cave drawings, Lyon’s Roman theater and the vast Palace of Versailles attest to its rich history."]  
 
-Low context precision: ["The country is also renowned for its wines and sophisticated cuisine. Lascaux’s ancient cave drawings, Lyon’s Roman theater and", "France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. Paris, its capital, is famed for its fashion houses, classical art museums including the Louvre and monuments like the Eiffel Tower",]
+Low context utilization: ["The country is also renowned for its wines and sophisticated cuisine. Lascaux’s ancient cave drawings, Lyon’s Roman theater and", "France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. Paris, its capital, is famed for its fashion houses, classical art museums including the Louvre and monuments like the Eiffel Tower",]
 ```
 
 ## Example
@@ -44,7 +44,7 @@ score.to_pandas()
 
 ## Calculation 
 
-Let's examine how context utilization was calculated using the low context precision example:
+Let's examine how context utilization was calculated using the low context utilization example:
 
 **Step 1**: For each chunk in retrieved context, check if it is relevant or not relevant to arrive at the answer for the given question.
 
@@ -58,8 +58,8 @@ Let's examine how context utilization was calculated using the low context preci
 \text{Precision@2} = {\text{1} \over \text{2}} = 0.5
 ````
 
-**Step 3**: Calculate the mean of precision@k to arrive at the final context precision score.
+**Step 3**: Calculate the mean of precision@k to arrive at the final context utilization score.
 
 ```{math}
- \text{Context Precision} = {\text{(0+0.5)} \over \text{1}} = 0.5
+ \text{Context Utilization} = {\text{(0+0.5)} \over \text{1}} = 0.5
 ```

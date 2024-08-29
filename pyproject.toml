@@ -18,6 +18,7 @@ dynamic = ["version", "readme"]
 [project.optional-dependencies]
 all = [
     "sentence-transformers",
+    "transformers",
 ]
 
 [tool.setuptools]
@@ -25,6 +26,9 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/plain"}
+
+[tool.ruff]
+exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
 ignore = ["E501"]

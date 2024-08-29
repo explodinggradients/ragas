@@ -158,6 +158,10 @@ class Prompt(BaseModel):
             raise ValueError(
                 f"Input variables {self.input_keys} do not match with the given parameters {list(kwargs.keys())}"
             )
+        for key, value in kwargs.items():
+            if isinstance(value, str):
+                kwargs[key] = json.dumps(value)
+
         prompt = self.to_string()
         return PromptValue(prompt_str=prompt.format(**kwargs))
 
@@ -265,7 +269,7 @@ class Prompt(BaseModel):
 
         return self
 
-    def save(self, cache_dir: t.Optional[str] = None) -> None:
+    def save(self, cache_dir: t.Optional[str] = None):
         cache_dir = cache_dir if cache_dir else get_cache_dir()
         cache_dir = os.path.join(cache_dir, self.language)
         if not os.path.exists(cache_dir):
