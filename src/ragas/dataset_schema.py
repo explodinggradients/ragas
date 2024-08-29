@@ -1,82 +1,36 @@
-from typing import Any, Dict, List, Literal, Optional, Union
+import json
+from typing import Dict, Iterator, List, Optional, Union
 
 from datasets import Dataset
 from langchain_core.pydantic_v1 import BaseModel, validator
 
-
-class Message(BaseModel):
-    content: str
-    metadata: Optional[Dict[str, Any]] = None
+from ragas.messages import AIMessage, HumanMessage, ToolMessage
 
 
-class ToolCall(BaseModel):
-    name: str
-    args: Dict[str, Union[str, int, float]]
+class BaseEvalSample(BaseModel):
+    ...
 
 
-class HumanMessage(Message):
-    type: Literal["human"] = "human"
-
-    def pretty_repr(self):
-        return f"Human: {self.content}"
-
-
-class ToolMessage(Message):
-    type: Literal["tool"] = "tool"
-
-    def pretty_repr(self):
-        return f"ToolOutput: {self.content}"
-
-
-class AIMessage(Message):
-    type: Literal["ai"] = "ai"
-    tool_calls: Optional[List[ToolCall]] = None
-
-    def dict(self, **kwargs):
-        content = (
-            self.content
-            if self.tool_calls is None
-            else {
-                "text": self.content,
-                "tool_calls": [tc.dict() for tc in self.tool_calls],
-            }
-        )
-        return {"content": content, "type": self.type}
-
-    def pretty_repr(self):
-        lines = []
-        if self.content != "":
-            lines.append(f"AI: {self.content}")
-        if self.tool_calls is not None:
-            lines.append("Tools:")
-            for tc in self.tool_calls:
-                lines.append(f"  {tc.name}: {tc.args}")
-
-        return "\n".join(lines)
-
-
-class EvaluationSample(BaseModel):
+class SingleTurnSample(BaseEvalSample):
     user_input: Optional[str] = None
     retrieved_contexts: Optional[List[str]] = None
     ground_truth_contexts: Optional[List[str]] = None
     response: Optional[str] = None
+    multi_responses: Optional[List[str]] = None
     reference: Optional[str] = None
     rubric: Optional[Dict[str, str]] = None
 
     def dict(self, **kwargs):
-        row = {
-            "user_input": self.user_input,
-            "retrieved_contexts": self.retrieved_contexts,
-            "ground_truth_contexts": self.ground_truth_contexts,
-            "response": self.response,
-            "reference": self.reference,
-            "rubric": self.rubric,
-        }
+        row = self.dict()
         row = {k: v for k, v in row.items() if v is not None}
         return row
 
+    @classmethod
+    def from_dict(cls, row):
+        return cls(**row)
 
-class WorkflowEvaluationSample(BaseModel):
+
+class MultiTurnSample(BaseEvalSample):
     user_input: List[Union[HumanMessage, AIMessage, ToolMessage]]
     reference: Optional[str] = None
 
@@ -115,12 +69,43 @@ class WorkflowEvaluationSample(BaseModel):
         return "\n".join(lines)
 
 
+# TODO: add methods that allow users to load data from different types like dict, json, etc
+# just like pd.read_csv, pd.read_json, etc
+
+
 class EvaluationDataset(BaseModel):
-    samples: List[EvaluationSample]
+    samples: List[BaseEvalSample]
 
     def to_hf_dataset(self):
         rows = [sample.dict() for sample in self.samples]
+
+        for sample in rows:
+            for item in sample["user_input"]:
+                if not isinstance(item["content"], str):
+                    item["content"] = json.dumps(item["content"])
+
         return Dataset.from_list(rows)
 
     def features(self):
         return self.to_hf_dataset().features.keys()
+
+    @classmethod
+    def from_list(cls, mapping: List[Dict]):
+        samples = []
+        if all(
+            "user_input" in item and isinstance(mapping[0]["user_input"], list)
+            for item in mapping
+        ):
+            samples.extend(MultiTurnSample(**sample) for sample in mapping)
+        else:
+            samples.extend(SingleTurnSample(**sample) for sample in mapping)
+        return cls(samples=samples)
+
+    def __iter__(self) -> Iterator[BaseEvalSample]:
+        return iter(self.samples)
+
+    def __len__(self) -> int:
+        return len(self.samples)
+
+    def __getitem__(self, idx: int) -> BaseEvalSample:
+        return self.samples[idx]
