@@ -211,14 +211,14 @@ class Faithfulness(MetricWithLLM):
     def _create_statements_prompt(self, row: t.Dict) -> PromptValue:
         assert self.sentence_segmenter is not None, "sentence_segmenter is not set"
 
-        text, question = row["answer"], row["question"]
-        sentences = self.sentence_segmenter.segment(text)
+        answer, question = row["answer"], row["question"]
+        sentences = self.sentence_segmenter.segment(answer)
         sentences = [
             sentence for sentence in sentences if sentence.strip().endswith(".")
         ]
         sentences = "\n".join([f"{i}:{x}" for i, x in enumerate(sentences)])
         prompt_value = self.statement_prompt.format(
-            question=question, answer=text, sentences=sentences
+            question=question, answer=answer, sentences=sentences
         )
         return prompt_value
 

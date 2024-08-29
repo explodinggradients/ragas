@@ -188,10 +188,10 @@ class FaithfulnessExperimental(MetricWithLLM):
 
         # get the sentences from the answer
         sentences = self.sentence_segmenter.segment(answer)
+        # TODO: why do we do this?
         sentences = [
             sentence for sentence in sentences if sentence.strip().endswith(".")
         ]
-
         sentence_components = await self.long_form_answer_prompt.generate(
             FaithfulnessStatements(
                 question=question,

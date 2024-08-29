@@ -125,7 +125,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
 
     async def generate(self, data: InputModel, callbacks: Callbacks) -> OutputModel:
         prompt_value = PromptValue(prompt_str=self.to_string(data))
-        resp = await self.llm.generate(prompt_value)
+        resp = await self.llm.generate(prompt_value, callbacks=callbacks)
         resp_text = resp.generations[0][0].text
         parser = RagasoutputParser(pydantic_object=self.output_model)
         answer = await parser.aparse(resp_text, prompt_value, self.llm, max_retries=3)
