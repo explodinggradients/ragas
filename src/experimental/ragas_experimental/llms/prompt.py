@@ -14,6 +14,7 @@ import pydantic
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import BaseRagasLLM
+    from langchain_core.callbacks import Callbacks
 
 PYDANTIC_V2 = pydantic.VERSION.startswith("2.")
 
@@ -122,7 +123,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             + "output: "
         )
 
-    async def generate(self, data: InputModel) -> OutputModel:
+    async def generate(self, data: InputModel, callbacks: Callbacks) -> OutputModel:
         prompt_value = PromptValue(prompt_str=self.to_string(data))
         resp = await self.llm.generate(prompt_value)
         resp_text = resp.generations[0][0].text
