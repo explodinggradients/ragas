@@ -23,6 +23,7 @@ if t.TYPE_CHECKING:
 
     from ragas.embeddings import BaseRagasEmbeddings
     from ragas.llms import BaseRagasLLM
+    from ragas.dataset_schema import BaseEvalSample
 
 from pysbd import Segmenter
 from pysbd.languages import LANGUAGE_CODES
@@ -138,7 +139,7 @@ class Metric(ABC):
 
     async def ascore(
         self: t.Self,
-        row: t.Dict,
+        row: BaseEvalSample,
         callbacks: Callbacks = None,
         timeout: t.Optional[float] = None,
     ) -> float:
