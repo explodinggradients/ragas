@@ -2,6 +2,7 @@ import typing as t
 
 try:
     from opik.integrations.langchain import OpikTracer as LangchainOpikTracer
+    from opik.evaluation import RAGAS_EVALUATION_CHAIN_NAME
 except ImportError:
     raise ImportError("Opik is not installed. Please install it using `pip install opik` to use the Opik tracer.")
 
@@ -19,7 +20,7 @@ class OpikTracer(LangchainOpikTracer):
     metadata: dict
         Additional metadata to log for each trace.
     """
-    _evaluation_run_id: str = None
+    _evaluation_run_id: t.Optional[str] = None
 
     def _persist_run(self, run: "Run"):
         # The _persist_run function is called by LangChain if it is a root run,
@@ -28,7 +29,7 @@ class OpikTracer(LangchainOpikTracer):
             super()._persist_run(run)
 
     def _on_chain_start(self, run: "Run"):
-        if (run.parent_run_id is None) and (run.name == "ragas evaluation"):
+        if (run.parent_run_id is None) and (run.name == RAGAS_EVALUATION_CHAIN_NAME):
             # Store the evaluation run id so we can flag the child traces and log them independently
             self._evaluation_run_id = run.id
         else:

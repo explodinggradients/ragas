@@ -46,6 +46,8 @@ if t.TYPE_CHECKING:
 
     from ragas.cost import CostCallbackHandler, TokenUsageParser
 
+RAGAS_EVALUATION_CHAIN_NAME = "ragas evaluation"
+
 
 @track_was_completed
 def evaluate(
@@ -233,7 +235,7 @@ def evaluate(
     # new evaluation chain
     row_run_managers = []
     evaluation_rm, evaluation_group_cm = new_group(
-        name="ragas evaluation", inputs={}, callbacks=callbacks
+        name=RAGAS_EVALUATION_CHAIN_NAME, inputs={}, callbacks=callbacks
     )
     for i, row in enumerate(dataset):
         row = t.cast(t.Dict[str, t.Any], row)
