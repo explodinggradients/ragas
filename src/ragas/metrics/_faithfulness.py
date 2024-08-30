@@ -17,7 +17,7 @@ if t.TYPE_CHECKING:
 
     from ragas.llms.prompt import PromptValue
 
-from typing import Any, Protocol
+from typing import Any, Generator, Protocol
 
 
 class HasSegmentMethod(Protocol):
@@ -316,6 +316,10 @@ class Faithfulness(MetricWithLLM):
 @dataclass
 class FaithulnesswithHHEM(Faithfulness):
     name: str = "faithfulness_with_hhem"  # type: ignore
+    def __init__(self, device:str='cpu', eval_batch_size:int=10):
+        self.device = device
+        self.batch_size = eval_batch_size
+        super().__init__()
 
     def __post_init__(self):
         try:
@@ -327,6 +331,7 @@ class FaithulnesswithHHEM(Faithfulness):
         self.nli_classifier = AutoModelForSequenceClassification.from_pretrained(
             "vectara/hallucination_evaluation_model", trust_remote_code=True
         )
+        self.nli_classifier.to(self.device)
         super().__post_init__()
 
     def _create_pairs(
@@ -338,6 +343,12 @@ class FaithulnesswithHHEM(Faithfulness):
         premise = "\n".join(row["contexts"])
         pairs = [(premise, statement) for statement in statements]
         return pairs
+
+    def _create_batch(self, pairs: t.List[t.Tuple[str, str]]) -> Generator:
+        l = len(pairs)
+        for ndx in range(0, l, self.batch_size):
+            yield pairs[ndx:min(ndx + self.batch_size, l)]
+
 
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
         """
@@ -362,9 +373,12 @@ class FaithulnesswithHHEM(Faithfulness):
 
         assert isinstance(statements, t.List), "statements must be a list"
 
+        scores = []
         pairs = self._create_pairs(row, statements)
-        scores = self.nli_classifier.predict(pairs).detach().numpy().round()
-        return scores.sum() / len(scores)
+        for input_pairs in self._create_batch(pairs): # to avoid OOM
+            batch_scores = self.nli_classifier.predict(input_pairs).cpu().detach().round()
+            scores += batch_scores
+        return sum(scores) / len(scores)
 
 
 faithfulness = Faithfulness()
