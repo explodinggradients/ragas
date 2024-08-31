@@ -17,11 +17,9 @@ if t.TYPE_CHECKING:
 
     from ragas.llms.prompt import PromptValue
 
-from typing import Any, Generator, Protocol
 
-
-class HasSegmentMethod(Protocol):
-    def segment(self, text) -> Any:
+class HasSegmentMethod(t.Protocol):
+    def segment(self, text) -> t.Any:
         ...
 
 
@@ -316,10 +314,8 @@ class Faithfulness(MetricWithLLM):
 @dataclass
 class FaithulnesswithHHEM(Faithfulness):
     name: str = "faithfulness_with_hhem"  # type: ignore
-    def __init__(self, device:str='cpu', eval_batch_size:int=10):
-        self.device = device
-        self.batch_size = eval_batch_size
-        super().__init__()
+    device: str = 'cpu'
+    batch_size: int = 10
 
     def __post_init__(self):
         try:
@@ -344,7 +340,7 @@ class FaithulnesswithHHEM(Faithfulness):
         pairs = [(premise, statement) for statement in statements]
         return pairs
 
-    def _create_batch(self, pairs: t.List[t.Tuple[str, str]]) -> Generator:
+    def _create_batch(self, pairs: t.List[t.Tuple[str, str]]) -> t.Generator[t.List[t.Tuple[str, str]], None, None]:
         l = len(pairs)
         for ndx in range(0, l, self.batch_size):
             yield pairs[ndx:min(ndx + self.batch_size, l)]
