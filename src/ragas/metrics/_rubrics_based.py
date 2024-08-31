@@ -135,7 +135,7 @@ class LabelledRubricsScore(MetricWithLLM):
 
     def _create_prompt(self, row: t.Dict) -> PromptValue:
         question, contexts, answer, ground_truth = (
-            row["question"],
+            row["user_input"],
             row["contexts"],
             row["answer"],
             row["ground_truth"],

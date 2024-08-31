@@ -33,10 +33,7 @@ from ragas.metrics.base import (
 from ragas.metrics.critique import AspectCritique
 from ragas.run_config import RunConfig
 from ragas.utils import get_feature_language, safe_nanmean
-from ragas.validation import (
-    remap_column_names,
-    validate_required_columns,
-)
+from ragas.validation import remap_column_names, validate_required_columns
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
