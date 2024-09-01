@@ -2,7 +2,7 @@ import typing as t
 
 try:
     from opik.integrations.langchain import OpikTracer as LangchainOpikTracer
-    from opik.evaluation import RAGAS_EVALUATION_CHAIN_NAME
+    from ragas.evaluation import RAGAS_EVALUATION_CHAIN_NAME
 except ImportError:
     raise ImportError("Opik is not installed. Please install it using `pip install opik` to use the Opik tracer.")
 
