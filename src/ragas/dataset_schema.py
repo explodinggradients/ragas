@@ -14,20 +14,16 @@ class BaseEvalSample(BaseModel):
 class SingleTurnSample(BaseEvalSample):
     user_input: Optional[str] = None
     retrieved_contexts: Optional[List[str]] = None
-    ground_truth_contexts: Optional[List[str]] = None
+    reference_contexts: Optional[List[str]] = None
     response: Optional[str] = None
     multi_responses: Optional[List[str]] = None
     reference: Optional[str] = None
     rubric: Optional[Dict[str, str]] = None
 
     def dict(self, **kwargs):
-        row = self.dict()
+        row = super().dict(**kwargs)
         row = {k: v for k, v in row.items() if v is not None}
         return row
-
-    @classmethod
-    def from_dict(cls, row):
-        return cls(**row)
 
 
 class MultiTurnSample(BaseEvalSample):
@@ -69,25 +65,30 @@ class MultiTurnSample(BaseEvalSample):
         return "\n".join(lines)
 
 
-# TODO: add methods that allow users to load data from different types like dict, json, etc
-# just like pd.read_csv, pd.read_json, etc
-
-
 class EvaluationDataset(BaseModel):
     samples: List[BaseEvalSample]
+
+    def __post_init__(self):
+        first_sample_type = type(self.samples[0])
+        if not all(isinstance(sample, first_sample_type) for sample in self.samples):
+            raise ValueError("All samples must be of the same type")
+
+    def get_sample_type(self):
+        return type(self.samples[0])
 
     def to_hf_dataset(self):
         rows = [sample.dict() for sample in self.samples]
 
-        for sample in rows:
-            for item in sample["user_input"]:
-                if not isinstance(item["content"], str):
-                    item["content"] = json.dumps(item["content"])
+        if self.get_sample_type() == MultiTurnSample:
+            for sample in rows:
+                for item in sample["user_input"]:
+                    if not isinstance(item["content"], str):
+                        item["content"] = json.dumps(item["content"])
 
         return Dataset.from_list(rows)
 
     def features(self):
-        return self.to_hf_dataset().features.keys()
+        return self.samples[0].dict().keys()
 
     @classmethod
     def from_list(cls, mapping: List[Dict]):
