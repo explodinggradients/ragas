@@ -6,9 +6,10 @@ from dataclasses import dataclass, field
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel, Field
 
+from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.metrics.base import EvaluationMode, MetricWithLLM, SingleTurnMetric
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -105,9 +106,9 @@ WITHOUT_REFERENCE_SCORING_PROMPT = Prompt(
 
 
 @dataclass
-class LabelledRubricsScore(MetricWithLLM):
+class LabelledRubricsScore(MetricWithLLM, SingleTurnMetric):
     name: str = "labelled_rubrics_score"  # type: ignore
-    evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
+    _required_columns: t.Tuple[str, ...] = ("user_input", "response", "reference")
     rubrics: t.Dict[str, str] = field(
         default_factory=lambda: DEFAULT_WITH_REFERENCE_RUBRICS
     )
@@ -115,6 +116,11 @@ class LabelledRubricsScore(MetricWithLLM):
         default_factory=lambda: WITH_REFERENCE_SCORING_PROMPT
     )
     max_retries: int = 1
+
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        return await self._ascore(sample.dict(), callbacks)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM is not set"
@@ -136,9 +142,9 @@ class LabelledRubricsScore(MetricWithLLM):
     def _create_prompt(self, row: t.Dict) -> PromptValue:
         question, contexts, answer, ground_truth = (
             row["user_input"],
-            row["contexts"],
-            row["answer"],
-            row["ground_truth"],
+            row["retrieved_contexts"],
+            row["response"],
+            row["reference"],
         )
         contexts = "\n".join(contexts)
         question = f"{question} answer using context: {contexts}"
@@ -158,7 +164,7 @@ class LabelledRubricsScore(MetricWithLLM):
 
 
 @dataclass
-class ReferenceFreeRubricsScore(LabelledRubricsScore):
+class ReferenceFreeRubricsScore(LabelledRubricsScore, SingleTurnMetric):
     name: str = "reference_free_rubrics_score"  # type: ignore
     evaluation_mode: EvaluationMode = EvaluationMode.qga  # type: ignore
     rubrics: t.Dict[str, str] = field(
@@ -171,9 +177,9 @@ class ReferenceFreeRubricsScore(LabelledRubricsScore):
 
     def _create_prompt(self, row: t.Dict) -> PromptValue:
         question, contexts, answer = (
-            row["question"],
-            row["contexts"],
-            row["answer"],
+            row["user_input"],
+            row["retrieved_contexts"],
+            row["response"],
         )
         contexts = "\n".join(contexts)
         question = f"{question} answer using context: {contexts}"

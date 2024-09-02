@@ -7,9 +7,15 @@ from dataclasses import dataclass, field
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel
 
+from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithEmbeddings, MetricWithLLM
+from ragas.metrics.base import (
+    EvaluationMode,
+    MetricWithEmbeddings,
+    MetricWithLLM,
+    SingleTurnMetric,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +89,7 @@ QUESTION_GEN = Prompt(
 
 
 @dataclass
-class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
+class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     """
     Scores the relevancy of the answer according to the given question.
     Answers with incomplete, redundant or unnecessary information is penalized.
@@ -127,7 +133,7 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
     def _calculate_score(
         self, answers: t.Sequence[AnswerRelevanceClassification], row: t.Dict
     ) -> float:
-        question = row["question"]
+        question = row["user_input"]
         gen_questions = [answer.question for answer in answers]
         committal = np.any([answer.noncommittal for answer in answers])
         if all(q == "" for q in gen_questions):
@@ -142,8 +148,14 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings):
         return score
 
     def _create_question_gen_prompt(self, row: t.Dict) -> PromptValue:
-        ans, ctx = row["answer"], row["contexts"]
+        ans, ctx = row["response"], row["retrived_contexts"]
         return self.question_generation.format(answer=ans, context="\n".join(ctx))
+
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        row = sample.dict()
+        return await self._ascore(row, callbacks)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM is not set"

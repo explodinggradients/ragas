@@ -7,9 +7,10 @@ from dataclasses import dataclass, field
 import numpy as np
 from langchain.pydantic_v1 import BaseModel, Field
 
+from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt, PromptValue
-from ragas.metrics.base import EvaluationMode, MetricWithLLM, ensembler
+from ragas.metrics.base import MetricWithLLM, SingleTurnMetric, ensembler
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -73,7 +74,7 @@ CONTEXT_PRECISION = Prompt(
 
 
 @dataclass
-class ContextPrecision(MetricWithLLM):
+class ContextPrecision(MetricWithLLM, SingleTurnMetric):
     """
     Average Precision is a metric that evaluates whether all of the
     relevant items selected by the model are ranked higher or not.
@@ -86,7 +87,11 @@ class ContextPrecision(MetricWithLLM):
     """
 
     name: str = "context_precision"  # type: ignore
-    evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
+    _required_columns: t.Tuple[str, ...] = (
+        "user_input",
+        "retrieved_contexts",
+        "reference",
+    )
     context_precision_prompt: Prompt = field(default_factory=lambda: CONTEXT_PRECISION)
     max_retries: int = 1
     _reproducibility: int = 1
@@ -108,7 +113,7 @@ class ContextPrecision(MetricWithLLM):
         self._reproducibility = value
 
     def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:
-        return row["question"], row["contexts"], row["ground_truth"]
+        return row["user_input"], row["retrieved_contexts"], row["reference"]
 
     def _context_precision_prompt(self, row: t.Dict) -> t.List[PromptValue]:
         question, contexts, answer = self._get_row_attributes(row)
@@ -138,6 +143,12 @@ class ContextPrecision(MetricWithLLM):
                 "Invalid response format. Expected a list of dictionaries with keys 'verdict'"
             )
         return score
+
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        row = sample.dict()
+        return await self._ascore(row, callbacks)
 
     async def _ascore(
         self: t.Self,
@@ -189,10 +200,14 @@ class ContextPrecision(MetricWithLLM):
 @dataclass
 class ContextUtilization(ContextPrecision):
     name: str = "context_utilization"
-    evaluation_mode: EvaluationMode = EvaluationMode.qac
+    _required_columns: t.Tuple[str, ...] = (
+        "user_input",
+        "retrieved_contexts",
+        "response",
+    )
 
     def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:
-        return row["question"], row["contexts"], row["answer"]
+        return row["user_input"], row["retrieved_contexts"], row["response"]
 
 
 context_precision = ContextPrecision()
