@@ -28,6 +28,7 @@ from ragas.metrics.base import (
     Metric,
     MetricWithEmbeddings,
     MetricWithLLM,
+    SingleTurnMetric,
     is_reproducable,
 )
 from ragas.metrics.critique import AspectCritique
@@ -239,15 +240,16 @@ def evaluate(
             callbacks=evaluation_group_cm,
         )
         row_run_managers.append((row_rm, row_group_cm))
-        [
+        _ = [
             executor.submit(
-                metric.ascore,
+                metric.single_turn_ascore,
                 sample,
                 row_group_cm,
                 name=f"{metric.name}-{i}",
                 timeout=run_config.timeout,
             )
             for metric in metrics
+            if isinstance(metric, SingleTurnMetric)
         ]
 
     scores = []
