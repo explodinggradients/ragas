@@ -71,10 +71,13 @@ class MultiTurnSample(BaseEvalSample):
 class EvaluationDataset(BaseModel):
     samples: List[BaseEvalSample]
 
-    def __post_init__(self):
-        first_sample_type = type(self.samples[0])
-        if not all(isinstance(sample, first_sample_type) for sample in self.samples):
+    @validator("samples")
+    def validate_samples(cls, samples):
+        first_sample_type = type(samples[0])
+        if not all(isinstance(sample, first_sample_type) for sample in samples):
             raise ValueError("All samples must be of the same type")
+        
+        return samples
 
     def get_sample_type(self):
         return type(self.samples[0])
@@ -91,7 +94,7 @@ class EvaluationDataset(BaseModel):
         return Dataset.from_list(rows)
 
     def features(self):
-        return self.samples[0].dict().keys()
+        return list(self.samples[0].dict().keys())
 
     @classmethod
     def from_list(cls, mapping: List[Dict]):
