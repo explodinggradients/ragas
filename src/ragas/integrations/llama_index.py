@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 def evaluate(
     query_engine,
-    dataset: dict,
+    dataset: Dataset,
     metrics: list[Metric],
     llm: t.Optional[LlamaindexLLM] = None,
     embeddings: t.Optional[LlamaIndexEmbeddings] = None,
@@ -83,7 +83,7 @@ def evaluate(
             "answer": answers,
         }
     )
-    if "ground_truth" in dataset:
+    if "ground_truth" in dataset.column_names:
         hf_dataset = hf_dataset.add_column(
             name="ground_truth",
             column=dataset["ground_truth"],

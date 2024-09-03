@@ -34,7 +34,7 @@ Retrieval augmented generation (RAG) is a paradigm for augmenting LLM with custo
 ```{rubric} Continual Learning
 ```
 
-Continual learning is concept used in machine learning that aims to learn, iterate and improve ML pipelines over it's lifetime using the insights derived from continuous stream of data points.  In LLM & RAGs, this can be applied by iterating and improving each components of LLM application from insights derived from production and feedback data.
+Continual learning is concept used in machine learning that aims to learn, iterate and improve ML pipelines over its lifetime using the insights derived from continuous stream of data points.  In LLM & RAGs, this can be applied by iterating and improving each components of LLM application from insights derived from production and feedback data.
 :::
 
 ::::{grid} 2

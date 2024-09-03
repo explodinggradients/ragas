@@ -150,23 +150,16 @@ class SummarizationScore(MetricWithLLM, SingleTurnMetric):
         "reference_contexts",
         "response",
     )
+    coeff: float = 0.5
     question_generation_prompt: Prompt = field(
         default_factory=lambda: TEXT_GENERATE_QUESTIONS
     )
     answer_generation_prompt: Prompt = field(
         default_factory=lambda: TEXT_GENERATE_ANSWERS
     )
-
-    def _get_extract_keyphrases_prompt(self, text) -> PromptValue:
-        return TEXT_EXTRACT_KEYPHRASES.format(text=text)
-
-    def _get_question_generation_prompt(self, text, keyphrases) -> PromptValue:
-        return TEXT_GENERATE_QUESTIONS.format(text=text, keyphrases=keyphrases)
-
-    def _get_answer_generation_prompt(
-        self, questions: t.List, summary: str
-    ) -> PromptValue:
-        return TEXT_GENERATE_ANSWERS.format(summary=summary, questions=questions)
+    extract_keyphrases_prompt: Prompt = field(
+        default_factory=lambda: TEXT_EXTRACT_KEYPHRASES
+    )
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
@@ -175,42 +168,37 @@ class SummarizationScore(MetricWithLLM, SingleTurnMetric):
         return await self._ascore(row, callbacks)
 
     async def _ascore(self, row: Dict, callbacks: Callbacks) -> float:
+
         text: str = "\n".join(row["reference_contexts"])
         summary: str = row["response"]
         keyphrases = await self._extract_keyphrases(text, callbacks)
         questions = await self._get_questions(text, keyphrases, callbacks)
         answers = await self._get_answers(questions, summary, callbacks)
 
-        scores = []
+        scores = {}
         qa_score = self._compute_qa_score(answers)
-        scores.append(qa_score)
+        scores["qa_score"] = qa_score
         if self.length_penalty:
             conciseness_score = self._compute_conciseness_score(text, summary)
-            scores.append(conciseness_score)
+            scores["conciseness_score"] = conciseness_score
         return self._compute_score(scores)
 
     def _compute_score(self, scores) -> float:
-        """Returns average score of the different scores."""
-        return sum(scores) / len(scores)
+        return (
+            scores["qa_score"] * (1 - self.coeff)
+            + scores.get("conciseness_score", 0) * self.coeff
+        )
 
     def _compute_qa_score(self, answers: t.List[str]) -> float:
-        """Returns a score between 0 and 1 reflecting the fraction of
-        correct answers, ie with a value 'yes'
-        """
         correct = sum([1 for a in answers if a.lower() == "1"])
         return correct / len(answers)
 
     def _compute_conciseness_score(self, text, summary) -> float:
-        """Returns the conciseness score of the summary. This is calculated as
-        (1- relative_length_of_summary), where relative_length_of_summary is the
-        ratio of the length of the summary to the length of the original text.
-        This promotes shorter summaries.
-        """
-        return 1 - (len(summary) / len(text))
+        return 1 - min(len(summary), len(text)) / (len(text) + 1e-10)
 
     async def _extract_keyphrases(self, text: str, callbacks: Callbacks) -> t.List[str]:
         assert self.llm is not None, "LLM is not initialized"
-        p_value = self._get_extract_keyphrases_prompt(text)
+        p_value = self.extract_keyphrases_prompt.format(text=text)
         result = await self.llm.generate(
             prompt=p_value,
             callbacks=callbacks,
@@ -230,7 +218,9 @@ class SummarizationScore(MetricWithLLM, SingleTurnMetric):
         self, text: str, keyphrases: list[str], callbacks: Callbacks
     ) -> t.List[str]:
         assert self.llm is not None, "LLM is not initialized"
-        p_value = self._get_question_generation_prompt(text, keyphrases)
+        p_value = self.question_generation_prompt.format(
+            text=text, keyphrases=keyphrases
+        )
         result = await self.llm.generate(
             prompt=p_value,
             callbacks=callbacks,
@@ -251,7 +241,9 @@ class SummarizationScore(MetricWithLLM, SingleTurnMetric):
         self, questions: t.List[str], summary: str, callbacks: Callbacks
     ) -> t.List[str]:
         assert self.llm is not None, "LLM is not initialized"
-        p_value = self._get_answer_generation_prompt(questions, summary)
+        p_value = self.answer_generation_prompt.format(
+            questions=questions, summary=summary
+        )
         result = await self.llm.generate(
             prompt=p_value,
             callbacks=callbacks,
@@ -268,17 +260,19 @@ class SummarizationScore(MetricWithLLM, SingleTurnMetric):
 
         return response.answers
 
+    def adapt(self, language: str, cache_dir: str | None = None) -> None:
+        assert self.llm is not None, "set LLM before use"
 
-def adapt(self, language: str, cache_dir: str | None = None) -> None:
-    assert self.llm is not None, "set LLM before use"
-
-    logger.info(f"Adapting summarization to {language}")
-    self.question_generation_prompt = self.question_generation_prompt.adapt(
-        language, self.llm, cache_dir
-    )
-    self.answer_generation_prompt = self.answer_generation_prompt.adapt(
-        language, self.llm, cache_dir
-    )
+        logger.info(f"Adapting summarization to {language}")
+        self.question_generation_prompt = self.question_generation_prompt.adapt(
+            language, self.llm, cache_dir
+        )
+        self.answer_generation_prompt = self.answer_generation_prompt.adapt(
+            language, self.llm, cache_dir
+        )
+        self.answer_generation_prompt = self.answer_generation_prompt.adapt(
+            language, self.llm, cache_dir
+        )
 
 
 summarization_score = SummarizationScore()
