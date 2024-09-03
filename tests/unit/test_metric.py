@@ -30,3 +30,26 @@ def test_metric():
 
     fm = FakeMetric()
     assert fm.score({"user_input": "a", "response": "b"}) == 0
+
+
+def test_single_turn_metric():
+    from ragas.metrics.base import SingleTurnMetric
+
+    class FakeMetric(SingleTurnMetric):
+        name = "fake_metric"
+        _required_columns = ("user_input", "response")
+
+        def init(self, run_config):
+            pass
+
+        async def _ascore(self, row, callbacks) -> float:
+            pass
+
+        async def _single_turn_ascore(self, sample: SingleTurnSample, callbacks):
+            return 0
+
+    fm = FakeMetric()
+    assert (
+        fm.single_turn_score(SingleTurnSample(**{"user_input": "a", "response": "b"}))
+        == 0
+    )
