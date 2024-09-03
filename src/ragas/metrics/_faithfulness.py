@@ -173,7 +173,8 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
     nli_statements_message: Prompt = field(
         default_factory=lambda: NLI_STATEMENTS_MESSAGE
     )
-    statement_prompt: Prompt = field(default_factory=lambda: LONG_FORM_ANSWER_PROMPT)
+    statement_prompt: Prompt = field(default_factory=lambda: LONG
+                                     _FORM_ANSWER_PROMPT)
     sentence_segmenter: t.Optional[HasSegmentMethod] = None
     max_retries: int = 1
     _reproducibility: int = 1
