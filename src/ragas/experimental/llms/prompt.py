@@ -1,20 +1,20 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-import json
 import typing as t
+from abc import ABC, abstractmethod
+
+import pydantic
+
+# Check Pydantic version
+from pydantic import BaseModel
 
 from ragas.llms.output_parser import RagasoutputParser
 from ragas.llms.prompt import PromptValue
 
-# Check Pydantic version
-from pydantic import BaseModel
-import pydantic
-
 if t.TYPE_CHECKING:
-    from ragas.llms.base import BaseRagasLLM
     from langchain_core.callbacks import Callbacks
+
+    from ragas.llms.base import BaseRagasLLM
 
 PYDANTIC_V2 = pydantic.VERSION.startswith("2.")
 
@@ -24,7 +24,7 @@ class BasePrompt(ABC):
         self.llm: BaseRagasLLM = llm
 
     @abstractmethod
-    async def generate(self, data: t.Any) -> t.Any:
+    async def generate(self, data: t.Any, callbacks: Callbacks = None) -> t.Any:
         pass
 
 
@@ -57,11 +57,13 @@ def to_json(model: t.Any, indent: int = 4) -> str:
         return model.json(indent=indent)
 
 
-def model_to_json_schema(model: t.Type[BaseModel]) -> dict:
+def model_to_json_schema(model: t.Type[BaseModel]) -> str:
     if PYDANTIC_V2:
-        return model.model_json_schema()
+        # NOTE: this is not the same as model.schema_json()
+        return model.model_json_schema()  # type: ignore
     else:
         return model.schema_json()
+
 
 InputModel = t.TypeVar("InputModel", bound=BaseModel)
 OutputModel = t.TypeVar("OutputModel", bound=BaseModel)
@@ -96,9 +98,11 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
                 example_strings.append(
                     self.instruction
                     + "\n"
-                    + "input: " + to_json(input_data, indent=4)
+                    + "input: "
+                    + to_json(input_data, indent=4)
                     + "\n"
-                    + "output: " + to_json(output_data, indent=4)
+                    + "output: "
+                    + to_json(output_data, indent=4)
                 )
 
             return (
@@ -118,12 +122,15 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             + "\n"
             + self.generate_examples()
             + "\nNow perform the above instruction with the following input\n"
-            + "input: " + to_json(data, indent=4)
+            + "input: "
+            + to_json(data, indent=4)
             + "\n"
             + "output: "
         )
 
-    async def generate(self, data: InputModel, callbacks: Callbacks) -> OutputModel:
+    async def generate(
+        self, data: InputModel, callbacks: Callbacks = None
+    ) -> OutputModel:
         prompt_value = PromptValue(prompt_str=self.to_string(data))
         resp = await self.llm.generate(prompt_value, callbacks=callbacks)
         resp_text = resp.generations[0][0].text
@@ -135,7 +142,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
 
 
 class StringPrompt(BasePrompt):
-    async def generate(self, data: str) -> str:
+    async def generate(self, data: str, callbacks: Callbacks = None) -> str:
         prompt_value = PromptValue(prompt_str=data)
-        llm_result = await self.llm.agenerate_text(prompt_value)
+        llm_result = await self.llm.agenerate_text(prompt_value, callbacks=callbacks)
         return llm_result.generations[0][0].text

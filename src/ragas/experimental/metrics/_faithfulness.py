@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-import typing as t
 import logging
+import typing as t
 from dataclasses import dataclass
 
-from pydantic import BaseModel, Field
 import numpy as np
+from pydantic import BaseModel, Field
 
+from ragas.experimental.llms.prompt import PydanticPrompt
 from ragas.metrics.base import EvaluationMode, MetricWithLLM, get_segmenter
-from ragas_experimental.llms.prompt import PydanticPrompt
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
+
     from ragas.metrics._faithfulness import HasSegmentMethod
 
 
@@ -187,6 +188,8 @@ class FaithfulnessExperimental(MetricWithLLM):
         answer, question, contexts = row["answer"], row["question"], row["contexts"]
 
         # get the sentences from the answer
+        if self.sentence_segmenter is None:
+            raise ValueError("Sentence segmenter is not set")
         sentences = self.sentence_segmenter.segment(answer)
         # TODO: why do we do this?
         sentences = [
@@ -198,9 +201,9 @@ class FaithfulnessExperimental(MetricWithLLM):
                 answer=answer,
                 sentences={i: sentence for i, sentence in enumerate(sentences)},
             ),
-            callbacks=callbacks
+            callbacks=callbacks,
         )
-        
+
         statements = [
             statement
             for component in sentence_components.sentences
@@ -211,9 +214,9 @@ class FaithfulnessExperimental(MetricWithLLM):
                 context="\n".join(contexts),
                 statements=statements,
             ),
-            callbacks=callbacks
+            callbacks=callbacks,
         )
-        
+
         # compute the score
         num_faithful_statements = sum(
             verdict.verdict for verdict in verdicts.statements
@@ -223,4 +226,3 @@ class FaithfulnessExperimental(MetricWithLLM):
         else:
             score = np.nan
         return score
-
