@@ -105,7 +105,7 @@ class EvaluationDataset(BaseModel):
             samples.extend(SingleTurnSample(**sample) for sample in mapping)
         return cls(samples=samples)
 
-    def __iter__(self) -> Iterator[BaseEvalSample]:
+    def __iter__(self) -> Iterator[BaseEvalSample]:  # type: ignore
         return iter(self.samples)
 
     def __len__(self) -> int:
