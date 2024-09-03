@@ -1,7 +1,6 @@
-from datasets import Dataset
 from ragas.dataset_schema import EvaluationDataset
-from ragas.metrics.base import Metric
 from ragas.metrics import ALL_METRICS
+from ragas.metrics.base import Metric
 
 
 def validate_required_columns(ds: EvaluationDataset, metric: Metric):
@@ -11,8 +10,8 @@ def validate_required_columns(ds: EvaluationDataset, metric: Metric):
     required_columns = set(metric.required_columns)
     available_columns = set(ds.features())
     return required_columns.issubset(available_columns)
-        
-        
+
+
 def get_available_metrics(ds: EvaluationDataset) -> list[Metric]:
     """
     Get the available metrics for the given dataset.
@@ -21,7 +20,7 @@ def get_available_metrics(ds: EvaluationDataset) -> list[Metric]:
     """
     available_metrics = []
     for metric in ALL_METRICS:
-        validate_required_columns(ds, metric)
-        available_metrics.append(metric.name)
-        
+        if validate_required_columns(ds, metric):
+            available_metrics.append(metric)
+
     return available_metrics
