@@ -25,6 +25,9 @@ class SingleTurnSample(BaseEvalSample):
         row = {k: v for k, v in row.items() if v is not None}
         return row
 
+    def features(self):
+        return self.dict().keys()
+
 
 class MultiTurnSample(BaseEvalSample):
     user_input: List[Union[HumanMessage, AIMessage, ToolMessage]]
