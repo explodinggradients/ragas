@@ -168,7 +168,9 @@ class MetricWithEmbeddings(Metric):
 
 class SingleTurnMetric(Metric):
     def single_turn_score(
-        self, sample: SingleTurnSample, callbacks: Callbacks
+        self,
+        sample: SingleTurnSample,
+        callbacks: Callbacks = None,
     ) -> float:
         callbacks = callbacks or []
         rm, group_cm = new_group(self.name, inputs=sample.dict(), callbacks=callbacks)
