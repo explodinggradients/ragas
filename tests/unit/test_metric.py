@@ -1,32 +1,18 @@
-from ragas.metrics.base import EvaluationMode
+from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
 from ragas.metrics.utils import get_available_metrics
 
 
 def test_get_available_metrics():
-    from datasets import Dataset
+    sample1 = SingleTurnSample(user_input="What is X", response="Y")
+    sample2 = SingleTurnSample(user_input="What is Z", response="W")
+    ds = EvaluationDataset(samples=[sample1, sample2])
 
-    ds = Dataset.from_dict({"question": ["a", "b", "c"], "answer": ["d", "e", "f"]})
     assert all(
         [
-            metric.evaluation_mode == EvaluationMode.qa
+            metric.required_columns == ("user_input", "response")
             for metric in get_available_metrics(ds)
         ]
-    ), "All metrics should have evaluation mode qa"
-
-    ds = Dataset.from_dict(
-        {
-            "question": ["a", "b", "c"],
-            "answer": ["d", "e", "f"],
-            "contexts": ["g", "h", "i"],
-        }
-    )
-    assert all(
-        [
-            metric.evaluation_mode
-            in [EvaluationMode.qa, EvaluationMode.qc, EvaluationMode.qac]
-            for metric in get_available_metrics(ds)
-        ]
-    ), "All metrics should have evaluation mode qa"
+    ), "All metrics should have required columns ('user_input', 'response')"
 
 
 def test_metric():
@@ -34,7 +20,7 @@ def test_metric():
 
     class FakeMetric(Metric):
         name = "fake_metric"  # type: ignore
-        evaluation_mode = EvaluationMode.qa  # type: ignore
+        _required_columns = ("user_input", "response")
 
         def init(self, run_config):
             pass
@@ -43,4 +29,4 @@ def test_metric():
             return 0
 
     fm = FakeMetric()
-    assert fm.score({"question": "a", "answer": "b"}) == 0
+    assert fm.score({"user_input": "a", "response": "b"}) == 0
