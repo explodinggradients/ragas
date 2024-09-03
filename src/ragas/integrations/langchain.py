@@ -4,6 +4,7 @@ import typing as t
 
 from langchain.chains.base import Chain
 from langchain.schema import RUN_KEY
+from langchain_core.documents import Document as LCDocument
 from langchain_openai.chat_models import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langsmith.evaluation import EvaluationResult, RunEvaluator
@@ -76,7 +77,9 @@ class EvaluatorChain(Chain, RunEvaluator):
             inputs = convert_row_v1_to_v2(inputs)
             if "retrieved_contexts" in inputs:
                 inputs["retrieved_contexts"] = [
-                    doc.page_content for doc in inputs["retrieved_contexts"]
+                    doc.page_content
+                    for doc in inputs["retrieved_contexts"]
+                    if isinstance(doc, LCDocument)
                 ]
             inputs = SingleTurnSample(**inputs)
 
@@ -106,7 +109,9 @@ class EvaluatorChain(Chain, RunEvaluator):
             inputs = convert_row_v1_to_v2(inputs)
             if "retrieved_contexts" in inputs:
                 inputs["retrieved_contexts"] = [
-                    doc.page_content for doc in inputs["retrieved_contexts"]
+                    doc.page_content
+                    for doc in inputs["retrieved_contexts"]
+                    if isinstance(doc, LCDocument)
                 ]
             inputs = SingleTurnSample(**inputs)
 
@@ -158,7 +163,10 @@ class EvaluatorChain(Chain, RunEvaluator):
         assert (
             run.outputs is not None
         ), "the current run has no outputs. The chain should output 'answer' and 'contexts' keys."
-        output_keys = list(self.metric.required_columns)
+        output_keys = get_required_columns_v1(self.metric)
+        output_keys = [
+            key for key in output_keys if key not in ["question", "ground_truth"]
+        ]
         missing_keys = self._keys_are_present(output_keys, run.outputs)
         if missing_keys:
             raise ValueError(
@@ -183,12 +191,7 @@ class EvaluatorChain(Chain, RunEvaluator):
 
         chain_eval = run.outputs
         chain_eval["question"] = example.inputs["question"]
-        if self.metric.evaluation_mode in [
-            EvaluationMode.gc,
-            EvaluationMode.ga,
-            EvaluationMode.qcg,
-            EvaluationMode.qga,
-        ]:
+        if "ground_truth" in get_required_columns_v1(self.metric):
             if example.outputs is None or "ground_truth" not in example.outputs:
                 raise ValueError("expected `ground_truth` in example outputs.")
             chain_eval["ground_truth"] = example.outputs["ground_truth"]
