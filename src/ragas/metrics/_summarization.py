@@ -9,7 +9,7 @@ from langchain.pydantic_v1 import BaseModel
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
-from ragas.llms.prompt import Prompt, PromptValue
+from ragas.llms.prompt import Prompt
 from ragas.metrics.base import MetricWithLLM, SingleTurnMetric
 
 if t.TYPE_CHECKING:
@@ -168,7 +168,6 @@ class SummarizationScore(MetricWithLLM, SingleTurnMetric):
         return await self._ascore(row, callbacks)
 
     async def _ascore(self, row: Dict, callbacks: Callbacks) -> float:
-
         text: str = "\n".join(row["reference_contexts"])
         summary: str = row["response"]
         keyphrases = await self._extract_keyphrases(text, callbacks)

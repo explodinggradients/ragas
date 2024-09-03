@@ -8,7 +8,7 @@ import numpy as np
 from pydantic import BaseModel, Field
 
 from ragas.experimental.llms.prompt import PydanticPrompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM, get_segmenter
+from ragas.metrics.base import MetricWithLLM, SingleTurnMetric, get_segmenter
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -153,9 +153,13 @@ class NLIStatementPrompt(PydanticPrompt[NLIStatementInput, NLIStatementOutput]):
 
 
 @dataclass
-class FaithfulnessExperimental(MetricWithLLM):
+class FaithfulnessExperimental(MetricWithLLM, SingleTurnMetric):
     name: str = "faithfulness_experimental"  # type: ignore
-    evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
+    _required_columns: t.Tuple[str, ...] = (
+        "user_input",
+        "response",
+        "retrieved_contexts",
+    )
     sentence_segmenter: t.Optional[HasSegmentMethod] = None
     max_retries: int = 1
     _reproducibility: int = 1
@@ -185,7 +189,11 @@ class FaithfulnessExperimental(MetricWithLLM):
             self.sentence_segmenter = get_segmenter(language=language, clean=False)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        answer, question, contexts = row["answer"], row["question"], row["contexts"]
+        answer, question, contexts = (
+            row["response"],
+            row["user_input"],
+            row["retrieved_contexts"],
+        )
 
         # get the sentences from the answer
         if self.sentence_segmenter is None:

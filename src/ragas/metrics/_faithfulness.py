@@ -221,7 +221,7 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
         ]
         sentences = "\n".join([f"{i}:{x}" for i, x in enumerate(sentences)])
         prompt_value = self.statement_prompt.format(
-            question=question, answer=answer, sentences=sentences
+            question=question, answer=text, sentences=sentences
         )
         return prompt_value
 
