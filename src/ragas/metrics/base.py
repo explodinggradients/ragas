@@ -42,6 +42,7 @@ VALID_COLUMNS = [
     "rubric",
 ]
 
+
 @dataclass
 class Metric(ABC):
     _required_columns: t.Tuple[str, ...] = field(default_factory=tuple)
@@ -166,6 +167,25 @@ class MetricWithEmbeddings(Metric):
 
 
 class SingleTurnMetric(Metric):
+    def single_turn_score(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        callbacks = callbacks or []
+        rm, group_cm = new_group(self.name, inputs=sample.dict(), callbacks=callbacks)
+        try:
+            loop = asyncio.get_event_loop()
+            score = loop.run_until_complete(
+                self._single_turn_ascore(sample=sample, callbacks=group_cm)
+            )
+        except Exception as e:
+            if not group_cm.ended:
+                rm.on_chain_error(e)
+            raise e
+        else:
+            if not group_cm.ended:
+                rm.on_chain_end({"output": score})
+        return score
+
     async def single_turn_ascore(
         self,
         sample: SingleTurnSample,
