@@ -1,3 +1,5 @@
+import pytest
+
 from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
 from ragas.metrics.utils import get_available_metrics
 
@@ -9,12 +11,12 @@ def test_get_available_metrics():
 
     assert all(
         [
-            metric.required_columns == ("user_input", "response")
-            for metric in get_available_metrics(ds)
+            m.required_columns == ("user_input", "response")
+            for m in get_available_metrics(ds)
         ]
     ), "All metrics should have required columns ('user_input', 'response')"
 
-
+@pytest.mark.asyncio
 def test_metric():
     from ragas.metrics.base import Metric
 

@@ -13,7 +13,7 @@ def test_evaluation_dataset():
 
     assert dataset.get_sample_type() == SingleTurnSample
     assert len(hf_dataset) == 2
-    assert dataset.features() == ["user_input", "response"]
+    assert dataset.features() == {"response", "user_input"}
     assert len(dataset) == 2
     assert dataset[0] == single_turn_sample
 
