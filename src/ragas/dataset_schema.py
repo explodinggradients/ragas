@@ -105,6 +105,18 @@ class EvaluationDataset(BaseModel):
             samples.extend(SingleTurnSample(**sample) for sample in mapping)
         return cls(samples=samples)
 
+    @classmethod
+    def from_dict(cls, mapping: Dict):
+        samples = []
+        if all(
+            "user_input" in item and isinstance(mapping[0]["user_input"], list)
+            for item in mapping
+        ):
+            samples.extend(MultiTurnSample(**sample) for sample in mapping)
+        else:
+            samples.extend(SingleTurnSample(**sample) for sample in mapping)
+        return cls(samples=samples)
+
     def __iter__(self) -> Iterator[BaseEvalSample]:  # type: ignore
         return iter(self.samples)
 
