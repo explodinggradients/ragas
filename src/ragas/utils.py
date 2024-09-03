@@ -178,3 +178,22 @@ def get_from_dict(data_dict: t.Dict, key: str, default=None) -> t.Any:
             return default
 
     return current
+
+
+REQUIRED_COLS_v1 = {
+    "user_input": "question",
+    "retrieved_contexts": "contexts",
+    "response": "answer",
+    "reference": "ground_truth",
+}
+
+
+def get_required_columns_v1(metric: Metric):
+    required_cols = metric.required_columns
+    required_cols = [REQUIRED_COLS_v1.get(col) for col in required_cols]
+    return [col for col in required_cols if col is not None]
+
+
+def convert_row_v1_to_v2(row: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+    required_cols_v2 = {k: v for v, k in REQUIRED_COLS_v1.items()}
+    return {required_cols_v2[k]: v for k, v in row.items() if k in required_cols_v2}
