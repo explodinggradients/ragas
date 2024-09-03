@@ -8,7 +8,13 @@ from ragas.messages import AIMessage, HumanMessage, ToolMessage
 
 
 class BaseEvalSample(BaseModel):
-    ...
+    def dict(self, **kwargs):
+        row = super().dict(**kwargs)
+        row = {k: v for k, v in row.items() if v is not None}
+        return row
+
+    def features(self):
+        return set(self.dict().keys())
 
 
 class SingleTurnSample(BaseEvalSample):
@@ -19,14 +25,6 @@ class SingleTurnSample(BaseEvalSample):
     multi_responses: Optional[List[str]] = None
     reference: Optional[str] = None
     rubric: Optional[Dict[str, str]] = None
-
-    def dict(self, **kwargs):
-        row = super().dict(**kwargs)
-        row = {k: v for k, v in row.items() if v is not None}
-        return row
-
-    def features(self):
-        return self.dict().keys()
 
 
 class MultiTurnSample(BaseEvalSample):
@@ -76,7 +74,7 @@ class EvaluationDataset(BaseModel):
         first_sample_type = type(samples[0])
         if not all(isinstance(sample, first_sample_type) for sample in samples):
             raise ValueError("All samples must be of the same type")
-        
+
         return samples
 
     def get_sample_type(self):
@@ -94,7 +92,7 @@ class EvaluationDataset(BaseModel):
         return Dataset.from_list(rows)
 
     def features(self):
-        return list(self.samples[0].dict().keys())
+        return self.samples[0].features()
 
     @classmethod
     def from_list(cls, mapping: List[Dict]):

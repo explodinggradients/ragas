@@ -42,7 +42,7 @@ def handle_deprecated_ground_truths(ds: Dataset) -> Dataset:
 def validate_required_columns(ds: EvaluationDataset, metrics: list[Metric]):
     for m in metrics:
         required_columns = set(m.required_columns)
-        available_columns = set(ds.features())
+        available_columns = ds.features()
         if not required_columns.issubset(available_columns):
             raise ValueError(
                 f"The metric [{m.name}] that that is used requires the following "
