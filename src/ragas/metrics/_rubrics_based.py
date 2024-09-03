@@ -9,7 +9,7 @@ from langchain_core.pydantic_v1 import BaseModel, Field
 from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM, SingleTurnMetric
+from ragas.metrics.base import MetricWithLLM, SingleTurnMetric
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -166,7 +166,7 @@ class LabelledRubricsScore(MetricWithLLM, SingleTurnMetric):
 @dataclass
 class ReferenceFreeRubricsScore(LabelledRubricsScore, SingleTurnMetric):
     name: str = "reference_free_rubrics_score"  # type: ignore
-    evaluation_mode: EvaluationMode = EvaluationMode.qga  # type: ignore
+    _required_columns: t.Tuple[str, ...] = ("user_input", "response")
     rubrics: t.Dict[str, str] = field(
         default_factory=lambda: DEFAULT_REFERENCE_FREE_RUBRICS
     )
