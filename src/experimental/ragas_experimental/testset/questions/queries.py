@@ -28,24 +28,24 @@ properties
 }}
 """
 
-CHILD_NODES_QUERY = """
-        {{
-        filterNodes(label: DOC, level : LEVEL_0) {{
-            id
-            label
-            properties
-            relationships(label: "child") {{
-            label
-            properties
-            target {{
-                id
-                label
-                properties
-            }}
-            source {{
-                id
-            }}
-            }}
-        }}
-        }}
-        """
+CHILD_NODES_QUERY = """\
+{{
+filterNodes(label: DOC, level : LEVEL_0) {{
+    id
+    label
+    properties
+    relationships(label: "child") {{
+    label
+    properties
+    target {{
+        id
+        label
+        properties
+    }}
+    source {{
+        id
+    }}
+    }}
+}}
+}}
+"""
