@@ -200,7 +200,7 @@ class Faithfulness(MetricWithLLM):
         contexts = row["contexts"]
         # check if the statements are support in the contexts
         contexts_str: str = "\n".join(contexts)
-        statements_str: str = json.dumps(statements)
+        statements_str: str = json.dumps(statements, ensure_ascii=False)
         prompt_value = self.nli_statements_message.format(
             context=contexts_str, statements=statements_str
         )

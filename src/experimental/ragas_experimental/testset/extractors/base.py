@@ -25,7 +25,7 @@ class Extractor(ABC):
                 return await self.aextract_text(node.properties[self.attribute])
             elif self.attribute in node.properties["metadata"]:
                 return await self.aextract_text(
-                    json.dumps(node.properties["metadata"][self.attribute])
+                    json.dumps(node.properties["metadata"][self.attribute], ensure_ascii=False)
                 )
             else:
                 raise ValueError(f"Attribute {self.attribute} not found in node")
@@ -34,7 +34,7 @@ class Extractor(ABC):
                 return await self.aextract_text(node.page_content)
             elif self.attribute in node.metadata:
                 return await self.aextract_text(
-                    json.dumps(node.metadata[self.attribute])
+                    json.dumps(node.metadata[self.attribute], ensure_ascii=False)
                 )
             else:
                 raise ValueError(f"Attribute {self.attribute} not found in node")
@@ -45,7 +45,7 @@ class Extractor(ABC):
                 return self.extract_text(node.properties[self.attribute])
             elif self.attribute in node.properties["metadata"]:
                 return self.extract_text(
-                    json.dumps(node.properties["metadata"][self.attribute])
+                    json.dumps(node.properties["metadata"][self.attribute], ensure_ascii=False)
                 )
             else:
                 raise ValueError(f"Attribute {self.attribute} not found in node")
@@ -53,7 +53,7 @@ class Extractor(ABC):
             if self.attribute == "page_content":
                 return self.extract_text(node.page_content)
             elif self.attribute in node.metadata:
-                return self.extract_text(json.dumps(node.metadata[self.attribute]))
+                return self.extract_text(json.dumps(node.metadata[self.attribute], ensure_ascii=False))
             else:
                 raise ValueError(f"Attribute {self.attribute} not found in node")
 

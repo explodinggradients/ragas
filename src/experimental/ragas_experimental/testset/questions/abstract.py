@@ -237,7 +237,7 @@ class AbstractQA(AbstractQuestions):
 
         query = LEAF_NODE_QUERY
         leaf_nodes = [
-            self.query_nodes(query, {"id": json.dumps(id)}) for id in node_ids
+            self.query_nodes(query, {"id": json.dumps(id, ensure_ascii=False)}) for id in node_ids
         ]
         leaf_nodes = [node for nodes in leaf_nodes for node in nodes]
         if leaf_nodes is None:
@@ -485,7 +485,7 @@ class ComparativeAbstractQA(AbstractQuestions):
 
         query = LEAF_NODE_QUERY
         leaf_nodes = [
-            self.query_nodes(query, {"id": json.dumps(id)}) for id in node_ids
+            self.query_nodes(query, {"id": json.dumps(id, ensure_ascii=False)}) for id in node_ids
         ]
         leaf_nodes = [node for nodes in leaf_nodes for node in nodes]
         leaf_nodes = [
