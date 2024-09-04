@@ -67,7 +67,11 @@ from datasets import Dataset
 from ragas.metrics import FaithulnesswithHHEM
 from ragas import evaluate
 
-faithfulness_with_hhem = FaithulnesswithHHEM(device=your_device, batch_size=your_batch_size)
+# Set the device and batch size (optional)
+my_device = "cpu"
+my_batch_size = 10
+
+faithfulness_with_hhem = FaithulnesswithHHEM(device=my_device, batch_size=my_batch_size)
 data_samples = {
     'question': ['When was the first super bowl?', 'Who won the most super bowls?'],
     'answer': ['The first superbowl was held on Jan 15, 1967', 'The most super bowls have been won by The New England Patriots'],
