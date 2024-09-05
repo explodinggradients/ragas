@@ -2,13 +2,18 @@ from __future__ import annotations
 
 import logging
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from pydantic import BaseModel, Field
 
 from ragas.experimental.llms.prompt import PydanticPrompt
-from ragas.metrics.base import MetricWithLLM, SingleTurnMetric, get_segmenter
+from ragas.metrics.base import (
+    MetricType,
+    MetricWithLLM,
+    SingleTurnMetric,
+    get_segmenter,
+)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -155,10 +160,10 @@ class NLIStatementPrompt(PydanticPrompt[NLIStatementInput, NLIStatementOutput]):
 @dataclass
 class FaithfulnessExperimental(MetricWithLLM, SingleTurnMetric):
     name: str = "faithfulness_experimental"  # type: ignore
-    _required_columns: t.Tuple[str, ...] = (
-        "user_input",
-        "response",
-        "retrieved_contexts",
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {"user_input", "response", "retreived_contexts"}
+        }
     )
     sentence_segmenter: t.Optional[HasSegmentMethod] = None
     max_retries: int = 1
