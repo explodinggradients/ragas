@@ -7,9 +7,10 @@ from typing import Dict
 
 from langchain.pydantic_v1 import BaseModel
 
+from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.metrics.base import MetricWithLLM, SingleTurnMetric
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -141,12 +142,15 @@ TEXT_GENERATE_ANSWERS = Prompt(
 
 
 @dataclass
-class SummarizationScore(MetricWithLLM):
+class SummarizationScore(MetricWithLLM, SingleTurnMetric):
     name: str = "summary_score"  # type: ignore
     max_retries: int = 1
     length_penalty: bool = True
+    _required_columns: t.Tuple[str, ...] = (
+        "reference_contexts",
+        "response",
+    )
     coeff: float = 0.5
-    evaluation_mode: EvaluationMode = EvaluationMode.ca  # type: ignore
     question_generation_prompt: Prompt = field(
         default_factory=lambda: TEXT_GENERATE_QUESTIONS
     )
@@ -157,9 +161,15 @@ class SummarizationScore(MetricWithLLM):
         default_factory=lambda: TEXT_EXTRACT_KEYPHRASES
     )
 
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        row = sample.dict()
+        return await self._ascore(row, callbacks)
+
     async def _ascore(self, row: Dict, callbacks: Callbacks) -> float:
-        text: str = "\n".join(row["contexts"])
-        summary: str = row["summary"]
+        text: str = "\n".join(row["reference_contexts"])
+        summary: str = row["response"]
         keyphrases = await self._extract_keyphrases(text, callbacks)
         questions = await self._get_questions(text, keyphrases, callbacks)
         answers = await self._get_answers(questions, summary, callbacks)

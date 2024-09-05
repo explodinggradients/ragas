@@ -8,9 +8,10 @@ from typing import Dict
 import numpy as np
 from langchain.pydantic_v1 import BaseModel
 
+from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.metrics.base import MetricWithLLM, SingleTurnMetric
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -107,7 +108,7 @@ TEXT_ENTITY_EXTRACTION = Prompt(
 
 
 @dataclass
-class ContextEntityRecall(MetricWithLLM):
+class ContextEntityRecall(MetricWithLLM, SingleTurnMetric):
     """
     Calculates recall based on entities present in ground truth and context.
     Let CN be the set of entities present in context,
@@ -130,7 +131,7 @@ class ContextEntityRecall(MetricWithLLM):
     """
 
     name: str = "context_entity_recall"  # type: ignore
-    evaluation_mode: EvaluationMode = EvaluationMode.gc  # type: ignore
+    _required_columns: t.Tuple[str, ...] = ("reference", "retrieved_contexts")
     context_entity_recall_prompt: Prompt = field(
         default_factory=lambda: TEXT_ENTITY_EXTRACTION
     )
@@ -168,12 +169,18 @@ class ContextEntityRecall(MetricWithLLM):
 
         return answer
 
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        row = sample.dict()
+        return await self._ascore(row, callbacks)
+
     async def _ascore(
         self,
         row: Dict,
         callbacks: Callbacks,
     ) -> float:
-        ground_truth, contexts = row["ground_truth"], row["contexts"]
+        ground_truth, contexts = row["reference"], row["retrieved_contexts"]
         ground_truth = await self.get_entities(ground_truth, callbacks=callbacks)
         contexts = await self.get_entities("\n".join(contexts), callbacks=callbacks)
         if ground_truth is None or contexts is None:

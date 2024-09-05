@@ -8,9 +8,10 @@ from dataclasses import dataclass, field
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel
 
+from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.metrics.base import MetricWithLLM, SingleTurnMetric
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks.base import Callbacks
@@ -52,7 +53,7 @@ CRITIQUE_PROMPT = Prompt(
 
 
 @dataclass
-class AspectCritique(MetricWithLLM):
+class AspectCritique(MetricWithLLM, SingleTurnMetric):
     """
     Judges the submission to give binary results using the criteria specified
     in the metric definition.
@@ -72,7 +73,11 @@ class AspectCritique(MetricWithLLM):
     """
 
     name: str = field(default="", repr=True)  # type: ignore
-    evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
+    _required_columns: t.Tuple[str, ...] = (
+        "user_input",
+        "response",
+        "retreived_contexts",
+    )
     critic_prompt: Prompt = field(default_factory=lambda: CRITIQUE_PROMPT)
     definition: str = field(default="", repr=True)
     strictness: int = field(default=1, repr=False)
@@ -117,10 +122,16 @@ class AspectCritique(MetricWithLLM):
 
         return score
 
+    async def _single_turn_ascore(
+        self: t.Self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        row = sample.dict()
+        return await self._ascore(row, callbacks)
+
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "set LLM before use"
 
-        q, c, a = row["question"], row["contexts"], row["answer"]
+        q, c, a = row["user_input"], row["retrieved_contexts"], row["response"]
 
         p_value = self.prompt_format(q, a, c)
         result = await self.llm.generate(p_value, callbacks=callbacks)

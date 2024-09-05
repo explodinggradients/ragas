@@ -12,6 +12,7 @@ from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 from ragas._analytics import EvaluationEvent, track, track_was_completed
 from ragas.callbacks import new_group
 from ragas.cost import TokenUsage
+from ragas.dataset_schema import EvaluationDataset
 from ragas.embeddings.base import (
     BaseRagasEmbeddings,
     LangchainEmbeddingsWrapper,
@@ -27,19 +28,13 @@ from ragas.metrics.base import (
     Metric,
     MetricWithEmbeddings,
     MetricWithLLM,
+    SingleTurnMetric,
     is_reproducable,
 )
 from ragas.metrics.critique import AspectCritique
 from ragas.run_config import RunConfig
 from ragas.utils import get_feature_language, safe_nanmean
-
-# from ragas.metrics.critique import AspectCritique
-from ragas.validation import (
-    handle_deprecated_ground_truths,
-    remap_column_names,
-    validate_column_dtypes,
-    validate_evaluation_modes,
-)
+from ragas.validation import remap_column_names, validate_required_columns
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -49,7 +44,7 @@ if t.TYPE_CHECKING:
 
 @track_was_completed
 def evaluate(
-    dataset: Dataset,
+    dataset: t.Union[Dataset, EvaluationDataset],
     metrics: list[Metric] | None = None,
     llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
@@ -157,12 +152,14 @@ def evaluate(
 
         metrics = [answer_relevancy, context_precision, faithfulness, context_recall]
 
-    # remap column names from the dataset
-    dataset = remap_column_names(dataset, column_map)
-    # validation
-    dataset = handle_deprecated_ground_truths(dataset)
-    validate_evaluation_modes(dataset, metrics)
-    validate_column_dtypes(dataset)
+    if isinstance(dataset, Dataset):
+        # remap column names from the dataset
+        dataset = remap_column_names(dataset, column_map)
+        # validation
+        dataset = EvaluationDataset.from_list(dataset.to_list())
+
+    if isinstance(dataset, EvaluationDataset):
+        validate_required_columns(dataset, metrics)
 
     # set the llm and embeddings
     if isinstance(llm, LangchainLLM):
@@ -235,23 +232,24 @@ def evaluate(
     evaluation_rm, evaluation_group_cm = new_group(
         name="ragas evaluation", inputs={}, callbacks=callbacks
     )
-    for i, row in enumerate(dataset):
-        row = t.cast(t.Dict[str, t.Any], row)
+    for i, sample in enumerate(dataset):
+        row = t.cast(t.Dict[str, t.Any], sample.dict())
         row_rm, row_group_cm = new_group(
             name=f"row {i}",
             inputs=row,
             callbacks=evaluation_group_cm,
         )
         row_run_managers.append((row_rm, row_group_cm))
-        [
+        _ = [
             executor.submit(
-                metric.ascore,
-                row,
+                metric.single_turn_ascore,
+                sample,
                 row_group_cm,
                 name=f"{metric.name}-{i}",
                 timeout=run_config.timeout,
             )
             for metric in metrics
+            if isinstance(metric, SingleTurnMetric)
         ]
 
     scores = []
@@ -284,7 +282,7 @@ def evaluate(
         cost_cb = ragas_callbacks["cost_cb"] if "cost_cb" in ragas_callbacks else None
         result = Result(
             scores=Dataset.from_list(scores),
-            dataset=dataset,
+            dataset=dataset.to_hf_dataset(),
             binary_columns=binary_metrics,
             cost_cb=t.cast(
                 t.Union["CostCallbackHandler", None],
@@ -316,7 +314,7 @@ def evaluate(
             event_type="evaluation",
             metrics=metrics_names,
             evaluation_mode="",
-            num_rows=dataset.shape[0],
+            num_rows=len(dataset),
             language=metric_lang[0] if len(metric_lang) > 0 else "",
             in_ci=in_ci,
         )

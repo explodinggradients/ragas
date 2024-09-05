@@ -12,11 +12,12 @@ import logging
 import typing as t
 from abc import ABC, abstractmethod
 from collections import Counter
-from dataclasses import dataclass
-from enum import Enum
+from dataclasses import dataclass, field
 
 from ragas.callbacks import new_group
+from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.run_config import RunConfig
+from ragas.utils import deprecated
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -32,44 +33,37 @@ logger = logging.getLogger(__name__)
 
 LANGUAGE_CODES = {v.__name__.lower(): k for k, v in LANGUAGE_CODES.items()}
 
-EvaluationMode = Enum("EvaluationMode", "qac qa qc gc ga qga qcg ca")
-
-
-def get_required_columns(
-    eval_mod: EvaluationMode, ignore_columns: t.Optional[t.List[str]] = None
-) -> t.List[str]:
-    if eval_mod == EvaluationMode.qac:
-        keys = ["question", "answer", "contexts"]
-    elif eval_mod == EvaluationMode.qa:
-        keys = ["question", "answer"]
-    elif eval_mod == EvaluationMode.qc:
-        keys = ["question", "contexts"]
-    elif eval_mod == EvaluationMode.gc:
-        keys = ["contexts", "ground_truth"]
-    elif eval_mod == EvaluationMode.ga:
-        keys = ["answer", "ground_truth"]
-    elif eval_mod == EvaluationMode.qga:
-        keys = ["question", "contexts", "answer", "ground_truth"]
-    elif eval_mod == EvaluationMode.qcg:
-        keys = ["question", "contexts", "ground_truth"]
-    elif eval_mod == EvaluationMode.ca:
-        keys = ["contexts", "answer"]
-    ignore_columns = ignore_columns or []
-
-    return [k for k in keys if k not in ignore_columns]
+VALID_COLUMNS = [
+    "user_input",
+    "retrieved_contexts",
+    "reference_contexts",
+    "response",
+    "reference",
+    "rubric",
+]
 
 
 @dataclass
 class Metric(ABC):
+    _required_columns: t.Tuple[str, ...] = field(default_factory=tuple)
+
     @property
     @abstractmethod
     def name(self) -> str:
         ...
 
     @property
-    @abstractmethod
-    def evaluation_mode(self) -> EvaluationMode:
-        ...
+    def required_columns(self) -> t.Tuple[str, ...]:
+        return self._required_columns
+
+    @required_columns.setter
+    def required_columns(self, columns: t.Tuple[str, ...]):
+        for column in columns:
+            if column not in VALID_COLUMNS:
+                raise ValueError(
+                    f"Invalid column '{column}'. Must be one of {VALID_COLUMNS}"
+                )
+        self._required_columns = columns
 
     @abstractmethod
     def init(self, run_config: RunConfig):
@@ -94,6 +88,7 @@ class Metric(ABC):
             "adapt() is not implemented for {} metric".format(self.name)
         )
 
+    @deprecated("0.2", removal="0.3", alternative="single_turn_ascore")
     def score(self: t.Self, row: t.Dict, callbacks: Callbacks = None) -> float:
         callbacks = callbacks or []
         rm, group_cm = new_group(self.name, inputs=row, callbacks=callbacks)
@@ -109,6 +104,7 @@ class Metric(ABC):
                 rm.on_chain_end({"output": score})
         return score
 
+    @deprecated("0.2", removal="0.3", alternative="single_turn_ascore")
     async def ascore(
         self: t.Self,
         row: t.Dict,
@@ -168,6 +164,71 @@ class MetricWithEmbeddings(Metric):
                 f"Metric '{self.name}' has no valid embeddings provided (self.embeddings is None). Please initantiate a the metric with an embeddings to run."  # noqa
             )
         self.embeddings.set_run_config(run_config)
+
+
+class SingleTurnMetric(Metric):
+    def single_turn_score(
+        self,
+        sample: SingleTurnSample,
+        callbacks: Callbacks = None,
+    ) -> float:
+        callbacks = callbacks or []
+        rm, group_cm = new_group(self.name, inputs=sample.dict(), callbacks=callbacks)
+        try:
+            loop = asyncio.get_event_loop()
+            score = loop.run_until_complete(
+                self._single_turn_ascore(sample=sample, callbacks=group_cm)
+            )
+        except Exception as e:
+            if not group_cm.ended:
+                rm.on_chain_error(e)
+            raise e
+        else:
+            if not group_cm.ended:
+                rm.on_chain_end({"output": score})
+        return score
+
+    async def single_turn_ascore(
+        self,
+        sample: SingleTurnSample,
+        callbacks: Callbacks = None,
+        timeout: t.Optional[float] = None,
+    ) -> float:
+        callbacks = callbacks or []
+        row = sample.dict()
+        rm, group_cm = new_group(self.name, inputs=row, callbacks=callbacks)
+        try:
+            score = await asyncio.wait_for(
+                self._single_turn_ascore(sample=sample, callbacks=group_cm),
+                timeout=timeout,
+            )
+        except Exception as e:
+            if not group_cm.ended:
+                rm.on_chain_error(e)
+            raise e
+        else:
+            if not group_cm.ended:
+                rm.on_chain_end({"output": score})
+        return score
+
+    @abstractmethod
+    async def _single_turn_ascore(
+        self,
+        sample: SingleTurnSample,
+        callbacks: Callbacks,
+    ) -> float:
+        ...
+
+
+class MultiTurnMetric(Metric):
+    @abstractmethod
+    async def multi_turn_ascore(
+        self,
+        sample: MultiTurnSample,
+        callbacks: Callbacks,
+        timeout: t.Optional[float] = None,
+    ) -> float:
+        ...
 
 
 class Ensember:
