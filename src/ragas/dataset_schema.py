@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Iterator, List, Optional, Union
+import typing as t
 
 from datasets import Dataset
 from langchain_core.pydantic_v1 import BaseModel, validator
@@ -18,18 +18,18 @@ class BaseEvalSample(BaseModel):
 
 
 class SingleTurnSample(BaseEvalSample):
-    user_input: Optional[str] = None
-    retrieved_contexts: Optional[List[str]] = None
-    reference_contexts: Optional[List[str]] = None
-    response: Optional[str] = None
-    multi_responses: Optional[List[str]] = None
-    reference: Optional[str] = None
-    rubric: Optional[Dict[str, str]] = None
+    user_input: t.Optional[str] = None
+    retrieved_contexts: t.Optional[t.List[str]] = None
+    reference_contexts: t.Optional[t.List[str]] = None
+    response: t.Optional[str] = None
+    multi_responses: t.Optional[t.List[str]] = None
+    reference: t.Optional[str] = None
+    rubric: t.Optional[t.Dict[str, str]] = None
 
 
 class MultiTurnSample(BaseEvalSample):
-    user_input: List[Union[HumanMessage, AIMessage, ToolMessage]]
-    reference: Optional[str] = None
+    user_input: t.List[t.Union[HumanMessage, AIMessage, ToolMessage]]
+    reference: t.Optional[str] = None
 
     @validator("user_input")
     def validate_messages(cls, messages):
@@ -67,7 +67,7 @@ class MultiTurnSample(BaseEvalSample):
 
 
 class EvaluationDataset(BaseModel):
-    samples: List[BaseEvalSample]
+    samples: t.List[BaseEvalSample]
 
     @validator("samples")
     def validate_samples(cls, samples):
@@ -95,7 +95,7 @@ class EvaluationDataset(BaseModel):
         return self.samples[0].features()
 
     @classmethod
-    def from_list(cls, mapping: List[Dict]):
+    def from_list(cls, mapping: t.List[t.Dict]):
         samples = []
         if all(
             "user_input" in item and isinstance(mapping[0]["user_input"], list)
@@ -107,7 +107,7 @@ class EvaluationDataset(BaseModel):
         return cls(samples=samples)
 
     @classmethod
-    def from_dict(cls, mapping: Dict):
+    def from_dict(cls, mapping: t.Dict):
         samples = []
         if all(
             "user_input" in item and isinstance(mapping[0]["user_input"], list)
@@ -118,7 +118,7 @@ class EvaluationDataset(BaseModel):
             samples.extend(SingleTurnSample(**sample) for sample in mapping)
         return cls(samples=samples)
 
-    def __iter__(self) -> Iterator[BaseEvalSample]:  # type: ignore
+    def __iter__(self) -> t.Iterator[BaseEvalSample]:  # type: ignore
         return iter(self.samples)
 
     def __len__(self) -> int:
