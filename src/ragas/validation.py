@@ -4,8 +4,8 @@ import logging
 
 from datasets import Dataset, Sequence
 
-from ragas.dataset_schema import EvaluationDataset
-from ragas.metrics.base import Metric
+from ragas.dataset_schema import EvaluationDataset, MultiTurnSample, SingleTurnSample
+from ragas.metrics.base import Metric, MetricType
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +39,24 @@ def handle_deprecated_ground_truths(ds: Dataset) -> Dataset:
     return ds
 
 
+def get_supported_metric_type(ds: EvaluationDataset):
+    """
+    get the supported metric type for the given dataset
+    """
+
+    sample_type = ds.get_sample_type()
+    if sample_type == SingleTurnSample:
+        return MetricType.SINGLE_TURN.name
+    elif sample_type == MultiTurnSample:
+        return MetricType.MULTI_TURN.name
+    else:
+        raise ValueError(f"Unsupported sample type {sample_type}")
+
+
 def validate_required_columns(ds: EvaluationDataset, metrics: list[Metric]):
+    metric_type = get_supported_metric_type(ds)
     for m in metrics:
-        required_columns = set(m.required_columns)
+        required_columns = set(m.required_columns.get(metric_type, []))
         available_columns = ds.features()
         if not required_columns.issubset(available_columns):
             raise ValueError(
