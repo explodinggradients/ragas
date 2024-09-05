@@ -1,7 +1,10 @@
+import typing as t
+from dataclasses import dataclass, field
+
 import pytest
-from attr import dataclass
 from datasets import Dataset
 
+from ragas.metrics.base import MetricType
 from ragas.validation import remap_column_names, validate_required_columns
 
 column_maps = [
@@ -25,7 +28,9 @@ def test_validate_required_columns():
     @dataclass
     class MockMetric(Metric):
         name = "mock_metric"
-        _required_columns = ("user_input", "response")
+        _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+            default_factory=lambda: {MetricType.SINGLE_TURN: {"user_input", "response"}}
+        )
 
         def init(self, run_config):
             pass
