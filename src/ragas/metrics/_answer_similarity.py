@@ -2,13 +2,18 @@ from __future__ import annotations
 
 import logging
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.embeddings.base import HuggingfaceEmbeddings
-from ragas.metrics.base import MetricWithEmbeddings, MetricWithLLM, SingleTurnMetric
+from ragas.metrics.base import (
+    MetricType,
+    MetricWithEmbeddings,
+    MetricWithLLM,
+    SingleTurnMetric,
+)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks.base import Callbacks
@@ -38,7 +43,9 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     """
 
     name: str = "answer_similarity"  # type: ignore
-    _required_columns: t.Tuple[str, ...] = ("reference", "response")
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
+    )
     is_cross_encoder: bool = False
     threshold: t.Optional[float] = None
 

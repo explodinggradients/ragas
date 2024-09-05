@@ -6,10 +6,15 @@ from dataclasses import dataclass, field
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel, Field
 
-from ragas.dataset_schema import SingleTurnSample
+from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import MetricWithLLM, SingleTurnMetric
+from ragas.metrics.base import (
+    MetricType,
+    MetricWithLLM,
+    MultiTurnMetric,
+    SingleTurnMetric,
+)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -106,9 +111,19 @@ WITHOUT_REFERENCE_SCORING_PROMPT = Prompt(
 
 
 @dataclass
-class LabelledRubricsScore(MetricWithLLM, SingleTurnMetric):
+class LabelledRubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     name: str = "labelled_rubrics_score"  # type: ignore
-    _required_columns: t.Tuple[str, ...] = ("user_input", "response", "reference")
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {"user_input", "response", "reference"},
+            MetricType.MULTI_TURN: {
+                "user_input",
+                "response",
+                "reference",
+                "retrieved_contexts",
+            },
+        }
+    )
     rubrics: t.Dict[str, str] = field(
         default_factory=lambda: DEFAULT_WITH_REFERENCE_RUBRICS
     )
@@ -139,6 +154,11 @@ class LabelledRubricsScore(MetricWithLLM, SingleTurnMetric):
         score = parsed_response.dicts()[0]["score"]
         return score
 
+    async def _multi_turn_ascore(
+        self, sample: MultiTurnSample, callbacks: Callbacks
+    ) -> float:
+        return 0.0
+
     def _create_prompt(self, row: t.Dict) -> PromptValue:
         question, contexts, answer, ground_truth = (
             row["user_input"],
@@ -166,7 +186,9 @@ class LabelledRubricsScore(MetricWithLLM, SingleTurnMetric):
 @dataclass
 class ReferenceFreeRubricsScore(LabelledRubricsScore, SingleTurnMetric):
     name: str = "reference_free_rubrics_score"  # type: ignore
-    _required_columns: t.Tuple[str, ...] = ("user_input", "response")
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {MetricType.SINGLE_TURN: {"user_input", "response"}}
+    )
     rubrics: t.Dict[str, str] = field(
         default_factory=lambda: DEFAULT_REFERENCE_FREE_RUBRICS
     )
