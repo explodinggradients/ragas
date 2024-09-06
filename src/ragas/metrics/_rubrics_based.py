@@ -55,7 +55,7 @@ DEFAULT_WITH_REFERENCE_RUBRICS = {
 }
 
 
-WITH_REFERENCE_SCORING_PROMPT = Prompt(
+SINGLE_TURN_WITH_REFERENCE_SCORING_PROMPT = Prompt(
     name="prometheus_score",
     output_format_instruction=_score_feedback_output_instructions,
     instruction="""Given an question (which might contain an input along with it), a answer to evaluate, a ground_truth answer that gets a score of 5, and a score rubric representing evaluation criteria are given.
@@ -78,6 +78,35 @@ WITH_REFERENCE_SCORING_PROMPT = Prompt(
         }
     ],
     input_keys=["question", "answer", "ground_truth", "rubrics"],
+    output_key="analysis",
+    language="english",
+)
+
+
+MULTI_TURN_WITH_REFERENCE_SCORING_PROMPT = Prompt(
+    name="prometheus_score",
+    output_format_instruction=_score_feedback_output_instructions,
+    instruction="""Given an interaction between AI,Human and external Tool as input and reference that's desired outcome that get's a score of 5,and a score rubric representing evaluation criteria are given.
+1. Write detailed feedback that assesses the quality of the responselet  strictly based on the given score rubric, without evaluating in general.
+2. After writing the feedback, assign a score between 1 and 5, referring to the score rubric.""",
+    examples=[
+        {
+            "interaction": """
+            Human: Hey, book a table at the nearest best Chinese restaurant for 8:00pm\nAI: Sure, let me find the best options for you.\nTools:\n  restaurant_search: {'cuisine': 'Chinese', 'time': '8:00pm'}\nToolOutput: Found a few options: 1. Golden Dragon, 2. Jade Palace\nAI: I found some great options: Golden Dragon and Jade Palace. Which one would you prefer?\nHuman: Let's go with Golden Dragon.\nAI: Great choice! I'll book a table for 8:00pm at Golden Dragon.\nTools:\n  restaurant_book: {'name': 'Golden Dragon', 'time': '8:00pm'}\nToolOutput: Table booked at Golden Dragon for 8:00pm.\nAI: Your table at Golden Dragon is booked for 8:00pm. Enjoy your meal!\nHuman: thanks
+            """,
+            "reference": "The AI successfully books a table at the nearest best Chinese restaurant for 8:00pm, providing the user with options and confirming the booking.",
+            "rubrics": DEFAULT_WITH_REFERENCE_RUBRICS,
+            "analysis": ScoreFeedbackAnswers.parse_obj(
+                [
+                    {
+                        "feedback": """The AI successfully books a table at the nearest best Chinese restaurant for 8:00pm, providing the user with options and confirming the booking. The response is clear, accurate, and meets all the criteria for a score of 5 based on the rubric.""",
+                        "score": 5,
+                    }
+                ]
+            ).dicts(),
+        }
+    ],
+    input_keys=["interaction", "reference", "rubrics"],
     output_key="analysis",
     language="english",
 )
@@ -118,17 +147,18 @@ class LabelledRubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
             MetricType.SINGLE_TURN: {"user_input", "response", "reference"},
             MetricType.MULTI_TURN: {
                 "user_input",
-                "response",
                 "reference",
-                "retrieved_contexts",
             },
         }
     )
     rubrics: t.Dict[str, str] = field(
         default_factory=lambda: DEFAULT_WITH_REFERENCE_RUBRICS
     )
-    scoring_prompt: Prompt = field(
-        default_factory=lambda: WITH_REFERENCE_SCORING_PROMPT
+    single_turn_scoring_prompt: Prompt = field(
+        default_factory=lambda: SINGLE_TURN_WITH_REFERENCE_SCORING_PROMPT
+    )
+    multi_turn_scoring_prompt: Prompt = field(
+        default_factory=lambda: MULTI_TURN_WITH_REFERENCE_SCORING_PROMPT
     )
     max_retries: int = 1
 
@@ -140,7 +170,7 @@ class LabelledRubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM is not set"
 
-        prompt_value = self._create_prompt(row)
+        prompt_value = self._create_single_turn_prompt(row)
 
         response = await self.llm.generate(prompt_value, callbacks=callbacks)
 
@@ -157,9 +187,27 @@ class LabelledRubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     async def _multi_turn_ascore(
         self, sample: MultiTurnSample, callbacks: Callbacks
     ) -> float:
-        return 0.0
+        
+        interaction = sample.pretty_repr()
+        row = {"interaction": interaction, "reference": sample.reference}
+        prompt = self._create_multi_turn_prompt(row)
+        response = await self.llm.generate(prompt, callbacks=callbacks)
+        parsed_response = await _score_feedback_output_parser.aparse(
+            response.generations[0][0].text, prompt, self.llm, self.max_retries
+        )
+        if parsed_response is None:
+            return np.nan
+        score = parsed_response.dicts()[0]["score"]
+        return score
 
-    def _create_prompt(self, row: t.Dict) -> PromptValue:
+    
+    def _create_multi_turn_prompt(self, row: t.Dict) -> PromptValue:
+        interaction, reference = row["interaction"], row["reference"]
+        return self.multi_turn_scoring_prompt.format(
+            interaction=interaction, reference=reference, rubrics=self.rubrics
+        )
+
+    def _create_single_turn_prompt(self, row: t.Dict) -> PromptValue:
         question, contexts, answer, ground_truth = (
             row["user_input"],
             row["retrieved_contexts"],
@@ -168,7 +216,7 @@ class LabelledRubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         )
         contexts = "\n".join(contexts)
         question = f"{question} answer using context: {contexts}"
-        return self.scoring_prompt.format(
+        return self.single_turn_scoring_prompt.format(
             question=question,
             answer=answer,
             ground_truth=ground_truth,
@@ -177,10 +225,10 @@ class LabelledRubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         assert self.llm is not None, "LLM must be set to adapt the metric"
-        self.scoring_prompt.adapt(language, self.llm, cache_dir)
+        self.single_turn_scoring_prompt.adapt(language, self.llm, cache_dir)
 
     def save(self, cache_dir: t.Optional[str] = None) -> None:
-        self.scoring_prompt.save(cache_dir)
+        self.single_turn_scoring_prompt.save(cache_dir)
 
 
 @dataclass
