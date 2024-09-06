@@ -5,7 +5,7 @@ import logging
 from datasets import Dataset, Sequence
 
 from ragas.dataset_schema import EvaluationDataset, MultiTurnSample, SingleTurnSample
-from ragas.metrics.base import Metric, MetricType
+from ragas.metrics.base import Metric, MetricType, MultiTurnMetric, SingleTurnMetric
 
 logger = logging.getLogger(__name__)
 
@@ -63,4 +63,20 @@ def validate_required_columns(ds: EvaluationDataset, metrics: list[Metric]):
                 f"The metric [{m.name}] that that is used requires the following "
                 f"additional columns {list(required_columns - available_columns)} "
                 f"to be present in the dataset."
+            )
+
+
+def validate_supported_metrics(ds: EvaluationDataset, metrics: list[Metric]):
+    data_type = ds.get_sample_type()
+    for m in metrics:
+        if data_type == SingleTurnSample:
+            flag = isinstance(m, SingleTurnMetric)
+        elif data_type == MultiTurnSample:
+            flag = isinstance(m, MultiTurnMetric)
+        else:
+            raise ValueError(f"Unsupported sample type {data_type}")
+
+        if not flag:
+            raise ValueError(
+                f"The metric does not support the sample type {data_type}."
             )
