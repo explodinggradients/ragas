@@ -1,4 +1,7 @@
+from ragas.experimental.llms.prompt import PydanticPrompt
 from ragas.llms.prompt import Prompt
+from langchain_core.pydantic_v1 import BaseModel
+import typing as t
 
 common_theme_from_summaries = Prompt(
     name="get_common_themes",
@@ -164,6 +167,31 @@ abstract_question_from_theme = Prompt(
     language="english",
 )
 
+class CriticQuestion(BaseModel):
+    question: str
+
+class CriticFeedback(BaseModel):
+    independence: int
+    clear_intent: int
+
+class CriticQuestionPrompt(PydanticPrompt[CriticQuestion, CriticFeedback]):
+    instruction: str = "Critique the synthetically generated question based on the following rubrics. Provide a score for each rubric: Independence and Clear Intent. Scores are given as low (0), medium (1), or high (2)."
+    input_model = CriticQuestion
+    output_model = CriticFeedback
+    examples: t.List[t.Tuple[CriticQuestion, CriticFeedback]] = [
+        (
+            CriticQuestion(question="How does AI improve efficiency and accuracy across different industries?"),
+            CriticFeedback(independence=2, clear_intent=2)
+        ),
+        (
+            CriticQuestion(question="Explain the benefits of AI."),
+            CriticFeedback(independence=1, clear_intent=1)
+        ),
+        (
+            CriticQuestion(question="How does AI?"),
+            CriticFeedback(independence=0, clear_intent=0)
+        ),
+    ]
 
 critic_question = Prompt(
     name="critic_question",

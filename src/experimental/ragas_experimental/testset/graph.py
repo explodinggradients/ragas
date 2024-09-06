@@ -56,7 +56,6 @@ class Relationship(ObjectType):
     def __init__(self, id=None, **kwargs):
         super().__init__(id=id or str(uuid.uuid4()), **kwargs)
 
-
 class Node(ObjectType):
     """Represents a node in a graph with associated properties."""
 

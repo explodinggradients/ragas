@@ -21,6 +21,8 @@ from ragas_experimental.testset.questions.prompts import (
     common_topic_from_keyphrases,
     critic_question,
     question_answering,
+    CriticQuestionPrompt,
+    CriticQuestion,
 )
 from ragas_experimental.testset.questions.queries import (
     CLUSTER_OF_RELATED_NODES_QUERY,
@@ -220,9 +222,9 @@ class AbstractQA(AbstractQuestions):
     async def critic_question(self, question: str) -> bool:
         assert self.llm is not None, "LLM is not initialized"
 
-        output = await self.llm.generate(critic_question.format(question=question))
-        output = json.loads(output.generations[0][0].text)
-        return all(score >= 2 for score in output.values())
+        prompt = CriticQuestionPrompt(llm=self.llm)
+        output = await prompt.generate(data=CriticQuestion(question=question))
+        return output..independence >= 2 and output.clear_intent >= 2
 
     async def retrieve_chunks(
         self, nodes: t.List[Node], kwargs: t.Optional[dict] = None
