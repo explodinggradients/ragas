@@ -7,9 +7,10 @@ from dataclasses import dataclass, field
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel
 
+from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM, ensembler
+from ragas.metrics.base import MetricWithLLM, SingleTurnMetric, ensembler
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -108,7 +109,7 @@ CONTEXT_RECALL_RA = Prompt(
 
 
 @dataclass
-class ContextRecall(MetricWithLLM):
+class ContextRecall(MetricWithLLM, SingleTurnMetric):
     """
     Estimates context recall by estimating TP and FN using annotated answer and
     retrieved context.
@@ -119,7 +120,11 @@ class ContextRecall(MetricWithLLM):
     """
 
     name: str = "context_recall"  # type: ignore
-    evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
+    _required_columns: t.Tuple[str, ...] = (
+        "user_input",
+        "retrieved_contexts",
+        "reference",
+    )
     context_recall_prompt: Prompt = field(default_factory=lambda: CONTEXT_RECALL_RA)
     max_retries: int = 1
     _reproducibility: int = 1
@@ -146,7 +151,7 @@ class ContextRecall(MetricWithLLM):
             self.reproducibility = 1
 
     def _create_context_recall_prompt(self, row: t.Dict) -> PromptValue:
-        qstn, ctx, gt = row["question"], row["contexts"], row["ground_truth"]
+        qstn, ctx, gt = row["user_input"], row["retrieved_contexts"], row["reference"]
         ctx = "\n".join(ctx) if isinstance(ctx, list) else ctx
 
         return self.context_recall_prompt.format(question=qstn, context=ctx, answer=gt)
@@ -161,6 +166,12 @@ class ContextRecall(MetricWithLLM):
             logger.warning("The LLM did not return a valid classification.")
 
         return score
+
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        row = sample.dict()
+        return await self._ascore(row, callbacks)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "set LLM before use"

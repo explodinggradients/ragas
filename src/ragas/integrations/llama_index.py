@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import typing as t
-from copy import copy
 from uuid import uuid4
 
 from datasets import Dataset
@@ -13,7 +12,6 @@ from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
 from ragas.llms import LlamaIndexLLMWrapper
 from ragas.run_config import RunConfig
-from ragas.validation import EVALMODE_TO_COLUMNS, validate_evaluation_modes
 
 if t.TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import (
@@ -28,22 +26,9 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def validate_dataset(dataset: dict, metrics: list[Metric]):
-    # change EVALMODE_TO_COLUMNS for usecase with no contexts and answer
-    evalmod_to_columns_llamaindex = copy(EVALMODE_TO_COLUMNS)
-    for mode in EVALMODE_TO_COLUMNS:
-        if "answer" in EVALMODE_TO_COLUMNS[mode]:
-            EVALMODE_TO_COLUMNS[mode].remove("answer")
-        if "contexts" in EVALMODE_TO_COLUMNS[mode]:
-            EVALMODE_TO_COLUMNS[mode].remove("contexts")
-
-    hf_dataset = Dataset.from_dict(dataset)
-    validate_evaluation_modes(hf_dataset, metrics, evalmod_to_columns_llamaindex)
-
-
 def evaluate(
     query_engine,
-    dataset: dict,
+    dataset: Dataset,
     metrics: list[Metric],
     llm: t.Optional[LlamaindexLLM] = None,
     embeddings: t.Optional[LlamaIndexEmbeddings] = None,
@@ -98,7 +83,7 @@ def evaluate(
             "answer": answers,
         }
     )
-    if "ground_truth" in dataset:
+    if "ground_truth" in dataset.column_names:
         hf_dataset = hf_dataset.add_column(
             name="ground_truth",
             column=dataset["ground_truth"],

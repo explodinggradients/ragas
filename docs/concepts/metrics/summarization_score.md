@@ -11,18 +11,21 @@ We compute the question-answer score using the answers, which is a list of `1`s 
 \text{QA score} = \frac{|\text{correctly answered questions}|}{|\text{total questions}|}
 ````
 
-We also introduce an option to penalize larger summaries by proving a conciseness score. If this option is enabled, the final score is calculated as the average of the summarization score and the conciseness score. This conciseness scores ensures that summaries that are just copies of the text do not get a high score, because they will obviously answer all questions correctly.
+We also introduce an option to penalize larger summaries by proving a conciseness score. If this option is enabled, the final score is calculated as the weighted average of the summarization score and the conciseness score. This conciseness scores ensures that summaries that are just copies of the text do not get a high score, because they will obviously answer all questions correctly. Also, we do not want the summaries that are empty. We add a small value `1e-10` to the denominator to avoid division by zero.
 
 ```{math}
 :label: conciseness-score
-\text{conciseness score} = 1 - \frac{\text{length of summary}}{\text{length of context}}
+\text{conciseness score} = 1 - \frac{\min(\text{length of summary}, \text{length of context})}{\text{length of context} + \text{1e-10}}
 ````
+
+We also provide a coefficient `coeff`(default value 0.5) to control the weightage of the scores. 
 
 The final summarization score is then calculated as:
 
 ```{math}
 :label: summarization-score
-\text{Summarization Score} = \frac{\text{QA score} + \text{conciseness score}}{2}
+\text{Summarization Score} = \text{QA score}*\text{coeff} + \\
+\text{conciseness score}*\text{(1-coeff)}
 ````
 
 ```{hint}
@@ -61,13 +64,14 @@ The final summarization score is then calculated as:
 ## Example
 
 ```{code-block} python
-from datasets import Dataset 
 from ragas.metrics import summarization_score
 from ragas import evaluate
+from datasets import Dataset 
+
 
 data_samples = {
-    'contexts' : [[c1], [c2]],
-    'summary': [s1, s2]
+    'contexts':[["A company is launching a new product, a smartphone app designed to help users track their fitness goals. The app allows users to set daily exercise targets, log their meals, and track their water intake. It also provides personalized workout recommendations and sends motivational reminders throughout the day."]],
+    'summary':['A company is launching a fitness tracking app that helps users set exercise goals, log meals, and track water intake, with personalized workout suggestions and motivational reminders.'],
 }
 dataset = Dataset.from_dict(data_samples)
 score = evaluate(dataset,metrics=[summarization_score])

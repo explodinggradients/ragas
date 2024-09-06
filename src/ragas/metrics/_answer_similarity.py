@@ -6,8 +6,9 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ragas.dataset_schema import SingleTurnSample
 from ragas.embeddings.base import HuggingfaceEmbeddings
-from ragas.metrics.base import EvaluationMode, MetricWithEmbeddings, MetricWithLLM
+from ragas.metrics.base import MetricWithEmbeddings, MetricWithLLM, SingleTurnMetric
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks.base import Callbacks
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
+class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     """
     Scores the semantic similarity of ground truth with generated answer.
     cross encoder score is used to quantify semantic similarity.
@@ -37,7 +38,7 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
     """
 
     name: str = "answer_similarity"  # type: ignore
-    evaluation_mode: EvaluationMode = EvaluationMode.ga  # type: ignore
+    _required_columns: t.Tuple[str, ...] = ("reference", "response")
     is_cross_encoder: bool = False
     threshold: t.Optional[float] = None
 
@@ -49,11 +50,17 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings):
                 **self.embeddings.encode_kwargs,
             }
 
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        row = sample.dict()
+        return await self._ascore(row, callbacks)
+
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.embeddings is not None, "embeddings must be set"
 
-        ground_truth = t.cast(str, row["ground_truth"])
-        answer = t.cast(str, row["answer"])
+        ground_truth = t.cast(str, row["reference"])
+        answer = t.cast(str, row["response"])
 
         if self.is_cross_encoder and isinstance(self.embeddings, HuggingfaceEmbeddings):
             raise NotImplementedError(

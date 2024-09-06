@@ -1,28 +1,10 @@
-from datasets import Dataset
-
-from ragas.metrics._answer_correctness import answer_correctness
-from ragas.metrics._answer_relevance import answer_relevancy
-from ragas.metrics._answer_similarity import answer_similarity
-from ragas.metrics._context_entities_recall import context_entity_recall
-from ragas.metrics._context_precision import context_precision, context_utilization
-from ragas.metrics._context_recall import context_recall
-from ragas.metrics._faithfulness import faithfulness
+from ragas.dataset_schema import EvaluationDataset
+from ragas.metrics import ALL_METRICS
 from ragas.metrics.base import Metric
-from ragas.validation import validate_evaluation_modes
-
-ALL_METRICS = [
-    answer_correctness,
-    faithfulness,
-    answer_similarity,
-    context_precision,
-    context_utilization,
-    context_recall,
-    answer_relevancy,
-    context_entity_recall,
-]
+from ragas.validation import validate_required_columns
 
 
-def get_available_metrics(ds: Dataset) -> list[Metric]:
+def get_available_metrics(ds: EvaluationDataset) -> list[Metric]:
     """
     Get the available metrics for the given dataset.
     E.g. if the dataset contains ("question", "answer", "contexts") columns,
@@ -31,8 +13,9 @@ def get_available_metrics(ds: Dataset) -> list[Metric]:
     available_metrics = []
     for metric in ALL_METRICS:
         try:
-            validate_evaluation_modes(ds, [metric])
+            validate_required_columns(ds, [metric])
             available_metrics.append(metric)
         except ValueError:
-            continue
+            pass
+
     return available_metrics

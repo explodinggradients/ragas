@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.prompt import Prompt
 from ragas.metrics._faithfulness import (
     LONG_FORM_ANSWER_PROMPT,
@@ -17,7 +18,7 @@ from ragas.metrics._faithfulness import (
     _faithfulness_output_parser,
     _statements_output_parser,
 )
-from ragas.metrics.base import EvaluationMode, MetricWithLLM, ensembler, get_segmenter
+from ragas.metrics.base import MetricWithLLM, SingleTurnMetric, ensembler, get_segmenter
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -29,10 +30,15 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class NoiseSensitivity(MetricWithLLM):
+class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
     name: str = "noise_sensitivity"  # type: ignore
     focus: str = "relevant"
-    evaluation_mode: EvaluationMode = EvaluationMode.qga  # type: ignore
+    _required_columns: t.Tuple[str, ...] = (
+        "user_input",
+        "response",
+        "ground_truth",
+        "retrieved_contexts",
+    )
     nli_statements_message: Prompt = field(
         default_factory=lambda: NLI_STATEMENTS_MESSAGE
     )
@@ -205,6 +211,12 @@ class NoiseSensitivity(MetricWithLLM):
 
         return noise_sensitivity_in_relevant
 
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        row = sample.dict()
+        return await self._ascore(row, callbacks)
+
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
         """
         returns the NLI score for each (q, c, a) pair
@@ -212,15 +224,15 @@ class NoiseSensitivity(MetricWithLLM):
         assert self.llm is not None, "LLM is not set"
 
         gt_statements = await self._decompose_answer_into_statements(
-            row["ground_truth"], row["question"], callbacks
+            row["reference"], row["user_input"], callbacks
         )
         ans_statements = await self._decompose_answer_into_statements(
-            row["answer"], row["question"], callbacks
+            row["response"], row["user_input"], callbacks
         )
         gt_verdictslist = []
         ans_verdictslist = []
 
-        for ctx in row["contexts"]:
+        for ctx in row["retrieved_contexts"]:
             verdicts = await self._evaluate_statement_faithfulness(
                 gt_statements, ctx, callbacks
             )
