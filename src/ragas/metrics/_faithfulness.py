@@ -8,9 +8,10 @@ from dataclasses import dataclass, field
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel, Field
 
+from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM, ensembler, get_segmenter
+from ragas.metrics.base import MetricWithLLM, SingleTurnMetric, ensembler, get_segmenter
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -162,9 +163,13 @@ NLI_STATEMENTS_MESSAGE = Prompt(
 
 
 @dataclass
-class Faithfulness(MetricWithLLM):
+class Faithfulness(MetricWithLLM, SingleTurnMetric):
     name: str = "faithfulness"  # type: ignore
-    evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
+    _required_columns: t.Tuple[str, ...] = (
+        "user_input",
+        "response",
+        "retrieved_contexts",
+    )
     nli_statements_message: Prompt = field(
         default_factory=lambda: NLI_STATEMENTS_MESSAGE
     )
@@ -197,7 +202,7 @@ class Faithfulness(MetricWithLLM):
     def _create_nli_prompt(self, row: t.Dict, statements: t.List[str]) -> PromptValue:
         assert self.llm is not None, "llm must be set to compute score"
 
-        contexts = row["contexts"]
+        contexts = row["retrieved_contexts"]
         # check if the statements are support in the contexts
         contexts_str: str = "\n".join(contexts)
         statements_str: str = json.dumps(statements)
@@ -209,14 +214,14 @@ class Faithfulness(MetricWithLLM):
     def _create_statements_prompt(self, row: t.Dict) -> PromptValue:
         assert self.sentence_segmenter is not None, "sentence_segmenter is not set"
 
-        answer, question = row["answer"], row["question"]
-        sentences = self.sentence_segmenter.segment(answer)
+        text, question = row["response"], row["user_input"]
+        sentences = self.sentence_segmenter.segment(text)
         sentences = [
             sentence for sentence in sentences if sentence.strip().endswith(".")
         ]
         sentences = "\n".join([f"{i}:{x}" for i, x in enumerate(sentences)])
         prompt_value = self.statement_prompt.format(
-            question=question, answer=answer, sentences=sentences
+            question=question, answer=text, sentences=sentences
         )
         return prompt_value
 
@@ -233,6 +238,12 @@ class Faithfulness(MetricWithLLM):
             score = np.nan
 
         return score
+
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        row = sample.dict()
+        return await self._ascore(row, callbacks)
 
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
         """

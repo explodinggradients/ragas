@@ -1,73 +1,8 @@
-from collections import namedtuple
-
 import pytest
+from attr import dataclass
 from datasets import Dataset
 
-from ragas.metrics import answer_relevancy, context_precision, faithfulness
-from ragas.validation import (
-    remap_column_names,
-    validate_column_dtypes,
-    validate_evaluation_modes,
-)
-
-CaseToTest = namedtuple(
-    "TestCase", ["q", "a", "c", "g", "is_valid_columns", "metrics", "is_valid_metrics"]
-)
-
-TEST_CASES = [
-    CaseToTest("a", "b", ["c"], None, True, [faithfulness], True),
-    CaseToTest("a", "b", ["c"], "g", True, [faithfulness], True),
-    CaseToTest("a", None, ["c"], "g", True, [context_precision], True),
-    CaseToTest("a", "b", "c", "g", False, [context_precision], True),
-    CaseToTest(
-        "a", None, [["c"]], None, False, [context_precision, answer_relevancy], False
-    ),
-    CaseToTest("a", None, ["c"], ["g"], False, [context_precision], True),
-    CaseToTest("a", None, ["c"], [["g"]], False, [context_precision], True),
-    CaseToTest(1, None, ["c"], "g", False, [context_precision], True),
-    CaseToTest(1, None, None, None, False, [context_precision], False),
-]
-
-
-@pytest.mark.parametrize("testcase", TEST_CASES)
-def test_validate_column_dtypes(testcase):
-    dataset_dict = {}
-    if testcase.q is not None:
-        dataset_dict["question"] = [testcase.q]
-    if testcase.a is not None:
-        dataset_dict["answer"] = [testcase.a]
-    if testcase.c is not None:
-        dataset_dict["contexts"] = [testcase.c]
-    if testcase.g is not None:
-        dataset_dict["ground_truth"] = [testcase.g]
-
-    test_dataset = Dataset.from_dict(dataset_dict)
-    if testcase.is_valid_columns:
-        validate_column_dtypes(test_dataset)
-    else:
-        with pytest.raises(ValueError):
-            validate_column_dtypes(test_dataset)
-
-
-@pytest.mark.parametrize("testcase", TEST_CASES)
-def test_validate_columns_and_metrics(testcase):
-    dataset_dict = {}
-    if testcase.q is not None:
-        dataset_dict["question"] = [testcase.q]
-    if testcase.a is not None:
-        dataset_dict["answer"] = [testcase.a]
-    if testcase.c is not None:
-        dataset_dict["contexts"] = [testcase.c]
-    if testcase.g is not None:
-        dataset_dict["ground_truth"] = [testcase.g]
-    test_dataset = Dataset.from_dict(dataset_dict)
-
-    if testcase.is_valid_metrics:
-        validate_evaluation_modes(test_dataset, testcase.metrics)
-    else:
-        with pytest.raises(ValueError):
-            validate_evaluation_modes(test_dataset, testcase.metrics)
-
+from ragas.validation import remap_column_names, validate_required_columns
 
 column_maps = [
     {
@@ -81,6 +16,29 @@ column_maps = [
         "answer": "rag_answer",
     },  # subset of columns present
 ]
+
+
+def test_validate_required_columns():
+    from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
+    from ragas.metrics.base import Metric
+
+    @dataclass
+    class MockMetric(Metric):
+        name = "mock_metric"
+        _required_columns = ("user_input", "response")
+
+        def init(self, run_config):
+            pass
+
+        async def _ascore(self, row, callbacks):
+            return 0.0
+
+    m = MockMetric()
+    sample1 = SingleTurnSample(user_input="What is X")
+    sample2 = SingleTurnSample(user_input="What is Z")
+    ds = EvaluationDataset(samples=[sample1, sample2])
+    with pytest.raises(ValueError):
+        validate_required_columns(ds, [m])
 
 
 @pytest.mark.parametrize("column_map", column_maps)

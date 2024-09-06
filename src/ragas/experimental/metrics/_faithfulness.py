@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-import typing as t
 import logging
+import typing as t
 from dataclasses import dataclass
 
-from pydantic import BaseModel, Field
 import numpy as np
+from pydantic import BaseModel, Field
 
-from ragas.metrics.base import EvaluationMode, MetricWithLLM, get_segmenter
-from ragas_experimental.llms.prompt import PydanticPrompt
+from ragas.experimental.llms.prompt import PydanticPrompt
+from ragas.metrics.base import MetricWithLLM, SingleTurnMetric, get_segmenter
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
+
     from ragas.metrics._faithfulness import HasSegmentMethod
 
 
@@ -152,9 +153,13 @@ class NLIStatementPrompt(PydanticPrompt[NLIStatementInput, NLIStatementOutput]):
 
 
 @dataclass
-class FaithfulnessExperimental(MetricWithLLM):
+class FaithfulnessExperimental(MetricWithLLM, SingleTurnMetric):
     name: str = "faithfulness_experimental"  # type: ignore
-    evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
+    _required_columns: t.Tuple[str, ...] = (
+        "user_input",
+        "response",
+        "retrieved_contexts",
+    )
     sentence_segmenter: t.Optional[HasSegmentMethod] = None
     max_retries: int = 1
     _reproducibility: int = 1
@@ -184,9 +189,15 @@ class FaithfulnessExperimental(MetricWithLLM):
             self.sentence_segmenter = get_segmenter(language=language, clean=False)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        answer, question, contexts = row["answer"], row["question"], row["contexts"]
+        answer, question, contexts = (
+            row["response"],
+            row["user_input"],
+            row["retrieved_contexts"],
+        )
 
         # get the sentences from the answer
+        if self.sentence_segmenter is None:
+            raise ValueError("Sentence segmenter is not set")
         sentences = self.sentence_segmenter.segment(answer)
         # TODO: why do we do this?
         sentences = [
@@ -198,9 +209,9 @@ class FaithfulnessExperimental(MetricWithLLM):
                 answer=answer,
                 sentences={i: sentence for i, sentence in enumerate(sentences)},
             ),
-            callbacks=callbacks
+            callbacks=callbacks,
         )
-        
+
         statements = [
             statement
             for component in sentence_components.sentences
@@ -211,9 +222,9 @@ class FaithfulnessExperimental(MetricWithLLM):
                 context="\n".join(contexts),
                 statements=statements,
             ),
-            callbacks=callbacks
+            callbacks=callbacks,
         )
-        
+
         # compute the score
         num_faithful_statements = sum(
             verdict.verdict for verdict in verdicts.statements
@@ -223,4 +234,3 @@ class FaithfulnessExperimental(MetricWithLLM):
         else:
             score = np.nan
         return score
-
