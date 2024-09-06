@@ -20,11 +20,13 @@ PYDANTIC_V2 = pydantic.VERSION.startswith("2.")
 
 
 class BasePrompt(ABC):
-    def __init__(self, llm):
-        self.llm: BaseRagasLLM = llm
+    def __init__(self):
+        pass
 
     @abstractmethod
-    async def generate(self, data: t.Any, callbacks: Callbacks = None) -> t.Any:
+    async def generate(
+        self, data: t.Any, llm: BaseRagasLLM, callbacks: Callbacks = None
+    ) -> t.Any:
         pass
 
 
@@ -129,20 +131,22 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         )
 
     async def generate(
-        self, data: InputModel, callbacks: Callbacks = None
+        self, data: InputModel, llm: BaseRagasLLM, callbacks: Callbacks = None
     ) -> OutputModel:
         prompt_value = PromptValue(prompt_str=self.to_string(data))
-        resp = await self.llm.generate(prompt_value, callbacks=callbacks)
+        resp = await llm.generate(prompt_value, callbacks=callbacks)
         resp_text = resp.generations[0][0].text
         parser = RagasoutputParser(pydantic_object=self.output_model)
-        answer = await parser.aparse(resp_text, prompt_value, self.llm, max_retries=3)
+        answer = await parser.aparse(resp_text, prompt_value, llm, max_retries=3)
 
         # TODO: make sure RagasOutputPraser returns the same type as OutputModel
         return answer  # type: ignore
 
 
 class StringPrompt(BasePrompt):
-    async def generate(self, data: str, callbacks: Callbacks = None) -> str:
+    async def generate(
+        self, data: str, llm: BaseRagasLLM, callbacks: Callbacks = None
+    ) -> str:
         prompt_value = PromptValue(prompt_str=data)
-        llm_result = await self.llm.agenerate_text(prompt_value, callbacks=callbacks)
+        llm_result = await llm.agenerate_text(prompt_value, callbacks=callbacks)
         return llm_result.generations[0][0].text
