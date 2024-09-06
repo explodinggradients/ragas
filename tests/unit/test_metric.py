@@ -13,7 +13,7 @@ def test_get_available_metrics():
 
     assert all(
         [
-            m.required_columns == {"SINGLE_TURN": {"response", "user_input"}}
+            m.required_columns["SINGLE_TURN"] == {"response", "user_input"}
             for m in get_available_metrics(ds)
         ]
     ), "All metrics should have required columns ('user_input', 'response')"
