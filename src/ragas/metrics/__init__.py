@@ -21,14 +21,14 @@ from ragas.metrics._noise_sensitivity import (
     noise_sensitivity_irrelevant,
     noise_sensitivity_relevant,
 )
-from ragas.metrics._rubrics_based import (
+from ragas.metrics._summarization import SummarizationScore, summarization_score
+from ragas.metrics.critique import AspectCritique
+from ragas.metrics.domain_specific_rubrics import (
     LabelledRubricsScore,
     ReferenceFreeRubricsScore,
     labelled_rubrics_score,
     reference_free_rubrics_score,
 )
-from ragas.metrics._summarization import SummarizationScore, summarization_score
-from ragas.metrics.critique import AspectCritique
 
 __all__ = [
     "AnswerCorrectness",

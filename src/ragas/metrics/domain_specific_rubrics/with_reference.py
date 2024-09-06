@@ -173,3 +173,6 @@ class LabelledRubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
             reference=ground_truth,
             rubrics=self.rubrics,
         )
+
+
+labelled_rubrics_score = LabelledRubricsScore()
