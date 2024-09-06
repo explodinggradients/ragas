@@ -194,9 +194,8 @@ class FaithfulnessExperimental(MetricWithLLM, SingleTurnMetric):
             self.sentence_segmenter = get_segmenter(language=language, clean=False)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        
         assert self.llm is not None, "LLM is not set"
-        
+
         answer, question, contexts = (
             row["response"],
             row["user_input"],
