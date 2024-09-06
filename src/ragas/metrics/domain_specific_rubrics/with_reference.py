@@ -97,7 +97,7 @@ class MultiTurnWithReferencePrompt(
 
 @dataclass
 class RubricsScoreWithReference(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
-    name: str = "labelled_rubrics_score"  # type: ignore
+    name: str = "rubrics_score_with_reference"  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {"user_input", "response", "reference"},
@@ -175,4 +175,4 @@ class RubricsScoreWithReference(MetricWithLLM, SingleTurnMetric, MultiTurnMetric
         )
 
 
-labelled_rubrics_score = RubricsScoreWithReference()
+rubrics_score_with_reference = RubricsScoreWithReference()

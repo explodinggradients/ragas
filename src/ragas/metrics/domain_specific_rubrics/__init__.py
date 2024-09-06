@@ -1,15 +1,15 @@
 from ragas.metrics.domain_specific_rubrics.with_reference import (
     RubricsScoreWithReference,
-    labelled_rubrics_score,
+    rubrics_score_with_reference,
 )
 from ragas.metrics.domain_specific_rubrics.without_reference import (
     RubricsScoreWithoutReference,
-    reference_free_rubrics_score,
+    rubrics_score_without_reference,
 )
 
 __all__ = [
     "RubricsScoreWithReference",
     "RubricsScoreWithoutReference",
-    "labelled_rubrics_score",
-    "reference_free_rubrics_score",
+    "rubrics_score_with_reference",
+    "rubrics_score_without_reference",
 ]

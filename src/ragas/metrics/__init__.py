@@ -26,8 +26,8 @@ from ragas.metrics.critique import AspectCritique
 from ragas.metrics.domain_specific_rubrics import (
     RubricsScoreWithReference,
     RubricsScoreWithoutReference,
-    labelled_rubrics_score,
-    reference_free_rubrics_score,
+    rubrics_score_with_reference,
+    rubrics_score_without_reference,
 )
 
 __all__ = [
@@ -54,8 +54,8 @@ __all__ = [
     "NoiseSensitivity",
     "noise_sensitivity_irrelevant",
     "noise_sensitivity_relevant",
-    "labelled_rubrics_score",
-    "reference_free_rubrics_score",
+    "rubrics_score_with_reference",
+    "rubrics_score_without_reference",
     "RubricsScoreWithoutReference",
     "RubricsScoreWithReference",
 ]

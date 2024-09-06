@@ -11,7 +11,7 @@ For example, in RAG if you have the `question`, `contexts`, `answer` and `ground
 from ragas import evaluate
 from datasets import Dataset, DatasetDict
 
-from ragas.metrics import reference_free_rubrics_score, labelled_rubrics_score
+from ragas.metrics import rubrics_score_without_reference, rubrics_score_with_reference
 
 rows = {
     "question": [
@@ -40,8 +40,8 @@ dataset = Dataset.from_dict(rows)
 result = evaluate(
     dataset,
     metrics=[
-        reference_free_rubrics_score,
-        labelled_rubrics_score
+        rubrics_score_without_reference,
+        rubrics_score_with_reference
     ],
 )
 
@@ -60,7 +60,7 @@ my_custom_rubrics = {
     "score5_description": "answer and ground truth are exactly the same",
 }
 
-labelled_rubrics_score = RubricsScoreWithReference(rubrics=my_custom_rubrics)
+rubrics_score_with_reference = RubricsScoreWithReference(rubrics=my_custom_rubrics)
 ```
 
 
