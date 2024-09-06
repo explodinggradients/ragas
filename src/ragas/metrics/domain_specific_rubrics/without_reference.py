@@ -84,7 +84,7 @@ class MultiTurnWithoutReferencePrompt(
 
 
 @dataclass
-class ReferenceFreeRubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
+class RubricsScoreWithoutReference(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     name: str = "reference_free_rubrics_score"  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
@@ -161,4 +161,4 @@ class ReferenceFreeRubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric
         )
 
 
-reference_free_rubrics_score = ReferenceFreeRubricsScore()
+reference_free_rubrics_score = RubricsScoreWithoutReference()

@@ -50,7 +50,7 @@ result = evaluate(
 Here the evaluation is done using both reference free and reference based rubrics. You can also declare and use your own rubric by defining the rubric in the `rubric` parameter.
 
 ```python
-from ragas.metrics.rubrics import LabelledRubricsScore
+from ragas.metrics.rubrics import RubricsScoreWithReference
 
 my_custom_rubrics = {
     "score1_description": "answer and ground truth are completely different",
@@ -60,7 +60,7 @@ my_custom_rubrics = {
     "score5_description": "answer and ground truth are exactly the same",
 }
 
-labelled_rubrics_score = LabelledRubricsScore(rubrics=my_custom_rubrics)
+labelled_rubrics_score = RubricsScoreWithReference(rubrics=my_custom_rubrics)
 ```
 
 

@@ -24,8 +24,8 @@ from ragas.metrics._noise_sensitivity import (
 from ragas.metrics._summarization import SummarizationScore, summarization_score
 from ragas.metrics.critique import AspectCritique
 from ragas.metrics.domain_specific_rubrics import (
-    LabelledRubricsScore,
-    ReferenceFreeRubricsScore,
+    RubricsScoreWithReference,
+    RubricsScoreWithoutReference,
     labelled_rubrics_score,
     reference_free_rubrics_score,
 )
@@ -56,8 +56,8 @@ __all__ = [
     "noise_sensitivity_relevant",
     "labelled_rubrics_score",
     "reference_free_rubrics_score",
-    "ReferenceFreeRubricsScore",
-    "LabelledRubricsScore",
+    "RubricsScoreWithoutReference",
+    "RubricsScoreWithReference",
 ]
 
 current_module = sys.modules[__name__]
