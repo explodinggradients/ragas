@@ -186,14 +186,17 @@ class FaithfulnessExperimental(MetricWithLLM, SingleTurnMetric):
         self._reproducibility = value
 
     def __post_init__(self):
-        self.long_form_answer_prompt = LongFormAnswerPrompt(llm=self.llm)
-        self.nli_statement_prompt = NLIStatementPrompt(llm=self.llm)
+        self.long_form_answer_prompt = LongFormAnswerPrompt()
+        self.nli_statement_prompt = NLIStatementPrompt()
         if self.sentence_segmenter is None:
             # TODO: make this dynamic, taking language from prompt
             language = "english"
             self.sentence_segmenter = get_segmenter(language=language, clean=False)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        
+        assert self.llm is not None, "LLM is not set"
+        
         answer, question, contexts = (
             row["response"],
             row["user_input"],
@@ -214,6 +217,7 @@ class FaithfulnessExperimental(MetricWithLLM, SingleTurnMetric):
                 answer=answer,
                 sentences={i: sentence for i, sentence in enumerate(sentences)},
             ),
+            llm=self.llm,
             callbacks=callbacks,
         )
 
@@ -227,6 +231,7 @@ class FaithfulnessExperimental(MetricWithLLM, SingleTurnMetric):
                 context="\n".join(contexts),
                 statements=statements,
             ),
+            llm=self.llm,
             callbacks=callbacks,
         )
 
