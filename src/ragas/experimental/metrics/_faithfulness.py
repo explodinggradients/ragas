@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 from pydantic import BaseModel, Field
 
-from ragas.experimental.llms.prompt import PydanticPrompt
+from ragas.experimental.prompt import PydanticPrompt
 from ragas.metrics.base import MetricWithLLM, SingleTurnMetric, get_segmenter
 
 if t.TYPE_CHECKING:
