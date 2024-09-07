@@ -31,7 +31,7 @@ def load_as_json(text) -> t.Dict:
 
 # not migrating to Prompt format to avoid circular imports
 JSON_PROMPT = """\
-Rewrite the input into valid json
+Rewrite the input into valid json. Only output JSON and nothing else.
 
 Input:
 {{
