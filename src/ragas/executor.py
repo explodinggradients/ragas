@@ -115,4 +115,8 @@ class Executor:
 
         results = asyncio.run(_aresults())
         sorted_results = sorted(results, key=lambda x: x[0])
+
+        # clear jobs if completed
+        self.jobs = []
+
         return [r[1] for r in sorted_results]
