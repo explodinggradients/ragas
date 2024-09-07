@@ -1,7 +1,7 @@
 import pytest
 from langchain_core.outputs import Generation, LLMResult
-from ragas_experimental.llms.prompt import StringIO, StringPrompt
 
+from ragas.experimental.prompt import StringIO, StringPrompt
 from ragas.llms.base import BaseRagasLLM
 from ragas.llms.prompt import PromptValue
 from ragas.run_config import RunConfig
@@ -40,7 +40,8 @@ def test_process_fields():
     from enum import Enum
 
     from pydantic import BaseModel
-    from ragas_experimental.llms.prompt import PydanticPrompt, StringIO
+
+    from ragas.experimental.prompt import PydanticPrompt, StringIO
 
     class Categories(str, Enum):
         science = "science"
@@ -64,7 +65,10 @@ def test_process_fields():
 
 @pytest.mark.asyncio
 async def test_pydantic_prompt_io():
-    from ragas_experimental.llms.prompt import PydanticPrompt, StringIO
+    from ragas.experimental.prompt import (
+        PydanticPrompt,
+        StringIO,
+    )
 
     class Prompt(PydanticPrompt[StringIO, StringIO]):
         instruction = ""
@@ -80,7 +84,9 @@ async def test_pydantic_prompt_io():
 
 
 def test_pydantic_prompt_examples():
-    from ragas_experimental.llms.prompt import PydanticPrompt
+    from ragas.experimental.prompt import (
+        PydanticPrompt,
+    )
 
     class Prompt(PydanticPrompt[StringIO, StringIO]):
         instruction = ""

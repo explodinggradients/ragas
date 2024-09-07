@@ -4,6 +4,10 @@ from dataclasses import dataclass
 import numpy as np
 import tiktoken
 from langchain_core.documents import Document as LCDocument
+
+from ragas.llms.base import BaseRagasLLM, llm_factory
+from ragas.llms.json_load import json_loader
+from ragas.llms.prompt import Prompt
 from ragas_experimental.testset.extractors.base import Extractor
 from ragas_experimental.testset.extractors.prompts import (
     headline_extractor_prompt,
@@ -13,10 +17,6 @@ from ragas_experimental.testset.extractors.prompts import (
 )
 from ragas_experimental.testset.graph import Node
 from ragas_experimental.testset.utils import MODEL_MAX_LENGTHS, merge_dicts
-
-from ragas.llms.base import BaseRagasLLM, llm_factory
-from ragas.llms.json_load import json_loader
-from ragas.llms.prompt import Prompt
 
 
 @dataclass
@@ -81,6 +81,7 @@ class LLMbasedExtractor(Extractor):
         return output
 
     def merge_extractors(self, *extractors):
+        # If the current instance is an LLMbasedExtractor, include it in the list of extractors
         if isinstance(self, LLMbasedExtractor):
             extractors = (self,) + extractors
 
@@ -90,8 +91,10 @@ class LLMbasedExtractor(Extractor):
         extractors = list(extractors)
         for idx, extractor in enumerate(extractors):
             if idx not in added_indices:
+                # Start a new group of extractors
                 final_extractors.append([extractor])
                 added_indices.append(idx)
+                # Get the remaining extractors that haven't been added to a group yet
                 other_extractors = [
                     ext for i, ext in enumerate(extractors) if i not in added_indices
                 ]
@@ -99,6 +102,7 @@ class LLMbasedExtractor(Extractor):
                 assert extractor.prompt is not None, "Input keys are not defined"
 
                 input_keys = extractor.prompt.input_keys
+                # Filter extractors that have compatible properties
                 filtered_extractors = [
                     ext
                     for ext in other_extractors
@@ -109,11 +113,13 @@ class LLMbasedExtractor(Extractor):
                 ]
                 for ext in filtered_extractors:
                     assert ext.prompt is not None, "Prompt is not defined for extractor"
+                    # Get input values from the extractor's examples
                     input_values = [
                         ext.prompt.examples[i][key]
                         for i in range(len(ext.prompt.examples))
                         for key in input_keys
                     ]
+                    # Check if the input values match the current extractor's examples
                     if all(
                         extractor.prompt.examples[i][key] == input_values[i]
                         for i in range(len(ext.prompt.examples))
@@ -124,6 +130,7 @@ class LLMbasedExtractor(Extractor):
 
         extractors_to_return = []
         for extractors in final_extractors:
+            # Combine instructions from all extractors in the group
             instruction = "\n".join(
                 [
                     f"{i}:{extractor.prompt.instruction}"
@@ -135,6 +142,7 @@ class LLMbasedExtractor(Extractor):
             examples = []
             extractor_prompt1 = extractors[0].prompt if extractors[0].prompt else None
             if extractor_prompt1 is not None:
+                # Create combined examples from all extractors in the group
                 for idx, example in enumerate(extractor_prompt1.examples):
                     example = {
                         key: example[key] for key in extractor_prompt1.input_keys
@@ -149,6 +157,7 @@ class LLMbasedExtractor(Extractor):
                     example.update({"output": output})
                     examples.append(example)
 
+                # Create a new prompt combining all extractors in the group
                 prompt = Prompt(
                     name="merged_extractor",
                     instruction=instruction,
@@ -157,6 +166,7 @@ class LLMbasedExtractor(Extractor):
                     output_key="output",
                     output_type="json",
                 )
+                # Create a new LLMbasedExtractor with the merged prompt
                 extractors_to_return.append(
                     LLMbasedExtractor(attribute=extractors[0].attribute, prompt=prompt)
                 )

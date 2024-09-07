@@ -7,6 +7,10 @@ import numpy as np
 import tiktoken
 from langchain.utils.math import cosine_similarity
 from langchain_core.documents import Document as LCDocument
+
+from ragas.executor import Executor
+from ragas.llms.json_load import json_loader
+from ragas.llms.prompt import Prompt
 from ragas_experimental.testset.graph import Node
 from ragas_experimental.testset.questions.base import (
     QAC,
@@ -15,24 +19,20 @@ from ragas_experimental.testset.questions.base import (
     QuestionStyle,
 )
 from ragas_experimental.testset.questions.prompts import (
+    CriticQuestion,
+    CriticQuestionPrompt,
     abstract_comparative_question,
     abstract_question_from_theme,
     common_theme_from_summaries,
     common_topic_from_keyphrases,
     critic_question,
     question_answering,
-    CriticQuestionPrompt,
-    CriticQuestion,
 )
 from ragas_experimental.testset.questions.queries import (
     CLUSTER_OF_RELATED_NODES_QUERY,
     LEAF_NODE_QUERY,
 )
 from ragas_experimental.testset.utils import rng
-
-from ragas.executor import Executor
-from ragas.llms.json_load import json_loader
-from ragas.llms.prompt import Prompt
 
 logger = logging.getLogger(__name__)
 
@@ -222,9 +222,11 @@ class AbstractQA(AbstractQuestions):
     async def critic_question(self, question: str) -> bool:
         assert self.llm is not None, "LLM is not initialized"
 
-        prompt = CriticQuestionPrompt(llm=self.llm)
-        output = await prompt.generate(data=CriticQuestion(question=question))
-        return output..independence >= 2 and output.clear_intent >= 2
+        prompt = CriticQuestionPrompt()
+        output = await prompt.generate(
+            llm=self.llm, data=CriticQuestion(question=question), callbacks=[]
+        )
+        return output.independence >= 2 and output.clear_intent >= 2
 
     async def retrieve_chunks(
         self, nodes: t.List[Node], kwargs: t.Optional[dict] = None

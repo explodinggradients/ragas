@@ -5,6 +5,9 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from langchain_core.documents import Document as LCDocument
+
+from ragas.executor import Executor
+from ragas.llms.prompt import Prompt
 from ragas_experimental.testset.graph import Node
 from ragas_experimental.testset.questions.base import (
     DEFAULT_DISTRIBUTION,
@@ -21,9 +24,6 @@ from ragas_experimental.testset.questions.prompts import (
 )
 from ragas_experimental.testset.questions.queries import CHILD_NODES_QUERY
 from ragas_experimental.testset.utils import rng
-
-from ragas.executor import Executor
-from ragas.llms.prompt import Prompt
 
 logger = logging.getLogger(__name__)
 
@@ -48,18 +48,12 @@ class SpecificQA(QAGenerator):
     async def generate_questions(
         self, query, kwargs, distribution=DEFAULT_DISTRIBUTION, num_samples=5
     ):
-        # This method generates specific questions based on nodes and keyphrases
-        
         assert self.llm is not None, "LLM is not initialized"
         query = query or CHILD_NODES_QUERY
         kwargs = kwargs or {}
-        
-        # Query nodes and select a subset randomly
         nodes = self.query_nodes(query, kwargs)
         num_nodes = min(num_samples, len(nodes))
         nodes = rng.choice(nodes, size=num_nodes, replace=False)
-        
-        # Calculate seeds for each node to determine how many questions per node
         seed_per_results = num_samples // len(nodes)
         reminder = num_samples - seed_per_results * num_nodes
         seeds = [seed_per_results] * num_nodes
@@ -67,14 +61,11 @@ class SpecificQA(QAGenerator):
 
         nodes_and_keyphraes = []
         for node, seed in zip(nodes, seeds):
-            # Extract separators (section headings) from child relationships
             seperators = [
                 rel.properties["seperator"]
                 for rel in node.relationships
                 if rel.label == "child"
             ]
-            
-            # If multiple separators, use LLM to order sections by relevance
             if len(seperators) > 1:
                 p_vlaue = self.order_sections_prompt.format(sections=seperators)
                 output = await self.llm.generate(p_vlaue)
@@ -90,7 +81,6 @@ class SpecificQA(QAGenerator):
                 # TODO: inspect and handle better
                 selected_heading = seperators[0:1]
 
-            # Select target nodes based on the chosen separators
             target_nodes = [
                 relation.target
                 for relation in node.relationships
@@ -102,7 +92,6 @@ class SpecificQA(QAGenerator):
                 )
             ]
 
-            # Extract keyphrases from target nodes and select randomly
             keyphrases = [
                 node.properties["metadata"]["keyphrases"] for node in target_nodes
             ]
@@ -114,7 +103,6 @@ class SpecificQA(QAGenerator):
                 [(target_nodes, keyphrase) for keyphrase in keyphrases]
             )
 
-        # Create an Executor for parallel processing of question generation
         exec = Executor(
             desc="Generating",
             keep_progress_bar=True,
@@ -122,7 +110,6 @@ class SpecificQA(QAGenerator):
             run_config=None,
         )
 
-        # Submit tasks to generate questions based on the given distribution
         index = 0
         for dist, prob in distribution.items():
             style, length = dist
@@ -136,7 +123,6 @@ class SpecificQA(QAGenerator):
                 )
                 index += 1
 
-        # Handle any remaining samples not covered by the distribution
         remaining_size = num_samples - index
         if remaining_size != 0:
             choices = np.array(distribution.keys())
@@ -153,8 +139,8 @@ class SpecificQA(QAGenerator):
                 )
                 index += 1
 
-        # Return the results of all executed tasks (generated questions)
         return exec.results()
+
     async def generate_question(
         self,
         nodes: t.List[Node],
