@@ -15,7 +15,7 @@ question_answer_parser = RagasoutputParser(pydantic_object=AnswerFormat)
 reasoning_question_prompt = Prompt(
     name="reasoning_question",
     instruction="""Complicate the given question by rewriting question into a multi-hop reasoning question based on the provided context.
-    Answering the question should require the reader to make multiple logical connections or inferences using the information available in given context.
+    Answering the question should require the reader to make multiple logical connections or inferences using the information available in given context. Only output the question and nothing else.
     Rules to follow when rewriting question:
     1. Ensure that the rewritten question can be answered entirely from the information present in the contexts.
     2. Do not frame questions that contains more than 15 words. Use abbreviation wherever possible.
@@ -43,7 +43,7 @@ reasoning_question_prompt = Prompt(
 multi_context_question_prompt = Prompt(
     name="multi_context_question",
     instruction="""
-    The task is to rewrite and complicate the given question in a way that answering it requires information derived from both context1 and context2. 
+    The task is to rewrite and complicate the given question in a way that answering it requires information derived from both context1 and context2. Only output the question and nothing else.
     Follow the rules given below while rewriting the question.
         1. The rewritten question should not be very long. Use abbreviation wherever possible.
         2. The rewritten question must be reasonable and must be understood and responded by humans.
@@ -73,7 +73,7 @@ multi_context_question_prompt = Prompt(
 conditional_question_prompt = Prompt(
     name="conditional_question",
     instruction="""Rewrite the provided question to increase its complexity by introducing a conditional element.
-    The goal is to make the question more intricate by incorporating a scenario or condition that affects the context of the question.
+    The goal is to make the question more intricate by incorporating a scenario or condition that affects the context of the question. Only output the question and nothing else.
     Follow the rules given below while rewriting the question.
         1. The rewritten question should not be longer than 25 words. Use abbreviation wherever possible.
         2. The rewritten question must be reasonable and must be understood and responded by humans.
@@ -100,7 +100,8 @@ conditional_question_prompt = Prompt(
 compress_question_prompt = Prompt(
     name="compress_question",
     instruction="""Rewrite the following question to make it more indirect and shorter while retaining the essence of the original question.
-    The goal is to create a question that conveys the same meaning but in a less direct manner. The rewritten question should shorter so use abbreviation wherever possible.""",
+    The goal is to create a question that conveys the same meaning but in a less direct manner. The rewritten question should shorter so use abbreviation wherever possible.
+    Only output the question and nothing else.""",
     examples=[
         {
             "question": "What is the distance between the Earth and the Moon?",
@@ -216,7 +217,7 @@ keyphrase_extraction_prompt = Prompt(
 
 seed_question_prompt = Prompt(
     name="seed_question",
-    instruction="Generate a question that can be fully answered from given context. The question should be formed using topic",
+    instruction="Generate a question that can be fully answered from given context. The question should be formed using topic. Only output the question and nothing else.",
     examples=[
         {
             "context": "Photosynthesis in plants involves converting light energy into chemical energy, using chlorophyll and other pigments to absorb light. This process is crucial for plant growth and the production of oxygen.",
@@ -303,7 +304,7 @@ find_relevant_context_prompt = Prompt(
 
 question_rewrite_prompt = Prompt(
     name="rewrite_question",
-    instruction="""Given a context, question and feedback, rewrite the question to improve its clarity and answerability based on the feedback provided.""",
+    instruction="""Given a context, question and feedback, rewrite the question to improve its clarity and answerability based on the feedback provided. Only output the question and nothing else.""",
     examples=[
         {
             "context": "The Eiffel Tower was constructed using iron and was originally intended as a temporary exhibit for the 1889 World's Fair held in Paris. Despite its initial temporary purpose, the Eiffel Tower quickly became a symbol of Parisian ingenuity and an iconic landmark of the city, attracting millions of visitors each year. The tower's design, created by Gustave Eiffel, was initially met with criticism from some French artists and intellectuals, but it has since been celebrated as a masterpiece of structural engineering and architectural design.",
