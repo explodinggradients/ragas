@@ -4,8 +4,6 @@ import typing as t
 from abc import ABC, abstractmethod
 
 import pydantic
-
-# Check Pydantic version
 from pydantic import BaseModel
 
 from ragas.llms.output_parser import RagasoutputParser
@@ -21,13 +19,9 @@ PYDANTIC_V2 = pydantic.VERSION.startswith("2.")
 
 class BasePrompt(ABC):
     @abstractmethod
-<<<<<<<< HEAD:src/experimental/ragas_experimental/prompt.py
     async def generate(
-        self, llm: BaseRagasLLM, data: t.Any, callbacks: Callbacks
+        self, llm: BaseRagasLLM, data: t.Any, callbacks: Callbacks = []
     ) -> t.Any:
-========
-    async def generate(self, data: t.Any, callbacks: Callbacks = None) -> t.Any:
->>>>>>>> main:src/ragas/experimental/llms/prompt.py
         pass
 
 
@@ -132,11 +126,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         )
 
     async def generate(
-<<<<<<<< HEAD:src/experimental/ragas_experimental/prompt.py
-        self, llm: BaseRagasLLM, data: InputModel, callbacks: Callbacks
-========
-        self, data: InputModel, callbacks: Callbacks = None
->>>>>>>> main:src/ragas/experimental/llms/prompt.py
+        self, llm: BaseRagasLLM, data: InputModel, callbacks: Callbacks = []
     ) -> OutputModel:
         prompt_value = PromptValue(prompt_str=self.to_string(data))
         resp = await llm.generate(prompt_value, callbacks=callbacks)
@@ -149,13 +139,20 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
 
 
 class StringPrompt(BasePrompt):
-<<<<<<<< HEAD:src/experimental/ragas_experimental/prompt.py
-    async def generate(self, llm: BaseRagasLLM, data: str, callbacks: Callbacks) -> str:
+    async def generate(
+        self, llm: BaseRagasLLM, data: str, callbacks: Callbacks = []
+    ) -> str:
         prompt_value = PromptValue(prompt_str=data)
         llm_result = await llm.agenerate_text(prompt_value, callbacks=callbacks)
-========
-    async def generate(self, data: str, callbacks: Callbacks = None) -> str:
-        prompt_value = PromptValue(prompt_str=data)
-        llm_result = await self.llm.agenerate_text(prompt_value, callbacks=callbacks)
->>>>>>>> main:src/ragas/experimental/llms/prompt.py
         return llm_result.generations[0][0].text
+
+
+def merge_prompts(prompts: t.List[PydanticPrompt]):
+    # check if all prompts have the same input_model and inputs in the examples are the same
+    input_model = prompts[0].input_model
+    input_examples = prompts[0].examples[0][0]
+    for prompt in prompts[1:]:
+        if prompt.input_model != input_model:
+            raise ValueError("All prompts must have the same input_model")
+        if prompt.examples[0][0] != input_examples:
+            raise ValueError("All prompts must have the same input_examples")
