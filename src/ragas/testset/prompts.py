@@ -3,13 +3,25 @@ from langchain_core.pydantic_v1 import BaseModel
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
 
+from typing import List
+
 
 class AnswerFormat(BaseModel):
     answer: str
     verdict: int
 
 
+class KeyphraseFormat(BaseModel):
+    keyphrases: List[str]
+
+
+class RelevantContextFormat(BaseModel):
+    relevant_contexts: List[int]
+
+
 question_answer_parser = RagasoutputParser(pydantic_object=AnswerFormat)
+keyphrase_parser = RagasoutputParser(pydantic_object=KeyphraseFormat)
+relevant_context_parser = RagasoutputParser(pydantic_object=RelevantContextFormat)
 
 
 reasoning_question_prompt = Prompt(
@@ -186,28 +198,33 @@ question_answer_prompt = Prompt(
 keyphrase_extraction_prompt = Prompt(
     name="keyphrase_extraction",
     instruction="Extract the top 3 to 5 keyphrases from the provided text, focusing on the most significant and distinctive aspects. ",
+    output_format_instruction=get_json_format_instructions(KeyphraseFormat),
     examples=[
         {
             "text": "A black hole is a region of spacetime where gravity is so strong that nothing, including light and other electromagnetic waves, has enough energy to escape it. The theory of general relativity predicts that a sufficiently compact mass can deform spacetime to form a black hole.",
-            "output": {
-                "keyphrases": [
-                    "Black hole",
-                    "Region of spacetime",
-                    "Strong gravity",
-                    "Light and electromagnetic waves",
-                    "Theory of general relativity",
-                ]
-            },
+            "output": KeyphraseFormat.parse_obj(
+                {
+                    "keyphrases": [
+                        "Black hole",
+                        "Region of spacetime",
+                        "Strong gravity",
+                        "Light and electromagnetic waves",
+                        "Theory of general relativity",
+                    ]
+                }
+            ).dict(),
         },
         {
             "text": "The Great Wall of China is an ancient series of walls and fortifications located in northern China, built around 500 years ago. This immense wall stretches over 13,000 miles and is a testament to the skill and persistence of ancient Chinese engineers.",
-            "output": {
-                "keyphrases": [
-                    "Great Wall of China",
-                    "Ancient fortifications",
-                    "Northern China",
-                ]
-            },
+            "output": KeyphraseFormat.parse_obj(
+                {
+                    "keyphrases": [
+                        "Great Wall of China",
+                        "Ancient fortifications",
+                        "Northern China",
+                    ]
+                }
+            ).dict(),
         },
     ],
     input_keys=["text"],
@@ -273,6 +290,7 @@ main_topic_extraction_prompt = Prompt(
 find_relevant_context_prompt = Prompt(
     name="find_relevant_context",
     instruction="Given a question and set of contexts, find the most relevant contexts to answer the question.",
+    output_format_instruction=get_json_format_instructions(KeyphraseFormat),
     examples=[
         {
             "question": "What is the capital of France?",
@@ -281,9 +299,11 @@ find_relevant_context_prompt = Prompt(
                 "2. The capital of France is Paris. It is also the most populous city in France, with a population of over 2 million people. Paris is known for its cultural landmarks like the Eiffel Tower and the Louvre Museum.",
                 "3. Paris is the capital of France. It is also the most populous city in France, with a population of over 2 million people. Paris is known for its cultural landmarks like the Eiffel Tower and the Louvre Museum.",
             ],
-            "output": {
-                "relevant_contexts": [1, 2],
-            },
+            "output": RelevantContextFormat.parse_obj(
+                {
+                    "relevant_contexts": [2, 3],
+                }
+            ).dict(),
         },
         {
             "question": "How does caffeine affect the body and what are its common sources?",
@@ -292,7 +312,11 @@ find_relevant_context_prompt = Prompt(
                 "2. Regular physical activity is essential for maintaining good health. It can help control weight, combat health conditions, boost energy, and promote better sleep.",
                 "3. Common sources of caffeine include coffee, tea, cola, and energy drinks. These beverages are consumed worldwide and are known for providing a quick boost of energy.",
             ],
-            "output": {"relevant_contexts": [1, 2]},
+            "output": RelevantContextFormat.parse_obj(
+                {
+                    "relevant_contexts": [1, 2],
+                }
+            ).dict()            
         },
     ],
     input_keys=["question", "contexts"],
