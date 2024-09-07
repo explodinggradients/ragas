@@ -1,0 +1,62 @@
+import logging
+import typing as t
+import uuid
+from dataclasses import dataclass, field
+
+from ragas.executor import Executor
+from ragas.experimental.testset.extractors.base import BaseExtractor
+from ragas.experimental.testset.graph import KnowledgeGraph, Node
+from ragas.llms.base import BaseRagasLLM, llm_factory
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class DocumentStore:
+    extractors: t.List[BaseExtractor] = field(default_factory=list)
+    knowledge_graph: KnowledgeGraph = field(default_factory=KnowledgeGraph)
+    llm: BaseRagasLLM = field(default_factory=llm_factory)
+
+    def __post_init__(self):
+        if not self.extractors:
+            from ragas.experimental.testset.extractors.llm_based import (
+                KeyphrasesExtractor,
+                SummaryExtractor,
+                TitleExtractor,
+            )
+
+            self.extractors = [
+                SummaryExtractor(llm=self.llm),
+                KeyphrasesExtractor(llm=self.llm),
+                TitleExtractor(llm=self.llm),
+            ]
+
+    def add_extractor(self, extractor: BaseExtractor):
+        self.extractors.append(extractor)
+
+    def add_nodes(self, nodes: t.List[Node]):
+        # run extrators against the nodes
+        exec = Executor(
+            desc="Extraction..",
+            keep_progress_bar=True,
+            raise_exceptions=False,
+            run_config=None,
+        )
+
+        # Closure function to extract properties and add properties to node.
+        async def extract_with_node_id(node: Node, extractor: BaseExtractor):
+            key, value = await extractor.extract(node)
+            if value is not None:
+                try:
+                    node.add_property(key, value)
+                except ValueError as e:
+                    logger.warning(
+                        "Error adding property '%s' to node '%s': %s", key, node, e
+                    )
+
+        # extract properties from each node and add to knowledge graph
+        for node in nodes:
+            for extractor in self.extractors:
+                exec.submit(extract_with_node_id, node, extractor)
+            self.knowledge_graph.add_node(node)
+        exec.results()
