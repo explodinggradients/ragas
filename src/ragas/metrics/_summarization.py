@@ -10,7 +10,7 @@ from langchain.pydantic_v1 import BaseModel
 from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import MetricWithLLM, SingleTurnMetric
+from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -146,9 +146,13 @@ class SummarizationScore(MetricWithLLM, SingleTurnMetric):
     name: str = "summary_score"  # type: ignore
     max_retries: int = 1
     length_penalty: bool = True
-    _required_columns: t.Tuple[str, ...] = (
-        "reference_contexts",
-        "response",
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {
+                "reference_contexts",
+                "response",
+            }
+        }
     )
     coeff: float = 0.5
     question_generation_prompt: Prompt = field(

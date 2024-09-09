@@ -189,7 +189,7 @@ REQUIRED_COLS_v1 = {
 
 
 def get_required_columns_v1(metric: Metric):
-    required_cols = metric.required_columns
+    required_cols = metric.required_columns.get("SINGLE_TURN", set())
     required_cols = [REQUIRED_COLS_v1.get(col) for col in required_cols]
     return [col for col in required_cols if col is not None]
 

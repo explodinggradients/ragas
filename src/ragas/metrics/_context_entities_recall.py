@@ -11,7 +11,7 @@ from langchain.pydantic_v1 import BaseModel
 from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import MetricWithLLM, SingleTurnMetric
+from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.base import Callbacks
@@ -131,7 +131,11 @@ class ContextEntityRecall(MetricWithLLM, SingleTurnMetric):
     """
 
     name: str = "context_entity_recall"  # type: ignore
-    _required_columns: t.Tuple[str, ...] = ("reference", "retrieved_contexts")
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {"reference", "retrieved_contexts"}
+        }
+    )
     context_entity_recall_prompt: Prompt = field(
         default_factory=lambda: TEXT_ENTITY_EXTRACTION
     )
