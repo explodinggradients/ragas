@@ -20,9 +20,6 @@ PYDANTIC_V2 = pydantic.VERSION.startswith("2.")
 
 
 class BasePrompt(ABC):
-    def __init__(self):
-        pass
-
     @abstractmethod
     async def generate(
         self, data: t.Any, llm: BaseRagasLLM, callbacks: Callbacks = None

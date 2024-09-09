@@ -126,21 +126,16 @@ class RubricsScoreWithoutReference(MetricWithLLM, SingleTurnMetric, MultiTurnMet
         assert self.llm is not None, "LLM is not set"
 
         interaction = sample.pretty_repr()
-        row = {"interaction": interaction}
-        prompt_input = self._create_multi_turn_prompt(row)
+        prompt_input = MultiTurnWithoutReferenceInput(
+            user_input=interaction,
+            rubrics=self.rubrics,
+        )
         output = await self.multi_turn_scoring_prompt.generate(
             prompt_input,
             llm=self.llm,
             callbacks=callbacks,
         )
         return output.score
-
-    def _create_multi_turn_prompt(self, row: t.Dict) -> MultiTurnWithoutReferenceInput:
-        interaction = row["interaction"]
-        return MultiTurnWithoutReferenceInput(
-            user_input=interaction,
-            rubrics=self.rubrics,
-        )
 
     def _create_single_turn_prompt(
         self, row: t.Dict
