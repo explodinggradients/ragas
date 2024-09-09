@@ -19,6 +19,9 @@ dynamic = ["version", "readme"]
 all = [
     "sentence-transformers",
     "transformers",
+    "nltk",
+    "rouge_score",
+    "fuzzywuzzy",
 ]
 
 [tool.setuptools]
