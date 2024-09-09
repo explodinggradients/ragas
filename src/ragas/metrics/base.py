@@ -15,7 +15,6 @@ from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
 
-
 from ragas.callbacks import new_group
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.run_config import RunConfig
@@ -163,7 +162,7 @@ class MetricWithLLM(Metric):
         prompts = {}
         for name, value in inspect.getmembers(self):
             if isinstance(value, Prompt):
-                prompts[name].append(value)
+                prompts.update({name: value})
         return prompts
 
     def set_prompts(self, **prompts):
@@ -171,7 +170,7 @@ class MetricWithLLM(Metric):
         for key, value in prompts.items():
             if key not in available_prompts:
                 raise ValueError(
-                    f"Prompt with name '{key}' not found in the available prompts"
+                    f"Prompt with name '{key}' does not exist in the metric {self.name}. Use get_prompts() to see available prompts."
                 )
             if not isinstance(value, Prompt):
                 raise ValueError(
