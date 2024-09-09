@@ -13,3 +13,4 @@ graphene
 fuzzywuzzy
 rouge_score
 nltk
+rapidfuzz
