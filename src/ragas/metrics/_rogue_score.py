@@ -1,18 +1,20 @@
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from langchain_core.callbacks import Callbacks
 from rouge_score import rouge_scorer
 
 from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics.base import SingleTurnMetric
+from ragas.metrics.base import MetricType, SingleTurnMetric
 from ragas.run_config import RunConfig
 
 
 @dataclass
 class RougeScore(SingleTurnMetric):
     name: str = "rouge_score"  # type: ignore
-    _required_columns: t.Tuple[str, ...] = ("reference", "response")
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
+    )
     rogue_type: t.Literal["rouge1", "rougeL"] = "rougeL"
     measure_type: t.Literal["fmeasure", "precision", "recall"] = "fmeasure"
 

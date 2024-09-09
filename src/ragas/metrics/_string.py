@@ -1,12 +1,12 @@
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 from langchain_core.callbacks import Callbacks
 from rapidfuzz import distance
 
 from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics.base import SingleTurnMetric
+from ragas.metrics.base import MetricType, SingleTurnMetric
 from ragas.run_config import RunConfig
 
 
@@ -26,7 +26,9 @@ DISTANCE_MEASURE_MAP = {
 @dataclass
 class ExactMatch(SingleTurnMetric):
     name: str = "exact_match"  # type: ignore
-    _required_columns: t.Tuple[str, ...] = ("reference", "response")
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
+    )
 
     def init(self, run_config: RunConfig):
         pass
@@ -42,7 +44,9 @@ class ExactMatch(SingleTurnMetric):
 
 class StringPresent(SingleTurnMetric):
     name: str = "string_present"  # type: ignore
-    _required_columns: t.Tuple[str, ...] = ("reference", "response")
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
+    )
 
     def init(self, run_config: RunConfig):
         pass
@@ -62,7 +66,9 @@ class StringPresent(SingleTurnMetric):
 
 class StringDistance(SingleTurnMetric):
     name: str = "string_distance"  # type: ignore
-    _required_columns: t.Tuple[str, ...] = ("reference", "response")
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
+    )
     distance_measure: DistanceMeasure = DistanceMeasure.LEVENSHTEIN
 
     def init(self, run_config: RunConfig):
