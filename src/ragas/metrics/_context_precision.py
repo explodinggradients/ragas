@@ -10,7 +10,7 @@ from langchain.pydantic_v1 import BaseModel, Field
 from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt, PromptValue
-from ragas.metrics.base import MetricWithLLM, SingleTurnMetric, ensembler
+from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric, ensembler
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -87,10 +87,14 @@ class ContextPrecision(MetricWithLLM, SingleTurnMetric):
     """
 
     name: str = "context_precision"  # type: ignore
-    _required_columns: t.Tuple[str, ...] = (
-        "user_input",
-        "retrieved_contexts",
-        "reference",
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {
+                "user_input",
+                "retrieved_contexts",
+                "reference",
+            }
+        }
     )
     context_precision_prompt: Prompt = field(default_factory=lambda: CONTEXT_PRECISION)
     max_retries: int = 1
@@ -200,10 +204,10 @@ class ContextPrecision(MetricWithLLM, SingleTurnMetric):
 @dataclass
 class ContextUtilization(ContextPrecision):
     name: str = "context_utilization"
-    _required_columns: t.Tuple[str, ...] = (
-        "user_input",
-        "retrieved_contexts",
-        "response",
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {"user_input", "response", "retreived_contexts"}
+        }
     )
 
     def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:

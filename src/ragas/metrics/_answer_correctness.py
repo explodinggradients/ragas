@@ -17,6 +17,7 @@ from ragas.metrics._faithfulness import (
     _statements_output_parser,
 )
 from ragas.metrics.base import (
+    MetricType,
     MetricWithEmbeddings,
     MetricWithLLM,
     SingleTurnMetric,
@@ -158,7 +159,11 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     """
 
     name: str = "answer_correctness"  # type: ignore[reportIncompatibleMethodOverride]
-    _required_columns: t.Tuple[str, ...] = ("user_input", "response", "reference")
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {"user_input", "response", "reference"}
+        }
+    )
     correctness_prompt: Prompt = field(default_factory=lambda: CORRECTNESS_PROMPT)
     long_form_answer_prompt: Prompt = field(
         default_factory=lambda: LONG_FORM_ANSWER_PROMPT

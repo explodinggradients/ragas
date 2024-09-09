@@ -18,7 +18,13 @@ from ragas.metrics._faithfulness import (
     _faithfulness_output_parser,
     _statements_output_parser,
 )
-from ragas.metrics.base import MetricWithLLM, SingleTurnMetric, ensembler, get_segmenter
+from ragas.metrics.base import (
+    MetricType,
+    MetricWithLLM,
+    SingleTurnMetric,
+    ensembler,
+    get_segmenter,
+)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -33,11 +39,15 @@ logger = logging.getLogger(__name__)
 class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
     name: str = "noise_sensitivity"  # type: ignore
     focus: str = "relevant"
-    _required_columns: t.Tuple[str, ...] = (
-        "user_input",
-        "response",
-        "ground_truth",
-        "retrieved_contexts",
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {
+                "user_input",
+                "response",
+                "ground_truth",
+                "retrieved_contexts",
+            }
+        }
     )
     nli_statements_message: Prompt = field(
         default_factory=lambda: NLI_STATEMENTS_MESSAGE

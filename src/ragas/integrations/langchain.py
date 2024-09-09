@@ -130,7 +130,7 @@ class EvaluatorChain(Chain, RunEvaluator):
 
     def _validate(self, input: SingleTurnSample) -> None:
         # validate each example
-        required_columns = self.metric.required_columns
+        required_columns = self.metric.required_columns.get("SINGLE_TURN", [])
         for col in required_columns:
             if col not in input.features():
                 raise ValueError(
