@@ -1,8 +1,11 @@
+import typing as t
+from dataclasses import dataclass, field
+
 import pytest
-from attr import dataclass
 from datasets import Dataset
 
-from ragas.validation import remap_column_names, validate_required_columns
+from ragas.metrics.base import MetricType
+from ragas.validation import remap_column_names, validate_supported_metrics
 
 column_maps = [
     {
@@ -25,7 +28,9 @@ def test_validate_required_columns():
     @dataclass
     class MockMetric(Metric):
         name = "mock_metric"
-        _required_columns = ("user_input", "response")
+        _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+            default_factory=lambda: {MetricType.SINGLE_TURN: {"user_input", "response"}}
+        )
 
         def init(self, run_config):
             pass
@@ -38,7 +43,36 @@ def test_validate_required_columns():
     sample2 = SingleTurnSample(user_input="What is Z")
     ds = EvaluationDataset(samples=[sample1, sample2])
     with pytest.raises(ValueError):
-        validate_required_columns(ds, [m])
+        validate_supported_metrics(ds, [m])
+
+
+def test_valid_data_type():
+    from ragas.dataset_schema import EvaluationDataset, MultiTurnSample
+    from ragas.messages import HumanMessage
+    from ragas.metrics.base import MetricWithLLM, SingleTurnMetric
+
+    @dataclass
+    class MockMetric(MetricWithLLM, SingleTurnMetric):
+        name = "mock_metric"
+        _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+            default_factory=lambda: {MetricType.SINGLE_TURN: {"user_input"}}
+        )
+
+        def init(self, run_config):
+            pass
+
+        async def _single_turn_ascore(self, sample, callbacks):
+            return 0.0
+
+        async def _ascore(self, row, callbacks):
+            return 0.0
+
+    m = MockMetric()
+    sample1 = MultiTurnSample(user_input=[HumanMessage(content="What is X")])
+    sample2 = MultiTurnSample(user_input=[HumanMessage(content="What is X")])
+    ds = EvaluationDataset(samples=[sample1, sample2])
+    with pytest.raises(ValueError):
+        validate_supported_metrics(ds, [m])
 
 
 @pytest.mark.parametrize("column_map", column_maps)

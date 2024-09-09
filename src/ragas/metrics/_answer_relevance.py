@@ -10,7 +10,12 @@ from langchain_core.pydantic_v1 import BaseModel
 from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import MetricWithEmbeddings, MetricWithLLM, SingleTurnMetric
+from ragas.metrics.base import (
+    MetricType,
+    MetricWithEmbeddings,
+    MetricWithLLM,
+    SingleTurnMetric,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -103,10 +108,14 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     """
 
     name: str = "answer_relevancy"  # type: ignore
-    _required_columns: t.Tuple[str, ...] = (
-        "user_input",
-        "response",
-        "retrived_contexts",
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {
+                "user_input",
+                "response",
+                "retrived_contexts",
+            }
+        }
     )
     question_generation: Prompt = field(default_factory=lambda: QUESTION_GEN)
     strictness: int = 3

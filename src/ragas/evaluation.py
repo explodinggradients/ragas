@@ -12,7 +12,7 @@ from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 from ragas._analytics import EvaluationEvent, track, track_was_completed
 from ragas.callbacks import new_group
 from ragas.cost import TokenUsage
-from ragas.dataset_schema import EvaluationDataset
+from ragas.dataset_schema import EvaluationDataset, MultiTurnSample, SingleTurnSample
 from ragas.embeddings.base import (
     BaseRagasEmbeddings,
     LangchainEmbeddingsWrapper,
@@ -28,13 +28,18 @@ from ragas.metrics.base import (
     Metric,
     MetricWithEmbeddings,
     MetricWithLLM,
+    MultiTurnMetric,
     SingleTurnMetric,
     is_reproducable,
 )
 from ragas.metrics.critique import AspectCritique
 from ragas.run_config import RunConfig
 from ragas.utils import get_feature_language, safe_nanmean
-from ragas.validation import remap_column_names, validate_required_columns
+from ragas.validation import (
+    remap_column_names,
+    validate_required_columns,
+    validate_supported_metrics,
+)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -162,6 +167,7 @@ def evaluate(
 
     if isinstance(dataset, EvaluationDataset):
         validate_required_columns(dataset, metrics)
+        validate_supported_metrics(dataset, metrics)
 
     # set the llm and embeddings
     if isinstance(llm, LangchainLLM):
@@ -234,6 +240,8 @@ def evaluate(
     evaluation_rm, evaluation_group_cm = new_group(
         name=RAGAS_EVALUATION_CHAIN_NAME, inputs={}, callbacks=callbacks
     )
+
+    sample_type = dataset.get_sample_type()
     for i, sample in enumerate(dataset):
         row = t.cast(t.Dict[str, t.Any], sample.dict())
         row_rm, row_group_cm = new_group(
@@ -242,17 +250,32 @@ def evaluate(
             callbacks=evaluation_group_cm,
         )
         row_run_managers.append((row_rm, row_group_cm))
-        _ = [
-            executor.submit(
-                metric.single_turn_ascore,
-                sample,
-                row_group_cm,
-                name=f"{metric.name}-{i}",
-                timeout=run_config.timeout,
-            )
-            for metric in metrics
-            if isinstance(metric, SingleTurnMetric)
-        ]
+        if sample_type == SingleTurnSample:
+            _ = [
+                executor.submit(
+                    metric.single_turn_ascore,
+                    sample,
+                    row_group_cm,
+                    name=f"{metric.name}-{i}",
+                    timeout=run_config.timeout,
+                )
+                for metric in metrics
+                if isinstance(metric, SingleTurnMetric)
+            ]
+        elif sample_type == MultiTurnSample:
+            _ = [
+                executor.submit(
+                    metric.multi_turn_ascore,
+                    sample,
+                    row_group_cm,
+                    name=f"{metric.name}-{i}",
+                    timeout=run_config.timeout,
+                )
+                for metric in metrics
+                if isinstance(metric, MultiTurnMetric)
+            ]
+        else:
+            raise ValueError(f"Unsupported sample type {sample_type}")
 
     scores = []
     try:

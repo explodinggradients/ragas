@@ -13,6 +13,7 @@ import typing as t
 from abc import ABC, abstractmethod
 from collections import Counter
 from dataclasses import dataclass, field
+from enum import Enum
 
 from ragas.callbacks import new_group
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
@@ -43,9 +44,14 @@ VALID_COLUMNS = [
 ]
 
 
+class MetricType(Enum):
+    SINGLE_TURN = "single_turn"
+    MULTI_TURN = "multi_turn"
+
+
 @dataclass
 class Metric(ABC):
-    _required_columns: t.Tuple[str, ...] = field(default_factory=tuple)
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(default_factory=dict)
 
     @property
     @abstractmethod
@@ -53,17 +59,17 @@ class Metric(ABC):
         ...
 
     @property
-    def required_columns(self) -> t.Tuple[str, ...]:
-        return self._required_columns
+    def required_columns(self) -> t.Dict[str, t.Set[str]]:
+        return {k.name: v for k, v in self._required_columns.items()}
 
     @required_columns.setter
-    def required_columns(self, columns: t.Tuple[str, ...]):
+    def required_columns(self, metric_type: MetricType, columns: t.Set[str]):
         for column in columns:
             if column not in VALID_COLUMNS:
                 raise ValueError(
                     f"Invalid column '{column}'. Must be one of {VALID_COLUMNS}"
                 )
-        self._required_columns = columns
+        self._required_columns[metric_type] = columns
 
     @abstractmethod
     def init(self, run_config: RunConfig):
@@ -221,12 +227,54 @@ class SingleTurnMetric(Metric):
 
 
 class MultiTurnMetric(Metric):
-    @abstractmethod
+    def multi_turn_score(
+        self,
+        sample: MultiTurnSample,
+        callbacks: Callbacks = None,
+    ) -> float:
+        callbacks = callbacks or []
+        rm, group_cm = new_group(self.name, inputs=sample.dict(), callbacks=callbacks)
+        try:
+            loop = asyncio.get_event_loop()
+            score = loop.run_until_complete(
+                self._multi_turn_ascore(sample=sample, callbacks=group_cm)
+            )
+        except Exception as e:
+            if not group_cm.ended:
+                rm.on_chain_error(e)
+            raise e
+        else:
+            if not group_cm.ended:
+                rm.on_chain_end({"output": score})
+        return score
+
     async def multi_turn_ascore(
         self,
         sample: MultiTurnSample,
-        callbacks: Callbacks,
+        callbacks: Callbacks = None,
         timeout: t.Optional[float] = None,
+    ) -> float:
+        callbacks = callbacks or []
+        rm, group_cm = new_group(self.name, inputs=sample.dict(), callbacks=callbacks)
+        try:
+            score = await asyncio.wait_for(
+                self._multi_turn_ascore(sample=sample, callbacks=group_cm),
+                timeout=timeout,
+            )
+        except Exception as e:
+            if not group_cm.ended:
+                rm.on_chain_error(e)
+            raise e
+        else:
+            if not group_cm.ended:
+                rm.on_chain_end({"output": score})
+        return score
+
+    @abstractmethod
+    async def _multi_turn_ascore(
+        self,
+        sample: MultiTurnSample,
+        callbacks: Callbacks,
     ) -> float:
         ...
 
