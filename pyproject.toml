@@ -22,6 +22,10 @@ all = [
     "torch==2.4.0",
     "einops>=0.7.0",
     "sentencepiece>=0.2.0"
+    "nltk",
+    "rouge_score",
+    "fuzzywuzzy",
+    "rapidfuzz",
 ]
 
 [tool.setuptools]
