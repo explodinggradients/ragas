@@ -443,7 +443,7 @@ class FaithfulnesswithMiniCheck(Faithfulness):
     )
     self._tokenizer = AutoTokenizer.from_pretrained(
         "bespokelabs/Bespoke-MiniCheck-7B")
-    self.nli_classifier.to(self.device)
+    self._minicheck.to(self.device)
     super().__post_init__()
 
   def _create_batch(
