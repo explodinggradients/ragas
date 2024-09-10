@@ -4,8 +4,10 @@ import json
 import logging
 import typing as t
 from dataclasses import dataclass, field
+from string import Template
 
 import numpy as np
+import torch
 from langchain_core.pydantic_v1 import BaseModel, Field
 
 from ragas.dataset_schema import SingleTurnSample
@@ -20,86 +22,82 @@ from ragas.metrics.base import (
 )
 
 if t.TYPE_CHECKING:
-    from langchain_core.callbacks import Callbacks
+  from langchain_core.callbacks import Callbacks
 
-    from ragas.llms.prompt import PromptValue
+  from ragas.llms.prompt import PromptValue
 
 
 class HasSegmentMethod(t.Protocol):
-    def segment(self, text) -> t.Any:
-        ...
+  def segment(self, text) -> t.Any:
+    ...
 
 
 logger = logging.getLogger(__name__)
 
 
 class Statements(BaseModel):
-    sentence_index: int = Field(
-        ..., description="Index of the sentence from the statement list"
-    )
-    simpler_statements: t.List[str] = Field(..., description="the simpler statements")
+  sentence_index: int = Field(
+      ..., description="Index of the sentence from the statement list"
+  )
+  simpler_statements: t.List[str] = Field(...,
+                                          description="the simpler statements")
 
 
 class StatementsAnswers(BaseModel):
-    __root__: t.List[Statements]
+  __root__: t.List[Statements]
 
-    def dicts(self) -> t.List[t.Dict]:
-        return self.dict()["__root__"]
-
-
-_statements_output_instructions = get_json_format_instructions(StatementsAnswers)
-_statements_output_parser = RagasoutputParser(pydantic_object=StatementsAnswers)
+  def dicts(self) -> t.List[t.Dict]:
+    return self.dict()["__root__"]
 
 
-LONG_FORM_ANSWER_PROMPT = Prompt(
-    name="long_form_answer",
-    output_format_instruction=_statements_output_instructions,
-    instruction="Given a question, an answer, and sentences from the answer analyze the complexity of each sentence given under 'sentences' and break down each sentence into one or more fully understandable statements while also ensuring no pronouns are used in each statement. Format the outputs in JSON.",
-    examples=[
-        {
-            "question": "Who was Albert Einstein and what is he best known for?",
-            "answer": "He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.",
-            "sentences": """
-        0:He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. 
+_statements_output_instructions = get_json_format_instructions(
+    StatementsAnswers)
+_statements_output_parser = RagasoutputParser(
+    pydantic_object=StatementsAnswers)
+
+
+LONG_FORM_ANSWER_PROMPT = Prompt(name="long_form_answer",
+                                 output_format_instruction=_statements_output_instructions,
+                                 instruction="Given a question, an answer, and sentences from the answer analyze the complexity of each sentence given under 'sentences' and break down each sentence into one or more fully understandable statements while also ensuring no pronouns are used in each statement. Format the outputs in JSON.",
+                                 examples=[{"question": "Who was Albert Einstein and what is he best known for?",
+                                            "answer": "He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.",
+                                            "sentences": """
+        0:He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time.
         1:He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.
         """,
-            "analysis": StatementsAnswers.parse_obj(
-                [
-                    {
-                        "sentence_index": 0,
-                        "simpler_statements": [
-                            "Albert Einstein was a German-born theoretical physicist.",
-                            "Albert Einstein is recognized as one of the greatest and most influential physicists of all time.",
-                        ],
-                    },
-                    {
-                        "sentence_index": 1,
-                        "simpler_statements": [
-                            "Albert Einstein was best known for developing the theory of relativity.",
-                            "Albert Einstein also made important contributions to the development of the theory of quantum mechanics.",
-                        ],
-                    },
-                ]
-            ).dicts(),
-        }
-    ],
-    input_keys=["question", "answer", "sentences"],
-    output_key="analysis",
-    language="english",
-)
+                                            "analysis": StatementsAnswers.parse_obj([{"sentence_index": 0,
+                                                                                      "simpler_statements": ["Albert Einstein was a German-born theoretical physicist.",
+                                                                                                             "Albert Einstein is recognized as one of the greatest and most influential physicists of all time.",
+                                                                                                             ],
+                                                                                      },
+                                                                                     {"sentence_index": 1,
+                                                                                      "simpler_statements": ["Albert Einstein was best known for developing the theory of relativity.",
+                                                                                                             "Albert Einstein also made important contributions to the development of the theory of quantum mechanics.",
+                                                                                                             ],
+                                                                                      },
+                                                                                     ]).dicts(),
+                                            }],
+                                 input_keys=["question",
+                                             "answer",
+                                             "sentences"],
+                                 output_key="analysis",
+                                 language="english",
+                                 )
 
 
 class StatementFaithfulnessAnswer(BaseModel):
-    statement: str = Field(..., description="the original statement, word-by-word")
-    reason: str = Field(..., description="the reason of the verdict")
-    verdict: int = Field(..., description="the verdict(0/1) of the faithfulness.")
+  statement: str = Field(...,
+                         description="the original statement, word-by-word")
+  reason: str = Field(..., description="the reason of the verdict")
+  verdict: int = Field(...,
+                       description="the verdict(0/1) of the faithfulness.")
 
 
 class StatementFaithfulnessAnswers(BaseModel):
-    __root__: t.List[StatementFaithfulnessAnswer]
+  __root__: t.List[StatementFaithfulnessAnswer]
 
-    def dicts(self) -> t.List[t.Dict]:
-        return self.dict()["__root__"]
+  def dicts(self) -> t.List[t.Dict]:
+    return self.dict()["__root__"]
 
 
 _faithfulness_output_instructions = get_json_format_instructions(
@@ -170,235 +168,367 @@ NLI_STATEMENTS_MESSAGE = Prompt(
 
 @dataclass
 class Faithfulness(MetricWithLLM, SingleTurnMetric):
-    name: str = "faithfulness"  # type: ignore
-    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
-        default_factory=lambda: {
-            MetricType.SINGLE_TURN: {
-                "user_input",
-                "response",
-                "retrieved_contexts",
-            }
-        }
+  name: str = "faithfulness"  # type: ignore
+  _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+      default_factory=lambda: {
+          MetricType.SINGLE_TURN: {
+              "user_input",
+              "response",
+              "retrieved_contexts",
+          }
+      }
+  )
+  nli_statements_message: Prompt = field(
+      default_factory=lambda: NLI_STATEMENTS_MESSAGE
+  )
+  statement_prompt: Prompt = field(
+      default_factory=lambda: LONG_FORM_ANSWER_PROMPT)
+  sentence_segmenter: t.Optional[HasSegmentMethod] = None
+  max_retries: int = 1
+  _reproducibility: int = 1
+
+  @property
+  def reproducibility(self):
+    return self._reproducibility
+
+  @reproducibility.setter
+  def reproducibility(self, value):
+    if value < 1:
+      logger.warning("reproducibility cannot be less than 1, setting to 1")
+      value = 1
+    elif value % 2 == 0:
+      logger.warning(
+          "reproducibility level cannot be set to even number, setting to odd"
+      )
+      value += 1
+    self._reproducibility = value
+
+  def __post_init__(self):
+    if self.sentence_segmenter is None:
+      language = self.nli_statements_message.language
+      self.sentence_segmenter = get_segmenter(language=language, clean=False)
+
+  def _create_nli_prompt(
+          self,
+          row: t.Dict,
+          statements: t.List[str]) -> PromptValue:
+    assert self.llm is not None, "llm must be set to compute score"
+
+    contexts = row["retrieved_contexts"]
+    # check if the statements are support in the contexts
+    contexts_str: str = "\n".join(contexts)
+    statements_str: str = json.dumps(statements)
+    prompt_value = self.nli_statements_message.format(
+        context=contexts_str, statements=statements_str
     )
-    nli_statements_message: Prompt = field(
-        default_factory=lambda: NLI_STATEMENTS_MESSAGE
+    return prompt_value
+
+  def _create_statements_prompt(self, row: t.Dict) -> PromptValue:
+    assert self.sentence_segmenter is not None, "sentence_segmenter is not set"
+
+    text, question = row["response"], row["user_input"]
+    sentences = self.sentence_segmenter.segment(text)
+    sentences = [
+        sentence for sentence in sentences if sentence.strip().endswith(".")
+    ]
+    sentences = "\n".join([f"{i}:{x}" for i, x in enumerate(sentences)])
+    prompt_value = self.statement_prompt.format(
+        question=question, answer=text, sentences=sentences
     )
-    statement_prompt: Prompt = field(default_factory=lambda: LONG_FORM_ANSWER_PROMPT)
-    sentence_segmenter: t.Optional[HasSegmentMethod] = None
-    max_retries: int = 1
-    _reproducibility: int = 1
+    return prompt_value
 
-    @property
-    def reproducibility(self):
-        return self._reproducibility
+  def _compute_score(self, answers: StatementFaithfulnessAnswers):
+    # check the verdicts and compute the score
+    faithful_statements = sum(
+        1 if answer.verdict else 0 for answer in answers.__root__
+    )
+    num_statements = len(answers.__root__)
+    if num_statements:
+      score = faithful_statements / num_statements
+    else:
+      logger.warning("No statements were generated from the answer.")
+      score = np.nan
 
-    @reproducibility.setter
-    def reproducibility(self, value):
-        if value < 1:
-            logger.warning("reproducibility cannot be less than 1, setting to 1")
-            value = 1
-        elif value % 2 == 0:
-            logger.warning(
-                "reproducibility level cannot be set to even number, setting to odd"
-            )
-            value += 1
-        self._reproducibility = value
+    return score
 
-    def __post_init__(self):
-        if self.sentence_segmenter is None:
-            language = self.nli_statements_message.language
-            self.sentence_segmenter = get_segmenter(language=language, clean=False)
+  async def _single_turn_ascore(
+      self, sample: SingleTurnSample, callbacks: Callbacks
+  ) -> float:
+    row = sample.dict()
+    return await self._ascore(row, callbacks)
 
-    def _create_nli_prompt(self, row: t.Dict, statements: t.List[str]) -> PromptValue:
-        assert self.llm is not None, "llm must be set to compute score"
+  async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+    """
+    returns the NLI score for each (q, c, a) pair
+    """
+    assert self.llm is not None, "LLM is not set"
 
-        contexts = row["retrieved_contexts"]
-        # check if the statements are support in the contexts
-        contexts_str: str = "\n".join(contexts)
-        statements_str: str = json.dumps(statements)
-        prompt_value = self.nli_statements_message.format(
-            context=contexts_str, statements=statements_str
+    p_value = self._create_statements_prompt(row)
+    statements = await self.llm.generate(
+        p_value,
+        callbacks=callbacks,
+    )
+    statements = await _statements_output_parser.aparse(
+        statements.generations[0][0].text, p_value, self.llm, self.max_retries
+    )
+
+    if statements is None:
+      return np.nan
+
+    statements = [item["simpler_statements"] for item in statements.dicts()]
+    statements = [item for sublist in statements for item in sublist]
+
+    assert isinstance(statements, t.List), "statements must be a list"
+
+    p_value = self._create_nli_prompt(row, statements)
+    nli_result = await self.llm.generate(
+        p_value,
+        callbacks=callbacks,
+        n=self._reproducibility,
+    )
+
+    nli_result_text = [
+        nli_result.generations[0][i].text for i in range(self._reproducibility)
+    ]
+    faithfulness_list = [
+        await _faithfulness_output_parser.aparse(
+            text, p_value, self.llm, self.max_retries
         )
-        return prompt_value
+        for text in nli_result_text
+    ]
 
-    def _create_statements_prompt(self, row: t.Dict) -> PromptValue:
-        assert self.sentence_segmenter is not None, "sentence_segmenter is not set"
+    faithfulness_list = [
+        faith.dicts() for faith in faithfulness_list if faith is not None
+    ]
 
-        text, question = row["response"], row["user_input"]
-        sentences = self.sentence_segmenter.segment(text)
-        sentences = [
-            sentence for sentence in sentences if sentence.strip().endswith(".")
-        ]
-        sentences = "\n".join([f"{i}:{x}" for i, x in enumerate(sentences)])
-        prompt_value = self.statement_prompt.format(
-            question=question, answer=text, sentences=sentences
-        )
-        return prompt_value
+    if faithfulness_list:
+      faithfulness_list = ensembler.from_discrete(
+          faithfulness_list,
+          "verdict",
+      )
 
-    def _compute_score(self, answers: StatementFaithfulnessAnswers):
-        # check the verdicts and compute the score
-        faithful_statements = sum(
-            1 if answer.verdict else 0 for answer in answers.__root__
-        )
-        num_statements = len(answers.__root__)
-        if num_statements:
-            score = faithful_statements / num_statements
-        else:
-            logger.warning("No statements were generated from the answer.")
-            score = np.nan
+      faithfulness_list = StatementFaithfulnessAnswers.parse_obj(
+          faithfulness_list
+      )
+    else:
+      return np.nan
 
-        return score
+    return self._compute_score(faithfulness_list)
 
-    async def _single_turn_ascore(
-        self, sample: SingleTurnSample, callbacks: Callbacks
-    ) -> float:
-        row = sample.dict()
-        return await self._ascore(row, callbacks)
+  def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
+    assert self.llm is not None, "LLM is not set"
 
-    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
-        """
-        returns the NLI score for each (q, c, a) pair
-        """
-        assert self.llm is not None, "LLM is not set"
+    logger.info(f"Adapting Faithfulness metric to {language}")
 
-        p_value = self._create_statements_prompt(row)
-        statements = await self.llm.generate(
-            p_value,
-            callbacks=callbacks,
-        )
-        statements = await _statements_output_parser.aparse(
-            statements.generations[0][0].text, p_value, self.llm, self.max_retries
-        )
+    self.nli_statements_message = self.nli_statements_message.adapt(
+        language, self.llm, cache_dir
+    )
+    self.statement_prompt = self.statement_prompt.adapt(
+        language, self.llm, cache_dir
+    )
 
-        if statements is None:
-            return np.nan
+    self.sentence_segmenter = get_segmenter(language=language, clean=False)
 
-        statements = [item["simpler_statements"] for item in statements.dicts()]
-        statements = [item for sublist in statements for item in sublist]
-
-        assert isinstance(statements, t.List), "statements must be a list"
-
-        p_value = self._create_nli_prompt(row, statements)
-        nli_result = await self.llm.generate(
-            p_value,
-            callbacks=callbacks,
-            n=self._reproducibility,
-        )
-
-        nli_result_text = [
-            nli_result.generations[0][i].text for i in range(self._reproducibility)
-        ]
-        faithfulness_list = [
-            await _faithfulness_output_parser.aparse(
-                text, p_value, self.llm, self.max_retries
-            )
-            for text in nli_result_text
-        ]
-
-        faithfulness_list = [
-            faith.dicts() for faith in faithfulness_list if faith is not None
-        ]
-
-        if faithfulness_list:
-            faithfulness_list = ensembler.from_discrete(
-                faithfulness_list,
-                "verdict",
-            )
-
-            faithfulness_list = StatementFaithfulnessAnswers.parse_obj(
-                faithfulness_list
-            )
-        else:
-            return np.nan
-
-        return self._compute_score(faithfulness_list)
-
-    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
-        assert self.llm is not None, "LLM is not set"
-
-        logger.info(f"Adapting Faithfulness metric to {language}")
-
-        self.nli_statements_message = self.nli_statements_message.adapt(
-            language, self.llm, cache_dir
-        )
-        self.statement_prompt = self.statement_prompt.adapt(
-            language, self.llm, cache_dir
-        )
-
-        self.sentence_segmenter = get_segmenter(language=language, clean=False)
-
-    def save(self, cache_dir: t.Optional[str] = None) -> None:
-        self.nli_statements_message.save(cache_dir)
-        self.statement_prompt.save(cache_dir)
+  def save(self, cache_dir: t.Optional[str] = None) -> None:
+    self.nli_statements_message.save(cache_dir)
+    self.statement_prompt.save(cache_dir)
 
 
 @dataclass
 class FaithulnesswithHHEM(Faithfulness):
-    name: str = "faithfulness_with_hhem"  # type: ignore
-    device: str = "cpu"
-    batch_size: int = 10
+  name: str = "faithfulness_with_hhem"  # type: ignore
+  device: str = "cpu"
+  batch_size: int = 10
 
-    def __post_init__(self):
-        try:
-            from transformers import AutoModelForSequenceClassification
-        except ImportError:
-            raise ImportError(
-                "Huggingface transformers must be installed to use this feature, try `pip install transformers`"
-            )
-        self.nli_classifier = AutoModelForSequenceClassification.from_pretrained(
-            "vectara/hallucination_evaluation_model", trust_remote_code=True
-        )
-        self.nli_classifier.to(self.device)
-        super().__post_init__()
+  def __post_init__(self):
+    try:
+      import torch as torch
+      from transformers import AutoModelForSequenceClassification
+    except ImportError:
+      raise ImportError(
+          "Huggingface transformers and PyTorch must be installed to use this feature, try `pip install transformers torch`"
+      )
+    self.nli_classifier = AutoModelForSequenceClassification.from_pretrained(
+        "vectara/hallucination_evaluation_model", trust_remote_code=True
+    )
+    self.nli_classifier.to(self.device)
+    super().__post_init__()
 
-    def _create_pairs(
-        self, row: t.Dict, statements: t.List[str]
-    ) -> t.List[t.Tuple[str, str]]:
-        """
-        create pairs of (question, answer) from the row
-        """
-        premise = "\n".join(row["contexts"])
-        pairs = [(premise, statement) for statement in statements]
-        return pairs
+  def _create_pairs(
+      self, row: t.Dict, statements: t.List[str]
+  ) -> t.List[t.Tuple[str, str]]:
+    """
+    create pairs of (question, answer) from the row
+    """
+    premise = "\n".join(row["contexts"])
+    pairs = [(premise, statement) for statement in statements]
+    return pairs
 
-    def _create_batch(
-        self, pairs: t.List[t.Tuple[str, str]]
-    ) -> t.Generator[t.List[t.Tuple[str, str]], None, None]:
-        length_of_pairs = len(pairs)
-        for ndx in range(0, length_of_pairs, self.batch_size):
-            yield pairs[ndx : min(ndx + self.batch_size, length_of_pairs)]
+  def _create_batch(
+      self, pairs: t.List[t.Tuple[str, str]]
+  ) -> t.Generator[t.List[t.Tuple[str, str]], None, None]:
+    length_of_pairs = len(pairs)
+    for ndx in range(0, length_of_pairs, self.batch_size):
+      yield pairs[ndx: min(ndx + self.batch_size, length_of_pairs)]
 
-    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
-        """
-        returns the NLI score for each (q, c, a) pair
-        """
-        assert self.llm is not None, "LLM is not set"
+  async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+    """
+    returns the NLI score for each (q, c, a) pair
+    """
+    assert self.llm is not None, "LLM is not set"
 
-        p_value = self._create_statements_prompt(row)
-        statements = await self.llm.generate(
-            p_value,
-            callbacks=callbacks,
-        )
-        statements = await _statements_output_parser.aparse(
-            statements.generations[0][0].text, p_value, self.llm, self.max_retries
-        )
+    p_value = self._create_statements_prompt(row)
+    statements = await self.llm.generate(
+        p_value,
+        callbacks=callbacks,
+    )
+    statements = await _statements_output_parser.aparse(
+        statements.generations[0][0].text, p_value, self.llm, self.max_retries
+    )
 
-        if statements is None:
-            return np.nan
+    if statements is None:
+      return np.nan
 
-        statements = [item["simpler_statements"] for item in statements.dicts()]
-        statements = [item for sublist in statements for item in sublist]
+    statements = [item["simpler_statements"] for item in statements.dicts()]
+    statements = [item for sublist in statements for item in sublist]
 
-        assert isinstance(statements, t.List), "statements must be a list"
+    assert isinstance(statements, t.List), "statements must be a list"
 
-        scores = []
-        pairs = self._create_pairs(row, statements)
-        for input_pairs in self._create_batch(pairs):  # to avoid OOM
-            batch_scores = (
-                self.nli_classifier.predict(input_pairs).cpu().detach().round()
-            )
-            scores += batch_scores
-        return sum(scores) / len(scores)
+    scores = []
+    pairs = self._create_pairs(row, statements)
+    for input_pairs in self._create_batch(pairs):  # to avoid OOM
+      batch_scores = (
+          self.nli_classifier.predict(input_pairs).cpu().detach().round()
+      )
+      scores += batch_scores
+    return sum(scores) / len(scores)
+
+
+MINICHECK_SYSTEM_PROMPT = (
+    "Determine whether the provided claim is consistent with the "
+    "corresponding document. Consistency in this context implies that all "
+    "information presented in the claim is substantiated by the document. "
+    "If not, it should be considered inconsistent. Please assess the "
+    "claim's consistency with the document by responding with either \"Yes\" "
+    "or \"No\"."
+)
+MINICHECK_USER_PROMPT_TEMPLATE = Template("Document: $document\nClaim: $claim")
+
+
+@dataclass
+class MiniCheckExample:
+  document: str = ""
+  claim: str = ""
+
+
+@dataclass
+class FaithfulnesswithMiniCheck(Faithfulness):
+  name: str = "faithfulness_with_minicheck"  # type: ignore
+  device: str = "cpu"
+  batch_size: int = 10
+  max_sequence_len: int = 32000  # set max sequence length depending on memory
+  use_api: bool = True
+
+  def __post_init__(self):
+    try:
+      from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+    except ImportError:
+      raise ImportError(
+          "Huggingface transformers must be installed to use this feature, try `pip install transformers`"
+      )
+    self._minicheck = AutoModelForSeq2SeqLM.from_pretrained(
+        "bespokelabs/Bespoke-MiniCheck-7B", trust_remote_code=True
+    )
+    self._tokenizer = AutoTokenizer.from_pretrained(
+        "bespokelabs/Bespoke-MiniCheck-7B")
+    self.nli_classifier.to(self.device)
+    super().__post_init__()
+
+  def _create_batch(
+      self, pairs: t.List[t.Tuple[str, str]]
+  ) -> t.Generator[t.List[t.Tuple[str, str]], None, None]:
+    length_of_pairs = len(pairs)
+    for ndx in range(0, length_of_pairs, self.batch_size):
+      yield pairs[ndx: min(ndx + self.batch_size, length_of_pairs)]
+
+  def _create_examples(
+      self, row: t.Dict, statements: t.List[str]
+  ) -> t.List[str]:
+    document = "\n".join(row["contexts"])
+    return [MiniCheckExample(document=document, claim=statement)
+            for statement in statements]
+
+  def _decode(self, prompts: t.List[str]):
+    inputs = self._tokenizer(
+        prompts,
+        return_tensors="pt",
+        padding=True,
+        truncation=True,
+        max_length=self.max_sequence_len)
+    inputs = {k: v.to(self.device) for k, v in inputs.items()}
+
+    with torch.no_grad():
+      outputs = self._minicheck(
+          **inputs,
+          max_new_tokens=1,
+          return_dict_in_generate=True,
+          output_scores=True)
+
+    return outputs
+
+  def _extract_support_probability(self, outputs):
+    logits = outputs.scores[0]
+    yes_tokens = [token_id for token_id, token in enumerate(
+        self._tokenizer.get_vocab().keys()) if "yes" in token.lower()]
+
+    yes_mask = torch.isin(torch.arange(
+        logits.shape[-1]).to(logits.device), torch.tensor(yes_tokens).to(logits.device))
+    yes_probs = torch.softmax(logits, dim=-1)[:, yes_mask].sum(dim=-1)
+
+    return yes_probs
+
+  def _score_examples_locally(
+          self, examples: t.List[MiniCheckExample]) -> t.List[float]:
+    prompts = []
+    for example in examples:
+      user_prompt = MINICHECK_USER_PROMPT_TEMPLATE.substitute(
+          document=example.document, claim=example.claim)
+      message = [
+          {"role": "system", "content": MINICHECK_SYSTEM_PROMPT},
+          {"role": "user", "content": user_prompt},
+      ]
+      prompt = self.tokenizer.apply_chat_template(
+          message, add_generation_prompt=True, tokenize=False)
+      prompts.append(prompt)
+
+    scores = []
+    for i in range(0, len(prompts), self.batch_size):
+      logits = self._decode(prompts[i:i + self.batch_size])
+      scores_batch = self._extract_support_probability(logits)
+      scores.extend(scores_batch)
+    return scores
+
+  async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+    assert self.llm is not None, "LLM is not set"
+
+    p_value = self._create_statements_prompt(row)
+    statements = await self.llm.generate(
+        p_value,
+        callbacks=callbacks,
+    )
+    statements = await _statements_output_parser.aparse(
+        statements.generations[0][0].text, p_value, self.llm, self.max_retries
+    )
+
+    if statements is None:
+      return np.nan
+
+    statements = [item["simpler_statements"] for item in statements.dicts()]
+    statements = [item for sublist in statements for item in sublist]
+
+    examples = self._create_examples(row, statements)
+    scores = self._score_example_locally(examples)
+    return sum(scores) / len(scores)
 
 
 faithfulness = Faithfulness()
