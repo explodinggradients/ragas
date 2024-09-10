@@ -281,7 +281,10 @@ class NonLLMContextPrecisionWithReference(SingleTurnMetric):
         return score
 
 
+@dataclass
 class ContextPrecision(LLMContextPrecisionWithReference):
+    name: str = "context_precision"  # type: ignore
+
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
@@ -291,10 +294,13 @@ class ContextPrecision(LLMContextPrecisionWithReference):
         since="0.2", removal="0.3", alternative="LLMContextPrecisionWithReference"
     )
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await self._ascore(row, callbacks)
+        return await super()._ascore(row, callbacks)
 
 
+@dataclass
 class ContextUtilization(LLMContextPrecisionWithoutReference):
+    name: str = "context_utilization"  # type: ignore
+
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
@@ -304,7 +310,7 @@ class ContextUtilization(LLMContextPrecisionWithoutReference):
         since="0.2", removal="0.3", alternative="LLMContextPrecisionWithoutReference"
     )
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await self._ascore(row, callbacks)
+        return await super()._ascore(row, callbacks)
 
 
 context_precision = ContextPrecision()
