@@ -34,7 +34,7 @@ from ragas.metrics.base import (
 )
 from ragas.metrics.critique import AspectCritique
 from ragas.run_config import RunConfig
-from ragas.utils import get_feature_language, safe_nanmean
+from ragas.utils import REQUIRED_COLS_v1, get_feature_language, safe_nanmean
 from ragas.validation import (
     remap_column_names,
     validate_required_columns,
@@ -159,9 +159,12 @@ def evaluate(
 
         metrics = [answer_relevancy, context_precision, faithfulness, context_recall]
 
+    v1_input = False
     if isinstance(dataset, Dataset):
         # remap column names from the dataset
+        v1_input = True
         dataset = remap_column_names(dataset, column_map)
+        dataset = remap_column_names(dataset, REQUIRED_COLS_v1)
         # validation
         dataset = EvaluationDataset.from_list(dataset.to_list())
 
@@ -304,10 +307,16 @@ def evaluate(
     else:
         # evalution run was successful
         # now lets process the results
+        # convert to v.1 dataset
+        dataset = dataset.to_hf_dataset()
+        if v1_input:
+            cols = {k: v for v, k in REQUIRED_COLS_v1.items()}
+            dataset = remap_column_names(dataset, cols)
+
         cost_cb = ragas_callbacks["cost_cb"] if "cost_cb" in ragas_callbacks else None
         result = Result(
             scores=Dataset.from_list(scores),
-            dataset=dataset.to_hf_dataset(),
+            dataset=dataset,
             binary_columns=binary_metrics,
             cost_cb=t.cast(
                 t.Union["CostCallbackHandler", None],
