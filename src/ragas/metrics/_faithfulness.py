@@ -457,10 +457,6 @@ class FaithfulnesswithMiniCheck(Faithfulness):
       self._tokenizer = AutoTokenizer.from_pretrained(
           "bespokelabs/Bespoke-MiniCheck-7B",
           trust_remote_code=True)
-      self._yes_tokens = []
-      for token, token_id in self._tokenizer.get_vocab().items():
-        if token.lower() == 'yes':
-          self._yes_tokens.append(token_id)
       self._minicheck.to(self.device)
     super().__post_init__()
 
