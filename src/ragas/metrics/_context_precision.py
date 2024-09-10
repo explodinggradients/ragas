@@ -315,6 +315,3 @@ class ContextUtilization(LLMContextPrecisionWithoutReference):
 
 context_precision = ContextPrecision()
 context_utilization = ContextUtilization()
-llm_context_precision_with_reference = LLMContextPrecisionWithReference()
-llm_context_precision_without_reference = LLMContextPrecisionWithoutReference()
-non_llm_context_precision_with_reference = NonLLMContextPrecisionWithReference()
