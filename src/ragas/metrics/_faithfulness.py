@@ -342,7 +342,6 @@ class FaithulnesswithHHEM(Faithfulness):
 
   def __post_init__(self):
     try:
-      import torch as torch
       from transformers import AutoModelForSequenceClassification
     except ImportError:
       raise ImportError(
@@ -428,15 +427,18 @@ class FaithfulnesswithMiniCheck(Faithfulness):
   batch_size: int = 10
   max_sequence_len: int = 32000  # set max sequence length depending on memory
   use_api: bool = True
+  api_key: str = ""
 
   def __post_init__(self):
     try:
-      from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+      import einops as einops
+      import torch as torch
+      from transformers import AutoModelForCausalLM, AutoTokenizer
     except ImportError:
       raise ImportError(
-          "Huggingface transformers must be installed to use this feature, try `pip install transformers`"
-      )
-    self._minicheck = AutoModelForSeq2SeqLM.from_pretrained(
+          "einops, torch, and transformers must be installed to use this feature, "
+          " try `pip install .[all]` to install the dependencies.")
+    self._minicheck = AutoModelForCausalLM.from_pretrained(
         "bespokelabs/Bespoke-MiniCheck-7B", trust_remote_code=True
     )
     self._tokenizer = AutoTokenizer.from_pretrained(

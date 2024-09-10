@@ -19,6 +19,8 @@ dynamic = ["version", "readme"]
 all = [
     "sentence-transformers",
     "transformers",
+    "torch==2.4.0",
+    "einops==0.7.0"
 ]
 
 [tool.setuptools]
