@@ -1,13 +1,19 @@
 import typing as t
 
 try:
-    from opik.integrations.langchain import OpikTracer as LangchainOpikTracer # type: ignore
+    from opik.integrations.langchain import (  # type: ignore
+        OpikTracer as LangchainOpikTracer,
+    )
+
     from ragas.evaluation import RAGAS_EVALUATION_CHAIN_NAME
 except ImportError:
-    raise ImportError("Opik is not installed. Please install it using `pip install opik` to use the Opik tracer.")
+    raise ImportError(
+        "Opik is not installed. Please install it using `pip install opik` to use the Opik tracer."
+    )
 
 if t.TYPE_CHECKING:
     from langchain_core.tracers.schemas import Run
+
 
 class OpikTracer(LangchainOpikTracer):
     """
@@ -20,6 +26,7 @@ class OpikTracer(LangchainOpikTracer):
     metadata: dict
         Additional metadata to log for each trace.
     """
+
     _evaluation_run_id: t.Optional[str] = None
 
     def _persist_run(self, run: "Run"):
@@ -48,8 +55,11 @@ class OpikTracer(LangchainOpikTracer):
                 span = self._span_map[run.id]
                 trace_id = span.trace_id
                 if run.outputs:
-                    self._opik_client.log_traces_feedback_scores([
-                        {"id": trace_id, "name": name, "value": round(value, 4)} for name, value in  run.outputs.items()
-                    ])
-            
+                    self._opik_client.log_traces_feedback_scores(
+                        [
+                            {"id": trace_id, "name": name, "value": round(value, 4)}
+                            for name, value in run.outputs.items()
+                        ]
+                    )
+
             self._persist_run(run)
