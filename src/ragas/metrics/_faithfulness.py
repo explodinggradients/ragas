@@ -390,6 +390,20 @@ class FaithulnesswithHHEM(Faithfulness):
         if statements is None:
             return np.nan
 
+        statements = [item["simpler_statements"] for item in statements.dicts()]
+        statements = [item for sublist in statements for item in sublist]
+
+        assert isinstance(statements, t.List), "statements must be a list"
+
+        scores = []
+        pairs = self._create_pairs(row, statements)
+        for input_pairs in self._create_batch(pairs):  # to avoid OOM
+            batch_scores = (
+                self.nli_classifier.predict(input_pairs).cpu().detach().round()
+            )
+            scores += batch_scores
+        return sum(scores) / len(scores)
+
 
 MINICHECK_SYSTEM_PROMPT = (
     "Determine whether the provided claim is consistent with the "
