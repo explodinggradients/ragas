@@ -35,4 +35,4 @@ def test_amnesty_e2e():
 
 @pytest.mark.ragas_ci
 def test_assert_in_range():
-    assert_in_range(0.5, value=0.1, plus_or_minus=0.1)
+  assert_in_range(0.5, value=0.1, plus_or_minus=0.1)
