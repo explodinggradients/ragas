@@ -336,6 +336,61 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
         self.statement_prompt.save(cache_dir)
 
 
+@dataclass
+class FaithulnesswithHHEM(Faithfulness):
+    name: str = "faithfulness_with_hhem"  # type: ignore
+    device: str = "cpu"
+    batch_size: int = 10
+
+    def __post_init__(self):
+        try:
+            from transformers import AutoModelForSequenceClassification
+        except ImportError:
+            raise ImportError(
+                "Huggingface transformers must be installed to use this feature, try `pip install transformers`"
+            )
+        self.nli_classifier = AutoModelForSequenceClassification.from_pretrained(
+            "vectara/hallucination_evaluation_model", trust_remote_code=True
+        )
+        self.nli_classifier.to(self.device)
+        super().__post_init__()
+
+    def _create_pairs(
+        self, row: t.Dict, statements: t.List[str]
+    ) -> t.List[t.Tuple[str, str]]:
+        """
+        create pairs of (question, answer) from the row
+        """
+        premise = "\n".join(row["contexts"])
+        pairs = [(premise, statement) for statement in statements]
+        return pairs
+
+    def _create_batch(
+        self, pairs: t.List[t.Tuple[str, str]]
+    ) -> t.Generator[t.List[t.Tuple[str, str]], None, None]:
+        length_of_pairs = len(pairs)
+        for ndx in range(0, length_of_pairs, self.batch_size):
+            yield pairs[ndx : min(ndx + self.batch_size, length_of_pairs)]
+
+    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+        """
+        returns the NLI score for each (q, c, a) pair
+        """
+        assert self.llm is not None, "LLM is not set"
+
+        p_value = self._create_statements_prompt(row)
+        statements = await self.llm.generate(
+            p_value,
+            callbacks=callbacks,
+        )
+        statements = await _statements_output_parser.aparse(
+            statements.generations[0][0].text, p_value, self.llm, self.max_retries
+        )
+
+        if statements is None:
+            return np.nan
+
+
 MINICHECK_SYSTEM_PROMPT = (
     "Determine whether the provided claim is consistent with the "
     "corresponding document. Consistency in this context implies that all "
