@@ -81,7 +81,9 @@ class StringDistance(SingleTurnMetric):
         response = sample.response
         assert isinstance(reference, str), "Expecting a string"
         assert isinstance(response, str), "Expecting a string"
-        return DISTANCE_MEASURE_MAP[self.distance_measure].distance(reference, response)
+        return 1 - DISTANCE_MEASURE_MAP[self.distance_measure].normalized_distance(
+            reference, response
+        )
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
