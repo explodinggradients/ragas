@@ -432,7 +432,6 @@ class FaithfulnesswithMiniCheck(Faithfulness):
     else:
       try:
         import einops as einops
-        import torch as torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
       except ImportError:
         raise ImportError(
@@ -458,6 +457,7 @@ class FaithfulnesswithMiniCheck(Faithfulness):
             for statement in statements]
 
   def _decode(self, prompts: t.List[str]):
+    import torch
     inputs = self._tokenizer(
         prompts,
         return_tensors="pt",
@@ -476,6 +476,7 @@ class FaithfulnesswithMiniCheck(Faithfulness):
     return outputs
 
   def _extract_scores(self, outputs):
+    import torch
     logits = outputs.scores[0]
     probs = torch.softmax(logits, dim=-1)
     top_5_probs, top_5_indices = torch.topk(probs, 5, dim=-1)
