@@ -174,7 +174,7 @@ class MetricWithLLM(Metric):
                 )
             if not isinstance(value, Prompt):
                 raise ValueError(
-                    f"Prompt with name '{key}' must be an instance of PydanticPrompt"
+                    f"Prompt with name '{key}' must be an instance of 'Prompt'"
                 )
             setattr(self, key, value)
 
