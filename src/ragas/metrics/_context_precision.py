@@ -232,8 +232,10 @@ class NonLLMContextPrecisionWithReference(SingleTurnMetric):
     threshold: float = 0.5
 
     def __post_init__(self):
-        if not isinstance(self.distance_measure, MetricWithLLM):
-            raise ValueError("distance_measure must be an instance of MetricWithLLM")
+        if isinstance(self.distance_measure, MetricWithLLM):
+            raise ValueError(
+                "distance_measure must not be an instance of MetricWithLLM for NonLLMContextPrecisionWithReference"
+            )
 
     def init(self, run_config: RunConfig) -> None:
         ...
@@ -262,10 +264,10 @@ class NonLLMContextPrecisionWithReference(SingleTurnMetric):
                     ]
                 )
             )
-
+        scores = [1 if score >= self.threshold else 0 for score in scores]
         return self._calculate_average_precision(scores)
 
-    def _calculate_average_precision(self, verdict_list: t.List[float]) -> float:
+    def _calculate_average_precision(self, verdict_list: t.List[int]) -> float:
         score = np.nan
 
         denominator = sum(verdict_list) + 1e-10
