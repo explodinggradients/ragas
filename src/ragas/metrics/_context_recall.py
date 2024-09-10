@@ -264,18 +264,17 @@ class NonLLMContextRecall(SingleTurnMetric):
         assert reference_contexts is not None, "reference_contexts is empty"
 
         scores = []
-        for rc in retrieved_contexts:
+        for ref in reference_contexts:
             scores.append(
                 max(
                     [
                         await self.distance_measure.single_turn_ascore(
                             SingleTurnSample(reference=rc, response=ref), callbacks
                         )
-                        for ref in reference_contexts
+                        for rc in retrieved_contexts
                     ]
                 )
             )
-
         return self._compute_score(scores)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
