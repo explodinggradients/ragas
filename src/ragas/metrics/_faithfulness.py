@@ -443,20 +443,17 @@ class FaithfulnesswithMiniCheck(Faithfulness):
     )
     self._tokenizer = AutoTokenizer.from_pretrained(
         "bespokelabs/Bespoke-MiniCheck-7B")
+    self._yes_tokens = []
+    for token, token_id in minicheck._tokenizer.get_vocab().items():
+      if token.lower() == 'yes':
+        self._yes_tokens.append(token_id)
     self._minicheck.to(self.device)
     super().__post_init__()
-
-  def _create_batch(
-      self, pairs: t.List[t.Tuple[str, str]]
-  ) -> t.Generator[t.List[t.Tuple[str, str]], None, None]:
-    length_of_pairs = len(pairs)
-    for ndx in range(0, length_of_pairs, self.batch_size):
-      yield pairs[ndx: min(ndx + self.batch_size, length_of_pairs)]
 
   def _create_examples(
       self, row: t.Dict, statements: t.List[str]
   ) -> t.List[str]:
-    document = "\n".join(row["contexts"])
+    document = "\n".join(row["retrieved_contexts"])
     return [MiniCheckExample(document=document, claim=statement)
             for statement in statements]
 
@@ -470,7 +467,7 @@ class FaithfulnesswithMiniCheck(Faithfulness):
     inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
     with torch.no_grad():
-      outputs = self._minicheck(
+      outputs = self._minicheck.generate(
           **inputs,
           max_new_tokens=1,
           return_dict_in_generate=True,
@@ -480,12 +477,19 @@ class FaithfulnesswithMiniCheck(Faithfulness):
 
   def _extract_support_probability(self, outputs):
     logits = outputs.scores[0]
-    yes_tokens = [token_id for token_id, token in enumerate(
-        self._tokenizer.get_vocab().keys()) if "yes" in token.lower()]
-
-    yes_mask = torch.isin(torch.arange(
-        logits.shape[-1]).to(logits.device), torch.tensor(yes_tokens).to(logits.device))
-    yes_probs = torch.softmax(logits, dim=-1)[:, yes_mask].sum(dim=-1)
+    probs = torch.softmax(logits, dim=-1)
+    top_5_probs, top_5_indices = torch.topk(probs, 5, dim=-1)
+    yes_probs = torch.zeros(logits.shape[0], device=logits.device)
+    for i in range(logits.shape[0]):
+      top_5_tokens = [
+          self._tokenizer.decode(
+              [idx]).lower() for idx in top_5_indices[i]]
+      yes_prob = sum(
+          prob for token,
+          prob in zip(
+              top_5_tokens,
+              top_5_probs[i]) if token == 'yes')
+      yes_probs[i] = yes_prob
 
     return yes_probs
 
@@ -499,14 +503,15 @@ class FaithfulnesswithMiniCheck(Faithfulness):
           {"role": "system", "content": MINICHECK_SYSTEM_PROMPT},
           {"role": "user", "content": user_prompt},
       ]
-      prompt = self.tokenizer.apply_chat_template(
+      prompt = self._tokenizer.apply_chat_template(
           message, add_generation_prompt=True, tokenize=False)
+      print(prompt)
       prompts.append(prompt)
-
     scores = []
     for i in range(0, len(prompts), self.batch_size):
       logits = self._decode(prompts[i:i + self.batch_size])
       scores_batch = self._extract_support_probability(logits)
+      print(scores_batch)
       scores.extend(scores_batch)
     return scores
 
@@ -529,7 +534,7 @@ class FaithfulnesswithMiniCheck(Faithfulness):
     statements = [item for sublist in statements for item in sublist]
 
     examples = self._create_examples(row, statements)
-    scores = self._score_example_locally(examples)
+    scores = self._score_examples_locally(examples)
     return sum(scores) / len(scores)
 
 
