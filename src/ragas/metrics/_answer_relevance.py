@@ -113,7 +113,7 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
             MetricType.SINGLE_TURN: {
                 "user_input",
                 "response",
-                "retrived_contexts",
+                "retrieved_contexts",
             }
         }
     )
@@ -156,7 +156,7 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         return score
 
     def _create_question_gen_prompt(self, row: t.Dict) -> PromptValue:
-        ans, ctx = row["response"], row["retrived_contexts"]
+        ans, ctx = row["response"], row["retrieved_contexts"]
         return self.question_generation.format(answer=ans, context="\n".join(ctx))
 
     async def _single_turn_ascore(
