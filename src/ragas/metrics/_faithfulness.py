@@ -1,16 +1,16 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+import os
 import typing as t
 from dataclasses import dataclass, field
 from string import Template
 
 import numpy as np
-from langchain_core.pydantic_v1 import BaseModel, Field
-import asyncio
-import os
 import requests
+from langchain_core.pydantic_v1 import BaseModel, Field
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
@@ -455,7 +455,8 @@ class FaithfulnesswithMiniCheck(Faithfulness):
           "bespokelabs/Bespoke-MiniCheck-7B", trust_remote_code=True
       )
       self._tokenizer = AutoTokenizer.from_pretrained(
-          "bespokelabs/Bespoke-MiniCheck-7B")
+          "bespokelabs/Bespoke-MiniCheck-7B",
+          trust_remote_code=True)
       self._yes_tokens = []
       for token, token_id in self._tokenizer.get_vocab().items():
         if token.lower() == 'yes':
