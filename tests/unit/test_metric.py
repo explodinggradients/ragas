@@ -60,5 +60,3 @@ def test_single_turn_metric():
         fm.single_turn_score(SingleTurnSample(**{"user_input": "a", "response": "b"}))
         == 0
     )
-
-    
