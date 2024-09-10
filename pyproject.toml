@@ -40,5 +40,5 @@ ignore = ["E501"]
 requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools_scm]
+[tool.setuptools_scm]g
 write_to = "src/ragas/_version.py"

@@ -9,6 +9,9 @@ from string import Template
 import numpy as np
 import torch
 from langchain_core.pydantic_v1 import BaseModel, Field
+import asyncio
+import os
+import requests
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
@@ -425,29 +428,41 @@ class FaithfulnesswithMiniCheck(Faithfulness):
   name: str = "faithfulness_with_minicheck"  # type: ignore
   device: str = "cpu"
   batch_size: int = 10
-  max_sequence_len: int = 32000  # set max sequence length depending on memory
-  use_api: bool = True
-  api_key: str = ""
+  max_sequence_len: int = 10000  # max sequence can be 32768
+  use_api: bool = False
+  bespoke_api_key: str = ""
+  max_concurrent_requests: int = 10
 
   def __post_init__(self):
-    try:
-      import einops as einops
-      import torch as torch
-      from transformers import AutoModelForCausalLM, AutoTokenizer
-    except ImportError:
-      raise ImportError(
-          "einops, torch, and transformers must be installed to use this feature, "
-          " try `pip install .[all]` to install the dependencies.")
-    self._minicheck = AutoModelForCausalLM.from_pretrained(
-        "bespokelabs/Bespoke-MiniCheck-7B", trust_remote_code=True
-    )
-    self._tokenizer = AutoTokenizer.from_pretrained(
-        "bespokelabs/Bespoke-MiniCheck-7B")
-    self._yes_tokens = []
-    for token, token_id in self._tokenizer.get_vocab().items():
-      if token.lower() == 'yes':
-        self._yes_tokens.append(token_id)
-    self._minicheck.to(self.device)
+    if self.use_api:
+      self.bespoke_api_key = (self.bespoke_api_key if self.bespoke_api_key else
+                              os.environ.get("BESPOKE_API_KEY"))
+      if not self.bespoke_api_key:
+        raise ValueError(
+            f"No API key found for bespokelabs API. Please get your key "
+            "at https://console.bespokelabs.ai, then provide it "
+            "by passing the bespoke_api_key parameter to the "
+            "constructor or set the BESPOKE_API_KEY environment variable.")
+      self._semaphore = asyncio.Semaphore(self.max_concurrent_requests)
+    else:
+      try:
+        import einops as einops
+        import torch as torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+      except ImportError:
+        raise ImportError(
+            "einops, torch, and transformers must be installed to use this feature, "
+            " try `pip install .[all]` to install the dependencies.")
+      self._minicheck = AutoModelForCausalLM.from_pretrained(
+          "bespokelabs/Bespoke-MiniCheck-7B", trust_remote_code=True
+      )
+      self._tokenizer = AutoTokenizer.from_pretrained(
+          "bespokelabs/Bespoke-MiniCheck-7B")
+      self._yes_tokens = []
+      for token, token_id in self._tokenizer.get_vocab().items():
+        if token.lower() == 'yes':
+          self._yes_tokens.append(token_id)
+      self._minicheck.to(self.device)
     super().__post_init__()
 
   def _create_examples(
@@ -505,15 +520,41 @@ class FaithfulnesswithMiniCheck(Faithfulness):
       ]
       prompt = self._tokenizer.apply_chat_template(
           message, add_generation_prompt=True, tokenize=False)
-      print(prompt)
       prompts.append(prompt)
     scores = []
     for i in range(0, len(prompts), self.batch_size):
       logits = self._decode(prompts[i:i + self.batch_size])
       scores_batch = self._extract_scores(logits)
-      print(scores_batch)
       scores.extend(scores_batch)
     return scores
+
+  async def _score_examples_api(
+          self,
+          examples: t.List[MiniCheckExample]) -> t.List[float]:
+    async def request_minicheck(example: MiniCheckExample) -> t.List[float]:
+      def sync_request_minicheck(example: MiniCheckExample):
+        try:
+          response = requests.post(
+              "https://api.bespokelabs.ai/v0/minicheck/factcheck",
+              json={
+                  "context": example.document,
+                  "claim": example.claim
+              },
+              headers={"api_key": self.bespoke_api_key}
+          )
+          response.raise_for_status()
+          return int(response.json()['support_prob'] > 0.5)
+        except requests.RequestException as e:
+          logger.warning(f"Bespoke API request failed: {str(e)}")
+          return np.nan
+      loop = asyncio.get_event_loop()
+      return await loop.run_in_executor(
+          None,
+          sync_request_minicheck,
+          example
+      )
+    return await asyncio.gather(*[
+        request_minicheck(example) for example in examples])
 
   async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
     assert self.llm is not None, "LLM is not set"
@@ -534,7 +575,10 @@ class FaithfulnesswithMiniCheck(Faithfulness):
     statements = [item for sublist in statements for item in sublist]
 
     examples = self._create_examples(row, statements)
-    scores = self._score_examples_locally(examples)
+    if not self.use_api:
+      scores = self._score_examples_locally(examples)
+    else:
+      scores = await self._score_examples_api(examples)
     return sum(scores) / len(scores)
 
 
