@@ -23,12 +23,6 @@ from ragas.metrics._noise_sensitivity import (
 )
 from ragas.metrics._summarization import SummarizationScore, summarization_score
 from ragas.metrics.critique import AspectCritique
-from ragas.metrics.domain_specific_rubrics import (
-    RubricsScoreWithoutReference,
-    RubricsScoreWithReference,
-    rubrics_score_with_reference,
-    rubrics_score_without_reference,
-)
 
 __all__ = [
     "AnswerCorrectness",
@@ -54,10 +48,6 @@ __all__ = [
     "NoiseSensitivity",
     "noise_sensitivity_irrelevant",
     "noise_sensitivity_relevant",
-    "rubrics_score_with_reference",
-    "rubrics_score_without_reference",
-    "RubricsScoreWithoutReference",
-    "RubricsScoreWithReference",
 ]
 
 current_module = sys.modules[__name__]
