@@ -10,7 +10,7 @@ from langchain_core.pydantic_v1 import BaseModel
 from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics._string import StringDistance
+from ragas.metrics._string import NonLLMStringSimilarity
 from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric, ensembler
 from ragas.run_config import RunConfig
 from ragas.utils import deprecated
@@ -243,7 +243,9 @@ class NonLLMContextRecall(SingleTurnMetric):
             }
         }
     )
-    distance_measure: SingleTurnMetric = field(default_factory=lambda: StringDistance())
+    distance_measure: SingleTurnMetric = field(
+        default_factory=lambda: NonLLMStringSimilarity()
+    )
     threshold: float = 0.5
 
     def __post_init__(self):
@@ -285,7 +287,6 @@ class NonLLMContextRecall(SingleTurnMetric):
         denom = len(response)
         numerator = sum(response)
         score = numerator / denom if denom > 0 else np.nan
-
         return score
 
 
