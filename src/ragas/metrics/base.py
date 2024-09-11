@@ -17,6 +17,7 @@ from enum import Enum
 
 from ragas.callbacks import new_group
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
+from ragas.executor import is_event_loop_running
 from ragas.run_config import RunConfig
 from ragas.utils import deprecated
 
@@ -59,8 +60,7 @@ class Metric(ABC):
 
     @property
     @abstractmethod
-    def name(self) -> str:
-        ...
+    def name(self) -> str: ...
 
     @property
     def required_columns(self) -> t.Dict[str, t.Set[str]]:
@@ -103,6 +103,15 @@ class Metric(ABC):
         callbacks = callbacks or []
         rm, group_cm = new_group(self.name, inputs=row, callbacks=callbacks)
         try:
+            if is_event_loop_running():
+                try:
+                    import nest_asyncio
+
+                    nest_asyncio.apply()
+                except ImportError:
+                    raise ImportError(
+                        "It seems like your running this in a jupyter-like environment. Please install nest_asyncio with `pip install nest_asyncio` to make it work."
+                    )
             loop = asyncio.get_event_loop()
             score = loop.run_until_complete(self._ascore(row=row, callbacks=group_cm))
         except Exception as e:
@@ -138,8 +147,7 @@ class Metric(ABC):
         return score
 
     @abstractmethod
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        ...
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float: ...
 
 
 @dataclass
@@ -246,8 +254,7 @@ class SingleTurnMetric(Metric):
         self,
         sample: SingleTurnSample,
         callbacks: Callbacks,
-    ) -> float:
-        ...
+    ) -> float: ...
 
 
 class MultiTurnMetric(Metric):
@@ -299,8 +306,7 @@ class MultiTurnMetric(Metric):
         self,
         sample: MultiTurnSample,
         callbacks: Callbacks,
-    ) -> float:
-        ...
+    ) -> float: ...
 
 
 class Ensember:
