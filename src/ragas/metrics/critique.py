@@ -78,7 +78,6 @@ class AspectCritique(MetricWithLLM, SingleTurnMetric):
             MetricType.SINGLE_TURN: {
                 "user_input",
                 "response",
-                "retreived_contexts",
             }
         }
     )
@@ -111,7 +110,7 @@ class AspectCritique(MetricWithLLM, SingleTurnMetric):
         if context is not None:
             if isinstance(context, list):
                 context = "\n".join(context)
-            question = f"{question } answer using context: {context}"
+            question = f"Question: {question} Answer using context: {context}"
         return self.critic_prompt.format(
             input=question, submission=answer, criteria=self.definition
         )
@@ -135,7 +134,7 @@ class AspectCritique(MetricWithLLM, SingleTurnMetric):
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "set LLM before use"
 
-        q, c, a = row["user_input"], row["retrieved_contexts"], row["response"]
+        q, c, a = row["user_input"], row.get("retrieved_contexts"), row["response"]
 
         p_value = self.prompt_format(q, a, c)
         result = await self.llm.generate(p_value, callbacks=callbacks)
