@@ -38,7 +38,7 @@ class OpikTracer(LangchainOpikTracer):
     def _on_chain_start(self, run: "Run"):
         if (run.parent_run_id is None) and (run.name == RAGAS_EVALUATION_CHAIN_NAME):
             # Store the evaluation run id so we can flag the child traces and log them independently
-            self._evaluation_run_id = str(run.id)
+            self._evaluation_run_id = run.id
         else:
             # Each child trace of the "ragas evaluation" chain should be a new trace
             if run.parent_run_id == self._evaluation_run_id:
