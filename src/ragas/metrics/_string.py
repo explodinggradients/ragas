@@ -34,6 +34,7 @@ class ExactMatch(SingleTurnMetric):
         return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
 
 
+@dataclass
 class StringPresent(SingleTurnMetric):
     name: str = "string_present"  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
@@ -56,8 +57,9 @@ class StringPresent(SingleTurnMetric):
         return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
 
 
-class StringDistance(SingleTurnMetric):
-    name: str = "string_distance"  # type: ignore
+@dataclass
+class NonLLMStringSimilarity(SingleTurnMetric):
+    name: str = "non_llm_string_similarity"  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
     )
