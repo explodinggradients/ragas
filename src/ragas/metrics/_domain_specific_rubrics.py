@@ -169,30 +169,30 @@ class RubricsScoreWithoutReference(MetricWithLLM, SingleTurnMetric, MultiTurnMet
         )
 
 
-class SingleTurnWithRefernceInput(BaseModel):
+class SingleTurnWithReferenceInput(BaseModel):
     user_input: str = Field(..., description="The user input")
     response: str = Field(..., description="The response")
     reference: str = Field(..., description="The reference")
     rubrics: t.Dict[str, str] = Field(..., description="The rubric")
 
 
-class MultiTurnWithRefernceInput(BaseModel):
+class MultiTurnWithReferenceInput(BaseModel):
     user_input: str = Field(..., description="The user input")
     reference: str = Field(..., description="The reference")
     rubrics: t.Dict[str, str] = Field(..., description="The rubric")
 
 
 class SingleTurnWithReferencePrompt(
-    PydanticPrompt[SingleTurnWithRefernceInput, ScoreFeedback]
+    PydanticPrompt[SingleTurnWithReferenceInput, ScoreFeedback]
 ):
     instruction = """Given user input, response and reference that's desired outcome that get's a score of 5,and a score rubric representing evaluation criteria are given.
     1. Write detailed feedback that assesses the quality of the response strictly based on the given score rubric, without evaluating in general.
     2. After writing the feedback, assign a score between 1 and 5, referring to the score rubric."""
-    input_model = SingleTurnWithRefernceInput
+    input_model = SingleTurnWithReferenceInput
     output_model = ScoreFeedback
     examples = [
         (
-            SingleTurnWithRefernceInput(
+            SingleTurnWithReferenceInput(
                 user_input="What is the capital of France?",
                 response="The capital of France is Paris.",
                 reference="The capital of France is Paris.",
@@ -207,16 +207,16 @@ class SingleTurnWithReferencePrompt(
 
 
 class MultiTurnWithReferencePrompt(
-    PydanticPrompt[MultiTurnWithRefernceInput, ScoreFeedback]
+    PydanticPrompt[MultiTurnWithReferenceInput, ScoreFeedback]
 ):
     instruction = """Given an interaction between AI,Human and external Tool as input and reference that's desired outcome that get's a score of 5,and a score rubric representing evaluation criteria are given.
     1. Write detailed feedback that assesses the quality of the responselet  strictly based on the given score rubric, without evaluating in general.
     2. After writing the feedback, assign a score between 1 and 5, referring to the score rubric."""
-    input_model = MultiTurnWithRefernceInput
+    input_model = MultiTurnWithReferenceInput
     output_model = ScoreFeedback
     examples = [
         (
-            MultiTurnWithRefernceInput(
+            MultiTurnWithReferenceInput(
                 user_input="""Human: Hey, book a table at the nearest best Chinese restaurant for 8:00pm\nAI: Sure, let me find the best options for you.\nTools:\n  restaurant_search: {'cuisine': 'Chinese', 'time': '8:00pm'}\nToolOutput: Found a few options: 1. Golden Dragon, 2. Jade Palace\nAI: I found some great options: Golden Dragon and Jade Palace. Which one would you prefer?\nHuman: Let's go with Golden Dragon.\nAI: Great choice! I'll book a table for 8:00pm at Golden Dragon.\nTools:\n  restaurant_book: {'name': 'Golden Dragon', 'time': '8:00pm'}\nToolOutput: Table booked at Golden Dragon for 8:00pm.\nAI: Your table at Golden Dragon is booked for 8:00pm. Enjoy your meal!\nHuman: thanks""",
                 reference="The AI successfully books a table at the nearest best Chinese restaurant for 8:00pm, providing the user with options and confirming the booking.",
                 rubrics=DEFAULT_WITH_REFERENCE_RUBRICS,
@@ -282,15 +282,15 @@ class RubricsScoreWithReference(MetricWithLLM, SingleTurnMetric, MultiTurnMetric
         )
         return output.score
 
-    def _create_multi_turn_prompt(self, row: t.Dict) -> MultiTurnWithRefernceInput:
+    def _create_multi_turn_prompt(self, row: t.Dict) -> MultiTurnWithReferenceInput:
         interaction, reference = row["interaction"], row["reference"]
-        return MultiTurnWithRefernceInput(
+        return MultiTurnWithReferenceInput(
             user_input=interaction,
             reference=reference,
             rubrics=self.rubrics,
         )
 
-    def _create_single_turn_prompt(self, row: t.Dict) -> SingleTurnWithRefernceInput:
+    def _create_single_turn_prompt(self, row: t.Dict) -> SingleTurnWithReferenceInput:
         question, contexts, answer, ground_truth = (
             row["user_input"],
             row.get("retrieved_contexts"),
@@ -301,7 +301,7 @@ class RubricsScoreWithReference(MetricWithLLM, SingleTurnMetric, MultiTurnMetric
             contexts = "\n".join(contexts)
             question = f"{question} answer using context: {contexts}"
 
-        return SingleTurnWithRefernceInput(
+        return SingleTurnWithReferenceInput(
             user_input=question,
             response=answer,
             reference=ground_truth,
