@@ -41,6 +41,7 @@ __all__ = [
     "Faithfulness",
     "faithfulness",
     "FaithulnesswithHHEM",
+    "FaithfulnesswithMiniCheck",
     "AnswerSimilarity",
     "answer_similarity",
     "ContextPrecision",

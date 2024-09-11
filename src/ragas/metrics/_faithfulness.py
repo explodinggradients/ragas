@@ -438,7 +438,7 @@ class FaithfulnesswithMiniCheck(Faithfulness):
                               os.environ.get("BESPOKE_API_KEY"))
       if not self.bespoke_api_key:
         raise ValueError(
-            f"No API key found for bespokelabs API. Please get your key "
+            "No API key found for bespokelabs API. Please get your key "
             "at https://console.bespokelabs.ai, then provide it "
             "by passing the bespoke_api_key parameter to the "
             "constructor or set the BESPOKE_API_KEY environment variable.")
