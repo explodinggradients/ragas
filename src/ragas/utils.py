@@ -7,6 +7,7 @@ import warnings
 from functools import lru_cache
 
 import numpy as np
+from datasets import Dataset
 
 if t.TYPE_CHECKING:
     from ragas.metrics.base import Metric
@@ -197,3 +198,13 @@ def get_required_columns_v1(metric: Metric):
 def convert_row_v1_to_v2(row: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     required_cols_v2 = {k: v for v, k in REQUIRED_COLS_v1.items()}
     return {required_cols_v2[k]: v for k, v in row.items() if k in required_cols_v2}
+
+
+def convert_v1_to_v2_dataset(dataset: Dataset) -> Dataset:
+    columns_map = {v: k for k, v in REQUIRED_COLS_v1.items() if v in dataset.features}
+    return dataset.rename_columns(columns_map)
+
+
+def convert_v2_to_v1_dataset(dataset: Dataset) -> Dataset:
+    columns_map = {k: v for k, v in REQUIRED_COLS_v1.items() if k in dataset.features}
+    return dataset.rename_columns(columns_map)
