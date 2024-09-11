@@ -435,7 +435,7 @@ class FaithfulnesswithMiniCheck(Faithfulness):
   def __post_init__(self):
     if self.use_api:
       self.bespoke_api_key = (self.bespoke_api_key if self.bespoke_api_key else
-                              os.environ.get("BESPOKE_API_KEY"))
+                              os.environ.get("BESPOKE_API_KEY", ""))
       if not self.bespoke_api_key:
         raise ValueError(
             "No API key found for bespokelabs API. Please get your key "
@@ -462,7 +462,7 @@ class FaithfulnesswithMiniCheck(Faithfulness):
 
   def _create_examples(
       self, row: t.Dict, statements: t.List[str]
-  ) -> t.List[str]:
+  ) -> t.List[MiniCheckExample]:
     document = "\n".join(row["retrieved_contexts"])
     return [MiniCheckExample(document=document, claim=statement)
             for statement in statements]
@@ -528,8 +528,8 @@ class FaithfulnesswithMiniCheck(Faithfulness):
   async def _score_examples_api(
           self,
           examples: t.List[MiniCheckExample]) -> t.List[float]:
-    async def request_minicheck(example: MiniCheckExample) -> t.List[float]:
-      def sync_request_minicheck(example: MiniCheckExample):
+    async def request_minicheck(example: MiniCheckExample) -> float:
+      def sync_request_minicheck(example: MiniCheckExample) -> float:
         try:
           response = requests.post(
               "https://api.bespokelabs.ai/v0/minicheck/factcheck",
