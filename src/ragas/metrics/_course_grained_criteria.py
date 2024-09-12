@@ -28,10 +28,14 @@ class CourseGrainedOutput(BaseModel):
     score: int = Field(description="The score for the submission")
 
 
-class CourseGrainedInput(BaseModel):
+class SingleTurnCourseGrainedInput(BaseModel):
     user_input: str = Field(description="The input to the model")
     response: str = Field(description="The response from the model")
     criteria: str = Field(description="The criteria to evaluate the response")
+
+
+class SingleTurnCourseGrainedWithReferenceInput(SingleTurnCourseGrainedInput):
+    reference: str = Field(description="The reference response")
 
 
 class MultiTurnCourseGrainedInput(BaseModel):
@@ -39,15 +43,19 @@ class MultiTurnCourseGrainedInput(BaseModel):
     criteria: str = Field(description="The criteria to evaluate the response")
 
 
+class MultiTurnCourseGrainedWithReferenceInput(MultiTurnCourseGrainedInput):
+    reference: str = Field(description="The reference response")
+
+
 class SingleTurnCourseGrainedPrompt(
-    PydanticPrompt[CourseGrainedInput, CourseGrainedOutput]
+    PydanticPrompt[SingleTurnCourseGrainedInput, CourseGrainedOutput]
 ):
-    instruction = "Given a input and response. Evaluate and score the submission only using the given criteria."
-    input_model = CourseGrainedInput
+    instruction = "Given a input and response. Evaluate and score the response only using the given criteria."
+    input_model = SingleTurnCourseGrainedInput
     output_model = CourseGrainedOutput
     examples = [
         (
-            CourseGrainedInput(
+            SingleTurnCourseGrainedInput(
                 user_input="Who was the director of Los Alamos Laboratory?",
                 response="Einstein was the director of Los Alamos Laboratory.",
                 criteria="Score responses in range of 0 to 5 based on factors such as grammar, relevance, and coherence.",
@@ -55,6 +63,28 @@ class SingleTurnCourseGrainedPrompt(
             CourseGrainedOutput(
                 reason="The response is grammatically correct and relevant to the input.",
                 score=5,
+            ),
+        )
+    ]
+
+
+class SingleTurnCourseGrainedWithReferencePrompt(
+    PydanticPrompt[SingleTurnCourseGrainedWithReferenceInput, CourseGrainedOutput]
+):
+    instruction = "Given a input, system response and reference. Evaluate and score the response against the reference only using the given criteria."
+    input_model = SingleTurnCourseGrainedWithReferenceInput
+    output_model = CourseGrainedOutput
+    examples = [
+        (
+            SingleTurnCourseGrainedWithReferenceInput(
+                user_input="Who was the director of Los Alamos Laboratory?",
+                response="Einstein was the director of Los Alamos Laboratory.",
+                reference="The director of Los Alamos Laboratory was J. Robert Oppenheimer.",
+                criteria="Score responses in range of 0 (low) to 5 (high) based similarity with reference.",
+            ),
+            CourseGrainedOutput(
+                reason="The response and reference have two very different answers.",
+                score=0,
             ),
         )
     ]
@@ -80,6 +110,27 @@ class MultiTurnCourseGrainedPrompt(
     ]
 
 
+class MultiTurnCourseGrainedWithReferencePrompt(
+    PydanticPrompt[MultiTurnCourseGrainedWithReferenceInput, CourseGrainedOutput]
+):
+    instruction = "Given an interaction between Human, AI and Tools evaluate and score the interaction using the given criteria."
+    input_model = MultiTurnCourseGrainedWithReferenceInput
+    output_model = CourseGrainedOutput
+    examples = [
+        (
+            MultiTurnCourseGrainedWithReferenceInput(
+                user_input="""Human: Hey, book a table at the nearest best Chinese restaurant for 8:00pm\nAI: Sure, let me find the best options for you.\nTools:\n  restaurant_search: {'cuisine': 'Chinese', 'time': '8:00pm'}\nToolOutput: Found a few options: 1. Golden Dragon, 2. Jade Palace\nAI: I found some great options: Golden Dragon and Jade Palace. Which one would you prefer?\nHuman: Let's go with Golden Dragon.\nAI: Great choice! I'll book a table for 8:00pm at Golden Dragon.\nTools:\n  restaurant_book: {'name': 'Golden Dragon', 'time': '8:00pm'}\nToolOutput: Table booked at Golden Dragon for 8:00pm.\nAI: Your table at Golden Dragon is booked for 8:00pm. Enjoy your meal!\nHuman: thanks""",
+                reference="The AI successfully books a table at the nearest best Chinese restaurant for 8:00pm, providing the user with options and confirming the booking.",
+                criteria="Score the interaction in range of 0 to 5 based on factors such as helpfulness, coherence, and relevance.",
+            ),
+            CourseGrainedOutput(
+                reason="The interaction is coherent and relevant to the user's request.",
+                score=5,
+            ),
+        )
+    ]
+
+
 class CourseGrainedOutout(BaseModel):
     reason: str = Field(description="Reason for the score")
     score: int = Field(description="The score for the submission")
@@ -91,15 +142,10 @@ class CourseGrainedWithoutReferenceInput(BaseModel):
     criteria: str = Field(description="The criteria to evaluate the response")
 
 
-class CourseGrainedWithReferenceInput(BaseModel):
-    user_input: str = Field(description="The input to the model")
-    response: str = Field(description="The response from the model")
-    reference: str = Field(description="The reference response")
-    criteria: str = Field(description="The criteria to evaluate the response")
-
-
 @dataclass
-class CourseGrainedScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
+class CourseGrainedScoreWithoutReferenceScore(
+    MetricWithLLM, SingleTurnMetric, MultiTurnMetric
+):
     """
     Judges the submission to give binary results using the criteria specified
     in the metric definition.
@@ -109,8 +155,7 @@ class CourseGrainedScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     name: str
         name of the metrics
     definition: str
-        criteria to judge the submission, example "Is the submission spreading
-        fake information?"
+        criteria to score the submission
     strictness: int
         The number of times self consistency checks is made. Final judgement is
         made using majority vote.
@@ -122,7 +167,10 @@ class CourseGrainedScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
             MetricType.SINGLE_TURN: {
                 "user_input",
                 "response",
-            }
+            },
+            MetricType.MULTI_TURN: {
+                "user_input",
+            },
         }
     )
     single_turn_prompt: PydanticPrompt = field(
@@ -150,9 +198,9 @@ class CourseGrainedScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         self, safe_loaded_responses: t.List[CourseGrainedOutput]
     ) -> float:
         if self.strictness > 1:
-            score = Counter(
-                [item.verdict for item in safe_loaded_responses]
-            ).most_common(1)[0][0]
+            score = Counter([item.score for item in safe_loaded_responses]).most_common(
+                1
+            )[0][0]
         else:
             score = safe_loaded_responses[0].score
 
@@ -178,7 +226,7 @@ class CourseGrainedScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
                 context = "\n".join(context)
             user_input = f"Question: {user_input} Answer using context: {context}"
 
-        prompt_input = CourseGrainedInput(
+        prompt_input = SingleTurnCourseGrainedInput(
             user_input=user_input,
             response=response,
             criteria=self.definition,
@@ -200,10 +248,8 @@ class CourseGrainedScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         assert sample.reference is not None, "Reference is not set"
 
         interaction = sample.pretty_repr()
-        reference = sample.reference
-        prompt_input = CourseGrainedInput(
+        prompt_input = MultiTurnCourseGrainedInput(
             user_input=interaction,
-            response=reference,
             criteria=self.definition,
         )
         response = await self.multi_turn_prompt.generate(
@@ -211,4 +257,73 @@ class CourseGrainedScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
             llm=self.llm,
             callbacks=callbacks,
         )
+        return self._compute_score([response])
+
+
+@dataclass
+class CourseGrainedScoreWithReference(CourseGrainedScoreWithoutReferenceScore):
+    name: str = field(default="", repr=True)  # type: ignore
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {
+                "user_input",
+                "response",
+                "reference",
+            },
+            MetricType.MULTI_TURN: {
+                "user_input",
+                "reference",
+            },
+        }
+    )
+    single_turn_prompt: PydanticPrompt = field(
+        default_factory=lambda: SingleTurnCourseGrainedWithReferencePrompt()
+    )
+    multi_turn_prompt: PydanticPrompt = field(
+        default_factory=lambda: MultiTurnCourseGrainedWithReferencePrompt()
+    )
+
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        assert self.llm is not None, "LLM is not set"
+        assert sample.user_input is not None, "User input is not set"
+        assert sample.reference is not None, "Reference is not set"
+        assert sample.response is not None, "Response is not set"
+
+        prompt_input = SingleTurnCourseGrainedWithReferenceInput(
+            user_input=sample.user_input,
+            response=sample.response,
+            reference=sample.reference,
+            criteria=self.definition,
+        )
+
+        response = await self.single_turn_prompt.generate(
+            prompt_input,
+            llm=self.llm,
+            callbacks=callbacks,
+        )
+
+        return self._compute_score([response])
+
+    async def _multi_turn_ascore(
+        self, sample: MultiTurnSample, callbacks: Callbacks
+    ) -> float:
+        assert self.llm is not None, "LLM is not set"
+        assert sample.user_input is not None, "User input is not set"
+        assert sample.reference is not None, "Reference is not set"
+
+        interaction = sample.pretty_repr()
+        prompt_input = MultiTurnCourseGrainedWithReferenceInput(
+            user_input=interaction,
+            reference=sample.reference,
+            criteria=self.definition,
+        )
+
+        response = await self.multi_turn_prompt.generate(
+            prompt_input,
+            llm=self.llm,
+            callbacks=callbacks,
+        )
+
         return self._compute_score([response])
