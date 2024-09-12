@@ -13,7 +13,7 @@ from ragas.metrics import (
     context_utilization,
     faithfulness,
 )
-from ragas.metrics.critique import harmfulness
+from ragas.metrics._aspect_critic import harmfulness
 
 # data
 ds = load_dataset("explodinggradients/amnesty_qa", "english_v2")

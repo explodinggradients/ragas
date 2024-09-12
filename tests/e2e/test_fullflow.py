@@ -2,7 +2,7 @@ from datasets import load_dataset
 
 from ragas import evaluate
 from ragas.metrics import answer_relevancy, context_precision, faithfulness
-from ragas.metrics.critique import harmfulness
+from ragas.metrics._aspect_critic import harmfulness
 
 
 def test_evaluate_e2e():
