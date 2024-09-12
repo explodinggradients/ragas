@@ -14,3 +14,5 @@ fuzzywuzzy
 rouge_score
 nltk
 rapidfuzz
+einops>=0.7.0
+torch==2.4.0
