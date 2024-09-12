@@ -1,6 +1,6 @@
 def test_import_module():
     import ragas.metrics
-    import ragas.metrics.critique
+    import ragas.metrics._aspect_critic
 
     test_metrics = [
         "answer_correctness",
@@ -25,7 +25,7 @@ def test_import_module():
         assert hasattr(ragas.metrics, metric)
 
     for metric in test_critique:
-        assert hasattr(ragas.metrics.critique, metric)
+        assert hasattr(ragas.metrics._aspect_critic, metric)
 
 
 def test_import_in_debug_mode():
