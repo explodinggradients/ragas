@@ -66,6 +66,7 @@ def evaluate(
     token_usage_parser: t.Optional[TokenUsageParser] = None,
     raise_exceptions: bool = False,
     column_map: t.Optional[t.Dict[str, str]] = None,
+    show_progress: bool = True,
 ) -> Result:
     """
     Run the evaluation on the dataset with different metrics
@@ -109,6 +110,8 @@ def evaluate(
         the dataset are different from the default ones then you can provide the
         mapping as a dictionary here. Example: If the dataset column name is contexts_v1,
         column_map can be given as {"contexts":"contexts_v1"}
+    show_progress: bool, optional
+        Whether to show the progress bar during evaluation. If set to False, the progress bar will be disabled. Default is True.
 
     Returns
     -------
@@ -223,6 +226,7 @@ def evaluate(
         keep_progress_bar=True,
         raise_exceptions=raise_exceptions,
         run_config=run_config,
+        show_progress=show_progress,
     )
 
     # Ragas Callbacks
