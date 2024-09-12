@@ -272,7 +272,7 @@ class SimpleCriteriaScoreWithReference(SimpleCriteriaScoreWithoutReference):
             },
             MetricType.MULTI_TURN: {
                 "user_input",
-            "reference",
+                "reference",
             },
         }
     )
