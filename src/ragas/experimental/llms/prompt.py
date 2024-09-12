@@ -22,7 +22,13 @@ PYDANTIC_V2 = pydantic.VERSION.startswith("2.")
 class BasePrompt(ABC):
     @abstractmethod
     async def generate(
-        self, data: t.Any, llm: BaseRagasLLM, callbacks: Callbacks = None
+        self,
+        llm: BaseRagasLLM,
+        data: t.Any,
+        n: int = 1,
+        temperature: t.Optional[float] = None,
+        stop: t.Optional[t.List[str]] = None,
+        callbacks: Callbacks = [],
     ) -> t.Any:
         pass
 
@@ -128,10 +134,22 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         )
 
     async def generate(
-        self, data: InputModel, llm: BaseRagasLLM, callbacks: Callbacks = None
+        self,
+        llm: BaseRagasLLM,
+        data: InputModel,
+        n: int = 1,
+        temperature: t.Optional[float] = None,
+        stop: t.Optional[t.List[str]] = None,
+        callbacks: Callbacks = [],
     ) -> OutputModel:
         prompt_value = PromptValue(prompt_str=self.to_string(data))
-        resp = await llm.generate(prompt_value, callbacks=callbacks)
+        resp = await llm.generate(
+            prompt_value,
+            n=n,
+            temperature=temperature,
+            stop=stop,
+            callbacks=callbacks,
+        )
         resp_text = resp.generations[0][0].text
         parser = RagasoutputParser(pydantic_object=self.output_model)
         answer = await parser.aparse(resp_text, prompt_value, llm, max_retries=3)
@@ -142,8 +160,20 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
 
 class StringPrompt(BasePrompt):
     async def generate(
-        self, data: str, llm: BaseRagasLLM, callbacks: Callbacks = None
+        self,
+        llm: BaseRagasLLM,
+        data: str,
+        n: int = 1,
+        temperature: t.Optional[float] = None,
+        stop: t.Optional[t.List[str]] = None,
+        callbacks: Callbacks = [],
     ) -> str:
         prompt_value = PromptValue(prompt_str=data)
-        llm_result = await llm.agenerate_text(prompt_value, callbacks=callbacks)
+        llm_result = await llm.agenerate_text(
+            prompt_value,
+            n=n,
+            temperature=temperature,
+            stop=stop,
+            callbacks=callbacks,
+        )
         return llm_result.generations[0][0].text

@@ -212,7 +212,7 @@ class FaithfulnessExperimental(MetricWithLLM, SingleTurnMetric):
             sentence for sentence in sentences if sentence.strip().endswith(".")
         ]
         sentence_components = await self.long_form_answer_prompt.generate(
-            FaithfulnessStatements(
+            data=FaithfulnessStatements(
                 question=question,
                 answer=answer,
                 sentences={i: sentence for i, sentence in enumerate(sentences)},
@@ -227,7 +227,7 @@ class FaithfulnessExperimental(MetricWithLLM, SingleTurnMetric):
             for statement in component.simpler_statements
         ]
         verdicts = await self.nli_statement_prompt.generate(
-            NLIStatementInput(
+            data=NLIStatementInput(
                 context="\n".join(contexts),
                 statements=statements,
             ),
