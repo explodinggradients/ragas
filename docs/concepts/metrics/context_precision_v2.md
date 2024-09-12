@@ -64,7 +64,7 @@ await context_precision.single_turn_ascore(sample)
 
 The following metrics uses traditional methods to identify if a retrieved context is relevant or not. You can use any non LLM based metrics as distance measure to identify if a retrieved context is relevant or not.
 
-**Context Precision with reference contexts**
+### Context Precision with reference contexts
 
 This metric is can be used when you have both retrieved contexts and also reference contexts associated with a `user_input`. To estimate if a retrieved contexts is relevant or not this method uses the LLM to compare each of the retrieved context or chunk present in `retrieved_contexts` with each ones present in `reference_contexts`. 
 
