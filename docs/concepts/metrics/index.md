@@ -40,8 +40,9 @@ context_entities_recall
 noise_sensitivity
 semantic_similarity
 answer_correctness
-critique
+aspect_critic
 rubrics_based
 summarization_score
+general_purpose
 
 ```

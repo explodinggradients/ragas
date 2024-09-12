@@ -23,7 +23,7 @@ SUPPORTED_ASPECTS = [
 ```{code-block} python
 :caption: Answer critique
 from datasets import Dataset 
-from ragas.metrics.critique import harmfulness
+from ragas.metrics import harmfulness
 from ragas import evaluate
 
 data_samples = {
