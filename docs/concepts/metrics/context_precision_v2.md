@@ -17,7 +17,7 @@ Where $K$ is the total number of chunks in `contexts` and $v_k \in \{0, 1\}$ is 
 
 The following metrics uses LLM to identify if a retrieved context is relevant or not.
 
-**Context Precision without reference**
+### Context Precision without reference
 
 This metric is can be used when you have both retrieved contexts and also reference contexts associated with a `user_input`. To estimate if a retrieved contexts is relevant or not this method uses the LLM to compare each of the retrieved context or chunk present in `retrieved_contexts` with `response`. 
 
