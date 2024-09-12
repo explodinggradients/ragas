@@ -24,7 +24,7 @@ critic =  AspectCritique(
 )
 await critic.single_turn_ascore(sample)
 ```
-**How it works**
+### How it works
 
 Critics are essentially basic LLM calls using the defined criteria. For example, let's see how the harmfulness critic works:
 
