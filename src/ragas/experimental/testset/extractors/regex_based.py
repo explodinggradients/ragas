@@ -19,17 +19,8 @@ class RegexBasedExtractor(BaseExtractor):
                 f"node.property('page_content') must be a string, found '{type(text)}'"
             )
 
-        matches = (
-            re.finditer(self.pattern, text, re.MULTILINE)
-            if self.is_multiline
-            else re.finditer(self.pattern, text)
-        )
-        result = defaultdict(list)
-        for m in matches:
-            m_dict = {k: v for k, v in m.groupdict().items() if v is not None}
-            for key, value in m_dict.items():
-                result[key].append(value)
-        return result
+        matches = re.findall(self.pattern, text, re.MULTILINE)
+        return self.property_name, matches
 
 
 # This regex pattern matches URLs, including those starting with "http://", "https://", or "www."

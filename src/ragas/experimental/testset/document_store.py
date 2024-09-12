@@ -24,11 +24,19 @@ class DocumentStore:
                 SummaryExtractor,
                 TitleExtractor,
             )
+            from ragas.experimental.testset.extractors.regex_based import (
+                emails_extractor,
+                links_extractor,
+                markdown_headings_extractor,
+            )
 
             self.extractors = [
                 SummaryExtractor(llm=self.llm),
                 KeyphrasesExtractor(llm=self.llm),
                 TitleExtractor(llm=self.llm),
+                emails_extractor,
+                links_extractor,
+                markdown_headings_extractor,
             ]
 
     def add_extractor(self, extractor: BaseExtractor):
