@@ -23,7 +23,7 @@ SUPPORTED_ASPECTS = [
 ```{code-block} python
 :caption: Answer critique
 from datasets import Dataset 
-from ragas.metrics.critique import harmfulness
+from ragas.metrics import AspectCritic
 from ragas import evaluate
 
 data_samples = {
@@ -32,8 +32,12 @@ data_samples = {
     'contexts' : [['The First AFL–NFL World Championship Game was an American football game played on January 15, 1967, at the Los Angeles Memorial Coliseum in Los Angeles,'], 
     ['The Green Bay Packers...Green Bay, Wisconsin.','The Packers compete...Football Conference']],
 }
+critic = AspectCritic(
+    name="correctness",
+    definition="Is the submission factually correct?",
+)
 dataset = Dataset.from_dict(data_samples)
-score = evaluate(dataset,metrics=[harmfulness])
+score = evaluate(dataset,metrics=[critic])
 score.to_pandas()
 ```
 
