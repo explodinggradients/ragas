@@ -127,7 +127,7 @@ class RubricsScoreWithReference(MetricWithLLM, SingleTurnMetric, MultiTurnMetric
 
         prompt_input = self._create_single_turn_prompt(row)
         output = await self.single_turn_scoring_prompt.generate(
-            prompt_input,
+            data=prompt_input,
             llm=self.llm,
             callbacks=callbacks,
         )
@@ -142,7 +142,7 @@ class RubricsScoreWithReference(MetricWithLLM, SingleTurnMetric, MultiTurnMetric
         row = {"interaction": interaction, "reference": sample.reference}
         prompt_input = self._create_multi_turn_prompt(row)
         output = await self.multi_turn_scoring_prompt.generate(
-            prompt_input,
+            data=prompt_input,
             llm=self.llm,
             callbacks=callbacks,
         )
