@@ -80,24 +80,6 @@ class MultiTurnAspectCriticPrompt(
     ]
 
 
-class CourseGrainedOutout(BaseModel):
-    reason: str = Field(description="Reason for the verdict")
-    score: int = Field(description="The score for the submission")
-
-
-class CourseGrainedWithoutReferenceInput(BaseModel):
-    user_input: str = Field(description="The input to the model")
-    response: str = Field(description="The response from the model")
-    criteria: str = Field(description="The criteria to evaluate the response")
-
-
-class CourseGrainedWithReferenceInput(BaseModel):
-    user_input: str = Field(description="The input to the model")
-    response: str = Field(description="The response from the model")
-    reference: str = Field(description="The reference response")
-    criteria: str = Field(description="The criteria to evaluate the response")
-
-
 @dataclass
 class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     """
