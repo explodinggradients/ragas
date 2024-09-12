@@ -27,6 +27,7 @@ class BasePrompt(ABC):
         data: t.Any,
         n: int = 1,
         temperature: t.Optional[float] = None,
+        stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = [],
     ) -> t.Any:
         pass
@@ -138,6 +139,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         data: InputModel,
         n: int = 1,
         temperature: t.Optional[float] = None,
+        stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = [],
     ) -> OutputModel:
         prompt_value = PromptValue(prompt_str=self.to_string(data))
@@ -145,6 +147,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             prompt_value,
             n=n,
             temperature=temperature,
+            stop=stop,
             callbacks=callbacks,
         )
         resp_text = resp.generations[0][0].text
@@ -162,10 +165,15 @@ class StringPrompt(BasePrompt):
         data: str,
         n: int = 1,
         temperature: t.Optional[float] = None,
+        stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = [],
     ) -> str:
         prompt_value = PromptValue(prompt_str=data)
         llm_result = await llm.agenerate_text(
-            prompt_value, n=n, temperature=temperature, callbacks=callbacks
+            prompt_value,
+            n=n,
+            temperature=temperature,
+            stop=stop,
+            callbacks=callbacks,
         )
         return llm_result.generations[0][0].text
