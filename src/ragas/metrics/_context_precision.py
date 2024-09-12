@@ -10,7 +10,10 @@ from langchain.pydantic_v1 import BaseModel, Field
 from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt, PromptValue
+from ragas.metrics._string import NonLLMStringSimilarity
 from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric, ensembler
+from ragas.run_config import RunConfig
+from ragas.utils import deprecated
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -74,7 +77,7 @@ CONTEXT_PRECISION = Prompt(
 
 
 @dataclass
-class ContextPrecision(MetricWithLLM, SingleTurnMetric):
+class LLMContextPrecisionWithReference(MetricWithLLM, SingleTurnMetric):
     """
     Average Precision is a metric that evaluates whether all of the
     relevant items selected by the model are ranked higher or not.
@@ -86,7 +89,7 @@ class ContextPrecision(MetricWithLLM, SingleTurnMetric):
     context_precision_prompt: Prompt
     """
 
-    name: str = "context_precision"  # type: ignore
+    name: str = "llm_context_precision_with_reference"  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {
@@ -202,8 +205,8 @@ class ContextPrecision(MetricWithLLM, SingleTurnMetric):
 
 
 @dataclass
-class ContextUtilization(ContextPrecision):
-    name: str = "context_utilization"
+class LLMContextPrecisionWithoutReference(LLMContextPrecisionWithReference):
+    name: str = "llm_context_precision_without_reference"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {"user_input", "response", "retreived_contexts"}
@@ -212,6 +215,104 @@ class ContextUtilization(ContextPrecision):
 
     def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:
         return row["user_input"], row["retrieved_contexts"], row["response"]
+
+
+@dataclass
+class NonLLMContextPrecisionWithReference(SingleTurnMetric):
+    name: str = "non_llm_context_precision_with_reference"  # type: ignore
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {
+                "retrieved_contexts",
+                "reference_contexts",
+            }
+        }
+    )
+    distance_measure: SingleTurnMetric = field(
+        default_factory=lambda: NonLLMStringSimilarity()
+    )
+    threshold: float = 0.5
+
+    def __post_init__(self):
+        if isinstance(self.distance_measure, MetricWithLLM):
+            raise ValueError(
+                "distance_measure must not be an instance of MetricWithLLM for NonLLMContextPrecisionWithReference"
+            )
+
+    def init(self, run_config: RunConfig) -> None:
+        ...
+
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        sample = SingleTurnSample(**row)
+        return await self._single_turn_ascore(sample, callbacks)
+
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        retrieved_contexts = sample.retrieved_contexts
+        reference_contexts = sample.reference_contexts
+        assert retrieved_contexts is not None, "retrieved_contexts is empty"
+        assert reference_contexts is not None, "reference_contexts is empty"
+
+        scores = []
+        for rc in retrieved_contexts:
+            scores.append(
+                max(
+                    [
+                        await self.distance_measure.single_turn_ascore(
+                            SingleTurnSample(reference=rc, response=ref), callbacks
+                        )
+                        for ref in reference_contexts
+                    ]
+                )
+            )
+        scores = [1 if score >= self.threshold else 0 for score in scores]
+        return self._calculate_average_precision(scores)
+
+    def _calculate_average_precision(self, verdict_list: t.List[int]) -> float:
+        score = np.nan
+
+        denominator = sum(verdict_list) + 1e-10
+        numerator = sum(
+            [
+                (sum(verdict_list[: i + 1]) / (i + 1)) * verdict_list[i]
+                for i in range(len(verdict_list))
+            ]
+        )
+        score = numerator / denominator
+        return score
+
+
+@dataclass
+class ContextPrecision(LLMContextPrecisionWithReference):
+    name: str = "context_precision"  # type: ignore
+
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        return await super()._single_turn_ascore(sample, callbacks)
+
+    @deprecated(
+        since="0.2", removal="0.3", alternative="LLMContextPrecisionWithReference"
+    )
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        return await super()._ascore(row, callbacks)
+
+
+@dataclass
+class ContextUtilization(LLMContextPrecisionWithoutReference):
+    name: str = "context_utilization"  # type: ignore
+
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        return await super()._single_turn_ascore(sample, callbacks)
+
+    @deprecated(
+        since="0.2", removal="0.3", alternative="LLMContextPrecisionWithoutReference"
+    )
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        return await super()._ascore(row, callbacks)
 
 
 context_precision = ContextPrecision()
