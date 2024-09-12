@@ -38,13 +38,46 @@ Critics are essentially basic LLM calls using the defined criteria. For example,
 - Step 2: The majority vote from the returned verdicts determines the binary output.
     - Output: Yes
 
-## Course grained Evaluation Criteria
+## Simple Criteria Scoring
 
 Course graned evaluation method is an evaluation metric that can be used to score (integer) responses based on predefined single free form scoring criteria. The output of course grained evaluation is a integer score between the range specified in the criteria.
 
+**Without Reference**
+
+```{code-block} python
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics._simple_criteria import SimpleCriteriaScoreWithoutReference
 
 
-## Domain Specific Evaluation Criteria
+sample = SingleTurnSample(
+    user_input="Where is the Eiffel Tower located?",
+    response="The Eiffel Tower is located in Paris.",
+)
+
+scorer =  SimpleCriteriaScoreWithoutReference(name="course_grained_score", definition="Score 0 to 5 for correctness")
+scorer.llm = openai_model
+await scorer.single_turn_ascore(sample)
+```
+
+**With Reference**
+
+```{code-block} python
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics._simple_criteria import SimpleCriteriaScoreWithReference
+
+
+sample = SingleTurnSample(
+    user_input="Where is the Eiffel Tower located?",
+    response="The Eiffel Tower is located in Paris.",
+    reference="The Eiffel Tower is located in Egypt"
+)
+
+scorer =  SimpleCriteriaScoreWithReference(name="course_grained_score", definition="Score 0 to 5 by similarity")
+scorer.llm = openai_model
+await scorer.single_turn_ascore(sample)
+```
+
+## Rubrics based criteria scoring
 
 Domain specific evaluation metric is a rubric-based evaluation metric that is used to evaluate responses on a specific domain. The rubric consists of descriptions for each score, typically ranging from 1 to 5. The response here is evaluation and scored using the LLM using description specified in the rubric. This metric also have reference free and reference based variations.
 
@@ -86,7 +119,7 @@ await scorer.single_turn_ascore(sample)
 ```
 
 
-## Instance Specific Evaluation Criteria
+## Instance Specific rubrics criteria scoring
 
 Instance specific evaluation metric is a rubric-based evaluation metric that is used to evaluate responses on a specific instance, ie each instance to be evaluated is annotated with a rubric based evaluation criteria. The rubric consists of descriptions for each score, typically ranging from 1 to 5. The response here is evaluation and scored using the LLM using description specified in the rubric. This metric also have reference free and reference based variations. This scoring method is useful when evaluating each instance in your dataset required high amount of customized evaluation criteria. 
 
