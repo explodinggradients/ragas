@@ -16,3 +16,4 @@ nltk
 rapidfuzz
 einops>=0.7.0
 torch==2.4.0
+sentencepiece>=0.2.0
