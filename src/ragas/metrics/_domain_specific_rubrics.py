@@ -127,7 +127,7 @@ class RubricsScoreWithoutReference(MetricWithLLM, SingleTurnMetric, MultiTurnMet
 
         prompt_input = self._create_single_turn_prompt(row)
         output = await self.single_turn_scoring_prompt.generate(
-            prompt_input,
+            data=prompt_input,
             llm=self.llm,
             callbacks=callbacks,
         )
@@ -144,7 +144,7 @@ class RubricsScoreWithoutReference(MetricWithLLM, SingleTurnMetric, MultiTurnMet
             rubrics=self.rubrics,
         )
         output = await self.multi_turn_scoring_prompt.generate(
-            prompt_input,
+            data=prompt_input,
             llm=self.llm,
             callbacks=callbacks,
         )

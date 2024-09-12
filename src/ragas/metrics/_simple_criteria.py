@@ -233,7 +233,7 @@ class SimpleCriteriaScoreWithoutReference(
         )
 
         response = await self.single_turn_prompt.generate(
-            prompt_input,
+            data=prompt_input,
             llm=self.llm,
             callbacks=callbacks,
         )
@@ -253,7 +253,7 @@ class SimpleCriteriaScoreWithoutReference(
             criteria=self.definition,
         )
         response = await self.multi_turn_prompt.generate(
-            prompt_input,
+            data=prompt_input,
             llm=self.llm,
             callbacks=callbacks,
         )
@@ -299,7 +299,7 @@ class SimpleCriteriaScoreWithReference(SimpleCriteriaScoreWithoutReference):
         )
 
         response = await self.single_turn_prompt.generate(
-            prompt_input,
+            data=prompt_input,
             llm=self.llm,
             callbacks=callbacks,
         )
@@ -321,7 +321,7 @@ class SimpleCriteriaScoreWithReference(SimpleCriteriaScoreWithoutReference):
         )
 
         response = await self.multi_turn_prompt.generate(
-            prompt_input,
+            data=prompt_input,
             llm=self.llm,
             callbacks=callbacks,
         )

@@ -167,7 +167,7 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         )
 
         response = await self.single_turn_prompt.generate(
-            prompt_input,
+            data=prompt_input,
             llm=self.llm,
             callbacks=callbacks,
         )
@@ -189,7 +189,7 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
             criteria=self.definition,
         )
         response = await self.multi_turn_prompt.generate(
-            prompt_input,
+            data=prompt_input,
             llm=self.llm,
             callbacks=callbacks,
         )

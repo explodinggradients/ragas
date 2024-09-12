@@ -65,7 +65,7 @@ class InstanceRubricsWithReference(MetricWithLLM, SingleTurnMetric, MultiTurnMet
         )
 
         response = await self.single_turn_prompt.generate(
-            prompt_input, llm=self.llm, callbacks=callbacks
+            data=prompt_input, llm=self.llm, callbacks=callbacks
         )
         return response.score
 
@@ -91,7 +91,7 @@ class InstanceRubricsWithReference(MetricWithLLM, SingleTurnMetric, MultiTurnMet
             rubrics=rubrics,
         )
         output = await self.multi_turn_prompt.generate(
-            prompt_input,
+            data=prompt_input,
             llm=self.llm,
             callbacks=callbacks,
         )
@@ -137,7 +137,7 @@ class InstanceRubricsScoreWithoutReference(
         )
 
         response = await self.single_turn_prompt.generate(
-            prompt_input, llm=self.llm, callbacks=callbacks
+            data=prompt_input, llm=self.llm, callbacks=callbacks
         )
         return response.score
 
@@ -159,7 +159,7 @@ class InstanceRubricsScoreWithoutReference(
             rubrics=rubrics,
         )
         output = await self.multi_turn_prompt.generate(
-            prompt_input,
+            data=prompt_input,
             llm=self.llm,
             callbacks=callbacks,
         )
