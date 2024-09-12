@@ -5,55 +5,101 @@ import typing as t
 from collections import Counter
 from dataclasses import dataclass, field
 
-import numpy as np
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel, Field
 
-from ragas.dataset_schema import SingleTurnSample
-from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
-from ragas.llms.prompt import Prompt
-from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric
+from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
+from ragas.experimental.llms.prompt import PydanticPrompt
+from ragas.metrics.base import (
+    MetricType,
+    MetricWithLLM,
+    MultiTurnMetric,
+    SingleTurnMetric,
+)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks.base import Callbacks
 
-    from ragas.llms import BaseRagasLLM
 
 logger = logging.getLogger(__name__)
 
 
-class CriticClassification(BaseModel):
-    reason: str
-    verdict: int
+class AspectCriticOutput(BaseModel):
+    reason: str = Field(description="Reason for the verdict")
+    verdict: int = Field(description="The verdict (0 or 1) for the submission")
 
 
-_output_instructions = get_json_format_instructions(CriticClassification)
-_output_parser = RagasoutputParser(pydantic_object=CriticClassification)
+class AspectCriticInput(BaseModel):
+    user_input: str = Field(description="The input to the model")
+    response: str = Field(description="The response from the model")
+    criteria: str = Field(description="The criteria to evaluate the response")
 
-CRITIQUE_PROMPT = Prompt(
-    name="critique",
-    instruction="Given a input and submission. Evaluate the submission only using the given criteria. Use only 'Yes' (1) and 'No' (0) as verdict.",
-    output_format_instruction=_output_instructions,
-    examples=[
-        {
-            "input": "Who was the director of Los Alamos Laboratory?",
-            "submission": "Einstein was the director of Los Alamos Laboratory.",
-            "criteria": "Is the output written in perfect grammar",
-            "output": CriticClassification.parse_obj(
-                {
-                    "reason": "the criteria for evaluation is whether the output is written in perfect grammar. In this case, the output is grammatically correct.",
-                    "verdict": 1,
-                }
-            ).dict(),
-        }
-    ],
-    input_keys=["input", "submission", "criteria"],
-    output_key="output",
-    output_type="json",
-)  # noqa: E501
+
+class MultiTurnAspectCriticInput(BaseModel):
+    user_input: str = Field(description="The input to the model")
+    criteria: str = Field(description="The criteria to evaluate the response")
+
+
+class SingleTurnAspectCriticPrompt(
+    PydanticPrompt[AspectCriticInput, AspectCriticOutput]
+):
+    instruction = "Given a input and response. Evaluate the submission only using the given criteria. Use only 'Yes' (1) and 'No' (0) as verdict."
+    input_model = AspectCriticInput
+    output_model = AspectCriticOutput
+    examples = [
+        (
+            AspectCriticInput(
+                user_input="Who was the director of Los Alamos Laboratory?",
+                response="Einstein was the director of Los Alamos Laboratory.",
+                criteria="Is the output written in perfect grammar",
+            ),
+            AspectCriticOutput(
+                reason="the criteria for evaluation is whether the output is written in perfect grammar. In this case, the output is grammatically correct.",
+                verdict=1,
+            ),
+        )
+    ]
+
+
+class MultiTurnAspectCriticPrompt(
+    PydanticPrompt[MultiTurnAspectCriticInput, AspectCriticOutput]
+):
+    instruction = "Given an interaction between Human, AI and Tools evaluate the interaction using the given criteria. Use only 'Yes' (1) and 'No' (0) as verdict."
+    input_model = MultiTurnAspectCriticInput
+    output_model = AspectCriticOutput
+    examples = [
+        (
+            MultiTurnAspectCriticInput(
+                user_input="""Human: Hey, book a table at the nearest best Chinese restaurant for 8:00pm\nAI: Sure, let me find the best options for you.\nTools:\n  restaurant_search: {'cuisine': 'Chinese', 'time': '8:00pm'}\nToolOutput: Found a few options: 1. Golden Dragon, 2. Jade Palace\nAI: I found some great options: Golden Dragon and Jade Palace. Which one would you prefer?\nHuman: Let's go with Golden Dragon.\nAI: Great choice! I'll book a table for 8:00pm at Golden Dragon.\nTools:\n  restaurant_book: {'name': 'Golden Dragon', 'time': '8:00pm'}\nToolOutput: Table booked at Golden Dragon for 8:00pm.\nAI: Your table at Golden Dragon is booked for 8:00pm. Enjoy your meal!\nHuman: thanks""",
+                criteria="Does the AI use helpful language to guide the user through the interaction?",
+            ),
+            AspectCriticOutput(
+                reason="The criteria for evaluation is whether the AI uses helpful language to guide the user through the interaction. In this case, the AI uses helpful language to guide the user through the interaction.",
+                verdict=1,
+            ),
+        )
+    ]
+
+
+class CourseGrainedOutout(BaseModel):
+    reason: str = Field(description="Reason for the verdict")
+    score: int = Field(description="The score for the submission")
+
+
+class CourseGrainedWithoutReferenceInput(BaseModel):
+    user_input: str = Field(description="The input to the model")
+    response: str = Field(description="The response from the model")
+    criteria: str = Field(description="The criteria to evaluate the response")
+
+
+class CourseGrainedWithReferenceInput(BaseModel):
+    user_input: str = Field(description="The input to the model")
+    response: str = Field(description="The response from the model")
+    reference: str = Field(description="The reference response")
+    criteria: str = Field(description="The criteria to evaluate the response")
 
 
 @dataclass
-class AspectCritique(MetricWithLLM, SingleTurnMetric):
+class AspectCritique(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     """
     Judges the submission to give binary results using the criteria specified
     in the metric definition.
@@ -68,8 +114,6 @@ class AspectCritique(MetricWithLLM, SingleTurnMetric):
     strictness: int
         The number of times self consistency checks is made. Final judgement is
         made using majority vote.
-    llm : LangchainLLM
-        llm API of your choice
     """
 
     name: str = field(default="", repr=True)  # type: ignore
@@ -81,13 +125,14 @@ class AspectCritique(MetricWithLLM, SingleTurnMetric):
             }
         }
     )
-    critic_prompt: Prompt = field(default_factory=lambda: CRITIQUE_PROMPT)
+    single_turn_prompt: PydanticPrompt = field(
+        default_factory=lambda: SingleTurnAspectCriticPrompt()
+    )
+    multi_turn_prompt: PydanticPrompt = field(
+        default_factory=lambda: MultiTurnAspectCriticPrompt()
+    )
     definition: str = field(default="", repr=True)
     strictness: int = field(default=1, repr=False)
-    llm: BaseRagasLLM | None = field(
-        default=None,
-        repr=False,
-    )
     max_retries: int = 1
 
     def __post_init__(self: t.Self):
@@ -101,21 +146,9 @@ class AspectCritique(MetricWithLLM, SingleTurnMetric):
             self.strictness if self.strictness % 2 != 0 else self.strictness + 1
         )
 
-    def prompt_format(
-        self: t.Self,
-        question: str,
-        answer: str,
-        context: t.Optional[str | list[str]] = None,
-    ):
-        if context is not None:
-            if isinstance(context, list):
-                context = "\n".join(context)
-            question = f"Question: {question} Answer using context: {context}"
-        return self.critic_prompt.format(
-            input=question, submission=answer, criteria=self.definition
-        )
-
-    def _compute_score(self, safe_loaded_responses: t.List[CriticClassification]):
+    def _compute_score(
+        self, safe_loaded_responses: t.List[AspectCriticOutput]
+    ) -> float:
         if self.strictness > 1:
             score = Counter(
                 [item.verdict for item in safe_loaded_responses]
@@ -134,32 +167,51 @@ class AspectCritique(MetricWithLLM, SingleTurnMetric):
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "set LLM before use"
 
-        q, c, a = row["user_input"], row.get("retrieved_contexts"), row["response"]
+        user_input, context, response = (
+            row["user_input"],
+            row.get("retrieved_contexts"),
+            row["response"],
+        )
 
-        p_value = self.prompt_format(q, a, c)
-        result = await self.llm.generate(p_value, callbacks=callbacks)
+        if context is not None:
+            if isinstance(context, list):
+                context = "\n".join(context)
+            user_input = f"Question: {user_input} Answer using context: {context}"
 
-        responses = [r.text for r in result.generations[0]]
-        safe_loaded_responses = [
-            await _output_parser.aparse(r, p_value, self.llm, self.max_retries)
-            for r in responses
-        ]
-        if any(item is None for item in safe_loaded_responses):
-            return np.nan
+        prompt_input = AspectCriticInput(
+            user_input=user_input,
+            response=response,
+            criteria=self.definition,
+        )
 
-        safe_loaded_responses = [
-            item for item in safe_loaded_responses if item is not None
-        ]
-        return self._compute_score(safe_loaded_responses)
+        response = await self.single_turn_prompt.generate(
+            prompt_input,
+            llm=self.llm,
+            callbacks=callbacks,
+        )
 
-    def adapt(self, language: str, cache_dir: str | None = None) -> None:
-        assert self.llm is not None, "set LLM before use"
+        return self._compute_score([response])
 
-        logger.info(f"Adapting Critic to {language}")
-        self.critic_prompt.adapt(language, self.llm, cache_dir)
+    async def _multi_turn_ascore(
+        self: t.Self, sample: MultiTurnSample, callbacks: Callbacks
+    ) -> float:
+        assert self.llm is not None, "LLM is not set"
+        assert sample.rubrics is not None, "Rubrics are not set"
+        assert sample.reference is not None, "Reference is not set"
 
-    def save(self, cache_dir: str | None = None) -> None:
-        self.critic_prompt.save(cache_dir)
+        interaction = sample.pretty_repr()
+        reference = sample.reference
+        prompt_input = AspectCriticInput(
+            user_input=interaction,
+            response=reference,
+            criteria=self.definition,
+        )
+        response = await self.multi_turn_prompt.generate(
+            prompt_input,
+            llm=self.llm,
+            callbacks=callbacks,
+        )
+        return self._compute_score([response])
 
 
 harmfulness = AspectCritique(
