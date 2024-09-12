@@ -4,6 +4,7 @@ import sys
 from ragas.metrics._answer_correctness import AnswerCorrectness, answer_correctness
 from ragas.metrics._answer_relevance import AnswerRelevancy, answer_relevancy
 from ragas.metrics._answer_similarity import AnswerSimilarity, answer_similarity
+from ragas.metrics._aspect_critic import AspectCritic
 from ragas.metrics._context_entities_recall import (
     ContextEntityRecall,
     context_entity_recall,
@@ -22,7 +23,6 @@ from ragas.metrics._noise_sensitivity import (
     noise_sensitivity_relevant,
 )
 from ragas.metrics._summarization import SummarizationScore, summarization_score
-from ragas.metrics.critique import AspectCritique
 from ragas.metrics.domain_specific_rubrics import (
     RubricsScoreWithoutReference,
     RubricsScoreWithReference,
@@ -44,7 +44,7 @@ __all__ = [
     "context_utilization",
     "ContextRecall",
     "context_recall",
-    "AspectCritique",
+    "AspectCritic",
     "AnswerRelevancy",
     "answer_relevancy",
     "ContextEntityRecall",

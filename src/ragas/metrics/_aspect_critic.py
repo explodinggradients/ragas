@@ -178,7 +178,6 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         self: t.Self, sample: MultiTurnSample, callbacks: Callbacks
     ) -> float:
         assert self.llm is not None, "LLM is not set"
-        assert sample.rubrics is not None, "Rubrics are not set"
         assert sample.reference is not None, "Reference is not set"
 
         interaction = sample.pretty_repr()
