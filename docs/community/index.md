@@ -1,6 +1,6 @@
 # ❤️ Community 
 
-**"Alone we can do so little; together we can do so much." - Helen Keller**
+> "Alone we can do so little; together we can do so much." - Helen Keller
 
 Our project thrives on the vibrant energy, diverse skills, and shared passion of our community. It's not just about code; it's about people coming together to create something extraordinary. This space celebrates every contribution, big or small, and features the amazing people who make it all happen.
 
