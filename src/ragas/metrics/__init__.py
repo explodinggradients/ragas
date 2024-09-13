@@ -29,7 +29,6 @@ from ragas.metrics._noise_sensitivity import (
     noise_sensitivity_relevant,
 )
 from ragas.metrics._summarization import SummarizationScore, summarization_score
-from ragas.metrics.critique import AspectCritique
 from ragas.metrics.domain_specific_rubrics import (
     RubricsScoreWithoutReference,
     RubricsScoreWithReference,
