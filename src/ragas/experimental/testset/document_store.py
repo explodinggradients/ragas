@@ -19,6 +19,9 @@ class DocumentStore:
 
     def __post_init__(self):
         if not self.extractors:
+            from ragas.experimental.testset.extractors.embedding import (
+                embedding_extractor,
+            )
             from ragas.experimental.testset.extractors.llm_based import (
                 KeyphrasesExtractor,
                 SummaryExtractor,
@@ -37,6 +40,7 @@ class DocumentStore:
                 emails_extractor,
                 links_extractor,
                 markdown_headings_extractor,
+                embedding_extractor,
             ]
 
     def add_extractor(self, extractor: BaseExtractor):

@@ -20,7 +20,7 @@ headline_extractor_prompt = Prompt(
     examples=[
         {
             "text": """
-            Some Title
+Some Title
 1. Introduction and Related Work
 
 1.1 Conditional Computation
