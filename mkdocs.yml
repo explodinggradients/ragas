@@ -4,7 +4,6 @@ repo_name: explodinggradients/ragas
 repo_url: https://github.com/explodinggradients/ragas
 exclude_docs: |
   concepts/*
-  getstarted/*
   howtos/*
   reference/*
 
@@ -12,7 +11,12 @@ exclude_docs: |
 # Navigation
 nav:
   - "": index.md
-  - 🚀 Get Started: getstarted/index.md
+  - 🚀 Get Started: 
+    - getstarted/index.md
+    - Installation: getstarted/install.md
+    - Generate a Synthetic Testset: getstarted/testset_generation.md
+    - Evaluate Using Your Testset: getstarted/evaluation.md
+    - Monitor Your RAG in Production: getstarted/monitoring.md
   - 📚 Core Concepts: concepts/index.md
   - 🛠️ How-to Guides: howtos/index.md
   - 📖 References: reference/index.md
@@ -39,6 +43,7 @@ theme:
     - navigation.sections
     - navigation.top
     - navigation.tracking
+    - navigation.indexes
     - search.suggest
     - search.highlight
 markdown_extensions:
@@ -46,9 +51,11 @@ markdown_extensions:
       anchor_linenums: true
       line_spans: __span
       pygments_lang_class: true
+  - admonition
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.details
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.emoji:
@@ -88,3 +95,4 @@ plugins:
         code_line_numbers: true
         jupyter_images: true
         jupyter_table_beautifier: true
+  - glightbox
