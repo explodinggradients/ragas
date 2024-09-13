@@ -1,16 +1,5 @@
 (core-concepts)=
 # 📚 Core Concepts
-:::{toctree}
-:caption: Concepts
-:hidden:
-
-metrics_driven
-metrics/index
-prompts
-prompt_adaptation
-testset_generation
-feedback
-:::
 
 Ragas aims to create an open standard, providing developers with the tools and techniques to leverage continual learning in their RAG applications. With Ragas, you would be able to
 

@@ -3,7 +3,10 @@ site_name: Ragas
 repo_name: explodinggradients/ragas
 repo_url: https://github.com/explodinggradients/ragas
 exclude_docs: |
-  docs/community.md
+  concepts/*
+  getstarted/*
+  howtos/*
+  reference/*
 
 
 # Navigation
@@ -42,6 +45,9 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - attr_list
   - md_in_html
 
@@ -68,6 +74,7 @@ plugins:
       execute: false
       include: ["*.ipynb"]
       ignore: ["*"]
+
       jupyter_options:
         hide_input: false
         hide_output: false
