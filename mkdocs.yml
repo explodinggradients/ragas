@@ -11,12 +11,18 @@ exclude_docs: |
 
 # Navigation
 nav:
-  - Home: index.md
+  - "": index.md
+  - 🚀 Get Started: getstarted/index.md
+  - 📚 Core Concepts: concepts/index.md
+  - 🛠️ How-to Guides: howtos/index.md
+  - 📖 References: reference/index.md
+  - ❤️ Community: community/index.md
 
 # Material-Docs Theme
 theme:
   name: material
-  logo: img/logo.png
+  logo: _static/imgs/ragas-logo.png
+  favicon: _static/favicon.ico
   palette:
     scheme: slate
     accent: white
