@@ -1,16 +1,8 @@
-(community)=
 # ❤️ Community 
 
 **"Alone we can do so little; together we can do so much." - Helen Keller**
 
 Our project thrives on the vibrant energy, diverse skills, and shared passion of our community. It's not just about code; it's about people coming together to create something extraordinary. This space celebrates every contribution, big or small, and features the amazing people who make it all happen.
-
-:::{note}
-**📅 Upcomming Events**
-
-- [Greg Loughnane's](https://www.youtube.com/@AI-Makerspace) YT live event on RAG eval with LangChain and RAGAS on [Feb 7](https://lu.ma/theartofrag)
-:::
-
 
 ## **🌟  Contributors**
 

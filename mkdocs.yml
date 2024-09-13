@@ -2,6 +2,9 @@ site_name: Ragas
 #site_url: https://jjmachan.github.io/ragasDocs
 repo_name: explodinggradients/ragas
 repo_url: https://github.com/explodinggradients/ragas
+exclude_docs: |
+  docs/community.md
+
 
 # Navigation
 nav:
@@ -63,6 +66,8 @@ plugins:
       javascript_dir: js
   - mkdocs-jupyter:
       execute: false
+      include: ["*.ipynb"]
+      ignore: ["*"]
       jupyter_options:
         hide_input: false
         hide_output: false
