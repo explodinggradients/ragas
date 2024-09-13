@@ -23,6 +23,7 @@ from ragas.executor import Executor
 from ragas.integrations.helicone import helicone_config
 from ragas.llms import llm_factory
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
+from ragas.metrics import AspectCritic
 from ragas.metrics._answer_correctness import AnswerCorrectness
 from ragas.metrics.base import (
     Metric,
@@ -32,7 +33,6 @@ from ragas.metrics.base import (
     SingleTurnMetric,
     is_reproducable,
 )
-from ragas.metrics.critique import AspectCritique
 from ragas.run_config import RunConfig
 from ragas.utils import (
     convert_v1_to_v2_dataset,
@@ -196,7 +196,7 @@ def evaluate(
     # loop through the metrics and perform initializations
     for i, metric in enumerate(metrics):
         # set llm and embeddings if not set
-        if isinstance(metric, AspectCritique):
+        if isinstance(metric, AspectCritic):
             binary_metrics.append(metric.name)
         if isinstance(metric, MetricWithLLM) and metric.llm is None:
             if llm is None:

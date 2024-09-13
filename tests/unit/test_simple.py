@@ -16,6 +16,6 @@ def test_type_casting():
 
 
 def test_import_metrics():
-    from ragas.metrics.critique import harmfulness
+    from ragas.metrics._aspect_critic import harmfulness
 
     assert harmfulness is not None
