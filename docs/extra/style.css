@@ -1,0 +1,81 @@
+body {
+  background-color: black !important;
+  color: white;
+  margin: 0;
+  padding: 0;
+  color-scheme: dark !important;
+  font-family: "Satoshi", Arial, sans-serif !important;
+}
+.md-tabs {
+  background: black !important;
+}
+.md-nav--lifted > .md-nav__list > .md-nav__item--active > .md-nav__link {
+  background: black !important;
+  box-shadow: none !important;
+}
+.md-search__scrollwrap {
+  background: black !important;
+  color: white !important;
+}
+@font-face {
+  font-family: "Satoshi";
+  src: url("./fonts/Satoshi-Variable.ttf") format("truetype"),
+    url("./fonts/Satoshi-VariableItalic.ttf") format("truetype");
+}
+.highlight-ipynb {
+  background: var(--md-code-bg-color) !important;
+  color: white !important;
+  font-size: 1.2em !important;
+  padding: 1em !important;
+}
+.jp-InputArea {
+  border-radius: 5px !important;
+  margin-bottom: 1rem !important;
+  border: none !important;
+}
+.jupyter-wrapper .zeroclipboard-container .clipboard-copy-icon {
+  width: 2em !important;
+}
+.jupyter-wrapper .jp-InputArea-editor {
+  border: none !important;
+}
+h1 {
+  font-size: 2em;
+  font-weight: 500 !important;
+  margin: 0;
+  color: white !important;
+}
+.md-nav__title {
+  color: white;
+  box-shadow: none !important;
+  background: none !important;
+}
+.md-nav__link--active {
+  color: rgb(255, 200, 0) !important;
+}
+.jp-InputArea-prompt {
+  display: none !important;
+}
+.jp-OutputArea-prompt {
+  display: none !important;
+}
+.jp-Notebook {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1em;
+}
+.md-header {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  backdrop-filter: blur(100px) !important;
+  -webkit-backdrop-filter: blur(100px) !important;
+  width: 70% !important;
+  margin: auto !important;
+  border-radius: 10px !important;
+  padding-inline: 1em !important;
+}
+.jp-MarkdownOutput {
+  color: white !important;
+  text-align: start !important;
+  width: 100% !important;
+}
