@@ -3,21 +3,17 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass, field
 
-import numpy as np
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 
 from ragas.dataset_schema import MultiTurnSample
-from ragas.llms.output_parser import RagasoutputParser
-from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM
+from ragas.experimental.llms.prompt import PydanticPrompt
+from ragas.metrics.base import MetricType, MetricWithLLM, MultiTurnMetric
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks.base import Callbacks
 
-    from ragas.llms.prompt import PromptValue
 
-
-class GoalAccuracy(BaseModel):
+class WorkflowOutput(BaseModel):
     user_goal: str = Field(
         ..., description="The task or objective the user wants to achieve."
     )
@@ -26,7 +22,16 @@ class GoalAccuracy(BaseModel):
     )
 
 
-class CompareOutcome(BaseModel):
+class CompareOutcomeInput(BaseModel):
+    desired_outcome: str = Field(
+        ..., description="The desired outcome or result of the workflow."
+    )
+    arrived_outcome: str = Field(
+        ..., description="The actual outcome or result of the workflow."
+    )
+
+
+class CompareOutcomeOutput(BaseModel):
     reason: str = Field(
         ..., description="The task or objective the user wants to achieve."
     )
@@ -35,12 +40,20 @@ class CompareOutcome(BaseModel):
     )
 
 
-GOAL_AND_STATE_PROMPT = Prompt(
-    name="goal_accuracy",
-    instruction="Given an agentic workflow comprised of Human, AI and Tools, identify the user_goal (the task or objective the user wants to achieve) and the end_state (the final outcome or result of the workflow).",
-    examples=[
-        {
-            "workflow": """
+class WorkflowInput(BaseModel):
+    workflow: str = Field(
+        ..., description="The agentic workflow comprised of Human, AI and Tools."
+    )
+
+
+class InferGoalOutcomePrompt(PydanticPrompt[WorkflowInput, WorkflowOutput]):
+    instruction = "Given an agentic workflow comprised of Human, AI and Tools, identify the user_goal (the task or objective the user wants to achieve) and the end_state (the final outcome or result of the workflow)."
+    input_model = WorkflowInput
+    output_model = WorkflowOutput
+    examples = [
+        (
+            WorkflowInput(
+                workflow="""
             Human: Hey, book a table at the nearest best Chinese restaurant for 8:00pm
             AI: Sure, let me find the best options for you.
             Tools:
@@ -54,96 +67,107 @@ GOAL_AND_STATE_PROMPT = Prompt(
             ToolOutput: Table booked at Golden Dragon for 8:00pm.
             AI: Your table at Golden Dragon is booked for 8:00pm. Enjoy your meal!
             Human: thanks
-            """,
-            "output": {
-                "user_goal": "Book a table at the nearest best Chinese restaurant for 8:00pm.",
-                "end_state": "A table is successfully booked at Golden Dragon (Chinese restaurant) for 8:00pm.",
-            },
-        }
-    ],
-    input_keys=["workflow"],
-    output_key="output",
-    language="english",
-)
+            """
+            ),
+            WorkflowOutput(
+                user_goal="Book a table at the nearest best Chinese restaurant for 8:00pm.",
+                end_state="A table is successfully booked at Golden Dragon (Chinese restaurant) for 8:00pm.",
+            ),
+        )
+    ]
 
 
-COMPARE_OUTCOME_PROMPT = Prompt(
-    name="compare_outcome",
-    instruction="Given user goal, desired outcome and acheived outcome compare them and identify if they are the same (1) or different(0).",
-    examples=[
-        {
-            "goal": "Book a table at any Chinese restaurant for 8:00pm.",
-            "desired_outcome": "A table is successfully booked at any Chinese restaurant for 8:00pm.",
-            "arrived_outcome": "A table is successfully booked at Jade Palace (Chinese restaurant) for 8:00pm.",
-            "output": {
-                "reason": "The arrived outcome is same as the desired outcome and aligns with the user goal.",
-                "verdict": "1",
-            },
-        }
-    ],
-    input_keys=["goal", "desired_outcome", "arrived_outcome"],
-    output_key="output",
-    language="english",
-)
-
-
-_goal_accuracy_output_parser = RagasoutputParser(pydantic_object=GoalAccuracy)
-_outcome_comparison_parser = RagasoutputParser(pydantic_object=CompareOutcome)
+class CompareOutcomePrompt(PydanticPrompt[CompareOutcomeInput, CompareOutcomeOutput]):
+    instruction = "Given user goal, desired outcome and acheived outcome compare them and identify if they are the same (1) or different(0)."
+    input_model = CompareOutcomeInput
+    output_model = CompareOutcomeOutput
+    examples = [
+        (
+            CompareOutcomeInput(
+                desired_outcome="A table is successfully booked at any Chinese restaurant for 8:00pm.",
+                arrived_outcome="A table is successfully booked at Jade Palace (Chinese restaurant) for 8:00pm.",
+            ),
+            CompareOutcomeOutput(
+                reason="The arrived outcome is same as the desired outcome and aligns with the user goal.",
+                verdict="1",
+            ),
+        )
+    ]
 
 
 @dataclass
-class AgentGoalAccuracy(MetricWithLLM):
+class AgentGoalAccuracyWithReference(MetricWithLLM, MultiTurnMetric):
     name: str = "agent_goal_accuracy"  # type: ignore
-    _required_columns: t.Tuple[str, ...] = ("user_input", "reference")  # type: ignore
-    evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
-    workflow_prompt: Prompt = field(default_factory=lambda: GOAL_AND_STATE_PROMPT)
-    compare_outcome_prompt: Prompt = field(
-        default_factory=lambda: COMPARE_OUTCOME_PROMPT
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.MULTI_TURN: {
+                "user_input",
+                "reference",
+            }
+        }
+    )
+    workflow_prompt: PydanticPrompt = field(
+        default_factory=lambda: InferGoalOutcomePrompt()
+    )
+    compare_outcome_prompt: PydanticPrompt = field(
+        default_factory=lambda: CompareOutcomePrompt()
     )
     max_retries: int = 1
 
-    def _create_workflow_prompt(self, sample: MultiTurnSample) -> PromptValue:
-        workflow = sample.pretty_repr()
-        return self.workflow_prompt.format(workflow=workflow)
-
-    def _create_comparison_prompt(self, row: t.Dict[str, str]) -> PromptValue:
-        return self.compare_outcome_prompt.format(
-            goal=row["goal"],
-            desired_outcome=row["desired_outcome"],
-            arrived_outcome=row["arrived_outcome"],
-        )
-
-    async def _ascore(
+    async def _multi_turn_ascore(
         self,
-        row: MultiTurnSample,
+        sample: MultiTurnSample,
         callbacks: Callbacks,
     ) -> float:
         assert self.llm is not None, "LLM is not set"
-        prompt_value = self._create_workflow_prompt(row)
-        response = await self.llm.generate(prompt_value, callbacks=callbacks)
-        response = response.generations[0][0].text
-        parsed_response = await _goal_accuracy_output_parser.aparse(
-            response, self.llm, self.max_retries
-        )
-        if parsed_response is None:
-            return np.nan
+        assert sample.reference is not None, "Reference is not set"
 
-        row_dict = {
-            "goal": parsed_response.user_goal,
-            "arrived_outcome": parsed_response.end_state,
-            "desired_outcome": row.reference,
+        prompt_input = WorkflowInput(workflow=sample.pretty_repr())
+        response = await self.workflow_prompt.generate(
+            data=prompt_input, llm=self.llm, callbacks=callbacks
+        )
+        prompt_input = CompareOutcomeInput(
+            desired_outcome=sample.reference, arrived_outcome=response.end_state
+        )
+        response = await self.compare_outcome_prompt.generate(
+            data=prompt_input, llm=self.llm, callbacks=callbacks
+        )
+        return float(response.verdict)
+
+
+@dataclass
+class AgentGoalAccuracyWithoutReference(MetricWithLLM, MultiTurnMetric):
+    name: str = "agent_goal_accuracy"  # type: ignore
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.MULTI_TURN: {
+                "user_input",
+            }
         }
+    )
+    workflow_prompt: PydanticPrompt = field(
+        default_factory=lambda: InferGoalOutcomePrompt()
+    )
+    compare_outcome_prompt: PydanticPrompt = field(
+        default_factory=lambda: CompareOutcomePrompt()
+    )
+    max_retries: int = 1
 
-        prompt = self._create_comparison_prompt(row_dict)
-        result = await self.llm.generate(prompt, callbacks=callbacks)
-        result = result.generations[0][0].text
-        parsed_response = await _outcome_comparison_parser.aparse(
-            result, self.llm, self.max_retries
+    async def _multi_turn_ascore(
+        self,
+        sample: MultiTurnSample,
+        callbacks: Callbacks,
+    ) -> float:
+        assert self.llm is not None, "LLM is not set"
+
+        prompt_input = WorkflowInput(workflow=sample.pretty_repr())
+        response = await self.workflow_prompt.generate(
+            data=prompt_input, llm=self.llm, callbacks=callbacks
         )
-        if parsed_response is None:
-            return np.nan
-        verdict = int(parsed_response.verdict)
-        return verdict
-
-
-agent_goal_accuracy = AgentGoalAccuracy()
+        prompt_input = CompareOutcomeInput(
+            desired_outcome=response.user_goal, arrived_outcome=response.end_state
+        )
+        response = await self.compare_outcome_prompt.generate(
+            data=prompt_input, llm=self.llm, callbacks=callbacks
+        )
+        return float(response.verdict)
