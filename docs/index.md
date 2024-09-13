@@ -1,12 +1,4 @@
 # Introduction
-:::{toctree}
-:hidden:
-getstarted/index.md
-concepts/index.md
-howtos/index.md
-references/index.rst
-community/index.md
-:::
 
 Ragas is a framework that helps you evaluate your Retrieval Augmented Generation (RAG) pipelines. RAG denotes a class of LLM applications that use external data to augment the LLM’s context. There are existing tools and frameworks that help you build these pipelines but evaluating it and quantifying your pipeline performance can be hard. This is where Ragas (RAG Assessment) comes in.
 

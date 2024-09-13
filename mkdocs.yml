@@ -1,0 +1,72 @@
+site_name: Ragas
+#site_url: https://jjmachan.github.io/ragasDocs
+repo_name: explodinggradients/ragas
+repo_url: https://github.com/explodinggradients/ragas
+
+# Navigation
+nav:
+  - Home: index.md
+
+# Material-Docs Theme
+theme:
+  name: material
+  logo: img/logo.png
+  palette:
+    scheme: slate
+    accent: white
+  features:
+    - content.tabs.link
+    - content.code.annotate
+    - content.code.copy
+    - announce.dismiss
+    - navigation.tabs
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.path
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - search.suggest
+    - search.highlight
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+
+# Extra CSS
+extra_css:
+  - extra/style.css
+
+# Plugins
+extra:
+  version:
+    provider: mike
+plugins:
+  - search
+  - mkdocstrings
+  - mike:
+      alias_type: symlink
+      redirect_template: null
+      deploy_prefix: ''
+      canonical_version: null
+      version_selector: true
+      css_dir: css
+      javascript_dir: js
+  - mkdocs-jupyter:
+      execute: false
+      jupyter_options:
+        hide_input: false
+        hide_output: false
+        code_folding: true
+        code_line_numbers: true
+        jupyter_images: true
+        jupyter_table_beautifier: true

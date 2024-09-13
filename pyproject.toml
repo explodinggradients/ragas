@@ -24,6 +24,13 @@ all = [
     "fuzzywuzzy",
     "rapidfuzz",
 ]
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material",
+    "mkdocs-jupyter",
+    "mkdocstrings[python]",
+    "mike"
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
