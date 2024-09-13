@@ -163,7 +163,7 @@ class FaithfulnessExperimental(MetricWithLLM, SingleTurnMetric):
     name: str = "faithfulness_experimental"  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
-            MetricType.SINGLE_TURN: {"user_input", "response", "retreived_contexts"}
+            MetricType.SINGLE_TURN: {"user_input", "response", "retrieved_contexts"}
         }
     )
     sentence_segmenter: t.Optional[HasSegmentMethod] = None
