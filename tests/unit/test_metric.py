@@ -44,7 +44,7 @@ def test_single_turn_metric():
 
     class FakeMetric(SingleTurnMetric):
         name = "fake_metric"
-        _required_columns = ("user_input", "response")
+        _required_columns = {MetricType.SINGLE_TURN: {"user_input", "response"}}
 
         def init(self, run_config):
             pass
