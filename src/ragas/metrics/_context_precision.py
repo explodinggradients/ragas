@@ -209,7 +209,7 @@ class LLMContextPrecisionWithoutReference(LLMContextPrecisionWithReference):
     name: str = "llm_context_precision_without_reference"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
-            MetricType.SINGLE_TURN: {"user_input", "response", "retreived_contexts"}
+            MetricType.SINGLE_TURN: {"user_input", "response", "retrieved_contexts"}
         }
     )
 
