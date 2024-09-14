@@ -31,6 +31,7 @@ class MultiTurnSample(BaseEvalSample):
     user_input: t.List[t.Union[HumanMessage, AIMessage, ToolMessage]]
     reference: t.Optional[str] = None
     reference_tool_calls: t.Optional[t.List[ToolCall]] = None
+    rubrics: t.Optional[t.Dict[str, str]] = None
 
     @validator("user_input")
     def validate_messages(cls, messages):
