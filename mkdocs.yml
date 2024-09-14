@@ -3,7 +3,6 @@ site_name: Ragas
 repo_name: explodinggradients/ragas
 repo_url: https://github.com/explodinggradients/ragas
 exclude_docs: |
-  concepts/*
   howtos/*
   reference/*
 
@@ -17,7 +16,14 @@ nav:
     - Generate a Synthetic Testset: getstarted/testset_generation.md
     - Evaluate Using Your Testset: getstarted/evaluation.md
     - Monitor Your RAG in Production: getstarted/monitoring.md
-  - 📚 Core Concepts: concepts/index.md
+  - 📚 Core Concepts: 
+    - concepts/index.md
+    - Evaluation Driven Development: concepts/evaluation_driven.md
+    - Metrics: concepts/metrics/index.md
+    - Synthetic Test Data Generation: concepts/testset_generation.md
+    - Prompt Object: concepts/prompts.md
+    - Prompt Adaptation: concepts/prompt_adaptation.md
+    - Utilizing User Feedback: concepts/feedback.md
   - 🛠️ How-to Guides: howtos/index.md
   - 📖 References: reference/index.md
   - ❤️ Community: community/index.md

@@ -97,9 +97,11 @@ If you want to delve deeper into the results and identify examples where your pi
 df = result.to_pandas()
 df.head()
 ```
-<p align="left">
-<img src="_static/imgs/quickstart-output.png" alt="quickstart-outputs" width="800" height="600" />
-</p>
+
+<figure markdown="span">
+  ![Evaluation Output](../_static/imgs/quickstart-output.png){width="800"}
+  <figcaption>Evaluation Output</figcaption>
+</figure>
 
 That's all!
 

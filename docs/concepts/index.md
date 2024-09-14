@@ -1,4 +1,3 @@
-(core-concepts)=
 # 📚 Core Concepts
 
 Ragas aims to create an open standard, providing developers with the tools and techniques to leverage continual learning in their RAG applications. With Ragas, you would be able to
@@ -9,10 +8,8 @@ Ragas aims to create an open standard, providing developers with the tools and t
 4. Use these insights to iterate and improve your application.
 
 
-(what-is-rag)=
-:::{dropdown} what is RAG and continual learning?
-```{rubric} RAG
-```
+## What is RAG and continual learning?
+### RAG
 
 Retrieval augmented generation (RAG) is a paradigm for augmenting LLM with custom data. It generally consists of two stages:
 
@@ -20,35 +17,26 @@ Retrieval augmented generation (RAG) is a paradigm for augmenting LLM with custo
 
 - querying stage: retrieving relevant context from the knowledge to assist the LLM in responding to a question
 
-```{rubric} Continual Learning
-```
+### Continual Learning
 
 Continual learning is concept used in machine learning that aims to learn, iterate and improve ML pipelines over its lifetime using the insights derived from continuous stream of data points.  In LLM & RAGs, this can be applied by iterating and improving each components of LLM application from insights derived from production and feedback data.
-:::
 
-::::{grid} 2
+<div class="grid cards" markdown>
 
-:::{grid-item-card} Metrics Driven Development
-:link: mdd
-:link-type: ref
-What is MDD?
-:::
+- [Evaluation Driven Development](evaluation_driven.md)
 
-:::{grid-item-card} Ragas Metrics
-:link: ragas-metrics
-:link-type: ref
-What metrics are available? How do they work?
-:::
+    What is EDD?
 
-:::{grid-item-card} Synthetic Test Data Generation
-:link: testset-generation
-:link-type: ref
-How to create more datasets to test on?
-:::
+- [Ragas Metrics](metrics/index.md)
 
-:::{grid-item-card} Utilizing User Feedback
-:link: user-feedback
-:link-type: ref
-How to leverage the signals from user to improve?
-:::
-::::
+    What metrics are available? How do they work?
+
+- [Synthetic Test Data Generation](testset_generation.md)
+
+    How to create more datasets to test on?
+
+- [Utilizing User Feedback](feedback.md)
+
+    How to leverage the signals from user to improve?
+
+</div>
