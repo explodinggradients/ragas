@@ -19,7 +19,18 @@ nav:
   - 📚 Core Concepts: 
     - concepts/index.md
     - Evaluation Driven Development: concepts/evaluation_driven.md
-    - Metrics: concepts/metrics/index.md
+    - Metrics: 
+      - concepts/metrics/index.md
+      - Faithfulness: concepts/metrics/faithfulness.md
+      - Answer Relevance: concepts/metrics/answer_relevance.md
+      - Context Recall: concepts/metrics/context_recall.md
+      - Context Precision: concepts/metrics/context_precision.md
+      - Context Utilization: concepts/metrics/context_utilization.md
+      - Context Entities Recall: concepts/metrics/context_entities_recall.md
+      - Noise Sensitivity: concepts/metrics/noise_sensitivity.md
+      - Summarization Score: concepts/metrics/summarization_score.md
+      - Answer Correctness: concepts/metrics/answer_correctness.md
+      - Answer Semantic Similarity: concepts/metrics/semantic_similarity.md
     - Synthetic Test Data Generation: concepts/testset_generation.md
     - Prompt Object: concepts/prompts.md
     - Prompt Adaptation: concepts/prompt_adaptation.md
@@ -69,6 +80,8 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - attr_list
   - md_in_html
+  - pymdownx.arithmatex:
+      generic: true
 
 # Extra CSS
 extra_css:
@@ -102,3 +115,7 @@ plugins:
         jupyter_images: true
         jupyter_table_beautifier: true
   - glightbox
+
+extra_javascript:
+  - _static/js/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js

@@ -1,5 +1,3 @@
-
-
 # Context Recall
 
 Context recall measures the extent to which the retrieved context aligns with the annotated answer, treated as the ground truth. It is computed using `question`, `ground truth` and the retrieved `context`, and the values range between 0 and 1, with higher values indicating better performance.
@@ -8,25 +6,22 @@ A reference free version of this is available as [context_utilization](context_u
 
 The formula for calculating context recall is as follows:
 
-```{math}
+$$
 \text{context recall} = {|\text{GT claims that can be attributed to context}| \over |\text{Number of claims in GT}|}
-```
+$$
 
-```{hint}
+!!! example
+    Question: Where is France and what is it's capital?
 
-Question: Where is France and what is it's capital?
+    Ground truth: France is in Western Europe and its capital is Paris. 
 
-Ground truth: France is in Western Europe and its capital is Paris. 
+    High context recall: France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. Paris, its capital, is famed for its fashion houses, classical art museums including the Louvre and monuments like the Eiffel Tower.
 
-High context recall: France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. Paris, its capital, is famed for its fashion houses, classical art museums including the Louvre and monuments like the Eiffel Tower.
-
-Low context recall: France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. The country is also renowned for its wines and sophisticated cuisine. Lascaux’s ancient cave drawings, Lyon’s Roman theater and the vast Palace of Versailles attest to its rich history.
-```
+    Low context recall: France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. The country is also renowned for its wines and sophisticated cuisine. Lascaux’s ancient cave drawings, Lyon’s Roman theater and the vast Palace of Versailles attest to its rich history.
 
 ## Example
 
-```{code-block} python
-:caption: Context recall
+```python
 from datasets import Dataset 
 from ragas.metrics import context_recall
 from ragas import evaluate
@@ -56,7 +51,8 @@ Let's examine how context recall was calculated using the low context recall exa
     - Statement 2: No
 
 - **Step 3:** Use the formula depicted above to calculate context recall.
-    ```{math}
+
+    $$
     \text{context recall} = { \text{1} \over \text{2} } = 0.5
-    ``` 
+    $$ 
 
