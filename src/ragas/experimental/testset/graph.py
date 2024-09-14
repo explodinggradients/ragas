@@ -29,12 +29,15 @@ class Node(BaseModel):
 class Relationship(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     type: str
-    properties: dict
     source: Node
     target: Node
+    properties: dict = Field(default_factory=dict)
 
     def __repr__(self) -> str:
-        return f"Relationship(type: {self.type}, properties: {self.properties.keys()}, source: {self.source}, target: {self.target})"
+        return f"Node(id: {str(self.source.id)[:6]}) -> Node(id: {str(self.target.id)[:6]}), type: {self.type}, properties: {list(self.properties.keys())})"
+
+    def __str__(self) -> str:
+        return self.__repr__()
 
 
 @dataclass

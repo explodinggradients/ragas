@@ -1,6 +1,5 @@
 import logging
 import typing as t
-import uuid
 from dataclasses import dataclass, field
 
 from ragas.executor import Executor
