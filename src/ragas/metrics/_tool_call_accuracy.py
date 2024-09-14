@@ -1,25 +1,22 @@
 from __future__ import annotations
 
 import typing as t
+import warnings
 from dataclasses import dataclass, field
+
+import numpy as np
 
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.messages import AIMessage
 from ragas.metrics._string import ExactMatch
-from ragas.metrics.base import (
-    MetricType,
-    MetricWithLLM,
-    MultiTurnMetric,
-    SingleTurnMetric,
-)
-import numpy as np
+from ragas.metrics.base import MetricType, MultiTurnMetric, SingleTurnMetric
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks.base import Callbacks
 
 
 @dataclass
-class ToolCallAccuracy(MetricWithLLM, MultiTurnMetric):
+class ToolCallAccuracy(MultiTurnMetric):
     name: str = "tool_call_accuracy"  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
@@ -31,9 +28,6 @@ class ToolCallAccuracy(MetricWithLLM, MultiTurnMetric):
     )
 
     arg_comparison_metric: SingleTurnMetric = ExactMatch()
-
-    def __post_init__(self):
-        self.exact_match = ExactMatch()
 
     async def _get_arg_score(
         self, preds: t.Dict[str, t.Any], refs: t.Dict[str, t.Any], callbacks: Callbacks
@@ -53,12 +47,11 @@ class ToolCallAccuracy(MetricWithLLM, MultiTurnMetric):
     async def _multi_turn_ascore(
         self, sample: MultiTurnSample, callbacks: Callbacks
     ) -> float:
-        assert self.llm is not None, "LLM is not set"
         assert sample.reference_tool_calls is not None, "Reference is not set"
 
         if isinstance(sample.user_input[-1], AIMessage):
             if sample.user_input[-1].tool_calls is None:
-                return 0.0
+                return np.nan
 
             score = 0.0
             reference_tool_calls = sample.reference_tool_calls
@@ -72,4 +65,8 @@ class ToolCallAccuracy(MetricWithLLM, MultiTurnMetric):
 
             return score / len(reference_tool_calls)
         else:
+            warnings.warn("Last message is not an AIMessage with ToolCalls")
             return np.nan
+
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        return await self._multi_turn_ascore(MultiTurnSample(**row), callbacks)
