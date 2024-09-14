@@ -29,6 +29,9 @@ class ToolCallAccuracy(MultiTurnMetric):
 
     arg_comparison_metric: SingleTurnMetric = ExactMatch()
 
+    def init(self, run_config):
+        pass
+
     async def _get_arg_score(
         self, preds: t.Dict[str, t.Any], refs: t.Dict[str, t.Any], callbacks: Callbacks
     ) -> float:
