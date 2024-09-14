@@ -2,6 +2,7 @@ import typing as t
 from dataclasses import dataclass
 
 import numpy as np
+
 from ragas_experimental.testset.graph import Node
 from ragas_experimental.testset.relationships.base import Similarity
 
