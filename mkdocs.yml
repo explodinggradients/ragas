@@ -38,6 +38,12 @@ nav:
     - howtos/index.md
     - Customisations: 
       - howtos/customisations/index.md
+      - howtos/customisations/bring-your-own-llm-or-embs.md
+      - howtos/customisations/ragas_custom_model.ipynb 
+      - howtos/customisations/run_config.ipynb
+      - howtos/customisations/azure-openai.ipynb
+      - howtos/customisations/aws-bedrock.ipynb
+      - howtos/customisations/gcp-vertexai.ipynb
     - Applications: 
       - howtos/applications/index.md
       - howtos/applications/data_preparation.md
