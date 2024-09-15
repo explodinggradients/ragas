@@ -3,7 +3,6 @@ site_name: Ragas
 repo_name: explodinggradients/ragas
 repo_url: https://github.com/explodinggradients/ragas
 exclude_docs: |
-  howtos/*
   reference/*
 
 
@@ -35,7 +34,34 @@ nav:
     - Prompt Object: concepts/prompts.md
     - Prompt Adaptation: concepts/prompt_adaptation.md
     - Utilizing User Feedback: concepts/feedback.md
-  - 🛠️ How-to Guides: howtos/index.md
+  - 🛠️ How-to Guides: 
+    - howtos/index.md
+    - Customisations: 
+      - howtos/customisations/index.md
+    - Applications: 
+      - howtos/applications/index.md
+      - howtos/applications/data_preparation.md
+      - Measure Cost and Usage: howtos/applications/cost.ipynb
+      - howtos/applications/compare_embeddings.md
+      - howtos/applications/compare_llms.md
+      - howtos/applications/custom_prompts.md
+      - howtos/applications/use_prompt_adaptation.md
+      - howtos/applications/tracing.md
+      - howtos/applications/add_to_ci.md
+    - Integrations: 
+      - howtos/integrations/index.md
+      - Llamaindex: howtos/integrations/llamaindex.ipynb
+      - Langchain: howtos/integrations/langchain.ipynb
+      - Langsmith: howtos/integrations/langsmith.ipynb
+      - howtos/integrations/arize.ipynb
+      - howtos/integrations/langfuse.ipynb
+      - howtos/integrations/athina.ipynb
+      - howtos/integrations/zeno.ipynb
+      - howtos/integrations/tonic-validate.ipynb
+      - howtos/integrations/haystack.ipynb
+      - howtos/integrations/openlayer.ipynb
+      - howtos/integrations/helicone.ipynb
+      - howtos/integrations/opik.ipynb
   - 📖 References: reference/index.md
   - ❤️ Community: community/index.md
 
@@ -100,13 +126,12 @@ plugins:
       deploy_prefix: ''
       canonical_version: null
       version_selector: true
-      css_dir: css
-      javascript_dir: js
+      css_dir: _static/css
+      javascript_dir: _static/js
   - mkdocs-jupyter:
       execute: false
       include: ["*.ipynb"]
-      ignore: ["*"]
-
+      ignore: ["*.md"]
       jupyter_options:
         hide_input: false
         hide_output: false

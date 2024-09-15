@@ -34,7 +34,7 @@ test-e2e: ## Run end2end tests
 	
 # Docs
 docsite: ## Build and serve documentation
-	@mkdocs serve
+	@mkdocs serve --dirty
 rewrite-docs: ## Use GPT4 to rewrite the documentation
 	@echo "Rewriting the documentation in directory $(DIR)..."
 	@python $(GIT_ROOT)/docs/python alphred.py --directory $(DIR)

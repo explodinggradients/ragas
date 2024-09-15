@@ -10,7 +10,7 @@ This is a tutorial notebook showcasing how to successfully use ragas with data f
 ### Dataset
 Here I’m using a dataset containing all the relevant columns in Hindi language. 
 
-```{code-block} python
+```python
 
 from datasets import load_dataset, Dataset
 
@@ -18,7 +18,7 @@ hindi_dataset = load_dataset("explodinggradients/amnesty_qa","hindi")
 hindi_dataset
 ```
 
-```{code-block}
+```text
 DatasetDict({
     train: Dataset({
         features: ['question', 'ground_truth', 'answer', 'contexts'],
@@ -31,7 +31,7 @@ DatasetDict({
 
 Import any metrics from Ragas as required and adapt and save each one of them to the target language using `adapt` function. Optionally you can also specify which llm to use for prompt adaptation, here I am using `gpt-4`. It is highly recommended to use the best llm here as quality of adapted prompts highly influence the results. 
 
-```{code-block} python
+```python
 
 from ragas.metrics import (
     faithfulness,
@@ -50,15 +50,14 @@ The prompts belonging to respective metrics will be now automatically adapted to
 
 Let’s inspect the adapted prompt belonging to the answer correctness metric
 
-```{note}
-When adapting prompts, it is recommended to review them manually prior to evaluation, as language models may introduce errors during translation
-````
+!!! note
+    When adapting prompts, it is recommended to review them manually prior to evaluation, as language models may introduce errors during translation
 
-
-```{code-block} python
+```python
 print(answer_correctness.correctness_prompt.to_string())
 ```
-```{code-block}
+
+```text
 Extract the following from the given question and the ground truth
 
 question: "सूरज को क्या चलाता है और इसका प्राथमिक कार्य क्या है?"
@@ -81,7 +80,7 @@ The instruction and key objects are kept unchanged intentionally to allow consum
 
 ### Evaluate
 
-```{code-block} python
+```python
 from ragas import evaluate
 
 ragas_score = evaluate(dataset['train'], metrics=[faithfulness,answer_correctness])
@@ -98,14 +97,14 @@ This is a tutorial notebook showcasing how to successfully use ragas test data g
 Here I'm using a corpus of wikipedia articles written in Hindi. You can download the articles by 
 
 
-```{code-block} bash
+```bash
 git lfs install
 git clone https://huggingface.co/datasets/explodinggradients/hindi-wikipedia
 ```
 
 Now you can load the documents using a document loader, here I am using `DirectoryLoader`
 
-```{code-block} python
+```python
 from langchain_community.document_loaders import DirectoryLoader
 
 loader = DirectoryLoader("./hindi-wikipedia/")
@@ -121,7 +120,7 @@ for document in documents:
 Now we can import all the required evolutions and adapt it using `generator.adapt`. This will also adapt all the necessary filters required for the corresponding evolutions. Once adapted, it's better to save and inspect the adapted prompts. 
 
 
-```{code-block} python
+```python
 
 from ragas.testset.generator import TestsetGenerator
 from ragas.testset.evolutions import simple, reasoning, multi_context,conditional
@@ -148,7 +147,7 @@ generator.save(evolutions=[simple, reasoning, multi_context,conditional])
 ### Generate dataset
 Once adapted you can use the evolutions and generator just like before to generate data samples for any given distribution.
 
-```{code-block} python
+```python
 # determine distribution
 
 distributions = {
