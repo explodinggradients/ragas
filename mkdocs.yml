@@ -68,7 +68,9 @@ nav:
       - howtos/integrations/openlayer.ipynb
       - howtos/integrations/helicone.ipynb
       - howtos/integrations/opik.ipynb
-  - 📖 References: reference/index.md
+  - 📖 References: 
+    - references/index.md
+    - Evaluation: references/evaluation.md
   - ❤️ Community: community/index.md
 
 # Material-Docs Theme
