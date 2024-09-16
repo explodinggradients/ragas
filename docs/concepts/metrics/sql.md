@@ -55,3 +55,50 @@ To change the mode to column-wise comparison, set the `mode` parameter to `colum
 ```{code-block} python
 scorer = DataCompyScore(mode="column", metric="recall")
 ```
+
+## Non Execution based metrics
+
+Executing SQL queries on the database can be time-consuming and sometimes not feasible. In such cases, we can use non-execution based metrics to evaluate the SQL queries. These metrics compare the SQL queries directly without executing them on the database.
+
+### SQL Query Semantic equivalence
+
+SQL Query Semantic equivalence is a metric that can be used to evaluate the equivalence of `response` query with `reference` query. The metric also needs database schema to be used when comparing queries, this is inputted in `reference_contexts`. This metric is a binary metric, with 1 indicating that the SQL queries are semantically equivalent and 0 indicating that the SQL queries are not semantically equivalent.
+
+```{code-block} python
+from ragas.metrics._sql_semantic_equivalence import LLMSqlEquivalenceWithReference
+from ragas.dataset_schema import SingleTurnSample
+
+sample = SingleTurnSample(
+    response="""
+        SELECT p.product_name, SUM(oi.quantity) AS total_quantity
+        FROM order_items oi
+        JOIN products p ON oi.product_id = p.product_id
+        GROUP BY p.product_name;
+    """,
+    reference="""
+        SELECT p.product_name, COUNT(oi.quantity) AS total_quantity
+        FROM order_items oi
+        JOIN products p ON oi.product_id = p.product_id
+        GROUP BY p.product_name;
+    """,
+    reference_contexts=[
+        """
+        Table order_items:
+        - order_item_id: INT
+        - order_id: INT
+        - product_id: INT
+        - quantity: INT
+        """,
+        """
+        Table products:
+        - product_id: INT
+        - product_name: VARCHAR
+        - price: DECIMAL
+        """
+    ]
+)
+
+scorer = LLMSqlEquivalenceWithReference()
+scorer.llm = openai_model
+await scorer.single_turn_ascore(sample)
+```
