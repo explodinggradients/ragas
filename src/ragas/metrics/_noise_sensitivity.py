@@ -44,7 +44,7 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
             MetricType.SINGLE_TURN: {
                 "user_input",
                 "response",
-                "ground_truth",
+                "reference",
                 "retrieved_contexts",
             }
         }
@@ -257,7 +257,7 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
         answers["retrieved2ground_truth"] = np.array(gt_verdictslist).T
         answers["retrieved2answer"] = np.array(ans_verdictslist).T
         answers["ground_truth2answer"] = await self._evaluate_statement_faithfulness(
-            ans_statements, row["ground_truth"], callbacks
+            ans_statements, row["reference"], callbacks
         )
         answers["ground_truth2answer"] = np.array([answers["ground_truth2answer"]])
         answers = {k: v.astype(bool) for k, v in answers.items()}
