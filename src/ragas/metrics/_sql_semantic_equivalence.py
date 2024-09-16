@@ -82,7 +82,7 @@ class LLMSqlEquivalenceWithReference(MetricWithLLM, SingleTurnMetric):
             sample.reference_contexts, list
         ), "Sample reference_contexts must be a List"
 
-        database_schema = " ".join(sample.reference_contexts)
+        database_schema = "\n".join(sample.reference_contexts)
         input_data = EquivalenceInput(
             reference=sample.reference,
             response=sample.response,
@@ -91,7 +91,7 @@ class LLMSqlEquivalenceWithReference(MetricWithLLM, SingleTurnMetric):
         response = await self.equivalence_prompt.generate(
             data=input_data, llm=self.llm, callbacks=callbacks
         )
-        return response.equivalence
+        return int(response.equivalence)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
