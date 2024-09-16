@@ -1,7 +1,6 @@
 import typing as t
 
 try:
-    from opik import opik_context
     from opik.integrations.langchain import (
         OpikTracer as LangchainOpikTracer,
     )  # type: ignore
