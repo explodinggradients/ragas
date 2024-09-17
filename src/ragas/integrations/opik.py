@@ -1,9 +1,9 @@
 import typing as t
 
 try:
-    from opik.integrations.langchain import (  # type: ignore
+    from opik.integrations.langchain import (
         OpikTracer as LangchainOpikTracer,
-    )
+    )  # type: ignore
 
     from ragas.evaluation import RAGAS_EVALUATION_CHAIN_NAME
 except ImportError:
@@ -29,37 +29,34 @@ class OpikTracer(LangchainOpikTracer):
 
     _evaluation_run_id: t.Optional[str] = None
 
-    def _persist_run(self, run: "Run"):
-        # The _persist_run function is called by LangChain if it is a root run,
-        # we update it so that we don't log the root run if we are running an evaluation.
-        if run.id != self._evaluation_run_id:
-            super()._persist_run(run)
-
-    def _on_chain_start(self, run: "Run"):
+    def _process_start_trace(self, run: "Run"):
         if (run.parent_run_id is None) and (run.name == RAGAS_EVALUATION_CHAIN_NAME):
             # Store the evaluation run id so we can flag the child traces and log them independently
-            self._evaluation_run_id = str(run.id)
+            self._evaluation_run_id = run.id
         else:
-            # Each child trace of the "ragas evaluation" chain should be a new trace
             if run.parent_run_id == self._evaluation_run_id:
                 run.parent_run_id = None
 
-            super()._on_chain_start(run)
+        super()._process_start_trace(run)
 
-    def _on_chain_end(self, run: "Run"):
-        if run.id == self._evaluation_run_id:
-            pass
-        else:
-            # We want to log the output row chain as feedback scores as these align with the Opik terminology of "feedback scores"
-            if run.name.startswith("row ") and (self._evaluation_run_id is not None):
-                span = self._span_map[run.id]
-                trace_id = span.trace_id
+    def _process_end_trace(self, run: "Run"):
+        if run.id != self._evaluation_run_id:
+            if run.name.startswith("row "):
+                trace_data = self._created_traces_data_map[run.id]
                 if run.outputs:
                     self._opik_client.log_traces_feedback_scores(
                         [
-                            {"id": trace_id, "name": name, "value": round(value, 4)}
+                            {
+                                "id": trace_data.id,
+                                "name": name,
+                                "value": round(value, 4),
+                            }
                             for name, value in run.outputs.items()
                         ]
                     )
 
-            self._persist_run(run)
+            super()._process_end_trace(run)
+
+    def _persist_run(self, run: "Run"):
+        if run.id != self._evaluation_run_id:
+            super()._persist_run(run)
