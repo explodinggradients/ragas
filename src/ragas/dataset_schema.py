@@ -30,6 +30,7 @@ class SingleTurnSample(BaseEvalSample):
 class MultiTurnSample(BaseEvalSample):
     user_input: t.List[t.Union[HumanMessage, AIMessage, ToolMessage]]
     reference: t.Optional[str] = None
+    reference_topics: t.Optional[t.List[str]] = None
 
     @validator("user_input")
     def validate_messages(cls, messages):
@@ -58,9 +59,13 @@ class MultiTurnSample(BaseEvalSample):
     def to_messages(self):
         return [m.dict() for m in self.user_input]
 
-    def pretty_repr(self):
+    def pretty_repr(self, ignore_tool_output=False):
         lines = []
         for m in self.user_input:
+            if isinstance(m, ToolMessage) and ignore_tool_output:
+                continue
+            if isinstance(m, AIMessage) and ignore_tool_output:
+                m = AIMessage(content=m.content)
             lines.append(m.pretty_repr())
 
         return "\n".join(lines)
