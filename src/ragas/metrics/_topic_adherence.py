@@ -161,9 +161,9 @@ class TopicAdherenceScore(MetricWithLLM, MultiTurnMetric):
                 data=prompt_input, llm=self.llm, callbacks=callbacks
             )
             topic_answered_verdict.append(response.refused_to_answer)
-        topic_answered_verdict = np.array([
-            not answer for answer in topic_answered_verdict
-        ])
+        topic_answered_verdict = np.array(
+            [not answer for answer in topic_answered_verdict]
+        )
 
         prompt_input = TopicClassificationInput(
             reference_topics=sample.reference_topics, topics=topics
