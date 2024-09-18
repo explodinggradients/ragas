@@ -5,7 +5,7 @@ dependencies = [
     "datasets",
     "tiktoken",
     "langchain",
-    "langchain-core<3",
+    "langchain-core<0.3",
     "langchain-community",
     "langchain_openai",
     "openai>1",
