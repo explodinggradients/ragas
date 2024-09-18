@@ -23,6 +23,8 @@ all = [
     "rouge_score",
     "fuzzywuzzy",
     "rapidfuzz",
+    "pandas",
+    "datacompy",
 ]
 
 [tool.setuptools]
