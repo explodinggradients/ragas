@@ -31,6 +31,7 @@ class Relationship(BaseModel):
     type: str
     source: Node
     target: Node
+    bidirectional: bool = False
     properties: dict = Field(default_factory=dict)
 
     def __repr__(self) -> str:
