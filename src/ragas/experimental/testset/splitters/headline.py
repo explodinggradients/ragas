@@ -32,7 +32,9 @@ class HeadlineSplitter(Splitter):
         chunks = [text[indices[i] : indices[i + 1]] for i in range(len(indices) - 1)]
 
         # create the nodes
-        nodes = [Node(properties={"page_content": chunk}) for chunk in chunks]
+        nodes = [
+            Node(type="chunk", properties={"page_content": chunk}) for chunk in chunks
+        ]
 
         # create the relationships for children
         relationships = []

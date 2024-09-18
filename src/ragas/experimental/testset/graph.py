@@ -34,7 +34,7 @@ class Relationship(BaseModel):
     properties: dict = Field(default_factory=dict)
 
     def __repr__(self) -> str:
-        return f"Node(id: {str(self.source.id)[:6]}) -> Node(id: {str(self.target.id)[:6]}), type: {self.type}, properties: {list(self.properties.keys())})"
+        return f"Relationship(Node(id: {str(self.source.id)[:6]}) -> Node(id: {str(self.target.id)[:6]}), type: {self.type}, properties: {list(self.properties.keys())})"
 
     def __str__(self) -> str:
         return self.__repr__()
@@ -61,3 +61,9 @@ class KnowledgeGraph:
         for rel in self.relationships:
             if rel.id == id:
                 return rel
+
+    def __repr__(self) -> str:
+        return f"KnowledgeGraph(nodes: {len(self.nodes)}, relationships: {len(self.relationships)})"
+
+    def __str__(self) -> str:
+        return self.__repr__()

@@ -1,12 +1,11 @@
 import typing as t
 from dataclasses import dataclass
 
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 
 from ragas.experimental.prompt import PydanticPrompt, StringIO
 from ragas.experimental.testset.extractors.base import LLMBasedExtractor
 from ragas.experimental.testset.graph import Node
-from ragas.llms.base import BaseRagasLLM
 
 
 # define prompts

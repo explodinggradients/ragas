@@ -3,8 +3,7 @@ from __future__ import annotations
 import typing as t
 from abc import ABC, abstractmethod
 
-import pydantic
-from pydantic import BaseModel
+from pydantic import VERSION, BaseModel
 
 from ragas.llms.output_parser import RagasoutputParser
 from ragas.llms.prompt import PromptValue
@@ -14,7 +13,7 @@ if t.TYPE_CHECKING:
 
     from ragas.llms.base import BaseRagasLLM
 
-PYDANTIC_V2 = pydantic.VERSION.startswith("2.")
+PYDANTIC_V2 = VERSION.startswith("2.")
 
 
 class BasePrompt(ABC):
