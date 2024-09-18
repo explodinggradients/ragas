@@ -54,13 +54,6 @@ if t.TYPE_CHECKING:
 RAGAS_EVALUATION_CHAIN_NAME = "ragas evaluation"
 
 
-def test_evaluate(dataset: Dataset, llm: BaseRagasLLM, embeddings: BaseRagasEmbeddings):
-    """
-    test_evaluate
-    """
-    print("test_evaluate")
-
-
 @track_was_completed
 def evaluate(
     dataset: t.Union[Dataset, EvaluationDataset],
@@ -487,14 +480,6 @@ class Result(dict):
         )
 
     def __repr__(self) -> str:
-        """
-        Return a string representation of the result.
-
-        Returns
-        -------
-        str
-            The string representation of the result.
-        """
         scores = self.copy()
         score_strs = [f"'{k}': {v:0.4f}" for k, v in scores.items()]
         return "{" + ", ".join(score_strs) + "}"
