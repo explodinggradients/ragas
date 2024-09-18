@@ -32,6 +32,7 @@ class MultiTurnSample(BaseEvalSample):
     reference: t.Optional[str] = None
     reference_tool_calls: t.Optional[t.List[ToolCall]] = None
     rubrics: t.Optional[t.Dict[str, str]] = None
+    reference_topics: t.Optional[t.List[str]] = None
 
     @validator("user_input")
     def validate_messages(cls, messages):

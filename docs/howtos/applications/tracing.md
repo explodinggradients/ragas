@@ -12,7 +12,7 @@ export LANGCHAIN_API_KEY=<your-api-key>
 export LANGCHAIN_PROJECT=<your-project>  # if not specified, defaults to "default"
 ```
 
-Now we have to import the required tracer from langchain, here we are using `LangChainTracer` but you can similarly use any tracer supported by langchain like [WandbTracer](https://python.langchain.com/docs/integrations/providers/wandb_tracing) or [OpikTracer](https://comet.com/docs/opik/tracing/integrations/ragas?utm_source=ragas&utm_medium=github&utm_campaign=opik&utm_content=tracing_how_to)
+Now we have to import the required tracer from langchain, here we are using `LangChainTracer` but you can similarly use any tracer supported by langchain like [WandbTracer](https://python.langchain.com/docs/integrations/providers/wandb_tracing) or [OpikTracer](https://comet.com/docs/opik/tracing/integrations/ragas?utm_source=ragas&utm_medium=docs&utm_campaign=opik&utm_content=tracing_how_to)
 
 ```{code-block} python
 # langsmith
