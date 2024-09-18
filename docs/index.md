@@ -30,6 +30,6 @@ Ragas is a framework that helps you evaluate your Retrieval Augmented Generation
 
     Technical descriptions of how Ragas classes and methods work.
 
-    [:octicons-arrow-right-24: References](reference/index.md)
+    [:octicons-arrow-right-24: References](references/index.md)
 
 </div>

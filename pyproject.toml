@@ -29,9 +29,11 @@ docs = [
     "mkdocs-material",
     "mkdocs-jupyter",
     "mkdocstrings[python]",
-    "mike",
     "mkdocs-glightbox",
     "mkdocs-autorefs",
+    "mkdocs-gen-files",
+    "mkdocs-literate-nav",
+    "mkdocs-section-index",
 ]
 [tool.setuptools]
 package-dir = {"" = "src"}

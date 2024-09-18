@@ -2,8 +2,8 @@ site_name: Ragas
 #site_url: https://jjmachan.github.io/ragasDocs
 repo_name: explodinggradients/ragas
 repo_url: https://github.com/explodinggradients/ragas
-exclude_docs: |
-  reference/*
+watch:
+  - src
 
 
 # Navigation
@@ -70,7 +70,9 @@ nav:
       - howtos/integrations/opik.ipynb
   - 📖 References: 
     - references/index.md
-    - Evaluation: references/evaluation.md
+    - references/evaluation.md
+    - references/metrics.md
+    - references/run_config.md
   - ❤️ Community: community/index.md
 
 # Material-Docs Theme
@@ -127,15 +129,11 @@ extra:
     provider: mike
 plugins:
   - search
-  - mkdocstrings
-  - mike:
-      alias_type: symlink
-      redirect_template: null
-      deploy_prefix: ''
-      canonical_version: null
-      version_selector: true
-      css_dir: _static/css
-      javascript_dir: _static/js
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
   - mkdocs-jupyter:
       execute: false
       include: ["*.ipynb"]
