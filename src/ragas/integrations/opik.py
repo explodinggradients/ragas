@@ -1,9 +1,9 @@
 import typing as t
 
 try:
-    from opik.integrations.langchain import (
+    from opik.integrations.langchain import (  # type: ignore
         OpikTracer as LangchainOpikTracer,
-    )  # type: ignore
+    )
 
     from ragas.evaluation import RAGAS_EVALUATION_CHAIN_NAME
 except ImportError:
@@ -32,7 +32,7 @@ class OpikTracer(LangchainOpikTracer):
     def _process_start_trace(self, run: "Run"):
         if (run.parent_run_id is None) and (run.name == RAGAS_EVALUATION_CHAIN_NAME):
             # Store the evaluation run id so we can flag the child traces and log them independently
-            self._evaluation_run_id = run.id
+            self._evaluation_run_id = str(run.id)
         else:
             if run.parent_run_id == self._evaluation_run_id:
                 run.parent_run_id = None
