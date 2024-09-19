@@ -34,6 +34,14 @@ class Node(BaseModel):
     def get_property(self, key: str) -> t.Optional[t.Any]:
         return self.properties.get(key.lower(), None)
 
+    def __hash__(self) -> int:
+        return hash(self.id)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Node):
+            return self.id == other.id
+        return False
+
 
 class Relationship(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
@@ -43,11 +51,22 @@ class Relationship(BaseModel):
     bidirectional: bool = False
     properties: dict = Field(default_factory=dict)
 
+    def get_property(self, key: str) -> t.Optional[t.Any]:
+        return self.properties.get(key.lower(), None)
+
     def __repr__(self) -> str:
-        return f"Relationship(Node(id: {str(self.source.id)[:6]}) -> Node(id: {str(self.target.id)[:6]}), type: {self.type}, properties: {list(self.properties.keys())})"
+        return f"Relationship(Node(id: {str(self.source.id)[:6]}) {'<->' if self.bidirectional else '->'} Node(id: {str(self.target.id)[:6]}), type: {self.type}, properties: {list(self.properties.keys())})"
 
     def __str__(self) -> str:
         return self.__repr__()
+
+    def __hash__(self) -> int:
+        return hash(self.id)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Relationship):
+            return self.id == other.id
+        return False
 
 
 @dataclass
@@ -68,17 +87,6 @@ class KnowledgeGraph:
 
     def _add_relationship(self, relationship: Relationship):
         self.relationships.append(relationship)
-
-    def get_node_by_id(self, id: uuid.UUID) -> t.Optional[Node]:
-        for node in self.nodes:
-            if node.id == id:
-                return node
-        return None
-
-    def get_relationship_by_id(self, id):
-        for rel in self.relationships:
-            if rel.id == id:
-                return rel
 
     def save(self, path: t.Union[str, Path]):
         if isinstance(path, str):
@@ -112,3 +120,36 @@ class KnowledgeGraph:
 
     def __str__(self) -> str:
         return self.__repr__()
+
+    def find_clusters(
+        self, relationship_condition: t.Callable[[Relationship], bool] = lambda _: True
+    ) -> t.List[t.Set[Node]]:
+        clusters = []
+        visited = set()
+
+        relationships = [
+            rel for rel in self.relationships if relationship_condition(rel)
+        ]
+
+        def dfs(node: Node, cluster: t.Set[Node]):
+            visited.add(node)
+            cluster.add(node)
+            for rel in relationships:
+                if rel.source == node and rel.target not in visited:
+                    dfs(rel.target, cluster)
+                # if the relationship is bidirectional, we need to check the reverse
+                elif (
+                    rel.bidirectional
+                    and rel.target == node
+                    and rel.source not in visited
+                ):
+                    dfs(rel.source, cluster)
+
+        for node in self.nodes:
+            if node not in visited:
+                cluster = set()
+                dfs(node, cluster)
+                if len(cluster) > 1:
+                    clusters.append(cluster)
+
+        return clusters
