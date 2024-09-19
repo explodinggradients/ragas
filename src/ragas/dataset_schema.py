@@ -4,7 +4,7 @@ import typing as t
 from datasets import Dataset
 from langchain_core.pydantic_v1 import BaseModel, validator
 
-from ragas.messages import AIMessage, HumanMessage, ToolMessage
+from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 
 
 class BaseEvalSample(BaseModel):
@@ -30,6 +30,9 @@ class SingleTurnSample(BaseEvalSample):
 class MultiTurnSample(BaseEvalSample):
     user_input: t.List[t.Union[HumanMessage, AIMessage, ToolMessage]]
     reference: t.Optional[str] = None
+    reference_tool_calls: t.Optional[t.List[ToolCall]] = None
+    rubrics: t.Optional[t.Dict[str, str]] = None
+    reference_topics: t.Optional[t.List[str]] = None
 
     @validator("user_input")
     def validate_messages(cls, messages):

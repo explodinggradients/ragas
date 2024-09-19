@@ -3,7 +3,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 from langchain_core.callbacks import Callbacks
-from rapidfuzz import distance
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics.base import MetricType, SingleTurnMetric
@@ -14,13 +13,6 @@ class DistanceMeasure(Enum):
     LEVENSHTEIN = "levenshtein"
     HAMMING = "hamming"
     JARO = "jaro"
-
-
-DISTANCE_MEASURE_MAP = {
-    DistanceMeasure.LEVENSHTEIN: distance.Levenshtein,
-    DistanceMeasure.HAMMING: distance.Hamming,
-    DistanceMeasure.JARO: distance.Jaro,
-}
 
 
 @dataclass
@@ -42,6 +34,7 @@ class ExactMatch(SingleTurnMetric):
         return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
 
 
+@dataclass
 class StringPresent(SingleTurnMetric):
     name: str = "string_present"  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
@@ -64,12 +57,27 @@ class StringPresent(SingleTurnMetric):
         return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
 
 
-class StringDistance(SingleTurnMetric):
-    name: str = "string_distance"  # type: ignore
+@dataclass
+class NonLLMStringSimilarity(SingleTurnMetric):
+    name: str = "non_llm_string_similarity"  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
     )
     distance_measure: DistanceMeasure = DistanceMeasure.LEVENSHTEIN
+
+    def __post_init__(self):
+        try:
+            from rapidfuzz import distance
+        except ImportError:
+            raise ImportError(
+                "rapidfuzz is required for string distance. Please install it using `pip install rapidfuzz`"
+            )
+
+        self.distance_measure_map = {
+            DistanceMeasure.LEVENSHTEIN: distance.Levenshtein,
+            DistanceMeasure.HAMMING: distance.Hamming,
+            DistanceMeasure.JARO: distance.Jaro,
+        }
 
     def init(self, run_config: RunConfig):
         pass
@@ -81,7 +89,7 @@ class StringDistance(SingleTurnMetric):
         response = sample.response
         assert isinstance(reference, str), "Expecting a string"
         assert isinstance(response, str), "Expecting a string"
-        return 1 - DISTANCE_MEASURE_MAP[self.distance_measure].normalized_distance(
+        return 1 - self.distance_measure_map[self.distance_measure].normalized_distance(
             reference, response
         )
 

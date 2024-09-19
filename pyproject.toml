@@ -5,7 +5,7 @@ dependencies = [
     "datasets",
     "tiktoken",
     "langchain",
-    "langchain-core",
+    "langchain-core<0.3",
     "langchain-community",
     "langchain_openai",
     "openai>1",
@@ -26,6 +26,8 @@ all = [
     "rouge_score",
     "fuzzywuzzy",
     "rapidfuzz",
+    "pandas",
+    "datacompy",
 ]
 
 [tool.setuptools]

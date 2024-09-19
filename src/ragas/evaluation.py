@@ -23,6 +23,7 @@ from ragas.executor import Executor
 from ragas.integrations.helicone import helicone_config
 from ragas.llms import llm_factory
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
+from ragas.metrics import AspectCritic
 from ragas.metrics._answer_correctness import AnswerCorrectness
 from ragas.metrics.base import (
     Metric,
@@ -32,9 +33,13 @@ from ragas.metrics.base import (
     SingleTurnMetric,
     is_reproducable,
 )
-from ragas.metrics.critique import AspectCritique
 from ragas.run_config import RunConfig
-from ragas.utils import REQUIRED_COLS_v1, get_feature_language, safe_nanmean
+from ragas.utils import (
+    convert_v1_to_v2_dataset,
+    convert_v2_to_v1_dataset,
+    get_feature_language,
+    safe_nanmean,
+)
 from ragas.validation import (
     remap_column_names,
     validate_required_columns,
@@ -61,6 +66,7 @@ def evaluate(
     token_usage_parser: t.Optional[TokenUsageParser] = None,
     raise_exceptions: bool = False,
     column_map: t.Optional[t.Dict[str, str]] = None,
+    show_progress: bool = True,
 ) -> Result:
     """
     Run the evaluation on the dataset with different metrics
@@ -104,6 +110,8 @@ def evaluate(
         the dataset are different from the default ones then you can provide the
         mapping as a dictionary here. Example: If the dataset column name is contexts_v1,
         column_map can be given as {"contexts":"contexts_v1"}
+    show_progress: bool, optional
+        Whether to show the progress bar during evaluation. If set to False, the progress bar will be disabled. Default is True.
 
     Returns
     -------
@@ -164,7 +172,7 @@ def evaluate(
         # remap column names from the dataset
         v1_input = True
         dataset = remap_column_names(dataset, column_map)
-        dataset = remap_column_names(dataset, REQUIRED_COLS_v1)
+        dataset = convert_v1_to_v2_dataset(dataset)
         # validation
         dataset = EvaluationDataset.from_list(dataset.to_list())
 
@@ -188,7 +196,7 @@ def evaluate(
     # loop through the metrics and perform initializations
     for i, metric in enumerate(metrics):
         # set llm and embeddings if not set
-        if isinstance(metric, AspectCritique):
+        if isinstance(metric, AspectCritic):
             binary_metrics.append(metric.name)
         if isinstance(metric, MetricWithLLM) and metric.llm is None:
             if llm is None:
@@ -218,6 +226,7 @@ def evaluate(
         keep_progress_bar=True,
         raise_exceptions=raise_exceptions,
         run_config=run_config,
+        show_progress=show_progress,
     )
 
     # Ragas Callbacks
@@ -310,8 +319,7 @@ def evaluate(
         # convert to v.1 dataset
         dataset = dataset.to_hf_dataset()
         if v1_input:
-            cols = {k: v for v, k in REQUIRED_COLS_v1.items()}
-            dataset = remap_column_names(dataset, cols)
+            dataset = convert_v2_to_v1_dataset(dataset)
 
         cost_cb = ragas_callbacks["cost_cb"] if "cost_cb" in ragas_callbacks else None
         result = Result(
