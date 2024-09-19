@@ -180,12 +180,11 @@ class ClaimDecompositionPrompt(
     """
     input_model = ClaimDecompositionInput
     output_model = ClaimDecompositionOutput
-    examples = []
 
 
 @dataclass
 class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
-    name: str = "factual_correctness" # type: ignore
+    name: str = "factual_correctness"  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"response", "reference"}}
     )
@@ -211,6 +210,7 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
     async def decompose_claims(
         self, response: str, callbacks: Callbacks
     ) -> t.List[str]:
+        assert self.llm is not None, "LLM must be set"
         sentences = self.segmenter.segment(response)
         assert isinstance(sentences, list), "Segmenter must return a list of sentences"
         prompt_input = ClaimDecompositionInput(response=response, sentences=sentences)
@@ -225,6 +225,7 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
     async def verify_claims(
         self, premise: str, hypothesis_list: t.List[str], callbacks: Callbacks
     ) -> NDArray[np.bool_]:
+        assert self.llm is not None, "LLM must be set"
         prompt_input = NLIStatementInput(context=premise, statements=hypothesis_list)
         response = await self.nli_prompt.generate(
             data=prompt_input, llm=self.llm, callbacks=callbacks
