@@ -18,11 +18,11 @@ class HeadlineSplitter(Splitter):
     def split(self, node: Node) -> t.Tuple[t.List[Node], t.List[Relationship]]:
         text = node.get_property("page_content")
         if text is None:
-            raise ValueError("'page_content' is not set for this node")
+            raise ValueError("'page_content' property not found in this node")
 
         headlines = node.get_property("headlines")
         if headlines is None:
-            raise ValueError("'headlines' is not set for this node")
+            raise ValueError("'headlines' property not found in this node")
 
         # create the chunks for the different sections
         indices = []

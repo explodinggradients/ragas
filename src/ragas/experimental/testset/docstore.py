@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class DocumentStore:
     extractors: t.List[BaseExtractor] = field(default_factory=list)
-    knowledge_graph: KnowledgeGraph = field(default_factory=KnowledgeGraph)
+    kg: KnowledgeGraph = field(default_factory=KnowledgeGraph)
     llm: BaseRagasLLM = field(default_factory=llm_factory)
 
     def __post_init__(self):
@@ -22,6 +22,7 @@ class DocumentStore:
                 embedding_extractor,
             )
             from ragas.experimental.testset.extractors.llm_based import (
+                HeadlinesExtractor,
                 KeyphrasesExtractor,
                 SummaryExtractor,
                 TitleExtractor,
@@ -36,6 +37,7 @@ class DocumentStore:
                 SummaryExtractor(llm=self.llm),
                 KeyphrasesExtractor(llm=self.llm),
                 TitleExtractor(llm=self.llm),
+                HeadlinesExtractor(llm=self.llm),
                 emails_extractor,
                 links_extractor,
                 markdown_headings_extractor,
@@ -69,5 +71,5 @@ class DocumentStore:
         for node in nodes:
             for extractor in self.extractors:
                 exec.submit(extract_with_node_id, node, extractor)
-            self.knowledge_graph.add_node(node)
+            self.kg._add_node(node)
         exec.results()
