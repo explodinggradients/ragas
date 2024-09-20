@@ -48,13 +48,6 @@ Now, we'll import and use Ragas' `TestsetGenerator` to quickly generate a synthe
     generator_llm = ChatOpenAI(model="gpt-3.5-turbo-16k")
     critic_llm = ChatOpenAI(model="gpt-4")
     embeddings = OpenAIEmbeddings()
-
-    generator = TestsetGenerator.from_langchain(
-        generator_llm,
-        critic_llm,
-        embeddings
-    )
-
     ```
 
 === "AWS Bedrock"
@@ -102,15 +95,12 @@ Now, we'll import and use Ragas' `TestsetGenerator` to quickly generate a synthe
 Now you can generate the testset
 
 ```python
-testset = generator.generate_with_langchain_docs(
-    documents, 
-    test_size=10, 
-    distributions={
-        "simple": 0.5, 
-        "reasoning": 0.25, 
-        "multi_context": 0.25
-    }
+generator = TestsetGenerator.from_langchain(
+    generator_llm,
+    critic_llm,
+    embeddings
 )
+testset = generator.generate_with_langchain_docs(documents, test_size=10, distributions={simple: 0.5, reasoning: 0.25, multi_context: 0.25})
 ```
 
 !!! note
