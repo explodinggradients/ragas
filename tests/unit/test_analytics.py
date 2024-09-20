@@ -90,7 +90,7 @@ def test_load_userid_from_json_file(tmp_path, monkeypatch):
     with open(userid_filepath, "w") as f:
         import json
 
-        json.dump({"userid": "test-userid"}, f)
+        json.dump({"userid": "test-userid"}, f, ensure_ascii=False)
 
     from ragas._analytics import get_userid
 
