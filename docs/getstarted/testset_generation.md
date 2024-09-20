@@ -1,12 +1,7 @@
 # Generate a Synthetic Testset
 
-This tutorial guides you in creating a synthetic evaluation dataset for assessing your RAG pipeline. For this purpose, we will utilize OpenAI models. Ensure that your OpenAI API key is readily accessible within your environment.
+This tutorial guides you in creating a synthetic evaluation dataset for assessing your RAG pipeline. 
 
-```python
-import os
-
-os.environ["OPENAI_API_KEY"] = "your-openai-key"
-```
 
 ## Documents
 
@@ -34,25 +29,90 @@ At this point, we have a set of documents ready to be used as a foundation for g
 
 Now, we'll import and use Ragas' `TestsetGenerator` to quickly generate a synthetic test set from the loaded documents.
 
+=== "OpenAI"
+    First, set your OpenAI API key.
+    ```python
+    import os
+
+    os.environ["OPENAI_API_KEY"] = "your-openai-key"
+    ```
+
+    Now you can generate the testset.
+
+    ```python
+    from ragas.testset.generator import TestsetGenerator
+    from ragas.testset.evolutions import simple, reasoning, multi_context
+    from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+
+    # generator with openai models
+    generator_llm = ChatOpenAI(model="gpt-3.5-turbo-16k")
+    critic_llm = ChatOpenAI(model="gpt-4")
+    embeddings = OpenAIEmbeddings()
+
+    generator = TestsetGenerator.from_langchain(
+        generator_llm,
+        critic_llm,
+        embeddings
+    )
+
+    ```
+
+=== "AWS Bedrock"
+    First you have to set your AWS credentials and configurations
+
+    ```python
+    config = {
+        "credentials_profile_name": "your-profile-name",  # E.g "default"
+        "region_name": "your-region-name",  # E.g. "us-east-1"
+        "model_id": "your-model-id",  # E.g "anthropic.claude-v2"
+        "model_kwargs": {"temperature": 0.4},
+        }
+    ```
+
+    ```python
+    from langchain_aws.chat_models import BedrockChat
+    from langchain_aws.embeddings import BedrockEmbeddings
+    
+    # llm Wrapper
+    from ragas.llms import LangchainLLMWrapper
+    from ragas.embeddings import LangchainEmbeddingWrapper
+
+    critic_llm = LangchainLLMWrapper(BedrockChat(
+        credentials_profile_name=config["credentials_profile_name"],
+        region_name=config["region_name"],
+        endpoint_url=f"https://bedrock-runtime.{config['region_name']}.amazonaws.com",
+        model_id=config["model_id"],
+        model_kwargs=config["model_kwargs"],
+    ))
+    generator_llm = LangchainLLMWrapper(BedrockChat(
+        credentials_profile_name=config["credentials_profile_name"],
+        region_name=config["region_name"],
+        endpoint_url=f"https://bedrock-runtime.{config['region_name']}.amazonaws.com",
+        model_id=config["model_id"],
+        model_kwargs=config["model_kwargs"],
+    ))
+
+    # init the embeddings
+    embeddings = LangchainEmbeddingWrapper(BedrockEmbeddings(
+        credentials_profile_name=config["credentials_profile_name"],
+        region_name=config["region_name"],
+    ))
+    ```
+
+Now you can generate the testset
+
 ```python
-from ragas.testset.generator import TestsetGenerator
-from ragas.testset.evolutions import simple, reasoning, multi_context
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-
-# generator with openai models
-generator_llm = ChatOpenAI(model="gpt-3.5-turbo-16k")
-critic_llm = ChatOpenAI(model="gpt-4")
-embeddings = OpenAIEmbeddings()
-
-generator = TestsetGenerator.from_langchain(
-    generator_llm,
-    critic_llm,
-    embeddings
+testset = generator.generate_with_langchain_docs(
+    documents, 
+    test_size=10, 
+    distributions={
+        "simple": 0.5, 
+        "reasoning": 0.25, 
+        "multi_context": 0.25
+    }
 )
-
-# generate testset
-testset = generator.generate_with_langchain_docs(documents, test_size=10, distributions={simple: 0.5, reasoning: 0.25, multi_context: 0.25})
 ```
+
 !!! note
     Depending on which LLM provider you're using, you might have to configure the `llm` and `embeddings` parameter in the function. Check the [Bring your own LLM guide](../howtos/customisations/bring-your-own-llm-or-embs.md) to learn more.
 
