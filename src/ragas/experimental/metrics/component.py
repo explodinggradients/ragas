@@ -167,7 +167,11 @@ class TextClassificationNLIComponent(BaseNLIComponent):
         for i in range(0, len(prompt_input_list), self.batch_size):
             prompt_input_list_batch = prompt_input_list[i : i + self.batch_size]
             response = self.hf_pipeline(prompt_input_list_batch, **self.model_kwargs)
-            response = [item[0]["label"] == self.label for item in response]
+            assert isinstance(response, list), "Response should be a list"
+            assert all(
+                isinstance(item, dict) for item in response
+            ), "Items in response should be dictionaries"
+            response = [item[0].get("label") == self.label for item in response]  # type: ignore
             scores.extend(response)
 
         return scores
