@@ -3,9 +3,10 @@ from __future__ import annotations
 import logging
 import typing as t
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from pydantic import BaseModel, Field
+from transformers import AutoTokenizer, Pipeline, pipeline
 
 from ragas.experimental.llms.prompt import PydanticPrompt
 from ragas.llms.base import BaseRagasLLM
@@ -94,7 +95,7 @@ class NLIStatementPrompt(PydanticPrompt[NLIStatementInput, NLIStatementOutput]):
 class BaseNLIComponent(ABC):
     @abstractmethod
     async def apply(
-        self, hypothesis: str, premises: t.List[str], callbacks: Callbacks
+        self, hypothesis: t.List[str], premise: str, callbacks: Callbacks
     ) -> t.List[bool]:
         """
         Apply the NLI component to a list of premises and a hypothesis.
@@ -108,10 +109,10 @@ class LLMNLIComponent(BaseNLIComponent):
     nli_prompt: PydanticPrompt = NLIStatementPrompt()
 
     async def apply(
-        self, hypothesis: str, premises: t.List[str], callbacks: Callbacks
+        self, hypothesis: t.List[str], premise: str, callbacks: Callbacks
     ) -> t.List[bool]:
         assert self.llm is not None, "LLM must be set"
-        prompt_input = NLIStatementInput(context=hypothesis, statements=premises)
+        prompt_input = NLIStatementInput(context=premise, statements=hypothesis)
         response = await self.nli_prompt.generate(
             data=prompt_input, llm=self.llm, callbacks=callbacks
         )
@@ -119,40 +120,54 @@ class LLMNLIComponent(BaseNLIComponent):
 
 
 @dataclass
-class SequenceClassificationNLIComponent(BaseNLIComponent):
-    pretrained_model_name_or_path: str = "vectara/hallucination_evaluation_model"
+class TextClassificationNLIComponent(BaseNLIComponent):
+    hf_pipeline: Pipeline
+    prompt: str
+    label: str
     batch_size: int = 32
-    device: str = "cpu"
+    model_kwargs: t.Dict[str, t.Any] = field(default_factory=dict)
 
     def __post_init__(self):
-        try:
-            from transformers import AutoModelForSequenceClassification
-        except ImportError:
-            raise ImportError(
-                "Huggingface transformers must be installed to use this feature, try `pip install transformers`"
-            )
-        except Exception as e:
-            raise RuntimeError("Failed to load the model") from e
-        self.model = AutoModelForSequenceClassification.from_pretrained(
-            self.pretrained_model_name_or_path, trust_remote_code=True
-        )
-        self.model.to(self.device)
+        if "{premise}" not in self.prompt or "{hypothesis}" not in self.prompt:
+            raise ValueError("Prompt should not contain 'premise' or 'hypothesis'")
 
-    def _create_batch(
-        self, pairs: t.List[t.Tuple[str, str]]
-    ) -> t.Generator[t.List[t.Tuple[str, str]], None, None]:
-        length_of_pairs = len(pairs)
-        for ndx in range(0, length_of_pairs, self.batch_size):
-            yield pairs[ndx : min(ndx + self.batch_size, length_of_pairs)]
+        self.model_kwargs["top_k"] = 1
+
+    @classmethod
+    def from_model_id(
+        cls,
+        model_id: str,
+        prompt: str,
+        label: str,
+        model_kwargs: t.Dict[str, t.Any] = {},
+        pipeline_kwargs: t.Dict[str, t.Any] = {},
+    ) -> TextClassificationNLIComponent:
+        tokenizer = AutoTokenizer.from_pretrained(model_id)
+        hf_pipeline = pipeline(
+            "text-classification",
+            model=model_id,
+            tokenizer=tokenizer,
+            **pipeline_kwargs,
+        )
+
+        return cls(
+            hf_pipeline=hf_pipeline,
+            prompt=prompt,
+            label=label,
+            model_kwargs=model_kwargs,
+        )
 
     async def apply(
-        self, hypothesis: str, premises: t.List[str], callbacks: Callbacks
+        self, hypothesis: t.List[str], premise: str, callbacks: Callbacks = None
     ) -> t.List[bool]:
         scores = []
-        pairs = [(hypothesis, premise) for premise in premises]
-        batch_pairs = self._create_batch(pairs)
-        for input_pairs in batch_pairs:  # to avoid OOM
-            batch_scores = self.model.predict(input_pairs).cpu().detach().round()
-            scores += batch_scores
+        prompt_input_list = [
+            self.prompt.format(hypothesis=text, premise=premise) for text in hypothesis
+        ]
+        for i in range(0, len(prompt_input_list), self.batch_size):
+            prompt_input_list_batch = prompt_input_list[i : i + self.batch_size]
+            response = self.hf_pipeline(prompt_input_list_batch, **self.model_kwargs)
+            response = [item[0]["label"] == self.label for item in response]
+            scores.extend(response)
 
-        return [bool(score) for score in scores]
+        return scores
