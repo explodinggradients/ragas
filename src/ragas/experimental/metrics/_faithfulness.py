@@ -230,7 +230,7 @@ class FaithfulnessExperimental(MetricWithLLM, SingleTurnMetric):
             for statement in component.simpler_statements
         ]
         verdicts = await self.nli_component.apply(
-            hypothesis=contexts, premises=statements, callbacks=callbacks
+            hypothesis=statements, premise=contexts, callbacks=callbacks
         )
 
         # compute the score
