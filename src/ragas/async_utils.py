@@ -1,7 +1,28 @@
 """Async utils."""
 
 import asyncio
+import typing as t
 from typing import Any, Coroutine, List
+
+from ragas.executor import Executor
+
+
+def run_async(
+    desc: str,
+    func: t.Callable,
+    kwargs_list: t.List[t.Dict] = [],
+):
+    executor = Executor(
+        desc=desc,
+        keep_progress_bar=True,
+        raise_exceptions=True,
+        run_config=None,
+    )
+
+    for kwargs in kwargs_list:
+        executor.submit(func, **kwargs)
+
+    return executor.results()
 
 
 def run_async_tasks(
