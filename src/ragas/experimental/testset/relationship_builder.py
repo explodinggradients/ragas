@@ -5,13 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from ragas.experimental.testset.graph import KnowledgeGraph, Relationship
-
-
-@dataclass
-class RelationshipBuilder(ABC):
-    @abstractmethod
-    def build(self, graph: KnowledgeGraph) -> t.List[Relationship]:
-        pass
+from ragas.experimental.testset.graph_transforms import RelationshipBuilder
 
 
 @dataclass
@@ -43,12 +37,12 @@ class CosineSimilarityBuilder(RelationshipBuilder):
             if pair[0] < pair[1]
         ]
 
-    def build(self, graph: KnowledgeGraph) -> t.List[Relationship]:
+    async def transform(self, kg: KnowledgeGraph) -> t.List[Relationship]:
         if self.attribute is None:
             self.attribute = "embedding"
 
         embeddings = []
-        for node in graph.nodes:
+        for node in kg.nodes:
             embedding = node.get_property(self.attribute)
             if embedding is None:
                 raise ValueError(f"Node {node.id} has no {self.attribute}")
@@ -60,8 +54,8 @@ class CosineSimilarityBuilder(RelationshipBuilder):
 
         return [
             Relationship(
-                source=graph.nodes[i],
-                target=graph.nodes[j],
+                source=kg.nodes[i],
+                target=kg.nodes[j],
                 type="cosine_similarity",
                 properties={"cosine_similarity": similarity_float},
                 bidirectional=True,

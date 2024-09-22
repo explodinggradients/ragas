@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 from ragas.experimental.testset.graph import Node
+from ragas.experimental.testset.graph_transforms import Extractor
 from ragas.llms.base import BaseRagasLLM, llm_factory
 
 
@@ -19,6 +20,6 @@ class BaseExtractor(ABC):
 
 
 @dataclass
-class LLMBasedExtractor(BaseExtractor):
+class LLMBasedExtractor(Extractor):
     llm: BaseRagasLLM = field(default_factory=llm_factory)
     merge_if_possible: bool = True

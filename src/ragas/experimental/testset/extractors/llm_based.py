@@ -113,10 +113,10 @@ class SummaryExtractor(LLMBasedExtractor):
     property_name: str = "summary"
     prompt: SummaryExtractorPrompt = SummaryExtractorPrompt()
 
-    async def _extract(self, node: Node) -> t.Any:
+    async def extract(self, node: Node) -> t.Tuple[str, t.Any]:
         node_text = node.get_property("page_content")
         if node_text is None:
-            return None
+            return self.property_name, None
         result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
         return self.property_name, result.text
 
@@ -126,7 +126,7 @@ class KeyphrasesExtractor(LLMBasedExtractor):
     property_name: str = "keyphrases"
     prompt: KeyphrasesExtractorPrompt = KeyphrasesExtractorPrompt()
 
-    async def _extract(self, node: Node) -> t.Tuple[str, t.Any]:
+    async def extract(self, node: Node) -> t.Tuple[str, t.Any]:
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, None
@@ -139,7 +139,7 @@ class TitleExtractor(LLMBasedExtractor):
     property_name: str = "title"
     prompt: TitleExtractorPrompt = TitleExtractorPrompt()
 
-    async def _extract(self, node: Node) -> t.Tuple[str, t.Any]:
+    async def extract(self, node: Node) -> t.Tuple[str, t.Any]:
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, None
@@ -152,7 +152,7 @@ class HeadlinesExtractor(LLMBasedExtractor):
     property_name: str = "headlines"
     prompt: HeadlinesExtractorPrompt = HeadlinesExtractorPrompt()
 
-    async def _extract(self, node: Node) -> t.Tuple[str, t.Any]:
+    async def extract(self, node: Node) -> t.Tuple[str, t.Any]:
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, None

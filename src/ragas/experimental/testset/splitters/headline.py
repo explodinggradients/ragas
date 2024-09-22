@@ -1,21 +1,14 @@
-import re
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from ragas.experimental.testset.graph import Node, Relationship
-
-
-@dataclass
-class Splitter(ABC):
-    @abstractmethod
-    def split(self, node: Node) -> t.Tuple[t.List[Node], t.List[Relationship]]:
-        pass
+from ragas.experimental.testset.graph_transforms import Splitter
 
 
 @dataclass
 class HeadlineSplitter(Splitter):
-    def split(self, node: Node) -> t.Tuple[t.List[Node], t.List[Relationship]]:
+    async def split(self, node: Node) -> t.Tuple[t.List[Node], t.List[Relationship]]:
         text = node.get_property("page_content")
         if text is None:
             raise ValueError("'page_content' property not found in this node")
