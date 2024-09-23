@@ -55,3 +55,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 write_to = "src/ragas/_version.py"
+
+[tool.pytest.ini_options]
+addopts = "-n 4"
