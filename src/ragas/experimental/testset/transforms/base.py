@@ -1,8 +1,9 @@
 import typing as t
 from abc import ABC, abstractmethod
-
+from dataclasses import dataclass, field
 
 from ragas.experimental.testset.graph import KnowledgeGraph, Node, Relationship
+from ragas.llms import BaseRagasLLM, llm_factory
 
 
 class BaseGraphTransformations(ABC):
@@ -106,6 +107,12 @@ class Extractor(BaseGraphTransformations):
             A tuple containing the property name and the extracted value.
         """
         pass
+
+
+@dataclass
+class LLMBasedExtractor(Extractor):
+    llm: BaseRagasLLM = field(default_factory=llm_factory)
+    merge_if_possible: bool = True
 
 
 class Splitter(BaseGraphTransformations):
