@@ -1,5 +1,3 @@
-
-
 # Noise Sensitivity
 
 Noise sensitivity measures how often a system makes errors by providing incorrect responses when utilizing either relevant or irrelevant retrieved documents. The score ranges from 0 to 1, with lower values indicating better performance. Noise sensitivity is computed using the question, ground truth, answer, and the retrieved context.
@@ -7,30 +5,26 @@ Noise sensitivity measures how often a system makes errors by providing incorrec
 To estimate noise sensitivity, each claim in the generated answer is examined to determine whether it is correct based on the ground truth and whether it can be attributed to the relevant (or irrelevant) retrieved context. Ideally, all claims in the answer should be supported by the relevant retrieved context.
 
 
-```{math}
+$$
 \text{noise sensitivity (relevant)} = {|\text{Number of incorrect claims in answer}| \over |\text{Number of claims in the Answer}|}
-```
+$$
 
-```{Hint}
+!!! example
+    Question: What is the Life Insurance Corporation of India (LIC) known for?
 
-Question: What is the Life Insurance Corporation of India (LIC) known for?
+    Ground truth: The Life Insurance Corporation of India (LIC) is the largest insurance company in India, established in 1956 through the nationalization of the insurance industry. It is known for managing a large portfolio of investments.
 
-Ground truth: The Life Insurance Corporation of India (LIC) is the largest insurance company in India, established in 1956 through the nationalization of the insurance industry. It is known for managing a large portfolio of investments.
-
-Relevant Retrieval: 
-    - The Life Insurance Corporation of India (LIC) was established in 1956 following the nationalization of the insurance industry in India.
-    - LIC is the largest insurance company in India, with a vast network of policyholders and a significant role in the financial sector.
-    - As the largest institutional investor in India, LIC manages a substantial life fund, contributing to the financial stability of the country.
-       
-Irrelevant Retrieval: 
-    - The Indian economy is one of the fastest-growing major economies in the world, thanks to the secors like finance, technology, manufacturing etc.
-```
-
+    Relevant Retrieval: 
+        - The Life Insurance Corporation of India (LIC) was established in 1956 following the nationalization of the insurance industry in India.
+        - LIC is the largest insurance company in India, with a vast network of policyholders and a significant role in the financial sector.
+        - As the largest institutional investor in India, LIC manages a substantial life fund, contributing to the financial stability of the country.
+        
+    Irrelevant Retrieval: 
+        - The Indian economy is one of the fastest-growing major economies in the world, thanks to the secors like finance, technology, manufacturing etc.
 
 ## Example
 
-```{code-block} python
-:caption: Noise Sensitivity
+```python
 from datasets import Dataset 
 from ragas.metrics import noise_sensitivity_relevant, noise_sensitivity_irrelevant
 from ragas import evaluate
@@ -92,9 +86,11 @@ Let's examine how noise sensitivity in relevant context was calculated:
     Total claims: 3
 
 - **Step 4:** Calculate noise sensitivity using the formula:
-    ```{math}
+
+    $$
     \text{noise sensitivity} = { \text{1} \over \text{3} } = 0.333
-    ``` 
+    $$ 
+
 This results in a noise sensitivity score of 0.333, indicating that one out of three claims in the answer was incorrect.
 
 

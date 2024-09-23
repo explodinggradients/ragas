@@ -26,7 +26,17 @@ all = [
     "pandas",
     "datacompy",
 ]
-
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material",
+    "mkdocs-jupyter",
+    "mkdocstrings[python]",
+    "mkdocs-glightbox",
+    "mkdocs-autorefs",
+    "mkdocs-gen-files",
+    "mkdocs-literate-nav",
+    "mkdocs-section-index",
+]
 [tool.setuptools]
 package-dir = {"" = "src"}
 

@@ -10,16 +10,13 @@ it produces more reproducable metrics but will be more costlier.
 
 You can easily write a pytest test as follows
 
-:::{note}
-This dataset that is already populated with outputs from a reference RAG
-When testing your own system make sure you use outputs from RAG pipeline 
-you want to test. For more information on how to build your datasets check 
-[Building HF `Dataset` with your own Data](./data_preparation.md) docs.
-:::
+!!! note
+    This dataset that is already populated with outputs from a reference RAG
+    When testing your own system make sure you use outputs from RAG pipeline 
+    you want to test. For more information on how to build your datasets check 
+    [Building HF `Dataset` with your own Data](./data_preparation.md) docs.
 
-```{code-block} python
-:caption: tests/e2e/test_amnesty_e2e.py
-:linenos:
+```python
 import pytest
 from datasets import load_dataset
 
@@ -59,8 +56,7 @@ def test_amnesty_e2e():
 Because these are long end-to-end test one thing that you can leverage is [Pytest Markers](https://docs.pytest.org/en/latest/example/markers.html) which help you mark your tests with special tags. It is recommended to mark Ragas tests with special tags so you can run them only when needed.
 
 To add a new `ragas_ci` tag to pytest add the following to your `conftest.py`
-```{code-block} python
-:caption: conftest.py
+```python
 def pytest_configure(config):
     """
     configure pytest
@@ -73,10 +69,7 @@ def pytest_configure(config):
 
 now you can use `ragas_ci` to mark all the tests that are part of Ragas CI.
 
-```{code-block} python
-:caption: tests/e2e/test_amnesty_e2e.py
-:linenos:
-:emphasize-added: 19
+```python
 import pytest
 from datasets import load_dataset
 

@@ -1,32 +1,28 @@
 # Compare Embeddings for retriever
 
-
 The performance of the retriever is a critical and influential factor that determines the overall effectiveness of a Retrieval Augmented Generation (RAG) system. In particular, the quality of the embeddings used plays a pivotal role in determining the quality of the retrieved content.
 
 This tutorial notebook provides a step-by-step guide on how to compare and choose the most suitable embeddings for your own data using the Ragas library.
 
-<p align="center">
-<img src="../../_static/imgs/compare-embeddings.jpeg" alt="compare-embeddings" width="600" height="400" />
-</p>
-
+<figure markdown="span">
+![Compare Embeddings](../../_static/imgs/compare-embeddings.jpeg){width="600"}
+<figcaption>Compare Embeddings</figcaption>
+</figure>
 
 ## Create synthetic test data 
 
 
-```{hint}
-Ragas can also work with your dataset. Refer to [data preparation](./data_preparation.md) to see how you can use your dataset with ragas. 
-```
+!!! tip
+    Ragas can also work with your dataset. Refer to [data preparation](./data_preparation.md) to see how you can use your dataset with ragas. 
 
 Ragas offers a unique test generation paradigm that enables the creation of evaluation datasets specifically tailored to your retrieval and generation tasks. Unlike traditional QA generators, Ragas can generate a wide variety of challenging test cases from your document corpus.
 
-```{seealso}
-Refer to [testset generation](../../concepts/testset_generation.md) to know more on how it works.
-```
+!!! tip
+    Refer to [testset generation](../../concepts/testset_generation.md) to know more on how it works.
 
 For this tutorial notebook, I am using papers from Semantic Scholar that is related to large language models to build RAG.
 
-```{code-block} python
-:caption: load documents using llama-hub and create test data
+```python
 from llama_index.core import download_loader
 from ragas.testset.evolutions import simple, reasoning, multi_context
 from ragas.testset.generator import TestsetGenerator
@@ -60,12 +56,12 @@ testset = generator.generate_with_llamaindex_docs(documents, 100,distributions)
 test_df = testset.to_pandas()
 ```
 
-<p align="left">
-<img src="../../_static/imgs/testset_output.png" alt="test-outputs" width="800" height="600" />
-</p>
+<figure markdown="span">
+![testset-output](../../_static/imgs/testset_output.png){width="800"}
+<figcaption>Test Outputs</figcaption>
+</figure>
 
-```{code-block} python
-:caption: collect questions and answers
+```python
 test_questions = test_df['question'].values.tolist()
 test_answers = [[item] for item in test_df['answer'].values.tolist()]
 ```
@@ -75,11 +71,10 @@ test_answers = [[item] for item in test_df['answer'].values.tolist()]
 
 Here I am using llama-index to build a basic RAG pipeline with my documents. The goal here is to collect retrieved contexts and generated answer for each of the test questions from your pipeline. Ragas has integrations with various RAG frameworks which makes evaluating them easier using ragas.
 
-```{note}
-refer to [langchain-tutorial](../integrations/langchain.ipynb) see how to evaluate using langchain
-```
+!!! note
+    refer to [langchain-tutorial](../integrations/langchain.ipynb) see how to evaluate using langchain
 
-```{code-block} python
+```python
 
 import nest_asyncio
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, ServiceContext
@@ -103,7 +98,7 @@ def build_query_engine(embed_model):
 
 Here we are importing metrics that are required to evaluate retriever component.
 
-```{code-block} python
+```python
 from ragas.metrics import (
     context_precision,
     context_recall,
@@ -117,7 +112,7 @@ metrics = [
 
 ## Evaluate OpenAI embeddings
 
-```{code-block} python
+```python
 from ragas.llama_index import evaluate
 
 openai_model = OpenAIEmbedding()
@@ -125,14 +120,13 @@ query_engine1 = build_query_engine(openai_model)
 result = evaluate(query_engine1, metrics, test_questions, test_answers)
 ```
 
-```{code-block}
-:caption: output
+```python
 {'context_precision': 0.2378, 'context_recall': 0.7159}
 ```
 
 ## Evaluate Bge embeddings
 
-```{code-block} python
+```python
 from ragas.llama_index import evaluate
 
 flag_model = HuggingFaceEmbeddings(model_name="BAAI/bge-small-en-v1.5")
@@ -140,8 +134,7 @@ query_engine2 = build_query_engine(flag_model)
 result = evaluate(query_engine2, metrics, test_questions, test_answers)
 ```
 
-```{code-block}
-:caption: output
+```python
 {'context_precision': 0.2655, 'context_recall': 0.7227}
 
 ```
@@ -152,11 +145,12 @@ Based on the evaluation results, it is apparent that the `context_precision` and
 
 For any further analysis of the scores you can export the results to pandas
 
-```{code-block} python
+```python
 result_df = result.to_pandas()
 result_df.head()
 ```
 
-<p align="left">
-<img src="../../_static/imgs/compare-emb-results.png" alt="results" width="800" height="600" />
-</p>
+<figure markdown="span">
+![compare-embeddings-results](../../_static/imgs/compare-emb-results.png){width="800"}
+<figcaption>Compare Embeddings Results</figcaption>
+</figure>

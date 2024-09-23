@@ -1,4 +1,3 @@
-(testset-generation)=
 # Synthetic Test Data generation 
 
 ## Why synthetic test data?
@@ -9,9 +8,10 @@ Evaluating RAG (Retrieval-Augmented Generation) augmented pipelines is crucial f
 
 Ragas takes a novel approach to evaluation data generation. An ideal evaluation dataset should encompass various types of questions encountered in production, including questions of varying difficulty levels. LLMs by default are not good at creating diverse samples as it tends to follow common paths. Inspired by works like [Evol-Instruct](https://arxiv.org/abs/2304.12244), Ragas achieves this by employing an evolutionary generation paradigm, where **questions with different characteristics such as reasoning, conditioning, multi-context, and more are systematically crafted from the provided set of documents**. This approach ensures comprehensive coverage of the performance of various components within your pipeline, resulting in a more robust evaluation process.
 
-<p align="center">
-<img src="../_static/imgs/eval-evolve.png" alt="evol-generate" width="600" height="400" />
-</p>
+<figure markdown="span">
+  ![Component-wise Evaluation](../../_static/imgs/eval-evolve.png){width="600"}
+  <figcaption>Component-wise Evaluation</figcaption>
+</figure>
 
 
 ### In-Depth Evolution
@@ -28,15 +28,13 @@ Moreover, our paradigm extends its capabilities to create conversational questio
 
 - **Conversational:** A portion of the questions, following the evolution process, can be transformed into conversational samples. These questions simulate a chat-based question-and-follow-up interaction, mimicking a chat-Q&A pipeline.
 
-```{note}
-Moving forward, we will be expanding the range of evolution techniques to offer even more diverse evaluation possibilities
-```
+!!! note
+    Moving forward, we will be expanding the range of evolution techniques to offer even more diverse evaluation possibilities
 
 
 ## Example
 
-```{code-block} python
-:caption: loading documents using langchain
+```python
 from langchain_community.document_loaders import PubMedLoader
 
 loader = PubMedLoader("liver", load_max_docs=10)
@@ -44,8 +42,7 @@ documents = loader.load()
 ```
 Checkout [langchain](https://python.langchain.com/docs/modules/data_connection/document_loaders/) document loaders to see more examples
 
-```{code-block} python
-:caption: loading documents using llama-index
+```python
 from llama_index import download_loader
 
 SemanticScholarReader = download_loader("SemanticScholarReader")
@@ -56,8 +53,7 @@ documents = loader.load_data(query=query_space,full_text=True,limit=10)
 Checkout [llama-index](https://gpt-index.readthedocs.io/en/stable/core_modules/data_modules/connector/root.html) document loaders to see more examples
 
 
-```{code-block} python
-:caption: Customising test data distribution 
+```python
 from ragas.testset.generator import TestsetGenerator
 from ragas.testset.evolutions import simple, reasoning, multi_context
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -88,22 +84,23 @@ testset.to_pandas()
 
 ```
 
-```{code-block} python 
-:caption: Export the results into pandas
+```python
 test_df = testset.to_pandas()
 test_df.head()
 ```
 
-<p align="left">
-<img src="../_static/imgs/testset_output.png" alt="test-outputs" width="800" height="600" />
-</p>
+<figure markdown="span">
+  ![Testset Output](../../_static/imgs/testset_output.png){width="800"}
+  <figcaption>Testset Output</figcaption>
+</figure>
 
 
 ## Analyze question types
 
- Analyze the frequency of different question types in the created dataset
+Analyze the frequency of different question types in the created dataset
 
 
-<p align="left">
-<img src="../_static/imgs/question_types.png" alt="test-outputs" width="450" height="400" />
-</p>
+<figure markdown="span">
+  ![Testset Output](../../_static/imgs/question_types.png){width="450"}
+  <figcaption>Testset Output</figcaption>
+</figure>

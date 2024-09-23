@@ -13,7 +13,8 @@ Prompts in ragas are defined using the `Prompt` class. Each prompt defined using
 - `language`: the language in which demonstrations are written. The default is English.
 
 Let’s create a simple prompt using `Prompt`
-```{code-block} python
+
+```python
 from ragas.llms.prompt import Prompt
 
 qa_prompt = Prompt(
@@ -49,7 +50,7 @@ Prompt objects have the following methods that can be used when evaluating or fo
 
     This method will generate a prompt string from the given object. This string can be directly used as a formatted string with the metrics in the evaluation task.
 
-    ```{code-block} python
+    ```python
     print(qa_prompt.to_string())
     ```
 
@@ -73,11 +74,11 @@ Prompt objects have the following methods that can be used when evaluating or fo
 
     This method will use the parameters passed as keyword arguments to format the prompt object and return a Langchain `PromptValue` object that can be directly used in the evaluation tasks.
 
-    ```{code-block} python
+    ```python
     qa_prompt.format(answer="This is an answer", context="This is a context")
     ```
 
-    ```{code-block} python
+    ```python
     PromptValue(prompt_str='Generate a question for the given answer\n\nanswer: "The last Olympics was held in Tokyo, Japan."\ncontext: "The last Olympics was held in Tokyo, Japan. It is held every 4 years"\noutput: {"question": "Where was the last Olympics held?"}\n\nanswer: "It can change its skin color based on the temperature of its environment."\ncontext: "A recent scientific study has discovered a new species of frog in the Amazon rainforest that has the unique ability to change its skin color based on the temperature of its environment."\noutput: {"question": "What unique ability does the newly discovered species of frog have?"}\n\nanswer: This is an answer\ncontext: This is a context\noutput: \n')
 
     ```
@@ -87,7 +88,7 @@ Prompt objects have the following methods that can be used when evaluating or fo
 
      This method will save the prompt to the given cache_dir (default `~/.cache`) directory using the value in the `name` variable.
 
-    ```{code-block} python
+    ```python
     qa_prompt.save()
     ```
 
@@ -97,12 +98,12 @@ Prompt objects have the following methods that can be used when evaluating or fo
 
      This method will load the appropriate prompt from the saved directory.
 
-    ```{code-block} python
+    ```python
     from ragas.utils import RAGAS_CACHE_HOME
     Prompt._load(name="question_generation",language="english",cache_dir=RAGAS_CACHE_HOME)
     ```
 
-    ```{code-block} python
+    ```python
     Prompt(name='question_generation', instruction='Generate a question for the given answer', examples=[{'answer': 'The last Olympics was held in Tokyo, Japan.', 'context': 'The last Olympics was held in Tokyo, Japan. It is held every 4 years', 'output': {'question': 'Where was the last Olympics held?'}}, {'answer': 'It can change its skin color based on the temperature of its environment.', 'context': 'A recent scientific study has discovered a new species of frog in the Amazon rainforest that has the unique ability to change its skin color based on the temperature of its environment.', 'output': {'question': 'What unique ability does the newly discovered species of frog have?'}}], input_keys=['answer', 'context'], output_key='output', output_type='JSON')
     ```
 

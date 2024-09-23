@@ -366,6 +366,21 @@ def evaluate(
 
 @dataclass
 class Result(dict):
+    """
+    A class to store and process the results of the evaluation.
+
+    Attributes
+    ----------
+    scores : Dataset
+        The dataset containing the scores of the evaluation.
+    dataset : Dataset, optional
+        The original dataset used for the evaluation. Default is None.
+    binary_columns : list of str, optional
+        List of columns that are binary metrics. Default is an empty list.
+    cost_cb : CostCallbackHandler, optional
+        The callback handler for cost computation. Default is None.
+    """
+
     scores: Dataset
     dataset: t.Optional[Dataset] = None
     binary_columns: t.List[str] = field(default_factory=list)
@@ -381,6 +396,26 @@ class Result(dict):
                 values.append(value + 1e-10)
 
     def to_pandas(self, batch_size: int | None = None, batched: bool = False):
+        """
+        Convert the result to a pandas DataFrame.
+
+        Parameters
+        ----------
+        batch_size : int, optional
+            The batch size for conversion. Default is None.
+        batched : bool, optional
+            Whether to convert in batches. Default is False.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The result as a pandas DataFrame.
+
+        Raises
+        ------
+        ValueError
+            If the dataset is not provided.
+        """
         if self.dataset is None:
             raise ValueError("dataset is not provided for the results class")
         assert self.scores.shape[0] == self.dataset.shape[0]
@@ -389,6 +424,19 @@ class Result(dict):
         return result_ds.to_pandas(batch_size=batch_size, batched=batched)
 
     def total_tokens(self) -> t.Union[t.List[TokenUsage], TokenUsage]:
+        """
+        Compute the total tokens used in the evaluation.
+
+        Returns
+        -------
+        list of TokenUsage or TokenUsage
+            The total tokens used.
+
+        Raises
+        ------
+        ValueError
+            If the cost callback handler is not provided.
+        """
         if self.cost_cb is None:
             raise ValueError(
                 "The evaluate() run was not configured for computing cost. Please provide a token_usage_parser function to evaluate() to compute cost."
@@ -401,6 +449,28 @@ class Result(dict):
         cost_per_output_token: t.Optional[float] = None,
         per_model_costs: t.Dict[str, t.Tuple[float, float]] = {},
     ) -> float:
+        """
+        Compute the total cost of the evaluation.
+
+        Parameters
+        ----------
+        cost_per_input_token : float, optional
+            The cost per input token. Default is None.
+        cost_per_output_token : float, optional
+            The cost per output token. Default is None.
+        per_model_costs : dict of str to tuple of float, optional
+            The per model costs. Default is an empty dictionary.
+
+        Returns
+        -------
+        float
+            The total cost of the evaluation.
+
+        Raises
+        ------
+        ValueError
+            If the cost callback handler is not provided.
+        """
         if self.cost_cb is None:
             raise ValueError(
                 "The evaluate() run was not configured for computing cost. Please provide a token_usage_parser function to evaluate() to compute cost."
