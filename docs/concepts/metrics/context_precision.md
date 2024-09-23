@@ -1,17 +1,15 @@
 # Context Precision
+Context Precision is a metric that measures the proportion of relevant chunks in the `retrieved_contexts`. It is calculated as the mean of the precision@k for each chunk in the context. Precision@k is the ratio of the number of relevant chunks at rank k to the total number of chunks at rank k.
 
-Context Precision is a metric that measures the proportion of relevant chunks in the retrieved context. It is calculated as the mean of the precision@k for each chunk in the context. Precision@k is the ratio of the number of relevant chunks at rank k to the total number of chunks at rank k.
-
-```{math}
+$$
 \text{Context Precision@K} = \frac{\sum_{k=1}^{K} \left( \text{Precision@k} \times v_k \right)}{\text{Total number of relevant items in the top } K \text{ results}}
-````
+$$
 
-```{math}
+$$
 \text{Precision@k} = {\text{true positives@k} \over  (\text{true positives@k} + \text{false positives@k})}
-````
+$$
 
-Where $K$ is the total number of chunks in `contexts` and $v_k \in \{0, 1\}$ is the relevance indicator at rank $k$.
-
+Where $K$ is the total number of chunks in `retrieved_contexts` and $v_k \in \{0, 1\}$ is the relevance indicator at rank $k$.
 
 ## LLM Based Context Precision
 

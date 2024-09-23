@@ -12,11 +12,11 @@ Computed using `user_input`, `reference` and the  `retrieved_contexts`, and the 
 
 The formula for calculating context recall is as follows:
 
-```{math}
+$$
 \text{context recall} = {|\text{GT claims that can be attributed to context}| \over |\text{Number of claims in GT}|}
-```
+$$
 
-## Example
+### Example
     
 ```python
 from ragas.dataset_schema import SingleTurnSample
@@ -40,13 +40,13 @@ Computed using `retrieved_contexts` and `reference_contexts`, and the values ran
 
 The formula for calculating context recall is as follows:
 
-```{math}
+$$
 \text{context recall} = {|\text{Number of relevant contexts retrieved}| \over |\text{Total number of reference contexts}|}
-```
+$$
 
-## Example
+### Example
     
-``` python
+```python
 
 
 from ragas.dataset_schema import SingleTurnSample
