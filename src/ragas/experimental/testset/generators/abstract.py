@@ -33,7 +33,7 @@ class Themes(BaseModel):
     themes: t.List[Theme]
 
 
-class CommonThemeFromSummaries(PydanticPrompt):
+class CommonThemeFromSummaries(PydanticPrompt[Summaries, Themes]):
     input_model = Summaries
     output_model = Themes
     instruction = "Analyze the following summaries and identify given number of common themes. The themes should be concise, descriptive, and highlight a key aspect shared across the summaries."
@@ -61,6 +61,15 @@ class CommonThemeFromSummaries(PydanticPrompt):
             ),
         )
     ]
+
+    def process_output(self, output: Themes, input: Summaries) -> Themes:
+        if len(output.themes) < input.num_themes:
+            # fill the rest with empty strings
+            output.themes.extend(
+                [Theme(theme="none", description="")]
+                * (input.num_themes - len(output.themes))
+            )
+        return output
 
 
 class AbstractQADistribution(BasicDistribution):
@@ -102,33 +111,43 @@ class AbstractGenerator(BaseTestsetGenerator):
             )
             kw_list.append({"data": summaries, "llm": self.llm})
 
-        themes = run_async(
+        themes: t.List[Themes] = run_async(
             desc="Generating common themes",
             func=self.common_theme_prompt.generate,
             kwargs_list=kw_list,
         )
-        themes = themes.themes
 
-        distributions = []
+        # sample clusters and themes to get num_clusters * num_themes
+        clusters_sampled = []
+        themes_sampled = []
+        themes_list = [theme.themes for theme in themes]
+        for cluster, ts in zip(node_clusters, themes_list):
+            for theme in ts:
+                themes_sampled.append(theme)
+                clusters_sampled.append(cluster)
+
+        # sample question styles and question lengths
         question_styles = random.choices(
             list(QuestionStyle), k=num_clusters * num_themes
         )
         question_lengths = random.choices(
             list(QuestionLength), k=num_clusters * num_themes
         )
-        clusters_sampled = random.choices(node_clusters, k=num_clusters * num_themes)
-        themes_sampled = random.choices(themes, k=num_clusters * num_themes)
+
+        # create distributions
+        distributions = []
         for cluster, theme, style, length in zip(
             clusters_sampled, themes_sampled, question_styles, question_lengths
         ):
             distributions.append(
                 AbstractQADistribution(
                     theme=theme.theme,
-                    nodes=list(cluster),
+                    nodes=cluster,
                     style=style,
                     length=length,
                 )
             )
+            print(len(distributions))
         return distributions
 
     async def generate_question(self, distribution: BasicDistribution) -> str:

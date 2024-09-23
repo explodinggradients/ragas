@@ -23,6 +23,9 @@ class BasePrompt(ABC):
     ) -> t.Any:
         pass
 
+    def process_output(self, output: t.Any, input: t.Any) -> t.Any:
+        return output
+
 
 def model_to_dict(
     model: BaseModel,
@@ -134,7 +137,10 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         answer = await parser.aparse(resp_text, prompt_value, llm, max_retries=3)
 
         # TODO: make sure RagasOutputPraser returns the same type as OutputModel
-        return answer  # type: ignore
+        return self.process_output(answer, data)  # type: ignore
+
+    def process_output(self, output: OutputModel, input: InputModel) -> OutputModel:
+        return output
 
 
 class StringPrompt(BasePrompt):
