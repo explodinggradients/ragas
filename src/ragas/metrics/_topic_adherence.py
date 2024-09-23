@@ -8,7 +8,7 @@ import numpy as np
 from pydantic import BaseModel, Field
 
 from ragas.dataset_schema import MultiTurnSample
-from ragas.experimental.llms.prompt import PydanticPrompt
+from ragas.experimental.prompt import PydanticPrompt
 from ragas.metrics.base import MetricType, MetricWithLLM, MultiTurnMetric
 
 if t.TYPE_CHECKING:

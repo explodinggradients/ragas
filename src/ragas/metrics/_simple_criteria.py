@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel, Field
 
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
-from ragas.experimental.llms.prompt import PydanticPrompt
+from ragas.experimental.prompt import PydanticPrompt
 from ragas.metrics.base import (
     MetricType,
     MetricWithLLM,
