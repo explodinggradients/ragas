@@ -139,7 +139,6 @@ class ContextEntityRecall(MetricWithLLM, SingleTurnMetric):
     context_entity_recall_prompt: Prompt = field(
         default_factory=lambda: TEXT_ENTITY_EXTRACTION
     )
-    batch_size: int = 15
     max_retries: int = 1
 
     def _compute_score(
@@ -195,4 +194,4 @@ class ContextEntityRecall(MetricWithLLM, SingleTurnMetric):
         return self.context_entity_recall_prompt.save(cache_dir)
 
 
-context_entity_recall = ContextEntityRecall(batch_size=15)
+context_entity_recall = ContextEntityRecall()
