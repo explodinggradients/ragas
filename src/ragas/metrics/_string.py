@@ -35,7 +35,7 @@ class ExactMatch(SingleTurnMetric):
 
 
 @dataclass
-class StringPresent(SingleTurnMetric):
+class StringPresence(SingleTurnMetric):
     name: str = "string_present"  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
