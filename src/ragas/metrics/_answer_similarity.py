@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
+class SemanticSimilarity(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     """
     Scores the semantic similarity of ground truth with generated answer.
     cross encoder score is used to quantify semantic similarity.
@@ -89,6 +89,11 @@ class AnswerSimilarity(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
             score = score >= self.threshold
 
         return score.tolist()[0]
+
+
+class AnswerSimilarity(SemanticSimilarity):
+    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+        return await super()._ascore(row, callbacks)
 
 
 answer_similarity = AnswerSimilarity()
