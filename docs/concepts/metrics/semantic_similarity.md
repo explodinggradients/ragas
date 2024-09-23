@@ -1,18 +1,11 @@
-# Answer semantic similarity
+##  Semantic similarity
 
 The concept of Answer Semantic Similarity pertains to the assessment of the semantic resemblance between the generated answer and the ground truth. This evaluation is based on the `ground truth` and the `answer`, with values falling within the range of 0 to 1. A higher score signifies a better alignment between the generated answer and the ground truth.
 
 Measuring the semantic similarity between answers can offer valuable insights into the quality of the generated response. This evaluation utilizes a cross-encoder model to calculate the semantic similarity score.
 
 
-!!! example
-    **Ground truth**: Albert Einstein's theory of relativity revolutionized our understanding of the universe."
-
-    **High similarity answer**: Einstein's groundbreaking theory of relativity transformed our comprehension of the cosmos.
-
-    **Low similarity answer**: Isaac Newton's laws of motion greatly influenced classical physics.
-
-## Example
+### Example
 
 ```python
 from datasets import Dataset 
@@ -30,7 +23,15 @@ score = evaluate(dataset,metrics=[answer_similarity])
 score.to_pandas()
 ```
 
-## Calculation 
+### How It’s Calculated 
+
+!!! example
+
+    **reference**: Albert Einstein's theory of relativity revolutionized our understanding of the universe."
+
+    **High similarity answer**: Einstein's groundbreaking theory of relativity transformed our comprehension of the cosmos.
+
+    **Low similarity answer**: Isaac Newton's laws of motion greatly influenced classical physics.
 
 Let's examine how answer similarity was calculated for the first answer:
 

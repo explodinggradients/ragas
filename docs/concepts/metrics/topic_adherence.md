@@ -1,27 +1,24 @@
-# Topic Adherence
+## Topic Adherence
 
 AI systems deployed in real-world applications are expected to adhere to domains of interest while interacting with users but LLMs sometimes may answer general queries by ignoring this limitation. The topic adherence metric evaluates the ability of the AI to stay on predefined domains during the interactions. This metric is particularly important in conversational AI systems, where the AI is expected to only provide assistance to queries related to predefined domains.
 
 Topic adherence requires a predefined set of topics that the AI system is expected to adhere to which is provided using `reference_topics` along with `user_input`. The metric can compute precision, recall, and F1 score for topic adherence, defined as 
     
-```{math}
-:label: Precision
+$$
 \text{Precision } = {|\text{Queries that are answered and are adheres to any present reference topics}| \over |\text{Queries that are answered and are adheres to any present reference topics}| + |\text{Queries that are answered and do not adheres to any present reference topics}|}
-```
+$$
 
-```{math}
-:label: Recall
+$$
 \text{Recall } = {|\text{Queries that are answered and are adheres to any present reference topics}| \over |\text{Queries that are answered and are adheres to any present reference topics}| + |\text{Queries that were refused and should have been answered}|}
-```
+$$
 
-```{math}
-:label: F1 Score
+$$
 \text{F1 Score } = {2 \times \text{Precision} \times \text{Recall} \over \text{Precision} + \text{Recall}}
-```
+$$
 
-## Example
+### Example
 
-```{code-block} python
+```python
 from ragas.dataset_schema import  SingleTurnSample, MultiTurnSample, EvaluationDataset
 from ragas.messages import HumanMessage,AIMessage,ToolMessage,ToolCall
 from ragas.metrics._topic_adherence import TopicAdherenceScore
@@ -58,7 +55,7 @@ await scorer.multi_turn_ascore(sample)
 
 To change the mode to recall, set the `mode` parameter to `recall`.
 
-```{code-block} python
+```python
 scorer = TopicAdherenceScore(mode="recall")
 ```  
 

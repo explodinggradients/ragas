@@ -20,7 +20,7 @@ SUPPORTED_ASPECTS = [
 
 ## Example
 
-```{code-block} python
+```python
 :caption: Answer critique
 from datasets import Dataset 
 from ragas.metrics import AspectCritic

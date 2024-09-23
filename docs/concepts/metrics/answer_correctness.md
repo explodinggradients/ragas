@@ -1,4 +1,4 @@
-# Answer Correctness
+## Answer Correctness
 
 The assessment of Answer Correctness involves gauging the accuracy of the generated answer when compared to the ground truth. This evaluation relies on the `ground truth` and the `answer`, with scores ranging from 0 to 1. A higher score indicates a closer alignment between the generated answer and the ground truth, signifying better correctness.
 
@@ -13,7 +13,7 @@ Answer correctness encompasses two critical aspects: semantic similarity between
     **Low answer correctness**: Einstein was born in Spain in 1879.
 
 
-## Example
+### Example
 
 ```python
 from datasets import Dataset 
@@ -31,7 +31,7 @@ score.to_pandas()
 
 ```
 
-## Calculation
+### Calculation
 
 Let's calculate the answer correctness for the answer with low answer correctness. It is computed as the sum of factual correctness and the semantic similarity between the given answer and the ground truth.
 
