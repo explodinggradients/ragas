@@ -18,7 +18,7 @@ The formula for calculating context recall is as follows:
 
 ## Example
     
-```{code-block} python
+```python
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics import LLMContextRecall
 
@@ -46,7 +46,7 @@ The formula for calculating context recall is as follows:
 
 ## Example
     
-```{code-block} python
+``` python
 
 
 from ragas.dataset_schema import SingleTurnSample

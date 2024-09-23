@@ -23,7 +23,7 @@ This metric is can be used when you have both retrieved contexts and also refere
 
 #### Example
     
-```{code-block} python
+```python
 from ragas import SingleTurnSample
 from ragas.metrics import LLMContextPrecisionWithoutReference
 
@@ -45,7 +45,7 @@ This metric is can be used when you have both retrieved contexts and also refere
 
 #### Example
     
-```{code-block} python
+```python
 from ragas import SingleTurnSample
 from ragas.metrics import LLMContextPrecisionWithReference
 
@@ -70,7 +70,7 @@ This metric is can be used when you have both retrieved contexts and also refere
 
 #### Example
     
-```{code-block} python
+```python
 from ragas import SingleTurnSample
 from ragas.metrics import NonLLMContextPrecisionWithReference
 

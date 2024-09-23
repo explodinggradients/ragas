@@ -21,6 +21,11 @@ Ragas provides a set of evaluation metrics that can be used to measure the perfo
 
 - [Factual Correctness](factual_correctness.md)
 - [Semantic Similarity](semantic_similarity.md)
+- [Non LLM String Similarity](traditional.md#non-llm-string-similarity)
+- [BLEU Score](traditional.md#bleu-score)
+- [ROUGE Score](traditional.md#rouge-score)
+- [String Presence](traditional.md#string-presence)
+- [Exact Match](traditional.md#exact-match)
 
 
 ## SQL
