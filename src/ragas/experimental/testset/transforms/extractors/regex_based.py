@@ -1,6 +1,5 @@
 import re
 import typing as t
-from collections import defaultdict
 from dataclasses import dataclass
 
 from ragas.experimental.testset.graph import Node
