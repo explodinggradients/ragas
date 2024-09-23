@@ -8,7 +8,7 @@ Ragas provides a set of evaluation metrics that can be used to measure the perfo
 - [Context Recall](context_recall.md)
 - [Context Entities Recall](context_entities_recall.md)
 - [Noise Sensitivity](noise_sensitivity.md)
-- [Answer relevance](answer_relevance.md)
+- [Response Relevancy](answer_relevance.md)
 - [Faithfulness](faithfulness.md)
 
 ## Agents or Tool use cases
