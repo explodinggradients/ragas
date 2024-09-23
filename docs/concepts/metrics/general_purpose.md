@@ -8,7 +8,7 @@ Aspect critic is an evaluation metric that can be used to evaluate responses bas
 
 ### Example
 
-```{code-block} python
+```python
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics.critique import AspectCritique
 
@@ -44,7 +44,7 @@ Course graned evaluation method is an evaluation metric that can be used to scor
 
 **Without Reference**
 
-```{code-block} python
+```python
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics._simple_criteria import SimpleCriteriaScoreWithoutReference
 
@@ -61,7 +61,7 @@ await scorer.single_turn_ascore(sample)
 
 **With Reference**
 
-```{code-block} python
+```python
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics._simple_criteria import SimpleCriteriaScoreWithReference
 
@@ -86,7 +86,7 @@ Domain specific evaluation metric is a rubric-based evaluation metric that is us
 Used when you have reference answer to evaluate the responses against.
 
 #### Example
-```{code-block} python
+```python
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics._domain_specific_rubrics import RubricsScoreWithReference
 sample = SingleTurnSample(
@@ -111,7 +111,7 @@ await scorer.single_turn_ascore(sample)
 Used when you don't have reference answer to evaluate the responses against.
 
 #### Example
-```{code-block} python
+```python
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics._domain_specific_rubrics import RubricsScoreWithoutReference
 sample = SingleTurnSample(
@@ -134,7 +134,7 @@ Instance specific evaluation metric is a rubric-based evaluation metric that is 
 Used when you have reference answer to evaluate the responses against.
 
 #### Example
-```{code-block} python
+```python
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics._domain_specific_rubrics import InstanceRubricsWithReference
 
@@ -162,7 +162,7 @@ await scorer.single_turn_ascore(sample)
 Used when you don't have reference answer to evaluate the responses against.
 
 #### Example
-```{code-block} python
+```python
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics._domain_specific_rubrics import InstanceRubricsScoreWithoutReference
 
