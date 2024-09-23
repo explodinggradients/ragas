@@ -32,6 +32,3 @@ class RougeScore(SingleTurnMetric):
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
-
-
-rouge_score = RougeScore()
