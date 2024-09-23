@@ -1,13 +1,46 @@
 # Noise Sensitivity
 
-Noise sensitivity measures how often a system makes errors by providing incorrect responses when utilizing either relevant or irrelevant retrieved documents. The score ranges from 0 to 1, with lower values indicating better performance. Noise sensitivity is computed using the question, ground truth, answer, and the retrieved context.
+Noise sensitivity measures how often a system makes errors by providing incorrect responses when utilizing either relevant or irrelevant retrieved documents. The score ranges from 0 to 1, with lower values indicating better performance. Noise sensitivity is computed using the `user_input`,  `reference`, `response`, and the `retrieved_contexts`.
 
-To estimate noise sensitivity, each claim in the generated answer is examined to determine whether it is correct based on the ground truth and whether it can be attributed to the relevant (or irrelevant) retrieved context. Ideally, all claims in the answer should be supported by the relevant retrieved context.
+To estimate noise sensitivity, each claim in the generated response is examined to determine whether it is correct based on the ground truth and whether it can be attributed to the relevant (or irrelevant) retrieved context. Ideally, all claims in the answer should be supported by the relevant retrieved context.
 
 
 $$
-\text{noise sensitivity (relevant)} = {|\text{Number of incorrect claims in answer}| \over |\text{Number of claims in the Answer}|}
+\text{noise sensitivity (relevant)} = {|\text{Total number of incorrect claims in response}| \over |\text{Total number of claims in the response}|}
 $$
+
+
+
+## Example
+
+```python
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics import NoiseSensitivity
+
+sample = SingleTurnSample(
+    user_input="What is the Life Insurance Corporation of India (LIC) known for?",
+    response="The Life Insurance Corporation of India (LIC) is the largest insurance company in India, known for its vast portfolio of investments. LIC contributes to the financial stability of the country.",
+    reference="The Life Insurance Corporation of India (LIC) is the largest insurance company in India, established in 1956 through the nationalization of the insurance industry. It is known for managing a large portfolio of investments.",
+    retrieved_contexts=[
+        "The Life Insurance Corporation of India (LIC) was established in 1956 following the nationalization of the insurance industry in India.",
+        "LIC is the largest insurance company in India, with a vast network of policyholders and huge investments.",
+        "As the largest institutional investor in India, LIC manages substantial funds, contributing to the financial stability of the country.",
+        "The Indian economy is one of the fastest-growing major economies in the world, thanks to sectors like finance, technology, manufacturing etc."
+    ]
+)
+
+scorer = NoiseSensitivity()
+await scorer.single_turn_ascore(sample)
+```
+
+To calculate noise sensivity of irrelevant context, you can set the `focus` parameter to `irrelevant`.
+
+```python
+scorer = NoiseSensitivity(focus="irrelevant")
+await scorer.single_turn_ascore(sample)
+```
+
+## How It’s Calculated
 
 !!! example
     Question: What is the Life Insurance Corporation of India (LIC) known for?
@@ -22,33 +55,6 @@ $$
     Irrelevant Retrieval: 
         - The Indian economy is one of the fastest-growing major economies in the world, thanks to the secors like finance, technology, manufacturing etc.
 
-## Example
-
-```python
-from datasets import Dataset 
-from ragas.metrics import noise_sensitivity_relevant, noise_sensitivity_irrelevant
-from ragas import evaluate
-
-data_sample = {
-    "question": ["What is the Life Insurance Corporation of India (LIC) known for?"],
-    "ground_truth": ["The Life Insurance Corporation of India (LIC) is the largest insurance company in India, established in 1956 through the nationalization of the insurance industry. It is known for managing a large portfolio of investments."],
-    "answer": ["The Life Insurance Corporation of India (LIC) is the largest insurance company in India, known for its vast portfolio of investments. LIC contributs to the financial stability of the country."],
-    "contexts": [[
-        "The Life Insurance Corporation of India (LIC) was established in 1956 following the nationalization of the insurance industry in India.",
-        "LIC is the largest insurance company in India, with a vast network of policyholders and a huge investments.",
-        "As the largest institutional investor in India, LIC manages a substantial funds, contributing to the financial stability of the country.",
-        "The Indian economy is one of the fastest-growing major economies in the world, thanks to the secors like finance, technology, manufacturing etc"
-    ]]
-}
-
-dataset = Dataset.from_dict(data_sample)
-metrics = [noise_sensitivity_relevant, noise_sensitivity_irrelevant]
-score = evaluate(dataset,metrics=metrics)
-score.to_pandas()
-```
-
-## Calculation
-
 Let's examine how noise sensitivity in relevant context was calculated:
 
 - **Step 1:** Identify the relevant contexts from which the ground truth can be inferred.
@@ -57,9 +63,9 @@ Let's examine how noise sensitivity in relevant context was calculated:
     The Life Insurance Corporation of India (LIC) is the largest insurance company in India, established in 1956 through the nationalization of the insurance industry. It is known for managing a large portfolio of investments.  
 
     - Contexts:
-        - Context 1: `The Life Insurance Corporation of India (LIC) was established in 1956` following the nationalization of the insurance industry in India.
-        - Context 2: `LIC is the largest insurance company in India`, with a vast network of policyholders and a significant role in the financial sector.
-        - Context 3: `As the largest institutional investor in India, LIC manages a substantial funds`, contributing to the financial stability of the country.
+        - Context 1: The Life Insurance Corporation of India (LIC) was established in 1956 following the nationalization of the insurance industry in India.
+        - Context 2: LIC is the largest insurance company in India, with a vast network of policyholders and a significant role in the financial sector.
+        - Context 3: As the largest institutional investor in India, LIC manages a substantial funds`, contributing to the financial stability of the country.
 
 - **Step 2:** Verify if the claims in the generated answer can be inferred from the relevant context.
 
@@ -68,8 +74,8 @@ Let's examine how noise sensitivity in relevant context was calculated:
 
     - Contexts:
         - Context 1: The Life Insurance Corporation of India (LIC) was established in 1956 following the nationalization of the insurance industry in India.
-        - Context 2: `LIC is the largest insurance company in India`, with a vast network of policyholders and a significant role in the financial sector.
-        - Context 3: `As the largest institutional investor in India, LIC manages a substantial funds`, `contributing to the financial stability of the country`.
+        - Context 2: LIC is the largest insurance company in India, with a vast network of policyholders and a significant role in the financial sector.
+        - Context 3: As the largest institutional investor in India, LIC manages a substantial funds, contributing to the financial stability of the country.
 
 
 - **Step 3:** Identify any incorrect claims in the answer (i.e., answer statements that are not supported by the ground truth).
@@ -78,7 +84,7 @@ Let's examine how noise sensitivity in relevant context was calculated:
     The Life Insurance Corporation of India (LIC) is the largest insurance company in India, established in 1956 through the nationalization of the insurance industry. It is known for managing a large portfolio of investments.
 
     - Answer:
-    The Life Insurance Corporation of India (LIC) is the largest insurance company in India, known for its vast portfolio of investments. `LIC contributs to the financial stability of the country`.
+    The Life Insurance Corporation of India (LIC) is the largest insurance company in India, known for its vast portfolio of investments. LIC contributs to the financial stability of the country.
 
     Explanation: The ground truth does not mention anything about LIC contributing to the financial stability of the country. Therefore, this statement in the answer is incorrect.
 
