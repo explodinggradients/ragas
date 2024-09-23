@@ -4,7 +4,7 @@ import typing as t
 from dataclasses import dataclass, field
 
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
-from ragas.experimental.llms.prompt import PydanticPrompt
+from ragas.experimental.prompt import PydanticPrompt
 from ragas.metrics._domain_specific_rubrics import (
     MultiTurnWithoutReferenceInput,
     MultiTurnWithoutReferencePrompt,
