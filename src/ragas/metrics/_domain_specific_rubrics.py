@@ -307,7 +307,3 @@ class RubricsScoreWithReference(MetricWithLLM, SingleTurnMetric, MultiTurnMetric
             reference=ground_truth,
             rubrics=self.rubrics,
         )
-
-
-rubrics_score_with_reference = RubricsScoreWithReference()
-rubrics_score_without_reference = RubricsScoreWithoutReference()

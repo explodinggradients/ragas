@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
     name: str = "noise_sensitivity"  # type: ignore
-    focus: str = "relevant"
+    focus: t.Literal["relevant", "irrelevant"] = "relevant"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {
@@ -266,8 +266,6 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         assert self.llm is not None, "LLM is not set"
 
-        logger.info(f"Adapting Faithfulness metric to {language}")
-
         self.nli_statements_message = self.nli_statements_message.adapt(
             language, self.llm, cache_dir
         )
@@ -280,7 +278,3 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
     def save(self, cache_dir: t.Optional[str] = None) -> None:
         self.nli_statements_message.save(cache_dir)
         self.statement_prompt.save(cache_dir)
-
-
-noise_sensitivity_relevant = NoiseSensitivity()
-noise_sensitivity_irrelevant = NoiseSensitivity(focus="irrelevant")
