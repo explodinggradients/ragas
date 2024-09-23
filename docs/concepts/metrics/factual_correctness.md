@@ -1,38 +1,38 @@
-# Factual Correctness
+## Factual Correctness
 
 Factual correctness is a metric that compares and evaluates the factual accuracy of the generated `response` with the `reference`. This metric is used to determine the extent to which the generated response aligns with the reference. The factual correctness score ranges from 0 to 1, with higher values indicating better performance. To measure the alignment between the response and the reference, the metric uses the LLM for first break down the response and reference into claims and then uses natural language inference to determine the factual overlap between the response and the reference. Factual overlap is quantified using precision, recall, and F1 score, which can be controlled using the `mode` parameter.
 
 The formula for calculating True Positive (TP), False Positive (FP), and False Negative (FN) is as follows:
 
-```{math}
+$$
 \text{True Positive (TP)} = \text{Number of claims in response that are present in reference}
-```
+$$
 
-```{math}
+$$
 \text{False Positive (FP)} = \text{Number of claims in response that are not present in reference}
-```
+$$
 
-```{math}
+$$
 \text{False Negative (FN)} = \text{Number of claims in reference that are not present in response}
-```
+$$
 
 The formula for calculating precision, recall, and F1 score is as follows:
 
-```{math}
+$$
 \text{Precision} = {TP \over (TP + FP)}
-```
+$$
 
-```{math}
+$$
 \text{Recall} = {TP \over (TP + FN)}
-```
+$$
 
-```{math}
+$$
 \text{F1 Score} = {2 \times \text{Precision} \times \text{Recall} \over (\text{Precision} + \text{Recall})}
-```
+$$
 
-## Example
+### Example
 
-```{code-block} python
+```python
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics._factual_correctness import FactualCorrectness
 
@@ -49,15 +49,23 @@ await scorer.single_turn_ascore(sample)
 
 By default, the mode is set to `F1`, you can change the mode to `precision` or `recall` by setting the `mode` parameter.
 
-```{code-block} python
+```python
 scorer = FactualCorrectness(mode="precision")
 ```
 
-## Controlling the Number of Claims
+### Controlling the Number of Claims
 
 Each sentence in the response and reference can be broken down into one or more claims. The number of claims that are generated from a single sentence is determined by the level of `atomicity` and `coverage` required for your application.
 
-### Understanding Atomicity and Coverage
+
+#### Example
+
+```python
+scorer = FactualCorrectness(mode="precision",atomicity="low")
+```
+
+
+#### Understanding Atomicity and Coverage
 
 In claim decomposition, two important parameters influence the output:
 
@@ -66,7 +74,7 @@ In claim decomposition, two important parameters influence the output:
 
 These parameters help control the granularity and completeness of the generated claims.
 
-### Atomicity
+#### Atomicity
 
 **Atomicity** refers to how much a sentence is broken down into its smallest, meaningful components. It can be adjusted based on whether you need highly detailed claims or a more consolidated view.
 
@@ -88,7 +96,7 @@ These parameters help control the granularity and completeness of the generated 
   - Decomposed Claims:
     - "Albert Einstein was a German theoretical physicist who developed the theory of relativity and contributed to quantum mechanics."
 
-### Coverage
+#### Coverage
 
 **Coverage** refers to how comprehensively the claims represent the information in the original sentence. It can be adjusted to either include all details or to generalize the content.
 
@@ -112,7 +120,7 @@ These parameters help control the granularity and completeness of the generated 
     - "Marie Curie was a physicist."
     - "Marie Curie conducted research on radioactivity."
 
-### Combining Atomicity and Coverage
+#### Combining Atomicity and Coverage
 
 By adjusting both atomicity and coverage, you can customize the level of detail and completeness to meet the needs of your specific use case.
 
@@ -136,15 +144,9 @@ By adjusting both atomicity and coverage, you can customize the level of detail 
     - "Charles Babbage was an English mathematician."
     - "Charles Babbage was an inventor."
 
-### Practical Application
+#### Practical Application
 
 - Use **High Atomicity and High Coverage** when you need a detailed and comprehensive breakdown for in-depth analysis or information extraction.
 - Use **Low Atomicity and Low Coverage** when only the key information is necessary, such as for summarization.
 
 This flexibility in controlling the number of claims helps ensure that the information is presented at the right level of granularity for your application's requirements.
-
-## Example
-
-```{code-block} python
-scorer = FactualCorrectness(mode="precision",atomicity="low")
-```

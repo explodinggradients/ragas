@@ -1,4 +1,4 @@
-# Agentic or tool use metrics
+# Agentic or Tool use
 
 Agentic or tool use workflows can be evaluated in multiple dimensions. Here are some of the metrics that can be used to evaluate the performance of agents or tools in a given task.
 

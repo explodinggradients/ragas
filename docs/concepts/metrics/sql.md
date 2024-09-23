@@ -12,20 +12,18 @@ Dataframes can be compared across rows or columns. This can be configured using 
 
 If mode is `row` then the comparison is done row-wise. If mode is `column` then the comparison is done column-wise.
 
-```{math}
-:label: precision
+$$
 \text{Precision } = {|\text{Number of matching rows in response and reference}| \over |\text{Total number of rows in response}|}
-```
+$$
 
-```{math}
-:label: recall
+$$
 \text{Precision } = {|\text{Number of matching rows in response and reference}| \over |\text{Total number of rows in reference}|}
-```
+$$
 
 By default, the mode is set to `row`, and metric is F1 score which is the harmonic mean of precision and recall.
 
 
-```{code-block} python
+```python
 from ragas.metrics._datacompy_score import DataCompyScore
 from ragas.dataset_schema import SingleTurnSample
 
@@ -52,7 +50,7 @@ await scorer.single_turn_ascore(sample)
 To change the mode to column-wise comparison, set the `mode` parameter to `column`.
 
 
-```{code-block} python
+```python
 scorer = DataCompyScore(mode="column", metric="recall")
 ```
 
@@ -64,7 +62,7 @@ Executing SQL queries on the database can be time-consuming and sometimes not fe
 
 SQL Query Semantic equivalence is a metric that can be used to evaluate the equivalence of `response` query with `reference` query. The metric also needs database schema to be used when comparing queries, this is inputted in `reference_contexts`. This metric is a binary metric, with 1 indicating that the SQL queries are semantically equivalent and 0 indicating that the SQL queries are not semantically equivalent.
 
-```{code-block} python
+```python
 from ragas.metrics._sql_semantic_equivalence import LLMSqlEquivalenceWithReference
 from ragas.dataset_schema import SingleTurnSample
 
