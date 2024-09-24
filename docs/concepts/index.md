@@ -3,20 +3,40 @@
 
 <div class="grid cards" markdown>
 
-- [Components](components/index.md)
+-   :material-widgets:{ .lg .middle } [__Components Guides__](components/index.md)
 
-    What are the different components used inside Ragas?
+    ---
 
-- [Ragas Metrics](metrics/index.md)
+    Discover the various components used within Ragas.
+    
+    Components like [Prompt Object](components/index.md#prompt-object), [Evaluation Dataset](components/index.md#evaluation-dataset) and [more..](components/index.md)
 
-    What metrics are available? How do they work?
+-   ::material-ruler-square:{ .lg .middle } [__Ragas Metrics__](metrics/index.md)
 
-- [Synthetic Test Data Generation](testset_generation.md)
+    ---
 
-    How to create high quality datasets to test on?
+    Explore available metrics and understand how they work.
 
-- [Feedback Intelligence](feedback.md)
+    Metrics for evaluating [RAG](metrics/index.md/#retrieval-augmented-generation), [Agentic workflows](metrics/index.md/#agents-or-tool-use-cases) and [more..](metrics/index.md/#list-of-available-metrics).
 
-    How to understand leverage the signals from production data?
+-   :material-database-plus:{ .lg .middle } [__Test Data Generation__](test_data_generation/index.md)
+
+    ---
+
+    Create high-quality datasets for comprehensive testing.
+
+    Algorithms for synthesizing data to test [RAG](test_data_generation/index.md#retrieval-augmented-generation), [Agentic workflows](test_data_generation/index.md#agents-or-tool-use-cases) 
+
+
+-   :material-chart-box-outline:{ .lg .middle } [__Feedback Intelligence__](feedback.md)
+
+    ---
+
+    Leverage signals from production data to gain actionable insights.
+
+    Learn about to leveraging implicit and explicit signals from production data.
+
+
+
 
 </div>
