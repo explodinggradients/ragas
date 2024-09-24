@@ -27,7 +27,9 @@ class ToolCallAccuracy(MultiTurnMetric):
         }
     )
 
-    arg_comparison_metric: SingleTurnMetric = ExactMatch()
+    arg_comparison_metric: SingleTurnMetric = field(
+        default_factory=lambda: ExactMatch()
+    )
 
     def init(self, run_config):
         pass
