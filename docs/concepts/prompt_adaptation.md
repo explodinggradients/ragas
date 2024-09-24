@@ -4,15 +4,15 @@ All the prompts used in ragas are natively written fully in English language and
 
 ## How this is made possible?
 
-```{note}
-If you're unfamilar with Prompt object in ragas refer [Prompt Object](./prompts.md)
-````
+!!! note
+    If you're unfamilar with Prompt object in ragas refer [Prompt Object](./prompts.md)
+
 Each prompt in Ragas contains instructions and demonstrations. Through research and experiments, we found that by providing demonstrations in the target language can help LLMs adapt easily to any given target language. Leveraging this key insight we carefully translate all the relevant parts of the demonstrations into the target language. This is done using an LLM and once translated, the prompt can be saved to disk for reuse later.
 
-**Example** 
+### Example
 
 Native prompt
-```{code-block} python
+```python
 Extract the noun from given sentence
 
 sentence: "The sun sets over the mountains."
@@ -22,7 +22,7 @@ sentence: {sentence}
 nouns:
 ```
 Prompt adapted to Hindi
-```{code-block} python
+```python
 Extract the noun from the given sentence
 
 sentence: "सूरज पहाड़ों के पार डूबता है।"
@@ -36,7 +36,7 @@ nouns:
 
 Create a sample prompt using `Prompt` class.
 
-```{code-block} python
+```python
 
 from ragas.llms.prompt import Prompt
 from langchain_openai.chat_models import ChatOpenAI
@@ -58,18 +58,18 @@ noun_extractor = Prompt(
 )
 ```
 
-Prompt adaption is done using the `.adapt` method: 
+Prompt adaption is done using the `.adapt` method:
 
 `adapt(self, language, llm, cache_dir)`
 
 The adapt method takes in a target language, LLM and adapts the prompts to the given target language. In case the adapted prompt is already present in `cache_dir` it is loaded.
 
-```{code-block} python
+```python
 adapted_prompt = noun_extractor.adapt(language="hindi",llm=openai_model)
 print(adapted_prompt.to_string())
 ```
 
-```{code-block}
+```python
 {'nouns': ['सूर्य', 'पहाड़']}
 Extract the noun from given sentence
 Output in only valid JSON format.

@@ -1,4 +1,3 @@
-(how-to-guides)=
 # 🛠️ How-to Guides
 
 
@@ -20,11 +19,3 @@ These guides are organized into 3 sections
   making it super easy to add ragas into your setup.
 
 You can check the entire list bellow 👇
-
-**Index**
-:::{toctree}
-
-customisations/index.md
-applications/index.md
-integrations/index.md
-:::

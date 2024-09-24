@@ -33,12 +33,8 @@ test-e2e: ## Run end2end tests
 	@pytest --nbmake tests/e2e -s
 	
 # Docs
-docs-site: ## Build and serve documentation
-	@sphinx-build -nW --keep-going -j 4 -b html $(GIT_ROOT)/docs/ $(GIT_ROOT)/docs/_build/html
-	@python -m http.server --directory $(GIT_ROOT)/docs/_build/html
-watch-docs: ## Build and watch documentation
-	rm -rf $(GIT_ROOT)/docs/_build/{html, jupyter_execute}
-	sphinx-autobuild docs docs/_build/html --watch $(GIT_ROOT)/src/ --ignore "_build" --open-browser
+docsite: ## Build and serve documentation
+	@mkdocs serve --dirty
 rewrite-docs: ## Use GPT4 to rewrite the documentation
 	@echo "Rewriting the documentation in directory $(DIR)..."
 	@python $(GIT_ROOT)/docs/python alphred.py --directory $(DIR)

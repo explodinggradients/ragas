@@ -1,12 +1,12 @@
-## Write custom prompts with ragas
+# Write custom prompts with ragas
 
 This is a tutorial notebook that shows how to create and use custom prompts with the metrics used in the evaluation task. This is achieved using Ragas prompt class. This tutorial will guide you to change and use different prompts with the Ragas metrics instead of the default ones used.
 
-**Dataset**
+## Dataset
 
 Here I’m using a dataset from HuggingFace.
 
-```{code-block} python
+```python
 
 from datasets import load_dataset, Dataset
 
@@ -14,7 +14,7 @@ amnesty_dataset = load_dataset("explodinggradients/amnesty_qa", "english")
 amnesty_dataset
 ```
 
-```{code-block} bash
+```text
 DatasetDict({
     train: Dataset({
         features: ['question', 'ground_truth', 'answer', 'contexts'],
@@ -23,11 +23,11 @@ DatasetDict({
 })
 ```
 
-**Create a Custom Prompt Object**
+## Create a Custom Prompt Object
 
 Create a new Prompt object to be used in the metric for the evaluation task. For this task, I will be instantiating an object of the Ragas Prompt class.
 
-```{code-block} python
+```python
 from ragas.llms.prompt import Prompt
 
 long_form_answer_prompt_new = Prompt(
@@ -57,18 +57,18 @@ long_form_answer_prompt_new = Prompt(
 )
 ```
 
-**Using the Custom Prompt in Evaluations**
+## Using the Custom Prompt in Evaluations
 
 I will be using the **faithfulness** metric for my evaluation task. Faithfulness uses two default prompts `long_form_answer_prompt` and `nli_statements_message` for evaluations. I will be changing the default `long_form_answer_prompt` used in this metric to the newly created prompt object.
 
-```{code-block} python
+```python
 from ragas.metrics import faithfulness
 
 faithfulness.long_form_answer_prompt = long_form_answer_prompt_new
 print(faithfulness.long_form_answer_prompt.to_string())
 ```
 
-```{code-block} bash
+```text
 Create one or more statements from each sentence in the given answer.
 
 question: "Which is the only planet in the solar system that has life on it?"
@@ -86,7 +86,7 @@ statements:
 
 Now the custom prompt that we created is being used in the faithfulness metric. We can now evaluate the dataset against the metric that uses the new prompt that we created.
 
-```{code-block} python
+```python
 from ragas import evaluate
 
 result = evaluate(
@@ -98,7 +98,7 @@ result = evaluate(
 
 result
 ```
-```{code-block} bash
+```text
 evaluating with [faithfulness]
 100%|██████████| 1/1 [02:31<00:00, 151.79s/it]
 

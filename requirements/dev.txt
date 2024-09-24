@@ -11,3 +11,8 @@ transformers
 fastembed
 graphene
 fuzzywuzzy
+rouge_score
+nltk
+rapidfuzz
+pandas
+datacompy

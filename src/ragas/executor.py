@@ -23,7 +23,7 @@ def is_event_loop_running() -> bool:
         return loop.is_running()
 
 
-def as_completed(coros, max_workers):
+async def as_completed(coros, max_workers):
     if max_workers == -1:
         return asyncio.as_completed(coros)
 
@@ -42,6 +42,7 @@ def as_completed(coros, max_workers):
 class Executor:
     desc: str = "Evaluating"
     keep_progress_bar: bool = True
+    show_progress: bool = True
     jobs: t.List[t.Any] = field(default_factory=list, repr=False)
     raise_exceptions: bool = False
     run_config: t.Optional[RunConfig] = field(default=None, repr=False)
@@ -102,11 +103,12 @@ class Executor:
         async def _aresults() -> t.List[t.Any]:
             results = []
             for future in tqdm(
-                futures_as_they_finish,
+                await futures_as_they_finish,
                 desc=self.desc,
                 total=len(self.jobs),
                 # whether you want to keep the progress bar after completion
                 leave=self.keep_progress_bar,
+                disable=not self.show_progress,
             ):
                 r = await future
                 results.append(r)

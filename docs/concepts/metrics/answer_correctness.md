@@ -1,25 +1,23 @@
-# Answer Correctness
+## Answer Correctness
 
 The assessment of Answer Correctness involves gauging the accuracy of the generated answer when compared to the ground truth. This evaluation relies on the `ground truth` and the `answer`, with scores ranging from 0 to 1. A higher score indicates a closer alignment between the generated answer and the ground truth, signifying better correctness.
 
 Answer correctness encompasses two critical aspects: semantic similarity between the generated answer and the ground truth, as well as factual similarity. These aspects are combined using a weighted scheme to formulate the answer correctness score. Users also have the option to employ a 'threshold' value to round the resulting score to binary, if desired.
 
 
-```{hint}
-Ground truth: Einstein was born in 1879 in Germany.
+!!! example
+    **Ground truth**: Einstein was born in 1879 in Germany.
 
-High answer correctness: In 1879, Einstein was born in Germany.
+    **High answer correctness**: In 1879, Einstein was born in Germany.
 
-Low answer correctness: Einstein was born in Spain in 1879.
+    **Low answer correctness**: Einstein was born in Spain in 1879.
 
-```
 
-## Example
+### Example
 
-```{code-block} python
-:caption: Answer correctness with custom weights for each variable
+```python
 from datasets import Dataset 
-from ragas.metrics import faithfulness, answer_correctness
+from ragas.metrics import answer_correctness
 from ragas import evaluate
 
 data_samples = {
@@ -33,7 +31,7 @@ score.to_pandas()
 
 ```
 
-## Calculation
+### Calculation
 
 Let's calculate the answer correctness for the answer with low answer correctness. It is computed as the sum of factual correctness and the semantic similarity between the given answer and the ground truth.
 
@@ -50,9 +48,9 @@ In the second example:
 Now, we can use the formula for the F1 score to quantify correctness based on the number of statements in each of these lists:
 
 
-```{math}
+$$
 \text{F1 Score} = {|\text{TP} \over {(|\text{TP}| + 0.5 \times (|\text{FP}| + |\text{FN}|))}}
-```
+$$
 
 Next, we calculate the semantic similarity between the generated answer and the ground truth. Read more about it [here](./semantic_similarity.md).
 

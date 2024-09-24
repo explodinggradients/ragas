@@ -143,9 +143,6 @@ jobs:
           pip install .
           pip install -r requirements/dev.txt
 
-      - name: Format check
-        run: |
-          make format
       - name: Lint check
         run: make lint
       - name: Type check

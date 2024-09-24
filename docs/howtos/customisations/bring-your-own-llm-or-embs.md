@@ -6,27 +6,25 @@ Ragas uses LLMs and Embeddings for both evaluation and test set generation. By d
 - [Testset Generation](#test-set-generation)
 
 
-:::{note}
-`BaseRagasLLM` and `BaseRagasEmbeddings` are the base classes Ragas uses internally for LLMs and Embeddings. Any custom LLM or Embeddings should be a subclass of these base classes. 
+!!! note
+    `BaseRagasLLM` and `BaseRagasEmbeddings` are the base classes Ragas uses internally for LLMs and Embeddings. Any custom LLM or Embeddings should be a subclass of these base classes. 
 
-If you are using Langchain, you can pass the Langchain LLM and Embeddings directly and Ragas will wrap it with `LangchainLLMWrapper` or `LangchainEmbeddingsWrapper` as needed.
-:::
+    If you are using Langchain, you can pass the Langchain LLM and Embeddings directly and Ragas will wrap it with `LangchainLLMWrapper` or `LangchainEmbeddingsWrapper` as needed.
 
-:::{seealso}
-After understanding the basics, feel free to check out the specific guides here
+!!! tip
+    After understanding the basics, feel free to check out the specific guides here
 
-- [Azure OpenAI](./azure-openai.ipynb)
-- [AWS Bedrock](./aws-bedrock.ipynb)
-- [Google Cloud (VertexAI)](./gcp-vertexai.ipynb)
+    - [Azure OpenAI](./azure-openai.ipynb)
+    - [AWS Bedrock](./aws-bedrock.ipynb)
+    - [Google Cloud (VertexAI)](./gcp-vertexai.ipynb)
 
-Checkout list of embeddings supported by langchain [here](https://python.langchain.com/docs/integrations/text_embedding/)
-Checkout list of llms supported by langchain [here](https://python.langchain.com/docs/integrations/chat/)
+    Checkout list of embeddings supported by langchain [here](https://python.langchain.com/docs/integrations/text_embedding/)
+    Checkout list of llms supported by langchain [here](https://python.langchain.com/docs/integrations/chat/)
 
-:::
 
 For the sake of this example I will be using `m2-bert-80M-8k-retrieval` to replace the default OpenAI Embeddings, and `NousResearch/Nous-Hermes-2-Mixtral-8x7B-SFT` hosted on Together AI as LLM to replace the default gpt-3.5-turbo LLM. So let's start by initializing them.
   
-```{code-block} python
+```python
 
 from langchain_together import Together
 from langchain_together.embeddings import TogetherEmbeddings
@@ -51,7 +49,7 @@ Depending on which metric you use for evaluations, it will use LLMs and/or Embed
 
 1. By Passing it through `evaluate()`: The evaluate function has 2 arguments `llm` and `embeddings`. You can pass any instance of `BaseRagasLLM` or `BaseRagasEmbeddings` respectively. If you are using Langchain, you can pass the Langchain llm and embeddings instances directly and Ragas will wrap it with `LangchainLLMWrapper` or `LangchainEmbeddingsWrapper` as needed.
 
-```{code-block} python
+```python
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.embeddings import Embeddings
 
@@ -62,7 +60,7 @@ results = evaluate(metrics=[], llm=langchain_llm, embeddings=embeddings)
 ```
 
 For example, to use the embeddings and llm we initialized above, we can do the following:
-```{code-block} python
+```python
 
 from ragas.metrics import faithfullness
 from ragas import evaluate
@@ -73,7 +71,7 @@ results = evaluate(metrics=[faithfullness], llm=together_completion, embeddings=
 2. Attaching it to `metrics`: You can attach the LLM and Embeddings to the `metrics` object directly.
 This method can be more useful when you want a specific metric to use a different LLM or Embeddings than the rest of the metrics.
 
-```{code-block} python
+```python
 # override the llm and embeddings for a specific metric
 from ragas.metrics import answer_relevancy 
 
@@ -94,7 +92,7 @@ result = evaluate(
 
 For example, to use the embeddings and llm we initialized above, we can do the following:
 
-```{code-block} python
+```python
 from ragas.metrics import answer_relevancy 
 
 answer_relevancy.llm = together_completion
@@ -103,9 +101,8 @@ answer_relevancy.embeddings = together_embeddings
 result = evaluate(metrics=[answer_relevancy])
 ```
 
-:::{note}
-A note on precedence: llms and embeddings attached to metrics have higher precedence than the llm and embeddings passed to `evaluate()` function. You can use this to override specific metrics with a different llm or embedding models that perform better for the metric in question.
-:::
+!!! note
+    A note on precedence: llms and embeddings attached to metrics have higher precedence than the llm and embeddings passed to `evaluate()` function. You can use this to override specific metrics with a different llm or embedding models that perform better for the metric in question.
 
 ## Test set Generation
 
@@ -121,7 +118,7 @@ There are two type of LLMs used in the test set generation pipeline. The `genera
 
 It also uses `embeddings` for functionalities like calculating the similarity between nodes,etc.
 
-```{code-block} python
+```python
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.embeddings import Embeddings
 
@@ -144,7 +141,7 @@ embeddings = MyCustomEmbeddings()
 
 For example, let's replace the default OpenAI LLM and Embeddings with the ones we initialized above.
 
-```{code-block} python
+```python
 
 from ragas.testset.generator import TestsetGenerator
 
@@ -161,7 +158,7 @@ generator = TestsetGenerator.from_langchain(
 ### DocumentStore
 The `DocumentStore` requires an `Extractor` to extract keywords from the documents and nodes and `embeddings` to calculate the embeddings of nodes and calculate similarity. 
 
-```{code-block} python
+```python
 # default extractor
 from ragas.testset.extractor import KeyphraseExtractor
 from langchain.text_splitter import TokenTextSplitter

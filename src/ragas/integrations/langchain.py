@@ -4,23 +4,23 @@ import typing as t
 
 from langchain.chains.base import Chain
 from langchain.schema import RUN_KEY
+from langchain_core.documents import Document as LCDocument
 from langchain_openai.chat_models import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langsmith.evaluation import EvaluationResult, RunEvaluator
 from langsmith.schemas import Example, Run
 
+from ragas.dataset_schema import SingleTurnSample
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.llms import LangchainLLMWrapper
 from ragas.metrics.base import (
-    EvaluationMode,
     Metric,
     MetricWithEmbeddings,
     MetricWithLLM,
-    get_required_columns,
+    SingleTurnMetric,
 )
 from ragas.run_config import RunConfig
-from ragas.utils import get_or_init
-from ragas.validation import EVALMODE_TO_COLUMNS
+from ragas.utils import convert_row_v1_to_v2, get_or_init, get_required_columns_v1
 
 if t.TYPE_CHECKING:
     from langchain.callbacks.manager import (
@@ -53,9 +53,13 @@ class EvaluatorChain(Chain, RunEvaluator):
             ).embeddings = LangchainEmbeddingsWrapper(embeddings)
         self.metric.init(run_config)
 
+        assert isinstance(
+            self.metric, SingleTurnMetric
+        ), "Metric must be SingleTurnMetric"
+
     @property
     def input_keys(self) -> list[str]:
-        return get_required_columns(self.metric.evaluation_mode)
+        return get_required_columns_v1(self.metric)
 
     @property
     def output_keys(self) -> list[str]:
@@ -63,88 +67,76 @@ class EvaluatorChain(Chain, RunEvaluator):
 
     def _call(
         self,
-        inputs: dict[str, t.Any],
+        inputs: t.Union[dict[str, t.Any], SingleTurnSample],
         run_manager: t.Optional[CallbackManagerForChainRun] = None,
     ) -> dict[str, t.Any]:
         """
         Call the evaluation chain.
         """
+        if isinstance(inputs, dict):
+            inputs = convert_row_v1_to_v2(inputs)
+            if "retrieved_contexts" in inputs:
+                inputs["retrieved_contexts"] = [
+                    doc.page_content
+                    for doc in inputs["retrieved_contexts"]
+                    if isinstance(doc, LCDocument)
+                ]
+            inputs = SingleTurnSample(**inputs)
+
         self._validate(inputs)
         _run_manager = run_manager or CallbackManagerForChainRun.get_noop_manager()
         callbacks = _run_manager.get_child()
 
-        c = inputs.get("contexts", [""])
-        g = inputs.get("ground_truth", "")
-        q = inputs.get("question", "")
-        a = inputs.get("answer", "")
-        score = self.metric.score(
-            {
-                "question": q,
-                "answer": a,
-                "contexts": c,
-                "ground_truth": g,
-            },
+        assert isinstance(
+            self.metric, SingleTurnMetric
+        ), "Metric must be SingleTurnMetric"
+        score = self.metric.single_turn_score(
+            inputs,
             callbacks=callbacks,
         )
         return {self.metric.name: score}
 
     async def _acall(
         self,
-        inputs: t.Dict[str, t.Any],
+        inputs: t.Union[t.Dict[str, t.Any], SingleTurnSample],
         run_manager: t.Optional[AsyncCallbackManagerForChainRun] = None,
     ) -> t.Dict[str, t.Any]:
         """
         Call the evaluation chain.
         """
+
+        if isinstance(inputs, dict):
+            inputs = convert_row_v1_to_v2(inputs)
+            if "retrieved_contexts" in inputs:
+                inputs["retrieved_contexts"] = [
+                    doc.page_content
+                    for doc in inputs["retrieved_contexts"]
+                    if isinstance(doc, LCDocument)
+                ]
+            inputs = SingleTurnSample(**inputs)
+
         self._validate(inputs)
         _run_manager = run_manager or AsyncCallbackManagerForChainRun.get_noop_manager()
         # TODO: currently AsyncCallbacks are not supported in ragas
         _run_manager.get_child()
-
-        c = inputs.get("contexts", [""])
-        g = inputs.get("ground_truth", "")
-        q = inputs.get("question", "")
-        a = inputs.get("answer", "")
-        score = await self.metric.ascore(
-            {
-                "question": q,
-                "answer": a,
-                "contexts": c,
-                "ground_truth": g,
-            },
+        assert isinstance(
+            self.metric, SingleTurnMetric
+        ), "Metric must be SingleTurnMetric"
+        score = await self.metric.single_turn_ascore(
+            inputs,
             callbacks=[],
         )
         return {self.metric.name: score}
 
-    def _validate(
-        self,
-        input: dict[str, t.Any],
-        question_key: str = "question",
-        prediction_key: str = "answer",
-        context_key: str = "contexts",
-    ) -> None:
+    def _validate(self, input: SingleTurnSample) -> None:
         # validate each example
-        required_columns = EVALMODE_TO_COLUMNS[self.metric.evaluation_mode]
-        if "question" in required_columns and question_key not in input:
-            raise ValueError(
-                f'"{question_key}" is required in each example'
-                f"for the metric[{self.metric.name}] you have chosen."
-            )
-        if "answer" in required_columns and prediction_key not in input:
-            raise ValueError(
-                f'"{prediction_key}" is required in each prediction'
-                f"for the metric[{self.metric.name}] you have chosen."
-            )
-        if "contexts" in required_columns and context_key not in input:
-            raise ValueError(
-                f'"{context_key}" is required in each prediction for the '
-                f"metric[{self.metric.name}] you have chosen."
-            )
-        if "ground_truth" in required_columns and "ground_truth" not in input:
-            raise ValueError(
-                f'"ground_truth" is required in each prediction for the '
-                f"metric[{self.metric.name}] you have chosen."
-            )
+        required_columns = self.metric.required_columns.get("SINGLE_TURN", [])
+        for col in required_columns:
+            if col not in input.features():
+                raise ValueError(
+                    f'"{col}" is required in each example'
+                    f"for the metric[{self.metric.name}] you have chosen."
+                )
 
     @staticmethod
     def _keys_are_present(keys_to_check: list, dict_to_check: dict) -> list[str]:
@@ -171,9 +163,10 @@ class EvaluatorChain(Chain, RunEvaluator):
         assert (
             run.outputs is not None
         ), "the current run has no outputs. The chain should output 'answer' and 'contexts' keys."
-        output_keys = get_required_columns(
-            self.metric.evaluation_mode, ["question", "ground_truth"]
-        )
+        output_keys = get_required_columns_v1(self.metric)
+        output_keys = [
+            key for key in output_keys if key not in ["question", "ground_truth"]
+        ]
         missing_keys = self._keys_are_present(output_keys, run.outputs)
         if missing_keys:
             raise ValueError(
@@ -198,12 +191,7 @@ class EvaluatorChain(Chain, RunEvaluator):
 
         chain_eval = run.outputs
         chain_eval["question"] = example.inputs["question"]
-        if self.metric.evaluation_mode in [
-            EvaluationMode.gc,
-            EvaluationMode.ga,
-            EvaluationMode.qcg,
-            EvaluationMode.qga,
-        ]:
+        if "ground_truth" in get_required_columns_v1(self.metric):
             if example.outputs is None or "ground_truth" not in example.outputs:
                 raise ValueError("expected `ground_truth` in example outputs.")
             chain_eval["ground_truth"] = example.outputs["ground_truth"]

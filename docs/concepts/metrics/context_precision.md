@@ -1,66 +1,83 @@
 # Context Precision
+Context Precision is a metric that measures the proportion of relevant chunks in the `retrieved_contexts`. It is calculated as the mean of the precision@k for each chunk in the context. Precision@k is the ratio of the number of relevant chunks at rank k to the total number of chunks at rank k.
 
-Context Precision is a metric that evaluates whether all of the ground-truth relevant items present in the `contexts` are ranked higher or not. Ideally all the relevant chunks must appear at the top ranks. This metric is computed using the `question`, `ground_truth` and the `contexts`, with values ranging between 0 and 1, where higher scores indicate better precision.
-
-
-```{math}
+$$
 \text{Context Precision@K} = \frac{\sum_{k=1}^{K} \left( \text{Precision@k} \times v_k \right)}{\text{Total number of relevant items in the top } K \text{ results}}
-````
+$$
 
-```{math}
+$$
 \text{Precision@k} = {\text{true positives@k} \over  (\text{true positives@k} + \text{false positives@k})}
-````
+$$
+
+Where $K$ is the total number of chunks in `retrieved_contexts` and $v_k \in \{0, 1\}$ is the relevance indicator at rank $k$.
+
+## LLM Based Context Precision
+
+The following metrics uses LLM to identify if a retrieved context is relevant or not.
+
+### Context Precision without reference
+
+This metric is can be used when you have both retrieved contexts and also reference contexts associated with a `user_input`. To estimate if a retrieved contexts is relevant or not this method uses the LLM to compare each of the retrieved context or chunk present in `retrieved_contexts` with `response`. 
+
+#### Example
+    
+```python
+from ragas import SingleTurnSample
+from ragas.metrics import LLMContextPrecisionWithoutReference
+
+context_precision = LLMContextPrecisionWithoutReference()
+
+sample = SingleTurnSample(
+    user_input="Where is the Eiffel Tower located?",
+    response="The Eiffel Tower is located in Paris.",
+    retrieved_contexts=["The Eiffel Tower is located in Paris."], 
+)
 
 
-Where $K$ is the total number of chunks in `contexts` and $v_k \in \{0, 1\}$ is the relevance indicator at rank $k$.
-
-```{hint}
-Question: Where is France and what is it's capital?
-Ground truth: France is in Western Europe and its capital is Paris.
-
-High context precision: ["France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. Paris, its capital, is famed for its fashion houses, classical art museums including the Louvre and monuments like the Eiffel Tower", "The country is also renowned for its wines and sophisticated cuisine. Lascaux’s ancient cave drawings, Lyon’s Roman theater and the vast Palace of Versailles attest to its rich history."]  
-
-Low context precision: ["The country is also renowned for its wines and sophisticated cuisine. Lascaux’s ancient cave drawings, Lyon’s Roman theater and", "France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. Paris, its capital, is famed for its fashion houses, classical art museums including the Louvre and monuments like the Eiffel Tower",]
+await context_precision.single_turn_ascore(sample)
 ```
 
-## Example
+### Context Precision with reference
 
-```{code-block} python
-:caption: Context precision
-from datasets import Dataset 
-from ragas.metrics import context_precision
-from ragas import evaluate
+This metric is can be used when you have both retrieved contexts and also reference answer associated with a `user_input`. To estimate if a retrieved contexts is relevant or not this method uses the LLM to compare each of the retrieved context or chunk present in `retrieved_contexts` with `reference`. 
 
-data_samples = {
-    'question': ['When was the first super bowl?', 'Who won the most super bowls?'],
-    'answer': ['The first superbowl was held on Jan 15, 1967', 'The most super bowls have been won by The New England Patriots'],
-    'contexts' : [['The First AFL–NFL World Championship Game was an American football game played on January 15, 1967, at the Los Angeles Memorial Coliseum in Los Angeles,'], 
-    ['The Green Bay Packers...Green Bay, Wisconsin.','The Packers compete...Football Conference']],
-    'ground_truth': ['The first superbowl was held on January 15, 1967', 'The New England Patriots have won the Super Bowl a record six times']
-}
-dataset = Dataset.from_dict(data_samples)
-score = evaluate(dataset,metrics=[context_precision])
-score.to_pandas()
+#### Example
+    
+```python
+from ragas import SingleTurnSample
+from ragas.metrics import LLMContextPrecisionWithReference
+
+context_precision = LLMContextPrecisionWithReference()
+
+sample = SingleTurnSample(
+    user_input="Where is the Eiffel Tower located?",
+    reference="The Eiffel Tower is located in Paris.",
+    retrieved_contexts=["The Eiffel Tower is located in Paris."], 
+)
+
+await context_precision.single_turn_ascore(sample)
 ```
 
-## Calculation 
+## Non LLM Based Context Precision
 
-Let's examine how context precision was calculated using the low context precision example:
+The following metrics uses traditional methods to identify if a retrieved context is relevant or not. You can use any non LLM based metrics as distance measure to identify if a retrieved context is relevant or not.
 
-**Step 1**: For each chunk in retrieved context, check if it is relevant or not relevant to arrive at the ground truth for the given question.
+### Context Precision with reference contexts
 
-**Step 2**: Calculate precision@k for each chunk in the context.
+This metric is can be used when you have both retrieved contexts and also reference contexts associated with a `user_input`. To estimate if a retrieved contexts is relevant or not this method uses the LLM to compare each of the retrieved context or chunk present in `retrieved_contexts` with each ones present in `reference_contexts`. 
 
-```{math}
-\text{Precision@1} = {\text{0} \over \text{1}} = 0
-````
+#### Example
+    
+```python
+from ragas import SingleTurnSample
+from ragas.metrics import NonLLMContextPrecisionWithReference
 
-```{math}
-\text{Precision@2} = {\text{1} \over \text{2}} = 0.5
-````
+context_precision = NonLLMContextPrecisionWithReference()
 
-**Step 3**: Calculate the mean of precision@k to arrive at the final context precision score.
+sample = SingleTurnSample(
+    retrieved_contexts=["The Eiffel Tower is located in Paris."], 
+    reference_contexts=["Paris is the capital of France.", "The Eiffel Tower is one of the most famous landmarks in Paris."]
+)
 
-```{math}
- \text{Context Precision} = {\text{(0+0.5)} \over \text{1}} = 0.5
+await context_precision.single_turn_ascore(sample)
 ```

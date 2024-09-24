@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel
 
+from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt, PromptValue
 from ragas.metrics._answer_similarity import AnswerSimilarity
@@ -16,9 +17,10 @@ from ragas.metrics._faithfulness import (
     _statements_output_parser,
 )
 from ragas.metrics.base import (
-    EvaluationMode,
+    MetricType,
     MetricWithEmbeddings,
     MetricWithLLM,
+    SingleTurnMetric,
     get_segmenter,
 )
 from ragas.run_config import RunConfig
@@ -140,7 +142,7 @@ CORRECTNESS_PROMPT = Prompt(
 
 
 @dataclass
-class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
+class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     """
     Measures answer correctness compared to ground truth as a combination of
     factuality and semantic similarity.
@@ -157,7 +159,11 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
     """
 
     name: str = "answer_correctness"  # type: ignore[reportIncompatibleMethodOverride]
-    evaluation_mode: EvaluationMode = EvaluationMode.qga  # type: ignore[reportIncompatibleMethodOverride]
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {"user_input", "response", "reference"}
+        }
+    )
     correctness_prompt: Prompt = field(default_factory=lambda: CORRECTNESS_PROMPT)
     long_form_answer_prompt: Prompt = field(
         default_factory=lambda: LONG_FORM_ANSWER_PROMPT
@@ -210,12 +216,19 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
         )
         return prompt_value
 
+    async def _single_turn_ascore(
+        self: t.Self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        row = sample.dict()
+        score = await self._ascore(row, callbacks)
+        return score
+
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM must be set"
 
-        question = row["question"]
+        question = row["user_input"]
         statements = {}
-        for item in ["answer", "ground_truth"]:
+        for item in ["response", "reference"]:
             p_value = self._create_statements_prompt(question, row[item])
             item_statement = await self.llm.generate(p_value, callbacks=callbacks)
             statements[item] = await _statements_output_parser.aparse(
@@ -231,12 +244,12 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings):
         if not all([val == [] for val in statements.values()]):
             ground_truth = [
                 statement
-                for item in statements["ground_truth"]
+                for item in statements["reference"]
                 for statement in item["simpler_statements"]
             ]
             answer = [
                 statement
-                for item in statements["answer"]
+                for item in statements["response"]
                 for statement in item["simpler_statements"]
             ]
             p_value = self.correctness_prompt.format(

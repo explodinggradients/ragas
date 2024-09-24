@@ -1,10 +1,9 @@
-# Building HF Dataset with your own Data
+# Dataset Preparation
 
 This tutorial notebook provides a step-by-step guide on how to prepare data for experimenting and evaluating using ragas. 
 
-```{note}
-If you're using popular frameworks like llama-index, langchain, etc to build your RAG application, Ragas provides integrations with these frameworks. Checkout [integrations](../integrations/)
-```
+!!! note
+    If you're using popular frameworks like llama-index, langchain, etc to build your RAG application, Ragas provides integrations with these frameworks. Checkout [integrations](../integrations/)
 
 This tutorial assumes that you have the 4 required data points from your RAG pipeline
 1. Question: A set of questions. 
@@ -15,8 +14,7 @@ This tutorial assumes that you have the 4 required data points from your RAG pip
 
 ## Example dataset
 
-```{code-block} python
-:caption: convert data samples to HF dataset
+```python
 from datasets import Dataset 
 
 data_samples = {

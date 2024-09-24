@@ -7,9 +7,13 @@ from dataclasses import dataclass, field
 import numpy as np
 from langchain_core.pydantic_v1 import BaseModel
 
+from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM, ensembler
+from ragas.metrics._string import NonLLMStringSimilarity
+from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric, ensembler
+from ragas.run_config import RunConfig
+from ragas.utils import deprecated
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -108,7 +112,7 @@ CONTEXT_RECALL_RA = Prompt(
 
 
 @dataclass
-class ContextRecall(MetricWithLLM):
+class LLMContextRecall(MetricWithLLM, SingleTurnMetric):
     """
     Estimates context recall by estimating TP and FN using annotated answer and
     retrieved context.
@@ -119,7 +123,15 @@ class ContextRecall(MetricWithLLM):
     """
 
     name: str = "context_recall"  # type: ignore
-    evaluation_mode: EvaluationMode = EvaluationMode.qcg  # type: ignore
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {
+                "user_input",
+                "retrieved_contexts",
+                "reference",
+            }
+        }
+    )
     context_recall_prompt: Prompt = field(default_factory=lambda: CONTEXT_RECALL_RA)
     max_retries: int = 1
     _reproducibility: int = 1
@@ -146,7 +158,7 @@ class ContextRecall(MetricWithLLM):
             self.reproducibility = 1
 
     def _create_context_recall_prompt(self, row: t.Dict) -> PromptValue:
-        qstn, ctx, gt = row["question"], row["contexts"], row["ground_truth"]
+        qstn, ctx, gt = row["user_input"], row["retrieved_contexts"], row["reference"]
         ctx = "\n".join(ctx) if isinstance(ctx, list) else ctx
 
         return self.context_recall_prompt.format(question=qstn, context=ctx, answer=gt)
@@ -161,6 +173,12 @@ class ContextRecall(MetricWithLLM):
             logger.warning("The LLM did not return a valid classification.")
 
         return score
+
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        row = sample.dict()
+        return await self._ascore(row, callbacks)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "set LLM before use"
@@ -196,6 +214,80 @@ class ContextRecall(MetricWithLLM):
 
     def save(self, cache_dir: str | None = None) -> None:
         self.context_recall_prompt.save(cache_dir)
+
+
+@dataclass
+class ContextRecall(LLMContextRecall):
+    name: str = "context_recall"
+
+    @deprecated(since="0.2", removal="0.3", alternative="LLMContextRecall")
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        row = sample.dict()
+        return await self._ascore(row, callbacks)
+
+    @deprecated(since="0.2", removal="0.3", alternative="LLMContextRecall")
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        return await super()._ascore(row, callbacks)
+
+
+@dataclass
+class NonLLMContextRecall(SingleTurnMetric):
+    name: str = "non_llm_context_recall"  # type: ignore
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {
+                "retrieved_contexts",
+                "reference_contexts",
+            }
+        }
+    )
+    distance_measure: SingleTurnMetric = field(
+        default_factory=lambda: NonLLMStringSimilarity()
+    )
+    threshold: float = 0.5
+
+    def __post_init__(self):
+        if isinstance(self.distance_measure, MetricWithLLM):
+            raise ValueError(
+                "distance_measure must not be an instance of MetricWithLLM for NonLLMContextPrecisionWithReference"
+            )
+
+    def init(self, run_config: RunConfig) -> None:
+        ...
+
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        retrieved_contexts = sample.retrieved_contexts
+        reference_contexts = sample.reference_contexts
+        assert retrieved_contexts is not None, "retrieved_contexts is empty"
+        assert reference_contexts is not None, "reference_contexts is empty"
+
+        scores = []
+        for ref in reference_contexts:
+            scores.append(
+                max(
+                    [
+                        await self.distance_measure.single_turn_ascore(
+                            SingleTurnSample(reference=rc, response=ref), callbacks
+                        )
+                        for rc in retrieved_contexts
+                    ]
+                )
+            )
+        return self._compute_score(scores)
+
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
+
+    def _compute_score(self, verdict_list: t.List[float]) -> float:
+        response = [1 if score > self.threshold else 0 for score in verdict_list]
+        denom = len(response)
+        numerator = sum(response)
+        score = numerator / denom if denom > 0 else np.nan
+        return score
 
 
 context_recall = ContextRecall()

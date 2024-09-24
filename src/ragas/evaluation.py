@@ -12,6 +12,7 @@ from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 from ragas._analytics import EvaluationEvent, track, track_was_completed
 from ragas.callbacks import new_group
 from ragas.cost import TokenUsage
+from ragas.dataset_schema import EvaluationDataset, MultiTurnSample, SingleTurnSample
 from ragas.embeddings.base import (
     BaseRagasEmbeddings,
     LangchainEmbeddingsWrapper,
@@ -22,23 +23,27 @@ from ragas.executor import Executor
 from ragas.integrations.helicone import helicone_config
 from ragas.llms import llm_factory
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
+from ragas.metrics import AspectCritic
 from ragas.metrics._answer_correctness import AnswerCorrectness
 from ragas.metrics.base import (
     Metric,
     MetricWithEmbeddings,
     MetricWithLLM,
+    MultiTurnMetric,
+    SingleTurnMetric,
     is_reproducable,
 )
-from ragas.metrics.critique import AspectCritique
 from ragas.run_config import RunConfig
-from ragas.utils import get_feature_language, safe_nanmean
-
-# from ragas.metrics.critique import AspectCritique
+from ragas.utils import (
+    convert_v1_to_v2_dataset,
+    convert_v2_to_v1_dataset,
+    get_feature_language,
+    safe_nanmean,
+)
 from ragas.validation import (
-    handle_deprecated_ground_truths,
     remap_column_names,
-    validate_column_dtypes,
-    validate_evaluation_modes,
+    validate_required_columns,
+    validate_supported_metrics,
 )
 
 if t.TYPE_CHECKING:
@@ -46,10 +51,12 @@ if t.TYPE_CHECKING:
 
     from ragas.cost import CostCallbackHandler, TokenUsageParser
 
+RAGAS_EVALUATION_CHAIN_NAME = "ragas evaluation"
+
 
 @track_was_completed
 def evaluate(
-    dataset: Dataset,
+    dataset: t.Union[Dataset, EvaluationDataset],
     metrics: list[Metric] | None = None,
     llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
@@ -59,6 +66,7 @@ def evaluate(
     token_usage_parser: t.Optional[TokenUsageParser] = None,
     raise_exceptions: bool = False,
     column_map: t.Optional[t.Dict[str, str]] = None,
+    show_progress: bool = True,
 ) -> Result:
     """
     Run the evaluation on the dataset with different metrics
@@ -102,6 +110,8 @@ def evaluate(
         the dataset are different from the default ones then you can provide the
         mapping as a dictionary here. Example: If the dataset column name is contexts_v1,
         column_map can be given as {"contexts":"contexts_v1"}
+    show_progress: bool, optional
+        Whether to show the progress bar during evaluation. If set to False, the progress bar will be disabled. Default is True.
 
     Returns
     -------
@@ -157,12 +167,18 @@ def evaluate(
 
         metrics = [answer_relevancy, context_precision, faithfulness, context_recall]
 
-    # remap column names from the dataset
-    dataset = remap_column_names(dataset, column_map)
-    # validation
-    dataset = handle_deprecated_ground_truths(dataset)
-    validate_evaluation_modes(dataset, metrics)
-    validate_column_dtypes(dataset)
+    v1_input = False
+    if isinstance(dataset, Dataset):
+        # remap column names from the dataset
+        v1_input = True
+        dataset = remap_column_names(dataset, column_map)
+        dataset = convert_v1_to_v2_dataset(dataset)
+        # validation
+        dataset = EvaluationDataset.from_list(dataset.to_list())
+
+    if isinstance(dataset, EvaluationDataset):
+        validate_required_columns(dataset, metrics)
+        validate_supported_metrics(dataset, metrics)
 
     # set the llm and embeddings
     if isinstance(llm, LangchainLLM):
@@ -180,7 +196,7 @@ def evaluate(
     # loop through the metrics and perform initializations
     for i, metric in enumerate(metrics):
         # set llm and embeddings if not set
-        if isinstance(metric, AspectCritique):
+        if isinstance(metric, AspectCritic):
             binary_metrics.append(metric.name)
         if isinstance(metric, MetricWithLLM) and metric.llm is None:
             if llm is None:
@@ -210,6 +226,7 @@ def evaluate(
         keep_progress_bar=True,
         raise_exceptions=raise_exceptions,
         run_config=run_config,
+        show_progress=show_progress,
     )
 
     # Ragas Callbacks
@@ -233,26 +250,44 @@ def evaluate(
     # new evaluation chain
     row_run_managers = []
     evaluation_rm, evaluation_group_cm = new_group(
-        name="ragas evaluation", inputs={}, callbacks=callbacks
+        name=RAGAS_EVALUATION_CHAIN_NAME, inputs={}, callbacks=callbacks
     )
-    for i, row in enumerate(dataset):
-        row = t.cast(t.Dict[str, t.Any], row)
+
+    sample_type = dataset.get_sample_type()
+    for i, sample in enumerate(dataset):
+        row = t.cast(t.Dict[str, t.Any], sample.dict())
         row_rm, row_group_cm = new_group(
             name=f"row {i}",
             inputs=row,
             callbacks=evaluation_group_cm,
         )
         row_run_managers.append((row_rm, row_group_cm))
-        [
-            executor.submit(
-                metric.ascore,
-                row,
-                row_group_cm,
-                name=f"{metric.name}-{i}",
-                timeout=run_config.timeout,
-            )
-            for metric in metrics
-        ]
+        if sample_type == SingleTurnSample:
+            _ = [
+                executor.submit(
+                    metric.single_turn_ascore,
+                    sample,
+                    row_group_cm,
+                    name=f"{metric.name}-{i}",
+                    timeout=run_config.timeout,
+                )
+                for metric in metrics
+                if isinstance(metric, SingleTurnMetric)
+            ]
+        elif sample_type == MultiTurnSample:
+            _ = [
+                executor.submit(
+                    metric.multi_turn_ascore,
+                    sample,
+                    row_group_cm,
+                    name=f"{metric.name}-{i}",
+                    timeout=run_config.timeout,
+                )
+                for metric in metrics
+                if isinstance(metric, MultiTurnMetric)
+            ]
+        else:
+            raise ValueError(f"Unsupported sample type {sample_type}")
 
     scores = []
     try:
@@ -281,6 +316,11 @@ def evaluate(
     else:
         # evalution run was successful
         # now lets process the results
+        # convert to v.1 dataset
+        dataset = dataset.to_hf_dataset()
+        if v1_input:
+            dataset = convert_v2_to_v1_dataset(dataset)
+
         cost_cb = ragas_callbacks["cost_cb"] if "cost_cb" in ragas_callbacks else None
         result = Result(
             scores=Dataset.from_list(scores),
@@ -316,7 +356,7 @@ def evaluate(
             event_type="evaluation",
             metrics=metrics_names,
             evaluation_mode="",
-            num_rows=dataset.shape[0],
+            num_rows=len(dataset),
             language=metric_lang[0] if len(metric_lang) > 0 else "",
             in_ci=in_ci,
         )
@@ -326,6 +366,21 @@ def evaluate(
 
 @dataclass
 class Result(dict):
+    """
+    A class to store and process the results of the evaluation.
+
+    Attributes
+    ----------
+    scores : Dataset
+        The dataset containing the scores of the evaluation.
+    dataset : Dataset, optional
+        The original dataset used for the evaluation. Default is None.
+    binary_columns : list of str, optional
+        List of columns that are binary metrics. Default is an empty list.
+    cost_cb : CostCallbackHandler, optional
+        The callback handler for cost computation. Default is None.
+    """
+
     scores: Dataset
     dataset: t.Optional[Dataset] = None
     binary_columns: t.List[str] = field(default_factory=list)
@@ -341,6 +396,26 @@ class Result(dict):
                 values.append(value + 1e-10)
 
     def to_pandas(self, batch_size: int | None = None, batched: bool = False):
+        """
+        Convert the result to a pandas DataFrame.
+
+        Parameters
+        ----------
+        batch_size : int, optional
+            The batch size for conversion. Default is None.
+        batched : bool, optional
+            Whether to convert in batches. Default is False.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The result as a pandas DataFrame.
+
+        Raises
+        ------
+        ValueError
+            If the dataset is not provided.
+        """
         if self.dataset is None:
             raise ValueError("dataset is not provided for the results class")
         assert self.scores.shape[0] == self.dataset.shape[0]
@@ -349,6 +424,19 @@ class Result(dict):
         return result_ds.to_pandas(batch_size=batch_size, batched=batched)
 
     def total_tokens(self) -> t.Union[t.List[TokenUsage], TokenUsage]:
+        """
+        Compute the total tokens used in the evaluation.
+
+        Returns
+        -------
+        list of TokenUsage or TokenUsage
+            The total tokens used.
+
+        Raises
+        ------
+        ValueError
+            If the cost callback handler is not provided.
+        """
         if self.cost_cb is None:
             raise ValueError(
                 "The evaluate() run was not configured for computing cost. Please provide a token_usage_parser function to evaluate() to compute cost."
@@ -361,6 +449,28 @@ class Result(dict):
         cost_per_output_token: t.Optional[float] = None,
         per_model_costs: t.Dict[str, t.Tuple[float, float]] = {},
     ) -> float:
+        """
+        Compute the total cost of the evaluation.
+
+        Parameters
+        ----------
+        cost_per_input_token : float, optional
+            The cost per input token. Default is None.
+        cost_per_output_token : float, optional
+            The cost per output token. Default is None.
+        per_model_costs : dict of str to tuple of float, optional
+            The per model costs. Default is an empty dictionary.
+
+        Returns
+        -------
+        float
+            The total cost of the evaluation.
+
+        Raises
+        ------
+        ValueError
+            If the cost callback handler is not provided.
+        """
         if self.cost_cb is None:
             raise ValueError(
                 "The evaluate() run was not configured for computing cost. Please provide a token_usage_parser function to evaluate() to compute cost."

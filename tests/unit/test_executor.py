@@ -82,7 +82,7 @@ def test_as_completed_in_script():
 
     async def _run():
         results = []
-        for t in as_completed([echo_order(1), echo_order(2), echo_order(3)], 3):
+        for t in await as_completed([echo_order(1), echo_order(2), echo_order(3)], 3):
             r = await t
             results.append(r)
         return results

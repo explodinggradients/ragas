@@ -1,6 +1,19 @@
+import inspect
+import sys
+
 from ragas.metrics._answer_correctness import AnswerCorrectness, answer_correctness
-from ragas.metrics._answer_relevance import AnswerRelevancy, answer_relevancy
-from ragas.metrics._answer_similarity import AnswerSimilarity, answer_similarity
+from ragas.metrics._answer_relevance import (
+    AnswerRelevancy,
+    ResponseRelevancy,
+    answer_relevancy,
+)
+from ragas.metrics._answer_similarity import (
+    AnswerSimilarity,
+    SemanticSimilarity,
+    answer_similarity,
+)
+from ragas.metrics._aspect_critic import AspectCritic
+from ragas.metrics._bleu_score import BleuScore
 from ragas.metrics._context_entities_recall import (
     ContextEntityRecall,
     context_entity_recall,
@@ -8,24 +21,37 @@ from ragas.metrics._context_entities_recall import (
 from ragas.metrics._context_precision import (
     ContextPrecision,
     ContextUtilization,
+    LLMContextPrecisionWithoutReference,
+    NonLLMContextPrecisionWithReference,
     context_precision,
-    context_utilization,
 )
-from ragas.metrics._context_recall import ContextRecall, context_recall
+from ragas.metrics._context_recall import (
+    ContextRecall,
+    LLMContextRecall,
+    NonLLMContextRecall,
+    context_recall,
+)
+from ragas.metrics._datacompy_score import DataCompyScore
+from ragas.metrics._domain_specific_rubrics import (
+    RubricsScoreWithoutReference,
+    RubricsScoreWithReference,
+)
+from ragas.metrics._factual_correctness import FactualCorrectness
 from ragas.metrics._faithfulness import Faithfulness, FaithulnesswithHHEM, faithfulness
-from ragas.metrics._noise_sensitivity import (
-    NoiseSensitivity,
-    noise_sensitivity_irrelevant,
-    noise_sensitivity_relevant,
+from ragas.metrics._goal_accuracy import (
+    AgentGoalAccuracyWithoutReference,
+    AgentGoalAccuracyWithReference,
 )
-from ragas.metrics._rubrics_based import (
-    LabelledRubricsScore,
-    ReferenceFreeRubricsScore,
-    labelled_rubrics_score,
-    reference_free_rubrics_score,
+from ragas.metrics._instance_specific_rubrics import (
+    InstanceRubricsScoreWithoutReference,
+    InstanceRubricsWithReference,
 )
+from ragas.metrics._noise_sensitivity import NoiseSensitivity
+from ragas.metrics._rogue_score import RougeScore
+from ragas.metrics._sql_semantic_equivalence import LLMSQLEquivalence
+from ragas.metrics._string import ExactMatch, NonLLMStringSimilarity, StringPresence, DistanceMeasure
 from ragas.metrics._summarization import SummarizationScore, summarization_score
-from ragas.metrics.critique import AspectCritique
+from ragas.metrics._tool_call_accuracy import ToolCallAccuracy
 
 __all__ = [
     "AnswerCorrectness",
@@ -38,10 +64,9 @@ __all__ = [
     "ContextPrecision",
     "context_precision",
     "ContextUtilization",
-    "context_utilization",
     "ContextRecall",
     "context_recall",
-    "AspectCritique",
+    "AspectCritic",
     "AnswerRelevancy",
     "answer_relevancy",
     "ContextEntityRecall",
@@ -49,10 +74,34 @@ __all__ = [
     "SummarizationScore",
     "summarization_score",
     "NoiseSensitivity",
-    "noise_sensitivity_irrelevant",
-    "noise_sensitivity_relevant",
-    "labelled_rubrics_score",
-    "reference_free_rubrics_score",
-    "ReferenceFreeRubricsScore",
-    "LabelledRubricsScore",
+    "RubricsScoreWithoutReference",
+    "RubricsScoreWithReference",
+    "LLMContextPrecisionWithoutReference",
+    "NonLLMContextPrecisionWithReference",
+    "LLMContextPrecisionWithoutReference",
+    "LLMContextRecall",
+    "NonLLMContextRecall",
+    "FactualCorrectness",
+    "InstanceRubricsScoreWithoutReference",
+    "InstanceRubricsWithReference",
+    "NonLLMStringSimilarity",
+    "ExactMatch",
+    "StringPresence",
+    "BleuScore",
+    "RougeScore",
+    "DataCompyScore",
+    "LLMSQLEquivalence",
+    "AgentGoalAccuracyWithoutReference",
+    "AgentGoalAccuracyWithReference",
+    "ToolCallAccuracy",
+    "ResponseRelevancy",
+    "SemanticSimilarity",
+    "DistanceMeasure",
+]
+
+current_module = sys.modules[__name__]
+ALL_METRICS = [
+    obj
+    for name, obj in inspect.getmembers(current_module)
+    if name in __all__ and not inspect.isclass(obj) and not inspect.isbuiltin(obj)
 ]

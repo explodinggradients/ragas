@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.prompt import Prompt
 from ragas.metrics._faithfulness import (
     LONG_FORM_ANSWER_PROMPT,
@@ -17,7 +18,13 @@ from ragas.metrics._faithfulness import (
     _faithfulness_output_parser,
     _statements_output_parser,
 )
-from ragas.metrics.base import EvaluationMode, MetricWithLLM, ensembler, get_segmenter
+from ragas.metrics.base import (
+    MetricType,
+    MetricWithLLM,
+    SingleTurnMetric,
+    ensembler,
+    get_segmenter,
+)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -29,10 +36,19 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class NoiseSensitivity(MetricWithLLM):
+class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
     name: str = "noise_sensitivity"  # type: ignore
-    focus: str = "relevant"
-    evaluation_mode: EvaluationMode = EvaluationMode.qga  # type: ignore
+    focus: t.Literal["relevant", "irrelevant"] = "relevant"
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {
+                "user_input",
+                "response",
+                "reference",
+                "retrieved_contexts",
+            }
+        }
+    )
     nli_statements_message: Prompt = field(
         default_factory=lambda: NLI_STATEMENTS_MESSAGE
     )
@@ -205,6 +221,12 @@ class NoiseSensitivity(MetricWithLLM):
 
         return noise_sensitivity_in_relevant
 
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        row = sample.dict()
+        return await self._ascore(row, callbacks)
+
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
         """
         returns the NLI score for each (q, c, a) pair
@@ -212,15 +234,15 @@ class NoiseSensitivity(MetricWithLLM):
         assert self.llm is not None, "LLM is not set"
 
         gt_statements = await self._decompose_answer_into_statements(
-            row["ground_truth"], row["question"], callbacks
+            row["reference"], row["user_input"], callbacks
         )
         ans_statements = await self._decompose_answer_into_statements(
-            row["answer"], row["question"], callbacks
+            row["response"], row["user_input"], callbacks
         )
         gt_verdictslist = []
         ans_verdictslist = []
 
-        for ctx in row["contexts"]:
+        for ctx in row["retrieved_contexts"]:
             verdicts = await self._evaluate_statement_faithfulness(
                 gt_statements, ctx, callbacks
             )
@@ -235,7 +257,7 @@ class NoiseSensitivity(MetricWithLLM):
         answers["retrieved2ground_truth"] = np.array(gt_verdictslist).T
         answers["retrieved2answer"] = np.array(ans_verdictslist).T
         answers["ground_truth2answer"] = await self._evaluate_statement_faithfulness(
-            ans_statements, row["ground_truth"], callbacks
+            ans_statements, row["reference"], callbacks
         )
         answers["ground_truth2answer"] = np.array([answers["ground_truth2answer"]])
         answers = {k: v.astype(bool) for k, v in answers.items()}
@@ -243,8 +265,6 @@ class NoiseSensitivity(MetricWithLLM):
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         assert self.llm is not None, "LLM is not set"
-
-        logger.info(f"Adapting Faithfulness metric to {language}")
 
         self.nli_statements_message = self.nli_statements_message.adapt(
             language, self.llm, cache_dir
@@ -258,7 +278,3 @@ class NoiseSensitivity(MetricWithLLM):
     def save(self, cache_dir: t.Optional[str] = None) -> None:
         self.nli_statements_message.save(cache_dir)
         self.statement_prompt.save(cache_dir)
-
-
-noise_sensitivity_relevant = NoiseSensitivity()
-noise_sensitivity_irrelevant = NoiseSensitivity(focus="irrelevant")

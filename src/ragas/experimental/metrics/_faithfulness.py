@@ -2,17 +2,23 @@ from __future__ import annotations
 
 import logging
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from pydantic import BaseModel, Field
 
-from ragas.experimental.llms.prompt import PydanticPrompt
-from ragas.metrics.base import EvaluationMode, MetricWithLLM, get_segmenter
+from ragas.experimental.prompt import PydanticPrompt
+from ragas.metrics.base import (
+    MetricType,
+    MetricWithLLM,
+    SingleTurnMetric,
+    get_segmenter,
+)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
+    from ragas.dataset_schema import SingleTurnSample
     from ragas.metrics._faithfulness import HasSegmentMethod
 
 
@@ -153,9 +159,13 @@ class NLIStatementPrompt(PydanticPrompt[NLIStatementInput, NLIStatementOutput]):
 
 
 @dataclass
-class FaithfulnessExperimental(MetricWithLLM):
+class FaithfulnessExperimental(MetricWithLLM, SingleTurnMetric):
     name: str = "faithfulness_experimental"  # type: ignore
-    evaluation_mode: EvaluationMode = EvaluationMode.qac  # type: ignore
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {"user_input", "response", "retrieved_contexts"}
+        }
+    )
     sentence_segmenter: t.Optional[HasSegmentMethod] = None
     max_retries: int = 1
     _reproducibility: int = 1
@@ -177,15 +187,21 @@ class FaithfulnessExperimental(MetricWithLLM):
         self._reproducibility = value
 
     def __post_init__(self):
-        self.long_form_answer_prompt = LongFormAnswerPrompt(llm=self.llm)
-        self.nli_statement_prompt = NLIStatementPrompt(llm=self.llm)
+        self.long_form_answer_prompt = LongFormAnswerPrompt()
+        self.nli_statement_prompt = NLIStatementPrompt()
         if self.sentence_segmenter is None:
             # TODO: make this dynamic, taking language from prompt
             language = "english"
             self.sentence_segmenter = get_segmenter(language=language, clean=False)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        answer, question, contexts = row["answer"], row["question"], row["contexts"]
+        assert self.llm is not None, "LLM is not set"
+
+        answer, question, contexts = (
+            row["response"],
+            row["user_input"],
+            row["retrieved_contexts"],
+        )
 
         # get the sentences from the answer
         if self.sentence_segmenter is None:
@@ -196,11 +212,12 @@ class FaithfulnessExperimental(MetricWithLLM):
             sentence for sentence in sentences if sentence.strip().endswith(".")
         ]
         sentence_components = await self.long_form_answer_prompt.generate(
-            FaithfulnessStatements(
+            data=FaithfulnessStatements(
                 question=question,
                 answer=answer,
                 sentences={i: sentence for i, sentence in enumerate(sentences)},
             ),
+            llm=self.llm,
             callbacks=callbacks,
         )
 
@@ -210,10 +227,11 @@ class FaithfulnessExperimental(MetricWithLLM):
             for statement in component.simpler_statements
         ]
         verdicts = await self.nli_statement_prompt.generate(
-            NLIStatementInput(
+            data=NLIStatementInput(
                 context="\n".join(contexts),
                 statements=statements,
             ),
+            llm=self.llm,
             callbacks=callbacks,
         )
 
@@ -226,3 +244,9 @@ class FaithfulnessExperimental(MetricWithLLM):
         else:
             score = np.nan
         return score
+
+    async def _single_turn_ascore(
+        self: t.Self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        row = sample.dict()
+        return await self._ascore(row, callbacks)
