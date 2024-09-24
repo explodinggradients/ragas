@@ -1,9 +1,8 @@
-from .base import BaseGraphTransformations, Parallel, Sequences
-from .engine import TransformerEngine
+from .base import BaseGraphTransformations
+from .engine import Parallel, TransformerEngine
 
 __all__ = [
     "BaseGraphTransformations",
     "Parallel",
-    "Sequences",
     "TransformerEngine",
 ]
