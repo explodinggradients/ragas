@@ -253,3 +253,25 @@ def extend_modify_input_prompt(
     question_modification_prompt.examples = examples
     question_modification_prompt.examples = examples
     return question_modification_prompt
+
+
+class UserInputAndContext(BaseModel):
+    user_input: str
+    context: str
+
+
+class GenerateReference(PydanticPrompt[UserInputAndContext, StringIO]):
+    input_model = UserInputAndContext
+    output_model = StringIO
+    instruction = "Answer the following question based on the information provided in the given text."
+    examples = [
+        (
+            UserInputAndContext(
+                user_input="How does AI enhance efficiency and accuracy across different industries?",
+                context="Advances in artificial intelligence have revolutionized many industries. From healthcare to finance, AI algorithms are making processes more efficient and accurate. Machine learning models are being used to predict diseases, optimize investment strategies, and even recommend personalized content to users. The integration of AI into daily operations is becoming increasingly indispensable for modern businesses.",
+            ),
+            StringIO(
+                text="AI improves efficiency and accuracy across different industries by making processes more efficient and accurate."
+            ),
+        )
+    ]

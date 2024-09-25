@@ -16,10 +16,12 @@ from ragas.experimental.testset.generators.prompts import (
     AbstractQuestionFromTheme,
     CommonThemeFromSummaries,
     CriticUserInput,
+    GenerateReference,
     ModifyUserInput,
     Summaries,
     ThemeAndContext,
     Themes,
+    UserInputAndContext,
     UserInputWithStyleAndLength,
     extend_modify_input_prompt,
 )
@@ -34,13 +36,14 @@ class AbstractQADistribution(BasicDistribution):
 
 @dataclass
 class AbstractGenerator(BaseTestsetGenerator):
-    user_input_modification_prompt: PydanticPrompt = field(
-        default_factory=ModifyUserInput
-    )
     generate_user_input_prompt: PydanticPrompt = field(
         default_factory=AbstractQuestionFromTheme
     )
     critic_user_input_prompt: PydanticPrompt = field(default_factory=CriticUserInput)
+    user_input_modification_prompt: PydanticPrompt = field(
+        default_factory=ModifyUserInput
+    )
+    generate_reference_prompt: PydanticPrompt = field(default_factory=GenerateReference)
 
     def __post_init__(self):
         self.common_theme_prompt = CommonThemeFromSummaries()
@@ -54,6 +57,13 @@ class AbstractGenerator(BaseTestsetGenerator):
             else False
         )
         logger.info("found %d clusters", len(node_clusters))
+
+        # filter out nodes that are not chunks
+        node_clusters = [
+            cluster
+            for cluster in node_clusters
+            if all(node.type == "chunk" for node in cluster)
+        ]
 
         # find the number of themes to generation for given n and the num of clusters
         # will generate more themes just in case
@@ -114,24 +124,14 @@ class AbstractGenerator(BaseTestsetGenerator):
         return distributions
 
     async def generate_user_input(self, distribution: AbstractQADistribution) -> str:
-        page_contents = []
-        for node in distribution.nodes:
-            if node.type == "chunk":
-                page_contents.append(node.get_property("page_content"))
-        common_theme = distribution.theme
-        source_text = "\n\n".join(page_contents[:4])
-
         question = await self.generate_user_input_prompt.generate(
             data=ThemeAndContext(
-                theme=common_theme,
-                context=source_text,
+                theme=distribution.theme,
+                context=self.make_source_text(distribution),
             ),
             llm=self.llm,
         )
         return question.text
-
-    async def generate_reference(self, question: str, chunks: t.List[Node]) -> str:
-        return ""
 
     async def critic_user_input(self, question: str) -> bool:
         critic = await self.critic_user_input_prompt.generate(
@@ -156,3 +156,13 @@ class AbstractGenerator(BaseTestsetGenerator):
             llm=self.llm,
         )
         return modified_question.text
+
+    async def generate_reference(self, question: str, chunks: t.List[Node]) -> str:
+        reference = await self.generate_reference_prompt.generate(
+            data=UserInputAndContext(
+                user_input=question,
+                context=self.make_source_text(chunks),
+            ),
+            llm=self.llm,
+        )
+        return reference.text

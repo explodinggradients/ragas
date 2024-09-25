@@ -59,3 +59,10 @@ class BaseTestsetGenerator(ABC, t.Generic[Distribution]):
         self, n: int, knowledge_graph: KnowledgeGraph
     ) -> t.List[Distribution]:
         pass
+
+    @staticmethod
+    def make_source_text(distribution: Distribution) -> str:
+        page_contents = []
+        for node in distribution.nodes:
+            page_contents.append(node.get_property("page_content"))
+        return "\n\n".join(page_contents)
