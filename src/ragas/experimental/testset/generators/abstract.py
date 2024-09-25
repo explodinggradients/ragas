@@ -11,17 +11,17 @@ from ragas.experimental.testset.generators.base import (
     BasicDistribution,
     UserInputLength,
     UserInputStyle,
-    extend_modify_input_prompt,
 )
 from ragas.experimental.testset.generators.prompts import (
     AbstractQuestionFromTheme,
     CommonThemeFromSummaries,
-    CriticQuestion,
-    ModifyQuestion,
-    QuestionWithStyleAndLength,
+    CriticUserInput,
+    ModifyUserInput,
     Summaries,
     ThemeAndContext,
     Themes,
+    UserInputWithStyleAndLength,
+    extend_modify_input_prompt,
 )
 from ragas.experimental.testset.graph import KnowledgeGraph, Node
 
@@ -34,11 +34,13 @@ class AbstractQADistribution(BasicDistribution):
 
 @dataclass
 class AbstractGenerator(BaseTestsetGenerator):
-    question_modification_prompt: PydanticPrompt = field(default_factory=ModifyQuestion)
-    generate_question_prompt: PydanticPrompt = field(
+    user_input_modification_prompt: PydanticPrompt = field(
+        default_factory=ModifyUserInput
+    )
+    generate_user_input_prompt: PydanticPrompt = field(
         default_factory=AbstractQuestionFromTheme
     )
-    critic_question_prompt: PydanticPrompt = field(default_factory=CriticQuestion)
+    critic_user_input_prompt: PydanticPrompt = field(default_factory=CriticUserInput)
 
     def __post_init__(self):
         self.common_theme_prompt = CommonThemeFromSummaries()
@@ -119,7 +121,7 @@ class AbstractGenerator(BaseTestsetGenerator):
         common_theme = distribution.theme
         source_text = "\n\n".join(page_contents[:4])
 
-        question = await self.generate_question_prompt.generate(
+        question = await self.generate_user_input_prompt.generate(
             data=ThemeAndContext(
                 theme=common_theme,
                 context=source_text,
@@ -132,7 +134,7 @@ class AbstractGenerator(BaseTestsetGenerator):
         return ""
 
     async def critic_user_input(self, question: str) -> bool:
-        critic = await self.critic_question_prompt.generate(
+        critic = await self.critic_user_input_prompt.generate(
             data=StringIO(text=question), llm=self.llm
         )
         return critic.independence > 1 and critic.clear_intent > 1
@@ -141,13 +143,15 @@ class AbstractGenerator(BaseTestsetGenerator):
         self, question: str, distribution: AbstractQADistribution
     ) -> str:
         prompt = extend_modify_input_prompt(
-            question_modification_prompt=self.question_modification_prompt,
+            question_modification_prompt=self.user_input_modification_prompt,
             style=distribution.style,
             length=distribution.length,
         )
         modified_question = await prompt.generate(
-            data=QuestionWithStyleAndLength(
-                question=question, style=distribution.style, length=distribution.length
+            data=UserInputWithStyleAndLength(
+                user_input=question,
+                style=distribution.style,
+                length=distribution.length,
             ),
             llm=self.llm,
         )

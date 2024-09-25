@@ -86,7 +86,7 @@ class Feedback(BaseModel):
     clear_intent: int
 
 
-class CriticQuestion(PydanticPrompt[StringIO, Feedback]):
+class CriticUserInput(PydanticPrompt[StringIO, Feedback]):
     input_model = StringIO
     output_model = Feedback
     instruction = "Critique the synthetically generated question based on the following rubrics. Provide a score for each rubric: Independence and Clear Intent. Scores are given as low (0), medium (1), or high (2)."
@@ -108,41 +108,41 @@ class CriticQuestion(PydanticPrompt[StringIO, Feedback]):
     ]
 
 
-class QuestionWithStyleAndLength(BaseModel):
-    question: str
+class UserInputWithStyleAndLength(BaseModel):
+    user_input: str
     style: UserInputStyle
     length: UserInputLength
 
 
-EXAMPLES_FOR_QUESTION_MODIFICATION = [
+EXAMPLES_FOR_USER_INPUT_MODIFICATION = [
     # Short Length Examples
     (
-        QuestionWithStyleAndLength(
-            question="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        UserInputWithStyleAndLength(
+            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
             style=UserInputStyle.MISSPELLED,
             length=UserInputLength.SHORT,
         ),
         StringIO(text="How do enrgy storag solutions compare on efficincy?"),
     ),
     (
-        QuestionWithStyleAndLength(
-            question="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        UserInputWithStyleAndLength(
+            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
             style=UserInputStyle.PERFECT_GRAMMAR,
             length=UserInputLength.SHORT,
         ),
         StringIO(text="How do energy storage solutions compare?"),
     ),
     (
-        QuestionWithStyleAndLength(
-            question="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        UserInputWithStyleAndLength(
+            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
             style=UserInputStyle.POOR_GRAMMAR,
             length=UserInputLength.SHORT,
         ),
         StringIO(text="How do storag solutions compare on efficiency?"),
     ),
     (
-        QuestionWithStyleAndLength(
-            question="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        UserInputWithStyleAndLength(
+            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
             style=UserInputStyle.WEB_SEARCH_LIKE,
             length=UserInputLength.SHORT,
         ),
@@ -152,16 +152,16 @@ EXAMPLES_FOR_QUESTION_MODIFICATION = [
     ),
     # Medium Length Examples
     (
-        QuestionWithStyleAndLength(
-            question="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        UserInputWithStyleAndLength(
+            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
             style=UserInputStyle.MISSPELLED,
             length=UserInputLength.MEDIUM,
         ),
         StringIO(text="How do enrgy storag solutions compare on efficincy n cost?"),
     ),
     (
-        QuestionWithStyleAndLength(
-            question="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        UserInputWithStyleAndLength(
+            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
             style=UserInputStyle.PERFECT_GRAMMAR,
             length=UserInputLength.MEDIUM,
         ),
@@ -170,16 +170,16 @@ EXAMPLES_FOR_QUESTION_MODIFICATION = [
         ),
     ),
     (
-        QuestionWithStyleAndLength(
-            question="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        UserInputWithStyleAndLength(
+            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
             style=UserInputStyle.POOR_GRAMMAR,
             length=UserInputLength.MEDIUM,
         ),
         StringIO(text="How energy storag solutions compare on efficiency and cost?"),
     ),
     (
-        QuestionWithStyleAndLength(
-            question="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        UserInputWithStyleAndLength(
+            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
             style=UserInputStyle.WEB_SEARCH_LIKE,
             length=UserInputLength.MEDIUM,
         ),
@@ -189,8 +189,8 @@ EXAMPLES_FOR_QUESTION_MODIFICATION = [
     ),
     # Long Length Examples
     (
-        QuestionWithStyleAndLength(
-            question="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        UserInputWithStyleAndLength(
+            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
             style=UserInputStyle.MISSPELLED,
             length=UserInputLength.LONG,
         ),
@@ -199,8 +199,8 @@ EXAMPLES_FOR_QUESTION_MODIFICATION = [
         ),
     ),
     (
-        QuestionWithStyleAndLength(
-            question="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        UserInputWithStyleAndLength(
+            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
             style=UserInputStyle.PERFECT_GRAMMAR,
             length=UserInputLength.LONG,
         ),
@@ -209,8 +209,8 @@ EXAMPLES_FOR_QUESTION_MODIFICATION = [
         ),
     ),
     (
-        QuestionWithStyleAndLength(
-            question="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        UserInputWithStyleAndLength(
+            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
             style=UserInputStyle.POOR_GRAMMAR,
             length=UserInputLength.LONG,
         ),
@@ -219,8 +219,8 @@ EXAMPLES_FOR_QUESTION_MODIFICATION = [
         ),
     ),
     (
-        QuestionWithStyleAndLength(
-            question="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+        UserInputWithStyleAndLength(
+            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
             style=UserInputStyle.WEB_SEARCH_LIKE,
             length=UserInputLength.LONG,
         ),
@@ -231,8 +231,25 @@ EXAMPLES_FOR_QUESTION_MODIFICATION = [
 ]
 
 
-class ModifyQuestion(PydanticPrompt[QuestionWithStyleAndLength, StringIO]):
-    input_model = QuestionWithStyleAndLength
+class ModifyUserInput(PydanticPrompt[UserInputWithStyleAndLength, StringIO]):
+    input_model = UserInputWithStyleAndLength
     output_model = StringIO
     instruction = "Modify the given question in order to fit the given style and length"
     examples = []
+
+
+def extend_modify_input_prompt(
+    question_modification_prompt: PydanticPrompt,
+    style: UserInputStyle,
+    length: UserInputLength,
+) -> PydanticPrompt:
+    examples = [
+        example
+        for example in EXAMPLES_FOR_USER_INPUT_MODIFICATION
+        if example[0].style == style and example[0].length == length
+    ]
+    if not examples:
+        raise ValueError(f"No examples found for style {style} and length {length}")
+    question_modification_prompt.examples = examples
+    question_modification_prompt.examples = examples
+    return question_modification_prompt

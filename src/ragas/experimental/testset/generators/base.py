@@ -5,11 +5,6 @@ from enum import Enum
 
 from pydantic import BaseModel
 
-from ragas.experimental.prompt import PydanticPrompt
-from ragas.experimental.testset.generators.prompts import (
-    EXAMPLES_FOR_QUESTION_MODIFICATION,
-    ModifyQuestion,
-)
 from ragas.experimental.testset.graph import KnowledgeGraph, Node
 from ragas.llms import BaseRagasLLM, llm_factory
 
@@ -64,20 +59,3 @@ class BaseTestsetGenerator(ABC, t.Generic[Distribution]):
         self, n: int, knowledge_graph: KnowledgeGraph
     ) -> t.List[Distribution]:
         pass
-
-
-def extend_modify_input_prompt(
-    question_modification_prompt: PydanticPrompt,
-    style: UserInputStyle,
-    length: UserInputLength,
-) -> PydanticPrompt:
-    examples = [
-        example
-        for example in EXAMPLES_FOR_QUESTION_MODIFICATION
-        if example[0].style == style and example[0].length == length
-    ]
-    if not examples:
-        raise ValueError(f"No examples found for style {style} and length {length}")
-    question_modification_prompt.examples = examples
-    question_modification_prompt.examples = examples
-    return question_modification_prompt
