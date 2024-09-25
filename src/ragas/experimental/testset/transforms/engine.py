@@ -113,7 +113,7 @@ class TransformerEngine:
             )
 
     def rollback(
-        self, transforms: t.List[BaseGraphTransformations], on: KnowledgeGraph
+        self, transforms: t.List[BaseGraphTransformations], kg: KnowledgeGraph
     ):
         # this will allow you to roll back the transformations
         raise NotImplementedError
