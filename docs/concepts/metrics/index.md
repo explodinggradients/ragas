@@ -1,10 +1,14 @@
-# List of available metrics
+# Metrics 
+
+
+
+## List of available metrics
 
 Ragas provides a set of evaluation metrics that can be used to measure the performance of your LLM application. These metrics are designed to help you objectively measure the performance of your application. Metrics are available for different applications and tasks, such as RAG and Agentic workflows. 
 
 Each metric are essentially paradigms that is designed to evaluate a particular aspect of the application. LLM Based metrics might use one or more LLM calls to arrive at the score or result. One can also modify or write your own metrics using ragas.
 
-## Retrieval Augmented Generation
+### Retrieval Augmented Generation
 - [Context Precision](context_precision.md)
 - [Context Recall](context_recall.md)
 - [Context Entities Recall](context_entities_recall.md)
@@ -12,13 +16,13 @@ Each metric are essentially paradigms that is designed to evaluate a particular 
 - [Response Relevancy](answer_relevance.md)
 - [Faithfulness](faithfulness.md)
 
-## Agents or Tool use cases
+### Agents or Tool use cases
 
 - [Topic adherence](topic_adherence.md)
 - [Tool call Accuracy](agents.md#tool-call-accuracy)
 - [Agent Goal Accuracy](agents.md#agent-goal-accuracy)
 
-## Natural Language Comparison
+### Natural Language Comparison
 
 - [Factual Correctness](factual_correctness.md)
 - [Semantic Similarity](semantic_similarity.md)
@@ -29,19 +33,19 @@ Each metric are essentially paradigms that is designed to evaluate a particular 
 - [Exact Match](traditional.md#exact-match)
 
 
-## SQL
+### SQL
 
 - [Execution based Datacompy Score](sql.md#execution-based-metrics)
 - [SQL query Equivalence](sql.md#sql-query-semantic-equivalence)
 
-## General purpose
+### General purpose
 
 - [Aspect critic](general_purpose.md#aspect-critic)
 - [Simple Criteria Scoring](general_purpose.md#simple-criteria-scoring)
 - [Rubrics based scoring](general_purpose.md#rubrics-based-scoring)
 - [Instance specific rubrics scoring](general_purpose.md#instance-specific-rubrics-scoring)
 
-## Other tasks
+### Other tasks
 
 - [Summarization](summarization_score.md)
 
