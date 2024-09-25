@@ -13,4 +13,4 @@ Let's get started!
 
 ## Retrieval Augmented Generation
 - Generate test data for evaluating RAG
-- Use metrics for evaluating RAG
+- Run ragas metrics for evaluating RAG
