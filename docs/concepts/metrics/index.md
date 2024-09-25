@@ -51,7 +51,7 @@ await metric.multi_turn_ascore(sample)
 
 ### Metric Design Principles
 
-Designing effective metrics for AI applications requires adhering to a set of core principles to ensure their reliability, interpretability, and relevance. Here are the key principles we follow in ragas when developing metrics:
+Designing effective metrics for AI applications requires following to a set of core principles to ensure their reliability, interpretability, and relevance. Here are five key principles we follow in ragas when designing metrics:
 
 **1. Single-Aspect Focus**  
 A single metric should target only one specific aspect of the AI application's performance. This ensures that the metric is both interpretable and actionable, providing clear insights into what is being measured.
@@ -64,6 +64,9 @@ When developing metrics using large language models (LLMs), use intelligent prom
 
 **4. Robustness**  
 Ensure that LLM-based metrics include sufficient few-shot examples that reflect the desired outcomes. This enhances the robustness of the metric by providing context and guidance for the LLM to follow.
+
+**5.Consistent Scoring Ranges**  
+It is crucial to normalize metric score values or ensure they fall within a specific range, such as 0 to 1. This facilitates comparison between different metrics and helps maintain consistency and interpretability across the evaluation framework.
 
 These principles serve as a foundation for creating metrics that are not only effective but also practical and meaningful in evaluating AI applications.
 
