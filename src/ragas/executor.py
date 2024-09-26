@@ -41,8 +41,8 @@ async def as_completed(coros, max_workers):
 @dataclass
 class Executor:
     desc: str = "Evaluating"
-    keep_progress_bar: bool = True
     show_progress: bool = True
+    keep_progress_bar: bool = True
     jobs: t.List[t.Any] = field(default_factory=list, repr=False)
     raise_exceptions: bool = False
     run_config: t.Optional[RunConfig] = field(default=None, repr=False)

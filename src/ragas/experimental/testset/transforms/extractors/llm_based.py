@@ -157,4 +157,6 @@ class HeadlinesExtractor(LLMBasedExtractor):
         if node_text is None:
             return self.property_name, None
         result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
+        if result is None:
+            return self.property_name, None
         return self.property_name, result.headlines
