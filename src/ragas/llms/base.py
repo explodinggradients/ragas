@@ -63,8 +63,7 @@ class BaseRagasLLM(ABC):
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
-    ) -> LLMResult:
-        ...
+    ) -> LLMResult: ...
 
     @abstractmethod
     async def agenerate_text(
@@ -74,8 +73,7 @@ class BaseRagasLLM(ABC):
         temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
-    ) -> LLMResult:
-        ...
+    ) -> LLMResult: ...
 
     async def generate(
         self,

@@ -7,9 +7,7 @@ from dataclasses import dataclass
 
 from ragas.executor import as_completed, is_event_loop_running, tqdm
 from ragas.experimental.testset.graph import KnowledgeGraph
-from ragas.experimental.testset.transforms.base import (
-    BaseGraphTransformations,
-)
+from ragas.experimental.testset.transforms.base import BaseGraphTransformations
 from ragas.run_config import RunConfig
 
 logger = logging.getLogger(__name__)

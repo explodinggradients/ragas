@@ -52,9 +52,9 @@ class AbstractGenerator(BaseTestsetGenerator):
         self, n: int, knowledge_graph: KnowledgeGraph
     ) -> t.List[AbstractQADistribution]:
         node_clusters = knowledge_graph.find_clusters(
-            relationship_condition=lambda rel: True
-            if rel.get_property("cosine_similarity")
-            else False
+            relationship_condition=lambda rel: (
+                True if rel.get_property("cosine_similarity") else False
+            )
         )
         logger.info("found %d clusters", len(node_clusters))
 

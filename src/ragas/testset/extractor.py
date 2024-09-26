@@ -22,8 +22,7 @@ class Extractor(ABC):
     llm: BaseRagasLLM
 
     @abstractmethod
-    async def extract(self, node: Node, is_async: bool = True) -> t.Any:
-        ...
+    async def extract(self, node: Node, is_async: bool = True) -> t.Any: ...
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         """

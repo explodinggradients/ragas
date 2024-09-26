@@ -173,11 +173,9 @@ class Evolution:
     @abstractmethod
     async def _aevolve(
         self, current_tries: int, current_nodes: CurrentNodes
-    ) -> EvolutionOutput:
-        ...
+    ) -> EvolutionOutput: ...
 
-    async def filter_and_retry(self, question):
-        ...
+    async def filter_and_retry(self, question): ...
 
     async def generate_datarow(
         self,

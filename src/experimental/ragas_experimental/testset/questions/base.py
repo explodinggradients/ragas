@@ -46,12 +46,12 @@ class QAC:
 
 @dataclass
 class StyleLengthDistribution:
-    style_length_distribution: t.Dict[
-        t.Tuple[QuestionStyle, QuestionLength], float
-    ] = field(
-        default_factory=lambda: {
-            (QuestionStyle.PERFECT_GRAMMAR, QuestionLength.MEDIUM): 1.0
-        }
+    style_length_distribution: t.Dict[t.Tuple[QuestionStyle, QuestionLength], float] = (
+        field(
+            default_factory=lambda: {
+                (QuestionStyle.PERFECT_GRAMMAR, QuestionLength.MEDIUM): 1.0
+            }
+        )
     )
 
     def __post_init__(self):

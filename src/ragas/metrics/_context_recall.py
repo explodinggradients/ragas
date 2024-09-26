@@ -254,8 +254,7 @@ class NonLLMContextRecall(SingleTurnMetric):
                 "distance_measure must not be an instance of MetricWithLLM for NonLLMContextPrecisionWithReference"
             )
 
-    def init(self, run_config: RunConfig) -> None:
-        ...
+    def init(self, run_config: RunConfig) -> None: ...
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
