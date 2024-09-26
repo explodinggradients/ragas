@@ -2,7 +2,7 @@
 
 An evaluation dataset is a homogeneous collection of [data samples](eval_sample.md) designed to assess the performance and capabilities of an AI application. In Ragas, evaluation datasets are represented using the `EvaluationDataset` class, which provides a structured way to organize and manage data samples for evaluation purposes. 
 
-**Structure of an Evaluation Dataset**
+## Structure of an Evaluation Dataset
 
 An evaluation dataset consists of:
 
@@ -10,7 +10,7 @@ An evaluation dataset consists of:
 - **Consistency**: All samples within the dataset should be of the same type (either all single-turn or all multi-turn samples) to maintain consistency in evaluation.
 
 
-**Guidelines for Curating an Effective Evaluation Dataset**
+## Guidelines for Curating an Effective Evaluation Dataset
 
 - **Define Clear Objectives**: Identify the specific aspects of the AI application that you want to evaluate and the scenarios you want to test. Collect data samples that reflect these objectives.
 
