@@ -235,7 +235,7 @@ class ModifyUserInput(PydanticPrompt[UserInputWithStyleAndLength, StringIO]):
     input_model = UserInputWithStyleAndLength
     output_model = StringIO
     instruction = "Modify the given question in order to fit the given style and length"
-    examples = []
+    examples: t.List[t.Tuple[UserInputWithStyleAndLength, StringIO]] = []
 
 
 def extend_modify_input_prompt(
