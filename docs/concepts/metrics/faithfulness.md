@@ -33,7 +33,7 @@ await scorer.single_turn_ascore(sample)
 
 ```python
 from ragas.database_schema import SingleTurnSample 
-from ragas.metrics import FaithulnesswithHHEM
+from ragas.metrics import FaithfulnesswithHHEM
 
 
 sample = SingleTurnSample(
@@ -43,7 +43,7 @@ sample = SingleTurnSample(
             "The First AFL–NFL World Championship Game was an American football game played on January 15, 1967, at the Los Angeles Memorial Coliseum in Los Angeles."
         ]
     )
-scorer = FaithulnesswithHHEM()
+scorer = FaithfulnesswithHHEM()
 await scorer.single_turn_ascore(sample)
 
 ```
@@ -55,7 +55,7 @@ You can load the model onto a specified device by setting the `device` argument 
 my_device = "cuda:0"
 my_batch_size = 10
 
-scorer = FaithulnesswithHHEM(device=my_device, batch_size=my_batch_size)
+scorer = FaithfulnesswithHHEM(device=my_device, batch_size=my_batch_size)
 await scorer.single_turn_ascore(sample)
 ```
 

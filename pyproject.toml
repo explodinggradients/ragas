@@ -21,7 +21,6 @@ all = [
     "transformers",
     "nltk",
     "rouge_score",
-    "fuzzywuzzy",
     "rapidfuzz",
     "pandas",
     "datacompy",

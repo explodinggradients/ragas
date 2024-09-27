@@ -1,42 +1,42 @@
 # 📚 Core Concepts
 
-Ragas aims to create an open standard, providing developers with the tools and techniques to leverage continual learning in their RAG applications. With Ragas, you would be able to
-
-1. Synthetically generate a diverse test dataset that you can use to evaluate your app.
-2. Use LLM-assisted evaluation metrics designed to help you objectively measure the performance of your application.
-3. Monitor the quality of your apps in production using smaller, cheaper models that can give actionable insights. For example, the number of hallucinations in the generated answer. 
-4. Use these insights to iterate and improve your application.
-
-
-## What is RAG and continual learning?
-### RAG
-
-Retrieval augmented generation (RAG) is a paradigm for augmenting LLM with custom data. It generally consists of two stages:
-
-- indexing stage: preparing a knowledge base, and
-
-- querying stage: retrieving relevant context from the knowledge to assist the LLM in responding to a question
-
-### Continual Learning
-
-Continual learning is concept used in machine learning that aims to learn, iterate and improve ML pipelines over its lifetime using the insights derived from continuous stream of data points.  In LLM & RAGs, this can be applied by iterating and improving each components of LLM application from insights derived from production and feedback data.
 
 <div class="grid cards" markdown>
 
-- [Evaluation Driven Development](evaluation_driven.md)
+-   :material-widgets:{ .lg .middle } [__Components Guides__](components/index.md)
 
-    What is EDD?
+    ---
 
-- [Ragas Metrics](metrics/index.md)
+    Discover the various components used within Ragas.
+    
+    Components like [Prompt Object](components/index.md#prompt-object), [Evaluation Dataset](components/index.md#evaluation-dataset) and [more..](components/index.md)
 
-    What metrics are available? How do they work?
+-   ::material-ruler-square:{ .lg .middle } [__Ragas Metrics__](metrics/index.md)
 
-- [Synthetic Test Data Generation](testset_generation.md)
+    ---
 
-    How to create more datasets to test on?
+    Explore available metrics and understand how they work.
 
-- [Utilizing User Feedback](feedback.md)
+    Metrics for evaluating [RAG](metrics/index.md/#retrieval-augmented-generation), [Agentic workflows](metrics/index.md/#agents-or-tool-use-cases) and [more..](metrics/index.md/#list-of-available-metrics).
 
-    How to leverage the signals from user to improve?
+-   :material-database-plus:{ .lg .middle } [__Test Data Generation__](test_data_generation/index.md)
+
+    ---
+
+    Create high-quality datasets for comprehensive testing.
+
+    Algorithms for synthesizing data to test [RAG](test_data_generation/index.md#retrieval-augmented-generation), [Agentic workflows](test_data_generation/index.md#agents-or-tool-use-cases) 
+
+
+-   :material-chart-box-outline:{ .lg .middle } [__Feedback Intelligence__](feedback.md)
+
+    ---
+
+    Leverage signals from production data to gain actionable insights.
+
+    Learn about to leveraging implicit and explicit signals from production data.
+
+
+
 
 </div>

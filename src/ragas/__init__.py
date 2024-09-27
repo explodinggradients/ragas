@@ -1,4 +1,5 @@
 from ragas.adaptation import adapt
+from ragas.dataset_schema import EvaluationDataset, MultiTurnSample, SingleTurnSample
 from ragas.evaluation import evaluate
 from ragas.run_config import RunConfig
 
@@ -8,4 +9,12 @@ except ImportError:
     __version__ = "unknown version"
 
 
-__all__ = ["evaluate", "adapt", "RunConfig", "__version__"]
+__all__ = [
+    "evaluate",
+    "adapt",
+    "RunConfig",
+    "__version__",
+    "SingleTurnSample",
+    "MultiTurnSample",
+    "EvaluationDataset",
+]
