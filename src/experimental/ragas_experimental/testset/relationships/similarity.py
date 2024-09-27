@@ -14,10 +14,10 @@ class Jaccard(Similarity):
     def __post_init__(self):
         if self.type == "fuzzy":
             try:
-                from fuzzywuzzy import fuzz
+                from rapidfuzz import fuzz
             except ImportError:
                 raise ImportError(
-                    "fuzzywuzzy is not installed. Run pip install fuzzywuzzy"
+                    "rapidfuzz is not installed. Run pip install rapidfuzz"
                 )
             self.fuzz = fuzz
             self.threshold = self.threshold or 80
