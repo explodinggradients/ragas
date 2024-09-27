@@ -333,7 +333,7 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
 
 
 @dataclass
-class FaithulnesswithHHEM(Faithfulness):
+class FaithfulnesswithHHEM(Faithfulness):
     name: str = "faithfulness_with_hhem"  # type: ignore
     device: str = "cpu"
     batch_size: int = 10
@@ -402,3 +402,5 @@ class FaithulnesswithHHEM(Faithfulness):
 
 
 faithfulness = Faithfulness()
+
+
