@@ -76,7 +76,7 @@ class TransformerEngine:
         run_config: RunConfig = RunConfig(),
     ):
         """
-        Apply a list of transformations to a knowledge graph.
+        Apply a list of transformations to a knowledge graph in place.
         """
         # apply nest_asyncio to fix the event loop issue in jupyter
         self._apply_nest_asyncio()
