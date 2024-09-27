@@ -37,7 +37,7 @@ from ragas.metrics._domain_specific_rubrics import (
     RubricsScoreWithReference,
 )
 from ragas.metrics._factual_correctness import FactualCorrectness
-from ragas.metrics._faithfulness import Faithfulness, FaithulnesswithHHEM, faithfulness
+from ragas.metrics._faithfulness import Faithfulness, FaithfulnesswithHHEM, faithfulness
 from ragas.metrics._goal_accuracy import (
     AgentGoalAccuracyWithoutReference,
     AgentGoalAccuracyWithReference,
@@ -58,7 +58,7 @@ __all__ = [
     "answer_correctness",
     "Faithfulness",
     "faithfulness",
-    "FaithulnesswithHHEM",
+    "FaithfulnesswithHHEM",
     "AnswerSimilarity",
     "answer_similarity",
     "ContextPrecision",
