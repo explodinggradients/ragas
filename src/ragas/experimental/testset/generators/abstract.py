@@ -167,9 +167,9 @@ class AbstractQuestionSimulator(BaseSimulator):
         )
         return question.text
 
-    async def critic_user_input(self, question: str) -> bool:
+    async def critic_user_input(self, user_input: str) -> bool:
         critic = await self.critic_user_input_prompt.generate(
-            data=StringIO(text=question), llm=self.llm
+            data=StringIO(text=user_input), llm=self.llm
         )
         return critic.independence > 1 and critic.clear_intent > 1
 
