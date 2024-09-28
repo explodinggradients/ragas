@@ -78,6 +78,10 @@ class StringIO(BaseModel):
     text: str
 
 
+class BoolIO(BaseModel):
+    value: bool
+
+
 class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
     input_model: t.Type[InputModel]
     output_model: t.Type[OutputModel]

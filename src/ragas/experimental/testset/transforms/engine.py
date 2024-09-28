@@ -7,9 +7,7 @@ from dataclasses import dataclass
 
 from ragas.executor import as_completed, is_event_loop_running, tqdm
 from ragas.experimental.testset.graph import KnowledgeGraph
-from ragas.experimental.testset.transforms.base import (
-    BaseGraphTransformations,
-)
+from ragas.experimental.testset.transforms.base import BaseGraphTransformations
 from ragas.run_config import RunConfig
 
 logger = logging.getLogger(__name__)
@@ -71,12 +69,21 @@ class TransformerEngine:
 
     def apply(
         self,
-        transforms: t.List[BaseGraphTransformations] | Parallel,
+        transforms: t.Union[
+            t.List[BaseGraphTransformations], Parallel, BaseGraphTransformations
+        ],
         kg: KnowledgeGraph,
         run_config: RunConfig = RunConfig(),
-    ) -> KnowledgeGraph:
+    ):
+        """
+        Apply a list of transformations to a knowledge graph.
+        """
         # apply nest_asyncio to fix the event loop issue in jupyter
         self._apply_nest_asyncio()
+
+        # if single transformation, wrap it in a list
+        if isinstance(transforms, BaseGraphTransformations):
+            transforms = [transforms]
 
         # apply the transformations
         # if Sequences, apply each transformation sequentially
@@ -103,10 +110,8 @@ class TransformerEngine:
                 f"Invalid transforms type: {type(transforms)}. Expects a list of BaseGraphTransformations or a Parallel instance."
             )
 
-        return kg
-
     def rollback(
-        self, transforms: t.List[BaseGraphTransformations], on: KnowledgeGraph
-    ) -> KnowledgeGraph:
+        self, transforms: t.List[BaseGraphTransformations], kg: KnowledgeGraph
+    ):
         # this will allow you to roll back the transformations
         raise NotImplementedError

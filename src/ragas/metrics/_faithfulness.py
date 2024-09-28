@@ -26,8 +26,7 @@ if t.TYPE_CHECKING:
 
 
 class HasSegmentMethod(t.Protocol):
-    def segment(self, text) -> t.Any:
-        ...
+    def segment(self, text) -> t.Any: ...
 
 
 logger = logging.getLogger(__name__)

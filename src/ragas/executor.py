@@ -118,3 +118,21 @@ class Executor:
         results = asyncio.run(_aresults())
         sorted_results = sorted(results, key=lambda x: x[0])
         return [r[1] for r in sorted_results]
+
+
+def run_async_batch(desc: str, func: t.Callable, kwargs_list: t.List[t.Dict]):
+    """
+    run the same async function with different arguments
+    """
+    run_config = RunConfig()
+    executor = Executor(
+        desc=desc,
+        keep_progress_bar=False,
+        raise_exceptions=True,
+        run_config=run_config,
+    )
+
+    for kwargs in kwargs_list:
+        executor.submit(func, **kwargs)
+
+    return executor.results()

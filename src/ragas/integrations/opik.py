@@ -3,7 +3,7 @@ import typing as t
 try:
     from opik.integrations.langchain import (  # type: ignore
         OpikTracer as LangchainOpikTracer,
-    )
+    )  # type: ignore
 
     from ragas.evaluation import RAGAS_EVALUATION_CHAIN_NAME
 except ImportError:
