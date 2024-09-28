@@ -1,9 +1,13 @@
+# fmt: off
+# isort: skip_file
+# both are to so as to not formate out the type: ignore below
+
 import typing as t
 
 try:
-    from opik.integrations.langchain import (  # type: ignore
+    from opik.integrations.langchain import ( # type: ignore
         OpikTracer as LangchainOpikTracer,
-    )  # type: ignore
+    )
 
     from ragas.evaluation import RAGAS_EVALUATION_CHAIN_NAME
 except ImportError:

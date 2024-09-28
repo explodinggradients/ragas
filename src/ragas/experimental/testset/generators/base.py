@@ -22,47 +22,47 @@ class UserInputStyle(str, Enum):
     WEB_SEARCH_LIKE = "Web search like queries"
 
 
-class BasicDistribution(BaseModel):
+class BasicScenario(BaseModel):
     nodes: t.List[Node]
     style: UserInputStyle
     length: UserInputLength
 
 
-Distribution = t.TypeVar("Distribution", bound=BasicDistribution)
+Scenario = t.TypeVar("Scenario", bound=BasicScenario)
 
 
 @dataclass
-class BaseTestsetGenerator(ABC, t.Generic[Distribution]):
+class BaseSimulator(ABC, t.Generic[Scenario]):
     llm: BaseRagasLLM = field(default_factory=llm_factory)
 
     @abstractmethod
     async def generate_user_input(
         self,
-        distribution: Distribution,
+        scenario: Scenario,
     ) -> str:
         pass
 
     @abstractmethod
-    async def generate_reference(self, question: str, chunks: t.List[Node]) -> str:
+    async def generate_reference(self, user_input: str, chunks: t.List[Node]) -> str:
         pass
 
     @abstractmethod
-    async def critic_user_input(self, question: str) -> bool:
+    async def critic_user_input(self, user_input: str) -> bool:
         pass
 
     @abstractmethod
-    async def modify_user_input(self, question: str, distribution: Distribution) -> str:
+    async def modify_user_input(self, user_input: str, scenario: Scenario) -> str:
         pass
 
     @abstractmethod
-    async def generate_distributions(
+    async def generate_scenarios(
         self, n: int, knowledge_graph: KnowledgeGraph
-    ) -> t.List[Distribution]:
+    ) -> t.List[Scenario]:
         pass
 
     @staticmethod
-    def make_source_text(distribution: Distribution) -> str:
+    def make_source_text(scenario: Scenario) -> str:
         page_contents = []
-        for node in distribution.nodes:
+        for node in scenario.nodes:
             page_contents.append(node.get_property("page_content"))
         return "\n\n".join(page_contents)
