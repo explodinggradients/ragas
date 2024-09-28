@@ -63,7 +63,7 @@ class EquivalencePrompt(PydanticPrompt[EquivalenceInput, EquivalenceOutput]):
 
 
 @dataclass
-class LLMSqlEquivalenceWithReference(MetricWithLLM, SingleTurnMetric):
+class LLMSQLEquivalence(MetricWithLLM, SingleTurnMetric):
     name: str = "llm_sql_equivalence_with_reference"  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {

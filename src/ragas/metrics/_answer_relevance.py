@@ -25,15 +25,15 @@ if t.TYPE_CHECKING:
     from ragas.llms.prompt import PromptValue
 
 
-class AnswerRelevanceClassification(BaseModel):
+class ResponseRelevanceClassification(BaseModel):
     question: str
     noncommittal: int
 
 
 _output_instructions = get_json_format_instructions(
-    pydantic_object=AnswerRelevanceClassification
+    pydantic_object=ResponseRelevanceClassification
 )
-_output_parser = RagasoutputParser(pydantic_object=AnswerRelevanceClassification)
+_output_parser = RagasoutputParser(pydantic_object=ResponseRelevanceClassification)
 
 
 QUESTION_GEN = Prompt(
@@ -44,7 +44,7 @@ QUESTION_GEN = Prompt(
         {
             "answer": """Albert Einstein was born in Germany.""",
             "context": """Albert Einstein was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time""",
-            "output": AnswerRelevanceClassification.parse_obj(
+            "output": ResponseRelevanceClassification.parse_obj(
                 {
                     "question": "Where was Albert Einstein born?",
                     "noncommittal": 0,
@@ -54,7 +54,7 @@ QUESTION_GEN = Prompt(
         {
             "answer": """It can change its skin color based on the temperature of its environment.""",
             "context": """A recent scientific study has discovered a new species of frog in the Amazon rainforest that has the unique ability to change its skin color based on the temperature of its environment.""",
-            "output": AnswerRelevanceClassification.parse_obj(
+            "output": ResponseRelevanceClassification.parse_obj(
                 {
                     "question": "What unique ability does the newly discovered species of frog have?",
                     "noncommittal": 0,
@@ -64,7 +64,7 @@ QUESTION_GEN = Prompt(
         {
             "answer": """Everest""",
             "context": """The tallest mountain on Earth, measured from sea level, is a renowned peak located in the Himalayas.""",
-            "output": AnswerRelevanceClassification.parse_obj(
+            "output": ResponseRelevanceClassification.parse_obj(
                 {
                     "question": "What is the tallest mountain on Earth?",
                     "noncommittal": 0,
@@ -74,7 +74,7 @@ QUESTION_GEN = Prompt(
         {
             "answer": """I don't know about the  groundbreaking feature of the smartphone invented in 2023 as am unaware of information beyond 2022. """,
             "context": """In 2023, a groundbreaking invention was announced: a smartphone with a battery life of one month, revolutionizing the way people use mobile technology.""",
-            "output": AnswerRelevanceClassification.parse_obj(
+            "output": ResponseRelevanceClassification.parse_obj(
                 {
                     "question": "What was the groundbreaking feature of the smartphone invented in 2023?",
                     "noncommittal": 1,
@@ -89,7 +89,7 @@ QUESTION_GEN = Prompt(
 
 
 @dataclass
-class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
+class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     """
     Scores the relevancy of the answer according to the given question.
     Answers with incomplete, redundant or unnecessary information is penalized.
@@ -139,7 +139,7 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         )
 
     def _calculate_score(
-        self, answers: t.Sequence[AnswerRelevanceClassification], row: t.Dict
+        self, answers: t.Sequence[ResponseRelevanceClassification], row: t.Dict
     ) -> float:
         question = row["user_input"]
         gen_questions = [answer.question for answer in answers]
@@ -195,6 +195,11 @@ class AnswerRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
 
     def save(self, cache_dir: str | None = None) -> None:
         self.question_generation.save(cache_dir)
+
+
+class AnswerRelevancy(ResponseRelevancy):
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        return await super()._ascore(row, callbacks)
 
 
 answer_relevancy = AnswerRelevancy()

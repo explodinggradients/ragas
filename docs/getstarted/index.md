@@ -1,6 +1,6 @@
 # 🚀 Get Started
 
-Welcome to the Ragas tutorials! If you're new to Ragas, the Get Started guides will walk you through the fundamentals of working with Ragas. These tutorials assume basic knowledge of Python and Retrieval Augmented Generation (RAG) pipelines. 
+Welcome to the Ragas tutorials! If you're new to Ragas, the Get Started guides will walk you through the fundamentals of working with Ragas. These tutorials assume basic knowledge of Python and building LLM application pipelines. 
 
 Before you proceed further, ensure that you have [Ragas installed](./install.md)!
 
@@ -11,17 +11,6 @@ If you have any questions about Ragas, feel free to join and ask in the `#questi
 
 Let's get started!
 
-<div class="grid cards" markdown>
-
-- [Generate a Synthetic Testset](./testset_generation.md)
-
-    Learn how to generate `Question/Context/Ground_Truth` triplets to get started.
-
-- [Evaluate Using Your Testset](./evaluation.md)
-
-    Find out how to evaluate your RAG pipeline using your test set (your own dataset or synthetic).
-
-- [Monitor Your RAG in Production](./monitoring.md)
-
-    Discover how to monitor the performance and quality of your RAG application in production.
-</div>
+## Retrieval Augmented Generation
+- [Generate test data for evaluating RAG]()
+- [Run ragas metrics for evaluating RAG](rag_evaluation.md)

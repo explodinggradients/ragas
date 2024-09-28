@@ -62,20 +62,26 @@ h1 {
 .jp-Notebook {
   display: flex !important;
   flex-direction: column !important;
-  gap: 1em;
 }
 .md-header {
-  background: rgba(255, 255, 255, 0.1) !important;
+  background: black !important;
   color: white !important;
-  backdrop-filter: blur(100px) !important;
-  -webkit-backdrop-filter: blur(100px) !important;
-  width: 70% !important;
-  margin: auto !important;
-  border-radius: 10px !important;
-  padding-inline: 1em !important;
 }
 .jp-MarkdownOutput {
   color: white !important;
   text-align: start !important;
   width: 100% !important;
+}
+.md-nav--primary,
+.md-nav--primary .md-nav {
+  background: black !important;
+}
+.md-nav--primary .md-nav__title ~ .md-nav__list {
+  background: black !important;
+}
+.md-typeset a {
+  color: rgb(254 240 138);
+}
+.md-sidebar {
+  border-right: #dddddd6b 0.5px solid;
 }
