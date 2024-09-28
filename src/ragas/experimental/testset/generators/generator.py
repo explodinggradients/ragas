@@ -88,17 +88,27 @@ class TestsetGenerator:
         """
         Generate an evaluation dataset based on given scenarios and parameters.
 
-        Args:
-            test_size (int): The number of samples to generate.
-            scenarios (Optional[QuestionTypes]): A list of tuples containing scenario generators and their probabilities.
-                If None, default scenarios will be used.
-            run_config (Optional[RunConfig]): Configuration for running the generation process.
-            with_debugging_logs (bool): If True, enable debug logging for various components.
-            raise_exceptions (bool): If True, raise exceptions during the generation process.
+        Parameters
+        ----------
+        test_size : int
+            The number of samples to generate.
+        scenarios : Optional[QuestionTypes], optional
+            A list of tuples containing scenario generators and their probabilities.
+            If None, default scenarios will be used.
+        run_config : Optional[RunConfig], optional
+            Configuration for running the generation process.
+        with_debugging_logs : bool, default False
+            If True, enable debug logging for various components.
+        raise_exceptions : bool, default True
+            If True, raise exceptions during the generation process.
 
-        Returns:
-            EvaluationDataset: A dataset containing the generated evaluation samples.
+        Returns
+        -------
+        EvaluationDataset
+            A dataset containing the generated evaluation samples.
 
+        Notes
+        -----
         This function performs the following steps:
         1. Set up scenarios and debug logging if required.
         2. Generate scenarios using an Executor.
