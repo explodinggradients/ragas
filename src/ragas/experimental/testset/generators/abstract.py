@@ -7,8 +7,8 @@ from dataclasses import dataclass, field
 from ragas.executor import run_async_batch
 from ragas.experimental.prompt import PydanticPrompt, StringIO
 from ragas.experimental.testset.generators.base import (
-    BaseTestsetGenerator,
-    BasicDistribution,
+    BaseSimulator,
+    BasicScenario,
     UserInputLength,
     UserInputStyle,
 )
@@ -30,12 +30,12 @@ from ragas.experimental.testset.graph import KnowledgeGraph, Node
 logger = logging.getLogger(__name__)
 
 
-class AbstractQADistribution(BasicDistribution):
+class AbstractQAScenario(BasicScenario):
     theme: str
 
 
 @dataclass
-class AbstractGenerator(BaseTestsetGenerator):
+class AbstractGenerator(BaseSimulator):
     generate_user_input_prompt: PydanticPrompt = field(
         default_factory=AbstractQuestionFromTheme
     )
@@ -48,9 +48,9 @@ class AbstractGenerator(BaseTestsetGenerator):
     def __post_init__(self):
         self.common_theme_prompt = CommonThemeFromSummaries()
 
-    async def generate_distributions(
+    async def generate_scenarios(
         self, n: int, knowledge_graph: KnowledgeGraph
-    ) -> t.List[AbstractQADistribution]:
+    ) -> t.List[AbstractQAScenario]:
         node_clusters = knowledge_graph.find_clusters(
             relationship_condition=lambda rel: (
                 True if rel.get_property("cosine_similarity") else False
@@ -114,7 +114,7 @@ class AbstractGenerator(BaseTestsetGenerator):
             clusters_sampled, themes_sampled, question_styles, question_lengths
         ):
             distributions.append(
-                AbstractQADistribution(
+                AbstractQAScenario(
                     theme=theme.theme,
                     nodes=cluster,
                     style=style,
@@ -123,44 +123,44 @@ class AbstractGenerator(BaseTestsetGenerator):
             )
         return distributions
 
-    async def generate_user_input(self, distribution: AbstractQADistribution) -> str:
+    async def generate_user_input(self, scenario: AbstractQAScenario) -> str:
         question = await self.generate_user_input_prompt.generate(
             data=ThemeAndContext(
-                theme=distribution.theme,
-                context=self.make_source_text(distribution),
+                theme=scenario.theme,
+                context=self.make_source_text(scenario),
             ),
             llm=self.llm,
         )
         return question.text
 
-    async def critic_user_input(self, question: str) -> bool:
+    async def critic_user_input(self, user_input: str) -> bool:
         critic = await self.critic_user_input_prompt.generate(
-            data=StringIO(text=question), llm=self.llm
+            data=StringIO(text=user_input), llm=self.llm
         )
         return critic.independence > 1 and critic.clear_intent > 1
 
     async def modify_user_input(
-        self, question: str, distribution: AbstractQADistribution
+        self, user_input: str, scenario: AbstractQAScenario
     ) -> str:
         prompt = extend_modify_input_prompt(
             question_modification_prompt=self.user_input_modification_prompt,
-            style=distribution.style,
-            length=distribution.length,
+            style=scenario.style,
+            length=scenario.length,
         )
         modified_question = await prompt.generate(
             data=UserInputWithStyleAndLength(
-                user_input=question,
-                style=distribution.style,
-                length=distribution.length,
+                user_input=user_input,
+                style=scenario.style,
+                length=scenario.length,
             ),
             llm=self.llm,
         )
         return modified_question.text
 
-    async def generate_reference(self, question: str, chunks: t.List[Node]) -> str:
+    async def generate_reference(self, user_input: str, chunks: t.List[Node]) -> str:
         reference = await self.generate_reference_prompt.generate(
             data=UserInputAndContext(
-                user_input=question,
+                user_input=user_input,
                 context=self.make_source_text(chunks),
             ),
             llm=self.llm,
