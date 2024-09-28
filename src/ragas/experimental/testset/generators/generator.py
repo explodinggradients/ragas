@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 import typing as t
 from dataclasses import dataclass, field
 

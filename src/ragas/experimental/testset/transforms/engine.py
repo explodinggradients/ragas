@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import typing as t
-from dataclasses import dataclass
 
 from ragas.executor import as_completed, is_event_loop_running, tqdm
 from ragas.experimental.testset.graph import KnowledgeGraph
