@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from dataclasses import dataclass, field
 
@@ -27,16 +28,16 @@ if t.TYPE_CHECKING:
 @dataclass
 class TestsetGenerator:
     llm: BaseRagasLLM
-    docstore: KnowledgeGraph = field(default_factory=KnowledgeGraph)
+    knowledge_graph: KnowledgeGraph = field(default_factory=KnowledgeGraph)
 
     @classmethod
     def from_langchain(
         cls,
         llm: LangchainLLM,
-        docstore: t.Optional[KnowledgeGraph] = None,
+        knowledge_graph: t.Optional[KnowledgeGraph] = None,
     ):
-        docstore = docstore or KnowledgeGraph()
-        return cls(LangchainLLMWrapper(llm), docstore)
+        knowledge_graph = knowledge_graph or KnowledgeGraph()
+        return cls(LangchainLLMWrapper(llm), knowledge_graph)
 
     def generate_with_langchain_docs(
         self,
@@ -44,9 +45,9 @@ class TestsetGenerator:
         test_size: int,
         transforms: t.Optional[Transforms] = None,
         scenarios: t.Optional[QuestionTypes] = None,
+        run_config: t.Optional[RunConfig] = None,
         with_debugging_logs=False,
         raise_exceptions: bool = True,
-        run_config: t.Optional[RunConfig] = None,
     ) -> EvaluationDataset:
         transforms = transforms or default_transforms()
 
@@ -64,27 +65,58 @@ class TestsetGenerator:
 
         kg = KnowledgeGraph(nodes=nodes)
 
-        # apply transforms and update the docstore
+        # apply transforms and update the knowledge graph
         apply_transforms(transforms, kg)
-        self.docstore = kg
+        self.knowledge_graph = kg
 
         return self.generate(
-            test_size,
-            scenarios,
-            with_debugging_logs,
-            raise_exceptions,
-            run_config,
+            test_size=test_size,
+            scenarios=scenarios,
+            run_config=run_config,
+            with_debugging_logs=with_debugging_logs,
+            raise_exceptions=raise_exceptions,
         )
 
     def generate(
         self,
         test_size: int,
         scenarios: t.Optional[QuestionTypes] = None,
+        run_config: t.Optional[RunConfig] = None,
         with_debugging_logs=False,
         raise_exceptions: bool = True,
-        run_config: t.Optional[RunConfig] = None,
     ) -> EvaluationDataset:
+        """
+        Generate an evaluation dataset based on given scenarios and parameters.
+
+        Args:
+            test_size (int): The number of samples to generate.
+            scenarios (Optional[QuestionTypes]): A list of tuples containing scenario generators and their probabilities.
+                If None, default scenarios will be used.
+            run_config (Optional[RunConfig]): Configuration for running the generation process.
+            with_debugging_logs (bool): If True, enable debug logging for various components.
+            raise_exceptions (bool): If True, raise exceptions during the generation process.
+
+        Returns:
+            EvaluationDataset: A dataset containing the generated evaluation samples.
+
+        This function performs the following steps:
+        1. Set up scenarios and debug logging if required.
+        2. Generate scenarios using an Executor.
+        3. Calculate split values for different scenario types.
+        4. Generate samples for each scenario.
+        5. Compile the results into an EvaluationDataset.
+        """
         scenarios = scenarios or default_scenarios(self.llm)
+
+        if with_debugging_logs:
+            from ragas.utils import patch_logger
+
+            patch_logger("ragas.testset.evolutions", logging.DEBUG)
+            patch_logger("ragas.testset.extractor", logging.DEBUG)
+            patch_logger("ragas.testset.filters", logging.DEBUG)
+            patch_logger("ragas.testset.docstore", logging.DEBUG)
+            patch_logger("ragas.llms.prompt", logging.DEBUG)
+
         # generate scenarios
         exec = Executor(
             "Generating Scenarios",
@@ -97,7 +129,7 @@ class TestsetGenerator:
             [prob for _, prob in scenarios], test_size
         )
         for i, (scenario, _) in enumerate(scenarios):
-            exec.submit(scenario.generate_scenarios, splits[i], self.docstore)
+            exec.submit(scenario.generate_scenarios, splits[i], self.knowledge_graph)
 
         scenario_sample_list: t.List[t.List[BasicScenario]] = exec.results()
 

@@ -192,11 +192,11 @@ class AbstractQuestionSimulator(BaseSimulator):
         return modified_question.text
 
     async def generate_reference(
-        self, question: str, scenario: AbstractQuestionScenario
+        self, user_input: str, scenario: AbstractQuestionScenario
     ) -> str:
         reference = await self.generate_reference_prompt.generate(
             data=UserInputAndContext(
-                user_input=question,
+                user_input=user_input,
                 context=self.make_source_text(scenario),
             ),
             llm=self.llm,

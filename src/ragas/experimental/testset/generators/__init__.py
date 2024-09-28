@@ -12,4 +12,4 @@ def default_scenarios(llm: BaseRagasLLM) -> QuestionTypes:
     return [(AbstractQuestionSimulator(llm), 1.0)]
 
 
-__all__ = ["AbstractQuestionSimulator"]
+__all__ = ["AbstractQuestionSimulator", "default_scenarios"]
