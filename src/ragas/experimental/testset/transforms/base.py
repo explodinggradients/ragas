@@ -9,7 +9,7 @@ from ragas.llms import BaseRagasLLM, llm_factory
 logger = logging.getLogger(__name__)
 
 
-class BaseGraphTransformations(ABC):
+class BaseGraphTransformation(ABC):
     """
     Abstract base class for graph transformations on a KnowledgeGraph.
     """
@@ -68,7 +68,7 @@ class BaseGraphTransformations(ABC):
         pass
 
 
-class Extractor(BaseGraphTransformations):
+class Extractor(BaseGraphTransformation):
     """
     Abstract base class for extractors that transform a KnowledgeGraph by extracting
     specific properties from its nodes.
@@ -165,7 +165,7 @@ class LLMBasedExtractor(Extractor):
     merge_if_possible: bool = True
 
 
-class Splitter(BaseGraphTransformations):
+class Splitter(BaseGraphTransformation):
     """
     Abstract base class for splitters that transform a KnowledgeGraph by splitting
     its nodes into smaller chunks.
@@ -247,7 +247,7 @@ class Splitter(BaseGraphTransformations):
         return [apply_split(node) for node in filtered.nodes]
 
 
-class RelationshipBuilder(BaseGraphTransformations):
+class RelationshipBuilder(BaseGraphTransformation):
     """
     Abstract base class for building relationships in a KnowledgeGraph.
 

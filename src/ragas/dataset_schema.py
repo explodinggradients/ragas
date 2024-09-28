@@ -74,6 +74,9 @@ class EvaluationDataset(BaseModel):
 
     @validator("samples")
     def validate_samples(cls, samples):
+        if len(samples) == 0:
+            return samples
+
         first_sample_type = type(samples[0])
         if not all(isinstance(sample, first_sample_type) for sample in samples):
             raise ValueError("All samples must be of the same type")

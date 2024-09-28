@@ -1,3 +1,15 @@
-from .abstract import AbstractGenerator
+import typing as t
 
-__all__ = ["AbstractGenerator"]
+from ragas.llms import BaseRagasLLM
+
+from .abstract import AbstractQuestionSimulator
+from .base import BaseSimulator
+
+QuestionTypes = t.List[t.Tuple[BaseSimulator, float]]
+
+
+def default_scenarios(llm: BaseRagasLLM) -> QuestionTypes:
+    return [(AbstractQuestionSimulator(llm), 1.0)]
+
+
+__all__ = ["AbstractQuestionSimulator"]

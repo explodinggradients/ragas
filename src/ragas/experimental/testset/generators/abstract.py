@@ -4,6 +4,7 @@ import random
 import typing as t
 from dataclasses import dataclass, field
 
+from ragas.dataset_schema import SingleTurnSample
 from ragas.executor import run_async_batch
 from ragas.experimental.prompt import PydanticPrompt, StringIO
 from ragas.experimental.testset.generators.base import (
@@ -25,17 +26,17 @@ from ragas.experimental.testset.generators.prompts import (
     UserInputWithStyleAndLength,
     extend_modify_input_prompt,
 )
-from ragas.experimental.testset.graph import KnowledgeGraph, Node
+from ragas.experimental.testset.graph import KnowledgeGraph, NodeType
 
 logger = logging.getLogger(__name__)
 
 
-class AbstractQAScenario(BasicScenario):
+class AbstractQuestionScenario(BasicScenario):
     theme: str
 
 
 @dataclass
-class AbstractGenerator(BaseSimulator):
+class AbstractQuestionSimulator(BaseSimulator):
     generate_user_input_prompt: PydanticPrompt = field(
         default_factory=AbstractQuestionFromTheme
     )
@@ -50,11 +51,11 @@ class AbstractGenerator(BaseSimulator):
 
     async def generate_scenarios(
         self, n: int, knowledge_graph: KnowledgeGraph
-    ) -> t.List[AbstractQAScenario]:
+    ) -> t.List[AbstractQuestionScenario]:
         node_clusters = knowledge_graph.find_clusters(
-            relationship_condition=lambda rel: (
-                True if rel.get_property("cosine_similarity") else False
-            )
+            relationship_condition=lambda rel: True
+            if rel.get_property("cosine_similarity")
+            else False
         )
         logger.info("found %d clusters", len(node_clusters))
 
@@ -67,9 +68,22 @@ class AbstractGenerator(BaseSimulator):
 
         # find the number of themes to generation for given n and the num of clusters
         # will generate more themes just in case
+        if len(node_clusters) == 0:
+            node_clusters_new = []
+            # if no clusters, use the nodes directly
+            for node in knowledge_graph.nodes:
+                if node.type == NodeType.CHUNK:
+                    node_clusters_new.append([node])
+
+            if len(node_clusters_new) == 0:
+                raise ValueError(
+                    "no clusters found. Try running a few transforms to populate the dataset"
+                )
+            node_clusters = node_clusters_new[:n]
+
         num_clusters = len(node_clusters)
         num_themes = math.ceil(n / num_clusters)
-        logger.info("generating %d themes", num_themes)
+        logger.info("generating %d themes", num_clusters)
 
         kw_list = []
         for cluster in node_clusters:
@@ -114,7 +128,7 @@ class AbstractGenerator(BaseSimulator):
             clusters_sampled, themes_sampled, question_styles, question_lengths
         ):
             distributions.append(
-                AbstractQAScenario(
+                AbstractQuestionScenario(
                     theme=theme.theme,
                     nodes=cluster,
                     style=style,
@@ -123,7 +137,27 @@ class AbstractGenerator(BaseSimulator):
             )
         return distributions
 
-    async def generate_user_input(self, scenario: AbstractQAScenario) -> str:
+    async def generate_sample(
+        self, scenario: AbstractQuestionScenario
+    ) -> SingleTurnSample:
+        user_input = await self.generate_user_input(scenario)
+        if await self.critic_user_input(user_input):
+            user_input = await self.modify_user_input(user_input, scenario)
+
+        reference = await self.generate_reference(user_input, scenario)
+
+        reference_contexts = []
+        for node in scenario.nodes:
+            if node.get_property("page_content") is not None:
+                reference_contexts.append(node.get_property("page_content"))
+
+        return SingleTurnSample(
+            user_input=user_input,
+            reference=reference,
+            reference_contexts=reference_contexts,
+        )
+
+    async def generate_user_input(self, scenario: AbstractQuestionScenario) -> str:
         question = await self.generate_user_input_prompt.generate(
             data=ThemeAndContext(
                 theme=scenario.theme,
@@ -133,14 +167,14 @@ class AbstractGenerator(BaseSimulator):
         )
         return question.text
 
-    async def critic_user_input(self, user_input: str) -> bool:
+    async def critic_user_input(self, question: str) -> bool:
         critic = await self.critic_user_input_prompt.generate(
-            data=StringIO(text=user_input), llm=self.llm
+            data=StringIO(text=question), llm=self.llm
         )
         return critic.independence > 1 and critic.clear_intent > 1
 
     async def modify_user_input(
-        self, user_input: str, scenario: AbstractQAScenario
+        self, user_input: str, scenario: AbstractQuestionScenario
     ) -> str:
         prompt = extend_modify_input_prompt(
             question_modification_prompt=self.user_input_modification_prompt,
@@ -157,11 +191,13 @@ class AbstractGenerator(BaseSimulator):
         )
         return modified_question.text
 
-    async def generate_reference(self, user_input: str, chunks: t.List[Node]) -> str:
+    async def generate_reference(
+        self, question: str, scenario: AbstractQuestionScenario
+    ) -> str:
         reference = await self.generate_reference_prompt.generate(
             data=UserInputAndContext(
-                user_input=user_input,
-                context=self.make_source_text(chunks),
+                user_input=question,
+                context=self.make_source_text(scenario),
             ),
             llm=self.llm,
         )
