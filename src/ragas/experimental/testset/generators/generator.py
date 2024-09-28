@@ -119,13 +119,12 @@ class TestsetGenerator:
         scenarios = scenarios or default_scenarios(self.llm)
 
         if with_debugging_logs:
+            # TODO: Edit this before pre-release
             from ragas.utils import patch_logger
 
-            patch_logger("ragas.testset.evolutions", logging.DEBUG)
-            patch_logger("ragas.testset.extractor", logging.DEBUG)
-            patch_logger("ragas.testset.filters", logging.DEBUG)
-            patch_logger("ragas.testset.docstore", logging.DEBUG)
-            patch_logger("ragas.llms.prompt", logging.DEBUG)
+            patch_logger("ragas.experimental.testset.generators", logging.DEBUG)
+            patch_logger("ragas.experimental.testset.graph", logging.DEBUG)
+            patch_logger("ragas.experimental.testset.transforms", logging.DEBUG)
 
         # generate scenarios
         exec = Executor(
