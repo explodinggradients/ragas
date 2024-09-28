@@ -2,6 +2,19 @@
 
 Ragas is a framework that helps you evaluate your Retrieval Augmented Generation (RAG) pipelines. RAG denotes a class of LLM applications that use external data to augment the LLM’s context. There are existing tools and frameworks that help you build these pipelines but evaluating it and quantifying your pipeline performance can be hard. This is where Ragas (RAG Assessment) comes in.
 
+{% llm_tabs %}
+GPT-3
+This is the content for GPT-3.
+It can span multiple lines.
+
+GPT-4
+This is the content for GPT-4.
+It can also span multiple lines.
+
+Claude
+This is the content for Claude.
+Multiple lines are supported here too.
+{% endllm_tabs %}
 
 <div class="grid cards" markdown>
 - 🚀 **Get Started**
@@ -14,22 +27,22 @@ Ragas is a framework that helps you evaluate your Retrieval Augmented Generation
 
 - 📚 **Core Concepts**
 
-    The high-level explanations for building a better understand about the
-    important topics such as how to think about metrics-driven development, how the Ragas metrics work under the hood and synthetic dataset generation.
+  The high-level explanations for building a better understand about the
+  important topics such as how to think about metrics-driven development, how the Ragas metrics work under the hood and synthetic dataset generation.
 
-    [:octicons-arrow-right-24: Core Concepts](concepts/index.md)
+  [:octicons-arrow-right-24: Core Concepts](concepts/index.md)
 
 - 🛠️ **How-to Guides**
 
-    Practical guides to help you achieve a specific goals. Take a look at these
-    guides to learn how to use Ragas to solve real-world problems.
+  Practical guides to help you achieve a specific goals. Take a look at these
+  guides to learn how to use Ragas to solve real-world problems.
 
-    [:octicons-arrow-right-24: How-to Guides](howtos/index.md)
+  [:octicons-arrow-right-24: How-to Guides](howtos/index.md)
 
 - 📖 **References**
 
-    Technical descriptions of how Ragas classes and methods work.
+  Technical descriptions of how Ragas classes and methods work.
 
-    [:octicons-arrow-right-24: References](references/index.md)
+  [:octicons-arrow-right-24: References](references/index.md)
 
 </div>

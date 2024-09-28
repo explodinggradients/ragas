@@ -129,6 +129,7 @@ extra:
     provider: mike
 plugins:
   - search
+  - macros
   - mkdocstrings:
       handlers:
         python:
@@ -146,6 +147,7 @@ plugins:
         jupyter_images: true
         jupyter_table_beautifier: true
   - glightbox
+  - /llmswitch/plugin.py
 
 extra_javascript:
   - _static/js/mathjax.js
