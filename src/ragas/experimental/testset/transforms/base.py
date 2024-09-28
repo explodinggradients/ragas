@@ -9,10 +9,17 @@ from ragas.llms import BaseRagasLLM, llm_factory
 logger = logging.getLogger(__name__)
 
 
+@dataclass
 class BaseGraphTransformation(ABC):
     """
     Abstract base class for graph transformations on a KnowledgeGraph.
     """
+
+    name: str = ""
+
+    def __post_init__(self):
+        if not self.name:
+            self.name = self.__class__.__name__
 
     @abstractmethod
     async def transform(self, kg: KnowledgeGraph) -> t.Any:
@@ -68,6 +75,7 @@ class BaseGraphTransformation(ABC):
         pass
 
 
+@dataclass
 class Extractor(BaseGraphTransformation):
     """
     Abstract base class for extractors that transform a KnowledgeGraph by extracting
@@ -81,6 +89,8 @@ class Extractor(BaseGraphTransformation):
     extract(node: Node) -> t.Tuple[str, t.Any]
         Abstract method to extract a specific property from a node.
     """
+
+    filter_nodes: t.Callable[[Node], bool] = lambda _: True
 
     async def transform(
         self, kg: KnowledgeGraph
@@ -157,6 +167,16 @@ class Extractor(BaseGraphTransformation):
 
         filtered = self.filter(kg)
         return [apply_extract(node) for node in filtered.nodes]
+
+    def filter(self, kg: KnowledgeGraph) -> KnowledgeGraph:
+        return KnowledgeGraph(
+            nodes=[node for node in kg.nodes if self.filter_nodes(node)],
+            relationships=[
+                rel
+                for rel in kg.relationships
+                if rel.source in kg.nodes and rel.target in kg.nodes
+            ],
+        )
 
 
 @dataclass

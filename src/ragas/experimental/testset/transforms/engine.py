@@ -71,8 +71,8 @@ def apply_nest_asyncio():
 
 
 def apply_transforms(
-    transforms: Transforms,
     kg: KnowledgeGraph,
+    transforms: Transforms,
     run_config: RunConfig = RunConfig(),
 ):
     """
@@ -111,6 +111,6 @@ def apply_transforms(
         )
 
 
-def rollback_transforms(transforms: Transforms, kg: KnowledgeGraph):
+def rollback_transforms(kg: KnowledgeGraph, transforms: Transforms):
     # this will allow you to roll back the transformations
     raise NotImplementedError
