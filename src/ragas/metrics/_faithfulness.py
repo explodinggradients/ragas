@@ -401,5 +401,3 @@ class FaithfulnesswithHHEM(Faithfulness):
 
 
 faithfulness = Faithfulness()
-
-
