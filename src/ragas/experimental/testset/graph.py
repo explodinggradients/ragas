@@ -2,6 +2,7 @@ import json
 import typing as t
 import uuid
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 
 from pydantic import BaseModel, Field
@@ -14,10 +15,16 @@ class UUIDEncoder(json.JSONEncoder):
         return super().default(o)
 
 
+class NodeType(str, Enum):
+    UNKNOWN = ""
+    DOCUMENT = "document"
+    CHUNK = "chunk"
+
+
 class Node(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     properties: dict = Field(default_factory=dict)
-    type: str = ""
+    type: NodeType = NodeType.UNKNOWN
 
     # a simple repr
     def __repr__(self) -> str:

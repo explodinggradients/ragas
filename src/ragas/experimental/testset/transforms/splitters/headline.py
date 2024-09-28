@@ -1,7 +1,7 @@
 import typing as t
 from dataclasses import dataclass
 
-from ragas.experimental.testset.graph import Node, Relationship
+from ragas.experimental.testset.graph import Node, NodeType, Relationship
 from ragas.experimental.testset.transforms.base import Splitter
 
 
@@ -25,7 +25,8 @@ class HeadlineSplitter(Splitter):
 
         # create the nodes
         nodes = [
-            Node(type="chunk", properties={"page_content": chunk}) for chunk in chunks
+            Node(type=NodeType.CHUNK, properties={"page_content": chunk})
+            for chunk in chunks
         ]
 
         # create the relationships for children

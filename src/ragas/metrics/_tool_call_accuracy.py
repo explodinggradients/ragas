@@ -4,7 +4,6 @@ import typing as t
 import warnings
 from dataclasses import dataclass, field
 
-
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.messages import AIMessage
 from ragas.metrics._string import ExactMatch

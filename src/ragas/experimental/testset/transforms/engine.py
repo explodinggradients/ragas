@@ -3,18 +3,23 @@ from __future__ import annotations
 import asyncio
 import logging
 import typing as t
-from dataclasses import dataclass
 
 from ragas.executor import as_completed, is_event_loop_running, tqdm
 from ragas.experimental.testset.graph import KnowledgeGraph
-from ragas.experimental.testset.transforms.base import BaseGraphTransformations
+from ragas.experimental.testset.transforms.base import BaseGraphTransformation
 from ragas.run_config import RunConfig
 
 logger = logging.getLogger(__name__)
 
+Transforms = t.Union[
+    t.List[BaseGraphTransformation],
+    "Parallel",
+    BaseGraphTransformation,
+]
+
 
 class Parallel:
-    def __init__(self, *transformations: BaseGraphTransformations):
+    def __init__(self, *transformations: BaseGraphTransformation):
         self.transformations = list(transformations)
 
     def generate_execution_plan(self, kg: KnowledgeGraph) -> t.List[t.Coroutine]:
@@ -33,7 +38,7 @@ async def run_coroutines(coroutines: t.List[t.Coroutine], desc: str, max_workers
         desc=desc,
         total=len(coroutines),
         # whether you want to keep the progress bar after completion
-        leave=True,
+        leave=False,
     ):
         try:
             await future
@@ -41,7 +46,7 @@ async def run_coroutines(coroutines: t.List[t.Coroutine], desc: str, max_workers
             logger.error(f"unable to apply transformation: {e}")
 
 
-def get_desc(transform: BaseGraphTransformations | Parallel):
+def get_desc(transform: BaseGraphTransformation | Parallel):
     if isinstance(transform, Parallel):
         transform_names = [t.__class__.__name__ for t in transform.transformations]
         return f"Applying [{', '.join(transform_names)}] transformations in parallel"
@@ -49,69 +54,63 @@ def get_desc(transform: BaseGraphTransformations | Parallel):
         return f"Applying {transform.__class__.__name__}"
 
 
-@dataclass
-class TransformerEngine:
-    _nest_asyncio_applied: bool = False
+def apply_nest_asyncio():
+    NEST_ASYNCIO_APPLIED: bool = False
+    if is_event_loop_running():
+        # an event loop is running so call nested_asyncio to fix this
+        try:
+            import nest_asyncio
+        except ImportError:
+            raise ImportError(
+                "It seems like your running this in a jupyter-like environment. Please install nest_asyncio with `pip install nest_asyncio` to make it work."
+            )
 
-    def _apply_nest_asyncio(self):
-        if is_event_loop_running():
-            # an event loop is running so call nested_asyncio to fix this
-            try:
-                import nest_asyncio
-            except ImportError:
-                raise ImportError(
-                    "It seems like your running this in a jupyter-like environment. Please install nest_asyncio with `pip install nest_asyncio` to make it work."
-                )
+        if not NEST_ASYNCIO_APPLIED:
+            nest_asyncio.apply()
+            NEST_ASYNCIO_APPLIED = True
 
-            if not self._nest_asyncio_applied:
-                nest_asyncio.apply()
-                self._nest_asyncio_applied = True
 
-    def apply(
-        self,
-        transforms: t.Union[
-            t.List[BaseGraphTransformations], Parallel, BaseGraphTransformations
-        ],
-        kg: KnowledgeGraph,
-        run_config: RunConfig = RunConfig(),
-    ):
-        """
-        Apply a list of transformations to a knowledge graph.
-        """
-        # apply nest_asyncio to fix the event loop issue in jupyter
-        self._apply_nest_asyncio()
+def apply_transforms(
+    transforms: Transforms,
+    kg: KnowledgeGraph,
+    run_config: RunConfig = RunConfig(),
+):
+    """
+    Apply a list of transformations to a knowledge graph in place.
+    """
+    # apply nest_asyncio to fix the event loop issue in jupyter
+    apply_nest_asyncio()
 
-        # if single transformation, wrap it in a list
-        if isinstance(transforms, BaseGraphTransformations):
-            transforms = [transforms]
+    # if single transformation, wrap it in a list
+    if isinstance(transforms, BaseGraphTransformation):
+        transforms = [transforms]
 
-        # apply the transformations
-        # if Sequences, apply each transformation sequentially
-        if isinstance(transforms, t.List):
-            for transform in transforms:
-                asyncio.run(
-                    run_coroutines(
-                        transform.generate_execution_plan(kg),
-                        get_desc(transform),
-                        run_config.max_workers,
-                    )
-                )
-        # if Parallel, collect inside it and run it all
-        elif isinstance(transforms, Parallel):
+    # apply the transformations
+    # if Sequences, apply each transformation sequentially
+    if isinstance(transforms, t.List):
+        for transform in transforms:
             asyncio.run(
                 run_coroutines(
-                    transforms.generate_execution_plan(kg),
-                    get_desc(transforms),
+                    transform.generate_execution_plan(kg),
+                    get_desc(transform),
                     run_config.max_workers,
                 )
             )
-        else:
-            raise ValueError(
-                f"Invalid transforms type: {type(transforms)}. Expects a list of BaseGraphTransformations or a Parallel instance."
+    # if Parallel, collect inside it and run it all
+    elif isinstance(transforms, Parallel):
+        asyncio.run(
+            run_coroutines(
+                transforms.generate_execution_plan(kg),
+                get_desc(transforms),
+                run_config.max_workers,
             )
+        )
+    else:
+        raise ValueError(
+            f"Invalid transforms type: {type(transforms)}. Expects a list of BaseGraphTransformations or a Parallel instance."
+        )
 
-    def rollback(
-        self, transforms: t.List[BaseGraphTransformations], kg: KnowledgeGraph
-    ):
-        # this will allow you to roll back the transformations
-        raise NotImplementedError
+
+def rollback_transforms(transforms: Transforms, kg: KnowledgeGraph):
+    # this will allow you to roll back the transformations
+    raise NotImplementedError
