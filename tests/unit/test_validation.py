@@ -27,7 +27,7 @@ def test_validate_required_columns():
 
     @dataclass
     class MockMetric(Metric):
-        name = "mock_metric"
+        name = "mock_metric"  # type: ignore
         _required_columns: t.Dict[MetricType, t.Set[str]] = field(
             default_factory=lambda: {MetricType.SINGLE_TURN: {"user_input", "response"}}
         )

@@ -6,9 +6,9 @@ from dataclasses import dataclass, field
 
 from ragas.dataset_schema import EvaluationDataset
 from ragas.executor import Executor
-from ragas.experimental.testset.generators import default_scenarios
-from ragas.experimental.testset.generators.utils import calculate_split_values
 from ragas.experimental.testset.graph import KnowledgeGraph, Node, NodeType
+from ragas.experimental.testset.simulators import default_scenarios
+from ragas.experimental.testset.simulators.utils import calculate_split_values
 from ragas.experimental.testset.transforms import (
     Transforms,
     apply_transforms,
@@ -21,8 +21,8 @@ if t.TYPE_CHECKING:
     from langchain_core.documents import Document as LCDocument
     from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
-    from ragas.experimental.testset.generators import QuestionTypes
-    from ragas.experimental.testset.generators.base import BasicScenario
+    from ragas.experimental.testset.simulators import QuestionTypes
+    from ragas.experimental.testset.simulators.base import BaseScenario
 
 
 @dataclass
@@ -66,7 +66,7 @@ class TestsetGenerator:
         kg = KnowledgeGraph(nodes=nodes)
 
         # apply transforms and update the knowledge graph
-        apply_transforms(transforms, kg)
+        apply_transforms(kg, transforms)
         self.knowledge_graph = kg
 
         return self.generate(
@@ -93,7 +93,7 @@ class TestsetGenerator:
         test_size : int
             The number of samples to generate.
         scenarios : Optional[QuestionTypes], optional
-            A list of tuples containing scenario generators and their probabilities.
+            A list of tuples containing scenario simulators and their probabilities.
             If None, default scenarios will be used.
         run_config : Optional[RunConfig], optional
             Configuration for running the generation process.
@@ -122,7 +122,7 @@ class TestsetGenerator:
             # TODO: Edit this before pre-release
             from ragas.utils import patch_logger
 
-            patch_logger("ragas.experimental.testset.generators", logging.DEBUG)
+            patch_logger("ragas.experimental.testset.simulators", logging.DEBUG)
             patch_logger("ragas.experimental.testset.graph", logging.DEBUG)
             patch_logger("ragas.experimental.testset.transforms", logging.DEBUG)
 
@@ -140,7 +140,7 @@ class TestsetGenerator:
         for i, (scenario, _) in enumerate(scenarios):
             exec.submit(scenario.generate_scenarios, splits[i], self.knowledge_graph)
 
-        scenario_sample_list: t.List[t.List[BasicScenario]] = exec.results()
+        scenario_sample_list: t.List[t.List[BaseScenario]] = exec.results()
 
         exec = Executor(
             "Generating Samples",

@@ -49,7 +49,7 @@ async def run_coroutines(coroutines: t.List[t.Coroutine], desc: str, max_workers
 def get_desc(transform: BaseGraphTransformation | Parallel):
     if isinstance(transform, Parallel):
         transform_names = [t.__class__.__name__ for t in transform.transformations]
-        return f"Applying [{', '.join(transform_names)}] transformations in parallel"
+        return f"Applying [{', '.join(transform_names)}]"
     else:
         return f"Applying {transform.__class__.__name__}"
 
@@ -71,8 +71,8 @@ def apply_nest_asyncio():
 
 
 def apply_transforms(
-    transforms: Transforms,
     kg: KnowledgeGraph,
+    transforms: Transforms,
     run_config: RunConfig = RunConfig(),
 ):
     """
@@ -111,6 +111,6 @@ def apply_transforms(
         )
 
 
-def rollback_transforms(transforms: Transforms, kg: KnowledgeGraph):
+def rollback_transforms(kg: KnowledgeGraph, transforms: Transforms):
     # this will allow you to roll back the transformations
     raise NotImplementedError
