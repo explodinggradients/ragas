@@ -146,7 +146,8 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = [],
     ) -> OutputModel:
-        prompt_value = PromptValue(prompt_str=self.to_string(data))
+        processed_data = self.process_input(data)
+        prompt_value = PromptValue(prompt_str=self.to_string(processed_data))
         resp = await llm.generate(
             prompt_value,
             n=n,
@@ -159,7 +160,13 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         answer = await parser.aparse(resp_text, prompt_value, llm, max_retries=3)
 
         # TODO: make sure RagasOutputPraser returns the same type as OutputModel
-        return answer  # type: ignore
+        return self.process_output(answer, data)  # type: ignore
+
+    def process_input(self, input: InputModel) -> InputModel:
+        return input
+
+    def process_output(self, output: OutputModel, input: InputModel) -> OutputModel:
+        return output
 
 
 class StringPrompt(BasePrompt):

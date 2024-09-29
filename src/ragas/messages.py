@@ -1,6 +1,6 @@
 import typing as t
 
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 
 
 class Message(BaseModel):

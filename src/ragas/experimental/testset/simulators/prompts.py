@@ -3,7 +3,7 @@ import typing as t
 from pydantic import BaseModel
 
 from ragas.experimental.prompt import PydanticPrompt, StringIO
-from ragas.experimental.testset.generators.base import UserInputLength, UserInputStyle
+from ragas.experimental.testset.simulators.base import UserInputLength, UserInputStyle
 
 
 class Summaries(BaseModel):
@@ -272,6 +272,137 @@ class GenerateReference(PydanticPrompt[UserInputAndContext, StringIO]):
             ),
             StringIO(
                 text="AI improves efficiency and accuracy across different industries by making processes more efficient and accurate."
+            ),
+        )
+    ]
+
+
+class KeyphrasesAndNumConcepts(BaseModel):
+    keyphrases: t.List[str]
+    num_concepts: int
+
+
+class Concepts(BaseModel):
+    concepts: t.Dict[str, t.List[str]]
+
+
+class CommonConceptsFromKeyphrases(PydanticPrompt[KeyphrasesAndNumConcepts, Concepts]):
+    input_model = KeyphrasesAndNumConcepts
+    output_model = Concepts
+    instruction = "Identify a list of common concepts from the given list of key phrases for comparing the given theme across reports."
+    examples = [
+        (
+            KeyphrasesAndNumConcepts(
+                keyphrases=[
+                    "fast charging",
+                    "long battery life",
+                    "OLED display",
+                    "waterproof",
+                ],
+                num_concepts=4,
+            ),
+            Concepts(
+                concepts={
+                    "Charging": [
+                        "fast charging",
+                        "long battery life",
+                        "OLED display",
+                        "waterproof",
+                    ],
+                    "Battery Life": [
+                        "long battery life",
+                        "extended battery",
+                        "durable battery",
+                        "prolonged battery",
+                    ],
+                    "Display": [
+                        "OLED display",
+                        "HD display",
+                        "AMOLED display",
+                        "retina display",
+                    ],
+                    "Water/Dust Resistance": [
+                        "waterproof",
+                        "dust resistant",
+                        "splash proof",
+                        "water resistant",
+                    ],
+                }
+            ),
+        )
+    ]
+
+    def process_output(
+        self, output: Concepts, input: KeyphrasesAndNumConcepts
+    ) -> Concepts:
+        if len(output.concepts) < input.num_concepts:
+            # fill the rest with empty strings
+            output.concepts.update(
+                {
+                    "Concept" + str(i): []
+                    for i in range(input.num_concepts - len(output.concepts))
+                }
+            )
+        return output
+
+
+class CAQInput(BaseModel):
+    concept: str
+    keyphrases: t.List[str]
+    summaries: t.List[str]
+
+
+class ComparativeAbstractQuestion(PydanticPrompt[CAQInput, StringIO]):
+    input_model = CAQInput
+    output_model = StringIO
+    instruction = "Generate an abstract comparative question based on the given concept, keyphrases belonging to that concept, and summaries of reports."
+    examples = [
+        (
+            CAQInput(
+                concept="Battery Life",
+                keyphrases=[
+                    "long battery life",
+                    "extended battery",
+                    "durable battery",
+                    "prolonged battery",
+                ],
+                summaries=[
+                    "The device offers a long battery life, capable of lasting up to 24 hours on a single charge.",
+                    "Featuring an extended battery, the product can function for 20 hours with heavy usage.",
+                    "With a durable battery, this model ensures 22 hours of operation under normal conditions.",
+                    "The battery life is prolonged, allowing the gadget to be used for up to 18 hours on one charge.",
+                ],
+            ),
+            StringIO(
+                text="How do the battery life claims and performance metrics compare across different reports for devices featuring long battery life, extended battery, durable battery, and prolonged battery?"
+            ),
+        )
+    ]
+
+
+class SpecificQuestionInput(BaseModel):
+    title: str
+    keyphrase: str
+    text: str
+
+
+class SpecificQuestion(PydanticPrompt[SpecificQuestionInput, StringIO]):
+    input_model = SpecificQuestionInput
+    output_model = StringIO
+    instruction = "Given the title of a text and a text chunk, along with a keyphrase from the chunk, generate a specific question related to the keyphrase.\n\n"
+    "1. Read the title and the text chunk.\n"
+    "2. Identify the context of the keyphrase within the text chunk.\n"
+    "3. Formulate a question that directly relates to the keyphrase and its context within the chunk.\n"
+    "4. Ensure the question is clear, specific, and relevant to the keyphrase."
+    examples = [
+        (
+            SpecificQuestionInput(
+                title="The Impact of Artificial Intelligence on Modern Healthcare",
+                keyphrase="personalized treatment plans",
+                text="Artificial intelligence (AI) is revolutionizing healthcare by improving diagnostic accuracy and enabling personalized treatment plans. AI algorithms analyze vast amounts of medical data to identify patterns and predict patient outcomes, which enhances the decision-making process for healthcare professionals.",
+            ),
+            StringIO(
+                text="How does AI contribute to the development of personalized treatment plans in healthcare?"
             ),
         )
     ]
