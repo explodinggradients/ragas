@@ -42,7 +42,11 @@ class MultiTurnSample(BaseEvalSample):
     reference_topics: t.Optional[t.List[str]] = None
 
     @field_validator("user_input")
-    def validate_messages(cls, messages):
+    @classmethod
+    def validate_user_input(
+        cls,
+        messages: t.List[t.Union[HumanMessage, AIMessage, ToolMessage]],
+    ) -> t.List[t.Union[HumanMessage, AIMessage, ToolMessage]]:
         if not (
             isinstance(m, (HumanMessage, AIMessage, ToolMessage)) for m in messages
         ):
@@ -80,7 +84,9 @@ class EvaluationDataset(BaseModel):
     samples: t.List[BaseEvalSample]
 
     @field_validator("samples")
-    def validate_samples(cls, samples):
+    def validate_samples(
+        cls, samples: t.List[BaseEvalSample]
+    ) -> t.List[BaseEvalSample]:
         if len(samples) == 0:
             return samples
 
