@@ -3,14 +3,14 @@
 How to customize various aspects of Ragas to suit your needs.
 
 ## Metrics
-- [Modifying prompts in metrics](metrics/modifying-prompts-metrics.ipynb)
+- [Modify prompts in metrics](metrics/modifying-prompts-metrics.ipynb)
 - [Write your own metrics](metrics/Write_your_own_metric.ipynb)
-- [Customising LLM used within metrics]()
-- [Adapting metrics to target language]()
-- [Aligning metrics with human evaluators]()
+- [Customize LLM used within metrics]()
+- [Adapt metrics to target language]()
+- [Align metrics with human evaluators]()
 
 ## Testset Generation
 
-- [Adding your own test cases]()
-- [Customising LLM used within Test Generation]()
-- [Seeding generations using production data]()
+- [Add your own test cases]()
+- [Customize LLM used within Test Generation]()
+- [Seed generations using production data]()
