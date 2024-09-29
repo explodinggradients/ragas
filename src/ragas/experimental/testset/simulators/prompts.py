@@ -3,7 +3,7 @@ import typing as t
 from pydantic import BaseModel
 
 from ragas.experimental.prompt import PydanticPrompt, StringIO
-from ragas.experimental.testset.generators.base import UserInputLength, UserInputStyle
+from ragas.experimental.testset.simulators.base import UserInputLength, UserInputStyle
 
 
 class Summaries(BaseModel):

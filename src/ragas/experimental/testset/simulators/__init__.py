@@ -2,7 +2,7 @@ import typing as t
 
 from ragas.llms import BaseRagasLLM
 
-from .abstract import AbstractQuestionSimulator
+from .abstract_qa import AbstractQuestionSimulator
 from .base import BaseSimulator
 
 QuestionTypes = t.List[t.Tuple[BaseSimulator, float]]
