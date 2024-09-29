@@ -7,8 +7,6 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from ragas.experimental.testset.transforms.engine import Transforms, apply_transforms
-
 
 class UUIDEncoder(json.JSONEncoder):
     def default(self, o):
@@ -162,6 +160,3 @@ class KnowledgeGraph:
                     clusters.append(cluster)
 
         return clusters
-
-    def apply(self, transforms: Transforms):
-        apply_transforms(self, transforms)
