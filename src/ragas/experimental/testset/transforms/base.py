@@ -309,9 +309,11 @@ class RelationshipBuilder(BaseGraphTransformation):
             A list of coroutines to be executed in parallel.
         """
 
-        async def apply_build_relationships(kg: KnowledgeGraph):
-            relationships = await self.transform(kg)
-            kg.relationships.extend(relationships)
+        async def apply_build_relationships(
+            filtered_kg: KnowledgeGraph, original_kg: KnowledgeGraph
+        ):
+            relationships = await self.transform(filtered_kg)
+            original_kg.relationships.extend(relationships)
 
-        filtered = self.filter(kg)
-        return [apply_build_relationships(filtered)]
+        filtered_kg = self.filter(kg)
+        return [apply_build_relationships(filtered_kg=filtered_kg, original_kg=kg)]

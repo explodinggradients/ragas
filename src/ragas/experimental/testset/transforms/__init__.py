@@ -23,11 +23,10 @@ def default_transforms() -> Transforms:
 
     # specify the transforms and their order to be applied
     transforms = [
+        summary_extractor,
         headline_extractor,
         headline_splitter,
-        Parallel(
-            embedding_extractor, summary_extractor, keyphrase_extractor, title_extractor
-        ),
+        Parallel(embedding_extractor, keyphrase_extractor, title_extractor),
         cosine_sim_builder,
     ]
     return transforms
