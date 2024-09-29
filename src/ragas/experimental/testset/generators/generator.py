@@ -22,7 +22,7 @@ if t.TYPE_CHECKING:
     from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
     from ragas.experimental.testset.generators import QuestionTypes
-    from ragas.experimental.testset.generators.base import BasicScenario
+    from ragas.experimental.testset.generators.base import BaseScenario
 
 
 @dataclass
@@ -140,7 +140,7 @@ class TestsetGenerator:
         for i, (scenario, _) in enumerate(scenarios):
             exec.submit(scenario.generate_scenarios, splits[i], self.knowledge_graph)
 
-        scenario_sample_list: t.List[t.List[BasicScenario]] = exec.results()
+        scenario_sample_list: t.List[t.List[BaseScenario]] = exec.results()
 
         exec = Executor(
             "Generating Samples",

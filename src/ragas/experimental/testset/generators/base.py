@@ -27,13 +27,13 @@ class UserInputStyle(str, Enum):
     WEB_SEARCH_LIKE = "Web search like queries"
 
 
-class BasicScenario(BaseModel):
+class BaseScenario(BaseModel):
     nodes: t.List[Node]
     style: UserInputStyle
     length: UserInputLength
 
 
-Scenario = t.TypeVar("Scenario", bound=BasicScenario)
+Scenario = t.TypeVar("Scenario", bound=BaseScenario)
 
 
 @dataclass

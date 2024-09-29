@@ -8,8 +8,8 @@ from ragas.dataset_schema import SingleTurnSample
 from ragas.executor import run_async_batch
 from ragas.experimental.prompt import PydanticPrompt, StringIO
 from ragas.experimental.testset.generators.base import (
+    BaseScenario,
     BaseSimulator,
-    BasicScenario,
     UserInputLength,
     UserInputStyle,
 )
@@ -31,7 +31,7 @@ from ragas.experimental.testset.graph import KnowledgeGraph, NodeType
 logger = logging.getLogger(__name__)
 
 
-class AbstractQuestionScenario(BasicScenario):
+class AbstractQuestionScenario(BaseScenario):
     theme: str
 
 
@@ -202,3 +202,56 @@ class AbstractQuestionSimulator(BaseSimulator):
             llm=self.llm,
         )
         return reference.text
+
+
+class ComparativeAbstractQuestionScenario(BaseScenario):
+    common_theme: str
+
+
+@dataclass
+class ComparativeAbstractQuestionSimulator(BaseSimulator):
+    async def generate_scenarios(
+        self, n: int, knowledge_graph: KnowledgeGraph
+    ) -> t.List[ComparativeAbstractQuestionScenario]:
+        node_clusters = knowledge_graph.find_clusters(
+            relationship_condition=lambda rel: (
+                True if rel.get_property("summary_cosine_similarity") else False
+            )
+        )
+        print("found %d clusters", len(node_clusters))
+
+        # filter out nodes that are not chunks
+        node_clusters = [
+            cluster
+            for cluster in node_clusters
+            if all(node.type == "chunk" for node in cluster)
+        ]
+
+        # find the number of themes to generation for given n and the num of clusters
+        # will generate more themes just in case
+        if len(node_clusters) == 0:
+            node_clusters_new = []
+            # if no clusters, use the nodes directly
+            for node in knowledge_graph.nodes:
+                if node.type == NodeType.CHUNK:
+                    node_clusters_new.append([node])
+
+            if len(node_clusters_new) == 0:
+                raise ValueError(
+                    "no clusters found. Try running a few transforms to populate the dataset"
+                )
+            node_clusters = node_clusters_new[:n]
+
+        num_clusters = len(node_clusters)
+        num_themes = math.ceil(n / num_clusters)
+        logger.info("generating %d themes", num_clusters)
+        return []
+
+    async def generate_sample(
+        self, scenario: ComparativeAbstractQuestionScenario
+    ) -> SingleTurnSample:
+        return SingleTurnSample(
+            user_input="",
+            reference="",
+            reference_contexts=[],
+        )
