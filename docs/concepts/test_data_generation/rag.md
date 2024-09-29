@@ -26,11 +26,6 @@ To solve this problem, Ragas uses a Knowledge Graph based approach to Testset Ge
 
 ## Knowledge Graph Creation
 
-<div style="text-align: center;">
-    <img src="/docs/_static/imgs/kg_rag.png" alt="KG Formation" width="auto" height="auto">
-</div>
-
-
 
 
 ## Scenario Generation
