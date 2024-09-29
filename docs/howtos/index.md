@@ -10,7 +10,7 @@ Each guide in this section provides a focused solution to real-world problems th
 
     How to customize various aspects of Ragas to suit your needs.
     
-    Customize features such as [Metrics](customisations/testgenerator/) and [Testset Generation](customisations/metrics/).
+    Customize features such as [Metrics](customisations/index.md#metrics) and [Testset Generation](customisations/index.md#testset-generation).
 
 -   :material-cube-outline:{ .lg .middle }  [__Applications__](applications/index.md)
 
