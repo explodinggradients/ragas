@@ -7,11 +7,16 @@ from .extractors import (
     SummaryExtractor,
     TitleExtractor,
 )
-from .relationship_builders.cosine import CosineSimilarityBuilder
+from .relationship_builders.cosine import (
+    CosineSimilarityBuilder,
+    SummaryCosineSimilarityBuilder,
+)
 from .splitters import HeadlineSplitter
 
 
 def default_transforms() -> Transforms:
+    from ragas.experimental.testset.graph import NodeType
+
     # define the transforms
     summary_extractor = SummaryExtractor()
     keyphrase_extractor = KeyphrasesExtractor()
@@ -20,14 +25,22 @@ def default_transforms() -> Transforms:
     embedding_extractor = EmbeddingExtractor()
     headline_splitter = HeadlineSplitter()
     cosine_sim_builder = CosineSimilarityBuilder(threshold=0.8)
+    summary_embedder = EmbeddingExtractor(
+        name="summary_embedder",
+        property_name="summary_embedding",
+        embed_property_name="summary",
+        filter_nodes=lambda node: True if node.type == NodeType.DOCUMENT else False,
+    )
+    summary_cosine_sim_builder = SummaryCosineSimilarityBuilder(threshold=0.6)
 
     # specify the transforms and their order to be applied
     transforms = [
-        summary_extractor,
-        headline_extractor,
+        Parallel(summary_extractor, headline_extractor),
+        summary_embedder,
         headline_splitter,
         Parallel(embedding_extractor, keyphrase_extractor, title_extractor),
         cosine_sim_builder,
+        summary_cosine_sim_builder,
     ]
     return transforms
 
