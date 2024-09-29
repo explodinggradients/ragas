@@ -127,8 +127,8 @@ from ragas.testset.evolutions import simple, reasoning, multi_context,conditiona
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 # generator with openai models
-generator_llm = ChatOpenAI(model="gpt-3.5-turbo-16k")
-critic_llm = ChatOpenAI(model="gpt-4")
+generator_llm = ChatOpenAI(model="gpt-4o-mini")
+critic_llm = ChatOpenAI(model="gpt-4o")
 embeddings = OpenAIEmbeddings()
 
 generator = TestsetGenerator.from_langchain(
