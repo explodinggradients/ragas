@@ -1,10 +1,17 @@
+from __future__ import annotations
+
 import json
 import typing as t
 
-from datasets import Dataset
-from langchain_core.pydantic_v1 import BaseModel, validator
+from pydantic import BaseModel, field_validator
 
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
+
+if t.TYPE_CHECKING:
+    import pandas as pd
+    from datasets import Dataset as HFDataset
+
+    PandasDataframe = pd.DataFrame
 
 
 class BaseEvalSample(BaseModel):
@@ -34,7 +41,7 @@ class MultiTurnSample(BaseEvalSample):
     rubrics: t.Optional[t.Dict[str, str]] = None
     reference_topics: t.Optional[t.List[str]] = None
 
-    @validator("user_input")
+    @field_validator("user_input")
     def validate_messages(cls, messages):
         if not (
             isinstance(m, (HumanMessage, AIMessage, ToolMessage)) for m in messages
@@ -72,7 +79,7 @@ class MultiTurnSample(BaseEvalSample):
 class EvaluationDataset(BaseModel):
     samples: t.List[BaseEvalSample]
 
-    @validator("samples")
+    @field_validator("samples")
     def validate_samples(cls, samples):
         if len(samples) == 0:
             return samples
@@ -86,7 +93,7 @@ class EvaluationDataset(BaseModel):
     def get_sample_type(self):
         return type(self.samples[0])
 
-    def to_hf_dataset(self):
+    def _to_list(self):
         rows = [sample.dict() for sample in self.samples]
 
         if self.get_sample_type() == MultiTurnSample:
@@ -95,7 +102,28 @@ class EvaluationDataset(BaseModel):
                     if not isinstance(item["content"], str):
                         item["content"] = json.dumps(item["content"])
 
-        return Dataset.from_list(rows)
+        return rows
+
+    def to_dataset(self) -> HFDataset:
+        try:
+            from datasets import Dataset as HFDataset
+        except ImportError:
+            raise ImportError(
+                "datasets is not installed. Please install it to use this function."
+            )
+
+        return HFDataset.from_list(self._to_list())
+
+    def to_pandas(self) -> PandasDataframe:
+        try:
+            import pandas as pd
+        except ImportError:
+            raise ImportError(
+                "pandas is not installed. Please install it to use this function."
+            )
+
+        data = self._to_list()
+        return pd.DataFrame(data)
 
     def features(self):
         return self.samples[0].features()
