@@ -49,10 +49,3 @@ class BaseSimulator(ABC, t.Generic[Scenario]):
     @abstractmethod
     async def generate_sample(self, scenario: Scenario) -> BaseEvalSample:
         pass
-
-    @staticmethod
-    def make_source_text(scenario: Scenario) -> str:
-        page_contents = []
-        for node in scenario.nodes:
-            page_contents.append(node.get_property("page_content"))
-        return "\n\n".join(page_contents)

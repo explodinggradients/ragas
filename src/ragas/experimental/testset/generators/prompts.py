@@ -275,3 +275,106 @@ class GenerateReference(PydanticPrompt[UserInputAndContext, StringIO]):
             ),
         )
     ]
+
+
+class KeyphrasesAndNumConcepts(BaseModel):
+    keyphrases: t.List[str]
+    num_concepts: int
+
+
+class Concepts(BaseModel):
+    concepts: t.Dict[str, t.List[str]]
+
+
+class CommonConceptsFromKeyphrases(PydanticPrompt[KeyphrasesAndNumConcepts, Concepts]):
+    input_model = KeyphrasesAndNumConcepts
+    output_model = Concepts
+    instruction = "Identify a list of common concepts from the given list of key phrases for comparing the given theme across reports."
+    examples = [
+        (
+            KeyphrasesAndNumConcepts(
+                keyphrases=[
+                    "fast charging",
+                    "long battery life",
+                    "OLED display",
+                    "waterproof",
+                ],
+                num_concepts=4,
+            ),
+            Concepts(
+                concepts={
+                    "Charging": [
+                        "fast charging",
+                        "long battery life",
+                        "OLED display",
+                        "waterproof",
+                    ],
+                    "Battery Life": [
+                        "long battery life",
+                        "extended battery",
+                        "durable battery",
+                        "prolonged battery",
+                    ],
+                    "Display": [
+                        "OLED display",
+                        "HD display",
+                        "AMOLED display",
+                        "retina display",
+                    ],
+                    "Water/Dust Resistance": [
+                        "waterproof",
+                        "dust resistant",
+                        "splash proof",
+                        "water resistant",
+                    ],
+                }
+            ),
+        )
+    ]
+
+    def process_output(
+        self, output: Concepts, input: KeyphrasesAndNumConcepts
+    ) -> Concepts:
+        if len(output.concepts) < input.num_concepts:
+            # fill the rest with empty strings
+            output.concepts.update(
+                {
+                    "Concept" + str(i): []
+                    for i in range(input.num_concepts - len(output.concepts))
+                }
+            )
+        return output
+
+
+class CAQInput(BaseModel):
+    concept: str
+    keyphrases: t.List[str]
+    summaries: t.List[str]
+
+
+class ComparativeAbstractQuestion(PydanticPrompt[CAQInput, StringIO]):
+    input_model = CAQInput
+    output_model = StringIO
+    instruction = "Generate an abstract comparative question based on the given concept, keyphrases belonging to that concept, and summaries of reports."
+    examples = [
+        (
+            CAQInput(
+                concept="Battery Life",
+                keyphrases=[
+                    "long battery life",
+                    "extended battery",
+                    "durable battery",
+                    "prolonged battery",
+                ],
+                summaries=[
+                    "The device offers a long battery life, capable of lasting up to 24 hours on a single charge.",
+                    "Featuring an extended battery, the product can function for 20 hours with heavy usage.",
+                    "With a durable battery, this model ensures 22 hours of operation under normal conditions.",
+                    "The battery life is prolonged, allowing the gadget to be used for up to 18 hours on one charge.",
+                ],
+            ),
+            StringIO(
+                text="How do the battery life claims and performance metrics compare across different reports for devices featuring long battery life, extended battery, durable battery, and prolonged battery?"
+            ),
+        )
+    ]
