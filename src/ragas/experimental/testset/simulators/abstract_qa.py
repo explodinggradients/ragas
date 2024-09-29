@@ -9,11 +9,7 @@ from ragas.executor import run_async_batch
 from ragas.experimental.prompt import PydanticPrompt
 from ragas.experimental.testset.graph import KnowledgeGraph, NodeType
 
-from .base import (
-    BaseScenario,
-    UserInputLength,
-    UserInputStyle,
-)
+from .base import BaseScenario, UserInputLength, UserInputStyle
 from .base_qa import QASimulator
 from .prompts import (
     AbstractQuestionFromTheme,

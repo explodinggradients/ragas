@@ -6,9 +6,9 @@ from dataclasses import dataclass, field
 
 from ragas.dataset_schema import EvaluationDataset
 from ragas.executor import Executor
+from ragas.experimental.testset.graph import KnowledgeGraph, Node, NodeType
 from ragas.experimental.testset.simulators import default_scenarios
 from ragas.experimental.testset.simulators.utils import calculate_split_values
-from ragas.experimental.testset.graph import KnowledgeGraph, Node, NodeType
 from ragas.experimental.testset.transforms import (
     Transforms,
     apply_transforms,

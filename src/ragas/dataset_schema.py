@@ -104,7 +104,7 @@ class EvaluationDataset(BaseModel):
 
         return rows
 
-    def to_dataset(self) -> HFDataset:
+    def to_hf_dataset(self) -> HFDataset:
         try:
             from datasets import Dataset as HFDataset
         except ImportError:
