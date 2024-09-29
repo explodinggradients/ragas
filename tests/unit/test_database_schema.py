@@ -1,5 +1,5 @@
 import pytest
-from langchain_core.pydantic_v1 import ValidationError
+from pydantic import ValidationError
 
 from ragas.dataset_schema import EvaluationDataset, MultiTurnSample, SingleTurnSample
 
@@ -21,7 +21,8 @@ def test_evaluation_dataset():
 def test_single_type_evaluation_dataset():
     single_turn_sample = SingleTurnSample(user_input="What is X", response="Y")
     multi_turn_sample = MultiTurnSample(
-        user_input=[{"content": "What is X"}], response="Y"
+        user_input=[{"content": "What is X"}],
+        response="Y",  # type: ignore
     )
 
     with pytest.raises(ValidationError) as exc_info:

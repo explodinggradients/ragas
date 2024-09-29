@@ -10,13 +10,14 @@ from ragas.experimental.testset.transforms.base import Extractor
 class EmbeddingExtractor(Extractor):
     model: str = "text-embedding-3-small"
     property_name: str = "embedding"
+    embed_property_name: str = "page_content"
     embedding_model: BaseRagasEmbeddings = embedding_factory(model=model)
 
     async def extract(self, node: Node) -> t.Tuple[str, t.Any]:
-        text = node.get_property("page_content")
+        text = node.get_property(self.embed_property_name)
         if not isinstance(text, str):
             raise ValueError(
-                f"node.property('page_content') must be a string, found '{type(text)}'"
+                f"node.property('{self.embed_property_name}') must be a string, found '{type(text)}'"
             )
         embedding = self.embedding_model.embed_query(text)
         return self.property_name, embedding
