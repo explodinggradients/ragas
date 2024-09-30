@@ -34,8 +34,8 @@ query_space = "large language models"
 documents = loader.load_data(query=query_space, limit=100)
 
 # generator with openai models
-generator_llm = ChatOpenAI(model="gpt-3.5-turbo-16k")
-critic_llm = ChatOpenAI(model="gpt-4")
+generator_llm = ChatOpenAI(model="gpt-4o-mini")
+critic_llm = ChatOpenAI(model="gpt-4o")
 embeddings = OpenAIEmbeddings()
 
 generator = TestsetGenerator.from_langchain(
