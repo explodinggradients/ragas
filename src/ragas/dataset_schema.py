@@ -8,10 +8,8 @@ from pydantic import BaseModel, field_validator
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 
 if t.TYPE_CHECKING:
-    import pandas as pd
     from datasets import Dataset as HFDataset
-
-    PandasDataframe = pd.DataFrame
+    from pandas import DataFrame as PandasDataframe
 
 
 class BaseEvalSample(BaseModel):
@@ -99,7 +97,7 @@ class EvaluationDataset(BaseModel):
     def get_sample_type(self):
         return type(self.samples[0])
 
-    def _to_list(self):
+    def _to_list(self) -> t.List[t.Dict]:
         rows = [sample.dict() for sample in self.samples]
 
         if self.get_sample_type() == MultiTurnSample:

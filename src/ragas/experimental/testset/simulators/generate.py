@@ -4,10 +4,10 @@ import logging
 import typing as t
 from dataclasses import dataclass, field
 
-from ragas.dataset_schema import EvaluationDataset
 from ragas.executor import Executor
 from ragas.experimental.testset.graph import KnowledgeGraph, Node, NodeType
 from ragas.experimental.testset.simulators import default_scenarios
+from ragas.experimental.testset.simulators.testset_schema import Testset, TestsetSample
 from ragas.experimental.testset.simulators.utils import calculate_split_values
 from ragas.experimental.testset.transforms import (
     Transforms,
@@ -48,7 +48,7 @@ class TestsetGenerator:
         run_config: t.Optional[RunConfig] = None,
         with_debugging_logs=False,
         raise_exceptions: bool = True,
-    ) -> EvaluationDataset:
+    ) -> Testset:
         transforms = transforms or default_transforms()
 
         # convert the documents to Ragas nodes
@@ -84,7 +84,7 @@ class TestsetGenerator:
         run_config: t.Optional[RunConfig] = None,
         with_debugging_logs=False,
         raise_exceptions: bool = True,
-    ) -> EvaluationDataset:
+    ) -> Testset:
         """
         Generate an evaluation dataset based on given scenarios and parameters.
 
@@ -104,8 +104,8 @@ class TestsetGenerator:
 
         Returns
         -------
-        EvaluationDataset
-            A dataset containing the generated evaluation samples.
+        Testset
+            A dataset containing the generated TestsetSamples.
 
         Notes
         -----
@@ -148,9 +148,20 @@ class TestsetGenerator:
             run_config=run_config,
             keep_progress_bar=True,
         )
+        additional_testset_info: t.List[t.Dict] = []
         for i, (scenario, _) in enumerate(scenarios):
             for sample in scenario_sample_list[i]:
                 exec.submit(scenario.generate_sample, sample)
+                additional_testset_info.append(
+                    {
+                        "simulator_name": scenario.name,
+                    }
+                )
 
         eval_samples = exec.results()
-        return EvaluationDataset(samples=eval_samples)
+
+        # build the testset
+        testsets = []
+        for sample, additional_info in zip(eval_samples, additional_testset_info):
+            testsets.append(TestsetSample(eval_sample=sample, **additional_info))
+        return Testset(samples=testsets)
