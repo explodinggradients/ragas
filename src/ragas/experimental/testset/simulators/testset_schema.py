@@ -35,7 +35,7 @@ class Testset(BaseModel):
         ]
         return testset_list
 
-    def to_pandas_dataframe(self) -> PandasDataframe:
+    def to_pandas(self) -> PandasDataframe:
         import pandas as pd
 
         return pd.DataFrame(self._to_list())

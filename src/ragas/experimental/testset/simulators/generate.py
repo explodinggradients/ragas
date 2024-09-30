@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 
 from ragas.executor import Executor
 from ragas.experimental.testset.graph import KnowledgeGraph, Node, NodeType
-from ragas.experimental.testset.simulators import default_scenarios
+from ragas.experimental.testset.simulators import default_simulators
 from ragas.experimental.testset.simulators.testset_schema import Testset, TestsetSample
 from ragas.experimental.testset.simulators.utils import calculate_split_values
 from ragas.experimental.testset.transforms import (
@@ -71,7 +71,7 @@ class TestsetGenerator:
 
         return self.generate(
             test_size=test_size,
-            scenarios=scenarios,
+            simulators=scenarios,
             run_config=run_config,
             with_debugging_logs=with_debugging_logs,
             raise_exceptions=raise_exceptions,
@@ -80,7 +80,7 @@ class TestsetGenerator:
     def generate(
         self,
         test_size: int,
-        scenarios: t.Optional[QuestionTypes] = None,
+        simulators: t.Optional[QuestionTypes] = None,
         run_config: t.Optional[RunConfig] = None,
         with_debugging_logs=False,
         raise_exceptions: bool = True,
@@ -92,9 +92,9 @@ class TestsetGenerator:
         ----------
         test_size : int
             The number of samples to generate.
-        scenarios : Optional[QuestionTypes], optional
+        simulators : Optional[QuestionTypes], optional
             A list of tuples containing scenario simulators and their probabilities.
-            If None, default scenarios will be used.
+            If None, default simulators will be used.
         run_config : Optional[RunConfig], optional
             Configuration for running the generation process.
         with_debugging_logs : bool, default False
@@ -116,7 +116,7 @@ class TestsetGenerator:
         4. Generate samples for each scenario.
         5. Compile the results into an EvaluationDataset.
         """
-        scenarios = scenarios or default_scenarios(self.llm)
+        simulators = simulators or default_simulators(self.llm)
 
         if with_debugging_logs:
             # TODO: Edit this before pre-release
@@ -135,9 +135,9 @@ class TestsetGenerator:
         )
         # generate samples
         splits, split_values = calculate_split_values(
-            [prob for _, prob in scenarios], test_size
+            [prob for _, prob in simulators], test_size
         )
-        for i, (scenario, _) in enumerate(scenarios):
+        for i, (scenario, _) in enumerate(simulators):
             exec.submit(scenario.generate_scenarios, splits[i], self.knowledge_graph)
 
         scenario_sample_list: t.List[t.List[BaseScenario]] = exec.results()
@@ -149,12 +149,13 @@ class TestsetGenerator:
             keep_progress_bar=True,
         )
         additional_testset_info: t.List[t.Dict] = []
-        for i, (scenario, _) in enumerate(scenarios):
+        for i, (simulator, _) in enumerate(simulators):
             for sample in scenario_sample_list[i]:
-                exec.submit(scenario.generate_sample, sample)
+                exec.submit(simulator.generate_sample, sample)
+                # fill out the additional info for the TestsetSample
                 additional_testset_info.append(
                     {
-                        "simulator_name": scenario.name,
+                        "simulator_name": simulator.name,
                     }
                 )
 
