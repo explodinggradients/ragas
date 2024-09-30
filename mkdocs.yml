@@ -128,6 +128,9 @@ extra_css:
 extra:
   version:
     provider: mike
+  analytics:
+    provider: google
+    property: !ENV GOOGLE_ANALYTICS_KEY
 plugins:
   - search
   - mkdocstrings:
