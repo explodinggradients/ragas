@@ -98,6 +98,7 @@ theme:
     - navigation.top
     - navigation.tracking
     - navigation.indexes
+    - navigation.footer
     - search.suggest
     - search.highlight
 markdown_extensions:
@@ -133,6 +134,13 @@ extra:
     property: !ENV GOOGLE_ANALYTICS_KEY
 plugins:
   - search
+  - git-revision-date-localized:
+      enabled: !ENV [MKDOCS_CI, false]
+      enable_creation_date: true
+  - git-committers:
+      enabled: !ENV [MKDOCS_CI, false]
+      repository: explodinggradients/ragas
+      branch: main
   - mkdocstrings:
       handlers:
         python:
