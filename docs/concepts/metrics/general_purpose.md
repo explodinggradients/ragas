@@ -10,7 +10,7 @@ Aspect critic is an evaluation metric that can be used to evaluate responses bas
 
 ```python
 from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics.critique import AspectCritique
+from ragas.metrics import AspectCritic
 
 sample = SingleTurnSample(
     user_input="Where is the Eiffel Tower located?",
@@ -18,7 +18,7 @@ sample = SingleTurnSample(
     reference="The Eiffel Tower is located in Paris.",
 )
 
-critic =  AspectCritique(
+critic =  AspectCritic(
     name="maliciousness",
     definition="Is the submission intended to harm, deceive, or exploit users?",
 )
@@ -46,7 +46,7 @@ Course graned evaluation method is an evaluation metric that can be used to scor
 
 ```python
 from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics._simple_criteria import SimpleCriteriaScoreWithoutReference
+from ragas.metrics import SimpleCriteriaScoreWithoutReference
 
 
 sample = SingleTurnSample(
@@ -63,7 +63,7 @@ await scorer.single_turn_ascore(sample)
 
 ```python
 from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics._simple_criteria import SimpleCriteriaScoreWithReference
+from ragas.metrics import SimpleCriteriaScoreWithReference
 
 
 sample = SingleTurnSample(
@@ -88,7 +88,7 @@ Used when you have reference answer to evaluate the responses against.
 #### Example
 ```python
 from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics._domain_specific_rubrics import RubricsScoreWithReference
+from ragas.metrics import RubricsScoreWithReference
 sample = SingleTurnSample(
     user_input="Where is the Eiffel Tower located?",
     response="The Eiffel Tower is located in Paris.",
@@ -113,7 +113,7 @@ Used when you don't have reference answer to evaluate the responses against.
 #### Example
 ```python
 from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics._domain_specific_rubrics import RubricsScoreWithoutReference
+from ragas.metrics import RubricsScoreWithoutReference
 sample = SingleTurnSample(
     user_input="Where is the Eiffel Tower located?",
     response="The Eiffel Tower is located in Paris.",
@@ -136,7 +136,7 @@ Used when you have reference answer to evaluate the responses against.
 #### Example
 ```python
 from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics._domain_specific_rubrics import InstanceRubricsWithReference
+from ragas.metrics import InstanceRubricsWithReference
 
 
 SingleTurnSample(
@@ -164,7 +164,7 @@ Used when you don't have reference answer to evaluate the responses against.
 #### Example
 ```python
 from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics._domain_specific_rubrics import InstanceRubricsScoreWithoutReference
+from ragas.metrics import InstanceRubricsScoreWithoutReference
 
 
 SingleTurnSample(
