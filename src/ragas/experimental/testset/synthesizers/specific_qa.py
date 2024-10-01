@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import random
 import typing as t
 from dataclasses import dataclass, field
@@ -9,6 +11,9 @@ from ragas.experimental.testset.graph import KnowledgeGraph, NodeType
 from .base import BaseScenario, QueryLength, QueryStyle
 from .base_qa import QuerySynthesizer
 from .prompts import SpecificQuery, SpecificQuestionInput
+
+if t.TYPE_CHECKING:
+    from langchain_core.callbacks import Callbacks
 
 
 class SpecificQueryScenario(BaseScenario):
@@ -69,6 +74,7 @@ class SpecificQuerySynthesizer(QuerySynthesizer):
                 text=scenario.nodes[0].get_property("page_content") or "",
             ),
             llm=self.llm,
+            callbacks=callbacks,
         )
 
         query_text = query.text

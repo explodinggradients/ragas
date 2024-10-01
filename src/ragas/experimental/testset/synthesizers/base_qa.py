@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import typing as t
 from dataclasses import dataclass, field
 
 from ragas.experimental.prompt import StringIO
@@ -12,6 +15,9 @@ from .prompts import (
     QueryWithStyleAndLength,
     extend_modify_input_prompt,
 )
+
+if t.TYPE_CHECKING:
+    from langchain_core.callbacks import Callbacks
 
 
 @dataclass
@@ -39,6 +45,7 @@ class QuerySynthesizer(BaseSynthesizer[Scenario]):
                 length=scenario.length,
             ),
             llm=self.llm,
+            callbacks=callbacks,
         )
         return modified_query.text
 
@@ -46,14 +53,17 @@ class QuerySynthesizer(BaseSynthesizer[Scenario]):
         self,
         question: str,
         scenario: Scenario,
+        callbacks: t.Optional[Callbacks] = None,
         reference_property_name: str = "page_content",
     ) -> str:
+        callbacks = callbacks or []
         reference = await self.generate_reference_prompt.generate(
             data=QueryAndContext(
                 query=question,
                 context=self.make_reference_contexts(scenario, reference_property_name),
             ),
             llm=self.llm,
+            callbacks=callbacks,
         )
         return reference.text
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import math
 import random
@@ -24,6 +26,9 @@ from .prompts import (
     Themes,
 )
 
+if t.TYPE_CHECKING:
+    from langchain_core.callbacks import Callbacks
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,8 +46,8 @@ class AbstractQuerySynthesizer(QuerySynthesizer):
         super().__post_init__()
         self.common_theme_prompt = CommonThemeFromSummaries()
 
-    async def generate_scenarios(
-        self, n: int, knowledge_graph: KnowledgeGraph
+    async def _generate_scenarios(
+        self, n: int, knowledge_graph: KnowledgeGraph, callbacks: Callbacks
     ) -> t.List[AbstractQuestionScenario]:
         node_clusters = knowledge_graph.find_clusters(
             relationship_condition=lambda rel: (
@@ -89,7 +94,7 @@ class AbstractQuerySynthesizer(QuerySynthesizer):
                 summaries=summaries,
                 num_themes=num_themes,
             )
-            kw_list.append({"data": summaries, "llm": self.llm})
+            kw_list.append({"data": summaries, "llm": self.llm, "callbacks": callbacks})
 
         themes: t.List[Themes] = run_async_batch(
             desc="Generating common themes",
@@ -125,8 +130,8 @@ class AbstractQuerySynthesizer(QuerySynthesizer):
             )
         return distributions
 
-    async def generate_sample(
-        self, scenario: AbstractQuestionScenario
+    async def _generate_sample(
+        self, scenario: AbstractQuestionScenario, callbacks: Callbacks
     ) -> SingleTurnSample:
         user_input = await self.generate_user_input(scenario)
         if await self.critic_query(user_input):
@@ -152,6 +157,7 @@ class AbstractQuerySynthesizer(QuerySynthesizer):
                 context=self.make_reference_contexts(scenario),
             ),
             llm=self.llm,
+            callbacks=callbacks,
         )
         return query.text
 
@@ -216,6 +222,7 @@ class ComparativeAbstractQuerySynthesizer(QuerySynthesizer):
                         num_concepts=num_concepts,
                     ),
                     "llm": self.llm,
+                    "callbacks": callbacks,
                 }
             )
 
@@ -281,6 +288,7 @@ class ComparativeAbstractQuerySynthesizer(QuerySynthesizer):
                 summaries=summaries,
             ),
             llm=self.llm,
+            callbacks=callbacks,
         )
         query = query.text
 
