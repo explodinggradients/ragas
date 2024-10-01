@@ -7,6 +7,7 @@ from enum import Enum
 
 from pydantic import BaseModel
 
+from ragas.experimental.prompt import PromptMixin
 from ragas.callbacks import new_group
 from ragas.experimental.testset.graph import KnowledgeGraph, Node
 from ragas.llms import BaseRagasLLM, llm_factory

@@ -86,7 +86,7 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
     def _create_nli_prompt(self, contexts: str, statements: t.List[str]) -> PromptValue:
         assert self.llm is not None, "llm must be set to compute score"
 
-        statements_str: str = json.dumps(statements)
+        statements_str: str = json.dumps(statements, ensure_ascii=False)
         prompt_value = self.nli_statements_message.format(
             context=contexts, statements=statements_str
         )
