@@ -4,10 +4,10 @@ import logging
 import typing as t
 from dataclasses import dataclass, field
 
-from ragas.dataset_schema import EvaluationDataset
 from ragas.executor import Executor
 from ragas.experimental.testset.graph import KnowledgeGraph, Node, NodeType
-from ragas.experimental.testset.simulators import default_scenarios
+from ragas.experimental.testset.simulators import default_simulator_distribution
+from ragas.experimental.testset.simulators.testset_schema import Testset, TestsetSample
 from ragas.experimental.testset.simulators.utils import calculate_split_values
 from ragas.experimental.testset.transforms import (
     Transforms,
@@ -21,7 +21,7 @@ if t.TYPE_CHECKING:
     from langchain_core.documents import Document as LCDocument
     from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
-    from ragas.experimental.testset.simulators import QuestionTypes
+    from ragas.experimental.testset.simulators import SimulatorDistributions
     from ragas.experimental.testset.simulators.base import BaseScenario
 
 
@@ -44,11 +44,11 @@ class TestsetGenerator:
         documents: t.Sequence[LCDocument],
         test_size: int,
         transforms: t.Optional[Transforms] = None,
-        scenarios: t.Optional[QuestionTypes] = None,
+        simulator_distributions: t.Optional[SimulatorDistributions] = None,
         run_config: t.Optional[RunConfig] = None,
         with_debugging_logs=False,
         raise_exceptions: bool = True,
-    ) -> EvaluationDataset:
+    ) -> Testset:
         transforms = transforms or default_transforms()
 
         # convert the documents to Ragas nodes
@@ -71,7 +71,7 @@ class TestsetGenerator:
 
         return self.generate(
             test_size=test_size,
-            scenarios=scenarios,
+            simulator_distributions=simulator_distributions,
             run_config=run_config,
             with_debugging_logs=with_debugging_logs,
             raise_exceptions=raise_exceptions,
@@ -80,11 +80,11 @@ class TestsetGenerator:
     def generate(
         self,
         test_size: int,
-        scenarios: t.Optional[QuestionTypes] = None,
+        simulator_distributions: t.Optional[SimulatorDistributions] = None,
         run_config: t.Optional[RunConfig] = None,
         with_debugging_logs=False,
         raise_exceptions: bool = True,
-    ) -> EvaluationDataset:
+    ) -> Testset:
         """
         Generate an evaluation dataset based on given scenarios and parameters.
 
@@ -92,9 +92,9 @@ class TestsetGenerator:
         ----------
         test_size : int
             The number of samples to generate.
-        scenarios : Optional[QuestionTypes], optional
+        simulator_distribution : Optional[SimulatorDistribution], optional
             A list of tuples containing scenario simulators and their probabilities.
-            If None, default scenarios will be used.
+            If None, default simulators will be used.
         run_config : Optional[RunConfig], optional
             Configuration for running the generation process.
         with_debugging_logs : bool, default False
@@ -104,8 +104,8 @@ class TestsetGenerator:
 
         Returns
         -------
-        EvaluationDataset
-            A dataset containing the generated evaluation samples.
+        Testset
+            A dataset containing the generated TestsetSamples.
 
         Notes
         -----
@@ -116,7 +116,9 @@ class TestsetGenerator:
         4. Generate samples for each scenario.
         5. Compile the results into an EvaluationDataset.
         """
-        scenarios = scenarios or default_scenarios(self.llm)
+        simulator_distributions = (
+            simulator_distributions or default_simulator_distribution(self.llm)
+        )
 
         if with_debugging_logs:
             # TODO: Edit this before pre-release
@@ -134,10 +136,10 @@ class TestsetGenerator:
             keep_progress_bar=False,
         )
         # generate samples
-        splits, split_values = calculate_split_values(
-            [prob for _, prob in scenarios], test_size
+        splits, _ = calculate_split_values(
+            [prob for _, prob in simulator_distributions], test_size
         )
-        for i, (scenario, _) in enumerate(scenarios):
+        for i, (scenario, _) in enumerate(simulator_distributions):
             exec.submit(scenario.generate_scenarios, splits[i], self.knowledge_graph)
 
         scenario_sample_list: t.List[t.List[BaseScenario]] = exec.results()
@@ -148,9 +150,21 @@ class TestsetGenerator:
             run_config=run_config,
             keep_progress_bar=True,
         )
-        for i, (scenario, _) in enumerate(scenarios):
+        additional_testset_info: t.List[t.Dict] = []
+        for i, (simulator, _) in enumerate(simulator_distributions):
             for sample in scenario_sample_list[i]:
-                exec.submit(scenario.generate_sample, sample)
+                exec.submit(simulator.generate_sample, sample)
+                # fill out the additional info for the TestsetSample
+                additional_testset_info.append(
+                    {
+                        "simulator_name": simulator.name,
+                    }
+                )
 
         eval_samples = exec.results()
-        return EvaluationDataset(samples=eval_samples)
+
+        # build the testset
+        testsets = []
+        for sample, additional_info in zip(eval_samples, additional_testset_info):
+            testsets.append(TestsetSample(eval_sample=sample, **additional_info))
+        return Testset(samples=testsets)
