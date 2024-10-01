@@ -9,7 +9,7 @@ from ragas.experimental.prompt import PydanticPrompt
 from ragas.experimental.testset.graph import KnowledgeGraph, NodeType
 
 from .base import BaseScenario, QueryLength, QueryStyle
-from .base_qa import QuerySynthesizer
+from .base_query import QuerySynthesizer
 from .prompts import SpecificQuery, SpecificQuestionInput
 
 if t.TYPE_CHECKING:

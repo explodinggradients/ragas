@@ -2,9 +2,9 @@ import typing as t
 
 from ragas.llms import BaseRagasLLM
 
-from .abstract_qa import AbstractQuerySynthesizer, ComparativeAbstractQuerySynthesizer
+from .abstract_query import AbstractQuerySynthesizer, ComparativeAbstractQuerySynthesizer
 from .base import BaseSynthesizer
-from .specific_qa import SpecificQuerySynthesizer
+from .specific_query import SpecificQuerySynthesizer
 
 QueryDistribution = t.List[t.Tuple[BaseSynthesizer, float]]
 
