@@ -5,7 +5,7 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
@@ -33,7 +33,7 @@ class ContextRecallClassificationAnswers(BaseModel):
     __root__: t.List[ContextRecallClassificationAnswer]
 
     def dicts(self) -> t.List[t.Dict]:
-        return self.dict()["__root__"]
+        return self.model_dump()["__root__"]
 
 
 _classification_output_instructions = get_json_format_instructions(

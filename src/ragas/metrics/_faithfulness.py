@@ -6,7 +6,7 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
@@ -98,7 +98,7 @@ class StatementFaithfulnessAnswers(BaseModel):
     __root__: t.List[StatementFaithfulnessAnswer]
 
     def dicts(self) -> t.List[t.Dict]:
-        return self.dict()["__root__"]
+        return self.model_dump()["__root__"]
 
 
 _faithfulness_output_instructions = get_json_format_instructions(
@@ -121,7 +121,7 @@ NLI_STATEMENTS_MESSAGE = Prompt(
                 "John is a dedicated student.",
                 "John has a part-time job.",
             ],
-            "answer": StatementFaithfulnessAnswers.parse_obj(
+            "answer": StatementFaithfulnessAnswers.model_validate(
                 [
                     {
                         "statement": "John is majoring in Biology.",
@@ -149,7 +149,7 @@ NLI_STATEMENTS_MESSAGE = Prompt(
         {
             "context": """Photosynthesis is a process used by plants, algae, and certain bacteria to convert light energy into chemical energy.""",
             "statements": ["Albert Einstein was a genius."],
-            "answer": StatementFaithfulnessAnswers.parse_obj(
+            "answer": StatementFaithfulnessAnswers.model_validate(
                 [
                     {
                         "statement": "Albert Einstein was a genius.",
