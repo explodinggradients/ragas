@@ -54,3 +54,18 @@ Once the knowledge graph is created, the different types of queries can be gener
 ## Scenario Generation
 
 Now we have the knowledge graph that can be used to manufacture the right context to generate any type of query. When a population of users interact with RAG system, they may formulate the queries in various ways depending upon their persona (eg, Senior Engineer, Junior Engineer, etc), Query length (Short, Long, etc), Query style (Formal, Informal, etc). To generate the queries that cover all these scenarios, Ragas uses a Scenario based approach to Test set Generation.
+
+Each `Scenario` in Test set Generation is a combination of following parameters. 
+
+- Nodes : The nodes that are used to generate the query
+- Query Length : The length of the desired query, it can be short, medium or long, etc. 
+- Query Style : The style of the query, it can be  web search, chat, etc.
+- Persona : The persona of the user, it can be Senior Engineer, Junior Engineer, etc. (Coming soon)
+
+<figure markdown="span">
+  ![Scenario in Test Generation](../../_static/imgs/scenario_rag.png){width="auto"}
+  <figcaption>Scenario in Test Generation</figcaption>
+</figure>
+
+
+Once the scenarios are created using `generate_scenarios` method, the query, and reference answer can be generated in `generate_sample` method using the LLM. 
