@@ -24,8 +24,8 @@ class SpecificQueryScenario(BaseScenario):
 class SpecificQuerySynthesizer(QuerySynthesizer):
     generate_query_prompt: PydanticPrompt = field(default_factory=SpecificQuery)
 
-    async def generate_scenarios(
-        self, n: int, knowledge_graph: KnowledgeGraph
+    async def _generate_scenarios(
+        self, n: int, knowledge_graph: KnowledgeGraph, callbacks: Callbacks
     ) -> t.List[SpecificQueryScenario]:
         # filter out nodes that have keyphrases
         nodes = []
@@ -64,8 +64,8 @@ class SpecificQuerySynthesizer(QuerySynthesizer):
             )
         return scenarios
 
-    async def generate_sample(
-        self, scenario: SpecificQueryScenario
+    async def _generate_sample(
+        self, scenario: SpecificQueryScenario, callbacks: t.Optional[Callbacks] = None
     ) -> SingleTurnSample:
         query = await self.generate_query_prompt.generate(
             data=SpecificQuestionInput(
@@ -79,7 +79,7 @@ class SpecificQuerySynthesizer(QuerySynthesizer):
 
         query_text = query.text
         if not await self.critic_query(query_text):
-            query_text = await self.modify_query(query_text, scenario)
+            query_text = await self.modify_query(query_text, scenario, callbacks)
 
         reference = await self.generate_reference(query_text, scenario)
 

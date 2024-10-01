@@ -32,7 +32,7 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class AbstractQuestionScenario(BaseScenario):
+class AbstractQueryScenario(BaseScenario):
     theme: str
 
 
@@ -48,7 +48,7 @@ class AbstractQuerySynthesizer(QuerySynthesizer):
 
     async def _generate_scenarios(
         self, n: int, knowledge_graph: KnowledgeGraph, callbacks: Callbacks
-    ) -> t.List[AbstractQuestionScenario]:
+    ) -> t.List[AbstractQueryScenario]:
         node_clusters = knowledge_graph.find_clusters(
             relationship_condition=lambda rel: (
                 True if rel.get_property("cosine_similarity") else False
@@ -121,7 +121,7 @@ class AbstractQuerySynthesizer(QuerySynthesizer):
             clusters_sampled, themes_sampled, query_styles, query_lengths
         ):
             distributions.append(
-                AbstractQuestionScenario(
+                AbstractQueryScenario(
                     theme=theme.theme,
                     nodes=cluster,
                     style=style,
@@ -131,11 +131,11 @@ class AbstractQuerySynthesizer(QuerySynthesizer):
         return distributions
 
     async def _generate_sample(
-        self, scenario: AbstractQuestionScenario, callbacks: Callbacks
+        self, scenario: AbstractQueryScenario, callbacks: Callbacks
     ) -> SingleTurnSample:
-        user_input = await self.generate_user_input(scenario)
+        user_input = await self.generate_query(scenario, callbacks)
         if await self.critic_query(user_input):
-            user_input = await self.modify_query(user_input, scenario)
+            user_input = await self.modify_query(user_input, scenario, callbacks)
 
         reference = await self.generate_reference(user_input, scenario)
 
@@ -150,7 +150,9 @@ class AbstractQuerySynthesizer(QuerySynthesizer):
             reference_contexts=reference_contexts,
         )
 
-    async def generate_user_input(self, scenario: AbstractQuestionScenario) -> str:
+    async def generate_query(
+        self, scenario: AbstractQueryScenario, callbacks: Callbacks
+    ) -> str:
         query = await self.generate_user_input_prompt.generate(
             data=ThemeAndContext(
                 theme=scenario.theme,
@@ -175,8 +177,8 @@ class ComparativeAbstractQuerySynthesizer(QuerySynthesizer):
         default_factory=ComparativeAbstractQuery
     )
 
-    async def generate_scenarios(
-        self, n: int, knowledge_graph: KnowledgeGraph
+    async def _generate_scenarios(
+        self, n: int, knowledge_graph: KnowledgeGraph, callbacks: Callbacks
     ) -> t.List[ComparativeAbstractQueryScenario]:
         node_clusters = knowledge_graph.find_clusters(
             relationship_condition=lambda rel: (
@@ -267,8 +269,8 @@ class ComparativeAbstractQuerySynthesizer(QuerySynthesizer):
             )
         return scenarios
 
-    async def generate_sample(
-        self, scenario: ComparativeAbstractQueryScenario
+    async def _generate_sample(
+        self, scenario: ComparativeAbstractQueryScenario, callbacks: Callbacks
     ) -> SingleTurnSample:
         # generate the user input
         keyphrases = []
@@ -294,10 +296,12 @@ class ComparativeAbstractQuerySynthesizer(QuerySynthesizer):
 
         # critic the query
         if not await self.critic_query(query):
-            query = await self.modify_query(query, scenario)
+            query = await self.modify_query(query, scenario, callbacks)
 
         # generate the answer
-        answer = await self.generate_reference(query, scenario, "summary")
+        answer = await self.generate_reference(
+            query, scenario, callbacks, reference_property_name="summary"
+        )
 
         # make the reference contexts
         # TODO: make this more efficient. Right now we are taking only the summary

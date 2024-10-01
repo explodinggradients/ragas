@@ -8,7 +8,10 @@ from ragas.callbacks import new_group
 from ragas.executor import Executor
 from ragas.experimental.testset.graph import KnowledgeGraph, Node, NodeType
 from ragas.experimental.testset.synthesizers import default_query_distribution
-from ragas.experimental.testset.synthesizers.testset_schema import Testset, TestsetSample
+from ragas.experimental.testset.synthesizers.testset_schema import (
+    Testset,
+    TestsetSample,
+)
 from ragas.experimental.testset.synthesizers.utils import calculate_split_values
 from ragas.experimental.testset.transforms import (
     Transforms,
@@ -89,6 +92,7 @@ class TestsetGenerator:
         test_size: int,
         query_distribution: t.Optional[QueryDistribution] = None,
         run_config: t.Optional[RunConfig] = None,
+        callbacks: t.Optional[Callbacks] = None,
         with_debugging_logs=False,
         raise_exceptions: bool = True,
     ) -> Testset:
@@ -126,9 +130,7 @@ class TestsetGenerator:
         4. Generate samples for each scenario.
         5. Compile the results into an EvaluationDataset.
         """
-        query_distribution = (
-            query_distribution or default_query_distribution(self.llm)
-        )
+        query_distribution = query_distribution or default_query_distribution(self.llm)
         callbacks = callbacks or []
 
         # new group for Testset Generation
@@ -147,7 +149,7 @@ class TestsetGenerator:
             patch_logger("ragas.experimental.testset.transforms", logging.DEBUG)
 
         splits, _ = calculate_split_values(
-            [prob for _, prob in simulator_distributions], test_size
+            [prob for _, prob in query_distribution], test_size
         )
         # new group for Generation of Scenarios
         scenario_generation_rm, scenario_generation_grp = new_group(

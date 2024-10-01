@@ -32,7 +32,9 @@ class QuerySynthesizer(BaseSynthesizer[Scenario]):
         )
         return critic.independence > 1 and critic.clear_intent > 1
 
-    async def modify_query(self, query: str, scenario: Scenario) -> str:
+    async def modify_query(
+        self, query: str, scenario: Scenario, callbacks: Callbacks
+    ) -> str:
         prompt = extend_modify_input_prompt(
             query_modification_prompt=self.query_modification_prompt,
             style=scenario.style,
