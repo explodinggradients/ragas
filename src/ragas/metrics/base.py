@@ -32,7 +32,7 @@ import inspect
 from pysbd import Segmenter
 from pysbd.languages import LANGUAGE_CODES
 
-from ragas.experimental.prompt import PydanticPrompt as Prompt
+from ragas.prompt import PydanticPrompt as Prompt
 
 logger = logging.getLogger(__name__)
 

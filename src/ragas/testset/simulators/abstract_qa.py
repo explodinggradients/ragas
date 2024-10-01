@@ -8,8 +8,8 @@ from dataclasses import dataclass, field
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.executor import run_async_batch
-from ragas.experimental.prompt import PydanticPrompt
 from ragas.experimental.testset.graph import KnowledgeGraph, NodeType
+from ragas.prompt import PydanticPrompt
 
 from .base import BaseScenario, UserInputLength, UserInputStyle
 from .base_qa import QASimulator

@@ -8,8 +8,8 @@ import numpy as np
 from pydantic import BaseModel, Field
 
 from ragas.dataset_schema import MultiTurnSample
-from ragas.experimental.prompt import PydanticPrompt
 from ragas.metrics.base import MetricType, MetricWithLLM, MultiTurnMetric
+from ragas.prompt import PydanticPrompt
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -66,9 +66,7 @@ class TopicClassificationPrompt(
 
 
 class TopicRefusedPrompt(PydanticPrompt[TopicRefusedInput, TopicRefusedOutput]):
-    instruction: str = (
-        "Given a topic, classify if the AI refused to answer the question about the topic."
-    )
+    instruction: str = "Given a topic, classify if the AI refused to answer the question about the topic."
     input_model = TopicRefusedInput
     output_model = TopicRefusedOutput
     examples = [
@@ -98,9 +96,7 @@ AI: You're welcome! Feel free to ask if you need more information.""",
 class TopicExtractionPrompt(
     PydanticPrompt[TopicExtractionInput, TopicExtractionOutput]
 ):
-    instruction: str = (
-        "Given an interaction between Human, Tool and AI, extract the topics from Human's input."
-    )
+    instruction: str = "Given an interaction between Human, Tool and AI, extract the topics from Human's input."
     input_model = TopicExtractionInput
     output_model = TopicExtractionOutput
     examples = [

@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass, field
 
-from ragas.experimental.prompt import StringIO
+from ragas.prompt import StringIO
 
 from .base import BaseSimulator, Scenario
 from .prompts import (
