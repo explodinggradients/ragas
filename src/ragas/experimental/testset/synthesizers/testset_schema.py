@@ -13,7 +13,7 @@ if t.TYPE_CHECKING:
 
 class TestsetSample(BaseModel):
     eval_sample: t.Union[SingleTurnSample, MultiTurnSample]
-    simulator_name: str
+    synthesizer_name: str
 
 
 class Testset(BaseModel):
