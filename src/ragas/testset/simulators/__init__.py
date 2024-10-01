@@ -17,4 +17,9 @@ def default_simulator_distribution(llm: BaseRagasLLM) -> SimulatorDistributions:
     ]
 
 
-__all__ = ["AbstractQuestionSimulator", "default_simulator_distribution"]
+__all__ = [
+    "AbstractQuestionSimulator",
+    "ComparativeAbstractQuestionSimulator",
+    "SpecificQASimulator",
+    "default_simulator_distribution",
+]
