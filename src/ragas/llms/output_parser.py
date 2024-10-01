@@ -4,7 +4,7 @@ import typing as t
 
 from langchain_core.exceptions import OutputParserException
 from langchain_core.output_parsers import PydanticOutputParser
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 
 from ragas.llms import BaseRagasLLM
 from ragas.llms.prompt import Prompt, PromptValue

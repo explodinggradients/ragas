@@ -5,13 +5,14 @@ dependencies = [
     "datasets",
     "tiktoken",
     "langchain",
-    "langchain-core<0.3",
+    "langchain-core",
     "langchain-community",
     "langchain_openai",
-    "openai>1",
-    "pysbd>=0.3.4",
     "nest-asyncio",
     "appdirs",
+    "pydantic>=2",
+    "openai>1",
+    "pysbd>=0.3.4",
 ]
 dynamic = ["version", "readme"]
 

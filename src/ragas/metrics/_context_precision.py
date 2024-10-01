@@ -33,7 +33,7 @@ class ContextPrecisionVerifications(BaseModel):
 
 
 _verification_output_instructions = get_json_format_instructions(
-    ContextPrecisionVerification
+    ContextPrecisionVerification  # type: ignore
 )
 _output_parser = RagasoutputParser(pydantic_object=ContextPrecisionVerification)
 
