@@ -121,22 +121,22 @@ def test_load_userid_from_json_file(tmp_path, monkeypatch):
 def test_testset_generation_tracking(monkeypatch):
     import ragas._analytics as analyticsmodule
     from ragas._analytics import TestsetGenerationEvent, track
-    from ragas.testset.simulators import default_simulator_distribution
+    from ragas.testset.synthesizers import default_query_distribution
 
-    distributions = default_simulator_distribution(llm=EchoLLM())
+    distributions = default_query_distribution(llm=EchoLLM())
 
     testset_event_payload = TestsetGenerationEvent(
         event_type="testset_generation",
-        evolution_names=[e.__class__.__name__.lower() for e in distributions],
+        evolution_names=[e.__class__.__name__.lower() for e, _ in distributions],
         evolution_percentages=[p for _, p in distributions],
         num_rows=10,
         language="english",
     )
 
     assert dict(testset_event_payload)["evolution_names"] == [
-        "abstractquestionsimulator",
-        "comparativeabstractquestionsimulator",
-        "specificqasimulator",
+        "abstractquerysynthesizer",
+        "comparativeabstractquerysynthesizer",
+        "specificquerysynthesizer",
     ]
 
     assert dict(testset_event_payload)["evolution_percentages"] == [0.25, 0.25, 0.5]
