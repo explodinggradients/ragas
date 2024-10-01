@@ -9,6 +9,10 @@ from ragas.llms import BaseRagasLLM, llm_factory
 logger = logging.getLogger(__name__)
 
 
+def default_filter(node: Node) -> bool:
+    return True
+
+
 @dataclass
 class BaseGraphTransformation(ABC):
     """
@@ -90,7 +94,9 @@ class Extractor(BaseGraphTransformation):
         Abstract method to extract a specific property from a node.
     """
 
-    filter_nodes: t.Callable[[Node], bool] = lambda _: True
+    filter_nodes: t.Callable[[Node], bool] = field(
+        default_factory=lambda: default_filter
+    )
 
     async def transform(
         self, kg: KnowledgeGraph
