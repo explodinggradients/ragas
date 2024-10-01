@@ -10,12 +10,16 @@ class EchoLLM(BaseRagasLLM):
     def generate_text(  # type: ignore
         self,
         prompt: PromptValue,
+        *args,
+        **kwargs,
     ) -> LLMResult:
         return LLMResult(generations=[[Generation(text=prompt.to_string())]])
 
     async def agenerate_text(  # type: ignore
         self,
         prompt: PromptValue,
+        *args,
+        **kwargs,
     ) -> LLMResult:
         return LLMResult(generations=[[Generation(text=prompt.to_string())]])
 
