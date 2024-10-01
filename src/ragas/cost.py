@@ -3,7 +3,7 @@ import typing as t
 
 from langchain_core.callbacks.base import BaseCallbackHandler
 from langchain_core.outputs import ChatGeneration, ChatResult, LLMResult
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 
 from ragas.utils import get_from_dict
 
@@ -39,7 +39,9 @@ class TokenUsage(BaseModel):
             + self.output_tokens * cost_per_output_token
         )
 
-    def __eq__(self, other: "TokenUsage") -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TokenUsage):
+            return False
         return (
             self.input_tokens == other.input_tokens
             and self.output_tokens == other.output_tokens
