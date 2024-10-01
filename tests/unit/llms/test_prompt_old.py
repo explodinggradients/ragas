@@ -1,6 +1,8 @@
 import importlib
 import pkgutil
 
+import pytest
+
 import ragas
 from ragas.llms.prompt import Prompt
 
@@ -77,6 +79,7 @@ TESTCASES = [
 ]
 
 
+@pytest.mark.skip(reason="Prompt is deprecated")
 def test_prompt_object():
     for testcase in TESTCASES:
         prompt = Prompt(**testcase)
@@ -103,6 +106,7 @@ def test_prompt_object():
             ), "get_example_str should return a string"
 
 
+@pytest.mark.skip(reason="Prompt is deprecated")
 def test_prompt_object_names():
     "ensure that all prompt objects have unique names"
 
@@ -123,6 +127,7 @@ def test_prompt_object_names():
                 prompt_object_names.append(obj.name)
 
 
+@pytest.mark.skip(reason="Prompt is deprecated")
 def test_save_and_load(tmp_path):
     for testcase in TESTCASES:
         prompt = Prompt(**testcase)

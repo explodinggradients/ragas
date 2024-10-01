@@ -98,7 +98,7 @@ class EvaluationDataset(BaseModel):
         return type(self.samples[0])
 
     def _to_list(self) -> t.List[t.Dict]:
-        rows = [sample.dict() for sample in self.samples]
+        rows = [sample.model_dump() for sample in self.samples]
 
         if self.get_sample_type() == MultiTurnSample:
             for sample in rows:
