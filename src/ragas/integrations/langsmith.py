@@ -9,7 +9,7 @@ from ragas.integrations.langchain import EvaluatorChain
 if t.TYPE_CHECKING:
     from langsmith.schemas import Dataset as LangsmithDataset
 
-    from ragas.testset.generator import TestDataset
+    from ragas.testset import Testset
 
 try:
     from langsmith import Client
@@ -21,7 +21,7 @@ except ImportError:
 
 
 def upload_dataset(
-    dataset: TestDataset, dataset_name: str, dataset_desc: str = ""
+    dataset: Testset, dataset_name: str, dataset_desc: str = ""
 ) -> LangsmithDataset:
     """
     Uploads a new dataset to LangSmith, converting it from a TestDataset object to a

@@ -6,25 +6,25 @@ from dataclasses import dataclass, field
 
 from ragas.callbacks import new_group
 from ragas.executor import Executor
-from ragas.experimental.testset.graph import KnowledgeGraph, Node, NodeType
-from ragas.experimental.testset.simulators import default_simulator_distribution
-from ragas.experimental.testset.simulators.testset_schema import Testset, TestsetSample
-from ragas.experimental.testset.simulators.utils import calculate_split_values
-from ragas.experimental.testset.transforms import (
+from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
+from ragas.run_config import RunConfig
+from ragas.testset.graph import KnowledgeGraph, Node, NodeType
+from ragas.testset.simulators import default_simulator_distribution
+from ragas.testset.simulators.testset_schema import Testset, TestsetSample
+from ragas.testset.simulators.utils import calculate_split_values
+from ragas.testset.transforms import (
     Transforms,
     apply_transforms,
     default_transforms,
 )
-from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
-from ragas.run_config import RunConfig
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
     from langchain_core.documents import Document as LCDocument
     from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
-    from ragas.experimental.testset.simulators import SimulatorDistributions
-    from ragas.experimental.testset.simulators.base import BaseScenario
+    from ragas.testset.simulators import SimulatorDistributions
+    from ragas.testset.simulators.base import BaseScenario
 
 
 RAGAS_TESTSET_GENERATION_GROUP_NAME = "ragas testset generation"

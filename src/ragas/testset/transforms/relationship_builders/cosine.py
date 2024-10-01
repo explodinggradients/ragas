@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from ragas.experimental.testset.graph import KnowledgeGraph, NodeType, Relationship
-from ragas.experimental.testset.transforms.base import RelationshipBuilder
+from ragas.testset.graph import KnowledgeGraph, NodeType, Relationship
+from ragas.testset.transforms.base import RelationshipBuilder
 
 
 @dataclass

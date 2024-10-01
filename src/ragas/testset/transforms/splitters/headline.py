@@ -1,8 +1,8 @@
 import typing as t
 from dataclasses import dataclass
 
-from ragas.experimental.testset.graph import Node, NodeType, Relationship
-from ragas.experimental.testset.transforms.base import Splitter
+from ragas.testset.graph import Node, NodeType, Relationship
+from ragas.testset.transforms.base import Splitter
 
 
 @dataclass

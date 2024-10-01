@@ -2,8 +2,8 @@ import re
 import typing as t
 from dataclasses import dataclass
 
-from ragas.experimental.testset.graph import Node
-from ragas.experimental.testset.transforms.base import Extractor
+from ragas.testset.graph import Node
+from ragas.testset.transforms.base import Extractor
 
 
 @dataclass

@@ -3,8 +3,8 @@ import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
-from ragas.experimental.testset.graph import KnowledgeGraph, Node, Relationship
 from ragas.llms import BaseRagasLLM, llm_factory
+from ragas.testset.graph import KnowledgeGraph, Node, Relationship
 
 logger = logging.getLogger(__name__)
 

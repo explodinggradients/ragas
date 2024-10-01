@@ -15,7 +15,7 @@ from .splitters import HeadlineSplitter
 
 
 def default_transforms() -> Transforms:
-    from ragas.experimental.testset.graph import NodeType
+    from ragas.testset.graph import NodeType
 
     # define the transforms
     summary_extractor = SummaryExtractor()
