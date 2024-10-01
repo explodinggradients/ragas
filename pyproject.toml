@@ -35,6 +35,8 @@ docs = [
     "mkdocs-gen-files",
     "mkdocs-literate-nav",
     "mkdocs-section-index",
+    "mkdocs-git-committers-plugin-2",
+    "mkdocs-git-revision-date-localized-plugin",
 ]
 [tool.setuptools]
 package-dir = {"" = "src"}

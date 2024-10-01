@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import math
 import random
@@ -24,6 +26,9 @@ from .prompts import (
     Themes,
 )
 
+if t.TYPE_CHECKING:
+    from langchain_core.callbacks import Callbacks
+
 logger = logging.getLogger(__name__)
 
 
@@ -38,10 +43,11 @@ class AbstractQuestionSimulator(QASimulator):
     )
 
     def __post_init__(self):
+        super().__post_init__()
         self.common_theme_prompt = CommonThemeFromSummaries()
 
-    async def generate_scenarios(
-        self, n: int, knowledge_graph: KnowledgeGraph
+    async def _generate_scenarios(
+        self, n: int, knowledge_graph: KnowledgeGraph, callbacks: Callbacks
     ) -> t.List[AbstractQuestionScenario]:
         node_clusters = knowledge_graph.find_clusters(
             relationship_condition=lambda rel: (
@@ -88,7 +94,7 @@ class AbstractQuestionSimulator(QASimulator):
                 summaries=summaries,
                 num_themes=num_themes,
             )
-            kw_list.append({"data": summaries, "llm": self.llm})
+            kw_list.append({"data": summaries, "llm": self.llm, "callbacks": callbacks})
 
         themes: t.List[Themes] = run_async_batch(
             desc="Generating common themes",
@@ -128,14 +134,14 @@ class AbstractQuestionSimulator(QASimulator):
             )
         return distributions
 
-    async def generate_sample(
-        self, scenario: AbstractQuestionScenario
+    async def _generate_sample(
+        self, scenario: AbstractQuestionScenario, callbacks: Callbacks
     ) -> SingleTurnSample:
-        user_input = await self.generate_user_input(scenario)
-        if await self.critic_question(user_input):
-            user_input = await self.modify_question(user_input, scenario)
+        user_input = await self.generate_user_input(scenario, callbacks)
+        if await self.critic_question(user_input, callbacks):
+            user_input = await self.modify_question(user_input, scenario, callbacks)
 
-        reference = await self.generate_answer(user_input, scenario)
+        reference = await self.generate_answer(user_input, scenario, callbacks)
 
         reference_contexts = []
         for node in scenario.nodes:
@@ -148,13 +154,16 @@ class AbstractQuestionSimulator(QASimulator):
             reference_contexts=reference_contexts,
         )
 
-    async def generate_user_input(self, scenario: AbstractQuestionScenario) -> str:
+    async def generate_user_input(
+        self, scenario: AbstractQuestionScenario, callbacks: Callbacks
+    ) -> str:
         question = await self.generate_user_input_prompt.generate(
             data=ThemeAndContext(
                 theme=scenario.theme,
                 context=self.make_source_text(scenario),
             ),
             llm=self.llm,
+            callbacks=callbacks,
         )
         return question.text
 
@@ -172,8 +181,8 @@ class ComparativeAbstractQuestionSimulator(QASimulator):
         default_factory=ComparativeAbstractQuestion
     )
 
-    async def generate_scenarios(
-        self, n: int, knowledge_graph: KnowledgeGraph
+    async def _generate_scenarios(
+        self, n: int, knowledge_graph: KnowledgeGraph, callbacks: Callbacks
     ) -> t.List[ComparativeAbstractQuestionScenario]:
         node_clusters = knowledge_graph.find_clusters(
             relationship_condition=lambda rel: (
@@ -219,6 +228,7 @@ class ComparativeAbstractQuestionSimulator(QASimulator):
                         num_concepts=num_concepts,
                     ),
                     "llm": self.llm,
+                    "callbacks": callbacks,
                 }
             )
 
@@ -263,8 +273,8 @@ class ComparativeAbstractQuestionSimulator(QASimulator):
             )
         return scenarios
 
-    async def generate_sample(
-        self, scenario: ComparativeAbstractQuestionScenario
+    async def _generate_sample(
+        self, scenario: ComparativeAbstractQuestionScenario, callbacks: Callbacks
     ) -> SingleTurnSample:
         # generate the user input
         keyphrases = []
@@ -284,15 +294,18 @@ class ComparativeAbstractQuestionSimulator(QASimulator):
                 summaries=summaries,
             ),
             llm=self.llm,
+            callbacks=callbacks,
         )
         question = question.text
 
         # critic the question
-        if not await self.critic_question(question):
-            question = await self.modify_question(question, scenario)
+        if not await self.critic_question(question, callbacks):
+            question = await self.modify_question(question, scenario, callbacks)
 
         # generate the answer
-        answer = await self.generate_answer(question, scenario, "summary")
+        answer = await self.generate_answer(
+            question, scenario, callbacks, reference_property_name="summary"
+        )
 
         # make the reference contexts
         # TODO: make this more efficient. Right now we are taking only the summary
