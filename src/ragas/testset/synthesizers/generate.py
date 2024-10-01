@@ -8,26 +8,19 @@ from ragas.callbacks import new_group
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
 from ragas.run_config import RunConfig
-from ragas.testset.synthesizers import default_query_distribution
-from ragas.testset.synthesizers.testset_schema import (
-    Testset,
-    TestsetSample,
-)
-from ragas.testset.synthesizers.utils import calculate_split_values
 from ragas.testset.graph import KnowledgeGraph, Node, NodeType
-from ragas.testset.transforms import (
-    Transforms,
-    apply_transforms,
-    default_transforms,
-)
+from ragas.testset.synthesizers import default_query_distribution
+from ragas.testset.synthesizers.testset_schema import Testset, TestsetSample
+from ragas.testset.synthesizers.utils import calculate_split_values
+from ragas.testset.transforms import Transforms, apply_transforms, default_transforms
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
     from langchain_core.documents import Document as LCDocument
     from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
-    from ragas.experimental.testset.synthesizers import QueryDistribution
-    from ragas.experimental.testset.synthesizers.base import BaseScenario
+    from ragas.testset.synthesizers import QueryDistribution
+    from ragas.testset.synthesizers.base import BaseScenario
 
 
 RAGAS_TESTSET_GENERATION_GROUP_NAME = "ragas testset generation"

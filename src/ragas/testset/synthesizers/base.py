@@ -8,8 +8,8 @@ from enum import Enum
 from pydantic import BaseModel
 
 from ragas.callbacks import new_group
-from ragas.prompt import PromptMixin
 from ragas.llms import BaseRagasLLM, llm_factory
+from ragas.prompt import PromptMixin
 from ragas.testset.graph import KnowledgeGraph, Node
 
 if t.TYPE_CHECKING:

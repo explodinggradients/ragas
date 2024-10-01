@@ -1,4 +1,4 @@
-from ragas.testset.simulators.generate import TestsetGenerator
-from ragas.testset.simulators.testset_schema import Testset, TestsetSample
+from ragas.testset.synthesizers.generate import TestsetGenerator
+from ragas.testset.synthesizers.testset_schema import Testset, TestsetSample
 
 __all__ = ["TestsetGenerator", "Testset", "TestsetSample"]
