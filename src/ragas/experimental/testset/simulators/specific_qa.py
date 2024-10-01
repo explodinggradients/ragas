@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import random
 import typing as t
 from dataclasses import dataclass, field
@@ -10,6 +12,9 @@ from .base import BaseScenario, UserInputLength, UserInputStyle
 from .base_qa import QASimulator
 from .prompts import SpecificQuestion, SpecificQuestionInput
 
+if t.TYPE_CHECKING:
+    from langchain_core.callbacks import Callbacks
+
 
 class SpecificQuestionScenario(BaseScenario):
     keyphrase: str
@@ -19,8 +24,8 @@ class SpecificQuestionScenario(BaseScenario):
 class SpecificQASimulator(QASimulator):
     generate_question_prompt: PydanticPrompt = field(default_factory=SpecificQuestion)
 
-    async def generate_scenarios(
-        self, n: int, knowledge_graph: KnowledgeGraph
+    async def _generate_scenarios(
+        self, n: int, knowledge_graph: KnowledgeGraph, callbacks: Callbacks
     ) -> t.List[SpecificQuestionScenario]:
         # filter out nodes that have keyphrases
         nodes = []
@@ -59,8 +64,8 @@ class SpecificQASimulator(QASimulator):
             )
         return scenarios
 
-    async def generate_sample(
-        self, scenario: SpecificQuestionScenario
+    async def _generate_sample(
+        self, scenario: SpecificQuestionScenario, callbacks: Callbacks
     ) -> SingleTurnSample:
         question = await self.generate_question_prompt.generate(
             data=SpecificQuestionInput(
@@ -69,13 +74,16 @@ class SpecificQASimulator(QASimulator):
                 text=scenario.nodes[0].get_property("page_content") or "",
             ),
             llm=self.llm,
+            callbacks=callbacks,
         )
 
         question_text = question.text
-        if not await self.critic_question(question_text):
-            question_text = await self.modify_question(question_text, scenario)
+        if not await self.critic_question(question_text, callbacks):
+            question_text = await self.modify_question(
+                question_text, scenario, callbacks
+            )
 
-        reference = await self.generate_answer(question_text, scenario)
+        reference = await self.generate_answer(question_text, scenario, callbacks)
 
         reference_contexts = []
         for node in scenario.nodes:

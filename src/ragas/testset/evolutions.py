@@ -234,9 +234,7 @@ class Evolution:
         )
         answer = answer if isinstance(answer, dict) else {}
         logger.debug("answer generated: %s", answer)
-        answer = (
-            np.nan if answer.get("verdict") == -1 else answer.get("answer", np.nan)
-        )
+        answer = np.nan if answer.get("verdict") == -1 else answer.get("answer", np.nan)
 
         return DataRow(
             question=question.strip('"'),
