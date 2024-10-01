@@ -7,8 +7,8 @@ from enum import Enum
 
 from pydantic import BaseModel
 
-from ragas.experimental.prompt import PromptMixin
 from ragas.callbacks import new_group
+from ragas.experimental.prompt import PromptMixin
 from ragas.experimental.testset.graph import KnowledgeGraph, Node
 from ragas.llms import BaseRagasLLM, llm_factory
 
@@ -41,7 +41,7 @@ Scenario = t.TypeVar("Scenario", bound=BaseScenario)
 
 
 @dataclass
-class BaseSynthesizer(ABC, t.Generic[Scenario]):
+class BaseSynthesizer(ABC, t.Generic[Scenario], PromptMixin):
     name: str = ""
     llm: BaseRagasLLM = field(default_factory=llm_factory)
 
