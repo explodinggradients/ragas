@@ -189,7 +189,9 @@ class SingleTurnMetric(Metric):
         callbacks: Callbacks = None,
     ) -> float:
         callbacks = callbacks or []
-        rm, group_cm = new_group(self.name, inputs=sample.dict(), callbacks=callbacks)
+        rm, group_cm = new_group(
+            self.name, inputs=sample.model_dump(), callbacks=callbacks
+        )
         try:
             loop = asyncio.get_event_loop()
             score = loop.run_until_complete(
@@ -211,7 +213,7 @@ class SingleTurnMetric(Metric):
         timeout: t.Optional[float] = None,
     ) -> float:
         callbacks = callbacks or []
-        row = sample.dict()
+        row = sample.model_dump()
         rm, group_cm = new_group(self.name, inputs=row, callbacks=callbacks)
         try:
             score = await asyncio.wait_for(
@@ -242,7 +244,9 @@ class MultiTurnMetric(Metric):
         callbacks: Callbacks = None,
     ) -> float:
         callbacks = callbacks or []
-        rm, group_cm = new_group(self.name, inputs=sample.dict(), callbacks=callbacks)
+        rm, group_cm = new_group(
+            self.name, inputs=sample.model_dump(), callbacks=callbacks
+        )
         try:
             loop = asyncio.get_event_loop()
             score = loop.run_until_complete(
@@ -264,7 +268,9 @@ class MultiTurnMetric(Metric):
         timeout: t.Optional[float] = None,
     ) -> float:
         callbacks = callbacks or []
-        rm, group_cm = new_group(self.name, inputs=sample.dict(), callbacks=callbacks)
+        rm, group_cm = new_group(
+            self.name, inputs=sample.model_dump(), callbacks=callbacks
+        )
         try:
             score = await asyncio.wait_for(
                 self._multi_turn_ascore(sample=sample, callbacks=group_cm),

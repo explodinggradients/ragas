@@ -13,13 +13,11 @@ if t.TYPE_CHECKING:
 
 
 class BaseEvalSample(BaseModel):
-    def dict(self, **kwargs):
-        row = super().dict(**kwargs)
-        row = {k: v for k, v in row.items() if v is not None}
-        return row
+    def dict(self, **kwargs) -> t.Dict:
+        return self.model_dump(exclude_none=True)
 
-    def features(self):
-        return set(self.dict().keys())
+    def features(self) -> t.List[str]:
+        return list(self.dict().keys())
 
 
 class SingleTurnSample(BaseEvalSample):
@@ -68,7 +66,7 @@ class MultiTurnSample(BaseEvalSample):
         return messages
 
     def to_messages(self):
-        return [m.dict() for m in self.user_input]
+        return [m.model_dump() for m in self.user_input]
 
     def pretty_repr(self):
         lines = []

@@ -1,5 +1,3 @@
-import typing as t
-from dataclasses import dataclass, field
 
 from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
 from ragas.metrics.base import MetricType
@@ -17,26 +15,6 @@ def test_get_available_metrics():
             for m in get_available_metrics(ds)
         ]
     ), "All metrics should have required columns ('user_input', 'response')"
-
-
-def test_metric():
-    from ragas.metrics.base import Metric
-
-    @dataclass
-    class FakeMetric(Metric):
-        name = "fake_metric"  # type: ignore
-        _required_columns: t.Dict[MetricType, t.Set[str]] = field(
-            default_factory=lambda: {MetricType.SINGLE_TURN: {"user_input", "response"}}
-        )
-
-        def init(self, run_config):
-            pass
-
-        async def _ascore(self, row, callbacks) -> float:
-            return 0
-
-    fm = FakeMetric()
-    assert fm.score({"user_input": "a", "response": "b"}) == 0
 
 
 def test_single_turn_metric():

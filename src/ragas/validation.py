@@ -57,7 +57,7 @@ def validate_required_columns(ds: EvaluationDataset, metrics: list[Metric]):
     metric_type = get_supported_metric_type(ds)
     for m in metrics:
         required_columns = set(m.required_columns.get(metric_type, []))
-        available_columns = ds.features()
+        available_columns = set(ds.features())
         if not required_columns.issubset(available_columns):
             raise ValueError(
                 f"The metric [{m.name}] that that is used requires the following "

@@ -1,3 +1,5 @@
+import typing as t
+
 import pytest
 from pydantic import ValidationError
 
@@ -29,3 +31,16 @@ def test_single_type_evaluation_dataset():
         EvaluationDataset(samples=[single_turn_sample, multi_turn_sample])
 
     assert "All samples must be of the same type" in str(exc_info.value)
+
+
+def test_base_eval_sample():
+    from ragas.dataset_schema import BaseEvalSample
+
+    class FakeSample(BaseEvalSample):
+        user_input: str
+        response: str
+        reference: t.Optional[str] = None
+
+    fake_sample = FakeSample(user_input="What is X", response="Y")
+    assert fake_sample.dict() == {"user_input": "What is X", "response": "Y"}
+    assert fake_sample.features() == ["user_input", "response"]
