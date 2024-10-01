@@ -294,6 +294,7 @@ class ComparativeAbstractQuestionSimulator(QASimulator):
                 summaries=summaries,
             ),
             llm=self.llm,
+            callbacks=callbacks,
         )
         question = question.text
 
