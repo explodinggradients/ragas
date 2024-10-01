@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 
 from ragas.executor import Executor
 from ragas.experimental.testset.graph import KnowledgeGraph, Node, NodeType
-from ragas.experimental.testset.simulators import default_simulator_distribution
+from ragas.experimental.testset.simulators import default_query_distribution
 from ragas.experimental.testset.simulators.testset_schema import Testset, TestsetSample
 from ragas.experimental.testset.simulators.utils import calculate_split_values
 from ragas.experimental.testset.transforms import (
@@ -21,7 +21,7 @@ if t.TYPE_CHECKING:
     from langchain_core.documents import Document as LCDocument
     from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
-    from ragas.experimental.testset.simulators import SimulatorDistributions
+    from ragas.experimental.testset.simulators import QueryDistribution
     from ragas.experimental.testset.simulators.base import BaseScenario
 
 
@@ -44,7 +44,7 @@ class TestsetGenerator:
         documents: t.Sequence[LCDocument],
         test_size: int,
         transforms: t.Optional[Transforms] = None,
-        simulator_distributions: t.Optional[SimulatorDistributions] = None,
+        query_distribution: t.Optional[QueryDistribution] = None,
         run_config: t.Optional[RunConfig] = None,
         with_debugging_logs=False,
         raise_exceptions: bool = True,
@@ -71,7 +71,7 @@ class TestsetGenerator:
 
         return self.generate(
             test_size=test_size,
-            simulator_distributions=simulator_distributions,
+            query_distribution=query_distribution,
             run_config=run_config,
             with_debugging_logs=with_debugging_logs,
             raise_exceptions=raise_exceptions,
@@ -80,7 +80,7 @@ class TestsetGenerator:
     def generate(
         self,
         test_size: int,
-        simulator_distributions: t.Optional[SimulatorDistributions] = None,
+        query_distribution: t.Optional[QueryDistribution] = None,
         run_config: t.Optional[RunConfig] = None,
         with_debugging_logs=False,
         raise_exceptions: bool = True,
@@ -92,7 +92,7 @@ class TestsetGenerator:
         ----------
         test_size : int
             The number of samples to generate.
-        simulator_distribution : Optional[SimulatorDistribution], optional
+        query_distribution : Optional[QueryDistribution], optional
             A list of tuples containing scenario simulators and their probabilities.
             If None, default simulators will be used.
         run_config : Optional[RunConfig], optional
@@ -116,15 +116,13 @@ class TestsetGenerator:
         4. Generate samples for each scenario.
         5. Compile the results into an EvaluationDataset.
         """
-        simulator_distributions = (
-            simulator_distributions or default_simulator_distribution(self.llm)
-        )
+        query_distribution = query_distribution or default_query_distribution(self.llm)
 
         if with_debugging_logs:
             # TODO: Edit this before pre-release
             from ragas.utils import patch_logger
 
-            patch_logger("ragas.experimental.testset.simulators", logging.DEBUG)
+            patch_logger("ragas.experimental.testset.synthesizers", logging.DEBUG)
             patch_logger("ragas.experimental.testset.graph", logging.DEBUG)
             patch_logger("ragas.experimental.testset.transforms", logging.DEBUG)
 
@@ -137,9 +135,9 @@ class TestsetGenerator:
         )
         # generate samples
         splits, _ = calculate_split_values(
-            [prob for _, prob in simulator_distributions], test_size
+            [prob for _, prob in query_distribution], test_size
         )
-        for i, (scenario, _) in enumerate(simulator_distributions):
+        for i, (scenario, _) in enumerate(query_distribution):
             exec.submit(scenario.generate_scenarios, splits[i], self.knowledge_graph)
 
         scenario_sample_list: t.List[t.List[BaseScenario]] = exec.results()
@@ -151,13 +149,13 @@ class TestsetGenerator:
             keep_progress_bar=True,
         )
         additional_testset_info: t.List[t.Dict] = []
-        for i, (simulator, _) in enumerate(simulator_distributions):
+        for i, (synthesizer, _) in enumerate(query_distribution):
             for sample in scenario_sample_list[i]:
-                exec.submit(simulator.generate_sample, sample)
+                exec.submit(synthesizer.generate_sample, sample)
                 # fill out the additional info for the TestsetSample
                 additional_testset_info.append(
                     {
-                        "simulator_name": simulator.name,
+                        "synthesizer_name": synthesizer.name,
                     }
                 )
 

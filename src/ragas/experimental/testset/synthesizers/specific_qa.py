@@ -6,22 +6,22 @@ from ragas.dataset_schema import SingleTurnSample
 from ragas.experimental.prompt import PydanticPrompt
 from ragas.experimental.testset.graph import KnowledgeGraph, NodeType
 
-from .base import BaseScenario, UserInputLength, UserInputStyle
-from .base_qa import QASimulator
-from .prompts import SpecificQuestion, SpecificQuestionInput
+from .base import BaseScenario, QueryLength, QueryStyle
+from .base_qa import QuerySynthesizer
+from .prompts import SpecificQuery, SpecificQuestionInput
 
 
-class SpecificQuestionScenario(BaseScenario):
+class SpecificQueryScenario(BaseScenario):
     keyphrase: str
 
 
 @dataclass
-class SpecificQASimulator(QASimulator):
-    generate_question_prompt: PydanticPrompt = field(default_factory=SpecificQuestion)
+class SpecificQuerySynthesizer(QuerySynthesizer):
+    generate_query_prompt: PydanticPrompt = field(default_factory=SpecificQuery)
 
     async def generate_scenarios(
         self, n: int, knowledge_graph: KnowledgeGraph
-    ) -> t.List[SpecificQuestionScenario]:
+    ) -> t.List[SpecificQueryScenario]:
         # filter out nodes that have keyphrases
         nodes = []
         for node in knowledge_graph.nodes:
@@ -44,25 +44,25 @@ class SpecificQASimulator(QASimulator):
             else:
                 sampled_keyphrases.append(random.choice(keyphrases))
 
-        # sample question styles and lengths
-        question_styles = random.choices(list(UserInputStyle), k=n)
-        question_lengths = random.choices(list(UserInputLength), k=n)
+        # sample query styles and lengths
+        query_styles = random.choices(list(QueryStyle), k=n)
+        query_lengths = random.choices(list(QueryLength), k=n)
 
         scenarios = []
         for node, keyphrase, style, length in zip(
-            sampled_nodes, sampled_keyphrases, question_styles, question_lengths
+            sampled_nodes, sampled_keyphrases, query_styles, query_lengths
         ):
             scenarios.append(
-                SpecificQuestionScenario(
+                SpecificQueryScenario(
                     nodes=[node], keyphrase=keyphrase, style=style, length=length
                 )
             )
         return scenarios
 
     async def generate_sample(
-        self, scenario: SpecificQuestionScenario
+        self, scenario: SpecificQueryScenario
     ) -> SingleTurnSample:
-        question = await self.generate_question_prompt.generate(
+        query = await self.generate_query_prompt.generate(
             data=SpecificQuestionInput(
                 title=scenario.nodes[0].get_property("title") or "",
                 keyphrase=scenario.keyphrase,
@@ -71,11 +71,11 @@ class SpecificQASimulator(QASimulator):
             llm=self.llm,
         )
 
-        question_text = question.text
-        if not await self.critic_question(question_text):
-            question_text = await self.modify_question(question_text, scenario)
+        query_text = query.text
+        if not await self.critic_query(query_text):
+            query_text = await self.modify_query(query_text, scenario)
 
-        reference = await self.generate_answer(question_text, scenario)
+        reference = await self.generate_reference(query_text, scenario)
 
         reference_contexts = []
         for node in scenario.nodes:
@@ -83,7 +83,7 @@ class SpecificQASimulator(QASimulator):
                 reference_contexts.append(node.get_property("page_content"))
 
         return SingleTurnSample(
-            user_input=question_text,
+            user_input=query_text,
             reference=reference,
             reference_contexts=reference_contexts,
         )

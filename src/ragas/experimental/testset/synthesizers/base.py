@@ -14,13 +14,13 @@ if t.TYPE_CHECKING:
     from ragas.dataset_schema import BaseEvalSample
 
 
-class UserInputLength(str, Enum):
+class QueryLength(str, Enum):
     LONG = "long"
     MEDIUM = "medium"
     SHORT = "short"
 
 
-class UserInputStyle(str, Enum):
+class QueryStyle(str, Enum):
     MISSPELLED = "Misspelled queries"
     PERFECT_GRAMMAR = "Perfect grammar"
     POOR_GRAMMAR = "Poor grammar"
@@ -29,15 +29,15 @@ class UserInputStyle(str, Enum):
 
 class BaseScenario(BaseModel):
     nodes: t.List[Node]
-    style: UserInputStyle
-    length: UserInputLength
+    style: QueryStyle
+    length: QueryLength
 
 
 Scenario = t.TypeVar("Scenario", bound=BaseScenario)
 
 
 @dataclass
-class BaseSimulator(ABC, t.Generic[Scenario]):
+class BaseSynthesizer(ABC, t.Generic[Scenario]):
     name: str = ""
     llm: BaseRagasLLM = field(default_factory=llm_factory)
 

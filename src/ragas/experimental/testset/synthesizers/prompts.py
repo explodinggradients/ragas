@@ -3,7 +3,7 @@ import typing as t
 from pydantic import BaseModel
 
 from ragas.experimental.prompt import PydanticPrompt, StringIO
-from ragas.experimental.testset.simulators.base import UserInputLength, UserInputStyle
+from ragas.experimental.testset.synthesizers.base import QueryLength, QueryStyle
 
 
 class Summaries(BaseModel):
@@ -64,7 +64,7 @@ class ThemeAndContext(BaseModel):
     context: str
 
 
-class AbstractQuestionFromTheme(PydanticPrompt[ThemeAndContext, StringIO]):
+class AbstractQueryFromTheme(PydanticPrompt[ThemeAndContext, StringIO]):
     input_model = ThemeAndContext
     output_model = StringIO
     instruction = "Generate an abstract conceptual question using the given theme that can be answered from the information in the provided context."
@@ -108,43 +108,43 @@ class CriticUserInput(PydanticPrompt[StringIO, Feedback]):
     ]
 
 
-class UserInputWithStyleAndLength(BaseModel):
-    user_input: str
-    style: UserInputStyle
-    length: UserInputLength
+class QueryWithStyleAndLength(BaseModel):
+    query: str
+    style: QueryStyle
+    length: QueryLength
 
 
 EXAMPLES_FOR_USER_INPUT_MODIFICATION = [
     # Short Length Examples
     (
-        UserInputWithStyleAndLength(
-            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            style=UserInputStyle.MISSPELLED,
-            length=UserInputLength.SHORT,
+        QueryWithStyleAndLength(
+            query="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+            style=QueryStyle.MISSPELLED,
+            length=QueryLength.SHORT,
         ),
         StringIO(text="How do enrgy storag solutions compare on efficincy?"),
     ),
     (
-        UserInputWithStyleAndLength(
-            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            style=UserInputStyle.PERFECT_GRAMMAR,
-            length=UserInputLength.SHORT,
+        QueryWithStyleAndLength(
+            query="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+            style=QueryStyle.PERFECT_GRAMMAR,
+            length=QueryLength.SHORT,
         ),
         StringIO(text="How do energy storage solutions compare?"),
     ),
     (
-        UserInputWithStyleAndLength(
-            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            style=UserInputStyle.POOR_GRAMMAR,
-            length=UserInputLength.SHORT,
+        QueryWithStyleAndLength(
+            query="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+            style=QueryStyle.POOR_GRAMMAR,
+            length=QueryLength.SHORT,
         ),
         StringIO(text="How do storag solutions compare on efficiency?"),
     ),
     (
-        UserInputWithStyleAndLength(
-            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            style=UserInputStyle.WEB_SEARCH_LIKE,
-            length=UserInputLength.SHORT,
+        QueryWithStyleAndLength(
+            query="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+            style=QueryStyle.WEB_SEARCH_LIKE,
+            length=QueryLength.SHORT,
         ),
         StringIO(
             text="compare energy storage solutions efficiency cost sustainability"
@@ -152,36 +152,36 @@ EXAMPLES_FOR_USER_INPUT_MODIFICATION = [
     ),
     # Medium Length Examples
     (
-        UserInputWithStyleAndLength(
-            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            style=UserInputStyle.MISSPELLED,
-            length=UserInputLength.MEDIUM,
+        QueryWithStyleAndLength(
+            query="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+            style=QueryStyle.MISSPELLED,
+            length=QueryLength.MEDIUM,
         ),
         StringIO(text="How do enrgy storag solutions compare on efficincy n cost?"),
     ),
     (
-        UserInputWithStyleAndLength(
-            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            style=UserInputStyle.PERFECT_GRAMMAR,
-            length=UserInputLength.MEDIUM,
+        QueryWithStyleAndLength(
+            query="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+            style=QueryStyle.PERFECT_GRAMMAR,
+            length=QueryLength.MEDIUM,
         ),
         StringIO(
             text="How do energy storage solutions compare in efficiency and cost?"
         ),
     ),
     (
-        UserInputWithStyleAndLength(
-            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            style=UserInputStyle.POOR_GRAMMAR,
-            length=UserInputLength.MEDIUM,
+        QueryWithStyleAndLength(
+            query="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+            style=QueryStyle.POOR_GRAMMAR,
+            length=QueryLength.MEDIUM,
         ),
         StringIO(text="How energy storag solutions compare on efficiency and cost?"),
     ),
     (
-        UserInputWithStyleAndLength(
-            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            style=UserInputStyle.WEB_SEARCH_LIKE,
-            length=UserInputLength.MEDIUM,
+        QueryWithStyleAndLength(
+            query="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+            style=QueryStyle.WEB_SEARCH_LIKE,
+            length=QueryLength.MEDIUM,
         ),
         StringIO(
             text="comparison of energy storage solutions efficiency cost sustainability"
@@ -189,40 +189,40 @@ EXAMPLES_FOR_USER_INPUT_MODIFICATION = [
     ),
     # Long Length Examples
     (
-        UserInputWithStyleAndLength(
-            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            style=UserInputStyle.MISSPELLED,
-            length=UserInputLength.LONG,
+        QueryWithStyleAndLength(
+            query="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+            style=QueryStyle.MISSPELLED,
+            length=QueryLength.LONG,
         ),
         StringIO(
             text="How do various enrgy storag solutions compare in terms of efficincy, cost, and sustanbility in rnewable energy systems?"
         ),
     ),
     (
-        UserInputWithStyleAndLength(
-            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            style=UserInputStyle.PERFECT_GRAMMAR,
-            length=UserInputLength.LONG,
+        QueryWithStyleAndLength(
+            query="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+            style=QueryStyle.PERFECT_GRAMMAR,
+            length=QueryLength.LONG,
         ),
         StringIO(
             text="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?"
         ),
     ),
     (
-        UserInputWithStyleAndLength(
-            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            style=UserInputStyle.POOR_GRAMMAR,
-            length=UserInputLength.LONG,
+        QueryWithStyleAndLength(
+            query="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+            style=QueryStyle.POOR_GRAMMAR,
+            length=QueryLength.LONG,
         ),
         StringIO(
             text="How various energy storag solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?"
         ),
     ),
     (
-        UserInputWithStyleAndLength(
-            user_input="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
-            style=UserInputStyle.WEB_SEARCH_LIKE,
-            length=UserInputLength.LONG,
+        QueryWithStyleAndLength(
+            query="How do various energy storage solutions compare in terms of efficiency, cost, and sustainability in renewable energy systems?",
+            style=QueryStyle.WEB_SEARCH_LIKE,
+            length=QueryLength.LONG,
         ),
         StringIO(
             text="How do various energy storage solutions compare efficiency cost sustainability renewable energy systems?"
@@ -231,17 +231,17 @@ EXAMPLES_FOR_USER_INPUT_MODIFICATION = [
 ]
 
 
-class ModifyUserInput(PydanticPrompt[UserInputWithStyleAndLength, StringIO]):
-    input_model = UserInputWithStyleAndLength
+class ModifyUserInput(PydanticPrompt[QueryWithStyleAndLength, StringIO]):
+    input_model = QueryWithStyleAndLength
     output_model = StringIO
     instruction = "Modify the given question in order to fit the given style and length"
-    examples: t.List[t.Tuple[UserInputWithStyleAndLength, StringIO]] = []
+    examples: t.List[t.Tuple[QueryWithStyleAndLength, StringIO]] = []
 
 
 def extend_modify_input_prompt(
-    question_modification_prompt: PydanticPrompt,
-    style: UserInputStyle,
-    length: UserInputLength,
+    query_modification_prompt: PydanticPrompt,
+    style: QueryStyle,
+    length: QueryLength,
 ) -> PydanticPrompt:
     examples = [
         example
@@ -250,24 +250,24 @@ def extend_modify_input_prompt(
     ]
     if not examples:
         raise ValueError(f"No examples found for style {style} and length {length}")
-    question_modification_prompt.examples = examples
-    question_modification_prompt.examples = examples
-    return question_modification_prompt
+    query_modification_prompt.examples = examples
+    query_modification_prompt.examples = examples
+    return query_modification_prompt
 
 
-class UserInputAndContext(BaseModel):
-    user_input: str
+class QueryAndContext(BaseModel):
+    query: str
     context: str
 
 
-class GenerateReference(PydanticPrompt[UserInputAndContext, StringIO]):
-    input_model = UserInputAndContext
+class GenerateReference(PydanticPrompt[QueryAndContext, StringIO]):
+    input_model = QueryAndContext
     output_model = StringIO
     instruction = "Answer the following question based on the information provided in the given text."
     examples = [
         (
-            UserInputAndContext(
-                user_input="How does AI enhance efficiency and accuracy across different industries?",
+            QueryAndContext(
+                query="How does AI enhance efficiency and accuracy across different industries?",
                 context="Advances in artificial intelligence have revolutionized many industries. From healthcare to finance, AI algorithms are making processes more efficient and accurate. Machine learning models are being used to predict diseases, optimize investment strategies, and even recommend personalized content to users. The integration of AI into daily operations is becoming increasingly indispensable for modern businesses.",
             ),
             StringIO(
@@ -352,7 +352,7 @@ class CAQInput(BaseModel):
     summaries: t.List[str]
 
 
-class ComparativeAbstractQuestion(PydanticPrompt[CAQInput, StringIO]):
+class ComparativeAbstractQuery(PydanticPrompt[CAQInput, StringIO]):
     input_model = CAQInput
     output_model = StringIO
     instruction = "Generate an abstract comparative question based on the given concept, keyphrases belonging to that concept, and summaries of reports."
@@ -386,7 +386,7 @@ class SpecificQuestionInput(BaseModel):
     text: str
 
 
-class SpecificQuestion(PydanticPrompt[SpecificQuestionInput, StringIO]):
+class SpecificQuery(PydanticPrompt[SpecificQuestionInput, StringIO]):
     input_model = SpecificQuestionInput
     output_model = StringIO
     instruction = "Given the title of a text and a text chunk, along with a keyphrase from the chunk, generate a specific question related to the keyphrase.\n\n"

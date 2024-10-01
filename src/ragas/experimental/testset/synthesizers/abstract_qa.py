@@ -9,14 +9,14 @@ from ragas.executor import run_async_batch
 from ragas.experimental.prompt import PydanticPrompt
 from ragas.experimental.testset.graph import KnowledgeGraph, NodeType
 
-from .base import BaseScenario, UserInputLength, UserInputStyle
-from .base_qa import QASimulator
+from .base import BaseScenario, QueryLength, QueryStyle
+from .base_qa import QuerySynthesizer
 from .prompts import (
-    AbstractQuestionFromTheme,
+    AbstractQueryFromTheme,
     CAQInput,
     CommonConceptsFromKeyphrases,
     CommonThemeFromSummaries,
-    ComparativeAbstractQuestion,
+    ComparativeAbstractQuery,
     Concepts,
     KeyphrasesAndNumConcepts,
     Summaries,
@@ -32,9 +32,9 @@ class AbstractQuestionScenario(BaseScenario):
 
 
 @dataclass
-class AbstractQuestionSimulator(QASimulator):
+class AbstractQuerySynthesizer(QuerySynthesizer):
     generate_user_input_prompt: PydanticPrompt = field(
-        default_factory=AbstractQuestionFromTheme
+        default_factory=AbstractQueryFromTheme
     )
 
     def __post_init__(self):
@@ -106,18 +106,14 @@ class AbstractQuestionSimulator(QASimulator):
                 themes_sampled.append(theme)
                 clusters_sampled.append(cluster)
 
-        # sample question styles and question lengths
-        question_styles = random.choices(
-            list(UserInputStyle), k=num_clusters * num_themes
-        )
-        question_lengths = random.choices(
-            list(UserInputLength), k=num_clusters * num_themes
-        )
+        # sample query styles and query lengths
+        query_styles = random.choices(list(QueryStyle), k=num_clusters * num_themes)
+        query_lengths = random.choices(list(QueryLength), k=num_clusters * num_themes)
 
         # create distributions
         distributions = []
         for cluster, theme, style, length in zip(
-            clusters_sampled, themes_sampled, question_styles, question_lengths
+            clusters_sampled, themes_sampled, query_styles, query_lengths
         ):
             distributions.append(
                 AbstractQuestionScenario(
@@ -133,10 +129,10 @@ class AbstractQuestionSimulator(QASimulator):
         self, scenario: AbstractQuestionScenario
     ) -> SingleTurnSample:
         user_input = await self.generate_user_input(scenario)
-        if await self.critic_question(user_input):
-            user_input = await self.modify_question(user_input, scenario)
+        if await self.critic_query(user_input):
+            user_input = await self.modify_query(user_input, scenario)
 
-        reference = await self.generate_answer(user_input, scenario)
+        reference = await self.generate_reference(user_input, scenario)
 
         reference_contexts = []
         for node in scenario.nodes:
@@ -150,32 +146,32 @@ class AbstractQuestionSimulator(QASimulator):
         )
 
     async def generate_user_input(self, scenario: AbstractQuestionScenario) -> str:
-        question = await self.generate_user_input_prompt.generate(
+        query = await self.generate_user_input_prompt.generate(
             data=ThemeAndContext(
                 theme=scenario.theme,
-                context=self.make_source_text(scenario),
+                context=self.make_reference_contexts(scenario),
             ),
             llm=self.llm,
         )
-        return question.text
+        return query.text
 
 
-class ComparativeAbstractQuestionScenario(BaseScenario):
+class ComparativeAbstractQueryScenario(BaseScenario):
     common_concept: str
 
 
 @dataclass
-class ComparativeAbstractQuestionSimulator(QASimulator):
+class ComparativeAbstractQuerySynthesizer(QuerySynthesizer):
     common_concepts_prompt: PydanticPrompt = field(
         default_factory=CommonConceptsFromKeyphrases
     )
-    generate_question_prompt: PydanticPrompt = field(
-        default_factory=ComparativeAbstractQuestion
+    generate_query_prompt: PydanticPrompt = field(
+        default_factory=ComparativeAbstractQuery
     )
 
     async def generate_scenarios(
         self, n: int, knowledge_graph: KnowledgeGraph
-    ) -> t.List[ComparativeAbstractQuestionScenario]:
+    ) -> t.List[ComparativeAbstractQueryScenario]:
         node_clusters = knowledge_graph.find_clusters(
             relationship_condition=lambda rel: (
                 True if rel.get_property("summary_cosine_similarity") else False
@@ -234,16 +230,16 @@ class ComparativeAbstractQuestionSimulator(QASimulator):
             for concept in common_concept.concepts:
                 cluster_concepts.append((cluster, concept))
 
-        question_lengths_sampled = random.choices(
-            list(UserInputLength), k=num_clusters * num_concepts
+        query_lengths_sampled = random.choices(
+            list(QueryLength), k=num_clusters * num_concepts
         )
-        question_styles_sampled = random.choices(
-            list(UserInputStyle), k=num_clusters * num_concepts
+        query_styles_sampled = random.choices(
+            list(QueryStyle), k=num_clusters * num_concepts
         )
         logger.info(
-            "len(question_lengths_sampled) = %d, len(question_styles_sampled) = %d, len(cluster_concepts) = %d",
-            len(question_lengths_sampled),
-            len(question_styles_sampled),
+            "len(query_lengths_sampled) = %d, len(query_styles_sampled) = %d, len(cluster_concepts) = %d",
+            len(query_lengths_sampled),
+            len(query_styles_sampled),
             len(cluster_concepts),
         )
 
@@ -251,11 +247,11 @@ class ComparativeAbstractQuestionSimulator(QASimulator):
         scenarios = []
         for (cluster, concept), length, style in zip(
             cluster_concepts,
-            question_lengths_sampled,
-            question_styles_sampled,
+            query_lengths_sampled,
+            query_styles_sampled,
         ):
             scenarios.append(
-                ComparativeAbstractQuestionScenario(
+                ComparativeAbstractQueryScenario(
                     common_concept=concept,
                     nodes=cluster,
                     length=length,
@@ -265,7 +261,7 @@ class ComparativeAbstractQuestionSimulator(QASimulator):
         return scenarios
 
     async def generate_sample(
-        self, scenario: ComparativeAbstractQuestionScenario
+        self, scenario: ComparativeAbstractQueryScenario
     ) -> SingleTurnSample:
         # generate the user input
         keyphrases = []
@@ -278,7 +274,7 @@ class ComparativeAbstractQuestionSimulator(QASimulator):
             if summary_node is not None:
                 summaries.append(summary_node)
 
-        question = await self.generate_question_prompt.generate(
+        query = await self.generate_query_prompt.generate(
             data=CAQInput(
                 concept=scenario.common_concept,
                 keyphrases=keyphrases,
@@ -286,14 +282,14 @@ class ComparativeAbstractQuestionSimulator(QASimulator):
             ),
             llm=self.llm,
         )
-        question = question.text
+        query = query.text
 
-        # critic the question
-        if not await self.critic_question(question):
-            question = await self.modify_question(question, scenario)
+        # critic the query
+        if not await self.critic_query(query):
+            query = await self.modify_query(query, scenario)
 
         # generate the answer
-        answer = await self.generate_answer(question, scenario, "summary")
+        answer = await self.generate_reference(query, scenario, "summary")
 
         # make the reference contexts
         # TODO: make this more efficient. Right now we are taking only the summary
@@ -303,7 +299,7 @@ class ComparativeAbstractQuestionSimulator(QASimulator):
                 reference_contexts.append(node.get_property("summary"))
 
         return SingleTurnSample(
-            user_input=question,
+            user_input=query,
             reference=answer,
             reference_contexts=reference_contexts,
         )
