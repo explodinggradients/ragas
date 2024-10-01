@@ -47,6 +47,36 @@ The documents are chunked to form hierarchial nodes. The chunking can be done by
 
 Different extractors are used to extract information from each nodes that can be used to establish the relationship between the nodes. For example, in the case of financial documents, the extractor that can be used are entity extractor to extract the entities like Company Name, Keyphrase extractor to extract important key phrases present in each node, etc. You can write your own [custom extractors]() to extract the information that is relevant to your domain.
 
+Extractors can be LLM based which are inherited from `LLMBasedExtractor` or rule based which are inherited from `Extractor`.
+
+#### Example
+
+Let's say we have a sample node from the knowledge graph. We can use the `KeyphrasesExtractor` to extract the keyphrases from the node.
+
+```python
+from ragas.experimental.testset.transforms import KeyphrasesExtractor
+from ragas.experimental.testset.graph import Node
+
+sample_node = Node(
+    properties={"page_content": "The theory of relativity revolutionized our understanding of space and time. It introduced the concept that time is not absolute but can change depending on the observer's frame of reference."}
+)
+
+extractor = KeyphrasesExtractor()
+await extractor.extract(sample_node)
+```
+Returns a tuple of the type of the extractor and the extracted information.
+
+```bash
+('keyphrases',
+ ['theory of relativity',
+  'understanding of space and time',
+  'time is not absolute',
+  "observer's frame of reference",
+  'concept of time'])
+```
+
+
+
 ### Relationship builder
 
 The extracted information is used to establish the relationship between the nodes. For example, in the case of financial documents, the relationship can be established between the nodes based on the entities present in the nodes.
