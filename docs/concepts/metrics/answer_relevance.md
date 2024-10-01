@@ -2,7 +2,7 @@
 
 The evaluation metric, Answer Relevancy, focuses on assessing how pertinent the generated answer is to the given prompt. A lower score is assigned to answers that are incomplete or contain redundant information and higher scores indicate better relevancy. This metric is computed using the `user_input`, the `retrived_contexts` and the `response`. 
 
-The Answer Relevancy is defined as the mean cosine similarity of the original `user_input` to a number of artifical questions, which where generated (reverse engineered) based on the `response`: 
+The Answer Relevancy is defined as the mean cosine similarity of the original `user_input` to a number of artificial questions, which where generated (reverse engineered) based on the `response`: 
 
 $$
 \text{answer relevancy} = \frac{1}{N} \sum_{i=1}^{N} cos(E_{g_i}, E_o)
