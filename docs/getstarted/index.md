@@ -13,4 +13,4 @@ Let's get started!
 
 ## Retrieval Augmented Generation
 - [Run ragas metrics for evaluating RAG](rag_evaluation.md)
-- [Generate test data for evaluating RAG](rag_testset_generation.ipynb)
+- [Generate test data for evaluating RAG](rag_testset_generation.md)
