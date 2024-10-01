@@ -137,13 +137,12 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
                 "verdict",
             )
 
-            faithfulness_list = StatementFaithfulnessAnswers.parse_obj(
+            faithfulness_list = StatementFaithfulnessAnswers.model_validate(
                 faithfulness_list
             )
 
             verdict_list = [
-                1 if statement.verdict else 0
-                for statement in faithfulness_list.__root__
+                1 if statement.verdict else 0 for statement in faithfulness_list.dicts()
             ]
             return np.array(verdict_list)
         else:
@@ -162,14 +161,17 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
                 callbacks=callbacks,
             )
         else:
-            statements_gen = self.llm.generate(
+            statements_gen = await self.llm.generate(
                 p_value,
                 callbacks=callbacks,
             )
 
         # Await the aparse method
         statements = await _statements_output_parser.aparse(
-            statements_gen.generations[0][0].text, p_value, self.llm, self.max_retries  # type: ignore
+            statements_gen.generations[0][0].text,
+            p_value,
+            self.llm,
+            self.max_retries,  # type: ignore
         )
 
         if statements is None:
