@@ -3,10 +3,15 @@ import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
+from ragas.experimental.prompt import PromptMixin
 from ragas.experimental.testset.graph import KnowledgeGraph, Node, Relationship
 from ragas.llms import BaseRagasLLM, llm_factory
 
 logger = logging.getLogger(__name__)
+
+
+def default_filter(node: Node) -> bool:
+    return True
 
 
 @dataclass
@@ -90,7 +95,9 @@ class Extractor(BaseGraphTransformation):
         Abstract method to extract a specific property from a node.
     """
 
-    filter_nodes: t.Callable[[Node], bool] = lambda _: True
+    filter_nodes: t.Callable[[Node], bool] = field(
+        default_factory=lambda: default_filter
+    )
 
     async def transform(
         self, kg: KnowledgeGraph
@@ -180,7 +187,7 @@ class Extractor(BaseGraphTransformation):
 
 
 @dataclass
-class LLMBasedExtractor(Extractor):
+class LLMBasedExtractor(Extractor, PromptMixin):
     llm: BaseRagasLLM = field(default_factory=llm_factory)
     merge_if_possible: bool = True
 
