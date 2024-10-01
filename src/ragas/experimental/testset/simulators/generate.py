@@ -103,6 +103,9 @@ class TestsetGenerator:
         simulator_distribution : Optional[SimulatorDistribution], optional
             A list of tuples containing scenario simulators and their probabilities.
             If None, default simulators will be used.
+        callbacks : Optional[Callbacks], optional
+            Langchain style callbacks to use for the generation process. You can use
+            this to log the generation process or add other metadata.
         run_config : Optional[RunConfig], optional
             Configuration for running the generation process.
         with_debugging_logs : bool, default False
