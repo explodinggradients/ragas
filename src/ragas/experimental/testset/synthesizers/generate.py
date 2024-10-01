@@ -6,9 +6,9 @@ from dataclasses import dataclass, field
 
 from ragas.executor import Executor
 from ragas.experimental.testset.graph import KnowledgeGraph, Node, NodeType
-from ragas.experimental.testset.simulators import default_query_distribution
-from ragas.experimental.testset.simulators.testset_schema import Testset, TestsetSample
-from ragas.experimental.testset.simulators.utils import calculate_split_values
+from ragas.experimental.testset.synthesizers import default_query_distribution
+from ragas.experimental.testset.synthesizers.testset_schema import Testset, TestsetSample
+from ragas.experimental.testset.synthesizers.utils import calculate_split_values
 from ragas.experimental.testset.transforms import (
     Transforms,
     apply_transforms,
@@ -21,8 +21,8 @@ if t.TYPE_CHECKING:
     from langchain_core.documents import Document as LCDocument
     from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
-    from ragas.experimental.testset.simulators import QueryDistribution
-    from ragas.experimental.testset.simulators.base import BaseScenario
+    from ragas.experimental.testset.synthesizers import QueryDistribution
+    from ragas.experimental.testset.synthesizers.base import BaseScenario
 
 
 @dataclass
@@ -116,7 +116,9 @@ class TestsetGenerator:
         4. Generate samples for each scenario.
         5. Compile the results into an EvaluationDataset.
         """
-        query_distribution = query_distribution or default_query_distribution(self.llm)
+        query_distribution = (
+            query_distribution or default_query_distribution(self.llm)
+        )
 
         if with_debugging_logs:
             # TODO: Edit this before pre-release
