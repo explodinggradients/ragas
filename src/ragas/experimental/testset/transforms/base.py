@@ -1,14 +1,17 @@
-import inspect
 import logging
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
-from ragas.experimental.prompt import PydanticPrompt as Prompt
+from ragas.experimental.prompt import PromptMixin
 from ragas.experimental.testset.graph import KnowledgeGraph, Node, Relationship
 from ragas.llms import BaseRagasLLM, llm_factory
 
 logger = logging.getLogger(__name__)
+
+
+def default_filter(node: Node) -> bool:
+    return True
 
 
 @dataclass
@@ -92,11 +95,9 @@ class Extractor(BaseGraphTransformation):
         Abstract method to extract a specific property from a node.
     """
 
-    @staticmethod
-    def default_filter(node: Node) -> bool:
-        return True
-
-    filter_nodes: t.Callable[[Node], bool] = default_filter
+    filter_nodes: t.Callable[[Node], bool] = field(
+        default_factory=lambda: default_filter
+    )
 
     async def transform(
         self, kg: KnowledgeGraph
@@ -186,29 +187,9 @@ class Extractor(BaseGraphTransformation):
 
 
 @dataclass
-class LLMBasedExtractor(Extractor):
+class LLMBasedExtractor(Extractor, PromptMixin):
     llm: BaseRagasLLM = field(default_factory=llm_factory)
     merge_if_possible: bool = True
-
-    def get_prompts(self) -> t.Dict[str, Prompt]:
-        prompts = {}
-        for name, value in inspect.getmembers(self):
-            if isinstance(value, Prompt):
-                prompts.update({name: value})
-        return prompts
-
-    def set_prompts(self, **prompts):
-        available_prompts = self.get_prompts()
-        for key, value in prompts.items():
-            if key not in available_prompts:
-                raise ValueError(
-                    f"Prompt with name '{key}' does not exist in the extractor. Use get_prompts() to see available prompts."
-                )
-            if not isinstance(value, Prompt):
-                raise ValueError(
-                    f"Prompt with name '{key}' must be an instance of 'Prompt'"
-                )
-            setattr(self, key, value)
 
 
 class Splitter(BaseGraphTransformation):
