@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -7,6 +8,7 @@ from enum import Enum
 
 from pydantic import BaseModel
 
+from ragas.experimental.prompt import PydanticPrompt as Prompt
 from ragas.experimental.testset.graph import KnowledgeGraph, Node
 from ragas.llms import BaseRagasLLM, llm_factory
 
@@ -54,3 +56,23 @@ class BaseSimulator(ABC, t.Generic[Scenario]):
     @abstractmethod
     async def generate_sample(self, scenario: Scenario) -> BaseEvalSample:
         pass
+
+    def get_prompts(self) -> t.Dict[str, Prompt]:
+        prompts = {}
+        for name, value in inspect.getmembers(self):
+            if isinstance(value, Prompt):
+                prompts.update({name: value})
+        return prompts
+
+    def set_prompts(self, **prompts):
+        available_prompts = self.get_prompts()
+        for key, value in prompts.items():
+            if key not in available_prompts:
+                raise ValueError(
+                    f"Prompt with name '{key}' does not exist in the simulator {self.name}. Use get_prompts() to see available prompts."
+                )
+            if not isinstance(value, Prompt):
+                raise ValueError(
+                    f"Prompt with name '{key}' must be an instance of 'Prompt'"
+                )
+            setattr(self, key, value)
