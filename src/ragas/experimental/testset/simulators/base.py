@@ -38,7 +38,12 @@ Scenario = t.TypeVar("Scenario", bound=BaseScenario)
 
 @dataclass
 class BaseSimulator(ABC, t.Generic[Scenario]):
+    name: str = ""
     llm: BaseRagasLLM = field(default_factory=llm_factory)
+
+    def __post_init__(self):
+        if not self.name:
+            self.name = self.__class__.__name__
 
     @abstractmethod
     async def generate_scenarios(

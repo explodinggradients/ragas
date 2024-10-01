@@ -38,6 +38,7 @@ class AbstractQuestionSimulator(QASimulator):
     )
 
     def __post_init__(self):
+        super().__post_init__()
         self.common_theme_prompt = CommonThemeFromSummaries()
 
     async def generate_scenarios(
