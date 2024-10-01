@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import typing as t
 from dataclasses import dataclass, field
 
 from ragas.experimental.prompt import StringIO
@@ -13,6 +16,9 @@ from .prompts import (
     extend_modify_input_prompt,
 )
 
+if t.TYPE_CHECKING:
+    from langchain_core.callbacks import Callbacks
+
 
 @dataclass
 class QASimulator(BaseSimulator[Scenario]):
@@ -22,13 +28,19 @@ class QASimulator(BaseSimulator[Scenario]):
     )
     generate_reference_prompt: PydanticPrompt = field(default_factory=GenerateReference)
 
-    async def critic_question(self, question: str) -> bool:
+    async def critic_question(
+        self, question: str, callbacks: t.Optional[Callbacks] = None
+    ) -> bool:
+        callbacks = callbacks or []
         critic = await self.critic_user_input_prompt.generate(
-            data=StringIO(text=question), llm=self.llm
+            data=StringIO(text=question), llm=self.llm, callbacks=callbacks
         )
         return critic.independence > 1 and critic.clear_intent > 1
 
-    async def modify_question(self, question: str, scenario: Scenario) -> str:
+    async def modify_question(
+        self, question: str, scenario: Scenario, callbacks: t.Optional[Callbacks] = None
+    ) -> str:
+        callbacks = callbacks or []
         prompt = extend_modify_input_prompt(
             question_modification_prompt=self.user_input_modification_prompt,
             style=scenario.style,
@@ -41,6 +53,7 @@ class QASimulator(BaseSimulator[Scenario]):
                 length=scenario.length,
             ),
             llm=self.llm,
+            callbacks=callbacks,
         )
         return modified_question.text
 
@@ -48,14 +61,17 @@ class QASimulator(BaseSimulator[Scenario]):
         self,
         question: str,
         scenario: Scenario,
+        callbacks: t.Optional[Callbacks] = None,
         reference_property_name: str = "page_content",
     ) -> str:
+        callbacks = callbacks or []
         reference = await self.generate_reference_prompt.generate(
             data=UserInputAndContext(
                 user_input=question,
                 context=self.make_source_text(scenario, reference_property_name),
             ),
             llm=self.llm,
+            callbacks=callbacks,
         )
         return reference.text
 

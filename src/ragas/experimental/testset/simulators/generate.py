@@ -4,6 +4,7 @@ import logging
 import typing as t
 from dataclasses import dataclass, field
 
+from ragas.callbacks import new_group
 from ragas.executor import Executor
 from ragas.experimental.testset.graph import KnowledgeGraph, Node, NodeType
 from ragas.experimental.testset.simulators import default_simulator_distribution
@@ -18,11 +19,15 @@ from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
 from ragas.run_config import RunConfig
 
 if t.TYPE_CHECKING:
+    from langchain_core.callbacks import Callbacks
     from langchain_core.documents import Document as LCDocument
     from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
     from ragas.experimental.testset.simulators import SimulatorDistributions
     from ragas.experimental.testset.simulators.base import BaseScenario
+
+
+RAGAS_TESTSET_GENERATION_GROUP_NAME = "ragas testset generation"
 
 
 @dataclass
@@ -128,6 +133,14 @@ class TestsetGenerator:
             patch_logger("ragas.experimental.testset.graph", logging.DEBUG)
             patch_logger("ragas.experimental.testset.transforms", logging.DEBUG)
 
+        splits, _ = calculate_split_values([prob for _, prob in simulators], test_size)
+        # new group for Generation of Scenarios
+        scenario_generation_rm, scenario_generation_grp = new_group(
+            name="Scenario Generation",
+            inputs={"splits": splits},
+            callbacks=testset_generation_grp,
+        )
+
         # generate scenarios
         exec = Executor(
             "Generating Scenarios",
@@ -144,6 +157,12 @@ class TestsetGenerator:
 
         scenario_sample_list: t.List[t.List[BaseScenario]] = exec.results()
 
+        # new group for Generation of Samples
+        sample_generation_rm, sample_generation_grp = new_group(
+            name="Sample Generation",
+            inputs={"scenario_sample_list": scenario_sample_list},
+            callbacks=testset_generation_grp,
+        )
         exec = Executor(
             "Generating Samples",
             raise_exceptions=raise_exceptions,
@@ -153,7 +172,7 @@ class TestsetGenerator:
         additional_testset_info: t.List[t.Dict] = []
         for i, (simulator, _) in enumerate(simulator_distributions):
             for sample in scenario_sample_list[i]:
-                exec.submit(simulator.generate_sample, sample)
+                exec.submit(simulator.generate_sample, sample, sample_generation_grp)
                 # fill out the additional info for the TestsetSample
                 additional_testset_info.append(
                     {
@@ -167,4 +186,6 @@ class TestsetGenerator:
         testsets = []
         for sample, additional_info in zip(eval_samples, additional_testset_info):
             testsets.append(TestsetSample(eval_sample=sample, **additional_info))
-        return Testset(samples=testsets)
+        testset = Testset(samples=testsets)
+        testset_generation_rm.on_chain_end({"testset": "testst"})
+        return testset
