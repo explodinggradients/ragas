@@ -3,9 +3,9 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel
 
-from ragas.experimental.prompt import PydanticPrompt, StringIO
-from ragas.experimental.testset.graph import Node
-from ragas.experimental.testset.transforms.base import LLMBasedExtractor
+from ragas.prompt import PydanticPrompt, StringIO
+from ragas.testset.graph import Node
+from ragas.testset.transforms.base import LLMBasedExtractor
 
 
 # define prompts

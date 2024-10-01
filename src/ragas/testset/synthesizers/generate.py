@@ -6,20 +6,20 @@ from dataclasses import dataclass, field
 
 from ragas.callbacks import new_group
 from ragas.executor import Executor
-from ragas.experimental.testset.graph import KnowledgeGraph, Node, NodeType
-from ragas.experimental.testset.synthesizers import default_query_distribution
-from ragas.experimental.testset.synthesizers.testset_schema import (
+from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
+from ragas.run_config import RunConfig
+from ragas.testset.synthesizers import default_query_distribution
+from ragas.testset.synthesizers.testset_schema import (
     Testset,
     TestsetSample,
 )
-from ragas.experimental.testset.synthesizers.utils import calculate_split_values
-from ragas.experimental.testset.transforms import (
+from ragas.testset.synthesizers.utils import calculate_split_values
+from ragas.testset.graph import KnowledgeGraph, Node, NodeType
+from ragas.testset.transforms import (
     Transforms,
     apply_transforms,
     default_transforms,
 )
-from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
-from ragas.run_config import RunConfig
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks

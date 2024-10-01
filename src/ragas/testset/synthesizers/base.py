@@ -8,9 +8,9 @@ from enum import Enum
 from pydantic import BaseModel
 
 from ragas.callbacks import new_group
-from ragas.experimental.prompt import PromptMixin
-from ragas.experimental.testset.graph import KnowledgeGraph, Node
+from ragas.prompt import PromptMixin
 from ragas.llms import BaseRagasLLM, llm_factory
+from ragas.testset.graph import KnowledgeGraph, Node
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
