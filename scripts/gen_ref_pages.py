@@ -10,11 +10,12 @@ logger = logging.getLogger(__name__)
 nav = mkdocs_gen_files.Nav()
 root = Path(__file__).parent.parent
 src = root / "src"
+src_ragas = root / "src" / "ragas"
 
 logger.info("Generating code reference pages for %s with root %s", src, root)
 for path in sorted(src.rglob("*.py")):
     module_path = path.relative_to(src).with_suffix("")
-    doc_path = path.relative_to(src).with_suffix(".md")
+    doc_path = path.relative_to(src_ragas).with_suffix(".md")
     full_doc_path = Path("references", doc_path)
 
     parts = tuple(module_path.parts)
