@@ -34,7 +34,7 @@ body {
   border: none !important;
 }
 .jupyter-wrapper .zeroclipboard-container .clipboard-copy-icon {
-  width: 2em !important;
+  width: 0.9rem !important;
 }
 .jupyter-wrapper .jp-InputArea-editor {
   border: none !important;
@@ -62,6 +62,8 @@ h1 {
 .jp-Notebook {
   display: flex !important;
   flex-direction: column !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 .md-header {
   background: black !important;
@@ -85,3 +87,38 @@ h1 {
 .md-sidebar {
   border-right: #dddddd6b 0.5px solid;
 }
+
+.jp-Cell {
+  padding: 0 !important;
+  max-height: fit-content !important;
+}
+
+
+.jp-MarkdownOutput h2 {
+  padding-top: 1rem !important;
+  border: none !important;
+  margin: 0 !important;
+}
+
+.jp-MarkdownOutput h1 {
+  padding: 0 0 1rem 0 !important;
+  border: none !important;
+  margin: 0 !important;
+}
+
+.jp-RenderedText pre{
+  padding: 0.5rem 0 0.5rem 0 !important;
+}
+
+.highlight-ipynb span {
+  font-size: 13.6px !important;
+  padding: 0 !important;
+}
+
+.highlight-ipynb {
+  padding: 9.5px 14px !important;
+  margin: 0;
+}
+
+
+
