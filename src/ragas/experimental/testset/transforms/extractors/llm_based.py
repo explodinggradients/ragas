@@ -199,9 +199,9 @@ class NERExtractor(LLMBasedExtractor):
     property_name: str = "entities"
     prompt: NERPrompt = NERPrompt()
 
-    async def extract(self, node: Node) -> t.Tuple[str, t.Any]:
+    async def extract(self, node: Node) -> t.Tuple[str, t.Dict[str, t.List[str]]]:
         node_text = node.get_property("page_content")
         if node_text is None:
-            return self.property_name, None
+            return self.property_name, {}
         result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
         return self.property_name, result.entities.model_dump()
