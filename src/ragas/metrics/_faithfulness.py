@@ -353,7 +353,7 @@ class FaithfulnesswithHHEM(Faithfulness):
         """
         create pairs of (question, answer) from the row
         """
-        premise = "\n".join(row["contexts"])
+        premise = "\n".join(row["retrieved_contexts"])
         pairs = [(premise, statement) for statement in statements]
         return pairs
 
