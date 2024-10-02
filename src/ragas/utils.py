@@ -11,7 +11,6 @@ from datasets import Dataset
 
 if t.TYPE_CHECKING:
     from ragas.metrics.base import Metric
-    from ragas.testset.evolutions import Evolution
 
 DEBUG_ENV_VAR = "RAGAS_DEBUG"
 
@@ -77,7 +76,7 @@ def is_nan(x):
         return False
 
 
-def get_feature_language(feature: t.Union[Metric, Evolution]) -> t.Optional[str]:
+def get_feature_language(feature: Metric) -> t.Optional[str]:
     from ragas.llms.prompt import Prompt
 
     languags = [

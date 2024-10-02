@@ -5,7 +5,7 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
@@ -120,9 +120,7 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     question_generation: Prompt = field(default_factory=lambda: QUESTION_GEN)
     strictness: int = 3
 
-    def calculate_similarity(
-        self: t.Self, question: str, generated_questions: list[str]
-    ):
+    def calculate_similarity(self, question: str, generated_questions: list[str]):
         assert self.embeddings is not None
         question_vec = np.asarray(self.embeddings.embed_query(question)).reshape(1, -1)
         gen_question_vec = np.asarray(

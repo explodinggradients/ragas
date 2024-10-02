@@ -27,12 +27,10 @@ if t.TYPE_CHECKING:
     from ragas.embeddings import BaseRagasEmbeddings
     from ragas.llms import BaseRagasLLM
 
-import inspect
-
 from pysbd import Segmenter
 from pysbd.languages import LANGUAGE_CODES
 
-from ragas.experimental.prompt import PydanticPrompt as Prompt
+from ragas.prompt import PromptMixin
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +149,7 @@ class Metric(ABC):
 
 
 @dataclass
-class MetricWithLLM(Metric):
+class MetricWithLLM(Metric, PromptMixin):
     llm: t.Optional[BaseRagasLLM] = None
 
     def init(self, run_config: RunConfig):
@@ -165,26 +163,6 @@ class MetricWithLLM(Metric):
                 f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please initantiate a the metric with an LLM to run."  # noqa
             )
         self.llm.set_run_config(run_config)
-
-    def get_prompts(self) -> t.Dict[str, Prompt]:
-        prompts = {}
-        for name, value in inspect.getmembers(self):
-            if isinstance(value, Prompt):
-                prompts.update({name: value})
-        return prompts
-
-    def set_prompts(self, **prompts):
-        available_prompts = self.get_prompts()
-        for key, value in prompts.items():
-            if key not in available_prompts:
-                raise ValueError(
-                    f"Prompt with name '{key}' does not exist in the metric {self.name}. Use get_prompts() to see available prompts."
-                )
-            if not isinstance(value, Prompt):
-                raise ValueError(
-                    f"Prompt with name '{key}' must be an instance of 'Prompt'"
-                )
-            setattr(self, key, value)
 
 
 @dataclass

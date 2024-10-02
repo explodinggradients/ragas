@@ -8,13 +8,13 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel, Field
 
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
-from ragas.experimental.prompt import PydanticPrompt
 from ragas.metrics.base import (
     MetricType,
     MetricWithLLM,
     MultiTurnMetric,
     SingleTurnMetric,
 )
+from ragas.prompt import PydanticPrompt
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks.base import Callbacks
