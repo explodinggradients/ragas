@@ -1,3 +1,3 @@
 # Testset Generation
 
-::: ragas.experimental.testset.TestsetGenerator
+::: ragas.testset.TestsetGenerator

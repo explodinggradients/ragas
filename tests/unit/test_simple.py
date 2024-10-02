@@ -5,7 +5,7 @@ import typing as t
 
 def test_import():
     import ragas
-    from ragas.testset.generator import TestsetGenerator
+    from ragas.testset import TestsetGenerator
 
     assert TestsetGenerator is not None
     assert ragas is not None

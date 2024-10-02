@@ -8,7 +8,6 @@ from dataclasses import dataclass, field
 import numpy as np
 from tqdm.auto import tqdm
 
-from ragas.exceptions import MaxRetriesExceeded
 from ragas.run_config import RunConfig
 
 logger = logging.getLogger(__name__)
@@ -53,9 +52,6 @@ class Executor:
             result = np.nan
             try:
                 result = await callable(*args, **kwargs)
-            except MaxRetriesExceeded as e:
-                # this only for testset generation v2
-                logger.warning(f"max retries exceeded for {e.evolution}")
             except Exception as e:
                 if self.raise_exceptions:
                     raise e
