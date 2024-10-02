@@ -35,8 +35,8 @@ def test_base_event():
     from ragas._analytics import BaseEvent
 
     be = BaseEvent(event_type="evaluation")
-    assert isinstance(dict(be).get("event_type"), str)
-    assert isinstance(dict(be).get("user_id"), str)
+    assert isinstance(be.model_dump().get("event_type"), str)
+    assert isinstance(be.model_dump().get("user_id"), str)
 
 
 def test_evaluation_event():
@@ -51,7 +51,7 @@ def test_evaluation_event():
         in_ci=True,
     )
 
-    payload = dict(evaluation_event)
+    payload = evaluation_event.model_dump()
     assert isinstance(payload.get("user_id"), str)
     assert isinstance(payload.get("evaluation_mode"), str)
     assert isinstance(payload.get("metrics"), list)
@@ -133,13 +133,17 @@ def test_testset_generation_tracking(monkeypatch):
         language="english",
     )
 
-    assert dict(testset_event_payload)["evolution_names"] == [
+    assert testset_event_payload.model_dump()["evolution_names"] == [
         "abstractquerysynthesizer",
         "comparativeabstractquerysynthesizer",
         "specificquerysynthesizer",
     ]
 
-    assert dict(testset_event_payload)["evolution_percentages"] == [0.25, 0.25, 0.5]
+    assert testset_event_payload.model_dump()["evolution_percentages"] == [
+        0.25,
+        0.25,
+        0.5,
+    ]
 
     # just in the case you actually want to check if tracking is working in the
     # dashboard
