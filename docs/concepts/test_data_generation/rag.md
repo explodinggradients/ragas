@@ -4,6 +4,12 @@ In RAG application, when a user interacts through your application to a set of d
 
 ## Two fundamental query types in RAG
 
+```mermaid
+graph TD
+    A[Queries] -->  B[Specific Queries]
+    A -->  C[Abstract Queries]
+```
+
 In any RAG application, when an end user interacts with the system, the queries can be broadly classified into two types:
 
 - Specific Queries
@@ -217,5 +223,40 @@ Each `Scenario` in Test set Generation is a combination of following parameters.
 </figure>
 
 
-Once the scenarios are created using `generate_scenarios` method, the query, and reference answer can be generated in `generate_sample` method using the LLM. 
+### Query Synthesizer
 
+The `QuerySynthesizer` is responsible for generating different scenarios for a single query type. The `generate_scenarios` method is used to generate the scenarios for a single query type. The `generate_sample` method is used to generate the query and reference answer for a single scenario. Let's understand this with an example. 
+
+#### Example
+
+In the previous example, we have created a knowledge graph that contains two nodes that are related to each other based on the entity similarity. Now imagine that you have 20 such pairs of nodes in your KG that are related to each other based on the entity similarity. 
+
+Imagine your goal is to create 50 different queries where each query is about some abstract question comparing two entities. We first have to query the KG to get the pairs of nodes that are related to each other based on the entity similarity. Then we have to generate the scenarios for each pair of nodes untill we get 50 different scenarios. This logic is implemented in `generate_scenarios` method.
+
+
+```python
+from dataclasses import dataclass
+from ragas.experimental.testset.synthesizers.base_query import QuerySynthesizer
+
+@dataclass
+class EntityQuerySynthesizer(QuerySynthesizer):
+
+    async def _generate_scenarios( self, n, knowledge_graph, callbacks):
+        """
+        logic to query nodes with entity
+        logic describing how to combine nodes,styles,length,persona to form n scenarios
+        """
+
+        return scenarios
+
+    async def _generate_sample(
+        self, scenario, callbacks
+    ):
+
+        """
+        logic on how to use tranform each scenario to EvalSample (Query,Context,Reference)
+        you may create singleturn or multiturn sample
+        """
+
+        return SingleTurnSample(user_input=query, reference_contexs=contexts, reference=reference)
+```
