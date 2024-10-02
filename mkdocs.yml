@@ -109,7 +109,6 @@ markdown_extensions:
   - admonition
   - pymdownx.inlinehilite
   - pymdownx.snippets
-  - pymdownx.superfences
   - pymdownx.details
   - pymdownx.tabbed:
       alternate_style: true
@@ -120,6 +119,11 @@ markdown_extensions:
   - md_in_html
   - pymdownx.arithmatex:
       generic: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
 
 # Extra CSS
 extra_css:
