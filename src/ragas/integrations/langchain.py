@@ -48,9 +48,9 @@ class EvaluatorChain(Chain, RunEvaluator):
             t.cast(MetricWithLLM, self.metric).llm = LangchainLLMWrapper(llm)
         if isinstance(self.metric, MetricWithEmbeddings):
             embeddings = get_or_init(kwargs, "embeddings", OpenAIEmbeddings)
-            t.cast(MetricWithEmbeddings, self.metric).embeddings = (
-                LangchainEmbeddingsWrapper(embeddings)
-            )
+            t.cast(
+                MetricWithEmbeddings, self.metric
+            ).embeddings = LangchainEmbeddingsWrapper(embeddings)
         self.metric.init(run_config)
 
         assert isinstance(
@@ -132,7 +132,7 @@ class EvaluatorChain(Chain, RunEvaluator):
         # validate each example
         required_columns = self.metric.required_columns.get("SINGLE_TURN", [])
         for col in required_columns:
-            if col not in input.features():
+            if col not in input.get_features():
                 raise ValueError(
                     f'"{col}" is required in each example'
                     f"for the metric[{self.metric.name}] you have chosen."
