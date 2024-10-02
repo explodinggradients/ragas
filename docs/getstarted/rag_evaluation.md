@@ -6,6 +6,11 @@ In this tutorial, we will take a sample [test dataset](https://huggingface.co/da
 
 The dataset used here is from [Amnesty QA RAG](https://huggingface.co/datasets/explodinggradients/amnesty_qa) that contains the necessary data points we need for this tutorial. Here I am loading it from huggingface hub, but you may use file from any source. 
 
+```python
+from datasets import load_dataset
+dataset = load_dataset("explodinggradients/amnesty_qa","english_v3")
+```
+
 Converting data to ragas [evaluation dataset]()
 
 ```python

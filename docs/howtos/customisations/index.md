@@ -5,6 +5,7 @@ How to customize various aspects of Ragas to suit your needs.
 ## General 
 
 - [Customize models](customise_models.md)
+- [Managing timeouts, retries and others](run_config.ipynb)
 
 ## Metrics
 - [Modify prompts in metrics](metrics/modifying-prompts-metrics.ipynb)
