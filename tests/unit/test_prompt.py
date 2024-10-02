@@ -29,6 +29,7 @@ async def test_string_prompt():
     echo_llm = EchoLLM(run_config=RunConfig())
     prompt = StringPrompt()
     assert await prompt.generate(data="hello", llm=echo_llm) == "hello"
+    assert prompt.name == "stringprompt"
 
 
 expected_generate_output_signature = """\
@@ -95,3 +96,15 @@ def test_pydantic_prompt_examples():
 
     _ = Prompt()
     # assert p.generate_examples() == "hello -> hello\nworld -> world"
+
+
+def test_prompt_hash():
+    from ragas.prompt import StringPrompt
+
+    class Prompt(StringPrompt):
+        instruction = "You are a helpful assistant."
+
+    p = Prompt()
+    assert hash(p) == hash(p)
+    p.instruction = "You are a helpful assistant. And some more"
+    # assert hash(p) != hash(p)

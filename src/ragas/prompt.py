@@ -16,6 +16,10 @@ if t.TYPE_CHECKING:
 
 
 class BasePrompt(ABC):
+    def __init__(self, name: t.Optional[str] = None):
+        if name is None:
+            self.name = self.__class__.__name__.lower()
+
     @abstractmethod
     async def generate(
         self,
