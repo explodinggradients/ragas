@@ -120,7 +120,7 @@ class RubricsScoreWithoutReference(MetricWithLLM, SingleTurnMetric, MultiTurnMet
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
-        return await self._ascore(sample.dict(), callbacks)
+        return await self._ascore(sample.to_dict(), callbacks)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM is not set"
@@ -254,7 +254,7 @@ class RubricsScoreWithReference(MetricWithLLM, SingleTurnMetric, MultiTurnMetric
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
-        return await self._ascore(sample.dict(), callbacks)
+        return await self._ascore(sample.to_dict(), callbacks)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM is not set"

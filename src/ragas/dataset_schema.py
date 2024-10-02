@@ -13,16 +13,24 @@ if t.TYPE_CHECKING:
 
 
 class BaseEvalSample(BaseModel):
-    def dict(self, **kwargs):
-        row = super().dict(**kwargs)
-        row = {k: v for k, v in row.items() if v is not None}
-        return row
+    def to_dict(self) -> t.Dict:
+        """
+        Get the dictionary representation of the sample without attributes that are None.
+        """
+        return self.model_dump(exclude_none=True)
 
-    def features(self):
-        return set(self.dict().keys())
+    def get_features(self) -> t.List[str]:
+        """
+        Get the features of the sample that are not None.
+        """
+        return list(self.to_dict().keys())
 
 
 class SingleTurnSample(BaseEvalSample):
+    """
+    Represents evaluation samples for single-turn interactions.
+    """
+
     user_input: t.Optional[str] = None
     retrieved_contexts: t.Optional[t.List[str]] = None
     reference_contexts: t.Optional[t.List[str]] = None
@@ -68,7 +76,7 @@ class MultiTurnSample(BaseEvalSample):
         return messages
 
     def to_messages(self):
-        return [m.dict() for m in self.user_input]
+        return [m.model_dump() for m in self.user_input]
 
     def pretty_repr(self):
         lines = []
@@ -98,7 +106,7 @@ class EvaluationDataset(BaseModel):
         return type(self.samples[0])
 
     def _to_list(self) -> t.List[t.Dict]:
-        rows = [sample.dict() for sample in self.samples]
+        rows = [sample.model_dump() for sample in self.samples]
 
         if self.get_sample_type() == MultiTurnSample:
             for sample in rows:
@@ -130,7 +138,7 @@ class EvaluationDataset(BaseModel):
         return pd.DataFrame(data)
 
     def features(self):
-        return self.samples[0].features()
+        return self.samples[0].get_features()
 
     @classmethod
     def from_list(cls, mapping: t.List[t.Dict]):

@@ -226,7 +226,7 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
-        row = sample.dict()
+        row = sample.to_dict()
         return await self._ascore(row, callbacks)
 
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
