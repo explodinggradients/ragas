@@ -77,6 +77,7 @@ theme:
   favicon: _static/favicon.ico
   palette:
     scheme: slate
+    primary: custom
     accent: white
   features:
     - content.tabs.link
@@ -102,7 +103,6 @@ markdown_extensions:
       pygments_lang_class: true
   - admonition
   - pymdownx.inlinehilite
-  - pymdownx.snippets
   - pymdownx.details
   - pymdownx.tabbed:
       alternate_style: true
@@ -118,6 +118,8 @@ markdown_extensions:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.snippets:
+      base_path: ['./docs/extra/components/']
 
 # Extra CSS
 extra_css:
