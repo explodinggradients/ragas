@@ -116,9 +116,9 @@ class NamedEntities(BaseModel):
 
 
 class NEROutput(BaseModel):
-    entities: NamedEntities    
-    
-    
+    entities: NamedEntities
+
+
 class NERPrompt(PydanticPrompt[StringIO, NEROutput]):
     instruction: str = "Extract named entities from the given text."
     input_model: t.Type[StringIO] = StringIO
@@ -138,7 +138,7 @@ class NERPrompt(PydanticPrompt[StringIO, NEROutput]):
             ),
         )
     ]
-    
+
 
 @dataclass
 class SummaryExtractor(LLMBasedExtractor):
@@ -193,15 +193,15 @@ class HeadlinesExtractor(LLMBasedExtractor):
             return self.property_name, None
         return self.property_name, result.headlines
 
+
 @dataclass
 class NERExtractor(LLMBasedExtractor):
     property_name: str = "entities"
     prompt: NERPrompt = NERPrompt()
-    
+
     async def extract(self, node: Node) -> t.Tuple[str, t.Any]:
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, None
         result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
         return self.property_name, result.entities.model_dump()
-    
