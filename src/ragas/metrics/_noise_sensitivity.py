@@ -137,13 +137,12 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
                 "verdict",
             )
 
-            faithfulness_list = StatementFaithfulnessAnswers.parse_obj(
+            faithfulness_list = StatementFaithfulnessAnswers.model_validate(
                 faithfulness_list
             )
 
             verdict_list = [
-                1 if statement.verdict else 0
-                for statement in faithfulness_list.__root__
+                1 if statement.verdict else 0 for statement in faithfulness_list.dicts()
             ]
             return np.array(verdict_list)
         else:

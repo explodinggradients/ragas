@@ -31,13 +31,13 @@ class GenerateAnswersResponse(BaseModel):
 
 
 _output_instructions_question_generation = get_json_format_instructions(
-    pydantic_object=GenerateQuestionsResponse
+    pydantic_object=GenerateQuestionsResponse  # type: ignore
 )
 _output_instructions_answer_generation = get_json_format_instructions(
-    pydantic_object=GenerateAnswersResponse
+    pydantic_object=GenerateAnswersResponse  # type: ignore
 )
 _output_instructions_keyphrase_extraction = get_json_format_instructions(
-    pydantic_object=ExtractKeyphrasesResponse
+    pydantic_object=ExtractKeyphrasesResponse  # type: ignore
 )
 _output_parser_question_generation = RagasoutputParser(
     pydantic_object=GenerateQuestionsResponse

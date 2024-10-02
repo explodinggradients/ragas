@@ -6,7 +6,7 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field, RootModel
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
@@ -39,11 +39,8 @@ class Statements(BaseModel):
     simpler_statements: t.List[str] = Field(..., description="the simpler statements")
 
 
-class StatementsAnswers(BaseModel):
-    __root__: t.List[Statements]
-
-    def dicts(self) -> t.List[t.Dict]:
-        return self.dict()["__root__"]
+class StatementsAnswers(RootModel):
+    root: t.List[Statements]
 
 
 _statements_output_instructions = get_json_format_instructions(StatementsAnswers)
@@ -79,7 +76,7 @@ LONG_FORM_ANSWER_PROMPT = Prompt(
                         ],
                     },
                 ]
-            ).dicts(),
+            ).model_dump(),
         }
     ],
     input_keys=["question", "answer", "sentences"],
@@ -94,11 +91,11 @@ class StatementFaithfulnessAnswer(BaseModel):
     verdict: int = Field(..., description="the verdict(0/1) of the faithfulness.")
 
 
-class StatementFaithfulnessAnswers(BaseModel):
-    __root__: t.List[StatementFaithfulnessAnswer]
+class StatementFaithfulnessAnswers(RootModel):
+    root: t.List[StatementFaithfulnessAnswer]
 
-    def dicts(self) -> t.List[t.Dict]:
-        return self.dict()["__root__"]
+    def dicts(self):
+        return self.model_dump()
 
 
 _faithfulness_output_instructions = get_json_format_instructions(
@@ -144,12 +141,12 @@ NLI_STATEMENTS_MESSAGE = Prompt(
                         "verdict": 0,
                     },
                 ]
-            ).dicts(),
+            ).model_dump(),
         },
         {
             "context": """Photosynthesis is a process used by plants, algae, and certain bacteria to convert light energy into chemical energy.""",
             "statements": ["Albert Einstein was a genius."],
-            "answer": StatementFaithfulnessAnswers.parse_obj(
+            "answer": StatementFaithfulnessAnswers.model_validate(
                 [
                     {
                         "statement": "Albert Einstein was a genius.",
@@ -157,7 +154,7 @@ NLI_STATEMENTS_MESSAGE = Prompt(
                         "verdict": 0,
                     }
                 ]
-            ).dicts(),
+            ).model_dump(),
         },
     ],
     input_keys=["context", "statements"],
@@ -237,9 +234,9 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
     def _compute_score(self, answers: StatementFaithfulnessAnswers):
         # check the verdicts and compute the score
         faithful_statements = sum(
-            1 if answer.verdict else 0 for answer in answers.__root__
+            1 if answer.verdict else 0 for answer in answers.model_dump()
         )
-        num_statements = len(answers.__root__)
+        num_statements = len(answers.model_dump())
         if num_statements:
             score = faithful_statements / num_statements
         else:
@@ -272,7 +269,7 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
         if statements is None:
             return np.nan
 
-        statements = [item["simpler_statements"] for item in statements.dicts()]
+        statements = [item["simpler_statements"] for item in statements.model_dump()]
         statements = [item for sublist in statements for item in sublist]
 
         assert isinstance(statements, t.List), "statements must be a list"
@@ -295,7 +292,7 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
         ]
 
         faithfulness_list = [
-            faith.dicts() for faith in faithfulness_list if faith is not None
+            faith.model_dump() for faith in faithfulness_list if faith is not None
         ]
 
         if faithfulness_list:
@@ -385,7 +382,7 @@ class FaithfulnesswithHHEM(Faithfulness):
         if statements is None:
             return np.nan
 
-        statements = [item["simpler_statements"] for item in statements.dicts()]
+        statements = [item["simpler_statements"] for item in statements.model_dump()]
         statements = [item for sublist in statements for item in sublist]
 
         assert isinstance(statements, t.List), "statements must be a list"

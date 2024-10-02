@@ -24,7 +24,7 @@ class ContextEntitiesResponse(BaseModel):
 
 
 _output_instructions = get_json_format_instructions(
-    pydantic_object=ContextEntitiesResponse
+    pydantic_object=ContextEntitiesResponse  # type: ignore
 )
 _output_parser = RagasoutputParser(pydantic_object=ContextEntitiesResponse)
 
