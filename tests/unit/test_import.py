@@ -35,8 +35,13 @@ def test_import_in_debug_mode():
     """
     import os
 
-    os.environ["RAGAS_DEBUG"] = "True"
-
     from ragas.utils import get_debug_mode
 
+    get_debug_mode.cache_clear()
+
+    os.environ["RAGAS_DEBUG"] = "True"
+
     assert get_debug_mode() is True
+
+    del os.environ["RAGAS_DEBUG"]
+    get_debug_mode.cache_clear()
