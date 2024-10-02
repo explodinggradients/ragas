@@ -4,9 +4,6 @@ import inspect
 import typing as t
 from abc import ABC, abstractmethod
 
-import pydantic
-
-# Check Pydantic version
 from pydantic import BaseModel
 
 from ragas.llms.output_parser import RagasoutputParser
@@ -16,8 +13,6 @@ if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
     from ragas.llms.base import BaseRagasLLM
-
-PYDANTIC_V2 = pydantic.VERSION.startswith("2.")
 
 
 class BasePrompt(ABC):
@@ -32,43 +27,6 @@ class BasePrompt(ABC):
         callbacks: Callbacks = [],
     ) -> t.Any:
         pass
-
-
-def model_to_dict(
-    model: BaseModel,
-    by_alias: bool = False,
-    exclude_unset: bool = False,
-    exclude_defaults: bool = False,
-) -> t.Dict[str, t.Any]:
-    if PYDANTIC_V2:
-        return model.model_dump(  # type: ignore
-            by_alias=by_alias,
-            exclude_unset=exclude_unset,
-            exclude_defaults=exclude_defaults,
-        )
-    else:
-        return model.dict(
-            by_alias=by_alias,
-            exclude_unset=exclude_unset,
-            exclude_defaults=exclude_defaults,
-        )
-
-
-def to_json(model: t.Any, indent: int = 4) -> str:
-    if PYDANTIC_V2:
-        # Pydantic 2.x
-        return model.model_dump_json(indent=indent)
-    else:
-        # Pydantic 1.x
-        return model.json(indent=indent)
-
-
-def model_to_json_schema(model: t.Type[BaseModel]) -> str:
-    if PYDANTIC_V2:
-        # NOTE: this is not the same as model.schema_json()
-        return model.model_json_schema()  # type: ignore
-    else:
-        return model.schema_json()
 
 
 InputModel = t.TypeVar("InputModel", bound=BaseModel)
@@ -93,11 +51,10 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         return self.instruction
 
     def generate_output_signature(self, indent: int = 4) -> str:
-        schema = model_to_json_schema(self.output_model)
         return (
             f"Please return the output in a JSON format that complies with the "
             f"following schema as specified in JSON Schema and OpenAPI specification:\n"
-            f"{schema}"
+            f"{self.output_model.model_json_schema()}"
         )
 
     def generate_examples(self):
@@ -109,10 +66,10 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
                     self.instruction
                     + "\n"
                     + "input: "
-                    + to_json(input_data, indent=4)
+                    + input_data.model_dump_json(indent=4)
                     + "\n"
                     + "output: "
-                    + to_json(output_data, indent=4)
+                    + output_data.model_dump_json(indent=4)
                 )
 
             return (
@@ -133,7 +90,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             + self.generate_examples()
             + "\nNow perform the above instruction with the following input\n"
             + "input: "
-            + to_json(data, indent=4)
+            + data.model_dump_json(indent=4)
             + "\n"
             + "output: "
         )
