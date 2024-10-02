@@ -5,75 +5,69 @@ repo_url: https://github.com/explodinggradients/ragas
 watch:
   - src
 
-
 # Navigation
 nav:
   - "": index.md
-  - 🚀 Get Started: 
-    - getstarted/index.md
-    - Installation: getstarted/install.md
-    - Generate a Synthetic Testset: getstarted/testset_generation.md
-    - Evaluate Using Your Testset: getstarted/evaluation.md
-    - Monitor Your RAG in Production: getstarted/monitoring.md
-  - 📚 Core Concepts: 
-    - concepts/index.md
-    - Evaluation Driven Development: concepts/evaluation_driven.md
-    - Metrics: 
-      - concepts/metrics/index.md
-      - Faithfulness: concepts/metrics/faithfulness.md
-      - Answer Relevance: concepts/metrics/answer_relevance.md
-      - Context Recall: concepts/metrics/context_recall.md
-      - Context Precision: concepts/metrics/context_precision.md
-      - Context Utilization: concepts/metrics/context_utilization.md
-      - Context Entities Recall: concepts/metrics/context_entities_recall.md
-      - Noise Sensitivity: concepts/metrics/noise_sensitivity.md
-      - Summarization Score: concepts/metrics/summarization_score.md
-      - Answer Correctness: concepts/metrics/answer_correctness.md
-      - Answer Semantic Similarity: concepts/metrics/semantic_similarity.md
-    - Synthetic Test Data Generation: concepts/testset_generation.md
-    - Prompt Object: concepts/prompts.md
-    - Prompt Adaptation: concepts/prompt_adaptation.md
-    - Utilizing User Feedback: concepts/feedback.md
-  - 🛠️ How-to Guides: 
-    - howtos/index.md
-    - Customisations: 
-      - howtos/customisations/index.md
-      - howtos/customisations/bring-your-own-llm-or-embs.md
-      - howtos/customisations/ragas_custom_model.ipynb 
-      - howtos/customisations/run_config.ipynb
-      - howtos/customisations/azure-openai.ipynb
-      - howtos/customisations/aws-bedrock.ipynb
-      - howtos/customisations/gcp-vertexai.ipynb
-    - Applications: 
-      - howtos/applications/index.md
-      - howtos/applications/data_preparation.md
-      - Measure Cost and Usage: howtos/applications/cost.ipynb
-      - howtos/applications/compare_embeddings.md
-      - howtos/applications/compare_llms.md
-      - howtos/applications/custom_prompts.md
-      - howtos/applications/use_prompt_adaptation.md
-      - howtos/applications/tracing.md
-      - howtos/applications/add_to_ci.md
-    - Integrations: 
-      - howtos/integrations/index.md
-      - Llamaindex: howtos/integrations/llamaindex.ipynb
-      - Langchain: howtos/integrations/langchain.ipynb
-      - Langsmith: howtos/integrations/langsmith.ipynb
-      - howtos/integrations/arize.ipynb
-      - howtos/integrations/langfuse.ipynb
-      - howtos/integrations/athina.ipynb
-      - howtos/integrations/zeno.ipynb
-      - howtos/integrations/tonic-validate.ipynb
-      - howtos/integrations/haystack.ipynb
-      - howtos/integrations/openlayer.ipynb
-      - howtos/integrations/helicone.ipynb
-      - howtos/integrations/opik.ipynb
-  - 📖 References: 
-    - references/index.md
-    - references/evaluation.md
-    - references/metrics.md
-    - references/run_config.md
-    - references/testset_generation.md
+  - 🚀 Get Started:
+      - getstarted/index.md
+      - Installation: getstarted/install.md
+      - Generate a Synthetic Testset: getstarted/testset_generation.md
+      - Evaluate Using Your Testset: getstarted/evaluation.md
+      - Monitor Your RAG in Production: getstarted/monitoring.md
+  - 📚 Core Concepts:
+      - concepts/index.md
+      - Evaluation Driven Development: concepts/evaluation_driven.md
+      - Metrics:
+          - concepts/metrics/index.md
+          - Faithfulness: concepts/metrics/faithfulness.md
+          - Answer Relevance: concepts/metrics/answer_relevance.md
+          - Context Recall: concepts/metrics/context_recall.md
+          - Context Precision: concepts/metrics/context_precision.md
+          - Context Utilization: concepts/metrics/context_utilization.md
+          - Context Entities Recall: concepts/metrics/context_entities_recall.md
+          - Noise Sensitivity: concepts/metrics/noise_sensitivity.md
+          - Summarization Score: concepts/metrics/summarization_score.md
+          - Answer Correctness: concepts/metrics/answer_correctness.md
+          - Answer Semantic Similarity: concepts/metrics/semantic_similarity.md
+      - Synthetic Test Data Generation: concepts/testset_generation.md
+      - Prompt Object: concepts/prompts.md
+      - Prompt Adaptation: concepts/prompt_adaptation.md
+      - Utilizing User Feedback: concepts/feedback.md
+  - 🛠️ How-to Guides:
+      - howtos/index.md
+      - Customisations:
+          - howtos/customisations/index.md
+          - howtos/customisations/bring-your-own-llm-or-embs.md
+          - howtos/customisations/ragas_custom_model.ipynb
+          - howtos/customisations/run_config.ipynb
+          - howtos/customisations/azure-openai.ipynb
+          - howtos/customisations/aws-bedrock.ipynb
+          - howtos/customisations/gcp-vertexai.ipynb
+      - Applications:
+          - howtos/applications/index.md
+          - howtos/applications/data_preparation.md
+          - Measure Cost and Usage: howtos/applications/cost.ipynb
+          - howtos/applications/compare_embeddings.md
+          - howtos/applications/compare_llms.md
+          - howtos/applications/custom_prompts.md
+          - howtos/applications/use_prompt_adaptation.md
+          - howtos/applications/tracing.md
+          - howtos/applications/add_to_ci.md
+      - Integrations:
+          - howtos/integrations/index.md
+          - Llamaindex: howtos/integrations/llamaindex.ipynb
+          - Langchain: howtos/integrations/langchain.ipynb
+          - Langsmith: howtos/integrations/langsmith.ipynb
+          - howtos/integrations/arize.ipynb
+          - howtos/integrations/langfuse.ipynb
+          - howtos/integrations/athina.ipynb
+          - howtos/integrations/zeno.ipynb
+          - howtos/integrations/tonic-validate.ipynb
+          - howtos/integrations/haystack.ipynb
+          - howtos/integrations/openlayer.ipynb
+          - howtos/integrations/helicone.ipynb
+          - howtos/integrations/opik.ipynb
+  - 📖 References: references/
   - ❤️ Community: community/index.md
 
 # Material-Docs Theme
@@ -162,6 +156,9 @@ plugins:
         jupyter_images: true
         jupyter_table_beautifier: true
   - glightbox
+  - literate-nav:
+      nav_file: SUMMARY.md
+  - section-index
 
 extra_javascript:
   - _static/js/mathjax.js
