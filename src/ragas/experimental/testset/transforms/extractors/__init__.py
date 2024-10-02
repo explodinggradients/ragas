@@ -4,6 +4,7 @@ from .llm_based import (
     KeyphrasesExtractor,
     SummaryExtractor,
     TitleExtractor,
+    NERExtractor
 )
 from .regex_based import emails_extractor, links_extractor, markdown_headings_extractor
 
@@ -16,4 +17,5 @@ __all__ = [
     "TitleExtractor",
     "HeadlinesExtractor",
     "EmbeddingExtractor",
+    "NERExtractor",
 ]

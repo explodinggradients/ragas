@@ -108,6 +108,38 @@ The sparsely-gated mixture-of-experts layer is a feedforward neural network laye
     ]
 
 
+class NamedEntities(BaseModel):
+    ORG: t.List[str]
+    LOC: t.List[str]
+    PER: t.List[str]
+    MISC: t.List[str]
+
+
+class NEROutput(BaseModel):
+    entities: NamedEntities    
+    
+    
+class NERPrompt(PydanticPrompt[StringIO, NEROutput]):
+    instruction: str = "Extract named entities from the given text."
+    input_model: t.Type[StringIO] = StringIO
+    output_model: t.Type[NEROutput] = NEROutput
+    examples: t.List[t.Tuple[StringIO, NEROutput]] = [
+        (
+            StringIO(
+                text="Artificial intelligence\n\nArtificial intelligence is transforming various industries by automating tasks that previously required human intelligence. From healthcare to finance, AI is being used to analyze vast amounts of data quickly and accurately. This technology is also driving innovations in areas like self-driving cars and personalized recommendations."
+            ),
+            NEROutput(
+                entities=NamedEntities(
+                    ORG=["Artificial intelligence"],
+                    LOC=["healthcare", "finance"],
+                    PER=[],
+                    MISC=["self-driving cars", "personalized recommendations"],
+                )
+            ),
+        )
+    ]
+    
+
 @dataclass
 class SummaryExtractor(LLMBasedExtractor):
     property_name: str = "summary"
@@ -160,3 +192,16 @@ class HeadlinesExtractor(LLMBasedExtractor):
         if result is None:
             return self.property_name, None
         return self.property_name, result.headlines
+
+@dataclass
+class NERExtractor(LLMBasedExtractor):
+    property_name: str = "entities"
+    prompt: NERPrompt = NERPrompt()
+    
+    async def extract(self, node: Node) -> t.Tuple[str, t.Any]:
+        node_text = node.get_property("page_content")
+        if node_text is None:
+            return self.property_name, None
+        result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
+        return self.property_name, result.entities.model_dump()
+    
