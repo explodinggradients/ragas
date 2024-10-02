@@ -30,7 +30,7 @@ if t.TYPE_CHECKING:
 from pysbd import Segmenter
 from pysbd.languages import LANGUAGE_CODES
 
-from ragas.experimental.prompt import PromptMixin
+from ragas.prompt import PromptMixin
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +58,7 @@ class Metric(ABC):
 
     @property
     @abstractmethod
-    def name(self) -> str:
-        ...
+    def name(self) -> str: ...
 
     @property
     def required_columns(self) -> t.Dict[str, t.Set[str]]:
@@ -146,8 +145,7 @@ class Metric(ABC):
         return score
 
     @abstractmethod
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        ...
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float: ...
 
 
 @dataclass
@@ -234,8 +232,7 @@ class SingleTurnMetric(Metric):
         self,
         sample: SingleTurnSample,
         callbacks: Callbacks,
-    ) -> float:
-        ...
+    ) -> float: ...
 
 
 class MultiTurnMetric(Metric):
@@ -287,8 +284,7 @@ class MultiTurnMetric(Metric):
         self,
         sample: MultiTurnSample,
         callbacks: Callbacks,
-    ) -> float:
-        ...
+    ) -> float: ...
 
 
 class Ensember:

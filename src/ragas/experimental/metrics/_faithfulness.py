@@ -7,13 +7,13 @@ from dataclasses import dataclass, field
 import numpy as np
 from pydantic import BaseModel, Field
 
-from ragas.experimental.prompt import PydanticPrompt
 from ragas.metrics.base import (
     MetricType,
     MetricWithLLM,
     SingleTurnMetric,
     get_segmenter,
 )
+from ragas.prompt import PydanticPrompt
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
