@@ -24,7 +24,7 @@ def test_single_type_evaluation_dataset():
     single_turn_sample = SingleTurnSample(user_input="What is X", response="Y")
     multi_turn_sample = MultiTurnSample(
         user_input=[{"content": "What is X"}],
-        response="Y",  # type: ignore
+        response="Y",  # type: ignore (this type error is what we want to test)
     )
 
     with pytest.raises(ValidationError) as exc_info:
@@ -42,5 +42,5 @@ def test_base_eval_sample():
         reference: t.Optional[str] = None
 
     fake_sample = FakeSample(user_input="What is X", response="Y")
-    assert fake_sample.dict() == {"user_input": "What is X", "response": "Y"}
-    assert fake_sample.features() == ["user_input", "response"]
+    assert fake_sample.to_dict() == {"user_input": "What is X", "response": "Y"}
+    assert fake_sample.get_features() == ["user_input", "response"]

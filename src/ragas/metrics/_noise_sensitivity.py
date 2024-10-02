@@ -162,14 +162,17 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
                 callbacks=callbacks,
             )
         else:
-            statements_gen = self.llm.generate(
+            statements_gen = await self.llm.generate(
                 p_value,
                 callbacks=callbacks,
             )
 
         # Await the aparse method
         statements = await _statements_output_parser.aparse(
-            statements_gen.generations[0][0].text, p_value, self.llm, self.max_retries  # type: ignore
+            statements_gen.generations[0][0].text,
+            p_value,
+            self.llm,
+            self.max_retries,  # type: ignore
         )
 
         if statements is None:
@@ -224,7 +227,7 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
-        row = sample.dict()
+        row = sample.to_dict()
         return await self._ascore(row, callbacks)
 
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:

@@ -13,14 +13,24 @@ if t.TYPE_CHECKING:
 
 
 class BaseEvalSample(BaseModel):
-    def dict(self, **kwargs) -> t.Dict:
+    def to_dict(self) -> t.Dict:
+        """
+        Get the dictionary representation of the sample without attributes that are None.
+        """
         return self.model_dump(exclude_none=True)
 
-    def features(self) -> t.List[str]:
-        return list(self.dict().keys())
+    def get_features(self) -> t.List[str]:
+        """
+        Get the features of the sample that are not None.
+        """
+        return list(self.to_dict().keys())
 
 
 class SingleTurnSample(BaseEvalSample):
+    """
+    Represents evaluation samples for single-turn interactions.
+    """
+
     user_input: t.Optional[str] = None
     retrieved_contexts: t.Optional[t.List[str]] = None
     reference_contexts: t.Optional[t.List[str]] = None
@@ -128,7 +138,7 @@ class EvaluationDataset(BaseModel):
         return pd.DataFrame(data)
 
     def features(self):
-        return self.samples[0].features()
+        return self.samples[0].get_features()
 
     @classmethod
     def from_list(cls, mapping: t.List[t.Dict]):

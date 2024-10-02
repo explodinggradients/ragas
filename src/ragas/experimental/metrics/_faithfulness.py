@@ -248,5 +248,5 @@ class FaithfulnessExperimental(MetricWithLLM, SingleTurnMetric):
     async def _single_turn_ascore(
         self: t.Self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
-        row = sample.dict()
+        row = sample.to_dict()
         return await self._ascore(row, callbacks)
