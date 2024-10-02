@@ -60,7 +60,7 @@ def validate_required_columns(ds: EvaluationDataset, metrics: list[Metric]):
         available_columns = ds.features()
         if not required_columns.issubset(available_columns):
             raise ValueError(
-                f"The metric [{m.name}] that that is used requires the following "
+                f"The metric [{m.name}] that is used requires the following "
                 f"additional columns {list(required_columns - available_columns)} "
                 f"to be present in the dataset."
             )
