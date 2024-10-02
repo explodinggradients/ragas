@@ -3,6 +3,24 @@ from __future__ import annotations
 import typing as t
 
 import pytest
+from langchain_core.outputs import Generation, LLMResult
+
+from ragas.llms.base import BaseRagasLLM
+from ragas.llms.prompt import PromptValue
+
+
+class EchoLLM(BaseRagasLLM):
+    def generate_text(  # type: ignore
+        self,
+        prompt: PromptValue,
+    ) -> LLMResult:
+        return LLMResult(generations=[[Generation(text=prompt.to_string())]])
+
+    async def agenerate_text(  # type: ignore
+        self,
+        prompt: PromptValue,
+    ) -> LLMResult:
+        return LLMResult(generations=[[Generation(text=prompt.to_string())]])
 
 
 def test_debug_tracking_flag():
@@ -103,25 +121,25 @@ def test_load_userid_from_json_file(tmp_path, monkeypatch):
 def test_testset_generation_tracking(monkeypatch):
     import ragas._analytics as analyticsmodule
     from ragas._analytics import TestsetGenerationEvent, track
-    from ragas.testset.evolutions import multi_context, reasoning, simple
+    from ragas.testset.synthesizers import default_query_distribution
 
-    distributions = {simple: 0.5, multi_context: 0.3, reasoning: 0.2}
+    distributions = default_query_distribution(llm=EchoLLM())
 
     testset_event_payload = TestsetGenerationEvent(
         event_type="testset_generation",
-        evolution_names=[e.__class__.__name__.lower() for e in distributions],
-        evolution_percentages=[distributions[e] for e in distributions],
+        evolution_names=[e.__class__.__name__.lower() for e, _ in distributions],
+        evolution_percentages=[p for _, p in distributions],
         num_rows=10,
         language="english",
     )
 
     assert dict(testset_event_payload)["evolution_names"] == [
-        "simpleevolution",
-        "multicontextevolution",
-        "reasoningevolution",
+        "abstractquerysynthesizer",
+        "comparativeabstractquerysynthesizer",
+        "specificquerysynthesizer",
     ]
 
-    assert dict(testset_event_payload)["evolution_percentages"] == [0.5, 0.3, 0.2]
+    assert dict(testset_event_payload)["evolution_percentages"] == [0.25, 0.25, 0.5]
 
     # just in the case you actually want to check if tracking is working in the
     # dashboard
