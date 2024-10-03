@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from ragas.callbacks import new_group
 from ragas.exceptions import RagasOutputParserException
 from ragas.llms.prompt import PromptValue
-from ragas.utils import camel_to_snake
+from ragas.utils import RAGAS_SUPPORTED_LANGUAGE_CODES, camel_to_snake
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -22,9 +22,15 @@ logger = logging.getLogger(__name__)
 
 
 class BasePrompt(ABC):
-    def __init__(self, name: t.Optional[str] = None):
+    def __init__(self, name: t.Optional[str] = None, language: str = "english"):
         if name is None:
             self.name = camel_to_snake(self.__class__.__name__)
+
+        if language not in RAGAS_SUPPORTED_LANGUAGE_CODES:
+            raise ValueError(
+                f"Language '{language}' not supported. Supported languages: {RAGAS_SUPPORTED_LANGUAGE_CODES.keys()}"
+            )
+        self.language = language
 
     @abstractmethod
     async def generate(
