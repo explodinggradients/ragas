@@ -97,6 +97,7 @@ class TestsetGenerationEvent(BaseEvent):
     num_rows: int
     language: str
     is_experiment: bool = False
+    version: str = "3"  # the version of testset generation pipeline
 
 
 @silent
