@@ -8,7 +8,7 @@ import numpy as np
 from pydantic import BaseModel, RootModel
 
 from ragas.dataset_schema import SingleTurnSample
-from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
+from ragas.llms.output_parser import RagasOutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt
 from ragas.metrics._string import NonLLMStringSimilarity
 from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric, ensembler
@@ -39,7 +39,7 @@ class ContextRecallClassificationAnswers(RootModel):
 _classification_output_instructions = get_json_format_instructions(
     ContextRecallClassificationAnswers
 )
-_output_parser = RagasoutputParser(pydantic_object=ContextRecallClassificationAnswers)
+_output_parser = RagasOutputParser(pydantic_object=ContextRecallClassificationAnswers)
 
 
 CONTEXT_RECALL_RA = Prompt(

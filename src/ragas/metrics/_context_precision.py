@@ -8,7 +8,7 @@ import numpy as np
 from langchain.pydantic_v1 import BaseModel, Field
 
 from ragas.dataset_schema import SingleTurnSample
-from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
+from ragas.llms.output_parser import RagasOutputParser, get_json_format_instructions
 from ragas.llms.prompt import Prompt, PromptValue
 from ragas.metrics._string import NonLLMStringSimilarity
 from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric, ensembler
@@ -35,7 +35,7 @@ class ContextPrecisionVerifications(BaseModel):
 _verification_output_instructions = get_json_format_instructions(
     ContextPrecisionVerification  # type: ignore
 )
-_output_parser = RagasoutputParser(pydantic_object=ContextPrecisionVerification)
+_output_parser = RagasOutputParser(pydantic_object=ContextPrecisionVerification)
 
 CONTEXT_PRECISION = Prompt(
     name="context_precision",
