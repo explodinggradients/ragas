@@ -55,34 +55,31 @@ nav:
                 - Summarization: concepts/metrics/available_metrics/summarization_score.md
       - Test Data Generation:
           - concepts/test_data_generation/index.md
+          - RAG:
+              - concepts/test_data_generation/rag.md
+              - KG Building: concepts/test_data_generation/rag/#knowledge-graph-creation
+              - Scenario Generation: concepts/test_data_generation/rag/#scenario-generation
+          - Agents or tool use:
+              - concepts/test_data_generation/agents.md
       - Feedback Intelligence:
           - concepts/feedback/index.md
   - 🛠️ How-to Guides:
       - howtos/index.md
-      # - Applications:
-      #     - howtos/applications/index.md
-      #     - howtos/applications/data_preparation.md
-      #     - Measure Cost and Usage: howtos/applications/cost.ipynb
-      #     - howtos/applications/compare_embeddings.md
-      #     - howtos/applications/compare_llms.md
-      #     - howtos/applications/custom_prompts.md
-      #     - howtos/applications/use_prompt_adaptation.md
-      #     - howtos/applications/tracing.md
-      #     - howtos/applications/add_to_ci.md
-      # - Integrations:
-      #     - howtos/integrations/index.md
-      #     - Llamaindex: howtos/integrations/llamaindex.ipynb
-      #     - Langchain: howtos/integrations/langchain.ipynb
-      #     - Langsmith: howtos/integrations/langsmith.ipynb
-      #     - howtos/integrations/arize.ipynb
-      #     - howtos/integrations/langfuse.ipynb
-      #     - howtos/integrations/athina.ipynb
-      #     - howtos/integrations/zeno.ipynb
-      #     - howtos/integrations/tonic-validate.ipynb
-      #     - howtos/integrations/haystack.ipynb
-      #     - howtos/integrations/openlayer.ipynb
-      #     - howtos/integrations/helicone.ipynb
-      #     - howtos/integrations/opik.ipynb
+      - Customizations:
+          - howtos/customizations/index.md
+          - General:
+            - Customise models: howtos/customizations/customize_models.md
+            - Run Config: howtos/customizations/run_config.ipynb
+          - Metrics:
+            - Modify Prompts: howtos/customizations/metrics/modifying-prompts-metrics.ipynb
+            - Add Custom Metrics: howtos/customizations/metrics/write_your_own_metric.ipynb
+          - Testset Generation:
+            - Add custom scenarios: howtos/customizations/testset_generation/add_custom_scenarios.md
+            - Seed Generation with Production Data: howtos/customizations/testset_generation/seed_generation_with_production_data.md
+      - Applications:
+          - howtos/applications/index.md
+      - Integrations:
+          - howtos/integrations/index.md
   - 📖 References: references/
   - ❤️ Community: community/index.md
 
