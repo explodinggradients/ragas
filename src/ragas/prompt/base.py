@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from abc import ABC, abstractmethod
 
@@ -7,6 +8,7 @@ from langchain_core.exceptions import OutputParserException
 from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel
 
+from ragas.callbacks import new_group
 from ragas.exceptions import RagasOutputParserException
 from ragas.llms.prompt import PromptValue
 
@@ -14,6 +16,8 @@ if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
     from ragas.llms.base import BaseRagasLLM
+
+logger = logging.getLogger(__name__)
 
 
 class BasePrompt(ABC):
@@ -123,25 +127,47 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         data: InputModel,
         temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
-        callbacks: Callbacks = [],
+        callbacks: t.Optional[Callbacks] = None,
     ) -> OutputModel:
-        processed_data = self.process_input(data)
-        prompt_value = PromptValue(prompt_str=self.to_string(processed_data))
-        resp = await llm.generate(
-            prompt_value,
+        """
+        Generate a single output using the provided language model and input data.
+
+        This method is a special case of `generate_multiple` where only one output is generated.
+
+        Parameters
+        ----------
+        llm : BaseRagasLLM
+            The language model to use for generation.
+        data : InputModel
+            The input data for generation.
+        temperature : float, optional
+            The temperature parameter for controlling randomness in generation.
+        stop : List[str], optional
+            A list of stop sequences to end generation.
+        callbacks : Callbacks, optional
+            Callback functions to be called during the generation process.
+
+        Returns
+        -------
+        OutputModel
+            The generated output.
+
+        Notes
+        -----
+        This method internally calls `generate_multiple` with `n=1` and returns the first (and only) result.
+        """
+        callbacks = callbacks or []
+
+        # this is just a special case of generate_multiple
+        output_single = await self.generate_multiple(
+            llm=llm,
+            data=data,
             n=1,
             temperature=temperature,
             stop=stop,
             callbacks=callbacks,
         )
-        output_string = resp.generations[0][0].text
-        parser = RagasOutputParser(pydantic_object=self.output_model)
-        answer = await parser.parse_output_string(
-            output_string, prompt_value, llm, max_retries=3
-        )
-
-        # TODO: make sure RagasOutputPraser returns the same type as OutputModel
-        return self.process_output(answer, data)  # type: ignore
+        return output_single[0]
 
     async def generate_multiple(
         self,
@@ -150,27 +176,72 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         n: int = 1,
         temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
-        callbacks: Callbacks = [],
+        callbacks: t.Optional[Callbacks] = None,
     ) -> t.List[OutputModel]:
+        """
+        Generate multiple outputs using the provided language model and input data.
+
+        Parameters
+        ----------
+        llm : BaseRagasLLM
+            The language model to use for generation.
+        data : InputModel
+            The input data for generation.
+        n : int, optional
+            The number of outputs to generate. Default is 1.
+        temperature : float, optional
+            The temperature parameter for controlling randomness in generation.
+        stop : List[str], optional
+            A list of stop sequences to end generation.
+        callbacks : Callbacks, optional
+            Callback functions to be called during the generation process.
+
+        Returns
+        -------
+        List[OutputModel]
+            A list of generated outputs.
+
+        Raises
+        ------
+        RagasOutputParserException
+            If there's an error parsing the output.
+        """
+        callbacks = callbacks or []
         processed_data = self.process_input(data)
+        prompt_rm, prompt_cb = new_group(
+            name=self.name,
+            inputs={"data": processed_data},
+            callbacks=callbacks,
+        )
         prompt_value = PromptValue(prompt_str=self.to_string(processed_data))
         resp = await llm.generate(
             prompt_value,
             n=n,
             temperature=temperature,
             stop=stop,
-            callbacks=callbacks,
+            callbacks=prompt_cb,
         )
 
         output_models = []
         parser = RagasOutputParser(pydantic_object=self.output_model)
         for i in range(n):
             output_string = resp.generations[0][i].text
-            answer = await parser.parse_output_string(
-                output_string, prompt_value, llm, max_retries=3
-            )
-            output_models.append(self.process_output(answer, data))  # type: ignore
+            try:
+                answer = await parser.parse_output_string(
+                    output_string=output_string,
+                    prompt_value=prompt_value,
+                    llm=llm,
+                    callbacks=prompt_cb,
+                    max_retries=3,
+                )
+                processed_output = self.process_output(answer, data)  # type: ignore
+                output_models.append(processed_output)
+            except RagasOutputParserException as e:
+                prompt_rm.on_chain_error(error=e)
+                logger.error("Prompt %s failed to parse output: %s", self.name, e)
+                raise e
 
+        prompt_rm.on_chain_end({"output": output_models})
         return output_models
 
     def process_input(self, input: InputModel) -> InputModel:
@@ -273,21 +344,33 @@ class RagasOutputParser(PydanticOutputParser[OutputModel]):
         output_string: str,
         prompt_value: PromptValue,
         llm: BaseRagasLLM,
+        callbacks: Callbacks,
         max_retries: int = 1,
     ):
+        callbacks = callbacks or []
         try:
             result = super().parse(output_string)
         except OutputParserException:
             if max_retries != 0:
-                result = await fix_output_format_prompt.generate(
+                retry_rm, retry_cb = new_group(
+                    name="fix_output_format",
+                    inputs={"output_string": output_string},
+                    callbacks=callbacks,
+                )
+                fixed_output_string = await fix_output_format_prompt.generate(
                     llm=llm,
                     data=OutputStringAndPrompt(
                         output_string=output_string,
                         prompt_value=prompt_value.to_string(),
                     ),
                 )
+                retry_rm.on_chain_end({"fixed_output_string": fixed_output_string})
                 return await self.parse_output_string(
-                    result.text, prompt_value, llm, max_retries - 1
+                    output_string=fixed_output_string.text,
+                    prompt_value=prompt_value,
+                    llm=llm,
+                    max_retries=max_retries - 1,
+                    callbacks=callbacks,
                 )
             else:
                 raise RagasOutputParserException(num_retries=max_retries)
