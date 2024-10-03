@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from ragas.callbacks import new_group
 from ragas.exceptions import RagasOutputParserException
 from ragas.llms.prompt import PromptValue
+from ragas.utils import camel_to_snake
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 class BasePrompt(ABC):
     def __init__(self, name: t.Optional[str] = None):
         if name is None:
-            self.name = self.__class__.__name__.lower()
+            self.name = camel_to_snake(self.__class__.__name__)
 
     @abstractmethod
     async def generate(

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import typing as t
 import warnings
 from functools import lru_cache
@@ -207,3 +208,12 @@ def convert_v1_to_v2_dataset(dataset: Dataset) -> Dataset:
 def convert_v2_to_v1_dataset(dataset: Dataset) -> Dataset:
     columns_map = {k: v for k, v in REQUIRED_COLS_v1.items() if k in dataset.features}
     return dataset.rename_columns(columns_map)
+
+
+def camel_to_snake(name):
+    """
+    Convert a camelCase string to snake_case.
+    eg: HaiThere -> hai_there
+    """
+    pattern = re.compile(r"(?<!^)(?=[A-Z])")
+    return pattern.sub("_", name).lower()
