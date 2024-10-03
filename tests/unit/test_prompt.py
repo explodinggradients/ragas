@@ -30,7 +30,7 @@ async def test_string_prompt():
     echo_llm = EchoLLM(run_config=RunConfig())
     prompt = StringPrompt()
     assert await prompt.generate(data="hello", llm=echo_llm) == "hello"
-    assert prompt.name == "stringprompt"
+    assert prompt.name == "string_prompt"
 
 
 expected_generate_output_signature = """\
