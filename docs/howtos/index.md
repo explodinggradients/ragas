@@ -4,13 +4,13 @@ Each guide in this section provides a focused solution to real-world problems th
 
 <div class="grid cards" markdown>
 
--   :material-tune:{ .lg .middle } [__Customization__](customisations/index.md)
+-   :material-tune:{ .lg .middle } [__Customization__](cutomizations/index.md)
 
     ---
 
     How to customize various aspects of Ragas to suit your needs.
     
-    Customize features such as [Metrics](customisations/index.md#metrics) and [Testset Generation](customisations/index.md#testset-generation).
+    Customize features such as [Metrics](cutomizations/index.md#metrics) and [Testset Generation](cutomizations/index.md#testset-generation).
 
 -   :material-cube-outline:{ .lg .middle }  [__Applications__](applications/index.md)
 

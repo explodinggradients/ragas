@@ -1,4 +1,4 @@
-## Customise Models
+## Customize Models
 
 Ragas may use a LLM and or Embedding for evaluation and synthetic data generation. Both of these models can be customised according to you availabiity. 
 
