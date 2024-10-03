@@ -3,9 +3,11 @@ from __future__ import annotations
 import typing as t
 from abc import ABC, abstractmethod
 
+from langchain_core.exceptions import OutputParserException
+from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel
 
-from ragas.llms.output_parser import RagasOutputParser
+from ragas.exceptions import RagasOutputParserException
 from ragas.llms.prompt import PromptValue
 
 if t.TYPE_CHECKING:
@@ -132,9 +134,11 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             stop=stop,
             callbacks=callbacks,
         )
-        resp_text = resp.generations[0][0].text
+        output_string = resp.generations[0][0].text
         parser = RagasOutputParser(pydantic_object=self.output_model)
-        answer = await parser.aparse(resp_text, prompt_value, llm, max_retries=3)
+        answer = await parser.parse_output_string(
+            output_string, prompt_value, llm, max_retries=3
+        )
 
         # TODO: make sure RagasOutputPraser returns the same type as OutputModel
         return self.process_output(answer, data)  # type: ignore
@@ -161,8 +165,10 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         output_models = []
         parser = RagasOutputParser(pydantic_object=self.output_model)
         for i in range(n):
-            resp_text = resp.generations[0][i].text
-            answer = await parser.aparse(resp_text, prompt_value, llm, max_retries=3)
+            output_string = resp.generations[0][i].text
+            answer = await parser.parse_output_string(
+                output_string, prompt_value, llm, max_retries=3
+            )
             output_models.append(self.process_output(answer, data))  # type: ignore
 
         return output_models
@@ -245,3 +251,44 @@ class StringPrompt(BasePrompt):
             await self.generate(llm, data, temperature, stop, callbacks)
             for _ in range(n)
         ]
+
+
+class OutputStringAndPrompt(BaseModel):
+    output_string: str
+    prompt_value: str
+
+
+class FixOutputFormat(PydanticPrompt[OutputStringAndPrompt, StringIO]):
+    instruction = "The output string did not satisfy the constraints given in the prompt. Fix the output string and return it."
+    input_model = OutputStringAndPrompt
+    output_model = StringIO
+
+
+fix_output_format_prompt = FixOutputFormat()
+
+
+class RagasOutputParser(PydanticOutputParser[OutputModel]):
+    async def parse_output_string(
+        self,
+        output_string: str,
+        prompt_value: PromptValue,
+        llm: BaseRagasLLM,
+        max_retries: int = 1,
+    ):
+        try:
+            result = super().parse(output_string)
+        except OutputParserException:
+            if max_retries != 0:
+                result = await fix_output_format_prompt.generate(
+                    llm=llm,
+                    data=OutputStringAndPrompt(
+                        output_string=output_string,
+                        prompt_value=prompt_value.to_string(),
+                    ),
+                )
+                return await self.parse_output_string(
+                    result.text, prompt_value, llm, max_retries - 1
+                )
+            else:
+                raise RagasOutputParserException(num_retries=max_retries)
+        return result
