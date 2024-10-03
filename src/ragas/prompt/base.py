@@ -188,16 +188,14 @@ class StringPrompt(BasePrompt):
 
     Examples
     --------
-    >>> prompt = StringPrompt(instruction="Generate a joke for the given category: {category}.")
+    >>> from ragas.prompt import string_prompt
     >>> await prompt.generate(llm=llm, data={"category": "commerce"})
     """
-
-    instruction: str
 
     async def generate(
         self,
         llm: BaseRagasLLM,
-        data: t.Optional[t.Dict[str, t.Any]] = None,
+        data: str,
         temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = [],
@@ -225,11 +223,8 @@ class StringPrompt(BasePrompt):
         str
             The generated text.
         """
-        if data is None:
-            data = {}
-        prompt_value = PromptValue(prompt_str=self.instruction.format(**data))
         llm_result = await llm.agenerate_text(
-            prompt_value,
+            PromptValue(prompt_str=data),
             n=1,
             temperature=temperature,
             stop=stop,
@@ -240,7 +235,7 @@ class StringPrompt(BasePrompt):
     async def generate_multiple(
         self,
         llm: BaseRagasLLM,
-        data: t.Optional[t.Dict[str, t.Any]] = None,
+        data: str,
         n: int = 1,
         temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,

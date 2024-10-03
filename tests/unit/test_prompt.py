@@ -2,7 +2,8 @@ import pytest
 from langchain_core.outputs import Generation, LLMResult
 
 from ragas.llms.base import BaseRagasLLM
-from ragas.prompt import PromptValue, StringIO, StringPrompt
+from ragas.llms.prompt import PromptValue
+from ragas.prompt import StringIO, StringPrompt
 from ragas.run_config import RunConfig
 
 
