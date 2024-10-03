@@ -8,7 +8,7 @@ import numpy as np
 from pydantic import BaseModel
 
 from ragas.dataset_schema import SingleTurnSample
-from ragas.llms.output_parser import RagasOutputParser, get_json_format_instructions
+from ragas.llms.output_parser import RagasOutputParserOld, get_json_format_instructions
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import (
     MetricType,
@@ -33,7 +33,7 @@ class ResponseRelevanceClassification(BaseModel):
 _output_instructions = get_json_format_instructions(
     pydantic_object=ResponseRelevanceClassification
 )
-_output_parser = RagasOutputParser(pydantic_object=ResponseRelevanceClassification)
+_output_parser = RagasOutputParserOld(pydantic_object=ResponseRelevanceClassification)
 
 
 QUESTION_GEN = Prompt(

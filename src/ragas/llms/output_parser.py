@@ -40,7 +40,7 @@ Do not return any preamble or explanations, return only a pure JSON string surro
 
 def get_json_format_instructions(pydantic_object: t.Type[TBaseModel]) -> str:
     # Copy schema to avoid altering original Pydantic schema.
-    schema = {k: v for k, v in pydantic_object.schema().items()}
+    schema = {k: v for k, v in pydantic_object.model_json_schema().items()}
 
     # Remove extraneous fields.
     reduced_schema = schema
@@ -53,7 +53,7 @@ def get_json_format_instructions(pydantic_object: t.Type[TBaseModel]) -> str:
     return resp
 
 
-class RagasOutputParser(PydanticOutputParser):
+class RagasOutputParserOld(PydanticOutputParser):
     async def aparse(  # type: ignore
         self, result: str, prompt: PromptValue, llm: BaseRagasLLM, max_retries: int = 1
     ):

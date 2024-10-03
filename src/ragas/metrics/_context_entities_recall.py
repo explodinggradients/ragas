@@ -9,7 +9,7 @@ import numpy as np
 from langchain.pydantic_v1 import BaseModel
 
 from ragas.dataset_schema import SingleTurnSample
-from ragas.llms.output_parser import RagasOutputParser, get_json_format_instructions
+from ragas.llms.output_parser import RagasOutputParserOld, get_json_format_instructions
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric
 
@@ -26,7 +26,7 @@ class ContextEntitiesResponse(BaseModel):
 _output_instructions = get_json_format_instructions(
     pydantic_object=ContextEntitiesResponse  # type: ignore
 )
-_output_parser = RagasOutputParser(pydantic_object=ContextEntitiesResponse)
+_output_parser = RagasOutputParserOld(pydantic_object=ContextEntitiesResponse)
 
 
 TEXT_ENTITY_EXTRACTION = Prompt(
