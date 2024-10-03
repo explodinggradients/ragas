@@ -8,8 +8,6 @@ import numpy as np
 from pydantic import BaseModel
 
 from ragas.dataset_schema import SingleTurnSample
-from ragas.llms.output_parser import RagasOutputParserOld, get_json_format_instructions
-from ragas.llms.prompt import Prompt
 from ragas.metrics.base import (
     MetricType,
     MetricWithEmbeddings,
@@ -22,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
-
 
 
 class ResponseRelevanceOutput(BaseModel):
@@ -139,7 +136,9 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         responses = []
         for _ in range(self.strictness):
             response = await self.question_generation.generate(
-                data=prompt_input, llm=self.llm, callbacks=callbacks,
+                data=prompt_input,
+                llm=self.llm,
+                callbacks=callbacks,
             )
             responses.append(response)
 
