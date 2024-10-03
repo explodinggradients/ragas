@@ -61,7 +61,7 @@ def test_process_fields():
         output_model = StringIO
 
     p = JokeGenerator()
-    _ = p.generate_output_signature()
+    _ = p._generate_output_signature()
 
     # assert expected_generate_output_signature == generation
 
@@ -79,7 +79,7 @@ async def test_pydantic_prompt_io():
     assert p.input_model == StringIO
     assert p.output_model == StringIO
 
-    assert p.generate_examples() == ""
+    assert p._generate_examples() == ""
 
 
 def test_pydantic_prompt_examples():

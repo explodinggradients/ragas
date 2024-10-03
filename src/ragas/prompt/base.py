@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 
 from pydantic import BaseModel
 
-from ragas.llms.output_parser import RagasoutputParser
+from ragas.llms.output_parser import RagasOutputParser
 from ragas.llms.prompt import PromptValue
 
 if t.TYPE_CHECKING:
@@ -24,11 +24,28 @@ class BasePrompt(ABC):
         self,
         llm: BaseRagasLLM,
         data: t.Any,
+        temperature: t.Optional[float] = None,
+        stop: t.Optional[t.List[str]] = None,
+        callbacks: Callbacks = [],
+    ) -> t.Any:
+        """
+        Generate a single completion from the prompt.
+        """
+        pass
+
+    @abstractmethod
+    def generate_multiple(
+        self,
+        llm: BaseRagasLLM,
+        data: t.Any,
         n: int = 1,
         temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = [],
     ) -> t.Any:
+        """
+        Generate multiple completions from the prompt.
+        """
         pass
 
 
@@ -50,17 +67,17 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
     instruction: str
     examples: t.List[t.Tuple[InputModel, OutputModel]] = []
 
-    def generate_instruction(self) -> str:
+    def _generate_instruction(self) -> str:
         return self.instruction
 
-    def generate_output_signature(self, indent: int = 4) -> str:
+    def _generate_output_signature(self, indent: int = 4) -> str:
         return (
             f"Please return the output in a JSON format that complies with the "
             f"following schema as specified in JSON Schema and OpenAPI specification:\n"
             f"{self.output_model.model_json_schema()}"
         )
 
-    def generate_examples(self):
+    def _generate_examples(self):
         if self.examples:
             example_strings = []
             for e in self.examples:
@@ -86,11 +103,11 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
     def to_string(self, data: InputModel) -> str:
         # this needs a check
         return (
-            self.generate_instruction()
+            self._generate_instruction()
             + "\n"
-            + self.generate_output_signature()
+            + self._generate_output_signature()
             + "\n"
-            + self.generate_examples()
+            + self._generate_examples()
             + "\nNow perform the above instruction with the following input\n"
             + "input: "
             + data.model_dump_json(indent=4)
@@ -102,11 +119,35 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         self,
         llm: BaseRagasLLM,
         data: InputModel,
-        n: int = 1,
         temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = [],
     ) -> OutputModel:
+        processed_data = self.process_input(data)
+        prompt_value = PromptValue(prompt_str=self.to_string(processed_data))
+        resp = await llm.generate(
+            prompt_value,
+            n=1,
+            temperature=temperature,
+            stop=stop,
+            callbacks=callbacks,
+        )
+        resp_text = resp.generations[0][0].text
+        parser = RagasOutputParser(pydantic_object=self.output_model)
+        answer = await parser.aparse(resp_text, prompt_value, llm, max_retries=3)
+
+        # TODO: make sure RagasOutputPraser returns the same type as OutputModel
+        return self.process_output(answer, data)  # type: ignore
+
+    async def generate_multiple(
+        self,
+        llm: BaseRagasLLM,
+        data: InputModel,
+        n: int = 1,
+        temperature: t.Optional[float] = None,
+        stop: t.Optional[t.List[str]] = None,
+        callbacks: Callbacks = [],
+    ) -> t.List[OutputModel]:
         processed_data = self.process_input(data)
         prompt_value = PromptValue(prompt_str=self.to_string(processed_data))
         resp = await llm.generate(
@@ -116,12 +157,15 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             stop=stop,
             callbacks=callbacks,
         )
-        resp_text = resp.generations[0][0].text
-        parser = RagasoutputParser(pydantic_object=self.output_model)
-        answer = await parser.aparse(resp_text, prompt_value, llm, max_retries=3)
 
-        # TODO: make sure RagasOutputPraser returns the same type as OutputModel
-        return self.process_output(answer, data)  # type: ignore
+        output_models = []
+        parser = RagasOutputParser(pydantic_object=self.output_model)
+        for i in range(n):
+            resp_text = resp.generations[0][i].text
+            answer = await parser.aparse(resp_text, prompt_value, llm, max_retries=3)
+            output_models.append(self.process_output(answer, data))  # type: ignore
+
+        return output_models
 
     def process_input(self, input: InputModel) -> InputModel:
         return input
@@ -131,21 +175,78 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
 
 
 class StringPrompt(BasePrompt):
+    """
+    A simple prompt that can be formatted with additional data using f-string syntax.
+
+    This prompt is a simpler alternative to PydanticPrompt for those who prefer a more
+    flexible approach without the need for a Pydantic model.
+
+    Parameters
+    ----------
+    instruction : str
+        The instruction string that can be formatted with additional data.
+
+    Examples
+    --------
+    >>> prompt = StringPrompt(instruction="Generate a joke for the given category: {category}.")
+    >>> await prompt.generate(llm=llm, data={"category": "commerce"})
+    """
+
+    instruction: str
+
     async def generate(
         self,
         llm: BaseRagasLLM,
-        data: str,
-        n: int = 1,
+        data: t.Optional[t.Dict[str, t.Any]] = None,
         temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = [],
     ) -> str:
-        prompt_value = PromptValue(prompt_str=data)
+        """
+        Generate text based on the instruction and provided data.
+
+        Parameters
+        ----------
+        llm : BaseRagasLLM
+            The language model to use for text generation.
+        data : Optional[Dict[str, Any]], optional
+            The data to format the instruction with, by default None.
+        n : int, optional
+            The number of completions to generate, by default 1.
+        temperature : Optional[float], optional
+            The temperature for text generation, by default None.
+        stop : Optional[List[str]], optional
+            The stop sequences for text generation, by default None.
+        callbacks : Callbacks, optional
+            The callbacks to use during text generation, by default [].
+
+        Returns
+        -------
+        str
+            The generated text.
+        """
+        if data is None:
+            data = {}
+        prompt_value = PromptValue(prompt_str=self.instruction.format(**data))
         llm_result = await llm.agenerate_text(
             prompt_value,
-            n=n,
+            n=1,
             temperature=temperature,
             stop=stop,
             callbacks=callbacks,
         )
         return llm_result.generations[0][0].text
+
+    async def generate_multiple(
+        self,
+        llm: BaseRagasLLM,
+        data: t.Optional[t.Dict[str, t.Any]] = None,
+        n: int = 1,
+        temperature: t.Optional[float] = None,
+        stop: t.Optional[t.List[str]] = None,
+        callbacks: Callbacks = [],
+    ) -> t.List[str]:
+        return [
+            await self.generate(llm, data, temperature, stop, callbacks)
+            for _ in range(n)
+        ]
