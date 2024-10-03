@@ -1,21 +1,31 @@
 # 🛠️ How-to Guides
 
+Each guide in this section provides a focused solution to real-world problems that you, as an experienced user, may encounter while using Ragas. These guides are designed to be concise and direct, offering quick solutions to your problems. We assume you have a foundational understanding and are comfortable with Ragas concepts. If not, feel free to explore the [Get Started](../getstarted/index.md) section first.
 
-The how-to guides offer a more comprehensive overview of all the tools Ragas
-offers and how to use them. This will help you tackle messier real-world
-usecases when you're using the framework to help build your own RAG pipelines.
+<div class="grid cards" markdown>
 
-The guides assume you are familiar and confortable with the Ragas basics. If
-your not feel free to checkout the [Get Started](../getstarted/index.md)
-sections first.
+-   :material-tune:{ .lg .middle } [__Customization__](customizations/index.md)
 
-These guides are organized into 3 sections
+    ---
 
-- [Customisations](./customisations/index.md): How to customise Ragas to use with your system. Things
-  like changing the LLMs used underneath are covered here.
-- [Applications](./applications/index.md): Shows how to leverage Ragas framework to solve various
-  real-world problems that you might be facing too.
-- [Integrations](./integrations/index.md): Integrations with other tools like langchain and llamaindex,
-  making it super easy to add ragas into your setup.
+    How to customize various aspects of Ragas to suit your needs.
+    
+    Customize features such as [Metrics](customizations/index.md#metrics) and [Testset Generation](customizations/index.md#testset-generation).
 
-You can check the entire list bellow 👇
+-   :material-cube-outline:{ .lg .middle }  [__Applications__](applications/index.md)
+
+    ---
+
+    How to use Ragas for various applications and use cases.
+
+    Includes applications such as [RAG evaluation](applications/index.md).
+
+-   :material-link-variant:{ .lg .middle } [__Integrations__](integrations/index.md)
+
+    ---
+
+    How to integrate Ragas with other frameworks and observability tools.
+
+    Use Ragas with frameworks like [Langchain](integrations/langchain.md), [LlamaIndex](integrations/llamaindex.md), and [observability tools]().
+
+</div>

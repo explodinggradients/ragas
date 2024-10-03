@@ -1,98 +1,157 @@
+:root {
+  --bg-color: #080a0c;
+  --bg-color2: #13161a;
+  --bg-color3: black;
+  --text-color: #eeeeee;
+  --link-color: #eac874;
+  --link-hover-color: rgb(255, 200, 0);
+  --nav-active-color: rgb(255, 200, 0);
+  --border-color: #dddddd6b;
+  --code-bg-color: #1e2129;
+  --header-bg-color: var(--bg-color2);
+  --font-color-white: white;
+  --md-typeset-a-color: #eac874 !important;
+
+  /* changing default colors */
+
+  /* Primary color shades */
+  /* --md-primary-fg-color: #eac874;
+  --md-primary-fg-color--light: #eac874;
+  --md-primary-fg-color--dark: #eac874; */
+  /* --md-primary-bg-color: var(--bg-color); */
+  /* --md-primary-bg-color--light: var(--bg-color2); */
+
+  /* // Accent color shades */
+  --md-accent-fg-color:#9c864e;
+  /* --md-accent-fg-color--transparent: var(--link-hover-color);
+  --md-accent-bg-color: var(--nav-active-color);
+  --md-accent-bg-color--light: var(--link-color); */
+}
+
+.md-tabs__link:hover {
+  color: var(--link-hover-color) !important;
+}
+
 body {
-  background-color: black !important;
-  color: white;
+  background-color: var(--bg-color) !important;
+  color: var(--text-color);
   margin: 0;
   padding: 0;
   color-scheme: dark !important;
   font-family: "Satoshi", Arial, sans-serif !important;
 }
+
 .md-tabs {
-  background: black !important;
+  background: var(--bg-color) !important;
+}
+.md-top:hover {
+  color: var(--link-hover-color) !important;
+  background-color: #1e2129;
 }
 .md-nav--lifted > .md-nav__list > .md-nav__item--active > .md-nav__link {
-  background: black !important;
+  background: var(--bg-color) !important;
   box-shadow: none !important;
 }
+
 .md-search__scrollwrap {
-  background: black !important;
-  color: white !important;
+  background: var(--bg-color) !important;
+  color: var(--font-color-white) !important;
 }
+
 @font-face {
   font-family: "Satoshi";
   src: url("./fonts/Satoshi-Variable.ttf") format("truetype"),
     url("./fonts/Satoshi-VariableItalic.ttf") format("truetype");
 }
+
 .highlight-ipynb {
-  background: var(--md-code-bg-color) !important;
+  background: var(--code-bg-color) !important;
   color: white !important;
   font-size: 1.2em !important;
   padding: 1em !important;
+}
+
+code {
+  background: var(--code-bg-color) !important;
+  color: white !important;
 }
 .jp-InputArea {
   border-radius: 5px !important;
   margin-bottom: 1rem !important;
   border: none !important;
 }
+
 .jupyter-wrapper .zeroclipboard-container .clipboard-copy-icon {
   width: 0.9rem !important;
 }
+
 .jupyter-wrapper .jp-InputArea-editor {
   border: none !important;
 }
+
 h1 {
   font-size: 2em;
   font-weight: 500 !important;
   margin: 0;
-  color: white !important;
+  color: var(--text-color) !important;
 }
+
 .md-nav__title {
-  color: white;
+  color: var(--text-color);
   box-shadow: none !important;
   background: none !important;
 }
+
 .md-nav__link--active {
-  color: rgb(255, 200, 0) !important;
+  color: var(--nav-active-color) !important;
 }
+
 .jp-InputArea-prompt {
   display: none !important;
 }
+
 .jp-OutputArea-prompt {
   display: none !important;
 }
+
 .jp-Notebook {
   display: flex !important;
   flex-direction: column !important;
   margin: 0 !important;
   padding: 0 !important;
 }
+
 .md-header {
-  background: black !important;
-  color: white !important;
+  background: var(--header-bg-color) !important;
+  color: var(--font-color-white) !important;
 }
+
 .jp-MarkdownOutput {
-  color: white !important;
+  color: var(--font-color-white) !important;
   text-align: start !important;
   width: 100% !important;
 }
-.md-nav--primary,
-.md-nav--primary .md-nav {
-  background: black !important;
-}
-.md-nav--primary .md-nav__title ~ .md-nav__list {
-  background: black !important;
-}
+
 .md-typeset a {
-  color: rgb(254 240 138);
+  color: var(--link-color);
 }
+
+.md-typeset a:hover {
+  color: var(--link-hover-color);
+}
+
 .md-sidebar {
-  border-right: #dddddd6b 0.5px solid;
+  border-right: var(--border-color) 0.5px solid;
+}
+
+.md-main {
+  background: var(--bg-color);
 }
 
 .jp-Cell {
   padding: 0 !important;
   max-height: fit-content !important;
 }
-
 
 .jp-MarkdownOutput h2 {
   padding-top: 1rem !important;
@@ -106,7 +165,7 @@ h1 {
   margin: 0 !important;
 }
 
-.jp-RenderedText pre{
+.jp-RenderedText pre {
   padding: 0.5rem 0 0.5rem 0 !important;
 }
 
@@ -120,5 +179,25 @@ h1 {
   margin: 0;
 }
 
+.md-nav__link[href]:hover {
+  color: var(--link-hover-color) !important;
+}
 
+/* Width of the scrollbar */
+::-webkit-scrollbar {
+  width: 3px;
+}
 
+::-webkit-scrollbar-track {
+  background: transparent; /* Track color */
+  border-radius: 10px; /* Rounded corners for track */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #848282; /* Thumb color */
+  border-radius: 10px; /* Rounded corners for thumb */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #616161; /* Thumb color on hover */
+}

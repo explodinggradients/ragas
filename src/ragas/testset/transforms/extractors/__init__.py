@@ -2,6 +2,7 @@ from .embeddings import EmbeddingExtractor
 from .llm_based import (
     HeadlinesExtractor,
     KeyphrasesExtractor,
+    NERExtractor,
     SummaryExtractor,
     TitleExtractor,
 )
@@ -16,4 +17,5 @@ __all__ = [
     "TitleExtractor",
     "HeadlinesExtractor",
     "EmbeddingExtractor",
+    "NERExtractor",
 ]

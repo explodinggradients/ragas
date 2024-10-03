@@ -16,76 +16,50 @@ from ragas.metrics.base import (
     MetricWithLLM,
     SingleTurnMetric,
 )
+from ragas.prompt import PydanticPrompt
 
 logger = logging.getLogger(__name__)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
-    from ragas.llms.prompt import PromptValue
 
 
-class ResponseRelevanceClassification(BaseModel):
+class ResponseRelevanceOutput(BaseModel):
     question: str
     noncommittal: int
 
 
-_output_instructions = get_json_format_instructions(
-    pydantic_object=ResponseRelevanceClassification
-)
-_output_parser = RagasOutputParserOld(pydantic_object=ResponseRelevanceClassification)
+class ResponseRelevanceInput(BaseModel):
+    response: str
 
 
-QUESTION_GEN = Prompt(
-    name="question_generation",
-    instruction="""Generate a question for the given answer and Identify if answer is noncommittal. Give noncommittal as 1 if the answer is noncommittal and 0 if the answer is committal. A noncommittal answer is one that is evasive, vague, or ambiguous. For example, "I don't know" or "I'm not sure" are noncommittal answers""",
-    output_format_instruction=_output_instructions,
-    examples=[
-        {
-            "answer": """Albert Einstein was born in Germany.""",
-            "context": """Albert Einstein was a German-born theoretical physicist who is widely held to be one of the greatest and most influential scientists of all time""",
-            "output": ResponseRelevanceClassification.parse_obj(
-                {
-                    "question": "Where was Albert Einstein born?",
-                    "noncommittal": 0,
-                }
-            ).dict(),
-        },
-        {
-            "answer": """It can change its skin color based on the temperature of its environment.""",
-            "context": """A recent scientific study has discovered a new species of frog in the Amazon rainforest that has the unique ability to change its skin color based on the temperature of its environment.""",
-            "output": ResponseRelevanceClassification.parse_obj(
-                {
-                    "question": "What unique ability does the newly discovered species of frog have?",
-                    "noncommittal": 0,
-                }
-            ).dict(),
-        },
-        {
-            "answer": """Everest""",
-            "context": """The tallest mountain on Earth, measured from sea level, is a renowned peak located in the Himalayas.""",
-            "output": ResponseRelevanceClassification.parse_obj(
-                {
-                    "question": "What is the tallest mountain on Earth?",
-                    "noncommittal": 0,
-                }
-            ).dict(),
-        },
-        {
-            "answer": """I don't know about the  groundbreaking feature of the smartphone invented in 2023 as am unaware of information beyond 2022. """,
-            "context": """In 2023, a groundbreaking invention was announced: a smartphone with a battery life of one month, revolutionizing the way people use mobile technology.""",
-            "output": ResponseRelevanceClassification.parse_obj(
-                {
-                    "question": "What was the groundbreaking feature of the smartphone invented in 2023?",
-                    "noncommittal": 1,
-                }
-            ).dict(),
-        },
-    ],
-    input_keys=["answer", "context"],
-    output_key="output",
-    output_type="json",
-)
+class RessponseRelevancePrompt(
+    PydanticPrompt[ResponseRelevanceInput, ResponseRelevanceOutput]
+):
+    instruction = """Generate a question for the given answer and Identify if answer is noncommittal. Give noncommittal as 1 if the answer is noncommittal and 0 if the answer is committal. A noncommittal answer is one that is evasive, vague, or ambiguous. For example, "I don't know" or "I'm not sure" are noncommittal answers"""
+    input_model = ResponseRelevanceInput
+    output_model = ResponseRelevanceOutput
+    examples = [
+        (
+            ResponseRelevanceInput(
+                response="""Albert Einstein was born in Germany.""",
+            ),
+            ResponseRelevanceOutput(
+                question="Where was Albert Einstein born?",
+                noncommittal=0,
+            ),
+        ),
+        (
+            ResponseRelevanceInput(
+                response="""I don't know about the  groundbreaking feature of the smartphone invented in 2023 as am unaware of information beyond 2022. """,
+            ),
+            ResponseRelevanceOutput(
+                question="What was the groundbreaking feature of the smartphone invented in 2023?",
+                noncommittal=1,
+            ),
+        ),
+    ]
 
 
 @dataclass
@@ -113,11 +87,10 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
             MetricType.SINGLE_TURN: {
                 "user_input",
                 "response",
-                "retrieved_contexts",
             }
         }
     )
-    question_generation: Prompt = field(default_factory=lambda: QUESTION_GEN)
+    question_generation: PydanticPrompt = RessponseRelevancePrompt()
     strictness: int = 3
 
     def calculate_similarity(self, question: str, generated_questions: list[str]):
@@ -137,7 +110,7 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         )
 
     def _calculate_score(
-        self, answers: t.Sequence[ResponseRelevanceClassification], row: t.Dict
+        self, answers: t.Sequence[ResponseRelevanceOutput], row: t.Dict
     ) -> float:
         question = row["user_input"]
         gen_questions = [answer.question for answer in answers]
@@ -153,10 +126,6 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
 
         return score
 
-    def _create_question_gen_prompt(self, row: t.Dict) -> PromptValue:
-        ans, ctx = row["response"], row["retrieved_contexts"]
-        return self.question_generation.format(answer=ans, context="\n".join(ctx))
-
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
@@ -166,33 +135,15 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM is not set"
 
-        prompt = self._create_question_gen_prompt(row)
-        result = await self.llm.generate(
-            prompt,
-            n=self.strictness,
-            callbacks=callbacks,
-        )
+        prompt_input = ResponseRelevanceInput(response=row["response"])
+        responses = []
+        for _ in range(self.strictness):
+            response = await self.question_generation.generate(
+                data=prompt_input, llm=self.llm, callbacks=callbacks,
+            )
+            responses.append(response)
 
-        answers = [
-            await _output_parser.aparse(result.text, prompt, self.llm)
-            for result in result.generations[0]
-        ]
-        if any(answer is None for answer in answers):
-            return np.nan
-
-        answers = [answer for answer in answers if answer is not None]
-        return self._calculate_score(answers, row)
-
-    def adapt(self, language: str, cache_dir: str | None = None) -> None:
-        assert self.llm is not None, "LLM is not set"
-
-        logger.info(f"Adapting AnswerRelevancy metric to {language}")
-        self.question_generation = self.question_generation.adapt(
-            language, self.llm, cache_dir
-        )
-
-    def save(self, cache_dir: str | None = None) -> None:
-        self.question_generation.save(cache_dir)
+        return self._calculate_score(responses, row)
 
 
 class AnswerRelevancy(ResponseRelevancy):

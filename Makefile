@@ -34,6 +34,8 @@ run-ci: format lint type test ## Running all CI checks
 
 # Docs
 docsite: ## Build and serve documentation
+	@echo "Generating reference pages..."
+	@python scripts/gen_ref_pages.py
 	@mkdocs serve --dirty
 rewrite-docs: ## Use GPT4 to rewrite the documentation
 	@echo "Rewriting the documentation in directory $(DIR)..."
