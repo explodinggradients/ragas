@@ -2,7 +2,8 @@ import pytest
 from langchain_core.outputs import Generation, LLMResult
 
 from ragas.llms.base import BaseRagasLLM
-from ragas.prompt import PromptValue, StringIO, StringPrompt
+from ragas.llms.prompt import PromptValue
+from ragas.prompt import StringIO, StringPrompt
 from ragas.run_config import RunConfig
 
 
@@ -29,6 +30,7 @@ async def test_string_prompt():
     echo_llm = EchoLLM(run_config=RunConfig())
     prompt = StringPrompt()
     assert await prompt.generate(data="hello", llm=echo_llm) == "hello"
+    assert prompt.name == "string_prompt"
 
 
 expected_generate_output_signature = """\
@@ -60,7 +62,7 @@ def test_process_fields():
         output_model = StringIO
 
     p = JokeGenerator()
-    _ = p.generate_output_signature()
+    _ = p._generate_output_signature()
 
     # assert expected_generate_output_signature == generation
 
@@ -78,7 +80,7 @@ async def test_pydantic_prompt_io():
     assert p.input_model == StringIO
     assert p.output_model == StringIO
 
-    assert p.generate_examples() == ""
+    assert p._generate_examples() == ""
 
 
 def test_pydantic_prompt_examples():
@@ -95,3 +97,15 @@ def test_pydantic_prompt_examples():
 
     _ = Prompt()
     # assert p.generate_examples() == "hello -> hello\nworld -> world"
+
+
+def test_prompt_hash():
+    from ragas.prompt import StringPrompt
+
+    class Prompt(StringPrompt):
+        instruction = "You are a helpful assistant."
+
+    p = Prompt()
+    assert hash(p) == hash(p)
+    p.instruction = "You are a helpful assistant. And some more"
+    # assert hash(p) != hash(p)

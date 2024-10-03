@@ -15,27 +15,22 @@ from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
 
+from pysbd import Segmenter
+
 from ragas.callbacks import new_group
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.executor import is_event_loop_running
+from ragas.prompt import PromptMixin
 from ragas.run_config import RunConfig
-from ragas.utils import deprecated
+from ragas.utils import RAGAS_SUPPORTED_LANGUAGE_CODES, deprecated
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
     from ragas.embeddings import BaseRagasEmbeddings
     from ragas.llms import BaseRagasLLM
-
-from pysbd import Segmenter
-from pysbd.languages import LANGUAGE_CODES
-
-from ragas.prompt import PromptMixin
-
 logger = logging.getLogger(__name__)
 
-
-LANGUAGE_CODES = {v.__name__.lower(): k for k, v in LANGUAGE_CODES.items()}
 
 VALID_COLUMNS = [
     "user_input",
@@ -58,8 +53,7 @@ class Metric(ABC):
 
     @property
     @abstractmethod
-    def name(self) -> str:
-        ...
+    def name(self) -> str: ...
 
     @property
     def required_columns(self) -> t.Dict[str, t.Set[str]]:
@@ -146,8 +140,7 @@ class Metric(ABC):
         return score
 
     @abstractmethod
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        ...
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float: ...
 
 
 @dataclass
@@ -245,8 +238,7 @@ class SingleTurnMetric(Metric):
         self,
         sample: SingleTurnSample,
         callbacks: Callbacks,
-    ) -> float:
-        ...
+    ) -> float: ...
 
 
 class MultiTurnMetric(Metric):
@@ -311,8 +303,7 @@ class MultiTurnMetric(Metric):
         self,
         sample: MultiTurnSample,
         callbacks: Callbacks,
-    ) -> float:
-        ...
+    ) -> float: ...
 
 
 class Ensember:
@@ -358,12 +349,14 @@ def get_segmenter(
     Get a sentence segmenter for a given language
     """
     language = language.lower()
-    if language not in LANGUAGE_CODES:
+    if language not in RAGAS_SUPPORTED_LANGUAGE_CODES:
         raise ValueError(
-            f"Language '{language}' not supported. Supported languages: {LANGUAGE_CODES.keys()}"
+            f"Language '{language}' not supported. Supported languages: {RAGAS_SUPPORTED_LANGUAGE_CODES.keys()}"
         )
     return Segmenter(
-        language=LANGUAGE_CODES[language], clean=clean, char_span=char_span
+        language=RAGAS_SUPPORTED_LANGUAGE_CODES[language],
+        clean=clean,
+        char_span=char_span,
     )
 
 

@@ -48,9 +48,9 @@ class EvaluatorChain(Chain, RunEvaluator):
             t.cast(MetricWithLLM, self.metric).llm = LangchainLLMWrapper(llm)
         if isinstance(self.metric, MetricWithEmbeddings):
             embeddings = get_or_init(kwargs, "embeddings", OpenAIEmbeddings)
-            t.cast(
-                MetricWithEmbeddings, self.metric
-            ).embeddings = LangchainEmbeddingsWrapper(embeddings)
+            t.cast(MetricWithEmbeddings, self.metric).embeddings = (
+                LangchainEmbeddingsWrapper(embeddings)
+            )
         self.metric.init(run_config)
 
         assert isinstance(

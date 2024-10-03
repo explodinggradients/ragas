@@ -37,3 +37,17 @@ data_dict = {
 )
 def test_get_from_dict(data_dict, key, expected):
     assert get_from_dict(data_dict, key) == expected
+
+
+@pytest.mark.parametrize(
+    ["camel_case_string", "expected"],
+    [
+        ("myVariableName", "my_variable_name"),
+        ("CamelCaseString", "camel_case_string"),
+        ("AnotherCamelCaseString", "another_camel_case_string"),
+    ],
+)
+def test_camel_to_snake(camel_case_string, expected):
+    from ragas.utils import camel_to_snake
+
+    assert camel_to_snake(camel_case_string) == expected

@@ -59,5 +59,7 @@ build-backend = "setuptools.build_meta"
 write_to = "src/ragas/_version.py"
 
 [tool.pytest.ini_options]
-addopts = "-n 4"
+addopts = "-n 0"
 asyncio_default_fixture_loop_scope = "function"
+[pytest]
+testpaths = ["tests"]
