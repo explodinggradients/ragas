@@ -8,7 +8,7 @@ from ragas.prompt.utils import get_all_strings, update_strings
 
 class Category(BaseModel):
     category: str
-    name: str = "good_name"
+    name: str = "good name"
     is_good: bool = True
     number: int = 1
 
@@ -37,14 +37,39 @@ test_cases = [
     TestCase(
         obj=Categories(
             list_of_categories=[
-                Category(category="old1", name="name_old1"),
-                Category(category="old2", name="name_old2"),
-                Category(category="old3", name="name_old3"),
-                Category(category="old1", name="name_old1"),
-            ]
+                Category(category="old 1", name="name old1"),
+                Category(category="old 2", name="name old2"),
+                Category(category="old 3", name="name old3"),
+                Category(category="old 1", name="name old1"),
+            ],
+            list_of_names=["name 1", "name 2", "name 3"],
         ),
-        old_strings=["old 1", "old 2", "old 3", "old 1"],
-        new_strings=["old_1", "old_2", "old_3", "old_1"],
+        old_strings=[
+            "old 1",
+            "name old1",
+            "old 2",
+            "name old2",
+            "old 3",
+            "name old3",
+            "old 1",
+            "name old1",
+            "name 1",
+            "name 2",
+            "name 3",
+        ],
+        new_strings=[
+            "old_1",
+            "name old1",
+            "old_2",
+            "name old2",
+            "old_3",
+            "name old3",
+            "old_1",
+            "name old1",
+            "name 1",
+            "name 2",
+            "name 3",
+        ],
     ),
     TestCase(
         obj=[
@@ -53,71 +78,47 @@ test_cases = [
             Category(category="old 3", is_good=True, number=3),
             Category(category="old 1", is_good=True, number=4),
         ],
-        old_strings=["old 1", "old 2", "old 3", "old 1"],
-        new_strings=["old_1", "old_2", "old_3", "old_1"],
+        old_strings=[
+            "old 1",
+            "good name",
+            "old 2",
+            "good name",
+            "old 3",
+            "good name",
+            "old 1",
+            "good name",
+        ],
+        new_strings=[
+            "old_1",
+            "good_name",
+            "old_2",
+            "good_name",
+            "old_3",
+            "good_name",
+            "old_1",
+            "good_name",
+        ],
     ),
 ]
 
 
 @pytest.mark.parametrize(
     "obj, expected",
-    [
-        (
-            {
-                "a": "old1",
-                "b": "old2",
-                "c": ["old1", "old2", "old3"],
-                "d": {"e": "old2"},
-            },
-            ["old1", "old2", "old1", "old2", "old3", "old2"],
-        ),
-        (
-            [
-                Category(category="old1", is_good=True, number=1),
-                Category(category="old2", is_good=True, number=2),
-                Category(category="old3", is_good=True, number=3),
-                Category(category="old1", is_good=True, number=4),
-            ],
-            [
-                "old1",
-                "good_name",
-                "old2",
-                "good_name",
-                "old3",
-                "good_name",
-                "old1",
-                "good_name",
-            ],
-        ),
-        (
-            Categories(
-                list_of_categories=[
-                    Category(category="old1", name="name_old1"),
-                    Category(category="old2", name="name_old2"),
-                    Category(category="old3", name="name_old3"),
-                    Category(category="old1", name="name_old1"),
-                ]
-            ),
-            [
-                "old1",
-                "name_old1",
-                "old2",
-                "name_old2",
-                "old3",
-                "name_old3",
-                "old1",
-                "name_old1",
-                "good_name1",
-                "good_name2",
-                "good_name3",
-            ],
-        ),
-    ],
+    [(test_case.obj, test_case.old_strings) for test_case in test_cases],
 )
 def test_get_all_strings(obj, expected):
     assert get_all_strings(obj) == expected
 
 
-def test_update_strings():
-    obj = {"a": "old1", "b": "old2", "c": ["old1", "old2", "old3"], "d": {"e": "old2"}}
-    pass
+@pytest.mark.parametrize(
+    "obj, old_strings, new_strings",
+    [
+        (test_case.obj, test_case.old_strings, test_case.new_strings)
+        for test_case in test_cases
+    ],
+)
+def test_update_strings(obj, old_strings, new_strings):
+    updated_obj = update_strings(obj, old_strings, new_strings)
+
+    assert get_all_strings(updated_obj) == new_strings
+    assert get_all_strings(obj) == old_strings
