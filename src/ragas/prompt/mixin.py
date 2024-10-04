@@ -1,7 +1,12 @@
+from __future__ import annotations
+
 import inspect
 import typing as t
 
 from .pydantic_prompt import PydanticPrompt
+
+if t.TYPE_CHECKING:
+    from ragas.llms.base import BaseRagasLLM
 
 
 class PromptMixin:
@@ -24,3 +29,14 @@ class PromptMixin:
                     f"Prompt with name '{key}' must be an instance of 'ragas.prompt.PydanticPrompt'"
                 )
             setattr(self, key, value)
+
+    async def adapt_prompts(
+        self, language: str, llm: BaseRagasLLM
+    ) -> t.Dict[str, PydanticPrompt]:
+        prompts = self.get_prompts()
+        adapted_prompts = {}
+        for name, prompt in prompts.items():
+            adapted_prompt = await prompt.adapt(language, llm)
+            adapted_prompts[name] = adapted_prompt
+
+        return adapted_prompts
