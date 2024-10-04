@@ -46,7 +46,10 @@
   --md-admonition-fg-color: var(--md-default-fg-color);
   --md-admonition-bg-color: var(--md-default-bg-color);
 
-  --jp-rendermime-error-background: rgba(244, 67, 54, 0.28);
+  --jp-content-font-color0: rgb(219, 219, 219);
+  --jp-content-font-color1: rgba(230, 230, 230, 0.87);
+  --jp-content-font-color2: rgb(234, 231, 231);
+  --jp-content-font-color3: rgb(255, 255, 255);
 }
 
 :root {
@@ -60,14 +63,26 @@
 
 [data-md-color-scheme="ragas_dark"] .jp-OutputArea-executeResult pre {
   color: var(--md-code-hl-punctuation-color) !important;
+}
+.jp-OutputArea-executeResult pre {
   padding: 0 !important;
   padding-left: 0.5rem !important;
 }
 
+[data-md-color-scheme="ragas_dark"]
+  .jp-OutputArea-child
+  .jp-RenderedText[data-mime-type="text/plain"]
+  pre {
+  color: white !important;
+}
+
 [data-md-color-scheme="ragas_dark"] .jp-OutputArea-executeResult {
+  background-color: #272a35;
+}
+
+.jp-OutputArea-executeResult {
   margin-top: 1rem;
   margin-bottom: 1rem;
-  background-color: #272a35;
   padding: 0 !important;
 }
 
@@ -88,14 +103,15 @@ body {
     url("./fonts/Satoshi-VariableItalic.ttf") format("truetype");
 }
 
-.highlight-ipynb {
+[data-md-color-scheme="ragas_dark"] .highlight-ipynb {
   background: var(--code-bg-color) !important;
   color: white !important;
+}
+.highlight-ipynb {
   font-size: 1.2em !important;
   padding: 1em !important;
 }
-
-code {
+[data-md-color-scheme="ragas_dark"] code {
   background: var(--code-bg-color) !important;
   color: white !important;
 }
@@ -139,13 +155,14 @@ h1 {
   padding: 0 !important;
 }
 
-.jp-MarkdownOutput {
+[data-md-color-scheme="ragas_dark"] .jp-MarkdownOutput {
   color: white !important;
+}
+.jp-MarkdownOutput {
   text-align: start !important;
   width: 100% !important;
 }
-
-.md-sidebar {
+[data-md-color-scheme="ragas_dark"] .md-sidebar {
   border-right: var(--border-color) 0.5px solid;
 }
 
