@@ -1,7 +1,7 @@
 import inspect
 import typing as t
 
-from .base import PydanticPrompt
+from .pydantic_prompt import PydanticPrompt
 
 
 class PromptMixin:
