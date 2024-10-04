@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import logging
 import typing as t
 from abc import ABC, abstractmethod
@@ -13,6 +14,8 @@ from ragas.exceptions import RagasOutputParserException
 from ragas.llms.prompt import PromptValue
 from ragas.utils import RAGAS_SUPPORTED_LANGUAGE_CODES, camel_to_snake
 
+from .utils import get_all_strings, update_strings
+
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
@@ -21,15 +24,19 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _check_if_language_is_supported(language: str):
+    if language not in RAGAS_SUPPORTED_LANGUAGE_CODES:
+        raise ValueError(
+            f"Language '{language}' not supported. Supported languages: {RAGAS_SUPPORTED_LANGUAGE_CODES.keys()}"
+        )
+
+
 class BasePrompt(ABC):
     def __init__(self, name: t.Optional[str] = None, language: str = "english"):
         if name is None:
             self.name = camel_to_snake(self.__class__.__name__)
 
-        if language not in RAGAS_SUPPORTED_LANGUAGE_CODES:
-            raise ValueError(
-                f"Language '{language}' not supported. Supported languages: {RAGAS_SUPPORTED_LANGUAGE_CODES.keys()}"
-            )
+        _check_if_language_is_supported(language)
         self.language = language
 
     @abstractmethod
@@ -330,10 +337,35 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
     def process_output(self, output: OutputModel, input: InputModel) -> OutputModel:
         return output
 
-    def adapt(self, language: str, llm: BaseRagasLLM) -> PydanticPrompt:
-        return self
+    async def adapt(
+        self, target_language: str, llm: BaseRagasLLM
+    ) -> "PydanticPrompt[InputModel, OutputModel]":
+        """
+        Adapt the prompt to a new language.
+        """
+
+        # throws ValueError if language is not supported
+        _check_if_language_is_supported(target_language)
+
+        strings = get_all_strings(self.examples)
+        translated_strings = await translate_statements_prompt.generate(
+            llm=llm,
+            data=ToTranslate(target_language=target_language, statements=strings),
+        )
+
+        translated_examples = update_strings(
+            obj=self.examples,
+            old_strings=strings,
+            new_strings=translated_strings.statements,
+        )
+
+        new_prompt = copy.deepcopy(self)
+        new_prompt.examples = translated_examples
+        new_prompt.language = target_language
+        return new_prompt
 
 
+# Ragas Output Parser
 class OutputStringAndPrompt(BaseModel):
     output_string: str
     prompt_value: str
@@ -385,3 +417,61 @@ class RagasOutputParser(PydanticOutputParser[OutputModel]):
             else:
                 raise RagasOutputParserException(num_retries=max_retries)
         return result
+
+
+# Ragas Adaptation
+class ToTranslate(BaseModel):
+    target_language: str
+    statements: t.List[str]
+
+
+class Translated(BaseModel):
+    statements: t.List[str]
+
+
+class TranslateStatements(PydanticPrompt[ToTranslate, Translated]):
+    instruction = "Translate the following statements to the target language."
+    input_model = ToTranslate
+    output_model = Translated
+    examples = [
+        (
+            ToTranslate(
+                target_language="hindi",
+                statements=[
+                    "Albert Einstein was born in Germany.",
+                    "Albert Einstein was best known for his theory of relativity.",
+                ],
+            ),
+            Translated(
+                statements=[
+                    "अल्बर्ट आइंस्टीन का जन्म जर्मनी में हुआ था।",
+                    "अल्बर्ट आइंस्टीन अपने सापेक्षता के सिद्धांत के लिए सबसे अधिक प्रसिद्ध थे।",
+                ]
+            ),
+        ),
+        (
+            ToTranslate(
+                target_language="dutch",
+                statements=[
+                    "Paris is the capital of France.",
+                    "Croissants are a popular French pastry.",
+                ],
+            ),
+            Translated(
+                statements=[
+                    "Parijs is de hoofdstad van Frankrijk.",
+                    "Croissants zijn een populair Frans gebak.",
+                ]
+            ),
+        ),
+    ]
+
+    def process_output(self, output: Translated, input: ToTranslate) -> Translated:
+        if len(output.statements) != len(input.statements):
+            raise ValueError(
+                "The number of statements in the output does not match the number of statements in the input. Translation failed."
+            )
+        return output
+
+
+translate_statements_prompt = TranslateStatements()
