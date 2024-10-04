@@ -1,61 +1,85 @@
-:root {
-  --bg-color: #080a0c;
-  --bg-color2: #13161a;
-  --bg-color3: black;
-  --text-color: #eeeeee;
-  --link-color: #eac874;
-  --link-hover-color: rgb(255, 200, 0);
-  --nav-active-color: rgb(255, 200, 0);
-  --border-color: #dddddd6b;
-  --code-bg-color: #1e2129;
-  --header-bg-color: var(--bg-color2);
-  --font-color-white: white;
-  --md-typeset-a-color: #eac874 !important;
-
-  /* changing default colors */
-
-  /* Primary color shades */
-  /* --md-primary-fg-color: #eac874;
-  --md-primary-fg-color--light: #eac874;
-  --md-primary-fg-color--dark: #eac874; */
-  /* --md-primary-bg-color: var(--bg-color); */
-  /* --md-primary-bg-color--light: var(--bg-color2); */
-
-  /* // Accent color shades */
-  --md-accent-fg-color:#9c864e;
-  /* --md-accent-fg-color--transparent: var(--link-hover-color);
-  --md-accent-bg-color: var(--nav-active-color);
-  --md-accent-bg-color--light: var(--link-color); */
+[data-md-color-scheme="ragas_light"] {
+  --md-primary-fg-color: #f4ce14; /* in header bg*/
+  --md-primary-bg-color: #21252f; /* in header text*/
+  --md-default-bg-color: #faf8f3; /* main bg */
+  --md-accent-fg-color: #ffb700df; /* hover and other accent*/
+  --md-typeset-a-color: #c87d06; /* links */
+  --md-default-fg-color--light: #212121; /* h1 colour */
+  --md-typeset-color: #222529; /* text colour */
 }
 
-.md-tabs__link:hover {
-  color: var(--link-hover-color) !important;
+[data-md-color-scheme="ragas_dark"] {
+  --md-primary-fg-color: #13161a; /* in header bg*/
+  --md-primary-bg-color: #eeeeee; /* in header text*/
+  --md-default-bg-color: #080a0c; /* main bg */
+  --md-default-fg-color: #eeeee; /* main bg */
+
+  --md-accent-fg-color: #edc242; /* hover and other accent*/
+  --md-typeset-a-color: #edc242; /* links */
+  --md-default-fg-color--light: #ffff; /* h1 colour */
+  --md-typeset-color: #eeeeee; /* text colour */
+
+  --md-code-fg-color: #d5d8e2d1;
+  --md-code-bg-color: h#272a35;
+  --md-code-hl-color: #2977ff;
+  --md-code-hl-color--light: #2977ff1a;
+  --md-code-hl-number-color: #e6695b;
+  --md-code-hl-special-color: #f06090;
+  --md-code-hl-function-color: #c973d9;
+  --md-code-hl-constant-color: #9383e2;
+  --md-code-hl-keyword-color: #6791e0;
+  --md-code-hl-string-color: #2fb170;
+  --md-code-hl-name-color: #d5d8e2d1;
+  --md-code-hl-operator-color: #e2e4e98f; /* code highlight operator */
+  --md-code-hl-punctuation-color: #e2e4e98f; /* code highlight punctuation */
+  --md-code-hl-comment-color: #e2e4e98f;
+  --md-code-hl-generic-color: #e2e4e98f;
+  --md-code-hl-variable-color: #e2e4e98f;
+
+  --md-hue: 225deg;
+  --md-typeset-kbd-color: hsla(var(--md-hue), 15%, 90%, 0.12);
+  --md-typeset-kbd-accent-color: hsla(var(--md-hue), 15%, 90%, 0.2);
+  --md-typeset-kbd-border-color: hsla(var(--md-hue), 15%, 14%, 1);
+  --md-typeset-mark-color: #4287ff4d;
+  --md-typeset-table-color: hsla(var(--md-hue), 15%, 95%, 0.12);
+  --md-typeset-table-color--light: hsla(var(--md-hue), 15%, 95%, 0.035);
+  --md-admonition-fg-color: var(--md-default-fg-color);
+  --md-admonition-bg-color: var(--md-default-bg-color);
+
+  --jp-rendermime-error-background: rgba(244, 67, 54, 0.28);
+}
+
+:root {
+  --border-color: #dddddd6b;
+  --code-bg-color: #1e2129;
+}
+
+[data-md-color-scheme="ragas_dark"] .tabbed-labels:before {
+  background: #eeee !important;
+}
+
+[data-md-color-scheme="ragas_dark"] .jp-OutputArea-executeResult pre {
+  color: var(--md-code-hl-punctuation-color) !important;
+  padding: 0 !important;
+  padding-left: 0.5rem !important;
+}
+
+[data-md-color-scheme="ragas_dark"] .jp-OutputArea-executeResult {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  background-color: #272a35;
+  padding: 0 !important;
 }
 
 body {
-  background-color: var(--bg-color) !important;
-  color: var(--text-color);
   margin: 0;
   padding: 0;
   color-scheme: dark !important;
   font-family: "Satoshi", Arial, sans-serif !important;
 }
 
-.md-tabs {
-  background: var(--bg-color) !important;
-}
-.md-top:hover {
-  color: var(--link-hover-color) !important;
-  background-color: #1e2129;
-}
 .md-nav--lifted > .md-nav__list > .md-nav__item--active > .md-nav__link {
-  background: var(--bg-color) !important;
   box-shadow: none !important;
-}
-
-.md-search__scrollwrap {
-  background: var(--bg-color) !important;
-  color: var(--font-color-white) !important;
 }
 
 @font-face {
@@ -93,17 +117,11 @@ h1 {
   font-size: 2em;
   font-weight: 500 !important;
   margin: 0;
-  color: var(--text-color) !important;
 }
 
 .md-nav__title {
-  color: var(--text-color);
   box-shadow: none !important;
   background: none !important;
-}
-
-.md-nav__link--active {
-  color: var(--nav-active-color) !important;
 }
 
 .jp-InputArea-prompt {
@@ -121,31 +139,14 @@ h1 {
   padding: 0 !important;
 }
 
-.md-header {
-  background: var(--header-bg-color) !important;
-  color: var(--font-color-white) !important;
-}
-
 .jp-MarkdownOutput {
-  color: var(--font-color-white) !important;
+  color: white !important;
   text-align: start !important;
   width: 100% !important;
 }
 
-.md-typeset a {
-  color: var(--link-color);
-}
-
-.md-typeset a:hover {
-  color: var(--link-hover-color);
-}
-
 .md-sidebar {
   border-right: var(--border-color) 0.5px solid;
-}
-
-.md-main {
-  background: var(--bg-color);
 }
 
 .jp-Cell {
@@ -177,10 +178,6 @@ h1 {
 .highlight-ipynb {
   padding: 9.5px 14px !important;
   margin: 0;
-}
-
-.md-nav__link[href]:hover {
-  color: var(--link-hover-color) !important;
 }
 
 /* Width of the scrollbar */
