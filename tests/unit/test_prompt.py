@@ -122,3 +122,22 @@ def test_prompt_hash_in_ragas(fake_llm):
     prompts = synthesizer.get_prompts()
     for prompt in prompts.values():
         assert hash(prompt) == hash(prompt)
+
+
+def test_prompt_save_load(tmp_path):
+    from ragas.prompt import PydanticPrompt, StringIO
+
+    class Prompt(PydanticPrompt[StringIO, StringIO]):
+        instruction = "You are a helpful assistant."
+        input_model = StringIO
+        output_model = StringIO
+        examples = [
+            (StringIO(text="hello"), StringIO(text="hello")),
+            (StringIO(text="world"), StringIO(text="world")),
+        ]
+
+    p = Prompt()
+    file_path = tmp_path / "test_prompt.json"
+    p.save(file_path)
+    p2 = Prompt.load(file_path)
+    assert hash(p) == hash(p2)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import logging
 import typing as t
 
@@ -8,6 +9,7 @@ from langchain_core.exceptions import OutputParserException
 from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel
 
+from ragas._version import __version__
 from ragas.callbacks import new_group
 from ragas.exceptions import RagasOutputParserException
 from ragas.llms.prompt import PromptValue
@@ -246,7 +248,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
                 (input_model.model_dump_json(), output_model.model_dump_json())
             )
 
-        # note sure if input_model and output_model should be included
+        # not sure if input_model and output_model should be included
         return hash(
             (
                 self.name,
@@ -257,6 +259,51 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
                 self.language,
             )
         )
+
+    def save(self, file_path: str):
+        data = {
+            "ragas_version": __version__,
+            "prompt_hash": hash(self),
+            "instruction": self.instruction,
+            "examples": [
+                {"input": example[0].model_dump(), "output": example[1].model_dump()}
+                for example in self.examples
+            ],
+        }
+        with open(file_path, "w") as f:
+            json.dump(data, f, indent=2)
+
+    @classmethod
+    def load(cls, file_path: str) -> "PydanticPrompt[InputModel, OutputModel]":
+        with open(file_path, "r") as f:
+            data = json.load(f)
+
+        # You might want to add version compatibility checks here
+        ragas_version = data.get("ragas_version")
+        if ragas_version != __version__:
+            logger.warning(
+                "Prompt was saved with Ragas v%s, but you are loading it with Ragas v%s. "
+                "There might be incompatibilities.",
+                ragas_version,
+                __version__,
+            )
+        prompt_hash = data.get("prompt_hash")
+
+        instruction = data["instruction"]
+        examples = [
+            (cls.input_model(**example["input"]), cls.output_model(**example["output"]))
+            for example in data["examples"]
+        ]
+
+        cls.instruction = instruction
+        cls.examples = examples
+
+        loaded_prompt = cls()
+        # Optionally, verify the loaded prompt's hash matches the saved hash
+        if prompt_hash is not None and hash(loaded_prompt) != prompt_hash:
+            logger.warning("Loaded prompt hash does not match the saved hash.")
+
+        return loaded_prompt
 
 
 # Ragas Output Parser
