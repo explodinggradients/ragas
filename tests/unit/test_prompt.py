@@ -153,3 +153,21 @@ def test_prompt_save_load(tmp_path):
     p.save(file_path)
     p2 = Prompt.load(file_path)
     assert hash(p) == hash(p2)
+
+
+def test_prompt_class_attributes():
+    """
+    We are using class attributes to store the prompt instruction and examples.
+    We want to make sure there is no relationship between the class attributes
+    and instance.
+    """
+    from ragas.testset.synthesizers.prompts import CommonThemeFromSummariesPrompt
+
+    p = CommonThemeFromSummariesPrompt()
+    p_another_instance = CommonThemeFromSummariesPrompt()
+    assert p.instruction == p_another_instance.instruction
+    assert p.examples == p_another_instance.examples
+    p.instruction = "You are a helpful assistant."
+    p.examples = []
+    assert p.instruction != p_another_instance.instruction
+    assert p.examples != p_another_instance.examples
