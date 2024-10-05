@@ -28,22 +28,24 @@ def pytest_configure(config):
     )
 
 
-class FakeTestLLM(BaseRagasLLM):
-    def llm(self):
-        return self
+class EchoLLM(BaseRagasLLM):
+    def generate_text(  # type: ignore
+        self,
+        prompt: PromptValue,
+        *args,
+        **kwargs,
+    ) -> LLMResult:
+        return LLMResult(generations=[[Generation(text=prompt.to_string())]])
 
-    def generate_text(
-        self, prompt: PromptValue, n=1, temperature=1e-8, stop=None, callbacks=[]
-    ):
-        generations = [[Generation(text=prompt.prompt_str)] * n]
-        return LLMResult(generations=generations)
-
-    async def agenerate_text(
-        self, prompt: PromptValue, n=1, temperature=1e-8, stop=None, callbacks=[]
-    ):
-        return self.generate_text(prompt, n, temperature, stop, callbacks)
+    async def agenerate_text(  # type: ignore
+        self,
+        prompt: PromptValue,
+        *args,
+        **kwargs,
+    ) -> LLMResult:
+        return LLMResult(generations=[[Generation(text=prompt.to_string())]])
 
 
 @pytest.fixture
 def fake_llm():
-    return FakeTestLLM()
+    return EchoLLM()

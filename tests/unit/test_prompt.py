@@ -100,12 +100,25 @@ def test_pydantic_prompt_examples():
 
 
 def test_prompt_hash():
-    from ragas.prompt import StringPrompt
+    from ragas.prompt import PydanticPrompt, StringIO
 
-    class Prompt(StringPrompt):
+    class Prompt(PydanticPrompt[StringIO, StringIO]):
         instruction = "You are a helpful assistant."
+        input_model = StringIO
+        output_model = StringIO
 
     p = Prompt()
-    assert hash(p) == hash(p)
+    p_copy = Prompt()
+    assert hash(p) == hash(p_copy)
     p.instruction = "You are a helpful assistant. And some more"
-    # assert hash(p) != hash(p)
+    assert hash(p) != hash(p_copy)
+
+
+def test_prompt_hash_in_ragas(fake_llm):
+    # check with a prompt inside ragas
+    from ragas.testset.synthesizers import AbstractQuerySynthesizer
+
+    synthesizer = AbstractQuerySynthesizer(llm=fake_llm)
+    prompts = synthesizer.get_prompts()
+    for prompt in prompts.values():
+        assert hash(prompt) == hash(prompt)

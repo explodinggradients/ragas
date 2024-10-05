@@ -237,6 +237,27 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         new_prompt.language = target_language
         return new_prompt
 
+    def __hash__(self):
+        # convert examples to json string for hashing
+        examples = []
+        for example in self.examples:
+            input_model, output_model = example
+            examples.append(
+                (input_model.model_dump_json(), output_model.model_dump_json())
+            )
+
+        # note sure if input_model and output_model should be included
+        return hash(
+            (
+                self.name,
+                self.input_model,
+                self.output_model,
+                self.instruction,
+                *examples,
+                self.language,
+            )
+        )
+
 
 # Ragas Output Parser
 class OutputStringAndPrompt(BaseModel):
