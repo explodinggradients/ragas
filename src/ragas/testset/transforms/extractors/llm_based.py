@@ -108,7 +108,6 @@ The sparsely-gated mixture-of-experts layer is a feedforward neural network laye
     ]
 
 
-
 class NamedEntities(BaseModel):
     ORG: t.List[str]
     LOC: t.List[str]
@@ -141,7 +140,6 @@ class NERPrompt(PydanticPrompt[StringIO, NEROutput]):
     ]
 
 
-      
 @dataclass
 class SummaryExtractor(LLMBasedExtractor):
     property_name: str = "summary"
@@ -207,4 +205,3 @@ class NERExtractor(LLMBasedExtractor):
             return self.property_name, {}
         result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
         return self.property_name, result.entities.model_dump()
-

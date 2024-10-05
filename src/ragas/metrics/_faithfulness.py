@@ -9,7 +9,7 @@ import numpy as np
 from pydantic import BaseModel, Field, RootModel
 
 from ragas.dataset_schema import SingleTurnSample
-from ragas.llms.output_parser import RagasoutputParser, get_json_format_instructions
+from ragas.llms.output_parser import RagasOutputParserOld, get_json_format_instructions
 from ragas.llms.prompt import Prompt
 from ragas.metrics.base import (
     MetricType,
@@ -44,7 +44,7 @@ class StatementsAnswers(RootModel):
 
 
 _statements_output_instructions = get_json_format_instructions(StatementsAnswers)
-_statements_output_parser = RagasoutputParser(pydantic_object=StatementsAnswers)
+_statements_output_parser = RagasOutputParserOld(pydantic_object=StatementsAnswers)
 
 
 LONG_FORM_ANSWER_PROMPT = Prompt(
@@ -101,7 +101,7 @@ class StatementFaithfulnessAnswers(RootModel):
 _faithfulness_output_instructions = get_json_format_instructions(
     StatementFaithfulnessAnswers
 )
-_faithfulness_output_parser = RagasoutputParser(
+_faithfulness_output_parser = RagasOutputParserOld(
     pydantic_object=StatementFaithfulnessAnswers
 )
 

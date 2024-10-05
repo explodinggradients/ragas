@@ -47,6 +47,7 @@ def is_multiple_completion_supported(llm: BaseLanguageModel) -> bool:
 @dataclass
 class BaseRagasLLM(ABC):
     run_config: RunConfig = field(default_factory=RunConfig)
+    multiple_completion_supported: bool = False
 
     def set_run_config(self, run_config: RunConfig):
         self.run_config = run_config

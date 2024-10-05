@@ -4,6 +4,7 @@ import logging
 import typing as t
 from dataclasses import dataclass, field
 
+from ragas._analytics import TestsetGenerationEvent, track
 from ragas.callbacks import new_group
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
@@ -202,4 +203,17 @@ class TestsetGenerator:
             testsets.append(TestsetSample(eval_sample=sample, **additional_info))
         testset = Testset(samples=testsets)
         testset_generation_rm.on_chain_end({"testset": testset})
+
+        # tracking how many samples were generated
+        track(
+            TestsetGenerationEvent(
+                event_type="testset_generation",
+                evolution_names=[
+                    e.__class__.__name__.lower() for e, _ in query_distribution
+                ],
+                evolution_percentages=[p for _, p in query_distribution],
+                num_rows=test_size,
+                language="english",
+            )
+        )
         return testset

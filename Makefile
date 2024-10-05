@@ -24,14 +24,14 @@ clean: ## Clean all generated files
 	@cd $(GIT_ROOT)/docs && make clean
 	@cd $(GIT_ROOT) || exit 1
 	@find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
-run-ci: format lint type ## Running all CI checks
 test: ## Run tests
 	@echo "Running tests..."
 	@pytest --nbmake tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 test-e2e: ## Run end2end tests
 	echo "running end2end tests..."
 	@pytest --nbmake tests/e2e -s
-	
+run-ci: format lint type test ## Running all CI checks
+
 # Docs
 docsite: ## Build and serve documentation
 	@echo "Generating reference pages..."
