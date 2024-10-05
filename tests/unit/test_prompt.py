@@ -1,3 +1,5 @@
+import copy
+
 import pytest
 from langchain_core.outputs import Generation, LLMResult
 
@@ -110,8 +112,10 @@ def test_prompt_hash():
     p = Prompt()
     p_copy = Prompt()
     assert hash(p) == hash(p_copy)
+    assert p == p_copy
     p.instruction = "You are a helpful assistant. And some more"
     assert hash(p) != hash(p_copy)
+    assert p != p_copy
 
 
 def test_prompt_hash_in_ragas(fake_llm):
@@ -122,6 +126,14 @@ def test_prompt_hash_in_ragas(fake_llm):
     prompts = synthesizer.get_prompts()
     for prompt in prompts.values():
         assert hash(prompt) == hash(prompt)
+        assert prompt == prompt
+
+    # change instruction and check if hash changes
+    for prompt in prompts.values():
+        old_prompt = copy.deepcopy(prompt)
+        prompt.instruction = "You are a helpful assistant."
+        assert hash(prompt) != hash(old_prompt)
+        assert prompt != old_prompt
 
 
 def test_prompt_save_load(tmp_path):

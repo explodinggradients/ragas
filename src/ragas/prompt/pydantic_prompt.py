@@ -260,10 +260,23 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             )
         )
 
+    def __eq__(self, other):
+        if not isinstance(other, PydanticPrompt):
+            return False
+        return (
+            self.name == other.name
+            and self.input_model == other.input_model
+            and self.output_model == other.output_model
+            and self.instruction == other.instruction
+            and self.examples == other.examples
+            and self.language == other.language
+        )
+
     def save(self, file_path: str):
         data = {
             "ragas_version": __version__,
             "prompt_hash": hash(self),
+            "language": self.language,
             "instruction": self.instruction,
             "examples": [
                 {"input": example[0].model_dump(), "output": example[1].model_dump()}
