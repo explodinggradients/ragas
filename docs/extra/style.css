@@ -1,11 +1,12 @@
 [data-md-color-scheme="ragas_light"] {
-  --md-primary-fg-color: #f4ce14; /* in header bg*/
-  --md-primary-bg-color: #21252f; /* in header text*/
+  --md-primary-fg-color: #f8f8f5; /* in header bg*/
+  --md-primary-bg-color: #212121; /* in header text*/
   --md-default-bg-color: #faf8f3; /* main bg */
   --md-accent-fg-color: #ffb700df; /* hover and other accent*/
   --md-typeset-a-color: #c87d06; /* links */
   --md-default-fg-color--light: #212121; /* h1 colour */
   --md-typeset-color: #222529; /* text colour */
+  --md-code-bg-color: #e7e7e7;
 }
 
 [data-md-color-scheme="ragas_dark"] {
@@ -19,8 +20,8 @@
   --md-default-fg-color--light: #ffff; /* h1 colour */
   --md-typeset-color: #eeeeee; /* text colour */
 
-  --md-code-fg-color: #d5d8e2d1;
-  --md-code-bg-color: h#272a35;
+  --md-code-fg-color: #ebebeb;
+  --md-code-bg-color: #272a35;
   --md-code-hl-color: #2977ff;
   --md-code-hl-color--light: #2977ff1a;
   --md-code-hl-number-color: #e6695b;
@@ -57,6 +58,13 @@
   --code-bg-color: #1e2129;
 }
 
+/* .md-header{
+  border-bottom: 2px solid var(--md-accent-fg-color);
+} */
+/* .md-tabs{
+  border-bottom: 2px solid var(--md-accent-fg-color);
+} */
+
 [data-md-color-scheme="ragas_dark"] .tabbed-labels:before {
   background: #eeee !important;
 }
@@ -73,13 +81,34 @@
   .jp-OutputArea-child
   .jp-RenderedText[data-mime-type="text/plain"]
   pre {
-  color: white !important;
+  color: #d5d8e2 !important;
+}
+
+[data-md-color-scheme="ragas_light"]
+  .jp-OutputArea-child
+  .jp-RenderedText[data-mime-type="text/plain"]
+  pre {
+  color: #515152 !important;
+}
+.jp-OutputArea-child .jp-RenderedText[data-mime-type="text/plain"] pre {
+  padding-left: 1rem !important;
 }
 
 [data-md-color-scheme="ragas_dark"] .jp-OutputArea-executeResult {
-  background-color: #272a35;
+  background-color: #181b25;
+
 }
 
+
+[data-md-color-scheme="ragas_light"] .jp-OutputArea-executeResult {
+  background-color: #E4E4E7;
+  border-top: 0.8px solid #bbbbbd;
+}
+
+
+[data-md-color-scheme="ragas_light"] .highlight-ipynb {
+  background-color: var(--md-code-bg-color) !important;
+}
 .jp-OutputArea-executeResult {
   margin-top: 1rem;
   margin-bottom: 1rem;
