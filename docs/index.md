@@ -1,21 +1,19 @@
-# Introduction
+# ✨ Introduction
 
-Ragas is a framework that helps you evaluate your Retrieval Augmented Generation (RAG) pipelines. RAG denotes a class of LLM applications that use external data to augment the LLM’s context. There are existing tools and frameworks that help you build these pipelines but evaluating it and quantifying your pipeline performance can be hard. This is where Ragas (RAG Assessment) comes in.
+Ragas is a library that provides tools to supercharge the evaluation of Large Language Model (LLM) applications. It is designed to help you evaluate your LLM applications with ease and confidence. 
+
 
 
 <div class="grid cards" markdown>
 - 🚀 **Get Started**
 
-    Learn the basics and become familiar with the Ragas metrics and how to evaluate
-    RAG pipelines with it, how to generate synthetic testsets to run evaluations
-    against and setting up online monitoring for your RAG apps.
+    Install with `pip` and get started with Ragas with these tutorials.
 
     [:octicons-arrow-right-24: Get Started](getstarted/index.md)
 
 - 📚 **Core Concepts**
 
-    The high-level explanations for building a better understand about the
-    important topics such as how to think about metrics-driven development, how the Ragas metrics work under the hood and synthetic dataset generation.
+    In depth explanation and discussion of the concepts and working of different features available in Ragas.
 
     [:octicons-arrow-right-24: Core Concepts](concepts/index.md)
 
