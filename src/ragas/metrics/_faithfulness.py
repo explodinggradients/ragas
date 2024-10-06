@@ -234,7 +234,7 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
     def _compute_score(self, answers: StatementFaithfulnessAnswers):
         # check the verdicts and compute the score
         faithful_statements = sum(
-            1 if answer.verdict else 0 for answer in answers.model_dump()
+            1 if answer['verdict'] else 0 for answer in answers.model_dump()
         )
         num_statements = len(answers.model_dump())
         if num_statements:
