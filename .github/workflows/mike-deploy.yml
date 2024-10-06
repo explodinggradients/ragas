@@ -82,7 +82,7 @@ jobs:
           # We will need to create a user for this at some point
           git config user.name "github-actions[bot]"
           git config user.email "{user.id}+{user.login}@users.noreply.github.com"
-          git fetch --no-tags --prune --depth=1 origin +refs/heads/production:refs/remotes/origin/production
+          git fetch --no-tags --prune --depth=1 origin +refs/heads/gh-pages:refs/remotes/origin/gh-pages
           mike deploy \
             --update-aliases \
             --branch production \
