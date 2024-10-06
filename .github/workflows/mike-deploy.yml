@@ -52,8 +52,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e ".[docs]"
-          python -m pip install -e ".[env]"  
-          
+          python -m pip install -e ".[env]"
 
       - name: Run script to generate references
         run: python scripts/gen_ref_pages.py
@@ -85,7 +84,7 @@ jobs:
           git fetch --no-tags --prune --depth=1 origin +refs/heads/gh-pages:refs/remotes/origin/gh-pages
           mike deploy \
             --update-aliases \
-            --branch production \
             --push \
+            --remote origin \
             ${{ env.Ragas_DOCS_VERSION }} \
             ${{ env.Ragas_DOCS_ALIAS }}
