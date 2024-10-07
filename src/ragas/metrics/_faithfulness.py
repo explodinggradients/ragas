@@ -42,6 +42,9 @@ class Statements(BaseModel):
 class StatementsAnswers(RootModel):
     root: t.List[Statements]
 
+    def dicts(self):
+        return self.model_dump()
+
 
 _statements_output_instructions = get_json_format_instructions(StatementsAnswers)
 _statements_output_parser = RagasOutputParserOld(pydantic_object=StatementsAnswers)
