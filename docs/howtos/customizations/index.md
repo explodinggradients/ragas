@@ -11,7 +11,6 @@ How to customize various aspects of Ragas to suit your needs.
 - [Modify prompts in metrics](metrics/modifying-prompts-metrics.ipynb)
 - [Write your own metrics](metrics/write_your_own_metric.ipynb)
 - [Adapt metrics to target language](metrics/metrics_language_adaptation.ipynb)
-- [Align metrics with human evaluators]()
 
 ## Testset Generation
 
