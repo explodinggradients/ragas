@@ -128,7 +128,7 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
         ]
 
         faithfulness_list = [
-            faith.dicts() for faith in faithfulness_list if faith is not None
+            faith.model_dump() for faith in faithfulness_list if faith is not None
         ]
 
         if faithfulness_list:
@@ -142,7 +142,7 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
             )
 
             verdict_list = [
-                1 if statement.verdict else 0 for statement in faithfulness_list.dicts()
+                1 if statement.verdict else 0 for statement in faithfulness_list.model_dump()
             ]
             return np.array(verdict_list)
         else:
@@ -177,19 +177,19 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
         if statements is None:
             return np.nan
 
-        # Ensure statements is not a coroutine before calling dicts()
+        # Ensure statements is not a coroutine before calling model_dump()
         if inspect.iscoroutine(statements):
             statements = await statements
 
         # Add error handling and logging
-        if not hasattr(statements, "dicts"):
+        if not hasattr(statements, "model_dump"):
             logging.error(f"Unexpected type for statements: {type(statements)}")
             logging.error(f"Statements content: {statements}")
             raise AttributeError(
-                f"'statements' object of type {type(statements)} has no attribute 'dicts'"
+                f"'statements' object of type {type(statements)} has no attribute 'model_dump'"
             )
 
-        statements = [item["simpler_statements"] for item in statements.dicts()]
+        statements = [item["simpler_statements"] for item in statements.model_dump()]
         statements = [item for sublist in statements for item in sublist]
 
         return statements

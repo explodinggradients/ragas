@@ -238,7 +238,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
                 self.max_retries,
             )
             statements[item] = (
-                statements[item].dicts() if statements[item] is not None else []
+                statements[item].model_dump() if statements[item] is not None else []
             )
 
         if not all([val == [] for val in statements.values()]):

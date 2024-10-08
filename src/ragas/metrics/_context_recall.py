@@ -32,9 +32,6 @@ class ContextRecallClassificationAnswer(BaseModel):
 class ContextRecallClassificationAnswers(RootModel):
     root: t.List[ContextRecallClassificationAnswer]
 
-    def dicts(self) -> t.List[t.Dict]:
-        return self.model_dump()
-
 
 _classification_output_instructions = get_json_format_instructions(
     ContextRecallClassificationAnswers
@@ -76,7 +73,7 @@ CONTEXT_RECALL_RA = Prompt(
                         "attributed": 0,
                     },
                 ]
-            ).dicts(),
+            ).model_dump(),
         },
         {
             "question": """who won 2020 icc world cup?""",
@@ -90,7 +87,7 @@ CONTEXT_RECALL_RA = Prompt(
                         "attributed": 1,
                     },
                 ]
-            ).dicts(),
+            ).model_dump(),
         },
         {
             "question": """What is the primary fuel for the Sun?""",
@@ -104,7 +101,7 @@ CONTEXT_RECALL_RA = Prompt(
                         "attributed": 0,
                     },
                 ]
-            ).dicts(),
+            ).model_dump(),
         },
     ],
     input_keys=["question", "context", "answer"],
@@ -197,7 +194,7 @@ class LLMContextRecall(MetricWithLLM, SingleTurnMetric):
             for text in results
         ]
 
-        answers = [answer.dicts() for answer in answers if answer is not None]
+        answers = [answer.model_dump() for answer in answers if answer is not None]
         if all(answer is None for answer in answers):
             return np.nan
 
