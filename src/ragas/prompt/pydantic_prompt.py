@@ -237,6 +237,9 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         new_prompt.language = target_language
         return new_prompt
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(instruction={self.instruction}, examples={self.examples}, language={self.language})"
+
 
 # Ragas Output Parser
 class OutputStringAndPrompt(BaseModel):

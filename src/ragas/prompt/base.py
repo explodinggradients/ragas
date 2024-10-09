@@ -32,6 +32,9 @@ class BasePrompt(ABC):
         _check_if_language_is_supported(language)
         self.language = language
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(name={self.name}, language={self.language})"
+
     @abstractmethod
     async def generate(
         self,
