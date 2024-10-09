@@ -27,6 +27,9 @@ def test_import_module():
     for metric in test_critique:
         assert hasattr(ragas.metrics.critique, metric)
 
+    # testset generation
+    from ragas.testset.evolutions import ComplexEvolution
+
 
 def test_import_in_debug_mode():
     """
