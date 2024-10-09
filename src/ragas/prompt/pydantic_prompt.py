@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import logging
 import typing as t
 
@@ -66,8 +67,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         else:
             return ""
 
-    def to_string(self, data: InputModel) -> str:
-        # this needs a check
+    def to_string(self, data: t.Optional[InputModel] = None) -> str:
         return (
             self._generate_instruction()
             + "\n"
@@ -75,9 +75,11 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             + "\n"
             + self._generate_examples()
             + "\nNow perform the above instruction with the following input\n"
-            + "input: "
-            + data.model_dump_json(indent=4)
-            + "\n"
+            + (
+                "input: " + data.model_dump_json(indent=4) + "\n"
+                if data is not None
+                else "input: (None)\n"
+            )
             + "output: "
         )
 
@@ -239,6 +241,20 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
 
     def __repr__(self):
         return f"{self.__class__.__name__}(instruction={self.instruction}, examples={self.examples}, language={self.language})"
+
+    def __str__(self):
+        json_str = json.dumps(
+            {
+                "name": self.name,
+                "instruction": self.instruction,
+                "examples": [
+                    (e[0].model_dump(), e[1].model_dump()) for e in self.examples
+                ],
+                "language": self.language,
+            },
+            indent=2,
+        )[1:-1]
+        return f"{self.__class__.__name__}({json_str})"
 
 
 # Ragas Output Parser
