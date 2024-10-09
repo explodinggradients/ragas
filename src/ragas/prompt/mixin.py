@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 import inspect
+import logging
+import os
 import typing as t
 
+from .base import _check_if_language_is_supported
 from .pydantic_prompt import PydanticPrompt
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import BaseRagasLLM
+
+
+logger = logging.getLogger(__name__)
 
 
 class PromptMixin:
@@ -40,3 +46,43 @@ class PromptMixin:
             adapted_prompts[name] = adapted_prompt
 
         return adapted_prompts
+
+    def save_prompts(self, path: str):
+        """
+        save prompts to a directory in the format of {name}_{language}.json
+        """
+        # check if path is valid
+        if not os.path.exists(path):
+            raise ValueError(f"Path {path} does not exist")
+
+        prompts = self.get_prompts()
+        for prompt_name, prompt in prompts.items():
+            # hash_hex = f"0x{hash(prompt) & 0xFFFFFFFFFFFFFFFF:016x}"
+            prompt_file_name = os.path.join(
+                path, f"{prompt_name}_{prompt.language}.json"
+            )
+            prompt.save(prompt_file_name)
+
+    def load_prompts(self, path: str, language: t.Optional[str] = None):
+        """
+        Load prompts from a directory in the format of {name}_{language}.json
+        """
+        # check if path is valid
+        if not os.path.exists(path):
+            raise ValueError(f"Path {path} does not exist")
+
+        # check if language is supported, defaults to english
+        if language is None:
+            language = "english"
+            logger.info(
+                "Language not specified, loading prompts for default language: %s",
+                language,
+            )
+        _check_if_language_is_supported(language)
+
+        loaded_prompts = {}
+        for prompt_name, prompt in self.get_prompts().items():
+            prompt_file_name = os.path.join(path, f"{prompt_name}_{language}.json")
+            loaded_prompt = prompt.__class__.load(prompt_file_name)
+            loaded_prompts[prompt_name] = loaded_prompt
+        return loaded_prompts

@@ -151,8 +151,40 @@ def test_prompt_save_load(tmp_path):
     p = Prompt()
     file_path = tmp_path / "test_prompt.json"
     p.save(file_path)
-    p2 = Prompt.load(file_path)
-    assert hash(p) == hash(p2)
+    p1 = Prompt.load(file_path)
+    assert hash(p) == hash(p1)
+    assert p == p1
+
+
+def test_prompt_save_load_language(tmp_path):
+    from ragas.prompt import PydanticPrompt, StringIO
+
+    class Prompt(PydanticPrompt[StringIO, StringIO]):
+        instruction = "You are a helpful assistant."
+        language = "spanish"
+        input_model = StringIO
+        output_model = StringIO
+        examples = [
+            (StringIO(text="hello"), StringIO(text="hello")),
+            (StringIO(text="world"), StringIO(text="world")),
+        ]
+
+    p_spanish = Prompt()
+    file_path = tmp_path / "test_prompt_spanish.json"
+    p_spanish.save(file_path)
+    p_spanish_loaded = Prompt.load(file_path)
+    assert hash(p_spanish) == hash(p_spanish_loaded)
+    assert p_spanish == p_spanish_loaded
+
+
+def test_save_existing_prompt(tmp_path):
+    from ragas.testset.synthesizers.prompts import CommonThemeFromSummariesPrompt
+
+    p = CommonThemeFromSummariesPrompt()
+    file_path = tmp_path / "test_prompt.json"
+    p.save(file_path)
+    p2 = CommonThemeFromSummariesPrompt.load(file_path)
+    assert p == p2
 
 
 def test_prompt_class_attributes():
