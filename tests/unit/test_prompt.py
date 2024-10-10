@@ -1,3 +1,5 @@
+import copy
+
 import pytest
 from langchain_core.outputs import Generation, LLMResult
 
@@ -100,12 +102,104 @@ def test_pydantic_prompt_examples():
 
 
 def test_prompt_hash():
-    from ragas.prompt import StringPrompt
+    from ragas.prompt import PydanticPrompt, StringIO
 
-    class Prompt(StringPrompt):
+    class Prompt(PydanticPrompt[StringIO, StringIO]):
         instruction = "You are a helpful assistant."
+        input_model = StringIO
+        output_model = StringIO
 
     p = Prompt()
-    assert hash(p) == hash(p)
+    p_copy = Prompt()
+    assert hash(p) == hash(p_copy)
+    assert p == p_copy
     p.instruction = "You are a helpful assistant. And some more"
-    # assert hash(p) != hash(p)
+    assert hash(p) != hash(p_copy)
+    assert p != p_copy
+
+
+def test_prompt_hash_in_ragas(fake_llm):
+    # check with a prompt inside ragas
+    from ragas.testset.synthesizers import AbstractQuerySynthesizer
+
+    synthesizer = AbstractQuerySynthesizer(llm=fake_llm)
+    prompts = synthesizer.get_prompts()
+    for prompt in prompts.values():
+        assert hash(prompt) == hash(prompt)
+        assert prompt == prompt
+
+    # change instruction and check if hash changes
+    for prompt in prompts.values():
+        old_prompt = copy.deepcopy(prompt)
+        prompt.instruction = "You are a helpful assistant."
+        assert hash(prompt) != hash(old_prompt)
+        assert prompt != old_prompt
+
+
+def test_prompt_save_load(tmp_path):
+    from ragas.prompt import PydanticPrompt, StringIO
+
+    class Prompt(PydanticPrompt[StringIO, StringIO]):
+        instruction = "You are a helpful assistant."
+        input_model = StringIO
+        output_model = StringIO
+        examples = [
+            (StringIO(text="hello"), StringIO(text="hello")),
+            (StringIO(text="world"), StringIO(text="world")),
+        ]
+
+    p = Prompt()
+    file_path = tmp_path / "test_prompt.json"
+    p.save(file_path)
+    p1 = Prompt.load(file_path)
+    assert hash(p) == hash(p1)
+    assert p == p1
+
+
+def test_prompt_save_load_language(tmp_path):
+    from ragas.prompt import PydanticPrompt, StringIO
+
+    class Prompt(PydanticPrompt[StringIO, StringIO]):
+        instruction = "You are a helpful assistant."
+        language = "spanish"
+        input_model = StringIO
+        output_model = StringIO
+        examples = [
+            (StringIO(text="hello"), StringIO(text="hello")),
+            (StringIO(text="world"), StringIO(text="world")),
+        ]
+
+    p_spanish = Prompt()
+    file_path = tmp_path / "test_prompt_spanish.json"
+    p_spanish.save(file_path)
+    p_spanish_loaded = Prompt.load(file_path)
+    assert hash(p_spanish) == hash(p_spanish_loaded)
+    assert p_spanish == p_spanish_loaded
+
+
+def test_save_existing_prompt(tmp_path):
+    from ragas.testset.synthesizers.prompts import CommonThemeFromSummariesPrompt
+
+    p = CommonThemeFromSummariesPrompt()
+    file_path = tmp_path / "test_prompt.json"
+    p.save(file_path)
+    p2 = CommonThemeFromSummariesPrompt.load(file_path)
+    assert p == p2
+
+
+def test_prompt_class_attributes():
+    """
+    We are using class attributes to store the prompt instruction and examples.
+    We want to make sure there is no relationship between the class attributes
+    and instance.
+    """
+    from ragas.testset.synthesizers.prompts import CommonThemeFromSummariesPrompt
+
+    p = CommonThemeFromSummariesPrompt()
+    p_another_instance = CommonThemeFromSummariesPrompt()
+    assert p.instruction == p_another_instance.instruction
+    assert p.examples == p_another_instance.examples
+    p.instruction = "You are a helpful assistant."
+    p.examples = []
+    assert p.instruction != p_another_instance.instruction
+    assert p.examples != p_another_instance.examples
