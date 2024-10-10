@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 import typing as t
 from dataclasses import dataclass, field
@@ -10,12 +9,10 @@ from pydantic import BaseModel, Field, RootModel
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.llms.output_parser import RagasOutputParserOld, get_json_format_instructions
-from ragas.llms.prompt import Prompt
 from ragas.metrics.base import (
     MetricType,
     MetricWithLLM,
     SingleTurnMetric,
-    ensembler,
     get_segmenter,
 )
 from ragas.prompt import PydanticPrompt
@@ -23,7 +20,6 @@ from ragas.prompt import PydanticPrompt
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
-    from ragas.llms.prompt import PromptValue
 
 
 class HasSegmentMethod(t.Protocol):
