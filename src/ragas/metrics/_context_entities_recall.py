@@ -5,7 +5,7 @@ import typing as t
 from dataclasses import dataclass, field
 from typing import Dict
 
-from langchain.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric
@@ -17,23 +17,21 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class Entities(BaseModel):
+class EntitiesList(BaseModel):
     entities: t.List[str]
 
 
-class ExtractEntitiesPrompt(PydanticPrompt):
+class ExtractEntitiesPrompt(PydanticPrompt[StringIO, EntitiesList]):
     name: str = "text_entity_extraction"
-    instruction: str = (
-        "Given a text, extract unique entities without repetition. Ensure you consider different forms or mentions of the same entity as a single entity."
-    )
+    instruction: str = "Given a text, extract unique entities without repetition. Ensure you consider different forms or mentions of the same entity as a single entity."
     input_model = StringIO
-    output_model = Entities
+    output_model = EntitiesList
     examples = [
         (
             StringIO(
                 text="The Eiffel Tower, located in Paris, France, is one of the most iconic landmarks globally. Millions of visitors are attracted to it each year for its breathtaking views of the city. Completed in 1889, it was constructed in time for the 1889 World's Fair."
             ),
-            Entities(
+            EntitiesList(
                 entities=["Eiffel Tower", "Paris", "France", "1889", "World's Fair"]
             ),
         ),
@@ -41,7 +39,7 @@ class ExtractEntitiesPrompt(PydanticPrompt):
             StringIO(
                 text="The Colosseum in Rome, also known as the Flavian Amphitheatre, stands as a monument to Roman architectural and engineering achievement. Construction began under Emperor Vespasian in AD 70 and was completed by his son Titus in AD 80. It could hold between 50,000 and 80,000 spectators who watched gladiatorial contests and public spectacles."
             ),
-            Entities(
+            EntitiesList(
                 entities=[
                     "Colosseum",
                     "Rome",
@@ -57,7 +55,7 @@ class ExtractEntitiesPrompt(PydanticPrompt):
             StringIO(
                 text="The Great Wall of China, stretching over 21,196 kilometers from east to west, is a marvel of ancient defensive architecture. Built to protect against invasions from the north, its construction started as early as the 7th century BC. Today, it is a UNESCO World Heritage Site and a major tourist attraction."
             ),
-            Entities(
+            EntitiesList(
                 entities=[
                     "Great Wall of China",
                     "21,196 kilometers",
@@ -70,7 +68,7 @@ class ExtractEntitiesPrompt(PydanticPrompt):
             StringIO(
                 text="The Apollo 11 mission, which launched on July 16, 1969, marked the first time humans landed on the Moon. Astronauts Neil Armstrong, Buzz Aldrin, and Michael Collins made history, with Armstrong being the first man to step on the lunar surface. This event was a significant milestone in space exploration."
             ),
-            Entities(
+            EntitiesList(
                 entities=[
                     "Apollo 11 mission",
                     "July 16, 1969",
@@ -130,7 +128,7 @@ class ContextEntityRecall(MetricWithLLM, SingleTurnMetric):
         self,
         text: str,
         callbacks: Callbacks,
-    ) -> Entities:
+    ) -> EntitiesList:
         assert self.llm is not None, "LLM is not initialized"
 
         entities = await self.context_entity_recall_prompt.generate(
