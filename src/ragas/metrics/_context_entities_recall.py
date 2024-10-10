@@ -5,12 +5,9 @@ import typing as t
 from dataclasses import dataclass, field
 from typing import Dict
 
-import numpy as np
 from langchain.pydantic_v1 import BaseModel
 
 from ragas.dataset_schema import SingleTurnSample
-from ragas.llms.output_parser import RagasOutputParserOld, get_json_format_instructions
-from ragas.llms.prompt import Prompt
 from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric
 from ragas.prompt import PydanticPrompt, StringIO
 
@@ -26,7 +23,9 @@ class Entities(BaseModel):
 
 class ExtractEntitiesPrompt(PydanticPrompt):
     name: str = "text_entity_extraction"
-    instruction: str = "Given a text, extract unique entities without repetition. Ensure you consider different forms or mentions of the same entity as a single entity."
+    instruction: str = (
+        "Given a text, extract unique entities without repetition. Ensure you consider different forms or mentions of the same entity as a single entity."
+    )
     input_model = StringIO
     output_model = Entities
     examples = [
