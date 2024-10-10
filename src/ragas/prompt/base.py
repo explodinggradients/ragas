@@ -38,6 +38,9 @@ class BasePrompt(ABC):
         self.language = language
         self.original_hash = original_hash
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(name={self.name}, language={self.language})"
+
     @abstractmethod
     async def generate(
         self,
