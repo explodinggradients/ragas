@@ -311,7 +311,9 @@ class Ensember:
     Combine multiple llm outputs for same input (n>1) to a single output
     """
 
-    def from_discrete(self, inputs: list[list[t.Dict]], attribute: str):
+    def from_discrete(
+        self, inputs: list[list[t.Dict]], attribute: str
+    ) -> t.List[t.Dict]:
         """
         Simple majority voting for binary values, ie [0,0,1] -> 0
         inputs: list of list of dicts each containing verdict for a single input
