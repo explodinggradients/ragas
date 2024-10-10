@@ -3,12 +3,14 @@ from __future__ import annotations
 import copy
 import json
 import logging
+import os
 import typing as t
 
 from langchain_core.exceptions import OutputParserException
 from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel
 
+from ragas._version import __version__
 from ragas.callbacks import new_group
 from ragas.exceptions import RagasOutputParserException
 from ragas.llms.prompt import PromptValue
@@ -222,6 +224,11 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         # throws ValueError if language is not supported
         _check_if_language_is_supported(target_language)
 
+        # set the original hash, this is used to
+        # identify the original prompt object when loading from file
+        if self.original_hash is None:
+            self.original_hash = hash(self)
+
         strings = get_all_strings(self.examples)
         translated_strings = await translate_statements_prompt.generate(
             llm=llm,
@@ -255,6 +262,97 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             indent=2,
         )[1:-1]
         return f"{self.__class__.__name__}({json_str})"
+
+    def __hash__(self):
+        # convert examples to json string for hashing
+        examples = []
+        for example in self.examples:
+            input_model, output_model = example
+            examples.append(
+                (input_model.model_dump_json(), output_model.model_dump_json())
+            )
+
+        # not sure if input_model and output_model should be included
+        return hash(
+            (
+                self.name,
+                self.input_model,
+                self.output_model,
+                self.instruction,
+                *examples,
+                self.language,
+            )
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, PydanticPrompt):
+            return False
+        return (
+            self.name == other.name
+            and self.input_model == other.input_model
+            and self.output_model == other.output_model
+            and self.instruction == other.instruction
+            and self.examples == other.examples
+            and self.language == other.language
+        )
+
+    def save(self, file_path: str):
+        """
+        Save the prompt to a file.
+        """
+        data = {
+            "ragas_version": __version__,
+            "original_hash": (
+                hash(self) if self.original_hash is None else self.original_hash
+            ),
+            "language": self.language,
+            "instruction": self.instruction,
+            "examples": [
+                {"input": example[0].model_dump(), "output": example[1].model_dump()}
+                for example in self.examples
+            ],
+        }
+        if os.path.exists(file_path):
+            raise FileExistsError(f"The file '{file_path}' already exists.")
+        with open(file_path, "w") as f:
+            json.dump(data, f, indent=2)
+            print(f"Prompt saved to {file_path}")
+
+    @classmethod
+    def load(cls, file_path: str) -> "PydanticPrompt[InputModel, OutputModel]":
+        with open(file_path, "r") as f:
+            data = json.load(f)
+
+        # You might want to add version compatibility checks here
+        ragas_version = data.get("ragas_version")
+        if ragas_version != __version__:
+            logger.warning(
+                "Prompt was saved with Ragas v%s, but you are loading it with Ragas v%s. "
+                "There might be incompatibilities.",
+                ragas_version,
+                __version__,
+            )
+        original_hash = data.get("original_hash")
+
+        prompt = cls()
+        instruction = data["instruction"]
+        examples = [
+            (
+                prompt.input_model(**example["input"]),
+                prompt.output_model(**example["output"]),
+            )
+            for example in data["examples"]
+        ]
+
+        prompt.instruction = instruction
+        prompt.examples = examples
+        prompt.language = data.get("language", prompt.language)
+
+        # Optionally, verify the loaded prompt's hash matches the saved hash
+        if original_hash is not None and hash(prompt) != original_hash:
+            logger.warning("Loaded prompt hash does not match the saved hash.")
+
+        return prompt
 
 
 # Ragas Output Parser

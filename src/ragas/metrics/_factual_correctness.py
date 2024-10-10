@@ -9,10 +9,7 @@ import numpy as np
 from numpy.typing import NDArray
 from pydantic import BaseModel, Field
 
-from ragas.experimental.metrics._faithfulness import (
-    NLIStatementInput,
-    NLIStatementPrompt,
-)
+from ragas.metrics._faithfulness import NLIStatementInput, NLIStatementPrompt
 from ragas.metrics.base import (
     MetricType,
     MetricWithLLM,

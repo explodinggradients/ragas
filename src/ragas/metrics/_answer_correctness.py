@@ -8,13 +8,11 @@ import numpy as np
 from pydantic import BaseModel
 
 from ragas.dataset_schema import SingleTurnSample
-from ragas.llms.output_parser import RagasOutputParserOld, get_json_format_instructions
-from ragas.llms.prompt import Prompt, PromptValue
 from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics._faithfulness import (
-    LONG_FORM_ANSWER_PROMPT,
+    FaithfulnessStatements,
     HasSegmentMethod,
-    _statements_output_parser,
+    LongFormAnswerPrompt,
 )
 from ragas.metrics.base import (
     MetricType,
@@ -23,122 +21,122 @@ from ragas.metrics.base import (
     SingleTurnMetric,
     get_segmenter,
 )
+from ragas.prompt import PydanticPrompt
 from ragas.run_config import RunConfig
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
+    from ragas.metrics._faithfulness import SentencesSimplified
+
 
 logger = logging.getLogger(__name__)
 
 
-class AnswerCorrectnessClassification(BaseModel):
-    TP: t.List[t.Dict[str, t.Any]]
-    FP: t.List[t.Dict[str, t.Any]]
-    FN: t.List[t.Dict[str, t.Any]]
+class QuestionAnswerGroundTruth(BaseModel):
+    question: str
+    answer: list[str]
+    ground_truth: list[str]
 
 
-_output_instructions = get_json_format_instructions(AnswerCorrectnessClassification)
-_output_parser = RagasOutputParserOld(pydantic_object=AnswerCorrectnessClassification)
+class StatementsWithReason(BaseModel):
+    statement: str
+    reason: str
 
-CORRECTNESS_INSTRUCTIONS = """\
-Given a ground truth and an answer statements, analyze each statement and classify them in one of the following categories:
 
-- TP (true positive): statements that are present in answer that are also directly supported by the one or more statements in ground truth,
-- FP (false positive): statements present in the answer but not directly supported by any statement in ground truth,
-- FN (false negative): statements found in the ground truth but not present in answer.
+class ClassificationWithReason(BaseModel):
+    TP: list[StatementsWithReason]
+    FP: list[StatementsWithReason]
+    FN: list[StatementsWithReason]
 
-Each statement can only belong to one of the categories. Provide a reason for each classification.
-"""
-CORRECTNESS_PROMPT = Prompt(
-    name="answer_correctness",
-    instruction=CORRECTNESS_INSTRUCTIONS,
-    output_format_instruction=_output_instructions,
-    examples=[
-        {
-            "question": """What powers the sun and what is its primary function?""",
-            "answer": [
-                "The sun is powered by nuclear fission, similar to nuclear reactors on Earth.",
-                "The primary function of the sun is to provide light to the solar system.",
-            ],
-            "ground_truth": [
-                "The sun is powered by nuclear fusion, where hydrogen atoms fuse to form helium.",
-                "This fusion process in the sun's core releases a tremendous amount of energy.",
-                "The energy from the sun provides heat and light, which are essential for life on Earth.",
-                "The sun's light plays a critical role in Earth's climate system.",
-                "Sunlight helps to drive the weather and ocean currents.",
-            ],
-            "classification": AnswerCorrectnessClassification.parse_obj(
-                {
-                    "TP": [
-                        {
-                            "statement": "The primary function of the sun is to provide light to the solar system.",
-                            "reason": "This statement is somewhat supported by the ground truth mentioning the sun providing light and its roles, though it focuses more broadly on the sun's energy.",
-                        }
-                    ],
-                    "FP": [
-                        {
-                            "statement": "The sun is powered by nuclear fission, similar to nuclear reactors on Earth.",
-                            "reason": "This statement is incorrect and contradicts the ground truth which states that the sun is powered by nuclear fusion.",
-                        }
-                    ],
-                    "FN": [
-                        {
-                            "statement": "The sun is powered by nuclear fusion, where hydrogen atoms fuse to form helium.",
-                            "reason": "This accurate description of the sun’s power source is not included in the answer.",
-                        },
-                        {
-                            "statement": "This fusion process in the sun's core releases a tremendous amount of energy.",
-                            "reason": "This process and its significance are not mentioned in the answer.",
-                        },
-                        {
-                            "statement": "The energy from the sun provides heat and light, which are essential for life on Earth.",
-                            "reason": "The answer only mentions light, omitting the essential aspects of heat and its necessity for life, which the ground truth covers.",
-                        },
-                        {
-                            "statement": "The sun's light plays a critical role in Earth's climate system.",
-                            "reason": "This broader impact of the sun’s light on Earth's climate system is not addressed in the answer.",
-                        },
-                        {
-                            "statement": "Sunlight helps to drive the weather and ocean currents.",
-                            "reason": "The effect of sunlight on weather patterns and ocean currents is omitted in the answer.",
-                        },
-                    ],
-                }
-            ).dict(),
-        },
-        {
-            "question": """What is the boiling point of water?""",
-            "answer": [
-                "The boiling point of water is 100 degrees Celsius at sea level"
-            ],
-            "ground_truth": [
-                "The boiling point of water is 100 degrees Celsius (212 degrees Fahrenheit) at sea level.",
-                "The boiling point of water can change with altitude.",
-            ],
-            "classification": AnswerCorrectnessClassification.parse_obj(
-                {
-                    "TP": [
-                        {
-                            "statement": "The boiling point of water is 100 degrees Celsius at sea level",
-                            "reason": "This statement is directly supported by the ground truth which specifies the boiling point of water as 100 degrees Celsius at sea level.",
-                        }
-                    ],
-                    "FP": [],
-                    "FN": [
-                        {
-                            "statement": "The boiling point of water can change with altitude.",
-                            "reason": "This additional information about how the boiling point of water can vary with altitude is not mentioned in the answer.",
-                        }
-                    ],
-                }
-            ).dict(),
-        },
-    ],
-    input_keys=["question", "answer", "ground_truth"],
-    output_key="classification",
-    output_type="json",
-)
+
+class CorrectnessClassifier(
+    PydanticPrompt[QuestionAnswerGroundTruth, ClassificationWithReason]
+):
+    instruction = "Given a ground truth and an answer statements, analyze each statement and classify them in one of the following categories: TP (true positive): statements that are present in answer that are also directly supported by the one or more statements in ground truth, FP (false positive): statements present in the answer but not directly supported by any statement in ground truth, FN (false negative): statements found in the ground truth but not present in answer. Each statement can only belong to one of the categories. Provide a reason for each classification."
+    input_model = QuestionAnswerGroundTruth
+    output_model = ClassificationWithReason
+    examples = [
+        (
+            QuestionAnswerGroundTruth(
+                question="What powers the sun and what is its primary function?",
+                answer=[
+                    "The sun is powered by nuclear fission, similar to nuclear reactors on Earth.",
+                    "The primary function of the sun is to provide light to the solar system.",
+                ],
+                ground_truth=[
+                    "The sun is powered by nuclear fusion, where hydrogen atoms fuse to form helium.",
+                    "This fusion process in the sun's core releases a tremendous amount of energy.",
+                    "The energy from the sun provides heat and light, which are essential for life on Earth.",
+                    "The sun's light plays a critical role in Earth's climate system.",
+                    "Sunlight helps to drive the weather and ocean currents.",
+                ],
+            ),
+            ClassificationWithReason(
+                TP=[
+                    StatementsWithReason(
+                        statement="The primary function of the sun is to provide light to the solar system.",
+                        reason="This statement is somewhat supported by the ground truth mentioning the sun providing light and its roles, though it focuses more broadly on the sun's energy.",
+                    )
+                ],
+                FP=[
+                    StatementsWithReason(
+                        statement="The sun is powered by nuclear fission, similar to nuclear reactors on Earth.",
+                        reason="This statement is incorrect and contradicts the ground truth which states that the sun is powered by nuclear fusion.",
+                    )
+                ],
+                FN=[
+                    StatementsWithReason(
+                        statement="The sun is powered by nuclear fusion, where hydrogen atoms fuse to form helium.",
+                        reason="This accurate description of the sun’s power source is not included in the answer.",
+                    ),
+                    StatementsWithReason(
+                        statement="This fusion process in the sun's core releases a tremendous amount of energy.",
+                        reason="This process and its significance are not mentioned in the answer.",
+                    ),
+                    StatementsWithReason(
+                        statement="The energy from the sun provides heat and light, which are essential for life on Earth.",
+                        reason="The answer only mentions light, omitting the essential aspects of heat and its necessity for life, which the ground truth covers.",
+                    ),
+                    StatementsWithReason(
+                        statement="The sun's light plays a critical role in Earth's climate system.",
+                        reason="This broader impact of the sun’s light on Earth's climate system is not addressed in the answer.",
+                    ),
+                    StatementsWithReason(
+                        statement="Sunlight helps to drive the weather and ocean currents.",
+                        reason="The effect of sunlight on weather patterns and ocean currents is omitted in the answer.",
+                    ),
+                ],
+            ),
+        ),
+        (
+            QuestionAnswerGroundTruth(
+                question="What is the boiling point of water?",
+                answer=[
+                    "The boiling point of water is 100 degrees Celsius at sea level"
+                ],
+                ground_truth=[
+                    "The boiling point of water is 100 degrees Celsius (212 degrees Fahrenheit) at sea level.",
+                    "The boiling point of water can change with altitude.",
+                ],
+            ),
+            ClassificationWithReason(
+                TP=[
+                    StatementsWithReason(
+                        statement="The boiling point of water is 100 degrees Celsius at sea level",
+                        reason="This statement is directly supported by the ground truth which specifies the boiling point of water as 100 degrees Celsius at sea level.",
+                    )
+                ],
+                FP=[],
+                FN=[
+                    StatementsWithReason(
+                        statement="The boiling point of water can change with altitude.",
+                        reason="This additional information about how the boiling point of water can vary with altitude is not mentioned in the answer.",
+                    )
+                ],
+            ),
+        ),
+    ]
 
 
 @dataclass
@@ -164,9 +162,9 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
             MetricType.SINGLE_TURN: {"user_input", "response", "reference"}
         }
     )
-    correctness_prompt: Prompt = field(default_factory=lambda: CORRECTNESS_PROMPT)
-    long_form_answer_prompt: Prompt = field(
-        default_factory=lambda: LONG_FORM_ANSWER_PROMPT
+    correctness_prompt: PydanticPrompt = field(default_factory=CorrectnessClassifier)
+    long_form_answer_prompt: PydanticPrompt = field(
+        default_factory=LongFormAnswerPrompt
     )
     weights: list[float] = field(default_factory=lambda: [0.75, 0.25])
     answer_similarity: t.Optional[AnswerSimilarity] = None
@@ -195,7 +193,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
             )
 
     def _compute_statement_presence(
-        self, prediction: AnswerCorrectnessClassification
+        self, prediction: ClassificationWithReason
     ) -> float:
         tp = len(prediction.TP)
         fp = len(prediction.FP)
@@ -203,18 +201,27 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         score = tp / (tp + 0.5 * (fp + fn)) if tp > 0 else 0
         return score
 
-    def _create_statements_prompt(self, question: str, text: str) -> PromptValue:
+    async def _create_simplified_statements(
+        self, question: str, text: str, callbacks: Callbacks
+    ) -> SentencesSimplified:
         assert self.sentence_segmenter is not None, "sentence_segmenter is not set"
+        assert self.llm is not None, "llm is not set"
 
         sentences = self.sentence_segmenter.segment(text)
-        sentences = [
-            sentence for sentence in sentences if sentence.strip().endswith(".")
-        ]
-        sentences = "\n".join([f"{i}:{x}" for i, x in enumerate(sentences)])
-        prompt_value = self.long_form_answer_prompt.format(
-            question=question, answer=text, sentences=sentences
+        sentences_with_index = {
+            i: sentence
+            for i, sentence in enumerate(sentences)
+            if sentence.strip().endswith(".")
+        }
+
+        statements_simplified = await self.long_form_answer_prompt.generate(
+            llm=self.llm,
+            data=FaithfulnessStatements(
+                question=question, answer=text, sentences=sentences_with_index
+            ),
+            callbacks=callbacks,
         )
-        return prompt_value
+        return statements_simplified
 
     async def _single_turn_ascore(
         self: t.Self, sample: SingleTurnSample, callbacks: Callbacks
@@ -226,42 +233,29 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM must be set"
 
+        # extract the statements from the answer and the ground truth
         question = row["user_input"]
-        statements = {}
+        statements: t.Dict[str, t.List[str]] = {}
         for item in ["response", "reference"]:
-            p_value = self._create_statements_prompt(question, row[item])
-            item_statement = await self.llm.generate(p_value, callbacks=callbacks)
-            statements[item] = await _statements_output_parser.aparse(
-                item_statement.generations[0][0].text,
-                p_value,
-                self.llm,
-                self.max_retries,
+            simplified_statements = await self._create_simplified_statements(
+                question, row[item], callbacks
             )
-            statements[item] = (
-                statements[item].dicts() if statements[item] is not None else []
-            )
+            _statements_unwrapped = []
+            for component in simplified_statements.sentences:
+                _statements_unwrapped.extend(component.simpler_statements)
+            statements[item] = _statements_unwrapped
 
         if not all([val == [] for val in statements.values()]):
-            ground_truth = [
-                statement
-                for item in statements["reference"]
-                for statement in item["simpler_statements"]
-            ]
-            answer = [
-                statement
-                for item in statements["response"]
-                for statement in item["simpler_statements"]
-            ]
-            p_value = self.correctness_prompt.format(
-                question=question,
-                ground_truth=ground_truth,
-                answer=answer,
-            )
-            is_statement_present = await self.llm.generate(p_value, callbacks=callbacks)
-            result_text = is_statement_present.generations[0][0].text
-
-            answers = await _output_parser.aparse(
-                result_text, p_value, self.llm, self.max_retries
+            ground_truth = [statement for statement in statements["reference"]]
+            answer = [statement for statement in statements["response"]]
+            answers = await self.correctness_prompt.generate(
+                llm=self.llm,
+                data=QuestionAnswerGroundTruth(
+                    question=question,
+                    answer=answer,
+                    ground_truth=ground_truth,
+                ),
+                callbacks=callbacks,
             )
             if answers is None:
                 return np.nan
@@ -285,19 +279,6 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         )
 
         return float(score)
-
-    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
-        assert self.llm is not None, "llm must be set to compute score"
-
-        logger.info(f"Adapting AnswerCorrectness metric to {language}")
-        self.correctness_prompt = self.correctness_prompt.adapt(
-            language, self.llm, cache_dir
-        )
-
-        self.sentence_segmenter = get_segmenter(language=language, clean=False)
-
-    def save(self, cache_dir: t.Optional[str] = None) -> None:
-        self.correctness_prompt.save(cache_dir)
 
 
 answer_correctness = AnswerCorrectness()

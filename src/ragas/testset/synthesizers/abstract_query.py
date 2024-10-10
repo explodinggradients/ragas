@@ -17,7 +17,7 @@ from .prompts import (
     AbstractQueryFromTheme,
     CAQInput,
     CommonConceptsFromKeyphrases,
-    CommonThemeFromSummaries,
+    CommonThemeFromSummariesPrompt,
     ComparativeAbstractQuery,
     Concepts,
     KeyphrasesAndNumConcepts,
@@ -44,7 +44,7 @@ class AbstractQuerySynthesizer(QuerySynthesizer):
 
     def __post_init__(self):
         super().__post_init__()
-        self.common_theme_prompt = CommonThemeFromSummaries()
+        self.common_theme_prompt = CommonThemeFromSummariesPrompt()
 
     async def _generate_scenarios(
         self, n: int, knowledge_graph: KnowledgeGraph, callbacks: Callbacks

@@ -20,7 +20,7 @@ class Themes(BaseModel):
     themes: t.List[Theme]
 
 
-class CommonThemeFromSummaries(PydanticPrompt[Summaries, Themes]):
+class CommonThemeFromSummariesPrompt(PydanticPrompt[Summaries, Themes]):
     input_model = Summaries
     output_model = Themes
     instruction = "Analyze the following summaries and identify given number of common themes. The themes should be concise, descriptive, and highlight a key aspect shared across the summaries."
