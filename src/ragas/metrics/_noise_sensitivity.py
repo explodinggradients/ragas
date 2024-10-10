@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import inspect
-import json
 import logging
 import typing as t
 from dataclasses import dataclass, field
@@ -9,27 +7,24 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from ragas.dataset_schema import SingleTurnSample
-from ragas.llms.prompt import Prompt
 from ragas.metrics._faithfulness import (
-    LONG_FORM_ANSWER_PROMPT,
-    NLI_STATEMENTS_MESSAGE,
+    FaithfulnessStatements,
     HasSegmentMethod,
-    StatementFaithfulnessAnswers,
-    _faithfulness_output_parser,
-    _statements_output_parser,
+    LongFormAnswerPrompt,
+    NLIStatementInput,
+    NLIStatementPrompt,
 )
 from ragas.metrics.base import (
     MetricType,
     MetricWithLLM,
     SingleTurnMetric,
-    ensembler,
     get_segmenter,
 )
+from ragas.prompt import PydanticPrompt
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
-    from ragas.llms.prompt import PromptValue
 
 
 logger = logging.getLogger(__name__)
@@ -49,10 +44,8 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
             }
         }
     )
-    nli_statements_message: Prompt = field(
-        default_factory=lambda: NLI_STATEMENTS_MESSAGE
-    )
-    statement_prompt: Prompt = field(default_factory=lambda: LONG_FORM_ANSWER_PROMPT)
+    nli_statements_message: PydanticPrompt = field(default_factory=NLIStatementPrompt)
+    statement_prompt: PydanticPrompt = field(default_factory=LongFormAnswerPrompt)
     sentence_segmenter: t.Optional[HasSegmentMethod] = None
     max_retries: int = 1
     _reproducibility: int = 1
@@ -83,115 +76,48 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
             )
         self.name = f"{self.name}_{self.focus}"  # type: ignore
 
-    def _create_nli_prompt(self, contexts: str, statements: t.List[str]) -> PromptValue:
-        assert self.llm is not None, "llm must be set to compute score"
-
-        statements_str: str = json.dumps(statements, ensure_ascii=False)
-        prompt_value = self.nli_statements_message.format(
-            context=contexts, statements=statements_str
-        )
-        return prompt_value
-
-    def _create_statements_prompt(self, text: str, question: str) -> PromptValue:
-        assert self.sentence_segmenter is not None, "sentence_segmenter is not set"
-        # contexts = row["contexts"]
-        sentences = self.sentence_segmenter.segment(text)
-        sentences = [
-            sentence for sentence in sentences if sentence.strip().endswith(".")
-        ]
-        sentences = "\n".join([f"{i}:{x}" for i, x in enumerate(sentences)])
-        prompt_value = self.statement_prompt.format(
-            question=question, answer=text, sentences=sentences
-        )
-        return prompt_value
-
     async def _evaluate_statement_faithfulness(
-        self, statements, context: str, callbacks: Callbacks
-    ):
+        self, statements: t.List[str], context: str, callbacks: Callbacks
+    ) -> t.List[int]:
         assert self.llm is not None, "LLM is not set"
 
-        p_value = self._create_nli_prompt(context, statements)
-        nli_result = await self.llm.generate(
-            p_value,
+        verdicts = await self.nli_statements_message.generate(
+            data=NLIStatementInput(context=context, statements=statements),
+            llm=self.llm,
             callbacks=callbacks,
-            n=self._reproducibility,
         )
 
-        nli_result_text = [
-            nli_result.generations[0][i].text for i in range(self._reproducibility)
+        verdict_list = [
+            1 if statement.verdict else 0 for statement in verdicts.statements
         ]
-        faithfulness_list = [
-            await _faithfulness_output_parser.aparse(
-                text, p_value, self.llm, self.max_retries
-            )
-            for text in nli_result_text
-        ]
-
-        faithfulness_list = [
-            faith.dicts() for faith in faithfulness_list if faith is not None
-        ]
-
-        if faithfulness_list:
-            faithfulness_list = ensembler.from_discrete(
-                faithfulness_list,
-                "verdict",
-            )
-
-            faithfulness_list = StatementFaithfulnessAnswers.model_validate(
-                faithfulness_list
-            )
-
-            verdict_list = [
-                1 if statement.verdict else 0 for statement in faithfulness_list.dicts()
-            ]
-            return np.array(verdict_list)
-        else:
-            return np.nan
+        return verdict_list
 
     async def _decompose_answer_into_statements(
         self, text: str, question: str, callbacks: Callbacks
-    ):
+    ) -> t.List[str]:
         assert self.llm is not None, "LLM is not set"
+        assert self.sentence_segmenter is not None, "sentence_segmenter is not set"
 
-        p_value = self._create_statements_prompt(text, question)
+        sentences = self.sentence_segmenter.segment(text)
+        sentences_with_index = {
+            i: sentence
+            for i, sentence in enumerate(sentences)
+            if sentence.strip().endswith(".")
+        }
 
-        if inspect.iscoroutinefunction(self.llm.generate):
-            statements_gen = await self.llm.generate(
-                p_value,
-                callbacks=callbacks,
-            )
-        else:
-            statements_gen = await self.llm.generate(
-                p_value,
-                callbacks=callbacks,
-            )
-
-        # Await the aparse method
-        statements = await _statements_output_parser.aparse(
-            statements_gen.generations[0][0].text,
-            p_value,
-            self.llm,
-            self.max_retries,  # type: ignore
+        statements_simplified = await self.statement_prompt.generate(
+            llm=self.llm,
+            data=FaithfulnessStatements(
+                question=question, answer=text, sentences=sentences_with_index
+            ),
+            callbacks=callbacks,
         )
 
-        if statements is None:
-            return np.nan
-
-        # Ensure statements is not a coroutine before calling dicts()
-        if inspect.iscoroutine(statements):
-            statements = await statements
-
-        # Add error handling and logging
-        if not hasattr(statements, "dicts"):
-            logging.error(f"Unexpected type for statements: {type(statements)}")
-            logging.error(f"Statements content: {statements}")
-            raise AttributeError(
-                f"'statements' object of type {type(statements)} has no attribute 'dicts'"
-            )
-
-        statements = [item["simpler_statements"] for item in statements.dicts()]
-        statements = [item for sublist in statements for item in sublist]
-
+        statements = []
+        if statements_simplified is None:
+            return statements
+        for component in statements_simplified.sentences:
+            statements.extend(component.simpler_statements)
         return statements
 
     def _compute_score(self, answers: t.Dict) -> float:
@@ -248,35 +174,21 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
             verdicts = await self._evaluate_statement_faithfulness(
                 gt_statements, ctx, callbacks
             )
-            gt_verdictslist.append(verdicts)
+            gt_verdictslist.append(np.array(verdicts))
 
             verdicts = await self._evaluate_statement_faithfulness(
                 ans_statements, ctx, callbacks
             )
-            ans_verdictslist.append(verdicts)
+            ans_verdictslist.append(np.array(verdicts))
 
         answers = {}
         answers["retrieved2ground_truth"] = np.array(gt_verdictslist).T
         answers["retrieved2answer"] = np.array(ans_verdictslist).T
-        answers["ground_truth2answer"] = await self._evaluate_statement_faithfulness(
-            ans_statements, row["reference"], callbacks
+        answers["ground_truth2answer"] = np.array(
+            await self._evaluate_statement_faithfulness(
+                ans_statements, row["reference"], callbacks
+            )
         )
         answers["ground_truth2answer"] = np.array([answers["ground_truth2answer"]])
         answers = {k: v.astype(bool) for k, v in answers.items()}
         return self._compute_score(answers)
-
-    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
-        assert self.llm is not None, "LLM is not set"
-
-        self.nli_statements_message = self.nli_statements_message.adapt(
-            language, self.llm, cache_dir
-        )
-        self.statement_prompt = self.statement_prompt.adapt(
-            language, self.llm, cache_dir
-        )
-
-        self.sentence_segmenter = get_segmenter(language=language, clean=False)
-
-    def save(self, cache_dir: t.Optional[str] = None) -> None:
-        self.nli_statements_message.save(cache_dir)
-        self.statement_prompt.save(cache_dir)
