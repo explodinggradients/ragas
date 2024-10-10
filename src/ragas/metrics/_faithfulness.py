@@ -33,6 +33,24 @@ class HasSegmentMethod(t.Protocol):
 logger = logging.getLogger(__name__)
 
 
+# TODO: Remove this!!!
+class Statements(BaseModel):
+    sentence_index: int = Field(
+        ..., description="Index of the sentence from the statement list"
+    )
+    simpler_statements: t.List[str] = Field(..., description="the simpler statements")
+
+
+class StatementsAnswers(RootModel):
+    root: t.List[Statements]
+
+
+_statements_output_instructions = get_json_format_instructions(StatementsAnswers)
+_statements_output_parser = RagasOutputParserOld(pydantic_object=StatementsAnswers)
+
+########################################################
+
+
 class FaithfulnessStatements(BaseModel):
     question: str = Field(description="The question to answer")
     answer: str = Field(description="The answer to the question")
