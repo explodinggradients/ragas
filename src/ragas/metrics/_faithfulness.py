@@ -21,6 +21,7 @@ if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
 
+
 class HasSegmentMethod(t.Protocol):
     def segment(self, text) -> t.Any: ...
 

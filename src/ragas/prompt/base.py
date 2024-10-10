@@ -25,12 +25,18 @@ def _check_if_language_is_supported(language: str):
 
 
 class BasePrompt(ABC):
-    def __init__(self, name: t.Optional[str] = None, language: str = "english"):
+    def __init__(
+        self,
+        name: t.Optional[str] = None,
+        language: str = "english",
+        original_hash: t.Optional[str] = None,
+    ):
         if name is None:
             self.name = camel_to_snake(self.__class__.__name__)
 
         _check_if_language_is_supported(language)
         self.language = language
+        self.original_hash = original_hash
 
     @abstractmethod
     async def generate(
@@ -65,9 +71,15 @@ class BasePrompt(ABC):
 class StringIO(BaseModel):
     text: str
 
+    def __hash__(self):
+        return hash(self.text)
+
 
 class BoolIO(BaseModel):
     value: bool
+
+    def __hash__(self):
+        return hash(self.value)
 
 
 class StringPrompt(BasePrompt):

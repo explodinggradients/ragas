@@ -31,7 +31,7 @@ class ResponseRelevanceInput(BaseModel):
     response: str
 
 
-class RessponseRelevancePrompt(
+class ResponseRelevancePrompt(
     PydanticPrompt[ResponseRelevanceInput, ResponseRelevanceOutput]
 ):
     instruction = """Generate a question for the given answer and Identify if answer is noncommittal. Give noncommittal as 1 if the answer is noncommittal and 0 if the answer is committal. A noncommittal answer is one that is evasive, vague, or ambiguous. For example, "I don't know" or "I'm not sure" are noncommittal answers"""
@@ -87,7 +87,7 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
             }
         }
     )
-    question_generation: PydanticPrompt = RessponseRelevancePrompt()
+    question_generation: PydanticPrompt = ResponseRelevancePrompt()
     strictness: int = 3
 
     def calculate_similarity(self, question: str, generated_questions: list[str]):
