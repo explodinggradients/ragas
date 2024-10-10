@@ -18,6 +18,7 @@ from ragas.metrics.base import (
     ensembler,
     get_segmenter,
 )
+from ragas.prompt import PydanticPrompt
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -32,57 +33,62 @@ class HasSegmentMethod(t.Protocol):
 logger = logging.getLogger(__name__)
 
 
-class Statements(BaseModel):
-    sentence_index: int = Field(
-        ..., description="Index of the sentence from the statement list"
+class FaithfulnessStatements(BaseModel):
+    question: str = Field(description="The question to answer")
+    answer: str = Field(description="The answer to the question")
+    sentences: t.Dict[int, str] = Field(
+        description="A mapping of sentence index to the sentence"
     )
-    simpler_statements: t.List[str] = Field(..., description="the simpler statements")
 
 
-class StatementsAnswers(RootModel):
-    root: t.List[Statements]
+class SentenceComponents(BaseModel):
+    sentence_index: int = Field(description="The index of the sentence")
+    simpler_statements: t.List[str] = Field(
+        description="A list of simpler statements that can be directly inferred from the context"
+    )
 
 
-_statements_output_instructions = get_json_format_instructions(StatementsAnswers)
-_statements_output_parser = RagasOutputParserOld(pydantic_object=StatementsAnswers)
+class SentencesSimplified(BaseModel):
+    sentences: t.List[SentenceComponents] = Field(
+        description="A list of sentences and their simpler versions"
+    )
 
 
-LONG_FORM_ANSWER_PROMPT = Prompt(
-    name="long_form_answer",
-    output_format_instruction=_statements_output_instructions,
-    instruction="Given a question, an answer, and sentences from the answer analyze the complexity of each sentence given under 'sentences' and break down each sentence into one or more fully understandable statements while also ensuring no pronouns are used in each statement. Format the outputs in JSON.",
-    examples=[
-        {
-            "question": "Who was Albert Einstein and what is he best known for?",
-            "answer": "He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.",
-            "sentences": """
-        0:He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. 
-        1:He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.
-        """,
-            "analysis": StatementsAnswers.parse_obj(
-                [
-                    {
-                        "sentence_index": 0,
-                        "simpler_statements": [
-                            "Albert Einstein was a German-born theoretical physicist.",
-                            "Albert Einstein is recognized as one of the greatest and most influential physicists of all time.",
-                        ],
-                    },
-                    {
-                        "sentence_index": 1,
-                        "simpler_statements": [
-                            "Albert Einstein was best known for developing the theory of relativity.",
-                            "Albert Einstein also made important contributions to the development of the theory of quantum mechanics.",
-                        ],
-                    },
-                ]
-            ).model_dump(),
-        }
-    ],
-    input_keys=["question", "answer", "sentences"],
-    output_key="analysis",
-    language="english",
+# examples
+example_input_1 = FaithfulnessStatements(
+    question="Who was Albert Einstein and what is he best known for?",
+    answer="He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.",
+    sentences={
+        0: "He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time.",
+        1: "He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.",
+    },
 )
+
+example_output_1 = SentencesSimplified(
+    sentences=[
+        SentenceComponents(
+            sentence_index=0,
+            simpler_statements=[
+                "Albert Einstein was a German-born theoretical physicist.",
+                "Albert Einstein is recognized as one of the greatest and most influential physicists of all time.",
+            ],
+        ),
+        SentenceComponents(
+            sentence_index=1,
+            simpler_statements=[
+                "Albert Einstein was best known for developing the theory of relativity.",
+                "Albert Einstein also made important contributions to the development of the theory of quantum mechanics.",
+            ],
+        ),
+    ]
+)
+
+
+class LongFormAnswerPrompt(PydanticPrompt[FaithfulnessStatements, SentencesSimplified]):
+    instruction = "Given a question, an answer, and sentences from the answer analyze the complexity of each sentence given under 'sentences' and break down each sentence into one or more fully understandable statements while also ensuring no pronouns are used in each statement. Format the outputs in JSON."
+    input_model = FaithfulnessStatements
+    output_model = SentencesSimplified
+    examples = [(example_input_1, example_output_1)]
 
 
 class StatementFaithfulnessAnswer(BaseModel):
@@ -91,77 +97,73 @@ class StatementFaithfulnessAnswer(BaseModel):
     verdict: int = Field(..., description="the verdict(0/1) of the faithfulness.")
 
 
-class StatementFaithfulnessAnswers(RootModel):
-    root: t.List[StatementFaithfulnessAnswer]
-
-    def dicts(self):
-        return self.model_dump()
+class NLIStatementOutput(BaseModel):
+    statements: t.List[StatementFaithfulnessAnswer]
 
 
-_faithfulness_output_instructions = get_json_format_instructions(
-    StatementFaithfulnessAnswers
-)
-_faithfulness_output_parser = RagasOutputParserOld(
-    pydantic_object=StatementFaithfulnessAnswers
-)
+class NLIStatementInput(BaseModel):
+    context: str = Field(..., description="The context of the question")
+    statements: t.List[str] = Field(..., description="The statements to judge")
 
-NLI_STATEMENTS_MESSAGE = Prompt(
-    name="nli_statements",
-    instruction="Your task is to judge the faithfulness of a series of statements based on a given context. For each statement you must return verdict as 1 if the statement can be directly inferred based on the context or 0 if the statement can not be directly inferred based on the context.",
-    output_format_instruction=_faithfulness_output_instructions,
-    examples=[
-        {
-            "context": """John is a student at XYZ University. He is pursuing a degree in Computer Science. He is enrolled in several courses this semester, including Data Structures, Algorithms, and Database Management. John is a diligent student and spends a significant amount of time studying and completing assignments. He often stays late in the library to work on his projects.""",
-            "statements": [
-                "John is majoring in Biology.",
-                "John is taking a course on Artificial Intelligence.",
-                "John is a dedicated student.",
-                "John has a part-time job.",
-            ],
-            "answer": StatementFaithfulnessAnswers.parse_obj(
-                [
-                    {
-                        "statement": "John is majoring in Biology.",
-                        "reason": "John's major is explicitly mentioned as Computer Science. There is no information suggesting he is majoring in Biology.",
-                        "verdict": 0,
-                    },
-                    {
-                        "statement": "John is taking a course on Artificial Intelligence.",
-                        "reason": "The context mentions the courses John is currently enrolled in, and Artificial Intelligence is not mentioned. Therefore, it cannot be deduced that John is taking a course on AI.",
-                        "verdict": 0,
-                    },
-                    {
-                        "statement": "John is a dedicated student.",
-                        "reason": "The context states that he spends a significant amount of time studying and completing assignments. Additionally, it mentions that he often stays late in the library to work on his projects, which implies dedication.",
-                        "verdict": 1,
-                    },
-                    {
-                        "statement": "John has a part-time job.",
-                        "reason": "There is no information given in the context about John having a part-time job.",
-                        "verdict": 0,
-                    },
+
+class NLIStatementPrompt(PydanticPrompt[NLIStatementInput, NLIStatementOutput]):
+    instruction = "Your task is to judge the faithfulness of a series of statements based on a given context. For each statement you must return verdict as 1 if the statement can be directly inferred based on the context or 0 if the statement can not be directly inferred based on the context."
+    input_model = NLIStatementInput
+    output_model = NLIStatementOutput
+    examples = [
+        (
+            NLIStatementInput(
+                context="""John is a student at XYZ University. He is pursuing a degree in Computer Science. He is enrolled in several courses this semester, including Data Structures, Algorithms, and Database Management. John is a diligent student and spends a significant amount of time studying and completing assignments. He often stays late in the library to work on his projects.""",
+                statements=[
+                    "John is majoring in Biology.",
+                    "John is taking a course on Artificial Intelligence.",
+                    "John is a dedicated student.",
+                    "John has a part-time job.",
+                ],
+            ),
+            NLIStatementOutput(
+                statements=[
+                    StatementFaithfulnessAnswer(
+                        statement="John is majoring in Biology.",
+                        reason="John's major is explicitly mentioned as Computer Science. There is no information suggesting he is majoring in Biology.",
+                        verdict=0,
+                    ),
+                    StatementFaithfulnessAnswer(
+                        statement="John is taking a course on Artificial Intelligence.",
+                        reason="The context mentions the courses John is currently enrolled in, and Artificial Intelligence is not mentioned. Therefore, it cannot be deduced that John is taking a course on AI.",
+                        verdict=0,
+                    ),
+                    StatementFaithfulnessAnswer(
+                        statement="John is a dedicated student.",
+                        reason="The context states that he spends a significant amount of time studying and completing assignments. Additionally, it mentions that he often stays late in the library to work on his projects, which implies dedication.",
+                        verdict=1,
+                    ),
+                    StatementFaithfulnessAnswer(
+                        statement="John has a part-time job.",
+                        reason="There is no information given in the context about John having a part-time job.",
+                        verdict=0,
+                    ),
                 ]
-            ).model_dump(),
-        },
-        {
-            "context": """Photosynthesis is a process used by plants, algae, and certain bacteria to convert light energy into chemical energy.""",
-            "statements": ["Albert Einstein was a genius."],
-            "answer": StatementFaithfulnessAnswers.model_validate(
-                [
-                    {
-                        "statement": "Albert Einstein was a genius.",
-                        "reason": "The context and statement are unrelated",
-                        "verdict": 0,
-                    }
+            ),
+        ),
+        (
+            NLIStatementInput(
+                context="Photosynthesis is a process used by plants, algae, and certain bacteria to convert light energy into chemical energy.",
+                statements=[
+                    "Albert Einstein was a genius.",
+                ],
+            ),
+            NLIStatementOutput(
+                statements=[
+                    StatementFaithfulnessAnswer(
+                        statement="Albert Einstein was a genius.",
+                        reason="The context and statement are unrelated",
+                        verdict=0,
+                    )
                 ]
-            ).model_dump(),
-        },
-    ],
-    input_keys=["context", "statements"],
-    output_key="answer",
-    output_type="json",
-    language="english",
-)  # noqa: E501
+            ),
+        ),
+    ]
 
 
 @dataclass
@@ -176,10 +178,8 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
             }
         }
     )
-    nli_statements_message: Prompt = field(
-        default_factory=lambda: NLI_STATEMENTS_MESSAGE
-    )
-    statement_prompt: Prompt = field(default_factory=lambda: LONG_FORM_ANSWER_PROMPT)
+    nli_statements_message: PydanticPrompt = field(default_factory=NLIStatementPrompt)
+    statement_prompt: PydanticPrompt = field(default_factory=LongFormAnswerPrompt)
     sentence_segmenter: t.Optional[HasSegmentMethod] = None
     max_retries: int = 1
     _reproducibility: int = 1
@@ -205,38 +205,49 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
             language = self.nli_statements_message.language
             self.sentence_segmenter = get_segmenter(language=language, clean=False)
 
-    def _create_nli_prompt(self, row: t.Dict, statements: t.List[str]) -> PromptValue:
+    async def _create_verdicts(
+        self, row: t.Dict, statements: t.List[str], callbacks: Callbacks
+    ) -> NLIStatementOutput:
         assert self.llm is not None, "llm must be set to compute score"
 
-        contexts = row["retrieved_contexts"]
-        # check if the statements are support in the contexts
-        contexts_str: str = "\n".join(contexts)
-        statements_str: str = json.dumps(statements, ensure_ascii=False)
-        prompt_value = self.nli_statements_message.format(
-            context=contexts_str, statements=statements_str
+        contexts_str: str = "\n".join(row["retrieved_contexts"])
+        verdicts = await self.nli_statements_message.generate(
+            data=NLIStatementInput(context=contexts_str, statements=statements),
+            llm=self.llm,
+            callbacks=callbacks,
         )
-        return prompt_value
 
-    def _create_statements_prompt(self, row: t.Dict) -> PromptValue:
+        return verdicts
+
+    async def _create_statements(
+        self, row: t.Dict, callbacks: Callbacks
+    ) -> SentencesSimplified:
+        assert self.llm is not None, "llm is not set"
         assert self.sentence_segmenter is not None, "sentence_segmenter is not set"
 
         text, question = row["response"], row["user_input"]
         sentences = self.sentence_segmenter.segment(text)
-        sentences = [
-            sentence for sentence in sentences if sentence.strip().endswith(".")
-        ]
-        sentences = "\n".join([f"{i}:{x}" for i, x in enumerate(sentences)])
-        prompt_value = self.statement_prompt.format(
-            question=question, answer=text, sentences=sentences
-        )
-        return prompt_value
+        sentences_with_index = {
+            i: sentence
+            for i, sentence in enumerate(sentences)
+            if sentence.strip().endswith(".")
+        }
 
-    def _compute_score(self, answers: StatementFaithfulnessAnswers):
+        statements_simplified = await self.statement_prompt.generate(
+            llm=self.llm,
+            data=FaithfulnessStatements(
+                question=question, answer=text, sentences=sentences_with_index
+            ),
+            callbacks=callbacks,
+        )
+        return statements_simplified
+
+    def _compute_score(self, answers: NLIStatementOutput):
         # check the verdicts and compute the score
         faithful_statements = sum(
-            1 if answer['verdict'] else 0 for answer in answers.model_dump()
+            1 if answer.verdict else 0 for answer in answers.statements
         )
-        num_statements = len(answers.model_dump())
+        num_statements = len(answers.statements)
         if num_statements:
             score = faithful_statements / num_statements
         else:
@@ -257,75 +268,17 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
         """
         assert self.llm is not None, "LLM is not set"
 
-        p_value = self._create_statements_prompt(row)
-        statements = await self.llm.generate(
-            p_value,
-            callbacks=callbacks,
-        )
-        statements = await _statements_output_parser.aparse(
-            statements.generations[0][0].text, p_value, self.llm, self.max_retries
-        )
-
-        if statements is None:
+        statements_simplified = await self._create_statements(row, callbacks)
+        if statements_simplified is None:
             return np.nan
 
-        statements = [item["simpler_statements"] for item in statements.model_dump()]
-        statements = [item for sublist in statements for item in sublist]
+        # unwrap the statements
+        statements = []
+        for component in statements_simplified.sentences:
+            statements.extend(component.simpler_statements)
 
-        assert isinstance(statements, t.List), "statements must be a list"
-
-        p_value = self._create_nli_prompt(row, statements)
-        nli_result = await self.llm.generate(
-            p_value,
-            callbacks=callbacks,
-            n=self._reproducibility,
-        )
-
-        nli_result_text = [
-            nli_result.generations[0][i].text for i in range(self._reproducibility)
-        ]
-        faithfulness_list = [
-            await _faithfulness_output_parser.aparse(
-                text, p_value, self.llm, self.max_retries
-            )
-            for text in nli_result_text
-        ]
-
-        faithfulness_list = [
-            faith.model_dump() for faith in faithfulness_list if faith is not None
-        ]
-
-        if faithfulness_list:
-            faithfulness_list = ensembler.from_discrete(
-                faithfulness_list,
-                "verdict",
-            )
-
-            faithfulness_list = StatementFaithfulnessAnswers.parse_obj(
-                faithfulness_list
-            )
-        else:
-            return np.nan
-
-        return self._compute_score(faithfulness_list)
-
-    def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
-        assert self.llm is not None, "LLM is not set"
-
-        logger.info(f"Adapting Faithfulness metric to {language}")
-
-        self.nli_statements_message = self.nli_statements_message.adapt(
-            language, self.llm, cache_dir
-        )
-        self.statement_prompt = self.statement_prompt.adapt(
-            language, self.llm, cache_dir
-        )
-
-        self.sentence_segmenter = get_segmenter(language=language, clean=False)
-
-    def save(self, cache_dir: t.Optional[str] = None) -> None:
-        self.nli_statements_message.save(cache_dir)
-        self.statement_prompt.save(cache_dir)
+        verdicts = await self._create_verdicts(row, statements, callbacks)
+        return self._compute_score(verdicts)
 
 
 @dataclass
@@ -370,21 +323,13 @@ class FaithfulnesswithHHEM(Faithfulness):
         """
         assert self.llm is not None, "LLM is not set"
 
-        p_value = self._create_statements_prompt(row)
-        statements = await self.llm.generate(
-            p_value,
-            callbacks=callbacks,
-        )
-        statements = await _statements_output_parser.aparse(
-            statements.generations[0][0].text, p_value, self.llm, self.max_retries
-        )
-
-        if statements is None:
+        statements_simplified = await self._create_statements(row, callbacks)
+        if statements_simplified is None:
             return np.nan
 
-        statements = [item["simpler_statements"] for item in statements.model_dump()]
-        statements = [item for sublist in statements for item in sublist]
-
+        statements = []
+        for components in statements_simplified.sentences:
+            statements.extend(components.simpler_statements)
         assert isinstance(statements, t.List), "statements must be a list"
 
         scores = []
