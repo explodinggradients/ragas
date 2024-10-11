@@ -93,7 +93,7 @@ class SemanticSimilarity(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
 
 class AnswerSimilarity(SemanticSimilarity):
     name: str = "answer_similarity"  # type: ignore
-    
+
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
         return await super()._ascore(row, callbacks)
 
