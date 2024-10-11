@@ -9,7 +9,7 @@ Evaluating RAG (Retrieval-Augmented Generation) augmented pipelines is crucial f
 Ragas takes a novel approach to evaluation data generation. An ideal evaluation dataset should encompass various types of questions encountered in production, including questions of varying difficulty levels. LLMs by default are not good at creating diverse samples as it tends to follow common paths. Inspired by works like [Evol-Instruct](https://arxiv.org/abs/2304.12244), Ragas achieves this by employing an evolutionary generation paradigm, where **questions with different characteristics such as reasoning, conditioning, multi-context, and more are systematically crafted from the provided set of documents**. This approach ensures comprehensive coverage of the performance of various components within your pipeline, resulting in a more robust evaluation process.
 
 <figure markdown="span">
-  ![Component-wise Evaluation](../../_static/imgs/eval-evolve.png){width="600"}
+  ![Component-wise Evaluation](/docs/_static/imgs/eval-evolve.png){width="600"}
   <figcaption>Component-wise Evaluation</figcaption>
 </figure>
 
