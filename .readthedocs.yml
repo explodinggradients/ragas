@@ -4,13 +4,17 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
+  commands:
+    - pip install -e .[docs]
+    - python scripts/gen_ref_pages.py
+    - mkdocs build
 
-mkdocs:
-  configuration: mkdocs.yml
+# mkdocs:
+#   configuration: mkdocs.yml
 
-python:
-  install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - docs
+# python:
+#   install:
+#     - method: pip
+#       path: .
+#       extra_requirements:
+#         - docs
