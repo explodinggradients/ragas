@@ -10,10 +10,9 @@ A metric is a quantitative measure used to evaluate the performance of a AI appl
 ## Different types of metrics
 
 <figure markdown="span">
-  ![Metrics Mind map](../../../_static/imgs/metrics_mindmap.png){width="600"}
+  ![Component-wise Evaluation](../../../_static/imgs/metrics_mindmap.png){width="600"}
   <figcaption>Metrics Mind map</figcaption>
 </figure>
-
 
 **Metrics can be classified into two categories based on the mechanism used underneath the hood**:
 
