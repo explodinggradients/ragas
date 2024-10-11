@@ -58,7 +58,7 @@ from ragas.metrics._string import (
 from ragas.metrics._summarization import SummarizationScore, summarization_score
 from ragas.metrics._tool_call_accuracy import ToolCallAccuracy
 from ragas.metrics._topic_adherence import TopicAdherenceScore
-from ragas.metrics._sql_semantic_equivalence import LLMSqlEquivalenceWithReference
+from ragas.metrics._sql_semantic_equivalence import LLMSQLEquivalence
 
 
 __all__ = [
@@ -106,7 +106,7 @@ __all__ = [
     "SemanticSimilarity",
     "DistanceMeasure",
     "TopicAdherenceScore",
-    "LLMSqlEquivalenceWithReference",
+    "LLMSQLEquivalence",
 ]
 
 current_module = sys.modules[__name__]

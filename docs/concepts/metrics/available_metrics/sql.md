@@ -60,10 +60,10 @@ Executing SQL queries on the database can be time-consuming and sometimes not fe
 
 ### SQL Query Semantic equivalence
 
-`LLMSqlEquivalenceWithReference` is a metric that can be used to evaluate the equivalence of `response` query with `reference` query. The metric also needs database schema to be used when comparing queries, this is inputted in `reference_contexts`. This metric is a binary metric, with 1 indicating that the SQL queries are semantically equivalent and 0 indicating that the SQL queries are not semantically equivalent.
+`LLMSQLEquivalence` is a metric that can be used to evaluate the equivalence of `response` query with `reference` query. The metric also needs database schema to be used when comparing queries, this is inputted in `reference_contexts`. This metric is a binary metric, with 1 indicating that the SQL queries are semantically equivalent and 0 indicating that the SQL queries are not semantically equivalent.
 
 ```python
-from ragas.metrics import LLMSqlEquivalenceWithReference
+from ragas.metrics import LLMSQLEquivalence
 from ragas.dataset_schema import SingleTurnSample
 
 sample = SingleTurnSample(
@@ -96,7 +96,7 @@ sample = SingleTurnSample(
     ]
 )
 
-scorer = LLMSqlEquivalenceWithReference()
+scorer = LLMSQLEquivalence()
 scorer.llm = openai_model
 await scorer.single_turn_ascore(sample)
 ```
