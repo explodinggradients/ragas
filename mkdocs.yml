@@ -16,9 +16,11 @@ nav:
       - concepts/index.md
       - Components:
           - concepts/components/index.md
-          - concepts/components/prompt.md
-          - concepts/components/eval_sample.md
-          - concepts/components/eval_dataset.md
+          - General:
+              - Prompt: concepts/components/prompt.md
+          - Evaluation:
+              - Evaluation Sample: concepts/components/eval_sample.md
+              - Evaluation Dataset: concepts/components/eval_dataset.md
       - Metrics:
           - concepts/metrics/index.md
           - Overview: concepts/metrics/overview/index.md
