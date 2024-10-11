@@ -7,7 +7,7 @@ Agentic or tool use workflows can be evaluated in multiple dimensions. Here are 
 
 AI systems deployed in real-world applications are expected to adhere to domains of interest while interacting with users but LLMs sometimes may answer general queries by ignoring this limitation. The topic adherence metric evaluates the ability of the AI to stay on predefined domains during the interactions. This metric is particularly important in conversational AI systems, where the AI is expected to only provide assistance to queries related to predefined domains.
 
-Topic adherence requires a predefined set of topics that the AI system is expected to adhere to which is provided using `reference_topics` along with `user_input`. The metric can compute precision, recall, and F1 score for topic adherence, defined as 
+`TopicAdherenceScore` requires a predefined set of topics that the AI system is expected to adhere to which is provided using `reference_topics` along with `user_input`. The metric can compute precision, recall, and F1 score for topic adherence, defined as 
     
 $$
 \text{Precision } = {|\text{Queries that are answered and are adheres to any present reference topics}| \over |\text{Queries that are answered and are adheres to any present reference topics}| + |\text{Queries that are answered and do not adheres to any present reference topics}|}
@@ -26,7 +26,7 @@ $$
 ```python
 from ragas.dataset_schema import  SingleTurnSample, MultiTurnSample, EvaluationDataset
 from ragas.messages import HumanMessage,AIMessage,ToolMessage,ToolCall
-from ragas.metrics._topic_adherence import TopicAdherenceScore
+from ragas.metrics import TopicAdherenceScore
 
 
 sample_input_4 = [
@@ -68,12 +68,12 @@ scorer = TopicAdherenceScore(mode="recall")
 
 ## Tool call Accuracy
 
-Tool call accuracy is a metric that can be used to evaluate the performance of the LLM in identifying and calling the required tools to complete a given task. This metric needs `user_input` and `reference_tool_calls` to evaluate the performance of the LLM in identifying and calling the required tools to complete a given task. The metric is computed by comparing the `reference_tool_calls` with the Tool calls made by the AI. The values range between 0 and 1, with higher values indicating better performance. 
+`ToolCallAccuracy` is a metric that can be used to evaluate the performance of the LLM in identifying and calling the required tools to complete a given task. This metric needs `user_input` and `reference_tool_calls` to evaluate the performance of the LLM in identifying and calling the required tools to complete a given task. The metric is computed by comparing the `reference_tool_calls` with the Tool calls made by the AI. The values range between 0 and 1, with higher values indicating better performance. 
 
 ```python
 from ragas.dataset_schema import  MultiTurnSample
 from ragas.messages import HumanMessage,AIMessage,ToolMessage,ToolCall
-from ragas.metrics._tool_call_accuracy import ToolCallAccuracy
+from ragas.metrics import ToolCallAccuracy
 
 
 sample = [
@@ -120,13 +120,13 @@ Agent goal accuracy is a metric that can be used to evaluate the performance of 
 
 ### With reference
 
-Calculating agent goal accuracy with reference needs `user_input` and `reference` to evaluate the performance of the LLM in identifying and achieving the goals of the user. The annotated `reference` will be used as ideal outcome. The metric is computed by comparing the `reference` with the goal achieved by the end of workflow.
+Calculating `AgentGoalAccuracyWithReference` with reference needs `user_input` and `reference` to evaluate the performance of the LLM in identifying and achieving the goals of the user. The annotated `reference` will be used as ideal outcome. The metric is computed by comparing the `reference` with the goal achieved by the end of workflow.
 
 
 ```python
 from ragas.dataset_schema import  MultiTurnSample
 from ragas.messages import HumanMessage,AIMessage,ToolMessage,ToolCall
-from ragas.metrics._agent_goal_accuracy import AgentGoalAccuracyWithReference
+from ragas.metrics import AgentGoalAccuracyWithReference
 
 
 sample = MultiTurnSample(user_input=[
@@ -153,7 +153,7 @@ await metric.multi_turn_ascore(sample)
 
 ### Without reference
 
-In without reference mode, the metric will evaluate the performance of the LLM in identifying and achieving the goals of the user without any reference. Here the desired outcome is inferred from the human interactions in the workflow.
+`AgentGoalAccuracyWithoutReference` works in without reference mode, the metric will evaluate the performance of the LLM in identifying and achieving the goals of the user without any reference. Here the desired outcome is inferred from the human interactions in the workflow.
 
 
 ### Example
@@ -161,7 +161,7 @@ In without reference mode, the metric will evaluate the performance of the LLM i
 ```python
 from ragas.dataset_schema import  MultiTurnSample
 from ragas.messages import HumanMessage,AIMessage,ToolMessage,ToolCall
-from ragas.metrics._agent_goal_accuracy import AgentGoalAccuracyWithoutReference
+from ragas.metrics import AgentGoalAccuracyWithoutReference
 
 
 sample = MultiTurnSample(user_input=[
