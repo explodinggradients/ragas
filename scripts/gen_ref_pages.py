@@ -4,10 +4,11 @@ import logging
 from pathlib import Path
 
 import mkdocs_gen_files
+from mkdocs_gen_files.nav import Nav
 
 logger = logging.getLogger(__name__)
 
-nav = mkdocs_gen_files.Nav()
+nav = Nav()
 root = Path(__file__).parent.parent
 src = root / "src"
 src_ragas = root / "src" / "ragas"
@@ -24,8 +25,10 @@ for path in sorted(src.rglob("*.py")):
         parts = parts[:-1]
         # doc_path = doc_path.with_name("index.md")
         # full_doc_path = full_doc_path.with_name("index.md")
+
     elif parts[-1] == "__main__":
         continue
+
     elif parts[-1][0] == "_":  # Skip private modules
         continue
 

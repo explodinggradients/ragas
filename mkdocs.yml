@@ -80,8 +80,18 @@ nav:
           - howtos/applications/index.md
       - Integrations:
           - howtos/integrations/index.md
-  - 📖 References: references/
+  - 📖 References: 
+    - Core: references/core.md
+    - Evaluation: references/evaluation.md
+    - Testset Generation: references/testset_gen.md
+    - Integrations: references/integrations.md
   - ❤️ Community: community/index.md
+
+# https://www.mkdocs.org/user-guide/configuration/#validation
+# validation:
+#   omitted_files: warn
+#   absolute_links: warn
+#   unrecognized_links: warn
 
 # Material-Docs Theme
 theme:
@@ -115,9 +125,9 @@ theme:
     - announce.dismiss
     - navigation.tabs
     - navigation.instant
+    - navigation.path
     - navigation.instant.prefetch
     - navigation.instant.progress
-    - navigation.path
     - navigation.sections
     - navigation.top
     - navigation.tracking
@@ -173,12 +183,21 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
+          paths: [src]
           options:
             docstring_style: numpy
+            members_order: source
+            separate_signature: true
+            filters: ["!^_"]
+            docstring_options:
+              ignore_init_summary: true
+            merge_init_into_class: true
+            show_signature_annotations: true
+            signature_crossrefs: true
   - mkdocs-jupyter:
       execute: false
-      include: ["*.ipynb"]
-      ignore: ["*.md"]
+      # include: ["*.ipynb"]
+      ignore: ["*.md", "*.ipynb"]
       jupyter_options:
         hide_input: false
         hide_output: false
@@ -187,9 +206,6 @@ plugins:
         jupyter_images: true
         jupyter_table_beautifier: true
   - glightbox
-  - literate-nav:
-      nav_file: SUMMARY.md
-  - section-index
 
 extra_javascript:
   - _static/js/mathjax.js
