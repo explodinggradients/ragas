@@ -4,7 +4,7 @@ General purpose evaluation metrics are used to evaluate any given task.
 
 ## Aspect Critic 
 
-Aspect critic is an evaluation metric that can be used to evaluate responses based on predefined aspects in free form natural language. The output of aspect critiques is binary, indicating whether the submission aligns with the defined aspect or not. 
+`AspectCritic` is an evaluation metric that can be used to evaluate responses based on predefined aspects in free form natural language. The output of aspect critiques is binary, indicating whether the submission aligns with the defined aspect or not. 
 
 ### Example
 
