@@ -31,25 +31,22 @@ class AnswersGenerated(BaseModel):
 
 class ExtractKeyphrasePrompt(PydanticPrompt[StringIO, ExtractedKeyphrases]):
     name: str = "extract_keyphrases"
-    instruction: str = "Extract the keyphrases essential for summarizing the text."
+    instruction: str = "Extract keyphrases of type: Person, Organization, Location, Date/Time, Monetary Values, and Percentages."
     input_model = StringIO
     output_model = ExtractedKeyphrases
     examples: t.List[t.Tuple[StringIO, ExtractedKeyphrases]] = [
         (
             StringIO(
-                text="JPMorgan Chase & Co. is an American multinational finance company headquartered in New York City. It is the largest bank in the United States and the world's largest by market capitalization as of 2023. Founded in 1799, it is a major provider of investment banking services, with US$3.9 trillion in total assets, and ranked #1 in the Forbes Global 2000 ranking in 2023."
+                text="Apple Inc. is a technology company based in Cupertino, California. Founded by Steve Jobs in 1976, it reached a market capitalization of $3 trillion in 2023."
             ),
             ExtractedKeyphrases(
                 keyphrases=[
-                    "JPMorgan Chase & Co.",
-                    "American multinational finance company",
-                    "headquartered in New York City",
-                    "largest bank in the United States",
-                    "world's largest bank by market capitalization",
-                    "founded in 1799",
-                    "major provider of investment banking services",
-                    "US$3.9 trillion in total assets",
-                    "ranked #1 in Forbes Global 2000 ranking",
+                    "Apple Inc.",
+                    "Cupertino, California",
+                    "Steve Jobs",
+                    "1976",
+                    "$3 trillion",
+                    "2023",
                 ]
             ),
         )
@@ -71,29 +68,24 @@ class GenerateQuestionsPrompt(
     examples: t.List[t.Tuple[GenerateQuestionsPromptInput, QuestionsGenerated]] = [
         (
             GenerateQuestionsPromptInput(
-                text="JPMorgan Chase & Co. is an American multinational finance company headquartered in New York City. It is the largest bank in the United States and the world's largest by market capitalization as of 2023. Founded in 1799, it is a major provider of investment banking services, with US$3.9 trillion in total assets, and ranked #1 in the Forbes Global 2000 ranking in 2023.",
+                text="Apple Inc. is a technology company based in Cupertino, California. Founded by Steve Jobs in 1976, it reached a market capitalization of $3 trillion in 2023.",
                 keyphrases=[
-                    "JPMorgan Chase & Co.",
-                    "American multinational finance company",
-                    "headquartered in New York City",
-                    "largest bank in the United States",
-                    "world's largest bank by market capitalization",
-                    "founded in 1799",
-                    "major provider of investment banking services",
-                    "US$3.9 trillion in total assets",
-                    "ranked #1 in Forbes Global 2000 ranking",
+                    "Apple Inc.",
+                    "Cupertino, California",
+                    "Steve Jobs",
+                    "1976",
+                    "$3 trillion",
+                    "2023",
                 ],
             ),
             QuestionsGenerated(
                 questions=[
-                    "Is JPMorgan Chase & Co. an American multinational finance company?",
-                    "Is JPMorgan Chase & Co. headquartered in New York City?",
-                    "Is JPMorgan Chase & Co. the largest bank in the United States?",
-                    "Is JPMorgan Chase & Co. the world's largest bank by market capitalization as of 2023?",
-                    "Was JPMorgan Chase & Co. founded in 1799?",
-                    "Is JPMorgan Chase & Co. a major provider of investment banking services?",
-                    "Does JPMorgan Chase & Co. have US$3.9 trillion in total assets?",
-                    "Was JPMorgan Chase & Co. ranked #1 in the Forbes Global 2000 ranking in 2023?",
+                    "Is Apple Inc. a technology company?",
+                    "Is Apple Inc. based in Cupertino, California?",
+                    "Was Apple Inc. founded by Steve Jobs?",
+                    "Was Apple Inc. founded in 1976?",
+                    "Did Apple Inc. reach a market capitalization of $3 trillion?",
+                    "Did Apple Inc. reach a market capitalization of $3 trillion in 2023?",
                 ]
             ),
         )
@@ -113,33 +105,29 @@ class GenerateAnswersPrompt(PydanticPrompt[SummaryAndQuestions, AnswersGenerated
     examples: t.List[t.Tuple[SummaryAndQuestions, AnswersGenerated]] = [
         (
             SummaryAndQuestions(
-                summary="JPMorgan Chase & Co., headquartered in New York City, is the largest bank in the US and the world's largest by market capitalization as of 2023. Founded in 1799, it offers extensive investment, private, asset management, and retail banking services, and has $3.9 trillion in assets, making it the fifth-largest bank globally. It operates the world's largest investment bank by revenue and was ranked #1 in the 2023 Forbes Global 2000.",
+                summary="Apple Inc. is a technology company based in Cupertino, California. Founded by Steve Jobs in 1976, it reached a market capitalization of $3 trillion in 2023.",
                 questions=[
-                    "Is JPMorgan Chase & Co. an American multinational finance company?",
-                    "Is JPMorgan Chase & Co. headquartered in New York City?",
-                    "Is JPMorgan Chase & Co. the largest bank in the United States?",
-                    "Is JPMorgan Chase & Co. the world's largest bank by market capitalization as of 2023?",
-                    "Is JPMorgan Chase & Co. considered systemically important by the Financial Stability Board?",
-                    "Was JPMorgan Chase & Co. founded in 1799 as the Chase Manhattan Company?",
-                    "Is JPMorgan Chase & Co. a major provider of investment banking services?",
-                    "Is JPMorgan Chase & Co. the fifth-largest bank in the world by assets?",
-                    "Does JPMorgan Chase & Co. operate the largest investment bank by revenue?",
-                    "Was JPMorgan Chase & Co. ranked #1 in the Forbes Global 2000 ranking?",
-                    "Does JPMorgan Chase & Co. provide investment banking services?",
+                    "Is Apple Inc. a technology company?",
+                    "Is Apple Inc. based in Cupertino, California?",
+                    "Was Apple Inc. founded by Steve Jobs?",
+                    "Was Apple Inc. founded in 1976?",
+                    "Did Apple Inc. reach a market capitalization of $3 trillion?",
+                    "Did Apple Inc. reach a market capitalization of $3 trillion in 2023?",
+                    "Is Apple Inc. a major software company?",
+                    "Is Apple Inc. known for the iPhone?",
+                    "Was Steve Jobs the co-founder of Apple Inc.?",
                 ],
             ),
             AnswersGenerated(
                 answers=[
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "1",
                     "0",
-                    "1",
-                    "1",
-                    "1",
                     "0",
-                    "0",
-                    "1",
-                    "1",
-                    "1",
-                    "1",
                     "1",
                 ]
             ),
