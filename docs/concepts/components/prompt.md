@@ -44,7 +44,7 @@ class MyPrompt(PydanticPrompt[MyInput,MyInput]):
     
 ```
 
-[Prompt Object API Reference]()
+[Prompt Object API Reference](/references/prompt/__init__/#ragas.prompt)
 
 ## Guidelines for Creating Effective Prompts
 
