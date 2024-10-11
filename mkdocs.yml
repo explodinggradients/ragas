@@ -81,10 +81,10 @@ nav:
       - Integrations:
           - howtos/integrations/index.md
   - 📖 References: 
-    - Core: references/core.md
-    - Evaluation: references/evaluation.md
-    - Testset Generation: references/testset_gen.md
-    - Integrations: references/integrations.md
+      - Core: references/core.md
+      - Evaluation: references/evaluation.md
+      - Testset Generation: references/testset_gen.md
+      - Integrations: references/integrations.md
   - ❤️ Community: community/index.md
 
 # https://www.mkdocs.org/user-guide/configuration/#validation
