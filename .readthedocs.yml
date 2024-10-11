@@ -7,7 +7,7 @@ build:
   commands:
     - pip install -e .[docs]
     - python scripts/gen_ref_pages.py
-    - mkdocs build
+    - mkdocs build --site-dir $READTHEDOCS_OUTPUT/html
 
 # mkdocs:
 #   configuration: mkdocs.yml
