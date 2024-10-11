@@ -81,10 +81,11 @@ nav:
       - Integrations:
           - howtos/integrations/index.md
   - 📖 References: 
-      - Core: references/core.md
-      - Evaluation: references/evaluation.md
-      - Testset Generation: references/testset_gen.md
-      - Integrations: references/integrations.md
+    - Core:
+      - Prompt: references/prompt.md
+    - Evaluation: references/evaluation.md
+    - Testset Generation: references/testset_gen.md
+    - Integrations: references/integrations.md
   - ❤️ Community: community/index.md
 
 # https://www.mkdocs.org/user-guide/configuration/#validation
@@ -205,7 +206,7 @@ plugins:
         code_line_numbers: true
         jupyter_images: true
         jupyter_table_beautifier: true
-  - glightbox
+  # - glightbox
 
 extra_javascript:
   - _static/js/mathjax.js
