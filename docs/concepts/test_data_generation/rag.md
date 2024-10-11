@@ -236,7 +236,7 @@ Imagine your goal is to create 50 different queries where each query is about so
 
 ```python
 from dataclasses import dataclass
-from ragas.experimental.testset.synthesizers.base_query import QuerySynthesizer
+from ragas.testset.synthesizers.base_query import QuerySynthesizer
 
 @dataclass
 class EntityQuerySynthesizer(QuerySynthesizer):

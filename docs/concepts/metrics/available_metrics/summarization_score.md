@@ -2,7 +2,7 @@
 
 ## Summarization Score
 
-This metric gives a measure of how well the summary (`response`) captures the important information from the `retrieved_contexts`. The intuition behind this metric is that a good summary shall contain all the important information present in the context(or text so to say).
+`SummarizationScore` metric gives a measure of how well the summary (`response`) captures the important information from the `retrieved_contexts`. The intuition behind this metric is that a good summary shall contain all the important information present in the context(or text so to say).
 
 We first extract a set of important keyphrases from the context. These keyphrases are then used to generate a set of questions. The answers to these questions are always `yes(1)` for the context. We then ask these questions to the summary and calculate the summarization score as the ratio of correctly answered questions to the total number of questions. 
 

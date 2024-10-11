@@ -5,7 +5,6 @@ An evaluation sample is a single structured data instance that is used to asses 
 ## SingleTurnSample
 SingleTurnSample represents a single-turn interaction between a user, LLM, and expected results for evaluation. It is suitable for evaluations that involve a single question and answer pair, possibly with additional context or reference information.
 
-[SingleTurnSample API Reference]()
 
 ### Example
 The following example demonstrates how to create a `SingleTurnSample` instance for evaluating a single-turn interaction in a RAG-based application. In this scenario, a user asks a question, and the AI provides an answer. We’ll create a SingleTurnSample instance to represent this interaction, including any retrieved contexts, reference answers, and evaluation rubrics.
@@ -43,9 +42,8 @@ sample = SingleTurnSample(
 
 ## MultiTurnSample
 
-MultiTurnSample represents a multi-turn interaction between Human, AI and optionally a Tool and expected results for evaluation. It is suitable for representing conversational agents in more complex interactions for evaluation. In `MultiTurnSample`, the `user_input` attribute represents a sequence of messages that collectively form a multi-turn conversation between a human user and an AI system. These messages are instances of the classes  [HumanMessage](), [AIMessage](), and [ToolMessage]()
+MultiTurnSample represents a multi-turn interaction between Human, AI and optionally a Tool and expected results for evaluation. It is suitable for representing conversational agents in more complex interactions for evaluation. In `MultiTurnSample`, the `user_input` attribute represents a sequence of messages that collectively form a multi-turn conversation between a human user and an AI system. These messages are instances of the classes  `HumanMessage`, `AIMessage`, and `ToolMessage`
 
-[MultTurnSample API Reference]()
 
 ### Example
 The following example demonstrates how to create a `MultiTurnSample` instance for evaluating a multi-turn interaction. In this scenario, a user wants to know the current weather in New York City. The AI assistant will use a weather API tool to fetch the information and respond to the user.

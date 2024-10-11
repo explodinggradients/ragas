@@ -57,6 +57,7 @@ from ragas.metrics._string import (
 )
 from ragas.metrics._summarization import SummarizationScore, summarization_score
 from ragas.metrics._tool_call_accuracy import ToolCallAccuracy
+from ragas.metrics._topic_adherence import TopicAdherenceScore
 
 __all__ = [
     "AnswerCorrectness",
@@ -102,6 +103,8 @@ __all__ = [
     "ResponseRelevancy",
     "SemanticSimilarity",
     "DistanceMeasure",
+    "TopicAdherenceScore",
+    "LLMSQLEquivalence",
 ]
 
 current_module = sys.modules[__name__]

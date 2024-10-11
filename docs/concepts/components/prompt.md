@@ -44,8 +44,6 @@ class MyPrompt(PydanticPrompt[MyInput,MyInput]):
     
 ```
 
-[Prompt Object API Reference]()
-
 ## Guidelines for Creating Effective Prompts
 
 When creating prompts in Ragas, consider the following guidelines to ensure that your prompts are effective and aligned with the task requirements:
