@@ -14,6 +14,9 @@ logger = logging.getLogger(__name__)
 
 
 def is_event_loop_running() -> bool:
+    """
+    Check if an event loop is currently running.
+    """
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
@@ -39,6 +42,27 @@ async def as_completed(coros, max_workers):
 
 @dataclass
 class Executor:
+    """
+    Executor class for running asynchronous jobs with progress tracking and error handling.
+
+    Attributes
+    ----------
+    desc : str
+        Description for the progress bar
+    show_progress : bool
+        Whether to show the progress bar
+    keep_progress_bar : bool
+        Whether to keep the progress bar after completion
+    jobs : List[Any]
+        List of jobs to execute
+    raise_exceptions : bool
+        Whether to raise exceptions or log them
+    run_config : RunConfig
+        Configuration for the run
+    _nest_asyncio_applied : bool
+        Whether nest_asyncio has been applied
+    """
+
     desc: str = "Evaluating"
     show_progress: bool = True
     keep_progress_bar: bool = True
@@ -73,10 +97,18 @@ class Executor:
     def submit(
         self, callable: t.Callable, *args, name: t.Optional[str] = None, **kwargs
     ):
+        """
+        Submit a job to be executed. This will wrap the callable with error handling
+        and indexing to keep track of the job index.
+        """
         callable_with_index = self.wrap_callable_with_index(callable, len(self.jobs))
         self.jobs.append((callable_with_index, args, kwargs, name))
 
     def results(self) -> t.List[t.Any]:
+        """
+        Execute all submitted jobs and return their results. The results are returned in
+        the order of job submission.
+        """
         if is_event_loop_running():
             # an event loop is running so call nested_asyncio to fix this
             try:
@@ -118,7 +150,8 @@ class Executor:
 
 def run_async_batch(desc: str, func: t.Callable, kwargs_list: t.List[t.Dict]):
     """
-    run the same async function with different arguments
+    A utility function to run the same async function with different arguments in
+    parallel.
     """
     run_config = RunConfig()
     executor = Executor(

@@ -90,6 +90,10 @@ nav:
   - 📖 References: 
     - Core:
       - Prompt: references/prompt.md
+      - LLMs: references/llms.md
+      - Embeddings: references/embeddings.md
+      - RunConfig: references/run_config.md
+      - Executor: references/executor.md
     - Evaluation: references/evaluation.md
     - Testset Generation: references/testset_gen.md
     - Integrations: references/integrations.md

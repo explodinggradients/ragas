@@ -20,15 +20,32 @@ DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
 
 
 class BaseRagasEmbeddings(Embeddings, ABC):
+    """
+    Abstract base class for Ragas embeddings.
+
+    This class extends the Embeddings class and provides methods for embedding
+    text and managing run configurations.
+
+    Attributes:
+        run_config (RunConfig): Configuration for running the embedding operations.
+
+    """
+
     run_config: RunConfig
 
     async def embed_text(self, text: str, is_async=True) -> List[float]:
+        """
+        Embed a single text string.
+        """
         embs = await self.embed_texts([text], is_async=is_async)
         return embs[0]
 
     async def embed_texts(
         self, texts: List[str], is_async: bool = True
     ) -> t.List[t.List[float]]:
+        """
+        Embed multiple texts.
+        """
         if is_async:
             aembed_documents_with_retry = add_async_retry(
                 self.aembed_documents, self.run_config
@@ -42,10 +59,17 @@ class BaseRagasEmbeddings(Embeddings, ABC):
             return await loop.run_in_executor(None, embed_documents_with_retry, texts)
 
     def set_run_config(self, run_config: RunConfig):
+        """
+        Set the run configuration for the embedding operations.
+        """
         self.run_config = run_config
 
 
 class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
+    """
+    Wrapper for any embeddings from langchain.
+    """
+
     def __init__(
         self, embeddings: Embeddings, run_config: t.Optional[RunConfig] = None
     ):
@@ -55,18 +79,33 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
         self.set_run_config(run_config)
 
     def embed_query(self, text: str) -> List[float]:
+        """
+        Embed a single query text.
+        """
         return self.embeddings.embed_query(text)
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """
+        Embed multiple documents.
+        """
         return self.embeddings.embed_documents(texts)
 
     async def aembed_query(self, text: str) -> List[float]:
+        """
+        Asynchronously embed a single query text.
+        """
         return await self.embeddings.aembed_query(text)
 
     async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
+        """
+        Asynchronously embed multiple documents.
+        """
         return await self.embeddings.aembed_documents(texts)
 
     def set_run_config(self, run_config: RunConfig):
+        """
+        Set the run configuration for the embedding operations.
+        """
         self.run_config = run_config
 
         # run configurations specially for OpenAI
@@ -83,16 +122,61 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
 
 @dataclass
 class HuggingfaceEmbeddings(BaseRagasEmbeddings):
+    """
+    Hugging Face embeddings class for generating embeddings using pre-trained models.
+
+    This class provides functionality to load and use Hugging Face models for
+    generating embeddings of text inputs.
+
+    Parameters
+    ----------
+    model_name : str, optional
+        Name of the pre-trained model to use, by default DEFAULT_MODEL_NAME.
+    cache_folder : str, optional
+        Path to store downloaded models. Can also be set by SENTENCE_TRANSFORMERS_HOME
+        environment variable.
+    model_kwargs : dict, optional
+        Additional keyword arguments to pass to the model.
+    encode_kwargs : dict, optional
+        Additional keyword arguments to pass to the encoding method.
+
+    Attributes
+    ----------
+    model : Union[SentenceTransformer, CrossEncoder]
+        The loaded Hugging Face model.
+    is_cross_encoder : bool
+        Flag indicating whether the model is a cross-encoder.
+
+    Methods
+    -------
+    embed_query(text)
+        Embed a single query text.
+    embed_documents(texts)
+        Embed multiple documents.
+    predict(texts)
+        Make predictions using a cross-encoder model.
+
+    Notes
+    -----
+    This class requires the `sentence_transformers` and `transformers` packages
+    to be installed.
+
+    Examples
+    --------
+    >>> embeddings = HuggingfaceEmbeddings(model_name="bert-base-uncased")
+    >>> query_embedding = embeddings.embed_query("What is the capital of France?")
+    >>> doc_embeddings = embeddings.embed_documents(["Paris is the capital of France.", "London is the capital of the UK."])
+    """
+
     model_name: str = DEFAULT_MODEL_NAME
-    """Model name to use."""
     cache_folder: t.Optional[str] = None
-    """Path to store models. 
-    Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable."""
     model_kwargs: t.Dict[str, t.Any] = field(default_factory=dict)
-    """Keyword arguments to pass to the model."""
     encode_kwargs: t.Dict[str, t.Any] = field(default_factory=dict)
 
     def __post_init__(self):
+        """
+        Initialize the model after the object is created.
+        """
         try:
             import sentence_transformers
             from transformers import AutoConfig
@@ -126,9 +210,15 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
             self.encode_kwargs["convert_to_tensor"] = True
 
     def embed_query(self, text: str) -> List[float]:
+        """
+        Embed a single query text.
+        """
         return self.embed_documents([text])[0]
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """
+        Embed multiple documents.
+        """
         from sentence_transformers.SentenceTransformer import SentenceTransformer
         from torch import Tensor
 
@@ -143,6 +233,9 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
         return embeddings.tolist()
 
     def predict(self, texts: List[List[str]]) -> List[List[float]]:
+        """
+        Make predictions using a cross-encoder model.
+        """
         from sentence_transformers.cross_encoder import CrossEncoder
         from torch import Tensor
 
@@ -157,6 +250,35 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
 
 
 class LlamaIndexEmbeddingsWrapper(BaseRagasEmbeddings):
+    """
+    Wrapper for any embeddings from llama-index.
+
+    This class provides a wrapper for llama-index embeddings, allowing them to be used
+    within the Ragas framework. It supports both synchronous and asynchronous embedding
+    operations for queries and documents.
+
+    Parameters
+    ----------
+    embeddings : BaseEmbedding
+        The llama-index embedding model to be wrapped.
+    run_config : RunConfig, optional
+        Configuration for the run. If not provided, a default RunConfig will be used.
+
+    Attributes
+    ----------
+    embeddings : BaseEmbedding
+        The wrapped llama-index embedding model.
+
+    Examples
+    --------
+    >>> from llama_index.embeddings import OpenAIEmbedding
+    >>> from ragas.embeddings import LlamaIndexEmbeddingsWrapper
+    >>> llama_embeddings = OpenAIEmbedding()
+    >>> wrapped_embeddings = LlamaIndexEmbeddingsWrapper(llama_embeddings)
+    >>> query_embedding = wrapped_embeddings.embed_query("What is the capital of France?")
+    >>> document_embeddings = wrapped_embeddings.embed_documents(["Paris is the capital of France.", "London is the capital of the UK."])
+    """
+
     def __init__(
         self, embeddings: BaseEmbedding, run_config: t.Optional[RunConfig] = None
     ):
@@ -181,6 +303,25 @@ class LlamaIndexEmbeddingsWrapper(BaseRagasEmbeddings):
 def embedding_factory(
     model: str = "text-embedding-ada-002", run_config: t.Optional[RunConfig] = None
 ) -> BaseRagasEmbeddings:
+    """
+    Create and return a BaseRagasEmbeddings instance. Used for default embeddings
+    used in Ragas (OpenAI).
+
+    This factory function creates an OpenAIEmbeddings instance and wraps it with
+    LangchainEmbeddingsWrapper to provide a BaseRagasEmbeddings compatible object.
+
+    Parameters
+    ----------
+    model : str, optional
+        The name of the OpenAI embedding model to use, by default "text-embedding-ada-002".
+    run_config : RunConfig, optional
+        Configuration for the run, by default None.
+
+    Returns
+    -------
+    BaseRagasEmbeddings
+        An instance of BaseRagasEmbeddings configured with the specified parameters.
+    """
     openai_embeddings = OpenAIEmbeddings(model=model)
     if run_config is not None:
         openai_embeddings.request_timeout = run_config.timeout
