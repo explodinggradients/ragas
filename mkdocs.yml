@@ -54,8 +54,8 @@ nav:
                   - concepts/metrics/available_metrics/general_purpose.md
                   - Aspect Critic: concepts/metrics/available_metrics/general_purpose/#aspect-critic
                   - Simple Criteria Scoring: concepts/metrics/available_metrics/general_purpose/#simple-criteria-scoring
-                  - Rubrics Based Scoring: concepts/metrics/available_metrics/general_purpose/#rubrics-based-scoring
-                  - Instance Specific Rubrics Scoring: concepts/metrics/available_metrics/general_purpose/#instance-specific-rubrics-scoring
+                  - Rubrics Based Scoring: concepts/metrics/available_metrics/general_purpose/#rubrics-based-criteria-scoring
+                  - Instance Specific Rubrics Scoring: concepts/metrics/available_metrics/general_purpose/#instance-specific-rubrics-criteria-scoring
               - Other Tasks:
                   - Summarization: concepts/metrics/available_metrics/summarization_score.md
       - Test Data Generation:
