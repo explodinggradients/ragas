@@ -4,7 +4,7 @@ How to customize various aspects of Ragas to suit your needs.
 
 ## General 
 
-- [Customize models](customise_models.md)
+- [Customize models](customize_models.md)
 - [Customize timeouts, retries and others](run_config.ipynb)
 
 ## Metrics
@@ -14,5 +14,5 @@ How to customize various aspects of Ragas to suit your needs.
 
 ## Testset Generation
 
-- [Add your own test cases]()
-- [Seed generations using production data]()
+- [Add your own test cases](testgenerator/index.md)
+- [Seed generations using production data](testgenerator/index.md)
