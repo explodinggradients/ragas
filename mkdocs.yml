@@ -16,9 +16,11 @@ nav:
       - concepts/index.md
       - Components:
           - concepts/components/index.md
-          - concepts/components/prompt.md
-          - concepts/components/eval_sample.md
-          - concepts/components/eval_dataset.md
+          - General:
+              - Prompt: concepts/components/prompt.md
+          - Evaluation:
+              - Evaluation Sample: concepts/components/eval_sample.md
+              - Evaluation Dataset: concepts/components/eval_dataset.md
       - Metrics:
           - concepts/metrics/index.md
           - Overview: concepts/metrics/overview/index.md
@@ -32,25 +34,30 @@ nav:
                   - Response Relevancy: concepts/metrics/available_metrics/answer_relevance.md
                   - Faithfulness: concepts/metrics/available_metrics/faithfulness.md
               - Agents or Tool Use Cases:
-                  - Topic Adherence: concepts/metrics/available_metrics/topic_adherence.md
-                  - Tool Call Accuracy: concepts/metrics/available_metrics/agents/#tool-call-accuracy
-                  - Agent Goal Accuracy: concepts/metrics/available_metrics/agents/#agent-goal-accuracy
+                    - concepts/metrics/available_metrics/agents.md
+                    - Topic Adherence: concepts/metrics/available_metrics/agents/#topic-adherence
+                    - Tool Call Accuracy: concepts/metrics/available_metrics/agents/#tool-call-accuracy
+                    - Agent Goal Accuracy: concepts/metrics/available_metrics/agents/#agent-goal-accuracy
               - Natural Language Comparison:
                   - Factual Correctness: concepts/metrics/available_metrics/factual_correctness.md
                   - Semantic Similarity: concepts/metrics/available_metrics/semantic_similarity.md
-                  - Non LLM String Similarity: concepts/metrics/available_metrics/traditional/#non-llm-string-similarity
-                  - BLEU Score: concepts/metrics/available_metrics/traditional/#bleu-score
-                  - ROUGE Score: concepts/metrics/available_metrics/traditional/#rouge-score
-                  - String Presence: concepts/metrics/available_metrics/traditional/#string-presence
-                  - Exact Match: concepts/metrics/available_metrics/traditional/#exact-match
+                  - Traditional non LLM metrics:
+                    - concepts/metrics/available_metrics/traditional.md
+                    - Non LLM String Similarity: concepts/metrics/available_metrics/traditional/#non-llm-string-similarity
+                    - BLEU Score: concepts/metrics/available_metrics/traditional/#bleu-score
+                    - ROUGE Score: concepts/metrics/available_metrics/traditional/#rouge-score
+                    - String Presence: concepts/metrics/available_metrics/traditional/#string-presence
+                    - Exact Match: concepts/metrics/available_metrics/traditional/#exact-match
               - SQL:
+                  - concepts/metrics/available_metrics/sql.md
                   - Execution based Datacompy Score: concepts/metrics/available_metrics/sql/#execution-based-metrics
                   - SQL Query Equivalence: concepts/metrics/available_metrics/sql/#sql-query-semantic-equivalence
               - General Purpose:
+                  - concepts/metrics/available_metrics/general_purpose.md
                   - Aspect Critic: concepts/metrics/available_metrics/general_purpose/#aspect-critic
                   - Simple Criteria Scoring: concepts/metrics/available_metrics/general_purpose/#simple-criteria-scoring
-                  - Rubrics Based Scoring: concepts/metrics/available_metrics/general_purpose/#rubrics-based-scoring
-                  - Instance Specific Rubrics Scoring: concepts/metrics/available_metrics/general_purpose/#instance-specific-rubrics-scoring
+                  - Rubrics Based Scoring: concepts/metrics/available_metrics/general_purpose/#rubrics-based-criteria-scoring
+                  - Instance Specific Rubrics Scoring: concepts/metrics/available_metrics/general_purpose/#instance-specific-rubrics-criteria-scoring
               - Other Tasks:
                   - Summarization: concepts/metrics/available_metrics/summarization_score.md
       - Test Data Generation:

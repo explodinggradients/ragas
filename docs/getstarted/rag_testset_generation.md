@@ -24,7 +24,7 @@ docs = loader.load()
 
 ### Choose your LLM
 
-You may choose to use any [LLM of your choice]()
+You may choose to use any [LLM of your choice](../howtos/customizations/customize_models.md)
 --8<--
 choose_evaluvator_llm.md
 --8<--

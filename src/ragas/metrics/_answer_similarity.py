@@ -42,7 +42,7 @@ class SemanticSimilarity(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         Default 0.5
     """
 
-    name: str = "answer_similarity"  # type: ignore
+    name: str = "semantic_similarity"  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
     )
@@ -92,6 +92,8 @@ class SemanticSimilarity(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
 
 
 class AnswerSimilarity(SemanticSimilarity):
+    name: str = "answer_similarity"  # type: ignore
+
     async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
         return await super()._ascore(row, callbacks)
 

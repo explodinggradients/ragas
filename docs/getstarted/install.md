@@ -19,5 +19,3 @@ git clone https://github.com/explodinggradients/ragas.git
 cd ragas 
 pip install -e .
 ```
-
-Next, let's construct a [synthetic test set](get-started-testset-generation) using your own data. If you've brought your own test set, you can learn how to [evaluate it](get-started-evaluation) using Ragas.

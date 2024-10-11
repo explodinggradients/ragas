@@ -1,4 +1,4 @@
-##  Semantic similarity
+#  Semantic similarity
 
 The concept of Answer Semantic Similarity pertains to the assessment of the semantic resemblance between the generated answer and the ground truth. This evaluation is based on the `ground truth` and the `answer`, with values falling within the range of 0 to 1. A higher score signifies a better alignment between the generated answer and the ground truth.
 
@@ -8,19 +8,19 @@ Measuring the semantic similarity between answers can offer valuable insights in
 ### Example
 
 ```python
-from datasets import Dataset 
-from ragas.metrics import answer_similarity
-from ragas import evaluate
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics import SemanticSimilarity
 
 
-data_samples = {
-    'question': ['When was the first super bowl?', 'Who won the most super bowls?'],
-    'answer': ['The first superbowl was held on Jan 15, 1967', 'The most super bowls have been won by The New England Patriots'],
-    'ground_truth': ['The first superbowl was held on January 15, 1967', 'The New England Patriots have won the Super Bowl a record six times']
-}
-dataset = Dataset.from_dict(data_samples)
-score = evaluate(dataset,metrics=[answer_similarity])
-score.to_pandas()
+sample = SingleTurnSample(
+    response="The Eiffel Tower is located in Paris.",
+    reference="The Eiffel Tower is located in Paris. I has a height of 1000ft."
+)
+
+scorer = SemanticSimilarity()
+scorer.embeddings = embedding_model
+await scorer.single_turn_ascore(sample)
+
 ```
 
 ### How It’s Calculated 

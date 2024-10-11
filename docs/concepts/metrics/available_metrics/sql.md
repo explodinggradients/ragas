@@ -6,7 +6,7 @@ In these metrics the resulting SQL is compared after executing the SQL query on 
 
 ### DataCompy Score
 
-DataCompy is a python library that compares two pandas DataFrames. It provides a simple interface to compare two DataFrames and provides a detailed report of the differences. In this metric the `response` is executed on the database and the resulting data is compared with the expected data, ie `reference`. To enable comparison both `response` and `reference` should be in the form of a Comma-Separated Values as shown in the example.
+`DataCompyScore` metric uses DataCompy, a python library that compares two pandas DataFrames. It provides a simple interface to compare two DataFrames and provides a detailed report of the differences. In this metric the `response` is executed on the database and the resulting data is compared with the expected data, ie `reference`. To enable comparison both `response` and `reference` should be in the form of a Comma-Separated Values as shown in the example.
 
 Dataframes can be compared across rows or columns. This can be configured using `mode` parameter. 
 
@@ -24,7 +24,7 @@ By default, the mode is set to `row`, and metric is F1 score which is the harmon
 
 
 ```python
-from ragas.metrics._datacompy_score import DataCompyScore
+from ragas.metrics import DataCompyScore
 from ragas.dataset_schema import SingleTurnSample
 
 data1 = """acct_id,dollar_amt,name,float_fld,date_fld
@@ -60,10 +60,10 @@ Executing SQL queries on the database can be time-consuming and sometimes not fe
 
 ### SQL Query Semantic equivalence
 
-SQL Query Semantic equivalence is a metric that can be used to evaluate the equivalence of `response` query with `reference` query. The metric also needs database schema to be used when comparing queries, this is inputted in `reference_contexts`. This metric is a binary metric, with 1 indicating that the SQL queries are semantically equivalent and 0 indicating that the SQL queries are not semantically equivalent.
+`LLMSQLEquivalence` is a metric that can be used to evaluate the equivalence of `response` query with `reference` query. The metric also needs database schema to be used when comparing queries, this is inputted in `reference_contexts`. This metric is a binary metric, with 1 indicating that the SQL queries are semantically equivalent and 0 indicating that the SQL queries are not semantically equivalent.
 
 ```python
-from ragas.metrics._sql_semantic_equivalence import LLMSqlEquivalenceWithReference
+from ragas.metrics import LLMSQLEquivalence
 from ragas.dataset_schema import SingleTurnSample
 
 sample = SingleTurnSample(
@@ -96,7 +96,7 @@ sample = SingleTurnSample(
     ]
 )
 
-scorer = LLMSqlEquivalenceWithReference()
+scorer = LLMSQLEquivalence()
 scorer.llm = openai_model
 await scorer.single_turn_ascore(sample)
 ```

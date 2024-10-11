@@ -28,7 +28,7 @@
     Algorithms for synthesizing data to test [RAG](test_data_generation/index.md#retrieval-augmented-generation), [Agentic workflows](test_data_generation/index.md#agents-or-tool-use-cases) 
 
 
--   :material-chart-box-outline:{ .lg .middle } [__Feedback Intelligence__](feedback.md)
+-   :material-chart-box-outline:{ .lg .middle } [__Feedback Intelligence__](feedback/index.md)
 
     ---
 
