@@ -32,7 +32,13 @@
     <p>
 </h4>
 
-Ragas supercharges your LLM application evaluations with tools to objectively measure performance, simulate test case scenarios, and gain insights by leveraging production data.
+[Ragas](https://www.ragas.io/) supercharges your LLM application evaluations with tools to objectively measure performance, simulate test case scenarios, and gain insights by leveraging production data.
+
+## Key Features
+
+- **Metrics**: Different LLM based and non LLM based metrics to objectively evaluate your LLM applications such as RAG, Agents, etc.
+- **Test Data Generation**: Synthesize high-quality datasets covering wide variety of scenarios for comprehensive testing of your LLM applications.
+- **Integrations**: Seamless integration with all major LLM applications frameworks like langchain and observability tools.
 
 ## :shield: Installation
 
