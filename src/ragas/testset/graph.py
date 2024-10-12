@@ -16,17 +16,36 @@ class UUIDEncoder(json.JSONEncoder):
 
 
 class NodeType(str, Enum):
+    """
+    Enumeration of node types in the knowledge graph.
+
+    Currently supported node types are: UNKNOWN, DOCUMENT, CHUNK
+    """
+
     UNKNOWN = ""
     DOCUMENT = "document"
     CHUNK = "chunk"
 
 
 class Node(BaseModel):
+    """
+    Represents a node in the knowledge graph.
+
+    Attributes
+    ----------
+    id : uuid.UUID
+        Unique identifier for the node.
+    properties : dict
+        Dictionary of properties associated with the node.
+    type : NodeType
+        Type of the node.
+
+    """
+
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     properties: dict = Field(default_factory=dict)
     type: NodeType = NodeType.UNKNOWN
 
-    # a simple repr
     def __repr__(self) -> str:
         return f"Node(id: {str(self.id)[:6]}, type: {self.type}, properties: {list(self.properties.keys())})"
 
@@ -34,11 +53,26 @@ class Node(BaseModel):
         return self.__repr__()
 
     def add_property(self, key: str, value: t.Any):
+        """
+        Adds a property to the node.
+
+        Raises
+        ------
+        ValueError
+            If the property already exists.
+        """
         if key.lower() in self.properties:
             raise ValueError(f"Property {key} already exists")
         self.properties[key.lower()] = value
 
     def get_property(self, key: str) -> t.Optional[t.Any]:
+        """
+        Retrieves a property value by key.
+
+        Notes
+        -----
+        The key is case-insensitive.
+        """
         return self.properties.get(key.lower(), None)
 
     def __hash__(self) -> int:
@@ -51,6 +85,26 @@ class Node(BaseModel):
 
 
 class Relationship(BaseModel):
+    """
+    Represents a relationship between two nodes in a knowledge graph.
+
+    Attributes
+    ----------
+    id : uuid.UUID, optional
+        Unique identifier for the relationship. Defaults to a new UUID.
+    type : str
+        The type of the relationship.
+    source : Node
+        The source node of the relationship.
+    target : Node
+        The target node of the relationship.
+    bidirectional : bool, optional
+        Whether the relationship is bidirectional. Defaults to False.
+    properties : dict, optional
+        Dictionary of properties associated with the relationship. Defaults to an empty dict.
+
+    """
+
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     type: str
     source: Node
@@ -59,6 +113,9 @@ class Relationship(BaseModel):
     properties: dict = Field(default_factory=dict)
 
     def get_property(self, key: str) -> t.Optional[t.Any]:
+        """
+        Retrieves a property value by key. The key is case-insensitive.
+        """
         return self.properties.get(key.lower(), None)
 
     def __repr__(self) -> str:
@@ -78,10 +135,29 @@ class Relationship(BaseModel):
 
 @dataclass
 class KnowledgeGraph:
+    """
+    Represents a knowledge graph containing nodes and relationships.
+
+    Attributes
+    ----------
+    nodes : List[Node]
+        List of nodes in the knowledge graph.
+    relationships : List[Relationship]
+        List of relationships in the knowledge graph.
+    """
+
     nodes: t.List[Node] = field(default_factory=list)
     relationships: t.List[Relationship] = field(default_factory=list)
 
     def add(self, item: t.Union[Node, Relationship]):
+        """
+        Adds a node or relationship to the knowledge graph.
+
+        Raises
+        ------
+        ValueError
+            If the item type is not Node or Relationship.
+        """
         if isinstance(item, Node):
             self._add_node(item)
         elif isinstance(item, Relationship):
@@ -96,6 +172,7 @@ class KnowledgeGraph:
         self.relationships.append(relationship)
 
     def save(self, path: t.Union[str, Path]):
+        """Saves the knowledge graph to a JSON file."""
         if isinstance(path, str):
             path = Path(path)
 
@@ -108,6 +185,7 @@ class KnowledgeGraph:
 
     @classmethod
     def load(cls, path: t.Union[str, Path]) -> "KnowledgeGraph":
+        """Loads a knowledge graph from a path."""
         if isinstance(path, str):
             path = Path(path)
 
@@ -131,6 +209,19 @@ class KnowledgeGraph:
     def find_clusters(
         self, relationship_condition: t.Callable[[Relationship], bool] = lambda _: True
     ) -> t.List[t.Set[Node]]:
+        """
+        Finds clusters of nodes in the knowledge graph based on a relationship condition.
+
+        Parameters
+        ----------
+        relationship_condition : Callable[[Relationship], bool], optional
+            A function that takes a Relationship and returns a boolean, by default lambda _: True
+
+        Returns
+        -------
+        List[Set[Node]]
+            A list of sets, where each set contains nodes that form a cluster.
+        """
         clusters = []
         visited = set()
 

@@ -95,11 +95,12 @@ nav:
       - RunConfig: references/run_config.md
       - Executor: references/executor.md
     - Evaluation: 
-      - Schemas: references/evaluation_dataset.md
+      - Schemas: references/evaluation_schema.md
       - Metrics: references/metrics.md
       - evaluate(): references/evaluate.md
     - Testset Generation: 
-      - Schemas: references/testset_schemas.md
+      - Schemas: references/testset_schema.md
+      - Graph: references/graph.md
     - Integrations: references/integrations.md
   - ❤️ Community: community/index.md
 

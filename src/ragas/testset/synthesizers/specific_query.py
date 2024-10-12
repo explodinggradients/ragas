@@ -17,6 +17,16 @@ if t.TYPE_CHECKING:
 
 
 class SpecificQueryScenario(BaseScenario):
+    """
+    Represents a scenario for generating specific queries.
+    Also inherits attributes from [BaseScenario][ragas.testset.synthesizers.base.BaseScenario].
+
+    Attributes
+    ----------
+    keyphrase : str
+        The keyphrase of the specific query scenario.
+    """
+
     keyphrase: str
 
 

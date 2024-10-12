@@ -33,6 +33,16 @@ logger = logging.getLogger(__name__)
 
 
 class AbstractQueryScenario(BaseScenario):
+    """
+    Represents a scenario for generating abstract queries.
+    Also inherits attributes from [BaseScenario][ragas.testset.synthesizers.base.BaseScenario].
+
+    Attributes
+    ----------
+    theme : str
+        The theme of the abstract query scenario.
+    """
+
     theme: str
 
 
