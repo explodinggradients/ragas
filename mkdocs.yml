@@ -94,8 +94,12 @@ nav:
       - Embeddings: references/embeddings.md
       - RunConfig: references/run_config.md
       - Executor: references/executor.md
-    - Evaluation: references/evaluation.md
-    - Testset Generation: references/testset_gen.md
+    - Evaluation: 
+      - Schemas: references/evaluation_dataset.md
+      - Metrics: references/metrics.md
+      - evaluate(): references/evaluate.md
+    - Testset Generation: 
+      - Schemas: references/testset_schemas.md
     - Integrations: references/integrations.md
   - ❤️ Community: community/index.md
 
