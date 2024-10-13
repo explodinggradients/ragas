@@ -7,4 +7,3 @@ build:
   commands:
     - pip install -e .[docs]
     - if [ -n "$GH_TOKEN" ]; then pip install git+https://${GH_TOKEN}@github.com/squidfunk/mkdocs-material-insiders.git; fi
-    - mkdocs build --site-dir $READTHEDOCS_OUTPUT/html
