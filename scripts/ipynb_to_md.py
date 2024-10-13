@@ -59,9 +59,12 @@ def find_and_convert_ipynb_files(directory):
 def get_valid_directory():
     while True:
         DEFAULT_DIRECTORY = "./docs/"
-        directory = input(
-            f"Enter the directory path to search for .ipynb files (default: {DEFAULT_DIRECTORY}): "
-        ).strip()
+        if os.environ.get("MKDOCS_CI"):
+            directory = DEFAULT_DIRECTORY
+        else:
+            directory = input(
+                f"Enter the directory path to search for .ipynb files (default: {DEFAULT_DIRECTORY}): "
+            ).strip()
 
         if directory == "":
             directory = DEFAULT_DIRECTORY
