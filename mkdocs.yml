@@ -108,10 +108,10 @@ nav:
   - ❤️ Community: community/index.md
 
 # https://www.mkdocs.org/user-guide/configuration/#validation
-# validation:
-#   omitted_files: warn
-#   absolute_links: warn
-#   unrecognized_links: warn
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
 
 # Material-Docs Theme
 theme:
@@ -216,8 +216,8 @@ plugins:
             signature_crossrefs: true
   - mkdocs-jupyter:
       execute: false
-      # include: ["*.ipynb"]
-      ignore: ["*.md", "*.ipynb"]
+      include: ["*.ipynb"]
+      ignore: ["*.md"]
       jupyter_options:
         hide_input: false
         hide_output: false
@@ -225,7 +225,7 @@ plugins:
         code_line_numbers: true
         jupyter_images: true
         jupyter_table_beautifier: true
-  # - glightbox
+  - glightbox
 
 extra_javascript:
   - _static/js/mathjax.js
