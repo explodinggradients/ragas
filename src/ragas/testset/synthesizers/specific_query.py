@@ -32,6 +32,11 @@ class SpecificQueryScenario(BaseScenario):
 
 @dataclass
 class SpecificQuerySynthesizer(QuerySynthesizer):
+    """
+    Synthesizes specific queries by choosing specific chunks and generating a
+    keyphrase from them and then generating queries based on that.
+    """
+
     generate_query_prompt: PydanticPrompt = field(default_factory=SpecificQuery)
 
     async def _generate_scenarios(

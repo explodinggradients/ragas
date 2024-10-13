@@ -101,6 +101,9 @@ nav:
     - Testset Generation: 
       - Schemas: references/testset_schema.md
       - Graph: references/graph.md
+      - Transforms: references/transforms.md
+      - Synthesizers: references/synthesizers.md
+      - Generation: references/generate.md
     - Integrations: references/integrations.md
   - ❤️ Community: community/index.md
 

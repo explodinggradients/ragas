@@ -63,6 +63,10 @@ Scenario = t.TypeVar("Scenario", bound=BaseScenario)
 
 @dataclass
 class BaseSynthesizer(ABC, t.Generic[Scenario], PromptMixin):
+    """
+    Base class for synthesizing scenarios and samples.
+    """
+
     name: str = ""
     llm: BaseRagasLLM = field(default_factory=llm_factory)
 

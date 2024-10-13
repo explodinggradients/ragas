@@ -16,7 +16,15 @@ logger = logging.getLogger(__name__)
 
 
 class PromptMixin:
+    """
+    Mixin class for classes that have prompts.
+    eg: [BaseSynthesizer][ragas.testset.synthesizers.base.BaseSynthesizer], [MetricWithLLM][ragas.metrics.base.MetricWithLLM]
+    """
+
     def get_prompts(self) -> t.Dict[str, PydanticPrompt]:
+        """
+        Returns a dictionary of prompts for the class.
+        """
         prompts = {}
         for name, value in inspect.getmembers(self):
             if isinstance(value, PydanticPrompt):
@@ -24,6 +32,14 @@ class PromptMixin:
         return prompts
 
     def set_prompts(self, **prompts):
+        """
+        Sets the prompts for the class.
+
+        Raises
+        ------
+        ValueError
+            If the prompt is not an instance of `PydanticPrompt`.
+        """
         available_prompts = self.get_prompts()
         for key, value in prompts.items():
             if key not in available_prompts:
@@ -39,6 +55,15 @@ class PromptMixin:
     async def adapt_prompts(
         self, language: str, llm: BaseRagasLLM
     ) -> t.Dict[str, PydanticPrompt]:
+        """
+        Adapts the prompts in the class to the given language and using the given LLM.
+
+        Notes
+        -----
+        Make sure you use the best available LLM for adapting the prompts and then save and load the prompts using
+        [save_prompts][ragas.prompt.mixin.PromptMixin.save_prompts] and [load_prompts][ragas.prompt.mixin.PromptMixin.load_prompts]
+        methods.
+        """
         prompts = self.get_prompts()
         adapted_prompts = {}
         for name, prompt in prompts.items():
@@ -49,7 +74,7 @@ class PromptMixin:
 
     def save_prompts(self, path: str):
         """
-        save prompts to a directory in the format of {name}_{language}.json
+        Saves the prompts to a directory in the format of {name}_{language}.json
         """
         # check if path is valid
         if not os.path.exists(path):
@@ -65,7 +90,7 @@ class PromptMixin:
 
     def load_prompts(self, path: str, language: t.Optional[str] = None):
         """
-        Load prompts from a directory in the format of {name}_{language}.json
+        Loads the prompts from a path. File should be in the format of {name}_{language}.json
         """
         # check if path is valid
         if not os.path.exists(path):

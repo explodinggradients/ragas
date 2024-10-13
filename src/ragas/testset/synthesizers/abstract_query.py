@@ -48,6 +48,16 @@ class AbstractQueryScenario(BaseScenario):
 
 @dataclass
 class AbstractQuerySynthesizer(QuerySynthesizer):
+    """
+    Synthesizes abstract queries which generate a theme and a set of summaries from a
+    cluster of chunks and then generate queries based on that.
+
+    Attributes
+    ----------
+    generate_user_input_prompt : PydanticPrompt
+        The prompt used for generating the user input.
+    """
+
     generate_user_input_prompt: PydanticPrompt = field(
         default_factory=AbstractQueryFromTheme
     )
@@ -180,6 +190,18 @@ class ComparativeAbstractQueryScenario(BaseScenario):
 
 @dataclass
 class ComparativeAbstractQuerySynthesizer(QuerySynthesizer):
+    """
+    Synthesizes comparative abstract queries which generate a common concept and
+    a set of keyphrases and summaries and then generate queries based on that.
+
+    Attributes
+    ----------
+    common_concepts_prompt : PydanticPrompt
+        The prompt used for generating common concepts.
+    generate_query_prompt : PydanticPrompt
+        The prompt used for generating the query.
+    """
+
     common_concepts_prompt: PydanticPrompt = field(
         default_factory=CommonConceptsFromKeyphrases
     )
