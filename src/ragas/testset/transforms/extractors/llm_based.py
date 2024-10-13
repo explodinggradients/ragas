@@ -142,6 +142,17 @@ class NERPrompt(PydanticPrompt[StringIO, NEROutput]):
 
 @dataclass
 class SummaryExtractor(LLMBasedExtractor):
+    """
+    Extracts a summary from the given text.
+
+    Attributes
+    ----------
+    property_name : str
+        The name of the property to extract.
+    prompt : SummaryExtractorPrompt
+        The prompt used for extraction.
+    """
+
     property_name: str = "summary"
     prompt: SummaryExtractorPrompt = SummaryExtractorPrompt()
 
@@ -155,6 +166,17 @@ class SummaryExtractor(LLMBasedExtractor):
 
 @dataclass
 class KeyphrasesExtractor(LLMBasedExtractor):
+    """
+    Extracts top 5 keyphrases from the given text.
+
+    Attributes
+    ----------
+    property_name : str
+        The name of the property to extract.
+    prompt : KeyphrasesExtractorPrompt
+        The prompt used for extraction.
+    """
+
     property_name: str = "keyphrases"
     prompt: KeyphrasesExtractorPrompt = KeyphrasesExtractorPrompt()
 
@@ -168,6 +190,17 @@ class KeyphrasesExtractor(LLMBasedExtractor):
 
 @dataclass
 class TitleExtractor(LLMBasedExtractor):
+    """
+    Extracts the title from the given text.
+
+    Attributes
+    ----------
+    property_name : str
+        The name of the property to extract.
+    prompt : TitleExtractorPrompt
+        The prompt used for extraction.
+    """
+
     property_name: str = "title"
     prompt: TitleExtractorPrompt = TitleExtractorPrompt()
 
@@ -181,6 +214,17 @@ class TitleExtractor(LLMBasedExtractor):
 
 @dataclass
 class HeadlinesExtractor(LLMBasedExtractor):
+    """
+    Extracts the headlines from the given text.
+
+    Attributes
+    ----------
+    property_name : str
+        The name of the property to extract.
+    prompt : HeadlinesExtractorPrompt
+        The prompt used for extraction.
+    """
+
     property_name: str = "headlines"
     prompt: HeadlinesExtractorPrompt = HeadlinesExtractorPrompt()
 
@@ -196,6 +240,17 @@ class HeadlinesExtractor(LLMBasedExtractor):
 
 @dataclass
 class NERExtractor(LLMBasedExtractor):
+    """
+    Extracts named entities from the given text.
+
+    Attributes
+    ----------
+    property_name : str
+        The name of the property to extract. Defaults to "entities".
+    prompt : NERPrompt
+        The prompt used for extraction.
+    """
+
     property_name: str = "entities"
     prompt: NERPrompt = NERPrompt()
 

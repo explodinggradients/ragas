@@ -1,4 +1,4 @@
-from .base import BaseGraphTransformation
+from .base import BaseGraphTransformation, Extractor, RelationshipBuilder, Splitter
 from .engine import Parallel, Transforms, apply_transforms, rollback_transforms
 from .extractors import (
     EmbeddingExtractor,
@@ -15,6 +15,28 @@ from .splitters import HeadlineSplitter
 
 
 def default_transforms() -> Transforms:
+    """
+    Creates and returns a default set of transforms for processing a knowledge graph.
+
+    This function defines a series of transformation steps to be applied to a
+    knowledge graph, including extracting summaries, keyphrases, titles,
+    headlines, and embeddings, as well as building similarity relationships
+    between nodes.
+
+    The transforms are applied in the following order:
+    1. Parallel extraction of summaries and headlines
+    2. Embedding of summaries for document nodes
+    3. Splitting of headlines
+    4. Parallel extraction of embeddings, keyphrases, and titles
+    5. Building cosine similarity relationships between nodes
+    6. Building cosine similarity relationships between summaries
+
+    Returns
+    -------
+    Transforms
+        A list of transformation steps to be applied to the knowledge graph.
+
+    """
     from ragas.testset.graph import NodeType
 
     # define the transforms
@@ -46,10 +68,26 @@ def default_transforms() -> Transforms:
 
 
 __all__ = [
+    # base
     "BaseGraphTransformation",
+    "Extractor",
+    "RelationshipBuilder",
+    "Splitter",
+    # Transform Engine
     "Parallel",
     "Transforms",
     "apply_transforms",
     "rollback_transforms",
     "default_transforms",
+    # extractors
+    "EmbeddingExtractor",
+    "HeadlinesExtractor",
+    "KeyphrasesExtractor",
+    "SummaryExtractor",
+    "TitleExtractor",
+    # relationship builders
+    "CosineSimilarityBuilder",
+    "SummaryCosineSimilarityBuilder",
+    # splitters
+    "HeadlineSplitter",
 ]

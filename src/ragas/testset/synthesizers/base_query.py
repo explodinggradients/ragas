@@ -22,6 +22,19 @@ if t.TYPE_CHECKING:
 
 @dataclass
 class QuerySynthesizer(BaseSynthesizer[Scenario]):
+    """
+    Synthesizes Question-Answer pairs. Used as a base class for other query synthesizers.
+
+    Attributes
+    ----------
+    critic_query_prompt : PydanticPrompt
+        The prompt used for criticizing the query.
+    query_modification_prompt : PydanticPrompt
+        The prompt used for modifying the query.
+    generate_reference_prompt : PydanticPrompt
+        The prompt used for generating the reference.
+    """
+
     critic_query_prompt: PydanticPrompt = field(default_factory=CriticUserInput)
     query_modification_prompt: PydanticPrompt = field(default_factory=ModifyUserInput)
     generate_reference_prompt: PydanticPrompt = field(default_factory=GenerateReference)

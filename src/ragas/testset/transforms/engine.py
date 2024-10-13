@@ -19,6 +19,14 @@ Transforms = t.Union[
 
 
 class Parallel:
+    """
+    Collection of transformations to be applied in parallel.
+
+    Examples
+    --------
+    >>> Parallel(HeadlinesExtractor(), SummaryExtractor())
+    """
+
     def __init__(self, *transformations: BaseGraphTransformation):
         self.transformations = list(transformations)
 
@@ -112,5 +120,12 @@ def apply_transforms(
 
 
 def rollback_transforms(kg: KnowledgeGraph, transforms: Transforms):
+    """
+    Rollback a list of transformations from a knowledge graph.
+
+    Note
+    ----
+    This is not yet implemented. Please open an issue if you need this feature.
+    """
     # this will allow you to roll back the transformations
     raise NotImplementedError

@@ -169,4 +169,3 @@ experiments/
 **/fil-result/
 src/ragas/_version.py
 .vscode
-/docs/references/

@@ -19,12 +19,20 @@ if t.TYPE_CHECKING:
 
 
 class QueryLength(str, Enum):
+    """
+    Enumeration of query lengths. Available options are: LONG, MEDIUM, SHORT
+    """
+
     LONG = "long"
     MEDIUM = "medium"
     SHORT = "short"
 
 
 class QueryStyle(str, Enum):
+    """
+    Enumeration of query styles. Available options are: MISSPELLED, PERFECT_GRAMMAR, POOR_GRAMMAR, WEB_SEARCH_LIKE
+    """
+
     MISSPELLED = "Misspelled queries"
     PERFECT_GRAMMAR = "Perfect grammar"
     POOR_GRAMMAR = "Poor grammar"
@@ -32,6 +40,19 @@ class QueryStyle(str, Enum):
 
 
 class BaseScenario(BaseModel):
+    """
+    Base class for representing a scenario for generating test samples.
+
+    Attributes
+    ----------
+    nodes : List[Node]
+        List of nodes involved in the scenario.
+    style : QueryStyle
+        The style of the query.
+    length : QueryLength
+        The length of the query.
+    """
+
     nodes: t.List[Node]
     style: QueryStyle
     length: QueryLength
@@ -42,6 +63,10 @@ Scenario = t.TypeVar("Scenario", bound=BaseScenario)
 
 @dataclass
 class BaseSynthesizer(ABC, t.Generic[Scenario], PromptMixin):
+    """
+    Base class for synthesizing scenarios and samples.
+    """
+
     name: str = ""
     llm: BaseRagasLLM = field(default_factory=llm_factory)
 

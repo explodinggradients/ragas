@@ -17,11 +17,26 @@ if t.TYPE_CHECKING:
 
 
 class SpecificQueryScenario(BaseScenario):
+    """
+    Represents a scenario for generating specific queries.
+    Also inherits attributes from [BaseScenario][ragas.testset.synthesizers.base.BaseScenario].
+
+    Attributes
+    ----------
+    keyphrase : str
+        The keyphrase of the specific query scenario.
+    """
+
     keyphrase: str
 
 
 @dataclass
 class SpecificQuerySynthesizer(QuerySynthesizer):
+    """
+    Synthesizes specific queries by choosing specific chunks and generating a
+    keyphrase from them and then generating queries based on that.
+    """
+
     generate_query_prompt: PydanticPrompt = field(default_factory=SpecificQuery)
 
     async def _generate_scenarios(

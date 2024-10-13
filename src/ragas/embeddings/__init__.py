@@ -7,9 +7,9 @@ from ragas.embeddings.base import (
 )
 
 __all__ = [
-    "HuggingfaceEmbeddings",
     "BaseRagasEmbeddings",
     "LangchainEmbeddingsWrapper",
     "LlamaIndexEmbeddingsWrapper",
+    "HuggingfaceEmbeddings",
     "embedding_factory",
 ]

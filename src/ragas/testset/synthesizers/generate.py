@@ -29,6 +29,17 @@ RAGAS_TESTSET_GENERATION_GROUP_NAME = "ragas testset generation"
 
 @dataclass
 class TestsetGenerator:
+    """
+    Generates an evaluation dataset based on given scenarios and parameters.
+
+    Attributes
+    ----------
+    llm : BaseRagasLLM
+        The language model to use for the generation process.
+    knowledge_graph : KnowledgeGraph, default empty
+        The knowledge graph to use for the generation process.
+    """
+
     llm: BaseRagasLLM
     knowledge_graph: KnowledgeGraph = field(default_factory=KnowledgeGraph)
 
@@ -37,7 +48,10 @@ class TestsetGenerator:
         cls,
         llm: LangchainLLM,
         knowledge_graph: t.Optional[KnowledgeGraph] = None,
-    ):
+    ) -> TestsetGenerator:
+        """
+        Creates a `TestsetGenerator` from a Langchain LLMs.
+        """
         knowledge_graph = knowledge_graph or KnowledgeGraph()
         return cls(LangchainLLMWrapper(llm), knowledge_graph)
 
@@ -52,6 +66,9 @@ class TestsetGenerator:
         with_debugging_logs=False,
         raise_exceptions: bool = True,
     ) -> Testset:
+        """
+        Generates an evaluation dataset based on given scenarios and parameters.
+        """
         transforms = transforms or default_transforms()
 
         # convert the documents to Ragas nodes

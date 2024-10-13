@@ -64,6 +64,19 @@ class RunConfig:
 
 
 def add_retry(fn: WrappedFn, run_config: RunConfig) -> WrappedFn:
+    """
+    Adds retry functionality to a given function using the provided RunConfig.
+
+    This function wraps the input function with retry logic using the tenacity library.
+    It configures the retry behavior based on the settings in the RunConfig.
+
+    Notes
+    -----
+    - If log_tenacity is enabled in the RunConfig, it sets up logging for retry attempts.
+    - The retry logic uses exponential backoff with random jitter for wait times.
+    - The number of retry attempts and exception types to retry on are configured
+      based on the RunConfig.
+    """
     # configure tenacity's after section wtih logger
     if run_config.log_tenacity is not None:
         logger = logging.getLogger(f"ragas.retry.{fn.__name__}")

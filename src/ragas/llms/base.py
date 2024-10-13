@@ -294,6 +294,26 @@ def llm_factory(
     default_headers: t.Optional[t.Dict[str, str]] = None,
     base_url: t.Optional[str] = None,
 ) -> BaseRagasLLM:
+    """
+    Create and return a BaseRagasLLM instance. Used for running default LLMs used
+    in Ragas (OpenAI).
+
+    Parameters
+    ----------
+    model : str, optional
+        The name of the model to use, by default "gpt-4o-mini".
+    run_config : RunConfig, optional
+        Configuration for the run, by default None.
+    default_headers : dict of str, optional
+        Default headers to be used in API requests, by default None.
+    base_url : str, optional
+        Base URL for the API, by default None.
+
+    Returns
+    -------
+    BaseRagasLLM
+        An instance of BaseRagasLLM configured with the specified parameters.
+    """
     timeout = None
     if run_config is not None:
         timeout = run_config.timeout
