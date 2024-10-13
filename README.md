@@ -34,7 +34,7 @@
 
 [Ragas](https://www.ragas.io/) supercharges your LLM application evaluations with tools to objectively measure performance, synthesize test case scenarios, and gain insights by leveraging production data.
 
-Evaluating and testing LLM applications is a challenging, time-consuming, and often boring process. Ragas aims provide a suite of tools that could supercharge your evaluation workflows and make it more efficient and fun using  state-of-the-art research. We are also building an open ecosystem, that fosters sharing of ideas to make the evaluation process better and collaborates with other tools in the market to make it seamless you.
+Evaluating and testing LLM applications is a challenging, time-consuming, and often boring process. Ragas aims provide a suite of tools that could supercharge your evaluation workflows and make it more efficient and fun using  state-of-the-art research. We are also building an open ecosystem, that fosters sharing of ideas to make the evaluation process better and collaborates with other tools in the market to make it a seamless experience.
 
 ## Key Features
 
