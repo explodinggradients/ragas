@@ -38,6 +38,8 @@ docsite: ## Build and serve documentation
 rewrite-docs: ## Use GPT4 to rewrite the documentation
 	@echo "Rewriting the documentation in directory $(DIR)..."
 	@python $(GIT_ROOT)/docs/python alphred.py --directory $(DIR)
+ipynb-to-md: ## Convert ipynb files to md files
+	@python $(GIT_ROOT)/scripts/ipynb_to_md.py
 
 # Benchmarks
 run-benchmarks-eval: ## Run benchmarks for Evaluation
