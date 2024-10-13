@@ -30,18 +30,7 @@ def convert_ipynb_to_md(ipynb_file):
 
 
 def get_last_modified_time(file_path):
-    try:
-        result = subprocess.run(
-            ["git", "log", "-1", "--format=%ct", file_path],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        timestamp = int(result.stdout.strip())
-        return datetime.datetime.fromtimestamp(timestamp)
-    except subprocess.CalledProcessError:
-        # If the file is not tracked by Git, use the file system's modification time
-        return datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
+    return datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
 
 
 def find_and_convert_ipynb_files(directory):
