@@ -1,14 +1,26 @@
+import datetime
 import os
 import subprocess
 
 
 def convert_ipynb_to_md(ipynb_file):
-    md_file = os.path.splitext(ipynb_file)[0] + ".md"
+    # Change this line to add an underscore
+    md_file = "_" + os.path.splitext(os.path.basename(ipynb_file))[0] + ".md"
+    md_path = os.path.join(os.path.dirname(ipynb_file), md_file)
     try:
         subprocess.run(
-            ["jupyter", "nbconvert", "--to", "markdown", ipynb_file], check=True
+            [
+                "jupyter",
+                "nbconvert",
+                "--to",
+                "markdown",
+                ipynb_file,
+                "--output",
+                md_file,
+            ],
+            check=True,
         )
-        print(f"Converted {ipynb_file} to {md_file}")
+        print(f"Converted {ipynb_file} to {md_path}")
     except subprocess.CalledProcessError as e:
         print(f"Error converting {ipynb_file}: {e}")
     except FileNotFoundError:
@@ -17,12 +29,42 @@ def convert_ipynb_to_md(ipynb_file):
         )
 
 
+def get_last_modified_time(file_path):
+    try:
+        result = subprocess.run(
+            ["git", "log", "-1", "--format=%ct", file_path],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        timestamp = int(result.stdout.strip())
+        return datetime.datetime.fromtimestamp(timestamp)
+    except subprocess.CalledProcessError:
+        # If the file is not tracked by Git, use the file system's modification time
+        return datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
+
+
 def find_and_convert_ipynb_files(directory):
-    for root, dirs, files in os.walk(directory):
+    for root, _, files in os.walk(directory):
         for file in files:
             if file.endswith(".ipynb"):
                 ipynb_file = os.path.join(root, file)
-                convert_ipynb_to_md(ipynb_file)
+                # Change this line to add an underscore
+                md_file = "_" + os.path.splitext(file)[0] + ".md"
+                md_path = os.path.join(root, md_file)
+
+                ipynb_modified = get_last_modified_time(ipynb_file)
+                md_modified = (
+                    get_last_modified_time(md_path)
+                    if os.path.exists(md_path)
+                    else datetime.datetime.min
+                )
+
+                if ipynb_modified > md_modified:
+                    print(f"Converting {ipynb_file} (modified: {ipynb_modified})")
+                    convert_ipynb_to_md(ipynb_file)
+                else:
+                    print(f"Skipping {ipynb_file} (not modified since last conversion)")
 
 
 def get_valid_directory():
