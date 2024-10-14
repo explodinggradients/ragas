@@ -76,15 +76,16 @@ nav:
           - howtos/customizations/index.md
           - General:
               - Customise models: howtos/customizations/customize_models.md
-              - Run Config: howtos/customizations/run_config.ipynb
+              - Run Config: howtos/customizations/_run_config.md
           - Metrics:
-              - Modify Prompts: howtos/customizations/metrics/modifying-prompts-metrics.ipynb
-              - Add Custom Metrics: howtos/customizations/metrics/write_your_own_metric.ipynb
+              - Modify Prompts: howtos/customizations/metrics/_modifying-prompts-metrics.md
+              - Add Custom Metrics: howtos/customizations/metrics/_write_your_own_metric.md
           - Testset Generation:
               - Add custom scenarios: howtos/customizations/testset_generation/add_custom_scenarios.md
               - Seed Generation with Production Data: howtos/customizations/testset_generation/seed_generation_with_production_data.md
       - Applications:
           - howtos/applications/index.md
+          - Cost Analysis: howtos/applications/cost.md
       - Integrations:
           - howtos/integrations/index.md
       - Migrations:
@@ -216,17 +217,6 @@ plugins:
             merge_init_into_class: true
             show_signature_annotations: true
             signature_crossrefs: true
-  - mkdocs-jupyter:
-      execute: false
-      include: ["*.ipynb"]
-      ignore: ["*.md"]
-      jupyter_options:
-        hide_input: false
-        hide_output: false
-        code_folding: true
-        code_line_numbers: true
-        jupyter_images: true
-        jupyter_table_beautifier: true
   - glightbox
 
 extra_javascript:
