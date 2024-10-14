@@ -151,7 +151,7 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
 
         return samples
 
-    def get_sample_type(self):
+    def get_sample_type(self) -> t.Type[Sample]:
         """Returns the type of the samples in the dataset."""
         return type(self.samples[0])
 
@@ -179,7 +179,7 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
         return HFDataset.from_list(self._to_list())
 
     @classmethod
-    def from_hf_dataset(cls, dataset: HFDataset) -> "RagasDataset[Sample]":
+    def from_hf_dataset(cls, dataset: HFDataset):
         """Creates an EvaluationDataset from a Hugging Face Dataset."""
         return cls.from_list(dataset.to_list())
 
@@ -273,8 +273,14 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
     def __getitem__(self, idx: int) -> Sample:
         return self.samples[idx]
 
+    def __str__(self) -> str:
+        return f"EvaluationDataset(features={self.features()}, len={len(self.samples)})"
 
-class EvaluationDataset(RagasDataset[BaseSample]):
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+class EvaluationDataset(RagasDataset[t.Union[SingleTurnSample, MultiTurnSample]]):
     """
     Represents a dataset of evaluation samples.
 
@@ -299,12 +305,21 @@ class EvaluationDataset(RagasDataset[BaseSample]):
         Creates an EvaluationDataset from a list of dictionaries.
     from_dict(mapping)
         Creates an EvaluationDataset from a dictionary.
+    from_csv(path)
+        Creates an EvaluationDataset from a CSV file.
+    to_csv(path)
+        Converts the dataset to a CSV file.
+    to_jsonl(path)
+        Converts the dataset to a JSONL file.
+    from_jsonl(path)
+        Creates an EvaluationDataset from a JSONL file.
     """
 
     pass
 
 
-class EvaluationResult(BaseModel):
+@dataclass
+class EvaluationResult(dict):
     """
     A class to store and process the results of the evaluation.
 
@@ -325,14 +340,14 @@ class EvaluationResult(BaseModel):
     binary_columns: t.List[str] = field(default_factory=list)
     cost_cb: t.Optional[CostCallbackHandler] = None
 
-    # def __post_init__(self):
-    #     values = []
-    #     for cn in self.scores[0].keys():
-    #         value = safe_nanmean(self.scores[cn])
-    #         self[cn] = value
-    #         if cn not in self.binary_columns:
-    #             value = t.cast(float, value)
-    #             values.append(value + 1e-10)
+    def __post_init__(self):
+        values = []
+        for cn in self.scores[0].keys():
+            value = safe_nanmean(self.scores[cn])
+            self[cn] = value
+            if cn not in self.binary_columns:
+                value = t.cast(float, value)
+                values.append(value + 1e-10)
 
     def to_pandas(self, batch_size: int | None = None, batched: bool = False):
         """
@@ -419,6 +434,6 @@ class EvaluationResult(BaseModel):
         )
 
     def __repr__(self) -> str:
-        scores = self.model_dump()
+        scores = self.copy()
         score_strs = [f"'{k}': {v:0.4f}" for k, v in scores.items()]
         return "{" + ", ".join(score_strs) + "}"

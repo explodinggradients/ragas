@@ -77,7 +77,7 @@ def evaluate(
 
     Parameters
     ----------
-    dataset : Dataset[question: list[str], contexts: list[list[str]], answer: list[str], ground_truth: list[list[str]]]
+    dataset : Dataset, EvaluationDataset
         The dataset in the format of ragas which the metrics will use to score the RAG
         pipeline with
     metrics : list[Metric] , optional
@@ -259,7 +259,7 @@ def evaluate(
 
     sample_type = dataset.get_sample_type()
     for i, sample in enumerate(dataset):
-        row = t.cast(t.Dict[str, t.Any], sample.dict())
+        row = t.cast(t.Dict[str, t.Any], sample.model_dump())
         row_rm, row_group_cm = new_group(
             name=f"row {i}",
             inputs=row,
