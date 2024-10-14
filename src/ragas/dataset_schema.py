@@ -12,7 +12,7 @@ if t.TYPE_CHECKING:
     from pandas import DataFrame as PandasDataframe
 
 
-class BaseEvalSample(BaseModel):
+class BaseSample(BaseModel):
     """
     Base class for evaluation samples.
     """
@@ -30,7 +30,7 @@ class BaseEvalSample(BaseModel):
         return list(self.to_dict().keys())
 
 
-class SingleTurnSample(BaseEvalSample):
+class SingleTurnSample(BaseSample):
     """
     Represents evaluation samples for single-turn interactions.
 
@@ -61,7 +61,7 @@ class SingleTurnSample(BaseEvalSample):
     rubric: t.Optional[t.Dict[str, str]] = None
 
 
-class MultiTurnSample(BaseEvalSample):
+class MultiTurnSample(BaseSample):
     """
     Represents evaluation samples for multi-turn interactions.
 
@@ -127,44 +127,14 @@ class MultiTurnSample(BaseEvalSample):
         return "\n".join(lines)
 
 
-class EvaluationDataset(BaseModel):
-    """
-    Represents a dataset of evaluation samples.
+Sample = t.TypeVar("Sample", bound=BaseSample)
 
-    Parameters
-    ----------
-    samples : List[BaseEvalSample]
-        A list of evaluation samples.
 
-    Attributes
-    ----------
-    samples : List[BaseEvalSample]
-        A list of evaluation samples.
-
-    Methods
-    -------
-    validate_samples(samples)
-        Validates that all samples are of the same type.
-    get_sample_type()
-        Returns the type of the samples in the dataset.
-    to_hf_dataset()
-        Converts the dataset to a Hugging Face Dataset.
-    to_pandas()
-        Converts the dataset to a pandas DataFrame.
-    features()
-        Returns the features of the samples.
-    from_list(mapping)
-        Creates an EvaluationDataset from a list of dictionaries.
-    from_dict(mapping)
-        Creates an EvaluationDataset from a dictionary.
-    """
-
-    samples: t.List[BaseEvalSample]
+class RagasDataset(BaseModel, t.Generic[Sample]):
+    samples: t.List[Sample]
 
     @field_validator("samples")
-    def validate_samples(
-        cls, samples: t.List[BaseEvalSample]
-    ) -> t.List[BaseEvalSample]:
+    def validate_samples(cls, samples: t.List[BaseSample]) -> t.List[BaseSample]:
         """Validates that all samples are of the same type."""
         if len(samples) == 0:
             return samples
@@ -201,6 +171,11 @@ class EvaluationDataset(BaseModel):
             )
 
         return HFDataset.from_list(self._to_list())
+
+    @classmethod
+    def from_hf_dataset(cls, dataset: HFDataset) -> "RagasDataset[Sample]":
+        """Creates an EvaluationDataset from a Hugging Face Dataset."""
+        return cls.from_list(dataset.to_list())
 
     def to_pandas(self) -> PandasDataframe:
         """Converts the dataset to a pandas DataFrame."""
@@ -244,11 +219,80 @@ class EvaluationDataset(BaseModel):
             samples.extend(SingleTurnSample(**sample) for sample in mapping)
         return cls(samples=samples)
 
-    def __iter__(self) -> t.Iterator[BaseEvalSample]:  # type: ignore
+    @classmethod
+    def from_csv(cls, path: str):
+        """Creates an EvaluationDataset from a CSV file."""
+        import csv
+
+        with open(path, "r", newline="") as csvfile:
+            reader = csv.DictReader(csvfile)
+            data = [row for row in reader]
+        return cls.from_list(data)
+
+    def to_csv(self, path: str):
+        """Converts the dataset to a CSV file."""
+        import csv
+
+        data = self._to_list()
+        if not data:
+            return
+
+        fieldnames = self.features()
+
+        with open(path, "w", newline="") as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for row in data:
+                writer.writerow(row)
+
+    def to_jsonl(self, path: str):
+        """Converts the dataset to a JSONL file."""
+        with open(path, "w") as jsonlfile:
+            for sample in self.samples:
+                jsonlfile.write(json.dumps(sample.to_dict()) + "\n")
+
+    @classmethod
+    def from_jsonl(cls, path: str):
+        """Creates an EvaluationDataset from a JSONL file."""
+        with open(path, "r") as jsonlfile:
+            data = [json.loads(line) for line in jsonlfile]
+        return cls.from_list(data)
+
+    def __iter__(self) -> t.Iterator[Sample]:  # type: ignore
         return iter(self.samples)
 
     def __len__(self) -> int:
         return len(self.samples)
 
-    def __getitem__(self, idx: int) -> BaseEvalSample:
+    def __getitem__(self, idx: int) -> Sample:
         return self.samples[idx]
+
+
+class EvaluationDataset(RagasDataset[BaseSample]):
+    """
+    Represents a dataset of evaluation samples.
+
+    Attributes
+    ----------
+    samples : List[BaseSample]
+        A list of evaluation samples.
+
+    Methods
+    -------
+    validate_samples(samples)
+        Validates that all samples are of the same type.
+    get_sample_type()
+        Returns the type of the samples in the dataset.
+    to_hf_dataset()
+        Converts the dataset to a Hugging Face Dataset.
+    to_pandas()
+        Converts the dataset to a pandas DataFrame.
+    features()
+        Returns the features of the samples.
+    from_list(mapping)
+        Creates an EvaluationDataset from a list of dictionaries.
+    from_dict(mapping)
+        Creates an EvaluationDataset from a dictionary.
+    """
+
+    pass

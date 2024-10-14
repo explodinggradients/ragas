@@ -47,7 +47,7 @@ def get_json_format_instructions(pydantic_object: t.Type[TBaseModel]) -> str:
     if "title" in reduced_schema:
         del reduced_schema["title"]
     # Ensure json in context is well-formed with double quotes.
-    schema_str = json.dumps(reduced_schema)
+    schema_str = json.dumps(reduced_schema, ensure_ascii=False)
 
     resp = JSON_FORMAT_INSTRUCTIONS.format(schema=schema_str)
     return resp
