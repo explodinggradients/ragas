@@ -2,16 +2,17 @@ from __future__ import annotations
 
 import typing as t
 
-from pydantic import BaseModel
-
-from ragas.dataset_schema import EvaluationDataset, MultiTurnSample, SingleTurnSample
+from ragas.dataset_schema import BaseSample, RagasDataset
 
 if t.TYPE_CHECKING:
-    from datasets import Dataset as HFDataset
-    from pandas import DataFrame as PandasDataframe
+    from ragas.dataset_schema import (
+        EvaluationDataset,
+        MultiTurnSample,
+        SingleTurnSample,
+    )
 
 
-class TestsetSample(BaseModel):
+class TestsetSample(BaseSample):
     """
     Represents a sample in a test set.
 
@@ -27,7 +28,7 @@ class TestsetSample(BaseModel):
     synthesizer_name: str
 
 
-class Testset(BaseModel):
+class Testset(RagasDataset[TestsetSample]):
     """
     Represents a test set containing multiple test samples.
 
@@ -57,29 +58,3 @@ class Testset(BaseModel):
             for eval_sample, sample in zip(eval_list, testset_list_without_eval_sample)
         ]
         return testset_list
-
-    def to_pandas(self) -> PandasDataframe:
-        """
-        Converts the Testset to a Pandas DataFrame.
-        """
-        import pandas as pd
-
-        return pd.DataFrame(self._to_list())
-
-    def to_hf_dataset(self) -> HFDataset:
-        """
-        Converts the Testset to a Hugging Face Dataset.
-
-        Raises
-        ------
-        ImportError
-            If the 'datasets' library is not installed.
-        """
-        try:
-            from datasets import Dataset as HFDataset
-        except ImportError:
-            raise ImportError(
-                "datasets is not installed. Please install it to use this function."
-            )
-
-        return HFDataset.from_list(self._to_list())
