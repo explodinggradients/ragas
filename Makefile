@@ -33,11 +33,14 @@ test-e2e: ## Run end2end tests
 run-ci: format lint type test ## Running all CI checks
 
 # Docs
-docsite: ## Build and serve documentation
-	@mkdocs serve --dirty
 rewrite-docs: ## Use GPT4 to rewrite the documentation
 	@echo "Rewriting the documentation in directory $(DIR)..."
 	@python $(GIT_ROOT)/docs/python alphred.py --directory $(DIR)
+ipynb-to-md: ## Convert ipynb files to md files
+	@python $(GIT_ROOT)/scripts/ipynb_to_md.py
+docsite: ## Build and serve documentation
+	@$(MAKE) ipynb-to-md
+	@mkdocs serve
 
 # Benchmarks
 run-benchmarks-eval: ## Run benchmarks for Evaluation

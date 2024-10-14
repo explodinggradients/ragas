@@ -76,10 +76,10 @@ nav:
           - howtos/customizations/index.md
           - General:
               - Customise models: howtos/customizations/customize_models.md
-              - Run Config: howtos/customizations/run_config.md
+              - Run Config: howtos/customizations/_run_config.md
           - Metrics:
-              - Modify Prompts: howtos/customizations/metrics/modifying-prompts-metrics.md
-              - Add Custom Metrics: howtos/customizations/metrics/write_your_own_metric.md
+              - Modify Prompts: howtos/customizations/metrics/_modifying-prompts-metrics.md
+              - Add Custom Metrics: howtos/customizations/metrics/_write_your_own_metric.md
           - Testset Generation:
               - Add custom scenarios: howtos/customizations/testset_generation/add_custom_scenarios.md
               - Seed Generation with Production Data: howtos/customizations/testset_generation/seed_generation_with_production_data.md
