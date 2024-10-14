@@ -24,10 +24,12 @@ We now pass the tracer to the `callbacks` parameter when calling `evaluate`
 
 ```python
 from ragas import EvaluationDataset
+from datasets import load_dataset
 from ragas.metrics import LLMContextRecall
 
+dataset = load_dataset("explodinggradients/amnesty_qa", "english_v3")
 
-dataset = EvaluationDataset.load_from_hf("explodinggradients/amnesty_qa", "english_v3", split="eval")
+dataset = EvaluationDataset.load_from_hf(dataset["eval"])
 evaluate(dataset, metrics=[LLMContextRecall()],callbacks=[tracer])
 ```
 
