@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import typing as t
-from dataclasses import dataclass, field
 
 import numpy as np
-from datasets import Dataset, concatenate_datasets
+from datasets import Dataset
 from langchain_core.callbacks import BaseCallbackHandler, BaseCallbackManager
 from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.language_models import BaseLanguageModel as LangchainLLM
@@ -38,12 +37,7 @@ from ragas.metrics.base import (
     is_reproducable,
 )
 from ragas.run_config import RunConfig
-from ragas.utils import (
-    convert_v1_to_v2_dataset,
-    convert_v2_to_v1_dataset,
-    get_feature_language,
-    safe_nanmean,
-)
+from ragas.utils import convert_v1_to_v2_dataset, get_feature_language
 from ragas.validation import (
     remap_column_names,
     validate_required_columns,
@@ -171,10 +165,8 @@ def evaluate(
 
         metrics = [answer_relevancy, context_precision, faithfulness, context_recall]
 
-    v1_input = False
     if isinstance(dataset, Dataset):
         # remap column names from the dataset
-        v1_input = True
         dataset = remap_column_names(dataset, column_map)
         dataset = convert_v1_to_v2_dataset(dataset)
         # validation
@@ -293,7 +285,7 @@ def evaluate(
         else:
             raise ValueError(f"Unsupported sample type {sample_type}")
 
-    scores = []
+    scores: t.List[t.Dict[str, t.Any]] = []
     try:
         # get the results
         results = executor.results()
@@ -320,14 +312,9 @@ def evaluate(
     else:
         # evalution run was successful
         # now lets process the results
-        # convert to v.1 dataset
-        dataset = dataset.to_hf_dataset()
-        if v1_input:
-            dataset = convert_v2_to_v1_dataset(dataset)
-
         cost_cb = ragas_callbacks["cost_cb"] if "cost_cb" in ragas_callbacks else None
         result = EvaluationResult(
-            scores=Dataset.from_list(scores),
+            scores=scores,
             dataset=dataset,
             binary_columns=binary_metrics,
             cost_cb=t.cast(

@@ -5,9 +5,9 @@ import typing as t
 from dataclasses import dataclass, field
 
 from datasets import Dataset as HFDataset
-from datasets import concatenate_datasets
 from pydantic import BaseModel, field_validator
 
+from ragas.cost import CostCallbackHandler
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 from ragas.utils import safe_nanmean
 
@@ -15,7 +15,7 @@ if t.TYPE_CHECKING:
     from datasets import Dataset as HFDataset
     from pandas import DataFrame as PandasDataframe
 
-    from ragas.cost import CostCallbackHandler, TokenUsage
+    from ragas.cost import TokenUsage
 
 
 class BaseSample(BaseModel):
@@ -270,9 +270,6 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
     def __len__(self) -> int:
         return len(self.samples)
 
-    def __getitem__(self, idx: int) -> Sample:
-        return self.samples[idx]
-
     def __str__(self) -> str:
         return f"EvaluationDataset(features={self.features()}, len={len(self.samples)})"
 
@@ -280,7 +277,10 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
         return self.__str__()
 
 
-class EvaluationDataset(RagasDataset[t.Union[SingleTurnSample, MultiTurnSample]]):
+SingleTurnSampleOrMultiTurnSample = t.Union[SingleTurnSample, MultiTurnSample]
+
+
+class EvaluationDataset(RagasDataset[SingleTurnSampleOrMultiTurnSample]):
     """
     Represents a dataset of evaluation samples.
 
@@ -315,11 +315,25 @@ class EvaluationDataset(RagasDataset[t.Union[SingleTurnSample, MultiTurnSample]]
         Creates an EvaluationDataset from a JSONL file.
     """
 
-    pass
+    @t.overload
+    def __getitem__(self, idx: int) -> SingleTurnSampleOrMultiTurnSample: ...
+
+    @t.overload
+    def __getitem__(self, idx: slice) -> "EvaluationDataset": ...
+
+    def __getitem__(
+        self, idx: t.Union[int, slice]
+    ) -> t.Union[SingleTurnSampleOrMultiTurnSample, "EvaluationDataset"]:
+        if isinstance(idx, int):
+            return self.samples[idx]
+        elif isinstance(idx, slice):
+            return type(self)(samples=self.samples[idx])
+        else:
+            raise TypeError("Index must be int or slice")
 
 
 @dataclass
-class EvaluationResult(dict):
+class EvaluationResult:
     """
     A class to store and process the results of the evaluation.
 
@@ -335,17 +349,23 @@ class EvaluationResult(dict):
         The callback handler for cost computation. Default is None.
     """
 
-    scores: HFDataset
-    dataset: t.Optional[HFDataset] = None
+    scores: t.List[t.Dict[str, t.Any]]
+    dataset: t.Optional[EvaluationDataset] = None
     binary_columns: t.List[str] = field(default_factory=list)
     cost_cb: t.Optional[CostCallbackHandler] = None
 
     def __post_init__(self):
+        # transform scores from list of dicts to dict of lists
+        self._scores_dict = {
+            k: [d[k] for d in self.scores] for k in self.scores[0].keys()
+        }
+
         values = []
-        for cn in self.scores[0].keys():
-            value = safe_nanmean(self.scores[cn])
-            self[cn] = value
-            if cn not in self.binary_columns:
+        self._repr_dict = {}
+        for metric_name in self._scores_dict.keys():
+            value = safe_nanmean(self._scores_dict[metric_name])
+            self._repr_dict[metric_name] = value
+            if metric_name not in self.binary_columns:
                 value = t.cast(float, value)
                 values.append(value + 1e-10)
 
@@ -370,12 +390,20 @@ class EvaluationResult(dict):
         ValueError
             If the dataset is not provided.
         """
+        try:
+            import pandas as pd
+        except ImportError:
+            raise ImportError(
+                "pandas is not installed. Please install it to use this function."
+            )
+
         if self.dataset is None:
             raise ValueError("dataset is not provided for the results class")
-        assert self.scores.shape[0] == self.dataset.shape[0]
-        result_ds = concatenate_datasets([self.dataset, self.scores], axis=1)
-
-        return result_ds.to_pandas(batch_size=batch_size, batched=batched)
+        assert len(self.scores) == len(self.dataset)
+        # convert both to pandas dataframes and concatenate
+        scores_df = pd.DataFrame(self.scores)
+        dataset_df = self.dataset.to_pandas()
+        return pd.concat([dataset_df, scores_df], axis=1)
 
     def total_tokens(self) -> t.Union[t.List[TokenUsage], TokenUsage]:
         """
@@ -434,6 +462,8 @@ class EvaluationResult(dict):
         )
 
     def __repr__(self) -> str:
-        scores = self.copy()
-        score_strs = [f"'{k}': {v:0.4f}" for k, v in scores.items()]
+        score_strs = [f"'{k}': {v:0.4f}" for k, v in self._repr_dict.items()]
         return "{" + ", ".join(score_strs) + "}"
+
+    def __getitem__(self, key: str) -> t.List[float]:
+        return self._scores_dict[key]
