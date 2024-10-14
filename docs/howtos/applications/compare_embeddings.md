@@ -1,3 +1,8 @@
+---
+search:
+  exclude: true
+---
+
 # Compare Embeddings for retriever
 
 The performance of the retriever is a critical and influential factor that determines the overall effectiveness of a Retrieval Augmented Generation (RAG) system. In particular, the quality of the embeddings used plays a pivotal role in determining the quality of the retrieved content.

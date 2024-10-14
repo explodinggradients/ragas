@@ -1,4 +1,4 @@
-# Explainability through Logging and tracing
+# Tracing and logging evaluations with Observability tools
 
 Logging and tracing results from llm are important for any language model-based application. This is a tutorial on how to do tracing with Ragas. Ragas provides `callbacks` functionality which allows you to hook various tracers like Langmsith, wandb, Opik, etc easily.  In this notebook, I will be using Langmith for tracing.
 
@@ -23,19 +23,21 @@ tracer = LangChainTracer(project_name="callback-experiments")
 We now pass the tracer to the `callbacks` parameter when calling `evaluate`
 
 ```python
+from ragas import EvaluationDataset
 from datasets import load_dataset
-from ragas.metrics import context_precision
-from ragas import evaluate
+from ragas.metrics import LLMContextRecall
 
-dataset = load_dataset("explodinggradients/amnesty_qa","english")
-evaluate(dataset["train"],metrics=[context_precision],callbacks=[tracer])
+dataset = load_dataset("explodinggradients/amnesty_qa", "english_v3")
+
+dataset = EvaluationDataset.load_from_hf(dataset["eval"])
+evaluate(dataset, metrics=[LLMContextRecall()],callbacks=[tracer])
 ```
 
 ```text
 {'context_precision': 1.0000}
 ```
 <figure markdown="span">
-  ![Tracing with Langsmith](../../_static/imgs/trace-langsmith.png)
+  ![Tracing with Langsmith](../../../_static/imgs/trace-langsmith.png)
   <figcaption>Tracing with Langsmith</figcaption>
 </figure>
  
