@@ -15,7 +15,7 @@ from ragas.testset.graph import KnowledgeGraph, Node
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
-    from ragas.dataset_schema import BaseEvalSample
+    from ragas.dataset_schema import BaseSample
 
 
 class QueryLength(str, Enum):
@@ -100,7 +100,7 @@ class BaseSynthesizer(ABC, t.Generic[Scenario], PromptMixin):
 
     async def generate_sample(
         self, scenario: Scenario, callbacks: t.Optional[Callbacks] = None
-    ) -> BaseEvalSample:
+    ) -> BaseSample:
         callbacks = callbacks or []
 
         # new group for Sample Generation
@@ -117,5 +117,5 @@ class BaseSynthesizer(ABC, t.Generic[Scenario], PromptMixin):
     @abstractmethod
     async def _generate_sample(
         self, scenario: Scenario, callbacks: Callbacks
-    ) -> BaseEvalSample:
+    ) -> BaseSample:
         pass

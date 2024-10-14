@@ -20,6 +20,28 @@ def test_evaluation_dataset():
     assert dataset[0] == single_turn_sample
 
 
+def test_evaluation_dataset_save_load(tmpdir):
+    single_turn_sample = SingleTurnSample(user_input="What is X", response="Y")
+
+    dataset = EvaluationDataset(samples=[single_turn_sample, single_turn_sample])
+
+    hf_dataset = dataset.to_hf_dataset()
+
+    # save and load to csv
+    dataset.to_csv(tmpdir / "csvfile.csv")
+    loaded_dataset = EvaluationDataset.from_csv(tmpdir / "csvfile.csv")
+    assert loaded_dataset == dataset
+
+    # save and load to jsonl
+    dataset.to_jsonl(tmpdir / "jsonlfile.jsonl")
+    loaded_dataset = EvaluationDataset.from_jsonl(tmpdir / "jsonlfile.jsonl")
+    assert loaded_dataset == dataset
+
+    # load from hf dataset
+    loaded_dataset = EvaluationDataset.from_hf_dataset(hf_dataset)
+    assert loaded_dataset == dataset
+
+
 def test_single_type_evaluation_dataset():
     single_turn_sample = SingleTurnSample(user_input="What is X", response="Y")
     multi_turn_sample = MultiTurnSample(
@@ -34,9 +56,9 @@ def test_single_type_evaluation_dataset():
 
 
 def test_base_eval_sample():
-    from ragas.dataset_schema import BaseEvalSample
+    from ragas.dataset_schema import BaseSample
 
-    class FakeSample(BaseEvalSample):
+    class FakeSample(BaseSample):
         user_input: str
         response: str
         reference: t.Optional[str] = None
@@ -44,3 +66,12 @@ def test_base_eval_sample():
     fake_sample = FakeSample(user_input="What is X", response="Y")
     assert fake_sample.to_dict() == {"user_input": "What is X", "response": "Y"}
     assert fake_sample.get_features() == ["user_input", "response"]
+
+
+def test_evaluation_dataset_iter():
+    single_turn_sample = SingleTurnSample(user_input="What is X", response="Y")
+
+    dataset = EvaluationDataset(samples=[single_turn_sample, single_turn_sample])
+
+    for sample in dataset:
+        assert sample == single_turn_sample
