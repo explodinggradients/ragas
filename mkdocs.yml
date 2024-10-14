@@ -87,6 +87,8 @@ nav:
           - howtos/applications/index.md
       - Integrations:
           - howtos/integrations/index.md
+      - Migrations:
+          - From v0.1 to v0.2: howtos/migrations/migrate_from_v01_to_v02.md
   - 📖 References: 
     - Core:
       - Prompt: references/prompt.md
