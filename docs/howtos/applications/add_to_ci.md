@@ -1,3 +1,8 @@
+---
+search:
+  exclude: true
+---
+
 # Adding to your CI pipeline with Pytest
 
 You can add Ragas evaluations as part of your Continious Integration pipeline 
