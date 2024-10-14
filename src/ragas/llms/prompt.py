@@ -160,7 +160,7 @@ class Prompt(BaseModel):
             )
         for key, value in kwargs.items():
             if isinstance(value, str):
-                kwargs[key] = json.dumps(value)
+                kwargs[key] = json.dumps(value, ensure_ascii=False).encode("utf8").decode()
 
         prompt = self.to_string()
         return PromptValue(prompt_str=prompt.format(**kwargs))
