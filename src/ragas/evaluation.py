@@ -11,8 +11,12 @@ from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
 from ragas._analytics import EvaluationEvent, track, track_was_completed
 from ragas.callbacks import new_group
-from ragas.cost import TokenUsage
-from ragas.dataset_schema import EvaluationDataset, MultiTurnSample, SingleTurnSample
+from ragas.dataset_schema import (
+    EvaluationDataset,
+    EvaluationResult,
+    MultiTurnSample,
+    SingleTurnSample,
+)
 from ragas.embeddings.base import (
     BaseRagasEmbeddings,
     LangchainEmbeddingsWrapper,
@@ -67,7 +71,7 @@ def evaluate(
     raise_exceptions: bool = False,
     column_map: t.Optional[t.Dict[str, str]] = None,
     show_progress: bool = True,
-) -> Result:
+) -> EvaluationResult:
     """
     Run the evaluation on the dataset with different metrics
 
@@ -322,7 +326,7 @@ def evaluate(
             dataset = convert_v2_to_v1_dataset(dataset)
 
         cost_cb = ragas_callbacks["cost_cb"] if "cost_cb" in ragas_callbacks else None
-        result = Result(
+        result = EvaluationResult(
             scores=Dataset.from_list(scores),
             dataset=dataset,
             binary_columns=binary_metrics,
@@ -362,124 +366,3 @@ def evaluate(
         )
     )
     return result
-
-
-@dataclass
-class Result(dict):
-    """
-    A class to store and process the results of the evaluation.
-
-    Attributes
-    ----------
-    scores : Dataset
-        The dataset containing the scores of the evaluation.
-    dataset : Dataset, optional
-        The original dataset used for the evaluation. Default is None.
-    binary_columns : list of str, optional
-        List of columns that are binary metrics. Default is an empty list.
-    cost_cb : CostCallbackHandler, optional
-        The callback handler for cost computation. Default is None.
-    """
-
-    scores: Dataset
-    dataset: t.Optional[Dataset] = None
-    binary_columns: t.List[str] = field(default_factory=list)
-    cost_cb: t.Optional[CostCallbackHandler] = None
-
-    def __post_init__(self):
-        values = []
-        for cn in self.scores[0].keys():
-            value = safe_nanmean(self.scores[cn])
-            self[cn] = value
-            if cn not in self.binary_columns:
-                value = t.cast(float, value)
-                values.append(value + 1e-10)
-
-    def to_pandas(self, batch_size: int | None = None, batched: bool = False):
-        """
-        Convert the result to a pandas DataFrame.
-
-        Parameters
-        ----------
-        batch_size : int, optional
-            The batch size for conversion. Default is None.
-        batched : bool, optional
-            Whether to convert in batches. Default is False.
-
-        Returns
-        -------
-        pandas.DataFrame
-            The result as a pandas DataFrame.
-
-        Raises
-        ------
-        ValueError
-            If the dataset is not provided.
-        """
-        if self.dataset is None:
-            raise ValueError("dataset is not provided for the results class")
-        assert self.scores.shape[0] == self.dataset.shape[0]
-        result_ds = concatenate_datasets([self.dataset, self.scores], axis=1)
-
-        return result_ds.to_pandas(batch_size=batch_size, batched=batched)
-
-    def total_tokens(self) -> t.Union[t.List[TokenUsage], TokenUsage]:
-        """
-        Compute the total tokens used in the evaluation.
-
-        Returns
-        -------
-        list of TokenUsage or TokenUsage
-            The total tokens used.
-
-        Raises
-        ------
-        ValueError
-            If the cost callback handler is not provided.
-        """
-        if self.cost_cb is None:
-            raise ValueError(
-                "The evaluate() run was not configured for computing cost. Please provide a token_usage_parser function to evaluate() to compute cost."
-            )
-        return self.cost_cb.total_tokens()
-
-    def total_cost(
-        self,
-        cost_per_input_token: t.Optional[float] = None,
-        cost_per_output_token: t.Optional[float] = None,
-        per_model_costs: t.Dict[str, t.Tuple[float, float]] = {},
-    ) -> float:
-        """
-        Compute the total cost of the evaluation.
-
-        Parameters
-        ----------
-        cost_per_input_token : float, optional
-            The cost per input token. Default is None.
-        cost_per_output_token : float, optional
-            The cost per output token. Default is None.
-        per_model_costs : dict of str to tuple of float, optional
-            The per model costs. Default is an empty dictionary.
-
-        Returns
-        -------
-        float
-            The total cost of the evaluation.
-
-        Raises
-        ------
-        ValueError
-            If the cost callback handler is not provided.
-        """
-        if self.cost_cb is None:
-            raise ValueError(
-                "The evaluate() run was not configured for computing cost. Please provide a token_usage_parser function to evaluate() to compute cost."
-            )
-        return self.cost_cb.total_cost(
-            cost_per_input_token, cost_per_output_token, per_model_costs
-        )
-
-    def __repr__(self) -> str:
-        scores = self.copy()
-        score_strs = [f"'{k}': {v:0.4f}" for k, v in scores.items()]
-        return "{" + ", ".join(score_strs) + "}"
