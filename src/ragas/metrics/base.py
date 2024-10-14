@@ -88,7 +88,7 @@ class Metric(ABC):
     def init(self, run_config: RunConfig): ...
 
     @deprecated("0.2", removal="0.3", alternative="single_turn_ascore")
-    def score(self: t.Self, row: t.Dict, callbacks: Callbacks = None) -> float:
+    def score(self, row: t.Dict, callbacks: Callbacks = None) -> float:
         """
         Calculates the score for a single row of data.
 
@@ -121,7 +121,7 @@ class Metric(ABC):
 
     @deprecated("0.2", removal="0.3", alternative="single_turn_ascore")
     async def ascore(
-        self: t.Self,
+        self,
         row: t.Dict,
         callbacks: Callbacks = None,
         timeout: t.Optional[float] = None,
