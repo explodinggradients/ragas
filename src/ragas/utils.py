@@ -37,16 +37,16 @@ def get_debug_mode() -> bool:
         return False
 
 
-def safe_nanmean(arr):
+def safe_nanmean(arr: t.List[float]) -> float:
     if len(arr) == 0:
         return np.nan  # or some other value or behavior for empty arrays
 
-    arr = np.asarray(arr)  # Ensure input is a numpy array
+    arr_numpy = np.asarray(arr)  # Ensure input is a numpy array
 
-    if np.isnan(arr).all():
+    if np.isnan(arr_numpy).all():
         return np.nan  # or some other value or behavior for all-NaN arrays
 
-    return np.nanmean(arr)
+    return float(np.nanmean(arr_numpy))
 
 
 def check_if_sum_is_close(

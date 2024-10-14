@@ -58,7 +58,7 @@ class TestsetGenerator:
     def generate_with_langchain_docs(
         self,
         documents: t.Sequence[LCDocument],
-        test_size: int,
+        testset_size: int,
         transforms: t.Optional[Transforms] = None,
         query_distribution: t.Optional[QueryDistribution] = None,
         run_config: t.Optional[RunConfig] = None,
@@ -90,7 +90,7 @@ class TestsetGenerator:
         self.knowledge_graph = kg
 
         return self.generate(
-            test_size=test_size,
+            testset_size=testset_size,
             query_distribution=query_distribution,
             run_config=run_config,
             callbacks=callbacks,
@@ -100,7 +100,7 @@ class TestsetGenerator:
 
     def generate(
         self,
-        test_size: int,
+        testset_size: int,
         query_distribution: t.Optional[QueryDistribution] = None,
         run_config: t.Optional[RunConfig] = None,
         callbacks: t.Optional[Callbacks] = None,
@@ -112,7 +112,7 @@ class TestsetGenerator:
 
         Parameters
         ----------
-        test_size : int
+        testset_size : int
             The number of samples to generate.
         query_distribution : Optional[QueryDistribution], optional
             A list of tuples containing scenario simulators and their probabilities.
@@ -147,7 +147,7 @@ class TestsetGenerator:
         # new group for Testset Generation
         testset_generation_rm, testset_generation_grp = new_group(
             name=RAGAS_TESTSET_GENERATION_GROUP_NAME,
-            inputs={"test_size": test_size},
+            inputs={"testset_size": testset_size},
             callbacks=callbacks,
         )
 
@@ -160,7 +160,7 @@ class TestsetGenerator:
             patch_logger("ragas.experimental.testset.transforms", logging.DEBUG)
 
         splits, _ = calculate_split_values(
-            [prob for _, prob in query_distribution], test_size
+            [prob for _, prob in query_distribution], testset_size
         )
         # new group for Generation of Scenarios
         scenario_generation_rm, scenario_generation_grp = new_group(
@@ -178,7 +178,7 @@ class TestsetGenerator:
         )
         # generate samples
         splits, _ = calculate_split_values(
-            [prob for _, prob in query_distribution], test_size
+            [prob for _, prob in query_distribution], testset_size
         )
         for i, (scenario, _) in enumerate(query_distribution):
             exec.submit(scenario.generate_scenarios, splits[i], self.knowledge_graph)
@@ -229,7 +229,7 @@ class TestsetGenerator:
                     e.__class__.__name__.lower() for e, _ in query_distribution
                 ],
                 evolution_percentages=[p for _, p in query_distribution],
-                num_rows=test_size,
+                num_rows=testset_size,
                 language="english",
             )
         )

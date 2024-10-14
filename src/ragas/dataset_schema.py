@@ -2,14 +2,20 @@ from __future__ import annotations
 
 import json
 import typing as t
+from dataclasses import dataclass, field
 
+from datasets import Dataset as HFDataset
 from pydantic import BaseModel, field_validator
 
+from ragas.cost import CostCallbackHandler
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
+from ragas.utils import safe_nanmean
 
 if t.TYPE_CHECKING:
     from datasets import Dataset as HFDataset
     from pandas import DataFrame as PandasDataframe
+
+    from ragas.cost import TokenUsage
 
 
 class BaseSample(BaseModel):
@@ -145,7 +151,7 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
 
         return samples
 
-    def get_sample_type(self):
+    def get_sample_type(self) -> t.Type[Sample]:
         """Returns the type of the samples in the dataset."""
         return type(self.samples[0])
 
@@ -175,7 +181,7 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
         return HFDataset.from_list(self._to_list())
 
     @classmethod
-    def from_hf_dataset(cls, dataset: HFDataset) -> "RagasDataset[Sample]":
+    def from_hf_dataset(cls, dataset: HFDataset):
         """Creates an EvaluationDataset from a Hugging Face Dataset."""
         return cls.from_list(dataset.to_list())
 
@@ -266,11 +272,17 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
     def __len__(self) -> int:
         return len(self.samples)
 
-    def __getitem__(self, idx: int) -> Sample:
-        return self.samples[idx]
+    def __str__(self) -> str:
+        return f"EvaluationDataset(features={self.features()}, len={len(self.samples)})"
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
-class EvaluationDataset(RagasDataset[BaseSample]):
+SingleTurnSampleOrMultiTurnSample = t.Union[SingleTurnSample, MultiTurnSample]
+
+
+class EvaluationDataset(RagasDataset[SingleTurnSampleOrMultiTurnSample]):
     """
     Represents a dataset of evaluation samples.
 
@@ -295,6 +307,165 @@ class EvaluationDataset(RagasDataset[BaseSample]):
         Creates an EvaluationDataset from a list of dictionaries.
     from_dict(mapping)
         Creates an EvaluationDataset from a dictionary.
+    from_csv(path)
+        Creates an EvaluationDataset from a CSV file.
+    to_csv(path)
+        Converts the dataset to a CSV file.
+    to_jsonl(path)
+        Converts the dataset to a JSONL file.
+    from_jsonl(path)
+        Creates an EvaluationDataset from a JSONL file.
     """
 
-    pass
+    @t.overload
+    def __getitem__(self, idx: int) -> SingleTurnSampleOrMultiTurnSample: ...
+
+    @t.overload
+    def __getitem__(self, idx: slice) -> "EvaluationDataset": ...
+
+    def __getitem__(
+        self, idx: t.Union[int, slice]
+    ) -> t.Union[SingleTurnSampleOrMultiTurnSample, "EvaluationDataset"]:
+        if isinstance(idx, int):
+            return self.samples[idx]
+        elif isinstance(idx, slice):
+            return type(self)(samples=self.samples[idx])
+        else:
+            raise TypeError("Index must be int or slice")
+
+
+@dataclass
+class EvaluationResult:
+    """
+    A class to store and process the results of the evaluation.
+
+    Attributes
+    ----------
+    scores : Dataset
+        The dataset containing the scores of the evaluation.
+    dataset : Dataset, optional
+        The original dataset used for the evaluation. Default is None.
+    binary_columns : list of str, optional
+        List of columns that are binary metrics. Default is an empty list.
+    cost_cb : CostCallbackHandler, optional
+        The callback handler for cost computation. Default is None.
+    """
+
+    scores: t.List[t.Dict[str, t.Any]]
+    dataset: t.Optional[EvaluationDataset] = None
+    binary_columns: t.List[str] = field(default_factory=list)
+    cost_cb: t.Optional[CostCallbackHandler] = None
+
+    def __post_init__(self):
+        # transform scores from list of dicts to dict of lists
+        self._scores_dict = {
+            k: [d[k] for d in self.scores] for k in self.scores[0].keys()
+        }
+
+        values = []
+        self._repr_dict = {}
+        for metric_name in self._scores_dict.keys():
+            value = safe_nanmean(self._scores_dict[metric_name])
+            self._repr_dict[metric_name] = value
+            if metric_name not in self.binary_columns:
+                value = t.cast(float, value)
+                values.append(value + 1e-10)
+
+    def to_pandas(self, batch_size: int | None = None, batched: bool = False):
+        """
+        Convert the result to a pandas DataFrame.
+
+        Parameters
+        ----------
+        batch_size : int, optional
+            The batch size for conversion. Default is None.
+        batched : bool, optional
+            Whether to convert in batches. Default is False.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The result as a pandas DataFrame.
+
+        Raises
+        ------
+        ValueError
+            If the dataset is not provided.
+        """
+        try:
+            import pandas as pd
+        except ImportError:
+            raise ImportError(
+                "pandas is not installed. Please install it to use this function."
+            )
+
+        if self.dataset is None:
+            raise ValueError("dataset is not provided for the results class")
+        assert len(self.scores) == len(self.dataset)
+        # convert both to pandas dataframes and concatenate
+        scores_df = pd.DataFrame(self.scores)
+        dataset_df = self.dataset.to_pandas()
+        return pd.concat([dataset_df, scores_df], axis=1)
+
+    def total_tokens(self) -> t.Union[t.List[TokenUsage], TokenUsage]:
+        """
+        Compute the total tokens used in the evaluation.
+
+        Returns
+        -------
+        list of TokenUsage or TokenUsage
+            The total tokens used.
+
+        Raises
+        ------
+        ValueError
+            If the cost callback handler is not provided.
+        """
+        if self.cost_cb is None:
+            raise ValueError(
+                "The evaluate() run was not configured for computing cost. Please provide a token_usage_parser function to evaluate() to compute cost."
+            )
+        return self.cost_cb.total_tokens()
+
+    def total_cost(
+        self,
+        cost_per_input_token: t.Optional[float] = None,
+        cost_per_output_token: t.Optional[float] = None,
+        per_model_costs: t.Dict[str, t.Tuple[float, float]] = {},
+    ) -> float:
+        """
+        Compute the total cost of the evaluation.
+
+        Parameters
+        ----------
+        cost_per_input_token : float, optional
+            The cost per input token. Default is None.
+        cost_per_output_token : float, optional
+            The cost per output token. Default is None.
+        per_model_costs : dict of str to tuple of float, optional
+            The per model costs. Default is an empty dictionary.
+
+        Returns
+        -------
+        float
+            The total cost of the evaluation.
+
+        Raises
+        ------
+        ValueError
+            If the cost callback handler is not provided.
+        """
+        if self.cost_cb is None:
+            raise ValueError(
+                "The evaluate() run was not configured for computing cost. Please provide a token_usage_parser function to evaluate() to compute cost."
+            )
+        return self.cost_cb.total_cost(
+            cost_per_input_token, cost_per_output_token, per_model_costs
+        )
+
+    def __repr__(self) -> str:
+        score_strs = [f"'{k}': {v:0.4f}" for k, v in self._repr_dict.items()]
+        return "{" + ", ".join(score_strs) + "}"
+
+    def __getitem__(self, key: str) -> t.List[float]:
+        return self._scores_dict[key]

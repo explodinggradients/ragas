@@ -85,7 +85,7 @@ nav:
               - Seed Generation with Production Data: howtos/customizations/testset_generation/seed_generation_with_production_data.md
       - Applications:
           - howtos/applications/index.md
-          - Cost Analysis: howtos/applications/cost.md
+          - Cost Analysis: howtos/applications/_cost.md
       - Integrations:
           - howtos/integrations/index.md
       - Migrations:

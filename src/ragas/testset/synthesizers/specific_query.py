@@ -35,6 +35,11 @@ class SpecificQuerySynthesizer(QuerySynthesizer):
     """
     Synthesizes specific queries by choosing specific chunks and generating a
     keyphrase from them and then generating queries based on that.
+
+    Attributes
+    ----------
+    generate_query_prompt : PydanticPrompt
+        The prompt used for generating the query.
     """
 
     generate_query_prompt: PydanticPrompt = field(default_factory=SpecificQuery)

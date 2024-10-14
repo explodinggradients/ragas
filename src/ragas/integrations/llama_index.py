@@ -19,7 +19,7 @@ if t.TYPE_CHECKING:
     )
     from llama_index.core.base.llms.base import BaseLLM as LlamaindexLLM
 
-    from ragas.evaluation import Result
+    from ragas.evaluation import EvaluationResult
     from ragas.metrics.base import Metric
 
 
@@ -35,7 +35,7 @@ def evaluate(
     raise_exceptions: bool = False,
     column_map: t.Optional[t.Dict[str, str]] = None,
     run_config: t.Optional[RunConfig] = None,
-) -> Result:
+) -> EvaluationResult:
     column_map = column_map or {}
 
     # wrap llms and embeddings

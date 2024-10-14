@@ -75,3 +75,17 @@ def test_evaluation_dataset_iter():
 
     for sample in dataset:
         assert sample == single_turn_sample
+
+
+def test_evaluation_dataset_type():
+    single_turn_sample = SingleTurnSample(user_input="What is X", response="Y")
+    multi_turn_sample = MultiTurnSample(
+        user_input=[{"content": "What is X"}],
+        response="Y",  # type: ignore (this type error is what we want to test)
+    )
+
+    dataset = EvaluationDataset(samples=[single_turn_sample])
+    assert dataset.get_sample_type() == SingleTurnSample
+
+    dataset = EvaluationDataset(samples=[multi_turn_sample])
+    assert dataset.get_sample_type() == MultiTurnSample

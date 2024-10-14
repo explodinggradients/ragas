@@ -6,7 +6,7 @@
     options:
         members_order: "source"
 
-::: ragas.evaluation.Result
+::: ragas.evaluation.EvaluationResult
     options:
         show_root_heading: True
 

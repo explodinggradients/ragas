@@ -105,7 +105,7 @@ class AIMessage(Message):
     tool_calls: t.Optional[t.List[ToolCall]] = None
     metadata: t.Optional[t.Dict[str, t.Any]] = None
 
-    def dict(self, **kwargs):
+    def to_dict(self, **kwargs):
         """
         Returns a dictionary representation of the AI message.
         """
