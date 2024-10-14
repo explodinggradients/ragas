@@ -39,11 +39,13 @@ While this query still refers to a single concept (the theory of relativity), it
 A multi-hop query involves multiple steps of reasoning, requiring information from two or more sources. The system must retrieve information from various documents and connect the dots to generate an accurate answer.
 
 **Example (Specific Query):**
+
 - “Which scientist influenced Einstein’s work on relativity, and what theory did they propose?”
 
 This requires the system to retrieve information about both the scientist who influenced Einstein and the specific theory, potentially from two different sources.
 
 **Example (Abstract Query):**
+
 - “How have scientific theories on relativity evolved since Einstein’s original publication?”
 
 This abstract query requires the retrieval of multiple pieces of information over time and across different sources to form a broad, interpretive response about the evolution of the theory.
