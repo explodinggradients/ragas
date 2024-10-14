@@ -260,6 +260,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
                 "language": self.language,
             },
             indent=2,
+            ensure_ascii=False,
         )[1:-1]
         return f"{self.__class__.__name__}({json_str})"
 
@@ -315,7 +316,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         if os.path.exists(file_path):
             raise FileExistsError(f"The file '{file_path}' already exists.")
         with open(file_path, "w") as f:
-            json.dump(data, f, indent=2)
+            json.dump(data, f, indent=2, ensure_ascii=False)
             print(f"Prompt saved to {file_path}")
 
     @classmethod

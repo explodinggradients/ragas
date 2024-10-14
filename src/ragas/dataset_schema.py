@@ -157,7 +157,9 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
             for sample in rows:
                 for item in sample["user_input"]:
                     if not isinstance(item["content"], str):
-                        item["content"] = json.dumps(item["content"])
+                        item["content"] = json.dumps(
+                            item["content"], ensure_ascii=False
+                        )
 
         return rows
 
@@ -249,7 +251,7 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
         """Converts the dataset to a JSONL file."""
         with open(path, "w") as jsonlfile:
             for sample in self.samples:
-                jsonlfile.write(json.dumps(sample.to_dict()) + "\n")
+                jsonlfile.write(json.dumps(sample.to_dict(), ensure_ascii=False) + "\n")
 
     @classmethod
     def from_jsonl(cls, path: str):
