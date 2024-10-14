@@ -96,9 +96,13 @@ Yay! Now are you ready to use ragas with Google VertexAI endpoints
 
 ### AWS Bedrock
 
+```bash
+pip install langchain_aws
+```
+
 ```python
-from langchain_community.chat_models import BedrockChat
-from langchain_community.embeddings import BedrockEmbeddings
+from langchain_aws import ChatBedrock
+from langchain_aws import BedrockEmbeddings
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
 
@@ -109,7 +113,7 @@ config = {
     "model_kwargs": {"temperature": 0.4},
 }
 
-bedrock_llm = BedrockChat(
+bedrock_llm = ChatBedrock(
     credentials_profile_name=config["credentials_profile_name"],
     region_name=config["region_name"],
     endpoint_url=f"https://bedrock-runtime.{config['region_name']}.amazonaws.com",
