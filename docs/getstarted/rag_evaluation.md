@@ -16,16 +16,7 @@ Converting data to ragas [evaluation dataset](../concepts/components/eval_datase
 ```python
 from ragas import EvaluationDataset, SingleTurnSample
 
-samples = []
-for row in dataset['eval']:
-    sample = SingleTurnSample(
-        user_input=row['user_input'],
-        reference=row['reference'],
-        response=row['response'],
-        retrieved_contexts=row['retrieved_contexts']
-    )
-    samples.append(sample)
-eval_dataset = EvaluationDataset(samples=samples)
+eval_dataset = EvaluationDataset.from_hf_dataset(dataset["eval"])
 ```
 
 

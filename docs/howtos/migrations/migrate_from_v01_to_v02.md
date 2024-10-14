@@ -19,22 +19,13 @@ You can easily translate
 from ragas import EvaluationDataset, SingleTurnSample
 
 hf_dataset = ... # your huggingface evaluation dataset
-samples = []
-for row in hf_dataset:
-    sample = SingleTurnSample(
-        user_input=row['user_input'],
-        reference=row['reference'],
-        response=row['response'],
-        retrieved_contexts=row['retrieved_contexts']
-    )
-    samples.append(sample)
-eval_dataset = EvaluationDataset(samples=samples)
+eval_dataset = EvaluationDataset.from_hf_dataset(hf_dataset)
 
 # save eval dataset
-TODO
+eval_dataset.to_csv("path/to/save/dataset.csv")
 
 # load eva dataset
-TODO
+eval_dataset = EvaluationDataset.from_csv("path/to/save/dataset.csv")
 ```
 
 ## Metrics
