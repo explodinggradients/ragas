@@ -14,18 +14,9 @@ dataset = load_dataset("explodinggradients/amnesty_qa","english_v3")
 Converting data to ragas [evaluation dataset](../concepts/components/eval_dataset.md)
 
 ```python
-from ragas import EvaluationDataset, SingleTurnSample
+from ragas import EvaluationDataset
 
-samples = []
-for row in dataset['eval']:
-    sample = SingleTurnSample(
-        user_input=row['user_input'],
-        reference=row['reference'],
-        response=row['response'],
-        retrieved_contexts=row['retrieved_contexts']
-    )
-    samples.append(sample)
-eval_dataset = EvaluationDataset(samples=samples)
+eval_dataset = EvaluationDataset.from_hf_dataset(dataset["eval"])
 ```
 
 

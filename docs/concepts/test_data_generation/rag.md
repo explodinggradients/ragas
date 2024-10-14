@@ -1,36 +1,64 @@
 # Testset Generation for RAG
 
-In RAG application, when a user interacts through your application to a set of documents the user may ask different types of queries. These queries in terms of a RAG system can be generally classified into two types:
+In RAG application, when a user interacts through your application to a set of documents the there can be different patterns of queries that the system can encounter. Let's first understand the different types of queries that can be encountered in RAG application.
 
-## Two fundamental query types in RAG
+## Query types in RAG
 
 ```mermaid
 graph TD
-    A[Queries] -->  B[Specific Queries]
-    A -->  C[Abstract Queries]
+    A[Queries] --> B[Single-Hop Query]
+    A --> C[Multi-Hop Query]
+    
+    B --> D1[Specific Query]
+    
+    B --> E1[Abstract Query]
+
+    C --> F1[Specific Query]
+    
+    C --> G1[Abstract Query]
 ```
 
-In any RAG application, when an end user interacts with the system, the queries can be broadly classified into two types:
+### Single-Hop Query
 
-- Specific Queries
-    - Queries directly answerable by referring to single context
-    - “What is the value of X in Report FY2020 ?”
+A single-hop query is a straightforward question that requires retrieving information from a single document or source to provide a relevant answer. It involves only one step to arrive at the answer.
 
-- Abstract Queries
+**Example (Specific Query):**
 
-    - Queries that can only be answered by referring to multiple documents
-    - “What is the the revenue trend for Company X from FY2020 through FY2023?”
+- “What year did Albert Einstein publish the theory of relativity?”
 
+This is a specific, fact-based question that can be answered with a single retrieval from a document containing that information.
 
-Synthesizing specific queries is relatively easy as it requires only a single context to generate the query. However, abstract queries require multiple contexts to generate the query.** Now the fundamental question is how select the right set of chunks to generate the abstract queries**. Different types of abstract queries require different types of contexts. For example, 
+**Example (Abstract Query):**
 
-- Abstract queries comparing two entities in a specific domain require contexts that contain information about the entities.
-    - “Compare the revenue growth of Company X and Company Y from FY2020 through FY2023”
-- Abstract queries about the a topic discussed in different contexts require contexts that contain information about the topic.
-    - “What are the different strategies used by companies to increase revenue?”
+- “How did Einstein’s theory change our understanding of time and space?”
 
+While this query still refers to a single concept (the theory of relativity), it requires a more abstract or interpretive explanation from the source material.
 
-To solve this problem, Ragas uses a Knowledge Graph based approach to Test set Generation.
+### Multi-Hop Query
+
+A multi-hop query involves multiple steps of reasoning, requiring information from two or more sources. The system must retrieve information from various documents and connect the dots to generate an accurate answer.
+
+**Example (Specific Query):**
+
+- “Which scientist influenced Einstein’s work on relativity, and what theory did they propose?”
+
+This requires the system to retrieve information about both the scientist who influenced Einstein and the specific theory, potentially from two different sources.
+
+**Example (Abstract Query):**
+
+- “How have scientific theories on relativity evolved since Einstein’s original publication?”
+
+This abstract query requires the retrieval of multiple pieces of information over time and across different sources to form a broad, interpretive response about the evolution of the theory.
+
+### Specific vs. Abstract Queries in a RAG
+
+- **Specific Query:** Focuses on clear, fact-based retrieval. The goal in RAG is to retrieve highly relevant information from one or more documents that directly address the specific question.
+  
+- **Abstract Query:** Requires a broader, more interpretive response. In RAG, abstract queries challenge the retrieval system to pull from documents that contain higher-level reasoning, explanations, or opinions, rather than simple facts.
+
+In both single-hop and multi-hop cases, the distinction between specific and abstract queries shapes the retrieval and generation process by determining whether the focus is on precision (specific) or on synthesizing broader ideas (abstract).
+
+Different types of queries requires different contexts to be synthesize. To solve this problem, Ragas uses a Knowledge Graph based approach to Test set Generation.
 
 ## Knowledge Graph Creation
 
