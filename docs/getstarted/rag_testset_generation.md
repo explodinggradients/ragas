@@ -37,7 +37,7 @@ Now we will run the test generation using the loaded documents and the LLM setup
 from ragas.testset import TestsetGenerator
 
 generator = TestsetGenerator(llm=generator_llm)
-dataset = generator.generate_with_langchain_docs(docs, test_size=10)
+dataset = generator.generate_with_langchain_docs(docs, testset_size=10)
 ```
 
 ### Export
