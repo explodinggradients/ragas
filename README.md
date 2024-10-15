@@ -46,7 +46,7 @@ Don't have a test dataset ready? We also do production-aligned test set generati
 
 ## :shield: Installation
 
-From release:
+Pypi: 
 
 ```bash
 pip install ragas
@@ -60,8 +60,34 @@ pip install git+https://github.com/explodinggradients/ragas
 
 ## :fire: Quickstart
 
-- [Run ragas metrics for evaluating RAG](https://docs.ragas.io/en/latest/getstarted/rag_evaluation/)
-- [Generate test data for evaluating RAG](https://docs.ragas.io/en/latest/getstarted/rag_testset_generation/)
+### Evaluate your RAG with Ragas metrics
+
+This is 4 main lines:
+
+```python
+from ragas.metrics import LLMContextRecall, Faithfulness, FactualCorrectness, SemanticSimilarity
+evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
+metrics = [LLMContextRecall(), FactualCorrectness(), Faithfulness()]
+results = evaluate(dataset=eval_dataset, metrics=metrics, llm=evaluator_llm)
+```
+
+Find the complete RAG Evaluation Quickstart here: [https://docs.ragas.io/en/latest/getstarted/rag_evaluation/](https://docs.ragas.io/en/latest/getstarted/rag_evaluation/)
+
+<details>
+<summary>🖱️Click to see preview of RESULTS</summary>
+
+| user_input | retrieved_contexts | response | reference | context_recall | factual_correctness | faithfulness |
+|------------|---------------------|----------|-----------|-----------------|---------------------|---------------|
+| What are the global implications of the USA Supreme Court ruling on abortion? | "- In 2022, the USA Supreme Court ... - The ruling has created a chilling effect ..." | The global implications ... Here are some potential implications: | The global implications ... Additionally, the ruling has had an impact beyond national borders ... | 1 | 0.47 | 0.516129 |
+| Which companies are the main contributors to GHG emissions ... ? | "- Fossil fuel companies ... - Between 2010 and 2020, human mortality ..." | According to the Carbon Majors database ... Here are the top contributors: | According to the Carbon Majors database ... Additionally, between 2010 and 2020, human mortality ... | 1 | 0.11 | 0.172414 |
+| Which private companies in the Americas are the largest GHG emitters ... ? | "The private companies responsible ... The largest emitter amongst state-owned companies ..." | According to the Carbon Majors database, the largest private companies ... | The largest private companies in the Americas ... | 1 | 0.26 | 0 |
+</details>
+
+### Generate a test dataset for comprehensive RAG evaluation
+
+What if you don't have the data for folks asking questions when they interact with your RAG system? 
+
+Ragas can help by generating [synthetic test set generation](https://docs.ragas.io/en/latest/getstarted/rag_testset_generation/) -- where you can seed it with your data and control the difficulty, variety, and complexity. 
 
 ## 🫂 Community
 
