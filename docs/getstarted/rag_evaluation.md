@@ -47,7 +47,7 @@ results = evaluate(dataset=eval_dataset, metrics=metrics, llm=evaluator_llm,)
 ### Exporting and analyzing results
 
 ```python
-df = result.to_pandas()
+df = results.to_pandas()
 df.head()
 ```
 
