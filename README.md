@@ -69,7 +69,9 @@ If you want to get more involved with Ragas, check out our [discord server](http
 At Ragas, we believe in transparency. We collect minimal, anonymized usage data to improve our product and guide our development efforts.
 
 ✅ No personal or company-identifying information
+
 ✅ Open-source data collection [code](./src/ragas/_analytics.py)
+
 ✅ Publicly available aggregated [data](https://github.com/explodinggradients/ragas/issues/49)
 
 To opt-out, set the `RAGAS_DO_NOT_TRACK` environment variable to `true`.
