@@ -1,8 +1,8 @@
-# Understand Cost and Usage of Operations
+# How to estimate Cost and Usage of evaluations
 
 When using LLMs for evaluation and test set generation, cost will be an important factor. Ragas provides you some tools to help you with that.
 
-## Understanding `TokenUsageParser`
+## Implement `TokenUsageParser`
 
 By default Ragas does not calculate the usage of tokens for `evaluate()`. This is because langchain's LLMs do not always return information about token usage in a uniform way. So in order to get the usage data, we have to implement a `TokenUsageParser`. 
 
@@ -34,50 +34,28 @@ get_token_usage_for_openai(llm_result)
 
 You can define your own or import parsers if they are defined. If you would like to suggest parser for LLM providers or contribute your own ones please check out this [issue](https://github.com/explodinggradients/ragas/issues/1151) 🙂.
 
-You can use it for evaluations as so. Using example from [get started](get-started-evaluation) here.
+You can use it for evaluations as so.
 
 
 ```python
+from ragas import EvaluationDataset
 from datasets import load_dataset
-from ragas.metrics import (
-    answer_relevancy,
-    faithfulness,
-    context_recall,
-    context_precision,
-)
 
-amnesty_qa = load_dataset("explodinggradients/amnesty_qa", "english_v2")
-amnesty_qa
+dataset = load_dataset("explodinggradients/amnesty_qa", "english_v3")
+
+dataset = EvaluationDataset.load_from_hf(dataset["eval"])
 ```
-
-    Repo card metadata block was not found. Setting CardData to empty.
-
-
-
-
-
-    DatasetDict({
-        eval: Dataset({
-            features: ['question', 'ground_truth', 'answer', 'contexts'],
-            num_rows: 20
-        })
-    })
-
-
 
 
 ```python
 from ragas import evaluate
+from ragas.metrics import LLMContextRecall
+
 from ragas.cost import get_token_usage_for_openai
 
 result = evaluate(
     amnesty_qa["eval"],
-    metrics=[
-        context_precision,
-        faithfulness,
-        answer_relevancy,
-        context_recall,
-    ],
+    metrics=[LLMContextRecall()],
     llm=gpt4o,
     token_usage_parser=get_token_usage_for_openai,
 )
