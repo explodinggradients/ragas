@@ -27,8 +27,8 @@
 <h4 align="center">
     <p>
         <a href="https://docs.ragas.io/">Documentation</a> |
-        <a href="#Quickstart">Quick start</a> |
-        <a href="https://discord.gg/5djav8GGNZ">Join Discord</a> |
+        <a href="#fire-quickstart">Quick start</a> |
+        <a href="https://discord.gg/5djav8GGNZ">Join Discord</a> 
     <p>
 </h4>
 
