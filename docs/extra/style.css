@@ -257,24 +257,23 @@ h1 {
   margin-right: 10px;
   font-size: 18px; /* Adjust size for thickness */
   font-weight: bold; /* Bold the arrow only */
-  transform: rotate(0deg);
+  content: '▶'; /* Right-pointing arrow */
   transition: transform 0.3s ease; /* Smooth rotation */
 }
 
 .arrow.open {
-  transform: rotate(90deg);
+  content: '▼'; /* Downward arrow when opened */
 }
 
 .toggle-list:hover {
-  color: #007BFF; /* Change color on hover to match link style */
+  color:  #edc242; /* Change color on hover to match link style */
 }
 
 a {
-  color: #007BFF; /* Link color */
+  color:  #edc242; /* Link color */
   text-decoration: none; /* Remove underline for links */
 }
 
 a:hover {
   text-decoration: underline; /* Add underline on hover */
 }
-

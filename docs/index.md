@@ -38,13 +38,13 @@ Ragas is a library that provides tools to supercharge the evaluation of Large La
 
 ## Frequently Asked Questions
 
-<div class="toggle-list"><span class="arrow">▼</span> What is the best open-source model to use?</div>
+<div class="toggle-list"><span class="arrow">▶</span> What is the best open-source model to use?</div>
 <div style="display: none;">
     There isn't a single correct answer to this question. With the rapid pace of AI model development, new open-source models are released every week, often claiming to outperform previous versions. The best model for your needs depends largely on your GPU capacity and the type of data you're working with.
     It's a good idea to explore newer, widely accepted models with strong general capabilities. You can refer to <a href="https://github.com/eugeneyan/open-llms?tab=readme-ov-file#open-llms">this list</a> for available open-source models, their release dates, and fine-tuned variants.
 </div>
 
-<div class="toggle-list"><span class="arrow">▼</span> Why do NaN values appear in evaluation results?</div>
+<div class="toggle-list"><span class="arrow">▶</span> Why do NaN values appear in evaluation results?</div>
 <div style="display: none;">
     NaN stands for "Not a Number." In ragas evaluation results, NaN can appear for two main reasons:
     <ul>
@@ -53,7 +53,7 @@ Ragas is a library that provides tools to supercharge the evaluation of Large La
     </ul>
 </div>
 
-<div class="toggle-list"><span class="arrow">▼</span> How can I make evaluation results more explainable?</div>
+<div class="toggle-list"><span class="arrow">▶</span> How can I make evaluation results more explainable?</div>
 <div style="display: none;">
     The best way is to trace and log your evaluation, then inspect the results using LLM traces. You can follow a detailed example of this process <a href="https://docs.ragas.io/en/stable/howtos/customizations/metrics/tracing/">here</a>.
 </div>

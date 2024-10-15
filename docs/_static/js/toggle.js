@@ -5,7 +5,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const content = toggle.nextElementSibling;
             const arrow = toggle.querySelector('.arrow');
             content.style.display = content.style.display === 'none' ? 'block' : 'none';
-            arrow.classList.toggle('open'); // Toggle arrow direction
+            // Toggle arrow direction based on content visibility
+            if (content.style.display === 'block') {
+                arrow.innerText = '▼'; // Down arrow
+            } else {
+                arrow.innerText = '▶'; // Right arrow
+            }
         });
     });
 });
