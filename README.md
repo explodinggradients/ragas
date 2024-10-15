@@ -27,7 +27,7 @@
 <h4 align="center">
     <p>
         <a href="https://docs.ragas.io/">Documentation</a> |
-        <a href="#Quickstart">Quick start</a> |
+        <a href="#fire-quickstart">Quick start</a> |
         <a href="https://dcbadge.vercel.app/api/server/5djav8GGNZ?style=flat">Join Discord</a> |
     <p>
 </h4>
