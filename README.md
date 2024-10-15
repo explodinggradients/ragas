@@ -58,7 +58,6 @@ pip install git+https://github.com/explodinggradients/ragas
 
 ## :fire: Quickstart
 
-
 - [Run ragas metrics for evaluating RAG](https://docs.ragas.io/en/latest/getstarted/rag_evaluation/)
 - [Generate test data for evaluating RAG](https://docs.ragas.io/en/latest/getstarted/rag_testset_generation/)
 
@@ -67,7 +66,12 @@ pip install git+https://github.com/explodinggradients/ragas
 If you want to get more involved with Ragas, check out our [discord server](https://discord.gg/5qGUJ6mh7C). It's a fun community where we geek out about LLM, Retrieval, Production issues, and more.
 
 ## 🔍 Open Analytics
+At Ragas, we believe in transparency. We collect minimal, anonymized usage data to improve our product and guide our development efforts.
 
-We track very basic usage metrics to guide us to figure out what our users want, what is working, and what's not. As a young startup, we have to be brutally honest about this which is why we are tracking these metrics. But as an Open Startup, we open-source all the data we collect. You can read more about this [here](https://github.com/explodinggradients/ragas/issues/49). **Ragas does not track any information that can be used to identify you or your company**. You can take a look at exactly what we track in the [code](./src/ragas/_analytics.py)
+✅ No personal or company-identifying information
 
-To disable usage-tracking you set the `RAGAS_DO_NOT_TRACK` flag to true.
+✅ Open-source data collection [code](./src/ragas/_analytics.py)
+
+✅ Publicly available aggregated [data](https://github.com/explodinggradients/ragas/issues/49)
+
+To opt-out, set the `RAGAS_DO_NOT_TRACK` environment variable to `true`.
