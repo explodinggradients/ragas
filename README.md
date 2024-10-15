@@ -67,6 +67,29 @@ pip install git+https://github.com/explodinggradients/ragas
 
 If you want to get more involved with Ragas, check out our [discord server](https://discord.gg/5qGUJ6mh7C). It's a fun community where we geek out about LLM, Retrieval, Production issues, and more.
 
+## Contributors
+
+```yml
++----------------------------------------------------------------------------+
+|     +----------------------------------------------------------------+     |
+|     | Developers: Those who built with `ragas`.                      |     |
+|     | (You have `import ragas` somewhere in your project)            |     |
+|     |     +----------------------------------------------------+     |     |
+|     |     | Contributors: Those who make `ragas` better.       |     |     |
+|     |     | (You make PR to this repo)                         |     |     |
+|     |     +----------------------------------------------------+     |     |
+|     +----------------------------------------------------------------+     |
++----------------------------------------------------------------------------+
+```
+
+We welcome contributions from the community! Whether it's bug fixes, feature additions, or documentation improvements, your input is valuable.
+
+1. Fork the repository
+2. Create your feature branch (git checkout -b feature/AmazingFeature)
+3. Commit your changes (git commit -m 'Add some AmazingFeature')
+4. Push to the branch (git push origin feature/AmazingFeature)
+5. Open a Pull Request
+
 ## 🔍 Open Analytics
 At Ragas, we believe in transparency. We collect minimal, anonymized usage data to improve our product and guide our development efforts.
 
