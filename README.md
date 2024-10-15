@@ -3,7 +3,7 @@
   src="./docs/_static/imgs/logo.png">
 </h1>
 <p align="center">
-  <i>Evaluation library for your LLM applications</i>
+  <i>Supercharge Your LLM Application Evaluations 🚀</i>
 </p>
 
 <p align="center">
@@ -31,8 +31,6 @@
         <a href="https://discord.gg/5djav8GGNZ">Join Discord</a> 
     <p>
 </h4>
-
-# Ragas: Supercharge Your LLM Application Evaluations 🚀
 
 Objective metrics, intelligent test generation, and data-driven insights for LLM apps
 
