@@ -249,13 +249,14 @@ h1 {
   cursor: pointer;
   display: flex;
   align-items: center;
-  font-weight: bold;
   padding: 10px 0;
+  font-weight: normal; /* Ensure normal weight for text */
 }
 
 .toggle-list .arrow {
   margin-right: 10px;
   font-size: 18px; /* Adjust size for thickness */
+  font-weight: bold; /* Bold the arrow only */
   transform: rotate(0deg);
   transition: transform 0.3s ease; /* Smooth rotation */
 }
