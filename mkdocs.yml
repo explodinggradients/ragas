@@ -81,8 +81,7 @@ nav:
               - Modify Prompts: howtos/customizations/metrics/_modifying-prompts-metrics.md
               - Add Custom Metrics: howtos/customizations/metrics/_write_your_own_metric.md
           - Testset Generation:
-              - Add custom scenarios: howtos/customizations/testset_generation/add_custom_scenarios.md
-              - Seed Generation with Production Data: howtos/customizations/testset_generation/seed_generation_with_production_data.md
+              - howtos/customizations/testgenerator/index.md
       - Applications:
           - howtos/applications/index.md
           - Cost Analysis: howtos/applications/_cost.md
