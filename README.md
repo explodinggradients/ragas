@@ -72,5 +72,4 @@ At Ragas, we believe in transparency. We collect minimal, anonymized usage data 
 ✅ Open-source data collection [code](./src/ragas/_analytics.py)
 ✅ Publicly available aggregated [data](https://github.com/explodinggradients/ragas/issues/49)
 
-Learn more about our open analytics approach
 To opt-out, set the `RAGAS_DO_NOT_TRACK` environment variable to `true`.
