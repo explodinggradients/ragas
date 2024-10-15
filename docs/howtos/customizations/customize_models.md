@@ -96,31 +96,37 @@ Yay! Now are you ready to use ragas with Google VertexAI endpoints
 
 ### AWS Bedrock
 
+```bash
+pip install langchain_aws
+```
+
 ```python
-from langchain_community.chat_models import BedrockChat
-from langchain_community.embeddings import BedrockEmbeddings
+from langchain_aws import ChatBedrockConverse
+from langchain_aws import BedrockEmbeddings
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
 
 config = {
     "credentials_profile_name": "your-profile-name",  # E.g "default"
     "region_name": "your-region-name",  # E.g. "us-east-1"
-    "model_id": "your-model-id",  # E.g "anthropic.claude-v2"
-    "model_kwargs": {"temperature": 0.4},
+    "llm": "your-llm-model-id",  # E.g "anthropic.claude-3-5-sonnet-20240620-v1:0"
+    "embeddings": "your-embedding-model-id",  # E.g "amazon.titan-embed-text-v2:0"
+    "temperature": 0.4,
 }
 
-bedrock_llm = BedrockChat(
+bedrock_llm = ChatBedrockConverse(
     credentials_profile_name=config["credentials_profile_name"],
     region_name=config["region_name"],
-    endpoint_url=f"https://bedrock-runtime.{config['region_name']}.amazonaws.com",
-    model_id=config["model_id"],
-    model_kwargs=config["model_kwargs"],
+    base_url=f"https://bedrock-runtime.{config['region_name']}.amazonaws.com",
+    model=config["llm"],
+    temperature=config["temperature"],
 )
 
 # init the embeddings
 bedrock_embeddings = BedrockEmbeddings(
     credentials_profile_name=config["credentials_profile_name"],
     region_name=config["region_name"],
+    model_id=config["embeddings"],
 )
 
 bedrock_llm = LangchainLLMWrapper(bedrock_llm)

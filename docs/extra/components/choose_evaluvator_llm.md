@@ -21,19 +21,20 @@
     config = {
         "credentials_profile_name": "your-profile-name",  # E.g "default"
         "region_name": "your-region-name",  # E.g. "us-east-1"
-        "model_id": "your-model-id",  # E.g "anthropic.claude-v2"
-        "model_kwargs": {"temperature": 0.4},
+        "llm": "your-llm-model-id",  # E.g "anthropic.claude-3-5-sonnet-20240620-v1:0"
+        "embeddings": "your-embedding-model-id",  # E.g "amazon.titan-embed-text-v2:0"
+        "temperature": 0.4,
     }
     ```
     define you LLMs
     ```python
-    from langchain_aws.chat_models import BedrockChat
+    from langchain_aws import ChatBedrockConverse
     from ragas.llms import LangchainLLMWrapper
-    evaluator_llm = LangchainLLMWrapper(BedrockChat(
+    evaluator_llm = LangchainLLMWrapper(ChatBedrockConverse(
         credentials_profile_name=config["credentials_profile_name"],
         region_name=config["region_name"],
-        endpoint_url=f"https://bedrock-runtime.{config['region_name']}.amazonaws.com",
-        model_id=config["model_id"],
-        model_kwargs=config["model_kwargs"],
+        base_url=f"https://bedrock-runtime.{config['region_name']}.amazonaws.com",
+        model=config["llm"],
+        temperature=config["temperature"],
     ))
     ```
