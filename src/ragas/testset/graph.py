@@ -181,7 +181,7 @@ class KnowledgeGraph:
             "relationships": [rel.model_dump() for rel in self.relationships],
         }
         with open(path, "w") as f:
-            json.dump(data, f, cls=UUIDEncoder, indent=2)
+            json.dump(data, f, cls=UUIDEncoder, indent=2, ensure_ascii=False)
 
     @classmethod
     def load(cls, path: t.Union[str, Path]) -> "KnowledgeGraph":
