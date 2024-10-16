@@ -12,6 +12,8 @@ from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 from ragas.utils import safe_nanmean
 
 if t.TYPE_CHECKING:
+    from pathlib import Path
+
     from datasets import Dataset as HFDataset
     from pandas import DataFrame as PandasDataframe
 
@@ -155,7 +157,7 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
         """Returns the type of the samples in the dataset."""
         return type(self.samples[0])
 
-    def _to_list(self) -> t.List[t.Dict]:
+    def to_list(self) -> t.List[t.Dict]:
         """Converts the samples to a list of dictionaries."""
         rows = [sample.to_dict() for sample in self.samples]
 
@@ -178,7 +180,7 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
                 "datasets is not installed. Please install it to use this function."
             )
 
-        return HFDataset.from_list(self._to_list())
+        return HFDataset.from_list(self.to_list())
 
     @classmethod
     def from_hf_dataset(cls, dataset: HFDataset):
@@ -194,7 +196,7 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
                 "pandas is not installed. Please install it to use this function."
             )
 
-        data = self._to_list()
+        data = self.to_list()
         return pd.DataFrame(data)
 
     def features(self):
@@ -202,16 +204,16 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
         return self.samples[0].get_features()
 
     @classmethod
-    def from_list(cls, mapping: t.List[t.Dict]):
+    def from_list(cls, data: t.List[t.Dict]):
         """Creates an EvaluationDataset from a list of dictionaries."""
         samples = []
         if all(
-            "user_input" in item and isinstance(mapping[0]["user_input"], list)
-            for item in mapping
+            "user_input" in item and isinstance(data[0]["user_input"], list)
+            for item in data
         ):
-            samples.extend(MultiTurnSample(**sample) for sample in mapping)
+            samples.extend(MultiTurnSample(**sample) for sample in data)
         else:
-            samples.extend(SingleTurnSample(**sample) for sample in mapping)
+            samples.extend(SingleTurnSample(**sample) for sample in data)
         return cls(samples=samples)
 
     @classmethod
@@ -227,25 +229,15 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
             samples.extend(SingleTurnSample(**sample) for sample in mapping)
         return cls(samples=samples)
 
-    @classmethod
-    def from_csv(cls, path: str):
-        """Creates an EvaluationDataset from a CSV file."""
-        import csv
-
-        with open(path, "r", newline="") as csvfile:
-            reader = csv.DictReader(csvfile)
-            data = [row for row in reader]
-        return cls.from_list(data)
-
-    def to_csv(self, path: str):
+    def to_csv(self, path: t.Union[str, Path]):
         """Converts the dataset to a CSV file."""
         import csv
 
-        data = self._to_list()
+        data = self.to_list()
         if not data:
             return
 
-        fieldnames = self.features()
+        fieldnames = data[0].keys()
 
         with open(path, "w", newline="") as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -253,14 +245,14 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
             for row in data:
                 writer.writerow(row)
 
-    def to_jsonl(self, path: str):
+    def to_jsonl(self, path: t.Union[str, Path]):
         """Converts the dataset to a JSONL file."""
         with open(path, "w") as jsonlfile:
             for sample in self.samples:
                 jsonlfile.write(json.dumps(sample.to_dict(), ensure_ascii=False) + "\n")
 
     @classmethod
-    def from_jsonl(cls, path: str):
+    def from_jsonl(cls, path: t.Union[str, Path]):
         """Creates an EvaluationDataset from a JSONL file."""
         with open(path, "r") as jsonlfile:
             data = [json.loads(line) for line in jsonlfile]
