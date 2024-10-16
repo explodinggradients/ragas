@@ -244,3 +244,36 @@ h1 {
 ::-webkit-scrollbar-thumb:hover {
   background: #616161; /* Thumb color on hover */
 }
+
+.toggle-list {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+  font-weight: normal; /* Ensure normal weight for text */
+}
+
+.toggle-list .arrow {
+  margin-right: 10px;
+  font-size: 18px; /* Adjust size for thickness */
+  font-weight: bold; /* Bold the arrow only */
+  content: '▶'; /* Right-pointing arrow */
+  transition: transform 0.3s ease; /* Smooth rotation */
+}
+
+.arrow.open {
+  content: '▼'; /* Downward arrow when opened */
+}
+
+.toggle-list:hover {
+  color:  #edc242; /* Change color on hover to match link style */
+}
+
+a {
+  color:  #edc242; /* Link color */
+  text-decoration: none; /* Remove underline for links */
+}
+
+a:hover {
+  text-decoration: underline; /* Add underline on hover */
+}
