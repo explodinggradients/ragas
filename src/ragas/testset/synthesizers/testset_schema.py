@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import typing as t
 
-from ragas.dataset_schema import BaseSample, RagasDataset
+from ragas.dataset_schema import BaseSample, EvaluationDataset, RagasDataset
 
 if t.TYPE_CHECKING:
     from ragas.dataset_schema import (
-        EvaluationDataset,
         MultiTurnSample,
         SingleTurnSample,
     )

@@ -334,6 +334,12 @@ class EvaluationDataset(RagasDataset[SingleTurnSampleOrMultiTurnSample]):
             raise TypeError("Index must be int or slice")
 
 
+class EvaluationResultRow(BaseModel):
+    dataset_row: t.Dict
+    scores: t.Dict[str, t.Any]
+    trace: t.Dict[str, t.Any] = field(default_factory=dict)  # none for now
+
+
 @dataclass
 class EvaluationResult:
     """
@@ -352,7 +358,7 @@ class EvaluationResult:
     """
 
     scores: t.List[t.Dict[str, t.Any]]
-    dataset: t.Optional[EvaluationDataset] = None
+    dataset: EvaluationDataset
     binary_columns: t.List[str] = field(default_factory=list)
     cost_cb: t.Optional[CostCallbackHandler] = None
 
@@ -406,6 +412,18 @@ class EvaluationResult:
         scores_df = pd.DataFrame(self.scores)
         dataset_df = self.dataset.to_pandas()
         return pd.concat([dataset_df, scores_df], axis=1)
+
+    def serialized(self) -> t.List[EvaluationResultRow]:
+        """
+        Convert the result to a list of EvaluationResultRow.
+        """
+        return [
+            EvaluationResultRow(
+                dataset_row=self.dataset[i].to_dict(),
+                scores=self.scores[i],
+            )
+            for i in range(len(self.scores))
+        ]
 
     def total_tokens(self) -> t.Union[t.List[TokenUsage], TokenUsage]:
         """
