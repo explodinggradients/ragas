@@ -23,8 +23,8 @@ We also provide a coefficient `coeff`(default value 0.5) to control the weightag
 The final summarization score is then calculated as:
 
 $$
-\text{Summarization Score} = \text{QA score}*\text{coeff} + \\
-\text{conciseness score}*\text{(1-coeff)}
+\text{Summarization Score} = \text{QA score}*\text{(1-coeff)} + \\
+\text{conciseness score}*\text{coeff}
 $$
 
 ## Example
