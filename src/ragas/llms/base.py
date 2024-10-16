@@ -88,7 +88,7 @@ class BaseRagasLLM(ABC):
         """Generate text using the given event loop."""
 
         if temperature is None:
-            temperature = 1e-8
+            temperature = self.get_temperature(n)
 
         if is_async:
             agenerate_text_with_retry = add_async_retry(
@@ -280,7 +280,7 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
         callbacks: Callbacks = None,
     ) -> LLMResult:
         if temperature is None:
-            temperature = 1e-8
+            temperature = self.get_temperature(n)
 
         kwargs = self.check_args(n, temperature, stop, callbacks)
         li_response = await self.llm.acomplete(prompt.to_string(), **kwargs)
