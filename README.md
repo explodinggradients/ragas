@@ -65,7 +65,10 @@ pip install git+https://github.com/explodinggradients/ragas
 This is 4 main lines:
 
 ```python
-from ragas.metrics import LLMContextRecall, Faithfulness, FactualCorrectness, SemanticSimilarity
+from ragas.metrics import LLMContextRecall, Faithfulness, FactualCorrectness
+from langchain_openai.chat_models import ChatOpenAI
+from ragas.llms import LangchainLLMWrapper
+
 evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
 metrics = [LLMContextRecall(), FactualCorrectness(), Faithfulness()]
 results = evaluate(dataset=eval_dataset, metrics=metrics, llm=evaluator_llm)
