@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+import json
 import typing as t
 
-from ragas.dataset_schema import BaseSample, EvaluationDataset, RagasDataset
+from ragas.dataset_schema import (
+    BaseSample,
+    EvaluationDataset,
+    MultiTurnSample,
+    RagasDataset,
+    SingleTurnSample,
+)
 
 if t.TYPE_CHECKING:
     from ragas.dataset_schema import (
@@ -47,13 +54,34 @@ class Testset(RagasDataset[TestsetSample]):
             samples=[sample.eval_sample for sample in self.samples]
         )
 
-    def _to_list(self) -> t.List[t.Dict]:
-        eval_list = self.to_evaluation_dataset()._to_list()
-        testset_list_without_eval_sample = [
-            sample.model_dump(exclude={"eval_sample"}) for sample in self.samples
-        ]
-        testset_list = [
-            {**eval_sample, **sample}
-            for eval_sample, sample in zip(eval_list, testset_list_without_eval_sample)
-        ]
-        return testset_list
+    def to_list(self) -> t.List[t.Dict]:
+        """
+        Converts the Testset to a list of dictionaries.
+        """
+        return [sample.model_dump() for sample in self.samples]
+
+    @classmethod
+    def from_list(cls, data: t.List[t.Dict]) -> Testset:
+        """
+        Converts a list of dictionaries to a Testset.
+        """
+        # first create the samples
+        samples = []
+        for sample in data:
+            eval_sample = sample["eval_sample"]
+
+            # if user_input is a list it is MultiTurnSample
+            if "user_input" in eval_sample and not isinstance(
+                eval_sample.get("user_input"), list
+            ):
+                eval_sample = SingleTurnSample(**sample["eval_sample"])
+            else:
+                eval_sample = MultiTurnSample(**sample["eval_sample"])
+
+            samples.append(
+                TestsetSample(
+                    eval_sample=eval_sample, synthesizer_name=sample["synthesizer_name"]
+                )
+            )
+        # then create the testset
+        return Testset(samples=samples)

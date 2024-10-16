@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import typing as t
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 from datasets import Dataset as HFDataset
@@ -138,8 +139,19 @@ class MultiTurnSample(BaseSample):
 Sample = t.TypeVar("Sample", bound=BaseSample)
 
 
-class RagasDataset(BaseModel, t.Generic[Sample]):
+class RagasDataset(ABC, BaseModel, t.Generic[Sample]):
     samples: t.List[Sample]
+
+    @abstractmethod
+    def to_list(self) -> t.List[t.Dict]:
+        """Converts the samples to a list of dictionaries."""
+        pass
+
+    @classmethod
+    @abstractmethod
+    def from_list(cls, data: t.List[t.Dict]) -> RagasDataset[Sample]:
+        """Creates an EvaluationDataset from a list of dictionaries."""
+        pass
 
     @field_validator("samples")
     def validate_samples(cls, samples: t.List[BaseSample]) -> t.List[BaseSample]:
@@ -156,20 +168,6 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
     def get_sample_type(self) -> t.Type[Sample]:
         """Returns the type of the samples in the dataset."""
         return type(self.samples[0])
-
-    def to_list(self) -> t.List[t.Dict]:
-        """Converts the samples to a list of dictionaries."""
-        rows = [sample.to_dict() for sample in self.samples]
-
-        if self.get_sample_type() == MultiTurnSample:
-            for sample in rows:
-                for item in sample["user_input"]:
-                    if not isinstance(item["content"], str):
-                        item["content"] = json.dumps(
-                            item["content"], ensure_ascii=False
-                        )
-
-        return rows
 
     def to_hf_dataset(self) -> HFDataset:
         """Converts the dataset to a Hugging Face Dataset."""
@@ -202,19 +200,6 @@ class RagasDataset(BaseModel, t.Generic[Sample]):
     def features(self):
         """Returns the features of the samples."""
         return self.samples[0].get_features()
-
-    @classmethod
-    def from_list(cls, data: t.List[t.Dict]):
-        """Creates an EvaluationDataset from a list of dictionaries."""
-        samples = []
-        if all(
-            "user_input" in item and isinstance(data[0]["user_input"], list)
-            for item in data
-        ):
-            samples.extend(MultiTurnSample(**sample) for sample in data)
-        else:
-            samples.extend(SingleTurnSample(**sample) for sample in data)
-        return cls(samples=samples)
 
     @classmethod
     def from_dict(cls, mapping: t.Dict):
@@ -299,8 +284,6 @@ class EvaluationDataset(RagasDataset[SingleTurnSampleOrMultiTurnSample]):
         Creates an EvaluationDataset from a list of dictionaries.
     from_dict(mapping)
         Creates an EvaluationDataset from a dictionary.
-    from_csv(path)
-        Creates an EvaluationDataset from a CSV file.
     to_csv(path)
         Converts the dataset to a CSV file.
     to_jsonl(path)
@@ -324,6 +307,31 @@ class EvaluationDataset(RagasDataset[SingleTurnSampleOrMultiTurnSample]):
             return type(self)(samples=self.samples[idx])
         else:
             raise TypeError("Index must be int or slice")
+
+    def to_list(self) -> t.List[t.Dict]:
+        rows = [sample.to_dict() for sample in self.samples]
+
+        if self.get_sample_type() == MultiTurnSample:
+            for sample in rows:
+                for item in sample["user_input"]:
+                    if not isinstance(item["content"], str):
+                        item["content"] = json.dumps(
+                            item["content"], ensure_ascii=False
+                        )
+
+        return rows
+
+    @classmethod
+    def from_list(cls, data: t.List[t.Dict]) -> EvaluationDataset:
+        samples = []
+        if all(
+            "user_input" in item and isinstance(data[0]["user_input"], list)
+            for item in data
+        ):
+            samples.extend(MultiTurnSample(**sample) for sample in data)
+        else:
+            samples.extend(SingleTurnSample(**sample) for sample in data)
+        return cls(samples=samples)
 
 
 class EvaluationResultRow(BaseModel):
