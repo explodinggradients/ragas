@@ -11,7 +11,7 @@ from datasets import load_dataset
 dataset = load_dataset("explodinggradients/amnesty_qa","english_v3")
 ```
 
-Converting data to ragas [evaluation dataset](../concepts/components/eval_dataset.md)
+Load the dataset into Ragas EvaluationDataset object. 
 
 ```python
 from ragas import EvaluationDataset

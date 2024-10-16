@@ -2,7 +2,13 @@
 
 An evaluation dataset is a homogeneous collection of [data samples](eval_sample.md) designed to assess the performance and capabilities of an AI application. In Ragas, evaluation datasets are represented using the `EvaluationDataset` class, which provides a structured way to organize and manage data samples for evaluation purposes. 
 
-## Structure of an Evaluation Dataset
+- [Overview](#overview)
+- [Creating an Evaluation Dataset from SingleTurnSamples](#creating-an-evaluation-dataset-from-singleturnsamples)
+- [Loading an Evaluation Dataset from Hugging Face Datasets](#loading-an-evaluation-dataset-from-hugging-face-datasets)
+
+## Overview
+
+### Structure of an Evaluation Dataset
 
 An evaluation dataset consists of:
 
@@ -10,7 +16,7 @@ An evaluation dataset consists of:
 - **Consistency**: All samples within the dataset should be of the same type (either all single-turn or all multi-turn samples) to maintain consistency in evaluation.
 
 
-## Guidelines for Curating an Effective Evaluation Dataset
+### Guidelines for Curating an Effective Evaluation Dataset
 
 - **Define Clear Objectives**: Identify the specific aspects of the AI application that you want to evaluate and the scenarios you want to test. Collect data samples that reflect these objectives.
 
@@ -19,7 +25,7 @@ An evaluation dataset consists of:
 - **Quality and Size**: Aim for a dataset that is large enough to provide meaningful insights but not so large that it becomes unwieldy. Ensure that the data is of high quality and accurately reflects the real-world scenarios you want to evaluate.
 
 
-### Example
+## Creating an Evaluation Dataset from SingleTurnSamples
 
 In this example, we’ll demonstrate how to create an EvaluationDataset using multiple `SingleTurnSample` instances. We’ll walk through the process step by step, including creating individual samples, assembling them into a dataset, and performing basic operations on the dataset.
 
@@ -68,4 +74,21 @@ Create an EvaluationDataset by passing a list of SingleTurnSample instances.
 dataset = EvaluationDataset(samples=[sample1, sample2, sample3])
 ``` 
 
-[EvaluationDataset API Reference]()
+## Loading an Evaluation Dataset from Hugging Face Datasets
+
+In practice, you may want to load an evaluation dataset from an existing dataset source, such as the Hugging Face Datasets library. The following example demonstrates how to load an evaluation dataset from a Hugging Face dataset and convert it into an EvaluationDataset instance.
+
+Ensure that the dataset contains the necessary fields for evaluation, such as user inputs, retrieved contexts, responses, and references.
+
+```python
+from datasets import load_dataset
+dataset = load_dataset("explodinggradients/amnesty_qa","english_v3")
+```
+
+Load the dataset into a Ragas EvaluationDataset object.
+
+```python
+from ragas import EvaluationDataset
+
+eval_dataset = EvaluationDataset.from_hf_dataset(dataset["eval"])
+```
