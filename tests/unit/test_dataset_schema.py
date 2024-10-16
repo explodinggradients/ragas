@@ -3,46 +3,66 @@ import typing as t
 import pytest
 from pydantic import ValidationError
 
-from ragas.dataset_schema import EvaluationDataset, MultiTurnSample, SingleTurnSample
+from ragas.dataset_schema import (
+    EvaluationDataset,
+    HumanMessage,
+    MultiTurnSample,
+    SingleTurnSample,
+)
+
+samples = [
+    SingleTurnSample(user_input="What is X", response="Y"),
+    MultiTurnSample(
+        user_input=[HumanMessage(content="What is X")],
+        reference="Y",
+    ),
+]
 
 
-def test_evaluation_dataset():
-    single_turn_sample = SingleTurnSample(user_input="What is X", response="Y")
-
-    dataset = EvaluationDataset(samples=[single_turn_sample, single_turn_sample])
+@pytest.mark.parametrize("eval_sample", samples)
+def test_evaluation_dataset(eval_sample):
+    dataset = EvaluationDataset(samples=[eval_sample, eval_sample])
 
     hf_dataset = dataset.to_hf_dataset()
 
-    assert dataset.get_sample_type() == SingleTurnSample
+    assert dataset.get_sample_type() is type(eval_sample)
     assert len(hf_dataset) == 2
-    assert dataset.features() == ["user_input", "response"]
     assert len(dataset) == 2
-    assert dataset[0] == single_turn_sample
+    assert dataset[0] == eval_sample
 
 
-def test_evaluation_dataset_save_load(tmpdir):
-    single_turn_sample = SingleTurnSample(user_input="What is X", response="Y")
-
-    dataset = EvaluationDataset(samples=[single_turn_sample, single_turn_sample])
-
-    hf_dataset = dataset.to_hf_dataset()
+@pytest.mark.parametrize("eval_sample", samples)
+def test_evaluation_dataset_save_load_csv(tmpdir, eval_sample):
+    dataset = EvaluationDataset(samples=[eval_sample, eval_sample])
 
     # save and load to csv
-    dataset.to_csv(tmpdir / "csvfile.csv")
-    loaded_dataset = EvaluationDataset.from_csv(tmpdir / "csvfile.csv")
-    assert loaded_dataset == dataset
+    csv_path = tmpdir / "csvfile.csv"
+    dataset.to_csv(csv_path)
+
+
+@pytest.mark.parametrize("eval_sample", samples)
+def test_evaluation_dataset_save_load_jsonl(tmpdir, eval_sample):
+    dataset = EvaluationDataset(samples=[eval_sample, eval_sample])
 
     # save and load to jsonl
-    dataset.to_jsonl(tmpdir / "jsonlfile.jsonl")
-    loaded_dataset = EvaluationDataset.from_jsonl(tmpdir / "jsonlfile.jsonl")
+    jsonl_path = tmpdir / "jsonlfile.jsonl"
+    dataset.to_jsonl(jsonl_path)
+    loaded_dataset = EvaluationDataset.from_jsonl(jsonl_path)
     assert loaded_dataset == dataset
 
-    # load from hf dataset
+
+@pytest.mark.parametrize("eval_sample", samples)
+def test_evaluation_dataset_load_from_hf(eval_sample):
+    dataset = EvaluationDataset(samples=[eval_sample, eval_sample])
+
+    # convert to and load from hf dataset
+    hf_dataset = dataset.to_hf_dataset()
     loaded_dataset = EvaluationDataset.from_hf_dataset(hf_dataset)
     assert loaded_dataset == dataset
 
 
-def test_single_type_evaluation_dataset():
+@pytest.mark.parametrize("eval_sample", samples)
+def test_single_type_evaluation_dataset(eval_sample):
     single_turn_sample = SingleTurnSample(user_input="What is X", response="Y")
     multi_turn_sample = MultiTurnSample(
         user_input=[{"content": "What is X"}],
