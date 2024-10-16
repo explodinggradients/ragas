@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import typing as t
 
 from ragas.dataset_schema import (
@@ -12,10 +11,7 @@ from ragas.dataset_schema import (
 )
 
 if t.TYPE_CHECKING:
-    from ragas.dataset_schema import (
-        MultiTurnSample,
-        SingleTurnSample,
-    )
+    from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 
 
 class TestsetSample(BaseSample):
