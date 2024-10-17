@@ -193,6 +193,15 @@ class SingleTurnMetric(Metric):
     This class provides methods to score single-turn samples, both synchronously and asynchronously.
     """
 
+    def _only_required_columns(self, sample: SingleTurnSample) -> SingleTurnSample:
+        """
+        Simplify the sample to only include the required columns.
+        """
+        required_columns = self.required_columns.get(MetricType.SINGLE_TURN.name, set())
+        if not required_columns:
+            return sample
+        return SingleTurnSample(**sample.model_dump(include=required_columns))
+
     def single_turn_score(
         self,
         sample: SingleTurnSample,
@@ -204,8 +213,10 @@ class SingleTurnMetric(Metric):
         May raise ImportError if nest_asyncio is not installed in a Jupyter-like environment.
         """
         callbacks = callbacks or []
+        # only get the required columns
+        sample = self._only_required_columns(sample)
         rm, group_cm = new_group(
-            self.name, inputs=sample.model_dump(), callbacks=callbacks
+            self.name, inputs=sample.to_dict(), callbacks=callbacks
         )
         try:
             if is_event_loop_running():
@@ -242,8 +253,11 @@ class SingleTurnMetric(Metric):
         May raise asyncio.TimeoutError if the scoring process exceeds the specified timeout.
         """
         callbacks = callbacks or []
-        row = sample.model_dump()
-        rm, group_cm = new_group(self.name, inputs=row, callbacks=callbacks)
+        # only get the required columns
+        sample = self._only_required_columns(sample)
+        rm, group_cm = new_group(
+            self.name, inputs=sample.to_dict(), callbacks=callbacks
+        )
         try:
             score = await asyncio.wait_for(
                 self._single_turn_ascore(sample=sample, callbacks=group_cm),
@@ -278,6 +292,15 @@ class MultiTurnMetric(Metric):
     for scoring multi-turn conversation samples.
     """
 
+    def _only_required_columns(self, sample: MultiTurnSample) -> MultiTurnSample:
+        """
+        Simplify the sample to only include the required columns.
+        """
+        required_columns = self.required_columns.get(MetricType.MULTI_TURN.name, set())
+        if not required_columns:
+            return sample
+        return MultiTurnSample(**sample.model_dump(include=required_columns))
+
     def multi_turn_score(
         self,
         sample: MultiTurnSample,
@@ -289,8 +312,9 @@ class MultiTurnMetric(Metric):
         May raise ImportError if nest_asyncio is not installed in Jupyter-like environments.
         """
         callbacks = callbacks or []
+        sample = self._only_required_columns(sample)
         rm, group_cm = new_group(
-            self.name, inputs=sample.model_dump(), callbacks=callbacks
+            self.name, inputs=sample.to_dict(), callbacks=callbacks
         )
         try:
             if is_event_loop_running():
@@ -327,8 +351,10 @@ class MultiTurnMetric(Metric):
         May raise asyncio.TimeoutError if the scoring process exceeds the specified timeout.
         """
         callbacks = callbacks or []
+        sample = self._only_required_columns(sample)
+
         rm, group_cm = new_group(
-            self.name, inputs=sample.model_dump(), callbacks=callbacks
+            self.name, inputs=sample.to_dict(), callbacks=callbacks
         )
         try:
             score = await asyncio.wait_for(
