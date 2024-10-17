@@ -10,7 +10,7 @@ from enum import Enum
 
 from pysbd import Segmenter
 
-from ragas.callbacks import new_group
+from ragas.callbacks import ChainType, new_group
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.executor import is_event_loop_running
 from ragas.prompt import PromptMixin
@@ -97,7 +97,12 @@ class Metric(ABC):
         This method is deprecated and will be removed in 0.3. Please use `single_turn_ascore` or `multi_turn_ascore` instead.
         """
         callbacks = callbacks or []
-        rm, group_cm = new_group(self.name, inputs=row, callbacks=callbacks)
+        rm, group_cm = new_group(
+            self.name,
+            inputs=row,
+            callbacks=callbacks,
+            metadata={"type": ChainType.METRIC},
+        )
         try:
             if is_event_loop_running():
                 try:
@@ -134,7 +139,12 @@ class Metric(ABC):
         This method is deprecated and will be removed in 0.3. Please use `single_turn_ascore` instead.
         """
         callbacks = callbacks or []
-        rm, group_cm = new_group(self.name, inputs=row, callbacks=callbacks)
+        rm, group_cm = new_group(
+            self.name,
+            inputs=row,
+            callbacks=callbacks,
+            metadata={"type": ChainType.METRIC},
+        )
         try:
             score = await asyncio.wait_for(
                 self._ascore(row=row, callbacks=group_cm),
@@ -216,7 +226,10 @@ class SingleTurnMetric(Metric):
         # only get the required columns
         sample = self._only_required_columns(sample)
         rm, group_cm = new_group(
-            self.name, inputs=sample.to_dict(), callbacks=callbacks
+            self.name,
+            inputs=sample.to_dict(),
+            callbacks=callbacks,
+            metadata={"type": ChainType.METRIC},
         )
         try:
             if is_event_loop_running():
@@ -256,7 +269,10 @@ class SingleTurnMetric(Metric):
         # only get the required columns
         sample = self._only_required_columns(sample)
         rm, group_cm = new_group(
-            self.name, inputs=sample.to_dict(), callbacks=callbacks
+            self.name,
+            inputs=sample.to_dict(),
+            callbacks=callbacks,
+            metadata={"type": ChainType.METRIC},
         )
         try:
             score = await asyncio.wait_for(
@@ -314,7 +330,10 @@ class MultiTurnMetric(Metric):
         callbacks = callbacks or []
         sample = self._only_required_columns(sample)
         rm, group_cm = new_group(
-            self.name, inputs=sample.to_dict(), callbacks=callbacks
+            self.name,
+            inputs=sample.to_dict(),
+            callbacks=callbacks,
+            metadata={"type": ChainType.METRIC},
         )
         try:
             if is_event_loop_running():
@@ -354,7 +373,10 @@ class MultiTurnMetric(Metric):
         sample = self._only_required_columns(sample)
 
         rm, group_cm = new_group(
-            self.name, inputs=sample.to_dict(), callbacks=callbacks
+            self.name,
+            inputs=sample.to_dict(),
+            callbacks=callbacks,
+            metadata={"type": ChainType.METRIC},
         )
         try:
             score = await asyncio.wait_for(

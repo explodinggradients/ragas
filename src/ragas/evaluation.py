@@ -9,7 +9,7 @@ from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
 from ragas._analytics import EvaluationEvent, track, track_was_completed
-from ragas.callbacks import new_group
+from ragas.callbacks import ChainType, RagasTracer, new_group
 from ragas.dataset_schema import (
     EvaluationDataset,
     EvaluationResult,
@@ -246,7 +246,10 @@ def evaluate(
     # new evaluation chain
     row_run_managers = []
     evaluation_rm, evaluation_group_cm = new_group(
-        name=RAGAS_EVALUATION_CHAIN_NAME, inputs={}, callbacks=callbacks
+        name=RAGAS_EVALUATION_CHAIN_NAME,
+        inputs={},
+        callbacks=callbacks,
+        metadata={"type": ChainType.EVALUATION},
     )
 
     sample_type = dataset.get_sample_type()
@@ -256,6 +259,7 @@ def evaluate(
             name=f"row {i}",
             inputs=row,
             callbacks=evaluation_group_cm,
+            metadata={"type": ChainType.ROW, "row_index": i},
         )
         row_run_managers.append((row_rm, row_group_cm))
         if sample_type == SingleTurnSample:
