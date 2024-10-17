@@ -34,7 +34,7 @@ print(prompts["single_turn_prompt"].to_string())
 
 
 ### Modifying instruction in default prompt
-It is highly likely that one might to modify the prompt to suit ones needs. Ragas provides `set_prompts` methods to allow you to do so. Let's change the one of the prompts used in `FactualCorrectness` metrics
+It is highly likely that one might want to modify the prompt to suit ones needs. Ragas provides `set_prompts` methods to allow you to do so. Let's change the one of the prompts used in `FactualCorrectness` metrics
 
 
 ```python
@@ -55,7 +55,6 @@ print(scorer.get_prompts()["single_turn_prompt"].instruction)
 ```
 
     Given a input, system response and reference. Evaluate and score the response against the reference only using the given criteria.
-    Only output valid JSON.
     Only output valid JSON.
 
 
