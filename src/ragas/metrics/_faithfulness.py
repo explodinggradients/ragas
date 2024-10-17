@@ -243,7 +243,7 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
         sentences_with_index = {
             i: sentence
             for i, sentence in enumerate(sentences)
-            if sentence.strip().endswith(".")
+            if sentence.strip().endswith(('.', '。', '!', '！'))
         }
 
         statements_simplified = await self.statement_prompt.generate(
