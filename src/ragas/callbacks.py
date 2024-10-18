@@ -21,8 +21,8 @@ def new_group(
     name: str,
     inputs: t.Dict,
     callbacks: Callbacks,
-    tags: t.List[str] | None = None,
-    metadata: t.Dict[str, t.Any] | None = None,
+    tags: t.Optional[t.List[str]] = None,
+    metadata: t.Optional[t.Dict[str, t.Any]] = None,
 ) -> t.Tuple[CallbackManagerForChainRun, CallbackManagerForChainGroup]:
     tags = tags or []
     metadata = metadata or {}
@@ -59,7 +59,7 @@ class ChainType(Enum):
 
 class ChainRun(BaseModel):
     run_id: uuid.UUID
-    parent_run_id: uuid.UUID | None
+    parent_run_id: t.Optional[uuid.UUID]
     name: str
     inputs: t.Dict[str, t.Any]
     metadata: t.Dict[str, t.Any]
