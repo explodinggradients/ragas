@@ -13,7 +13,6 @@ from langchain_core.callbacks import (
     CallbackManagerForChainRun,
     Callbacks,
 )
-from langchain_core.messages import BaseMessage
 from pydantic import BaseModel, Field
 
 

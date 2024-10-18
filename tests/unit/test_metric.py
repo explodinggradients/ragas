@@ -40,10 +40,7 @@ def test_single_turn_metric():
 
 
 def test_required_columns():
-    from ragas.metrics.base import (
-        MetricType,
-        SingleTurnMetric,
-    )
+    from ragas.metrics.base import MetricType, SingleTurnMetric
 
     @dataclass
     class FakeMetric(SingleTurnMetric):
