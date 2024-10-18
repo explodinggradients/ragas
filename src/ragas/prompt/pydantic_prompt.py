@@ -11,7 +11,7 @@ from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel
 
 from ragas._version import __version__
-from ragas.callbacks import new_group
+from ragas.callbacks import ChainType, new_group
 from ragas.exceptions import RagasOutputParserException
 from ragas.llms.prompt import PromptValue
 
@@ -176,6 +176,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             name=self.name,
             inputs={"data": processed_data},
             callbacks=callbacks,
+            metadata={"type": ChainType.RAGAS_PROMPT},
         )
         prompt_value = PromptValue(prompt_str=self.to_string(processed_data))
         resp = await llm.generate(

@@ -275,7 +275,7 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
         row = sample.to_dict()
         return await self._ascore(row, callbacks)
 
-    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         """
         returns the NLI score for each (q, c, a) pair
         """
@@ -330,7 +330,7 @@ class FaithfulnesswithHHEM(Faithfulness):
         for ndx in range(0, length_of_pairs, self.batch_size):
             yield pairs[ndx : min(ndx + self.batch_size, length_of_pairs)]
 
-    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         """
         returns the NLI score for each (q, c, a) pair
         """

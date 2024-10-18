@@ -8,16 +8,19 @@ from dataclasses import dataclass, field
 from datasets import Dataset as HFDataset
 from pydantic import BaseModel, field_validator
 
+from ragas.callbacks import parse_run_traces
 from ragas.cost import CostCallbackHandler
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 from ragas.utils import safe_nanmean
 
 if t.TYPE_CHECKING:
+    import uuid
     from pathlib import Path
 
     from datasets import Dataset as HFDataset
     from pandas import DataFrame as PandasDataframe
 
+    from ragas.callbacks import ChainRun
     from ragas.cost import TokenUsage
 
 
@@ -137,6 +140,7 @@ class MultiTurnSample(BaseSample):
 
 
 Sample = t.TypeVar("Sample", bound=BaseSample)
+T = t.TypeVar("T", bound="RagasDataset")
 
 
 class RagasDataset(ABC, BaseModel, t.Generic[Sample]):
@@ -149,7 +153,7 @@ class RagasDataset(ABC, BaseModel, t.Generic[Sample]):
 
     @classmethod
     @abstractmethod
-    def from_list(cls, data: t.List[t.Dict]) -> RagasDataset[Sample]:
+    def from_list(cls: t.Type[T], data: t.List[t.Dict]) -> T:
         """Creates an EvaluationDataset from a list of dictionaries."""
         pass
 
@@ -181,7 +185,7 @@ class RagasDataset(ABC, BaseModel, t.Generic[Sample]):
         return HFDataset.from_list(self.to_list())
 
     @classmethod
-    def from_hf_dataset(cls, dataset: HFDataset):
+    def from_hf_dataset(cls: t.Type[T], dataset: HFDataset) -> T:
         """Creates an EvaluationDataset from a Hugging Face Dataset."""
         return cls.from_list(dataset.to_list())
 
@@ -202,7 +206,7 @@ class RagasDataset(ABC, BaseModel, t.Generic[Sample]):
         return self.samples[0].get_features()
 
     @classmethod
-    def from_dict(cls, mapping: t.Dict):
+    def from_dict(cls: t.Type[T], mapping: t.Dict) -> T:
         """Creates an EvaluationDataset from a dictionary."""
         samples = []
         if all(
@@ -237,7 +241,7 @@ class RagasDataset(ABC, BaseModel, t.Generic[Sample]):
                 jsonlfile.write(json.dumps(sample.to_dict(), ensure_ascii=False) + "\n")
 
     @classmethod
-    def from_jsonl(cls, path: t.Union[str, Path]):
+    def from_jsonl(cls: t.Type[T], path: t.Union[str, Path]) -> T:
         """Creates an EvaluationDataset from a JSONL file."""
         with open(path, "r") as jsonlfile:
             data = [json.loads(line) for line in jsonlfile]
@@ -334,12 +338,6 @@ class EvaluationDataset(RagasDataset[SingleTurnSampleOrMultiTurnSample]):
         return cls(samples=samples)
 
 
-class EvaluationResultRow(BaseModel):
-    dataset_row: t.Dict
-    scores: t.Dict[str, t.Any]
-    trace: t.Dict[str, t.Any] = field(default_factory=dict)  # none for now
-
-
 @dataclass
 class EvaluationResult:
     """
@@ -361,6 +359,8 @@ class EvaluationResult:
     dataset: EvaluationDataset
     binary_columns: t.List[str] = field(default_factory=list)
     cost_cb: t.Optional[CostCallbackHandler] = None
+    traces: t.List[t.Dict[str, t.Any]] = field(default_factory=list)
+    ragas_traces: t.Dict[uuid.UUID, ChainRun] = field(default_factory=dict, repr=False)
 
     def __post_init__(self):
         # transform scores from list of dicts to dict of lists
@@ -376,6 +376,9 @@ class EvaluationResult:
             if metric_name not in self.binary_columns:
                 value = t.cast(float, value)
                 values.append(value + 1e-10)
+
+        # parse the traces
+        self.traces = parse_run_traces(self.ragas_traces)
 
     def to_pandas(self, batch_size: int | None = None, batched: bool = False):
         """
@@ -412,18 +415,6 @@ class EvaluationResult:
         scores_df = pd.DataFrame(self.scores)
         dataset_df = self.dataset.to_pandas()
         return pd.concat([dataset_df, scores_df], axis=1)
-
-    def serialized(self) -> t.List[EvaluationResultRow]:
-        """
-        Convert the result to a list of EvaluationResultRow.
-        """
-        return [
-            EvaluationResultRow(
-                dataset_row=self.dataset[i].to_dict(),
-                scores=self.scores[i],
-            )
-            for i in range(len(self.scores))
-        ]
 
     def total_tokens(self) -> t.Union[t.List[TokenUsage], TokenUsage]:
         """

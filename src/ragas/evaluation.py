@@ -9,7 +9,7 @@ from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
 from ragas._analytics import EvaluationEvent, track, track_was_completed
-from ragas.callbacks import new_group
+from ragas.callbacks import ChainType, RagasTracer, new_group
 from ragas.dataset_schema import (
     EvaluationDataset,
     EvaluationResult,
@@ -229,6 +229,10 @@ def evaluate(
     # init the callbacks we need for various tasks
     ragas_callbacks: t.Dict[str, BaseCallbackHandler] = {}
 
+    # Ragas Tracer which traces the run
+    tracer = RagasTracer()
+    ragas_callbacks["tracer"] = tracer
+
     # check if cost needs to be calculated
     if token_usage_parser is not None:
         from ragas.cost import CostCallbackHandler
@@ -246,7 +250,10 @@ def evaluate(
     # new evaluation chain
     row_run_managers = []
     evaluation_rm, evaluation_group_cm = new_group(
-        name=RAGAS_EVALUATION_CHAIN_NAME, inputs={}, callbacks=callbacks
+        name=RAGAS_EVALUATION_CHAIN_NAME,
+        inputs={},
+        callbacks=callbacks,
+        metadata={"type": ChainType.EVALUATION},
     )
 
     sample_type = dataset.get_sample_type()
@@ -256,6 +263,7 @@ def evaluate(
             name=f"row {i}",
             inputs=row,
             callbacks=evaluation_group_cm,
+            metadata={"type": ChainType.ROW, "row_index": i},
         )
         row_run_managers.append((row_rm, row_group_cm))
         if sample_type == SingleTurnSample:
@@ -321,6 +329,7 @@ def evaluate(
                 t.Union["CostCallbackHandler", None],
                 cost_cb,
             ),
+            ragas_traces=tracer.traces,
         )
         if not evaluation_group_cm.ended:
             evaluation_rm.on_chain_end(result)
