@@ -74,8 +74,16 @@ class SemanticSimilarity(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
                 "async score [ascore()] not implemented for HuggingFace embeddings"
             )
         else:
-            embedding_1 = np.array(await self.embeddings.embed_text(ground_truth))
-            embedding_2 = np.array(await self.embeddings.embed_text(answer))
+            try: 
+                embcall_1 = await self.embeddings.embed_text(ground_truth)
+                embcall_2 = await self.embeddings.embed_text(answer)
+            except AttributeError:
+                #reason: OpenAIEmbeddings' object has no attibute 'embed_text'
+                embcall_1 = self.embeddings.embed_query(ground_truth)
+                embcall_2 = self.embeddings.embed_query(answer)
+            finally:
+                embedding_1 = np.array(embcall_1)
+                embedding_2 = np.array(embcall_2)
             # Normalization factors of the above embeddings
             norms_1 = np.linalg.norm(embedding_1, keepdims=True)
             norms_2 = np.linalg.norm(embedding_2, keepdims=True)
