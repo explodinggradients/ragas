@@ -57,7 +57,7 @@ class ChainType(Enum):
     RAGAS_PROMPT = "ragas_prompt"
 
 
-class ChainRuns(BaseModel):
+class ChainRun(BaseModel):
     run_id: uuid.UUID
     parent_run_id: uuid.UUID | None
     name: str
@@ -78,7 +78,7 @@ class ChainRunEncoder(json.JSONEncoder):
 
 @dataclass
 class RagasTracer(BaseCallbackHandler):
-    traces: t.Dict[uuid.UUID, ChainRuns] = field(default_factory=dict)
+    traces: t.Dict[uuid.UUID, ChainRun] = field(default_factory=dict)
 
     def on_chain_start(
         self,
@@ -91,7 +91,7 @@ class RagasTracer(BaseCallbackHandler):
         metadata: t.Optional[t.Dict[str, t.Any]] = None,
         **kwargs: t.Any,
     ) -> t.Any:
-        self.traces[run_id] = ChainRuns(
+        self.traces[run_id] = ChainRun(
             run_id=run_id,
             parent_run_id=parent_run_id,
             name=serialized["name"],
