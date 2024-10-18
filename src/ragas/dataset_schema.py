@@ -8,16 +8,19 @@ from dataclasses import dataclass, field
 from datasets import Dataset as HFDataset
 from pydantic import BaseModel, field_validator
 
+from ragas.callbacks import parse_run_traces
 from ragas.cost import CostCallbackHandler
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 from ragas.utils import safe_nanmean
 
 if t.TYPE_CHECKING:
+    import uuid
     from pathlib import Path
 
     from datasets import Dataset as HFDataset
     from pandas import DataFrame as PandasDataframe
 
+    from ragas.callbacks import ChainRun
     from ragas.cost import TokenUsage
 
 
@@ -356,6 +359,8 @@ class EvaluationResult:
     dataset: EvaluationDataset
     binary_columns: t.List[str] = field(default_factory=list)
     cost_cb: t.Optional[CostCallbackHandler] = None
+    traces: t.List[t.Dict[str, t.Any]] = field(default_factory=list)
+    ragas_traces: t.Dict[uuid.UUID, ChainRun] = field(default_factory=dict, repr=False)
 
     def __post_init__(self):
         # transform scores from list of dicts to dict of lists
@@ -371,6 +376,9 @@ class EvaluationResult:
             if metric_name not in self.binary_columns:
                 value = t.cast(float, value)
                 values.append(value + 1e-10)
+
+        # parse the traces
+        self.traces = parse_run_traces(self.ragas_traces)
 
     def to_pandas(self, batch_size: int | None = None, batched: bool = False):
         """

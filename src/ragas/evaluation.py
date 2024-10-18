@@ -229,6 +229,10 @@ def evaluate(
     # init the callbacks we need for various tasks
     ragas_callbacks: t.Dict[str, BaseCallbackHandler] = {}
 
+    # Ragas Tracer which traces the run
+    tracer = RagasTracer()
+    ragas_callbacks["tracer"] = tracer
+
     # check if cost needs to be calculated
     if token_usage_parser is not None:
         from ragas.cost import CostCallbackHandler
@@ -325,6 +329,7 @@ def evaluate(
                 t.Union["CostCallbackHandler", None],
                 cost_cb,
             ),
+            ragas_traces=tracer.traces,
         )
         if not evaluation_group_cm.ended:
             evaluation_rm.on_chain_end(result)

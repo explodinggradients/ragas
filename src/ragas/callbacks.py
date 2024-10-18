@@ -118,3 +118,50 @@ class RagasTracer(BaseCallbackHandler):
             indent=4,
             cls=ChainRunEncoder,
         )
+
+
+@dataclass
+class MetricTrace(dict):
+    scores: t.Dict[str, float] = field(default_factory=dict)
+
+    def __repr__(self):
+        return self.scores.__repr__()
+
+    def __str__(self):
+        return self.__repr__()
+
+
+def parse_run_traces(
+    traces: t.Dict[uuid.UUID, ChainRun],
+) -> t.List[t.Dict[str, t.Any]]:
+    root_traces = [
+        chain_trace
+        for chain_trace in traces.values()
+        if chain_trace.parent_run_id is None
+    ]
+    if len(root_traces) > 1:
+        raise ValueError(
+            "Multiple root traces found! This is a bug on our end, please file an issue and we will fix it ASAP :)"
+        )
+    root_trace = root_traces[0]
+
+    # get all the row traces
+    parased_traces = []
+    for row_uuid in root_trace.children:
+        row_trace = traces[row_uuid]
+        metric_traces = MetricTrace()
+        for metric_uuid in row_trace.children:
+            metric_trace = traces[metric_uuid]
+            metric_traces.scores[metric_trace.name] = metric_trace.outputs["output"]
+            # get all the prompt IO from the metric trace
+            prompt_traces = {}
+            for i, prompt_uuid in enumerate(metric_trace.children):
+                prompt_trace = traces[prompt_uuid]
+                prompt_traces[f"{i}_{prompt_trace.name}"] = {
+                    "input": prompt_trace.inputs["data"],
+                    "output": prompt_trace.outputs["output"],
+                }
+            metric_traces[f"{metric_trace.name}"] = prompt_traces
+        parased_traces.append(metric_traces)
+
+    return parased_traces
