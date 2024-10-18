@@ -48,7 +48,7 @@ class SemanticSimilarity(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     )
     is_cross_encoder: bool = False
     threshold: t.Optional[float] = None
-
+        
     def __post_init__(self: t.Self):
         # only for cross encoder
         if isinstance(self.embeddings, HuggingfaceEmbeddings):
@@ -74,13 +74,15 @@ class SemanticSimilarity(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
                 "async score [ascore()] not implemented for HuggingFace embeddings"
             )
         else:
+            embcall_1: t.List[t.List[float]] = field(default_factory=list)
+            embcall_2: t.List[t.List[float]] = field(default_factory=list)
             try: 
-                embcall_1 = await self.embeddings.embed_text(ground_truth)
-                embcall_2 = await self.embeddings.embed_text(answer)
+                embcall_1: t.List[t.List[float]] = t.cast(list, await self.embeddings.embed_text(ground_truth))
+                embcall_2: t.List[t.List[float]] = t.cast(list, await self.embeddings.embed_text(answer))
             except AttributeError:
                 #reason: OpenAIEmbeddings' object has no attibute 'embed_text'
-                embcall_1 = self.embeddings.embed_query(ground_truth)
-                embcall_2 = self.embeddings.embed_query(answer)
+                embcall_1: t.List[t.List[float]] = t.cast(list, self.embeddings.embed_query(ground_truth))
+                embcall_2: t.List[t.List[float]] = t.cast(list, self.embeddings.embed_query(answer))
             finally:
                 embedding_1 = np.array(embcall_1)
                 embedding_2 = np.array(embcall_2)
