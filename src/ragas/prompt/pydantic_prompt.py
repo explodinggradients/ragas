@@ -241,7 +241,15 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             new_strings=translated_strings.statements,
         )
 
+        translated_instruction = await translate_statements_prompt.generate(
+            llm=llm,
+            data=ToTranslate(
+                target_language=target_language, statements=[self.instruction]
+            ),
+        )
+
         new_prompt = copy.deepcopy(self)
+        new_prompt.instruction = translated_instruction.statements[0]
         new_prompt.examples = translated_examples
         new_prompt.language = target_language
         return new_prompt
