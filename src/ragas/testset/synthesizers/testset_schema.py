@@ -10,9 +10,6 @@ from ragas.dataset_schema import (
     SingleTurnSample,
 )
 
-if t.TYPE_CHECKING:
-    from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
-
 
 class TestsetSample(BaseSample):
     """
