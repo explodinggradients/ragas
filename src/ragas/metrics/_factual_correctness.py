@@ -253,12 +253,12 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
         false_negatives = sum(~response_reference)
 
         if self.mode == "precision":
-            score = true_positives / (true_positives + false_positives)
+            score = true_positives / (true_positives + false_positives + 1e-8)
         elif self.mode == "recall":
-            score = true_positives / (true_positives + false_negatives)
+            score = true_positives / (true_positives + false_negatives + 1e-8)
         else:
-            precision = true_positives / (true_positives + false_positives)
-            recall = true_positives / (true_positives + false_negatives)
+            precision = true_positives / (true_positives + false_positives + 1e-8)
+            recall = true_positives / (true_positives + false_negatives + 1e-8)
             score = 2 * (precision * recall) / (precision + recall + 1e-8)
 
         return np.round(score, 2)
