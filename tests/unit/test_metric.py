@@ -66,7 +66,7 @@ def test_required_columns():
         "response",
     }
     assert (
-        fm._only_required_columns(
+        fm._only_required_columns_single_turn(
             SingleTurnSample(user_input="a", response="b", reference="c")
         ).to_dict()
         == SingleTurnSample(user_input="a", response="b").to_dict()

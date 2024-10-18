@@ -203,7 +203,9 @@ class SingleTurnMetric(Metric):
     This class provides methods to score single-turn samples, both synchronously and asynchronously.
     """
 
-    def _only_required_columns(self, sample: SingleTurnSample) -> SingleTurnSample:
+    def _only_required_columns_single_turn(
+        self, sample: SingleTurnSample
+    ) -> SingleTurnSample:
         """
         Simplify the sample to only include the required columns.
         """
@@ -224,7 +226,7 @@ class SingleTurnMetric(Metric):
         """
         callbacks = callbacks or []
         # only get the required columns
-        sample = self._only_required_columns(sample)
+        sample = self._only_required_columns_single_turn(sample)
         rm, group_cm = new_group(
             self.name,
             inputs=sample.to_dict(),
@@ -267,7 +269,7 @@ class SingleTurnMetric(Metric):
         """
         callbacks = callbacks or []
         # only get the required columns
-        sample = self._only_required_columns(sample)
+        sample = self._only_required_columns_single_turn(sample)
         rm, group_cm = new_group(
             self.name,
             inputs=sample.to_dict(),
@@ -308,7 +310,9 @@ class MultiTurnMetric(Metric):
     for scoring multi-turn conversation samples.
     """
 
-    def _only_required_columns(self, sample: MultiTurnSample) -> MultiTurnSample:
+    def _only_required_columns_multi_turn(
+        self, sample: MultiTurnSample
+    ) -> MultiTurnSample:
         """
         Simplify the sample to only include the required columns.
         """
@@ -328,7 +332,7 @@ class MultiTurnMetric(Metric):
         May raise ImportError if nest_asyncio is not installed in Jupyter-like environments.
         """
         callbacks = callbacks or []
-        sample = self._only_required_columns(sample)
+        sample = self._only_required_columns_multi_turn(sample)
         rm, group_cm = new_group(
             self.name,
             inputs=sample.to_dict(),
@@ -370,7 +374,7 @@ class MultiTurnMetric(Metric):
         May raise asyncio.TimeoutError if the scoring process exceeds the specified timeout.
         """
         callbacks = callbacks or []
-        sample = self._only_required_columns(sample)
+        sample = self._only_required_columns_multi_turn(sample)
 
         rm, group_cm = new_group(
             self.name,
