@@ -82,6 +82,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
                 if data is not None
                 else "input: (None)\n"
             )
+            + "Respond only with a valid JSON object that complies with the specified schema.\n"
             + "output: "
         )
 
