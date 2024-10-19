@@ -20,9 +20,8 @@ from ragas.run_config import RunConfig, add_async_retry, add_retry
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
+    from langchain_core.prompt_values import PromptValue
     from llama_index.core.base.llms.base import BaseLLM
-
-    from ragas.llms.prompt import PromptValue
 
 logger = logging.getLogger(__name__)
 

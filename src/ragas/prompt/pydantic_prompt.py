@@ -8,12 +8,12 @@ import typing as t
 
 from langchain_core.exceptions import OutputParserException
 from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.prompt_values import StringPromptValue as PromptValue
 from pydantic import BaseModel
 
 from ragas._version import __version__
 from ragas.callbacks import ChainType, new_group
 from ragas.exceptions import RagasOutputParserException
-from ragas.llms.prompt import PromptValue
 
 from .base import BasePrompt, StringIO, _check_if_language_is_supported
 from .utils import get_all_strings, update_strings
@@ -178,7 +178,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             callbacks=callbacks,
             metadata={"type": ChainType.RAGAS_PROMPT},
         )
-        prompt_value = PromptValue(prompt_str=self.to_string(processed_data))
+        prompt_value = PromptValue(text=self.to_string(processed_data))
         resp = await llm.generate(
             prompt_value,
             n=n,

@@ -2,9 +2,9 @@ import copy
 
 import pytest
 from langchain_core.outputs import Generation, LLMResult
+from langchain_core.prompt_values import StringPromptValue
 
 from ragas.llms.base import BaseRagasLLM
-from ragas.llms.prompt import PromptValue
 from ragas.prompt import StringIO, StringPrompt
 from ragas.run_config import RunConfig
 
@@ -12,7 +12,7 @@ from ragas.run_config import RunConfig
 class EchoLLM(BaseRagasLLM):
     def generate_text(  # type: ignore
         self,
-        prompt: PromptValue,
+        prompt: StringPromptValue,
         *args,
         **kwargs,
     ) -> LLMResult:
@@ -20,7 +20,7 @@ class EchoLLM(BaseRagasLLM):
 
     async def agenerate_text(  # type: ignore
         self,
-        prompt: PromptValue,
+        prompt: StringPromptValue,
         *args,
         **kwargs,
     ) -> LLMResult:
