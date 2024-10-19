@@ -27,8 +27,8 @@ if t.TYPE_CHECKING:
 
 
 def default_transforms(
-    llm: BaseRagasLLM = llm_factory(),
-    embedding_model: BaseRagasEmbeddings = embedding_factory(),
+    llm: BaseRagasLLM,
+    embedding_model: BaseRagasEmbeddings,
 ) -> Transforms:
     """
     Creates and returns a default set of transforms for processing a knowledge graph.

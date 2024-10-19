@@ -20,11 +20,14 @@ if t.TYPE_CHECKING:
     from langchain_core.documents import Document as LCDocument
     from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
+    from ragas.embeddings.base import BaseRagasEmbeddings
+    from ragas.llms.base import BaseRagasLLM
     from ragas.testset.synthesizers import QueryDistribution
     from ragas.testset.synthesizers.base import BaseScenario
 
 
 RAGAS_TESTSET_GENERATION_GROUP_NAME = "ragas testset generation"
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -60,6 +63,8 @@ class TestsetGenerator:
         documents: t.Sequence[LCDocument],
         testset_size: int,
         transforms: t.Optional[Transforms] = None,
+        transforms_llm: t.Optional[BaseRagasLLM] = None,
+        transforms_embedding_model: t.Optional[BaseRagasEmbeddings] = None,
         query_distribution: t.Optional[QueryDistribution] = None,
         run_config: t.Optional[RunConfig] = None,
         callbacks: t.Optional[Callbacks] = None,
@@ -69,7 +74,19 @@ class TestsetGenerator:
         """
         Generates an evaluation dataset based on given scenarios and parameters.
         """
-        transforms = transforms or default_transforms()
+        if transforms is None:
+            # use default transforms
+            if transforms_llm is None:
+                transforms_llm = self.llm
+                logger.info("Using TestGenerator.llm for transforms")
+            if transforms_embedding_model is None:
+                raise ValueError(
+                    "embedding_model must be provided for default_transforms. Alternatively you can provide your own transforms through the `transforms` parameter."
+                )
+            transforms = default_transforms(
+                llm=transforms_llm or self.llm,
+                embedding_model=transforms_embedding_model,
+            )
 
         # convert the documents to Ragas nodes
         nodes = []
