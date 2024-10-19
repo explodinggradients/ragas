@@ -3,7 +3,7 @@ from collections import namedtuple
 import pytest
 from pydantic import BaseModel
 
-from ragas.prompt.utils import get_all_strings, update_strings
+from ragas.prompt.utils import extract_json, get_all_strings, update_strings
 
 
 class Category(BaseModel):
@@ -122,3 +122,47 @@ def test_update_strings(obj, old_strings, new_strings):
 
     assert get_all_strings(updated_obj) == new_strings
     assert get_all_strings(obj) == old_strings
+
+
+class TestExtractJson:
+    prefix = "Here's the generated abstract conceptual question in the requested JSON format: "
+    suffix = "Would you like me to explain in more detail?"
+    object = """{"key": "value"}"""
+    array = """[1, 2, 3]"""
+    nested = """{"outer": {"inner": [1, 2, 3]}}"""
+
+    test_cases = [
+        (object, object),
+        (array, array),
+        (nested, nested),
+        (prefix + object, object),
+        (object + suffix, object),
+        (prefix + object + suffix, object),
+        (prefix + array, array),
+        (array + suffix, array),
+        (prefix + array + suffix, array),
+        (prefix + nested, nested),
+        (nested + suffix, nested),
+        (prefix + nested + suffix, nested),
+        (object + array + nested, object),
+        (nested + object + array, nested),
+    ]
+
+    @pytest.mark.parametrize("text, expected", test_cases)
+    def test_extract_json(self, text, expected):
+        assert extract_json(text) == expected
+
+    def test_extract_empty_array(self):
+        text = "Here is an empty array: [] and some text."
+        expected = "[]"
+        assert extract_json(text) == expected
+
+    def test_extract_empty_object(self):
+        text = "Here is an empty object: {} and more text."
+        expected = "{}"
+        assert extract_json(text) == expected
+
+    def test_extract_incomplete_json(self):
+        text = 'Not complete: {"key": "value", "array": [1, 2, 3'
+        expected = 'Not complete: {"key": "value", "array": [1, 2, 3'
+        assert extract_json(text) == expected
