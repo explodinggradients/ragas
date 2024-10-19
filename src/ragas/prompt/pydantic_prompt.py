@@ -216,7 +216,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         return output
 
     async def adapt(
-        self, target_language: str, llm: BaseRagasLLM
+        self, target_language: str, llm: BaseRagasLLM, adapt_instruction: bool = False
     ) -> "PydanticPrompt[InputModel, OutputModel]":
         """
         Adapt the prompt to a new language.
@@ -245,6 +245,16 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         new_prompt = copy.deepcopy(self)
         new_prompt.examples = translated_examples
         new_prompt.language = target_language
+
+        if adapt_instruction:
+            translated_instruction = await translate_statements_prompt.generate(
+                llm=llm,
+                data=ToTranslate(
+                    target_language=target_language, statements=[self.instruction]
+                ),
+            )
+            new_prompt.instruction = translated_instruction.statements[0]
+
         return new_prompt
 
     def __repr__(self):
@@ -423,7 +433,7 @@ class Translated(BaseModel):
 
 
 class TranslateStatements(PydanticPrompt[ToTranslate, Translated]):
-    instruction = "Translate the following statements to the target language."
+    instruction = "Translate the following statements to the target language. Ensure that the number of output data rows is equal to the number of input data rows."
     input_model = ToTranslate
     output_model = Translated
     examples = [
