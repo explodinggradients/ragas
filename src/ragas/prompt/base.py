@@ -4,9 +4,9 @@ import logging
 import typing as t
 from abc import ABC, abstractmethod
 
+from langchain_core.prompt_values import StringPromptValue
 from pydantic import BaseModel
 
-from ragas.llms.prompt import PromptValue
 from ragas.utils import RAGAS_SUPPORTED_LANGUAGE_CODES, camel_to_snake
 
 if t.TYPE_CHECKING:
@@ -135,7 +135,7 @@ class StringPrompt(BasePrompt):
             The generated text.
         """
         llm_result = await llm.agenerate_text(
-            PromptValue(prompt_str=data),
+            StringPromptValue(text=data),
             n=1,
             temperature=temperature,
             stop=stop,

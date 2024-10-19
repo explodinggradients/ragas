@@ -82,12 +82,12 @@ def is_nan(x):
 
 
 def get_feature_language(feature: Metric) -> t.Optional[str]:
-    from ragas.llms.prompt import Prompt
+    from ragas.prompt import BasePrompt
 
     languags = [
         value.language
         for _, value in vars(feature).items()
-        if isinstance(value, Prompt)
+        if isinstance(value, BasePrompt)
     ]
     return languags[0] if len(languags) > 0 else None
 

@@ -21,10 +21,10 @@ class Categories(BaseModel):
 old_strings = ["old1", "old2", "old3"]
 new_strings = ["new1", "new2", "new3"]
 
-TestCase = namedtuple("TestCase", ["obj", "old_strings", "new_strings"])
+OurTestCase = namedtuple("OurTestCase", ["obj", "old_strings", "new_strings"])
 
 test_cases = [
-    TestCase(
+    OurTestCase(
         obj={
             "a": "old 1",
             "b": "old 2",
@@ -34,7 +34,7 @@ test_cases = [
         old_strings=["old 1", "old 2", "old 1", "old 2", "old 3", "old 2"],
         new_strings=["old_1", "old_2", "old_1", "old_2", "old_3", "old_2"],
     ),
-    TestCase(
+    OurTestCase(
         obj=Categories(
             list_of_categories=[
                 Category(category="old 1", name="name old1"),
@@ -71,7 +71,7 @@ test_cases = [
             "name 3",
         ],
     ),
-    TestCase(
+    OurTestCase(
         obj=[
             Category(category="old 1", is_good=True, number=1),
             Category(category="old 2", is_good=True, number=2),

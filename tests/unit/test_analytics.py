@@ -4,9 +4,9 @@ import typing as t
 
 import pytest
 from langchain_core.outputs import Generation, LLMResult
+from langchain_core.prompt_values import StringPromptValue as PromptValue
 
 from ragas.llms.base import BaseRagasLLM
-from ragas.llms.prompt import PromptValue
 
 
 class EchoLLM(BaseRagasLLM):
