@@ -70,6 +70,12 @@ def extract_json(text: str) -> str:
     """Identify json from a text blob by matching '[]' or '{}'.
 
     Warning: This will identify the first json structure!"""
+
+    # check for markdown indicator; if present, start here
+    md_json_idx = text.find("```json")
+    if md_json_idx != -1:
+        text = text[md_json_idx:]
+
     left_bracket_idx = text.find("[")
     left_brace_idx = text.find("{")
 
