@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import typing as t
 
-from ragas.embeddings import embedding_factory
-from ragas.llms import llm_factory
-
 from .engine import Parallel
 from .extractors import (
     EmbeddingExtractor,
