@@ -51,3 +51,4 @@ df = results.to_pandas()
 df.head()
 ```
 
+![evaluation-result](./raga_evaluation_output.png)
