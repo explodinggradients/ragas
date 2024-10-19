@@ -237,8 +237,8 @@ class RagasDataset(ABC, BaseModel, t.Generic[Sample]):
     def to_jsonl(self, path: t.Union[str, Path]):
         """Converts the dataset to a JSONL file."""
         with open(path, "w") as jsonlfile:
-            for sample in self.samples:
-                jsonlfile.write(json.dumps(sample.to_dict(), ensure_ascii=False) + "\n")
+            for sample in self.to_list():
+                jsonlfile.write(json.dumps(sample, ensure_ascii=False) + "\n")
 
     @classmethod
     def from_jsonl(cls: t.Type[T], path: t.Union[str, Path]) -> T:

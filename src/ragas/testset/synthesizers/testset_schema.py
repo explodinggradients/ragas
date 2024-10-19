@@ -51,7 +51,12 @@ class Testset(RagasDataset[TestsetSample]):
         """
         Converts the Testset to a list of dictionaries.
         """
-        return [sample.model_dump() for sample in self.samples]
+        list_dict = []
+        for sample in self.samples:
+            sample_dict = sample.eval_sample.model_dump(exclude_none=True)
+            sample_dict["synthesizer_name"] = sample.synthesizer_name
+            list_dict.append(sample_dict)
+        return list_dict
 
     @classmethod
     def from_list(cls, data: t.List[t.Dict]) -> Testset:
@@ -61,19 +66,23 @@ class Testset(RagasDataset[TestsetSample]):
         # first create the samples
         samples = []
         for sample in data:
-            eval_sample = sample["eval_sample"]
+            synthesizer_name = sample["synthesizer_name"]
+            # remove the synthesizer name from the sample
+            sample.pop("synthesizer_name")
+            # the remaining sample is the eval_sample
+            eval_sample = sample
 
             # if user_input is a list it is MultiTurnSample
             if "user_input" in eval_sample and not isinstance(
                 eval_sample.get("user_input"), list
             ):
-                eval_sample = SingleTurnSample(**sample["eval_sample"])
+                eval_sample = SingleTurnSample(**eval_sample)
             else:
-                eval_sample = MultiTurnSample(**sample["eval_sample"])
+                eval_sample = MultiTurnSample(**eval_sample)
 
             samples.append(
                 TestsetSample(
-                    eval_sample=eval_sample, synthesizer_name=sample["synthesizer_name"]
+                    eval_sample=eval_sample, synthesizer_name=synthesizer_name
                 )
             )
         # then create the testset
