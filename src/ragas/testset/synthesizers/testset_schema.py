@@ -51,7 +51,12 @@ class Testset(RagasDataset[TestsetSample]):
         """
         Converts the Testset to a list of dictionaries.
         """
-        return [sample.model_dump() for sample in self.samples]
+        list_dict = []
+        for sample in self.samples:
+            sample_dict = sample.eval_sample.model_dump(exclude_none=True)
+            sample_dict["synthesizer_name"] = sample.synthesizer_name
+            list_dict.append(sample_dict)
+        return list_dict
 
     @classmethod
     def from_list(cls, data: t.List[t.Dict]) -> Testset:
