@@ -56,7 +56,7 @@ sample = SingleTurnSample(
 # Init the metric
 from ragas.metrics import Faithfulness
 faithfulness_metric = Faithfulness(llm=your_evaluator_llm)
-score = faithfulness.sigle_turn_ascore(sample=sample)
+score = faithfulness.single_turn_ascore(sample=sample)
 print(score)
 # 0.9
 ```
