@@ -186,6 +186,7 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
         default_factory=lambda: {MetricType.SINGLE_TURN: {"response", "reference"}}
     )
     mode: t.Literal["precision", "recall", "f1"] = "f1"
+    beta: float = Field(default_factory=lambda: 1.0)
     atomicity: t.Literal["low", "high"] = "low"
     coverage: t.Literal["low", "high"] = "low"
     claim_decomposition_prompt: PydanticPrompt = ClaimDecompositionPrompt()
@@ -203,6 +204,9 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
                 f"No examples found for the atomicity and coverage level: {value}"
             )
         self.segmenter = get_segmenter(language="english")
+
+        if type(self.beta) is not float:
+            raise ValueError("Beta must be a float. A beta > 1 gives more weight to recall, while beta < 1 favors precision.")
 
     async def decompose_claims(
         self, response: str, callbacks: Callbacks
@@ -248,18 +252,21 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
             premise=response, hypothesis_list=reference_claims, callbacks=callbacks
         )
 
-        true_positives = sum(reference_response)
-        false_positives = sum(~reference_response)
-        false_negatives = sum(~response_reference)
+        # Calculate the true positives, false positives, and false negatives
+        tp = sum(reference_response)
+        fp = sum(~reference_response)
+        fn = sum(~response_reference)
 
-        if self.mode == "precision":
-            score = true_positives / (true_positives + false_positives + 1e-8)
+        beta = self.beta
+
+        if self.mode == "precision" or beta == 0:
+            beta = 1e-8 # to avoid any division by zero 
         elif self.mode == "recall":
-            score = true_positives / (true_positives + false_negatives + 1e-8)
+            beta = 1e8
         else:
-            precision = true_positives / (true_positives + false_positives + 1e-8)
-            recall = true_positives / (true_positives + false_negatives + 1e-8)
-            score = 2 * (precision * recall) / (precision + recall + 1e-8)
+            self.mode == "f1" 
+        
+        score = ((1 + beta * beta) * tp) / ((1 + beta * beta) * tp + fp + (beta * beta) * fn) if tp > 0 else 0
 
         return np.round(score, 2)
 
