@@ -252,21 +252,19 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
             premise=response, hypothesis_list=reference_claims, callbacks=callbacks
         )
 
-        # Calculate the true positives, false positives, and false negatives
+        # Calculate the true positives (tp), false positives (fp), and false negatives (fn)
         tp = sum(reference_response)
         fp = sum(~reference_response)
         fn = sum(~response_reference)
 
         beta = self.beta
 
-        if self.mode == "precision" or beta == 0:
-            beta = 1e-8 # to avoid any division by zero 
+        if self.mode == "precision":
+            score = tp / (tp + fp + 1e-8)
         elif self.mode == "recall":
-            beta = 1e8
+            score = tp / (tp + fp + 1e-8)
         else:
-            self.mode == "f1" 
-        
-        score = ((1 + beta * beta) * tp) / ((1 + beta * beta) * tp + fp + (beta * beta) * fn) if tp > 0 else 0
+            score = ((1 + beta * beta) * tp) / ((1 + beta * beta) * tp + fp + (beta * beta) * fn) if tp > 0 else 0
 
         return np.round(score, 2)
 
