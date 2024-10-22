@@ -31,3 +31,13 @@ class RagasOutputParserException(RagasException):
             f"The output parser failed to parse the output after {num_retries} retries."
         )
         super().__init__(msg)
+
+
+class LLMDidNotFinishException(RagasException):
+    """
+    Exception raised when the LLM did not finish.
+    """
+
+    def __init__(self):
+        msg = "The LLM generation was not completed. Please increase try increasing the max_tokens and try again."
+        super().__init__(msg)
