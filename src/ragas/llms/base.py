@@ -104,6 +104,8 @@ class BaseRagasLLM(ABC):
             stop=stop,
             callbacks=callbacks,
         )
+
+        # check there are no max_token issues
         if not self.is_finished(result):
             raise LLMDidNotFinishException()
         return result
@@ -130,6 +132,10 @@ class LangchainLLMWrapper(BaseRagasLLM):
         self.is_finished_parser = is_finished_parser
 
     def is_finished(self, response: LLMResult) -> bool:
+        """
+        Parse the response to check if the LLM finished by checking the finish_reason
+        or stop_reason.
+        """
         if self.is_finished_parser is not None:
             return self.is_finished_parser(response)
         # if no parser is provided default to our own
