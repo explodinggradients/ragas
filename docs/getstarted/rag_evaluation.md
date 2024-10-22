@@ -33,15 +33,20 @@ Since all of the metrics we have chosen are LLM-based metrics, we need to choose
 ### Choosing evaluator LLM
 
 --8<--
-choose_evaluvator_llm.md
+choose_evaluator_llm.md
 --8<--
 
 
 ### Running Evaluation
 
 ```python
-metrics = [LLMContextRecall(), FactualCorrectness(), Faithfulness()]
-results = evaluate(dataset=eval_dataset, metrics=metrics, llm=evaluator_llm,)
+metrics = [
+    LLMContextRecall(llm=evaluator_llm), 
+    FactualCorrectness(llm=evaluator_llm), 
+    Faithfulness(llm=evaluator_llm),
+    SemanticSimilarity(embeddings=evaluator_embeddings)
+]
+results = evaluate(dataset=eval_dataset, metrics=metrics)
 ```
 
 ### Exporting and analyzing results
