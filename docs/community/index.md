@@ -16,6 +16,9 @@ Meet some of our outstanding members who made significant contributions !
 
 Explore insightful articles, tutorials, and stories written by and for our community members.
 
+- [Luka Panić](https://www.linkedin.com/in/luka-pani%C4%87-20b671277/) shares his work on 
+  - [Ragas Evaluation: In-Depth Insights | PIXION Blog](https://pixion.co/blog/ragas-evaluation-in-depth-insights): A detailed explanation of the metrics and how they are calculated.
+  - [RAG in practice - Test Set Generation | PIXION Blog](https://pixion.co/blog/rag-in-practice-test-set-generation): A tutorial on how to generate a test set using Ragas.
 - [Shanthi Vardhan](https://www.linkedin.com/in/shanthivardhan/) shares how his team at [Atomicwork uses ragas](https://www.atomicwork.com/blog/ragas-improving-atom-accuracy) to improve their AI system's ability to accurately identify and retrieve more precise information for enhanced service management.
 - [Pinecone's](https://pinecone.io/blog) study on how RAGs can enhance capabilities of LLMs in ["RAG makes LLMs better and equal"](https://www.pinecone.io/blog/rag-study/) uses ragas to proves context retrieval makes LLMs provide significantly better results, even when increasing the data size to 1 billion.
 - [Aishwarya Prabhat](https://www.linkedin.com/in/aishwaryaprabhat/) shares her expertise on advanced RAG techniques in her comprehensive guide, ["Performing, Evaluating & Tracking Advanced RAG (ft. AzureML, LlamaIndex & Ragas)"](https://www.linkedin.com/pulse/performing-evaluating-tracking-advanced-rag-ft-azureml-prabhat-i1rkc/).
