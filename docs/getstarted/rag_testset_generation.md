@@ -101,12 +101,11 @@ But you can mix and match transforms or build your own as needed.
 ```python
 from ragas.testset.transforms import default_transforms
 
-# choose your LLM and Embedding Model
-from ragas.llms import llm_factory
-from ragas.embeddings import embedding_factory
 
-transformer_llm = llm_factory("gpt-4o")
-embedding_model = embedding_factory("text-embedding-3-large")
+# define your LLM and Embedding Model
+# here we are using the same LLM and Embedding Model that we used to generate the testset
+transformer_llm = generator_llm
+embedding_model = generator_embeddings
 
 trans = default_transforms(llm=transformer_llm, embedding_model=embedding_model)
 apply_transforms(kg, trans)

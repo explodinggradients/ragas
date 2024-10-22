@@ -16,8 +16,11 @@
 
     ```python
     from ragas.llms import LangchainLLMWrapper
+    from ragas.embeddings import LangchainEmbeddingsWrapper
     from langchain_openai import ChatOpenAI
+    from langchain_openai import OpenAIEmbeddings
     evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
+    evaluator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
     ```
 
 
@@ -44,13 +47,21 @@
 
     ```python
     from langchain_aws import ChatBedrockConverse
+    from langchain_aws import BedrockEmbeddings
     from ragas.llms import LangchainLLMWrapper
+    from ragas.embeddings import LangchainEmbeddingsWrapper
+
     evaluator_llm = LangchainLLMWrapper(ChatBedrockConverse(
         credentials_profile_name=config["credentials_profile_name"],
         region_name=config["region_name"],
         base_url=f"https://bedrock-runtime.{config['region_name']}.amazonaws.com",
         model=config["llm"],
         temperature=config["temperature"],
+    ))
+    evaluator_embeddings = LangchainEmbeddingsWrapper(BedrockEmbeddings(
+        credentials_profile_name=config["credentials_profile_name"],
+        region_name=config["region_name"],
+        model_id=config["embeddings"],
     ))
     ```
 
