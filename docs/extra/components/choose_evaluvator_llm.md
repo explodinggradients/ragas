@@ -14,7 +14,7 @@
     ```
 
 
-=== "AWS Bedrock"
+=== "Amazon Bedrock"
     First you have to set your AWS credentials and configurations
 
     ```python
