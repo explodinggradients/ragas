@@ -1,25 +1,25 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from functools import partial
 
 from langchain_community.chat_models.vertexai import ChatVertexAI
 from langchain_community.llms import VertexAI
 from langchain_core.language_models import BaseLanguageModel
-from langchain_core.outputs import Generation, LLMResult
+from langchain_core.outputs import ChatGeneration, Generation, LLMResult
 from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI
 from langchain_openai.llms import AzureOpenAI, OpenAI
 from langchain_openai.llms.base import BaseOpenAI
 
+from ragas.exceptions import LLMDidNotFinishException
 from ragas.integrations.helicone import helicone_config
-from ragas.run_config import RunConfig, add_async_retry, add_retry
+from ragas.run_config import RunConfig, add_async_retry
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
+    from langchain_core.messages import BaseMessage
     from langchain_core.prompt_values import PromptValue
     from llama_index.core.base.llms.base import BaseLLM
 
@@ -55,6 +55,12 @@ class BaseRagasLLM(ABC):
         """Return the temperature to use for completion based on n."""
         return 0.3 if n > 1 else 1e-8
 
+    def is_finished(self, response: LLMResult) -> bool:
+        logger.warning(
+            f"is_finished not implemented for {self.__class__.__name__}. Will default to True."
+        )
+        return True
+
     @abstractmethod
     def generate_text(
         self,
@@ -82,36 +88,27 @@ class BaseRagasLLM(ABC):
         temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
-        is_async: bool = True,
     ) -> LLMResult:
         """Generate text using the given event loop."""
 
         if temperature is None:
             temperature = self.get_temperature(n)
 
-        if is_async:
-            agenerate_text_with_retry = add_async_retry(
-                self.agenerate_text, self.run_config
-            )
-            return await agenerate_text_with_retry(
-                prompt=prompt,
-                n=n,
-                temperature=temperature,
-                stop=stop,
-                callbacks=callbacks,
-            )
-        else:
-            loop = asyncio.get_event_loop()
-            generate_text_with_retry = add_retry(self.generate_text, self.run_config)
-            generate_text = partial(
-                generate_text_with_retry,
-                prompt=prompt,
-                n=n,
-                temperature=temperature,
-                stop=stop,
-                callbacks=callbacks,
-            )
-            return await loop.run_in_executor(None, generate_text)
+        agenerate_text_with_retry = add_async_retry(
+            self.agenerate_text, self.run_config
+        )
+        result = await agenerate_text_with_retry(
+            prompt=prompt,
+            n=n,
+            temperature=temperature,
+            stop=stop,
+            callbacks=callbacks,
+        )
+
+        # check there are no max_token issues
+        if not self.is_finished(result):
+            raise LLMDidNotFinishException()
+        return result
 
 
 class LangchainLLMWrapper(BaseRagasLLM):
@@ -123,12 +120,57 @@ class LangchainLLMWrapper(BaseRagasLLM):
     """
 
     def __init__(
-        self, langchain_llm: BaseLanguageModel, run_config: t.Optional[RunConfig] = None
+        self,
+        langchain_llm: BaseLanguageModel,
+        run_config: t.Optional[RunConfig] = None,
+        is_finished_parser: t.Optional[t.Callable[[LLMResult], bool]] = None,
     ):
         self.langchain_llm = langchain_llm
         if run_config is None:
             run_config = RunConfig()
         self.set_run_config(run_config)
+        self.is_finished_parser = is_finished_parser
+
+    def is_finished(self, response: LLMResult) -> bool:
+        """
+        Parse the response to check if the LLM finished by checking the finish_reason
+        or stop_reason.
+        """
+        if self.is_finished_parser is not None:
+            return self.is_finished_parser(response)
+        # if no parser is provided default to our own
+
+        is_finished_list = []
+        for g in response.flatten():
+            resp = g.generations[0][0]
+            if resp.generation_info is not None:
+                # generation_info is provided - so we parse that
+
+                # OpenAI uses "stop" to indicate that the generation is finished
+                # and is stored in 'finish_reason' key in generation_info
+                if resp.generation_info.get("finish_reason") is not None:
+                    is_finished_list.append(
+                        resp.generation_info.get("finish_reason") == "stop"
+                    )
+                # provied more conditions here
+                # https://github.com/explodinggradients/ragas/issues/1548
+
+            # if generation_info is empty, we parse the response_metadata
+            # this is less reliable
+            elif t.cast(ChatGeneration, resp).message is not None:
+                resp_message: BaseMessage = t.cast(ChatGeneration, resp).message
+                if resp_message.response_metadata.get("finish_reason") is not None:
+                    is_finished_list.append(
+                        resp_message.response_metadata.get("finish_reason") == "stop"
+                    )
+                elif resp_message.response_metadata.get("stop_reason") is not None:
+                    is_finished_list.append(
+                        resp_message.response_metadata.get("stop_reason") == "end_turn"
+                    )
+            # default to True
+            else:
+                is_finished_list.append(True)
+        return all(is_finished_list)
 
     def generate_text(
         self,
