@@ -16,7 +16,7 @@ from ragas.callbacks import ChainType, new_group
 from ragas.exceptions import RagasOutputParserException
 
 from .base import BasePrompt, StringIO, _check_if_language_is_supported
-from .utils import get_all_strings, update_strings
+from .utils import extract_json, get_all_strings, update_strings
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -82,6 +82,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
                 if data is not None
                 else "input: (None)\n"
             )
+            + "Respond only with a valid JSON object that complies with the specified schema.\n"
             + "output: "
         )
 
@@ -393,7 +394,8 @@ class RagasOutputParser(PydanticOutputParser[OutputModel]):
     ):
         callbacks = callbacks or []
         try:
-            result = super().parse(output_string)
+            jsonstr = extract_json(output_string)
+            result = super().parse(jsonstr)
         except OutputParserException:
             if max_retries != 0:
                 retry_rm, retry_cb = new_group(
