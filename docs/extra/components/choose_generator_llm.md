@@ -1,4 +1,3 @@
-
 === "OpenAI"
     Install the langchain-openai package
 
@@ -6,18 +5,19 @@
     pip install langchain-openai
     ```
 
-    Ensure you have your OpenAI key ready and available in your environment.
+    then ensure you have your OpenAI key ready and available in your environment
 
     ```python
     import os
     os.environ["OPENAI_API_KEY"] = "your-openai-key"
     ```
-    Wrap the LLMs in `LangchainLLMWrapper` so that it can be used with ragas.
+
+    Wrapp the LLMs in `LangchainLLMWrapper` so that it can be used with ragas.
 
     ```python
     from ragas.llms import LangchainLLMWrapper
     from langchain_openai import ChatOpenAI
-    evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
+    generator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
     ```
 
 
@@ -45,7 +45,7 @@
     ```python
     from langchain_aws import ChatBedrockConverse
     from ragas.llms import LangchainLLMWrapper
-    evaluator_llm = LangchainLLMWrapper(ChatBedrockConverse(
+    generator_llm = LangchainLLMWrapper(ChatBedrockConverse(
         credentials_profile_name=config["credentials_profile_name"],
         region_name=config["region_name"],
         base_url=f"https://bedrock-runtime.{config['region_name']}.amazonaws.com",

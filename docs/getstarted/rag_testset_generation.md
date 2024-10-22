@@ -29,7 +29,7 @@ docs = loader.load()
 
 You may choose to use any [LLM of your choice](../howtos/customizations/customize_models.md)
 --8<--
-choose_evaluvator_llm.md
+choose_generator_llm.md
 --8<--
 
 ### Generate Testset
