@@ -34,6 +34,9 @@ Explore insightful articles, tutorials, and stories written by and for our commu
   - *Bonus content* : Learn how to create an evaluation dataset that serves as a reference point for evaluating our RAG pipeline, Understand the RAGAS evaluation metrics and how to make sense of them and putting them in action to test a Naive RAG pipeline and measure its performance using RAGAS metrics. 
   - *Code walkthrough* : https://github.com/qdrant/qdrant-rag-eval/tree/master/workshop-rag-eval-qdrant-ragas
   - *Code walkthrough using [Deepset Haystack](https://haystack.deepset.ai/) and [Mixedbread.ai](https://www.mixedbread.ai/)* : https://github.com/qdrant/qdrant-rag-eval/tree/master/workshop-rag-eval-qdrant-ragas-haystack
+- [Minoru Onda](https://x.com/minorun365) writes for beginners about how to start Ragas v0.2 evaluation with Amazon Bedrock, and integrate with Langfuse.
+  - [RAG精度評価の定番ツール「Ragas」にAWSのBedrockで入門しよう！（v0.2対応） - Qiita](https://qiita.com/minorun365/items/2f4e238f8bbc6e393ba5)
+  - [生成AIアプリの出力をRagasで評価して、LangfuseでGUI監視しよう！ - Qiita](https://qiita.com/minorun365/items/70ad2f5a0afaac6e5cb9)
 
 
 ## **📅 Events**
