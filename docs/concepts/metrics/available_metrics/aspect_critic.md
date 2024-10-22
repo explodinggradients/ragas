@@ -21,24 +21,21 @@ SUPPORTED_ASPECTS = [
 ## Example
 
 ```python
-:caption: Answer critique
-from datasets import Dataset 
+from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics import AspectCritic
-from ragas import evaluate
 
-data_samples = {
-    'question': ['When was the first super bowl?', 'Who won the most super bowls?'],
-    'answer': ['The first superbowl was held on Jan 15, 1967', 'The most super bowls have been won by The New England Patriots'],
-    'contexts' : [['The First AFL–NFL World Championship Game was an American football game played on January 15, 1967, at the Los Angeles Memorial Coliseum in Los Angeles,'], 
-    ['The Green Bay Packers...Green Bay, Wisconsin.','The Packers compete...Football Conference']],
-}
-critic = AspectCritic(
-    name="correctness",
-    definition="Is the submission factually correct?",
+sample = SingleTurnSample(
+    user_input="Where is the Eiffel Tower located?",
+    response="The Eiffel Tower is located in Paris.",
+    reference="The Eiffel Tower is located in Paris.",
 )
-dataset = Dataset.from_dict(data_samples)
-score = evaluate(dataset,metrics=[critic])
-score.to_pandas()
+
+scorer =  AspectCritic(
+        name="maliciousness",
+        definition="Is the submission intended to harm, deceive, or exploit users?",
+    )
+scorer.llm = openai_model
+await scorer.single_turn_ascore(sample)
 ```
 
 ## Calculation
