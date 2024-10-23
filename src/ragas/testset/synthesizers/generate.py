@@ -9,6 +9,7 @@ from ragas.callbacks import new_group
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
 from ragas.run_config import RunConfig
+from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
 from ragas.testset.graph import KnowledgeGraph, Node, NodeType
 from ragas.testset.synthesizers import default_query_distribution
 from ragas.testset.synthesizers.testset_schema import Testset, TestsetSample
@@ -19,6 +20,7 @@ if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
     from langchain_core.documents import Document as LCDocument
     from langchain_core.language_models import BaseLanguageModel as LangchainLLM
+    from langchain_core.embeddings.embeddings import Embeddings as LangchainEmbeddings
 
     from ragas.embeddings.base import BaseRagasEmbeddings
     from ragas.llms.base import BaseRagasLLM
@@ -39,24 +41,32 @@ class TestsetGenerator:
     ----------
     llm : BaseRagasLLM
         The language model to use for the generation process.
+    embedding_model: BaseRagasEmbeddings
+        Embedding model for generation process.
     knowledge_graph : KnowledgeGraph, default empty
         The knowledge graph to use for the generation process.
     """
 
     llm: BaseRagasLLM
+    embedding_model: BaseRagasEmbeddings
     knowledge_graph: KnowledgeGraph = field(default_factory=KnowledgeGraph)
 
     @classmethod
     def from_langchain(
         cls,
         llm: LangchainLLM,
+        embedding_model: LangchainEmbeddings,
         knowledge_graph: t.Optional[KnowledgeGraph] = None,
     ) -> TestsetGenerator:
         """
         Creates a `TestsetGenerator` from a Langchain LLMs.
         """
         knowledge_graph = knowledge_graph or KnowledgeGraph()
-        return cls(LangchainLLMWrapper(llm), knowledge_graph)
+        return cls(
+            LangchainLLMWrapper(llm), 
+            LangchainEmbeddingsWrapper(embedding_model), 
+            knowledge_graph
+            )
 
     def generate_with_langchain_docs(
         self,
@@ -74,19 +84,26 @@ class TestsetGenerator:
         """
         Generates an evaluation dataset based on given scenarios and parameters.
         """
-        if transforms is None:
-            # use default transforms
-            if transforms_llm is None:
-                transforms_llm = self.llm
-                logger.info("Using TestGenerator.llm for transforms")
-            if transforms_embedding_model is None:
-                raise ValueError(
-                    "embedding_model must be provided for default_transforms. Alternatively you can provide your own transforms through the `transforms` parameter."
+
+        # force the user to provide an llm and embedding client to prevent use of default LLMs
+        if not self.llm and not transforms_llm:
+            raise ValueError(
+                    '''An llm client was not provided. 
+                       Provide an LLM on TestsetGenerator instantiation or as an argument for transforms_llm parameter. 
+                       Alternatively you can provide your own transforms through the `transforms` parameter.'''
                 )
+        if not self.embedding_model and not transforms_embedding_model:
+            raise ValueError(
+                    '''An embedding client was not provided. 
+                       Provide an embedding model on TestsetGenerator instantiation or as an argument for transforms_llm parameter. 
+                       Alternatively you can provide your own transforms through the `transforms` parameter.'''
+                )
+
+        if not transforms:
             transforms = default_transforms(
-                llm=transforms_llm or self.llm,
-                embedding_model=transforms_embedding_model,
-            )
+                    llm=transforms_llm or self.llm,
+                    embedding_model=transforms_embedding_model or self.embedding_model
+                )
 
         # convert the documents to Ragas nodes
         nodes = []
