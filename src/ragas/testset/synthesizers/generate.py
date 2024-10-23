@@ -141,6 +141,9 @@ class TestsetGenerator:
         callbacks : Optional[Callbacks], optional
             Langchain style callbacks to use for the generation process. You can use
             this to log the generation process or add other metadata.
+        token_usage_parser : Optional[TokenUsageParser], optional
+            Parse the LLMResult object and return a TokenUsage object. This is used to
+            calculate the cost of the generation process.
         run_config : Optional[RunConfig], optional
             Configuration for running the generation process.
         with_debugging_logs : bool, default False
@@ -227,10 +230,15 @@ class TestsetGenerator:
                 callbacks=scenario_generation_grp,
             )
 
-        scenario_sample_list: t.List[t.List[BaseScenario]] = exec.results()
-        scenario_generation_rm.on_chain_end(
-            outputs={"scenario_sample_list": scenario_sample_list}
-        )
+        try:
+            scenario_sample_list: t.List[t.List[BaseScenario]] = exec.results()
+        except Exception as e:
+            scenario_generation_rm.on_chain_error(e)
+            raise e
+        else:
+            scenario_generation_rm.on_chain_end(
+                outputs={"scenario_sample_list": scenario_sample_list}
+            )
 
         # new group for Generation of Samples
         sample_generation_rm, sample_generation_grp = new_group(
@@ -259,8 +267,13 @@ class TestsetGenerator:
                     }
                 )
 
-        eval_samples = exec.results()
-        sample_generation_rm.on_chain_end(outputs={"eval_samples": eval_samples})
+        try:
+            eval_samples = exec.results()
+        except Exception as e:
+            sample_generation_rm.on_chain_error(e)
+            raise e
+        else:
+            sample_generation_rm.on_chain_end(outputs={"eval_samples": eval_samples})
 
         # build the testset
         testsets = []
