@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import typing as t
+from dataclasses import dataclass, field
 
+from ragas.cost import CostCallbackHandler, TokenUsage
 from ragas.dataset_schema import (
     BaseSample,
     EvaluationDataset,
@@ -27,6 +29,7 @@ class TestsetSample(BaseSample):
     synthesizer_name: str
 
 
+@dataclass
 class Testset(RagasDataset[TestsetSample]):
     """
     Represents a test set containing multiple test samples.
@@ -38,6 +41,7 @@ class Testset(RagasDataset[TestsetSample]):
     """
 
     samples: t.List[TestsetSample]
+    cost_cb: t.Optional[CostCallbackHandler] = field(default=None, repr=False)
 
     def to_evaluation_dataset(self) -> EvaluationDataset:
         """
@@ -87,3 +91,30 @@ class Testset(RagasDataset[TestsetSample]):
             )
         # then create the testset
         return Testset(samples=samples)
+
+    def total_tokens(self) -> t.Union[t.List[TokenUsage], TokenUsage]:
+        """
+        Compute the total tokens used in the evaluation.
+        """
+        if self.cost_cb is None:
+            raise ValueError(
+                "The Testset was not configured for computing cost. Please provide a token_usage_parser function to TestsetGenerator to compute cost."
+            )
+        return self.cost_cb.total_tokens()
+
+    def total_cost(
+        self,
+        cost_per_input_token: t.Optional[float] = None,
+        cost_per_output_token: t.Optional[float] = None,
+    ) -> float:
+        """
+        Compute the total cost of the evaluation.
+        """
+        if self.cost_cb is None:
+            raise ValueError(
+                "The Testset was not configured for computing cost. Please provide a token_usage_parser function to TestsetGenerator to compute cost."
+            )
+        return self.cost_cb.total_cost(
+            cost_per_input_token=cost_per_input_token,
+            cost_per_output_token=cost_per_output_token,
+        )
