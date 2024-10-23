@@ -1,7 +1,6 @@
 import typing as t
 
 import pytest
-from pydantic import ValidationError
 
 from ragas.dataset_schema import (
     EvaluationDataset,
@@ -29,6 +28,9 @@ def test_evaluation_dataset(eval_sample):
     assert len(hf_dataset) == 2
     assert len(dataset) == 2
     assert dataset[0] == eval_sample
+
+    dataset_from_hf = EvaluationDataset.from_hf_dataset(hf_dataset)
+    assert dataset_from_hf == dataset
 
 
 @pytest.mark.parametrize("eval_sample", samples)
@@ -69,7 +71,7 @@ def test_single_type_evaluation_dataset(eval_sample):
         response="Y",  # type: ignore (this type error is what we want to test)
     )
 
-    with pytest.raises(ValidationError) as exc_info:
+    with pytest.raises(ValueError) as exc_info:
         EvaluationDataset(samples=[single_turn_sample, multi_turn_sample])
 
     assert "All samples must be of the same type" in str(exc_info.value)
