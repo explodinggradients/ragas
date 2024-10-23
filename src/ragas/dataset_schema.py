@@ -158,7 +158,7 @@ class RagasDataset(ABC, t.Generic[Sample]):
     @classmethod
     @abstractmethod
     def from_list(cls: t.Type[T], data: t.List[t.Dict]) -> T:
-        """Creates an EvaluationDataset from a list of dictionaries."""
+        """Creates an RagasDataset from a list of dictionaries."""
         pass
 
     def validate_samples(self, samples: t.List[Sample]) -> t.List[Sample]:

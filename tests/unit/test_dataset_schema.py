@@ -29,6 +29,9 @@ def test_evaluation_dataset(eval_sample):
     assert len(dataset) == 2
     assert dataset[0] == eval_sample
 
+    dataset_from_hf = EvaluationDataset.from_hf_dataset(hf_dataset)
+    assert dataset_from_hf == dataset
+
 
 @pytest.mark.parametrize("eval_sample", samples)
 def test_evaluation_dataset_save_load_csv(tmpdir, eval_sample):
