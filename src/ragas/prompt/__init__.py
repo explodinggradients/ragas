@@ -1,6 +1,7 @@
 from .base import BasePrompt, BoolIO, StringIO, StringPrompt
 from .mixin import PromptMixin
 from .pydantic_prompt import InputModel, OutputModel, PydanticPrompt
+from .multi_modal_prompt import ImageTextPrompt, ImageTextPromptValue
 
 __all__ = [
     "BasePrompt",
@@ -11,4 +12,6 @@ __all__ = [
     "PromptMixin",
     "InputModel",
     "OutputModel",
+    "ImageTextPrompt",
+    "ImageTextPromptValue",
 ]
