@@ -135,7 +135,12 @@ AI: You're welcome! Feel free to ask if you need more information."""
 class TopicAdherenceScore(MetricWithLLM, MultiTurnMetric):
     name: str = "topic_adherence"  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
-        default_factory=lambda: {MetricType.MULTI_TURN: {"user_input"}}
+        default_factory=lambda: {
+            MetricType.MULTI_TURN: {
+                "user_input",
+                "reference_topics",
+            }
+        }
     )
     mode: t.Literal["precision", "recall", "f1"] = "f1"
     topic_extraction_prompt: PydanticPrompt = TopicExtractionPrompt()
