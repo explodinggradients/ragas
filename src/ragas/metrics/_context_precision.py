@@ -104,6 +104,9 @@ class LLMContextPrecisionWithReference(MetricWithLLM, SingleTurnMetric):
     max_retries: int = 1
     _reproducibility: int = 1
 
+    def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:
+        return row["user_input"], row["retrieved_contexts"], row["reference"]
+
     @property
     def reproducibility(self):
         return self._reproducibility
@@ -153,14 +156,15 @@ class LLMContextPrecisionWithReference(MetricWithLLM, SingleTurnMetric):
     ) -> float:
         assert self.llm is not None, "LLM is not set"
 
+        user_input, retrieved_contexts, reference = self._get_row_attributes(row)
         responses = []
-        for context in row["retrieved_contexts"]:
+        for context in retrieved_contexts:
             verdicts: t.List[Verification] = (
                 await self.context_precision_prompt.generate_multiple(
                     data=QAC(
-                        question=row["user_input"],
+                        question=user_input,
                         context=context,
-                        answer=row["reference"],
+                        answer=reference,
                     ),
                     n=self.reproducibility,
                     llm=self.llm,
