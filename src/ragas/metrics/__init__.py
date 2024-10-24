@@ -59,6 +59,14 @@ from ragas.metrics._string import (
 from ragas.metrics._summarization import SummarizationScore, summarization_score
 from ragas.metrics._tool_call_accuracy import ToolCallAccuracy
 from ragas.metrics._topic_adherence import TopicAdherenceScore
+from ragas.metrics._multi_modal_faithfulness import (
+    MultiModalFaithfulness,
+    multimodal_faithness,
+)
+from ragas.metrics._multi_modal_relevance import (
+    MultiModalRelevance,
+    multimodal_relevance,
+)
 
 __all__ = [
     "AnswerCorrectness",
@@ -107,6 +115,10 @@ __all__ = [
     "DistanceMeasure",
     "TopicAdherenceScore",
     "LLMSQLEquivalence",
+    "MultiModalFaithfulness",
+    "multimodal_faithness",
+    "MultiModalRelevance",
+    "multimodal_relevance",
 ]
 
 current_module = sys.modules[__name__]

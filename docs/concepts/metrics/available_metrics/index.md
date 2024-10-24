@@ -11,6 +11,8 @@ Each metric are essentially paradigms that are designed to evaluate a particular
 - [Noise Sensitivity](noise_sensitivity.md)
 - [Response Relevancy](answer_relevance.md)
 - [Faithfulness](faithfulness.md)
+- [Multimodal Faithfulness](multi_modal_faithfulness.md)
+- [Multimodal Relevance](multi_modal_relevance.md)
 
 ## Agents or Tool use cases
 
