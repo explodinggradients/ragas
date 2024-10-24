@@ -93,6 +93,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: t.Optional[Callbacks] = None,
+        retries_left: int = 3,
     ) -> OutputModel:
         """
         Generate a single output using the provided language model and input data.
@@ -111,6 +112,8 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             A list of stop sequences to end generation.
         callbacks : Callbacks, optional
             Callback functions to be called during the generation process.
+        retries_left : int, optional
+            Number of retry attempts for an invalid LLM response
 
         Returns
         -------
@@ -131,6 +134,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             temperature=temperature,
             stop=stop,
             callbacks=callbacks,
+            retries_left=retries_left,
         )
         return output_single[0]
 
@@ -142,6 +146,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: t.Optional[Callbacks] = None,
+        retries_left: int = 3,
     ) -> t.List[OutputModel]:
         """
         Generate multiple outputs using the provided language model and input data.
@@ -160,6 +165,8 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             A list of stop sequences to end generation.
         callbacks : Callbacks, optional
             Callback functions to be called during the generation process.
+        retries_left : int, optional
+            Number of retry attempts for an invalid LLM response
 
         Returns
         -------
@@ -198,7 +205,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
                     prompt_value=prompt_value,
                     llm=llm,
                     callbacks=prompt_cb,
-                    max_retries=3,
+                    retries_left=retries_left,
                 )
                 processed_output = self.process_output(answer, data)  # type: ignore
                 output_models.append(processed_output)
@@ -390,14 +397,14 @@ class RagasOutputParser(PydanticOutputParser[OutputModel]):
         prompt_value: PromptValue,
         llm: BaseRagasLLM,
         callbacks: Callbacks,
-        max_retries: int = 1,
+        retries_left: int = 1,
     ):
         callbacks = callbacks or []
         try:
             jsonstr = extract_json(output_string)
             result = super().parse(jsonstr)
         except OutputParserException:
-            if max_retries != 0:
+            if retries_left != 0:
                 retry_rm, retry_cb = new_group(
                     name="fix_output_format",
                     inputs={"output_string": output_string},
@@ -410,17 +417,12 @@ class RagasOutputParser(PydanticOutputParser[OutputModel]):
                         prompt_value=prompt_value.to_string(),
                     ),
                     callbacks=retry_cb,
+                    retries_left = retries_left - 1,
                 )
                 retry_rm.on_chain_end({"fixed_output_string": fixed_output_string})
-                return await self.parse_output_string(
-                    output_string=fixed_output_string.text,
-                    prompt_value=prompt_value,
-                    llm=llm,
-                    max_retries=max_retries - 1,
-                    callbacks=callbacks,
-                )
+                result = fixed_output_string
             else:
-                raise RagasOutputParserException(num_retries=max_retries)
+                raise RagasOutputParserException()
         return result
 
 
