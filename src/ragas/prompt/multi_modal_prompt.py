@@ -5,7 +5,8 @@ import typing as t
 import base64
 import urllib.request
 from urllib.parse import urlparse
-from langchain_core.prompt_values import PromptValue, HumanMessage
+from langchain_core.prompt_values import PromptValue
+from langchain_core.messages import HumanMessage, BaseMessage
 from pydantic import BaseModel
 from ragas.callbacks import ChainType, new_group
 from ragas.exceptions import RagasOutputParserException
@@ -55,7 +56,7 @@ class ImageTextPrompt(PydanticPrompt, t.Generic[InputModel, OutputModel]):
             self._generate_output_signature(),
             self._generate_examples(),
             "Now perform the above instruction with the following",
-        ] + data.to_string_list()
+        ] + data.to_string_list()  # type: ignore
         return ImageTextPromptValue(items=text)
 
     async def generate_multiple(
@@ -119,7 +120,7 @@ class ImageTextPrompt(PydanticPrompt, t.Generic[InputModel, OutputModel]):
             try:
                 answer = await parser.parse_output_string(
                     output_string=output_string,
-                    prompt_value=prompt_value,
+                    prompt_value=prompt_value,  # type: ignore
                     llm=llm,
                     callbacks=prompt_cb,
                     max_retries=3,
@@ -138,7 +139,7 @@ class ImageTextPrompt(PydanticPrompt, t.Generic[InputModel, OutputModel]):
 class ImageTextPromptValue(PromptValue):
     items: t.List[str]
 
-    def to_messages(self):
+    def to_messages(self) -> t.List[BaseMessage]:
         messages = []
         for item in self.items:
             if self.is_image(item):
