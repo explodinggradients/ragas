@@ -1,7 +1,7 @@
 import typing as t
 from dataclasses import dataclass, field
 
-from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
+from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics.base import MetricType
 
 

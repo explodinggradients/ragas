@@ -1,6 +1,3 @@
-import inspect
-import sys
-
 from ragas.metrics._answer_correctness import AnswerCorrectness, answer_correctness
 from ragas.metrics._answer_relevance import (
     AnswerRelevancy,
