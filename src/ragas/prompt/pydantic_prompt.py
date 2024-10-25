@@ -417,7 +417,7 @@ class RagasOutputParser(PydanticOutputParser[OutputModel]):
                         prompt_value=prompt_value.to_string(),
                     ),
                     callbacks=retry_cb,
-                    retries_left = retries_left - 1,
+                    retries_left=retries_left - 1,
                 )
                 retry_rm.on_chain_end({"fixed_output_string": fixed_output_string})
                 result = fixed_output_string

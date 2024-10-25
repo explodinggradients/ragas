@@ -21,8 +21,8 @@ from ragas.metrics._context_entities_recall import (
 from ragas.metrics._context_precision import (
     ContextPrecision,
     ContextUtilization,
-    LLMContextPrecisionWithReference,
     LLMContextPrecisionWithoutReference,
+    LLMContextPrecisionWithReference,
     NonLLMContextPrecisionWithReference,
     context_precision,
 )

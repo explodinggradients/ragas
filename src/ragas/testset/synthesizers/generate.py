@@ -9,10 +9,10 @@ from langchain_core.callbacks import BaseCallbackManager
 from ragas._analytics import TestsetGenerationEvent, track
 from ragas.callbacks import new_group
 from ragas.cost import TokenUsageParser
+from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
 from ragas.run_config import RunConfig
-from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
 from ragas.testset.graph import KnowledgeGraph, Node, NodeType
 from ragas.testset.synthesizers import default_query_distribution
 from ragas.testset.synthesizers.testset_schema import Testset, TestsetSample
@@ -22,8 +22,8 @@ from ragas.testset.transforms import Transforms, apply_transforms, default_trans
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
     from langchain_core.documents import Document as LCDocument
-    from langchain_core.language_models import BaseLanguageModel as LangchainLLM
     from langchain_core.embeddings.embeddings import Embeddings as LangchainEmbeddings
+    from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
     from ragas.embeddings.base import BaseRagasEmbeddings
     from ragas.llms.base import BaseRagasLLM
@@ -66,10 +66,10 @@ class TestsetGenerator:
         """
         knowledge_graph = knowledge_graph or KnowledgeGraph()
         return cls(
-            LangchainLLMWrapper(llm), 
-            LangchainEmbeddingsWrapper(embedding_model), 
-            knowledge_graph
-            )
+            LangchainLLMWrapper(llm),
+            LangchainEmbeddingsWrapper(embedding_model),
+            knowledge_graph,
+        )
 
     def generate_with_langchain_docs(
         self,
@@ -91,22 +91,22 @@ class TestsetGenerator:
         # force the user to provide an llm and embedding client to prevent use of default LLMs
         if not self.llm and not transforms_llm:
             raise ValueError(
-                    '''An llm client was not provided. 
+                """An llm client was not provided. 
                        Provide an LLM on TestsetGenerator instantiation or as an argument for transforms_llm parameter. 
-                       Alternatively you can provide your own transforms through the `transforms` parameter.'''
-                )
+                       Alternatively you can provide your own transforms through the `transforms` parameter."""
+            )
         if not self.embedding_model and not transforms_embedding_model:
             raise ValueError(
-                    '''An embedding client was not provided. 
+                """An embedding client was not provided. 
                        Provide an embedding model on TestsetGenerator instantiation or as an argument for transforms_llm parameter. 
-                       Alternatively you can provide your own transforms through the `transforms` parameter.'''
-                )
+                       Alternatively you can provide your own transforms through the `transforms` parameter."""
+            )
 
         if not transforms:
             transforms = default_transforms(
-                    llm=transforms_llm or self.llm,
-                    embedding_model=transforms_embedding_model or self.embedding_model
-                )
+                llm=transforms_llm or self.llm,
+                embedding_model=transforms_embedding_model or self.embedding_model,
+            )
 
         # convert the documents to Ragas nodes
         nodes = []

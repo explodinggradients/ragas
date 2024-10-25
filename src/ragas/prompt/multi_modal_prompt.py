@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 
 
 class ImageTextPrompt(PydanticPrompt, t.Generic[InputModel, OutputModel]):
-
     def _generate_examples(self):
         if self.examples:
             example_strings = []
@@ -70,6 +69,7 @@ class ImageTextPrompt(PydanticPrompt, t.Generic[InputModel, OutputModel]):
         temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
         callbacks: t.Optional[Callbacks] = None,
+        retries_left: int = 3,
     ) -> t.List[OutputModel]:
         """
         Generate multiple outputs using the provided language model and input data.
@@ -117,7 +117,7 @@ class ImageTextPrompt(PydanticPrompt, t.Generic[InputModel, OutputModel]):
         )
 
         output_models = []
-        parser = RagasOutputParser(pydantic_object=self.output_model)
+        parser = RagasOutputParser(pydantic_object=self.output_model)  # type: ignore
         for i in range(n):
             output_string = resp.generations[0][i].text
             try:
@@ -126,7 +126,7 @@ class ImageTextPrompt(PydanticPrompt, t.Generic[InputModel, OutputModel]):
                     prompt_value=prompt_value,  # type: ignore
                     llm=llm,
                     callbacks=prompt_cb,
-                    max_retries=3,
+                    retries_left=retries_left,
                 )
                 processed_output = self.process_output(answer, data)  # type: ignore
                 output_models.append(processed_output)
