@@ -21,6 +21,7 @@ from ragas.metrics._context_entities_recall import (
 from ragas.metrics._context_precision import (
     ContextPrecision,
     ContextUtilization,
+    LLMContextPrecisionWithReference,
     LLMContextPrecisionWithoutReference,
     NonLLMContextPrecisionWithReference,
     context_precision,
@@ -90,6 +91,7 @@ __all__ = [
     "NoiseSensitivity",
     "RubricsScoreWithoutReference",
     "RubricsScoreWithReference",
+    "LLMContextPrecisionWithReference",
     "LLMContextPrecisionWithoutReference",
     "NonLLMContextPrecisionWithReference",
     "LLMContextPrecisionWithoutReference",

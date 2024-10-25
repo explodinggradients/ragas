@@ -143,8 +143,12 @@ Sample = t.TypeVar("Sample", bound=BaseSample)
 T = t.TypeVar("T", bound="RagasDataset")
 
 
-class RagasDataset(ABC, BaseModel, t.Generic[Sample]):
+@dataclass
+class RagasDataset(ABC, t.Generic[Sample]):
     samples: t.List[Sample]
+
+    def __post_init__(self):
+        self.samples = self.validate_samples(self.samples)
 
     @abstractmethod
     def to_list(self) -> t.List[t.Dict]:
@@ -154,17 +158,16 @@ class RagasDataset(ABC, BaseModel, t.Generic[Sample]):
     @classmethod
     @abstractmethod
     def from_list(cls: t.Type[T], data: t.List[t.Dict]) -> T:
-        """Creates an EvaluationDataset from a list of dictionaries."""
+        """Creates an RagasDataset from a list of dictionaries."""
         pass
 
-    @field_validator("samples")
-    def validate_samples(cls, samples: t.List[BaseSample]) -> t.List[BaseSample]:
+    def validate_samples(self, samples: t.List[Sample]) -> t.List[Sample]:
         """Validates that all samples are of the same type."""
         if len(samples) == 0:
             return samples
 
-        first_sample_type = type(samples[0])
-        if not all(isinstance(sample, first_sample_type) for sample in samples):
+        first_sample_type = type(self.samples[0])
+        if not all(isinstance(sample, first_sample_type) for sample in self.samples):
             raise ValueError("All samples must be of the same type")
 
         return samples
@@ -263,6 +266,7 @@ class RagasDataset(ABC, BaseModel, t.Generic[Sample]):
 SingleTurnSampleOrMultiTurnSample = t.Union[SingleTurnSample, MultiTurnSample]
 
 
+@dataclass
 class EvaluationDataset(RagasDataset[SingleTurnSampleOrMultiTurnSample]):
     """
     Represents a dataset of evaluation samples.

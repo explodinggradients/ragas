@@ -99,7 +99,7 @@ Now we will enrich the knowledge graph with additional information using [Transf
 But you can mix and match transforms or build your own as needed.
 
 ```python
-from ragas.testset.transforms import default_transforms
+from ragas.testset.transforms import default_transforms, apply_transforms
 
 
 # define your LLM and Embedding Model

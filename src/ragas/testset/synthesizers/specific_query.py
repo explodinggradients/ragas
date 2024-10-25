@@ -98,10 +98,10 @@ class SpecificQuerySynthesizer(QuerySynthesizer):
         )
 
         query_text = query.text
-        if not await self.critic_query(query_text):
+        if not await self.critic_query(query_text, callbacks):
             query_text = await self.modify_query(query_text, scenario, callbacks)
 
-        reference = await self.generate_reference(query_text, scenario)
+        reference = await self.generate_reference(query_text, scenario, callbacks)
 
         reference_contexts = []
         for node in scenario.nodes:
