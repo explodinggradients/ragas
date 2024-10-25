@@ -27,9 +27,7 @@ class RagasOutputParserException(RagasException):
     """
 
     def __init__(self):
-        msg = (
-            "The output parser failed to parse the output including retries."
-        )
+        msg = "The output parser failed to parse the output including retries."
         super().__init__(msg)
 
 

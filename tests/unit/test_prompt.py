@@ -208,8 +208,8 @@ def test_prompt_class_attributes():
 
 @pytest.mark.asyncio
 async def test_prompt_parse_retry():
-    from ragas.prompt import PydanticPrompt, StringIO
     from ragas.exceptions import RagasOutputParserException
+    from ragas.prompt import PydanticPrompt, StringIO
 
     class OutputModel(BaseModel):
         example: str
