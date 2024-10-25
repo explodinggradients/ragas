@@ -106,10 +106,3 @@ __all__ = [
     "TopicAdherenceScore",
     "LLMSQLEquivalence",
 ]
-
-current_module = sys.modules[__name__]
-ALL_METRICS = [
-    obj
-    for name, obj in inspect.getmembers(current_module)
-    if name in __all__ and not inspect.isclass(obj) and not inspect.isbuiltin(obj)
-]
