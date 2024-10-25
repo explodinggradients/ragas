@@ -1,22 +1,8 @@
 import typing as t
 from dataclasses import dataclass, field
 
-from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
+from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics.base import MetricType
-from ragas.metrics.utils import get_available_metrics
-
-
-def test_get_available_metrics():
-    sample1 = SingleTurnSample(user_input="What is X", response="Y")
-    sample2 = SingleTurnSample(user_input="What is Z", response="W")
-    ds = EvaluationDataset(samples=[sample1, sample2])
-
-    assert all(
-        [
-            m.required_columns["SINGLE_TURN"] == {"response", "user_input"}
-            for m in get_available_metrics(ds)
-        ]
-    ), "All metrics should have required columns ('user_input', 'response')"
 
 
 def test_single_turn_metric():

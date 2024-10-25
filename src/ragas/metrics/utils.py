@@ -1,21 +1,22 @@
-from ragas.dataset_schema import EvaluationDataset
-from ragas.metrics import ALL_METRICS
-from ragas.metrics.base import Metric
-from ragas.validation import validate_required_columns
+def fbeta_score(tp, fp, fn, beta=1.0):
+    if tp + fp == 0:
+        precision = 0
+    else:
+        precision = tp / (tp + fp)
 
+    if tp + fn == 0:
+        recall = 0
+    else:
+        recall = tp / (tp + fn)
 
-def get_available_metrics(ds: EvaluationDataset) -> list[Metric]:
-    """
-    Get the available metrics for the given dataset.
-    E.g. if the dataset contains ("question", "answer", "contexts") columns,
-    the available metrics are those that can be evaluated in [qa, qac, qc] mode.
-    """
-    available_metrics = []
-    for metric in ALL_METRICS:
-        try:
-            validate_required_columns(ds, [metric])
-            available_metrics.append(metric)
-        except ValueError:
-            pass
+    if precision == 0 and recall == 0:
+        return 0.0
 
-    return available_metrics
+    beta_squared = beta**2
+    fbeta = (
+        (1 + beta_squared)
+        * (precision * recall)
+        / ((beta_squared * precision) + recall)
+    )
+
+    return fbeta

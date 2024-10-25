@@ -1,6 +1,3 @@
-import inspect
-import sys
-
 from ragas.metrics._answer_correctness import AnswerCorrectness, answer_correctness
 from ragas.metrics._answer_relevance import (
     AnswerRelevancy,
@@ -119,11 +116,4 @@ __all__ = [
     "multimodal_faithness",
     "MultiModalRelevance",
     "multimodal_relevance",
-]
-
-current_module = sys.modules[__name__]
-ALL_METRICS = [
-    obj
-    for name, obj in inspect.getmembers(current_module)
-    if name in __all__ and not inspect.isclass(obj) and not inspect.isbuiltin(obj)
 ]

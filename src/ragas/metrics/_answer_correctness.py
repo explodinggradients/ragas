@@ -21,6 +21,7 @@ from ragas.metrics.base import (
     SingleTurnMetric,
     get_segmenter,
 )
+from ragas.metrics.utils import fbeta_score
 from ragas.prompt import PydanticPrompt
 from ragas.run_config import RunConfig
 
@@ -167,6 +168,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         default_factory=LongFormAnswerPrompt
     )
     weights: list[float] = field(default_factory=lambda: [0.75, 0.25])
+    beta: float = 1.0
     answer_similarity: t.Optional[AnswerSimilarity] = None
     sentence_segmenter: t.Optional[HasSegmentMethod] = None
     max_retries: int = 1
@@ -185,6 +187,11 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
             language = self.long_form_answer_prompt.language
             self.sentence_segmenter = get_segmenter(language=language, clean=False)
 
+        if type(self.beta) is not float:
+            raise ValueError(
+                "Beta must be a float. A beta > 1 gives more weight to recall, while beta < 1 favors precision."
+            )
+
     def init(self, run_config: RunConfig):
         super().init(run_config)
         if self.answer_similarity is None and self.weights[1] != 0:
@@ -198,7 +205,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         tp = len(prediction.TP)
         fp = len(prediction.FP)
         fn = len(prediction.FN)
-        score = tp / (tp + 0.5 * (fp + fn)) if tp > 0 else 0
+        score = fbeta_score(tp, fp, fn, self.beta)
         return score
 
     async def _create_simplified_statements(
