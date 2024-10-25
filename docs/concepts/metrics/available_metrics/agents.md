@@ -97,6 +97,7 @@ sample = MultiTurnSample(
 )
 
 scorer = ToolCallAccuracy()
+scorer.llm = your_llm
 await scorer.multi_turn_ascore(sample)
 ```
 
@@ -146,7 +147,8 @@ sample = MultiTurnSample(user_input=[
     reference="Table booked at one of the chinese restaurants at 8 pm")
 
 scorer = AgentGoalAccuracyWithReference()
-await metric.multi_turn_ascore(sample)
+scorer.llm = your_llm
+await scorer.multi_turn_ascore(sample)
 
 ```
 
