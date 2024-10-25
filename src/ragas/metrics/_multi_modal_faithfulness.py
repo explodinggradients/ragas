@@ -1,10 +1,17 @@
+from __future__ import annotations
+
 import typing as t
 from dataclasses import dataclass, field
-from ragas.metrics.base import MetricWithLLM, SingleTurnMetric, MetricType
-from pydantic import BaseModel, Field
-from ragas.prompt import ImageTextPrompt
-from ragas.dataset_schema import SingleTurnSample
+
 import numpy as np
+from pydantic import BaseModel, Field
+
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric
+from ragas.prompt import ImageTextPrompt
+
+if t.TYPE_CHECKING:
+    from langchain_core.callbacks import Callbacks
 
 
 class FaithfulnessInput(BaseModel):
@@ -69,20 +76,20 @@ class MultiModalFaithfulness(MetricWithLLM, SingleTurnMetric):
     )
     faithfulness_prompt: ImageTextPrompt = MultiModalFaithfulnessPrompt()
 
-    async def _ascore(self, row: t.Dict, callbacks: t.Any) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         prompt_input = FaithfulnessInput(
             response=row["response"], retrieved_contexts=row["retrieved_contexts"]
         )
         assert self.llm is not None, "LLM is not set"
         prompt_response = await self.faithfulness_prompt.generate(
-            data=prompt_input, llm=self.llm
+            data=prompt_input, llm=self.llm, callbacks=callbacks
         )
         if prompt_response is None:
             return np.nan
         return float(prompt_response.faithful)
 
     async def _single_turn_ascore(
-        self, sample: SingleTurnSample, callbacks: t.Any
+        self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
         row = sample.to_dict()
         return await self._ascore(row, callbacks)
