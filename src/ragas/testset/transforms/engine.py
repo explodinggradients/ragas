@@ -9,6 +9,9 @@ from ragas.run_config import RunConfig
 from ragas.testset.graph import KnowledgeGraph
 from ragas.testset.transforms.base import BaseGraphTransformation
 
+if t.TYPE_CHECKING:
+    from langchain_core.callbacks import Callbacks
+
 logger = logging.getLogger(__name__)
 
 Transforms = t.Union[
@@ -82,6 +85,7 @@ def apply_transforms(
     kg: KnowledgeGraph,
     transforms: Transforms,
     run_config: RunConfig = RunConfig(),
+    callbacks: t.Optional[Callbacks] = None,
 ):
     """
     Apply a list of transformations to a knowledge graph in place.

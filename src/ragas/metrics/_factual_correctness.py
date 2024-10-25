@@ -271,14 +271,22 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
         reference_response = await self.verify_claims(
             premise=reference, hypothesis_list=response_claims, callbacks=callbacks
         )
-        response_reference = await self.verify_claims(
-            premise=response, hypothesis_list=reference_claims, callbacks=callbacks
-        )
+        
 
-        # Calculate the true positives (tp), false positives (fp), and false negatives (fn)
+        if self.mode != "precision":
+            response_reference = await self.verify_claims(
+                premise=response, hypothesis_list=reference_claims, callbacks=callbacks
+            )
+        else:
+            response_reference = np.array([])
+
         tp = sum(reference_response)
         fp = sum(~reference_response)
-        fn = sum(~response_reference)
+        if self.mode != "precision":
+            fn = sum(~response_reference)
+        else:
+            fn = 0
+            
 
         if self.mode == "precision":
             score = tp / (tp + fp + 1e-8)

@@ -3,6 +3,7 @@ import copy
 import pytest
 from langchain_core.outputs import Generation, LLMResult
 from langchain_core.prompt_values import StringPromptValue
+from pydantic import BaseModel
 
 from ragas.llms.base import BaseRagasLLM
 from ragas.prompt import StringIO, StringPrompt
@@ -203,3 +204,25 @@ def test_prompt_class_attributes():
     p.examples = []
     assert p.instruction != p_another_instance.instruction
     assert p.examples != p_another_instance.examples
+
+
+@pytest.mark.asyncio
+async def test_prompt_parse_retry():
+    from ragas.exceptions import RagasOutputParserException
+    from ragas.prompt import PydanticPrompt, StringIO
+
+    class OutputModel(BaseModel):
+        example: str
+
+    class Prompt(PydanticPrompt[StringIO, OutputModel]):
+        instruction = ""
+        input_model = StringIO
+        output_model = OutputModel
+
+    echo_llm = EchoLLM(run_config=RunConfig())
+    prompt = Prompt()
+    with pytest.raises(RagasOutputParserException):
+        await prompt.generate(
+            data=StringIO(text="this prompt will be echoed back as invalid JSON"),
+            llm=echo_llm,
+        )

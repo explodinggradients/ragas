@@ -19,6 +19,7 @@ from ragas.metrics._context_precision import (
     ContextPrecision,
     ContextUtilization,
     LLMContextPrecisionWithoutReference,
+    LLMContextPrecisionWithReference,
     NonLLMContextPrecisionWithReference,
     context_precision,
 )
@@ -42,6 +43,14 @@ from ragas.metrics._goal_accuracy import (
 from ragas.metrics._instance_specific_rubrics import (
     InstanceRubricsScoreWithoutReference,
     InstanceRubricsWithReference,
+)
+from ragas.metrics._multi_modal_faithfulness import (
+    MultiModalFaithfulness,
+    multimodal_faithness,
+)
+from ragas.metrics._multi_modal_relevance import (
+    MultiModalRelevance,
+    multimodal_relevance,
 )
 from ragas.metrics._noise_sensitivity import NoiseSensitivity
 from ragas.metrics._rogue_score import RougeScore
@@ -79,6 +88,7 @@ __all__ = [
     "NoiseSensitivity",
     "RubricsScoreWithoutReference",
     "RubricsScoreWithReference",
+    "LLMContextPrecisionWithReference",
     "LLMContextPrecisionWithoutReference",
     "NonLLMContextPrecisionWithReference",
     "LLMContextPrecisionWithoutReference",
@@ -102,4 +112,8 @@ __all__ = [
     "DistanceMeasure",
     "TopicAdherenceScore",
     "LLMSQLEquivalence",
+    "MultiModalFaithfulness",
+    "multimodal_faithness",
+    "MultiModalRelevance",
+    "multimodal_relevance",
 ]

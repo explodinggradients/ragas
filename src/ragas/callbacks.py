@@ -151,14 +151,16 @@ def parse_run_traces(
         metric_traces = MetricTrace()
         for metric_uuid in row_trace.children:
             metric_trace = traces[metric_uuid]
-            metric_traces.scores[metric_trace.name] = metric_trace.outputs["output"]
+            metric_traces.scores[metric_trace.name] = metric_trace.outputs.get(
+                "output", {}
+            )
             # get all the prompt IO from the metric trace
             prompt_traces = {}
             for i, prompt_uuid in enumerate(metric_trace.children):
                 prompt_trace = traces[prompt_uuid]
                 prompt_traces[f"{i}_{prompt_trace.name}"] = {
-                    "input": prompt_trace.inputs["data"],
-                    "output": prompt_trace.outputs["output"],
+                    "input": prompt_trace.inputs.get("data", {}),
+                    "output": prompt_trace.outputs.get("output", {}),
                 }
             metric_traces[f"{metric_trace.name}"] = prompt_traces
         parased_traces.append(metric_traces)
