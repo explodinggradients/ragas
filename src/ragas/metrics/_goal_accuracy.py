@@ -114,6 +114,9 @@ class AgentGoalAccuracyWithReference(MetricWithLLM, MultiTurnMetric):
     )
     max_retries: int = 1
 
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        raise NotImplementedError
+
     async def _multi_turn_ascore(
         self,
         sample: MultiTurnSample,
@@ -152,6 +155,9 @@ class AgentGoalAccuracyWithoutReference(MetricWithLLM, MultiTurnMetric):
         default_factory=lambda: CompareOutcomePrompt()
     )
     max_retries: int = 1
+
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        raise NotImplementedError
 
     async def _multi_turn_ascore(
         self,
