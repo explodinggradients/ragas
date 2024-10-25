@@ -1,20 +1,23 @@
 from __future__ import annotations
 
-import logging
-import typing as t
 import base64
+import logging
+import mimetypes
+import typing as t
 import urllib.request
 from urllib.parse import urlparse
+
+from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.prompt_values import PromptValue
-from langchain_core.messages import HumanMessage, BaseMessage
 from pydantic import BaseModel
+
 from ragas.callbacks import ChainType, new_group
 from ragas.exceptions import RagasOutputParserException
 from ragas.prompt.pydantic_prompt import PydanticPrompt, RagasOutputParser
-import mimetypes
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
+
     from ragas.llms.base import BaseRagasLLM
 
 
