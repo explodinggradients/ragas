@@ -53,7 +53,7 @@ from ragas.metrics._multi_modal_relevance import (
     multimodal_relevance,
 )
 from ragas.metrics._noise_sensitivity import NoiseSensitivity
-from ragas.metrics._rogue_score import RougeScore
+from ragas.metrics._rouge_score import RougeScore
 from ragas.metrics._sql_semantic_equivalence import LLMSQLEquivalence
 from ragas.metrics._string import (
     DistanceMeasure,
