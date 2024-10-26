@@ -267,6 +267,8 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
         self.llm = llm
 
         self._signature = ""
+        if type(self.llm).__name__.lower() == "anthropic":
+            self._signature = "anthropic"
         if type(self.llm).__name__.lower() == "bedrock":
             self._signature = "bedrock"
         if run_config is None:
@@ -290,7 +292,7 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
             logger.info(
                 "callbacks not supported for LlamaIndex LLMs, ignoring callbacks"
             )
-        if self._signature == "bedrock":
+        if self._signature in ["anthropic", "bedrock"]:
             return {"temperature": temperature}
         else:
             return {
