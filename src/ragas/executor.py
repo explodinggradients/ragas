@@ -200,7 +200,12 @@ class Executor:
         return [r[1] for r in sorted_results]
 
 
-def run_async_batch(desc: str, func: t.Callable, kwargs_list: t.List[t.Dict]):
+def run_async_batch(
+    desc: str,
+    func: t.Callable,
+    kwargs_list: t.List[t.Dict],
+    batch_size: t.Optional[int] = None,
+):
     """Provide functionality to run the same async function with different arguments in parallel."""
     run_config = RunConfig()
     executor = Executor(
@@ -208,6 +213,7 @@ def run_async_batch(desc: str, func: t.Callable, kwargs_list: t.List[t.Dict]):
         keep_progress_bar=False,
         raise_exceptions=True,
         run_config=run_config,
+        batch_size=batch_size,
     )
 
     for kwargs in kwargs_list:

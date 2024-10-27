@@ -35,6 +35,7 @@ def evaluate(
     raise_exceptions: bool = False,
     column_map: t.Optional[t.Dict[str, str]] = None,
     run_config: t.Optional[RunConfig] = None,
+    batch_size: t.Optional[int] = None,
 ) -> EvaluationResult:
     column_map = column_map or {}
 
@@ -55,6 +56,7 @@ def evaluate(
         keep_progress_bar=True,
         raise_exceptions=raise_exceptions,
         run_config=run_config,
+        batch_size=batch_size,
     )
 
     # get query
