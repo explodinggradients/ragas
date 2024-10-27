@@ -64,7 +64,7 @@ def run_async_tasks(
                 "It seems like your running this in a jupyter-like environment. "
                 "Please install nest_asyncio with `pip install nest_asyncio` to make it work."
             )
-        finally:
+        else:
             nest_asyncio.apply()
 
     results = asyncio.run(_process_jobs())

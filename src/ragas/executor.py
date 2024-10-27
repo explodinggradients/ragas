@@ -190,10 +190,10 @@ class Executor:
                     "It seems like your running this in a jupyter-like environment. "
                     "Please install nest_asyncio with `pip install nest_asyncio` to make it work."
                 ) from e
-
-            if not self._nest_asyncio_applied:
-                nest_asyncio.apply()
-                self._nest_asyncio_applied = True
+            else:
+                if not self._nest_asyncio_applied:
+                    nest_asyncio.apply()
+                    self._nest_asyncio_applied = True
 
         results = asyncio.run(self._process_jobs())
         sorted_results = sorted(results, key=lambda x: x[0])
