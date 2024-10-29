@@ -9,9 +9,9 @@ from langchain_core.callbacks import BaseCallbackManager
 from ragas._analytics import TestsetGenerationEvent, track
 from ragas.callbacks import new_group
 from ragas.cost import TokenUsageParser
-from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
+from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper, LlamaIndexEmbeddingsWrapper
 from ragas.executor import Executor
-from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
+from ragas.llms import BaseRagasLLM, LangchainLLMWrapper, LlamaIndexLLMWrapper
 from ragas.run_config import RunConfig
 from ragas.testset.graph import KnowledgeGraph, Node, NodeType
 from ragas.testset.synthesizers import default_query_distribution
@@ -25,6 +25,11 @@ if t.TYPE_CHECKING:
     from langchain_core.embeddings.embeddings import Embeddings as LangchainEmbeddings
     from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
+    from llama_index.core.base.llms.base import BaseLLM as LlamaIndexLLM
+    from llama_index.core.base.embeddings.base import BaseEmbedding as LlamaIndexEmbedding
+
+    from llama_index.core.schema import Document as LlamaindexDocument
+    
     from ragas.embeddings.base import BaseRagasEmbeddings
     from ragas.llms.base import BaseRagasLLM
     from ragas.testset.synthesizers import QueryDistribution
@@ -68,6 +73,20 @@ class TestsetGenerator:
         return cls(
             LangchainLLMWrapper(llm),
             LangchainEmbeddingsWrapper(embedding_model),
+            knowledge_graph,
+        )
+
+    @classmethod
+    def from_llama_index(
+        cls,
+        llm: LlamaIndexLLM,
+        embedding_model: LlamaIndexEmbedding,
+        knowledge_graph: t.Optional[KnowledgeGraph] = None
+    ) -> "TestsetGenerator":
+        knowledge_graph = knowledge_graph or KnowledgeGraph()
+        return cls(
+            LlamaIndexLLMWrapper(llm),
+            LlamaIndexEmbeddingsWrapper(embedding_model),
             knowledge_graph,
         )
 
@@ -135,6 +154,71 @@ class TestsetGenerator:
             raise_exceptions=raise_exceptions,
         )
 
+    def generate_with_llamaindex_docs(
+        self,
+        documents: t.Sequence[LCDocument],
+        testset_size: int,
+        transforms: t.Optional[Transforms] = None,
+        transforms_llm: t.Optional[BaseRagasLLM] = None,
+        transforms_embedding_model: t.Optional[BaseRagasEmbeddings] = None,
+        query_distribution: t.Optional[QueryDistribution] = None,
+        run_config: t.Optional[RunConfig] = None,
+        callbacks: t.Optional[Callbacks] = None,
+        with_debugging_logs=False,
+        raise_exceptions: bool = True,
+    ):
+        """
+        Generates an evaluation dataset based on given scenarios and parameters.
+        """
+
+        # force the user to provide an llm and embedding client to prevent use of default LLMs
+        if not self.llm and not transforms_llm:
+            raise ValueError(
+                """An llm client was not provided. 
+                       Provide an LLM on TestsetGenerator instantiation or as an argument for transforms_llm parameter. 
+                       Alternatively you can provide your own transforms through the `transforms` parameter."""
+            )
+        if not self.embedding_model and not transforms_embedding_model:
+            raise ValueError(
+                """An embedding client was not provided. 
+                       Provide an embedding model on TestsetGenerator instantiation or as an argument for transforms_llm parameter. 
+                       Alternatively you can provide your own transforms through the `transforms` parameter."""
+            )
+
+        if not transforms:
+            transforms = default_transforms(
+                llm=transforms_llm or self.llm,
+                embedding_model=transforms_embedding_model or self.embedding_model,
+            )
+        
+        # convert the documents to Ragas nodes
+        nodes = []
+        for doc in documents:
+            if doc.text is not None and doc.text.strip() != "":
+                node = Node(
+                    type=NodeType.DOCUMENT,
+                    properties={
+                        "page_content": doc.text,
+                        "document_metadata": doc.metadata,
+                    },
+                )
+                nodes.append(node)
+
+        kg = KnowledgeGraph(nodes=nodes)
+
+        # apply transforms and update the knowledge graph
+        apply_transforms(kg, transforms, run_config)
+        self.knowledge_graph = kg
+
+        return self.generate(
+            testset_size=testset_size,
+            query_distribution=query_distribution,
+            run_config=run_config,
+            callbacks=callbacks,
+            with_debugging_logs=with_debugging_logs,
+            raise_exceptions=raise_exceptions,
+        )
+
     def generate(
         self,
         testset_size: int,
@@ -182,6 +266,9 @@ class TestsetGenerator:
         4. Generate samples for each scenario.
         5. Compile the results into an EvaluationDataset.
         """
+        if run_config is not None:
+            self.llm.set_run_config(run_config)
+        
         query_distribution = query_distribution or default_query_distribution(self.llm)
         callbacks = callbacks or []
 

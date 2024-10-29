@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import logging
+import datasets
 import typing as t
 from uuid import uuid4
-
-from datasets import Dataset
 
 from ragas.embeddings import LlamaIndexEmbeddingsWrapper
 from ragas.evaluation import evaluate as ragas_evaluate
@@ -12,6 +11,7 @@ from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
 from ragas.llms import LlamaIndexLLMWrapper
 from ragas.run_config import RunConfig
+from ragas.testset.synthesizers.testset_schema import Testset
 
 if t.TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import (
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 def evaluate(
     query_engine,
-    dataset: Dataset,
+    dataset: Testset,
     metrics: list[Metric],
     llm: t.Optional[LlamaindexLLM] = None,
     embeddings: t.Optional[LlamaIndexEmbeddings] = None,
@@ -41,15 +41,17 @@ def evaluate(
     # wrap llms and embeddings
     li_llm = None
     if llm is not None:
-        li_llm = LlamaIndexLLMWrapper(llm)
+        li_llm = LlamaIndexLLMWrapper(llm, run_config=run_config)
     li_embeddings = None
     if embeddings is not None:
-        li_embeddings = LlamaIndexEmbeddingsWrapper(embeddings)
+        li_embeddings = LlamaIndexEmbeddingsWrapper(embeddings, run_config=run_config)
 
     # validate and transform dataset
     if dataset is None:
         raise ValueError("Provide dataset!")
 
+    dataset = datasets.Dataset.from_list(dataset.to_hf_dataset()['eval_sample'])
+    
     exec = Executor(
         desc="Running Query Engine",
         keep_progress_bar=True,
@@ -58,7 +60,7 @@ def evaluate(
     )
 
     # get query
-    queries = dataset["question"]
+    queries = dataset["user_input"]
     for i, q in enumerate(queries):
         exec.submit(query_engine.aquery, q, name=f"query-{i}")
 
@@ -76,19 +78,21 @@ def evaluate(
             contexts.append([n.node.text for n in r.source_nodes])
 
     # create HF dataset
-    hf_dataset = Dataset.from_dict(
+    hf_dataset = datasets.Dataset.from_dict(
         {
-            "question": queries,
-            "contexts": contexts,
-            "answer": answers,
+            "user_input": queries,
+            "retrieved_contexts": contexts,
+            "response": answers,
         }
     )
-    if "ground_truth" in dataset.column_names:
+    if "reference" in dataset.column_names:
         hf_dataset = hf_dataset.add_column(
-            name="ground_truth",
-            column=dataset["ground_truth"],
+            name="reference",
+            column=dataset["reference"],
             new_fingerprint=str(uuid4()),
         )
+    
+    print(hf_dataset)
 
     results = ragas_evaluate(
         dataset=hf_dataset,
