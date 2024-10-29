@@ -50,7 +50,7 @@ def evaluate(
     if dataset is None:
         raise ValueError("Provide dataset!")
 
-    dataset = datasets.Dataset.from_list(dataset.to_hf_dataset()['eval_sample'])
+    dataset = dataset.to_hf_dataset()
     
     exec = Executor(
         desc="Running Query Engine",
@@ -92,8 +92,6 @@ def evaluate(
             new_fingerprint=str(uuid4()),
         )
     
-    print(hf_dataset)
-
     results = ragas_evaluate(
         dataset=hf_dataset,
         metrics=metrics,
