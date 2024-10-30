@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import typing as t
 
+from ragas.utils import num_tokens_from_string
+
 from .engine import Parallel
 from .extractors import (
     EmbeddingExtractor,
@@ -54,8 +56,17 @@ def default_transforms(
     # define the transforms
     summary_extractor = SummaryExtractor(llm=llm)
     keyphrase_extractor = KeyphrasesExtractor(llm=llm)
-    title_extractor = TitleExtractor(llm=llm)
-    headline_extractor = HeadlinesExtractor(llm=llm)
+    title_extractor = TitleExtractor(
+        llm=llm, filter_nodes=lambda node: node.type == NodeType.DOCUMENT
+    )
+    min_tokens = 500
+    headline_extractor = HeadlinesExtractor(
+        llm=llm,
+        filter_nodes=lambda node: num_tokens_from_string(
+            node.properties.get("page_content", "")
+        )
+        >= min_tokens,
+    )
     embedding_extractor = EmbeddingExtractor(embedding_model=embedding_model)
     headline_splitter = HeadlineSplitter()
     cosine_sim_builder = CosineSimilarityBuilder(threshold=0.8)
@@ -63,17 +74,17 @@ def default_transforms(
         name="summary_embedder",
         property_name="summary_embedding",
         embed_property_name="summary",
-        filter_nodes=lambda node: True if node.type == NodeType.DOCUMENT else False,
+        filter_nodes=lambda node: node.type == NodeType.DOCUMENT,
         embedding_model=embedding_model,
     )
     summary_cosine_sim_builder = SummaryCosineSimilarityBuilder(threshold=0.6)
 
     # specify the transforms and their order to be applied
     transforms = [
-        Parallel(summary_extractor, headline_extractor),
+        Parallel(summary_extractor, headline_extractor, title_extractor),
         summary_embedder,
         headline_splitter,
-        Parallel(embedding_extractor, keyphrase_extractor, title_extractor),
+        Parallel(embedding_extractor, keyphrase_extractor),
         cosine_sim_builder,
         summary_cosine_sim_builder,
     ]
