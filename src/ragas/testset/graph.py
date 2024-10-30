@@ -251,3 +251,38 @@ class KnowledgeGraph:
                     clusters.append(cluster)
 
         return clusters
+
+    def find_direct_clusters(
+        self, relationship_condition: t.Callable[[Relationship], bool] = lambda _: True
+    ) -> t.List[t.Set[Node]]:
+
+        clusters = []
+        relationships = [
+            rel for rel in self.relationships if relationship_condition(rel)
+        ]
+
+        for node in self.nodes:
+            cluster = set()
+            cluster.add(node)
+            for rel in relationships:
+                if rel.bidirectional:
+                    if rel.source == node:
+                        cluster.add(rel.target)
+                    elif rel.target == node:
+                        cluster.add(rel.source)
+                else:
+                    if rel.source == node:
+                        cluster.add(rel.target)
+
+            if len(cluster) > 1:
+                if cluster not in clusters:
+                    clusters.append(cluster)
+
+        # Remove subsets from clusters
+        unique_clusters = []
+        for cluster in clusters:
+            if not any(cluster < other for other in clusters):
+                unique_clusters.append(cluster)
+        clusters = unique_clusters
+
+        return clusters
