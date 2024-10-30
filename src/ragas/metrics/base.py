@@ -159,8 +159,10 @@ class Metric(ABC):
                 rm.on_chain_end({"output": score})
         return score
 
-    @abstractmethod
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float: ...
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        raise NotImplementedError(
+            f"Metric '{self.name}' has no implementation for _ascore. score() is deprecated and will be removed in 0.3. Please use single_turn_ascore or multi_turn_ascore instead."
+        )
 
 
 @dataclass
