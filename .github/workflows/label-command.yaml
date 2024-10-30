@@ -1,0 +1,40 @@
+name: Label Command
+on:
+  repository_dispatch:
+    types: [label-command]
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add or remove label
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const { issue, pull_request, comment } = context.payload.client_payload;
+            const repo = context.repo;
+            const number = issue ? issue.number : pull_request.number;
+            const args = context.payload.client_payload.slash_command.args;
+            
+            for (const arg of args) {
+              if (arg.startsWith('-')) {
+                await github.rest.issues.removeLabel({
+                  ...repo,
+                  issue_number: number,
+                  name: arg.slice(1)
+                });
+              } else {
+                await github.rest.issues.addLabels({
+                  ...repo,
+                  issue_number: number,
+                  labels: [arg]
+                });
+              }
+            }
+            
+            await github.rest.issues.createComment({
+              ...repo,
+              issue_number: number,
+              body: `Labels updated as requested by @${comment.user.login}.`
+            });
