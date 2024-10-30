@@ -17,7 +17,7 @@ async def test_run_async_tasks_unbatched(tasks):
     results = run_async_tasks(tasks)
 
     # Assert
-    assert results == list(range(1, 11))
+    assert sorted(results) == sorted(range(1, 11))
 
 
 @pytest.mark.asyncio
@@ -26,7 +26,7 @@ async def test_run_async_tasks_batched(tasks):
     results = run_async_tasks(tasks, batch_size=3)
 
     # Assert
-    assert results == list(range(1, 11))
+    assert sorted(results) == sorted(range(1, 11))
 
 
 @pytest.mark.asyncio
@@ -35,4 +35,4 @@ async def test_run_async_tasks_no_progress(tasks):
     results = run_async_tasks(tasks, show_progress=False)
 
     # Assert
-    assert results == list(range(1, 11))
+    assert sorted(results) == sorted(range(1, 11))

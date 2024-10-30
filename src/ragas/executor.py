@@ -6,7 +6,7 @@ import typing as t
 from dataclasses import dataclass, field
 
 import numpy as np
-from tqdm.asyncio import tqdm as atqdm
+from tqdm.auto import tqdm
 
 from ragas.run_config import RunConfig
 from ragas.utils import batched
@@ -119,59 +119,60 @@ class Executor:
         callable_with_index = self.wrap_callable_with_index(callable, len(self.jobs))
         self.jobs.append((callable_with_index, args, kwargs, name))
 
-    async def _process_batch(
-        self,
-        batch: t.Iterable[
-            t.Tuple[t.Callable[..., t.Coroutine], t.Tuple, t.Dict, t.Optional[str]]
-        ],
-        max_workers: int,
-        progress_bar_desc: str = "Batch progress",
-    ) -> t.List[t.Tuple[int, t.Coroutine]]:
-        """Process batch of jobs with optional progress tracking."""
-        results = []
-        coroutines = [afunc(*args, **kwargs) for afunc, args, kwargs, _ in batch]
-
-        # Convert coroutines to futures that complete as they finish
-        with atqdm(
-            total=len(list(batch)),
-            desc=progress_bar_desc,
-            disable=not self.show_progress,
-        ) as batch_pbar:
-            for future in await as_completed(coroutines, max_workers):
-                result = await future
-                results.append(result)
-                batch_pbar.update(1)
-        return results
-
     async def _process_jobs(self) -> t.List[t.Any]:
         """Execute jobs with optional progress tracking."""
         max_workers = (self.run_config or RunConfig()).max_workers
+        results = []
 
-        if self.batch_size:
-            results = []
-            batches = batched(self.jobs, self.batch_size)  # generator
-            n_batches = (len(self.jobs) + self.batch_size - 1) // self.batch_size
-
-            with atqdm(  # outer progress bar
-                total=n_batches,
+        if not self.batch_size:
+            with tqdm(
+                total=len(self.jobs),
                 desc=self.desc,
                 disable=not self.show_progress,
             ) as pbar:
-                for i, batch in enumerate(batches, 1):
-                    batch_results = await self._process_batch(
-                        batch,
-                        max_workers=max_workers,
-                        progress_bar_desc=f"Batch {i}/{n_batches}",
-                    )
-                    results.extend(batch_results)
-                    pbar.update(1)
+                # Create coroutines inside the loop instead of before
+                for afunc, args, kwargs, _ in self.jobs:
+                    coroutine = afunc(*args, **kwargs)
+                    for future in await as_completed([coroutine], max_workers):
+                        result = await future
+                        results.append(result)
+                        pbar.update(1)
 
-        else:
-            results = await self._process_batch(
-                self.jobs,
-                max_workers=max_workers,
-                progress_bar_desc=self.desc,
-            )
+                return results
+
+        # With batching, show nested progress bars
+        batches = batched(self.jobs, self.batch_size)  # generator of job tuples
+        n_batches = (len(self.jobs) + self.batch_size - 1) // self.batch_size
+
+        with (
+            tqdm(
+                total=len(self.jobs),
+                desc=self.desc,
+                disable=not self.show_progress,
+                position=1,
+                leave=True,
+            ) as overall_pbar,
+            tqdm(
+                total=min(self.batch_size, len(self.jobs)),
+                desc=f"Batch 1/{n_batches}",
+                disable=not self.show_progress,
+                position=0,
+                leave=False,
+            ) as batch_pbar,
+        ):
+            for i, batch in enumerate(batches, 1):
+                batch_pbar.reset(total=len(batch))
+                batch_pbar.set_description(f"Batch {i}/{n_batches}")
+
+                # Create coroutines for just this batch
+                coroutines = [
+                    afunc(*args, **kwargs) for afunc, args, kwargs, _ in batch
+                ]
+                for future in await as_completed(coroutines, max_workers):
+                    result = await future
+                    results.append(result)
+                    overall_pbar.update(1)
+                    batch_pbar.update(1)
 
         return results
 
