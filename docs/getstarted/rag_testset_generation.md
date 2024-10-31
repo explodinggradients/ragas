@@ -39,7 +39,7 @@ Now we will run the test generation using the loaded documents and the LLM setup
 ```python
 from ragas.testset import TestsetGenerator
 
-generator = TestsetGenerator(llm=generator_llm)
+generator = TestsetGenerator(llm=generator_llm, embedding_model=generator_embeddings)
 dataset = generator.generate_with_langchain_docs(docs, testset_size=10)
 ```
 
