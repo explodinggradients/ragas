@@ -266,11 +266,11 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
     ):
         self.llm = llm
 
-        self._signature = ""
-        if type(self.llm).__name__.lower() == "anthropic":
-            self._signature = "anthropic"
-        if type(self.llm).__name__.lower() == "bedrock":
-            self._signature = "bedrock"
+        try:
+            self._signature = type(self.llm).__name__.lower()
+        except AttributeError:
+            self._signature = ""
+
         if run_config is None:
             run_config = RunConfig()
         self.set_run_config(run_config)
