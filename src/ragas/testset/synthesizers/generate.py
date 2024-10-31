@@ -9,7 +9,11 @@ from langchain_core.callbacks import BaseCallbackManager
 from ragas._analytics import TestsetGenerationEvent, track
 from ragas.callbacks import new_group
 from ragas.cost import TokenUsageParser
-from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper, LlamaIndexEmbeddingsWrapper
+from ragas.embeddings.base import (
+    BaseRagasEmbeddings,
+    LangchainEmbeddingsWrapper,
+    LlamaIndexEmbeddingsWrapper,
+)
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper, LlamaIndexLLMWrapper
 from ragas.run_config import RunConfig
@@ -24,12 +28,11 @@ if t.TYPE_CHECKING:
     from langchain_core.documents import Document as LCDocument
     from langchain_core.embeddings.embeddings import Embeddings as LangchainEmbeddings
     from langchain_core.language_models import BaseLanguageModel as LangchainLLM
-
+    from llama_index.core.base.embeddings.base import (
+        BaseEmbedding as LlamaIndexEmbedding,
+    )
     from llama_index.core.base.llms.base import BaseLLM as LlamaIndexLLM
-    from llama_index.core.base.embeddings.base import BaseEmbedding as LlamaIndexEmbedding
 
-    from llama_index.core.schema import Document as LlamaindexDocument
-    
     from ragas.embeddings.base import BaseRagasEmbeddings
     from ragas.llms.base import BaseRagasLLM
     from ragas.testset.synthesizers import QueryDistribution
@@ -81,7 +84,7 @@ class TestsetGenerator:
         cls,
         llm: LlamaIndexLLM,
         embedding_model: LlamaIndexEmbedding,
-        knowledge_graph: t.Optional[KnowledgeGraph] = None
+        knowledge_graph: t.Optional[KnowledgeGraph] = None,
     ) -> "TestsetGenerator":
         knowledge_graph = knowledge_graph or KnowledgeGraph()
         return cls(
@@ -190,7 +193,7 @@ class TestsetGenerator:
                 llm=transforms_llm or self.llm,
                 embedding_model=transforms_embedding_model or self.embedding_model,
             )
-        
+
         # convert the documents to Ragas nodes
         nodes = []
         for doc in documents:
@@ -268,7 +271,7 @@ class TestsetGenerator:
         """
         if run_config is not None:
             self.llm.set_run_config(run_config)
-        
+
         query_distribution = query_distribution or default_query_distribution(self.llm)
         callbacks = callbacks or []
 

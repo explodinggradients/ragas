@@ -114,7 +114,7 @@ def evaluate(
     Returns
     -------
     EvaluationResult
-        EvaluationResult object containing the scores of each metric. 
+        EvaluationResult object containing the scores of each metric.
         You can use this do analysis later.
 
     Raises

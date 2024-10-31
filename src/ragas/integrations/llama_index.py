@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import logging
-import datasets
 import typing as t
 from uuid import uuid4
+
+import datasets
 
 from ragas.embeddings import LlamaIndexEmbeddingsWrapper
 from ragas.evaluation import evaluate as ragas_evaluate
@@ -51,7 +52,7 @@ def evaluate(
         raise ValueError("Provide dataset!")
 
     dataset = dataset.to_hf_dataset()
-    
+
     exec = Executor(
         desc="Running Query Engine",
         keep_progress_bar=True,
@@ -91,7 +92,7 @@ def evaluate(
             column=dataset["reference"],
             new_fingerprint=str(uuid4()),
         )
-    
+
     results = ragas_evaluate(
         dataset=hf_dataset,
         metrics=metrics,
