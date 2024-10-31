@@ -206,11 +206,12 @@ class KnowledgeGraph:
     def __str__(self) -> str:
         return self.__repr__()
 
-    def find_clusters(
+    def find_indirect_clusters(
         self, relationship_condition: t.Callable[[Relationship], bool] = lambda _: True
     ) -> t.List[t.Set[Node]]:
         """
-        Finds clusters of nodes in the knowledge graph based on a relationship condition.
+        Finds indirect clusters of nodes in the knowledge graph based on a relationship condition.
+        Here if A -> B -> C, then A, B, and C form a cluster.
 
         Parameters
         ----------
@@ -255,6 +256,21 @@ class KnowledgeGraph:
     def find_direct_clusters(
         self, relationship_condition: t.Callable[[Relationship], bool] = lambda _: True
     ) -> t.List[t.Set[Node]]:
+        
+        """
+        Finds direct clusters of nodes in the knowledge graph based on a relationship condition.
+        Here if A->B, and A->C, then A, B, and C form a cluster.
+
+        Parameters
+        ----------
+        relationship_condition : Callable[[Relationship], bool], optional
+            A function that takes a Relationship and returns a boolean, by default lambda _: True
+
+        Returns
+        -------
+        List[Set[Node]]
+            A list of sets, where each set contains nodes that form a cluster.
+        """
 
         clusters = []
         relationships = [
