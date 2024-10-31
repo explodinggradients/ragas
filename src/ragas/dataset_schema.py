@@ -316,6 +316,9 @@ class EvaluationDataset(RagasDataset[SingleTurnSampleOrMultiTurnSample]):
         else:
             raise TypeError("Index must be int or slice")
 
+    def is_multi_turn(self) -> bool:
+        return self.get_sample_type() == MultiTurnSample
+
     def to_list(self) -> t.List[t.Dict]:
         rows = [sample.to_dict() for sample in self.samples]
 

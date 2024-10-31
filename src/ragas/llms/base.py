@@ -299,6 +299,9 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
                 "stop": stop,
             }
 
+    def is_finished(self, response: LLMResult) -> bool:
+        return True
+
     def generate_text(
         self,
         prompt: PromptValue,
