@@ -32,6 +32,7 @@ if t.TYPE_CHECKING:
         BaseEmbedding as LlamaIndexEmbedding,
     )
     from llama_index.core.base.llms.base import BaseLLM as LlamaIndexLLM
+    from llama_index.core.schema import Document as LlamaIndexDocument
 
     from ragas.embeddings.base import BaseRagasEmbeddings
     from ragas.llms.base import BaseRagasLLM
@@ -159,7 +160,7 @@ class TestsetGenerator:
 
     def generate_with_llamaindex_docs(
         self,
-        documents: t.Sequence[LCDocument],
+        documents: t.Sequence[LlamaIndexDocument],
         testset_size: int,
         transforms: t.Optional[Transforms] = None,
         transforms_llm: t.Optional[BaseRagasLLM] = None,
@@ -174,18 +175,16 @@ class TestsetGenerator:
         Generates an evaluation dataset based on given scenarios and parameters.
         """
 
+        run_config = run_config or RunConfig()
+
         # force the user to provide an llm and embedding client to prevent use of default LLMs
         if not self.llm and not transforms_llm:
             raise ValueError(
-                """An llm client was not provided. 
-                       Provide an LLM on TestsetGenerator instantiation or as an argument for transforms_llm parameter. 
-                       Alternatively you can provide your own transforms through the `transforms` parameter."""
+                "An llm client was not provided. Provide an LLM on TestsetGenerator instantiation or as an argument for transforms_llm parameter. Alternatively you can provide your own transforms through the `transforms` parameter."
             )
         if not self.embedding_model and not transforms_embedding_model:
             raise ValueError(
-                """An embedding client was not provided. 
-                       Provide an embedding model on TestsetGenerator instantiation or as an argument for transforms_llm parameter. 
-                       Alternatively you can provide your own transforms through the `transforms` parameter."""
+                "An embedding client was not provided. Provide an embedding model on TestsetGenerator instantiation or as an argument for transforms_llm parameter. Alternatively you can provide your own transforms through the `transforms` parameter."
             )
 
         if not transforms:
