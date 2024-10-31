@@ -406,3 +406,206 @@ class SpecificQuery(PydanticPrompt[SpecificQuestionInput, StringIO]):
             ),
         )
     ]
+
+
+class ThemesAndConcepts(BaseModel):
+    output: t.List[str]
+
+
+class ThemesAndConceptsExtractorPrompt(PydanticPrompt[StringIO, ThemesAndConcepts]):
+    instruction: str = "Extract the main themes and concepts from the given text."
+    input_model: t.Type[StringIO] = StringIO
+    output_model: t.Type[ThemesAndConcepts] = ThemesAndConcepts
+    examples: t.List[t.Tuple[StringIO, ThemesAndConcepts]] = [
+        (
+            StringIO(
+                text="Artificial intelligence is transforming industries by automating tasks requiring human intelligence. AI analyzes vast data quickly and accurately, driving innovations like self-driving cars and personalized recommendations."
+            ),
+            ThemesAndConcepts(
+                output=[
+                    "Artificial intelligence",
+                    "Automation",
+                    "Data analysis",
+                    "Innovation",
+                    "Self-driving cars",
+                    "Personalized recommendations",
+                ]
+            ),
+        )
+    ]
+
+
+    
+                   
+
+class ConceptsList(BaseModel):
+    lists_of_concepts: t.List[t.List[str]]  # A list containing lists of concepts from each node
+
+class ConceptCombinations(BaseModel):
+    combinations: t.List[t.List[str]]  # Each combination is a list of concepts from different nodes
+
+# Define the prompt class
+class ConceptCombinationPrompt(PydanticPrompt[ConceptsList, ConceptCombinations]):
+    instruction: str = (
+        "Form combinations by pairing concepts from at least two different lists.\n"
+        "**Instructions:**\n"
+        "- Review the concepts from each node.\n"
+        "- Identify concepts that can logically be connected or contrasted.\n"
+        "- Form combinations that involve concepts from different nodes.\n"
+        "- Each combination should include at least one concept from two or more nodes.\n"
+        "- List the combinations clearly and concisely.\n"
+        "- Do not repeat the same combination more than once."
+    )
+    input_model: t.Type[ConceptsList] = ConceptsList  # Contains lists of concepts from each node
+    output_model: t.Type[ConceptCombinations] = ConceptCombinations  # Contains list of concept combinations
+    examples: t.List[t.Tuple[ConceptsList, ConceptCombinations]] = [
+        (
+            ConceptsList(
+                lists_of_concepts=[
+                    ["Artificial intelligence", "Automation"],  # Concepts from Node 1
+                    ["Healthcare", "Data privacy"]             # Concepts from Node 2
+                ]
+            ),
+            ConceptCombinations(
+                combinations=[
+                    ["Artificial intelligence", "Healthcare"],
+                    ["Automation", "Data privacy"]
+                ]
+            )
+        )]
+    
+    
+
+class NodeSummaries(BaseModel):
+    summaries: t.List[str]
+
+
+class Persona(BaseModel):
+    name: str
+    role_description: str
+
+
+class PersonasList(BaseModel):
+    personas: t.List[Persona]
+    
+    def __getitem__(self, key: str) -> Persona:
+        for persona in self.personas:
+            if persona.name == key:
+                return persona
+        raise KeyError(f"No persona found with name '{key}'")
+
+# Define the prompt class
+class PersonaGenerationPrompt(PydanticPrompt[NodeSummaries, PersonasList]):
+    instruction: str = (
+        "Using the provided node summaries, generate a list of possible personas who might "
+        "interact with this document set for information. For each persona, include only a unique name "
+        "and a brief role description summarizing who they are and their position or function."
+    )
+    input_model: t.Type[NodeSummaries] = NodeSummaries
+    output_model: t.Type[PersonasList] = PersonasList
+    examples: t.List[t.Tuple[NodeSummaries, PersonasList]] = [
+        (
+            NodeSummaries(
+                summaries=(
+                    [
+                        "The Ally Lab focuses on understanding allyship, which involves actively supporting "
+                        "marginalized groups to remove barriers in the workplace. Being an ally requires self-education, "
+                        "empathy, active listening, humility, and courage. Allies should recognize their privilege and "
+                        "take action to promote inclusivity.",
+                        "The Neurodiversity in the Workplace Short Course highlights the importance of understanding "
+                        "neurodiversity (including autism, ADHD, and dyslexia) to create an inclusive work environment. "
+                        "The course discusses personalized communication, management styles, and reasonable accommodations.",
+                        "Remote Work Challenges and Solutions discusses unique issues like communication barriers and "
+                        "feelings of isolation. It recommends inclusive communication and virtual team-building activities "
+                        "to support remote team members, including those from marginalized and neurodiverse backgrounds.",
+                    ]
+                )
+            ),
+            PersonasList(
+                personas=[
+                    Persona(
+                        name="Diversity and Inclusion Officer",
+                        role_description="Oversees initiatives to promote inclusivity and support for marginalized groups within the organization.",
+                    ),
+                    Persona(
+                        name="HR Manager",
+                        role_description="Manages employee support, training, and accommodations for diverse needs within the company.",
+                    ),
+                    Persona(
+                        name="Remote Team Lead",
+                        role_description="Leads a team of remote employees, focusing on inclusive communication and collaboration strategies.",
+                    ),
+                    Persona(
+                        name="Employee Ally",
+                        role_description="A team member interested in developing allyship skills to support marginalized colleagues.",
+                    ),
+                    Persona(
+                        name="Neurodivergent Employee Advocate",
+                        role_description="Works to ensure understanding and accommodations for neurodivergent employees in the workplace.",
+                    ),
+                ]
+            ),
+        )
+    ]
+
+
+
+# Define the input models
+class ThemesList(BaseModel):
+    themes: t.List[str]
+    
+
+# Define the output model
+class PersonaThemesMapping(BaseModel):
+    mapping: t.Dict[str, t.List[str]]  # Mapping from persona name to list of relevant themes
+
+# Define the prompt class
+class ThemesPersonasMatchingPrompt(PydanticPrompt[t.Tuple[ThemesList, PersonasList], PersonaThemesMapping]):
+    instruction: str = (
+        "Given the list of themes and the list of personas with their role descriptions, "
+        "match each persona with the themes that are most relevant to them based on their role descriptions. "
+        "Provide a mapping where each persona's name is associated with a list of relevant themes."
+    )
+    input_model: t.Type[t.Tuple[ThemesList, PersonasList]] = t.Tuple[ThemesList, PersonasList]
+    output_model: t.Type[PersonaThemesMapping] = PersonaThemesMapping
+    examples: t.List[t.Tuple[t.Tuple[ThemesList, PersonasList], PersonaThemesMapping]] = [
+        (
+            (
+                ThemesList(
+                    themes=[
+                        "Active listening",
+                        "Personalized communication",
+                        "Empathy",
+                        "Communication barriers",
+                        "Self-education",
+                        "Understanding cognitive differences",
+                        "Inclusivity",
+                        "Managing remote teams"
+                    ]
+                ),
+                PersonasList(
+                    personas=[
+                        Persona(
+                            name="HR Manager",
+                            role_description="Manages employee support and training within the company."
+                        ),
+                        Persona(
+                            name="Remote Team Lead",
+                            role_description="Leads a team of remote employees, focusing on inclusive communication."
+                        ),
+                        Persona(
+                            name="Employee Ally",
+                            role_description="A team member interested in developing allyship skills."
+                        ),
+                    ]
+                )
+            ),
+            PersonaThemesMapping(
+                mapping={
+                    "HR Manager": ["Active listening", "Personalized communication", "Self-education", "Understanding cognitive differences", "Inclusivity"],
+                    "Remote Team Lead": ["Communication barriers", "Empathy", "Managing remote teams", "Inclusivity", "Active listening"],
+                    "Employee Ally": ["Self-education", "Empathy", "Active listening", "Inclusivity"]
+                }
+            )
+        )
+    ]

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -10,12 +11,26 @@ from pydantic import BaseModel
 from ragas.callbacks import new_group
 from ragas.llms import BaseRagasLLM, llm_factory
 from ragas.prompt import PromptMixin
+from ragas.prompt.pydantic_prompt import PydanticPrompt
 from ragas.testset.graph import KnowledgeGraph, Node
+from ragas.testset.synthesizers.prompts import PersonaGenerationPrompt, NodeSummaries, GeneratedPersonas, PersonasList
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
     from ragas.dataset_schema import BaseSample
+
+import random
+
+logger = logging.getLogger(__name__)
+
+
+def default_filter(node: Node) -> bool:
+
+    if node.type.name == "DOCUMENT" and node.properties.get("summary") is not None:
+        return True
+    else:
+        return random.random() < 0.1
 
 
 class QueryLength(str, Enum):
@@ -37,6 +52,36 @@ class QueryStyle(str, Enum):
     PERFECT_GRAMMAR = "Perfect grammar"
     POOR_GRAMMAR = "Poor grammar"
     WEB_SEARCH_LIKE = "Web search like queries"
+
+
+
+@dataclass
+class PersonaGenerator:
+
+    llm: BaseRagasLLM
+    prompt: PydanticPrompt = PersonaGenerationPrompt()
+    filter_nodes: t.Callable[[Node], bool] = field(default_factory=lambda: default_filter)
+    max_tokens: int = 4000
+
+    async def generate_from_kg(self, kg: KnowledgeGraph) -> GeneratedPersonas:
+
+        texts = []
+        nodes = [node for node in kg.nodes if self.filter_nodes(node)]
+        for node in nodes:
+            text = node.properties.get("summary") or node.properties.get(
+                "topic_description"
+            )
+            if text is None:
+                logger.warning(
+                    f"Node {node} does not have a summary or topic description."
+                )
+            texts.append(text)
+
+        random.shuffle(texts)
+        prompt_input = NodeSummaries(summaries=texts[: self.max_tokens])
+        response = await self.prompt.generate(data=prompt_input, llm=self.llm)
+        return response
+        
 
 
 class BaseScenario(BaseModel):

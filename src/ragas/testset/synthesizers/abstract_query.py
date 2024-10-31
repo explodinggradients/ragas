@@ -69,7 +69,7 @@ class AbstractQuerySynthesizer(QuerySynthesizer):
     async def _generate_scenarios(
         self, n: int, knowledge_graph: KnowledgeGraph, callbacks: Callbacks
     ) -> t.List[AbstractQueryScenario]:
-        node_clusters = knowledge_graph.find_clusters(
+        node_clusters = knowledge_graph.find_indirect_clusters(
             relationship_condition=lambda rel: (
                 True if rel.get_property("cosine_similarity") else False
             )
@@ -212,7 +212,7 @@ class ComparativeAbstractQuerySynthesizer(QuerySynthesizer):
     async def _generate_scenarios(
         self, n: int, knowledge_graph: KnowledgeGraph, callbacks: Callbacks
     ) -> t.List[ComparativeAbstractQueryScenario]:
-        node_clusters = knowledge_graph.find_clusters(
+        node_clusters = knowledge_graph.find_indirect_clusters(
             relationship_condition=lambda rel: (
                 True if rel.get_property("summary_cosine_similarity") else False
             )
