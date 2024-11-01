@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from ragas.prompt import PydanticPrompt, StringIO
 from ragas.testset.graph import Node
+from ragas.testset.synthesizers.prompts import ThemesAndConceptsExtractorPrompt
 from ragas.testset.transforms.base import LLMBasedExtractor
 
 
@@ -300,3 +301,27 @@ class NERExtractor(LLMBasedExtractor):
             return self.property_name, {}
         result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
         return self.property_name, result.entities.model_dump()
+
+
+@dataclass
+class ThemesExtractor(LLMBasedExtractor):
+    """
+    Extracts themes from the given text.
+
+    Attributes
+    ----------
+    property_name : str
+        The name of the property to extract. Defaults to "themes".
+    prompt : ThemesExtractorPrompt
+        The prompt used for extraction.
+    """
+
+    property_name: str = "themes"
+    prompt: ThemesAndConceptsExtractorPrompt = ThemesAndConceptsExtractorPrompt()
+
+    async def extract(self, node: Node) -> t.Tuple[str, t.List[str]]:
+        node_text = node.get_property("page_content")
+        if node_text is None:
+            return self.property_name, []
+        result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
+        return self.property_name, result.output

@@ -1,6 +1,6 @@
 import typing as t
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from ragas.prompt import PydanticPrompt, StringIO
 from ragas.testset.synthesizers.base import QueryLength, QueryStyle
@@ -435,16 +435,21 @@ class ThemesAndConceptsExtractorPrompt(PydanticPrompt[StringIO, ThemesAndConcept
     ]
 
 
-    
-                   
-
 class ConceptsList(BaseModel):
-    lists_of_concepts: t.List[t.List[str]]  # A list containing lists of concepts from each node
+    lists_of_concepts: t.List[t.List[str]] = Field(
+        description="A list containing lists of concepts from each node"
+    )
+    max_combinations: int = Field(
+        description="The maximum number of concept combinations to generate", default=5
+    )
+
 
 class ConceptCombinations(BaseModel):
-    combinations: t.List[t.List[str]]  # Each combination is a list of concepts from different nodes
+    combinations: t.List[
+        t.List[str]
+    ]  # Each combination is a list of concepts from different nodes
 
-# Define the prompt class
+
 class ConceptCombinationPrompt(PydanticPrompt[ConceptsList, ConceptCombinations]):
     instruction: str = (
         "Form combinations by pairing concepts from at least two different lists.\n"
@@ -456,25 +461,30 @@ class ConceptCombinationPrompt(PydanticPrompt[ConceptsList, ConceptCombinations]
         "- List the combinations clearly and concisely.\n"
         "- Do not repeat the same combination more than once."
     )
-    input_model: t.Type[ConceptsList] = ConceptsList  # Contains lists of concepts from each node
-    output_model: t.Type[ConceptCombinations] = ConceptCombinations  # Contains list of concept combinations
+    input_model: t.Type[ConceptsList] = (
+        ConceptsList  # Contains lists of concepts from each node
+    )
+    output_model: t.Type[ConceptCombinations] = (
+        ConceptCombinations  # Contains list of concept combinations
+    )
     examples: t.List[t.Tuple[ConceptsList, ConceptCombinations]] = [
         (
             ConceptsList(
                 lists_of_concepts=[
                     ["Artificial intelligence", "Automation"],  # Concepts from Node 1
-                    ["Healthcare", "Data privacy"]             # Concepts from Node 2
-                ]
+                    ["Healthcare", "Data privacy"],  # Concepts from Node 2
+                ],
+                max_combinations=2,
             ),
             ConceptCombinations(
                 combinations=[
                     ["Artificial intelligence", "Healthcare"],
-                    ["Automation", "Data privacy"]
+                    ["Automation", "Data privacy"],
                 ]
-            )
-        )]
-    
-    
+            ),
+        )
+    ]
+
 
 class NodeSummaries(BaseModel):
     summaries: t.List[str]
@@ -487,12 +497,13 @@ class Persona(BaseModel):
 
 class PersonasList(BaseModel):
     personas: t.List[Persona]
-    
+
     def __getitem__(self, key: str) -> Persona:
         for persona in self.personas:
             if persona.name == key:
                 return persona
         raise KeyError(f"No persona found with name '{key}'")
+
 
 # Define the prompt class
 class PersonaGenerationPrompt(PydanticPrompt[NodeSummaries, PersonasList]):
@@ -549,29 +560,35 @@ class PersonaGenerationPrompt(PydanticPrompt[NodeSummaries, PersonasList]):
     ]
 
 
-
-# Define the input models
 class ThemesList(BaseModel):
     themes: t.List[str]
-    
+
+
+class ThemesPersonasInput(BaseModel):
+    themes: ThemesList
+    personas: PersonasList
+
 
 # Define the output model
 class PersonaThemesMapping(BaseModel):
-    mapping: t.Dict[str, t.List[str]]  # Mapping from persona name to list of relevant themes
+    mapping: t.Dict[str, t.List[str]]
+
 
 # Define the prompt class
-class ThemesPersonasMatchingPrompt(PydanticPrompt[t.Tuple[ThemesList, PersonasList], PersonaThemesMapping]):
+class ThemesPersonasMatchingPrompt(
+    PydanticPrompt[ThemesPersonasInput, PersonaThemesMapping]
+):
     instruction: str = (
         "Given the list of themes and the list of personas with their role descriptions, "
         "match each persona with the themes that are most relevant to them based on their role descriptions. "
         "Provide a mapping where each persona's name is associated with a list of relevant themes."
     )
-    input_model: t.Type[t.Tuple[ThemesList, PersonasList]] = t.Tuple[ThemesList, PersonasList]
+    input_model: t.Type[ThemesPersonasInput] = ThemesPersonasInput
     output_model: t.Type[PersonaThemesMapping] = PersonaThemesMapping
-    examples: t.List[t.Tuple[t.Tuple[ThemesList, PersonasList], PersonaThemesMapping]] = [
+    examples: t.List[t.Tuple[ThemesPersonasInput, PersonaThemesMapping]] = [
         (
-            (
-                ThemesList(
+            ThemesPersonasInput(
+                themes=ThemesList(
                     themes=[
                         "Active listening",
                         "Personalized communication",
@@ -580,32 +597,82 @@ class ThemesPersonasMatchingPrompt(PydanticPrompt[t.Tuple[ThemesList, PersonasLi
                         "Self-education",
                         "Understanding cognitive differences",
                         "Inclusivity",
-                        "Managing remote teams"
+                        "Managing remote teams",
                     ]
                 ),
-                PersonasList(
+                personas=PersonasList(
                     personas=[
                         Persona(
                             name="HR Manager",
-                            role_description="Manages employee support and training within the company."
+                            role_description="Manages employee support and training within the company.",
                         ),
                         Persona(
                             name="Remote Team Lead",
-                            role_description="Leads a team of remote employees, focusing on inclusive communication."
+                            role_description="Leads a team of remote employees, focusing on inclusive communication.",
                         ),
                         Persona(
                             name="Employee Ally",
-                            role_description="A team member interested in developing allyship skills."
+                            role_description="A team member interested in developing allyship skills.",
                         ),
                     ]
-                )
+                ),
             ),
             PersonaThemesMapping(
                 mapping={
-                    "HR Manager": ["Active listening", "Personalized communication", "Self-education", "Understanding cognitive differences", "Inclusivity"],
-                    "Remote Team Lead": ["Communication barriers", "Empathy", "Managing remote teams", "Inclusivity", "Active listening"],
-                    "Employee Ally": ["Self-education", "Empathy", "Active listening", "Inclusivity"]
+                    "HR Manager": [
+                        "Active listening",
+                        "Personalized communication",
+                        "Self-education",
+                        "Understanding cognitive differences",
+                        "Inclusivity",
+                    ],
+                    "Remote Team Lead": [
+                        "Communication barriers",
+                        "Empathy",
+                        "Managing remote teams",
+                        "Inclusivity",
+                        "Active listening",
+                    ],
+                    "Employee Ally": [
+                        "Self-education",
+                        "Empathy",
+                        "Active listening",
+                        "Inclusivity",
+                    ],
                 }
-            )
+            ),
         )
     ]
+
+
+class QueryConditions(BaseModel):
+    persona: Persona
+    themes: t.List[str]
+    query_style: str  # e.g., "web search", "informal", "formal"
+    query_length: str  # e.g., "short", "medium", "long"
+    context: t.List[str]  # Background content used for generating the query and answer
+
+
+# Define the output model
+class GeneratedQueryAnswer(BaseModel):
+    query: str  # The generated question based on conditions
+    answer: str  # The generated answer based on the context
+
+
+class QueryAnswerGenerationPrompt(
+    PydanticPrompt[QueryConditions, GeneratedQueryAnswer]
+):
+    instruction: str = (
+        "Generate a query and answer based on the specified conditions (persona, themes, style, length) "
+        "and the provided context. Ensure the answer is fully faithful to the context, only using information "
+        "directly from the nodes provided."
+        "### Instructions:\n"
+        "1. **Generate a Query**: Based on the context, persona, themes, style, and length, create a question "
+        "that aligns with the persona’s perspective and reflects the themes.\n"
+        "2. **Generate an Answer**: Using only the content from the provided context, create a faithful and detailed  answer to "
+        "the query. Do not include any information that not in or cannot be inferred from the given context.\n"
+        "### Example Outputs:\n\n"
+    )
+    input_model: t.Type[QueryConditions] = QueryConditions
+    output_model: t.Type[GeneratedQueryAnswer] = GeneratedQueryAnswer
+    examples = []
