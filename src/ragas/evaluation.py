@@ -55,7 +55,7 @@ RAGAS_EVALUATION_CHAIN_NAME = "ragas evaluation"
 @track_was_completed
 def evaluate(
     dataset: t.Union[Dataset, EvaluationDataset],
-    metrics: list[Metric] | None = None,
+    metrics: t.Optional[t.Sequence[Metric]] = None,
     llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
     callbacks: Callbacks = None,
