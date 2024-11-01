@@ -86,7 +86,10 @@ class TestsetGenerator:
         llm: LlamaIndexLLM,
         embedding_model: LlamaIndexEmbedding,
         knowledge_graph: t.Optional[KnowledgeGraph] = None,
-    ) -> "TestsetGenerator":
+    ) -> TestsetGenerator:
+        """
+        Creates a `TestsetGenerator` from a LlamaIndex LLM and embedding model.
+        """
         knowledge_graph = knowledge_graph or KnowledgeGraph()
         return cls(
             LlamaIndexLLMWrapper(llm),
@@ -163,8 +166,8 @@ class TestsetGenerator:
         documents: t.Sequence[LlamaIndexDocument],
         testset_size: int,
         transforms: t.Optional[Transforms] = None,
-        transforms_llm: t.Optional[BaseRagasLLM] = None,
-        transforms_embedding_model: t.Optional[BaseRagasEmbeddings] = None,
+        transforms_llm: t.Optional[LlamaIndexLLM] = None,
+        transforms_embedding_model: t.Optional[LlamaIndexEmbedding] = None,
         query_distribution: t.Optional[QueryDistribution] = None,
         run_config: t.Optional[RunConfig] = None,
         callbacks: t.Optional[Callbacks] = None,
@@ -188,9 +191,19 @@ class TestsetGenerator:
             )
 
         if not transforms:
+            if transforms_llm is None:
+                llm_for_transforms = self.llm
+            else:
+                llm_for_transforms = LlamaIndexLLMWrapper(transforms_llm)
+            if transforms_embedding_model is None:
+                embedding_model_for_transforms = self.embedding_model
+            else:
+                embedding_model_for_transforms = LlamaIndexEmbeddingsWrapper(
+                    transforms_embedding_model
+                )
             transforms = default_transforms(
-                llm=transforms_llm or self.llm,
-                embedding_model=transforms_embedding_model or self.embedding_model,
+                llm=llm_for_transforms,
+                embedding_model=embedding_model_for_transforms,
             )
 
         # convert the documents to Ragas nodes

@@ -344,6 +344,9 @@ class EvaluationDataset(RagasDataset[SingleTurnSampleOrMultiTurnSample]):
             samples.extend(SingleTurnSample(**sample) for sample in data)
         return cls(samples=samples)
 
+    def __repr__(self) -> str:
+        return f"EvaluationDataset(features={self.features()}, len={len(self.samples)})"
+
 
 @dataclass
 class EvaluationResult:
