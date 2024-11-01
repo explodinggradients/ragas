@@ -204,6 +204,11 @@ class RagasDataset(ABC, t.Generic[Sample]):
         data = self.to_list()
         return pd.DataFrame(data)
 
+    @classmethod
+    def from_pandas(cls, dataframe: PandasDataframe):
+        """Creates an EvaluationDataset from a pandas DataFrame."""
+        return cls.from_list(dataframe.to_dict(orient="records"))
+    
     def features(self):
         """Returns the features of the samples."""
         return self.samples[0].get_features()
@@ -316,6 +321,9 @@ class EvaluationDataset(RagasDataset[SingleTurnSampleOrMultiTurnSample]):
         else:
             raise TypeError("Index must be int or slice")
 
+    def is_multi_turn(self) -> bool:
+        return self.get_sample_type() == MultiTurnSample
+
     def to_list(self) -> t.List[t.Dict]:
         rows = [sample.to_dict() for sample in self.samples]
 
@@ -340,6 +348,9 @@ class EvaluationDataset(RagasDataset[SingleTurnSampleOrMultiTurnSample]):
         else:
             samples.extend(SingleTurnSample(**sample) for sample in data)
         return cls(samples=samples)
+
+    def __repr__(self) -> str:
+        return f"EvaluationDataset(features={self.features()}, len={len(self.samples)})"
 
 
 @dataclass

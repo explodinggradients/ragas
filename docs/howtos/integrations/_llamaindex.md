@@ -10,32 +10,27 @@ You will need an testset to evaluate your `QueryEngine` against. You can either 
 
 Let's see how that works with Llamaindex
 
-
-```python
 # load the documents
 from llama_index.core import SimpleDirectoryReader
 
 documents = SimpleDirectoryReader("./nyc_wikipedia").load_data()
-```
 
 Now  lets init the `TestsetGenerator` object with the corresponding generator and critic llms
 
 
 ```python
-from ragas.testset.generator import TestsetGenerator
-from ragas.testset.evolutions import simple, reasoning, multi_context
+from ragas.testset import TestsetGenerator
+
 from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
 
 # generator with openai models
-generator_llm = OpenAI(model="gpt-3.5-turbo-16k")
-critic_llm = OpenAI(model="gpt-4")
-embeddings = OpenAIEmbedding()
+generator_llm = OpenAI(model="gpt-4o")
+embeddings = OpenAIEmbedding(model="text-embedding-3-large")
 
 generator = TestsetGenerator.from_llama_index(
-    generator_llm=generator_llm,
-    critic_llm=critic_llm,
-    embeddings=embeddings,
+    llm=generator_llm,
+    embedding_model=embeddings,
 )
 ```
 
@@ -46,21 +41,9 @@ Now you are all set to generate the dataset
 # generate testset
 testset = generator.generate_with_llamaindex_docs(
     documents,
-    test_size=5,
-    distributions={simple: 0.5, reasoning: 0.25, multi_context: 0.25},
+    testset_size=5,
 )
 ```
-
-
-    embedding nodes:   0%|          | 0/54 [00:00<?, ?it/s]
-
-
-    Filename and doc_id are the same for all nodes.
-
-
-
-    Generating:   0%|          | 0/5 [00:00<?, ?it/s]
-
 
 
 ```python
@@ -89,59 +72,47 @@ df.head()
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>question</th>
-      <th>contexts</th>
-      <th>ground_truth</th>
-      <th>evolution_type</th>
-      <th>metadata</th>
-      <th>episode_done</th>
+      <th>user_input</th>
+      <th>reference_contexts</th>
+      <th>reference</th>
+      <th>synthesizer_name</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
-      <td>What cultural movement began in New York City ...</td>
-      <td>[ Others cite the end of the crack epidemic an...</td>
-      <td>The Harlem Renaissance</td>
-      <td>simple</td>
-      <td>[{'file_path': '/home/jjmachan/jjmachan/explod...</td>
-      <td>True</td>
+      <td>Why was New York named after the Duke of York?</td>
+      <td>[Etymology ==\n\nIn 1664, New York was named i...</td>
+      <td>New York was named after the Duke of York in 1...</td>
+      <td>AbstractQuerySynthesizer</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>What is the significance of New York City's tr...</td>
-      <td>[ consisting of 51 council members whose distr...</td>
-      <td>New York City's transportation system is both ...</td>
-      <td>simple</td>
-      <td>[{'file_path': '/home/jjmachan/jjmachan/explod...</td>
-      <td>True</td>
+      <td>How did the early Europan exploraton and setle...</td>
+      <td>[History ==\n\n\n=== Early history ===\nIn the...</td>
+      <td>The early European exploration and settlement ...</td>
+      <td>AbstractQuerySynthesizer</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>What factors led to the creation of Central Pa...</td>
-      <td>[ next ten years with British troops stationed...</td>
-      <td>Public-minded members of the contemporaneous b...</td>
-      <td>reasoning</td>
-      <td>[{'file_path': '/home/jjmachan/jjmachan/explod...</td>
-      <td>True</td>
+      <td>New York City population culture finance diver...</td>
+      <td>[New York City, the most populous city in the ...</td>
+      <td>New York City is a global cultural, financial,...</td>
+      <td>ComparativeAbstractQuerySynthesizer</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>What was the impact of the Treaty of Breda on ...</td>
-      <td>[ British raids. In 1626, the Dutch colonial D...</td>
-      <td>The Treaty of Breda confirmed the transfer of ...</td>
-      <td>multi_context</td>
-      <td>[{'file_path': '/home/jjmachan/jjmachan/explod...</td>
-      <td>True</td>
+      <td>How do the economic aspects of New York City, ...</td>
+      <td>[New York City, the most populous city in the ...</td>
+      <td>New York City's economic aspects, such as its ...</td>
+      <td>ComparativeAbstractQuerySynthesizer</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>What role did New York play in the American Re...</td>
-      <td>[ British raids. In 1626, the Dutch colonial D...</td>
-      <td>New York played a significant role in the Amer...</td>
-      <td>simple</td>
-      <td>[{'file_path': '/home/jjmachan/jjmachan/explod...</td>
-      <td>True</td>
+      <td>What role do biomedical research institutions ...</td>
+      <td>[Education ==\n\n \n\nNew York City has the la...</td>
+      <td>Biomedical research institutions in New York C...</td>
+      <td>SpecificQuerySynthesizer</td>
     </tr>
   </tbody>
 </table>
@@ -160,8 +131,7 @@ Since we already loaded the dataset into `documents` lets use that.
 
 ```python
 # build query engine
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
-from llama_index.core.settings import Settings
+from llama_index.core import VectorStoreIndex
 
 vector_index = VectorStoreIndex.from_documents(documents)
 
@@ -174,24 +144,24 @@ Lets try an sample question from the generated testset to see if it is working
 ```python
 # convert it to pandas dataset
 df = testset.to_pandas()
-df["question"][0]
+df["user_input"][0]
 ```
 
 
 
 
-    'What cultural movement began in New York City and established the African-American literary canon in the United States?'
+    'Why was New York named after the Duke of York?'
 
 
 
 
 ```python
-response_vector = query_engine.query(df["question"][0])
+response_vector = query_engine.query(df["user_input"][0])
 
 print(response_vector)
 ```
 
-    The Harlem Renaissance was the cultural movement that began in New York City and established the African-American literary canon in the United States.
+    New York was named after the Duke of York because in 1664, the city was named in honor of the Duke of York, who later became King James II of England.
 
 
 ## Evaluating the `QueryEngine`
@@ -210,54 +180,38 @@ Now lets import the metrics we will be using to evaluate
 
 
 ```python
+# import metrics
 from ragas.metrics import (
-    faithfulness,
-    answer_relevancy,
-    context_precision,
-    context_recall,
+    Faithfulness,
+    AnswerRelevancy,
+    ContextPrecision,
+    ContextRecall,
 )
-from ragas.metrics.critique import harmfulness
 
+# init metrics with evaluator LLM
+from ragas.llms import LlamaIndexLLMWrapper
+evaluator_llm = LlamaIndexLLMWrapper(OpenAI(model="gpt-4o"))
 metrics = [
-    faithfulness,
-    answer_relevancy,
-    context_precision,
-    context_recall,
-    harmfulness,
+    Faithfulness(llm=evaluator_llm),
+    AnswerRelevancy(llm=evaluator_llm),
+    ContextPrecision(llm=evaluator_llm),
+    ContextRecall(llm=evaluator_llm),
 ]
-```
-
-now lets init the evaluator model
-
-
-```python
-from llama_index.llms.openai import OpenAI
-from llama_index.embeddings.openai import OpenAIEmbedding
-
-# using GPT 3.5, use GPT 4 / 4-turbo for better accuracy
-evaluator_llm = OpenAI(model="gpt-3.5-turbo")
 ```
 
 the `evaluate()` function expects a dict of "question" and "ground_truth" for metrics. You can easily convert the `testset` to that format
 
 
 ```python
-# convert to HF dataset
-ds = testset.to_dataset()
-
-ds_dict = ds.to_dict()
-ds_dict["question"]
-ds_dict["ground_truth"]
+# convert to Ragas Evaluation Dataset
+ragas_dataset = testset.to_evaluation_dataset()
+ragas_dataset
 ```
 
 
 
 
-    ['The Harlem Renaissance',
-     "New York City's transportation system is both complex and extensive, with a comprehensive mass transit system that accounts for one in every three users of mass transit in the United States. The New York City Subway system is the largest rapid transit system in the world, and the city has a high usage of public transport, with a majority of households not owning a car. Due to their reliance on mass transit, New Yorkers spend less of their household income on transportation compared to the national average.",
-     'Public-minded members of the contemporaneous business elite lobbied for the establishment of Central Park',
-     'The Treaty of Breda confirmed the transfer of New Amsterdam to English control and the renaming of the settlement as New York. The Duke of York, who would later become King James II and VII, played a significant role in the naming of New York City.',
-     'New York played a significant role in the American Revolution. The Stamp Act Congress met in New York in October 1765, and the city became a center for the Sons of Liberty organization. Skirmishes and battles took place in and around New York, including the Battle of Long Island and the Battle of Saratoga. The city was occupied by British forces for much of the war, but it was eventually liberated by American troops in 1783.']
+    EvaluationDataset(features=['user_input', 'reference_contexts', 'reference'], len=7)
 
 
 
@@ -270,26 +224,9 @@ from ragas.integrations.llama_index import evaluate
 result = evaluate(
     query_engine=query_engine,
     metrics=metrics,
-    dataset=ds_dict,
-    llm=evaluator_llm,
-    embeddings=OpenAIEmbedding(),
+    dataset=ragas_dataset,
 )
 ```
-
-
-    Running Query Engine:   0%|          | 0/5 [00:00<?, ?it/s]
-
-
-
-    Evaluating:   0%|          | 0/25 [00:00<?, ?it/s]
-
-
-    n values greater than 1 not support for LlamaIndex LLMs
-    n values greater than 1 not support for LlamaIndex LLMs
-    n values greater than 1 not support for LlamaIndex LLMs
-    n values greater than 1 not support for LlamaIndex LLMs
-    n values greater than 1 not support for LlamaIndex LLMs
-
 
 
 ```python
@@ -297,7 +234,7 @@ result = evaluate(
 print(result)
 ```
 
-    {'faithfulness': 0.9000, 'answer_relevancy': 0.8993, 'context_precision': 0.9000, 'context_recall': 1.0000, 'harmfulness': 0.0000}
+    {'faithfulness': 0.9746, 'answer_relevancy': 0.9421, 'context_precision': 0.9286, 'context_recall': 0.6857}
 
 
 You can convert into a pandas dataframe to run more analysis on it.
@@ -328,77 +265,101 @@ result.to_pandas()
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>question</th>
-      <th>contexts</th>
-      <th>answer</th>
-      <th>ground_truth</th>
+      <th>user_input</th>
+      <th>retrieved_contexts</th>
+      <th>reference_contexts</th>
+      <th>response</th>
+      <th>reference</th>
       <th>faithfulness</th>
       <th>answer_relevancy</th>
       <th>context_precision</th>
       <th>context_recall</th>
-      <th>harmfulness</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
-      <td>What cultural movement began in New York City ...</td>
-      <td>[=== 19th century ===\n\nOver the course of th...</td>
-      <td>The Harlem Renaissance of literary and cultura...</td>
-      <td>The Harlem Renaissance</td>
-      <td>0.5</td>
-      <td>0.907646</td>
-      <td>0.5</td>
+      <td>What events led to New York being named after ...</td>
+      <td>[New York City is the headquarters of the glob...</td>
+      <td>[Etymology ==\n\nIn 1664, New York was named i...</td>
+      <td>New York was named in honor of the Duke of Yor...</td>
+      <td>New York was named after the Duke of York in 1...</td>
+      <td>1.000000</td>
+      <td>0.950377</td>
       <td>1.0</td>
-      <td>0</td>
+      <td>1.0</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>What is the significance of New York City's tr...</td>
-      <td>[== Transportation ==\n\nNew York City's compr...</td>
-      <td>New York City's transportation system is signi...</td>
-      <td>New York City's transportation system is both ...</td>
+      <td>How early European explorers and Native Americ...</td>
+      <td>[=== Dutch rule ===\n\nA permanent European pr...</td>
+      <td>[History ==\n\n\n=== Early history ===\nIn the...</td>
+      <td>Early European explorers established a permane...</td>
+      <td>Early European explorers and Native Americans ...</td>
+      <td>1.000000</td>
+      <td>0.896300</td>
       <td>1.0</td>
-      <td>0.986921</td>
-      <td>1.0</td>
-      <td>1.0</td>
-      <td>0</td>
+      <td>0.8</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>What factors led to the creation of Central Pa...</td>
-      <td>[=== 19th century ===\n\nOver the course of th...</td>
-      <td>Prominent American literary figures lived in N...</td>
-      <td>Public-minded members of the contemporaneous b...</td>
+      <td>New York City population economy challenges</td>
+      <td>[=== Wealth and income disparity ===\nNew York...</td>
+      <td>[New York City, the most populous city in the ...</td>
+      <td>New York City has faced challenges related to ...</td>
+      <td>New York City, as the most populous city in th...</td>
+      <td>1.000000</td>
+      <td>0.915717</td>
       <td>1.0</td>
-      <td>0.805014</td>
-      <td>1.0</td>
-      <td>1.0</td>
-      <td>0</td>
+      <td>0.0</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>What was the impact of the Treaty of Breda on ...</td>
-      <td>[=== Dutch rule ===\n\nA permanent European pr...</td>
-      <td>The Treaty of Breda resulted in the transfer o...</td>
-      <td>The Treaty of Breda confirmed the transfer of ...</td>
+      <td>How do the economic aspects of New York City, ...</td>
+      <td>[=== Wealth and income disparity ===\nNew York...</td>
+      <td>[New York City, the most populous city in the ...</td>
+      <td>The economic aspects of New York City, as a gl...</td>
+      <td>New York City's economic aspects as a global c...</td>
+      <td>0.913043</td>
+      <td>0.929317</td>
       <td>1.0</td>
-      <td>0.860931</td>
-      <td>1.0</td>
-      <td>1.0</td>
-      <td>0</td>
+      <td>0.0</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>What role did New York play in the American Re...</td>
+      <td>What are some of the cultural and architectura...</td>
+      <td>[==== Staten Island ====\nStaten Island (Richm...</td>
+      <td>[Geography ==\n\nDuring the Wisconsin glaciati...</td>
+      <td>Brooklyn is known for its cultural diversity, ...</td>
+      <td>Brooklyn is distinct within New York City due ...</td>
+      <td>1.000000</td>
+      <td>0.902664</td>
+      <td>0.5</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>What measures has New York City implemented to...</td>
+      <td>[==== International events ====\nIn terms of h...</td>
+      <td>[Environment ==\n\n \nEnvironmental issues in ...</td>
+      <td>New York City has implemented various measures...</td>
+      <td>New York City has implemented several measures...</td>
+      <td>0.909091</td>
+      <td>1.000000</td>
+      <td>1.0</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>What role did New York City play during the Am...</td>
       <td>[=== Province of New York and slavery ===\n\nI...</td>
-      <td>New York served as a significant location duri...</td>
-      <td>New York played a significant role in the Amer...</td>
+      <td>[History ==\n\n\n=== Early history ===\nIn the...</td>
+      <td>New York City served as a significant military...</td>
+      <td>During the American Revolution, New York City ...</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
       <td>1.0</td>
-      <td>0.935846</td>
       <td>1.0</td>
-      <td>1.0</td>
-      <td>0</td>
     </tr>
   </tbody>
 </table>

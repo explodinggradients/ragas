@@ -157,7 +157,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
 
             # if generation_info is empty, we parse the response_metadata
             # this is less reliable
-            elif t.cast(ChatGeneration, resp).message is not None:
+            elif isinstance(resp, ChatGeneration) and t.cast(ChatGeneration, resp).message is not None:
                 resp_message: BaseMessage = t.cast(ChatGeneration, resp).message
                 if resp_message.response_metadata.get("finish_reason") is not None:
                     is_finished_list.append(
@@ -266,9 +266,11 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
     ):
         self.llm = llm
 
-        self._signature = ""
-        if type(self.llm).__name__.lower() == "bedrock":
-            self._signature = "bedrock"
+        try:
+            self._signature = type(self.llm).__name__.lower()
+        except AttributeError:
+            self._signature = ""
+
         if run_config is None:
             run_config = RunConfig()
         self.set_run_config(run_config)
@@ -290,7 +292,7 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
             logger.info(
                 "callbacks not supported for LlamaIndex LLMs, ignoring callbacks"
             )
-        if self._signature == "bedrock":
+        if self._signature in ["anthropic", "bedrock"]:
             return {"temperature": temperature}
         else:
             return {
@@ -298,6 +300,9 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
                 "temperature": temperature,
                 "stop": stop,
             }
+
+    def is_finished(self, response: LLMResult) -> bool:
+        return True
 
     def generate_text(
         self,
