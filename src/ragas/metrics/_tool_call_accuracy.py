@@ -61,7 +61,9 @@ class ToolCallAccuracy(MultiTurnMetric):
     async def _multi_turn_ascore(
         self, sample: MultiTurnSample, callbacks: Callbacks
     ) -> float:
-        assert sample.reference_tool_calls is not None, "Reference tool calls is not set"
+        assert (
+            sample.reference_tool_calls is not None
+        ), "Reference tool calls is not set"
 
         pred_tool_calls = []
         for item in sample.user_input:

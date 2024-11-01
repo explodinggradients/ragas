@@ -9,9 +9,13 @@ from langchain_core.callbacks import BaseCallbackManager
 from ragas._analytics import TestsetGenerationEvent, track
 from ragas.callbacks import new_group
 from ragas.cost import TokenUsageParser
-from ragas.embeddings.base import BaseRagasEmbeddings, LangchainEmbeddingsWrapper
+from ragas.embeddings.base import (
+    BaseRagasEmbeddings,
+    LangchainEmbeddingsWrapper,
+    LlamaIndexEmbeddingsWrapper,
+)
 from ragas.executor import Executor
-from ragas.llms import BaseRagasLLM, LangchainLLMWrapper
+from ragas.llms import BaseRagasLLM, LangchainLLMWrapper, LlamaIndexLLMWrapper
 from ragas.run_config import RunConfig
 from ragas.testset.graph import KnowledgeGraph, Node, NodeType
 from ragas.testset.synthesizers import default_query_distribution
@@ -24,6 +28,11 @@ if t.TYPE_CHECKING:
     from langchain_core.documents import Document as LCDocument
     from langchain_core.embeddings.embeddings import Embeddings as LangchainEmbeddings
     from langchain_core.language_models import BaseLanguageModel as LangchainLLM
+    from llama_index.core.base.embeddings.base import (
+        BaseEmbedding as LlamaIndexEmbedding,
+    )
+    from llama_index.core.base.llms.base import BaseLLM as LlamaIndexLLM
+    from llama_index.core.schema import Document as LlamaIndexDocument
 
     from ragas.embeddings.base import BaseRagasEmbeddings
     from ragas.llms.base import BaseRagasLLM
@@ -71,6 +80,23 @@ class TestsetGenerator:
             knowledge_graph,
         )
 
+    @classmethod
+    def from_llama_index(
+        cls,
+        llm: LlamaIndexLLM,
+        embedding_model: LlamaIndexEmbedding,
+        knowledge_graph: t.Optional[KnowledgeGraph] = None,
+    ) -> TestsetGenerator:
+        """
+        Creates a `TestsetGenerator` from a LlamaIndex LLM and embedding model.
+        """
+        knowledge_graph = knowledge_graph or KnowledgeGraph()
+        return cls(
+            LlamaIndexLLMWrapper(llm),
+            LlamaIndexEmbeddingsWrapper(embedding_model),
+            knowledge_graph,
+        )
+
     def generate_with_langchain_docs(
         self,
         documents: t.Sequence[LCDocument],
@@ -85,7 +111,40 @@ class TestsetGenerator:
         raise_exceptions: bool = True,
     ) -> Testset:
         """
-        Generates an evaluation dataset based on given scenarios and parameters.
+        Generates an evaluation dataset based on given Langchain documents and parameters.
+
+        Parameters
+        ----------
+        documents : Sequence[LCDocument]
+            A sequence of Langchain documents to use as source material
+        testset_size : int
+            The number of test samples to generate
+        transforms : Optional[Transforms], optional
+            Custom transforms to apply to the documents, by default None
+        transforms_llm : Optional[BaseRagasLLM], optional
+            LLM to use for transforms if different from instance LLM, by default None
+        transforms_embedding_model : Optional[BaseRagasEmbeddings], optional
+            Embedding model to use for transforms if different from instance model, by default None
+        query_distribution : Optional[QueryDistribution], optional
+            Distribution of query types to generate, by default None
+        run_config : Optional[RunConfig], optional
+            Configuration for the generation run, by default None
+        callbacks : Optional[Callbacks], optional
+            Callbacks to use during generation, by default None
+        with_debugging_logs : bool, optional
+            Whether to include debug logs, by default False
+        raise_exceptions : bool, optional
+            Whether to raise exceptions during generation, by default True
+
+        Returns
+        -------
+        Testset
+            The generated evaluation dataset
+
+        Raises
+        ------
+        ValueError
+            If no LLM or embedding model is provided either during initialization or as arguments
         """
 
         # force the user to provide an llm and embedding client to prevent use of default LLMs
@@ -124,6 +183,79 @@ class TestsetGenerator:
 
         # apply transforms and update the knowledge graph
         apply_transforms(kg, transforms)
+        self.knowledge_graph = kg
+
+        return self.generate(
+            testset_size=testset_size,
+            query_distribution=query_distribution,
+            run_config=run_config,
+            callbacks=callbacks,
+            with_debugging_logs=with_debugging_logs,
+            raise_exceptions=raise_exceptions,
+        )
+
+    def generate_with_llamaindex_docs(
+        self,
+        documents: t.Sequence[LlamaIndexDocument],
+        testset_size: int,
+        transforms: t.Optional[Transforms] = None,
+        transforms_llm: t.Optional[LlamaIndexLLM] = None,
+        transforms_embedding_model: t.Optional[LlamaIndexEmbedding] = None,
+        query_distribution: t.Optional[QueryDistribution] = None,
+        run_config: t.Optional[RunConfig] = None,
+        callbacks: t.Optional[Callbacks] = None,
+        with_debugging_logs=False,
+        raise_exceptions: bool = True,
+    ):
+        """
+        Generates an evaluation dataset based on given scenarios and parameters.
+        """
+
+        run_config = run_config or RunConfig()
+
+        # force the user to provide an llm and embedding client to prevent use of default LLMs
+        if not self.llm and not transforms_llm:
+            raise ValueError(
+                "An llm client was not provided. Provide an LLM on TestsetGenerator instantiation or as an argument for transforms_llm parameter. Alternatively you can provide your own transforms through the `transforms` parameter."
+            )
+        if not self.embedding_model and not transforms_embedding_model:
+            raise ValueError(
+                "An embedding client was not provided. Provide an embedding model on TestsetGenerator instantiation or as an argument for transforms_llm parameter. Alternatively you can provide your own transforms through the `transforms` parameter."
+            )
+
+        if not transforms:
+            if transforms_llm is None:
+                llm_for_transforms = self.llm
+            else:
+                llm_for_transforms = LlamaIndexLLMWrapper(transforms_llm)
+            if transforms_embedding_model is None:
+                embedding_model_for_transforms = self.embedding_model
+            else:
+                embedding_model_for_transforms = LlamaIndexEmbeddingsWrapper(
+                    transforms_embedding_model
+                )
+            transforms = default_transforms(
+                llm=llm_for_transforms,
+                embedding_model=embedding_model_for_transforms,
+            )
+
+        # convert the documents to Ragas nodes
+        nodes = []
+        for doc in documents:
+            if doc.text is not None and doc.text.strip() != "":
+                node = Node(
+                    type=NodeType.DOCUMENT,
+                    properties={
+                        "page_content": doc.text,
+                        "document_metadata": doc.metadata,
+                    },
+                )
+                nodes.append(node)
+
+        kg = KnowledgeGraph(nodes=nodes)
+
+        # apply transforms and update the knowledge graph
+        apply_transforms(kg, transforms, run_config)
         self.knowledge_graph = kg
 
         return self.generate(
@@ -182,6 +314,9 @@ class TestsetGenerator:
         4. Generate samples for each scenario.
         5. Compile the results into an EvaluationDataset.
         """
+        if run_config is not None:
+            self.llm.set_run_config(run_config)
+
         query_distribution = query_distribution or default_query_distribution(self.llm)
         callbacks = callbacks or []
 
