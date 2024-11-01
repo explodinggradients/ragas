@@ -111,7 +111,40 @@ class TestsetGenerator:
         raise_exceptions: bool = True,
     ) -> Testset:
         """
-        Generates an evaluation dataset based on given scenarios and parameters.
+        Generates an evaluation dataset based on given Langchain documents and parameters.
+
+        Parameters
+        ----------
+        documents : Sequence[LCDocument]
+            A sequence of Langchain documents to use as source material
+        testset_size : int
+            The number of test samples to generate
+        transforms : Optional[Transforms], optional
+            Custom transforms to apply to the documents, by default None
+        transforms_llm : Optional[BaseRagasLLM], optional
+            LLM to use for transforms if different from instance LLM, by default None
+        transforms_embedding_model : Optional[BaseRagasEmbeddings], optional
+            Embedding model to use for transforms if different from instance model, by default None
+        query_distribution : Optional[QueryDistribution], optional
+            Distribution of query types to generate, by default None
+        run_config : Optional[RunConfig], optional
+            Configuration for the generation run, by default None
+        callbacks : Optional[Callbacks], optional
+            Callbacks to use during generation, by default None
+        with_debugging_logs : bool, optional
+            Whether to include debug logs, by default False
+        raise_exceptions : bool, optional
+            Whether to raise exceptions during generation, by default True
+
+        Returns
+        -------
+        Testset
+            The generated evaluation dataset
+
+        Raises
+        ------
+        ValueError
+            If no LLM or embedding model is provided either during initialization or as arguments
         """
 
         # force the user to provide an llm and embedding client to prevent use of default LLMs
