@@ -65,3 +65,53 @@
     ```
 
     If you want more information on how to use other AWS services, please refer to the [langchain-aws](https://python.langchain.com/docs/integrations/providers/aws/) documentation.
+
+=== "Azure OpenAI"
+    Install the langchain-openai package
+
+    ```bash
+    pip install langchain-openai
+    ```
+
+    Ensure you have your Azure OpenAI key ready and available in your environment.
+
+    ```python
+    import os
+    os.environ["AZURE_OPENAI_API_KEY"] = "your-azure-openai-key"
+
+    # other configuration
+    azure_config = {
+        "base_url": "",  # your endpoint
+        "model_deployment": "",  # your model deployment name
+        "model_name": "",  # your model name
+        "embedding_deployment": "",  # your embedding deployment name
+        "embedding_name": "",  # your embedding name
+    }
+
+    ```
+
+    Define your LLMs and wrap them in `LangchainLLMWrapper` so that it can be used with ragas.
+
+    ```python
+    from langchain_openai import AzureChatOpenAI
+    from langchain_openai import AzureOpenAIEmbeddings
+    from ragas.llms import LangchainLLMWrapper
+    from ragas.embeddings import LangchainEmbeddingsWrapper
+    generator_llm = LangchainLLMWrapper(AzureChatOpenAI(
+        openai_api_version="2023-05-15",
+        azure_endpoint=azure_configs["base_url"],
+        azure_deployment=azure_configs["model_deployment"],
+        model=azure_configs["model_name"],
+        validate_base_url=False,
+    ))
+
+    # init the embeddings for answer_relevancy, answer_correctness and answer_similarity
+    generator_embeddings = LangchainEmbeddingsWrapper(AzureOpenAIEmbeddings(
+        openai_api_version="2023-05-15",
+        azure_endpoint=azure_configs["base_url"],
+        azure_deployment=azure_configs["embedding_deployment"],
+        model=azure_configs["embedding_name"],
+    ))
+    ```
+
+    If you want more information on how to use other Azure services, please refer to the [langchain-azure](https://python.langchain.com/docs/integrations/chat/azure_chat_openai/) documentation.
