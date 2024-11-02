@@ -23,9 +23,7 @@ class EntitiesList(BaseModel):
 
 class ExtractEntitiesPrompt(PydanticPrompt[StringIO, EntitiesList]):
     name: str = "text_entity_extraction"
-    instruction: str = (
-        "Given a text, extract unique entities without repetition. Ensure you consider different forms or mentions of the same entity as a single entity."
-    )
+    instruction: str = "Given a text, extract unique entities without repetition. Ensure you consider different forms or mentions of the same entity as a single entity."
     input_model = StringIO
     output_model = EntitiesList
     examples = [
@@ -107,7 +105,7 @@ class ContextEntityRecall(MetricWithLLM, SingleTurnMetric):
         Batch size for openai completion.
     """
 
-    name: str = "context_entity_recall"  # type: ignore
+    name: str = "context_entity_recall"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {"reference", "retrieved_contexts"}

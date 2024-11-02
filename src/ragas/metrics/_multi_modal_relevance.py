@@ -70,7 +70,7 @@ Answer - True, if the response for the query is in line with context information
 
 @dataclass
 class MultiModalRelevance(MetricWithLLM, SingleTurnMetric):
-    name: str = "relevance_rate"  # type: ignore
+    name: str = "relevance_rate"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {

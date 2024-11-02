@@ -161,7 +161,7 @@ class SimpleCriteriaScoreWithoutReference(
         made using majority vote.
     """
 
-    name: str = field(default="", repr=True)  # type: ignore
+    name: str = field(default="", repr=True)
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {
@@ -183,7 +183,7 @@ class SimpleCriteriaScoreWithoutReference(
     strictness: int = field(default=1, repr=False)
     max_retries: int = 1
 
-    def __post_init__(self: t.Self):
+    def __post_init__(self):
         if self.name == "":
             raise ValueError("Expects a name")
         if self.definition == "":
@@ -207,12 +207,12 @@ class SimpleCriteriaScoreWithoutReference(
         return score
 
     async def _single_turn_ascore(
-        self: t.Self, sample: SingleTurnSample, callbacks: Callbacks
+        self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
         row = sample.to_dict()
         return await self._ascore(row, callbacks)
 
-    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "set LLM before use"
 
         user_input, context, response = (
@@ -241,7 +241,7 @@ class SimpleCriteriaScoreWithoutReference(
         return self._compute_score([response])
 
     async def _multi_turn_ascore(
-        self: t.Self, sample: MultiTurnSample, callbacks: Callbacks
+        self, sample: MultiTurnSample, callbacks: Callbacks
     ) -> float:
         assert self.llm is not None, "LLM is not set"
         assert sample.reference is not None, "Reference is not set"
@@ -261,7 +261,7 @@ class SimpleCriteriaScoreWithoutReference(
 
 @dataclass
 class SimpleCriteriaScoreWithReference(SimpleCriteriaScoreWithoutReference):
-    name: str = field(default="", repr=True)  # type: ignore
+    name: str = field(default="", repr=True)
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {
@@ -327,6 +327,6 @@ class SimpleCriteriaScoreWithReference(SimpleCriteriaScoreWithoutReference):
 
         return self._compute_score([response])
 
-    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         sample = SingleTurnSample(**row)
         return await self._single_turn_ascore(sample, callbacks)

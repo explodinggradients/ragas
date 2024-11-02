@@ -15,7 +15,7 @@ from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.executor import is_event_loop_running
 from ragas.prompt import PromptMixin
 from ragas.run_config import RunConfig
-from ragas.utils import RAGAS_SUPPORTED_LANGUAGE_CODES, deprecated
+from ragas.utils import RAGAS_SUPPORTED_LANGUAGE_CODES, camel_to_snake, deprecated
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -66,10 +66,11 @@ class Metric(ABC):
     """
 
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(default_factory=dict)
+    name: str = field(default="", repr=True)
 
-    @property
-    @abstractmethod
-    def name(self) -> str: ...
+    def __post_init__(self):
+        if self.name == "":
+            self.name = camel_to_snake(self.__class__.__name__)
 
     @property
     def required_columns(self) -> t.Dict[str, t.Set[str]]:

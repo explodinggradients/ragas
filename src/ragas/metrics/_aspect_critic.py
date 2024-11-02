@@ -15,7 +15,6 @@ from ragas.metrics.base import (
     SingleTurnMetric,
 )
 from ragas.prompt import PydanticPrompt
-from ragas.utils import camel_to_snake
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks.base import Callbacks
@@ -99,7 +98,7 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         made using majority vote.
     """
 
-    name: str = field(default="", repr=True)  # type: ignore
+    name: str = field(default="", repr=True)
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {
@@ -121,9 +120,13 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
 
     def __post_init__(self):
         if self.name == "":
-            self.name = camel_to_snake(self.__class__.__name__)  # type: ignore
+            raise ValueError(
+                f"{self.__class__.__name__}.__init__() missing required keyword argument: `name`"
+            )
         if self.definition == "":
-            raise ValueError("Expects definition")
+            raise ValueError(
+                f"{self.__class__.__name__}.__init__() missing required keyword argument: `definition`"
+            )
 
         # ensure odd number of checks to avoid tie in majority vote.
         self.strictness = (

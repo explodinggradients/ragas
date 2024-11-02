@@ -15,7 +15,7 @@ if t.TYPE_CHECKING:
 
 @dataclass
 class ToolCallAccuracy(MultiTurnMetric):
-    name: str = "tool_call_accuracy"  # type: ignore
+    name: str = "tool_call_accuracy"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.MULTI_TURN: {
