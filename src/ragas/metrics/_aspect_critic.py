@@ -15,6 +15,7 @@ from ragas.metrics.base import (
     SingleTurnMetric,
 )
 from ragas.prompt import PydanticPrompt
+from ragas.utils import camel_to_snake
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks.base import Callbacks
@@ -104,6 +105,7 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
             MetricType.SINGLE_TURN: {
                 "user_input",
                 "response",
+                "retrieved_contexts:optional",
             }
         }
     )
@@ -119,7 +121,7 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
 
     def __post_init__(self):
         if self.name == "":
-            raise ValueError("Expects a name")
+            self.name = camel_to_snake(self.__class__.__name__)  # type: ignore
         if self.definition == "":
             raise ValueError("Expects definition")
 
@@ -158,7 +160,7 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         if context is not None:
             if isinstance(context, list):
                 context = "\n".join(context)
-            user_input = f"Question: {user_input} Answer using context: {context}"
+            user_input = f"`user_input`: {user_input} Answer using `retrieved context`: {context}"
 
         prompt_input = AspectCriticInput(
             user_input=user_input,
@@ -175,7 +177,7 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         return self._compute_score([response])
 
     async def _multi_turn_ascore(
-        self: t.Self, sample: MultiTurnSample, callbacks: Callbacks
+        self, sample: MultiTurnSample, callbacks: Callbacks
     ) -> float:
         assert self.llm is not None, "LLM is not set"
         assert sample.reference is not None, "Reference is not set"
