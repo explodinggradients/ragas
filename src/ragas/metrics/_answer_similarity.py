@@ -69,6 +69,10 @@ class SemanticSimilarity(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         ground_truth = t.cast(str, row["reference"])
         answer = t.cast(str, row["response"])
 
+        # Handle embeddings for empty strings
+        ground_truth = ground_truth or " "
+        answer = answer or " "
+
         if self.is_cross_encoder and isinstance(self.embeddings, HuggingfaceEmbeddings):
             raise NotImplementedError(
                 "async score [ascore()] not implemented for HuggingFace embeddings"
