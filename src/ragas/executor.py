@@ -115,7 +115,9 @@ class Executor:
         name: t.Optional[str] = None,
         **kwargs,
     ) -> None:
-        """Submit a job to be executed, wrapping the callable with error handling and indexing to keep track of the job index."""
+        """
+        Submit a job to be executed, wrapping the callable with error handling and indexing to keep track of the job index.
+        """
         callable_with_index = self.wrap_callable_with_index(callable, len(self.jobs))
         self.jobs.append((callable_with_index, args, kwargs, name))
 
@@ -131,12 +133,13 @@ class Executor:
                 disable=not self.show_progress,
             ) as pbar:
                 # Create coroutines inside the loop instead of before
-                for afunc, args, kwargs, _ in self.jobs:
-                    coroutine = afunc(*args, **kwargs)
-                    for future in await as_completed([coroutine], max_workers):
-                        result = await future
-                        results.append(result)
-                        pbar.update(1)
+                coroutines = [
+                    afunc(*args, **kwargs) for afunc, args, kwargs, _ in self.jobs
+                ]
+                for future in await as_completed(coroutines, max_workers):
+                    result = await future
+                    results.append(result)
+                    pbar.update(1)
 
                 return results
 
@@ -178,9 +181,7 @@ class Executor:
 
     def results(self) -> t.List[t.Any]:
         """
-        Execute all submitted jobs and return their results.
-
-        The results are returned in the order of job submission.
+        Execute all submitted jobs and return their results. The results are returned in the order of job submission.
         """
         if is_event_loop_running():
             # an event loop is running so call nested_asyncio to fix this
@@ -207,7 +208,9 @@ def run_async_batch(
     kwargs_list: t.List[t.Dict],
     batch_size: t.Optional[int] = None,
 ):
-    """Provide functionality to run the same async function with different arguments in parallel."""
+    """
+    Provide functionality to run the same async function with different arguments in parallel.
+    """
     run_config = RunConfig()
     executor = Executor(
         desc=desc,
