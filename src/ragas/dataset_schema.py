@@ -208,7 +208,7 @@ class RagasDataset(ABC, t.Generic[Sample]):
     def from_pandas(cls, dataframe: PandasDataframe):
         """Creates an EvaluationDataset from a pandas DataFrame."""
         return cls.from_list(dataframe.to_dict(orient="records"))
-    
+
     def features(self):
         """Returns the features of the samples."""
         return self.samples[0].get_features()

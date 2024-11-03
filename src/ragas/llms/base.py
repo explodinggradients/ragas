@@ -157,7 +157,10 @@ class LangchainLLMWrapper(BaseRagasLLM):
 
             # if generation_info is empty, we parse the response_metadata
             # this is less reliable
-            elif isinstance(resp, ChatGeneration) and t.cast(ChatGeneration, resp).message is not None:
+            elif (
+                isinstance(resp, ChatGeneration)
+                and t.cast(ChatGeneration, resp).message is not None
+            ):
                 resp_message: BaseMessage = t.cast(ChatGeneration, resp).message
                 if resp_message.response_metadata.get("finish_reason") is not None:
                     is_finished_list.append(
