@@ -132,7 +132,7 @@ class Executor:
                 desc=self.desc,
                 disable=not self.show_progress,
             ) as pbar:
-                # Create coroutines inside the loop instead of before
+                # Create coroutines
                 coroutines = [
                     afunc(*args, **kwargs) for afunc, args, kwargs, _ in self.jobs
                 ]
@@ -167,7 +167,7 @@ class Executor:
                 batch_pbar.reset(total=len(batch))
                 batch_pbar.set_description(f"Batch {i}/{n_batches}")
 
-                # Create coroutines for just this batch
+                # Create coroutines per batch
                 coroutines = [
                     afunc(*args, **kwargs) for afunc, args, kwargs, _ in batch
                 ]
