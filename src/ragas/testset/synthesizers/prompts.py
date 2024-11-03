@@ -3,6 +3,7 @@ import typing as t
 from pydantic import BaseModel, Field
 
 from ragas.prompt import PydanticPrompt, StringIO
+from ragas.testset.persona import Persona, PersonasList
 from ragas.testset.synthesizers.base import QueryLength, QueryStyle
 
 
@@ -486,80 +487,6 @@ class ConceptCombinationPrompt(PydanticPrompt[ConceptsList, ConceptCombinations]
     ]
 
 
-class NodeSummaries(BaseModel):
-    summaries: t.List[str]
-
-
-class Persona(BaseModel):
-    name: str
-    role_description: str
-
-
-class PersonasList(BaseModel):
-    personas: t.List[Persona]
-
-    def __getitem__(self, key: str) -> Persona:
-        for persona in self.personas:
-            if persona.name == key:
-                return persona
-        raise KeyError(f"No persona found with name '{key}'")
-
-
-# Define the prompt class
-class PersonaGenerationPrompt(PydanticPrompt[NodeSummaries, PersonasList]):
-    instruction: str = (
-        "Using the provided node summaries, generate a list of possible personas who might "
-        "interact with this document set for information. For each persona, include only a unique name "
-        "and a brief role description summarizing who they are and their position or function."
-    )
-    input_model: t.Type[NodeSummaries] = NodeSummaries
-    output_model: t.Type[PersonasList] = PersonasList
-    examples: t.List[t.Tuple[NodeSummaries, PersonasList]] = [
-        (
-            NodeSummaries(
-                summaries=(
-                    [
-                        "The Ally Lab focuses on understanding allyship, which involves actively supporting "
-                        "marginalized groups to remove barriers in the workplace. Being an ally requires self-education, "
-                        "empathy, active listening, humility, and courage. Allies should recognize their privilege and "
-                        "take action to promote inclusivity.",
-                        "The Neurodiversity in the Workplace Short Course highlights the importance of understanding "
-                        "neurodiversity (including autism, ADHD, and dyslexia) to create an inclusive work environment. "
-                        "The course discusses personalized communication, management styles, and reasonable accommodations.",
-                        "Remote Work Challenges and Solutions discusses unique issues like communication barriers and "
-                        "feelings of isolation. It recommends inclusive communication and virtual team-building activities "
-                        "to support remote team members, including those from marginalized and neurodiverse backgrounds.",
-                    ]
-                )
-            ),
-            PersonasList(
-                personas=[
-                    Persona(
-                        name="Diversity and Inclusion Officer",
-                        role_description="Oversees initiatives to promote inclusivity and support for marginalized groups within the organization.",
-                    ),
-                    Persona(
-                        name="HR Manager",
-                        role_description="Manages employee support, training, and accommodations for diverse needs within the company.",
-                    ),
-                    Persona(
-                        name="Remote Team Lead",
-                        role_description="Leads a team of remote employees, focusing on inclusive communication and collaboration strategies.",
-                    ),
-                    Persona(
-                        name="Employee Ally",
-                        role_description="A team member interested in developing allyship skills to support marginalized colleagues.",
-                    ),
-                    Persona(
-                        name="Neurodivergent Employee Advocate",
-                        role_description="Works to ensure understanding and accommodations for neurodivergent employees in the workplace.",
-                    ),
-                ]
-            ),
-        )
-    ]
-
-
 class ThemesList(BaseModel):
     themes: t.List[str]
 
@@ -567,7 +494,7 @@ class ThemesList(BaseModel):
 class ThemesPersonasInput(BaseModel):
     themes: ThemesList
     personas: PersonasList
-
+    
 
 # Define the output model
 class PersonaThemesMapping(BaseModel):

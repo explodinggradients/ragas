@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import logging
 import random
+from turtle import pos
 import typing as t
 from dataclasses import dataclass
 from itertools import product
@@ -14,10 +15,11 @@ from ragas.prompt import PydanticPrompt
 from ragas.testset.graph import KnowledgeGraph, Node
 from ragas.testset.synthesizers.base import BaseScenario, QueryLength, QueryStyle
 from ragas.testset.synthesizers.base_query import QuerySynthesizer
+from ragas.testset.persona import PersonasList
+from ragas.testset.synthesizers.multihop.sampling import sample_diverse_combinations
 from ragas.testset.synthesizers.prompts import (
     ConceptCombinationPrompt,
     ConceptsList,
-    PersonasList,
     QueryAnswerGenerationPrompt,
     QueryConditions,
     ThemesList,
@@ -95,6 +97,34 @@ class MultiHopAbstractQuery(QuerySynthesizer):
     concept_combination_prompt: PydanticPrompt = ConceptCombinationPrompt()
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
     generate_query_reference_prompt: PydanticPrompt = QueryAnswerGenerationPrompt()
+    
+    
+    def _prepare_seed_node_persona_mapping(self, nodes, combinations: t.List[t.List[str]], persona_concepts) -> t.Dict[str, t.List[str]]:
+        
+        possible_combinations = []
+        for combination in combinations:
+            dict = {"combination": combination}
+            valid_personas = []
+            for persona, concept_list in persona_concepts.mapping.items():
+                concept_list = [c.lower() for c in concept_list]
+                if any(concept.lower() in concept_list for concept in combination):
+                    valid_personas.append(persona)
+            dict["personas"] = valid_personas
+            valid_nodes = []
+            for node in nodes:
+                node_themes = [theme.lower() for theme in node.get_property("themes")]
+                if node.get_property("themes") and any(
+                    concept.lower() in node_themes for concept in combination
+                ):
+                    valid_nodes.append(node)
+                    
+            dict["nodes"] = valid_nodes
+            dict["styles"] = list(QueryStyle)
+            dict["lengths"] = list(QueryLength)
+            
+            possible_combinations.append(dict)
+        return possible_combinations
+        
 
     async def _generate_scenarios(
         self,
@@ -144,40 +174,11 @@ class MultiHopAbstractQuery(QuerySynthesizer):
             persona_concepts = await self.theme_persona_matching_prompt.generate(
                 data=prompt_input, llm=self.llm, callbacks=callbacks
             )
-            node_themes = [
-                [theme.lower() for theme in theme_list] for theme_list in node_themes
-            ]
-            for combination in concept_combination.combinations:
-                for persona, concept_list in persona_concepts.mapping.items():
-                    concept_list = [c.lower() for c in concept_list]
-                    indices = [
-                        idx
-                        for idx, theme in enumerate(node_themes)
-                        if any(concept.lower() in concept_list for concept in theme)
-                    ]
-                    current_nodes = [nodes[idx] for idx in indices]
-                    if all(concept.lower() in concept_list for concept in combination):
-                        persona = persona_list[persona]
-                        style = random.choice(list(QueryStyle))
-                        length = random.choice(list(QueryLength))
-                        base_scenarios.append(
-                            MultiHopAbstractQueryScenario(
-                                nodes=current_nodes,
-                                themes=combination,
-                                persona=persona,
-                                style=style,
-                                length=length,
-                            )
-                        )
-
-            if len(base_scenarios) < num_sample_per_cluster:
-                for i in range(len(base_scenarios)):
-                    for style, length in product(list(QueryStyle), list(QueryLength)):
-                        scenario = copy.deepcopy(base_scenarios[i])
-                        scenario.style = style
-                        scenario.length = length
-                        base_scenarios.append(scenario)
-            scenarios.extend(base_scenarios[:num_sample_per_cluster])
+            
+            base_scenarios = self._prepare_seed_node_persona_mapping(nodes, concept_combination.combinations, persona_concepts)
+            base_scenarios = sample_diverse_combinations(base_scenarios, num_sample_per_cluster)
+            scenarios.extend(base_scenarios)
+            
         random.shuffle(scenarios)
 
         return scenarios
