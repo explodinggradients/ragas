@@ -149,10 +149,9 @@ theme:
     - content.code.copy
     - announce.dismiss
     - navigation.tabs
-    - navigation.instant
     - navigation.path
+    - navigation.instant
     - navigation.instant.prefetch
-    - navigation.instant.progress
     - navigation.sections
     - navigation.top
     - navigation.tracking
@@ -184,6 +183,10 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.snippets:
       base_path: ["./docs/extra/components/"]
+  - material.extensions.preview:
+      targets:
+        include:
+          - concepts/metrics/available_metrics/*
 
 # Extra CSS
 extra_css:
@@ -198,6 +201,7 @@ extra:
     property: !ENV GOOGLE_ANALYTICS_KEY
 plugins:
   - search
+  - social
   - git-revision-date-localized:
       enabled: !ENV [MKDOCS_CI, false]
       enable_creation_date: true

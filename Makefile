@@ -40,7 +40,7 @@ rewrite-docs: ## Use GPT4 to rewrite the documentation
 	@echo "Rewriting the documentation in directory $(DIR)..."
 	$(Q)python $(GIT_ROOT)/docs/python alphred.py --directory $(DIR)
 docsite: ## Build and serve documentation
-	$(Q)mkdocs serve
+	$(Q)mkdocs serve --dirtyreload
 
 # Benchmarks
 run-benchmarks-eval: ## Run benchmarks for Evaluation
