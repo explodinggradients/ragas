@@ -46,6 +46,8 @@ Check out these resources to learn more about the effectiveness of having a simp
 - [Hamel's Blog on Creating LLM-as-a-Judge that drives Business Result](https://hamel.dev/blog/posts/llm-judge/#step-3-direct-the-domain-expert-to-make-passfail-judgments-with-critiques)
 - [Eugene's Blog on AlignEval](https://eugeneyan.com/writing/aligneval/#labeling-mode-look-at-the-data)
 
+Now let's create a simple pass/fail metric to measure the hallucinations in the dataset with Ragas.
+
 
 ```python
 from ragas.metrics import AspectCritic
@@ -112,16 +114,21 @@ If your use case is not covered by those two, you can build a custom metric by s
 
 1. Am I trying to build a single turn or multi turn metric? If yes, subclassing the `Metric` class along with either [SingleTurnMetric][ragas.metrics.base.SingleTurnMetric] or [MultiTurnMetric][ragas.metrics.base.MultiTurnMetric] depending on if you are evaluating single turn or multi turn interactions.
 
-2. Do I need to use LLMs to evaluate my metric? If yes, instead of subclassing the `Metric` class, subclassing the `MetricWithLLM` class.
+2. Do I need to use LLMs to evaluate my metric? If yes, instead of subclassing the [Metric][ragas.metrics.base.Metric] class, subclassing the [MetricWithLLM][ragas.metrics.base.MetricWithLLM] class.
 
-3. Do I need to use embeddings to evaluate my metric? If yes, instead of subclassing the `Metric` class, subclassing the `MetricWithEmbeddings` class.
+3. Do I need to use embeddings to evaluate my metric? If yes, instead of subclassing the [Metric][ragas.metrics.base.Metric] class, subclassing the [MetricWithEmbeddings][ragas.metrics.base.MetricWithEmbeddings] class.
 
-4. Do I need to use both LLM and Embeddings to evaluate my metric? If yes, subclass both the `MetricWithLLM` and `MetricWithEmbeddings` classes.
+4. Do I need to use both LLM and Embeddings to evaluate my metric? If yes, subclass both the [MetricWithLLM][ragas.metrics.base.MetricWithLLM] and [MetricWithEmbeddings][ragas.metrics.base.MetricWithEmbeddings] classes.
 
 
-For our example, we need to to use LLMs to evaluate our metric so we will subclass the `MetricWithLLM` class and we are working for only single turn interactions for now so we will subclass the `SingleTurnMetric` class. 
+For our example, we need to to use LLMs to evaluate our metric so we will subclass the [MetricWithLLM][ragas.metrics.base.MetricWithLLM] class and we are working for only single turn interactions for now so we will subclass the [SingleTurnMetric][ragas.metrics.base.SingleTurnMetric] class. 
 
-As for the implementation, we will use the [Faithfulness][ragas.metrics.Faithfulness] metric to evaluate our metric to measure the hallucinations with the formula `hallucinations = 1 - faithfulness`.
+As for the implementation, we will use the [Faithfulness][ragas.metrics.Faithfulness] metric to evaluate our metric to measure the hallucinations with the formula 
+
+
+$$
+\text{Hallucinations} = 1 - \text{Faithfulness}
+$$
 
 
 ```python
