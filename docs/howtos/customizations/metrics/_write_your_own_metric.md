@@ -44,7 +44,7 @@ evaluator_llm = llm_factory('gpt-4o')
 Check out these resources to learn more about the effectiveness of having a simple pass/fail metric:
 
 - [Hamel's Blog on Creating LLM-as-a-Judge that drives Business Result](https://hamel.dev/blog/posts/llm-judge/#step-3-direct-the-domain-expert-to-make-passfail-judgments-with-critiques)
-- [Eugene's Blog on AlignEval](https://hamel.dev/blog/posts/llm-judge/#step-3-direct-the-domain-expert-to-make-passfail-judgments-with-critiques)
+- [Eugene's Blog on AlignEval](https://eugeneyan.com/writing/aligneval/#labeling-mode-look-at-the-data)
 
 
 ```python
