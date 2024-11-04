@@ -8,7 +8,6 @@ dependencies = [
     "langchain-core",
     "langchain-community",
     "langchain_openai",
-    "llama_index",
     "nest-asyncio",
     "appdirs",
     "pydantic>=2",
@@ -26,6 +25,7 @@ all = [
     "rapidfuzz",
     "pandas",
     "datacompy",
+    "llama_index",
 ]
 docs = [
     "mkdocs>=1.6.1",
