@@ -152,6 +152,7 @@ theme:
     - navigation.path
     - navigation.instant
     - navigation.instant.prefetch
+    - navigation.instant.preview
     - navigation.sections
     - navigation.top
     - navigation.tracking
@@ -183,10 +184,6 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.snippets:
       base_path: ["./docs/extra/components/"]
-  - material.extensions.preview:
-      targets:
-        include:
-          - concepts/metrics/available_metrics/*
 
 # Extra CSS
 extra_css:
