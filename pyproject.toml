@@ -25,6 +25,7 @@ all = [
     "rapidfuzz",
     "pandas",
     "datacompy",
+    "scikit-learn",
 ]
 docs = [
     "mkdocs>=1.6.1",
