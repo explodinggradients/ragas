@@ -150,14 +150,14 @@ class TestsetGenerator:
         # force the user to provide an llm and embedding client to prevent use of default LLMs
         if not self.llm and not transforms_llm:
             raise ValueError(
-                """An llm client was not provided. 
-                       Provide an LLM on TestsetGenerator instantiation or as an argument for transforms_llm parameter. 
+                """An llm client was not provided.
+                       Provide an LLM on TestsetGenerator instantiation or as an argument for transforms_llm parameter.
                        Alternatively you can provide your own transforms through the `transforms` parameter."""
             )
         if not self.embedding_model and not transforms_embedding_model:
             raise ValueError(
-                """An embedding client was not provided. 
-                       Provide an embedding model on TestsetGenerator instantiation or as an argument for transforms_llm parameter. 
+                """An embedding client was not provided.
+                       Provide an embedding model on TestsetGenerator instantiation or as an argument for transforms_llm parameter.
                        Alternatively you can provide your own transforms through the `transforms` parameter."""
             )
 
@@ -272,6 +272,7 @@ class TestsetGenerator:
         testset_size: int,
         query_distribution: t.Optional[QueryDistribution] = None,
         run_config: t.Optional[RunConfig] = None,
+        batch_size: t.Optional[int] = None,
         callbacks: t.Optional[Callbacks] = None,
         token_usage_parser: t.Optional[TokenUsageParser] = None,
         with_debugging_logs=False,
@@ -287,14 +288,16 @@ class TestsetGenerator:
         query_distribution : Optional[QueryDistribution], optional
             A list of tuples containing scenario simulators and their probabilities.
             If None, default simulators will be used.
+        run_config : Optional[RunConfig], optional
+            Configuration for running the generation process.
+        batch_size: int, optional
+            How large should batches be.  If set to None (default), no batching is done.
         callbacks : Optional[Callbacks], optional
             Langchain style callbacks to use for the generation process. You can use
             this to log the generation process or add other metadata.
         token_usage_parser : Optional[TokenUsageParser], optional
             Parse the LLMResult object and return a TokenUsage object. This is used to
             calculate the cost of the generation process.
-        run_config : Optional[RunConfig], optional
-            Configuration for running the generation process.
         with_debugging_logs : bool, default False
             If True, enable debug logging for various components.
         raise_exceptions : bool, default True
@@ -369,6 +372,7 @@ class TestsetGenerator:
             raise_exceptions=raise_exceptions,
             run_config=run_config,
             keep_progress_bar=False,
+            batch_size=batch_size,
         )
         # generate samples
         splits, _ = calculate_split_values(
@@ -403,6 +407,7 @@ class TestsetGenerator:
             raise_exceptions=raise_exceptions,
             run_config=run_config,
             keep_progress_bar=True,
+            batch_size=batch_size,
         )
         additional_testset_info: t.List[t.Dict] = []
         for i, (synthesizer, _) in enumerate(query_distribution):

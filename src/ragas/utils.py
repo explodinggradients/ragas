@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import logging
 import os
 import re
@@ -221,3 +222,13 @@ def camel_to_snake(name):
     """
     pattern = re.compile(r"(?<!^)(?=[A-Z])")
     return pattern.sub("_", name).lower()
+
+
+def batched(iterable: t.Iterable, n: int) -> t.Iterator[t.Tuple]:
+    """Batch data from the iterable into tuples of length n. The last batch may be shorter than n."""
+    # batched('ABCDEFG', 3) → ABC DEF G
+    if n < 1:
+        raise ValueError("n must be at least one")
+    iterator = iter(iterable)
+    while batch := tuple(itertools.islice(iterator, n)):
+        yield batch

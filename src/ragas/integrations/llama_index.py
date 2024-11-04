@@ -34,6 +34,7 @@ def evaluate(
     callbacks: t.Optional[Callbacks] = None,
     in_ci: bool = False,
     run_config: t.Optional[RunConfig] = None,
+    batch_size: t.Optional[int] = None,
     token_usage_parser: t.Optional[TokenUsageParser] = None,
     raise_exceptions: bool = False,
     column_map: t.Optional[t.Dict[str, str]] = None,
@@ -59,6 +60,7 @@ def evaluate(
         show_progress=show_progress,
         raise_exceptions=raise_exceptions,
         run_config=run_config,
+        batch_size=batch_size,
     )
 
     # check if multi-turn

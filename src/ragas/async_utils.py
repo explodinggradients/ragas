@@ -1,49 +1,89 @@
 """Async utils."""
 
 import asyncio
-from typing import Any, Coroutine, List
+from typing import Any, Coroutine, List, Optional
+
+from tqdm.auto import tqdm
+
+from ragas.executor import is_event_loop_running
+from ragas.utils import batched
 
 
 def run_async_tasks(
     tasks: List[Coroutine],
-    show_progress: bool = False,
+    batch_size: Optional[int] = None,
+    show_progress: bool = True,
     progress_bar_desc: str = "Running async tasks",
 ) -> List[Any]:
-    """Run a list of async tasks."""
-    tasks_to_execute: List[Any] = tasks
+    """
+    Execute async tasks with optional batching and progress tracking.
 
-    # if running in notebook, use nest_asyncio to hijack the event loop
-    try:
-        loop = asyncio.get_running_loop()
+    NOTE: Order of results is not guaranteed!
+
+    Args:
+        tasks: List of coroutines to execute
+        batch_size: Optional size for batching tasks. If None, runs all concurrently
+        show_progress: Whether to display progress bars
+    """
+
+    async def _run():
+        total_tasks = len(tasks)
+        results = []
+
+        # If no batching, run all tasks concurrently with single progress bar
+        if not batch_size:
+            with tqdm(
+                total=total_tasks,
+                desc=progress_bar_desc,
+                disable=not show_progress,
+            ) as pbar:
+                for future in asyncio.as_completed(tasks):
+                    result = await future
+                    results.append(result)
+                    pbar.update(1)
+            return results
+
+        # With batching, show nested progress bars
+        batches = batched(tasks, batch_size)  # generator
+        n_batches = (total_tasks + batch_size - 1) // batch_size
+        with (
+            tqdm(
+                total=total_tasks,
+                desc=progress_bar_desc,
+                disable=not show_progress,
+                position=0,
+                leave=True,
+            ) as overall_pbar,
+            tqdm(
+                total=batch_size,
+                desc=f"Batch 1/{n_batches}",
+                disable=not show_progress,
+                position=1,
+                leave=False,
+            ) as batch_pbar,
+        ):
+            for i, batch in enumerate(batches, 1):
+                batch_pbar.reset(total=len(batch))
+                batch_pbar.set_description(f"Batch {i}/{n_batches}")
+                for future in asyncio.as_completed(batch):
+                    result = await future
+                    results.append(result)
+                    overall_pbar.update(1)
+                    batch_pbar.update(1)
+
+        return results
+
+    if is_event_loop_running():
+        # an event loop is running so call nested_asyncio to fix this
         try:
             import nest_asyncio
         except ImportError:
-            raise RuntimeError(
-                "nest_asyncio is required to run async tasks in jupyter. Please install it via `pip install nest_asyncio`."  # noqa
+            raise ImportError(
+                "It seems like your running this in a jupyter-like environment. "
+                "Please install nest_asyncio with `pip install nest_asyncio` to make it work."
             )
         else:
             nest_asyncio.apply()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
 
-    # gather tasks to run
-    if show_progress:
-        from tqdm.asyncio import tqdm
-
-        async def _gather() -> List[Any]:
-            "gather tasks and show progress bar"
-            return await tqdm.gather(*tasks_to_execute, desc=progress_bar_desc)
-
-    else:  # don't show_progress
-
-        async def _gather() -> List[Any]:
-            return await asyncio.gather(*tasks_to_execute)
-
-    try:
-        outputs: List[Any] = loop.run_until_complete(_gather())
-    except Exception as e:
-        # run the operation w/o tqdm on hitting a fatal
-        # may occur in some environments where tqdm.asyncio
-        # is not supported
-        raise RuntimeError("Fatal error occurred while running async tasks.", e) from e
-    return outputs
+    results = asyncio.run(_run())
+    return results
