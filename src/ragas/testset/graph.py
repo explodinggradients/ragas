@@ -206,11 +206,14 @@ class KnowledgeGraph:
     def __str__(self) -> str:
         return self.__repr__()
 
-    def find_clusters(
-        self, relationship_condition: t.Callable[[Relationship], bool] = lambda _: True
+    def find_indirect_clusters(
+        self,
+        relationship_condition: t.Callable[[Relationship], bool] = lambda _: True,
+        depth_limit: int = 3,
     ) -> t.List[t.Set[Node]]:
         """
-        Finds clusters of nodes in the knowledge graph based on a relationship condition.
+        Finds indirect clusters of nodes in the knowledge graph based on a relationship condition.
+        Here if A -> B -> C, then A, B, and C form a cluster.
 
         Parameters
         ----------
@@ -229,25 +232,82 @@ class KnowledgeGraph:
             rel for rel in self.relationships if relationship_condition(rel)
         ]
 
-        def dfs(node: Node, cluster: t.Set[Node]):
+        def dfs(node: Node, cluster: t.Set[Node], depth: int):
+            if depth > depth_limit:
+                return
             visited.add(node)
             cluster.add(node)
             for rel in relationships:
+                neighbor = None
                 if rel.source == node and rel.target not in visited:
-                    dfs(rel.target, cluster)
-                # if the relationship is bidirectional, we need to check the reverse
+                    neighbor = rel.target
                 elif (
                     rel.bidirectional
                     and rel.target == node
                     and rel.source not in visited
                 ):
-                    dfs(rel.source, cluster)
+                    neighbor = rel.source
+
+                if neighbor is not None:
+                    dfs(neighbor, cluster, depth + 1)
 
         for node in self.nodes:
             if node not in visited:
                 cluster = set()
-                dfs(node, cluster)
+                dfs(node, cluster, 0)
                 if len(cluster) > 1:
                     clusters.append(cluster)
 
         return clusters
+
+    def find_direct_clusters(
+        self, relationship_condition: t.Callable[[Relationship], bool] = lambda _: True
+    ) -> t.Dict[Node, t.List[t.Set[Node]]]:
+        """
+        Finds direct clusters of nodes in the knowledge graph based on a relationship condition.
+        Here if A->B, and A->C, then A, B, and C form a cluster.
+
+        Parameters
+        ----------
+        relationship_condition : Callable[[Relationship], bool], optional
+            A function that takes a Relationship and returns a boolean, by default lambda _: True
+
+        Returns
+        -------
+        List[Set[Node]]
+            A list of sets, where each set contains nodes that form a cluster.
+        """
+
+        clusters = []
+        relationships = [
+            rel for rel in self.relationships if relationship_condition(rel)
+        ]
+        for node in self.nodes:
+            cluster = set()
+            cluster.add(node)
+            for rel in relationships:
+                if rel.bidirectional:
+                    if rel.source == node:
+                        cluster.add(rel.target)
+                    elif rel.target == node:
+                        cluster.add(rel.source)
+                else:
+                    if rel.source == node:
+                        cluster.add(rel.target)
+
+            if len(cluster) > 1:
+                if cluster not in clusters:
+                    clusters.append(cluster)
+
+        # Remove subsets from clusters
+        unique_clusters = []
+        for cluster in clusters:
+            if not any(cluster < other for other in clusters):
+                unique_clusters.append(cluster)
+        clusters = unique_clusters
+        
+        cluster_dict = {}
+        for cluster in clusters:
+            cluster_dict.update({cluster.pop(): cluster})
+            
+        return cluster_dict
