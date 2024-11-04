@@ -33,7 +33,11 @@ def test_required_columns():
         name = "fake_metric"  # type: ignore
         _required_columns: t.Dict[MetricType, t.Set[str]] = field(
             default_factory=lambda: {
-                MetricType.SINGLE_TURN: {"user_input", "response"},
+                MetricType.SINGLE_TURN: {
+                    "user_input",
+                    "response",
+                    "retrieved_contexts:optional",
+                },
             }
         )
 
@@ -47,13 +51,41 @@ def test_required_columns():
             return 0
 
     fm = FakeMetric()
+
+    # only return required columns, don't include optional columns
     assert fm.required_columns[MetricType.SINGLE_TURN.name] == {
         "user_input",
         "response",
     }
+
+    # check if optional columns are included
+    assert fm.get_required_columns(with_optional=False)[
+        MetricType.SINGLE_TURN.name
+    ] == {
+        "user_input",
+        "response",
+    }
+    # check if optional columns are included
+    assert fm.get_required_columns(with_optional=True)[MetricType.SINGLE_TURN.name] == {
+        "user_input",
+        "response",
+        "retrieved_contexts",
+    }
+
+    # check if only required columns are returned
     assert (
         fm._only_required_columns_single_turn(
             SingleTurnSample(user_input="a", response="b", reference="c")
         ).to_dict()
         == SingleTurnSample(user_input="a", response="b").to_dict()
+    )
+
+    # check if optional columns are included if they are not none
+    assert (
+        fm._only_required_columns_single_turn(
+            SingleTurnSample(user_input="a", response="b", retrieved_contexts=["c"])
+        ).to_dict()
+        == SingleTurnSample(
+            user_input="a", response="b", retrieved_contexts=["c"]
+        ).to_dict()
     )

@@ -98,24 +98,30 @@ class MultiTurnWithoutReferencePrompt(
 
 @dataclass
 class RubricsScoreWithoutReference(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
-    name: str = "rubrics_score_without_reference"  # type: ignore
+    name: str = "rubrics_score_without_reference"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
-            MetricType.SINGLE_TURN: {"user_input", "response"},
+            MetricType.SINGLE_TURN: {
+                "user_input",
+                "response",
+                "retrieved_contexts:optional",
+            },
             MetricType.MULTI_TURN: {
                 "user_input",
             },
-        }
+        },
+        repr=False,
     )
     rubrics: t.Dict[str, str] = field(
         default_factory=lambda: DEFAULT_REFERENCE_FREE_RUBRICS
     )
     max_retries: int = 1
-
-    def __post_init__(self):
-        self.single_turn_scoring_prompt = SingleTurnWithoutReferencePrompt()
-        self.multi_turn_scoring_prompt = MultiTurnWithoutReferencePrompt()
-        self.rubrics = self.rubrics or DEFAULT_REFERENCE_FREE_RUBRICS
+    single_turn_scoring_prompt: PydanticPrompt[
+        SingleTurnWithoutReferenceInput, ScoreFeedback
+    ] = field(default_factory=SingleTurnWithoutReferencePrompt, repr=False)
+    multi_turn_scoring_prompt: PydanticPrompt[
+        MultiTurnWithoutReferenceInput, ScoreFeedback
+    ] = field(default_factory=MultiTurnWithoutReferencePrompt, repr=False)
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
@@ -231,25 +237,32 @@ class MultiTurnWithReferencePrompt(
 
 @dataclass
 class RubricsScoreWithReference(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
-    name: str = "rubrics_score_with_reference"  # type: ignore
+    name: str = "rubrics_score_with_reference"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
-            MetricType.SINGLE_TURN: {"user_input", "response", "reference"},
+            MetricType.SINGLE_TURN: {
+                "user_input",
+                "response",
+                "retrieved_contexts:optional",
+                "reference",
+            },
             MetricType.MULTI_TURN: {
                 "user_input",
                 "reference",
             },
-        }
+        },
+        repr=False,
     )
     rubrics: t.Dict[str, str] = field(
         default_factory=lambda: DEFAULT_WITH_REFERENCE_RUBRICS
     )
     max_retries: int = 1
-
-    def __post_init__(self):
-        self.single_turn_scoring_prompt = SingleTurnWithReferencePrompt()
-        self.multi_turn_scoring_prompt = MultiTurnWithReferencePrompt()
-        self.rubrics = self.rubrics or DEFAULT_WITH_REFERENCE_RUBRICS
+    single_turn_scoring_prompt: PydanticPrompt[
+        SingleTurnWithReferenceInput, ScoreFeedback
+    ] = field(default_factory=SingleTurnWithReferencePrompt, repr=False)
+    multi_turn_scoring_prompt: PydanticPrompt[
+        MultiTurnWithReferenceInput, ScoreFeedback
+    ] = field(default_factory=MultiTurnWithReferencePrompt, repr=False)
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks

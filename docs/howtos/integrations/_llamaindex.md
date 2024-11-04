@@ -190,6 +190,7 @@ from ragas.metrics import (
 
 # init metrics with evaluator LLM
 from ragas.llms import LlamaIndexLLMWrapper
+
 evaluator_llm = LlamaIndexLLMWrapper(OpenAI(model="gpt-4o"))
 metrics = [
     Faithfulness(llm=evaluator_llm),

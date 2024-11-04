@@ -66,9 +66,7 @@ class TopicClassificationPrompt(
 
 
 class TopicRefusedPrompt(PydanticPrompt[TopicRefusedInput, TopicRefusedOutput]):
-    instruction: str = (
-        "Given a topic, classify if the AI refused to answer the question about the topic."
-    )
+    instruction: str = "Given a topic, classify if the AI refused to answer the question about the topic."
     input_model = TopicRefusedInput
     output_model = TopicRefusedOutput
     examples = [
@@ -98,9 +96,7 @@ AI: You're welcome! Feel free to ask if you need more information.""",
 class TopicExtractionPrompt(
     PydanticPrompt[TopicExtractionInput, TopicExtractionOutput]
 ):
-    instruction: str = (
-        "Given an interaction between Human, Tool and AI, extract the topics from Human's input."
-    )
+    instruction: str = "Given an interaction between Human, Tool and AI, extract the topics from Human's input."
     input_model = TopicExtractionInput
     output_model = TopicExtractionOutput
     examples = [
@@ -133,7 +129,7 @@ AI: You're welcome! Feel free to ask if you need more information."""
 
 @dataclass
 class TopicAdherenceScore(MetricWithLLM, MultiTurnMetric):
-    name: str = "topic_adherence"  # type: ignore
+    name: str = "topic_adherence"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.MULTI_TURN: {

@@ -10,7 +10,7 @@ from ragas.run_config import RunConfig
 
 @dataclass
 class RougeScore(SingleTurnMetric):
-    name: str = "rouge_score"  # type: ignore
+    name: str = "rouge_score"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
     )

@@ -65,7 +65,7 @@ class MultiModalFaithfulnessPrompt(
 
 @dataclass
 class MultiModalFaithfulness(MetricWithLLM, SingleTurnMetric):
-    name: str = "faithful_rate"  # type: ignore
+    name: str = "faithful_rate"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {

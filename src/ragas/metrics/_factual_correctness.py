@@ -202,7 +202,7 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
 
     """
 
-    name: str = "factual_correctness"  # type: ignore
+    name: str = "factual_correctness"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"response", "reference"}}
     )
