@@ -59,7 +59,7 @@ RAGAS_EVALUATION_CHAIN_NAME = "ragas evaluation"
 @track_was_completed
 def evaluate(
     dataset: t.Union[Dataset, EvaluationDataset],
-    metrics: list[Metric] | None = None,
+    metrics: t.Optional[t.Sequence[Metric]] = None,
     llm: t.Optional[BaseRagasLLM | LangchainLLM | LlamaIndexLLM] = None,
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings | LlamaIndexEmbedding] = None,
     callbacks: Callbacks = None,
@@ -69,6 +69,7 @@ def evaluate(
     raise_exceptions: bool = False,
     column_map: t.Optional[t.Dict[str, str]] = None,
     show_progress: bool = True,
+    batch_size: t.Optional[int] = None,
 ) -> EvaluationResult:
     """
     Run the evaluation on the dataset with different metrics
@@ -114,12 +115,14 @@ def evaluate(
         column_map can be given as {"contexts":"contexts_v1"}
     show_progress: bool, optional
         Whether to show the progress bar during evaluation. If set to False, the progress bar will be disabled. Default is True.
+    batch_size: int, optional
+        How large should batches be.  If set to None (default), no batching is done.
 
     Returns
     -------
-    Result
-        Result object containing the scores of each metric. You can use this do analysis
-        later.
+    EvaluationResult
+        EvaluationResult object containing the scores of each metric.
+        You can use this do analysis later.
 
     Raises
     ------
@@ -231,6 +234,7 @@ def evaluate(
         raise_exceptions=raise_exceptions,
         run_config=run_config,
         show_progress=show_progress,
+        batch_size=batch_size,
     )
 
     # Ragas Callbacks

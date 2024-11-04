@@ -33,9 +33,7 @@ class Verification(BaseModel):
 
 class ContextPrecisionPrompt(PydanticPrompt[QAC, Verification]):
     name: str = "context_precision"
-    instruction: str = (
-        'Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "1" if useful and "0" if not with json output.'
-    )
+    instruction: str = 'Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "1" if useful and "0" if not with json output.'
     input_model = QAC
     output_model = Verification
     examples = [
@@ -88,7 +86,7 @@ class LLMContextPrecisionWithReference(MetricWithLLM, SingleTurnMetric):
     context_precision_prompt: Prompt
     """
 
-    name: str = "llm_context_precision_with_reference"  # type: ignore
+    name: str = "llm_context_precision_with_reference"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {
@@ -103,6 +101,9 @@ class LLMContextPrecisionWithReference(MetricWithLLM, SingleTurnMetric):
     )
     max_retries: int = 1
     _reproducibility: int = 1
+
+    def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:
+        return row["user_input"], row["retrieved_contexts"], row["reference"]
 
     @property
     def reproducibility(self):
@@ -147,25 +148,26 @@ class LLMContextPrecisionWithReference(MetricWithLLM, SingleTurnMetric):
         return await self._ascore(row, callbacks)
 
     async def _ascore(
-        self: t.Self,
+        self,
         row: t.Dict,
         callbacks: Callbacks,
     ) -> float:
         assert self.llm is not None, "LLM is not set"
 
+        user_input, retrieved_contexts, reference = self._get_row_attributes(row)
         responses = []
-        for context in row["retrieved_contexts"]:
-            verdicts: t.List[Verification] = (
-                await self.context_precision_prompt.generate_multiple(
-                    data=QAC(
-                        question=row["user_input"],
-                        context=context,
-                        answer=row["reference"],
-                    ),
-                    n=self.reproducibility,
-                    llm=self.llm,
-                    callbacks=callbacks,
-                )
+        for context in retrieved_contexts:
+            verdicts: t.List[
+                Verification
+            ] = await self.context_precision_prompt.generate_multiple(
+                data=QAC(
+                    question=user_input,
+                    context=context,
+                    answer=reference,
+                ),
+                n=self.reproducibility,
+                llm=self.llm,
+                callbacks=callbacks,
             )
 
             responses.append([result.model_dump() for result in verdicts])
@@ -194,7 +196,7 @@ class LLMContextPrecisionWithoutReference(LLMContextPrecisionWithReference):
 
 @dataclass
 class NonLLMContextPrecisionWithReference(SingleTurnMetric):
-    name: str = "non_llm_context_precision_with_reference"  # type: ignore
+    name: str = "non_llm_context_precision_with_reference"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {
@@ -259,7 +261,7 @@ class NonLLMContextPrecisionWithReference(SingleTurnMetric):
 
 @dataclass
 class ContextPrecision(LLMContextPrecisionWithReference):
-    name: str = "context_precision"  # type: ignore
+    name: str = "context_precision"
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
@@ -275,7 +277,7 @@ class ContextPrecision(LLMContextPrecisionWithReference):
 
 @dataclass
 class ContextUtilization(LLMContextPrecisionWithoutReference):
-    name: str = "context_utilization"  # type: ignore
+    name: str = "context_utilization"
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks

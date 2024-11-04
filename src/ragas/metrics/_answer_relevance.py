@@ -78,7 +78,7 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         E.g. HuggingFaceEmbeddings('BAAI/bge-base-en')
     """
 
-    name: str = "answer_relevancy"  # type: ignore
+    name: str = "answer_relevancy"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {

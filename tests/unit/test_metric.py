@@ -1,22 +1,8 @@
 import typing as t
 from dataclasses import dataclass, field
 
-from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
+from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics.base import MetricType
-from ragas.metrics.utils import get_available_metrics
-
-
-def test_get_available_metrics():
-    sample1 = SingleTurnSample(user_input="What is X", response="Y")
-    sample2 = SingleTurnSample(user_input="What is Z", response="W")
-    ds = EvaluationDataset(samples=[sample1, sample2])
-
-    assert all(
-        [
-            m.required_columns["SINGLE_TURN"] == {"response", "user_input"}
-            for m in get_available_metrics(ds)
-        ]
-    ), "All metrics should have required columns ('user_input', 'response')"
 
 
 def test_single_turn_metric():
@@ -47,7 +33,11 @@ def test_required_columns():
         name = "fake_metric"  # type: ignore
         _required_columns: t.Dict[MetricType, t.Set[str]] = field(
             default_factory=lambda: {
-                MetricType.SINGLE_TURN: {"user_input", "response"},
+                MetricType.SINGLE_TURN: {
+                    "user_input",
+                    "response",
+                    "retrieved_contexts:optional",
+                },
             }
         )
 
@@ -61,13 +51,41 @@ def test_required_columns():
             return 0
 
     fm = FakeMetric()
+
+    # only return required columns, don't include optional columns
     assert fm.required_columns[MetricType.SINGLE_TURN.name] == {
         "user_input",
         "response",
     }
+
+    # check if optional columns are included
+    assert fm.get_required_columns(with_optional=False)[
+        MetricType.SINGLE_TURN.name
+    ] == {
+        "user_input",
+        "response",
+    }
+    # check if optional columns are included
+    assert fm.get_required_columns(with_optional=True)[MetricType.SINGLE_TURN.name] == {
+        "user_input",
+        "response",
+        "retrieved_contexts",
+    }
+
+    # check if only required columns are returned
     assert (
         fm._only_required_columns_single_turn(
             SingleTurnSample(user_input="a", response="b", reference="c")
         ).to_dict()
         == SingleTurnSample(user_input="a", response="b").to_dict()
+    )
+
+    # check if optional columns are included if they are not none
+    assert (
+        fm._only_required_columns_single_turn(
+            SingleTurnSample(user_input="a", response="b", retrieved_contexts=["c"])
+        ).to_dict()
+        == SingleTurnSample(
+            user_input="a", response="b", retrieved_contexts=["c"]
+        ).to_dict()
     )

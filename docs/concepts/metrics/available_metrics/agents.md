@@ -71,10 +71,9 @@ scorer = TopicAdherenceScore(mode="recall")
 `ToolCallAccuracy` is a metric that can be used to evaluate the performance of the LLM in identifying and calling the required tools to complete a given task. This metric needs `user_input` and `reference_tool_calls` to evaluate the performance of the LLM in identifying and calling the required tools to complete a given task. The metric is computed by comparing the `reference_tool_calls` with the Tool calls made by the AI. The values range between 0 and 1, with higher values indicating better performance. 
 
 ```python
+from ragas.metrics import ToolCallAccuracy
 from ragas.dataset_schema import  MultiTurnSample
 from ragas.messages import HumanMessage,AIMessage,ToolMessage,ToolCall
-from ragas.metrics import ToolCallAccuracy
-
 
 sample = [
     HumanMessage(content="What's the weather like in New York right now?"),
@@ -89,7 +88,7 @@ sample = [
     AIMessage(content="75°F is approximately 23.9°C.")
 ]
 
-sampl2 = MultiTurnSample(
+sample = MultiTurnSample(
     user_input=sample,
     reference_tool_calls=[
         ToolCall(name="weather_check", args={"location": "New York"}),
@@ -98,7 +97,8 @@ sampl2 = MultiTurnSample(
 )
 
 scorer = ToolCallAccuracy()
-await metric.multi_turn_ascore(sample)
+scorer.llm = your_llm
+await scorer.multi_turn_ascore(sample)
 ```
 
 The tool call sequence specified in `reference_tool_calls` is used as the ideal outcome. If the tool calls made by the AI does not the the order or sequence of the `reference_tool_calls`, the metric will return a score of 0. This helps to ensure that the AI is able to identify and call the required tools in the correct order to complete a given task.
@@ -147,7 +147,8 @@ sample = MultiTurnSample(user_input=[
     reference="Table booked at one of the chinese restaurants at 8 pm")
 
 scorer = AgentGoalAccuracyWithReference()
-await metric.multi_turn_ascore(sample)
+scorer.llm = your_llm
+await scorer.multi_turn_ascore(sample)
 
 ```
 

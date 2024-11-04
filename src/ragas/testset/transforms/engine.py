@@ -4,10 +4,15 @@ import asyncio
 import logging
 import typing as t
 
-from ragas.executor import as_completed, is_event_loop_running, tqdm
+from tqdm.auto import tqdm
+
+from ragas.executor import as_completed, is_event_loop_running
 from ragas.run_config import RunConfig
 from ragas.testset.graph import KnowledgeGraph
 from ragas.testset.transforms.base import BaseGraphTransformation
+
+if t.TYPE_CHECKING:
+    from langchain_core.callbacks import Callbacks
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +87,7 @@ def apply_transforms(
     kg: KnowledgeGraph,
     transforms: Transforms,
     run_config: RunConfig = RunConfig(),
+    callbacks: t.Optional[Callbacks] = None,
 ):
     """
     Apply a list of transformations to a knowledge graph in place.

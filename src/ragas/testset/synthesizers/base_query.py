@@ -39,9 +39,12 @@ class QuerySynthesizer(BaseSynthesizer[Scenario]):
     query_modification_prompt: PydanticPrompt = field(default_factory=ModifyUserInput)
     generate_reference_prompt: PydanticPrompt = field(default_factory=GenerateReference)
 
-    async def critic_query(self, query: str) -> bool:
+    async def critic_query(
+        self, query: str, callbacks: t.Optional[Callbacks] = None
+    ) -> bool:
+        callbacks = callbacks or []
         critic = await self.critic_query_prompt.generate(
-            data=StringIO(text=query), llm=self.llm
+            data=StringIO(text=query), llm=self.llm, callbacks=callbacks
         )
         return critic.independence > 1 and critic.clear_intent > 1
 

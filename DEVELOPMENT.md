@@ -21,6 +21,7 @@ This document provides guidelines for developing and contributing to the ragas p
 
 4. **Install Dependencies**
    ```
+   pip install -U setuptools  # Required on newer Python versions (e.g., 3.11)
    pip install -e ".[dev]"
    ```
 
@@ -55,6 +56,11 @@ This document provides guidelines for developing and contributing to the ragas p
 You can run the following command to check for code style issues:
 ```bash
 make run-ci
+```
+
+Adding a `V=1` option makes the output more verbose, showing normally hidden commands, like so:
+```bash
+make run-ci V=1
 ```
 
 ## Running Tests
