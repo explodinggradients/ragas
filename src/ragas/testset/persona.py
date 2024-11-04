@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from pydantic import BaseModel
+from tqdm import tqdm
 
 from ragas.llms.base import BaseRagasLLM
 from ragas.prompt import PydanticPrompt
@@ -131,7 +132,7 @@ class PersonaGenerator:
             raise ValueError("No labels found from clustering")
         cluster_centers = self.kmeans.cluster_centers_
         top_summaries = []
-        for i in range(self.num_personas):
+        for i in tqdm(range(self.num_personas), desc="Generating personas"):
             cluster_indices = [j for j, label in enumerate(labels) if label == i]
             _ = [summaries[j] for j in cluster_indices]
             centroid = cluster_centers[i]
