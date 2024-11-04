@@ -29,7 +29,6 @@ all = [
 docs = [
     "mkdocs>=1.6.1",
     "mkdocs-material",
-    "mkdocs-jupyter",
     "mkdocstrings[python]",
     "mkdocs-glightbox",
     "mkdocs-autorefs",

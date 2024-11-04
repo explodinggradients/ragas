@@ -220,7 +220,9 @@ plugins:
             show_signature_annotations: true
             signature_crossrefs: true
   - glightbox
-
+  - gen-files:
+      scripts:
+        - docs/ipynb_to_md.py
 extra_javascript:
   - _static/js/mathjax.js
   - _static/js/header_border.js

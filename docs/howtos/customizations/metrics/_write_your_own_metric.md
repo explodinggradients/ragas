@@ -282,3 +282,5 @@ results_df.head()
 </div>
 
 
+
+If you want to learn more about how to build custom metrics, you can read the [Custom Metrics Advanced](./_write_your_own_metric_advanced.md) guide.
