@@ -24,9 +24,8 @@ all = [
     "rouge_score",
     "rapidfuzz",
     "pandas",
-    "datacompy",
-    "scikit-learn",
-]
+    "datacompy",]
+
 docs = [
     "mkdocs>=1.6.1",
     "mkdocs-material",
