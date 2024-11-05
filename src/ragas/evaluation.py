@@ -8,7 +8,7 @@ from langchain_core.callbacks import BaseCallbackHandler, BaseCallbackManager
 from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
-from llama_index.core.llms import LLM as LlamaIndexLLM
+from llama_index.core.base.llms.base import BaseLLM as LlamaIndexLLM
 from llama_index.core.base.embeddings.base import BaseEmbedding as LlamaIndexEmbedding
 
 from ragas._analytics import EvaluationEvent, track, track_was_completed
