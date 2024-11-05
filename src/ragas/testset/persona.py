@@ -21,7 +21,7 @@ def default_filter(node: Node) -> bool:
         node.type.name == "DOCUMENT"
         and node.properties.get("summary_embedding") is not None
     ):
-        return True
+        return random.random() < 0.25
     else:
         return False
 
@@ -68,55 +68,78 @@ class PersonaList:
         llm: BaseRagasLLM,
         kg: KnowledgeGraph,
         persona_generation_prompt: PersonaGenerationPrompt = PersonaGenerationPrompt(),
-        num_personas: int = 5,
+        num_personas: int = 3,
         filter_fn: t.Callable[[Node], bool] = default_filter,
         callbacks: Callbacks = [],
     ) -> "PersonaList":
+        """
+        Generate personas from a knowledge graph based on cluster of similar document summaries.
 
-        try:
-            from sklearn.cluster import KMeans
-            from sklearn.metrics import pairwise_distances
-        except ImportError:
-            raise ImportError(
-                "PersonaGenerator requires the 'scikit-learn' package to be installed. "
-                "You can install it with 'pip install scikit-learn'."
-            )
+        parameters:
+            llm: BaseRagasLLM
+                The LLM to use for generating the persona.
+            kg: KnowledgeGraph
+                The knowledge graph to generate personas from.
+            persona_generation_prompt: PersonaGenerationPrompt
+                The prompt to use for generating the persona.
+            num_personas: int
+                The maximum number of personas to generate.
+            filter_fn: Callable[[Node], bool]
+                A function to filter nodes in the knowledge graph.
+            callbacks: Callbacks
+                The callbacks to use for the generation process.
 
-        kmeans = KMeans(n_clusters=num_personas, random_state=42)
+
+        returns:
+            PersonaList
+                The list of generated personas.
+        """
 
         nodes = [node for node in kg.nodes if filter_fn(node)]
         summaries = [node.properties.get("summary") for node in nodes]
-        if len(summaries) < num_personas:
-            logger.warning(
-                f"Only {len(summaries)} summaries found, randomly duplicating to reach {num_personas} personas."
-            )
-            summaries.extend(random.choices(summaries, k=num_personas - len(summaries)))
-
         summaries = [summary for summary in summaries if isinstance(summary, str)]
+
         embeddings = []
         for node in nodes:
             embeddings.append(node.properties.get("summary_embedding"))
 
         embeddings = np.array(embeddings)
-        kmeans.fit(embeddings)
-        labels = kmeans.labels_
-        if labels is None:
-            raise ValueError("No labels found from clustering")
-        cluster_centers = kmeans.cluster_centers_
-        persona_list = []
-        for i in tqdm(range(num_personas), desc="Generating personas"):
-            cluster_indices = [j for j, label in enumerate(labels) if label == i]
-            _ = [summaries[j] for j in cluster_indices]
-            centroid = cluster_centers[i]
-            X_cluster = embeddings[cluster_indices]
-            distances = pairwise_distances(
-                X_cluster, centroid.reshape(1, -1), metric="euclidean"
-            ).flatten()
+        cosine_similarities = np.dot(embeddings, embeddings.T)
 
-            closest_index = distances.argmin()
-            representative_summary: str = summaries[cluster_indices[closest_index]]
+        groups = []
+        visited = set()
+        threshold = 0.75
+
+        for i, summary in enumerate(summaries):
+            if i in visited:
+                continue
+            group = [i]
+            visited.add(i)
+            for j in range(i + 1, len(summaries)):
+                if cosine_similarities[i, j] > threshold:
+                    group.append(j)
+                    visited.add(j)
+            groups.append(group)
+
+        persona_list = []
+        top_summaries = []
+        for group in groups:
+            representative_summary = max([summaries[i] for i in group], key=len)
+            top_summaries.append(representative_summary)
+
+        if len(top_summaries) <= num_personas:
+            top_summaries.extend(
+                np.random.choice(top_summaries, num_personas - len(top_summaries))
+            )
+
+        for representative_summary in tqdm(
+            top_summaries[:num_personas], desc="Generating personas"
+        ):
             persona = await persona_generation_prompt.generate(
-                llm=llm, data=StringIO(text=representative_summary), callbacks=callbacks
+                llm=llm,
+                data=StringIO(text=representative_summary),
+                callbacks=callbacks,
+                temperature=1.0,
             )
             persona_list.append(persona)
 
