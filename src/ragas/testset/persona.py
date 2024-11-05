@@ -11,6 +11,9 @@ from ragas.llms.base import BaseRagasLLM
 from ragas.prompt import PydanticPrompt
 from ragas.testset.graph import KnowledgeGraph, Node
 
+if t.TYPE_CHECKING:
+    from langchain_core.callbacks import Callbacks
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,12 +23,7 @@ def default_filter(node: Node) -> bool:
         node.type.name == "DOCUMENT"
         and node.properties.get("summary_embedding") is not None
     ):
-        return True
-    elif (
-        node.type.name == "CHUNK"
-        and node.properties.get("topic_description_embedding") is not None
-    ):
-        return random.random() < 0.1
+        return random.random() < 0.25
     else:
         return False
 
@@ -111,19 +109,15 @@ class PersonaGenerator:
         self.pairwise_distances = pairwise_distances
         self.kmeans = KMeans(n_clusters=self.num_personas, random_state=42)
 
-    async def generate_from_kg(self, kg: KnowledgeGraph) -> PersonasList:
+    async def generate_from_kg(
+        self, kg: KnowledgeGraph, callbacks: Callbacks
+    ) -> PersonasList:
 
         nodes = [node for node in kg.nodes if self.filter_nodes(node)]
-        summaries = [
-            node.properties.get("summary") or node.properties.get("topic_description")
-            for node in nodes
-        ]
+        summaries = [node.properties.get("summary") for node in nodes]
         embeddings = []
         for node in nodes:
-            embeddings.append(
-                node.properties.get("summary_embedding")
-                or node.properties.get("topic_description_embedding")
-            )
+            embeddings.append(node.properties.get("summary_embedding"))
 
         embeddings = np.array(embeddings)
         self.kmeans.fit(embeddings)
@@ -146,5 +140,7 @@ class PersonaGenerator:
             top_summaries.append(representative_summary)
 
         prompt_input = SummaryInput(summaries=top_summaries)
-        response = await self.prompt.generate(data=prompt_input, llm=self.llm)
+        response = await self.prompt.generate(
+            data=prompt_input, llm=self.llm, callbacks=callbacks
+        )
         return response
