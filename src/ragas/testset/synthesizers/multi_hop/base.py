@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 from ragas import SingleTurnSample
 from ragas.prompt import PydanticPrompt
+from ragas.testset.persona import PersonasList
 from ragas.testset.synthesizers.base import (
     BaseScenario,
     BaseSynthesizer,
@@ -52,6 +53,7 @@ class MultiHopQuerySynthesizer(BaseSynthesizer[Scenario]):
         self,
         nodes,
         combinations: t.List[t.List[str]],
+        persona_list: PersonasList,
         persona_concepts,
         property_name: str,
     ) -> t.List[t.Dict[str, t.Any]]:
@@ -62,8 +64,11 @@ class MultiHopQuerySynthesizer(BaseSynthesizer[Scenario]):
             valid_personas = []
             for persona, concept_list in persona_concepts.mapping.items():
                 concept_list = [c.lower() for c in concept_list]
-                if any(concept.lower() in concept_list for concept in combination):
-                    valid_personas.append(persona)
+                if (
+                    any(concept.lower() in concept_list for concept in combination)
+                    and persona_list[persona]
+                ):
+                    valid_personas.append(persona_list[persona])
             dict["personas"] = valid_personas
             valid_nodes = []
             for node in nodes:
@@ -121,9 +126,9 @@ class MultiHopQuerySynthesizer(BaseSynthesizer[Scenario]):
             style = sample["style"]
             length = sample["length"]
 
-            if persona not in combination_persona_count[combination]:
+            if persona.name not in combination_persona_count[combination]:
                 selected_samples.append(sample)
-                combination_persona_count[combination].add(persona)
+                combination_persona_count[combination].add(persona.name)
 
             elif style_count[style] < max(style_count.values(), default=0) + 1:
                 selected_samples.append(sample)

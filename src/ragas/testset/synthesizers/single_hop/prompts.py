@@ -1,5 +1,7 @@
-from pydantic import BaseModel
 import typing as t
+
+from pydantic import BaseModel
+
 from ragas.prompt import PydanticPrompt
 from ragas.testset.persona import Persona
 
@@ -15,7 +17,7 @@ class QueryCondition(BaseModel):
 class GeneratedQueryAnswer(BaseModel):
     query: str
     answer: str
-    
+
 
 class QueryAnswerGenerationPrompt(PydanticPrompt[QueryCondition, GeneratedQueryAnswer]):
     instruction: str = (

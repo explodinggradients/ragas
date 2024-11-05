@@ -42,11 +42,11 @@ class Persona(BaseModel):
 class PersonasList(BaseModel):
     personas: t.List[Persona]
 
-    def __getitem__(self, key: str) -> Persona:
+    def __getitem__(self, key: str) -> t.Optional[Persona]:
         for persona in self.personas:
             if persona.name == key:
                 return persona
-        raise KeyError(f"No persona found with name '{key}'")
+        return None
 
 
 # Define the prompt class

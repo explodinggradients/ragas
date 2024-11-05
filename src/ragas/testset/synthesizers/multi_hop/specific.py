@@ -78,7 +78,6 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
                     if rel.source == key_node and rel.target == node:
                         overlapped_items = rel.get_property("overlapped_items")
                         break
-                print(overlapped_items)
                 if overlapped_items:
                     themes = ThemesList(themes=list(dict(overlapped_items).keys()))
                     prompt_input = ThemesPersonasInput(
@@ -93,6 +92,7 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
                     base_scenarios = self.prepare_combinations(
                         [key_node, node],
                         overlapped_items,
+                        persona_list,
                         persona_concepts,
                         property_name="entities",
                     )
@@ -101,17 +101,4 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
                     )
                     scenarios.extend(base_scenarios)
 
-        scenarios_to_return = []
-        for scenario in scenarios:
-            if len(scenarios_to_return) < n:
-                scenarios_to_return.append(
-                    MultiHopScenario(
-                        combinations=scenario["combination"],
-                        nodes=scenario["nodes"],
-                        style=scenario["style"],
-                        length=scenario["length"],
-                        persona=persona_list[scenario["persona"]],
-                    )
-                )
-
-        return scenarios_to_return
+        return scenarios

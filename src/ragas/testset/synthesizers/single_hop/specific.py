@@ -5,6 +5,8 @@ import random
 import typing as t
 from dataclasses import dataclass
 
+import numpy as np
+
 from ragas.dataset_schema import SingleTurnSample
 from ragas.prompt import PydanticPrompt
 from ragas.testset.graph import KnowledgeGraph
@@ -21,7 +23,10 @@ from ragas.testset.synthesizers.prompts import (
     ThemesPersonasInput,
     ThemesPersonasMatchingPrompt,
 )
-from ragas.testset.synthesizers.single_hop.prompts import QueryAnswerGenerationPrompt, QueryCondition
+from ragas.testset.synthesizers.single_hop.prompts import (
+    QueryAnswerGenerationPrompt,
+    QueryCondition,
+)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -52,22 +57,22 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
         self,
         node,
         terms: t.List[str],
+        persona_list: PersonasList,
         persona_concepts,
     ) -> t.List[t.Dict[str, t.Any]]:
 
-        possible_combinations = []
-        for term in terms:
-            sample = {"term": term}
-            for persona, concepts in persona_concepts.mapping.items():
-                concepts = [concept.lower() for concept in concepts]
-                if term.lower() in concepts:
-                    sample["persona"] = persona
-            sample["node"] = node
+        sample = {"terms": terms, "node": node}
+        valid_personas = []
+        for persona, concepts in persona_concepts.mapping.items():
+            concepts = [concept.lower() for concept in concepts]
+            if any(term.lower() in concepts for term in terms):
+                if persona_list[persona]:
+                    valid_personas.append(persona_list[persona])
+            sample["personas"] = valid_personas
             sample["styles"] = list(QueryStyle)
             sample["lengths"] = list(QueryLength)
-            possible_combinations.append(sample)
 
-        return possible_combinations
+        return [sample]
 
     def sample_combinations(self, data: t.List[t.Dict[str, t.Any]], num_samples):
 
@@ -126,30 +131,35 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
     ) -> t.List[SingleHopScenario]:
 
         assert persona_list is not None, "Persona list is required for this synthesizer"
-
+        property_name = "entities"
         nodes = []
         for node in knowledge_graph.nodes:
             if (
                 node.type.name == "CHUNK"
-                and node.get_property("keyphrases") is not None
-                and node.get_property("keyphrases") != []
+                and node.get_property(property_name) is not None
             ):
                 nodes.append(node)
 
+        samples_per_node = int(np.ceil(n / len(nodes)))
+
         scenarios = []
         for node in nodes:
-            themes = node.get_property("keyphrases")
+            if len(scenarios) >= n:
+                break
+            themes = node.get_property(property_name)
             prompt_input = ThemesPersonasInput(
                 themes=ThemesList(themes=themes), personas=persona_list
             )
-            persona_concepts = self.theme_persona_matching_prompt.generate(
+            persona_concepts = await self.theme_persona_matching_prompt.generate(
                 data=prompt_input, llm=self.llm, callbacks=callbacks
             )
-            base_scenarios = self.prepare_combinations(node, themes, persona_concepts)
-            scenarios.append(self.sample_combinations(base_scenarios, n))
+            base_scenarios = self.prepare_combinations(
+                node, themes, persona_list, persona_concepts
+            )
+            scenarios.extend(self.sample_combinations(base_scenarios, samples_per_node))
 
         return scenarios
-    
+
     async def _generate_sample(
         self, scenario: SingleHopScenario, callbacks: Callbacks
     ) -> SingleTurnSample:
@@ -179,4 +189,3 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
             contexts.append(context)
 
         return contexts
-

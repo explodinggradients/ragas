@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class MultiHopAbstractQuery(MultiHopQuerySynthesizer):
+class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
     """
     Synthesizes abstract multi-hop queries from given knowledge graph.
 
@@ -62,6 +62,8 @@ class MultiHopAbstractQuery(MultiHopQuerySynthesizer):
         num_sample_per_cluster = int(np.ceil(n / len(node_clusters)))
 
         for cluster in node_clusters:
+            if len(scenarios) >= n:
+                break
             nodes = []
             for node in cluster:
                 child_nodes = get_child_nodes(node, knowledge_graph, level=1)
@@ -94,6 +96,7 @@ class MultiHopAbstractQuery(MultiHopQuerySynthesizer):
             base_scenarios = self.prepare_combinations(
                 nodes,
                 concept_combination.combinations,
+                persona_list,
                 persona_concepts,
                 property_name="themes",
             )
