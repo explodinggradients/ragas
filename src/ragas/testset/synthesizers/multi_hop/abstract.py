@@ -37,7 +37,8 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
     Attributes
     ----------
     """
-
+    
+    name: str = "multi_hop_abstract_query_synthesizer"
     concept_combination_prompt: PydanticPrompt = ConceptCombinationPrompt()
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
 

@@ -49,6 +49,7 @@ class SingleHopScenario(BaseScenario):
 @dataclass
 class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
 
+    name: str = "single_hop_query_synthesizer"
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
     generate_query_reference_prompt: PydanticPrompt = QueryAnswerGenerationPrompt()
 

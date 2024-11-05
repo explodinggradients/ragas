@@ -134,15 +134,15 @@ def test_testset_generation_tracking(monkeypatch):
     )
 
     assert testset_event_payload.model_dump()["evolution_names"] == [
-        "abstractquerysynthesizer",
-        "comparativeabstractquerysynthesizer",
-        "specificquerysynthesizer",
+        "single_hop_query_synthesizer",
+        "multi_hop_abstract_query_synthesizer",
+        "multi_hop_specific_query_synthesizer",
     ]
 
     assert testset_event_payload.model_dump()["evolution_percentages"] == [
-        0.25,
-        0.25,
         0.5,
+        0.25,
+        0.25,
     ]
 
     # just in the case you actually want to check if tracking is working in the

@@ -36,7 +36,7 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
     generate_query_prompt : PydanticPrompt
         The prompt used for generating the query.
     """
-
+    name: str = "multi_hop_specific_query_synthesizer"
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
     generate_query_reference_prompt: PydanticPrompt = QueryAnswerGenerationPrompt()
 
