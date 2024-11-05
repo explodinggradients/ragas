@@ -47,7 +47,7 @@ def default_transforms(
     """
 
     headline_extractor = HeadlinesExtractor(llm=llm)
-    splitter = HeadlineSplitter()
+    splitter = HeadlineSplitter(min_tokens=500)
 
     def summary_filter(node):
         return (
