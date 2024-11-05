@@ -67,6 +67,7 @@ class PersonaList(BaseModel):
         kg: KnowledgeGraph,
         persona_generation_prompt: PersonaGenerationPrompt = PersonaGenerationPrompt(),
         num_personas: int = 5,
+        filter_fn: t.Callable[[Node], bool] = default_filter,
         callbacks: Callbacks = [],
     ) -> "PersonaList":
 
@@ -81,7 +82,7 @@ class PersonaList(BaseModel):
 
         kmeans = KMeans(n_clusters=num_personas, random_state=42)
 
-        nodes = [node for node in kg.nodes if default_filter(node)]
+        nodes = [node for node in kg.nodes if filter_fn(node)]
         summaries = [node.properties.get("summary") for node in nodes]
         if len(summaries) < num_personas:
             logger.warning(
