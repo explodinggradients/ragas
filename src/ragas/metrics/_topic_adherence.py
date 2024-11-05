@@ -48,7 +48,9 @@ class TopicClassificationOutput(BaseModel):
 class TopicClassificationPrompt(
     PydanticPrompt[TopicClassificationInput, TopicClassificationOutput]
 ):
-    instruction = "Given a set of topics classify if the topic falls into any of the given reference topics."
+    instruction = (
+        "Given a set of topics classify if the topic falls into any of the given reference topics."
+    )
     input_model = TopicClassificationInput
     output_model = TopicClassificationOutput
     examples = [
@@ -66,7 +68,9 @@ class TopicClassificationPrompt(
 
 
 class TopicRefusedPrompt(PydanticPrompt[TopicRefusedInput, TopicRefusedOutput]):
-    instruction: str = "Given a topic, classify if the AI refused to answer the question about the topic."
+    instruction: str = (
+        "Given a topic, classify if the AI refused to answer the question about the topic."
+    )
     input_model = TopicRefusedInput
     output_model = TopicRefusedOutput
     examples = [
@@ -93,10 +97,10 @@ AI: You're welcome! Feel free to ask if you need more information.""",
     ]
 
 
-class TopicExtractionPrompt(
-    PydanticPrompt[TopicExtractionInput, TopicExtractionOutput]
-):
-    instruction: str = "Given an interaction between Human, Tool and AI, extract the topics from Human's input."
+class TopicExtractionPrompt(PydanticPrompt[TopicExtractionInput, TopicExtractionOutput]):
+    instruction: str = (
+        "Given an interaction between Human, Tool and AI, extract the topics from Human's input."
+    )
     input_model = TopicExtractionInput
     output_model = TopicExtractionOutput
     examples = [
@@ -143,14 +147,10 @@ class TopicAdherenceScore(MetricWithLLM, MultiTurnMetric):
     topic_classification_prompt: PydanticPrompt = TopicClassificationPrompt()
     topic_refused_prompt: PydanticPrompt = TopicRefusedPrompt()
 
-    async def _multi_turn_ascore(
-        self, sample: MultiTurnSample, callbacks: Callbacks
-    ) -> float:
+    async def _multi_turn_ascore(self, sample: MultiTurnSample, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM must be set"
         assert isinstance(sample.user_input, list), "Sample user_input must be a list"
-        assert isinstance(
-            sample.reference_topics, list
-        ), "Sample reference_topics must be a list"
+        assert isinstance(sample.reference_topics, list), "Sample reference_topics must be a list"
         user_input = sample.pretty_repr()
 
         prompt_input = TopicExtractionInput(user_input=user_input)
@@ -166,9 +166,7 @@ class TopicAdherenceScore(MetricWithLLM, MultiTurnMetric):
                 data=prompt_input, llm=self.llm, callbacks=callbacks
             )
             topic_answered_verdict.append(response.refused_to_answer)
-        topic_answered_verdict = np.array(
-            [not answer for answer in topic_answered_verdict]
-        )
+        topic_answered_verdict = np.array([not answer for answer in topic_answered_verdict])
 
         prompt_input = TopicClassificationInput(
             reference_topics=sample.reference_topics, topics=topics
@@ -183,13 +181,13 @@ class TopicAdherenceScore(MetricWithLLM, MultiTurnMetric):
         false_negatives = sum(~topic_answered_verdict & topic_classifications)
 
         if self.mode == "precision":
-            return true_positives / (true_positives + false_positives)
+            return true_positives / (true_positives + false_positives + 1e-10)
         elif self.mode == "recall":
-            return true_positives / (true_positives + false_negatives)
+            return true_positives / (true_positives + false_negatives + 1e-10)
         else:
-            precision = true_positives / (true_positives + false_positives)
-            recall = true_positives / (true_positives + false_negatives)
-            return 2 * (precision * recall) / (precision + recall)
+            precision = true_positives / (true_positives + false_positives + 1e-10)
+            recall = true_positives / (true_positives + false_negatives + 1e-10)
+            return 2 * (precision * recall) / (precision + recall + 1e-10)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         return await self._multi_turn_ascore(MultiTurnSample(**row), callbacks)
