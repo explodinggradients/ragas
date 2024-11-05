@@ -92,11 +92,10 @@ class PersonaList(BaseModel):
                 f"Only {len(summaries)} summaries found, randomly duplicating to reach {num_personas} personas."
             )
             summaries.extend(random.choices(summaries, k=num_personas - len(summaries)))
-
         summaries = [summary for summary in summaries if isinstance(summary, str)]
+
         embeddings = []
         for node in nodes:
-            embeddings.append(node.properties.get("summary_embedding"))
             embeddings.append(node.properties.get("summary_embedding"))
 
         embeddings = np.array(embeddings)
