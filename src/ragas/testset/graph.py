@@ -213,7 +213,8 @@ class KnowledgeGraph:
     ) -> t.List[t.Set[Node]]:
         """
         Finds indirect clusters of nodes in the knowledge graph based on a relationship condition.
-        Here if A -> B -> C, then A, B, and C form a cluster.
+        Here if A -> B -> C -> D, then A, B, C, and D form a cluster. If there's also a path A -> B -> C -> E,
+        it will form a separate cluster.
 
         Parameters
         ----------
@@ -226,39 +227,46 @@ class KnowledgeGraph:
             A list of sets, where each set contains nodes that form a cluster.
         """
         clusters = []
-        visited = set()
+        visited_paths = set()
 
         relationships = [
             rel for rel in self.relationships if relationship_condition(rel)
         ]
 
-        def dfs(node: Node, cluster: t.Set[Node], depth: int):
-            if depth > depth_limit:
+        def dfs(node: Node, cluster: t.Set[Node], depth: int, path: t.Tuple[Node, ...]):
+            if depth >= depth_limit or path in visited_paths:
                 return
-            visited.add(node)
+            visited_paths.add(path)
             cluster.add(node)
+
             for rel in relationships:
                 neighbor = None
-                if rel.source == node and rel.target not in visited:
+                if rel.source == node and rel.target not in cluster:
                     neighbor = rel.target
                 elif (
                     rel.bidirectional
                     and rel.target == node
-                    and rel.source not in visited
+                    and rel.source not in cluster
                 ):
                     neighbor = rel.source
 
                 if neighbor is not None:
-                    dfs(neighbor, cluster, depth + 1)
+                    dfs(neighbor, cluster.copy(), depth + 1, path + (neighbor,))
+
+            # Add completed path-based cluster
+            if len(cluster) > 1:
+                clusters.append(cluster)
 
         for node in self.nodes:
-            if node not in visited:
-                cluster = set()
-                dfs(node, cluster, 0)
-                if len(cluster) > 1:
-                    clusters.append(cluster)
+            initial_cluster = set()
+            dfs(node, initial_cluster, 0, (node,))
 
-        return clusters
+        # Remove duplicates by converting clusters to frozensets
+        unique_clusters = [
+            set(cluster) for cluster in set(frozenset(c) for c in clusters)
+        ]
+
+        return unique_clusters
 
     def find_direct_clusters(
         self, relationship_condition: t.Callable[[Relationship], bool] = lambda _: True
@@ -305,9 +313,9 @@ class KnowledgeGraph:
             if not any(cluster < other for other in clusters):
                 unique_clusters.append(cluster)
         clusters = unique_clusters
-        
+
         cluster_dict = {}
         for cluster in clusters:
             cluster_dict.update({cluster.pop(): cluster})
-            
+
         return cluster_dict
