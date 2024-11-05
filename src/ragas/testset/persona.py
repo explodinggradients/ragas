@@ -1,6 +1,7 @@
 import logging
 import random
 import typing as t
+from dataclasses import dataclass
 
 import numpy as np
 from langchain_core.callbacks import Callbacks
@@ -54,7 +55,8 @@ class PersonaGenerationPrompt(PydanticPrompt[StringIO, Persona]):
     ]
 
 
-class PersonaList(BaseModel):
+@dataclass
+class PersonaList:
     personas: t.List[Persona]
 
     def __getitem__(self, key: str) -> t.Optional[Persona]:
