@@ -127,7 +127,7 @@ def test_testset_generation_tracking(monkeypatch):
 
     testset_event_payload = TestsetGenerationEvent(
         event_type="testset_generation",
-        evolution_names=[e.__class__.__name__.lower() for e, _ in distributions],
+        evolution_names=[e.name for e, _ in distributions],
         evolution_percentages=[p for _, p in distributions],
         num_rows=10,
         language="english",

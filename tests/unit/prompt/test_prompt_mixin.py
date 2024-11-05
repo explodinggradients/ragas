@@ -1,10 +1,10 @@
 import pytest
 
-from ragas.testset.synthesizers import AbstractQuerySynthesizer
+from ragas.testset.synthesizers.multi_hop import MultiHopAbstractQuerySynthesizer
 
 
 def test_prompt_save_load(tmp_path, fake_llm):
-    synth = AbstractQuerySynthesizer(llm=fake_llm)
+    synth = MultiHopAbstractQuerySynthesizer(llm=fake_llm)
     synth_prompts = synth.get_prompts()
     synth.save_prompts(tmp_path)
     loaded_prompts = synth.load_prompts(tmp_path)
@@ -16,7 +16,7 @@ def test_prompt_save_load(tmp_path, fake_llm):
 
 @pytest.mark.asyncio
 async def test_prompt_save_adapt_load(tmp_path, fake_llm):
-    synth = AbstractQuerySynthesizer(llm=fake_llm)
+    synth = MultiHopAbstractQuerySynthesizer(llm=fake_llm)
 
     # patch adapt_prompts
     async def adapt_prompts_patched(self, language, llm):
