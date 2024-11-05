@@ -10,11 +10,11 @@ from ragas.run_config import RunConfig
 
 @dataclass
 class RougeScore(SingleTurnMetric):
-    name: str = "rouge_score"  # type: ignore
+    name: str = "rouge_score"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
     )
-    rogue_type: t.Literal["rouge1", "rougeL"] = "rougeL"
+    rouge_type: t.Literal["rouge1", "rougeL"] = "rougeL"
     measure_type: t.Literal["fmeasure", "precision", "recall"] = "fmeasure"
 
     def __post_init__(self):
@@ -34,9 +34,9 @@ class RougeScore(SingleTurnMetric):
     ) -> float:
         assert isinstance(sample.reference, str), "Sample reference must be a string"
         assert isinstance(sample.response, str), "Sample response must be a string"
-        scorer = self.rouge_scorer.RougeScorer([self.rogue_type], use_stemmer=True)
+        scorer = self.rouge_scorer.RougeScorer([self.rouge_type], use_stemmer=True)
         scores = scorer.score(sample.reference, sample.response)
-        return getattr(scores[self.rogue_type], self.measure_type)
+        return getattr(scores[self.rouge_type], self.measure_type)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)

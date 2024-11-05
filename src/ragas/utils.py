@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import logging
 import os
 import re
@@ -229,3 +230,12 @@ def num_tokens_from_string(string: str, encoding_name: str = "cl100k_base") -> i
     encoding = tiktoken.get_encoding(encoding_name)
     num_tokens = len(encoding.encode(string))
     return num_tokens
+
+def batched(iterable: t.Iterable, n: int) -> t.Iterator[t.Tuple]:
+    """Batch data from the iterable into tuples of length n. The last batch may be shorter than n."""
+    # batched('ABCDEFG', 3) → ABC DEF G
+    if n < 1:
+        raise ValueError("n must be at least one")
+    iterator = iter(iterable)
+    while batch := tuple(itertools.islice(iterator, n)):
+        yield batch

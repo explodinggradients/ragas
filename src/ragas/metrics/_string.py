@@ -18,7 +18,7 @@ class DistanceMeasure(Enum):
 
 @dataclass
 class ExactMatch(SingleTurnMetric):
-    name: str = "exact_match"  # type: ignore
+    name: str = "exact_match"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
     )
@@ -37,7 +37,7 @@ class ExactMatch(SingleTurnMetric):
 
 @dataclass
 class StringPresence(SingleTurnMetric):
-    name: str = "string_present"  # type: ignore
+    name: str = "string_present"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
     )
@@ -60,7 +60,7 @@ class StringPresence(SingleTurnMetric):
 
 @dataclass
 class NonLLMStringSimilarity(SingleTurnMetric):
-    name: str = "non_llm_string_similarity"  # type: ignore
+    name: str = "non_llm_string_similarity"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
     )

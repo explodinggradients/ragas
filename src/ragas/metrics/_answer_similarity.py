@@ -42,14 +42,14 @@ class SemanticSimilarity(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         Default 0.5
     """
 
-    name: str = "semantic_similarity"  # type: ignore
+    name: str = "semantic_similarity"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
     )
     is_cross_encoder: bool = False
     threshold: t.Optional[float] = None
 
-    def __post_init__(self: t.Self):
+    def __post_init__(self):
         # only for cross encoder
         if isinstance(self.embeddings, HuggingfaceEmbeddings):
             self.is_cross_encoder = True if self.embeddings.is_cross_encoder else False
@@ -63,11 +63,15 @@ class SemanticSimilarity(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         row = sample.to_dict()
         return await self._ascore(row, callbacks)
 
-    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.embeddings is not None, "embeddings must be set"
 
         ground_truth = t.cast(str, row["reference"])
         answer = t.cast(str, row["response"])
+
+        # Handle embeddings for empty strings
+        ground_truth = ground_truth or " "
+        answer = answer or " "
 
         if self.is_cross_encoder and isinstance(self.embeddings, HuggingfaceEmbeddings):
             raise NotImplementedError(
@@ -92,9 +96,9 @@ class SemanticSimilarity(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
 
 
 class AnswerSimilarity(SemanticSimilarity):
-    name: str = "answer_similarity"  # type: ignore
+    name: str = "answer_similarity"
 
-    async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         return await super()._ascore(row, callbacks)
 
 

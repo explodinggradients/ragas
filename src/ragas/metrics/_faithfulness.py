@@ -162,7 +162,7 @@ class NLIStatementPrompt(PydanticPrompt[NLIStatementInput, NLIStatementOutput]):
 
 @dataclass
 class Faithfulness(MetricWithLLM, SingleTurnMetric):
-    name: str = "faithfulness"  # type: ignore
+    name: str = "faithfulness"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {
@@ -277,7 +277,7 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
 
 @dataclass
 class FaithfulnesswithHHEM(Faithfulness):
-    name: str = "faithfulness_with_hhem"  # type: ignore
+    name: str = "faithfulness_with_hhem"
     device: str = "cpu"
     batch_size: int = 10
 

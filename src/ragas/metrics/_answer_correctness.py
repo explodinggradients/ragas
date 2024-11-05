@@ -157,7 +157,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         The AnswerSimilarity object
     """
 
-    name: str = "answer_correctness"  # type: ignore[reportIncompatibleMethodOverride]
+    name: str = "answer_correctness"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {"user_input", "response", "reference"}
@@ -173,7 +173,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     sentence_segmenter: t.Optional[HasSegmentMethod] = None
     max_retries: int = 1
 
-    def __post_init__(self: t.Self):
+    def __post_init__(self):
         if len(self.weights) != 2:
             raise ValueError(
                 "Expects a list of two weights. First for factuality, second for semantic similarity"
@@ -231,7 +231,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         return statements_simplified
 
     async def _single_turn_ascore(
-        self: t.Self, sample: SingleTurnSample, callbacks: Callbacks
+        self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
         row = sample.to_dict()
         score = await self._ascore(row, callbacks)

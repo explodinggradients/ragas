@@ -41,9 +41,7 @@ class ContextRecallClassificationPrompt(
     PydanticPrompt[QCA, ContextRecallClassifications]
 ):
     name: str = "context_recall_classification"
-    instruction: str = (
-        "Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not. Use only 'Yes' (1) or 'No' (0) as a binary classification. Output json with reason."
-    )
+    instruction: str = "Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not. Use only 'Yes' (1) or 'No' (0) as a binary classification. Output json with reason."
     input_model = QCA
     output_model = ContextRecallClassifications
     examples = [
@@ -92,7 +90,7 @@ class LLMContextRecall(MetricWithLLM, SingleTurnMetric):
     name : str
     """
 
-    name: str = "context_recall"  # type: ignore
+    name: str = "context_recall"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {
@@ -150,17 +148,17 @@ class LLMContextRecall(MetricWithLLM, SingleTurnMetric):
         assert self.llm is not None, "set LLM before use"
 
         # run classification
-        classifications_list: t.List[ContextRecallClassifications] = (
-            await self.context_recall_prompt.generate_multiple(
-                data=QCA(
-                    question=row["user_input"],
-                    context="\n".join(row["retrieved_contexts"]),
-                    answer=row["reference"],
-                ),
-                llm=self.llm,
-                callbacks=callbacks,
-                n=self.reproducibility,
-            )
+        classifications_list: t.List[
+            ContextRecallClassifications
+        ] = await self.context_recall_prompt.generate_multiple(
+            data=QCA(
+                question=row["user_input"],
+                context="\n".join(row["retrieved_contexts"]),
+                answer=row["reference"],
+            ),
+            llm=self.llm,
+            callbacks=callbacks,
+            n=self.reproducibility,
         )
         classification_dicts = []
         for classification in classifications_list:
@@ -193,7 +191,7 @@ class ContextRecall(LLMContextRecall):
 
 @dataclass
 class NonLLMContextRecall(SingleTurnMetric):
-    name: str = "non_llm_context_recall"  # type: ignore
+    name: str = "non_llm_context_recall"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {
