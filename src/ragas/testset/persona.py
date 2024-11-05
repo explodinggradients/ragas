@@ -24,7 +24,6 @@ def default_filter(node: Node) -> bool:
         and node.properties.get("summary_embedding") is not None
     ):
         return True
-        return random.random() < 0.25
     else:
         return False
 
