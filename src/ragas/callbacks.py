@@ -57,13 +57,13 @@ class ChainType(Enum):
 
 
 class ChainRun(BaseModel):
-    run_id: uuid.UUID
-    parent_run_id: t.Optional[uuid.UUID]
+    run_id: str
+    parent_run_id: t.Optional[str]
     name: str
     inputs: t.Dict[str, t.Any]
     metadata: t.Dict[str, t.Any]
     outputs: t.Dict[str, t.Any] = Field(default_factory=dict)
-    children: t.List[uuid.UUID] = Field(default_factory=list)
+    children: t.List[str] = Field(default_factory=list)
 
 
 class ChainRunEncoder(json.JSONEncoder):
@@ -72,12 +72,14 @@ class ChainRunEncoder(json.JSONEncoder):
             return str(o)
         if isinstance(o, ChainType):
             return o.value
+        # if isinstance(o, EvaluationResult):
+        #     return ""
         return json.JSONEncoder.default(self, o)
 
 
 @dataclass
 class RagasTracer(BaseCallbackHandler):
-    traces: t.Dict[uuid.UUID, ChainRun] = field(default_factory=dict)
+    traces: t.Dict[str, ChainRun] = field(default_factory=dict)
 
     def on_chain_start(
         self,
@@ -90,17 +92,17 @@ class RagasTracer(BaseCallbackHandler):
         metadata: t.Optional[t.Dict[str, t.Any]] = None,
         **kwargs: t.Any,
     ) -> t.Any:
-        self.traces[run_id] = ChainRun(
-            run_id=run_id,
-            parent_run_id=parent_run_id,
+        self.traces[str(run_id)] = ChainRun(
+            run_id=str(run_id),
+            parent_run_id=str(parent_run_id) if parent_run_id else None,
             name=serialized["name"],
             inputs=inputs,
             metadata=metadata or {},
             children=[],
         )
 
-        if parent_run_id and parent_run_id in self.traces:
-            self.traces[parent_run_id].children.append(run_id)
+        if parent_run_id and str(parent_run_id) in self.traces:
+            self.traces[str(parent_run_id)].children.append(str(run_id))
 
     def on_chain_end(
         self,
@@ -109,12 +111,11 @@ class RagasTracer(BaseCallbackHandler):
         run_id: uuid.UUID,
         **kwargs: t.Any,
     ) -> t.Any:
-        self.traces[run_id].outputs = outputs
+        self.traces[str(run_id)].outputs = outputs
 
     def to_jsons(self) -> str:
         return json.dumps(
             [t.model_dump() for t in self.traces.values()],
-            indent=4,
             cls=ChainRunEncoder,
         )
 
@@ -131,7 +132,7 @@ class MetricTrace(dict):
 
 
 def parse_run_traces(
-    traces: t.Dict[uuid.UUID, ChainRun],
+    traces: t.Dict[str, ChainRun],
 ) -> t.List[t.Dict[str, t.Any]]:
     root_traces = [
         chain_trace
