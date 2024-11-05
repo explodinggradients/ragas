@@ -59,6 +59,11 @@ def default_transforms(
         llm=llm, filter_nodes=lambda node: summary_filter(node)
     )
 
+    theme_extractor = ThemesExtractor(llm=llm)
+    ner_extractor = NERExtractor(
+        llm=llm, filter_nodes=lambda node: node.type == NodeType.CHUNK
+    )
+
     summary_emb_extractor = EmbeddingExtractor(
         embedding_model=embedding_model,
         property_name="summary_embedding",
@@ -73,10 +78,6 @@ def default_transforms(
         filter_nodes=lambda node: summary_filter(node),
     )
 
-    theme_extractor = ThemesExtractor(llm=llm)
-    ner_extractor = NERExtractor(
-        llm=llm, filter_nodes=lambda node: node.type == NodeType.CHUNK
-    )
     ner_overlap_sim = OverlapScoreBuilder(
         threshold=0.01, filter_nodes=lambda node: node.type == NodeType.CHUNK
     )

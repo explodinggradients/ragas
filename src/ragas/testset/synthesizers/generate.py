@@ -299,7 +299,8 @@ class TestsetGenerator:
             callbacks=persona_generation_grp,
         )
         try:
-            return exec.results()
+            persona_list: t.List[PersonaList] = exec.results()
+            return persona_list[0]
         except Exception as e:
             persona_generation_rm.on_chain_error(e)
             raise e
