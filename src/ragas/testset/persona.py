@@ -1,14 +1,14 @@
 import logging
 import random
 import typing as t
-from dataclasses import dataclass, field
 
 import numpy as np
+from langchain_core.callbacks import Callbacks
 from pydantic import BaseModel
 from tqdm import tqdm
 
 from ragas.llms.base import BaseRagasLLM
-from ragas.prompt import PydanticPrompt
+from ragas.prompt import PydanticPrompt, StringIO
 from ragas.testset.graph import KnowledgeGraph, Node
 
 if t.TYPE_CHECKING:
@@ -23,13 +23,10 @@ def default_filter(node: Node) -> bool:
         node.type.name == "DOCUMENT"
         and node.properties.get("summary_embedding") is not None
     ):
+        return True
         return random.random() < 0.25
     else:
         return False
-
-
-class SummaryInput(BaseModel):
-    summaries: t.List[str]
 
 
 class Persona(BaseModel):
@@ -37,7 +34,28 @@ class Persona(BaseModel):
     role_description: str
 
 
-class PersonasList(BaseModel):
+class PersonaGenerationPrompt(PydanticPrompt[StringIO, Persona]):
+    instruction: str = (
+        "Using the provided summary, generate a single persona who would likely "
+        "interact with or benefit from the content. Include a unique name and a "
+        "concise role description of who they are."
+    )
+    input_model: t.Type[StringIO] = StringIO
+    output_model: t.Type[Persona] = Persona
+    examples: t.List[t.Tuple[StringIO, Persona]] = [
+        (
+            StringIO(
+                text="Guide to Digital Marketing explains strategies for engaging audiences across various online platforms."
+            ),
+            Persona(
+                name="Digital Marketing Specialist",
+                role_description="Focuses on engaging audiences and growing the brand online.",
+            ),
+        )
+    ]
+
+
+class PersonaList(BaseModel):
     personas: t.List[Persona]
 
     def __getitem__(self, key: str) -> t.Optional[Persona]:
@@ -46,56 +64,15 @@ class PersonasList(BaseModel):
                 return persona
         return None
 
-
-# Define the prompt class
-class PersonaGenerationPrompt(PydanticPrompt[SummaryInput, PersonasList]):
-    instruction: str = (
-        "Using the provided summaries, generate one persona for each summary who might "
-        "interact with the content. For each persona, include a unique name "
-        "and a brief role description of who they are."
-    )
-    input_model: t.Type[SummaryInput] = SummaryInput
-    output_model: t.Type[PersonasList] = PersonasList
-    examples: t.List[t.Tuple[SummaryInput, PersonasList]] = [
-        (
-            SummaryInput(
-                summaries=[
-                    "Guide to Digital Marketing explains strategies for engaging audiences across various online platforms.",
-                    "Data Privacy Essentials discusses principles for safeguarding user data and complying with privacy regulations.",
-                    "Introduction to Project Management covers key methods for planning, executing, and monitoring projects.",
-                ]
-            ),
-            PersonasList(
-                personas=[
-                    Persona(
-                        name="Digital Marketing Specialist",
-                        role_description="Focuses on engaging audiences and growing the brand online.",
-                    ),
-                    Persona(
-                        name="Data Privacy Officer",
-                        role_description="Ensures the organization's compliance with data protection laws.",
-                    ),
-                    Persona(
-                        name="Project Manager",
-                        role_description="Oversees project timelines and ensures tasks are completed efficiently.",
-                    ),
-                ]
-            ),
-        )
-    ]
-
-
-@dataclass
-class PersonaGenerator:
-
-    llm: BaseRagasLLM
-    num_personas: int = 5
-    prompt: PydanticPrompt = PersonaGenerationPrompt()
-    filter_nodes: t.Callable[[Node], bool] = field(
-        default_factory=lambda: default_filter
-    )
-
-    def __post_init__(self):
+    @classmethod
+    async def from_kg(
+        cls,
+        llm: BaseRagasLLM,
+        kg: KnowledgeGraph,
+        persona_generation_prompt: PersonaGenerationPrompt = PersonaGenerationPrompt(),
+        num_personas: int = 5,
+        callbacks: Callbacks = [],
+    ) -> "PersonaList":
 
         try:
             from sklearn.cluster import KMeans
@@ -106,41 +83,43 @@ class PersonaGenerator:
                 "You can install it with 'pip install scikit-learn'."
             )
 
-        self.pairwise_distances = pairwise_distances
-        self.kmeans = KMeans(n_clusters=self.num_personas, random_state=42)
+        kmeans = KMeans(n_clusters=num_personas, random_state=42)
 
-    async def generate_from_kg(
-        self, kg: KnowledgeGraph, callbacks: Callbacks
-    ) -> PersonasList:
-
-        nodes = [node for node in kg.nodes if self.filter_nodes(node)]
+        nodes = [node for node in kg.nodes if default_filter(node)]
         summaries = [node.properties.get("summary") for node in nodes]
+        if len(summaries) < num_personas:
+            logger.warning(
+                f"Only {len(summaries)} summaries found, randomly duplicating to reach {num_personas} personas."
+            )
+            summaries.extend(random.choices(summaries, k=num_personas - len(summaries)))
+
+        summaries = [summary for summary in summaries if isinstance(summary, str)]
         embeddings = []
         for node in nodes:
             embeddings.append(node.properties.get("summary_embedding"))
+            embeddings.append(node.properties.get("summary_embedding"))
 
         embeddings = np.array(embeddings)
-        self.kmeans.fit(embeddings)
-        labels = self.kmeans.labels_
+        kmeans.fit(embeddings)
+        labels = kmeans.labels_
         if labels is None:
             raise ValueError("No labels found from clustering")
-        cluster_centers = self.kmeans.cluster_centers_
-        top_summaries = []
-        for i in tqdm(range(self.num_personas), desc="Generating personas"):
+        cluster_centers = kmeans.cluster_centers_
+        persona_list = []
+        for i in tqdm(range(num_personas), desc="Generating personas"):
             cluster_indices = [j for j, label in enumerate(labels) if label == i]
             _ = [summaries[j] for j in cluster_indices]
             centroid = cluster_centers[i]
             X_cluster = embeddings[cluster_indices]
-            distances = self.pairwise_distances(
+            distances = pairwise_distances(
                 X_cluster, centroid.reshape(1, -1), metric="euclidean"
             ).flatten()
 
             closest_index = distances.argmin()
-            representative_summary = summaries[cluster_indices[closest_index]]
-            top_summaries.append(representative_summary)
+            representative_summary: str = summaries[cluster_indices[closest_index]]
+            persona = await persona_generation_prompt.generate(
+                llm=llm, data=StringIO(text=representative_summary), callbacks=callbacks
+            )
+            persona_list.append(persona)
 
-        prompt_input = SummaryInput(summaries=top_summaries)
-        response = await self.prompt.generate(
-            data=prompt_input, llm=self.llm, callbacks=callbacks
-        )
-        return response
+        return cls(personas=persona_list)
