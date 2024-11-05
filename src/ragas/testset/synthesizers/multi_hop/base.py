@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 from ragas import SingleTurnSample
 from ragas.prompt import PydanticPrompt
-from ragas.testset.persona import PersonasList
+from ragas.testset.persona import PersonaList
 from ragas.testset.synthesizers.base import (
     BaseScenario,
     BaseSynthesizer,
@@ -53,7 +53,7 @@ class MultiHopQuerySynthesizer(BaseSynthesizer[Scenario]):
         self,
         nodes,
         combinations: t.List[t.List[str]],
-        persona_list: PersonasList,
+        persona_list: PersonaList,
         persona_concepts,
         property_name: str,
     ) -> t.List[t.Dict[str, t.Any]]:

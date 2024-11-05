@@ -3,7 +3,7 @@ import typing as t
 from pydantic import BaseModel
 
 from ragas.prompt import PydanticPrompt
-from ragas.testset.persona import Persona, PersonasList
+from ragas.testset.persona import Persona, PersonaList
 
 
 class ThemesList(BaseModel):
@@ -12,7 +12,7 @@ class ThemesList(BaseModel):
 
 class ThemesPersonasInput(BaseModel):
     themes: ThemesList
-    personas: PersonasList
+    personas: PersonaList
 
 
 # Define the output model
@@ -46,7 +46,7 @@ class ThemesPersonasMatchingPrompt(
                         "Managing remote teams",
                     ]
                 ),
-                personas=PersonasList(
+                personas=PersonaList(
                     personas=[
                         Persona(
                             name="HR Manager",

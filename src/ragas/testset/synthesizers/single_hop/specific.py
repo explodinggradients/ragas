@@ -10,7 +10,7 @@ import numpy as np
 from ragas.dataset_schema import SingleTurnSample
 from ragas.prompt import PydanticPrompt
 from ragas.testset.graph import KnowledgeGraph
-from ragas.testset.persona import PersonasList
+from ragas.testset.persona import PersonaList
 from ragas.testset.synthesizers.base import (
     BaseScenario,
     BaseSynthesizer,
@@ -57,7 +57,7 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
         self,
         node,
         terms: t.List[str],
-        persona_list: PersonasList,
+        persona_list: PersonaList,
         persona_concepts,
     ) -> t.List[t.Dict[str, t.Any]]:
 
@@ -126,7 +126,7 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
         self,
         n: int,
         knowledge_graph: KnowledgeGraph,
-        persona_list: PersonasList,
+        persona_list: PersonaList,
         callbacks: Callbacks,
     ) -> t.List[SingleHopScenario]:
 

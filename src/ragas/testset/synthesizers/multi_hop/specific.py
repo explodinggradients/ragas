@@ -8,7 +8,7 @@ import numpy as np
 
 from ragas.prompt import PydanticPrompt
 from ragas.testset.graph import KnowledgeGraph
-from ragas.testset.persona import PersonasList
+from ragas.testset.persona import PersonaList
 from ragas.testset.synthesizers.multi_hop.base import (
     MultiHopQuerySynthesizer,
     MultiHopScenario,
@@ -45,7 +45,7 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
         self,
         n: int,
         knowledge_graph: KnowledgeGraph,
-        persona_list: PersonasList,
+        persona_list: PersonaList,
         callbacks: Callbacks,
     ) -> t.List[MultiHopScenario]:
 
