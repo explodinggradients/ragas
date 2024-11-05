@@ -31,7 +31,9 @@ class AnswersGenerated(BaseModel):
 
 class ExtractKeyphrasePrompt(PydanticPrompt[StringIO, ExtractedKeyphrases]):
     name: str = "extract_keyphrases"
-    instruction: str = "Extract keyphrases of type: Person, Organization, Location, Date/Time, Monetary Values, and Percentages."
+    instruction: str = (
+        "Extract keyphrases of type: Person, Organization, Location, Date/Time, Monetary Values, and Percentages."
+    )
     input_model = StringIO
     output_model = ExtractedKeyphrases
     examples: t.List[t.Tuple[StringIO, ExtractedKeyphrases]] = [
@@ -62,7 +64,9 @@ class GenerateQuestionsPrompt(
     PydanticPrompt[GenerateQuestionsPromptInput, QuestionsGenerated]
 ):
     name: str = "generate_questions"
-    instruction: str = "Based on the given text and keyphrases, generate closed-ended questions that can be answered with '1' if the question can be answered using the text, or '0' if it cannot. The questions should ALWAYS result in a '1' based on the given text."
+    instruction: str = (
+        "Based on the given text and keyphrases, generate closed-ended questions that can be answered with '1' if the question can be answered using the text, or '0' if it cannot. The questions should ALWAYS result in a '1' based on the given text."
+    )
     input_model = GenerateQuestionsPromptInput
     output_model = QuestionsGenerated
     examples: t.List[t.Tuple[GenerateQuestionsPromptInput, QuestionsGenerated]] = [
@@ -99,7 +103,9 @@ class SummaryAndQuestions(BaseModel):
 
 class GenerateAnswersPrompt(PydanticPrompt[SummaryAndQuestions, AnswersGenerated]):
     name: str = "generate_answers"
-    instruction: str = "Based on the list of close-ended '1' or '0' questions, generate a JSON with key 'answers', which is a list of strings that determines whether the provided summary contains sufficient information to answer EACH question. Answers should STRICTLY be either '1' or '0'. Answer '0' if the provided summary does not contain enough information to answer the question and answer '1' if the provided summary can answer the question."
+    instruction: str = (
+        "Based on the list of close-ended '1' or '0' questions, generate a JSON with key 'answers', which is a list of strings that determines whether the provided summary contains sufficient information to answer EACH question. Answers should STRICTLY be either '1' or '0'. Answer '0' if the provided summary does not contain enough information to answer the question and answer '1' if the provided summary can answer the question."
+    )
     input_model = SummaryAndQuestions
     output_model = AnswersGenerated
     examples: t.List[t.Tuple[SummaryAndQuestions, AnswersGenerated]] = [
