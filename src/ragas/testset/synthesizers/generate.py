@@ -18,6 +18,7 @@ from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper, LlamaIndexLLMWrapper
 from ragas.run_config import RunConfig
 from ragas.testset.graph import KnowledgeGraph, Node, NodeType
+from ragas.testset.persona import Persona, PersonaGenerator
 from ragas.testset.synthesizers import default_query_distribution
 from ragas.testset.synthesizers.testset_schema import Testset, TestsetSample
 from ragas.testset.synthesizers.utils import calculate_split_values
@@ -62,6 +63,7 @@ class TestsetGenerator:
     llm: BaseRagasLLM
     embedding_model: BaseRagasEmbeddings
     knowledge_graph: KnowledgeGraph = field(default_factory=KnowledgeGraph)
+    persona_list: t.Optional[t.List[Persona]] = None
 
     @classmethod
     def from_langchain(
@@ -267,6 +269,40 @@ class TestsetGenerator:
             raise_exceptions=raise_exceptions,
         )
 
+    def generate_persona_list(
+        self,
+        generation_group: Callbacks,
+        run_config: t.Optional[RunConfig] = None,
+        raise_exceptions: bool = True,
+    ):
+
+        # generate personas
+        num_personas = 5
+        persona_generator = PersonaGenerator(llm=self.llm, num_personas=num_personas)
+        # new group for Generation of Scenarios
+        persona_generation_rm, persona_generation_grp = new_group(
+            name="Persona Generation",
+            inputs={"num_personas": num_personas},
+            callbacks=generation_group,
+        )
+        # generate scenarios
+        exec = Executor(
+            "Generating Personas",
+            raise_exceptions=raise_exceptions,
+            run_config=run_config,
+            keep_progress_bar=False,
+        )
+        exec.submit(
+            persona_generator.generate_from_kg,
+            kg=self.knowledge_graph,
+            callbacks=persona_generation_grp,
+        )
+        try:
+            return exec.results()
+        except Exception as e:
+            persona_generation_rm.on_chain_error(e)
+            raise e
+
     def generate(
         self,
         testset_size: int,
@@ -355,6 +391,11 @@ class TestsetGenerator:
             patch_logger("ragas.experimental.testset.synthesizers", logging.DEBUG)
             patch_logger("ragas.experimental.testset.graph", logging.DEBUG)
             patch_logger("ragas.experimental.testset.transforms", logging.DEBUG)
+
+        if self.persona_list is None:
+            self.persona_list = self.generate_persona_list(
+                testset_generation_grp, run_config, raise_exceptions
+            )
 
         splits, _ = calculate_split_values(
             [prob for _, prob in query_distribution], testset_size
