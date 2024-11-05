@@ -9,7 +9,7 @@ import numpy as np
 from ragas.prompt import PydanticPrompt
 from ragas.testset.graph import KnowledgeGraph
 from ragas.testset.graph_queries import get_child_nodes
-from ragas.testset.persona import PersonaList
+from ragas.testset.persona import Persona, PersonaList
 from ragas.testset.synthesizers.multi_hop.base import (
     MultiHopQuerySynthesizer,
     MultiHopScenario,
@@ -19,7 +19,6 @@ from ragas.testset.synthesizers.multi_hop.prompts import (
     ConceptsList,
 )
 from ragas.testset.synthesizers.prompts import (
-    ThemesList,
     ThemesPersonasInput,
     ThemesPersonasMatchingPrompt,
 )
@@ -46,7 +45,7 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
         self,
         n: int,
         knowledge_graph: KnowledgeGraph,
-        persona_list: PersonaList,
+        persona_list: t.List[Persona],
         callbacks: Callbacks,
     ) -> t.List[MultiHopScenario]:
 
@@ -85,9 +84,8 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
                 for sublist in concept_combination.combinations
                 for theme in sublist
             ]
-            themes_list = ThemesList(themes=flattened_themes)
             prompt_input = ThemesPersonasInput(
-                themes=themes_list, personas=persona_list
+                themes=flattened_themes, personas=persona_list
             )
             persona_concepts = await self.theme_persona_matching_prompt.generate(
                 data=prompt_input, llm=self.llm, callbacks=callbacks
@@ -96,7 +94,7 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
             base_scenarios = self.prepare_combinations(
                 nodes,
                 concept_combination.combinations,
-                persona_list,
+                PersonaList(personas=persona_list),
                 persona_concepts,
                 property_name="themes",
             )

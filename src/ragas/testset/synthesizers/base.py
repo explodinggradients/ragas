@@ -11,7 +11,7 @@ from ragas.callbacks import new_group
 from ragas.llms import BaseRagasLLM, llm_factory
 from ragas.prompt import PromptMixin
 from ragas.testset.graph import KnowledgeGraph, Node
-from ragas.testset.persona import Persona, PersonaList
+from ragas.testset.persona import Persona
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -82,7 +82,7 @@ class BaseSynthesizer(ABC, t.Generic[Scenario], PromptMixin):
         self,
         n: int,
         knowledge_graph: KnowledgeGraph,
-        persona_list: PersonaList,
+        persona_list: t.List[Persona],
         callbacks: t.Optional[Callbacks] = None,
     ) -> t.List[Scenario]:
         callbacks = callbacks or []
@@ -102,7 +102,7 @@ class BaseSynthesizer(ABC, t.Generic[Scenario], PromptMixin):
         self,
         n: int,
         knowledge_graph: KnowledgeGraph,
-        persona_list: PersonaList,
+        persona_list: t.List[Persona],
         callbacks: Callbacks,
     ) -> t.List[Scenario]:
         pass

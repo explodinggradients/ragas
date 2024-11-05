@@ -8,14 +8,13 @@ import numpy as np
 
 from ragas.prompt import PydanticPrompt
 from ragas.testset.graph import KnowledgeGraph
-from ragas.testset.persona import PersonaList
+from ragas.testset.persona import Persona, PersonaList
 from ragas.testset.synthesizers.multi_hop.base import (
     MultiHopQuerySynthesizer,
     MultiHopScenario,
 )
 from ragas.testset.synthesizers.multi_hop.prompts import QueryAnswerGenerationPrompt
 from ragas.testset.synthesizers.prompts import (
-    ThemesList,
     ThemesPersonasInput,
     ThemesPersonasMatchingPrompt,
 )
@@ -45,7 +44,7 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
         self,
         n: int,
         knowledge_graph: KnowledgeGraph,
-        persona_list: PersonaList,
+        persona_list: t.List[Persona],
         callbacks: Callbacks,
     ) -> t.List[MultiHopScenario]:
 
@@ -79,7 +78,7 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
                         overlapped_items = rel.get_property("overlapped_items")
                         break
                 if overlapped_items:
-                    themes = ThemesList(themes=list(dict(overlapped_items).keys()))
+                    themes = list(dict(overlapped_items).keys())
                     prompt_input = ThemesPersonasInput(
                         themes=themes, personas=persona_list
                     )
@@ -92,7 +91,7 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
                     base_scenarios = self.prepare_combinations(
                         [key_node, node],
                         overlapped_items,
-                        persona_list,
+                        PersonaList(personas=persona_list),
                         persona_concepts,
                         property_name="entities",
                     )

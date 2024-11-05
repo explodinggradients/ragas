@@ -10,7 +10,7 @@ import numpy as np
 from ragas.dataset_schema import SingleTurnSample
 from ragas.prompt import PydanticPrompt
 from ragas.testset.graph import KnowledgeGraph
-from ragas.testset.persona import PersonaList
+from ragas.testset.persona import Persona, PersonaList
 from ragas.testset.synthesizers.base import (
     BaseScenario,
     BaseSynthesizer,
@@ -19,7 +19,6 @@ from ragas.testset.synthesizers.base import (
     Scenario,
 )
 from ragas.testset.synthesizers.prompts import (
-    ThemesList,
     ThemesPersonasInput,
     ThemesPersonasMatchingPrompt,
 )
@@ -126,7 +125,7 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
         self,
         n: int,
         knowledge_graph: KnowledgeGraph,
-        persona_list: PersonaList,
+        persona_list: t.List[Persona],
         callbacks: Callbacks,
     ) -> t.List[SingleHopScenario]:
 
@@ -147,14 +146,12 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
             if len(scenarios) >= n:
                 break
             themes = node.get_property(property_name)
-            prompt_input = ThemesPersonasInput(
-                themes=ThemesList(themes=themes), personas=persona_list
-            )
+            prompt_input = ThemesPersonasInput(themes=themes, personas=persona_list)
             persona_concepts = await self.theme_persona_matching_prompt.generate(
                 data=prompt_input, llm=self.llm, callbacks=callbacks
             )
             base_scenarios = self.prepare_combinations(
-                node, themes, persona_list, persona_concepts
+                node, themes, PersonaList(personas=persona_list), persona_concepts
             )
             scenarios.extend(self.sample_combinations(base_scenarios, samples_per_node))
 

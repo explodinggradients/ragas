@@ -18,7 +18,7 @@ from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper, LlamaIndexLLMWrapper
 from ragas.run_config import RunConfig
 from ragas.testset.graph import KnowledgeGraph, Node, NodeType
-from ragas.testset.persona import Persona, PersonaGenerator
+from ragas.testset.persona import Persona, PersonaList
 from ragas.testset.synthesizers import default_query_distribution
 from ragas.testset.synthesizers.testset_schema import Testset, TestsetSample
 from ragas.testset.synthesizers.utils import calculate_split_values
@@ -274,11 +274,10 @@ class TestsetGenerator:
         generation_group: Callbacks,
         run_config: t.Optional[RunConfig] = None,
         raise_exceptions: bool = True,
-    ):
+    ) -> PersonaList:
 
         # generate personas
         num_personas = 5
-        persona_generator = PersonaGenerator(llm=self.llm, num_personas=num_personas)
         # new group for Generation of Scenarios
         persona_generation_rm, persona_generation_grp = new_group(
             name="Persona Generation",
@@ -293,8 +292,10 @@ class TestsetGenerator:
             keep_progress_bar=False,
         )
         exec.submit(
-            persona_generator.generate_from_kg,
+            PersonaList.from_kg,
+            llm=self.llm,
             kg=self.knowledge_graph,
+            num_personas=num_personas,
             callbacks=persona_generation_grp,
         )
         try:
@@ -395,7 +396,7 @@ class TestsetGenerator:
         if self.persona_list is None:
             self.persona_list = self.generate_persona_list(
                 testset_generation_grp, run_config, raise_exceptions
-            )
+            ).personas
 
         splits, _ = calculate_split_values(
             [prob for _, prob in query_distribution], testset_size
@@ -424,6 +425,7 @@ class TestsetGenerator:
                 scenario.generate_scenarios,
                 n=splits[i],
                 knowledge_graph=self.knowledge_graph,
+                persona_list=self.persona_list,
                 callbacks=scenario_generation_grp,
             )
 
