@@ -49,8 +49,19 @@ class SingleHopSpecificQuerySynthesizer(SingleHopQuerySynthesizer):
         persona_list: t.List[Persona],
         callbacks: Callbacks,
     ) -> t.List[SingleHopScenario]:
+        """
+        Generates a list of scenarios on type SingleHopSpecificQuerySynthesizer
+        Steps to generate scenarios:
+        1. Find nodes with CHUNK type and entities property
+        2. Calculate the number of samples that should be created per node to get n samples in total
+        3. For each node
+            a. Find the entities associated with the node
+            b. Map personas to the entities to create query
+            c. Prepare all possible combinations of (node, entities, personas, style, length) as base scenarios
+            d. Sample num_sample_per_node (step 2) scenarios from base scenarios
+        4. Return the list of scenarios
+        """
 
-        assert persona_list is not None, "Persona list is required for this synthesizer"
         property_name = "entities"
         nodes = []
         for node in knowledge_graph.nodes:

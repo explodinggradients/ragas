@@ -48,6 +48,18 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
         persona_list: t.List[Persona],
         callbacks: Callbacks,
     ) -> t.List[MultiHopScenario]:
+        """
+        Generates a list of scenarios on type MultiHopSpecificQuerySynthesizer
+        Steps to generate scenarios:
+        1. Filter the knowledge graph to find cluster of nodes or defined relation type. Here entities_overlap
+        2. Calculate the number of samples that should be created per cluster to get n samples in total
+        3. For each cluster of nodes
+            a. Find the entities that are common between the nodes
+            b. Find list of personas that can be associated with the entities to create query
+            c. Create all possible combinations of (nodes, entities, personas, style, length) as scenarios
+            3. Sample num_sample_per_cluster scenarios from the list of scenarios
+        4. Return the list of scenarios of length n
+        """
 
         cluster_dict = knowledge_graph.find_direct_clusters(
             relationship_condition=lambda rel: (

@@ -37,7 +37,7 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
     Attributes
     ----------
     """
-    
+
     name: str = "multi_hop_abstract_query_synthesizer"
     concept_combination_prompt: PydanticPrompt = ConceptCombinationPrompt()
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
@@ -49,6 +49,17 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
         persona_list: t.List[Persona],
         callbacks: Callbacks,
     ) -> t.List[MultiHopScenario]:
+        """
+        Generates a list of scenarios on type MultiHopAbstractQuerySynthesizer
+        Steps to generate scenarios:
+        1. Find indirect clusters of nodes based on relationship condition
+        2. Calculate the number of samples that should be created per cluster to get n samples in total
+        3. For each cluster of nodes
+            a. Find the child nodes of the cluster nodes
+            b. Find list of personas that can be associated with the entities to create query
+            c. Create all possible combinations of (nodes, entities, personas, style, length) as scenarios
+        4. Sample diverse combinations of scenarios to get n samples
+        """
 
         node_clusters = knowledge_graph.find_indirect_clusters(
             relationship_condition=lambda rel: (
