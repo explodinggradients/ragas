@@ -5,7 +5,6 @@ import typing as t
 import numpy as np
 from langchain_core.callbacks import Callbacks
 from pydantic import BaseModel
-from tqdm import tqdm
 
 from ragas.executor import run_async_batch
 from ragas.llms.base import BaseRagasLLM
@@ -118,7 +117,6 @@ def generate_personas_from_kg(
                 visited.add(j)
         groups.append(group)
 
-    persona_list = []
     top_summaries = []
     for group in groups:
         representative_summary = max([summaries[i] for i in group], key=len)
@@ -139,10 +137,10 @@ def generate_personas_from_kg(
         }
         for summary in top_summaries[:num_personas]
     ]
-    personas = run_async_batch(
+    persona_list = run_async_batch(
         desc="Generating personas",
         func=persona_generation_prompt.generate,
         kwargs_list=kwargs_list,
     )
 
-    return personas
+    return persona_list
