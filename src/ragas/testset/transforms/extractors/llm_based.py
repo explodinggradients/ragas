@@ -70,34 +70,36 @@ class Headlines(BaseModel):
 
 
 class HeadlinesExtractorPrompt(PydanticPrompt[StringIO, Headlines]):
-    instruction: str = (
-        "Extract only the level 2 headings from the given text if they are present."
-    )
+    instruction: str = "Extract only level 2 headings from the given text."
+
     input_model: t.Type[StringIO] = StringIO
     output_model: t.Type[Headlines] = Headlines
     examples: t.List[t.Tuple[StringIO, Headlines]] = [
         (
             StringIO(
                 text="""\
-        Section 1: Introduction
-        Introduction to the topic...
+        Introduction
+        Overview of the topic...
 
-        1. Main Concepts
-        1.1 Key Definitions
-        Explanation of core definitions...
+        Main Concepts
+        Explanation of core ideas...
 
-        2. Advanced Topics
-        2.1 Specialized Techniques
-        Detail on various advanced techniques...
+        Detailed Analysis
+        Techniques and methods for analysis...
 
-        2.2 Emerging Trends
-        Description of current and emerging trends...
+        Subsection: Specialized Techniques
+        Further details on specialized techniques...
 
-        3. Summary and Conclusion
+        Future Directions
+        Insights into upcoming trends...
+
+        Conclusion
         Final remarks and summary.
         """,
             ),
-            Headlines(headlines=["2.1 Specialized Techniques", "2.2 Emerging Trends"]),
+            Headlines(
+                headlines=["Main Concepts", "Detailed Analysis", "Future Directions"]
+            ),
         ),
     ]
 
