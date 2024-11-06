@@ -1,31 +1,21 @@
 from __future__ import annotations
 
 import logging
-import random
 import typing as t
 from dataclasses import dataclass
 
 import numpy as np
 
-from ragas.dataset_schema import SingleTurnSample
 from ragas.prompt import PydanticPrompt
 from ragas.testset.graph import KnowledgeGraph
 from ragas.testset.persona import Persona, PersonaList
-from ragas.testset.synthesizers.base import (
-    BaseScenario,
-    BaseSynthesizer,
-    QueryLength,
-    QueryStyle,
-    Scenario,
-)
+from ragas.testset.synthesizers.base import BaseScenario
 from ragas.testset.synthesizers.prompts import (
     ThemesPersonasInput,
     ThemesPersonasMatchingPrompt,
 )
-from ragas.testset.synthesizers.single_hop.prompts import (
-    QueryAnswerGenerationPrompt,
-    QueryCondition,
-)
+
+from .base import SingleHopQuerySynthesizer
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -47,80 +37,10 @@ class SingleHopScenario(BaseScenario):
 
 
 @dataclass
-class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
+class SingleHopSpecificQuerySynthesizer(SingleHopQuerySynthesizer):
 
-    name: str = "single_hop_query_synthesizer"
+    name: str = "single_hop_specifc_query_synthesizer"
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
-    generate_query_reference_prompt: PydanticPrompt = QueryAnswerGenerationPrompt()
-
-    def prepare_combinations(
-        self,
-        node,
-        terms: t.List[str],
-        persona_list: PersonaList,
-        persona_concepts,
-    ) -> t.List[t.Dict[str, t.Any]]:
-
-        sample = {"terms": terms, "node": node}
-        valid_personas = []
-        for persona, concepts in persona_concepts.mapping.items():
-            concepts = [concept.lower() for concept in concepts]
-            if any(term.lower() in concepts for term in terms):
-                if persona_list[persona]:
-                    valid_personas.append(persona_list[persona])
-            sample["personas"] = valid_personas
-            sample["styles"] = list(QueryStyle)
-            sample["lengths"] = list(QueryLength)
-
-        return [sample]
-
-    def sample_combinations(self, data: t.List[t.Dict[str, t.Any]], num_samples):
-
-        selected_samples = []
-        node_term_set = set()
-
-        all_combinations = []
-        for entry in data:
-            node = entry["node"]
-            for term in entry["terms"]:
-                for persona in entry["personas"]:
-                    for style in entry["styles"]:
-                        for length in entry["lengths"]:
-                            all_combinations.append(
-                                {
-                                    "term": term,
-                                    "node": node,
-                                    "persona": persona,
-                                    "style": style,
-                                    "length": length,
-                                }
-                            )
-
-        random.shuffle(all_combinations)
-        for sample in all_combinations:
-            if len(selected_samples) >= num_samples:
-                break
-
-            term = sample["term"]
-            node = sample["node"]
-
-            if (node, term) not in node_term_set:
-                selected_samples.append(sample)
-                node_term_set.add((node, term))
-            elif len(selected_samples) < num_samples:
-                selected_samples.append(sample)
-
-        return [self.convert_to_scenario(sample) for sample in selected_samples]
-
-    def convert_to_scenario(self, data: t.Dict[str, t.Any]) -> SingleHopScenario:
-
-        return SingleHopScenario(
-            term=data["term"],
-            nodes=[data["node"]],
-            persona=data["persona"],
-            style=data["style"],
-            length=data["length"],
-        )
 
     async def _generate_scenarios(
         self,
@@ -157,33 +77,3 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
             scenarios.extend(self.sample_combinations(base_scenarios, samples_per_node))
 
         return scenarios
-
-    async def _generate_sample(
-        self, scenario: SingleHopScenario, callbacks: Callbacks
-    ) -> SingleTurnSample:
-
-        reference_context = self.make_contexts(scenario)
-        prompt_input = QueryCondition(
-            persona=scenario.persona,
-            term=scenario.term,
-            context=reference_context,
-            query_length=scenario.length.name,
-            query_style=scenario.style.name,
-        )
-        response = await self.generate_query_reference_prompt.generate(
-            data=prompt_input, llm=self.llm, callbacks=callbacks
-        )
-        return SingleTurnSample(
-            user_input=response.query,
-            reference=response.answer,
-            reference_contexts=reference_context,
-        )
-
-    def make_contexts(self, scenario: SingleHopScenario) -> t.List[str]:
-
-        contexts = []
-        for node in scenario.nodes:
-            context = f"{node.id}" + "\n\n" + node.properties.get("page_content", "")
-            contexts.append(context)
-
-        return contexts
