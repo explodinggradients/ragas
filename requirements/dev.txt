@@ -15,4 +15,3 @@ nltk
 rapidfuzz
 pandas
 datacompy
-scikit-learn
