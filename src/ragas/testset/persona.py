@@ -61,7 +61,7 @@ class PersonaList(BaseModel):
         raise KeyError(f"No persona found with name '{key}'")
 
 
-async def generate_personas_from_kg(
+def generate_personas_from_kg(
     kg: KnowledgeGraph,
     llm: BaseRagasLLM,
     persona_generation_prompt: PersonaGenerationPrompt = PersonaGenerationPrompt(),
