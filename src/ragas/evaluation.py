@@ -344,7 +344,7 @@ def evaluate(
             ragas_traces=tracer.traces,
         )
         if not evaluation_group_cm.ended:
-            evaluation_rm.on_chain_end(result)
+            evaluation_rm.on_chain_end({"scores": result.scores})
     finally:
         # reset llms and embeddings if changed
         for i in llm_changed:
