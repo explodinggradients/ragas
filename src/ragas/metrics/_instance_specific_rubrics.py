@@ -27,7 +27,7 @@ if t.TYPE_CHECKING:
 
 @dataclass
 class InstanceRubricsWithReference(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
-    name: str = "labelled_rubrics_score"  # type: ignore
+    name: str = "labelled_rubrics_score"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {"user_input", "response", "reference", "rubrics"},
@@ -102,7 +102,7 @@ class InstanceRubricsWithReference(MetricWithLLM, SingleTurnMetric, MultiTurnMet
 class InstanceRubricsScoreWithoutReference(
     MetricWithLLM, SingleTurnMetric, MultiTurnMetric
 ):
-    name: str = "reference_free_rubrics_score"  # type: ignore
+    name: str = "reference_free_rubrics_score"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {"user_input", "response", "rubrics"},

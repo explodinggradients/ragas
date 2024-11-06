@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DataCompyScore(SingleTurnMetric):
-    name: str = "data_compare_score"  # type: ignore
+    name: str = "data_compare_score"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
     )

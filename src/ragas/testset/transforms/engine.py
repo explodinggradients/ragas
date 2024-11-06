@@ -4,7 +4,9 @@ import asyncio
 import logging
 import typing as t
 
-from ragas.executor import as_completed, is_event_loop_running, tqdm
+from tqdm.auto import tqdm
+
+from ragas.executor import as_completed, is_event_loop_running
 from ragas.run_config import RunConfig
 from ragas.testset.graph import KnowledgeGraph
 from ragas.testset.transforms.base import BaseGraphTransformation

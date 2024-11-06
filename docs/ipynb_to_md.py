@@ -56,22 +56,20 @@ def find_and_convert_ipynb_files(directory):
                     print(f"Skipping {ipynb_file} (not modified since last conversion)")
 
 
-def get_valid_directory():
-    while True:
-        DEFAULT_DIRECTORY = "./docs/"
-        if os.environ.get("MKDOCS_CI"):
-            directory = DEFAULT_DIRECTORY
-        else:
-            directory = input(
-                f"Enter the directory path to search for .ipynb files (default: {DEFAULT_DIRECTORY}): "
-            ).strip()
+def get_valid_directory(use_default=False):
+    DEFAULT_DIRECTORY = "./docs/"
 
-        if directory == "":
-            directory = DEFAULT_DIRECTORY
-        if os.path.isdir(directory):
-            return os.path.abspath(directory)
-        else:
-            print("Directory does not exist. Please enter a valid")
+    if os.environ.get("MKDOCS_CI") or use_default:
+        directory = DEFAULT_DIRECTORY
+    else:
+        directory = input(
+            f"Enter the directory path to search for .ipynb files (default: {DEFAULT_DIRECTORY}): "
+        ).strip()
+
+    if directory == "":
+        directory = DEFAULT_DIRECTORY
+
+    return os.path.abspath(directory) if os.path.isdir(directory) else DEFAULT_DIRECTORY
 
 
 if __name__ == "__main__":
@@ -79,3 +77,7 @@ if __name__ == "__main__":
     print(f"Searching for .ipynb files in: {target_directory}")
     find_and_convert_ipynb_files(target_directory)
     print("Conversion process completed.")
+
+if __name__ == "<run_path>":
+    target_directory = get_valid_directory(use_default=True)
+    find_and_convert_ipynb_files(target_directory)

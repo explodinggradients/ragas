@@ -97,7 +97,7 @@ class CompareOutcomePrompt(PydanticPrompt[CompareOutcomeInput, CompareOutcomeOut
 
 @dataclass
 class AgentGoalAccuracyWithReference(MetricWithLLM, MultiTurnMetric):
-    name: str = "agent_goal_accuracy"  # type: ignore
+    name: str = "agent_goal_accuracy"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.MULTI_TURN: {
@@ -140,7 +140,7 @@ class AgentGoalAccuracyWithReference(MetricWithLLM, MultiTurnMetric):
 
 @dataclass
 class AgentGoalAccuracyWithoutReference(MetricWithLLM, MultiTurnMetric):
-    name: str = "agent_goal_accuracy"  # type: ignore
+    name: str = "agent_goal_accuracy"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.MULTI_TURN: {

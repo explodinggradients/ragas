@@ -24,12 +24,13 @@ all = [
     "rouge_score",
     "rapidfuzz",
     "pandas",
-    "datacompy",]
-
+    "datacompy",
+    "llama_index",
+]
 docs = [
     "mkdocs>=1.6.1",
     "mkdocs-material",
-    "mkdocs-jupyter",
+    "mkdocs-material[imaging]",
     "mkdocstrings[python]",
     "mkdocs-glightbox",
     "mkdocs-autorefs",
@@ -43,7 +44,7 @@ docs = [
 package-dir = {"" = "src"}
 
 [tool.setuptools.dynamic]
-readme = {file = ["README.md"], content-type = "text/plain"}
+readme = {file = ["README.md"], content-type = "text/markdown"}
 
 [tool.ruff]
 exclude = ["*.ipynb"]

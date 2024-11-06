@@ -202,7 +202,7 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
 
     """
 
-    name: str = "factual_correctness"  # type: ignore
+    name: str = "factual_correctness"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"response", "reference"}}
     )
@@ -271,7 +271,6 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
         reference_response = await self.verify_claims(
             premise=reference, hypothesis_list=response_claims, callbacks=callbacks
         )
-        
 
         if self.mode != "precision":
             response_reference = await self.verify_claims(
@@ -286,7 +285,6 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
             fn = sum(~response_reference)
         else:
             fn = 0
-            
 
         if self.mode == "precision":
             score = tp / (tp + fp + 1e-8)

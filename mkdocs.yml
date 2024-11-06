@@ -79,7 +79,9 @@ nav:
               - Run Config: howtos/customizations/_run_config.md
           - Metrics:
               - Modify Prompts: howtos/customizations/metrics/_modifying-prompts-metrics.md
-              - Add Custom Metrics: howtos/customizations/metrics/_write_your_own_metric.md
+              - Adapt Metrics to Languages: howtos/customizations/metrics/_metrics_language_adaptation.md
+              - Write your own Metrics: howtos/customizations/metrics/_write_your_own_metric.md
+              - Write your own Metrics - (advanced): howtos/customizations/metrics/_write_your_own_metric_advanced.md
           - Testset Generation:
               - howtos/customizations/testgenerator/index.md
       - Applications:
@@ -87,6 +89,7 @@ nav:
           - Cost Analysis: howtos/applications/_cost.md
       - Integrations:
           - howtos/integrations/index.md
+          - LlamaIndex: howtos/integrations/_llamaindex.md
       - Migrations:
           - From v0.1 to v0.2: howtos/migrations/migrate_from_v01_to_v02.md
   - 📖 References: 
@@ -146,10 +149,10 @@ theme:
     - content.code.copy
     - announce.dismiss
     - navigation.tabs
-    - navigation.instant
     - navigation.path
+    - navigation.instant
     - navigation.instant.prefetch
-    - navigation.instant.progress
+    - navigation.instant.preview
     - navigation.sections
     - navigation.top
     - navigation.tracking
@@ -195,6 +198,7 @@ extra:
     property: !ENV GOOGLE_ANALYTICS_KEY
 plugins:
   - search
+  - social
   - git-revision-date-localized:
       enabled: !ENV [MKDOCS_CI, false]
       enable_creation_date: true
@@ -217,7 +221,9 @@ plugins:
             show_signature_annotations: true
             signature_crossrefs: true
   - glightbox
-
+  - gen-files:
+      scripts:
+        - docs/ipynb_to_md.py
 extra_javascript:
   - _static/js/mathjax.js
   - _static/js/header_border.js

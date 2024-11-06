@@ -11,7 +11,7 @@ v0.2 is the start of the transition for Ragas from an evaluation library for RAG
 
 ## Evaluation Dataset
 
-We have moved from using HuggingFace [`Datasets`](https://huggingface.co/docs/datasets/v3.0.1/en/package_reference/main_classes#datasets.Dataset) to our own [`EvaluationDataset`][ragas.dataset_schema.EvaluationDataset] . You can read more about it from the core concepts section for [EvaluationDataset](../../concepts/components/evaluation-dataset.md) and [EvaluationSample](../../concepts/components/eval_sample.md)
+We have moved from using HuggingFace [`Datasets`](https://huggingface.co/docs/datasets/v3.0.1/en/package_reference/main_classes#datasets.Dataset) to our own [`EvaluationDataset`][ragas.dataset_schema.EvaluationDataset] . You can read more about it from the core concepts section for [EvaluationDataset](../../concepts/components/eval_dataset.md) and [EvaluationSample](../../concepts/components/eval_sample.md)
 
 You can easily translate 
 
