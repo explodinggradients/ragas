@@ -349,4 +349,50 @@ class ThemesExtractor(LLMBasedExtractor):
         if node_text is None:
             return self.property_name, []
         result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
-        return self.property_name, result.output
+        return self.property_name, result.entities.model_dump()
+
+
+class TopicDescription(BaseModel):
+    description: str
+
+
+class TopicDescriptionPrompt(PydanticPrompt[StringIO, TopicDescription]):
+    instruction: str = (
+        "Provide a concise description of the main topic(s) discussed in the following text."
+    )
+    input_model: t.Type[StringIO] = StringIO
+    output_model: t.Type[TopicDescription] = TopicDescription
+    examples: t.List[t.Tuple[StringIO, TopicDescription]] = [
+        (
+            StringIO(
+                text="Quantum Computing\n\nQuantum computing leverages the principles of quantum mechanics to perform complex computations more efficiently than classical computers. It has the potential to revolutionize fields like cryptography, material science, and optimization problems by solving tasks that are currently intractable for classical systems."
+            ),
+            TopicDescription(
+                description="An introduction to quantum computing and its potential to outperform classical computers in complex computations, impacting areas such as cryptography and material science."
+            ),
+        )
+    ]
+
+
+@dataclass
+class TopicDescriptionExtractor(LLMBasedExtractor):
+    """
+    Extracts a concise description of the main topic(s) discussed in the given text.
+
+    Attributes
+    ----------
+    property_name : str
+        The name of the property to extract.
+    prompt : TopicDescriptionPrompt
+        The prompt used for extraction.
+    """
+
+    property_name: str = "topic_description"
+    prompt: TopicDescriptionPrompt = TopicDescriptionPrompt()
+
+    async def extract(self, node: Node) -> t.Tuple[str, t.Any]:
+        node_text = node.get_property("page_content")
+        if node_text is None:
+            return self.property_name, None
+        result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
+        return self.property_name, result.description

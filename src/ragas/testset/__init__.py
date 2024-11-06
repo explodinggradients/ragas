@@ -6,6 +6,4 @@ __all__ = [
     "TestsetGenerator",
     "Testset",
     "TestsetSample",
-    "Persona",
-    "PersonaList",
 ]

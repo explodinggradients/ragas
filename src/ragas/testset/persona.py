@@ -1,30 +1,25 @@
 import logging
 import random
 import typing as t
-from dataclasses import dataclass
 
 import numpy as np
 from langchain_core.callbacks import Callbacks
 from pydantic import BaseModel
-from tqdm import tqdm
 
+from ragas.executor import run_async_batch
 from ragas.llms.base import BaseRagasLLM
 from ragas.prompt import PydanticPrompt, StringIO
 from ragas.testset.graph import KnowledgeGraph, Node
-
-if t.TYPE_CHECKING:
-    from langchain_core.callbacks import Callbacks
 
 logger = logging.getLogger(__name__)
 
 
 def default_filter(node: Node) -> bool:
-
     if (
         node.type.name == "DOCUMENT"
         and node.properties.get("summary_embedding") is not None
     ):
-        return True
+        return random.random() < 0.25
     else:
         return False
 
@@ -55,72 +50,97 @@ class PersonaGenerationPrompt(PydanticPrompt[StringIO, Persona]):
     ]
 
 
-@dataclass
-class PersonaList:
+class PersonaList(BaseModel):
     personas: t.List[Persona]
 
-    def __getitem__(self, key: str) -> t.Optional[Persona]:
+    def __getitem__(self, key: str) -> Persona:
         for persona in self.personas:
             if persona.name == key:
                 return persona
-        return None
+        raise KeyError(f"No persona found with name '{key}'")
 
-    @classmethod
-    async def from_kg(
-        cls,
-        llm: BaseRagasLLM,
-        kg: KnowledgeGraph,
-        persona_generation_prompt: PersonaGenerationPrompt = PersonaGenerationPrompt(),
-        num_personas: int = 5,
-        filter_fn: t.Callable[[Node], bool] = default_filter,
-        callbacks: Callbacks = [],
-    ) -> "PersonaList":
 
-        try:
-            from sklearn.cluster import KMeans
-            from sklearn.metrics import pairwise_distances
-        except ImportError:
-            raise ImportError(
-                "PersonaGenerator requires the 'scikit-learn' package to be installed. "
-                "You can install it with 'pip install scikit-learn'."
-            )
+def generate_personas_from_kg(
+    kg: KnowledgeGraph,
+    llm: BaseRagasLLM,
+    persona_generation_prompt: PersonaGenerationPrompt = PersonaGenerationPrompt(),
+    num_personas: int = 3,
+    filter_fn: t.Callable[[Node], bool] = default_filter,
+    callbacks: Callbacks = [],
+) -> t.List[Persona]:
+    """
+    Generate personas from a knowledge graph based on cluster of similar document summaries.
 
-        kmeans = KMeans(n_clusters=num_personas, random_state=42)
+    parameters:
+        kg: KnowledgeGraph
+            The knowledge graph to generate personas from.
+        llm: BaseRagasLLM
+            The LLM to use for generating the persona.
+        persona_generation_prompt: PersonaGenerationPrompt
+            The prompt to use for generating the persona.
+        num_personas: int
+            The maximum number of personas to generate.
+        filter_fn: Callable[[Node], bool]
+            A function to filter nodes in the knowledge graph.
+        callbacks: Callbacks
+            The callbacks to use for the generation process.
 
-        nodes = [node for node in kg.nodes if filter_fn(node)]
-        summaries = [node.properties.get("summary") for node in nodes]
-        if len(summaries) < num_personas:
-            logger.warning(
-                f"Only {len(summaries)} summaries found, randomly duplicating to reach {num_personas} personas."
-            )
-            summaries.extend(random.choices(summaries, k=num_personas - len(summaries)))
-        summaries = [summary for summary in summaries if isinstance(summary, str)]
 
-        embeddings = []
-        for node in nodes:
-            embeddings.append(node.properties.get("summary_embedding"))
+    returns:
+        t.List[Persona]
+            The list of generated personas.
+    """
 
-        embeddings = np.array(embeddings)
-        kmeans.fit(embeddings)
-        labels = kmeans.labels_
-        if labels is None:
-            raise ValueError("No labels found from clustering")
-        cluster_centers = kmeans.cluster_centers_
-        persona_list = []
-        for i in tqdm(range(num_personas), desc="Generating personas"):
-            cluster_indices = [j for j, label in enumerate(labels) if label == i]
-            _ = [summaries[j] for j in cluster_indices]
-            centroid = cluster_centers[i]
-            X_cluster = embeddings[cluster_indices]
-            distances = pairwise_distances(
-                X_cluster, centroid.reshape(1, -1), metric="euclidean"
-            ).flatten()
+    nodes = [node for node in kg.nodes if filter_fn(node)]
+    summaries = [node.properties.get("summary") for node in nodes]
+    summaries = [summary for summary in summaries if isinstance(summary, str)]
 
-            closest_index = distances.argmin()
-            representative_summary: str = summaries[cluster_indices[closest_index]]
-            persona = await persona_generation_prompt.generate(
-                llm=llm, data=StringIO(text=representative_summary), callbacks=callbacks
-            )
-            persona_list.append(persona)
+    embeddings = []
+    for node in nodes:
+        embeddings.append(node.properties.get("summary_embedding"))
 
-        return cls(personas=persona_list)
+    embeddings = np.array(embeddings)
+    cosine_similarities = np.dot(embeddings, embeddings.T)
+
+    groups = []
+    visited = set()
+    threshold = 0.75
+
+    for i, _ in enumerate(summaries):
+        if i in visited:
+            continue
+        group = [i]
+        visited.add(i)
+        for j in range(i + 1, len(summaries)):
+            if cosine_similarities[i, j] > threshold:
+                group.append(j)
+                visited.add(j)
+        groups.append(group)
+
+    top_summaries = []
+    for group in groups:
+        representative_summary = max([summaries[i] for i in group], key=len)
+        top_summaries.append(representative_summary)
+
+    if len(top_summaries) <= num_personas:
+        top_summaries.extend(
+            np.random.choice(top_summaries, num_personas - len(top_summaries))
+        )
+
+    # use run_async_batch to generate personas in parallel
+    kwargs_list = [
+        {
+            "llm": llm,
+            "data": StringIO(text=summary),
+            "callbacks": callbacks,
+            "temperature": 1.0,
+        }
+        for summary in top_summaries[:num_personas]
+    ]
+    persona_list = run_async_batch(
+        desc="Generating personas",
+        func=persona_generation_prompt.generate,
+        kwargs_list=kwargs_list,
+    )
+
+    return persona_list
