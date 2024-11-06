@@ -141,9 +141,9 @@ query_distribution = default_query_distribution(generator_llm)
 ```
 ```
 [
-    (AbstractQuerySynthesizer(llm=generator_llm), 0.25),
-    (ComparativeAbstractQuerySynthesizer(llm=generator_llm), 0.25),
-    (SpecificQuerySynthesizer(llm=generator_llm), 0.5),
+        (SingleHopSpecificQuerySynthesizer(llm=llm), 0.5),
+        (MultiHopAbstractQuerySynthesizer(llm=llm), 0.25),
+        (MultiHopSpecificQuerySynthesizer(llm=llm), 0.25),
 ]
 ```
 
