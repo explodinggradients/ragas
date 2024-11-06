@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import random
 import typing as t
 from dataclasses import dataclass, field
 
@@ -18,7 +19,7 @@ from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper, LlamaIndexLLMWrapper
 from ragas.run_config import RunConfig
 from ragas.testset.graph import KnowledgeGraph, Node, NodeType
-from ragas.testset.persona import Persona, PersonaList
+from ragas.testset.persona import Persona, generate_personas_from_kg
 from ragas.testset.synthesizers import default_query_distribution
 from ragas.testset.synthesizers.testset_schema import Testset, TestsetSample
 from ragas.testset.synthesizers.utils import calculate_split_values
@@ -269,46 +270,11 @@ class TestsetGenerator:
             raise_exceptions=raise_exceptions,
         )
 
-    def generate_persona_list(
-        self,
-        generation_group: Callbacks,
-        run_config: t.Optional[RunConfig] = None,
-        raise_exceptions: bool = True,
-    ) -> PersonaList:
-
-        # generate personas
-        num_personas = 5
-        # new group for Generation of Scenarios
-        persona_generation_rm, persona_generation_grp = new_group(
-            name="Persona Generation",
-            inputs={"num_personas": num_personas},
-            callbacks=generation_group,
-        )
-        # generate scenarios
-        exec = Executor(
-            "Generating Personas",
-            raise_exceptions=raise_exceptions,
-            run_config=run_config,
-            keep_progress_bar=False,
-        )
-        exec.submit(
-            PersonaList.from_kg,
-            llm=self.llm,
-            kg=self.knowledge_graph,
-            num_personas=num_personas,
-            callbacks=persona_generation_grp,
-        )
-        try:
-            persona_list: t.List[PersonaList] = exec.results()
-            return persona_list[0]
-        except Exception as e:
-            persona_generation_rm.on_chain_error(e)
-            raise e
-
     def generate(
         self,
         testset_size: int,
         query_distribution: t.Optional[QueryDistribution] = None,
+        num_personas: int = 3,
         run_config: t.Optional[RunConfig] = None,
         batch_size: t.Optional[int] = None,
         callbacks: t.Optional[Callbacks] = None,
@@ -326,6 +292,8 @@ class TestsetGenerator:
         query_distribution : Optional[QueryDistribution], optional
             A list of tuples containing scenario simulators and their probabilities.
             If None, default simulators will be used.
+        num_personas : int, default 3
+            The number of personas to generate or use from the persona_list.
         run_config : Optional[RunConfig], optional
             Configuration for running the generation process.
         batch_size: int, optional
@@ -395,9 +363,14 @@ class TestsetGenerator:
             patch_logger("ragas.experimental.testset.transforms", logging.DEBUG)
 
         if self.persona_list is None:
-            self.persona_list = self.generate_persona_list(
-                testset_generation_grp, run_config, raise_exceptions
-            ).personas
+            self.persona_list = generate_personas_from_kg(
+                llm=self.llm,
+                kg=self.knowledge_graph,
+                num_personas=num_personas,
+                callbacks=callbacks,
+            )
+        else:
+            random.shuffle(self.persona_list)
 
         splits, _ = calculate_split_values(
             [prob for _, prob in query_distribution], testset_size
@@ -426,7 +399,7 @@ class TestsetGenerator:
                 scenario.generate_scenarios,
                 n=splits[i],
                 knowledge_graph=self.knowledge_graph,
-                persona_list=self.persona_list,
+                persona_list=self.persona_list[:num_personas],
                 callbacks=scenario_generation_grp,
             )
 
