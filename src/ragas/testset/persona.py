@@ -1,13 +1,13 @@
 import logging
 import random
 import typing as t
-from dataclasses import dataclass
 
 import numpy as np
 from langchain_core.callbacks import Callbacks
 from pydantic import BaseModel
 from tqdm import tqdm
 
+from ragas.executor import run_async_batch
 from ragas.llms.base import BaseRagasLLM
 from ragas.prompt import PydanticPrompt, StringIO
 from ragas.testset.graph import KnowledgeGraph, Node
@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 def default_filter(node: Node) -> bool:
-
     if (
         node.type.name == "DOCUMENT"
         and node.properties.get("summary_embedding") is not None
@@ -52,8 +51,7 @@ class PersonaGenerationPrompt(PydanticPrompt[StringIO, Persona]):
     ]
 
 
-@dataclass
-class PersonaList:
+class PersonaList(BaseModel):
     personas: t.List[Persona]
 
     def __getitem__(self, key: str) -> Persona:
@@ -62,85 +60,89 @@ class PersonaList:
                 return persona
         raise KeyError(f"No persona found with name '{key}'")
 
-    @classmethod
-    async def from_kg(
-        cls,
-        llm: BaseRagasLLM,
-        kg: KnowledgeGraph,
-        persona_generation_prompt: PersonaGenerationPrompt = PersonaGenerationPrompt(),
-        num_personas: int = 3,
-        filter_fn: t.Callable[[Node], bool] = default_filter,
-        callbacks: Callbacks = [],
-    ) -> "PersonaList":
-        """
-        Generate personas from a knowledge graph based on cluster of similar document summaries.
 
-        parameters:
-            llm: BaseRagasLLM
-                The LLM to use for generating the persona.
-            kg: KnowledgeGraph
-                The knowledge graph to generate personas from.
-            persona_generation_prompt: PersonaGenerationPrompt
-                The prompt to use for generating the persona.
-            num_personas: int
-                The maximum number of personas to generate.
-            filter_fn: Callable[[Node], bool]
-                A function to filter nodes in the knowledge graph.
-            callbacks: Callbacks
-                The callbacks to use for the generation process.
+async def generate_personas_from_kg(
+    kg: KnowledgeGraph,
+    llm: BaseRagasLLM,
+    persona_generation_prompt: PersonaGenerationPrompt = PersonaGenerationPrompt(),
+    num_personas: int = 3,
+    filter_fn: t.Callable[[Node], bool] = default_filter,
+    callbacks: Callbacks = [],
+) -> t.List[Persona]:
+    """
+    Generate personas from a knowledge graph based on cluster of similar document summaries.
+
+    parameters:
+        kg: KnowledgeGraph
+            The knowledge graph to generate personas from.
+        llm: BaseRagasLLM
+            The LLM to use for generating the persona.
+        persona_generation_prompt: PersonaGenerationPrompt
+            The prompt to use for generating the persona.
+        num_personas: int
+            The maximum number of personas to generate.
+        filter_fn: Callable[[Node], bool]
+            A function to filter nodes in the knowledge graph.
+        callbacks: Callbacks
+            The callbacks to use for the generation process.
 
 
-        returns:
-            PersonaList
-                The list of generated personas.
-        """
+    returns:
+        t.List[Persona]
+            The list of generated personas.
+    """
 
-        nodes = [node for node in kg.nodes if filter_fn(node)]
-        summaries = [node.properties.get("summary") for node in nodes]
-        summaries = [summary for summary in summaries if isinstance(summary, str)]
+    nodes = [node for node in kg.nodes if filter_fn(node)]
+    summaries = [node.properties.get("summary") for node in nodes]
+    summaries = [summary for summary in summaries if isinstance(summary, str)]
 
-        embeddings = []
-        for node in nodes:
-            embeddings.append(node.properties.get("summary_embedding"))
+    embeddings = []
+    for node in nodes:
+        embeddings.append(node.properties.get("summary_embedding"))
 
-        embeddings = np.array(embeddings)
-        cosine_similarities = np.dot(embeddings, embeddings.T)
+    embeddings = np.array(embeddings)
+    cosine_similarities = np.dot(embeddings, embeddings.T)
 
-        groups = []
-        visited = set()
-        threshold = 0.75
+    groups = []
+    visited = set()
+    threshold = 0.75
 
-        for i, summary in enumerate(summaries):
-            if i in visited:
-                continue
-            group = [i]
-            visited.add(i)
-            for j in range(i + 1, len(summaries)):
-                if cosine_similarities[i, j] > threshold:
-                    group.append(j)
-                    visited.add(j)
-            groups.append(group)
+    for i, _ in enumerate(summaries):
+        if i in visited:
+            continue
+        group = [i]
+        visited.add(i)
+        for j in range(i + 1, len(summaries)):
+            if cosine_similarities[i, j] > threshold:
+                group.append(j)
+                visited.add(j)
+        groups.append(group)
 
-        persona_list = []
-        top_summaries = []
-        for group in groups:
-            representative_summary = max([summaries[i] for i in group], key=len)
-            top_summaries.append(representative_summary)
+    persona_list = []
+    top_summaries = []
+    for group in groups:
+        representative_summary = max([summaries[i] for i in group], key=len)
+        top_summaries.append(representative_summary)
 
-        if len(top_summaries) <= num_personas:
-            top_summaries.extend(
-                np.random.choice(top_summaries, num_personas - len(top_summaries))
-            )
+    if len(top_summaries) <= num_personas:
+        top_summaries.extend(
+            np.random.choice(top_summaries, num_personas - len(top_summaries))
+        )
 
-        for representative_summary in tqdm(
-            top_summaries[:num_personas], desc="Generating personas"
-        ):
-            persona = await persona_generation_prompt.generate(
-                llm=llm,
-                data=StringIO(text=representative_summary),
-                callbacks=callbacks,
-                temperature=1.0,
-            )
-            persona_list.append(persona)
+    # use run_async_batch to generate personas in parallel
+    kwargs_list = [
+        {
+            "llm": llm,
+            "data": StringIO(text=summary),
+            "callbacks": callbacks,
+            "temperature": 1.0,
+        }
+        for summary in top_summaries[:num_personas]
+    ]
+    personas = run_async_batch(
+        desc="Generating personas",
+        func=persona_generation_prompt.generate,
+        kwargs_list=kwargs_list,
+    )
 
-        return cls(personas=persona_list)
+    return personas
