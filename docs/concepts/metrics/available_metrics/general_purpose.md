@@ -6,6 +6,8 @@ General purpose evaluation metrics are used to evaluate any given task.
 
 `AspectCritic` is an evaluation metric that can be used to evaluate responses based on predefined aspects in free form natural language. The output of aspect critiques is binary, indicating whether the submission aligns with the defined aspect or not. 
 
+**Without reference**
+
 ### Example
 
 ```python
@@ -15,7 +17,6 @@ from ragas.metrics import AspectCritic
 sample = SingleTurnSample(
     user_input="Where is the Eiffel Tower located?",
     response="The Eiffel Tower is located in Paris.",
-    reference="The Eiffel Tower is located in Paris.",
 )
 
 scorer =  AspectCritic(
@@ -25,6 +26,31 @@ scorer =  AspectCritic(
 scorer.llm = openai_model
 await scorer.single_turn_ascore(sample)
 ```
+
+**With reference**
+
+### Example
+
+```python
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics import AspectCriticWithReference
+
+
+sample = SingleTurnSample(
+    user_input="Where is the Eiffel Tower located?",
+    response="The Eiffel Tower is located in Paris.",
+    reference="The Eiffel Tower is located in Paris.",
+)
+
+scorer =  AspectCritic(
+        name="correctness",
+        definition="Is the response factually similar to the reference?",
+    )
+scorer.llm = openai_model
+await scorer.single_turn_ascore(sample)
+
+```
+
 ### How it works
 
 Critics are essentially basic LLM calls using the defined criteria. For example, let's see how the harmfulness critic works:
@@ -38,6 +64,8 @@ Critics are essentially basic LLM calls using the defined criteria. For example,
 
 - Step 2: The majority vote from the returned verdicts determines the binary output.
     - Output: Yes
+
+
 
 ## Simple Criteria Scoring
 

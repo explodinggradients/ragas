@@ -105,7 +105,10 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
                 "user_input",
                 "response",
                 "retrieved_contexts:optional",
-            }
+            },
+            MetricType.MULTI_TURN: {
+                "user_input",
+            },
         }
     )
     single_turn_prompt: PydanticPrompt = field(
@@ -114,7 +117,9 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     multi_turn_prompt: PydanticPrompt = field(
         default_factory=lambda: MultiTurnAspectCriticPrompt()
     )
-    definition: str = field(default="", repr=True)
+    definition: str = field(
+        default="check if the response to the user input is correct", repr=True
+    )
     strictness: int = field(default=1, repr=False)
     max_retries: int = 1
 
@@ -183,13 +188,149 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         self, sample: MultiTurnSample, callbacks: Callbacks
     ) -> float:
         assert self.llm is not None, "LLM is not set"
-        assert sample.reference is not None, "Reference is not set"
 
         interaction = sample.pretty_repr()
-        reference = sample.reference
-        prompt_input = AspectCriticInput(
+        prompt_input = MultiTurnAspectCriticInput(
             user_input=interaction,
-            response=reference,
+            criteria=self.definition,
+        )
+        response = await self.multi_turn_prompt.generate(
+            data=prompt_input,
+            llm=self.llm,
+            callbacks=callbacks,
+        )
+        return self._compute_score([response])
+
+
+class AspectCriticInputWithReference(BaseModel):
+    user_input: str = Field(description="The input to the model")
+    response: str = Field(description="The response from the model")
+    reference: str = Field(description="The reference answer for comparison")
+    criteria: str = Field(description="The criteria to evaluate the response")
+
+
+class MultiTurnAspectCriticInputWithReference(BaseModel):
+    user_input: str = Field(description="The input to the model")
+    reference: str = Field(description="The reference answer for comparison")
+    criteria: str = Field(description="The criteria to evaluate the response")
+
+
+class AspectCriticOutputWithReference(BaseModel):
+    reason: str
+    verdict: int
+
+
+class SingleTurnAspectCriticPromptWithReference(
+    PydanticPrompt[AspectCriticInputWithReference, AspectCriticOutputWithReference]
+):
+    instruction = "Given an input, response, and reference. Evaluate the submission only using the given criteria. Use only 'Yes' (1) and 'No' (0) as verdict."
+    input_model = AspectCriticInputWithReference
+    output_model = AspectCriticOutputWithReference
+    examples = [
+        (
+            AspectCriticInputWithReference(
+                user_input="Who was the director of Los Alamos Laboratory?",
+                response="Einstein was the director of Los Alamos Laboratory.",
+                reference="J. Robert Oppenheimer was the director of Los Alamos Laboratory.",
+                criteria="Is the output written in perfect grammar",
+            ),
+            AspectCriticOutputWithReference(
+                reason="The criteria for evaluation is whether the output is written in perfect grammar. In this case, the output is grammatically correct.",
+                verdict=1,
+            ),
+        )
+    ]
+
+
+@dataclass
+class AspectCriticWithReference(AspectCritic):
+    """
+    AspectCriticWithReference judges the submission to give binary results using the criteria specified
+    It uses user_input, response and reference to evaluate the submission.
+
+    Attributes
+    ----------
+    name: str
+        name of the metrics
+    definition: str
+        criteria to judge the submission, example "Is the submission spreading
+        fake information?"
+    strictness: int
+        The number of times self consistency checks is made. Final judgement is
+        made using majority vote.
+    """
+
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {
+                "user_input",
+                "response",
+                "reference",
+                "retrieved_contexts:optional",
+            },
+            MetricType.MULTI_TURN: {
+                "user_input",
+                "reference",
+            },
+        }
+    )
+    definition: str = field(
+        default="check if response is similar to reference", repr=True
+    )
+    single_turn_prompt: PydanticPrompt = field(
+        default_factory=lambda: SingleTurnAspectCriticPromptWithReference()
+    )
+
+    multi_turn_prompt: PydanticPrompt = field(
+        default_factory=lambda: MultiTurnAspectCriticPrompt()
+    )
+
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        
+        if self.llm is None:
+            raise ValueError("LLM is not set")
+
+        user_input, context, response, reference = (
+            row["user_input"],
+            row.get("retrieved_contexts"),
+            row["response"],
+            row["reference"],
+        )
+
+        if context is not None:
+            if isinstance(context, list):
+                context = "\n".join(context)
+            user_input = f"`user_input`: {user_input} Answer using `retrieved context`: {context}"
+
+        prompt_input = AspectCriticInputWithReference(
+            user_input=user_input,
+            response=response,
+            reference=reference,
+            criteria=self.definition,
+        )
+
+        response = await self.single_turn_prompt.generate(
+            data=prompt_input,
+            llm=self.llm,
+            callbacks=callbacks,
+        )
+
+        return self._compute_score([response])
+
+    async def _multi_turn_ascore(
+        self, sample: MultiTurnSample, callbacks: Callbacks
+    ) -> float:
+        
+        if self.llm is None:
+            raise ValueError("LLM is not set")
+        
+        if sample.reference is None:
+            raise ValueError("Reference is not set")
+
+        interaction = sample.pretty_repr()
+        prompt_input = MultiTurnAspectCriticInputWithReference(
+            user_input=interaction,
+            reference=sample.reference,
             criteria=self.definition,
         )
         response = await self.multi_turn_prompt.generate(
