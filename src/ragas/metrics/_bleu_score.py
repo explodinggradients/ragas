@@ -42,7 +42,8 @@ class BleuScore(SingleTurnMetric):
         assert (
             self.sentence_segmenter is not None
         ), "Sentence segmenter is not initialized"
-
+        assert self.sentence_segmenter is not None, "sentence_segmenter is not set"
+        
         reference_sentences = self.sentence_segmenter.segment(sample.reference)
         response_sentences = self.sentence_segmenter.segment(sample.response)
 
