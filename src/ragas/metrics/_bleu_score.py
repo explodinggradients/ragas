@@ -38,6 +38,11 @@ class BleuScore(SingleTurnMetric):
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
+
+        assert (
+            self.sentence_segmenter is not None
+        ), "Sentence segmenter is not initialized"
+
         reference_sentences = self.sentence_segmenter.segment(sample.reference)
         response_sentences = self.sentence_segmenter.segment(sample.response)
 
