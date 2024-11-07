@@ -31,7 +31,7 @@
     pip install langchain-aws
     ```
 
-    then you have to set your AWS credentials and configurations
+    Then you have to set your AWS credentials and configurations
 
     ```python
     config = {
@@ -43,7 +43,7 @@
     }
     ```
 
-    define you LLMs and wrap them in `LangchainLLMWrapper` so that it can be used with ragas.
+    Define your LLMs and wrap them in `LangchainLLMWrapper` so that it can be used with ragas.
 
     ```python
     from langchain_aws import ChatBedrockConverse

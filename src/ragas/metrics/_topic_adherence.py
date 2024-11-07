@@ -97,7 +97,9 @@ AI: You're welcome! Feel free to ask if you need more information.""",
     ]
 
 
-class TopicExtractionPrompt(PydanticPrompt[TopicExtractionInput, TopicExtractionOutput]):
+class TopicExtractionPrompt(
+    PydanticPrompt[TopicExtractionInput, TopicExtractionOutput]
+):
     instruction: str = (
         "Given an interaction between Human, Tool and AI, extract the topics from Human's input."
     )

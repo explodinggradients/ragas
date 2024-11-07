@@ -19,6 +19,8 @@ DEBUG_ENV_VAR = "RAGAS_DEBUG"
 RAGAS_SUPPORTED_LANGUAGE_CODES = {
     v.__name__.lower(): k for k, v in LANGUAGE_CODES.items()
 }
+# endpoint for uploading results
+RAGAS_API_URL = "https://api.ragas.io"
 
 
 @lru_cache(maxsize=1)

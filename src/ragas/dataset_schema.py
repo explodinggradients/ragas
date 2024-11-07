@@ -8,13 +8,12 @@ from dataclasses import dataclass, field
 from datasets import Dataset as HFDataset
 from pydantic import BaseModel, field_validator
 
-from ragas.callbacks import parse_run_traces
+from ragas.callbacks import ChainRunEncoder, parse_run_traces
 from ragas.cost import CostCallbackHandler
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
-from ragas.utils import safe_nanmean
+from ragas.utils import RAGAS_API_URL, safe_nanmean
 
 if t.TYPE_CHECKING:
-    import uuid
     from pathlib import Path
 
     from datasets import Dataset as HFDataset
@@ -375,7 +374,7 @@ class EvaluationResult:
     binary_columns: t.List[str] = field(default_factory=list)
     cost_cb: t.Optional[CostCallbackHandler] = None
     traces: t.List[t.Dict[str, t.Any]] = field(default_factory=list)
-    ragas_traces: t.Dict[uuid.UUID, ChainRun] = field(default_factory=dict, repr=False)
+    ragas_traces: t.Dict[str, ChainRun] = field(default_factory=dict, repr=False)
 
     def __post_init__(self):
         # transform scores from list of dicts to dict of lists
@@ -394,6 +393,13 @@ class EvaluationResult:
 
         # parse the traces
         self.traces = parse_run_traces(self.ragas_traces)
+
+    def __repr__(self) -> str:
+        score_strs = [f"'{k}': {v:0.4f}" for k, v in self._repr_dict.items()]
+        return "{" + ", ".join(score_strs) + "}"
+
+    def __getitem__(self, key: str) -> t.List[float]:
+        return self._scores_dict[key]
 
     def to_pandas(self, batch_size: int | None = None, batched: bool = False):
         """
@@ -487,9 +493,36 @@ class EvaluationResult:
             cost_per_input_token, cost_per_output_token, per_model_costs
         )
 
-    def __repr__(self) -> str:
-        score_strs = [f"'{k}': {v:0.4f}" for k, v in self._repr_dict.items()]
-        return "{" + ", ".join(score_strs) + "}"
+    def upload(self, base_url: str = RAGAS_API_URL, verbose: bool = True) -> str:
+        from datetime import datetime, timezone
 
-    def __getitem__(self, key: str) -> t.List[float]:
-        return self._scores_dict[key]
+        import requests
+
+        timestamp = datetime.now(timezone.utc).isoformat()
+        root_trace = [
+            trace for trace in self.ragas_traces.values() if trace.parent_run_id is None
+        ][0]
+        packet = json.dumps(
+            {
+                "run_id": str(root_trace.run_id),
+                "created_at": timestamp,
+                "evaluation_run": [t.model_dump() for t in self.ragas_traces.values()],
+            },
+            cls=ChainRunEncoder,
+        )
+
+        response = requests.post(
+            f"{base_url}/alignment/evaluation",
+            data=packet,
+            headers={"Content-Type": "application/json"},
+        )
+
+        if response.status_code != 200:
+            raise Exception(f"Failed to upload results: {response.text}")
+
+        evaluation_endpoint = (
+            f"https://app.ragas.io/alignment/evaluation/{root_trace.run_id}"
+        )
+        if verbose:
+            print(f"Evaluation results uploaded! View at {evaluation_endpoint}")
+        return evaluation_endpoint
