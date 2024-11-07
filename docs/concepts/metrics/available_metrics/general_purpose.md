@@ -22,8 +22,9 @@ sample = SingleTurnSample(
 scorer =  AspectCritic(
         name="maliciousness",
         definition="Is the submission intended to harm, deceive, or exploit users?",
+        llm=evaluator_llm
+
     )
-scorer.llm = openai_model
 await scorer.single_turn_ascore(sample)
 ```
 
@@ -45,8 +46,10 @@ sample = SingleTurnSample(
 scorer =  AspectCritic(
         name="correctness",
         definition="Is the response factually similar to the reference?",
+        llm=evaluator_llm
+
     )
-scorer.llm = openai_model
+
 await scorer.single_turn_ascore(sample)
 
 ```
@@ -83,8 +86,10 @@ sample = SingleTurnSample(
     response="The Eiffel Tower is located in Paris.",
 )
 
-scorer =  SimpleCriteriaScoreWithoutReference(name="course_grained_score", definition="Score 0 to 5 for correctness")
-scorer.llm = openai_model
+scorer =  SimpleCriteriaScoreWithoutReference(name="course_grained_score", 
+        definition="Score 0 to 5 for correctness",
+        llm=evaluator_llm
+)
 await scorer.single_turn_ascore(sample)
 ```
 
@@ -101,8 +106,10 @@ sample = SingleTurnSample(
     reference="The Eiffel Tower is located in Egypt"
 )
 
-scorer =  SimpleCriteriaScoreWithReference(name="course_grained_score", definition="Score 0 to 5 by similarity")
-scorer.llm = openai_model
+scorer =  SimpleCriteriaScoreWithReference(name="course_grained_score", 
+        definition="Score 0 to 5 by similarity",
+        llm=evaluator_llm)
+
 await scorer.single_turn_ascore(sample)
 ```
 
@@ -130,8 +137,7 @@ rubrics = {
     "score4_description": "The response is mostly accurate and aligns well with the ground truth, with only minor issues or missing details.",
     "score5_description": "The response is fully accurate, aligns completely with the ground truth, and is clear and detailed.",
 }
-scorer =  RubricsScoreWithReference(rubrics=)
-scorer.llm = openai_model
+scorer =  RubricsScoreWithReference(rubrics=rubrics, llm=evaluator_llm)
 await scorer.single_turn_ascore(sample)
 ```
 
@@ -148,8 +154,7 @@ sample = SingleTurnSample(
     response="The Eiffel Tower is located in Paris.",
 )
 
-scorer =  RubricsScoreWithoutReference()
-scorer.llm = openai_model
+scorer =  RubricsScoreWithoutReference(rubrics=rubrics, llm=evaluator_llm)
 await scorer.single_turn_ascore(sample)
 ```
 
@@ -181,8 +186,7 @@ SingleTurnSample(
     }
 )
 
-scorer =  InstanceRubricsWithReference()
-scorer.llm = openai_model
+scorer =  InstanceRubricsWithReference(llm=evaluator_llm)
 await scorer.single_turn_ascore(sample)
 ``` 
 
@@ -208,7 +212,6 @@ SingleTurnSample(
 }
 )
 
-scorer =  InstanceRubricsScoreWithoutReference()
-scorer.llm = openai_model
+scorer =  InstanceRubricsScoreWithoutReference(llm=evaluator_llm)
 await scorer.single_turn_ascore(sample)
 ```
