@@ -11,11 +11,13 @@ You will need an testset to evaluate your `QueryEngine` against. You can either 
 Let's see how that works with Llamaindex
 
 # load the documents
+```python
 from llama_index.core import SimpleDirectoryReader
 
 documents = SimpleDirectoryReader("./nyc_wikipedia").load_data()
+```
 
-Now  lets init the `TestsetGenerator` object with the corresponding generator and critic llms
+Now lets init the `TestsetGenerator` object with the corresponding generator and critic llms
 
 
 ```python
@@ -171,7 +173,7 @@ Now that we have a `QueryEngine` for the `VectorStoreIndex` we can use the llama
 In order to run an evaluation with Ragas and LlamaIndex you need 3 things
 
 1. LlamaIndex `QueryEngine`: what we will be evaluating
-2. Metrics: Ragas defines a set of metrics that can measure different aspects of the `QueryEngine`. The available metrics and their meaning can be found [here](https://github.com/explodinggradients/ragas/blob/main/docs/metrics.md)
+2. Metrics: Ragas defines a set of metrics that can measure different aspects of the `QueryEngine`. The available metrics and their meaning can be found [here](https://docs.ragas.io/en/latest/concepts/metrics/available_metrics/)
 3. Questions: A list of questions that ragas will test the `QueryEngine` against. 
 
 first lets generate the questions. Ideally you should use that you see in production so that the distribution of question with which we evaluate matches the distribution of questions seen in production. This ensures that the scores reflect the performance seen in production but to start off we'll be using a few example question.
