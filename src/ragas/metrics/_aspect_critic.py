@@ -117,7 +117,9 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     multi_turn_prompt: PydanticPrompt = field(
         default_factory=lambda: MultiTurnAspectCriticPrompt()
     )
-    definition: str = field(default="check if the response to the user input is correct", repr=True)
+    definition: str = field(
+        default="check if the response to the user input is correct", repr=True
+    )
     strictness: int = field(default=1, repr=False)
     max_retries: int = 1
 
@@ -258,7 +260,6 @@ class AspectCriticWithReference(AspectCritic):
         made using majority vote.
     """
 
-    name: str = field(default="", repr=True)
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {
@@ -273,9 +274,9 @@ class AspectCriticWithReference(AspectCritic):
             },
         }
     )
-    definition: str = field(default="check if response is similar to reference", repr=True)
-    strictness: int = field(default=1, repr=False)
-
+    definition: str = field(
+        default="check if response is similar to reference", repr=True
+    )
     single_turn_prompt: PydanticPrompt = field(
         default_factory=lambda: SingleTurnAspectCriticPromptWithReference()
     )
@@ -285,7 +286,9 @@ class AspectCriticWithReference(AspectCritic):
     )
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        assert self.llm is not None, "set LLM before use"
+        
+        if self.llm is None:
+            raise ValueError("LLM is not set")
 
         user_input, context, response, reference = (
             row["user_input"],
@@ -317,8 +320,12 @@ class AspectCriticWithReference(AspectCritic):
     async def _multi_turn_ascore(
         self, sample: MultiTurnSample, callbacks: Callbacks
     ) -> float:
-        assert self.llm is not None, "LLM is not set"
-        assert sample.reference is not None, "Reference is not set"
+        
+        if self.llm is None:
+            raise ValueError("LLM is not set")
+        
+        if sample.reference is None:
+            raise ValueError("Reference is not set")
 
         interaction = sample.pretty_repr()
         prompt_input = MultiTurnAspectCriticInputWithReference(
