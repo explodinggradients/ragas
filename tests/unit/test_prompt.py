@@ -121,9 +121,9 @@ def test_prompt_hash():
 
 def test_prompt_hash_in_ragas(fake_llm):
     # check with a prompt inside ragas
-    from ragas.testset.synthesizers import AbstractQuerySynthesizer
+    from ragas.testset.synthesizers.multi_hop import MultiHopAbstractQuerySynthesizer
 
-    synthesizer = AbstractQuerySynthesizer(llm=fake_llm)
+    synthesizer = MultiHopAbstractQuerySynthesizer(llm=fake_llm)
     prompts = synthesizer.get_prompts()
     for prompt in prompts.values():
         assert hash(prompt) == hash(prompt)
@@ -179,12 +179,12 @@ def test_prompt_save_load_language(tmp_path):
 
 
 def test_save_existing_prompt(tmp_path):
-    from ragas.testset.synthesizers.prompts import CommonThemeFromSummariesPrompt
+    from ragas.testset.synthesizers.prompts import ThemesPersonasMatchingPrompt
 
-    p = CommonThemeFromSummariesPrompt()
+    p = ThemesPersonasMatchingPrompt()
     file_path = tmp_path / "test_prompt.json"
     p.save(file_path)
-    p2 = CommonThemeFromSummariesPrompt.load(file_path)
+    p2 = ThemesPersonasMatchingPrompt.load(file_path)
     assert p == p2
 
 
@@ -194,10 +194,10 @@ def test_prompt_class_attributes():
     We want to make sure there is no relationship between the class attributes
     and instance.
     """
-    from ragas.testset.synthesizers.prompts import CommonThemeFromSummariesPrompt
+    from ragas.testset.synthesizers.prompts import ThemesPersonasMatchingPrompt
 
-    p = CommonThemeFromSummariesPrompt()
-    p_another_instance = CommonThemeFromSummariesPrompt()
+    p = ThemesPersonasMatchingPrompt()
+    p_another_instance = ThemesPersonasMatchingPrompt()
     assert p.instruction == p_another_instance.instruction
     assert p.examples == p_another_instance.examples
     p.instruction = "You are a helpful assistant."

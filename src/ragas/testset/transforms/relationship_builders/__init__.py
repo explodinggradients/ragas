@@ -1,3 +1,4 @@
 from .cosine import CosineSimilarityBuilder
+from .traditional import JaccardSimilarityBuilder, OverlapScoreBuilder
 
-__all__ = ["CosineSimilarityBuilder"]
+__all__ = ["CosineSimilarityBuilder", "OverlapScoreBuilder", "JaccardSimilarityBuilder"]

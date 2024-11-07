@@ -11,6 +11,7 @@ from ragas.callbacks import new_group
 from ragas.llms import BaseRagasLLM, llm_factory
 from ragas.prompt import PromptMixin
 from ragas.testset.graph import KnowledgeGraph, Node
+from ragas.testset.persona import Persona
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -51,11 +52,14 @@ class BaseScenario(BaseModel):
         The style of the query.
     length : QueryLength
         The length of the query.
+    persona : Persona
+        A persona associated with the scenario.
     """
 
     nodes: t.List[Node]
     style: QueryStyle
     length: QueryLength
+    persona: Persona
 
 
 Scenario = t.TypeVar("Scenario", bound=BaseScenario)
@@ -78,6 +82,7 @@ class BaseSynthesizer(ABC, t.Generic[Scenario], PromptMixin):
         self,
         n: int,
         knowledge_graph: KnowledgeGraph,
+        persona_list: t.List[Persona],
         callbacks: t.Optional[Callbacks] = None,
     ) -> t.List[Scenario]:
         callbacks = callbacks or []
@@ -87,14 +92,18 @@ class BaseSynthesizer(ABC, t.Generic[Scenario], PromptMixin):
             callbacks=callbacks,
         )
         scenarios = await self._generate_scenarios(
-            n, knowledge_graph, scenario_generation_group
+            n, knowledge_graph, persona_list, scenario_generation_group
         )
         scenario_generation_rm.on_chain_end(outputs={"scenarios": scenarios})
         return scenarios
 
     @abstractmethod
     async def _generate_scenarios(
-        self, n: int, knowledge_graph: KnowledgeGraph, callbacks: Callbacks
+        self,
+        n: int,
+        knowledge_graph: KnowledgeGraph,
+        persona_list: t.List[Persona],
+        callbacks: Callbacks,
     ) -> t.List[Scenario]:
         pass
 

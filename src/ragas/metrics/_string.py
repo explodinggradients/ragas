@@ -13,6 +13,7 @@ class DistanceMeasure(Enum):
     LEVENSHTEIN = "levenshtein"
     HAMMING = "hamming"
     JARO = "jaro"
+    JARO_WINKLER = "jaro_winkler"
 
 
 @dataclass
@@ -77,6 +78,7 @@ class NonLLMStringSimilarity(SingleTurnMetric):
             DistanceMeasure.LEVENSHTEIN: distance.Levenshtein,
             DistanceMeasure.HAMMING: distance.Hamming,
             DistanceMeasure.JARO: distance.Jaro,
+            DistanceMeasure.JARO_WINKLER: distance.JaroWinkler,
         }
 
     def init(self, run_config: RunConfig):

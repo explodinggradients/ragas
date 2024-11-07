@@ -22,6 +22,10 @@ class BaseGraphTransformation(ABC):
 
     name: str = ""
 
+    filter_nodes: t.Callable[[Node], bool] = field(
+        default_factory=lambda: default_filter
+    )
+
     def __post_init__(self):
         if not self.name:
             self.name = self.__class__.__name__
@@ -59,7 +63,15 @@ class BaseGraphTransformation(ABC):
         KnowledgeGraph
             The filtered knowledge graph.
         """
-        return kg
+
+        return KnowledgeGraph(
+            nodes=[node for node in kg.nodes if self.filter_nodes(node)],
+            relationships=[
+                rel
+                for rel in kg.relationships
+                if rel.source in kg.nodes and rel.target in kg.nodes
+            ],
+        )
 
     @abstractmethod
     def generate_execution_plan(self, kg: KnowledgeGraph) -> t.List[t.Coroutine]:
@@ -94,10 +106,6 @@ class Extractor(BaseGraphTransformation):
     extract(node: Node) -> t.Tuple[str, t.Any]
         Abstract method to extract a specific property from a node.
     """
-
-    filter_nodes: t.Callable[[Node], bool] = field(
-        default_factory=lambda: default_filter
-    )
 
     async def transform(
         self, kg: KnowledgeGraph
@@ -174,16 +182,6 @@ class Extractor(BaseGraphTransformation):
 
         filtered = self.filter(kg)
         return [apply_extract(node) for node in filtered.nodes]
-
-    def filter(self, kg: KnowledgeGraph) -> KnowledgeGraph:
-        return KnowledgeGraph(
-            nodes=[node for node in kg.nodes if self.filter_nodes(node)],
-            relationships=[
-                rel
-                for rel in kg.relationships
-                if rel.source in kg.nodes and rel.target in kg.nodes
-            ],
-        )
 
 
 @dataclass

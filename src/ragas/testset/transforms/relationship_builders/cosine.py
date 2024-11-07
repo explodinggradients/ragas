@@ -8,52 +8,6 @@ from ragas.testset.transforms.base import RelationshipBuilder
 
 
 @dataclass
-class JaccardSimilarityBuilder(RelationshipBuilder):
-    property_name: str = "entities"
-    key_name: t.Optional[str] = None
-    new_property_name: str = "jaccard_similarity"
-    threshold: float = 0.5
-
-    def _jaccard_similarity(self, set1: t.Set[str], set2: t.Set[str]) -> float:
-        intersection = len(set1.intersection(set2))
-        union = len(set1.union(set2))
-        return intersection / union if union > 0 else 0.0
-
-    async def transform(self, kg: KnowledgeGraph) -> t.List[Relationship]:
-        if self.property_name is None:
-            self.property_name
-
-        similar_pairs = []
-        for i, node1 in enumerate(kg.nodes):
-            for j, node2 in enumerate(kg.nodes):
-                if i >= j:
-                    continue
-                items1 = node1.get_property(self.property_name)
-                items2 = node2.get_property(self.property_name)
-                if items1 is None or items2 is None:
-                    raise ValueError(
-                        f"Node {node1.id} or {node2.id} has no {self.property_name}"
-                    )
-                if self.key_name is not None:
-                    items1 = items1.get(self.key_name, [])
-                    items2 = items2.get(self.key_name, [])
-                similarity = self._jaccard_similarity(set(items1), set(items2))
-                if similarity >= self.threshold:
-                    similar_pairs.append((i, j, similarity))
-
-        return [
-            Relationship(
-                source=kg.nodes[i],
-                target=kg.nodes[j],
-                type="jaccard_similarity",
-                properties={self.new_property_name: similarity_float},
-                bidirectional=True,
-            )
-            for i, j, similarity_float in similar_pairs
-        ]
-
-
-@dataclass
 class CosineSimilarityBuilder(RelationshipBuilder):
     property_name: str = "embedding"
     new_property_name: str = "cosine_similarity"

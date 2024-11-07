@@ -206,11 +206,15 @@ class KnowledgeGraph:
     def __str__(self) -> str:
         return self.__repr__()
 
-    def find_clusters(
-        self, relationship_condition: t.Callable[[Relationship], bool] = lambda _: True
+    def find_indirect_clusters(
+        self,
+        relationship_condition: t.Callable[[Relationship], bool] = lambda _: True,
+        depth_limit: int = 3,
     ) -> t.List[t.Set[Node]]:
         """
-        Finds clusters of nodes in the knowledge graph based on a relationship condition.
+        Finds indirect clusters of nodes in the knowledge graph based on a relationship condition.
+        Here if A -> B -> C -> D, then A, B, C, and D form a cluster. If there's also a path A -> B -> C -> E,
+        it will form a separate cluster.
 
         Parameters
         ----------
@@ -223,31 +227,95 @@ class KnowledgeGraph:
             A list of sets, where each set contains nodes that form a cluster.
         """
         clusters = []
-        visited = set()
+        visited_paths = set()
 
         relationships = [
             rel for rel in self.relationships if relationship_condition(rel)
         ]
 
-        def dfs(node: Node, cluster: t.Set[Node]):
-            visited.add(node)
+        def dfs(node: Node, cluster: t.Set[Node], depth: int, path: t.Tuple[Node, ...]):
+            if depth >= depth_limit or path in visited_paths:
+                return
+            visited_paths.add(path)
             cluster.add(node)
+
             for rel in relationships:
-                if rel.source == node and rel.target not in visited:
-                    dfs(rel.target, cluster)
-                # if the relationship is bidirectional, we need to check the reverse
+                neighbor = None
+                if rel.source == node and rel.target not in cluster:
+                    neighbor = rel.target
                 elif (
                     rel.bidirectional
                     and rel.target == node
-                    and rel.source not in visited
+                    and rel.source not in cluster
                 ):
-                    dfs(rel.source, cluster)
+                    neighbor = rel.source
+
+                if neighbor is not None:
+                    dfs(neighbor, cluster.copy(), depth + 1, path + (neighbor,))
+
+            # Add completed path-based cluster
+            if len(cluster) > 1:
+                clusters.append(cluster)
 
         for node in self.nodes:
-            if node not in visited:
-                cluster = set()
-                dfs(node, cluster)
-                if len(cluster) > 1:
+            initial_cluster = set()
+            dfs(node, initial_cluster, 0, (node,))
+
+        # Remove duplicates by converting clusters to frozensets
+        unique_clusters = [
+            set(cluster) for cluster in set(frozenset(c) for c in clusters)
+        ]
+
+        return unique_clusters
+
+    def find_direct_clusters(
+        self, relationship_condition: t.Callable[[Relationship], bool] = lambda _: True
+    ) -> t.Dict[Node, t.List[t.Set[Node]]]:
+        """
+        Finds direct clusters of nodes in the knowledge graph based on a relationship condition.
+        Here if A->B, and A->C, then A, B, and C form a cluster.
+
+        Parameters
+        ----------
+        relationship_condition : Callable[[Relationship], bool], optional
+            A function that takes a Relationship and returns a boolean, by default lambda _: True
+
+        Returns
+        -------
+        List[Set[Node]]
+            A list of sets, where each set contains nodes that form a cluster.
+        """
+
+        clusters = []
+        relationships = [
+            rel for rel in self.relationships if relationship_condition(rel)
+        ]
+        for node in self.nodes:
+            cluster = set()
+            cluster.add(node)
+            for rel in relationships:
+                if rel.bidirectional:
+                    if rel.source == node:
+                        cluster.add(rel.target)
+                    elif rel.target == node:
+                        cluster.add(rel.source)
+                else:
+                    if rel.source == node:
+                        cluster.add(rel.target)
+
+            if len(cluster) > 1:
+                if cluster not in clusters:
                     clusters.append(cluster)
 
-        return clusters
+        # Remove subsets from clusters
+        unique_clusters = []
+        for cluster in clusters:
+            if not any(cluster < other for other in clusters):
+                unique_clusters.append(cluster)
+        clusters = unique_clusters
+
+        cluster_dict = {}
+        for cluster in clusters:
+            cluster_dict.update({cluster.pop(): cluster})
+
+        return cluster_dict

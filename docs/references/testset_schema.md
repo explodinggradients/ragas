@@ -15,12 +15,12 @@
         members:
             - BaseScenario
 
-::: ragas.testset.synthesizers.specific_query.SpecificQueryScenario
+::: ragas.testset.synthesizers.single_hop.specific.SingleHopSpecificQuerySynthesizer
     options:
         show_root_heading: True
         show_root_full_path: False
 
-::: ragas.testset.synthesizers.abstract_query.AbstractQueryScenario
+::: ragas.testset.synthesizers.multi_hop.specific.MultiHopSpecificQuerySynthesizer
     options:
         show_root_heading: True
         show_root_full_path: False

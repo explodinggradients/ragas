@@ -2,19 +2,21 @@ from __future__ import annotations
 
 import typing as t
 
-from .engine import Parallel
-from .extractors import (
+from ragas.testset.graph import NodeType
+from ragas.testset.transforms.extractors import (
     EmbeddingExtractor,
     HeadlinesExtractor,
-    KeyphrasesExtractor,
     SummaryExtractor,
-    TitleExtractor,
 )
-from .relationship_builders.cosine import (
+from ragas.testset.transforms.extractors.llm_based import NERExtractor, ThemesExtractor
+from ragas.testset.transforms.relationship_builders import (
     CosineSimilarityBuilder,
-    SummaryCosineSimilarityBuilder,
+    OverlapScoreBuilder,
 )
-from .splitters import HeadlineSplitter
+from ragas.testset.transforms.splitters import HeadlineSplitter
+from ragas.utils import num_tokens_from_string
+
+from .engine import Parallel
 
 if t.TYPE_CHECKING:
     from ragas.embeddings.base import BaseRagasEmbeddings
@@ -35,13 +37,7 @@ def default_transforms(
     headlines, and embeddings, as well as building similarity relationships
     between nodes.
 
-    The transforms are applied in the following order:
-    1. Parallel extraction of summaries and headlines
-    2. Embedding of summaries for document nodes
-    3. Splitting of headlines
-    4. Parallel extraction of embeddings, keyphrases, and titles
-    5. Building cosine similarity relationships between nodes
-    6. Building cosine similarity relationships between summaries
+
 
     Returns
     -------
@@ -49,32 +45,49 @@ def default_transforms(
         A list of transformation steps to be applied to the knowledge graph.
 
     """
-    from ragas.testset.graph import NodeType
 
-    # define the transforms
-    summary_extractor = SummaryExtractor(llm=llm)
-    keyphrase_extractor = KeyphrasesExtractor(llm=llm)
-    title_extractor = TitleExtractor(llm=llm)
     headline_extractor = HeadlinesExtractor(llm=llm)
-    embedding_extractor = EmbeddingExtractor(embedding_model=embedding_model)
-    headline_splitter = HeadlineSplitter()
-    cosine_sim_builder = CosineSimilarityBuilder(threshold=0.8)
-    summary_embedder = EmbeddingExtractor(
-        name="summary_embedder",
+    splitter = HeadlineSplitter(min_tokens=500)
+
+    def summary_filter(node):
+        return (
+            node.type == NodeType.DOCUMENT
+            and num_tokens_from_string(node.properties["page_content"]) > 500
+        )
+
+    summary_extractor = SummaryExtractor(
+        llm=llm, filter_nodes=lambda node: summary_filter(node)
+    )
+
+    theme_extractor = ThemesExtractor(llm=llm)
+    ner_extractor = NERExtractor(
+        llm=llm, filter_nodes=lambda node: node.type == NodeType.CHUNK
+    )
+
+    summary_emb_extractor = EmbeddingExtractor(
+        embedding_model=embedding_model,
         property_name="summary_embedding",
         embed_property_name="summary",
-        filter_nodes=lambda node: True if node.type == NodeType.DOCUMENT else False,
-        embedding_model=embedding_model,
+        filter_nodes=lambda node: summary_filter(node),
     )
-    summary_cosine_sim_builder = SummaryCosineSimilarityBuilder(threshold=0.6)
 
-    # specify the transforms and their order to be applied
+    cosine_sim_builder = CosineSimilarityBuilder(
+        property_name="summary_embedding",
+        new_property_name="summary_similarity",
+        threshold=0.7,
+        filter_nodes=lambda node: summary_filter(node),
+    )
+
+    ner_overlap_sim = OverlapScoreBuilder(
+        threshold=0.01, filter_nodes=lambda node: node.type == NodeType.CHUNK
+    )
+
     transforms = [
-        Parallel(summary_extractor, headline_extractor),
-        summary_embedder,
-        headline_splitter,
-        Parallel(embedding_extractor, keyphrase_extractor, title_extractor),
-        cosine_sim_builder,
-        summary_cosine_sim_builder,
+        headline_extractor,
+        splitter,
+        Parallel(summary_extractor, theme_extractor, ner_extractor),
+        summary_emb_extractor,
+        Parallel(cosine_sim_builder, ner_overlap_sim),
     ]
+
     return transforms
