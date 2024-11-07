@@ -16,7 +16,7 @@ Each metric are essentially paradigms that are designed to evaluate a particular
 
 ## Agents or Tool use cases
 
-- [Topic adherence](topic_adherence.md)
+- [Topic adherence](agents.md#topic_adherence)
 - [Tool call Accuracy](agents.md#tool-call-accuracy)
 - [Agent Goal Accuracy](agents.md#agent-goal-accuracy)
 
