@@ -9,7 +9,11 @@ import numpy as np
 from numpy.typing import NDArray
 from pydantic import BaseModel, Field
 
-from ragas.metrics._faithfulness import NLIStatementInput, NLIStatementPrompt
+from ragas.metrics._faithfulness import (
+    HasSegmentMethod,
+    NLIStatementInput,
+    NLIStatementPrompt,
+)
 from ragas.metrics.base import (
     MetricType,
     MetricWithLLM,
@@ -212,6 +216,8 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
     coverage: t.Literal["low", "high"] = "low"
     claim_decomposition_prompt: PydanticPrompt = ClaimDecompositionPrompt()
     nli_prompt: PydanticPrompt = NLIStatementPrompt()
+    sentence_segmenter: t.Optional[HasSegmentMethod] = None
+    language: str = "english"
 
     def __post_init__(self):
         value = f"{self.atomicity}_atomicity_{self.coverage}_coverage"
@@ -224,7 +230,8 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
             logger.warning(
                 f"No examples found for the atomicity and coverage level: {value}"
             )
-        self.segmenter = get_segmenter(language="english")
+        if not self.sentence_segmenter:
+            self.sentence_segmenter = get_segmenter(language=self.language, clean=False)
 
         if type(self.beta) is not float:
             raise ValueError(
@@ -235,7 +242,11 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
         self, response: str, callbacks: Callbacks
     ) -> t.List[str]:
         assert self.llm is not None, "LLM must be set"
-        sentences = self.segmenter.segment(response)
+        assert (
+            self.sentence_segmenter is not None
+        ), "Sentence segmenter is not initialized"
+
+        sentences = self.sentence_segmenter.segment(response)
         assert isinstance(sentences, list), "Segmenter must return a list of sentences"
         prompt_input = ClaimDecompositionInput(response=response, sentences=sentences)
         result = await self.claim_decomposition_prompt.generate(
