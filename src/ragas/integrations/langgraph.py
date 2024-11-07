@@ -22,9 +22,22 @@ def convert_to_ragas_messages(
     Raises:
         ValueError: If an unsupported message type is encountered
     """
+
+    def _validate_string_content(message, message_type: str) -> str:
+        if not isinstance(message.content, str):
+            raise TypeError(
+                f"{message_type} content must be a string, got {type(message.content).__name__}. "
+                f"Content: {message.content}"
+            )
+        return message.content
+
     MESSAGE_TYPE_MAP = {
-        HumanMessage: lambda m: r.HumanMessage(content=m.content),
-        ToolMessage: lambda m: r.ToolMessage(content=m.content),
+        HumanMessage: lambda m: r.HumanMessage(
+            content=_validate_string_content(m, "HumanMessage")
+        ),
+        ToolMessage: lambda m: r.ToolMessage(
+            content=_validate_string_content(m, "ToolMessage")
+        ),
     }
 
     def _extract_tool_calls(message: AIMessage) -> List[r.ToolCall]:
