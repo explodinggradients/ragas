@@ -52,7 +52,10 @@ def convert_to_ragas_messages(
 
     def _convert_ai_message(message: AIMessage) -> r.AIMessage:
         tool_calls = _extract_tool_calls(message) if message.additional_kwargs else None
-        return r.AIMessage(content=message.content, tool_calls=tool_calls)
+        return r.AIMessage(
+            content=_validate_string_content(message, "AIMessage"),
+            tool_calls=tool_calls,
+        )
 
     def _convert_message(message):
         if isinstance(message, SystemMessage):
