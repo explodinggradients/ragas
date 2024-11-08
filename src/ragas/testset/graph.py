@@ -1,6 +1,7 @@
 import json
 import typing as t
 import uuid
+from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -267,6 +268,53 @@ class KnowledgeGraph:
         ]
 
         return unique_clusters
+
+    def remove_node(
+        self, node: Node, inplace: bool = True
+    ) -> t.Optional["KnowledgeGraph"]:
+        """
+        Removes a node and its associated relationships from the knowledge graph.
+
+        Parameters
+        ----------
+        node : Node
+            The node to be removed from the knowledge graph.
+        inplace : bool, optional
+            If True, modifies the knowledge graph in place.
+            If False, returns a modified copy with the node removed.
+
+        Returns
+        -------
+        KnowledgeGraph or None
+            Returns a modified copy of the knowledge graph if `inplace` is False.
+            Returns None if `inplace` is True.
+
+        Raises
+        ------
+        ValueError
+            If the node is not present in the knowledge graph.
+        """
+        if node not in self.nodes:
+            raise ValueError("Node is not present in the knowledge graph.")
+
+        if inplace:
+            # Modify the current instance
+            self.nodes.remove(node)
+            self.relationships = [
+                rel
+                for rel in self.relationships
+                if rel.source != node and rel.target != node
+            ]
+        else:
+            # Create a deep copy and modify it
+            new_graph = deepcopy(self)
+            new_graph.nodes.remove(node)
+            new_graph.relationships = [
+                rel
+                for rel in new_graph.relationships
+                if rel.source != node and rel.target != node
+            ]
+            return new_graph
 
     def find_direct_clusters(
         self, relationship_condition: t.Callable[[Relationship], bool] = lambda _: True
