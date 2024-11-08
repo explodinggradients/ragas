@@ -8,11 +8,10 @@ In this tutorial, we'll:
 2. Set up an evaluation pipeline to track key performance metrics.
 3. Run and assess the agent's effectiveness with different queries.
 
-Click the [link](https://colab.research.google.com/drive/1IsmUfCVD_pVQ7HGsKj97BXOZBGXTIF8m?usp=sharing) to open the notebook in Google Colab.
+Click the [link](https://colab.research.google.com/github/explodinggradients/ragas/blob/main/docs/howtos/integrations/langgraph_agent_evaluation.ipynb) to open the notebook in Google Colab.
 
 ## Prerequisites
 - Python 3.8+
-- OpenAI API key
 - Basic understanding of LangGraph, LangChain and LLMs
 
 ## Installing Ragas and Other Dependencies
@@ -27,105 +26,21 @@ Install Ragas and Langgraph with pip:
 
 ## Building the ReAct Agent
 
-### Initializing the External Components: Setting Up the Metals.Dev API
-In this section, we'll walk through how to set up the [metals.dev](https://metals.dev/) API, which provides real-time prices for both precious and industrial metals. The API gives us a simple way to fetch the latest prices for metals like gold, silver, copper, and more.
+### Initializing External Components
+To begin, you have two options for setting up the external components:
 
-We selected metals.dev due to its free tier, which provides up to 250 requests per month — a sufficient allowance for this educational tutorials. Below are the steps to get started with the service.
+1. Use a Live API Key:  
 
-Before you can use the [metals.dev](https://metals.dev/) API, you will need to create an account and get an API key. Here’s how to do that:
+    - Sign up for an account on [metals.dev](https://metals.dev/) to get your API key.  
+    
+2. Simulate the API Response:  
 
-1. Go to the metals.dev website.
-2. Sign up for a free account by clicking on the Sign Up button.
-3. Once you've signed up and logged in, you will be taken to your dashboard where you can find your API key.
-
-
-```python
-import requests
-from requests.structures import CaseInsensitiveDict
-
-metals_api_key = "YOUR API KEY"
-usage_url = f"https://api.metals.dev/usage?api_key={metals_api_key}"
-
-headers = CaseInsensitiveDict()
-headers["Accept"] = "application/json"
-
-api_usage_response = requests.get(usage_url, headers=headers)
-print(api_usage_response)
-```
-
-    <Response [200]>
+    - Alternatively, you can use a predefined JSON object to simulate the API response. This allows you to get started more quickly without needing a live API key.  
 
 
+Choose the method that best fits your needs to proceed with the setup.
 
-```python
-api_usage_response.json()
-```
-
-
-
-
-    {'status': 'success',
-     'timestamp': '2024-11-07T06:35:31.023Z',
-     'plan': 'Free',
-     'total': 250,
-     'used': 13,
-     'remaining': 237}
-
-
-
-
-```python
-currency = "USD"
-unit = "g"
-price_url = f"https://api.metals.dev/v1/latest?api_key={metals_api_key}&currency={currency}&unit={unit}"
-
-live_metal_price_response = requests.get(price_url, headers=headers)
-print(live_metal_price_response)
-```
-
-    <Response [200]>
-
-
-
-```python
-live_metal_price_response.json()["metals"]
-```
-
-
-
-
-    {'gold': 85.3995,
-     'silver': 0.9997,
-     'platinum': 31.4921,
-     'palladium': 33.0797,
-     'lbma_gold_am': 87.6494,
-     'lbma_gold_pm': 85.5274,
-     'lbma_silver': 1.0224,
-     'lbma_platinum_am': 31.7328,
-     'lbma_platinum_pm': 31.2827,
-     'lbma_palladium_am': 33.9833,
-     'lbma_palladium_pm': 33.3725,
-     'mcx_gold': 90.6623,
-     'mcx_gold_am': 92.4892,
-     'mcx_gold_pm': 92.5011,
-     'mcx_silver': 1.0744,
-     'mcx_silver_am': 1.0958,
-     'mcx_silver_pm': 1.1044,
-     'ibja_gold': 90.7632,
-     'copper': 0.0096,
-     'aluminum': 0.0026,
-     'lead': 0.002,
-     'nickel': 0.0161,
-     'zinc': 0.003,
-     'lme_copper': 0.0094,
-     'lme_aluminum': 0.0026,
-     'lme_lead': 0.002,
-     'lme_nickel': 0.0159,
-     'lme_zinc': 0.003}
-
-
-
-### Alternative for Quick Access: Using a Predefined JSON Object
+### Predefined JSON Object to simulate API response
 If you would like to quickly get started without creating an account, you can bypass the setup process and use the predefined JSON object given below that simulates the API response.
 
 
@@ -166,7 +81,7 @@ metal_price = {
 
 The get_metal_price tool will be used by the agent to fetch the price of a specified metal. We'll create this tool using the @tool decorator from LangChain.
 
-If you want to use real-time data from the metals.dev API, you can modify the function to make a live request to the API. You will have to uncomment the parts related to the real-time API call.
+If you want to use real-time data from the metals.dev API, you can modify the function to make a live request to the API.
 
 
 ```python
@@ -187,8 +102,6 @@ def get_metal_price(metal_name: str) -> float:
     Raises:
         KeyError: If the specified metal is not found in the data source.
     """
-    # # Fetch the latest metal prices from the API
-    # metal_price = requests.get(price_url, headers=headers).json()["metals"]
     try:
         metal_name = metal_name.lower().strip()
         if metal_name not in metal_price:
@@ -317,7 +230,7 @@ display(Image(react_graph.get_graph(xray=True).draw_mermaid_png()))
 
 
     
-![jpeg](../../_static/imgs/_langgraph_agent_evaluation_28_0.jpg)
+![](../../_static/imgs/_langgraph_agent_evaluation_28_0.jpg)
     
 
 
@@ -339,10 +252,10 @@ result["messages"]
 
 
 
-    [HumanMessage(content='What is the price of copper?', id='a23dac0e-b7db-4fa3-86bb-35fcee17d40e'),
-     AIMessage(content='', additional_kwargs={'tool_calls': [{'id': 'call_Ny714Y9Ql2NKGpBK4WJZI36H', 'function': {'arguments': '{"metal_name":"copper"}', 'name': 'get_metal_price'}, 'type': 'function'}]}, response_metadata={'token_usage': {'completion_tokens': 18, 'prompt_tokens': 116, 'total_tokens': 134, 'prompt_tokens_details': {'cached_tokens': 0, 'audio_tokens': 0}, 'completion_tokens_details': {'reasoning_tokens': 0, 'audio_tokens': 0, 'accepted_prediction_tokens': 0, 'rejected_prediction_tokens': 0}}, 'model_name': 'gpt-4o-mini-2024-07-18', 'system_fingerprint': 'fp_0ba0d124f1', 'finish_reason': 'tool_calls', 'logprobs': None}, id='run-67ef1189-7e0c-4396-9862-3e4a607089bb-0', tool_calls=[{'name': 'get_metal_price', 'args': {'metal_name': 'copper'}, 'id': 'call_Ny714Y9Ql2NKGpBK4WJZI36H', 'type': 'tool_call'}], usage_metadata={'input_tokens': 116, 'output_tokens': 18, 'total_tokens': 134}),
-     ToolMessage(content='0.0098', name='get_metal_price', id='0f29642b-b4e8-4b78-9923-007b87affbe2', tool_call_id='call_Ny714Y9Ql2NKGpBK4WJZI36H'),
-     AIMessage(content='The price of copper is $0.0098 per gram.', response_metadata={'token_usage': {'completion_tokens': 14, 'prompt_tokens': 148, 'total_tokens': 162, 'prompt_tokens_details': {'cached_tokens': 0, 'audio_tokens': 0}, 'completion_tokens_details': {'reasoning_tokens': 0, 'audio_tokens': 0, 'accepted_prediction_tokens': 0, 'rejected_prediction_tokens': 0}}, 'model_name': 'gpt-4o-mini-2024-07-18', 'system_fingerprint': 'fp_0ba0d124f1', 'finish_reason': 'stop', 'logprobs': None}, id='run-71526780-e9f9-4a79-a914-7863f8ec9078-0', usage_metadata={'input_tokens': 148, 'output_tokens': 14, 'total_tokens': 162})]
+    [HumanMessage(content='What is the price of copper?', id='4122f5d4-e298-49e8-a0e0-c98adda78c6c'),
+     AIMessage(content='', additional_kwargs={'tool_calls': [{'id': 'call_DkVQBK4UMgiXrpguUS2qC4mA', 'function': {'arguments': '{"metal_name":"copper"}', 'name': 'get_metal_price'}, 'type': 'function'}]}, response_metadata={'token_usage': {'completion_tokens': 18, 'prompt_tokens': 116, 'total_tokens': 134, 'prompt_tokens_details': {'cached_tokens': 0, 'audio_tokens': 0}, 'completion_tokens_details': {'reasoning_tokens': 0, 'audio_tokens': 0, 'accepted_prediction_tokens': 0, 'rejected_prediction_tokens': 0}}, 'model_name': 'gpt-4o-mini-2024-07-18', 'system_fingerprint': 'fp_0ba0d124f1', 'finish_reason': 'tool_calls', 'logprobs': None}, id='run-0f77b156-e43e-4c1e-bd3a-307333eefb68-0', tool_calls=[{'name': 'get_metal_price', 'args': {'metal_name': 'copper'}, 'id': 'call_DkVQBK4UMgiXrpguUS2qC4mA', 'type': 'tool_call'}], usage_metadata={'input_tokens': 116, 'output_tokens': 18, 'total_tokens': 134}),
+     ToolMessage(content='0.0098', name='get_metal_price', id='422c089a-6b76-4e48-952f-8925c3700ae3', tool_call_id='call_DkVQBK4UMgiXrpguUS2qC4mA'),
+     AIMessage(content='The price of copper is $0.0098 per gram.', response_metadata={'token_usage': {'completion_tokens': 14, 'prompt_tokens': 148, 'total_tokens': 162, 'prompt_tokens_details': {'cached_tokens': 0, 'audio_tokens': 0}, 'completion_tokens_details': {'reasoning_tokens': 0, 'audio_tokens': 0, 'accepted_prediction_tokens': 0, 'rejected_prediction_tokens': 0}}, 'model_name': 'gpt-4o-mini-2024-07-18', 'system_fingerprint': 'fp_0ba0d124f1', 'finish_reason': 'stop', 'logprobs': None}, id='run-67cbf98b-4fa6-431e-9ce4-58697a76c36e-0', usage_metadata={'input_tokens': 148, 'output_tokens': 14, 'total_tokens': 162})]
 
 
 
@@ -362,9 +275,9 @@ Ragas uses its own format to evaluate agent interactions. So, if you're using La
 
 **Goal:**  Convert the list of LangChain messages (e.g., HumanMessage, AIMessage, and ToolMessage) into the format expected by Ragas, so the evaluation framework can understand and process them properly.
 
-To convert the list of LangChain messages into a format suitable for Ragas evaluation, you have two options:
-#### Option 1: Use the Implementation Provided by Ragas
-Ragas has already provided a function `convert_to_ragas_messages` that can be used to convert LangChain messages into the format expected by Ragas. Here's how you can use it:
+To convert a list of LangChain messages into a format suitable for Ragas evaluation, Ragas provides the function convert_to_ragas_messages, which can be used to transform LangChain messages into the format expected by Ragas.
+
+Here's how you can use the function:
 
 
 ```python
@@ -374,66 +287,9 @@ from ragas.integrations.langgraph import convert_to_ragas_messages
 ragas_trace = convert_to_ragas_messages(result["messages"])
 ```
 
-#### Option 2: Write a Custom Conversion Function
-Alternatively, you can implement your own conversion function by drawing inspiration from the code below. This function converts a list of LangChain messages (HumanMessage, AIMessage, ToolMessage) into Ragas-compatible message objects.
-
 
 ```python
-from typing import List, Union
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
-import ragas.messages as r
-import json
-
-
-def convert_to_ragas_trace(
-    messages: List[Union[HumanMessage, SystemMessage, AIMessage, ToolMessage]]
-) -> List[Union[r.HumanMessage, r.AIMessage, r.ToolMessage]]:
-    """
-    Converts a list of LangChain messages into Ragas messages for agent evaluation.
-
-    This function takes a list of LangChain message objects (which may include human messages, AI messages,
-    and tool messages) and converts them into Ragas message objects. It captures AI tool calls within each AI message,
-    if present, for more comprehensive evaluation using Ragas.
-
-    Args:
-        messages (List[Union[HumanMessage, SystemMessage, AIMessage, ToolMessage]]): A list of LangChain messages
-            representing the interaction trace of an AI agent. This may include human messages, system messages, AI messages,
-            and tool messages.
-
-    Returns:
-        List[Union[r.HumanMessage, r.AIMessage, r.ToolMessage]]: A list of Ragas message objects converted from the
-            input LangChain messages, ready for agent evaluation in Ragas.
-    """
-    ragas_trace = []
-    for message in messages:
-        if isinstance(message, HumanMessage):
-            ragas_trace.append(r.HumanMessage(content=message.content))
-        elif isinstance(message, AIMessage):
-            tool_calls = []
-            if message.additional_kwargs and "tool_calls" in message.additional_kwargs:
-                for tool_call in message.additional_kwargs["tool_calls"]:
-                    tool_calls.append(
-                        r.ToolCall(
-                            name=tool_call["function"]["name"],
-                            args=json.loads(tool_call["function"]["arguments"]),
-                        )
-                    )
-
-            if not tool_calls:
-                ragas_trace.append(r.AIMessage(content=message.content))
-            else:
-                ragas_trace.append(
-                    r.AIMessage(content=message.content, tool_calls=tool_calls)
-                )
-        elif isinstance(message, ToolMessage):
-            ragas_trace.append(r.ToolMessage(content=message.content))
-
-    return ragas_trace
-```
-
-
-```python
-convert_to_ragas_trace(messages=result["messages"])  # List of Ragas messages converted from LangChain messages using the defined function
+ragas_trace # List of Ragas messages
 ```
 
 
@@ -463,11 +319,16 @@ First, let us actually run our Agent with a couple of queries, and make sure we 
 ```python
 from ragas.metrics import ToolCallAccuracy
 from ragas.dataset_schema import MultiTurnSample
+from ragas.integrations.langgraph import convert_to_ragas_messages
+import ragas.messages as r
 
-ragas_trace_sample = convert_to_ragas_trace(messages=result["messages"])
+
+ragas_trace = convert_to_ragas_messages(
+    messages=result["messages"]
+)  # List of Ragas messages converted using the Ragas function
 
 sample = MultiTurnSample(
-    user_input=ragas_trace_sample,
+    user_input=ragas_trace,
     reference_tool_calls=[
         r.ToolCall(name="get_metal_price", args={"metal_name": "copper"})
     ],
@@ -498,16 +359,16 @@ result = react_graph.invoke({"messages": messages})
 
 
 ```python
-result["messages"] # List of Langchain messages
+result["messages"]  # List of Langchain messages
 ```
 
 
 
 
-    [HumanMessage(content='What is the price of 10 grams of silver?', id='f2839748-85f5-4526-9a5a-33a7863ece80'),
-     AIMessage(content='', additional_kwargs={'tool_calls': [{'id': 'call_Rwg2nNBGcpTckTkPkvuU9BuZ', 'function': {'arguments': '{"metal_name":"silver"}', 'name': 'get_metal_price'}, 'type': 'function'}]}, response_metadata={'token_usage': {'completion_tokens': 17, 'prompt_tokens': 120, 'total_tokens': 137, 'prompt_tokens_details': {'cached_tokens': 0, 'audio_tokens': 0}, 'completion_tokens_details': {'reasoning_tokens': 0, 'audio_tokens': 0, 'accepted_prediction_tokens': 0, 'rejected_prediction_tokens': 0}}, 'model_name': 'gpt-4o-mini-2024-07-18', 'system_fingerprint': 'fp_0ba0d124f1', 'finish_reason': 'tool_calls', 'logprobs': None}, id='run-9e34ecae-0fdf-4d85-b367-3ae291d57121-0', tool_calls=[{'name': 'get_metal_price', 'args': {'metal_name': 'silver'}, 'id': 'call_Rwg2nNBGcpTckTkPkvuU9BuZ', 'type': 'tool_call'}], usage_metadata={'input_tokens': 120, 'output_tokens': 17, 'total_tokens': 137}),
-     ToolMessage(content='1.0523', name='get_metal_price', id='03e48a10-e762-4476-a429-798d24a18f98', tool_call_id='call_Rwg2nNBGcpTckTkPkvuU9BuZ'),
-     AIMessage(content='The current price of silver is approximately $1.0523 per gram. Therefore, the price for 10 grams of silver would be about $10.52.', response_metadata={'token_usage': {'completion_tokens': 34, 'prompt_tokens': 151, 'total_tokens': 185, 'prompt_tokens_details': {'cached_tokens': 0, 'audio_tokens': 0}, 'completion_tokens_details': {'reasoning_tokens': 0, 'audio_tokens': 0, 'accepted_prediction_tokens': 0, 'rejected_prediction_tokens': 0}}, 'model_name': 'gpt-4o-mini-2024-07-18', 'system_fingerprint': 'fp_0ba0d124f1', 'finish_reason': 'stop', 'logprobs': None}, id='run-e163708f-5ae4-4fa8-8df1-d4b824baf8d4-0', usage_metadata={'input_tokens': 151, 'output_tokens': 34, 'total_tokens': 185})]
+    [HumanMessage(content='What is the price of 10 grams of silver?', id='51a469de-5b7c-4d01-ab71-f8db64c8da49'),
+     AIMessage(content='', additional_kwargs={'tool_calls': [{'id': 'call_rdplOo95CRwo3mZcPu4dmNxG', 'function': {'arguments': '{"metal_name":"silver"}', 'name': 'get_metal_price'}, 'type': 'function'}]}, response_metadata={'token_usage': {'completion_tokens': 17, 'prompt_tokens': 120, 'total_tokens': 137, 'prompt_tokens_details': {'cached_tokens': 0, 'audio_tokens': 0}, 'completion_tokens_details': {'reasoning_tokens': 0, 'audio_tokens': 0, 'accepted_prediction_tokens': 0, 'rejected_prediction_tokens': 0}}, 'model_name': 'gpt-4o-mini-2024-07-18', 'system_fingerprint': 'fp_0ba0d124f1', 'finish_reason': 'tool_calls', 'logprobs': None}, id='run-3bb60e27-1275-41f1-a46e-03f77984c9d8-0', tool_calls=[{'name': 'get_metal_price', 'args': {'metal_name': 'silver'}, 'id': 'call_rdplOo95CRwo3mZcPu4dmNxG', 'type': 'tool_call'}], usage_metadata={'input_tokens': 120, 'output_tokens': 17, 'total_tokens': 137}),
+     ToolMessage(content='1.0523', name='get_metal_price', id='0b5f9260-df26-4164-b042-6df2e869adfb', tool_call_id='call_rdplOo95CRwo3mZcPu4dmNxG'),
+     AIMessage(content='The current price of silver is approximately $1.0523 per gram. Therefore, the price of 10 grams of silver would be about $10.52.', response_metadata={'token_usage': {'completion_tokens': 34, 'prompt_tokens': 151, 'total_tokens': 185, 'prompt_tokens_details': {'cached_tokens': 0, 'audio_tokens': 0}, 'completion_tokens_details': {'reasoning_tokens': 0, 'audio_tokens': 0, 'accepted_prediction_tokens': 0, 'rejected_prediction_tokens': 0}}, 'model_name': 'gpt-4o-mini-2024-07-18', 'system_fingerprint': 'fp_0ba0d124f1', 'finish_reason': 'stop', 'logprobs': None}, id='run-93e38f71-cc9d-41d6-812a-bfad9f9231b2-0', usage_metadata={'input_tokens': 151, 'output_tokens': 34, 'total_tokens': 185})]
 
 
 
@@ -515,8 +376,21 @@ result["messages"] # List of Langchain messages
 ```python
 from ragas.integrations.langgraph import convert_to_ragas_messages
 
-ragas_trace = convert_to_ragas_messages(result["messages"]) # List of Ragas messages converted using the Ragas function
+ragas_trace = convert_to_ragas_messages(
+    result["messages"]
+)  # List of Ragas messages converted using the Ragas function
+ragas_trace
 ```
+
+
+
+
+    [HumanMessage(content='What is the price of 10 grams of silver?', metadata=None, type='human'),
+     AIMessage(content='', metadata=None, type='ai', tool_calls=[ToolCall(name='get_metal_price', args={'metal_name': 'silver'})]),
+     ToolMessage(content='1.0523', metadata=None, type='tool'),
+     AIMessage(content='The current price of silver is approximately $1.0523 per gram. Therefore, the price of 10 grams of silver would be about $10.52.', metadata=None, type='ai', tool_calls=None)]
+
+
 
 
 ```python
