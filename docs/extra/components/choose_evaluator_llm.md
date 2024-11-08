@@ -100,18 +100,18 @@
     from ragas.embeddings import LangchainEmbeddingsWrapper
     evaluator_llm = LangchainLLMWrapper(AzureChatOpenAI(
         openai_api_version="2023-05-15",
-        azure_endpoint=azure_configs["base_url"],
-        azure_deployment=azure_configs["model_deployment"],
-        model=azure_configs["model_name"],
+        azure_endpoint=azure_config["base_url"],
+        azure_deployment=azure_config["model_deployment"],
+        model=azure_config["model_name"],
         validate_base_url=False,
     ))
 
     # init the embeddings for answer_relevancy, answer_correctness and answer_similarity
     evaluator_embeddings = LangchainEmbeddingsWrapper(AzureOpenAIEmbeddings(
         openai_api_version="2023-05-15",
-        azure_endpoint=azure_configs["base_url"],
-        azure_deployment=azure_configs["embedding_deployment"],
-        model=azure_configs["embedding_name"],
+        azure_endpoint=azure_config["base_url"],
+        azure_deployment=azure_config["embedding_deployment"],
+        model=azure_config["embedding_name"],
     ))
     ```
 
