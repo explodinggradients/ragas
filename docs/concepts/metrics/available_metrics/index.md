@@ -42,6 +42,7 @@ Each metric are essentially paradigms that are designed to evaluate a particular
 - [Simple Criteria Scoring](general_purpose.md#simple-criteria-scoring)
 - [Rubrics based scoring](general_purpose.md#rubrics-based-scoring)
 - [Instance specific rubrics scoring](general_purpose.md#instance-specific-rubrics-scoring)
+- [Answer Correctness](answer_correctness.md)
 
 ## Other tasks
 
