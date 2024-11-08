@@ -9,6 +9,7 @@ from ragas.testset.transforms.extractors import (
     SummaryExtractor,
 )
 from ragas.testset.transforms.extractors.llm_based import NERExtractor, ThemesExtractor
+from ragas.testset.transforms.filters import CustomNodeFilter
 from ragas.testset.transforms.relationship_builders import (
     CosineSimilarityBuilder,
     OverlapScoreBuilder,
@@ -82,11 +83,14 @@ def default_transforms(
         threshold=0.01, filter_nodes=lambda node: node.type == NodeType.CHUNK
     )
 
+    node_filter = CustomNodeFilter(llm=llm, filter_nodes=lambda node: node.type == NodeType.CHUNK)
+
     transforms = [
         headline_extractor,
         splitter,
-        Parallel(summary_extractor, theme_extractor, ner_extractor),
-        summary_emb_extractor,
+        summary_extractor,
+        node_filter,
+        Parallel(summary_emb_extractor, theme_extractor, ner_extractor),
         Parallel(cosine_sim_builder, ner_overlap_sim),
     ]
 

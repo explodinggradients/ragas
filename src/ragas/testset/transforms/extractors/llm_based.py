@@ -70,7 +70,7 @@ class Headlines(BaseModel):
 
 
 class HeadlinesExtractorPrompt(PydanticPrompt[StringIO, Headlines]):
-    instruction: str = "Extract only level 2 headings from the given text."
+    instruction: str = "Extract only level 2 and level 3 headings from the given text."
 
     input_model: t.Type[StringIO] = StringIO
     output_model: t.Type[Headlines] = Headlines
@@ -78,27 +78,36 @@ class HeadlinesExtractorPrompt(PydanticPrompt[StringIO, Headlines]):
         (
             StringIO(
                 text="""\
-        Introduction
-        Overview of the topic...
+                Introduction
+                Overview of the topic...
 
-        Main Concepts
-        Explanation of core ideas...
+                Main Concepts
+                Explanation of core ideas...
 
-        Detailed Analysis
-        Techniques and methods for analysis...
+                Detailed Analysis
+                Techniques and methods for analysis...
 
-        Subsection: Specialized Techniques
-        Further details on specialized techniques...
+                Subsection: Specialized Techniques
+                Further details on specialized techniques...
 
-        Future Directions
-        Insights into upcoming trends...
+                Future Directions
+                Insights into upcoming trends...
 
-        Conclusion
-        Final remarks and summary.
-        """,
+                Subsection: Next Steps in Research
+                Discussion of new areas of study...
+
+                Conclusion
+                Final remarks and summary.
+                """
             ),
             Headlines(
-                headlines=["Main Concepts", "Detailed Analysis", "Future Directions"]
+                headlines=[
+                    "Main Concepts",
+                    "Detailed Analysis",
+                    "Subsection: Specialized Techniques",
+                    "Future Directions",
+                    "Subsection: Next Steps in Research",
+                ]
             ),
         ),
     ]
@@ -108,15 +117,24 @@ class NEROutput(BaseModel):
     entities: t.List[str]
 
 
-class NERPrompt(PydanticPrompt[StringIO, NEROutput]):
-    instruction: str = "Extract named entities from the given text."
-    input_model: t.Type[StringIO] = StringIO
+class TextWithExtractionLimit(BaseModel):
+    text: str
+    max_num: int = 10
+
+
+class NERPrompt(PydanticPrompt[TextWithExtractionLimit, NEROutput]):
+    instruction: str = (
+        "Extract the named entities from the given text, limiting the output to the top entities. "
+        "Ensure the number of entities does not exceed the specified maximum."
+    )
+    input_model: t.Type[TextWithExtractionLimit] = TextWithExtractionLimit
     output_model: t.Type[NEROutput] = NEROutput
-    examples: t.List[t.Tuple[StringIO, NEROutput]] = [
+    examples: t.List[t.Tuple[TextWithExtractionLimit, NEROutput]] = [
         (
-            StringIO(
+            TextWithExtractionLimit(
                 text="""Elon Musk, the CEO of Tesla and SpaceX, announced plans to expand operations to new locations in Europe and Asia.
-                This expansion is expected to create thousands of jobs, particularly in cities like Berlin and Shanghai."""
+                This expansion is expected to create thousands of jobs, particularly in cities like Berlin and Shanghai.""",
+                max_num=10,
             ),
             NEROutput(
                 entities=[
@@ -246,12 +264,16 @@ class NERExtractor(LLMBasedExtractor):
 
     property_name: str = "entities"
     prompt: NERPrompt = NERPrompt()
+    max_num_entities: int = 10
 
     async def extract(self, node: Node) -> t.Tuple[str, t.List[str]]:
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, []
-        result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
+        result = await self.prompt.generate(
+            self.llm,
+            data=TextWithExtractionLimit(text=node_text, max_num=self.max_num_entities),
+        )
         return self.property_name, result.entities
 
 
@@ -305,14 +327,17 @@ class ThemesAndConcepts(BaseModel):
     output: t.List[str]
 
 
-class ThemesAndConceptsExtractorPrompt(PydanticPrompt[StringIO, ThemesAndConcepts]):
+class ThemesAndConceptsExtractorPrompt(
+    PydanticPrompt[TextWithExtractionLimit, ThemesAndConcepts]
+):
     instruction: str = "Extract the main themes and concepts from the given text."
-    input_model: t.Type[StringIO] = StringIO
+    input_model: t.Type[TextWithExtractionLimit] = TextWithExtractionLimit
     output_model: t.Type[ThemesAndConcepts] = ThemesAndConcepts
-    examples: t.List[t.Tuple[StringIO, ThemesAndConcepts]] = [
+    examples: t.List[t.Tuple[TextWithExtractionLimit, ThemesAndConcepts]] = [
         (
-            StringIO(
-                text="Artificial intelligence is transforming industries by automating tasks requiring human intelligence. AI analyzes vast data quickly and accurately, driving innovations like self-driving cars and personalized recommendations."
+            TextWithExtractionLimit(
+                text="Artificial intelligence is transforming industries by automating tasks requiring human intelligence. AI analyzes vast data quickly and accurately, driving innovations like self-driving cars and personalized recommendations.",
+                max_num=10,
             ),
             ThemesAndConcepts(
                 output=[
@@ -343,10 +368,14 @@ class ThemesExtractor(LLMBasedExtractor):
 
     property_name: str = "themes"
     prompt: ThemesAndConceptsExtractorPrompt = ThemesAndConceptsExtractorPrompt()
+    max_num_themes: int = 10
 
     async def extract(self, node: Node) -> t.Tuple[str, t.List[str]]:
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, []
-        result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
+        result = await self.prompt.generate(
+            self.llm,
+            data=TextWithExtractionLimit(text=node_text, max_num=self.max_num_themes),
+        )
         return self.property_name, result.output
