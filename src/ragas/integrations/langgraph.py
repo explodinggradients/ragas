@@ -10,17 +10,28 @@ def convert_to_ragas_messages(
     messages: List[Union[HumanMessage, SystemMessage, AIMessage, ToolMessage]]
 ) -> List[Union[r.HumanMessage, r.AIMessage, r.ToolMessage]]:
     """
-    Converts LangChain messages into Ragas messages for agent evaluation.
+    Convert LangChain messages into Ragas messages for agent evaluation.
 
-    Args:
-        messages: List of LangChain message objects (HumanMessage, SystemMessage,
-                 AIMessage, ToolMessage)
+    Parameters
+    ----------
+    messages : List[Union[HumanMessage, SystemMessage, AIMessage, ToolMessage]]
+        List of LangChain message objects to be converted.
 
-    Returns:
-        List of corresponding Ragas message objects
+    Returns
+    -------
+    List[Union[r.HumanMessage, r.AIMessage, r.ToolMessage]]
+        List of corresponding Ragas message objects.
 
-    Raises:
-        ValueError: If an unsupported message type is encountered
+    Raises
+    ------
+    ValueError
+        If an unsupported message type is encountered.
+    TypeError
+        If message content is not a string.
+
+    Notes
+    -----
+    SystemMessages are skipped in the conversion process.
     """
 
     def _validate_string_content(message, message_type: str) -> str:
