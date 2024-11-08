@@ -275,7 +275,7 @@ Ragas uses its own format to evaluate agent interactions. So, if you're using La
 
 **Goal:**  Convert the list of LangChain messages (e.g., HumanMessage, AIMessage, and ToolMessage) into the format expected by Ragas, so the evaluation framework can understand and process them properly.
 
-To convert a list of LangChain messages into a format suitable for Ragas evaluation, Ragas provides the function [convert_to_ragas_messages](ragas.integrations.langgraph), which can be used to transform LangChain messages into the format expected by Ragas.
+To convert a list of LangChain messages into a format suitable for Ragas evaluation, Ragas provides the function [convert_to_ragas_messages][ragas.integrations.langgraph.convert_to_ragas_messages], which can be used to transform LangChain messages into the format expected by Ragas.
 
 Here's how you can use the function:
 
