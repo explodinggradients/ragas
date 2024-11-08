@@ -7,9 +7,8 @@ from datasets import Dataset
 from langchain_core.callbacks import BaseCallbackHandler, BaseCallbackManager
 from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.language_models import BaseLanguageModel as LangchainLLM
-
-from llama_index.core.base.llms.base import BaseLLM as LlamaIndexLLM
 from llama_index.core.base.embeddings.base import BaseEmbedding as LlamaIndexEmbedding
+from llama_index.core.base.llms.base import BaseLLM as LlamaIndexLLM
 
 from ragas._analytics import EvaluationEvent, track, track_was_completed
 from ragas.callbacks import ChainType, RagasTracer, new_group
@@ -61,7 +60,9 @@ def evaluate(
     dataset: t.Union[Dataset, EvaluationDataset],
     metrics: t.Optional[t.Sequence[Metric]] = None,
     llm: t.Optional[BaseRagasLLM | LangchainLLM | LlamaIndexLLM] = None,
-    embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings | LlamaIndexEmbedding] = None,
+    embeddings: t.Optional[
+        BaseRagasEmbeddings | LangchainEmbeddings | LlamaIndexEmbedding
+    ] = None,
     callbacks: Callbacks = None,
     in_ci: bool = False,
     run_config: RunConfig = RunConfig(),
