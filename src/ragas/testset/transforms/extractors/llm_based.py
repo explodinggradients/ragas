@@ -245,7 +245,7 @@ class NERExtractor(LLMBasedExtractor):
     """
 
     property_name: str = "entities"
-    prompt: NERPrompt = NERPrompt()
+    prompt: PydanticPrompt[StringIO, NEROutput] = NERPrompt()
 
     async def extract(self, node: Node) -> t.Tuple[str, t.List[str]]:
         node_text = node.get_property("page_content")
@@ -260,9 +260,7 @@ class TopicDescription(BaseModel):
 
 
 class TopicDescriptionPrompt(PydanticPrompt[StringIO, TopicDescription]):
-    instruction: str = (
-        "Provide a concise description of the main topic(s) discussed in the following text."
-    )
+    instruction: str = "Provide a concise description of the main topic(s) discussed in the following text."
     input_model: t.Type[StringIO] = StringIO
     output_model: t.Type[TopicDescription] = TopicDescription
     examples: t.List[t.Tuple[StringIO, TopicDescription]] = [
