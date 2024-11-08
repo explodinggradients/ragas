@@ -3,12 +3,45 @@ from dataclasses import dataclass
 
 from ragas.testset.graph import Node, NodeType, Relationship
 from ragas.testset.transforms.base import Splitter
-from ragas.utils import num_tokens_from_string
 
 
 @dataclass
 class HeadlineSplitter(Splitter):
     min_tokens: int = 300
+    max_tokens: int = 1000
+
+    def adjust_chunks(self, chunks):
+        adjusted_chunks = []
+        current_chunk = ""
+
+        for chunk in chunks:
+            chunk_tokens = chunk.split()
+
+            # Split chunks that are over max_tokens
+            while len(chunk_tokens) > self.max_tokens:
+                adjusted_chunks.append(" ".join(chunk_tokens[: self.max_tokens]))
+                chunk_tokens = chunk_tokens[self.max_tokens :]
+
+            # Handle chunks that are under min_tokens
+            if len(chunk_tokens) < self.min_tokens:
+                if current_chunk:
+                    current_chunk += " " + " ".join(chunk_tokens)
+                    if len(current_chunk.split()) >= self.min_tokens:
+                        adjusted_chunks.append(current_chunk)
+                        current_chunk = ""
+                else:
+                    current_chunk = " ".join(chunk_tokens)
+            else:
+                if current_chunk:
+                    adjusted_chunks.append(current_chunk)
+                    current_chunk = ""
+                adjusted_chunks.append(" ".join(chunk_tokens))
+
+        # Append any remaining chunk
+        if current_chunk:
+            adjusted_chunks.append(current_chunk)
+
+        return adjusted_chunks
 
     async def split(self, node: Node) -> t.Tuple[t.List[Node], t.List[Relationship]]:
         text = node.get_property("page_content")
@@ -27,19 +60,7 @@ class HeadlineSplitter(Splitter):
                 indices.append(index)
         indices.append(len(text))
         chunks = [text[indices[i] : indices[i + 1]] for i in range(len(indices) - 1)]
-        # merge chunks if their length is less than 300 tokens
-        merged_chunks = []
-        current_chunk = chunks[0]
-
-        for next_chunk in chunks[1:]:
-            if num_tokens_from_string(current_chunk) < self.min_tokens:
-                current_chunk = "\n\n".join([current_chunk, next_chunk])
-            else:
-                merged_chunks.append(current_chunk)
-                current_chunk = next_chunk
-
-        merged_chunks.append(current_chunk)
-        chunks = merged_chunks
+        chunks = self.adjust_chunks(chunks)
 
         # if there was no headline, return the original node
         if len(chunks) == 1:
