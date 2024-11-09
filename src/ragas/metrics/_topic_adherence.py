@@ -48,9 +48,7 @@ class TopicClassificationOutput(BaseModel):
 class TopicClassificationPrompt(
     PydanticPrompt[TopicClassificationInput, TopicClassificationOutput]
 ):
-    instruction = (
-        "Given a set of topics classify if the topic falls into any of the given reference topics."
-    )
+    instruction = "Given a set of topics classify if the topic falls into any of the given reference topics."
     input_model = TopicClassificationInput
     output_model = TopicClassificationOutput
     examples = [
@@ -149,10 +147,14 @@ class TopicAdherenceScore(MetricWithLLM, MultiTurnMetric):
     topic_classification_prompt: PydanticPrompt = TopicClassificationPrompt()
     topic_refused_prompt: PydanticPrompt = TopicRefusedPrompt()
 
-    async def _multi_turn_ascore(self, sample: MultiTurnSample, callbacks: Callbacks) -> float:
+    async def _multi_turn_ascore(
+        self, sample: MultiTurnSample, callbacks: Callbacks
+    ) -> float:
         assert self.llm is not None, "LLM must be set"
         assert isinstance(sample.user_input, list), "Sample user_input must be a list"
-        assert isinstance(sample.reference_topics, list), "Sample reference_topics must be a list"
+        assert isinstance(
+            sample.reference_topics, list
+        ), "Sample reference_topics must be a list"
         user_input = sample.pretty_repr()
 
         prompt_input = TopicExtractionInput(user_input=user_input)
@@ -168,7 +170,9 @@ class TopicAdherenceScore(MetricWithLLM, MultiTurnMetric):
                 data=prompt_input, llm=self.llm, callbacks=callbacks
             )
             topic_answered_verdict.append(response.refused_to_answer)
-        topic_answered_verdict = np.array([not answer for answer in topic_answered_verdict])
+        topic_answered_verdict = np.array(
+            [not answer for answer in topic_answered_verdict]
+        )
 
         prompt_input = TopicClassificationInput(
             reference_topics=sample.reference_topics, topics=topics

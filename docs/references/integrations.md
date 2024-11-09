@@ -16,3 +16,7 @@
 ::: ragas.integrations.helicone
     options:
         show_root_heading: true
+
+::: ragas.integrations.langgraph
+    options:
+        show_root_heading: true
