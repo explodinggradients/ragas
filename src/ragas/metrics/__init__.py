@@ -9,7 +9,7 @@ from ragas.metrics._answer_similarity import (
     SemanticSimilarity,
     answer_similarity,
 )
-from ragas.metrics._aspect_critic import AspectCritic
+from ragas.metrics._aspect_critic import AspectCritic, AspectCriticWithReference
 from ragas.metrics._bleu_score import BleuScore
 from ragas.metrics._context_entities_recall import (
     ContextEntityRecall,
@@ -116,4 +116,5 @@ __all__ = [
     "multimodal_faithness",
     "MultiModalRelevance",
     "multimodal_relevance",
+    "AspectCriticWithReference",
 ]
