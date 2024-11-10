@@ -13,7 +13,7 @@ How to customize various aspects of Ragas to suit your needs.
 - [Adapt metrics to target language](./metrics/_metrics_language_adaptation.md)
 - [Estimate cost of evaluation with metrics](metrics/_cost.md)
 - [Tracing evaluations with Observability tools](metrics/tracing.md)
-- [Debug LLM based metrics using tracing](metrics/metrics_llm_calls.ipynb)
+- [Debug LLM based metrics using tracing](metrics/_metrics_llm_calls.md)
 
 
 ## Testset Generation
