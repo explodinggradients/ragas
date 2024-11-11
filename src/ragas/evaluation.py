@@ -7,8 +7,6 @@ from datasets import Dataset
 from langchain_core.callbacks import BaseCallbackHandler, BaseCallbackManager
 from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.language_models import BaseLanguageModel as LangchainLLM
-from llama_index.core.base.embeddings.base import BaseEmbedding as LlamaIndexEmbedding
-from llama_index.core.base.llms.base import BaseLLM as LlamaIndexLLM
 
 from ragas._analytics import EvaluationEvent, track, track_was_completed
 from ragas.callbacks import ChainType, RagasTracer, new_group
@@ -21,14 +19,13 @@ from ragas.dataset_schema import (
 from ragas.embeddings.base import (
     BaseRagasEmbeddings,
     LangchainEmbeddingsWrapper,
-    LlamaIndexEmbeddingsWrapper,
     embedding_factory,
 )
 from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
 from ragas.integrations.helicone import helicone_config
 from ragas.llms import llm_factory
-from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper, LlamaIndexLLMWrapper
+from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics import AspectCritic
 from ragas.metrics._answer_correctness import AnswerCorrectness
 from ragas.metrics.base import (
@@ -59,10 +56,8 @@ RAGAS_EVALUATION_CHAIN_NAME = "ragas evaluation"
 def evaluate(
     dataset: t.Union[Dataset, EvaluationDataset],
     metrics: t.Optional[t.Sequence[Metric]] = None,
-    llm: t.Optional[BaseRagasLLM | LangchainLLM | LlamaIndexLLM] = None,
-    embeddings: t.Optional[
-        BaseRagasEmbeddings | LangchainEmbeddings | LlamaIndexEmbedding
-    ] = None,
+    llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
+    embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
     callbacks: Callbacks = None,
     in_ci: bool = False,
     run_config: RunConfig = RunConfig(),
@@ -187,12 +182,8 @@ def evaluate(
     # set the llm and embeddings
     if isinstance(llm, LangchainLLM):
         llm = LangchainLLMWrapper(llm, run_config=run_config)
-    elif isinstance(llm, LlamaIndexLLM):
-        llm = LlamaIndexLLMWrapper(llm, run_config=run_config)
     if isinstance(embeddings, LangchainEmbeddings):
         embeddings = LangchainEmbeddingsWrapper(embeddings)
-    elif isinstance(embeddings, LlamaIndexEmbedding):
-        embeddings = LlamaIndexEmbeddingsWrapper(embeddings)
 
     # init llms and embeddings
     binary_metrics = []

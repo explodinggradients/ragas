@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import typing as t
 from dataclasses import dataclass, field
+from datetime import datetime
+from uuid import uuid4
+
+from pydantic import BaseModel, Field
 
 from ragas.cost import CostCallbackHandler, TokenUsage
 from ragas.dataset_schema import (
@@ -11,6 +15,7 @@ from ragas.dataset_schema import (
     RagasDataset,
     SingleTurnSample,
 )
+from ragas.utils import RAGAS_API_URL
 
 
 class TestsetSample(BaseSample):
@@ -27,6 +32,16 @@ class TestsetSample(BaseSample):
 
     eval_sample: t.Union[SingleTurnSample, MultiTurnSample]
     synthesizer_name: str
+
+
+class TestsetPacket(BaseModel):
+    """
+    A packet of testset samples to be uploaded to the server.
+    """
+
+    samples: t.List[TestsetSample]
+    run_id: str = Field(default_factory=lambda: str(uuid4()))
+    created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
 
 
 @dataclass
@@ -118,3 +133,18 @@ class Testset(RagasDataset[TestsetSample]):
             cost_per_input_token=cost_per_input_token,
             cost_per_output_token=cost_per_output_token,
         )
+
+    def upload(self, base_url: str = RAGAS_API_URL, verbose: bool = True) -> str:
+        import requests
+
+        packet = TestsetPacket(samples=self.samples)
+        response = requests.post(
+            f"{base_url}/alignment/testset", json=packet.model_dump()
+        )
+        if response.status_code != 200:
+            raise Exception(f"Failed to upload results: {response.text}")
+
+        testset_endpoint = f"https://app.ragas.io/alignment/testset/{packet.run_id}"
+        if verbose:
+            print(f"Testset uploaded! View at {testset_endpoint}")
+        return testset_endpoint

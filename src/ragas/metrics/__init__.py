@@ -79,6 +79,7 @@ __all__ = [
     "ContextRecall",
     "context_recall",
     "AspectCritic",
+    "AspectCriticWithReference",
     "AnswerRelevancy",
     "answer_relevancy",
     "ContextEntityRecall",

@@ -263,7 +263,7 @@ class NERExtractor(LLMBasedExtractor):
     """
 
     property_name: str = "entities"
-    prompt: NERPrompt = NERPrompt()
+    prompt: PydanticPrompt[TextWithExtractionLimit, NEROutput] = NERPrompt()
     max_num_entities: int = 10
 
     async def extract(self, node: Node) -> t.Tuple[str, t.List[str]]:
@@ -282,9 +282,7 @@ class TopicDescription(BaseModel):
 
 
 class TopicDescriptionPrompt(PydanticPrompt[StringIO, TopicDescription]):
-    instruction: str = (
-        "Provide a concise description of the main topic(s) discussed in the following text."
-    )
+    instruction: str = "Provide a concise description of the main topic(s) discussed in the following text."
     input_model: t.Type[StringIO] = StringIO
     output_model: t.Type[TopicDescription] = TopicDescription
     examples: t.List[t.Tuple[StringIO, TopicDescription]] = [

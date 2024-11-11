@@ -38,7 +38,6 @@ class SingleHopScenario(BaseScenario):
 
 @dataclass
 class SingleHopSpecificQuerySynthesizer(SingleHopQuerySynthesizer):
-
     name: str = "single_hop_specifc_query_synthesizer"
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
 
@@ -71,6 +70,8 @@ class SingleHopSpecificQuerySynthesizer(SingleHopQuerySynthesizer):
             ):
                 nodes.append(node)
 
+        if len(nodes) == 0:
+            raise ValueError("No nodes found with the `entities` property.")
         samples_per_node = int(np.ceil(n / len(nodes)))
 
         scenarios = []

@@ -8,7 +8,11 @@ The dataset used here is from [Amnesty QA RAG](https://huggingface.co/datasets/e
 
 ```python
 from datasets import load_dataset
-dataset = load_dataset("explodinggradients/amnesty_qa","english_v3")
+dataset = load_dataset(
+    "explodinggradients/amnesty_qa",
+    "english_v3",
+    trust_remote_code=True
+)
 ```
 
 Load the dataset into Ragas EvaluationDataset object. 
