@@ -11,13 +11,15 @@ You will need an testset to evaluate your `QueryEngine` against. You can either 
 Let's see how that works with Llamaindex
 
 # load the documents
+
+
 ```python
 from llama_index.core import SimpleDirectoryReader
 
 documents = SimpleDirectoryReader("./nyc_wikipedia").load_data()
 ```
 
-Now lets init the `TestsetGenerator` object with the corresponding generator and critic llms
+Now  lets init the `TestsetGenerator` object with the corresponding generator and critic llms
 
 
 ```python

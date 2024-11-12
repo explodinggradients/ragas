@@ -230,7 +230,7 @@ display(Image(react_graph.get_graph(xray=True).draw_mermaid_png()))
 
 
     
-![jpeg](../../_static/imgs/_langgraph_agent_evaluation_28_0.jpg)
+![jpeg](_langgraph_agent_evaluation_files/_langgraph_agent_evaluation_23_0.jpg)
     
 
 

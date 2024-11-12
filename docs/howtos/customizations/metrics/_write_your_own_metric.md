@@ -34,7 +34,7 @@ choose_evaluator_llm.md
 ```python
 from ragas.llms import llm_factory
 
-evaluator_llm = llm_factory('gpt-4o')
+evaluator_llm = llm_factory("gpt-4o")
 ```
 
 ## Aspect Critic - Simple Criteria Scoring
@@ -56,7 +56,7 @@ from ragas.metrics import AspectCritic
 hallucinations_binary = AspectCritic(
     name="hallucinations_binary",
     definition="Did the model hallucinate or add any information that was not present in the retrieved context?",
-    llm=evaluator_llm
+    llm=evaluator_llm,
 )
 
 await hallucinations_binary.single_turn_ascore(eval_dataset[0])
@@ -93,9 +93,7 @@ Now lets init the metric with the rubric and evaluator llm and evaluate the data
 from ragas.metrics import RubricsScoreWithoutReference
 
 hallucinations_rubric = RubricsScoreWithoutReference(
-    name="hallucinations_rubric",
-    llm=evaluator_llm,
-    rubrics=rubric
+    name="hallucinations_rubric", llm=evaluator_llm, rubrics=rubric
 )
 
 await hallucinations_rubric.single_turn_ascore(eval_dataset[0])
@@ -125,7 +123,6 @@ For our example, we need to to use LLMs to evaluate our metric so we will subcla
 
 As for the implementation, we will use the [Faithfulness][ragas.metrics.Faithfulness] metric to evaluate our metric to measure the hallucinations with the formula 
 
-
 $$
 \text{Hallucinations} = 1 - \text{Faithfulness}
 $$
@@ -144,19 +141,28 @@ import typing as t
 from ragas.callbacks import Callbacks
 from ragas.dataset_schema import SingleTurnSample
 
+
 @dataclass
 class HallucinationsMetric(MetricWithLLM, SingleTurnMetric):
     # name of the metric
     name: str = "hallucinations_metric"
     # we need to define the required columns for the metric
-    _required_columns: t.Dict[MetricType, t.Set[str]] = field(default_factory=lambda: {MetricType.SINGLE_TURN: {"user_input", "response", "retrieved_contexts"}})
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {"user_input", "response", "retrieved_contexts"}
+        }
+    )
 
     def __post_init__(self):
         # init the faithfulness metric
         self.faithfulness_metric = Faithfulness(llm=self.llm)
 
-    async def _single_turn_ascore(self, sample: SingleTurnSample, callbacks: Callbacks) -> float:
-        faithfulness_score = await self.faithfulness_metric.single_turn_ascore(sample, callbacks)
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        faithfulness_score = await self.faithfulness_metric.single_turn_ascore(
+            sample, callbacks
+        )
         return 1 - faithfulness_score
 ```
 
@@ -181,12 +187,8 @@ Now let's evaluate the entire dataset with the metrics we have created.
 from ragas import evaluate
 
 results = evaluate(
-    eval_dataset, 
-    metrics=[
-        hallucinations_metric,
-        hallucinations_rubric,
-        hallucinations_binary
-    ], 
+    eval_dataset,
+    metrics=[hallucinations_metric, hallucinations_rubric, hallucinations_binary],
 )
 ```
 
