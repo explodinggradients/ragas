@@ -69,6 +69,9 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
         )
         logger.info("found %d clusters", len(node_clusters))
         scenarios = []
+        
+        if len(node_clusters) == 0:
+            raise ValueError("No clusters found in the knowledge graph. Try changing the relationship condition.")
 
         num_sample_per_cluster = int(np.ceil(n / len(node_clusters)))
 
