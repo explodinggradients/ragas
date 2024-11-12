@@ -15,7 +15,6 @@ QueryDistribution = t.List[t.Tuple[BaseSynthesizer, float]]
 
 
 def default_query_distribution(llm: BaseRagasLLM) -> QueryDistribution:
-    """ """
     return [
         (SingleHopSpecificQuerySynthesizer(llm=llm), 0.5),
         (MultiHopAbstractQuerySynthesizer(llm=llm), 0.25),
