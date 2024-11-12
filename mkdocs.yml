@@ -84,6 +84,7 @@ nav:
               - Write your own Metrics - (advanced): howtos/customizations/metrics/_write_your_own_metric_advanced.md
           - Testset Generation:
               - howtos/customizations/testgenerator/index.md
+              - Persona Generation: howtos/customizations/testgenerator/_persona_generator.md
       - Applications:
           - howtos/applications/index.md
           - Metrics:
