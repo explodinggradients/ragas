@@ -54,7 +54,7 @@ class ToolCallAccuracy(MultiTurnMetric):
         pass
 
     async def _get_arg_score(
-        self, preds: t.Dict[str, t.Any], refs: t.Dict[str, t.Any], callbacks: Callbacks
+            self, preds: t.Dict[str, t.Any], refs: t.Dict[str, t.Any], callbacks: Callbacks
     ) -> float:
         if not refs and not preds:
             return 1.0
@@ -74,7 +74,7 @@ class ToolCallAccuracy(MultiTurnMetric):
         return score / len(refs.keys())
 
     def is_sequence_aligned(
-        self, pred_sequence: t.List[str], ref_sequence: t.List[str]
+            self, pred_sequence: t.List[str], ref_sequence: t.List[str]
     ) -> bool:
         return pred_sequence == ref_sequence
 
@@ -120,12 +120,11 @@ class ToolCallAccuracy(MultiTurnMetric):
             self.is_sequence_aligned(tool_call_pred_sequence, tool_call_ref_sequence)
         )
 
-        # Calculate score based on paired tool calls
+        # Calculate score based on paired tool calls (without nested loop)
         score = 0.0
-        compared_count = 0
+        compared_count = min(len(pred_tool_calls), len(reference_tool_calls))
 
         for ref_tool_call, pred_tool_call in zip(reference_tool_calls, pred_tool_calls):
-            compared_count += 1
             if ref_tool_call.name == pred_tool_call.name:
                 arg_score = await self._get_arg_score(
                     pred_tool_call.args, ref_tool_call.args, callbacks
