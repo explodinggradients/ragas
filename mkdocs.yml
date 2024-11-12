@@ -86,7 +86,9 @@ nav:
               - howtos/customizations/testgenerator/index.md
       - Applications:
           - howtos/applications/index.md
-          - Cost Analysis: howtos/applications/_cost.md
+          - Metrics:
+            - Cost Analysis: howtos/applications/_cost.md
+            - Debug LLM Based Metrics: howtos/applications/_metrics_llm_calls.md
       - Integrations:
           - howtos/integrations/index.md
           - LlamaIndex: howtos/integrations/_llamaindex.md
