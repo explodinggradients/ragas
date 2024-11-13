@@ -277,13 +277,12 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
         assert response is not None, "Response is not set"
 
         response_claims = await self.decompose_claims(response, callbacks)
-        reference_claims = await self.decompose_claims(reference, callbacks)
-
         reference_response = await self.verify_claims(
             premise=reference, hypothesis_list=response_claims, callbacks=callbacks
         )
 
         if self.mode != "precision":
+            reference_claims = await self.decompose_claims(reference, callbacks)
             response_reference = await self.verify_claims(
                 premise=response, hypothesis_list=reference_claims, callbacks=callbacks
             )
