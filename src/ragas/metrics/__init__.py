@@ -63,7 +63,7 @@ from ragas.metrics._string import (
     StringPresence,
 )
 from ragas.metrics._summarization import SummarizationScore, summarization_score
-from ragas.metrics._tool_call_accuracy import ToolCallAccuracy
+from ragas.metrics._tool_call_accuracy import ToolCallAccuracy, ToolCallParallelAccuracy
 from ragas.metrics._tool_call_f1 import ToolCallF1
 from ragas.metrics._topic_adherence import TopicAdherenceScore
 from ragas.metrics.base import (
@@ -146,6 +146,7 @@ __all__ = [
     "AgentGoalAccuracyWithReference",
     "ToolCallF1",
     "ToolCallAccuracy",
+    "ToolCallParallelAccuracy",
     "ResponseRelevancy",
     "SemanticSimilarity",
     "DistanceMeasure",
