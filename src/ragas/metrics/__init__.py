@@ -9,7 +9,7 @@ from ragas.metrics._answer_similarity import (
     SemanticSimilarity,
     answer_similarity,
 )
-from ragas.metrics._aspect_critic import AspectCritic, AspectCriticWithReference
+from ragas.metrics._aspect_critic import AspectCritic
 from ragas.metrics._bleu_score import BleuScore
 from ragas.metrics._context_entities_recall import (
     ContextEntityRecall,
@@ -31,8 +31,7 @@ from ragas.metrics._context_recall import (
 )
 from ragas.metrics._datacompy_score import DataCompyScore
 from ragas.metrics._domain_specific_rubrics import (
-    RubricsScoreWithoutReference,
-    RubricsScoreWithReference,
+    RubricsScore,
 )
 from ragas.metrics._factual_correctness import FactualCorrectness
 from ragas.metrics._faithfulness import Faithfulness, FaithfulnesswithHHEM, faithfulness
@@ -41,8 +40,7 @@ from ragas.metrics._goal_accuracy import (
     AgentGoalAccuracyWithReference,
 )
 from ragas.metrics._instance_specific_rubrics import (
-    InstanceRubricsScoreWithoutReference,
-    InstanceRubricsWithReference,
+    InstanceRubrics,
 )
 from ragas.metrics._multi_modal_faithfulness import (
     MultiModalFaithfulness,
@@ -79,7 +77,6 @@ __all__ = [
     "ContextRecall",
     "context_recall",
     "AspectCritic",
-    "AspectCriticWithReference",
     "AnswerRelevancy",
     "answer_relevancy",
     "ContextEntityRecall",
@@ -87,8 +84,7 @@ __all__ = [
     "SummarizationScore",
     "summarization_score",
     "NoiseSensitivity",
-    "RubricsScoreWithoutReference",
-    "RubricsScoreWithReference",
+    "RubricsScore",
     "LLMContextPrecisionWithReference",
     "LLMContextPrecisionWithoutReference",
     "NonLLMContextPrecisionWithReference",
@@ -96,8 +92,7 @@ __all__ = [
     "LLMContextRecall",
     "NonLLMContextRecall",
     "FactualCorrectness",
-    "InstanceRubricsScoreWithoutReference",
-    "InstanceRubricsWithReference",
+    "InstanceRubrics",
     "NonLLMStringSimilarity",
     "ExactMatch",
     "StringPresence",
@@ -117,5 +112,4 @@ __all__ = [
     "multimodal_faithness",
     "MultiModalRelevance",
     "multimodal_relevance",
-    "AspectCriticWithReference",
 ]
