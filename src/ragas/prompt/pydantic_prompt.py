@@ -55,10 +55,10 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
                     self.instruction
                     + "\n"
                     + "input: "
-                    + input_data.model_dump_json(indent=4)
+                    + input_data.model_dump_json(indent=4, exclude_none=True)
                     + "\n"
                     + "output: "
-                    + output_data.model_dump_json(indent=4)
+                    + output_data.model_dump_json(indent=4, exclude_none=True)
                 )
 
             return (
@@ -78,7 +78,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             + self._generate_examples()
             + "\nNow perform the above instruction with the following input\n"
             + (
-                "input: " + data.model_dump_json(indent=4) + "\n"
+                "input: " + data.model_dump_json(indent=4, exclude_none=True) + "\n"
                 if data is not None
                 else "input: (None)\n"
             )
