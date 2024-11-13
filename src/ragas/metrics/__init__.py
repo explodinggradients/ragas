@@ -30,18 +30,14 @@ from ragas.metrics._context_recall import (
     context_recall,
 )
 from ragas.metrics._datacompy_score import DataCompyScore
-from ragas.metrics._domain_specific_rubrics import (
-    RubricsScore,
-)
+from ragas.metrics._domain_specific_rubrics import RubricsScore
 from ragas.metrics._factual_correctness import FactualCorrectness
 from ragas.metrics._faithfulness import Faithfulness, FaithfulnesswithHHEM, faithfulness
 from ragas.metrics._goal_accuracy import (
     AgentGoalAccuracyWithoutReference,
     AgentGoalAccuracyWithReference,
 )
-from ragas.metrics._instance_specific_rubrics import (
-    InstanceRubrics,
-)
+from ragas.metrics._instance_specific_rubrics import InstanceRubrics
 from ragas.metrics._multi_modal_faithfulness import (
     MultiModalFaithfulness,
     multimodal_faithness,
