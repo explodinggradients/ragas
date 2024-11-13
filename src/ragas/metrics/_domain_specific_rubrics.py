@@ -104,7 +104,18 @@ class MultiTurnPrompt(PydanticPrompt[MultiTurnInput, ScoreFeedback]):
                 rubrics=DEFAULT_REFERENCE_FREE_RUBRICS,
             ),
             ScoreFeedback(feedback="", score=5),
-        )
+        ),
+        (
+            MultiTurnInput(
+                user_input="""Human: Hey, book a table at the nearest best Chinese restaurant for 8:00pm\nAI: Sure, let me find the best options for you.\nTools:\n  restaurant_search: {'cuisine': 'Chinese', 'time': '8:00pm'}\nToolOutput: Found a few options: 1. Golden Dragon, 2. Jade Palace\nAI: I found some great options: Golden Dragon and Jade Palace. Which one would you prefer?\nHuman: Let's go with Golden Dragon.\nAI: Great choice! I'll book a table for 8:00pm at Golden Dragon.\nTools:\n  restaurant_book: {'name': 'Golden Dragon', 'time': '8:00pm'}\nToolOutput: Table booked at Golden Dragon for 8:00pm.\nAI: Your table at Golden Dragon is booked for 8:00pm. Enjoy your meal!\nHuman: thanks""",
+                reference="The AI successfully books a table at the nearest best Chinese restaurant for 8:00pm, providing the user with options and confirming the booking.",
+                rubrics=DEFAULT_WITH_REFERENCE_RUBRICS,
+            ),
+            ScoreFeedback(
+                feedback="The AI successfully books a table at the nearest best Chinese restaurant for 8:00pm, providing the user with options and confirming the booking. The response is clear, accurate, and meets all the criteria for a score of 5 based on the rubric.",
+                score=5,
+            ),
+        ),
     ]
 
 
@@ -122,6 +133,7 @@ class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
             },
             MetricType.MULTI_TURN: {
                 "user_input:optional",
+                "reference:optional",
             },
         },
         repr=False,

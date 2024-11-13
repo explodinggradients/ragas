@@ -27,9 +27,21 @@ class InstanceRubrics(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     name: str = "labelled_rubrics_score"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
-            MetricType.SINGLE_TURN: {"user_input", "response", "reference", "rubrics"},
-            MetricType.MULTI_TURN: {"user_input", "reference", "rubrics"},
-        }
+            MetricType.SINGLE_TURN: {
+                "rubrics",
+                "user_input:optional",
+                "response:optional",
+                "retrieved_contexts:optional",
+                "reference:optional",
+                "reference_contexts:optional",
+            },
+            MetricType.MULTI_TURN: {
+                "rubrics",
+                "user_input:optional",
+                "reference:optional",
+            },
+        },
+        repr=False,
     )
     single_turn_prompt: PydanticPrompt = field(
         default_factory=lambda: SingleTurnPrompt()
