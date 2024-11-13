@@ -32,6 +32,14 @@ You may choose to use any [LLM of your choice](../howtos/customizations/customiz
 choose_generator_llm.md
 --8<--
 
+### Initialize llm and embedding generators (Langchain methods are used here)
+from ragas.llms import LangchainLLMWrapper
+from ragas.embeddings import LangchainEmbeddingsWrapper
+from langchain_openai import ChatOpenAI
+from langchain_openai import OpenAIEmbeddings
+generator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
+generator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
+
 ### Generate Testset
 
 Now we will run the test generation using the loaded documents and the LLM setup. If you have used `llama_index` to load documents, please use `generate_with_llama_index_docs` method instead.
