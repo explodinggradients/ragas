@@ -83,7 +83,9 @@ def default_transforms(
         threshold=0.01, filter_nodes=lambda node: node.type == NodeType.CHUNK
     )
 
-    node_filter = CustomNodeFilter(llm=llm, filter_nodes=lambda node: node.type == NodeType.CHUNK)
+    node_filter = CustomNodeFilter(
+        llm=llm, filter_nodes=lambda node: node.type == NodeType.CHUNK
+    )
 
     transforms = [
         headline_extractor,

@@ -10,10 +10,7 @@ from langchain_core.callbacks import BaseCallbackManager
 from ragas._analytics import TestsetGenerationEvent, track
 from ragas.callbacks import new_group
 from ragas.cost import TokenUsageParser
-from ragas.embeddings.base import (
-    BaseRagasEmbeddings,
-    LlamaIndexEmbeddingsWrapper,
-)
+from ragas.embeddings.base import BaseRagasEmbeddings, LlamaIndexEmbeddingsWrapper
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper, LlamaIndexLLMWrapper
 from ragas.run_config import RunConfig
