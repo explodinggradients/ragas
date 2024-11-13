@@ -70,6 +70,18 @@ class SingleTurnAspectCriticPrompt(
                 verdict=1,
             ),
         ),
+        (
+            AspectCriticInput(
+                user_input="Who was the director of Los Alamos Laboratory?",
+                response="Einstein was the director of Los Alamos Laboratory.",
+                reference="J. Robert Oppenheimer was the director of Los Alamos Laboratory.",
+                criteria="Is the output written in perfect grammar",
+            ),
+            AspectCriticOutput(
+                reason="The criteria for evaluation is whether the output is written in perfect grammar. In this case, the output is grammatically incorrect.",
+                verdict=0,
+            ),
+        ),
     ]
 
 
