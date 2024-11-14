@@ -80,7 +80,7 @@ def default_transforms(
 
     transforms = []
 
-    if result["501-100000"] >= 0.5:
+    if result["501-100000"] >= 0.25:
         headline_extractor = HeadlinesExtractor(
             llm=llm, filter_nodes=lambda node: filter_doc_with_num_tokens(node)
         )
@@ -126,7 +126,7 @@ def default_transforms(
             Parallel(summary_emb_extractor, theme_extractor, ner_extractor),
             Parallel(cosine_sim_builder, ner_overlap_sim),
         ]
-    elif result["101-500"] >= 0.5:
+    elif result["101-500"] >= 0.25:
         summary_extractor = SummaryExtractor(
             llm=llm, filter_nodes=lambda node: filter_doc_with_num_tokens(node, 100)
         )
@@ -157,5 +157,7 @@ def default_transforms(
             Parallel(summary_emb_extractor, theme_extractor, ner_extractor),
             ner_overlap_sim,
         ]
+    else:
+        raise ValueError("Documents appears to be too short (ie 100 tokens or less). Please provide longer documents.")
 
     return transforms
