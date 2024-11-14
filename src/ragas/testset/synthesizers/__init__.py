@@ -16,18 +16,21 @@ QueryDistribution = t.List[t.Tuple[BaseSynthesizer, float]]
 
 
 def default_query_distribution(
-    llm: BaseRagasLLM, kg: KnowledgeGraph
+    llm: BaseRagasLLM, kg: t.Optional[KnowledgeGraph] = None
 ) -> QueryDistribution:
     """ """
     default_queries = [
         SingleHopSpecificQuerySynthesizer(llm=llm),
         MultiHopAbstractQuerySynthesizer(llm=llm),
         MultiHopSpecificQuerySynthesizer(llm=llm),
-
-    available_queries = []
-    for query in default_queries:
-        if query.get_node_clusters(kg):
-            available_queries.append(query)
+    ]
+    if kg is not None:
+        available_queries = []
+        for query in default_queries:
+            if query.get_node_clusters(kg):
+                available_queries.append(query)
+    else:
+        available_queries = default_queries
 
     return [(query, 1 / len(available_queries)) for query in available_queries]
 
