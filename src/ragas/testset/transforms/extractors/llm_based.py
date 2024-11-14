@@ -71,7 +71,7 @@ class TitleExtractorPrompt(PydanticPrompt[StringIO, StringIO]):
 
 
 class Headlines(BaseModel):
-    headlines: t.List[str]    
+    headlines: t.List[str]
 
 
 class HeadlinesExtractorPrompt(PydanticPrompt[TextWithExtractionLimit, Headlines]):
@@ -115,8 +115,9 @@ class HeadlinesExtractorPrompt(PydanticPrompt[TextWithExtractionLimit, Headlines
                     "Main Concepts",
                     "Detailed Analysis",
                     "Future Directions",
-                    ],)    
+                ],
             ),
+        ),
     ]
 
 

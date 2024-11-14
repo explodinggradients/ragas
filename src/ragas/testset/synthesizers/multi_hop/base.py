@@ -73,7 +73,7 @@ class MultiHopQuerySynthesizer(BaseSynthesizer[Scenario]):
             valid_nodes = []
             for node in nodes:
                 node_themes = [
-                    theme.lower() for theme in node.get_property(property_name)
+                    theme.lower() for theme in node.properties.get(property_name, [])
                 ]
                 if node.get_property(property_name) and any(
                     concept.lower() in node_themes for concept in combination

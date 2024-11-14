@@ -63,14 +63,20 @@ class CustomNodeFilter(LLMBasedNodeFilter):
 
     async def custom_filter(self, node: Node, kg: KnowledgeGraph) -> bool:
 
-        parent_nodes = get_parent_nodes(node, kg)
-        if len(parent_nodes) > 0:
-            summary = parent_nodes[0].properties.get("summary", "")
+        if node.type.name == "CHUNK":
+            parent_nodes = get_parent_nodes(node, kg)
+            if len(parent_nodes) > 0:
+                summary = parent_nodes[0].properties.get("summary", "")
+            else:
+                summary = ""
         else:
-            summary = ""
+            summary = node.properties.get("summary", "")
 
         if summary == "":
-            logger.warning(f"Node {node} has no parent node with a summary.")
+            logger.warning(
+                f"Node {node.id} does not have a summary. Skipping filtering."
+            )
+            return False
 
         prompt_input = QuestionPotentialInput(
             document_summary=summary,
