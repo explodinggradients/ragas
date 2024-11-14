@@ -58,8 +58,24 @@ from ragas.metrics._string import (
 from ragas.metrics._summarization import SummarizationScore, summarization_score
 from ragas.metrics._tool_call_accuracy import ToolCallAccuracy
 from ragas.metrics._topic_adherence import TopicAdherenceScore
+from ragas.metrics.base import (
+    Metric,
+    MetricType,
+    MetricWithEmbeddings,
+    MetricWithLLM,
+    MultiTurnMetric,
+    SingleTurnMetric,
+)
 
 __all__ = [
+    # basic metrics primitives
+    "Metric",
+    "MetricType",
+    "MetricWithEmbeddings",
+    "MetricWithLLM",
+    "SingleTurnMetric",
+    "MultiTurnMetric",
+    # specific metrics
     "AnswerCorrectness",
     "answer_correctness",
     "Faithfulness",
