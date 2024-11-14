@@ -147,7 +147,8 @@ def test_testset_generation_tracking(monkeypatch):
                 0.33,
                 0.33,
                 0.33,
-            ], atol=0.01
+            ],
+            atol=0.01,
         ).tolist()
     )
 

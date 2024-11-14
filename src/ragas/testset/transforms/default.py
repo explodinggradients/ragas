@@ -158,6 +158,8 @@ def default_transforms(
             ner_overlap_sim,
         ]
     else:
-        raise ValueError("Documents appears to be too short (ie 100 tokens or less). Please provide longer documents.")
+        raise ValueError(
+            "Documents appears to be too short (ie 100 tokens or less). Please provide longer documents."
+        )
 
     return transforms
