@@ -10,10 +10,7 @@ from langchain_core.callbacks import BaseCallbackManager
 from ragas._analytics import TestsetGenerationEvent, track
 from ragas.callbacks import new_group
 from ragas.cost import TokenUsageParser
-from ragas.embeddings.base import (
-    BaseRagasEmbeddings,
-    LlamaIndexEmbeddingsWrapper,
-)
+from ragas.embeddings.base import BaseRagasEmbeddings, LlamaIndexEmbeddingsWrapper
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper, LlamaIndexLLMWrapper
 from ragas.run_config import RunConfig
@@ -155,6 +152,7 @@ class TestsetGenerator:
 
         if not transforms:
             transforms = default_transforms(
+                documents=list(documents),
                 llm=transforms_llm or self.llm,
                 embedding_model=transforms_embedding_model,
             )
@@ -224,6 +222,7 @@ class TestsetGenerator:
                 transforms_embedding_model
             )
             transforms = default_transforms(
+                documents=[LCDocument(page_content=doc.text) for doc in documents],
                 llm=llm_for_transforms,
                 embedding_model=embedding_model_for_transforms,
             )
