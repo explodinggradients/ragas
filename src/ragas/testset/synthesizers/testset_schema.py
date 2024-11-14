@@ -39,7 +39,7 @@ class TestsetPacket(BaseModel):
     A packet of testset samples to be uploaded to the server.
     """
 
-    samples: t.List[TestsetSample]
+    samples_original: t.List[TestsetSample]
     run_id: str = Field(default_factory=lambda: str(uuid4()))
     created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
 
@@ -137,7 +137,7 @@ class Testset(RagasDataset[TestsetSample]):
     def upload(self, base_url: str = RAGAS_API_URL, verbose: bool = True) -> str:
         import requests
 
-        packet = TestsetPacket(samples=self.samples)
+        packet = TestsetPacket(samples_original=self.samples)
         response = requests.post(
             f"{base_url}/alignment/testset", json=packet.model_dump()
         )
