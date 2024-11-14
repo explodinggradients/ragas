@@ -311,7 +311,9 @@ class TestsetGenerator:
         if run_config is not None:
             self.llm.set_run_config(run_config)
 
-        query_distribution = query_distribution or default_query_distribution(self.llm)
+        query_distribution = query_distribution or default_query_distribution(
+            self.llm, self.knowledge_graph
+        )
         callbacks = callbacks or []
 
         # dict to store any callbacks we define
