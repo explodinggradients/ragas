@@ -43,7 +43,7 @@ class SingleHopSpecificQuerySynthesizer(SingleHopQuerySynthesizer):
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
     property_name: str = "entities"
 
-    def get_nodes(self, knowledge_graph: KnowledgeGraph) -> t.List[Node]:
+    def get_node_clusters(self, knowledge_graph: KnowledgeGraph) -> t.List[Node]:
 
         node_type_dict = defaultdict(int)
         for node in knowledge_graph.nodes:
@@ -93,7 +93,7 @@ class SingleHopSpecificQuerySynthesizer(SingleHopQuerySynthesizer):
         4. Return the list of scenarios
         """
 
-        nodes = self.get_nodes(knowledge_graph)
+        nodes = self.get_node_clusters(knowledge_graph)
         if len(nodes) == 0:
             raise ValueError("No nodes found with the `entities` property.")
         samples_per_node = int(np.ceil(n / len(nodes)))
