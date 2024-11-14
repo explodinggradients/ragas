@@ -79,7 +79,6 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
             raise ValueError(
                 "No clusters found in the knowledge graph. Try changing the relationship condition."
             )
-
         num_sample_per_cluster = int(np.ceil(n / len(node_clusters)))
 
         for cluster in node_clusters:

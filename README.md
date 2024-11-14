@@ -28,7 +28,9 @@
     <p>
         <a href="https://docs.ragas.io/">Documentation</a> |
         <a href="#fire-quickstart">Quick start</a> |
-        <a href="https://discord.gg/5djav8GGNZ">Join Discord</a> 
+        <a href="https://discord.gg/5djav8GGNZ">Join Discord</a> |
+        <a href="https://newsletter.ragas.io/">NewsLetter</a> |
+        <a href="https://www.ragas.io/careers">Careers</a>
     <p>
 </h4>
 

@@ -84,12 +84,16 @@ nav:
               - Write your own Metrics - (advanced): howtos/customizations/metrics/_write_your_own_metric_advanced.md
           - Testset Generation:
               - howtos/customizations/testgenerator/index.md
+              - Persona Generation: howtos/customizations/testgenerator/_persona_generator.md
       - Applications:
           - howtos/applications/index.md
-          - Cost Analysis: howtos/applications/_cost.md
+          - Metrics:
+            - Cost Analysis: howtos/applications/_cost.md
+            - Debug LLM Based Metrics: howtos/applications/_metrics_llm_calls.md
       - Integrations:
           - howtos/integrations/index.md
           - LlamaIndex: howtos/integrations/_llamaindex.md
+          - Arize: howtos/integrations/_arize.md
           - LangGraph: howtos/integrations/_langgraph_agent_evaluation.md
       - Migrations:
           - From v0.1 to v0.2: howtos/migrations/migrate_from_v01_to_v02.md

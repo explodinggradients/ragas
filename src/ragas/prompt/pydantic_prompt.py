@@ -42,48 +42,43 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
     def _generate_output_signature(self, indent: int = 4) -> str:
         return (
             f"Please return the output in a JSON format that complies with the "
-            f"following schema as specified in JSON Schema and OpenAPI specification:\n"
+            f"following schema as specified in JSON Schema:\n"
             f"{self.output_model.model_json_schema()}"
         )
 
     def _generate_examples(self):
         if self.examples:
             example_strings = []
-            for e in self.examples:
+            for idx, e in enumerate(self.examples):
                 input_data, output_data = e
                 example_strings.append(
-                    self.instruction
-                    + "\n"
-                    + "input: "
+                    f"Example {idx + 1}\n"
+                    + "Input: "
                     + input_data.model_dump_json(indent=4)
                     + "\n"
-                    + "output: "
+                    + "Output: "
                     + output_data.model_dump_json(indent=4)
                 )
 
-            return (
-                "These are some examples to show how to perform the above instruction\n"
-                + "\n\n".join(example_strings)
-            )
+            return "\n--------EXAMPLES-----------\n" + "\n\n".join(example_strings)
         # if no examples are provided
         else:
             return ""
 
     def to_string(self, data: t.Optional[InputModel] = None) -> str:
         return (
-            self._generate_instruction()
-            + "\n"
+            f"{self.instruction}\n"
             + self._generate_output_signature()
             + "\n"
             + self._generate_examples()
-            + "\nNow perform the above instruction with the following input\n"
+            + "\n-----------------------------\n"
+            + "\nNow perform the same with the following input\n"
             + (
-                "input: " + data.model_dump_json(indent=4) + "\n"
+                "Input: " + data.model_dump_json(indent=4) + "\n"
                 if data is not None
-                else "input: (None)\n"
+                else "Input: (None)\n"
             )
-            + "Respond only with a valid JSON object that complies with the specified schema.\n"
-            + "output: "
+            + "Output: "
         )
 
     async def generate(

@@ -23,7 +23,6 @@ def default_query_distribution(
         SingleHopSpecificQuerySynthesizer(llm=llm),
         MultiHopAbstractQuerySynthesizer(llm=llm),
         MultiHopSpecificQuerySynthesizer(llm=llm),
-    ]
 
     available_queries = []
     for query in default_queries:

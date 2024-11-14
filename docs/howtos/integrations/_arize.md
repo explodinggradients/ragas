@@ -78,26 +78,20 @@ An ideal test dataset should contain data points of high quality and diverse nat
 
 
 ```python
-from ragas.testset.generator import TestsetGenerator
-from ragas.testset.evolutions import simple, reasoning, multi_context
+from ragas.testset import TestsetGenerator
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 TEST_SIZE = 25
 
 # generator with openai models
-generator_llm = ChatOpenAI(model="gpt-3.5-turbo-16k")
-critic_llm = ChatOpenAI(model="gpt-4")
+generator_llm = ChatOpenAI(model="gpt-4o-mini")
+critic_llm = ChatOpenAI(model="gpt-4o")
 embeddings = OpenAIEmbeddings()
 
 generator = TestsetGenerator.from_langchain(generator_llm, critic_llm, embeddings)
 
-# set question type distribution
-distribution = {simple: 0.5, reasoning: 0.25, multi_context: 0.25}
-
 # generate testset
-testset = generator.generate_with_llamaindex_docs(
-    documents, test_size=TEST_SIZE, distributions=distribution
-)
+testset = generator.generate_with_llamaindex_docs(documents, test_size=TEST_SIZE)
 test_df = testset.to_pandas()
 test_df.head()
 ```
@@ -123,8 +117,8 @@ Build your query engine.
 
 
 ```python
-from llama_index import VectorStoreIndex, ServiceContext
-from llama_index.embeddings import OpenAIEmbedding
+from llama_index.core import VectorStoreIndex, ServiceContext
+from llama_index.embeddings.openai import OpenAIEmbedding
 
 
 def build_query_engine(documents):
@@ -144,7 +138,7 @@ If you check Phoenix, you should see embedding spans from when your corpus data 
 
 
 ```python
-from phoenix.trace.dsl.helpers import SpanQuery
+from phoenix.trace.dsl import SpanQuery
 
 client = px.Client()
 corpus_df = px.Client().query_spans(
@@ -240,7 +234,7 @@ Ragas uses LangChain to evaluate your LLM application data. Let's instrument Lan
 
 
 ```python
-from phoenix.trace.langchain import LangChainInstrumentor
+from openinference.instrumentation.langchain import LangChainInstrumentor
 
 LangChainInstrumentor().instrument()
 ```
