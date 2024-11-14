@@ -19,7 +19,7 @@ def default_filter(node: Node) -> bool:
         node.type.name == "DOCUMENT"
         and node.properties.get("summary_embedding") is not None
     ):
-        return random.random() < 0.25
+        return True
     else:
         return False
 
