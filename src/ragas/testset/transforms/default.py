@@ -90,7 +90,7 @@ def default_transforms(
         )
 
         theme_extractor = ThemesExtractor(
-            llm=llm, filter_nodes=lambda node: filter_docs(node)
+            llm=llm, filter_nodes=lambda node: filter_chunks(node)
         )
         ner_extractor = NERExtractor(
             llm=llm, filter_nodes=lambda node: filter_chunks(node)
