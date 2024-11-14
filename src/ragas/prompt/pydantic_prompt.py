@@ -67,7 +67,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
 
     def to_string(self, data: t.Optional[InputModel] = None) -> str:
         return (
-            "\n"
+            f"{self.instruction}\n"
             + self._generate_output_signature()
             + "\n"
             + self._generate_examples()
