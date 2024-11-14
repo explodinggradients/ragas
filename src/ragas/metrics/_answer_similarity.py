@@ -11,7 +11,6 @@ from ragas.embeddings.base import HuggingfaceEmbeddings
 from ragas.metrics.base import (
     MetricType,
     MetricWithEmbeddings,
-    MetricWithLLM,
     SingleTurnMetric,
 )
 
@@ -23,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class SemanticSimilarity(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
+class SemanticSimilarity(MetricWithEmbeddings, SingleTurnMetric):
     """
     Scores the semantic similarity of ground truth with generated answer.
     cross encoder score is used to quantify semantic similarity.
