@@ -71,14 +71,13 @@ class TitleExtractorPrompt(PydanticPrompt[StringIO, StringIO]):
 
 
 class Headlines(BaseModel):
-    headlines: t.List[str]
+    headlines: t.List[str]    
 
 
 class HeadlinesExtractorPrompt(PydanticPrompt[TextWithExtractionLimit, Headlines]):
     instruction: str = (
-        "Extract only level 2 and level 3 headings from the given text."
-        "Extract level 2 headings first, then extract level 3 headings."
-        "Only extract upto max_num headlines."
+        "Extract the most important max_num headlines from the given text that can be used to split the text into independent sections."
+        "Focus on Level 2 and Level 3 headings."
     )
 
     input_model: t.Type[TextWithExtractionLimit] = TextWithExtractionLimit
@@ -108,7 +107,7 @@ class HeadlinesExtractorPrompt(PydanticPrompt[TextWithExtractionLimit, Headlines
                 Conclusion
                 Final remarks and summary.
                 """,
-                max_num=5,
+                max_num=6,
             ),
             Headlines(
                 headlines=[
@@ -116,11 +115,8 @@ class HeadlinesExtractorPrompt(PydanticPrompt[TextWithExtractionLimit, Headlines
                     "Main Concepts",
                     "Detailed Analysis",
                     "Future Directions",
-                    "Conclusion",
-                    "Subsection: Specialized Techniques",
-                ]
+                    ],)    
             ),
-        ),
     ]
 
 
