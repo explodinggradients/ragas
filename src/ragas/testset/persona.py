@@ -93,10 +93,13 @@ def generate_personas_from_kg(
 
     nodes = [node for node in kg.nodes if filter_fn(node)]
     if len(nodes) == 0:
-        raise ValueError("No nodes that satisfied the given filer. Try changing the filter.")
-    
+        raise ValueError(
+            "No nodes that satisfied the given filer. Try changing the filter."
+        )
+
     summaries = [node.properties.get("summary") for node in nodes]
     summaries = [summary for summary in summaries if isinstance(summary, str)]
+    num_personas = min(num_personas, len(summaries))
 
     embeddings = []
     for node in nodes:
