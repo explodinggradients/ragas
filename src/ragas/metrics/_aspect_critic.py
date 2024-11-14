@@ -19,6 +19,7 @@ from ragas.prompt import PydanticPrompt
 if t.TYPE_CHECKING:
     from langchain_core.callbacks.base import Callbacks
 
+    from ragas.llms import BaseRagasLLM
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +106,6 @@ class MultiTurnAspectCriticPrompt(
     ]
 
 
-@dataclass
 class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     """
     Judges the submission to give binary results using the criteria specified
@@ -123,47 +123,50 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         made using majority vote.
     """
 
-    name: str = field(default="", repr=True)
-    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
-        default_factory=lambda: {
-            MetricType.SINGLE_TURN: {
-                "user_input:optional",
-                "response:optional",
-                "retrieved_contexts:optional",
-                "reference:optional",
-                "reference_contexts:optional",
-            },
-            MetricType.MULTI_TURN: {
-                "user_input",
-            },
-        }
-    )
-    single_turn_prompt: PydanticPrompt = field(
-        default_factory=lambda: SingleTurnAspectCriticPrompt()
-    )
-    multi_turn_prompt: PydanticPrompt = field(
-        default_factory=lambda: MultiTurnAspectCriticPrompt()
-    )
-    definition: str = field(
-        default="check if the response to the user input is correct", repr=True
-    )
-    strictness: int = field(default=1, repr=False)
-    max_retries: int = 1
+    def __init__(
+        self,
+        name: str,
+        definition: str,
+        llm: t.Optional[BaseRagasLLM] = None,
+        required_columns: t.Optional[t.Dict[MetricType, t.Set[str]]] = None,
+        single_turn_prompt: t.Optional[PydanticPrompt] = None,
+        multi_turn_prompt: t.Optional[PydanticPrompt] = None,
+        strictness: int = 1,
+        max_retries: int = 1,
+    ):
+        if required_columns is None:
+            required_columns = {
+                MetricType.SINGLE_TURN: {
+                    "user_input:optional",
+                    "response:optional",
+                    "retrieved_contexts:optional",
+                    "reference:optional",
+                    "reference_contexts:optional",
+                },
+                MetricType.MULTI_TURN: {
+                    "user_input",
+                },
+            }
 
-    def __post_init__(self):
-        if self.name == "":
-            raise ValueError(
-                f"{self.__class__.__name__}.__init__() missing required keyword argument: `name`"
-            )
-        if self.definition == "":
-            raise ValueError(
-                f"{self.__class__.__name__}.__init__() missing required keyword argument: `definition`"
-            )
+        super().__init__(
+            name=name,
+            _required_columns=required_columns,
+            llm=llm,
+        )
 
+        self.definition = definition
+        self.single_turn_prompt = single_turn_prompt or SingleTurnAspectCriticPrompt()
+        self.multi_turn_prompt = multi_turn_prompt or MultiTurnAspectCriticPrompt()
+        self.max_retries = max_retries
+
+        self.strictness = strictness
         # ensure odd number of checks to avoid tie in majority vote.
         self.strictness = (
             self.strictness if self.strictness % 2 != 0 else self.strictness + 1
         )
+
+    def __repr__(self) -> str:
+        return f"{self.name}(definition='{self.definition}', required_columns={self.required_columns}, llm={self.llm})"
 
     def _compute_score(
         self, safe_loaded_responses: t.List[AspectCriticOutput]

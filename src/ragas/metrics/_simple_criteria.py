@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import typing as t
 from collections import Counter
-from dataclasses import dataclass, field
 
 from pydantic import BaseModel, Field
 
@@ -18,6 +17,8 @@ from ragas.prompt import PydanticPrompt
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks.base import Callbacks
+
+    from ragas.llms import BaseRagasLLM
 
 
 logger = logging.getLogger(__name__)
@@ -121,7 +122,6 @@ class MultiTurnSimpleCriteriaPrompt(
     ]
 
 
-@dataclass
 class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     """
     Judges the submission to give binary results using the criteria specified
@@ -138,38 +138,41 @@ class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         made using majority vote.
     """
 
-    name: str = field(default="", repr=True)
-    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
-        default_factory=lambda: {
-            MetricType.SINGLE_TURN: {
-                "user_input:optional",
-                "response:optional",
-                "retrieved_contexts:optional",
-                "reference:optional",
-                "reference_contexts:optional",
-            },
-            MetricType.MULTI_TURN: {
-                "user_input:optional",
-                "reference:optional",
-            },
-        }
-    )
-    single_turn_prompt: PydanticPrompt = field(
-        default_factory=lambda: SingleTurnSimpleCriteriaPrompt()
-    )
-    multi_turn_prompt: PydanticPrompt = field(
-        default_factory=lambda: MultiTurnSimpleCriteriaPrompt()
-    )
-    definition: str = field(default="", repr=True)
-    strictness: int = field(default=1, repr=False)
-    max_retries: int = 1
+    def __init__(
+        self,
+        name: str,
+        definition: str,
+        llm: t.Optional[BaseRagasLLM] = None,
+        required_columns: t.Optional[t.Dict[MetricType, t.Set[str]]] = None,
+        single_turn_prompt: t.Optional[PydanticPrompt] = None,
+        multi_turn_prompt: t.Optional[PydanticPrompt] = None,
+        strictness: int = 1,
+    ):
+        if required_columns is None:
+            required_columns = {
+                MetricType.SINGLE_TURN: {
+                    "user_input:optional",
+                    "response:optional",
+                    "retrieved_contexts:optional",
+                    "reference:optional",
+                    "reference_contexts:optional",
+                },
+                MetricType.MULTI_TURN: {
+                    "user_input:optional",
+                    "reference:optional",
+                },
+            }
+        super().__init__(
+            name=name,
+            llm=llm,
+            _required_columns=required_columns,
+        )
 
-    def __post_init__(self):
-        if self.name == "":
-            raise ValueError("Expects a name")
-        if self.definition == "":
-            raise ValueError("Expects definition")
+        self.definition = definition
+        self.single_turn_prompt = single_turn_prompt or SingleTurnSimpleCriteriaPrompt()
+        self.multi_turn_prompt = multi_turn_prompt or MultiTurnSimpleCriteriaPrompt()
 
+        self.strictness = strictness
         # ensure odd number of checks to avoid tie in majority vote.
         self.strictness = (
             self.strictness if self.strictness % 2 != 0 else self.strictness + 1
