@@ -51,9 +51,7 @@ def default_transforms(
     """
 
     def count_doc_length_bins(documents, bin_ranges):
-        data = [
-            num_tokens_from_string(doc.page_content) for doc in documents
-        ]
+        data = [num_tokens_from_string(doc.page_content) for doc in documents]
         bins = {f"{start}-{end}": 0 for start, end in bin_ranges}
 
         for num in data:
@@ -76,7 +74,7 @@ def default_transforms(
     def filter_chunks(node):
         return node.type == NodeType.CHUNK
 
-    bin_ranges = [(0,100),(101, 500), (501, 100000)]
+    bin_ranges = [(0, 100), (101, 500), (501, 100000)]
     result = count_doc_length_bins(documents, bin_ranges)
     result = {k: v / len(documents) for k, v in result.items()}
 
@@ -142,23 +140,22 @@ def default_transforms(
         cosine_sim_builder = CosineSimilarityBuilder(
             property_name="summary_embedding",
             new_property_name="summary_similarity",
-            threshold=0.7,
+            threshold=0.5,
             filter_nodes=lambda node: filter_doc_with_num_tokens(node, 100),
         )
-        
+
         ner_extractor = NERExtractor(llm=llm)
         ner_overlap_sim = OverlapScoreBuilder(threshold=0.01)
         theme_extractor = ThemesExtractor(
             llm=llm, filter_nodes=lambda node: filter_docs(node)
         )
-        node_filter = CustomNodeFilter(
-            llm=llm
-        )
-        
+        node_filter = CustomNodeFilter(llm=llm)
+
         transforms = [
             summary_extractor,
             node_filter,
             Parallel(summary_emb_extractor, theme_extractor, ner_extractor),
-            ner_overlap_sim]
+            ner_overlap_sim,
+        ]
 
     return transforms
