@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from ragas.prompt import PydanticPrompt
-from ragas.testset.graph import KnowledgeGraph
+from ragas.testset.graph import KnowledgeGraph, Node
 from ragas.testset.graph_queries import get_child_nodes
 from ragas.testset.persona import Persona, PersonaList
 from ragas.testset.synthesizers.multi_hop.base import (
@@ -42,6 +42,17 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
     concept_combination_prompt: PydanticPrompt = ConceptCombinationPrompt()
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
 
+    def get_node_clusters(self, knowledge_graph: KnowledgeGraph) -> t.List[t.Set[Node]]:
+
+        node_clusters = knowledge_graph.find_indirect_clusters(
+            relationship_condition=lambda rel: (
+                True if rel.get_property("summary_similarity") else False
+            ),
+            depth_limit=3,
+        )
+        logger.info("found %d clusters", len(node_clusters))
+        return node_clusters
+
     async def _generate_scenarios(
         self,
         n: int,
@@ -61,17 +72,13 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
         4. Sample diverse combinations of scenarios to get n samples
         """
 
-        node_clusters = knowledge_graph.find_indirect_clusters(
-            relationship_condition=lambda rel: (
-                True if rel.get_property("summary_similarity") else False
-            ),
-            depth_limit=3,
-        )
-        logger.info("found %d clusters", len(node_clusters))
+        node_clusters = self.get_node_clusters(knowledge_graph)
         scenarios = []
-        
+
         if len(node_clusters) == 0:
-            raise ValueError("No clusters found in the knowledge graph. Try changing the relationship condition.")
+            raise ValueError(
+                "No clusters found in the knowledge graph. Try changing the relationship condition."
+            )
 
         num_sample_per_cluster = int(np.ceil(n / len(node_clusters)))
 

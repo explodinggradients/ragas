@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import logging
 import typing as t
+from collections import defaultdict
 from dataclasses import dataclass
 
 import numpy as np
 
 from ragas.prompt import PydanticPrompt
-from ragas.testset.graph import KnowledgeGraph
+from ragas.testset.graph import KnowledgeGraph, Node
 from ragas.testset.persona import Persona, PersonaList
 from ragas.testset.synthesizers.base import BaseScenario
 from ragas.testset.synthesizers.prompts import (
@@ -40,6 +41,37 @@ class SingleHopScenario(BaseScenario):
 class SingleHopSpecificQuerySynthesizer(SingleHopQuerySynthesizer):
     name: str = "single_hop_specifc_query_synthesizer"
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
+    property_name: str = "entities"
+
+    def get_nodes(self, knowledge_graph: KnowledgeGraph) -> t.List[Node]:
+
+        node_type_dict = defaultdict(int)
+        for node in knowledge_graph.nodes:
+            if (
+                node.type.name == "CHUNK"
+                and node.get_property(self.property_name) is not None
+            ):
+                node_type_dict["CHUNK"] += 1
+            elif (
+                node.type.name == "DOCUMENT"
+                and node.get_property(self.property_name) is not None
+            ):
+                node_type_dict["DOCUMENT"] += 1
+            else:
+                pass
+
+        node_filter = (
+            "CHUNK"
+            if node_type_dict["CHUNK"] > node_type_dict["DOCUMENT"]
+            else "DOCUMENT"
+        )
+
+        nodes = []
+        for node in knowledge_graph.nodes:
+            if node.type.name == node_filter:
+                nodes.append(node)
+
+        return nodes
 
     async def _generate_scenarios(
         self,
@@ -61,15 +93,7 @@ class SingleHopSpecificQuerySynthesizer(SingleHopQuerySynthesizer):
         4. Return the list of scenarios
         """
 
-        property_name = "entities"
-        nodes = []
-        for node in knowledge_graph.nodes:
-            if (
-                node.type.name == "CHUNK"
-                and node.get_property(property_name) is not None
-            ):
-                nodes.append(node)
-
+        nodes = self.get_nodes(knowledge_graph)
         if len(nodes) == 0:
             raise ValueError("No nodes found with the `entities` property.")
         samples_per_node = int(np.ceil(n / len(nodes)))
@@ -78,7 +102,7 @@ class SingleHopSpecificQuerySynthesizer(SingleHopQuerySynthesizer):
         for node in nodes:
             if len(scenarios) >= n:
                 break
-            themes = node.get_property(property_name)
+            themes = node.properties.get(self.property_name, [""])
             prompt_input = ThemesPersonasInput(themes=themes, personas=persona_list)
             persona_concepts = await self.theme_persona_matching_prompt.generate(
                 data=prompt_input, llm=self.llm, callbacks=callbacks
