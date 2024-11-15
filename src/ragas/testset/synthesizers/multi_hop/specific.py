@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from ragas.prompt import PydanticPrompt
-from ragas.testset.graph import KnowledgeGraph
+from ragas.testset.graph import KnowledgeGraph, Node
 from ragas.testset.persona import Persona, PersonaList
 from ragas.testset.synthesizers.multi_hop.base import (
     MultiHopQuerySynthesizer,
@@ -38,8 +38,25 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
     """
 
     name: str = "multi_hop_specific_query_synthesizer"
+    relation_type: str = "entities_overlap"
+    property_name: str = "entities"
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
     generate_query_reference_prompt: PydanticPrompt = QueryAnswerGenerationPrompt()
+
+    def get_node_clusters(self, knowledge_graph: KnowledgeGraph) -> t.List[t.Set[Node]]:
+
+        cluster_dict = knowledge_graph.find_direct_clusters(
+            relationship_condition=lambda rel: (
+                True if rel.type == self.relation_type else False
+            )
+        )
+        logger.info("found %d clusters", len(cluster_dict))
+        node_clusters = []
+        for key_node, list_of_nodes in cluster_dict.items():
+            for node in list_of_nodes:
+                node_clusters.append((key_node, node))
+
+        return node_clusters
 
     async def _generate_scenarios(
         self,
@@ -61,26 +78,21 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
         4. Return the list of scenarios of length n
         """
 
-        cluster_dict = knowledge_graph.find_direct_clusters(
-            relationship_condition=lambda rel: (
-                True if rel.type == "entities_overlap" else False
+        node_clusters = self.get_node_clusters(knowledge_graph)
+
+        if len(node_clusters) == 0:
+            raise ValueError(
+                "No clusters found in the knowledge graph. Try changing the relationship condition."
             )
-        )
+
+        num_sample_per_cluster = int(np.ceil(n / len(node_clusters)))
 
         valid_relationships = [
             rel
             for rel in knowledge_graph.relationships
-            if rel.type == "entities_overlap"
+            if rel.type == self.relation_type
         ]
-
-        node_clusters = []
-        for key_node, list_of_nodes in cluster_dict.items():
-            for node in list_of_nodes:
-                node_clusters.append((key_node, node))
-
-        logger.info("found %d clusters", len(cluster_dict))
         scenarios = []
-        num_sample_per_cluster = int(np.ceil(n / len(node_clusters)))
 
         for cluster in node_clusters:
             if len(scenarios) < n:
@@ -106,7 +118,7 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
                         overlapped_items,
                         PersonaList(personas=persona_list),
                         persona_concepts,
-                        property_name="entities",
+                        property_name=self.property_name,
                     )
                     base_scenarios = self.sample_diverse_combinations(
                         base_scenarios, num_sample_per_cluster

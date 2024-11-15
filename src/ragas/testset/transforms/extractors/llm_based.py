@@ -212,6 +212,7 @@ class KeyphrasesExtractor(LLMBasedExtractor):
         return self.property_name, keyphrases
 
 
+
 @dataclass
 class TitleExtractor(LLMBasedExtractor):
     """
@@ -258,7 +259,6 @@ class HeadlinesExtractor(LLMBasedExtractor):
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, None
-
         chunks = self.split_text_by_token_limit(node_text, self.max_token_limit)
         headlines = []
         for chunk in chunks:
