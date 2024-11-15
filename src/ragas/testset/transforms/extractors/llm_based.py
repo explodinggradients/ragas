@@ -8,7 +8,11 @@ from ragas.testset.graph import Node
 from ragas.testset.transforms.base import LLMBasedExtractor
 
 
-# define prompts
+class TextWithExtractionLimit(BaseModel):
+    text: str
+    max_num: int = 10
+
+
 class SummaryExtractorPrompt(PydanticPrompt[StringIO, StringIO]):
     instruction: str = "Summarize the given text in less than 10 sentences."
     input_model: t.Type[StringIO] = StringIO
@@ -29,14 +33,15 @@ class Keyphrases(BaseModel):
     keyphrases: t.List[str]
 
 
-class KeyphrasesExtractorPrompt(PydanticPrompt[StringIO, Keyphrases]):
-    instruction: str = "Extract top 5 keyphrases from the given text."
-    input_model: t.Type[StringIO] = StringIO
+class KeyphrasesExtractorPrompt(PydanticPrompt[TextWithExtractionLimit, Keyphrases]):
+    instruction: str = "Extract top max_num keyphrases from the given text."
+    input_model: t.Type[TextWithExtractionLimit] = TextWithExtractionLimit
     output_model: t.Type[Keyphrases] = Keyphrases
-    examples: t.List[t.Tuple[StringIO, Keyphrases]] = [
+    examples: t.List[t.Tuple[TextWithExtractionLimit, Keyphrases]] = [
         (
-            StringIO(
-                text="Artificial intelligence\n\nArtificial intelligence is transforming various industries by automating tasks that previously required human intelligence. From healthcare to finance, AI is being used to analyze vast amounts of data quickly and accurately. This technology is also driving innovations in areas like self-driving cars and personalized recommendations."
+            TextWithExtractionLimit(
+                text="Artificial intelligence\n\nArtificial intelligence is transforming various industries by automating tasks that previously required human intelligence. From healthcare to finance, AI is being used to analyze vast amounts of data quickly and accurately. This technology is also driving innovations in areas like self-driving cars and personalized recommendations.",
+                max_num=5,
             ),
             Keyphrases(
                 keyphrases=[
@@ -69,14 +74,17 @@ class Headlines(BaseModel):
     headlines: t.List[str]
 
 
-class HeadlinesExtractorPrompt(PydanticPrompt[StringIO, Headlines]):
-    instruction: str = "Extract only level 2 and level 3 headings from the given text."
+class HeadlinesExtractorPrompt(PydanticPrompt[TextWithExtractionLimit, Headlines]):
+    instruction: str = (
+        "Extract the most important max_num headlines from the given text that can be used to split the text into independent sections."
+        "Focus on Level 2 and Level 3 headings."
+    )
 
-    input_model: t.Type[StringIO] = StringIO
+    input_model: t.Type[TextWithExtractionLimit] = TextWithExtractionLimit
     output_model: t.Type[Headlines] = Headlines
-    examples: t.List[t.Tuple[StringIO, Headlines]] = [
+    examples: t.List[t.Tuple[TextWithExtractionLimit, Headlines]] = [
         (
-            StringIO(
+            TextWithExtractionLimit(
                 text="""\
                 Introduction
                 Overview of the topic...
@@ -98,16 +106,18 @@ class HeadlinesExtractorPrompt(PydanticPrompt[StringIO, Headlines]):
 
                 Conclusion
                 Final remarks and summary.
-                """
+                """,
+                max_num=6,
             ),
             Headlines(
                 headlines=[
+                    "Introduction",
                     "Main Concepts",
                     "Detailed Analysis",
-                    "Subsection: Specialized Techniques",
+                    "Subsection: Specialized Techniques"
                     "Future Directions",
-                    "Subsection: Next Steps in Research",
-                ]
+                    "Conclusion",
+                ],
             ),
         ),
     ]
@@ -115,11 +125,6 @@ class HeadlinesExtractorPrompt(PydanticPrompt[StringIO, Headlines]):
 
 class NEROutput(BaseModel):
     entities: t.List[str]
-
-
-class TextWithExtractionLimit(BaseModel):
-    text: str
-    max_num: int = 10
 
 
 class NERPrompt(PydanticPrompt[TextWithExtractionLimit, NEROutput]):
@@ -171,14 +176,15 @@ class SummaryExtractor(LLMBasedExtractor):
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, None
-        result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
+        chunks = self.split_text_by_token_limit(node_text, self.max_token_limit)
+        result = await self.prompt.generate(self.llm, data=StringIO(text=chunks[0]))
         return self.property_name, result.text
 
 
 @dataclass
 class KeyphrasesExtractor(LLMBasedExtractor):
     """
-    Extracts top 5 keyphrases from the given text.
+    Extracts top keyphrases from the given text.
 
     Attributes
     ----------
@@ -190,13 +196,20 @@ class KeyphrasesExtractor(LLMBasedExtractor):
 
     property_name: str = "keyphrases"
     prompt: KeyphrasesExtractorPrompt = KeyphrasesExtractorPrompt()
+    max_num: int = 5
 
     async def extract(self, node: Node) -> t.Tuple[str, t.Any]:
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, None
-        result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
-        return self.property_name, result.keyphrases
+        chunks = self.split_text_by_token_limit(node_text, self.max_token_limit)
+        keyphrases = []
+        for chunk in chunks:
+            result = await self.prompt.generate(
+                self.llm, data=TextWithExtractionLimit(text=chunk, max_num=self.max_num)
+            )
+            keyphrases.extend(result.keyphrases)
+        return self.property_name, keyphrases
 
 
 @dataclass
@@ -219,7 +232,8 @@ class TitleExtractor(LLMBasedExtractor):
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, None
-        result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
+        chunks = self.split_text_by_token_limit(node_text, self.max_token_limit)
+        result = await self.prompt.generate(self.llm, data=StringIO(text=chunks[0]))
         return self.property_name, result.text
 
 
@@ -238,15 +252,22 @@ class HeadlinesExtractor(LLMBasedExtractor):
 
     property_name: str = "headlines"
     prompt: HeadlinesExtractorPrompt = HeadlinesExtractorPrompt()
+    max_num: int = 5
 
     async def extract(self, node: Node) -> t.Tuple[str, t.Any]:
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, None
-        result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
-        if result is None:
-            return self.property_name, None
-        return self.property_name, result.headlines
+
+        chunks = self.split_text_by_token_limit(node_text, self.max_token_limit)
+        headlines = []
+        for chunk in chunks:
+            result = await self.prompt.generate(
+                self.llm, data=TextWithExtractionLimit(text=chunk, max_num=self.max_num)
+            )
+            if result:
+                headlines.extend(result.headlines)
+        return self.property_name, headlines
 
 
 @dataclass
@@ -270,11 +291,15 @@ class NERExtractor(LLMBasedExtractor):
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, []
-        result = await self.prompt.generate(
-            self.llm,
-            data=TextWithExtractionLimit(text=node_text, max_num=self.max_num_entities),
-        )
-        return self.property_name, result.entities
+        chunks = self.split_text_by_token_limit(node_text, self.max_token_limit)
+        entities = []
+        for chunk in chunks:
+            result = await self.prompt.generate(
+                self.llm,
+                data=TextWithExtractionLimit(text=chunk, max_num=self.max_num_entities),
+            )
+            entities.extend(result.entities)
+        return self.property_name, entities
 
 
 class TopicDescription(BaseModel):
@@ -282,7 +307,9 @@ class TopicDescription(BaseModel):
 
 
 class TopicDescriptionPrompt(PydanticPrompt[StringIO, TopicDescription]):
-    instruction: str = "Provide a concise description of the main topic(s) discussed in the following text."
+    instruction: str = (
+        "Provide a concise description of the main topic(s) discussed in the following text."
+    )
     input_model: t.Type[StringIO] = StringIO
     output_model: t.Type[TopicDescription] = TopicDescription
     examples: t.List[t.Tuple[StringIO, TopicDescription]] = [
@@ -317,7 +344,8 @@ class TopicDescriptionExtractor(LLMBasedExtractor):
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, None
-        result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
+        chunks = self.split_text_by_token_limit(node_text, self.max_token_limit)
+        result = await self.prompt.generate(self.llm, data=StringIO(text=chunks[0]))
         return self.property_name, result.description
 
 
@@ -372,8 +400,13 @@ class ThemesExtractor(LLMBasedExtractor):
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, []
-        result = await self.prompt.generate(
-            self.llm,
-            data=TextWithExtractionLimit(text=node_text, max_num=self.max_num_themes),
-        )
-        return self.property_name, result.output
+        chunks = self.split_text_by_token_limit(node_text, self.max_token_limit)
+        themes = []
+        for chunk in chunks:
+            result = await self.prompt.generate(
+                self.llm,
+                data=TextWithExtractionLimit(text=chunk, max_num=self.max_num_themes),
+            )
+            themes.extend(result.output)
+
+        return self.property_name, themes
