@@ -70,6 +70,8 @@ scorer = TopicAdherenceScore(mode="recall")
 
 `ToolCallAccuracy` is a metric that can be used to evaluate the performance of the LLM in identifying and calling the required tools to complete a given task. This metric needs `user_input` and `reference_tool_calls` to evaluate the performance of the LLM in identifying and calling the required tools to complete a given task. The metric is computed by comparing the `reference_tool_calls` with the Tool calls made by the AI. The values range between 0 and 1, with higher values indicating better performance. 
 
+By using the `mode` parameter, the evaluation can be customized to meet the specific requirements of your task. In `sequential` mode, the metric ensures that the agent adheres to a strict order of function calling, matching the sequence of the `reference_tool_calls`. In contrast, parallel mode evaluates the presence and correctness of tool calls without considering their order, allowing greater flexibility in scenarios where sequence is not critical.
+
 ```python
 from ragas.metrics import ToolCallAccuracy
 from ragas.dataset_schema import  MultiTurnSample
@@ -102,6 +104,23 @@ await scorer.multi_turn_ascore(sample)
 ```
 
 The tool call sequence specified in `reference_tool_calls` is used as the ideal outcome. If the tool calls made by the AI does not the the order or sequence of the `reference_tool_calls`, the metric will return a score of 0. This helps to ensure that the AI is able to identify and call the required tools in the correct order to complete a given task.
+
+The mode of evaluation for tool calling can be specified as either sequential or parallel. By default, the mode is sequential, meaning the order in which the tools are called must match the order in reference_tool_calls. In parallel mode, the order of tool calls does not matter; only the presence of the correct tools and their arguments is evaluated.
+
+```python
+# The same function calls as above, but the order of the tool calls is reversed in reference_tool_calls.
+sample = MultiTurnSample(
+    user_input=sample,
+    reference_tool_calls=[
+        ToolCall(name="temperature_conversion", args={"temperature_fahrenheit": 75}),
+        ToolCall(name="weather_check", args={"location": "New York"})
+    ]
+)
+
+scorer = ToolCallAccuracy(mode='parallel')
+scorer.llm = your_llm
+await scorer.multi_turn_ascore(sample)
+```
 
 By default the tool names and arguments are compared using exact string matching. But sometimes this might not be optimal, for example if the args are natural language strings. You can also use any ragas metrics (values between 0 and 1) as distance measure to identify if a retrieved context is relevant or not. For example,
 

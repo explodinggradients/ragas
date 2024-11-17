@@ -24,6 +24,7 @@ class ToolCallAccuracy(MultiTurnMetric):
             }
         }
     )
+    mode: t.Literal["sequential", "parallel"] = "sequential"
 
     arg_comparison_metric: SingleTurnMetric = field(
         default_factory=lambda: ExactMatch()
@@ -95,7 +96,10 @@ class ToolCallAccuracy(MultiTurnMetric):
             warnings.warn("No tool calls found in the user input")
             return 0.0
 
-        return score * sequence_aligned
+        if self.mode == "sequential":
+            return score * sequence_aligned
+        elif self.mode == "parallel":
+            return score
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         return await self._multi_turn_ascore(MultiTurnSample(**row), callbacks)

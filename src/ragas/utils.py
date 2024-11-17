@@ -233,6 +233,7 @@ def num_tokens_from_string(string: str, encoding_name: str = "cl100k_base") -> i
     num_tokens = len(encoding.encode(string))
     return num_tokens
 
+
 def batched(iterable: t.Iterable, n: int) -> t.Iterator[t.Tuple]:
     """Batch data from the iterable into tuples of length n. The last batch may be shorter than n."""
     # batched('ABCDEFG', 3) → ABC DEF G
