@@ -98,7 +98,7 @@ class ToolCallAccuracy(MultiTurnMetric):
 
         if self.mode == "sequential":
             return score * sequence_aligned
-        elif self.mode == "parallel":
+        else:  # For self.mode == "parallel"
             return score
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
