@@ -1,7 +1,7 @@
 import pytest
 from datasets import load_dataset
 
-from ragas import evaluate
+from ragas import EvaluationDataset, evaluate
 from ragas.metrics import (
     answer_relevancy,
     context_precision,
@@ -10,7 +10,7 @@ from ragas.metrics import (
 )
 
 # loading the V2 dataset
-amnesty_qa = load_dataset("explodinggradients/amnesty_qa", "english_v2")["eval"]
+amnesty_qa = load_dataset("explodinggradients/amnesty_qa", "english_v2")["eval"]  # type: ignore
 
 
 def assert_in_range(score: float, value: float, plus_or_minus: float):
@@ -23,7 +23,7 @@ def assert_in_range(score: float, value: float, plus_or_minus: float):
 @pytest.mark.ragas_ci
 def test_amnesty_e2e():
     result = evaluate(
-        amnesty_qa,
+        EvaluationDataset.from_hf_dataset(amnesty_qa),
         metrics=[answer_relevancy, faithfulness, context_recall, context_precision],
         in_ci=True,
     )
