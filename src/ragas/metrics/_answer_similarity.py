@@ -8,11 +8,7 @@ import numpy as np
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.embeddings.base import HuggingfaceEmbeddings
-from ragas.metrics.base import (
-    MetricType,
-    MetricWithEmbeddings,
-    SingleTurnMetric,
-)
+from ragas.metrics.base import MetricType, MetricWithEmbeddings, SingleTurnMetric
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks.base import Callbacks
