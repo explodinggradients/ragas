@@ -44,7 +44,7 @@ class ScoreFeedback(BaseModel):
     score: int = Field(..., description="The score given to the response")
 
 
-class SingleTurnInput(BaseModel):
+class SingleTurnInputWithoutRubric(BaseModel):
     user_input: t.Optional[str] = Field(
         description="The input to the llm system", default=None
     )
@@ -60,64 +60,27 @@ class SingleTurnInput(BaseModel):
     reference: t.Optional[str] = Field(
         description="The reference answer for evaluation", default=None
     )
-    rubrics: t.Dict[str, str] = Field(..., description="The rubric")
 
 
-class MultiTurnInput(BaseModel):
+class MultiTurnInputWithoutRubric(BaseModel):
     user_input: t.Optional[str] = Field(description="The user input", default=None)
     reference: t.Optional[str] = Field(
         description="The reference answer for evaluation", default=None
     )
-    rubrics: t.Dict[str, str] = Field(..., description="The rubric")
 
 
-class SingleTurnPrompt(PydanticPrompt[SingleTurnInput, ScoreFeedback]):
-    instruction = """Given an user_input (which might contain an input along with it), a response to evaluate, and a score rubric representing evaluation criteria are given.
-    1. Write detailed feedback that assesses the quality of the response strictly based on the given score rubric, without evaluating in general.
-    2. After writing the feedback, assign a score between 1 and 5, referring to the score rubric."""
-    input_model = SingleTurnInput
+class SingleTurnPrompt(PydanticPrompt[SingleTurnInputWithoutRubric, ScoreFeedback]):
+    instruction = ""  # this will be set in the constructor
+    input_model = SingleTurnInputWithoutRubric
     output_model = ScoreFeedback
-    examples = [
-        (
-            SingleTurnInput(
-                user_input="What is the capital of France?",
-                response="The capital of France is Paris.",
-                rubrics=DEFAULT_REFERENCE_FREE_RUBRICS,
-            ),
-            ScoreFeedback(
-                feedback="The response is completely accurate and directly answers the question about the capital of France.",
-                score=5,
-            ),
-        )
-    ]
+    examples = []
 
 
-class MultiTurnPrompt(PydanticPrompt[MultiTurnInput, ScoreFeedback]):
-    instruction = """Given an interaction between AI,Human and external Tool as input and reference that's desired outcome that get's a score of 5,and a score rubric representing evaluation criteria are given.
-    1. Write detailed feedback that assesses the quality of the responselet  strictly based on the given score rubric, without evaluating in general.
-    2. After writing the feedback, assign a score between 1 and 5, referring to the score rubric."""
-    input_model = MultiTurnInput
+class MultiTurnPrompt(PydanticPrompt[MultiTurnInputWithoutRubric, ScoreFeedback]):
+    instruction = ""  # this will be set in the constructor
+    input_model = MultiTurnInputWithoutRubric
     output_model = ScoreFeedback
-    examples = [
-        (
-            MultiTurnInput(
-                user_input="""Human: Hey, book a table at the nearest best Chinese restaurant for 8:00pm\nAI: Sure, let me find the best options for you.\nTools:\n  restaurant_search: {'cuisine': 'Chinese', 'time': '8:00pm'}\nToolOutput: Found a few options: 1. Golden Dragon, 2. Jade Palace\nAI: I found some great options: Golden Dragon and Jade Palace. Which one would you prefer?\nHuman: Let's go with Golden Dragon.\nAI: Great choice! I'll book a table for 8:00pm at Golden Dragon.\nTools:\n  restaurant_book: {'name': 'Golden Dragon', 'time': '8:00pm'}\nToolOutput: Table booked at Golden Dragon for 8:00pm.\nAI: Your table at Golden Dragon is booked for 8:00pm. Enjoy your meal!\nHuman: thanks""",
-                rubrics=DEFAULT_REFERENCE_FREE_RUBRICS,
-            ),
-            ScoreFeedback(feedback="", score=5),
-        ),
-        (
-            MultiTurnInput(
-                user_input="""Human: Hey, book a table at the nearest best Chinese restaurant for 8:00pm\nAI: Sure, let me find the best options for you.\nTools:\n  restaurant_search: {'cuisine': 'Chinese', 'time': '8:00pm'}\nToolOutput: Found a few options: 1. Golden Dragon, 2. Jade Palace\nAI: I found some great options: Golden Dragon and Jade Palace. Which one would you prefer?\nHuman: Let's go with Golden Dragon.\nAI: Great choice! I'll book a table for 8:00pm at Golden Dragon.\nTools:\n  restaurant_book: {'name': 'Golden Dragon', 'time': '8:00pm'}\nToolOutput: Table booked at Golden Dragon for 8:00pm.\nAI: Your table at Golden Dragon is booked for 8:00pm. Enjoy your meal!\nHuman: thanks""",
-                reference="The AI successfully books a table at the nearest best Chinese restaurant for 8:00pm, providing the user with options and confirming the booking.",
-                rubrics=DEFAULT_WITH_REFERENCE_RUBRICS,
-            ),
-            ScoreFeedback(
-                feedback="The AI successfully books a table at the nearest best Chinese restaurant for 8:00pm, providing the user with options and confirming the booking. The response is clear, accurate, and meets all the criteria for a score of 5 based on the rubric.",
-                score=5,
-            ),
-        ),
-    ]
+    examples = []
 
 
 class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
@@ -167,13 +130,12 @@ class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         response = row.get("response")
         retrieved_contexts = row.get("retrieved_contexts")
 
-        prompt_input = SingleTurnInput(
+        prompt_input = SingleTurnInputWithoutRubric(
             user_input=user_input,
             response=response,
             retrieved_contexts=retrieved_contexts,
             reference=reference,
             reference_contexts=reference_contexts,
-            rubrics=self.rubrics,
         )
         output = await self.single_turn_scoring_prompt.generate(
             data=prompt_input,
@@ -188,9 +150,8 @@ class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         assert self.llm is not None, "LLM is not set"
 
         interaction = sample.pretty_repr()
-        prompt_input = MultiTurnInput(
+        prompt_input = MultiTurnInputWithoutRubric(
             user_input=interaction,
-            rubrics=self.rubrics,
         )
         output = await self.multi_turn_scoring_prompt.generate(
             data=prompt_input,
