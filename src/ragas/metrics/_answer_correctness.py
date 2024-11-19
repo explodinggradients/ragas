@@ -195,9 +195,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     def init(self, run_config: RunConfig):
         super().init(run_config)
         if self.answer_similarity is None and self.weights[1] != 0:
-            self.answer_similarity = AnswerSimilarity(
-                llm=self.llm, embeddings=self.embeddings
-            )
+            self.answer_similarity = AnswerSimilarity(embeddings=self.embeddings)
 
     def _compute_statement_presence(
         self, prediction: ClassificationWithReason

@@ -1,5 +1,4 @@
 import logging
-import random
 import typing as t
 
 import numpy as np
@@ -19,7 +18,7 @@ def default_filter(node: Node) -> bool:
         node.type.name == "DOCUMENT"
         and node.properties.get("summary_embedding") is not None
     ):
-        return random.random() < 0.25
+        return True
     else:
         return False
 
@@ -92,8 +91,14 @@ def generate_personas_from_kg(
     """
 
     nodes = [node for node in kg.nodes if filter_fn(node)]
+    if len(nodes) == 0:
+        raise ValueError(
+            "No nodes that satisfied the given filer. Try changing the filter."
+        )
+
     summaries = [node.properties.get("summary") for node in nodes]
     summaries = [summary for summary in summaries if isinstance(summary, str)]
+    num_personas = min(num_personas, len(summaries))
 
     embeddings = []
     for node in nodes:

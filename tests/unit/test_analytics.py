@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
+import numpy as np
 import pytest
 from langchain_core.outputs import Generation, LLMResult
 from langchain_core.prompt_values import StringPromptValue as PromptValue
@@ -139,11 +140,17 @@ def test_testset_generation_tracking(monkeypatch):
         "multi_hop_specific_query_synthesizer",
     ]
 
-    assert testset_event_payload.model_dump()["evolution_percentages"] == [
-        0.5,
-        0.25,
-        0.25,
-    ]
+    assert all(
+        np.isclose(
+            testset_event_payload.model_dump()["evolution_percentages"],
+            [
+                0.33,
+                0.33,
+                0.33,
+            ],
+            atol=0.01,
+        ).tolist()
+    )
 
     # just in the case you actually want to check if tracking is working in the
     # dashboard

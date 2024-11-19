@@ -170,7 +170,7 @@ You can write your own [custom relationship builder]() to establish the relation
 
 ```python
 from ragas.testset.graph import KnowledgeGraph
-from ragas.testset.transforms.relationship_builders.cosine import JaccardSimilarityBuilder
+from ragas.testset.transforms.relationship_builders.traditional import JaccardSimilarityBuilder
 
 kg = KnowledgeGraph(nodes=sample_nodes)
 rel_builder = JaccardSimilarityBuilder(property_name="entities", key_name="PER", new_property_name="entity_jaccard_similarity")
