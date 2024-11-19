@@ -134,23 +134,21 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         strictness: int = 1,
         max_retries: int = 1,
     ):
-        if required_columns is None:
-            required_columns = {
-                MetricType.SINGLE_TURN: {
-                    "user_input:optional",
-                    "response:optional",
-                    "retrieved_contexts:optional",
-                    "reference:optional",
-                    "reference_contexts:optional",
-                },
-                MetricType.MULTI_TURN: {
-                    "user_input",
-                },
-            }
-
+        self._required_columns = required_columns or {
+            MetricType.SINGLE_TURN: {
+                "user_input:optional",
+                "response:optional",
+                "retrieved_contexts:optional",
+                "reference:optional",
+                "reference_contexts:optional",
+            },
+            MetricType.MULTI_TURN: {
+                "user_input",
+            },
+        }
         super().__init__(
             name=name,
-            _required_columns=required_columns,
+            _required_columns=self._required_columns,
             llm=llm,
         )
 

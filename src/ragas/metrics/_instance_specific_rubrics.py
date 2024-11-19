@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import typing as t
-from dataclasses import dataclass, field
 
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.metrics._domain_specific_rubrics import (
@@ -21,12 +20,20 @@ from ragas.prompt import PydanticPrompt
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
+    from ragas.llms import BaseRagasLLM
 
-@dataclass
+
 class InstanceRubrics(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
-    name: str = "labelled_rubrics_score"
-    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
-        default_factory=lambda: {
+    def __init__(
+        self,
+        name: str = "instance_rubrics",
+        llm: t.Optional[BaseRagasLLM] = None,
+        required_columns: t.Optional[t.Dict[MetricType, t.Set[str]]] = None,
+        single_turn_prompt: t.Optional[PydanticPrompt] = None,
+        multi_turn_prompt: t.Optional[PydanticPrompt] = None,
+        max_retries: int = 1,
+    ):
+        self._required_columns = required_columns or {
             MetricType.SINGLE_TURN: {
                 "rubrics",
                 "user_input:optional",
@@ -40,30 +47,32 @@ class InstanceRubrics(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
                 "user_input:optional",
                 "reference:optional",
             },
-        },
-        repr=False,
-    )
-    single_turn_prompt: PydanticPrompt = field(
-        default_factory=lambda: SingleTurnPrompt()
-    )
-    multi_turn_prompt: PydanticPrompt = field(default_factory=lambda: MultiTurnPrompt())
+        }
+        super().__init__(name=name, llm=llm, _required_columns=self._required_columns)
 
-    max_retries: int = 1
+        self.single_turn_prompt = single_turn_prompt or SingleTurnPrompt()
+        self.multi_turn_prompt = multi_turn_prompt or MultiTurnPrompt()
+        self.max_retries = max_retries
+
+    def __repr__(self) -> str:
+        return f"{self.name}(required_columns={self.required_columns}, llm={self.llm})"
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM is not set"
 
         user_input, contexts, response, reference, rubrics = (
-            row["user_input"],
+            row.get("user_input"),
             row.get("retrieved_contexts"),
-            row["response"],
-            row["reference"],
-            row["rubrics"],
+            row.get("response"),
+            row.get("reference"),
+            row.get("rubrics"),
         )
         if contexts is not None:
             contexts = "\n".join(contexts)
             user_input = f"{user_input} answer using context: {contexts}"
 
+        if rubrics is None:
+            raise ValueError(f"Rubrics are not set for the sample: {row}")
         prompt_input = SingleTurnInput(
             user_input=user_input,
             response=response,

@@ -18,6 +18,8 @@ from ragas.prompt import PydanticPrompt
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
+    from ragas.llms import BaseRagasLLM
+
 logger = logging.getLogger(__name__)
 
 
@@ -119,11 +121,22 @@ class MultiTurnPrompt(PydanticPrompt[MultiTurnInput, ScoreFeedback]):
     ]
 
 
-@dataclass
 class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
-    name: str = "rubrics_score"
-    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
-        default_factory=lambda: {
+    def __init__(
+        self,
+        name: str = "domain_specific_rubrics",
+        rubrics: t.Dict[str, str] = DEFAULT_REFERENCE_FREE_RUBRICS,
+        llm: t.Optional[BaseRagasLLM] = None,
+        required_columns: t.Optional[t.Dict[MetricType, t.Set[str]]] = None,
+        single_turn_prompt: t.Optional[PydanticPrompt] = None,
+        multi_turn_prompt: t.Optional[PydanticPrompt] = None,
+        max_retries: int = 1,
+    ):
+        self.rubrics = rubrics
+        self.single_turn_scoring_prompt = single_turn_prompt or SingleTurnPrompt()
+        self.multi_turn_scoring_prompt = multi_turn_prompt or MultiTurnPrompt()
+        self.max_retries = max_retries
+        self._required_columns = required_columns or {
             MetricType.SINGLE_TURN: {
                 "user_input:optional",
                 "response:optional",
@@ -135,19 +148,11 @@ class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
                 "user_input:optional",
                 "reference:optional",
             },
-        },
-        repr=False,
-    )
-    rubrics: t.Dict[str, str] = field(
-        default_factory=lambda: DEFAULT_REFERENCE_FREE_RUBRICS
-    )
-    max_retries: int = 1
-    single_turn_scoring_prompt: PydanticPrompt[SingleTurnInput, ScoreFeedback] = field(
-        default_factory=SingleTurnPrompt, repr=False
-    )
-    multi_turn_scoring_prompt: PydanticPrompt[MultiTurnInput, ScoreFeedback] = field(
-        default_factory=MultiTurnPrompt, repr=False
-    )
+        }
+        super().__init__(name=name, llm=llm, _required_columns=self._required_columns)
+
+    def __repr__(self) -> str:
+        return f"{self.name}(required_columns={self.required_columns}, llm={self.llm}), rubrics={self.rubrics}"
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks

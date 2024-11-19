@@ -178,6 +178,9 @@ class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
             self.strictness if self.strictness % 2 != 0 else self.strictness + 1
         )
 
+    def __repr__(self) -> str:
+        return f"{self.name}(required_columns={self.required_columns}, llm={self.llm}, definition={self.definition})"
+
     def _compute_score(
         self, safe_loaded_responses: t.List[SimpleCriteriaOutput]
     ) -> float:
