@@ -16,6 +16,7 @@
 
     ```python
     from ragas.llms import LangchainLLMWrapper
+    from ragas.embeddings import LangchainEmbeddingsWrapper
     from langchain_openai import ChatOpenAI
     from langchain_openai import OpenAIEmbeddings
     generator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
