@@ -286,7 +286,7 @@ class AspectCriticWithReference(AspectCritic):
     )
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        
+
         if self.llm is None:
             raise ValueError("LLM is not set")
 
@@ -320,10 +320,10 @@ class AspectCriticWithReference(AspectCritic):
     async def _multi_turn_ascore(
         self, sample: MultiTurnSample, callbacks: Callbacks
     ) -> float:
-        
+
         if self.llm is None:
             raise ValueError("LLM is not set")
-        
+
         if sample.reference is None:
             raise ValueError("Reference is not set")
 
