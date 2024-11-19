@@ -98,10 +98,7 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
         assert self.sentence_segmenter is not None, "sentence_segmenter is not set"
 
         sentences = self.sentence_segmenter.segment(text)
-        sentences_with_index = {
-            i: sentence
-            for i, sentence in enumerate(sentences)
-        }
+        sentences_with_index = {i: sentence for i, sentence in enumerate(sentences)}
 
         statements_simplified = await self.statement_prompt.generate(
             llm=self.llm,

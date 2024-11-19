@@ -13,6 +13,7 @@ For an example here is one that will parse OpenAI by using a parser we have defi
 
 ```python
 import os
+
 os.environ["OPENAI_API_KEY"] = "your-api-key"
 ```
 
@@ -61,8 +62,6 @@ metric = AspectCriticWithReference(
     name="answer_correctness",
     definition="is the response correct compared to reference",
 )
-
-
 ```
 
     Repo card metadata block was not found. Setting CardData to empty.
@@ -73,8 +72,12 @@ metric = AspectCriticWithReference(
 from ragas import evaluate
 from ragas.cost import get_token_usage_for_openai
 
-results = evaluate(eval_dataset[:5], metrics=[metric],  llm=gpt4o,
-    token_usage_parser=get_token_usage_for_openai,)
+results = evaluate(
+    eval_dataset[:5],
+    metrics=[metric],
+    llm=gpt4o,
+    token_usage_parser=get_token_usage_for_openai,
+)
 ```
 
     Evaluating: 100%|██████████| 5/5 [00:01<00:00,  2.81it/s]

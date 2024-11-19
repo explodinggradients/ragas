@@ -90,9 +90,9 @@ Now lets init the metric with the rubric and evaluator llm and evaluate the data
 
 
 ```python
-from ragas.metrics import RubricsScoreWithoutReference
+from ragas.metrics import RubricsScore
 
-hallucinations_rubric = RubricsScoreWithoutReference(
+hallucinations_rubric = RubricsScore(
     name="hallucinations_rubric", llm=evaluator_llm, rubrics=rubric
 )
 

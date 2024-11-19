@@ -69,7 +69,7 @@ class SingleTurnSample(BaseSample):
     response: t.Optional[str] = None
     multi_responses: t.Optional[t.List[str]] = None
     reference: t.Optional[str] = None
-    rubric: t.Optional[t.Dict[str, str]] = None
+    rubrics: t.Optional[t.Dict[str, str]] = None
 
 
 class MultiTurnSample(BaseSample):

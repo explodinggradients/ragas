@@ -1,17 +1,13 @@
 from __future__ import annotations
 
 import typing as t
-from dataclasses import dataclass, field
 
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.metrics._domain_specific_rubrics import (
-    MultiTurnWithoutReferenceInput,
-    MultiTurnWithoutReferencePrompt,
-    MultiTurnWithReferenceInput,
-    SingleTurnWithoutReferenceInput,
-    SingleTurnWithoutReferencePrompt,
-    SingleTurnWithReferenceInput,
-    SingleTurnWithReferencePrompt,
+    MultiTurnInput,
+    MultiTurnPrompt,
+    SingleTurnInput,
+    SingleTurnPrompt,
 )
 from ragas.metrics.base import (
     MetricType,
@@ -24,40 +20,60 @@ from ragas.prompt import PydanticPrompt
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
+    from ragas.llms import BaseRagasLLM
 
-@dataclass
-class InstanceRubricsWithReference(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
-    name: str = "labelled_rubrics_score"
-    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
-        default_factory=lambda: {
-            MetricType.SINGLE_TURN: {"user_input", "response", "reference", "rubrics"},
-            MetricType.MULTI_TURN: {"user_input", "reference", "rubrics"},
+
+class InstanceRubrics(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
+    def __init__(
+        self,
+        name: str = "instance_rubrics",
+        llm: t.Optional[BaseRagasLLM] = None,
+        required_columns: t.Optional[t.Dict[MetricType, t.Set[str]]] = None,
+        single_turn_prompt: t.Optional[PydanticPrompt] = None,
+        multi_turn_prompt: t.Optional[PydanticPrompt] = None,
+        max_retries: int = 1,
+    ):
+        self._required_columns = required_columns or {
+            MetricType.SINGLE_TURN: {
+                "rubrics",
+                "user_input:optional",
+                "response:optional",
+                "retrieved_contexts:optional",
+                "reference:optional",
+                "reference_contexts:optional",
+            },
+            MetricType.MULTI_TURN: {
+                "rubrics",
+                "user_input:optional",
+                "reference:optional",
+            },
         }
-    )
-    single_turn_prompt: PydanticPrompt = field(
-        default_factory=lambda: SingleTurnWithReferencePrompt()
-    )
-    multi_turn_prompt: PydanticPrompt = field(
-        default_factory=lambda: MultiTurnWithoutReferencePrompt()
-    )
+        super().__init__(name=name, llm=llm, _required_columns=self._required_columns)
 
-    max_retries: int = 1
+        self.single_turn_prompt = single_turn_prompt or SingleTurnPrompt()
+        self.multi_turn_prompt = multi_turn_prompt or MultiTurnPrompt()
+        self.max_retries = max_retries
+
+    def __repr__(self) -> str:
+        return f"{self.name}(required_columns={self.required_columns}, llm={self.llm})"
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM is not set"
 
         user_input, contexts, response, reference, rubrics = (
-            row["user_input"],
+            row.get("user_input"),
             row.get("retrieved_contexts"),
-            row["response"],
-            row["reference"],
-            row["rubrics"],
+            row.get("response"),
+            row.get("reference"),
+            row.get("rubrics"),
         )
         if contexts is not None:
             contexts = "\n".join(contexts)
             user_input = f"{user_input} answer using context: {contexts}"
 
-        prompt_input = SingleTurnWithReferenceInput(
+        if rubrics is None:
+            raise ValueError(f"Rubrics are not set for the sample: {row}")
+        prompt_input = SingleTurnInput(
             user_input=user_input,
             response=response,
             reference=reference,
@@ -85,77 +101,9 @@ class InstanceRubricsWithReference(MetricWithLLM, SingleTurnMetric, MultiTurnMet
         interaction = sample.pretty_repr()
         reference = sample.reference
         rubrics = sample.rubrics
-        prompt_input = MultiTurnWithReferenceInput(
+        prompt_input = MultiTurnInput(
             user_input=interaction,
             reference=reference,
-            rubrics=rubrics,
-        )
-        output = await self.multi_turn_prompt.generate(
-            data=prompt_input,
-            llm=self.llm,
-            callbacks=callbacks,
-        )
-        return output.score
-
-
-@dataclass
-class InstanceRubricsScoreWithoutReference(
-    MetricWithLLM, SingleTurnMetric, MultiTurnMetric
-):
-    name: str = "reference_free_rubrics_score"
-    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
-        default_factory=lambda: {
-            MetricType.SINGLE_TURN: {"user_input", "response", "rubrics"},
-            MetricType.MULTI_TURN: {"user_input", "rubrics"},
-        }
-    )
-    single_turn_prompt: PydanticPrompt = field(
-        default_factory=lambda: SingleTurnWithoutReferencePrompt()
-    )
-    multi_turn_prompt: PydanticPrompt = field(
-        default_factory=lambda: MultiTurnWithoutReferencePrompt()
-    )
-    max_retries: int = 1
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        assert self.llm is not None, "LLM is not set"
-
-        user_input, contexts, response, rubrics = (
-            row["user_input"],
-            row.get("retrieved_contexts"),
-            row["response"],
-            row["rubrics"],
-        )
-        if contexts is not None:
-            contexts = "\n".join(contexts)
-            user_input = f"{user_input} answer using context: {contexts}"
-
-        prompt_input = SingleTurnWithoutReferenceInput(
-            user_input=user_input,
-            response=response,
-            rubrics=rubrics,
-        )
-
-        response = await self.single_turn_prompt.generate(
-            data=prompt_input, llm=self.llm, callbacks=callbacks
-        )
-        return response.score
-
-    async def _single_turn_ascore(
-        self, sample: SingleTurnSample, callbacks: Callbacks
-    ) -> float:
-        row = sample.to_dict()
-        return await self._ascore(row, callbacks)
-
-    async def _multi_turn_ascore(
-        self, sample: MultiTurnSample, callbacks: Callbacks
-    ) -> float:
-        assert self.llm is not None, "LLM is not set"
-        assert sample.rubrics is not None, "Rubrics are not set"
-        interaction = sample.pretty_repr()
-        rubrics = sample.rubrics
-        prompt_input = MultiTurnWithoutReferenceInput(
-            user_input=interaction,
             rubrics=rubrics,
         )
         output = await self.multi_turn_prompt.generate(

@@ -83,13 +83,16 @@ class Metric(ABC):
         return required_columns
 
     @required_columns.setter
-    def required_columns(self, metric_type: MetricType, columns: t.Set[str]):
-        for column in columns:
-            if column not in VALID_COLUMNS:
-                raise ValueError(
-                    f"Invalid column '{column}'. Must be one of {VALID_COLUMNS}"
-                )
-        self._required_columns[metric_type] = columns
+    def required_columns(self, required_columns: t.Dict[MetricType, t.Set[str]]):
+        rc = {}
+        for metric_type, columns in required_columns.items():
+            for column in columns:
+                if column not in VALID_COLUMNS:
+                    raise ValueError(
+                        f"Invalid column '{column}'. Must be one of {VALID_COLUMNS}"
+                    )
+            rc[metric_type] = columns
+        self._required_columns = rc
 
     def get_required_columns(
         self, with_optional: bool = False

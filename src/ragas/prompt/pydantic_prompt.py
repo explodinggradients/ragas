@@ -74,7 +74,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             + "\n-----------------------------\n"
             + "\nNow perform the same with the following input\n"
             + (
-                "Input: " + data.model_dump_json(indent=4) + "\n"
+                "input: " + data.model_dump_json(indent=4, exclude_none=True) + "\n"
                 if data is not None
                 else "Input: (None)\n"
             )
