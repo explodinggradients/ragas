@@ -79,5 +79,5 @@ def validate_supported_metrics(ds: EvaluationDataset, metrics: t.Sequence[Metric
 
         if not flag:
             raise ValueError(
-                f"The metric does not support the sample type {data_type}."
+                f"The metric '{m.name}' does not support the sample type {data_type}."
             )

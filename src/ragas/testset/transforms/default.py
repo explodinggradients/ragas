@@ -117,7 +117,6 @@ def default_transforms(
         node_filter = CustomNodeFilter(
             llm=llm, filter_nodes=lambda node: filter_chunks(node)
         )
-
         transforms = [
             headline_extractor,
             splitter,

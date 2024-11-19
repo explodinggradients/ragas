@@ -114,7 +114,9 @@ class HeadlinesExtractorPrompt(PydanticPrompt[TextWithExtractionLimit, Headlines
                     "Introduction",
                     "Main Concepts",
                     "Detailed Analysis",
+                    "Subsection: Specialized Techniques",
                     "Future Directions",
+                    "Conclusion",
                 ],
             ),
         ),
@@ -174,14 +176,15 @@ class SummaryExtractor(LLMBasedExtractor):
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, None
-        result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
+        chunks = self.split_text_by_token_limit(node_text, self.max_token_limit)
+        result = await self.prompt.generate(self.llm, data=StringIO(text=chunks[0]))
         return self.property_name, result.text
 
 
 @dataclass
 class KeyphrasesExtractor(LLMBasedExtractor):
     """
-    Extracts top 5 keyphrases from the given text.
+    Extracts top keyphrases from the given text.
 
     Attributes
     ----------
@@ -199,10 +202,14 @@ class KeyphrasesExtractor(LLMBasedExtractor):
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, None
-        result = await self.prompt.generate(
-            self.llm, data=TextWithExtractionLimit(text=node_text, max_num=self.max_num)
-        )
-        return self.property_name, result.keyphrases
+        chunks = self.split_text_by_token_limit(node_text, self.max_token_limit)
+        keyphrases = []
+        for chunk in chunks:
+            result = await self.prompt.generate(
+                self.llm, data=TextWithExtractionLimit(text=chunk, max_num=self.max_num)
+            )
+            keyphrases.extend(result.keyphrases)
+        return self.property_name, keyphrases
 
 
 @dataclass
@@ -225,7 +232,8 @@ class TitleExtractor(LLMBasedExtractor):
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, None
-        result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
+        chunks = self.split_text_by_token_limit(node_text, self.max_token_limit)
+        result = await self.prompt.generate(self.llm, data=StringIO(text=chunks[0]))
         return self.property_name, result.text
 
 
@@ -250,12 +258,15 @@ class HeadlinesExtractor(LLMBasedExtractor):
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, None
-        result = await self.prompt.generate(
-            self.llm, data=TextWithExtractionLimit(text=node_text, max_num=self.max_num)
-        )
-        if result is None:
-            return self.property_name, None
-        return self.property_name, result.headlines
+        chunks = self.split_text_by_token_limit(node_text, self.max_token_limit)
+        headlines = []
+        for chunk in chunks:
+            result = await self.prompt.generate(
+                self.llm, data=TextWithExtractionLimit(text=chunk, max_num=self.max_num)
+            )
+            if result:
+                headlines.extend(result.headlines)
+        return self.property_name, headlines
 
 
 @dataclass
@@ -279,11 +290,15 @@ class NERExtractor(LLMBasedExtractor):
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, []
-        result = await self.prompt.generate(
-            self.llm,
-            data=TextWithExtractionLimit(text=node_text, max_num=self.max_num_entities),
-        )
-        return self.property_name, result.entities
+        chunks = self.split_text_by_token_limit(node_text, self.max_token_limit)
+        entities = []
+        for chunk in chunks:
+            result = await self.prompt.generate(
+                self.llm,
+                data=TextWithExtractionLimit(text=chunk, max_num=self.max_num_entities),
+            )
+            entities.extend(result.entities)
+        return self.property_name, entities
 
 
 class TopicDescription(BaseModel):
@@ -291,9 +306,7 @@ class TopicDescription(BaseModel):
 
 
 class TopicDescriptionPrompt(PydanticPrompt[StringIO, TopicDescription]):
-    instruction: str = (
-        "Provide a concise description of the main topic(s) discussed in the following text."
-    )
+    instruction: str = "Provide a concise description of the main topic(s) discussed in the following text."
     input_model: t.Type[StringIO] = StringIO
     output_model: t.Type[TopicDescription] = TopicDescription
     examples: t.List[t.Tuple[StringIO, TopicDescription]] = [
@@ -328,7 +341,8 @@ class TopicDescriptionExtractor(LLMBasedExtractor):
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, None
-        result = await self.prompt.generate(self.llm, data=StringIO(text=node_text))
+        chunks = self.split_text_by_token_limit(node_text, self.max_token_limit)
+        result = await self.prompt.generate(self.llm, data=StringIO(text=chunks[0]))
         return self.property_name, result.description
 
 
@@ -383,8 +397,13 @@ class ThemesExtractor(LLMBasedExtractor):
         node_text = node.get_property("page_content")
         if node_text is None:
             return self.property_name, []
-        result = await self.prompt.generate(
-            self.llm,
-            data=TextWithExtractionLimit(text=node_text, max_num=self.max_num_themes),
-        )
-        return self.property_name, result.output
+        chunks = self.split_text_by_token_limit(node_text, self.max_token_limit)
+        themes = []
+        for chunk in chunks:
+            result = await self.prompt.generate(
+                self.llm,
+                data=TextWithExtractionLimit(text=chunk, max_num=self.max_num_themes),
+            )
+            themes.extend(result.output)
+
+        return self.property_name, themes

@@ -289,7 +289,7 @@ ragas_trace = convert_to_ragas_messages(result["messages"])
 
 
 ```python
-ragas_trace # List of Ragas messages
+ragas_trace  # List of Ragas messages
 ```
 
 

@@ -14,9 +14,18 @@ Which we can define as follows:
 ```python
 from ragas.testset.persona import Persona
 
-persona_new_joinee = Persona(name="New Joinee", role_description="Don't know much about the company and is looking for information on how to get started.")
-persona_manager = Persona(name="Manager", role_description="Wants to know about the different teams and how they collaborate with each other.")
-persona_senior_manager = Persona(name="Senior Manager", role_description="Wants to know about the company vision and how it is executed.")
+persona_new_joinee = Persona(
+    name="New Joinee",
+    role_description="Don't know much about the company and is looking for information on how to get started.",
+)
+persona_manager = Persona(
+    name="Manager",
+    role_description="Wants to know about the different teams and how they collaborate with each other.",
+)
+persona_senior_manager = Persona(
+    name="Senior Manager",
+    role_description="Wants to know about the company vision and how it is executed.",
+)
 
 personas = [persona_new_joinee, persona_manager, persona_senior_manager]
 personas
@@ -49,7 +58,6 @@ testset_generator = TestsetGenerator(knowledge_graph=kg, persona_list=personas, 
 # Generate the Testset
 testset = testset_generator.generate(testset_size=10)
 testset
-
 ```
 
 

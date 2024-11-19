@@ -45,8 +45,8 @@ def is_multiple_completion_supported(llm: BaseLanguageModel) -> bool:
 
 @dataclass
 class BaseRagasLLM(ABC):
-    run_config: RunConfig = field(default_factory=RunConfig)
-    multiple_completion_supported: bool = False
+    run_config: RunConfig = field(default_factory=RunConfig, repr=False)
+    multiple_completion_supported: bool = field(default=False, repr=False)
 
     def set_run_config(self, run_config: RunConfig):
         self.run_config = run_config
@@ -256,6 +256,9 @@ class LangchainLLMWrapper(BaseRagasLLM):
             self.langchain_llm.request_timeout = run_config.timeout
             self.run_config.exception_types = RateLimitError
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(langchain_llm={self.langchain_llm.__class__.__name__}(...))"
+
 
 class LlamaIndexLLMWrapper(BaseRagasLLM):
     """
@@ -335,6 +338,9 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
         li_response = await self.llm.acomplete(prompt.to_string(), **kwargs)
 
         return LLMResult(generations=[[Generation(text=li_response.text)]])
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(llm={self.llm.__class__.__name__}(...))"
 
 
 def llm_factory(

@@ -38,7 +38,6 @@ class BleuScore(SingleTurnMetric):
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
-
         assert (
             self.sentence_segmenter is not None
         ), "Sentence segmenter is not initialized"
@@ -56,6 +55,3 @@ class BleuScore(SingleTurnMetric):
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
-
-
-bleu_score = BleuScore()

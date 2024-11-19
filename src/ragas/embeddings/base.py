@@ -119,6 +119,9 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
             self.embeddings.request_timeout = run_config.timeout
             self.run_config.exception_types = RateLimitError
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(embeddings={self.embeddings.__class__.__name__}(...))"
+
 
 @dataclass
 class HuggingfaceEmbeddings(BaseRagasEmbeddings):
@@ -298,6 +301,9 @@ class LlamaIndexEmbeddingsWrapper(BaseRagasEmbeddings):
 
     async def aembed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
         return await self.embeddings.aget_text_embedding_batch(texts)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(embeddings={self.embeddings.__class__.__name__}(...))"
 
 
 def embedding_factory(

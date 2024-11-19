@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import typing as t
 from collections import Counter
-from dataclasses import dataclass, field
 
 from pydantic import BaseModel, Field
 
@@ -19,6 +18,8 @@ from ragas.prompt import PydanticPrompt
 if t.TYPE_CHECKING:
     from langchain_core.callbacks.base import Callbacks
 
+    from ragas.llms import BaseRagasLLM
+
 
 logger = logging.getLogger(__name__)
 
@@ -29,22 +30,32 @@ class SimpleCriteriaOutput(BaseModel):
 
 
 class SingleTurnSimpleCriteriaInput(BaseModel):
-    user_input: str = Field(description="The input to the model")
-    response: str = Field(description="The response from the model")
+    user_input: t.Optional[str] = Field(
+        description="The input to the llm system", default=None
+    )
+    response: t.Optional[str] = Field(
+        description="The response from the llm system", default=None
+    )
+    retrieved_contexts: t.Optional[t.List[str]] = Field(
+        description="The retrieved contexts from the llm system", default=None
+    )
+    reference_contexts: t.Optional[t.List[str]] = Field(
+        description="The reference contexts for the evaluation", default=None
+    )
+    reference: t.Optional[str] = Field(
+        description="The reference answer for evaluation", default=None
+    )
     criteria: str = Field(description="The criteria to evaluate the response")
-
-
-class SingleTurnSimpleCriteriaWithReferenceInput(SingleTurnSimpleCriteriaInput):
-    reference: str = Field(description="The reference response")
 
 
 class MultiTurnSimpleCriteriaInput(BaseModel):
-    user_input: str = Field(description="The input to the model")
+    user_input: t.Optional[str] = Field(
+        description="The input to the model", default=None
+    )
+    reference: t.Optional[str] = Field(
+        description="The reference response", default=None
+    )
     criteria: str = Field(description="The criteria to evaluate the response")
-
-
-class MultiTurnSimpleCriteriaWithReferenceInput(MultiTurnSimpleCriteriaInput):
-    reference: str = Field(description="The reference response")
 
 
 class SingleTurnSimpleCriteriaPrompt(
@@ -64,19 +75,9 @@ class SingleTurnSimpleCriteriaPrompt(
                 reason="The response is grammatically correct and relevant to the input.",
                 score=5,
             ),
-        )
-    ]
-
-
-class SingleTurnSimpleCriteriaWithReferencePrompt(
-    PydanticPrompt[SingleTurnSimpleCriteriaWithReferenceInput, SimpleCriteriaOutput]
-):
-    instruction = "Given a input, system response and reference. Evaluate and score the response against the reference only using the given criteria."
-    input_model = SingleTurnSimpleCriteriaWithReferenceInput
-    output_model = SimpleCriteriaOutput
-    examples = [
+        ),
         (
-            SingleTurnSimpleCriteriaWithReferenceInput(
+            SingleTurnSimpleCriteriaInput(
                 user_input="Who was the director of Los Alamos Laboratory?",
                 response="Einstein was the director of Los Alamos Laboratory.",
                 reference="The director of Los Alamos Laboratory was J. Robert Oppenheimer.",
@@ -86,7 +87,7 @@ class SingleTurnSimpleCriteriaWithReferencePrompt(
                 reason="The response and reference have two very different answers.",
                 score=0,
             ),
-        )
+        ),
     ]
 
 
@@ -106,19 +107,9 @@ class MultiTurnSimpleCriteriaPrompt(
                 reason="The interaction is coherent and relevant to the user's request.",
                 score=5,
             ),
-        )
-    ]
-
-
-class MultiTurnSimpleCriteriaWithReferencePrompt(
-    PydanticPrompt[MultiTurnSimpleCriteriaWithReferenceInput, SimpleCriteriaOutput]
-):
-    instruction = "Given an interaction between Human, AI and Tools evaluate and score the interaction using the given criteria."
-    input_model = MultiTurnSimpleCriteriaWithReferenceInput
-    output_model = SimpleCriteriaOutput
-    examples = [
+        ),
         (
-            MultiTurnSimpleCriteriaWithReferenceInput(
+            MultiTurnSimpleCriteriaInput(
                 user_input="""Human: Hey, book a table at the nearest best Chinese restaurant for 8:00pm\nAI: Sure, let me find the best options for you.\nTools:\n  restaurant_search: {'cuisine': 'Chinese', 'time': '8:00pm'}\nToolOutput: Found a few options: 1. Golden Dragon, 2. Jade Palace\nAI: I found some great options: Golden Dragon and Jade Palace. Which one would you prefer?\nHuman: Let's go with Golden Dragon.\nAI: Great choice! I'll book a table for 8:00pm at Golden Dragon.\nTools:\n  restaurant_book: {'name': 'Golden Dragon', 'time': '8:00pm'}\nToolOutput: Table booked at Golden Dragon for 8:00pm.\nAI: Your table at Golden Dragon is booked for 8:00pm. Enjoy your meal!\nHuman: thanks""",
                 reference="The AI successfully books a table at the nearest best Chinese restaurant for 8:00pm, providing the user with options and confirming the booking.",
                 criteria="Score the interaction in range of 0 to 5 based on factors such as helpfulness, coherence, and relevance.",
@@ -127,25 +118,11 @@ class MultiTurnSimpleCriteriaWithReferencePrompt(
                 reason="The interaction is coherent and relevant to the user's request.",
                 score=5,
             ),
-        )
+        ),
     ]
 
 
-class SimpleCriteriaOutout(BaseModel):
-    reason: str = Field(description="Reason for the score")
-    score: int = Field(description="The score for the submission")
-
-
-class SimpleCriteriaWithoutReferenceInput(BaseModel):
-    user_input: str = Field(description="The input to the model")
-    response: str = Field(description="The response from the model")
-    criteria: str = Field(description="The criteria to evaluate the response")
-
-
-@dataclass
-class SimpleCriteriaScoreWithoutReference(
-    MetricWithLLM, SingleTurnMetric, MultiTurnMetric
-):
+class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     """
     Judges the submission to give binary results using the criteria specified
     in the metric definition.
@@ -161,38 +138,48 @@ class SimpleCriteriaScoreWithoutReference(
         made using majority vote.
     """
 
-    name: str = field(default="", repr=True)
-    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
-        default_factory=lambda: {
-            MetricType.SINGLE_TURN: {
-                "user_input",
-                "response",
-            },
-            MetricType.MULTI_TURN: {
-                "user_input",
-            },
-        }
-    )
-    single_turn_prompt: PydanticPrompt = field(
-        default_factory=lambda: SingleTurnSimpleCriteriaPrompt()
-    )
-    multi_turn_prompt: PydanticPrompt = field(
-        default_factory=lambda: MultiTurnSimpleCriteriaPrompt()
-    )
-    definition: str = field(default="", repr=True)
-    strictness: int = field(default=1, repr=False)
-    max_retries: int = 1
+    def __init__(
+        self,
+        name: str,
+        definition: str,
+        llm: t.Optional[BaseRagasLLM] = None,
+        required_columns: t.Optional[t.Dict[MetricType, t.Set[str]]] = None,
+        single_turn_prompt: t.Optional[PydanticPrompt] = None,
+        multi_turn_prompt: t.Optional[PydanticPrompt] = None,
+        strictness: int = 1,
+    ):
+        if required_columns is None:
+            required_columns = {
+                MetricType.SINGLE_TURN: {
+                    "user_input:optional",
+                    "response:optional",
+                    "retrieved_contexts:optional",
+                    "reference:optional",
+                    "reference_contexts:optional",
+                },
+                MetricType.MULTI_TURN: {
+                    "user_input:optional",
+                    "reference:optional",
+                },
+            }
+        super().__init__(
+            name=name,
+            llm=llm,
+            _required_columns=required_columns,
+        )
 
-    def __post_init__(self):
-        if self.name == "":
-            raise ValueError("Expects a name")
-        if self.definition == "":
-            raise ValueError("Expects definition")
+        self.definition = definition
+        self.single_turn_prompt = single_turn_prompt or SingleTurnSimpleCriteriaPrompt()
+        self.multi_turn_prompt = multi_turn_prompt or MultiTurnSimpleCriteriaPrompt()
 
+        self.strictness = strictness
         # ensure odd number of checks to avoid tie in majority vote.
         self.strictness = (
             self.strictness if self.strictness % 2 != 0 else self.strictness + 1
         )
+
+    def __repr__(self) -> str:
+        return f"{self.name}(required_columns={self.required_columns}, llm={self.llm}, definition={self.definition})"
 
     def _compute_score(
         self, safe_loaded_responses: t.List[SimpleCriteriaOutput]
@@ -257,76 +244,3 @@ class SimpleCriteriaScoreWithoutReference(
             callbacks=callbacks,
         )
         return self._compute_score([response])
-
-
-@dataclass
-class SimpleCriteriaScoreWithReference(SimpleCriteriaScoreWithoutReference):
-    name: str = field(default="", repr=True)
-    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
-        default_factory=lambda: {
-            MetricType.SINGLE_TURN: {
-                "user_input",
-                "response",
-                "reference",
-            },
-            MetricType.MULTI_TURN: {
-                "user_input",
-                "reference",
-            },
-        }
-    )
-    single_turn_prompt: PydanticPrompt = field(
-        default_factory=lambda: SingleTurnSimpleCriteriaWithReferencePrompt()
-    )
-    multi_turn_prompt: PydanticPrompt = field(
-        default_factory=lambda: MultiTurnSimpleCriteriaWithReferencePrompt()
-    )
-
-    async def _single_turn_ascore(
-        self, sample: SingleTurnSample, callbacks: Callbacks
-    ) -> float:
-        assert self.llm is not None, "LLM is not set"
-        assert sample.user_input is not None, "User input is not set"
-        assert sample.reference is not None, "Reference is not set"
-        assert sample.response is not None, "Response is not set"
-
-        prompt_input = SingleTurnSimpleCriteriaWithReferenceInput(
-            user_input=sample.user_input,
-            response=sample.response,
-            reference=sample.reference,
-            criteria=self.definition,
-        )
-
-        response = await self.single_turn_prompt.generate(
-            data=prompt_input,
-            llm=self.llm,
-            callbacks=callbacks,
-        )
-
-        return self._compute_score([response])
-
-    async def _multi_turn_ascore(
-        self, sample: MultiTurnSample, callbacks: Callbacks
-    ) -> float:
-        assert self.llm is not None, "LLM is not set"
-        assert sample.user_input is not None, "User input is not set"
-        assert sample.reference is not None, "Reference is not set"
-
-        interaction = sample.pretty_repr()
-        prompt_input = MultiTurnSimpleCriteriaWithReferenceInput(
-            user_input=interaction,
-            reference=sample.reference,
-            criteria=self.definition,
-        )
-
-        response = await self.multi_turn_prompt.generate(
-            data=prompt_input,
-            llm=self.llm,
-            callbacks=callbacks,
-        )
-
-        return self._compute_score([response])
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        sample = SingleTurnSample(**row)
-        return await self._single_turn_ascore(sample, callbacks)
