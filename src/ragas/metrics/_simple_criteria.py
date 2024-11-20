@@ -45,7 +45,6 @@ class SingleTurnSimpleCriteriaInput(BaseModel):
     reference: t.Optional[str] = Field(
         description="The reference answer for evaluation", default=None
     )
-    criteria: str = Field(description="The criteria to evaluate the response")
 
 
 class MultiTurnSimpleCriteriaInput(BaseModel):
@@ -55,71 +54,22 @@ class MultiTurnSimpleCriteriaInput(BaseModel):
     reference: t.Optional[str] = Field(
         description="The reference response", default=None
     )
-    criteria: str = Field(description="The criteria to evaluate the response")
 
 
 class SingleTurnSimpleCriteriaPrompt(
     PydanticPrompt[SingleTurnSimpleCriteriaInput, SimpleCriteriaOutput]
 ):
-    instruction = "Given a input and response. Evaluate and score the response only using the given criteria."
+    instruction = ""  # this will be set in the constructor
     input_model = SingleTurnSimpleCriteriaInput
     output_model = SimpleCriteriaOutput
-    examples = [
-        (
-            SingleTurnSimpleCriteriaInput(
-                user_input="Who was the director of Los Alamos Laboratory?",
-                response="Einstein was the director of Los Alamos Laboratory.",
-                criteria="Score responses in range of 0 to 5 based on factors such as grammar, relevance, and coherence.",
-            ),
-            SimpleCriteriaOutput(
-                reason="The response is grammatically correct and relevant to the input.",
-                score=5,
-            ),
-        ),
-        (
-            SingleTurnSimpleCriteriaInput(
-                user_input="Who was the director of Los Alamos Laboratory?",
-                response="Einstein was the director of Los Alamos Laboratory.",
-                reference="The director of Los Alamos Laboratory was J. Robert Oppenheimer.",
-                criteria="Score responses in range of 0 (low) to 5 (high) based similarity with reference.",
-            ),
-            SimpleCriteriaOutput(
-                reason="The response and reference have two very different answers.",
-                score=0,
-            ),
-        ),
-    ]
 
 
 class MultiTurnSimpleCriteriaPrompt(
     PydanticPrompt[MultiTurnSimpleCriteriaInput, SimpleCriteriaOutput]
 ):
-    instruction = "Given an interaction between Human, AI and Tools evaluate and score the interaction using the given criteria."
+    instruction = ""  # this will be set in the constructor
     input_model = MultiTurnSimpleCriteriaInput
     output_model = SimpleCriteriaOutput
-    examples = [
-        (
-            MultiTurnSimpleCriteriaInput(
-                user_input="""Human: Hey, book a table at the nearest best Chinese restaurant for 8:00pm\nAI: Sure, let me find the best options for you.\nTools:\n  restaurant_search: {'cuisine': 'Chinese', 'time': '8:00pm'}\nToolOutput: Found a few options: 1. Golden Dragon, 2. Jade Palace\nAI: I found some great options: Golden Dragon and Jade Palace. Which one would you prefer?\nHuman: Let's go with Golden Dragon.\nAI: Great choice! I'll book a table for 8:00pm at Golden Dragon.\nTools:\n  restaurant_book: {'name': 'Golden Dragon', 'time': '8:00pm'}\nToolOutput: Table booked at Golden Dragon for 8:00pm.\nAI: Your table at Golden Dragon is booked for 8:00pm. Enjoy your meal!\nHuman: thanks""",
-                criteria="Score the interaction in range of 0 to 5 based on factors such as helpfulness, coherence, and relevance.",
-            ),
-            SimpleCriteriaOutput(
-                reason="The interaction is coherent and relevant to the user's request.",
-                score=5,
-            ),
-        ),
-        (
-            MultiTurnSimpleCriteriaInput(
-                user_input="""Human: Hey, book a table at the nearest best Chinese restaurant for 8:00pm\nAI: Sure, let me find the best options for you.\nTools:\n  restaurant_search: {'cuisine': 'Chinese', 'time': '8:00pm'}\nToolOutput: Found a few options: 1. Golden Dragon, 2. Jade Palace\nAI: I found some great options: Golden Dragon and Jade Palace. Which one would you prefer?\nHuman: Let's go with Golden Dragon.\nAI: Great choice! I'll book a table for 8:00pm at Golden Dragon.\nTools:\n  restaurant_book: {'name': 'Golden Dragon', 'time': '8:00pm'}\nToolOutput: Table booked at Golden Dragon for 8:00pm.\nAI: Your table at Golden Dragon is booked for 8:00pm. Enjoy your meal!\nHuman: thanks""",
-                reference="The AI successfully books a table at the nearest best Chinese restaurant for 8:00pm, providing the user with options and confirming the booking.",
-                criteria="Score the interaction in range of 0 to 5 based on factors such as helpfulness, coherence, and relevance.",
-            ),
-            SimpleCriteriaOutput(
-                reason="The interaction is coherent and relevant to the user's request.",
-                score=5,
-            ),
-        ),
-    ]
 
 
 class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
@@ -172,8 +122,13 @@ class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         self.single_turn_prompt = single_turn_prompt or SingleTurnSimpleCriteriaPrompt()
         self.multi_turn_prompt = multi_turn_prompt or MultiTurnSimpleCriteriaPrompt()
 
-        self.strictness = strictness
+        # update the instruction for the prompts with the definition
+        instruction = f"Evaluate the Input based on the criterial defined. Give a score between 0 and 5.\nCriteria Definition: {self.definition}"
+        self.single_turn_prompt.instruction = instruction
+        self.multi_turn_prompt.instruction = instruction
+
         # ensure odd number of checks to avoid tie in majority vote.
+        self.strictness = strictness
         self.strictness = (
             self.strictness if self.strictness % 2 != 0 else self.strictness + 1
         )
@@ -216,7 +171,6 @@ class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         prompt_input = SingleTurnSimpleCriteriaInput(
             user_input=user_input,
             response=response,
-            criteria=self.definition,
         )
 
         response = await self.single_turn_prompt.generate(
@@ -236,7 +190,6 @@ class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         interaction = sample.pretty_repr()
         prompt_input = MultiTurnSimpleCriteriaInput(
             user_input=interaction,
-            criteria=self.definition,
         )
         response = await self.multi_turn_prompt.generate(
             data=prompt_input,

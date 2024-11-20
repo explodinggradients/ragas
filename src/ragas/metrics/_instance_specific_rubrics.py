@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import typing as t
 
+from pydantic import Field
+
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.metrics._domain_specific_rubrics import (
-    MultiTurnInput,
-    MultiTurnPrompt,
-    SingleTurnInput,
-    SingleTurnPrompt,
+    MultiTurnInputWithoutRubric,
+    ScoreFeedback,
+    SingleTurnInputWithoutRubric,
 )
 from ragas.metrics.base import (
     MetricType,
@@ -21,6 +22,30 @@ if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
     from ragas.llms import BaseRagasLLM
+
+
+class SingleTurnInputWithRubric(SingleTurnInputWithoutRubric):
+    rubrics: t.Dict[str, str] = Field(
+        ..., description="The rubric for evaluating this instance"
+    )
+
+
+class MultiTurnInputWithRubric(MultiTurnInputWithoutRubric):
+    rubrics: t.Dict[str, str] = Field(
+        ..., description="The rubric for evaluating this instance"
+    )
+
+
+class SingleTurnPrompt(PydanticPrompt[SingleTurnInputWithRubric, ScoreFeedback]):
+    instruction = ""  # this will be set in the constructor
+    input_model = SingleTurnInputWithRubric
+    output_model = ScoreFeedback
+
+
+class MultiTurnPrompt(PydanticPrompt[MultiTurnInputWithRubric, ScoreFeedback]):
+    instruction = ""  # this will be set in the constructor
+    input_model = MultiTurnInputWithRubric
+    output_model = ScoreFeedback
 
 
 class InstanceRubrics(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
@@ -73,7 +98,7 @@ class InstanceRubrics(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
 
         if rubrics is None:
             raise ValueError(f"Rubrics are not set for the sample: {row}")
-        prompt_input = SingleTurnInput(
+        prompt_input = SingleTurnInputWithRubric(
             user_input=user_input,
             response=response,
             reference=reference,
@@ -101,7 +126,7 @@ class InstanceRubrics(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         interaction = sample.pretty_repr()
         reference = sample.reference
         rubrics = sample.rubrics
-        prompt_input = MultiTurnInput(
+        prompt_input = MultiTurnInputWithRubric(
             user_input=interaction,
             reference=reference,
             rubrics=rubrics,
