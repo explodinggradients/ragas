@@ -73,14 +73,12 @@ class SingleTurnPrompt(PydanticPrompt[SingleTurnInputWithoutRubric, ScoreFeedbac
     instruction = ""  # this will be set in the constructor
     input_model = SingleTurnInputWithoutRubric
     output_model = ScoreFeedback
-    examples = []
 
 
 class MultiTurnPrompt(PydanticPrompt[MultiTurnInputWithoutRubric, ScoreFeedback]):
     instruction = ""  # this will be set in the constructor
     input_model = MultiTurnInputWithoutRubric
     output_model = ScoreFeedback
-    examples = []
 
 
 class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):

@@ -62,7 +62,6 @@ class SingleTurnSimpleCriteriaPrompt(
     instruction = ""  # this will be set in the constructor
     input_model = SingleTurnSimpleCriteriaInput
     output_model = SimpleCriteriaOutput
-    examples = []
 
 
 class MultiTurnSimpleCriteriaPrompt(
@@ -71,7 +70,6 @@ class MultiTurnSimpleCriteriaPrompt(
     instruction = ""  # this will be set in the constructor
     input_model = MultiTurnSimpleCriteriaInput
     output_model = SimpleCriteriaOutput
-    examples = []
 
 
 class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):

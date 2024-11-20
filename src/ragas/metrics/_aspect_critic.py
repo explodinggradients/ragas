@@ -61,7 +61,6 @@ class SingleTurnAspectCriticPrompt(
     instruction = ""
     input_model = AspectCriticInput
     output_model = AspectCriticOutput
-    examples = []
 
 
 class MultiTurnAspectCriticPrompt(
@@ -70,7 +69,6 @@ class MultiTurnAspectCriticPrompt(
     instruction = ""
     input_model = MultiTurnAspectCriticInput
     output_model = AspectCriticOutput
-    examples = []
 
 
 class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
