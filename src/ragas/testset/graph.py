@@ -316,12 +316,12 @@ class KnowledgeGraph:
             ]
             return new_graph
 
-    def find_direct_clusters(
+    def find_two_nodes_single_rel(
         self, relationship_condition: t.Callable[[Relationship], bool] = lambda _: True
-    ) -> t.Dict[Node, t.List[t.Set[Node]]]:
+    ) -> t.List[t.Tuple[Node, Relationship, Node]]:
         """
-        Finds direct clusters of nodes in the knowledge graph based on a relationship condition.
-        Here if A->B, and A->C, then A, B, and C form a cluster.
+        Finds nodes in the knowledge graph based on a relationship condition.
+        (NodeA, NodeB, Rel) triples are considered as multi-hop nodes.
 
         Parameters
         ----------
@@ -330,40 +330,34 @@ class KnowledgeGraph:
 
         Returns
         -------
-        List[Set[Node]]
-            A list of sets, where each set contains nodes that form a cluster.
+        List[Set[Node, Relationship, Node]]
+            A list of sets, where each set contains two nodes and a relationship forming a multi-hop node.
         """
 
-        clusters = []
         relationships = [
-            rel for rel in self.relationships if relationship_condition(rel)
+            relationship
+            for relationship in self.relationships
+            if relationship_condition(relationship)
         ]
-        for node in self.nodes:
-            cluster = set()
-            cluster.add(node)
-            for rel in relationships:
-                if rel.bidirectional:
-                    if rel.source == node:
-                        cluster.add(rel.target)
-                    elif rel.target == node:
-                        cluster.add(rel.source)
+
+        triplets = set()
+
+        for relationship in relationships:
+            if relationship.source != relationship.target:
+                node_a = relationship.source
+                node_b = relationship.target
+                # Ensure the smaller ID node is always first
+                if node_a.id < node_b.id:
+                    normalized_tuple = (node_a, relationship, node_b)
                 else:
-                    if rel.source == node:
-                        cluster.add(rel.target)
+                    normalized_relationship = Relationship(
+                        source=node_b,
+                        target=node_a,
+                        type=relationship.type,
+                        properties=relationship.properties,
+                    )
+                    normalized_tuple = (node_b, normalized_relationship, node_a)
 
-            if len(cluster) > 1:
-                if cluster not in clusters:
-                    clusters.append(cluster)
+                triplets.add(normalized_tuple)
 
-        # Remove subsets from clusters
-        unique_clusters = []
-        for cluster in clusters:
-            if not any(cluster < other for other in clusters):
-                unique_clusters.append(cluster)
-        clusters = unique_clusters
-
-        cluster_dict = {}
-        for cluster in clusters:
-            cluster_dict.update({cluster.pop(): cluster})
-
-        return cluster_dict
+        return list(triplets)
