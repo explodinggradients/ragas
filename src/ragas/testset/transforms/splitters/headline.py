@@ -52,6 +52,8 @@ class HeadlineSplitter(Splitter):
         if headlines is None:
             raise ValueError("'headlines' property not found in this node")
 
+        if len(text.split()) < self.min_tokens:
+            return [node], []
         # create the chunks for the different sections
         indices = [0]
         for headline in headlines:
