@@ -60,7 +60,7 @@ class OverlapScoreBuilder(RelationshipBuilder):
     new_property_name: str = "overlap_score"
     distance_measure: DistanceMeasure = DistanceMeasure.JARO_WINKLER
     distance_threshold: float = 0.9
-    threshold: float = 0.5
+    threshold: float = 0.01
 
     def __post_init__(self):
         try:
