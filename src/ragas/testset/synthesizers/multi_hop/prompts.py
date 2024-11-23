@@ -80,7 +80,6 @@ class QueryAnswerGenerationPrompt(
         "that aligns with the persona’s perspective and reflects the themes.\n"
         "2. **Generate an Answer**: Using only the content from the provided context, create a faithful and detailed  answer to "
         "the query. Do not include any information that not in or cannot be inferred from the given context.\n"
-        "### Example Outputs:\n\n"
     )
     input_model: t.Type[QueryConditions] = QueryConditions
     output_model: t.Type[GeneratedQueryAnswer] = GeneratedQueryAnswer

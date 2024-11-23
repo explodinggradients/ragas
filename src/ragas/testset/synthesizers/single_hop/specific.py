@@ -108,7 +108,7 @@ class SingleHopSpecificQuerySynthesizer(SingleHopQuerySynthesizer):
                 data=prompt_input, llm=self.llm, callbacks=callbacks
             )
             base_scenarios = self.prepare_combinations(
-                node, themes, PersonaList(personas=persona_list), persona_concepts
+                node, themes, personas=persona_list, persona_concepts=persona_concepts.mapping
             )
             scenarios.extend(self.sample_combinations(base_scenarios, samples_per_node))
 
