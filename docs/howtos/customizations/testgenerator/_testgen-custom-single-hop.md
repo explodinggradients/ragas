@@ -28,7 +28,10 @@ for doc in docs:
     kg.nodes.append(
         Node(
             type=NodeType.DOCUMENT,
-            properties={"page_content": doc.page_content, "document_metadata": doc.metadata}
+            properties={
+                "page_content": doc.page_content,
+                "document_metadata": doc.metadata,
+            },
         )
     )
 ```
@@ -44,7 +47,8 @@ You may use any of [your choice](/docs/howtos/customizations/customize_models.md
 ```python
 from ragas.llms.base import llm_factory
 from ragas.embeddings.base import embedding_factory
-llm=llm_factory()
+
+llm = llm_factory()
 embedding = embedding_factory()
 ```
 
@@ -60,25 +64,29 @@ Here we are using 2 extractors and 2 relationship builders.
 
 ```python
 from ragas.testset.transforms import apply_transforms
-from ragas.testset.transforms import HeadlinesExtractor, HeadlineSplitter,KeyphrasesExtractor
+from ragas.testset.transforms import (
+    HeadlinesExtractor,
+    HeadlineSplitter,
+    KeyphrasesExtractor,
+)
 
 
 headline_extractor = HeadlinesExtractor(llm=llm)
-headline_splitter = HeadlineSplitter(min_tokens=300,max_tokens=1000)
-keyphrase_extractor = KeyphrasesExtractor(llm=llm,property_name="keyphrases",max_num=10)
-
+headline_splitter = HeadlineSplitter(min_tokens=300, max_tokens=1000)
+keyphrase_extractor = KeyphrasesExtractor(
+    llm=llm, property_name="keyphrases", max_num=10
+)
 ```
 
 
 ```python
 transforms = [
-              headline_extractor,
-              headline_splitter,
-              keyphrase_extractor,
+    headline_extractor,
+    headline_splitter,
+    keyphrase_extractor,
 ]
 
-apply_transforms(kg,transforms=transforms)
-    
+apply_transforms(kg, transforms=transforms)
 ```
 
     Applying KeyphrasesExtractor:   6%| | 2/36 [00:01<00:20,  1Property 'keyphrases' already exists in node '514fdc'. Skipping!
@@ -97,9 +105,16 @@ You can also do this automatically by using the [automatic persona generator](/d
 
 ```python
 from ragas.testset.persona import Persona
-person1 = Persona(name="gitlab employee",role_description="A junior gitlab employee curious on workings on gitlab")
-persona2 = Persona(name="Hiring manager at gitlab",role_description="A hiring manager at gitlab trying to underestand hiring policies in gitlab")
-persona_list = [person1,persona2]
+
+person1 = Persona(
+    name="gitlab employee",
+    role_description="A junior gitlab employee curious on workings on gitlab",
+)
+persona2 = Persona(
+    name="Hiring manager at gitlab",
+    role_description="A hiring manager at gitlab trying to underestand hiring policies in gitlab",
+)
+persona_list = [person1, persona2]
 ```
 
 ## 
@@ -117,23 +132,23 @@ Inherit from `SingleHopQuerySynthesizer` and modify the function that generates 
 
 
 ```python
-from ragas.testset.synthesizers.single_hop import SingleHopQuerySynthesizer, SingleHopScenario
+from ragas.testset.synthesizers.single_hop import (
+    SingleHopQuerySynthesizer,
+    SingleHopScenario,
+)
 from dataclasses import dataclass
 from ragas.testset.synthesizers.prompts import (
     ThemesPersonasInput,
     ThemesPersonasMatchingPrompt,
 )
 
+
 @dataclass
 class MySingleHopScenario(SingleHopQuerySynthesizer):
 
     theme_persona_matching_prompt = ThemesPersonasMatchingPrompt()
 
-    async def _generate_scenarios(self,
-        n,
-        knowledge_graph,
-        persona_list,
-        callbacks):
+    async def _generate_scenarios(self, n, knowledge_graph, persona_list, callbacks):
 
         property_name = "keyphrases"
         nodes = []
@@ -141,7 +156,7 @@ class MySingleHopScenario(SingleHopQuerySynthesizer):
             if node.type.name == "CHUNK" and node.get_property(property_name):
                 nodes.append(node)
 
-        number_of_samples_per_node = max(1,n//len(nodes))
+        number_of_samples_per_node = max(1, n // len(nodes))
 
         scenarios = []
         for node in nodes:
@@ -153,9 +168,14 @@ class MySingleHopScenario(SingleHopQuerySynthesizer):
                 data=prompt_input, llm=self.llm, callbacks=callbacks
             )
             base_scenarios = self.prepare_combinations(
-                node, themes, personas=persona_list, persona_concepts=persona_concepts.mapping
+                node,
+                themes,
+                personas=persona_list,
+                persona_concepts=persona_concepts.mapping,
             )
-            scenarios.extend(self.sample_combinations(base_scenarios, number_of_samples_per_node))
+            scenarios.extend(
+                self.sample_combinations(base_scenarios, number_of_samples_per_node)
+            )
 
         return scenarios
 ```
@@ -167,7 +187,9 @@ query = MySingleHopScenario(llm=llm)
 
 
 ```python
-scenarios = await query.generate_scenarios(n=5,knowledge_graph=kg,persona_list=persona_list)
+scenarios = await query.generate_scenarios(
+    n=5, knowledge_graph=kg, persona_list=persona_list
+)
 ```
 
 
@@ -212,7 +234,7 @@ to the query. Do not add any information not included in or inferable from the c
 ```python
 prompt = query.get_prompts()["generate_query_reference_prompt"]
 prompt.instruction = instruction
-query.set_prompts(**{"generate_query_reference_prompt":prompt})
+query.set_prompts(**{"generate_query_reference_prompt": prompt})
 ```
 
 

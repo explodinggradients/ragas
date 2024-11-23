@@ -38,7 +38,7 @@ class SingleHopScenario(BaseScenario):
     """
 
     term: str
-    
+
     def __repr__(self) -> str:
         return f"SingleHopScenario(\nnodes={len(self.nodes)}\nterm={self.term}\npersona={self.persona}\nstyle={self.style}\nlength={self.length})"
 
