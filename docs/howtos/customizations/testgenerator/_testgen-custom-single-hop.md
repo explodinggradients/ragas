@@ -1,4 +1,4 @@
-## Create custom single-hop queries from your documents
+# Create custom single-hop queries from your documents
 
 ### Load sample documents
 I am using documents from [gitlab handbook](https://huggingface.co/datasets/explodinggradients/Sample_Docs_Markdown). You can download it by running the below command.
