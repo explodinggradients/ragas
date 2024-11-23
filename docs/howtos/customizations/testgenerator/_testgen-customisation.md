@@ -76,8 +76,6 @@ from ragas.testset.transforms import (
     HeadlineSplitter,
     KeyphrasesExtractor,
     OverlapScoreBuilder,
-    CustomNodeFilter,
-    SummaryExtractor,
 )
 
 
@@ -206,7 +204,7 @@ class MyMultiHopQuery(MultiHopQuerySynthesizer):
                     base_scenarios = self.prepare_combinations(
                         [node_a, node_b],
                         overlapped_keywords,
-                        persona_list=persona_list,
+                        personas=persona_list,
                         persona_item_mapping=persona_concepts.mapping,
                         property_name="keyphrases",
                     )
