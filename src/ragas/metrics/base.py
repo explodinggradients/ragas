@@ -12,7 +12,6 @@ from enum import Enum
 from pysbd import Segmenter
 
 from ragas.callbacks import ChainType, new_group
-from ragas.config import DemonstrationConfig, InstructionConfig
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.executor import is_event_loop_running
 from ragas.prompt import PromptMixin
@@ -22,8 +21,10 @@ from ragas.utils import RAGAS_SUPPORTED_LANGUAGE_CODES, camel_to_snake, deprecat
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
+    from ragas.config import DemonstrationConfig, InstructionConfig
     from ragas.embeddings import BaseRagasEmbeddings
     from ragas.llms import BaseRagasLLM
+
 logger = logging.getLogger(__name__)
 
 
