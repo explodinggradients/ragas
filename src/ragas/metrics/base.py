@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import typing as t
 from abc import ABC, abstractmethod
@@ -11,6 +12,7 @@ from enum import Enum
 from pysbd import Segmenter
 
 from ragas.callbacks import ChainType, new_group
+from ragas.config import DemonstrationConfig, InstructionConfig
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.executor import is_event_loop_running
 from ragas.prompt import PromptMixin
@@ -212,6 +214,20 @@ class MetricWithLLM(Metric, PromptMixin):
                 f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please initantiate a the metric with an LLM to run."  # noqa
             )
         self.llm.set_run_config(run_config)
+
+    def train(
+        self,
+        path: str,
+        demonstration_config: DemonstrationConfig,
+        instruction_config: InstructionConfig,
+        callbacks: Callbacks,
+    ) -> None:
+
+        if not path.endswith(".json"):
+            raise ValueError("Train data must be in json format")
+
+        _ = json.load(open(path))
+        return
 
 
 @dataclass
