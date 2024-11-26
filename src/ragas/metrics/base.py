@@ -54,6 +54,12 @@ class MetricType(Enum):
     MULTI_TURN = "multi_turn"
 
 
+class MetricOutputType(Enum):
+    BINARY = "binary"
+    SCORING = "rational"
+    RANKING = "ranking"
+
+
 @dataclass
 class Metric(ABC):
     """
@@ -70,6 +76,7 @@ class Metric(ABC):
 
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(default_factory=dict)
     name: str = field(default="", repr=True)
+    output_type: MetricOutputType = MetricOutputType.SCORING    # TODO: remove default and make it required, add corresponding value to every metric
 
     def __post_init__(self):
         if self.name == "":
