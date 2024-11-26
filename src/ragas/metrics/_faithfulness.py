@@ -101,7 +101,7 @@ class NLIStatementInput(BaseModel):
 
 
 class NLIStatementPrompt(PydanticPrompt[NLIStatementInput, NLIStatementOutput]):
-    instruction = "Your task is to judge the faithfulness of a series of statements based on a given context. For each statement you must return verdict as 1 if the statement can be directly inferred based on the context or 0 if the statement can not be directly inferred based on the context."
+    instruction = "Your task is to judge the faithfulness of a series of statements based on a given context. For each statement you must return verdict as 1 if the statement can be directly inferred based on the context or 0 if the statement can not be directly inferred based on the context. Ensure that each statement includes both a reason and a verdict. Do not omit any fields."
     input_model = NLIStatementInput
     output_model = NLIStatementOutput
     examples = [
