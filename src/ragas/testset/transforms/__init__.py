@@ -19,6 +19,10 @@ from .relationship_builders.cosine import (
     CosineSimilarityBuilder,
     SummaryCosineSimilarityBuilder,
 )
+from .relationship_builders.traditional import (
+    JaccardSimilarityBuilder,
+    OverlapScoreBuilder,
+)
 from .splitters import HeadlineSplitter
 
 __all__ = [
@@ -46,4 +50,6 @@ __all__ = [
     "HeadlineSplitter",
     "CustomNodeFilter",
     "NodeFilter",
+    "JaccardSimilarityBuilder",
+    "OverlapScoreBuilder",
 ]

@@ -85,6 +85,8 @@ nav:
           - Testset Generation:
               - howtos/customizations/testgenerator/index.md
               - Persona Generation: howtos/customizations/testgenerator/_persona_generator.md
+              - Custom Single-hop Query: howtos/customizations/testgenerator/_testgen-custom-single-hop.md
+              - Custom Multi-hop Query: howtos/customizations/testgenerator/_testgen-customisation.md
       - Applications:
           - howtos/applications/index.md
           - Metrics:
