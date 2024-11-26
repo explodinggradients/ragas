@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 from ragas.embeddings import BaseRagasEmbeddings
 from ragas.llms import BaseRagasLLM
-from ragas.optimizers.base import Optimizer
+from ragas.optimizers import GeneticOptimizer, Optimizer
 
 DEFAULT_OPTIMIZER_CONFIG = {"max_steps": 100}
 
@@ -18,8 +18,8 @@ class DemonstrationConfig(BaseModel):
 
 class InstructionConfig(BaseModel):
     enabled: bool = True
-    optimizer: Optimizer
+    optimizer: Optimizer = GeneticOptimizer()
     optimizer_config: t.Dict[str, t.Any] = Field(
         default_factory=lambda: DEFAULT_OPTIMIZER_CONFIG
     )
-    model: t.Optional[BaseRagasLLM] = None
+    llm: t.Optional[BaseRagasLLM] = None

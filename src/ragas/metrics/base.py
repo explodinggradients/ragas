@@ -227,7 +227,23 @@ class MetricWithLLM(Metric, PromptMixin):
         if not path.endswith(".json"):
             raise ValueError("Train data must be in json format")
 
-        _ = json.load(open(path))
+        data = json.load(open(path))
+        data = data.get(self.name)
+        if data is None:
+            raise ValueError(f"Metric '{self.name}' not found in train data")
+
+        optimizer = instruction_config.optimizer
+        llm = instruction_config.llm or self.llm
+        if llm is None:
+            raise ValueError(
+                f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please initantiate a the metric with an LLM to run."  # noqa
+            )
+        if optimizer.llm is None:
+            optimizer.llm = llm
+
+        optimizer_config = instruction_config.optimizer_config or {}
+        optimizer.optimize(self, data, optimizer_config, callbacks)
+
         return
 
 
