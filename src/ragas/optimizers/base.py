@@ -1,18 +1,20 @@
 import typing as t
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
-from ragas.embeddings.base import BaseRagasEmbeddings
+from langchain_core.callbacks import Callbacks
+
 from ragas.llms.base import BaseRagasLLM
 from ragas.metrics.base import MetricWithLLM
 
 
+@dataclass
 class Optimizer(ABC):
     """
     Abstract base class for all optimizers.
     """
 
-    llm: BaseRagasLLM
-    embedding: t.Optional[BaseRagasEmbeddings] = None
+    llm: t.Optional[BaseRagasLLM] = None
 
     @abstractmethod
     def optimize(
@@ -20,6 +22,7 @@ class Optimizer(ABC):
         metric: MetricWithLLM,
         train_data: t.Any,
         config: t.Dict[t.Any, t.Any],
+        callbacks: Callbacks,
     ) -> MetricWithLLM:
         """
         Optimizes the prompts for the given metric.
