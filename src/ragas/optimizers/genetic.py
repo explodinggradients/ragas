@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from ragas.metrics.base import MetricWithLLM
 from ragas.optimizers.base import Optimizer
 from ragas.prompt import PydanticPrompt
+from ragas.losses import Loss
 
 
 class FormattedExamples(BaseModel):
@@ -118,6 +119,7 @@ class GeneticOptimizer(Optimizer):
         self,
         metric: MetricWithLLM,
         train_data: t.Any,
+        loss: Loss,
         config: t.Dict[t.Any, t.Any],
         callbacks: Callbacks,
     ) -> MetricWithLLM:
@@ -125,3 +127,7 @@ class GeneticOptimizer(Optimizer):
         # max_steps = config.get("max_steps", 100)
 
         return metric
+    
+    
+    def _reverse_engineer_instruction(self, examples: t.List[t.Dict[t.Dict[str, t.Any]]]) -> str:
+        return "instruction"

@@ -14,6 +14,7 @@ from pysbd import Segmenter
 from ragas.callbacks import ChainType, new_group
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.executor import is_event_loop_running
+from ragas.losses import BinaryMetricLoss, MSELoss
 from ragas.prompt import PromptMixin
 from ragas.run_config import RunConfig
 from ragas.utils import RAGAS_SUPPORTED_LANGUAGE_CODES, camel_to_snake, deprecated
@@ -247,6 +248,16 @@ class MetricWithLLM(Metric, PromptMixin):
             )
         if optimizer.llm is None:
             optimizer.llm = llm
+            
+        if instruction_config.loss is None:
+            if self.output_type == MetricOutputType.BINARY:
+                loss_fun = BinaryMetricLoss()
+            elif self.output_type == MetricOutputType.SCORING:
+                loss_fun = MSELoss()
+            else:
+                raise NotImplementedError(f"Output type '{self.output_type}' not implemented")
+        else:
+            loss_fun = instruction_config.loss
 
         optimizer_config = instruction_config.optimizer_config or {}
         optimizer.optimize(self, data, optimizer_config, callbacks)

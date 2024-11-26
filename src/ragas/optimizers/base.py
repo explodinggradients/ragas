@@ -6,6 +6,7 @@ from langchain_core.callbacks import Callbacks
 
 from ragas.llms.base import BaseRagasLLM
 from ragas.metrics.base import MetricWithLLM
+from ragas.losses import Loss
 
 
 @dataclass
@@ -21,6 +22,7 @@ class Optimizer(ABC):
         self,
         metric: MetricWithLLM,
         train_data: t.Any,
+        loss: Loss,
         config: t.Dict[t.Any, t.Any],
         callbacks: Callbacks,
     ) -> MetricWithLLM:
