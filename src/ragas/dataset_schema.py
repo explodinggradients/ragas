@@ -526,3 +526,21 @@ class EvaluationResult:
         if verbose:
             print(f"Evaluation results uploaded! View at {evaluation_endpoint}")
         return evaluation_endpoint
+
+
+class PromptAnnotation(BaseModel):
+    prompt_input: t.Dict[str, t.Any]
+    prompt_output: t.Dict[str, t.Any]
+    is_accepted: bool
+    is_edited: t.Union[t.Dict[str, t.Any], None]
+
+
+class SampleAnnotation(BaseModel):
+    metric_input: t.Dict[str, t.Any]
+    metric_output: float
+    prompts: t.Dict[str, t.List[PromptAnnotation]]
+    is_accepted: bool
+
+
+class MetricAnnotation(BaseModel):
+    root: t.Dict[str, t.List[SampleAnnotation]]

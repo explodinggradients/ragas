@@ -57,7 +57,8 @@ class MetricType(Enum):
 
 class MetricOutputType(Enum):
     BINARY = "binary"
-    SCORING = "rational"
+    DISCRETE = "discrete"
+    CONTINUOUS = "continuous"
     RANKING = "ranking"
 
 
@@ -77,7 +78,9 @@ class Metric(ABC):
 
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(default_factory=dict)
     name: str = field(default="", repr=True)
-    output_type: MetricOutputType = MetricOutputType.SCORING    # TODO: remove default and make it required, add corresponding value to every metric
+    output_type: MetricOutputType = (
+        MetricOutputType.DISCRETE
+    )  # TODO: remove default and make it required, add corresponding value to every metric
 
     def __post_init__(self):
         if self.name == "":
@@ -248,19 +251,26 @@ class MetricWithLLM(Metric, PromptMixin):
             )
         if optimizer.llm is None:
             optimizer.llm = llm
-            
+
         if instruction_config.loss is None:
             if self.output_type == MetricOutputType.BINARY:
                 loss_fun = BinaryMetricLoss()
-            elif self.output_type == MetricOutputType.SCORING:
+            elif (
+                self.output_type == MetricOutputType.CONTINUOUS
+                or self.output_type == MetricOutputType.DISCRETE
+            ):
                 loss_fun = MSELoss()
             else:
-                raise NotImplementedError(f"Output type '{self.output_type}' not implemented")
+                raise NotImplementedError(
+                    f"Output type '{self.output_type}' not implemented"
+                )
         else:
             loss_fun = instruction_config.loss
 
+        optimizer.metric = self
+
         optimizer_config = instruction_config.optimizer_config or {}
-        optimizer.optimize(self, data, optimizer_config, callbacks)
+        optimizer.optimize(data, loss_fun, optimizer_config, callbacks)
 
         return
 

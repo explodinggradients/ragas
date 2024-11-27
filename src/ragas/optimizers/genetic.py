@@ -3,10 +3,10 @@ import typing as t
 from langchain_core.callbacks import Callbacks
 from pydantic import BaseModel
 
+from ragas.losses import Loss
 from ragas.metrics.base import MetricWithLLM
 from ragas.optimizers.base import Optimizer
 from ragas.prompt import PydanticPrompt
-from ragas.losses import Loss
 
 
 class FormattedExamples(BaseModel):
@@ -117,17 +117,31 @@ class GeneticOptimizer(Optimizer):
 
     def optimize(
         self,
-        metric: MetricWithLLM,
         train_data: t.Any,
         loss: Loss,
         config: t.Dict[t.Any, t.Any],
         callbacks: Callbacks,
     ) -> MetricWithLLM:
 
-        # max_steps = config.get("max_steps", 100)
+        if self.metric is None:
+            raise ValueError("No metric provided for optimization.")
 
-        return metric
-    
-    
-    def _reverse_engineer_instruction(self, examples: t.List[t.Dict[t.Dict[str, t.Any]]]) -> str:
+        if self.llm is None:
+            raise ValueError("No llm provided for optimization.")
+
+        # max_steps = config.get("max_steps", 100
+        return self.metric
+
+    def _initialize_population(
+        self, dataset: t.List[t.Dict[t.Dict[str, t.Any]]]
+    ) -> t.List[str]:
+
+        return ["instruction"]
+
+    def _reverse_engineer_instruction(
+        self, dataset: t.List[t.Dict[t.Dict[str, t.Any]]]
+    ) -> str:
+        return "instruction"
+
+    def _cross_over(self, parent_1: str, parent_2: str) -> str:
         return "instruction"

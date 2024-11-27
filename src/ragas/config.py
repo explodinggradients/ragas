@@ -4,8 +4,8 @@ from pydantic import BaseModel, Field
 
 from ragas.embeddings import BaseRagasEmbeddings
 from ragas.llms import BaseRagasLLM
-from ragas.optimizers import GeneticOptimizer, Optimizer
 from ragas.losses import Loss
+from ragas.optimizers import GeneticOptimizer, Optimizer
 
 DEFAULT_OPTIMIZER_CONFIG = {"max_steps": 100}
 
