@@ -56,7 +56,7 @@ class Testset(RagasDataset[TestsetSample]):
     """
 
     samples: t.List[TestsetSample]
-    run_id: str = field(default_factory=lambda: str(uuid4()), repr=False)
+    run_id: str = field(default_factory=lambda: str(uuid4()), repr=False, compare=False)
     cost_cb: t.Optional[CostCallbackHandler] = field(default=None, repr=False)
 
     def to_evaluation_dataset(self) -> EvaluationDataset:
