@@ -1,5 +1,7 @@
 import json
+import random
 import typing as t
+from collections import defaultdict
 
 import numpy as np
 from pydantic import BaseModel
@@ -30,7 +32,7 @@ class MetricAnnotation(BaseModel):
     root: t.Dict[str, t.List[SampleAnnotation]]
 
     def __getitem__(self, key):
-        return self.root[key]
+        return SingleMetricAnnotation(name=key, samples=self.root[key])
 
     @classmethod
     def from_json(cls, path, metric_name: t.Optional[str]) -> "MetricAnnotation":
@@ -47,20 +49,39 @@ class MetricAnnotation(BaseModel):
             }
         )
 
+    def __len__(self):
+        return sum(len(value) for value in self.root.values())
+
+
+class SingleMetricAnnotation(BaseModel):
+    name: str
+    samples: t.List[SampleAnnotation]
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    @classmethod
+    def from_json(cls, path) -> "SingleMetricAnnotation":
+
+        dataset = json.load(open(path))
+
+        return cls(
+            name=dataset["name"],
+            samples=[SampleAnnotation(**sample) for sample in dataset["samples"]],
+        )
+
     def filter(self, function: t.Optional[t.Callable] = None):
 
         if function is None:
             function = lambda x: True  # noqa: E731
 
-        return MetricAnnotation(
-            root={
-                key: [sample for sample in value if function(sample)]
-                for key, value in self.root.items()
-            }
+        return SingleMetricAnnotation(
+            name=self.name,
+            samples=[sample for sample in self.samples if function(sample)],
         )
 
     def __len__(self):
-        return sum(len(value) for value in self.root.values())
+        return len(self.samples)
 
     def train_test_split(
         self,
@@ -81,7 +102,6 @@ class MetricAnnotation(BaseModel):
     def batch(
         self,
         batch_size: int,
-        stratify: t.Optional[str] = None,
         drop_last_batch: bool = False,
     ):
         """
@@ -92,3 +112,85 @@ class MetricAnnotation(BaseModel):
             stratify (str): The column to stratify the batches on.
             drop_last_batch (bool): Whether to drop the last batch if it is smaller than the specified batch size.
         """
+
+        samples = self.samples[:]
+        random.shuffle(samples)
+
+        all_batches = [
+            samples[i : i + batch_size]
+            for i in range(0, len(samples), batch_size)
+            if len(samples[i : i + batch_size]) == batch_size or not drop_last_batch
+        ]
+
+        return all_batches
+
+    def stratified_batches(
+        self,
+        batch_size: int,
+        stratify_key: str,
+        drop_last_batch: bool = False,
+        replace: bool = False,
+    ) -> t.List[t.List[SampleAnnotation]]:
+        """
+        Create stratified batches based on a specified key, ensuring proportional representation.
+
+        Parameters:
+            batch_size (int): Number of samples per batch.
+            stratify_key (str): Key in `metric_input` used for stratification (e.g., class labels).
+            drop_last_batch (bool): If True, drops the last batch if it has fewer samples than `batch_size`.
+            replace (bool): If True, allows reusing samples from the same class to fill a batch if necessary.
+
+        Returns:
+            List[List[SampleAnnotation]]: A list of stratified batches, each batch being a list of SampleAnnotation objects.
+        """
+        # Group samples based on the stratification key
+        class_groups = defaultdict(list)
+        for sample in self.samples:
+            key = sample.metric_input.get(stratify_key)
+            if key is None:
+                raise ValueError(
+                    f"Stratify key '{stratify_key}' not found in metric_input."
+                )
+            class_groups[key].append(sample)
+
+        # Shuffle each class group for randomness
+        for group in class_groups.values():
+            random.shuffle(group)
+
+        # Determine the number of batches required
+        total_samples = len(self.samples)
+        num_batches = (
+            total_samples // batch_size
+            if drop_last_batch
+            else (total_samples + batch_size - 1) // batch_size
+        )
+        samples_per_class_per_batch = {
+            cls: max(1, len(samples) // num_batches)
+            for cls, samples in class_groups.items()
+        }
+
+        # Create stratified batches
+        all_batches = []
+        while len(all_batches) < num_batches:
+            batch = []
+            for cls, samples in list(class_groups.items()):
+                # Determine the number of samples to take from this class
+                count = min(
+                    samples_per_class_per_batch[cls],
+                    len(samples),
+                    batch_size - len(batch),
+                )
+                if count > 0:
+                    # Add samples from the current class
+                    batch.extend(samples[:count])
+                    class_groups[cls] = samples[count:]  # Remove used samples
+                elif replace and len(batch) < batch_size:
+                    # Reuse samples if `replace` is True
+                    batch.extend(random.choices(samples, k=batch_size - len(batch)))
+
+            # Shuffle the batch to mix classes
+            random.shuffle(batch)
+            if len(batch) == batch_size or not drop_last_batch:
+                all_batches.append(batch)
+
+        return all_batches
