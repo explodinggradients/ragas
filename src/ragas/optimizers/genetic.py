@@ -163,8 +163,12 @@ class GeneticOptimizer(Optimizer):
             optimization_generation_grp,
             raise_exceptions,
         )
+        # TODO: replace with metric.get_prompts('function_name')
+        seed_prompts = {key: val.instruction for key, val in self.metric.get_prompts().items() if key in initial_population[0].keys()}
+        initial_population.append(seed_prompts)
+        
         # max_steps = config.get("max_steps", 100
-        return self.metric
+        return initial_population
 
     def _initialize_population(
         self,
@@ -224,6 +228,9 @@ class GeneticOptimizer(Optimizer):
 
         if self.llm is None:
             raise ValueError("No llm provided for optimization.")
+        
+        if self.metric is None:
+            raise ValueError("No metric provided for optimization.")
 
         prompt_annotations = {key: [] for key in batch[0]["prompts"].keys()}
         candidates = {}
@@ -247,7 +254,7 @@ class GeneticOptimizer(Optimizer):
             instruction = await self.reverse_engineer_prompt.generate(
                 data=formatted_examples, llm=self.llm, callbacks=callbacks
             )
-            candidates[prompt_name] = instruction
+            candidates[prompt_name] = instruction.instruction
 
         return candidates
 
