@@ -57,8 +57,8 @@ class SingleMetricAnnotation(BaseModel):
     name: str
     samples: t.List[SampleAnnotation]
 
-    def __getitem__(self, key):
-        return getattr(self, key)
+    def __getitem__(self, idx):
+        return self.samples[idx]
 
     @classmethod
     def from_json(cls, path) -> "SingleMetricAnnotation":
@@ -146,11 +146,7 @@ class SingleMetricAnnotation(BaseModel):
         # Group samples based on the stratification key
         class_groups = defaultdict(list)
         for sample in self.samples:
-            key = sample.metric_input.get(stratify_key)
-            if key is None:
-                raise ValueError(
-                    f"Stratify key '{stratify_key}' not found in metric_input."
-                )
+            key = sample[stratify_key]
             class_groups[key].append(sample)
 
         # Shuffle each class group for randomness
@@ -160,9 +156,9 @@ class SingleMetricAnnotation(BaseModel):
         # Determine the number of batches required
         total_samples = len(self.samples)
         num_batches = (
-            total_samples // batch_size
+            np.ceil(total_samples / batch_size).astype(int)
             if drop_last_batch
-            else (total_samples + batch_size - 1) // batch_size
+            else np.floor(total_samples / batch_size).astype(int)
         )
         samples_per_class_per_batch = {
             cls: max(1, len(samples) // num_batches)

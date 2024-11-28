@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from langchain_core.callbacks import Callbacks
 
 from ragas.llms.base import BaseRagasLLM
+from ragas.loaders import SingleMetricAnnotation
 from ragas.losses import Loss
 from ragas.metrics.base import MetricWithLLM
 
@@ -21,7 +22,7 @@ class Optimizer(ABC):
     @abstractmethod
     def optimize(
         self,
-        train_data: t.Any,
+        dataset: SingleMetricAnnotation,
         loss: Loss,
         config: t.Dict[t.Any, t.Any],
         callbacks: Callbacks,

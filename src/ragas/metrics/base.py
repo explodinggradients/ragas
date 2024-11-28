@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import typing as t
 from abc import ABC, abstractmethod
@@ -14,6 +13,7 @@ from pysbd import Segmenter
 from ragas.callbacks import ChainType, new_group
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.executor import is_event_loop_running
+from ragas.loaders import MetricAnnotation
 from ragas.losses import BinaryMetricLoss, MSELoss
 from ragas.prompt import PromptMixin
 from ragas.run_config import RunConfig
@@ -238,10 +238,7 @@ class MetricWithLLM(Metric, PromptMixin):
         if not path.endswith(".json"):
             raise ValueError("Train data must be in json format")
 
-        data = json.load(open(path))
-        data = data.get(self.name)
-        if data is None:
-            raise ValueError(f"Metric '{self.name}' not found in train data")
+        dataset = MetricAnnotation.from_json(path, metric_name=self.name)
 
         optimizer = instruction_config.optimizer
         llm = instruction_config.llm or self.llm
@@ -270,7 +267,7 @@ class MetricWithLLM(Metric, PromptMixin):
         optimizer.metric = self
 
         optimizer_config = instruction_config.optimizer_config or {}
-        optimizer.optimize(data, loss_fun, optimizer_config, callbacks)
+        optimizer.optimize(dataset[self.name], loss_fun, optimizer_config, callbacks)
 
         return
 

@@ -3,6 +3,7 @@ import typing as t
 from langchain_core.callbacks import Callbacks
 from pydantic import BaseModel
 
+from ragas.loaders import SampleAnnotation, SingleMetricAnnotation
 from ragas.losses import Loss
 from ragas.metrics.base import MetricWithLLM
 from ragas.optimizers.base import Optimizer
@@ -115,9 +116,11 @@ class GeneticOptimizer(Optimizer):
     A genetic algorithm optimizer that balances exploration and exploitation.
     """
 
+    reverse_engineer_prompt = ReverseEngineerPrompt()
+
     def optimize(
         self,
-        train_data: t.Any,
+        dataset: SingleMetricAnnotation,
         loss: Loss,
         config: t.Dict[t.Any, t.Any],
         callbacks: Callbacks,
@@ -133,15 +136,50 @@ class GeneticOptimizer(Optimizer):
         return self.metric
 
     def _initialize_population(
-        self, dataset: t.List[t.Dict[t.Dict[str, t.Any]]]
+        self, dataset: SingleMetricAnnotation, population_size: int
     ) -> t.List[str]:
 
-        return ["instruction"]
+        candidates = []
+        dataset = dataset.filter(lambda x: x["is_accepted"])
+        batches = dataset.stratified_batches(
+            batch_size=population_size,
+            stratify_key="metric_output",
+            replace=False,
+            drop_last_batch=False,
+        )
+        for batch in batches:
+            candidate = self._reverse_engineer_instruction(batch)
+            candidates.append(candidate)
 
-    def _reverse_engineer_instruction(
-        self, dataset: t.List[t.Dict[t.Dict[str, t.Any]]]
-    ) -> str:
-        return "instruction"
+    async def _reverse_engineer_instruction(
+        self, batch: t.List[SampleAnnotation]
+    ) -> t.Dict[str, str]:
+
+        prompt_annotations = {key: [] for key in batch[0]["prompts"].keys()}
+        candidates = {}
+        for sample in batch:
+            input_ouputs = sample["prompts"]
+            for name, example in input_ouputs.items():
+                input_ = {
+                    key: val
+                    for key, val in example["prompt_input"].items()
+                    if val is not None
+                }
+                output = (
+                    example["edited_output"]
+                    if example["edited_output"]
+                    else example["prompt_output"]
+                )
+                prompt_annotations[name].append({"input": input_, "output": output})
+
+        for prompt_name, examples in prompt_annotations.items():
+            formatted_examples = FormattedExamples.from_examples(examples)
+            instruction = await self.reverse_engineer_prompt.generate(
+                data=formatted_examples, llm=self.llm
+            )
+            candidates[prompt_name] = instruction
+
+        return candidates
 
     def _cross_over(self, parent_1: str, parent_2: str) -> str:
         return "instruction"
