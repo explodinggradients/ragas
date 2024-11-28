@@ -9,7 +9,7 @@ import numpy as np
 
 from ragas.prompt import PydanticPrompt
 from ragas.testset.graph import KnowledgeGraph, Node
-from ragas.testset.persona import Persona, PersonaList
+from ragas.testset.persona import Persona
 from ragas.testset.synthesizers.base import BaseScenario
 from ragas.testset.synthesizers.prompts import (
     ThemesPersonasInput,
@@ -108,7 +108,10 @@ class SingleHopSpecificQuerySynthesizer(SingleHopQuerySynthesizer):
                 data=prompt_input, llm=self.llm, callbacks=callbacks
             )
             base_scenarios = self.prepare_combinations(
-                node, themes, PersonaList(personas=persona_list), persona_concepts
+                node,
+                themes,
+                personas=persona_list,
+                persona_concepts=persona_concepts.mapping,
             )
             scenarios.extend(self.sample_combinations(base_scenarios, samples_per_node))
 

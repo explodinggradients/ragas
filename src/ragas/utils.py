@@ -85,15 +85,15 @@ def is_nan(x):
         return False
 
 
-def get_feature_language(feature: Metric) -> t.Optional[str]:
+def get_metric_language(metric: Metric) -> str:
     from ragas.prompt import BasePrompt
 
     languags = [
         value.language
-        for _, value in vars(feature).items()
+        for _, value in vars(metric).items()
         if isinstance(value, BasePrompt)
     ]
-    return languags[0] if len(languags) > 0 else None
+    return languags[0] if len(languags) > 0 else ""
 
 
 def deprecated(

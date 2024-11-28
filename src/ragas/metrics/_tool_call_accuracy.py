@@ -35,6 +35,11 @@ class ToolCallAccuracy(MultiTurnMetric):
     async def _get_arg_score(
         self, preds: t.Dict[str, t.Any], refs: t.Dict[str, t.Any], callbacks: Callbacks
     ) -> float:
+        if not refs and not preds:
+            return 1.0
+        if not refs:
+            return 0.0
+
         score = 0.0
         for arg in refs.keys():
             if arg in preds:

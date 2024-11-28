@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+import time
 import typing as t
 
 import numpy as np
@@ -7,6 +9,7 @@ import pytest
 from langchain_core.outputs import Generation, LLMResult
 from langchain_core.prompt_values import StringPromptValue as PromptValue
 
+from ragas._analytics import EvaluationEvent
 from ragas.llms.base import BaseRagasLLM
 
 
@@ -47,17 +50,14 @@ def test_evaluation_event():
         event_type="evaluation",
         metrics=["harmfulness"],
         num_rows=1,
-        evaluation_mode="",
         language="english",
-        in_ci=True,
+        evaluation_type="SINGLE_TURN",
     )
 
     payload = evaluation_event.model_dump()
     assert isinstance(payload.get("user_id"), str)
-    assert isinstance(payload.get("evaluation_mode"), str)
+    assert isinstance(payload.get("evaluation_type"), str)
     assert isinstance(payload.get("metrics"), list)
-    assert isinstance(payload.get("language"), str)
-    assert isinstance(payload.get("in_ci"), bool)
 
 
 def setup_user_id_filepath(tmp_path, monkeypatch):
@@ -187,3 +187,108 @@ def test_was_completed(monkeypatch):
 
     assert event_properties_list[-1].event_type == "test"
     assert event_properties_list[-1].is_completed is True
+
+
+evaluation_events_and_num_rows = [
+    (  # 5 same events
+        [
+            EvaluationEvent(
+                event_type="evaluation",
+                metrics=["harmfulness"],
+                num_rows=1,
+                evaluation_type="SINGLE_TURN",
+                language="english",
+            )
+            for _ in range(5)
+        ],
+        [5],
+    ),
+    (  # 5 different events with different metrics
+        [
+            EvaluationEvent(
+                event_type="evaluation",
+                metrics=[f"harmfulness_{i}"],
+                num_rows=1,
+                evaluation_type="SINGLE_TURN",
+                language="english",
+            )
+            for i in range(5)
+        ],
+        [1, 1, 1, 1, 1],
+    ),
+    (  # 5 different events with different num_rows but 2 group of metrics
+        [
+            EvaluationEvent(
+                metrics=["harmfulness"],
+                num_rows=1,
+                evaluation_type="SINGLE_TURN",
+                language="english",
+            )
+            for i in range(10)
+        ]
+        + [
+            EvaluationEvent(
+                event_type="evaluation",
+                metrics=["accuracy"],
+                num_rows=1,
+                evaluation_type="SINGLE_TURN",
+                language="english",
+            )
+            for i in range(5)
+        ],
+        [10, 5],
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "evaluation_events, expected_num_rows_set", evaluation_events_and_num_rows
+)
+def test_analytics_batcher_join_evaluation_events(
+    monkeypatch, evaluation_events, expected_num_rows_set
+):
+    """
+    Test if the batcher joins the evaluation events correctly
+    """
+    from ragas._analytics import AnalyticsBatcher
+
+    batcher = AnalyticsBatcher()
+
+    joined_events = batcher._join_evaluation_events(evaluation_events)
+    assert len(joined_events) == len(expected_num_rows_set)
+    assert sorted(e.num_rows for e in joined_events) == sorted(expected_num_rows_set)
+
+
+@pytest.mark.parametrize(
+    "evaluation_events, expected_num_rows_set", evaluation_events_and_num_rows
+)
+def test_analytics_batcher_flush(monkeypatch, evaluation_events, expected_num_rows_set):
+    """
+    Test if the batcher flushes the events correctly
+    """
+    from ragas._analytics import AnalyticsBatcher
+
+    FLUSH_INTERVAL = 0.3
+    BATCH_SIZE = 5
+    batcher = AnalyticsBatcher(batch_size=BATCH_SIZE, flush_interval=FLUSH_INTERVAL)
+
+    # Use a list to hold the counter so it can be modified in the nested function
+    flush_mock_call_count = [0]
+
+    def flush_mock():
+        # Access the list and modify its first element
+        flush_mock_call_count[0] += 1
+        batcher.buffer = []
+        batcher.last_flush_time = time.time()
+
+    monkeypatch.setattr(batcher, "flush", flush_mock)
+
+    for event in evaluation_events[:-1]:
+        batcher.add_evaluation(event)
+
+    # Access the counter using flush_mock_call_count[0]
+    time.sleep(FLUSH_INTERVAL + 0.1)
+    batcher.add_evaluation(evaluation_events[-1])
+    assert flush_mock_call_count[0] == math.ceil(
+        sum(expected_num_rows_set) / BATCH_SIZE
+    )
