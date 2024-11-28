@@ -88,10 +88,9 @@ class BaseEvent(BaseModel):
 
 class EvaluationEvent(BaseEvent):
     metrics: t.List[str]
-    evaluation_mode: str
     num_rows: int
-    language: str
-    in_ci: bool
+    evaluation_type: t.Literal["SINGLE_TURN", "MULTI_TURN"]
+    event_type: str = "evaluation"
 
 
 class TestsetGenerationEvent(BaseEvent):
@@ -121,11 +120,12 @@ class AnalyticsBatcher:
     def add_evaluation(self, evaluation_event: EvaluationEvent) -> None:
         with self.lock:
             self.buffer.append(evaluation_event)
-            if (
-                len(self.buffer) >= self.BATCH_SIZE
-                or (time.time() - self.last_flush_time) > self.FLUSH_INTERVAL
-            ):
-                self.flush()
+
+        if (
+            len(self.buffer) >= self.BATCH_SIZE
+            or (time.time() - self.last_flush_time) > self.FLUSH_INTERVAL
+        ):
+            self.flush()
 
     def _join_evaluation_events(
         self, events: List[EvaluationEvent]
@@ -143,9 +143,7 @@ class AnalyticsBatcher:
             key = (
                 event.event_type,
                 tuple(event.metrics),
-                event.evaluation_mode,
-                event.language,
-                event.in_ci,
+                event.evaluation_type,
             )
             if key not in grouped_events:
                 grouped_events[key] = event
@@ -156,22 +154,20 @@ class AnalyticsBatcher:
         return list(grouped_events.values())
 
     def flush(self) -> None:
-        with self.lock:
-            # if no events to send, do nothing
-            if not self.buffer:
-                return
+        # if no events to send, do nothing
+        if not self.buffer:
+            return
 
-            try:
-                # join all the EvaluationEvents into a single event and send it
-                events_to_send = self._join_evaluation_events(self.buffer)
-                for event in events_to_send:
-                    track(event)
-            except Exception as err:
-                if _usage_event_debugging():
-                    logger.error(
-                        "Tracking Error: %s", err, stack_info=True, stacklevel=3
-                    )
-            finally:
+        try:
+            # join all the EvaluationEvents into a single event and send it
+            events_to_send = self._join_evaluation_events(self.buffer)
+            for event in events_to_send:
+                track(event)
+        except Exception as err:
+            if _usage_event_debugging():
+                logger.error("Tracking Error: %s", err, stack_info=True, stacklevel=3)
+        finally:
+            with self.lock:
                 self.buffer = []
                 self.last_flush_time = time.time()
 
@@ -212,4 +208,4 @@ def track_was_completed(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: 
 
 
 # Create a global batcher instance
-_analytics_batcher = AnalyticsBatcher()
+_analytics_batcher = AnalyticsBatcher(batch_size=10, flush_interval=10)

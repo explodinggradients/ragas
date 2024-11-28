@@ -50,17 +50,13 @@ def test_evaluation_event():
         event_type="evaluation",
         metrics=["harmfulness"],
         num_rows=1,
-        evaluation_mode="",
-        language="english",
-        in_ci=True,
+        evaluation_type="SINGLE_TURN",
     )
 
     payload = evaluation_event.model_dump()
     assert isinstance(payload.get("user_id"), str)
-    assert isinstance(payload.get("evaluation_mode"), str)
+    assert isinstance(payload.get("evaluation_type"), str)
     assert isinstance(payload.get("metrics"), list)
-    assert isinstance(payload.get("language"), str)
-    assert isinstance(payload.get("in_ci"), bool)
 
 
 def setup_user_id_filepath(tmp_path, monkeypatch):
@@ -199,9 +195,7 @@ evaluation_events_and_num_rows = [
                 event_type="evaluation",
                 metrics=["harmfulness"],
                 num_rows=1,
-                evaluation_mode="",
-                language="english",
-                in_ci=True,
+                evaluation_type="SINGLE_TURN",
             )
             for _ in range(5)
         ],
@@ -213,9 +207,7 @@ evaluation_events_and_num_rows = [
                 event_type="evaluation",
                 metrics=[f"harmfulness_{i}"],
                 num_rows=1,
-                evaluation_mode="",
-                language="english",
-                in_ci=True,
+                evaluation_type="SINGLE_TURN",
             )
             for i in range(5)
         ],
@@ -224,12 +216,9 @@ evaluation_events_and_num_rows = [
     (  # 5 different events with different num_rows but 2 group of metrics
         [
             EvaluationEvent(
-                event_type="evaluation",
-                metrics=[f"harmfulness"],
+                metrics=["harmfulness"],
                 num_rows=1,
-                evaluation_mode="",
-                language="english",
-                in_ci=True,
+                evaluation_type="SINGLE_TURN",
             )
             for i in range(10)
         ]
@@ -238,9 +227,7 @@ evaluation_events_and_num_rows = [
                 event_type="evaluation",
                 metrics=["accuracy"],
                 num_rows=1,
-                evaluation_mode="",
-                language="english",
-                in_ci=True,
+                evaluation_type="SINGLE_TURN",
             )
             for i in range(5)
         ],
@@ -267,7 +254,6 @@ def test_analytics_batcher_join_evaluation_events(
     assert sorted(e.num_rows for e in joined_events) == sorted(expected_num_rows_set)
 
 
-@pytest.mark.skip(reason="no working yet")
 @pytest.mark.parametrize(
     "evaluation_events, expected_num_rows_set", evaluation_events_and_num_rows
 )
@@ -287,6 +273,8 @@ def test_analytics_batcher_flush(monkeypatch, evaluation_events, expected_num_ro
     def flush_mock():
         # Access the list and modify its first element
         flush_mock_call_count[0] += 1
+        batcher.buffer = []
+        batcher.last_flush_time = time.time()
 
     monkeypatch.setattr(batcher, "flush", flush_mock)
 
