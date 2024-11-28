@@ -50,6 +50,7 @@ def test_evaluation_event():
         event_type="evaluation",
         metrics=["harmfulness"],
         num_rows=1,
+        language="english",
         evaluation_type="SINGLE_TURN",
     )
 
@@ -196,6 +197,7 @@ evaluation_events_and_num_rows = [
                 metrics=["harmfulness"],
                 num_rows=1,
                 evaluation_type="SINGLE_TURN",
+                language="english",
             )
             for _ in range(5)
         ],
@@ -208,6 +210,7 @@ evaluation_events_and_num_rows = [
                 metrics=[f"harmfulness_{i}"],
                 num_rows=1,
                 evaluation_type="SINGLE_TURN",
+                language="english",
             )
             for i in range(5)
         ],
@@ -219,6 +222,7 @@ evaluation_events_and_num_rows = [
                 metrics=["harmfulness"],
                 num_rows=1,
                 evaluation_type="SINGLE_TURN",
+                language="english",
             )
             for i in range(10)
         ]
@@ -228,6 +232,7 @@ evaluation_events_and_num_rows = [
                 metrics=["accuracy"],
                 num_rows=1,
                 evaluation_type="SINGLE_TURN",
+                language="english",
             )
             for i in range(5)
         ],

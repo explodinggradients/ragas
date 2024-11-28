@@ -90,6 +90,7 @@ class EvaluationEvent(BaseEvent):
     metrics: t.List[str]
     num_rows: int
     evaluation_type: t.Literal["SINGLE_TURN", "MULTI_TURN"]
+    language: str
     event_type: str = "evaluation"
 
 

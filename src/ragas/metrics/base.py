@@ -16,7 +16,12 @@ from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.executor import is_event_loop_running
 from ragas.prompt import PromptMixin
 from ragas.run_config import RunConfig
-from ragas.utils import RAGAS_SUPPORTED_LANGUAGE_CODES, camel_to_snake, deprecated
+from ragas.utils import (
+    RAGAS_SUPPORTED_LANGUAGE_CODES,
+    camel_to_snake,
+    deprecated,
+    get_metric_language,
+)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -294,6 +299,7 @@ class SingleTurnMetric(Metric):
                 metrics=[self.name],
                 num_rows=1,
                 evaluation_type=MetricType.SINGLE_TURN.name,
+                language=get_metric_language(self),
             )
         )
         return score
@@ -337,6 +343,7 @@ class SingleTurnMetric(Metric):
                 metrics=[self.name],
                 num_rows=1,
                 evaluation_type=MetricType.SINGLE_TURN.name,
+                language=get_metric_language(self),
             )
         )
         return score
@@ -420,6 +427,7 @@ class MultiTurnMetric(Metric):
                 metrics=[self.name],
                 num_rows=1,
                 evaluation_type=MetricType.SINGLE_TURN.name,
+                language=get_metric_language(self),
             )
         )
         return score
@@ -463,6 +471,7 @@ class MultiTurnMetric(Metric):
                 metrics=[self.name],
                 num_rows=1,
                 evaluation_type=MetricType.SINGLE_TURN.name,
+                language=get_metric_language(self),
             )
         )
 
