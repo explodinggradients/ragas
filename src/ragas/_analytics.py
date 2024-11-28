@@ -14,6 +14,7 @@ import requests
 from appdirs import user_data_dir
 from pydantic import BaseModel, Field
 
+from ragas._version import __version__
 from ragas.utils import get_debug_mode
 
 if t.TYPE_CHECKING:
@@ -84,6 +85,7 @@ def get_userid() -> str:
 class BaseEvent(BaseModel):
     event_type: str
     user_id: str = Field(default_factory=get_userid)
+    ragas_version: str = Field(default=__version__)
 
 
 class EvaluationEvent(BaseEvent):
