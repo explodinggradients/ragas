@@ -4,6 +4,7 @@ from langchain_core.callbacks import Callbacks
 from pydantic import BaseModel
 
 from ragas.callbacks import new_group
+from ragas.evaluation import evaluate
 from ragas.executor import Executor
 from ragas.loaders import SampleAnnotation, SingleMetricAnnotation
 from ragas.losses import Loss
@@ -164,11 +165,25 @@ class GeneticOptimizer(Optimizer):
             raise_exceptions,
         )
         # TODO: replace with metric.get_prompts('function_name')
-        seed_prompts = {key: val.instruction for key, val in self.metric.get_prompts().items() if key in initial_population[0].keys()}
+        seed_prompts = {
+            key: val.instruction
+            for key, val in self.metric.get_prompts().items()
+            if key in initial_population[0].keys()
+        }
         initial_population.append(seed_prompts)
         
+        fitness_scores = self.evaluate_fitness(
+            initial_population,
+            dataset,
+            loss,
+            run_config,
+            batch_size,
+            optimization_generation_grp,
+            raise_exceptions,
+        )
+
         # max_steps = config.get("max_steps", 100
-        return initial_population
+        return fitness_scores
 
     def _initialize_population(
         self,
@@ -182,13 +197,13 @@ class GeneticOptimizer(Optimizer):
     ) -> t.List[t.Dict[str, str]]:
 
         initialize_population_rm, initialize_population_grp = new_group(
-            name="initialize_population",
+            name="Initializing Population",
             inputs={"population_size": population_size},
             callbacks=callbacks,
         )
 
         exec = Executor(
-            desc="Intialiize Population",
+            desc="Initializing Population",
             raise_exceptions=raise_exceptions,
             run_config=run_config,
             keep_progress_bar=False,
@@ -228,7 +243,7 @@ class GeneticOptimizer(Optimizer):
 
         if self.llm is None:
             raise ValueError("No llm provided for optimization.")
-        
+
         if self.metric is None:
             raise ValueError("No metric provided for optimization.")
 
@@ -270,3 +285,66 @@ class GeneticOptimizer(Optimizer):
             data=parents, llm=self.llm, callbacks=callbacks
         )
         return offspring.instruction
+    
+    def _set_instructions(self, candidates: t.Dict[str, str]):
+        if self.metric is None:
+            raise ValueError("No metric provided for optimization.")
+        prompts = self.metric.get_prompts()
+        for key, val in candidates.items():
+            prompts[key].instruction = val
+        self.metric.set_prompts(**prompts)
+
+    def evaluate_fitness(
+        self,
+        candidates: t.List[t.Dict[str, str]],
+        dataset: SingleMetricAnnotation,
+        loss_fn: Loss,
+        run_config: t.Optional[RunConfig] = None,
+        batch_size: t.Optional[int] = None,
+        callbacks: t.Optional[Callbacks] = None,
+        raise_exceptions: bool = True,
+    ) -> t.List[float]:
+
+        if self.metric is None:
+            raise ValueError("No metric provided for optimization.")
+
+        losses = []
+        training_ids = []
+        y_true = []
+        for idx, sample in enumerate(dataset):
+            if sample["is_accepted"]:
+                training_ids.append(idx)
+                y_true.append(sample.metric_output)
+            elif not sample["is_accepted"] and self.metric.output_type.name == "BINARY":
+                training_ids.append(idx)
+                y_true.append(int(not sample.metric_output))
+
+        dataset = dataset.select(training_ids)
+        eval_dataset = dataset.to_evaluation_dataset()
+        for idx, candidate in enumerate(candidates):
+            
+            initialize_population_rm, initialize_population_grp = new_group(
+                name=f"Validating Candidate - {idx}",
+                inputs={"candidate": candidate},
+                callbacks=callbacks,
+            )
+            
+            self._set_instructions(candidate)
+            results = evaluate(
+                eval_dataset,
+                metrics=[self.metric],
+                llm=self.llm,
+                run_config=run_config,
+                batch_size=batch_size,
+                callbacks=initialize_population_grp,
+                raise_exceptions=raise_exceptions,
+            )
+            y_pred = results.to_pandas()[self.metric.name].values.tolist()
+            loss = loss_fn(y_true, y_pred)
+            losses.append(loss)
+            
+            initialize_population_rm.on_chain_end(
+                outputs={"loss": loss}
+            )
+
+        return losses

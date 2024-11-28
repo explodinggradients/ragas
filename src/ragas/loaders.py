@@ -6,6 +6,8 @@ from collections import defaultdict
 import numpy as np
 from pydantic import BaseModel
 
+from ragas.dataset_schema import EvaluationDataset
+
 
 class PromptAnnotation(BaseModel):
     prompt_input: t.Dict[str, t.Any]
@@ -22,6 +24,7 @@ class SampleAnnotation(BaseModel):
     metric_output: float
     prompts: t.Dict[str, PromptAnnotation]
     is_accepted: bool
+    target: t.Optional[float] = None
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -57,8 +60,21 @@ class SingleMetricAnnotation(BaseModel):
     name: str
     samples: t.List[SampleAnnotation]
 
+    def to_evaluation_dataset(self) -> EvaluationDataset:
+        samples = [sample.metric_input for sample in self.samples]
+        return EvaluationDataset.from_list(samples)
+
     def __getitem__(self, idx):
         return self.samples[idx]
+
+    def __iter__(self) -> t.Iterator[SampleAnnotation]:  # type: ignore
+        return iter(self.samples)
+
+    def select(self, indices: t.List[int]) -> "SingleMetricAnnotation":
+        return SingleMetricAnnotation(
+            name=self.name,
+            samples=[self.samples[idx] for idx in indices],
+        )
 
     @classmethod
     def from_json(cls, path) -> "SingleMetricAnnotation":
@@ -86,9 +102,9 @@ class SingleMetricAnnotation(BaseModel):
     def train_test_split(
         self,
         test_size: float = 0.2,
-        random_state: t.Optional[np.random.RandomState] = None,
+        seed: int = 42,
         stratify: t.Optional[t.List[t.Any]] = None,
-    ):
+    ) -> t.Tuple["SingleMetricAnnotation", "SingleMetricAnnotation"]:
         """
         Split the dataset into training and testing sets.
 
