@@ -75,7 +75,6 @@ def _make_hashable(o):
         return o
 
 # TODO: for now using this to remove non-deterministic keys
-# TODO: we should use the actual function signature to generate the cache key
 EXCLUDE_KEYS = ['callbacks', 'llm']
 
 
