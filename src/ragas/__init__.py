@@ -1,6 +1,7 @@
 from ragas.dataset_schema import EvaluationDataset, MultiTurnSample, SingleTurnSample
 from ragas.evaluation import evaluate
 from ragas.run_config import RunConfig
+from ragas.cache import cacher
 
 try:
     from ._version import version as __version__
@@ -15,4 +16,5 @@ __all__ = [
     "SingleTurnSample",
     "MultiTurnSample",
     "EvaluationDataset",
+    "cacher",
 ]

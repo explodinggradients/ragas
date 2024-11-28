@@ -15,11 +15,10 @@ from pydantic import BaseModel
 from ragas._version import __version__
 from ragas.callbacks import ChainType, new_group
 from ragas.exceptions import RagasOutputParserException
+from ragas.cache import cacher
 
 from .base import BasePrompt, StringIO, _check_if_language_is_supported
 from .utils import extract_json, get_all_strings, update_strings
-
-from diskcache import Cache
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -31,10 +30,6 @@ logger = logging.getLogger(__name__)
 # type variables for input and output models
 InputModel = t.TypeVar("InputModel", bound=BaseModel)
 OutputModel = t.TypeVar("OutputModel", bound=BaseModel)
-
-# Setup cache
-CACHE_DIR = os.getenv('RAGAS_CACHE_DIR', os.path.join(os.getcwd(), '.cache'))
-cache = Cache(CACHE_DIR)
 
 
 class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
@@ -140,6 +135,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         )
         return output_single[0]
 
+    @cacher()
     async def generate_multiple(
         self,
         llm: BaseRagasLLM,
@@ -182,16 +178,6 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         """
         callbacks = callbacks or []
 
-        cache_key = self._generate_cache_key(data, temperature, stop, n)
-
-        # Check if the result is in the cache
-        try:
-            if cache_key in cache:
-                logger.info(f"Cache hit for key: {cache_key}")
-                return cache[cache_key]
-        except Exception as e:
-            logger.warning(f"Cache access failed for key {cache_key}: {e}")
-
         processed_data = self.process_input(data)
         prompt_rm, prompt_cb = new_group(
             name=self.name,
@@ -228,43 +214,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
                 raise e
 
         prompt_rm.on_chain_end({"output": output_models})
-
-        try:
-            cache[cache_key] = output_models
-        except Exception as e:
-            logger.warning(f"Failed to cache result for key {cache_key}: {e}")
-
         return output_models
-    
-    def _generate_cache_key(
-        self,
-        data: InputModel,
-        temperature: t.Optional[float],
-        stop: t.Optional[t.List[str]],
-        n: int = 1,
-    ) -> str:
-        # Serialize data
-        data_str = json.dumps(data.model_dump(), sort_keys=True)
-        # Hash the examples
-        examples_bytes = json.dumps(
-            [(e[0].model_dump(), e[1].model_dump()) for e in self.examples],
-            sort_keys=True,
-        ).encode('utf-8')
-        examples_hash = hashlib.sha256(examples_bytes).hexdigest()
-
-        # Create a unique key string
-        key_elements = (
-            self.name,
-            self.instruction,
-            examples_hash,
-            data_str,
-            f"temperature={temperature}",
-            f"stop={stop}",
-            f"n={n}",
-        )
-        key_string = '|'.join(key_elements)
-        key_hash = hashlib.sha256(key_string.encode('utf-8')).hexdigest()
-        return key_hash
 
     def process_input(self, input: InputModel) -> InputModel:
         return input
@@ -364,10 +314,6 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             and self.examples == other.examples
             and self.language == other.language
         )
-    
-    def __del__(self):
-        # Ensure the cache is closed when the object is deleted
-        cache.close()
 
     def save(self, file_path: str):
         """
