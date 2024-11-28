@@ -232,7 +232,7 @@ class MetricWithLLM(Metric, PromptMixin):
         path: str,
         demonstration_config: DemonstrationConfig,
         instruction_config: InstructionConfig,
-        callbacks: Callbacks,
+        callbacks: Callbacks = None,
     ) -> None:
 
         if not path.endswith(".json"):
@@ -267,7 +267,9 @@ class MetricWithLLM(Metric, PromptMixin):
         optimizer.metric = self
 
         optimizer_config = instruction_config.optimizer_config or {}
-        optimizer.optimize(dataset[self.name], loss_fun, optimizer_config, callbacks)
+        optimizer.optimize(
+            dataset[self.name], loss_fun, optimizer_config, callbacks=callbacks
+        )
 
         return
 

@@ -8,6 +8,7 @@ from ragas.llms.base import BaseRagasLLM
 from ragas.loaders import SingleMetricAnnotation
 from ragas.losses import Loss
 from ragas.metrics.base import MetricWithLLM
+from ragas.run_config import RunConfig
 
 
 @dataclass
@@ -25,7 +26,11 @@ class Optimizer(ABC):
         dataset: SingleMetricAnnotation,
         loss: Loss,
         config: t.Dict[t.Any, t.Any],
-        callbacks: Callbacks,
+        run_config: t.Optional[RunConfig] = None,
+        batch_size: t.Optional[int] = None,
+        callbacks: t.Optional[Callbacks] = None,
+        with_debugging_logs=False,
+        raise_exceptions: bool = True,
     ) -> MetricWithLLM:
         """
         Optimizes the prompts for the given metric.
