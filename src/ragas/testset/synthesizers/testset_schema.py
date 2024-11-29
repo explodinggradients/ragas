@@ -40,7 +40,7 @@ class TestsetPacket(BaseModel):
     """
 
     samples_original: t.List[TestsetSample]
-    run_id: str = Field(default_factory=lambda: str(uuid4()))
+    run_id: str
     created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
 
 
@@ -56,6 +56,7 @@ class Testset(RagasDataset[TestsetSample]):
     """
 
     samples: t.List[TestsetSample]
+    run_id: str = field(default_factory=lambda: str(uuid4()), repr=False, compare=False)
     cost_cb: t.Optional[CostCallbackHandler] = field(default=None, repr=False)
 
     def to_evaluation_dataset(self) -> EvaluationDataset:
@@ -137,7 +138,7 @@ class Testset(RagasDataset[TestsetSample]):
     def upload(self, base_url: str = RAGAS_API_URL, verbose: bool = True) -> str:
         import requests
 
-        packet = TestsetPacket(samples_original=self.samples)
+        packet = TestsetPacket(samples_original=self.samples, run_id=self.run_id)
         response = requests.post(
             f"{base_url}/alignment/testset", json=packet.model_dump()
         )
