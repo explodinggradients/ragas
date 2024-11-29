@@ -60,7 +60,7 @@ def evaluate(
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
     callbacks: Callbacks = None,
     in_ci: bool = False,
-    run_config: RunConfig = RunConfig(),
+    run_config: t.Optional[RunConfig] = None,
     token_usage_parser: t.Optional[TokenUsageParser] = None,
     raise_exceptions: bool = False,
     column_map: t.Optional[t.Dict[str, str]] = None,
@@ -147,6 +147,7 @@ def evaluate(
     """
     column_map = column_map or {}
     callbacks = callbacks or []
+    run_config = run_config or RunConfig()
 
     if helicone_config.is_enabled:
         import uuid
