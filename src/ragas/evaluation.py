@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from uuid import UUID
 
 import numpy as np
 from datasets import Dataset
@@ -66,6 +67,7 @@ def evaluate(
     column_map: t.Optional[t.Dict[str, str]] = None,
     show_progress: bool = True,
     batch_size: t.Optional[int] = None,
+    run_id: t.Optional[UUID] = None,
 ) -> EvaluationResult:
     """
     Run the evaluation on the dataset with different metrics
@@ -335,6 +337,7 @@ def evaluate(
                 cost_cb,
             ),
             ragas_traces=tracer.traces,
+            run_id=run_id,
         )
         if not evaluation_group_cm.ended:
             evaluation_rm.on_chain_end({"scores": result.scores})

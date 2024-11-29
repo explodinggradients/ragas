@@ -171,7 +171,7 @@ class GeneticOptimizer(Optimizer):
             if key in initial_population[0].keys()
         }
         initial_population.append(seed_prompts)
-        
+
         fitness_scores = self.evaluate_fitness(
             initial_population,
             dataset,
@@ -285,7 +285,7 @@ class GeneticOptimizer(Optimizer):
             data=parents, llm=self.llm, callbacks=callbacks
         )
         return offspring.instruction
-    
+
     def _set_instructions(self, candidates: t.Dict[str, str]):
         if self.metric is None:
             raise ValueError("No metric provided for optimization.")
@@ -321,14 +321,15 @@ class GeneticOptimizer(Optimizer):
 
         dataset = dataset.select(training_ids)
         eval_dataset = dataset.to_evaluation_dataset()
-        for idx, candidate in enumerate(candidates):
-            
-            initialize_population_rm, initialize_population_grp = new_group(
-                name=f"Validating Candidate - {idx}",
-                inputs={"candidate": candidate},
-                callbacks=callbacks,
-            )
-            
+
+        initialize_population_rm, initialize_population_grp = new_group(
+            name="Evaluating candidate fitness",
+            inputs={"candidates": candidates},
+            callbacks=callbacks,
+        )
+        run_id = initialize_population_rm.run_id
+        for candidate in candidates:
+
             self._set_instructions(candidate)
             results = evaluate(
                 eval_dataset,
@@ -338,13 +339,12 @@ class GeneticOptimizer(Optimizer):
                 batch_size=batch_size,
                 callbacks=initialize_population_grp,
                 raise_exceptions=raise_exceptions,
+                run_id=run_id,
             )
             y_pred = results.to_pandas()[self.metric.name].values.tolist()
             loss = loss_fn(y_true, y_pred)
             losses.append(loss)
-            
-            initialize_population_rm.on_chain_end(
-                outputs={"loss": loss}
-            )
+
+        initialize_population_rm.on_chain_end(outputs={"losses": losses})
 
         return losses

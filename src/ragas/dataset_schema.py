@@ -4,6 +4,7 @@ import json
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from uuid import UUID
 
 from datasets import Dataset as HFDataset
 from pydantic import BaseModel, field_validator
@@ -375,6 +376,7 @@ class EvaluationResult:
     cost_cb: t.Optional[CostCallbackHandler] = None
     traces: t.List[t.Dict[str, t.Any]] = field(default_factory=list)
     ragas_traces: t.Dict[str, ChainRun] = field(default_factory=dict, repr=False)
+    run_id: t.Optional[UUID] = None
 
     def __post_init__(self):
         # transform scores from list of dicts to dict of lists
@@ -392,7 +394,7 @@ class EvaluationResult:
                 values.append(value + 1e-10)
 
         # parse the traces
-        self.traces = parse_run_traces(self.ragas_traces)
+        self.traces = parse_run_traces(self.ragas_traces, self.run_id)
 
     def __repr__(self) -> str:
         score_strs = [f"'{k}': {v:0.4f}" for k, v in self._repr_dict.items()]

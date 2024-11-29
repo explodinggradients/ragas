@@ -133,11 +133,12 @@ class MetricTrace(dict):
 
 def parse_run_traces(
     traces: t.Dict[str, ChainRun],
+    parent_run_id: t.Optional[uuid.UUID] = None,
 ) -> t.List[t.Dict[str, t.Any]]:
     root_traces = [
         chain_trace
         for chain_trace in traces.values()
-        if chain_trace.parent_run_id is None
+        if chain_trace.parent_run_id == str(parent_run_id)
     ]
     if len(root_traces) > 1:
         raise ValueError(
