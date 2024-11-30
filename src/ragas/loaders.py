@@ -115,6 +115,61 @@ class SingleMetricAnnotation(BaseModel):
         """
         pass
 
+    def sample(
+        self, n: int, stratify_key: t.Optional[str] = None
+    ) -> "SingleMetricAnnotation":
+        """
+        Create a subset of the dataset.
+
+        Parameters:
+            n (int): The number of samples to include in the subset.
+            stratify_key (str): The column to stratify the subset on.
+
+        Returns:
+            SingleMetricAnnotation: A subset of the dataset with `n` samples.
+        """
+        if n > len(self.samples):
+            raise ValueError(
+                "Requested sample size exceeds the number of available samples."
+            )
+
+        if stratify_key is None:
+            # Simple random sampling
+            sampled_indices = random.sample(range(len(self.samples)), n)
+            sampled_samples = [self.samples[i] for i in sampled_indices]
+        else:
+            # Stratified sampling
+            class_groups = defaultdict(list)
+            for idx, sample in enumerate(self.samples):
+                key = sample.metric_input.get(stratify_key)
+                class_groups[key].append(idx)
+
+            # Determine the proportion of samples to take from each class
+            total_samples = sum(len(indices) for indices in class_groups.values())
+            proportions = {
+                cls: len(indices) / total_samples
+                for cls, indices in class_groups.items()
+            }
+
+            sampled_indices = []
+            for cls, indices in class_groups.items():
+                cls_sample_count = int(np.round(proportions[cls] * n))
+                cls_sample_count = min(
+                    cls_sample_count, len(indices)
+                )  # Don't oversample
+                sampled_indices.extend(random.sample(indices, cls_sample_count))
+
+            # Handle any rounding discrepancies to ensure exactly `n` samples
+            while len(sampled_indices) < n:
+                remaining_indices = set(range(len(self.samples))) - set(sampled_indices)
+                if not remaining_indices:
+                    break
+                sampled_indices.append(random.choice(list(remaining_indices)))
+
+            sampled_samples = [self.samples[i] for i in sampled_indices]
+
+        return SingleMetricAnnotation(name=self.name, samples=sampled_samples)
+
     def batch(
         self,
         batch_size: int,
