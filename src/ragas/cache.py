@@ -45,23 +45,6 @@ class DiskCacheBackend(CacheInterface):
         self.cache.close()
 
 
-class InMemoryCacheBackend(CacheInterface):
-    def __init__(self):
-        self.cache = {}
-
-    def get(self, key: str):
-        return self.cache.get(key)
-
-    def set(self, key: str, value):
-        self.cache[key] = value
-
-    def has_key(self, key: str) -> bool:
-        return key in self.cache
-
-    def __del__(self):
-        self.cache = {}
-
-
 def _make_hashable(o):
     if isinstance(o, (tuple, list)):
         return tuple(_make_hashable(e) for e in o)
@@ -97,22 +80,18 @@ def _generate_cache_key(func, args, kwargs):
 
 def cacher(cache_backend: Optional[CacheInterface] = None):
     if cache_backend is None:
-        print("Using disk cache")
         cache_backend = DiskCacheBackend(
             os.path.join(os.path.dirname(__file__), ".cache")
         )
 
     def decorator(func):
         is_async = inspect.iscoroutinefunction(func)
-        print(f"Caching {func.__qualname__} {'async' if is_async else 'sync'}")
 
         @functools.wraps(func)
         async def async_wrapper(*args, **kwargs):
             cache_key = _generate_cache_key(func, args, kwargs)
-            print(f"Cache key: {cache_key}")
 
             if cache_backend.has_key(cache_key):
-                print(f"Cache hit for key: {cache_key}")
                 return cache_backend.get(cache_key)
 
             result = await func(*args, **kwargs)
@@ -122,10 +101,8 @@ def cacher(cache_backend: Optional[CacheInterface] = None):
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
             cache_key = _generate_cache_key(func, args, kwargs)
-            print(f"Cache key: {cache_key}")
 
             if cache_backend.has_key(cache_key):
-                print(f"Cache hit for key: {cache_key}")
                 return cache_backend.get(cache_key)
 
             result = func(*args, **kwargs)
