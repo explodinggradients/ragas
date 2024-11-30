@@ -4,6 +4,7 @@ from langchain_core.callbacks import Callbacks
 from pydantic import BaseModel
 
 from ragas.callbacks import new_group
+from ragas.dataset_schema import EvaluationResult
 from ragas.evaluation import evaluate
 from ragas.executor import Executor
 from ragas.loaders import SampleAnnotation, SingleMetricAnnotation
@@ -12,6 +13,10 @@ from ragas.metrics.base import MetricWithLLM
 from ragas.optimizers.base import Optimizer
 from ragas.prompt import PydanticPrompt
 from ragas.run_config import RunConfig
+from ragas.dataset_schema import EvaluationDataset
+import logging
+
+logger = logging.getLogger(__name__)
 
 RAGAS_OPTIMIZATION_GROUP = "ragas_optimization"
 
@@ -94,7 +99,7 @@ class FeedbackMutationPrompt(
 ):
     name: str = "feedback_mutation"
     instruction: str = (
-        "You're an expert reviewer. Given an instruction and a set of (input  containing (user_input, response, reference), output, expected_output) examples, give maximum 3 feedbacks on how the instruction can be improved to correct the mistakes in incorrect outputs and reach expected output."
+        "You're an expert reviewer. Given an instruction and a set of (input  containing (user_input, response, reference, etc), output, expected_output) examples, give maximum 3 feedbacks on how the instruction can be improved to correct the mistakes in incorrect outputs and reach expected output."
         "Do not provide the feedback to add examples with the instruction."
     )
     input_model = FeedbackMutationInput
@@ -124,6 +129,8 @@ class GeneticOptimizer(Optimizer):
 
     reverse_engineer_prompt = ReverseEngineerPrompt()
     cross_over_prompt = CrossOverPrompt()
+    feedback_generation_prompt = FeedbackMutationPrompt()
+    feedback_mutation_prompt = FeedbackMutationPromptGeneration()
 
     def optimize(
         self,
@@ -147,6 +154,7 @@ class GeneticOptimizer(Optimizer):
 
         population_size = config.get("population_size", 3)
         num_demonstrations = config.get("num_demonstrations", 3)
+        # elitism_rate = config.get("elitism_rate", 0.5)
 
         # new group for optimization
         optimization_generation_rm, optimization_generation_grp = new_group(
@@ -183,7 +191,16 @@ class GeneticOptimizer(Optimizer):
         )
 
         # max_steps = config.get("max_steps", 100
-        return fitness_scores
+        improved_prompts = self.feedback_mutation(
+            initial_population,
+            dataset,
+            sample_size=10,
+            run_config=run_config,
+            batch_size=batch_size,
+            callbacks=optimization_generation_grp,
+            raise_exceptions=raise_exceptions,
+        )
+        return improved_prompts
 
     def _initialize_population(
         self,
@@ -294,6 +311,191 @@ class GeneticOptimizer(Optimizer):
             prompts[key].instruction = val
         self.metric.set_prompts(**prompts)
 
+    def feedback_mutation(
+        self,
+        candidates: t.List[t.Dict[str, str]],
+        dataset: SingleMetricAnnotation,
+        sample_size: int,
+        run_config: t.Optional[RunConfig] = None,
+        batch_size: t.Optional[int] = None,
+        callbacks: t.Optional[Callbacks] = None,
+        raise_exceptions: bool = True,
+    ) -> t.List[str]:
+
+        if self.metric is None:
+            raise ValueError("No metric provided for optimization.")
+
+        feedback_rm, feedback_grp = new_group(
+            name="Feedback mutation",
+            inputs={"candidates": candidates},
+            callbacks=callbacks,
+        )
+        improved_candidates = []
+        dataset = dataset.filter(lambda x: x["is_accepted"])
+        for candidate in candidates:
+            candidate_rm, candidate_grp = new_group(
+                name="Candidate feedback mutation",
+                inputs={"candidate": candidate},
+                callbacks=feedback_grp,
+            )
+            dataset_sample = dataset.sample(sample_size, stratify_key="metric_output")
+            batch, target = self._get_evaluation_dataset(dataset_sample)
+            self._set_instructions(candidate)
+            results = evaluate(
+                batch,
+                metrics=[self.metric],
+                llm=self.llm,
+                run_config=run_config,
+                batch_size=batch_size,
+                callbacks=candidate_grp,
+                raise_exceptions=raise_exceptions,
+                run_id=candidate_rm.run_id,
+            )
+
+            exec = Executor(
+                desc="Getting feedbacks",
+                raise_exceptions=raise_exceptions,
+                run_config=run_config,
+                keep_progress_bar=False,
+                batch_size=batch_size,
+            )
+            exec.submit(
+                self._feedback_mutation,
+                candidate=candidate,
+                dataset=dataset_sample,
+                results=results,
+                target=target,
+                callbacks=candidate_grp,
+            )
+            try:
+                improved_candidate = exec.results()
+                improved_candidates.append(improved_candidate)
+            except Exception as e:
+                feedback_rm.on_chain_error(e)
+                raise e
+            else:
+                feedback_rm.on_chain_end(
+                    outputs={"improved_candidates": improved_candidates}
+                )
+
+        return improved_candidates
+
+    async def _feedback_mutation(
+        self,
+        candidate: t.Dict[str, str],
+        dataset: SampleAnnotation,
+        results: EvaluationResult,
+        target: t.List[float],
+        callbacks: Callbacks = None,
+    ) -> t.Dict[str, str]:
+
+        if self.llm is None:
+            raise ValueError("No llm provided for optimization.")
+
+        if self.metric is None:
+            raise ValueError("No metric provided for optimization.")
+
+        feedback_candidates = await self._get_feedbacks(
+            candidate, dataset, results, target, callbacks
+        )
+        improved_candidates = await self._implement_feedbacks(
+            candidate, feedback_candidates, callbacks
+        )
+        return improved_candidates
+
+    async def _implement_feedbacks(
+        self,
+        candidate: t.Dict[str, str],
+        feedbacks: t.Dict[str, t.List[str]],
+        callbacks: Callbacks = None,
+    ) -> t.Dict[str, str]:
+
+        if self.llm is None:
+            raise ValueError("No llm provided for optimization.")
+
+        improved_candidate = {}
+        for key in candidate.keys():
+            feedback = feedbacks[key]
+            if feedbacks:
+                feedback_input = FeedbackMutationPromptInput(
+                    instruction=candidate[key], feedbacks=feedback
+                )
+                improved_candidate[key] = await self.feedback_mutation_prompt.generate(
+                    data=feedback_input, llm=self.llm, callbacks=callbacks
+                )
+            else:
+                improved_candidate[key] = candidate[key]
+                logger.warning(f"No feedbacks found for the prompt {key}. Returning the original prompt.")
+
+        return improved_candidate
+
+    async def _get_feedbacks(
+        self,
+        candidate: t.Dict[str, str],
+        dataset: SampleAnnotation,
+        results: EvaluationResult,
+        target: t.List[float],
+        callbacks: Callbacks = None,
+    ) -> t.Dict[str, t.List[str]]:
+        
+        
+        def dict_to_str(dict: t.Dict[str, t.Any]) -> str:
+            return "".join(f"\n{key}:\n\t{val}\n" for key, val in dict.items())
+
+        if self.llm is None:
+            raise ValueError("No llm provided for optimization.")
+
+        if self.metric is None:
+            raise ValueError("No metric provided for optimization.")
+
+        prediction = results.to_pandas()[self.metric.name].values.tolist()
+        indices = [idx for idx in range(len(target)) if target[idx] != prediction[idx]]
+        traces = [trace[self.metric.name] for trace in results.traces]
+        if indices:
+            feedback_candidates = {}
+            for key in candidate.keys():
+                feedback_data = [
+                    FeedbackExample(
+                        input=dict_to_str(traces[idx][key]["input"].model_dump(exclude_none=True)),
+                        output=traces[idx][key]["output"][0].model_dump(exclude_none=True),
+                        expected_output=dataset[idx]["prompts"][key]["prompt_output"],
+                    )
+                    for idx in indices
+                ]
+                prompt_input = FeedbackMutationInput(
+                    instruction=candidate[key], examples=feedback_data
+                )
+                feedbacks = await self.feedback_generation_prompt.generate(
+                    data=prompt_input, llm=self.llm, callbacks=callbacks
+                )
+                feedback_candidates[key] = feedbacks.feedbacks
+        else:
+            logger.warning("No samples found for the feedback generation.")
+            feedback_candidates = {key: [] for key in candidate.keys()}
+
+        return feedback_candidates
+
+    def _get_evaluation_dataset(
+        self, dataset: SingleMetricAnnotation
+    ) -> t.Tuple[EvaluationDataset, t.List[float]]:
+
+        if self.metric is None:
+            raise ValueError("No metric provided for optimization.")
+
+        training_ids = []
+        y_true = []
+        for idx, sample in enumerate(dataset):
+            if sample["is_accepted"]:
+                training_ids.append(idx)
+                y_true.append(sample.metric_output)
+            elif not sample["is_accepted"] and self.metric.output_type.name == "BINARY":
+                training_ids.append(idx)
+                y_true.append(int(not sample.metric_output))
+
+        dataset = dataset.select(training_ids)
+        eval_dataset = dataset.to_evaluation_dataset()
+        return eval_dataset, y_true
+
     def evaluate_fitness(
         self,
         candidates: t.List[t.Dict[str, str]],
@@ -309,18 +511,8 @@ class GeneticOptimizer(Optimizer):
             raise ValueError("No metric provided for optimization.")
 
         losses = []
-        training_ids = []
-        y_true = []
-        for idx, sample in enumerate(dataset):
-            if sample["is_accepted"]:
-                training_ids.append(idx)
-                y_true.append(sample.metric_output)
-            elif not sample["is_accepted"] and self.metric.output_type.name == "BINARY":
-                training_ids.append(idx)
-                y_true.append(int(not sample.metric_output))
 
-        dataset = dataset.select(training_ids)
-        eval_dataset = dataset.to_evaluation_dataset()
+        eval_dataset, y_true = self._get_evaluation_dataset(dataset)
 
         initialize_population_rm, initialize_population_grp = new_group(
             name="Evaluating candidate fitness",
