@@ -1,7 +1,10 @@
 import typing as t
 from dataclasses import dataclass, field
 
+import pytest
+
 from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics import AspectCritic, SimpleCriteriaScore
 from ragas.metrics.base import MetricType
 
 
@@ -89,3 +92,20 @@ def test_required_columns():
             user_input="a", response="b", retrieved_contexts=["c"]
         ).to_dict()
     )
+
+
+@pytest.mark.parametrize("metric", [AspectCritic, SimpleCriteriaScore])
+def test_metrics_with_definition(metric):
+    """
+    Test the general metrics like AspectCritic, SimpleCriteriaScore
+    """
+
+    m = metric(name="metric", definition="test")
+
+    # check if the definition is set
+    assert m.definition == "test"
+
+    # check if the definition is updated and the instruction along with it
+    m.definition = "this is a new definition"
+    assert m.definition == "this is a new definition"
+    assert "this is a new definition" in m.single_turn_prompt.instruction

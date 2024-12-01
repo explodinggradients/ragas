@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import typing as t
 
-import numpy as np
 from datasets import Dataset
 from langchain_core.callbacks import BaseCallbackHandler, BaseCallbackManager
 from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 
-from ragas._analytics import EvaluationEvent, track, track_was_completed
+from ragas._analytics import track_was_completed
 from ragas.callbacks import ChainType, RagasTracer, new_group
 from ragas.dataset_schema import (
     EvaluationDataset,
@@ -37,7 +36,7 @@ from ragas.metrics.base import (
     is_reproducable,
 )
 from ragas.run_config import RunConfig
-from ragas.utils import convert_v1_to_v2_dataset, get_feature_language
+from ragas.utils import convert_v1_to_v2_dataset
 from ragas.validation import (
     remap_column_names,
     validate_required_columns,
@@ -351,18 +350,4 @@ def evaluate(
         for i in reproducable_metrics:
             metrics[i].reproducibility = 1  # type: ignore
 
-    # log the evaluation event
-    metrics_names = [m.name for m in metrics]
-    metric_lang = [get_feature_language(m) for m in metrics]
-    metric_lang = np.unique([m for m in metric_lang if m is not None])
-    track(
-        EvaluationEvent(
-            event_type="evaluation",
-            metrics=metrics_names,
-            evaluation_mode="",
-            num_rows=len(dataset),
-            language=metric_lang[0] if len(metric_lang) > 0 else "",
-            in_ci=in_ci,
-        )
-    )
     return result
