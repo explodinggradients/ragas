@@ -2,6 +2,7 @@ import logging
 import typing as t
 from uuid import UUID
 
+import numpy as np
 from langchain_core.callbacks import Callbacks
 from pydantic import BaseModel
 
@@ -11,8 +12,8 @@ from ragas.evaluation import evaluate
 from ragas.executor import Executor
 from ragas.loaders import SampleAnnotation, SingleMetricAnnotation
 from ragas.losses import Loss
-from ragas.metrics.base import MetricWithLLM
 from ragas.optimizers.base import Optimizer
+from ragas.optimizers.utils import hamming_distance
 from ragas.prompt import PydanticPrompt
 from ragas.run_config import RunConfig
 
@@ -142,7 +143,7 @@ class GeneticOptimizer(Optimizer):
         callbacks: t.Optional[Callbacks] = None,
         with_debugging_logs=False,
         raise_exceptions: bool = True,
-    ) -> MetricWithLLM:
+    ) -> t.Dict[str, str]:
 
         callbacks = callbacks or []
 
@@ -154,7 +155,6 @@ class GeneticOptimizer(Optimizer):
 
         population_size = config.get("population_size", 3)
         num_demonstrations = config.get("num_demonstrations", 3)
-        # elitism_rate = config.get("elitism_rate", 0.5)
 
         # new group for optimization
         optimization_generation_rm, optimization_generation_grp = new_group(
@@ -180,17 +180,6 @@ class GeneticOptimizer(Optimizer):
         }
         initial_population.append(seed_prompts)
 
-        # fitness_scores = self.evaluate_fitness(
-        #     initial_population,
-        #     dataset,
-        #     loss,
-        #     run_config,
-        #     batch_size,
-        #     optimization_generation_grp,
-        #     raise_exceptions,
-        # )
-
-        # max_steps = config.get("max_steps", 100
         improved_prompts = self.feedback_mutation(
             initial_population,
             dataset,
@@ -201,7 +190,31 @@ class GeneticOptimizer(Optimizer):
             raise_exceptions=raise_exceptions,
         )
 
-        return improved_prompts
+        improved_prompts = self.cross_over_mutation(
+            improved_prompts,
+            dataset,
+            run_config=run_config,
+            batch_size=batch_size,
+            callbacks=optimization_generation_grp,
+            raise_exceptions=raise_exceptions,
+        )
+
+        fitness_scores = self.evaluate_fitness(
+            improved_prompts,
+            dataset,
+            loss,
+            run_config=run_config,
+            batch_size=batch_size,
+            callbacks=optimization_generation_grp,
+            raise_exceptions=raise_exceptions,
+        )
+        best_candidate_idx = improved_prompts[np.argmax(fitness_scores)]
+
+        optimization_generation_rm.on_chain_end(
+            outputs={"best_candidate": improved_prompts[best_candidate_idx]}
+        )
+
+        return improved_prompts[best_candidate_idx]
 
     def _initialize_population(
         self,
@@ -321,7 +334,7 @@ class GeneticOptimizer(Optimizer):
         batch_size: t.Optional[int] = None,
         callbacks: t.Optional[Callbacks] = None,
         raise_exceptions: bool = True,
-    ) -> t.List[str]:
+    ) -> t.List[t.Dict[str, str]]:
 
         if self.metric is None:
             raise ValueError("No metric provided for optimization.")
@@ -569,3 +582,96 @@ class GeneticOptimizer(Optimizer):
         initialize_population_rm.on_chain_end(outputs={"losses": losses})
 
         return losses
+
+    async def _cross_over_chain(
+        self,
+        parent_x: t.Dict[str, str],
+        parent_y: t.Dict[str, str],
+        callbacks: Callbacks,
+    ):
+
+        if parent_x.keys() != parent_y.keys():
+            raise ValueError("The parents must have the same prompt names.")
+
+        chain_offsprings = {}
+        for key in parent_x.keys():
+            offspring = await self._cross_over_prompts(
+                parent_x[key], parent_y[key], callbacks
+            )
+            chain_offsprings[key] = offspring
+
+        return chain_offsprings
+
+    def cross_over_mutation(
+        self,
+        candidates: t.List[t.Dict[str, str]],
+        dataset: SingleMetricAnnotation,
+        run_config: t.Optional[RunConfig] = None,
+        batch_size: t.Optional[int] = None,
+        callbacks: t.Optional[Callbacks] = None,
+        raise_exceptions: bool = True,
+    ):
+
+        if self.metric is None:
+            raise ValueError("No metric provided for optimization.")
+
+        if self.llm is None:
+            raise ValueError("No llm provided for optimization.")
+
+        eval_dataset, y_true = self._get_evaluation_dataset(dataset)
+
+        cross_over_rm, cross_over_grp = new_group(
+            name="Cross-over mutation",
+            inputs={"candidates": candidates},
+            callbacks=callbacks,
+        )
+        run_id = cross_over_rm.run_id
+        prediction_vectors = []
+        for candidate in candidates:
+
+            results = self.evaluate_candidate(
+                candidate=candidate,
+                eval_dataset=eval_dataset,
+                run_config=run_config,
+                batch_size=batch_size,
+                callbacks=cross_over_grp,
+                raise_exceptions=raise_exceptions,
+                run_id=run_id,
+            )
+            y_pred = results.to_pandas()[self.metric.name].values.tolist()
+            prediction = [int(pred == true) for pred, true in zip(y_pred, y_true)]
+            prediction_vectors.append(prediction)
+
+        prediction_vectors = np.array(prediction_vectors)
+        distance_matrix = hamming_distance(prediction_vectors)
+
+        exec = Executor(
+            desc="Mutating candidates",
+            raise_exceptions=raise_exceptions,
+            run_config=run_config,
+            keep_progress_bar=False,
+            batch_size=batch_size,
+        )
+
+        offspring_candidates = []
+        for idx, candidate in enumerate(candidates):
+            parent_x = candidates[idx]
+            parent_y = candidates[np.argmin(distance_matrix[idx])]
+            exec.submit(
+                self._cross_over_chain,
+                parent_x=parent_x,
+                parent_y=parent_y,
+                callbacks=cross_over_grp,
+            )
+
+        try:
+            offspring_candidates = exec.results()
+        except Exception as e:
+            cross_over_rm.on_chain_error(e)
+            raise e
+        else:
+            cross_over_rm.on_chain_end(
+                outputs={"offspring_candidates": offspring_candidates}
+            )
+
+        return offspring_candidates
