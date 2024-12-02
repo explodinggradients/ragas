@@ -1,10 +1,12 @@
+import logging
 import typing as t
+from uuid import UUID
 
 from langchain_core.callbacks import Callbacks
 from pydantic import BaseModel
 
 from ragas.callbacks import new_group
-from ragas.dataset_schema import EvaluationResult
+from ragas.dataset_schema import EvaluationDataset, EvaluationResult
 from ragas.evaluation import evaluate
 from ragas.executor import Executor
 from ragas.loaders import SampleAnnotation, SingleMetricAnnotation
@@ -13,8 +15,6 @@ from ragas.metrics.base import MetricWithLLM
 from ragas.optimizers.base import Optimizer
 from ragas.prompt import PydanticPrompt
 from ragas.run_config import RunConfig
-from ragas.dataset_schema import EvaluationDataset
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -180,15 +180,15 @@ class GeneticOptimizer(Optimizer):
         }
         initial_population.append(seed_prompts)
 
-        fitness_scores = self.evaluate_fitness(
-            initial_population,
-            dataset,
-            loss,
-            run_config,
-            batch_size,
-            optimization_generation_grp,
-            raise_exceptions,
-        )
+        # fitness_scores = self.evaluate_fitness(
+        #     initial_population,
+        #     dataset,
+        #     loss,
+        #     run_config,
+        #     batch_size,
+        #     optimization_generation_grp,
+        #     raise_exceptions,
+        # )
 
         # max_steps = config.get("max_steps", 100
         improved_prompts = self.feedback_mutation(
@@ -200,6 +200,7 @@ class GeneticOptimizer(Optimizer):
             callbacks=optimization_generation_grp,
             raise_exceptions=raise_exceptions,
         )
+
         return improved_prompts
 
     def _initialize_population(
@@ -290,7 +291,7 @@ class GeneticOptimizer(Optimizer):
 
         return candidates
 
-    async def _cross_over(
+    async def _cross_over_prompts(
         self, parent_1: str, parent_2: str, callbacks: Callbacks = None
     ) -> str:
 
@@ -340,11 +341,9 @@ class GeneticOptimizer(Optimizer):
             )
             dataset_sample = dataset.sample(sample_size, stratify_key="metric_output")
             batch, target = self._get_evaluation_dataset(dataset_sample)
-            self._set_instructions(candidate)
-            results = evaluate(
-                batch,
-                metrics=[self.metric],
-                llm=self.llm,
+            results = self.evaluate_candidate(
+                candidate=candidate,
+                eval_dataset=batch,
                 run_config=run_config,
                 batch_size=batch_size,
                 callbacks=candidate_grp,
@@ -425,7 +424,9 @@ class GeneticOptimizer(Optimizer):
                 )
             else:
                 improved_candidate[key] = candidate[key]
-                logger.warning(f"No feedbacks found for the prompt {key}. Returning the original prompt.")
+                logger.warning(
+                    f"No feedbacks found for the prompt {key}. Returning the original prompt."
+                )
 
         return improved_candidate
 
@@ -437,8 +438,7 @@ class GeneticOptimizer(Optimizer):
         target: t.List[float],
         callbacks: Callbacks = None,
     ) -> t.Dict[str, t.List[str]]:
-        
-        
+
         def dict_to_str(dict: t.Dict[str, t.Any]) -> str:
             return "".join(f"\n{key}:\n\t{val}\n" for key, val in dict.items())
 
@@ -456,8 +456,12 @@ class GeneticOptimizer(Optimizer):
             for key in candidate.keys():
                 feedback_data = [
                     FeedbackExample(
-                        input=dict_to_str(traces[idx][key]["input"].model_dump(exclude_none=True)),
-                        output=traces[idx][key]["output"][0].model_dump(exclude_none=True),
+                        input=dict_to_str(
+                            traces[idx][key]["input"].model_dump(exclude_none=True)
+                        ),
+                        output=traces[idx][key]["output"][0].model_dump(
+                            exclude_none=True
+                        ),
                         expected_output=dataset[idx]["prompts"][key]["prompt_output"],
                     )
                     for idx in indices
@@ -496,6 +500,33 @@ class GeneticOptimizer(Optimizer):
         eval_dataset = dataset.to_evaluation_dataset()
         return eval_dataset, y_true
 
+    def evaluate_candidate(
+        self,
+        candidate: t.Dict[str, str],
+        eval_dataset: EvaluationDataset,
+        run_config: t.Optional[RunConfig] = None,
+        batch_size: t.Optional[int] = None,
+        callbacks: t.Optional[Callbacks] = None,
+        raise_exceptions: bool = True,
+        run_id: t.Optional[UUID] = None,
+    ) -> EvaluationResult:
+
+        if self.metric is None:
+            raise ValueError("No metric provided for optimization.")
+
+        self._set_instructions(candidate)
+        results = evaluate(
+            eval_dataset,
+            metrics=[self.metric],
+            llm=self.llm,
+            run_config=run_config,
+            batch_size=batch_size,
+            callbacks=callbacks,
+            raise_exceptions=raise_exceptions,
+            run_id=run_id,
+        )
+        return results
+
     def evaluate_fitness(
         self,
         candidates: t.List[t.Dict[str, str]],
@@ -522,11 +553,9 @@ class GeneticOptimizer(Optimizer):
         run_id = initialize_population_rm.run_id
         for candidate in candidates:
 
-            self._set_instructions(candidate)
-            results = evaluate(
-                eval_dataset,
-                metrics=[self.metric],
-                llm=self.llm,
+            results = self.evaluate_candidate(
+                candidate=candidate,
+                eval_dataset=eval_dataset,
                 run_config=run_config,
                 batch_size=batch_size,
                 callbacks=initialize_population_grp,
