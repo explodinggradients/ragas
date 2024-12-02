@@ -113,7 +113,7 @@ class SingleMetricAnnotation(BaseModel):
             seed (int): Random seed for reproducibility.
             stratify (list): The column values to stratify the split on.
         """
-        pass
+        raise NotImplementedError
 
     def sample(
         self, n: int, stratify_key: t.Optional[str] = None
