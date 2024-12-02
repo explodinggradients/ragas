@@ -41,6 +41,13 @@ class BaseSample(BaseModel):
         """
         return list(self.to_dict().keys())
 
+    def to_string(self) -> str:
+        """
+        Get the string representation of the sample.
+        """
+        sample_dict = self.to_dict()
+        return "".join(f"\n{key}:\n\t{val}\n" for key, val in sample_dict.items())
+
 
 class SingleTurnSample(BaseSample):
     """
@@ -394,7 +401,8 @@ class EvaluationResult:
                 values.append(value + 1e-10)
 
         # parse the traces
-        self.traces = parse_run_traces(self.ragas_traces, self.run_id)
+        run_id = str(self.run_id) if self.run_id is not None else None
+        self.traces = parse_run_traces(self.ragas_traces, run_id)
 
     def __repr__(self) -> str:
         score_strs = [f"'{k}': {v:0.4f}" for k, v in self._repr_dict.items()]
