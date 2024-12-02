@@ -31,7 +31,7 @@ class Optimizer(ABC):
         callbacks: t.Optional[Callbacks] = None,
         with_debugging_logs=False,
         raise_exceptions: bool = True,
-    ) -> MetricWithLLM:
+    ) -> t.Dict[str, str]:
         """
         Optimizes the prompts for the given metric.
 
@@ -46,7 +46,7 @@ class Optimizer(ABC):
 
         Returns
         -------
-        MetricWithLLM
-            The optimized metric.
+        Dict[str, str]
+            The optimized prompts for given chain.
         """
         pass
