@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from ragas.dataset_schema import SingleTurnSample
 from ragas.prompt import PydanticPrompt
 from ragas.testset.graph import Node
-from ragas.testset.persona import PersonaList
+from ragas.testset.persona import Persona, PersonaList
 from ragas.testset.synthesizers.base import (
     BaseScenario,
     BaseSynthesizer,
@@ -39,6 +39,9 @@ class SingleHopScenario(BaseScenario):
 
     term: str
 
+    def __repr__(self) -> str:
+        return f"SingleHopScenario(\nnodes={len(self.nodes)}\nterm={self.term}\npersona={self.persona}\nstyle={self.style}\nlength={self.length})"
+
 
 @dataclass
 class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
@@ -49,13 +52,14 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
         self,
         node: Node,
         terms: t.List[str],
-        persona_list: PersonaList,
-        persona_concepts,
+        personas: t.List[Persona],
+        persona_concepts: t.Dict[str, t.List[str]],
     ) -> t.List[t.Dict[str, t.Any]]:
 
         sample = {"terms": terms, "node": node}
         valid_personas = []
-        for persona, concepts in persona_concepts.mapping.items():
+        persona_list = PersonaList(personas=personas)
+        for persona, concepts in persona_concepts.items():
             concepts = [concept.lower() for concept in concepts]
             if any(term.lower() in concepts for term in terms):
                 if persona_list[persona]:

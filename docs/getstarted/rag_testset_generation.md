@@ -107,7 +107,7 @@ from ragas.testset.transforms import default_transforms, apply_transforms
 transformer_llm = generator_llm
 embedding_model = generator_embeddings
 
-trans = default_transforms(llm=transformer_llm, embedding_model=embedding_model)
+trans = default_transforms(documents=docs, llm=transformer_llm, embedding_model=embedding_model)
 apply_transforms(kg, trans)
 ```
 
@@ -129,7 +129,7 @@ Now we will use the `loaded_kg` to create the [TestsetGenerator][ragas.testset.s
 ```python
 from ragas.testset import TestsetGenerator
 
-generator = TestsetGenerator(llm=generator_llm, knowledge_graph=loaded_kg)
+generator = TestsetGenerator(llm=generator_llm, embedding_model=embedding_model, knowledge_graph=loaded_kg)
 ```
 
 We can also define the distribution of queries we would like to generate. Here lets use the default distribution.

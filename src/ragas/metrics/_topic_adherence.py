@@ -8,7 +8,12 @@ import numpy as np
 from pydantic import BaseModel, Field
 
 from ragas.dataset_schema import MultiTurnSample
-from ragas.metrics.base import MetricType, MetricWithLLM, MultiTurnMetric
+from ragas.metrics.base import (
+    MetricOutputType,
+    MetricType,
+    MetricWithLLM,
+    MultiTurnMetric,
+)
 from ragas.prompt import PydanticPrompt
 
 if t.TYPE_CHECKING:
@@ -142,6 +147,7 @@ class TopicAdherenceScore(MetricWithLLM, MultiTurnMetric):
             }
         }
     )
+    output_type: t.Optional[MetricOutputType] = MetricOutputType.CONTINUOUS
     mode: t.Literal["precision", "recall", "f1"] = "f1"
     topic_extraction_prompt: PydanticPrompt = TopicExtractionPrompt()
     topic_classification_prompt: PydanticPrompt = TopicClassificationPrompt()

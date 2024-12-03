@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.metrics.base import (
+    MetricOutputType,
     MetricType,
     MetricWithLLM,
     MultiTurnMetric,
@@ -94,6 +95,7 @@ class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         definition: str,
         llm: t.Optional[BaseRagasLLM] = None,
         required_columns: t.Optional[t.Dict[MetricType, t.Set[str]]] = None,
+        output_type: t.Optional[MetricOutputType] = MetricOutputType.DISCRETE,
         single_turn_prompt: t.Optional[PydanticPrompt] = None,
         multi_turn_prompt: t.Optional[PydanticPrompt] = None,
         strictness: int = 1,
@@ -116,14 +118,15 @@ class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
             name=name,
             llm=llm,
             _required_columns=required_columns,
+            output_type=output_type,
         )
 
-        self.definition = definition
+        self._definition = definition
         self.single_turn_prompt = single_turn_prompt or SingleTurnSimpleCriteriaPrompt()
         self.multi_turn_prompt = multi_turn_prompt or MultiTurnSimpleCriteriaPrompt()
 
         # update the instruction for the prompts with the definition
-        instruction = f"Evaluate the Input based on the criterial defined. Give a score between 0 and 5.\nCriteria Definition: {self.definition}"
+        instruction = f"Evaluate the Input based on the criterial defined. Give a score between 0 and 5.\nCriteria Definition: {self._definition}"
         self.single_turn_prompt.instruction = instruction
         self.multi_turn_prompt.instruction = instruction
 
@@ -134,7 +137,19 @@ class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         )
 
     def __repr__(self) -> str:
-        return f"{self.name}(required_columns={self.required_columns}, llm={self.llm}, definition={self.definition})"
+        return f"{self.name}(required_columns={self.required_columns}, llm={self.llm}, definition={self._definition})"
+
+    @property
+    def definition(self) -> str:
+        return self._definition
+
+    @definition.setter
+    def definition(self, value: str) -> None:
+        self._definition = value
+        # Update the instruction for both prompts with the new definition
+        instruction = f"Evaluate the Input based on the criterial defined. Give a score between 0 and 5.\nCriteria Definition: {self._definition}"
+        self.single_turn_prompt.instruction = instruction
+        self.multi_turn_prompt.instruction = instruction
 
     def _compute_score(
         self, safe_loaded_responses: t.List[SimpleCriteriaOutput]

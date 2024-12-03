@@ -9,7 +9,7 @@ import numpy as np
 from ragas.prompt import PydanticPrompt
 from ragas.testset.graph import KnowledgeGraph, Node
 from ragas.testset.graph_queries import get_child_nodes
-from ragas.testset.persona import Persona, PersonaList
+from ragas.testset.persona import Persona
 from ragas.testset.synthesizers.multi_hop.base import (
     MultiHopQuerySynthesizer,
     MultiHopScenario,
@@ -115,8 +115,8 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
             base_scenarios = self.prepare_combinations(
                 nodes,
                 concept_combination.combinations,
-                PersonaList(personas=persona_list),
-                persona_concepts,
+                personas=persona_list,
+                persona_item_mapping=persona_concepts.mappping,
                 property_name="themes",
             )
             base_scenarios = self.sample_diverse_combinations(
