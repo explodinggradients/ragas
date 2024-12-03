@@ -42,7 +42,8 @@ class DiskCacheBackend(CacheInterface):
         return key in self.cache
 
     def __del__(self):
-        self.cache.close()
+        if hasattr(self, 'cache'):
+            self.cache.close()
 
 
 def _make_hashable(o):
@@ -81,7 +82,7 @@ def _generate_cache_key(func, args, kwargs):
 def cacher(cache_backend: Optional[CacheInterface] = None):
     if cache_backend is None:
         cache_backend = DiskCacheBackend(
-            os.path.join(os.path.dirname(__file__), ".cache")
+            cache_dir=".cache",
         )
 
     def decorator(func):
