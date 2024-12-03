@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.metrics.base import (
+    MetricOutputType,
     MetricType,
     MetricWithLLM,
     MultiTurnMetric,
@@ -88,6 +89,7 @@ class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         rubrics: t.Dict[str, str] = DEFAULT_REFERENCE_FREE_RUBRICS,
         llm: t.Optional[BaseRagasLLM] = None,
         required_columns: t.Optional[t.Dict[MetricType, t.Set[str]]] = None,
+        output_type: t.Optional[MetricOutputType] = MetricOutputType.DISCRETE,
         single_turn_prompt: t.Optional[PydanticPrompt] = None,
         multi_turn_prompt: t.Optional[PydanticPrompt] = None,
         max_retries: int = 1,
@@ -109,7 +111,12 @@ class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
                 "reference:optional",
             },
         }
-        super().__init__(name=name, llm=llm, _required_columns=self._required_columns)
+        super().__init__(
+            name=name,
+            llm=llm,
+            _required_columns=self._required_columns,
+            output_type=output_type,
+        )
 
     def __repr__(self) -> str:
         return f"{self.name}(required_columns={self.required_columns}, llm={self.llm}), rubrics={self.rubrics}"

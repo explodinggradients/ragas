@@ -7,7 +7,12 @@ import numpy as np
 from pydantic import BaseModel, Field
 
 from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric
+from ragas.metrics.base import (
+    MetricOutputType,
+    MetricType,
+    MetricWithLLM,
+    SingleTurnMetric,
+)
 from ragas.prompt import ImageTextPrompt
 
 if t.TYPE_CHECKING:
@@ -80,6 +85,8 @@ class MultiModalRelevance(MetricWithLLM, SingleTurnMetric):
             }
         }
     )
+    output_type: t.Optional[MetricOutputType] = MetricOutputType.CONTINUOUS
+
     relevance_prompt: ImageTextPrompt = MultiModalRelevancePrompt()
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
