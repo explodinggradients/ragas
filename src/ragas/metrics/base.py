@@ -29,6 +29,7 @@ if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
     from ragas.config import DemonstrationConfig, InstructionConfig
+    from ragas.config import DemonstrationConfig, InstructionConfig
     from ragas.embeddings import BaseRagasEmbeddings
     from ragas.llms import BaseRagasLLM
 
@@ -59,6 +60,13 @@ class MetricType(Enum):
 
     SINGLE_TURN = "single_turn"
     MULTI_TURN = "multi_turn"
+
+
+class MetricOutputType(Enum):
+    BINARY = "binary"
+    DISCRETE = "discrete"
+    CONTINUOUS = "continuous"
+    RANKING = "ranking"
 
 
 class MetricOutputType(Enum):
@@ -225,6 +233,7 @@ class MetricWithLLM(Metric, PromptMixin):
     """
 
     llm: t.Optional[BaseRagasLLM] = None
+    output_type: t.Optional[MetricOutputType] = None
 
     def init(self, run_config: RunConfig):
         if self.llm is None:

@@ -49,4 +49,4 @@ class Optimizer(ABC):
         Dict[str, str]
             The optimized prompts for given chain.
         """
-        pass
+        raise NotImplementedError("The method `optimize` must be implemented.")

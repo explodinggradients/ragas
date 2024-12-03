@@ -15,6 +15,7 @@ from ragas.metrics._faithfulness import (
     LongFormAnswerPrompt,
 )
 from ragas.metrics.base import (
+    MetricOutputType,
     MetricType,
     MetricWithEmbeddings,
     MetricWithLLM,
@@ -163,6 +164,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
             MetricType.SINGLE_TURN: {"user_input", "response", "reference"}
         }
     )
+    output_type = MetricOutputType.CONTINUOUS
     correctness_prompt: PydanticPrompt = field(default_factory=CorrectnessClassifier)
     long_form_answer_prompt: PydanticPrompt = field(
         default_factory=LongFormAnswerPrompt
