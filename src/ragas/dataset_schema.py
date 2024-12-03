@@ -526,3 +526,7 @@ class EvaluationResult:
         if verbose:
             print(f"Evaluation results uploaded! View at {evaluation_endpoint}")
         return evaluation_endpoint
+
+
+class SingleMetricAnnotation(BaseModel):
+    pass

@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from langchain_core.callbacks import Callbacks
 
+from ragas.dataset_schema import SingleMetricAnnotation
 from ragas.llms.base import BaseRagasLLM
-from ragas.loaders import SingleMetricAnnotation
 from ragas.losses import Loss
 from ragas.metrics.base import MetricWithLLM
 from ragas.run_config import RunConfig
