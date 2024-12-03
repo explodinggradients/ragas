@@ -1,26 +1,37 @@
 import typing as t
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
-from ragas.embeddings.base import BaseRagasEmbeddings
+from langchain_core.callbacks import Callbacks
+
 from ragas.llms.base import BaseRagasLLM
+from ragas.loaders import SingleMetricAnnotation
+from ragas.losses import Loss
 from ragas.metrics.base import MetricWithLLM
+from ragas.run_config import RunConfig
 
 
+@dataclass
 class Optimizer(ABC):
     """
     Abstract base class for all optimizers.
     """
 
-    llm: BaseRagasLLM
-    embedding: t.Optional[BaseRagasEmbeddings] = None
+    metric: t.Optional[MetricWithLLM] = None
+    llm: t.Optional[BaseRagasLLM] = None
 
     @abstractmethod
     def optimize(
         self,
-        metric: MetricWithLLM,
-        train_data: t.Any,
+        dataset: SingleMetricAnnotation,
+        loss: Loss,
         config: t.Dict[t.Any, t.Any],
-    ) -> MetricWithLLM:
+        run_config: t.Optional[RunConfig] = None,
+        batch_size: t.Optional[int] = None,
+        callbacks: t.Optional[Callbacks] = None,
+        with_debugging_logs=False,
+        raise_exceptions: bool = True,
+    ) -> t.Dict[str, str]:
         """
         Optimizes the prompts for the given metric.
 
@@ -35,7 +46,7 @@ class Optimizer(ABC):
 
         Returns
         -------
-        MetricWithLLM
-            The optimized metric.
+        Dict[str, str]
+            The optimized prompts for given chain.
         """
         pass
