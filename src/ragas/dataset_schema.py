@@ -589,6 +589,9 @@ class SingleMetricAnnotation(BaseModel):
     def __getitem__(self, idx):
         return self.samples[idx]
 
+    def __repr__(self):
+        return f"SingleMetricAnnotation(name={self.name}, len={len(self.samples)})"
+
     def __iter__(self) -> t.Iterator[SampleAnnotation]:  # type: ignore
         return iter(self.samples)
 
