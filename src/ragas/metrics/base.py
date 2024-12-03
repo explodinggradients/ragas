@@ -233,13 +233,23 @@ class MetricWithLLM(Metric, PromptMixin):
     def train(
         self,
         path: str,
-        demonstration_config: DemonstrationConfig,
-        instruction_config: InstructionConfig,
+        demonstration_config: t.Optional[DemonstrationConfig] = None,
+        instruction_config: t.Optional[InstructionConfig] = None,
         callbacks: Callbacks = None,
     ) -> None:
 
         if not path.endswith(".json"):
             raise ValueError("Train data must be in json format")
+
+        if instruction_config is None:
+            from ragas.config import InstructionConfig
+
+            instruction_config = InstructionConfig()
+
+        if demonstration_config is None:
+            from ragas.config import DemonstrationConfig
+
+            demonstration_config = DemonstrationConfig()
 
         dataset = MetricAnnotation.from_json(path, metric_name=self.name)
 
