@@ -7,10 +7,14 @@ from langchain_core.callbacks import Callbacks
 from pydantic import BaseModel
 
 from ragas.callbacks import new_group
-from ragas.dataset_schema import EvaluationDataset, EvaluationResult
+from ragas.dataset_schema import (
+    EvaluationDataset,
+    EvaluationResult,
+    SampleAnnotation,
+    SingleMetricAnnotation,
+)
 from ragas.evaluation import evaluate
 from ragas.executor import Executor
-from ragas.loaders import SampleAnnotation, SingleMetricAnnotation
 from ragas.losses import Loss
 from ragas.optimizers.base import Optimizer
 from ragas.optimizers.utils import hamming_distance
@@ -389,9 +393,7 @@ class GeneticOptimizer(Optimizer):
                 candidate_rm.on_chain_end(
                     outputs={"improved_candidate": improved_candidate[0]}
                 )
-        feedback_rm.on_chain_end(
-            outputs={"improved candidates": improved_candidates}
-        )
+        feedback_rm.on_chain_end(outputs={"improved candidates": improved_candidates})
 
         return improved_candidates
 
@@ -502,6 +504,9 @@ class GeneticOptimizer(Optimizer):
 
         if self.metric is None:
             raise ValueError("No metric provided for optimization.")
+
+        if self.metric.output_type is None:
+            raise ValueError("No output type provided for the metric.")
 
         training_ids = []
         y_true = []

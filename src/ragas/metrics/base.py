@@ -12,9 +12,8 @@ from pysbd import Segmenter
 
 from ragas._analytics import EvaluationEvent, _analytics_batcher
 from ragas.callbacks import ChainType, new_group
-from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
+from ragas.dataset_schema import MetricAnnotation, MultiTurnSample, SingleTurnSample
 from ragas.executor import is_event_loop_running
-from ragas.loaders import MetricAnnotation
 from ragas.losses import BinaryMetricLoss, MSELoss
 from ragas.prompt import PromptMixin
 from ragas.run_config import RunConfig
@@ -28,7 +27,6 @@ from ragas.utils import (
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
-    from ragas.config import DemonstrationConfig, InstructionConfig
     from ragas.config import DemonstrationConfig, InstructionConfig
     from ragas.embeddings import BaseRagasEmbeddings
     from ragas.llms import BaseRagasLLM
@@ -69,13 +67,6 @@ class MetricOutputType(Enum):
     RANKING = "ranking"
 
 
-class MetricOutputType(Enum):
-    BINARY = "binary"
-    DISCRETE = "discrete"
-    CONTINUOUS = "continuous"
-    RANKING = "ranking"
-
-
 @dataclass
 class Metric(ABC):
     """
@@ -92,9 +83,6 @@ class Metric(ABC):
 
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(default_factory=dict)
     name: str = field(default="", repr=True)
-    output_type: MetricOutputType = (
-        MetricOutputType.DISCRETE
-    )  # TODO: remove default and make it required, add corresponding value to every metric
 
     def __post_init__(self):
         if self.name == "":
@@ -282,10 +270,13 @@ class MetricWithLLM(Metric, PromptMixin):
         optimizer.metric = self
 
         optimizer_config = instruction_config.optimizer_config or {}
-        optimizer.optimize(
+        optimized_prompts = optimizer.optimize(
             dataset[self.name], loss_fun, optimizer_config, callbacks=callbacks
         )
-
+        prompts = self.get_prompts()
+        for key, val in optimized_prompts.items():
+            prompts[key].instruction = val
+        self.set_prompts(**prompts)
         return
 
 
