@@ -666,7 +666,7 @@ class SingleMetricAnnotation(BaseModel):
             # Stratified sampling
             class_groups = defaultdict(list)
             for idx, sample in enumerate(self.samples):
-                key = sample.metric_input.get(stratify_key)
+                key = sample[stratify_key]
                 class_groups[key].append(idx)
 
             # Determine the proportion of samples to take from each class
