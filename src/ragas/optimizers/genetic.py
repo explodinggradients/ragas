@@ -208,13 +208,13 @@ class GeneticOptimizer(Optimizer):
             callbacks=optimization_generation_grp,
             raise_exceptions=raise_exceptions,
         )
-        best_candidate_idx = improved_prompts[np.argmax(fitness_scores)]
+        best_candidate = improved_prompts[np.argmax(fitness_scores)]
 
         optimization_generation_rm.on_chain_end(
-            outputs={"best_candidate": improved_prompts[best_candidate_idx]}
+            outputs={"best_candidate": best_candidate}
         )
 
-        return improved_prompts[best_candidate_idx]
+        return best_candidate
 
     def _initialize_population(
         self,
@@ -381,14 +381,17 @@ class GeneticOptimizer(Optimizer):
             )
             try:
                 improved_candidate = exec.results()
-                improved_candidates.append(improved_candidate)
+                improved_candidates.append(improved_candidate[0])
             except Exception as e:
-                feedback_rm.on_chain_error(e)
+                candidate_rm.on_chain_error(e)
                 raise e
             else:
-                feedback_rm.on_chain_end(
-                    outputs={"improved_candidates": improved_candidates}
+                candidate_rm.on_chain_end(
+                    outputs={"improved_candidate": improved_candidate[0]}
                 )
+        feedback_rm.on_chain_end(
+            outputs={"improved candidates": improved_candidates}
+        )
 
         return improved_candidates
 
@@ -432,9 +435,10 @@ class GeneticOptimizer(Optimizer):
                 feedback_input = FeedbackMutationPromptInput(
                     instruction=candidate[key], feedbacks=feedback
                 )
-                improved_candidate[key] = await self.feedback_mutation_prompt.generate(
+                output = await self.feedback_mutation_prompt.generate(
                     data=feedback_input, llm=self.llm, callbacks=callbacks
                 )
+                improved_candidate[key] = output.instruction
             else:
                 improved_candidate[key] = candidate[key]
                 logger.warning(
