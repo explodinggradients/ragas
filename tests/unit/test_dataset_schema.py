@@ -70,7 +70,7 @@ def test_loader_batch():
     assert all([len(item) == 2 for item in batches])
 
     batches = dataset.stratified_batches(batch_size=2, stratify_key="metric_output")
-    assert all(sum(item["metric_output"] for item in batch) == 1 for batch in batches)
+    assert all(sum([item["metric_output"] for item in batch]) == 1 for batch in batches)
 
 
 @pytest.mark.parametrize("eval_sample", samples)
