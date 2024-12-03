@@ -26,8 +26,10 @@ from ragas.utils import (
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
+    from ragas.config import DemonstrationConfig, InstructionConfig
     from ragas.embeddings import BaseRagasEmbeddings
     from ragas.llms import BaseRagasLLM
+
 logger = logging.getLogger(__name__)
 
 
@@ -226,6 +228,16 @@ class MetricWithLLM(Metric, PromptMixin):
                 f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please initantiate a the metric with an LLM to run."  # noqa
             )
         self.llm.set_run_config(run_config)
+
+    def train(
+        self,
+        path: str,
+        demonstration_config: DemonstrationConfig,
+        instruction_config: InstructionConfig,
+        callbacks: Callbacks,
+    ) -> None:
+
+        raise NotImplementedError("Training is not implemented for this metric.")
 
 
 @dataclass
