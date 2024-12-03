@@ -547,6 +547,12 @@ class GeneticOptimizer(Optimizer):
             raise_exceptions=raise_exceptions,
             run_id=run_id,
         )
+        # remap the traces to the original prompt names
+        remap_traces = {val.name: key for key, val in self.metric.get_prompts().items()}
+        for trace in results.traces:
+            for key in remap_traces:
+                if key in trace[self.metric.name]:
+                    trace[self.metric.name][remap_traces[key]] = trace[self.metric.name].pop(key)
         return results
 
     def evaluate_fitness(
