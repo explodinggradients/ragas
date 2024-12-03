@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import typing as t
 from abc import ABC, abstractmethod
@@ -224,11 +223,7 @@ class MetricWithLLM(Metric, PromptMixin):
         callbacks: Callbacks,
     ) -> None:
 
-        if not path.endswith(".json"):
-            raise ValueError("Train data must be in json format")
-
-        _ = json.load(open(path))
-        return
+        raise NotImplementedError("Training is not implemented for this metric.")
 
 
 @dataclass
