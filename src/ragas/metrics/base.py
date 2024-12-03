@@ -57,6 +57,13 @@ class MetricType(Enum):
     MULTI_TURN = "multi_turn"
 
 
+class MetricOutputType(Enum):
+    BINARY = "binary"
+    DISCRETE = "discrete"
+    CONTINUOUS = "continuous"
+    RANKING = "ranking"
+
+
 @dataclass
 class Metric(ABC):
     """
@@ -211,6 +218,7 @@ class MetricWithLLM(Metric, PromptMixin):
     """
 
     llm: t.Optional[BaseRagasLLM] = None
+    output_type: t.Optional[MetricOutputType] = None
 
     def init(self, run_config: RunConfig):
         if self.llm is None:

@@ -15,6 +15,7 @@ from ragas.metrics._faithfulness import (
     NLIStatementPrompt,
 )
 from ragas.metrics.base import (
+    MetricOutputType,
     MetricType,
     MetricWithLLM,
     SingleTurnMetric,
@@ -210,6 +211,7 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"response", "reference"}}
     )
+    output_type: t.Optional[MetricOutputType] = MetricOutputType.CONTINUOUS
     mode: t.Literal["precision", "recall", "f1"] = "f1"
     beta: float = 1.0
     atomicity: t.Literal["low", "high"] = "low"

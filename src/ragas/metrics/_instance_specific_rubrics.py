@@ -11,6 +11,7 @@ from ragas.metrics._domain_specific_rubrics import (
     SingleTurnInputWithoutRubric,
 )
 from ragas.metrics.base import (
+    MetricOutputType,
     MetricType,
     MetricWithLLM,
     MultiTurnMetric,
@@ -54,6 +55,7 @@ class InstanceRubrics(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         name: str = "instance_rubrics",
         llm: t.Optional[BaseRagasLLM] = None,
         required_columns: t.Optional[t.Dict[MetricType, t.Set[str]]] = None,
+        output_type: t.Optional[MetricOutputType] = MetricOutputType.DISCRETE,
         single_turn_prompt: t.Optional[PydanticPrompt] = None,
         multi_turn_prompt: t.Optional[PydanticPrompt] = None,
         max_retries: int = 1,
@@ -73,6 +75,7 @@ class InstanceRubrics(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
                 "reference:optional",
             },
         }
+        self.output_type = output_type
         super().__init__(name=name, llm=llm, _required_columns=self._required_columns)
 
         self.single_turn_prompt = single_turn_prompt or SingleTurnPrompt()

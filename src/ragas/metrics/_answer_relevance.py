@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics.base import (
+    MetricOutputType,
     MetricType,
     MetricWithEmbeddings,
     MetricWithLLM,
@@ -87,6 +88,8 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
             }
         }
     )
+    output_type = MetricOutputType.CONTINUOUS
+
     question_generation: PydanticPrompt = ResponseRelevancePrompt()
     strictness: int = 3
 
