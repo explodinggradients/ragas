@@ -134,7 +134,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
     def is_finished(self, response: LLMResult) -> bool:
         """
         Parse the response to check if the LLM finished by checking the finish_reason
-        or stop_reason.
+        or stop_reason. Supports OpenAI and Vertex AI models.
         """
         if self.is_finished_parser is not None:
             return self.is_finished_parser(response)
@@ -145,30 +145,34 @@ class LangchainLLMWrapper(BaseRagasLLM):
             resp = g.generations[0][0]
             if resp.generation_info is not None:
                 # generation_info is provided - so we parse that
-
-                # OpenAI uses "stop" to indicate that the generation is finished
-                # and is stored in 'finish_reason' key in generation_info
-                if resp.generation_info.get("finish_reason") is not None:
+                finish_reason = resp.generation_info.get("finish_reason")
+                if finish_reason is not None:
+                    # OpenAI uses "stop"
+                    # Vertex AI uses "STOP" or "MAX_TOKENS"
                     is_finished_list.append(
-                        resp.generation_info.get("finish_reason") == "stop"
+                        finish_reason in ["stop", "STOP", "MAX_TOKENS"]
                     )
+
                 # provied more conditions here
                 # https://github.com/explodinggradients/ragas/issues/1548
 
             # if generation_info is empty, we parse the response_metadata
             # this is less reliable
+
             elif (
                 isinstance(resp, ChatGeneration)
                 and t.cast(ChatGeneration, resp).message is not None
             ):
                 resp_message: BaseMessage = t.cast(ChatGeneration, resp).message
                 if resp_message.response_metadata.get("finish_reason") is not None:
+                    finish_reason = resp_message.response_metadata.get("finish_reason")
                     is_finished_list.append(
-                        resp_message.response_metadata.get("finish_reason") == "stop"
+                        finish_reason in ["stop", "STOP", "MAX_TOKENS"]
                     )
                 elif resp_message.response_metadata.get("stop_reason") is not None:
+                    stop_reason = resp_message.response_metadata.get("stop_reason")
                     is_finished_list.append(
-                        resp_message.response_metadata.get("stop_reason") == "end_turn"
+                        stop_reason in ["end_turn", "STOP", "MAX_TOKENS"]
                     )
             # default to True
             else:
