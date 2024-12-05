@@ -7,6 +7,7 @@ from datasets import Dataset
 from langchain_core.callbacks import BaseCallbackHandler, BaseCallbackManager
 from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.language_models import BaseLanguageModel as LangchainLLM
+from tqdm.auto import tqdm
 
 from ragas._analytics import track_was_completed
 from ragas.callbacks import ChainType, RagasTracer, new_group
@@ -67,6 +68,7 @@ def evaluate(
     show_progress: bool = True,
     batch_size: t.Optional[int] = None,
     run_id: t.Optional[UUID] = None,
+    pbar: t.Optional[tqdm] = None,
 ) -> EvaluationResult:
     """
     Run the evaluation on the dataset with different metrics
@@ -229,6 +231,7 @@ def evaluate(
         run_config=run_config,
         show_progress=show_progress,
         batch_size=batch_size,
+        pbar=pbar,
     )
 
     # Ragas Callbacks

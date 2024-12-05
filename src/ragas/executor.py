@@ -81,6 +81,7 @@ class Executor:
     batch_size: t.Optional[int] = None
     run_config: t.Optional[RunConfig] = field(default=None, repr=False)
     _nest_asyncio_applied: bool = field(default=False, repr=False)
+    pbar: t.Optional[tqdm] = None
 
     def wrap_callable_with_index(
         self, callable: t.Callable, counter: int
@@ -127,21 +128,22 @@ class Executor:
         results = []
 
         if not self.batch_size:
-            with tqdm(
-                total=len(self.jobs),
-                desc=self.desc,
-                disable=not self.show_progress,
-            ) as pbar:
-                # Create coroutines
-                coroutines = [
-                    afunc(*args, **kwargs) for afunc, args, kwargs, _ in self.jobs
-                ]
-                for future in await as_completed(coroutines, max_workers):
-                    result = await future
-                    results.append(result)
-                    pbar.update(1)
+            # Use external progress bar if provided, otherwise create one
+            if self.pbar is None:
+                with tqdm(
+                    total=len(self.jobs),
+                    desc=self.desc,
+                    disable=not self.show_progress,
+                ) as internal_pbar:
+                    await self._process_coroutines(
+                        self.jobs, internal_pbar, results, max_workers
+                    )
+            else:
+                await self._process_coroutines(
+                    self.jobs, self.pbar, results, max_workers
+                )
 
-                return results
+            return results
 
         # With batching, show nested progress bars
         batches = batched(self.jobs, self.batch_size)  # generator of job tuples
@@ -178,6 +180,14 @@ class Executor:
                     batch_pbar.update(1)
 
         return results
+
+    async def _process_coroutines(self, jobs, pbar, results, max_workers):
+        """Helper function to process coroutines and update the progress bar."""
+        coroutines = [afunc(*args, **kwargs) for afunc, args, kwargs, _ in jobs]
+        for future in await as_completed(coroutines, max_workers):
+            result = await future
+            results.append(result)
+            pbar.update(1)
 
     def results(self) -> t.List[t.Any]:
         """

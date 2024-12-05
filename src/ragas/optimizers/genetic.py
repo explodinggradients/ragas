@@ -5,6 +5,7 @@ from uuid import UUID
 import numpy as np
 from langchain_core.callbacks import Callbacks
 from pydantic import BaseModel
+from tqdm.auto import tqdm
 
 from ragas.callbacks import new_group
 from ragas.dataset_schema import (
@@ -159,6 +160,7 @@ class GeneticOptimizer(Optimizer):
 
         population_size = config.get("population_size", 3)
         num_demonstrations = config.get("num_demonstrations", 3)
+        sample_size = config.get("sample_size", 10)
 
         # new group for optimization
         optimization_generation_rm, optimization_generation_grp = new_group(
@@ -167,51 +169,76 @@ class GeneticOptimizer(Optimizer):
             callbacks=callbacks,
         )
 
-        initial_population = self._initialize_population(
-            dataset,
-            population_size,
-            num_demonstrations,
-            run_config,
-            batch_size,
-            optimization_generation_grp,
-            raise_exceptions,
-        )
-        # TODO: replace with metric.get_prompts('function_name')
-        seed_prompts = {
-            key: val.instruction
-            for key, val in self.metric.get_prompts().items()
-            if key in initial_population[0].keys()
-        }
-        initial_population.append(seed_prompts)
+        stages = [
+            {"name": "Initializing Population", "steps": population_size - 1},
+            {
+                "name": "Feedback Mutation",
+                "steps": population_size * sample_size + population_size,
+            },
+            {
+                "name": "Cross-over Mutation",
+                "steps": population_size * len(dataset) + population_size,
+            },
+            {"name": "Fitness Evaluation", "steps": population_size * len(dataset)},
+        ]
+        total_steps = sum([stage["steps"] for stage in stages])
+        with tqdm(
+            total=total_steps, desc="Overall Progress", dynamic_ncols=True
+        ) as pbar:
 
-        improved_prompts = self.feedback_mutation(
-            initial_population,
-            dataset,
-            sample_size=10,
-            run_config=run_config,
-            batch_size=batch_size,
-            callbacks=optimization_generation_grp,
-            raise_exceptions=raise_exceptions,
-        )
+            pbar.set_description(f"{stages[0]['name']} Step 1/{len(stages)}")
+            initial_population = self.initialize_population(
+                dataset,
+                population_size - 1,
+                num_demonstrations,
+                run_config,
+                batch_size,
+                optimization_generation_grp,
+                raise_exceptions,
+                pbar,
+            )
+            # TODO: replace with metric.get_prompts('function_name')
+            seed_prompts = {
+                key: val.instruction
+                for key, val in self.metric.get_prompts().items()
+                if key in initial_population[0].keys()
+            }
+            initial_population.append(seed_prompts)
 
-        improved_prompts = self.cross_over_mutation(
-            improved_prompts,
-            dataset,
-            run_config=run_config,
-            batch_size=batch_size,
-            callbacks=optimization_generation_grp,
-            raise_exceptions=raise_exceptions,
-        )
+            pbar.set_description(f"{stages[1]['name']} Step 2/{len(stages)}")
+            improved_prompts = self.feedback_mutation(
+                initial_population,
+                dataset,
+                sample_size=sample_size,
+                run_config=run_config,
+                batch_size=batch_size,
+                callbacks=optimization_generation_grp,
+                raise_exceptions=raise_exceptions,
+                pbar=pbar,
+            )
 
-        fitness_scores = self.evaluate_fitness(
-            improved_prompts,
-            dataset,
-            loss,
-            run_config=run_config,
-            batch_size=batch_size,
-            callbacks=optimization_generation_grp,
-            raise_exceptions=raise_exceptions,
-        )
+            pbar.set_description(f"{stages[2]['name']} Step 3/{len(stages)}")
+            improved_prompts = self.cross_over_mutation(
+                improved_prompts,
+                dataset,
+                run_config=run_config,
+                batch_size=batch_size,
+                callbacks=optimization_generation_grp,
+                raise_exceptions=raise_exceptions,
+                pbar=pbar,
+            )
+
+            pbar.set_description(f"{stages[3]['name']} Step 4/{len(stages)}")
+            fitness_scores = self.evaluate_fitness(
+                improved_prompts,
+                dataset,
+                loss,
+                run_config=run_config,
+                batch_size=batch_size,
+                callbacks=optimization_generation_grp,
+                raise_exceptions=raise_exceptions,
+                pbar=pbar,
+            )
         best_candidate = improved_prompts[np.argmax(fitness_scores)]
 
         optimization_generation_rm.on_chain_end(
@@ -220,7 +247,7 @@ class GeneticOptimizer(Optimizer):
 
         return best_candidate
 
-    def _initialize_population(
+    def initialize_population(
         self,
         dataset: SingleMetricAnnotation,
         population_size: int,
@@ -229,6 +256,7 @@ class GeneticOptimizer(Optimizer):
         batch_size: t.Optional[int] = None,
         callbacks: t.Optional[Callbacks] = None,
         raise_exceptions: bool = True,
+        pbar: t.Optional[tqdm] = None,
     ) -> t.List[t.Dict[str, str]]:
 
         initialize_population_rm, initialize_population_grp = new_group(
@@ -243,6 +271,7 @@ class GeneticOptimizer(Optimizer):
             run_config=run_config,
             keep_progress_bar=False,
             batch_size=batch_size,
+            pbar=pbar,
         )
 
         candidates = []
@@ -338,6 +367,7 @@ class GeneticOptimizer(Optimizer):
         batch_size: t.Optional[int] = None,
         callbacks: t.Optional[Callbacks] = None,
         raise_exceptions: bool = True,
+        pbar: t.Optional[tqdm] = None,
     ) -> t.List[t.Dict[str, str]]:
 
         if self.metric is None:
@@ -366,6 +396,7 @@ class GeneticOptimizer(Optimizer):
                 callbacks=candidate_grp,
                 raise_exceptions=raise_exceptions,
                 run_id=candidate_rm.run_id,
+                pbar=pbar,
             )
 
             exec = Executor(
@@ -374,6 +405,7 @@ class GeneticOptimizer(Optimizer):
                 run_config=run_config,
                 keep_progress_bar=False,
                 batch_size=batch_size,
+                pbar=pbar,
             )
             exec.submit(
                 self._feedback_mutation,
@@ -531,6 +563,7 @@ class GeneticOptimizer(Optimizer):
         callbacks: t.Optional[Callbacks] = None,
         raise_exceptions: bool = True,
         run_id: t.Optional[UUID] = None,
+        pbar: t.Optional[tqdm] = None,
     ) -> EvaluationResult:
 
         if self.metric is None:
@@ -546,13 +579,16 @@ class GeneticOptimizer(Optimizer):
             callbacks=callbacks,
             raise_exceptions=raise_exceptions,
             run_id=run_id,
+            pbar=pbar,
         )
         # remap the traces to the original prompt names
         remap_traces = {val.name: key for key, val in self.metric.get_prompts().items()}
         for trace in results.traces:
             for key in remap_traces:
                 if key in trace[self.metric.name]:
-                    trace[self.metric.name][remap_traces[key]] = trace[self.metric.name].pop(key)
+                    trace[self.metric.name][remap_traces[key]] = trace[
+                        self.metric.name
+                    ].pop(key)
         return results
 
     def evaluate_fitness(
@@ -564,6 +600,7 @@ class GeneticOptimizer(Optimizer):
         batch_size: t.Optional[int] = None,
         callbacks: t.Optional[Callbacks] = None,
         raise_exceptions: bool = True,
+        pbar: t.Optional[tqdm] = None,
     ) -> t.List[float]:
 
         if self.metric is None:
@@ -589,6 +626,7 @@ class GeneticOptimizer(Optimizer):
                 callbacks=initialize_population_grp,
                 raise_exceptions=raise_exceptions,
                 run_id=run_id,
+                pbar=pbar,
             )
             y_pred = results.to_pandas()[self.metric.name].values.tolist()
             loss = loss_fn(y_true, y_pred)
@@ -625,6 +663,7 @@ class GeneticOptimizer(Optimizer):
         batch_size: t.Optional[int] = None,
         callbacks: t.Optional[Callbacks] = None,
         raise_exceptions: bool = True,
+        pbar: t.Optional[tqdm] = None,
     ):
 
         if self.metric is None:
@@ -652,6 +691,7 @@ class GeneticOptimizer(Optimizer):
                 callbacks=cross_over_grp,
                 raise_exceptions=raise_exceptions,
                 run_id=run_id,
+                pbar=pbar,
             )
             y_pred = results.to_pandas()[self.metric.name].values.tolist()
             prediction = [int(pred == true) for pred, true in zip(y_pred, y_true)]
@@ -666,6 +706,7 @@ class GeneticOptimizer(Optimizer):
             run_config=run_config,
             keep_progress_bar=False,
             batch_size=batch_size,
+            pbar=pbar,
         )
 
         offspring_candidates = []
