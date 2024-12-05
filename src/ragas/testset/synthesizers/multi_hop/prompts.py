@@ -108,7 +108,7 @@ class QueryAnswerGenerationPrompt(
                 answer=(
                     "The experimental validation of the theory of relativity was achieved during the 1919 solar eclipse by confirming "
                     "the bending of light by gravity, which supported Einstein’s concept of spacetime as proposed in the theory."
-                )
-            )
+                ),
+            ),
         ),
     ]

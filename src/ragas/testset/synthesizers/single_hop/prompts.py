@@ -37,17 +37,17 @@ class QueryAnswerGenerationPrompt(PydanticPrompt[QueryCondition, GeneratedQueryA
             QueryCondition(
                 persona=Persona(
                     name="Software Engineer",
-                    role_description="Focuses on coding best practices and system design."
+                    role_description="Focuses on coding best practices and system design.",
                 ),
                 term="microservices",
                 query_style="Formal",
                 query_length="Medium",
                 context="Microservices are an architectural style where applications are structured as a collection of loosely coupled services. "
-                        "Each service is fine-grained and focuses on a single functionality."
+                "Each service is fine-grained and focuses on a single functionality.",
             ),
             GeneratedQueryAnswer(
                 query="What is the purpose of microservices in software architecture?",
-                answer="Microservices are designed to structure applications as a collection of loosely coupled services, each focusing on a single functionality."
-            )
+                answer="Microservices are designed to structure applications as a collection of loosely coupled services, each focusing on a single functionality.",
+            ),
         ),
     ]

@@ -138,5 +138,3 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
             reference=response.answer,
             reference_contexts=[reference_context],
         )
-
-    
