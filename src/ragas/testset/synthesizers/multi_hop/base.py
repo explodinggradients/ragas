@@ -181,8 +181,8 @@ class MultiHopQuerySynthesizer(BaseSynthesizer[Scenario]):
     def make_contexts(self, scenario: MultiHopScenario) -> t.List[str]:
 
         contexts = []
-        for node in scenario.nodes:
-            context = f"{node.id}" + "\n\n" + node.properties.get("page_content", "")
+        for i, node in enumerate(scenario.nodes):
+            context = f"<{i+1}-hop>" + "\n\n" + node.properties.get("page_content", "")
             contexts.append(context)
 
         return contexts

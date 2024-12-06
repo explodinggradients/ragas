@@ -11,7 +11,7 @@ class QueryCondition(BaseModel):
     term: str
     query_style: str
     query_length: str
-    context: t.List[str]
+    context: str
 
 
 class GeneratedQueryAnswer(BaseModel):
@@ -21,7 +21,7 @@ class GeneratedQueryAnswer(BaseModel):
 
 class QueryAnswerGenerationPrompt(PydanticPrompt[QueryCondition, GeneratedQueryAnswer]):
     instruction: str = (
-        "Generate a query and answer based on the specified conditions (persona, term, style, length) "
+        "Generate a single-hop query and answer based on the specified conditions (persona, term, style, length) "
         "and the provided context. Ensure the answer is entirely faithful to the context, using only the information "
         "directly from the provided context."
         "### Instructions:\n"
@@ -32,3 +32,22 @@ class QueryAnswerGenerationPrompt(PydanticPrompt[QueryCondition, GeneratedQueryA
     )
     input_model: t.Type[QueryCondition] = QueryCondition
     output_model: t.Type[GeneratedQueryAnswer] = GeneratedQueryAnswer
+    examples: t.List[t.Tuple[QueryCondition, GeneratedQueryAnswer]] = [
+        (
+            QueryCondition(
+                persona=Persona(
+                    name="Software Engineer",
+                    role_description="Focuses on coding best practices and system design.",
+                ),
+                term="microservices",
+                query_style="Formal",
+                query_length="Medium",
+                context="Microservices are an architectural style where applications are structured as a collection of loosely coupled services. "
+                "Each service is fine-grained and focuses on a single functionality.",
+            ),
+            GeneratedQueryAnswer(
+                query="What is the purpose of microservices in software architecture?",
+                answer="Microservices are designed to structure applications as a collection of loosely coupled services, each focusing on a single functionality.",
+            ),
+        ),
+    ]
