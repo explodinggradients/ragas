@@ -6,6 +6,9 @@ from ragas.dataset_schema import (
     EvaluationDataset,
     HumanMessage,
     MultiTurnSample,
+    PromptAnnotation,
+    SampleAnnotation,
+    SingleMetricAnnotation,
     SingleTurnSample,
 )
 
@@ -16,6 +19,58 @@ samples = [
         reference="Y",
     ),
 ]
+
+
+def create_sample_annotation(metric_output):
+    return SampleAnnotation(
+        metric_input={
+            "response": "",
+            "reference": "",
+            "user_input": "",
+        },
+        metric_output=metric_output,
+        prompts={
+            "single_turn_aspect_critic_prompt": PromptAnnotation(
+                prompt_input={
+                    "response": "",
+                    "reference": "",
+                    "user_input": "",
+                },
+                prompt_output={"reason": "", "verdict": 1},
+                is_accepted=True,
+                edited_output=None,
+            )
+        },
+        is_accepted=True,
+        target=None,
+    )
+
+
+def test_loader_sample():
+
+    annotated_samples = [create_sample_annotation(1) for _ in range(10)] + [
+        create_sample_annotation(0) for _ in range(10)
+    ]
+    test_dataset = SingleMetricAnnotation(name="metric", samples=annotated_samples)
+    sample = test_dataset.sample(2)
+    assert len(sample) == 2
+
+    sample = test_dataset.sample(2, stratify_key="metric_output")
+    assert len(sample) == 2
+    assert sum(item["metric_output"] for item in sample) == 1
+
+
+def test_loader_batch():
+
+    annotated_samples = [create_sample_annotation(1) for _ in range(10)] + [
+        create_sample_annotation(0) for _ in range(10)
+    ]
+    dataset = SingleMetricAnnotation(name="metric", samples=annotated_samples)
+    batches = dataset.batch(batch_size=2)
+    assert all([len(item) == 2 for item in batches])
+
+    batches = dataset.stratified_batches(batch_size=2, stratify_key="metric_output")
+    assert all(sum([item["metric_output"] for item in batch]) == 1 for batch in batches)
 
 
 @pytest.mark.parametrize("eval_sample", samples)

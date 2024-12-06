@@ -26,8 +26,10 @@ from ragas.utils import (
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
+    from ragas.config import DemonstrationConfig, InstructionConfig
     from ragas.embeddings import BaseRagasEmbeddings
     from ragas.llms import BaseRagasLLM
+
 logger = logging.getLogger(__name__)
 
 
@@ -55,6 +57,13 @@ class MetricType(Enum):
 
     SINGLE_TURN = "single_turn"
     MULTI_TURN = "multi_turn"
+
+
+class MetricOutputType(Enum):
+    BINARY = "binary"
+    DISCRETE = "discrete"
+    CONTINUOUS = "continuous"
+    RANKING = "ranking"
 
 
 @dataclass
@@ -211,6 +220,7 @@ class MetricWithLLM(Metric, PromptMixin):
     """
 
     llm: t.Optional[BaseRagasLLM] = None
+    output_type: t.Optional[MetricOutputType] = None
 
     def init(self, run_config: RunConfig):
         if self.llm is None:
@@ -218,6 +228,16 @@ class MetricWithLLM(Metric, PromptMixin):
                 f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please initantiate a the metric with an LLM to run."  # noqa
             )
         self.llm.set_run_config(run_config)
+
+    def train(
+        self,
+        path: str,
+        demonstration_config: DemonstrationConfig,
+        instruction_config: InstructionConfig,
+        callbacks: Callbacks,
+    ) -> None:
+
+        raise NotImplementedError("Training is not implemented for this metric.")
 
 
 @dataclass

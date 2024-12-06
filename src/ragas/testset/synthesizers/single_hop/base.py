@@ -122,7 +122,7 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
         self, scenario: SingleHopScenario, callbacks: Callbacks
     ) -> SingleTurnSample:
 
-        reference_context = self.make_contexts(scenario)
+        reference_context = scenario.nodes[0].properties.get("page_content", "")
         prompt_input = QueryCondition(
             persona=scenario.persona,
             term=scenario.term,
@@ -136,14 +136,5 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
         return SingleTurnSample(
             user_input=response.query,
             reference=response.answer,
-            reference_contexts=reference_context,
+            reference_contexts=[reference_context],
         )
-
-    def make_contexts(self, scenario: SingleHopScenario) -> t.List[str]:
-
-        contexts = []
-        for node in scenario.nodes:
-            context = f"{node.id}" + "\n\n" + node.properties.get("page_content", "")
-            contexts.append(context)
-
-        return contexts

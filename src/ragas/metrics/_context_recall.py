@@ -9,7 +9,13 @@ from pydantic import BaseModel
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics._string import NonLLMStringSimilarity
-from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric, ensembler
+from ragas.metrics.base import (
+    MetricOutputType,
+    MetricType,
+    MetricWithLLM,
+    SingleTurnMetric,
+    ensembler,
+)
 from ragas.prompt import PydanticPrompt
 from ragas.run_config import RunConfig
 from ragas.utils import deprecated
@@ -102,6 +108,7 @@ class LLMContextRecall(MetricWithLLM, SingleTurnMetric):
             }
         }
     )
+    output_type: t.Optional[MetricOutputType] = MetricOutputType.CONTINUOUS
     context_recall_prompt: PydanticPrompt = field(
         default_factory=ContextRecallClassificationPrompt
     )
@@ -202,6 +209,7 @@ class NonLLMContextRecall(SingleTurnMetric):
             }
         }
     )
+    output_type: MetricOutputType = MetricOutputType.CONTINUOUS
     distance_measure: SingleTurnMetric = field(
         default_factory=lambda: NonLLMStringSimilarity()
     )
