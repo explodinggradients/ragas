@@ -2,7 +2,7 @@ import typing as t
 
 from pydantic import BaseModel, Field
 
-from ragas.embeddings import BaseRagasEmbeddings
+from ragas.embeddings import BaseRagasEmbeddings, embedding_factory
 from ragas.llms import BaseRagasLLM
 from ragas.losses import Loss
 from ragas.optimizers import Optimizer
@@ -14,7 +14,7 @@ class DemonstrationConfig(BaseModel):
     enabled: bool = True
     top_k: int = 3
     technique: t.Literal["random", "similarity"] = "similarity"
-    embedding: t.Optional[BaseRagasEmbeddings] = None
+    embedding: BaseRagasEmbeddings = Field(default_factory=lambda: embedding_factory())
 
 
 class InstructionConfig(BaseModel):
