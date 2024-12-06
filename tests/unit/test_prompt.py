@@ -1,5 +1,7 @@
 import copy
+import typing as t
 
+import numpy as np
 import pytest
 from langchain_core.outputs import Generation, LLMResult
 from langchain_core.prompt_values import StringPromptValue
@@ -226,3 +228,45 @@ async def test_prompt_parse_retry():
             data=StringIO(text="this prompt will be echoed back as invalid JSON"),
             llm=echo_llm,
         )
+
+
+def cosine_similarity(v1: t.List[float], v2: t.List[float]) -> float:
+    """Calculate cosine similarity between two vectors."""
+    v1_array = np.array(v1)
+    v2_array = np.array(v2)
+    return np.dot(v1_array, v2_array) / (
+        np.linalg.norm(v1_array) * np.linalg.norm(v2_array)
+    )
+
+
+def test_in_memory_example_store():
+    from ragas.prompt import InMemoryExampleStore
+
+    class FakeInputModel(BaseModel):
+        text: str
+        embedding: t.List[float]
+
+    class FakeOutputModel(BaseModel):
+        text: str
+
+    def embedding_fn(x: FakeInputModel) -> t.List[float]:
+        return x.embedding
+
+    store = InMemoryExampleStore(embedding_fn=embedding_fn)
+    store.add_example(
+        FakeInputModel(text="hello", embedding=[1, 2, 3]),
+        FakeOutputModel(text="hello"),
+    )
+    store.add_example(
+        FakeInputModel(text="world", embedding=[1, 2, 4]),
+        FakeOutputModel(text="world"),
+    )
+    assert store.get_examples(FakeInputModel(text="hello", embedding=[1, 2, 3])) == [
+        FakeOutputModel(text="hello")
+    ]
+
+    # Example usage:
+    emb1 = [1, 2, 3]
+    emb2 = [1, 2, 4]
+    similarity = cosine_similarity(emb1, emb2)
+    assert similarity > 0.9  # These vectors are very similar
