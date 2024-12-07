@@ -83,7 +83,7 @@ nav:
               - Write your own Metrics: howtos/customizations/metrics/_write_your_own_metric.md
               - Write your own Metrics - (advanced): howtos/customizations/metrics/_write_your_own_metric_advanced.md
           - Testset Generation:
-              - howtos/customizations/testgenerator/index.md
+              - Non-English Testset Generation: howtos/customizations/testgenerator/_language_adaptation.md
               - Persona Generation: howtos/customizations/testgenerator/_persona_generator.md
               - Custom Single-hop Query: howtos/customizations/testgenerator/_testgen-custom-single-hop.md
               - Custom Multi-hop Query: howtos/customizations/testgenerator/_testgen-customisation.md

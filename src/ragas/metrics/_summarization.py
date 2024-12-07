@@ -8,7 +8,12 @@ from typing import Dict
 from pydantic import BaseModel
 
 from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric
+from ragas.metrics.base import (
+    MetricOutputType,
+    MetricType,
+    MetricWithLLM,
+    SingleTurnMetric,
+)
 from ragas.prompt import PydanticPrompt, StringIO
 
 if t.TYPE_CHECKING:
@@ -154,6 +159,7 @@ class SummarizationScore(MetricWithLLM, SingleTurnMetric):
             }
         }
     )
+    output_type: t.Optional[MetricOutputType] = MetricOutputType.CONTINUOUS
     coeff: float = 0.5
     question_generation_prompt: PydanticPrompt = field(
         default_factory=GenerateQuestionsPrompt

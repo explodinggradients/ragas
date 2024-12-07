@@ -9,7 +9,13 @@ from pydantic import BaseModel, Field
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics._string import NonLLMStringSimilarity
-from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric, ensembler
+from ragas.metrics.base import (
+    MetricOutputType,
+    MetricType,
+    MetricWithLLM,
+    SingleTurnMetric,
+    ensembler,
+)
 from ragas.prompt import PydanticPrompt
 from ragas.run_config import RunConfig
 from ragas.utils import deprecated
@@ -98,6 +104,7 @@ class LLMContextPrecisionWithReference(MetricWithLLM, SingleTurnMetric):
             }
         }
     )
+    output_type = MetricOutputType.CONTINUOUS
     context_precision_prompt: PydanticPrompt = field(
         default_factory=ContextPrecisionPrompt
     )

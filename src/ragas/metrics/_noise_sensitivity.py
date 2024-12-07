@@ -15,6 +15,7 @@ from ragas.metrics._faithfulness import (
     NLIStatementPrompt,
 )
 from ragas.metrics.base import (
+    MetricOutputType,
     MetricType,
     MetricWithLLM,
     SingleTurnMetric,
@@ -43,6 +44,7 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
             }
         }
     )
+    output_type: t.Optional[MetricOutputType] = MetricOutputType.CONTINUOUS
     nli_statements_message: PydanticPrompt = field(default_factory=NLIStatementPrompt)
     statement_prompt: PydanticPrompt = field(default_factory=LongFormAnswerPrompt)
     sentence_segmenter: t.Optional[HasSegmentMethod] = None

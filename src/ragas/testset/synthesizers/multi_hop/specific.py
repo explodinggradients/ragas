@@ -43,6 +43,16 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
     generate_query_reference_prompt: PydanticPrompt = QueryAnswerGenerationPrompt()
 
+    def get_node_clusters(self, knowledge_graph: KnowledgeGraph) -> t.List[t.Tuple]:
+
+        node_clusters = knowledge_graph.find_two_nodes_single_rel(
+            relationship_condition=lambda rel: (
+                True if rel.type == self.relation_type else False
+            )
+        )
+        logger.info("found %d clusters", len(node_clusters))
+        return node_clusters
+
     async def _generate_scenarios(
         self,
         n: int,
@@ -63,11 +73,7 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
         4. Return the list of scenarios of length n
         """
 
-        triplets = knowledge_graph.find_two_nodes_single_rel(
-            relationship_condition=lambda rel: (
-                True if rel.type == self.relation_type else False
-            )
-        )
+        triplets = self.get_node_clusters(knowledge_graph)
 
         if len(triplets) == 0:
             raise ValueError(
@@ -97,7 +103,7 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
                         [node_a, node_b],
                         overlapped_items,
                         personas=persona_list,
-                        persona_item_mapping=persona_concepts.mappping,
+                        persona_item_mapping=persona_concepts.mapping,
                         property_name=self.property_name,
                     )
                     base_scenarios = self.sample_diverse_combinations(

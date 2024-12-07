@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.metrics.base import (
+    MetricOutputType,
     MetricType,
     MetricWithLLM,
     MultiTurnMetric,
@@ -94,6 +95,7 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         definition: str,
         llm: t.Optional[BaseRagasLLM] = None,
         required_columns: t.Optional[t.Dict[MetricType, t.Set[str]]] = None,
+        output_type: t.Optional[MetricOutputType] = MetricOutputType.BINARY,
         single_turn_prompt: t.Optional[PydanticPrompt] = None,
         multi_turn_prompt: t.Optional[PydanticPrompt] = None,
         strictness: int = 1,
@@ -116,6 +118,7 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
             name=name,
             _required_columns=self._required_columns,
             llm=llm,
+            output_type=output_type,
         )
 
         self._definition = definition

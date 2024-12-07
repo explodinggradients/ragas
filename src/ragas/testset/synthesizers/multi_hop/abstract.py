@@ -116,7 +116,7 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
                 nodes,
                 concept_combination.combinations,
                 personas=persona_list,
-                persona_item_mapping=persona_concepts.mappping,
+                persona_item_mapping=persona_concepts.mapping,
                 property_name="themes",
             )
             base_scenarios = self.sample_diverse_combinations(
