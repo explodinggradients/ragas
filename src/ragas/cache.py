@@ -86,10 +86,17 @@ def cacher(cache_backend: Optional[CacheInterface] = None):
         )
 
     def decorator(func):
+        def is_caching_enabled():
+            # Read from environment variable, default to 0 (no caching) if not set
+            return os.environ.get("RAGAS_CACHE_ENABLED", "0") == "1"
+
         is_async = inspect.iscoroutinefunction(func)
 
         @functools.wraps(func)
         async def async_wrapper(*args, **kwargs):
+            if not is_caching_enabled():
+                return await func(*args, **kwargs)
+
             cache_key = _generate_cache_key(func, args, kwargs)
 
             if cache_backend.has_key(cache_key):
@@ -101,6 +108,9 @@ def cacher(cache_backend: Optional[CacheInterface] = None):
 
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
+            if not is_caching_enabled():
+                return func(*args, **kwargs)
+
             cache_key = _generate_cache_key(func, args, kwargs)
 
             if cache_backend.has_key(cache_key):
