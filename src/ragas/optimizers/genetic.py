@@ -477,7 +477,7 @@ class GeneticOptimizer(Optimizer):
         improved_candidate = {}
         for key in candidate.keys():
             feedback = feedbacks[key]
-            if feedbacks:
+            if feedback:
                 feedback_input = FeedbackMutationPromptInput(
                     instruction=candidate[key], feedbacks=feedback
                 )
