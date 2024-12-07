@@ -12,6 +12,7 @@ from langchain_core.prompt_values import StringPromptValue as PromptValue
 from pydantic import BaseModel
 
 from ragas._version import __version__
+from ragas.cache import cacher
 from ragas.callbacks import ChainType, new_group
 from ragas.exceptions import RagasOutputParserException
 
@@ -133,6 +134,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         )
         return output_single[0]
 
+    @cacher()
     async def generate_multiple(
         self,
         llm: BaseRagasLLM,
@@ -174,6 +176,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             If there's an error parsing the output.
         """
         callbacks = callbacks or []
+
         processed_data = self.process_input(data)
         prompt_rm, prompt_cb = new_group(
             name=self.name,
