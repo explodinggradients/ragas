@@ -1,10 +1,10 @@
-from abc import ABC, abstractmethod
-from typing import Optional
 import functools
-import inspect
 import hashlib
+import inspect
 import json
 import os
+from abc import ABC, abstractmethod
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -28,7 +28,9 @@ class DiskCacheBackend(CacheInterface):
         try:
             from diskcache import Cache
         except ImportError:
-            raise ImportError("For using the diskcache backend, please install it with `pip install diskcache`.")
+            raise ImportError(
+                "For using the diskcache backend, please install it with `pip install diskcache`."
+            )
 
         self.cache = Cache(cache_dir)
 
@@ -42,7 +44,7 @@ class DiskCacheBackend(CacheInterface):
         return key in self.cache
 
     def __del__(self):
-        if hasattr(self, 'cache'):
+        if hasattr(self, "cache"):
             self.cache.close()
 
 
@@ -58,8 +60,8 @@ def _make_hashable(o):
     else:
         return o
 
-# TODO: for now using this to remove non-deterministic keys
-EXCLUDE_KEYS = ['callbacks', 'llm']
+
+EXCLUDE_KEYS = ["callbacks", "llm"]
 
 
 def _generate_cache_key(func, args, kwargs):
@@ -69,9 +71,9 @@ def _generate_cache_key(func, args, kwargs):
     filtered_kwargs = {k: v for k, v in kwargs.items() if k not in EXCLUDE_KEYS}
 
     key_data = {
-        'function': func.__qualname__,
-        'args': _make_hashable(args),
-        'kwargs': _make_hashable(filtered_kwargs)
+        "function": func.__qualname__,
+        "args": _make_hashable(args),
+        "kwargs": _make_hashable(filtered_kwargs),
     }
 
     key_string = json.dumps(key_data, sort_keys=True, default=str)
@@ -121,4 +123,5 @@ def cacher(cache_backend: Optional[CacheInterface] = None):
             return result
 
         return async_wrapper if is_async else sync_wrapper
+
     return decorator

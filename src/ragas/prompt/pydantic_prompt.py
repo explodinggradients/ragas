@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import typing as t
-import hashlib
 
 from langchain_core.exceptions import OutputParserException
 from langchain_core.output_parsers import PydanticOutputParser
@@ -13,9 +12,9 @@ from langchain_core.prompt_values import StringPromptValue as PromptValue
 from pydantic import BaseModel
 
 from ragas._version import __version__
+from ragas.cache import cacher
 from ragas.callbacks import ChainType, new_group
 from ragas.exceptions import RagasOutputParserException
-from ragas.cache import cacher
 
 from .base import BasePrompt, StringIO, _check_if_language_is_supported
 from .utils import extract_json, get_all_strings, update_strings

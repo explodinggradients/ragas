@@ -531,7 +531,6 @@ class EvaluationResult:
         return evaluation_endpoint
 
 
-
 class PromptAnnotation(BaseModel):
     prompt_input: t.Dict[str, t.Any]
     prompt_output: t.Dict[str, t.Any]
