@@ -64,9 +64,10 @@ def test_caching_disabled_by_default(clear_env, cache_backend):
     # We'll simulate side effects by returning a changing result.
     @cacher(cache_backend=cache_backend)
     def changing_result():
-        from time import time
+        import time
 
-        return time()  # Returns current time, should differ if not cached
+        time.sleep(0.01)  # Sleep to ensure a measurable time difference
+        return time.time()  # Returns current time, should differ if not cached
 
     r1 = changing_result()
     r2 = changing_result()

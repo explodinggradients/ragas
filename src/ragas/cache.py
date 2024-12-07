@@ -4,18 +4,18 @@ import inspect
 import json
 import os
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
 
 class CacheInterface(ABC):
     @abstractmethod
-    def get(self, key: str):
+    def get(self, key: str) -> Any:
         pass
 
     @abstractmethod
-    def set(self, key: str, value):
+    def set(self, key: str, value) -> None:
         pass
 
     @abstractmethod
@@ -34,10 +34,10 @@ class DiskCacheBackend(CacheInterface):
 
         self.cache = Cache(cache_dir)
 
-    def get(self, key: str):
+    def get(self, key: str) -> Any:
         return self.cache.get(key)
 
-    def set(self, key: str, value):
+    def set(self, key: str, value) -> None:
         self.cache.set(key, value)
 
     def has_key(self, key: str) -> bool:
