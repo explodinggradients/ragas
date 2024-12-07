@@ -67,8 +67,8 @@ def evaluate(
     column_map: t.Optional[t.Dict[str, str]] = None,
     show_progress: bool = True,
     batch_size: t.Optional[int] = None,
-    run_id: t.Optional[UUID] = None,
-    pbar: t.Optional[tqdm] = None,
+    _run_id: t.Optional[UUID] = None,
+    _pbar: t.Optional[tqdm] = None,
 ) -> EvaluationResult:
     """
     Run the evaluation on the dataset with different metrics
@@ -231,7 +231,7 @@ def evaluate(
         run_config=run_config,
         show_progress=show_progress,
         batch_size=batch_size,
-        pbar=pbar,
+        pbar=_pbar,
     )
 
     # Ragas Callbacks
@@ -339,7 +339,7 @@ def evaluate(
                 cost_cb,
             ),
             ragas_traces=tracer.traces,
-            run_id=run_id,
+            run_id=_run_id,
         )
         if not evaluation_group_cm.ended:
             evaluation_rm.on_chain_end({"scores": result.scores})

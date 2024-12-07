@@ -235,7 +235,11 @@ class MetricWithLLM(Metric, PromptMixin):
         path: str,
         demonstration_config: t.Optional[DemonstrationConfig] = None,
         instruction_config: t.Optional[InstructionConfig] = None,
-        callbacks: Callbacks = None,
+        callbacks: t.Optional[Callbacks] = None,
+        run_config: t.Optional[RunConfig] = None,
+        batch_size: t.Optional[int] = None,
+        with_debugging_logs=False,
+        raise_exceptions: bool = True,
     ) -> None:
 
         if not path.endswith(".json"):
@@ -263,16 +267,21 @@ class MetricWithLLM(Metric, PromptMixin):
             optimizer.llm = llm
 
         if instruction_config.loss is None:
-            if self.output_type == MetricOutputType.BINARY:
+            if self.output_type is None:
+                raise ValueError(
+                    f"Output type for metric '{self.name}' is not defined. Please set the output type in the metric or in the instruction config."
+                )
+
+            if self.output_type.name == MetricOutputType.BINARY.name:
                 loss_fun = BinaryMetricLoss()
             elif (
-                self.output_type == MetricOutputType.CONTINUOUS
-                or self.output_type == MetricOutputType.DISCRETE
+                self.output_type.name == MetricOutputType.CONTINUOUS.name
+                or self.output_type.name == MetricOutputType.DISCRETE.name
             ):
                 loss_fun = MSELoss()
             else:
                 raise NotImplementedError(
-                    f"Output type '{self.output_type}' not implemented"
+                    f"Output type '{self.output_type.name}' not implemented"
                 )
         else:
             loss_fun = instruction_config.loss
@@ -281,7 +290,14 @@ class MetricWithLLM(Metric, PromptMixin):
 
         optimizer_config = instruction_config.optimizer_config or {}
         optimized_prompts = optimizer.optimize(
-            dataset[self.name], loss_fun, optimizer_config, callbacks=callbacks
+            dataset[self.name],
+            loss_fun,
+            optimizer_config,
+            callbacks=callbacks,
+            run_config=run_config,
+            batch_size=batch_size,
+            with_debugging_logs=with_debugging_logs,
+            raise_exceptions=raise_exceptions,
         )
         prompts = self.get_prompts()
         for key, val in optimized_prompts.items():
