@@ -85,6 +85,9 @@ class InMemoryExampleStore(ExampleStore):
 
         return top_indices.tolist()
 
+    def __repr__(self):
+        return f"InMemoryExampleStore(n_examples={len(self._examples_list)})"
+
 
 @dataclass
 class FewShotPydanticPrompt(PydanticPrompt, t.Generic[InputModel, OutputModel]):

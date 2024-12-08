@@ -545,7 +545,7 @@ class PromptAnnotation(BaseModel):
     prompt_input: t.Dict[str, t.Any]
     prompt_output: t.Dict[str, t.Any]
     is_accepted: bool
-    edited_output: t.Union[t.Dict[str, t.Any], None]
+    edited_output: t.Optional[t.Dict[str, t.Any]] = None
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -563,7 +563,6 @@ class SampleAnnotation(BaseModel):
 
 
 class MetricAnnotation(BaseModel):
-
     root: t.Dict[str, t.List[SampleAnnotation]]
 
     def __getitem__(self, key):
@@ -571,7 +570,6 @@ class MetricAnnotation(BaseModel):
 
     @classmethod
     def from_json(cls, path, metric_name: t.Optional[str]) -> "MetricAnnotation":
-
         dataset = json.load(open(path))
         if metric_name is not None and metric_name not in dataset:
             raise ValueError(f"Split {metric_name} not found in the dataset.")
@@ -613,7 +611,6 @@ class SingleMetricAnnotation(BaseModel):
 
     @classmethod
     def from_json(cls, path) -> "SingleMetricAnnotation":
-
         dataset = json.load(open(path))
 
         return cls(
@@ -622,7 +619,6 @@ class SingleMetricAnnotation(BaseModel):
         )
 
     def filter(self, function: t.Optional[t.Callable] = None):
-
         if function is None:
             function = lambda x: True  # noqa: E731
 
@@ -796,3 +792,13 @@ class SingleMetricAnnotation(BaseModel):
                 all_batches.append(batch)
 
         return all_batches
+
+    def get_prompt_annotations(self) -> t.Dict[str, t.List[PromptAnnotation]]:
+        """
+        Get all the prompt annotations for each prompt as a list.
+        """
+        prompt_annotations = defaultdict(list)
+        for sample in self.samples:
+            for prompt_name, prompt_annotation in sample.prompts.items():
+                prompt_annotations[prompt_name].append(prompt_annotation)
+        return prompt_annotations
