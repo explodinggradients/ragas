@@ -31,6 +31,7 @@ OutputModel = t.TypeVar("OutputModel", bound=BaseModel)
 
 
 class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
+    # these are class attributes
     input_model: t.Type[InputModel]
     output_model: t.Type[OutputModel]
     instruction: str
