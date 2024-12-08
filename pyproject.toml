@@ -64,3 +64,9 @@ addopts = "-n 0"
 asyncio_default_fixture_loop_scope = "function"
 [pytest]
 testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "arize-phoenix>=6.1.0",
+    "openinference-instrumentation-langchain>=0.1.29",
+]
