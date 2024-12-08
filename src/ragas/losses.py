@@ -1,6 +1,9 @@
 import typing as t
 from abc import ABC, abstractmethod
 
+from pydantic import GetCoreSchemaHandler
+from pydantic_core import CoreSchema, core_schema
+
 
 class Loss(ABC):
     """
@@ -10,6 +13,17 @@ class Loss(ABC):
     @abstractmethod
     def __call__(self, predicted: t.List, actual: t.List) -> float:
         raise NotImplementedError
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: t.Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        """
+        Define how Pydantic generates a schema for BaseRagasEmbeddings.
+        """
+        return core_schema.no_info_after_validator_function(
+            cls, core_schema.is_instance_schema(cls)  # The validator function
+        )
 
 
 class MSELoss(Loss):
