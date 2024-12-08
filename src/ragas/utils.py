@@ -26,7 +26,6 @@ RAGAS_SUPPORTED_LANGUAGE_CODES = {
 # endpoint for uploading results
 RAGAS_API_URL = "https://api.ragas.io"
 RAGAS_APP_URL = "https://app.ragas.io"
-RAGAS_API_VERSION = "1.0.0"
 RAGAS_API_SOURCE = "ragas_py"
 
 
@@ -260,6 +259,8 @@ def get_app_token() -> str:
 
 
 def upload_packet(path: str, data: str, base_url: str = RAGAS_API_URL):
+    from ragas._version import __version__
+
     app_token = get_app_token()
     response = requests.post(
         f"{base_url}/api/v1{path}",
@@ -268,7 +269,7 @@ def upload_packet(path: str, data: str, base_url: str = RAGAS_API_URL):
             "Content-Type": "application/json",
             "x-app-token": app_token,
             "x-source": RAGAS_API_SOURCE,
-            "x-app-version": RAGAS_API_VERSION,
+            "x-app-version": __version__,
         },
     )
     if response.status_code == 403:
