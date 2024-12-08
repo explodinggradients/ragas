@@ -9,9 +9,12 @@ import warnings
 from functools import lru_cache
 
 import numpy as np
+import requests
 import tiktoken
 from datasets import Dataset
 from pysbd.languages import LANGUAGE_CODES
+
+from ragas.exceptions import RagasAppUploadException
 
 if t.TYPE_CHECKING:
     from ragas.metrics.base import Metric
@@ -22,6 +25,9 @@ RAGAS_SUPPORTED_LANGUAGE_CODES = {
 }
 # endpoint for uploading results
 RAGAS_API_URL = "https://api.ragas.io"
+RAGAS_APP_URL = "https://app.ragas.io"
+RAGAS_API_VERSION = "1.0.0"
+RAGAS_API_SOURCE = "ragas_py"
 
 
 @lru_cache(maxsize=1)
@@ -242,3 +248,32 @@ def batched(iterable: t.Iterable, n: int) -> t.Iterator[t.Tuple]:
     iterator = iter(iterable)
     while batch := tuple(itertools.islice(iterator, n)):
         yield batch
+
+
+# App Utils
+@lru_cache(maxsize=1)
+def get_app_token() -> str:
+    app_token = os.environ.get("RAGAS_APP_TOKEN")
+    if app_token is None:
+        raise ValueError("RAGAS_APP_TOKEN is not set")
+    return app_token
+
+
+def upload_packet(path: str, data: str, base_url: str = RAGAS_API_URL):
+    app_token = get_app_token()
+    response = requests.post(
+        f"{base_url}/api/v1{path}",
+        data=data,
+        headers={
+            "Content-Type": "application/json",
+            "x-app-token": app_token,
+            "x-source": RAGAS_API_SOURCE,
+            "x-app-version": RAGAS_API_VERSION,
+        },
+    )
+    if response.status_code == 403:
+        raise RagasAppUploadException(
+            "AUTHENTICATION_ERROR: The app token is invalid. Please check your RAGAS_APP_TOKEN environment variable."
+        )
+    elif response.status_code != 200:
+        raise RagasAppUploadException(f"Failed to upload results: {response.text}")
