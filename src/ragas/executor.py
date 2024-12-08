@@ -5,13 +5,13 @@ import logging
 import typing as t
 from dataclasses import dataclass, field
 
+import nest_asyncio
 import numpy as np
 from tqdm.auto import tqdm
 
 from ragas.run_config import RunConfig
 from ragas.utils import batched
 
-import nest_asyncio
 nest_asyncio.apply()
 
 logger = logging.getLogger(__name__)
