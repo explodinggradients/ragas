@@ -51,7 +51,9 @@ class OutputInstruction(BaseModel):
 
 class ReverseEngineerPrompt(PydanticPrompt[FormattedExamples, OutputInstruction]):
     name: str = "reverse_engineer"
-    instruction: str = "Given a set of (input containing (user_input, response, reference, etc), expected output) pairs that were manually annotated, guess and generate the instruction given to the annotator."
+    instruction: str = (
+        "Given a set of (input containing (user_input, response, reference, etc), expected output) pairs that were manually annotated, guess and generate the instruction given to the annotator."
+    )
     input_model = FormattedExamples
     output_model = OutputInstruction
 
@@ -120,7 +122,9 @@ class FeedbackMutationPromptGeneration(
     PydanticPrompt[FeedbackMutationPromptInput, OutputInstruction]
 ):
     name: str = "feedback_mutation_generation"
-    instruction: str = "You are a mutator. Given an instruction and a set of feedbacks on how the instruction can be improved generate a new instruction that incorporates the feedback."
+    instruction: str = (
+        "You are a mutator. Given an instruction and a set of feedbacks on how the instruction can be improved generate a new instruction that incorporates the feedback."
+    )
     input_model = FeedbackMutationPromptInput
     output_model = OutputInstruction
 

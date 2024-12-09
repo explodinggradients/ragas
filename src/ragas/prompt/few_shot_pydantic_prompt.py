@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 import numpy as np
 from pydantic import BaseModel
 
-from ragas.embeddings.base import embedding_factory
 from ragas.llms.base import BaseRagasLLM
 from ragas.prompt.pydantic_prompt import PydanticPrompt
 
