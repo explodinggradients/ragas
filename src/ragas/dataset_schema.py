@@ -514,6 +514,7 @@ class EvaluationResult:
         upload_packet(
             path="/alignment/evaluation",
             data=packet,
+            base_url=base_url,
         )
 
         evaluation_endpoint = (
