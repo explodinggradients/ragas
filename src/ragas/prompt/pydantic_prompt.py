@@ -134,7 +134,6 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         )
         return output_single[0]
 
-    @cacher()
     async def generate_multiple(
         self,
         llm: BaseRagasLLM,

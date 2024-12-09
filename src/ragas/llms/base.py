@@ -16,6 +16,7 @@ from langchain_openai.llms.base import BaseOpenAI
 from ragas.exceptions import LLMDidNotFinishException
 from ragas.integrations.helicone import helicone_config
 from ragas.run_config import RunConfig, add_async_retry
+from ragas.cache import cacher
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -81,6 +82,7 @@ class BaseRagasLLM(ABC):
         callbacks: Callbacks = None,
     ) -> LLMResult: ...
 
+    @cacher()
     async def generate(
         self,
         prompt: PromptValue,
