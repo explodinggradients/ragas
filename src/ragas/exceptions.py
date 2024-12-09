@@ -39,3 +39,13 @@ class LLMDidNotFinishException(RagasException):
     def __init__(self):
         msg = "The LLM generation was not completed. Please increase try increasing the max_tokens and try again."
         super().__init__(msg)
+
+
+class UploadException(RagasException):
+    """
+    Exception raised when the app fails to upload the results.
+    """
+
+    def __init__(self, status_code: int, message: str):
+        self.status_code = status_code
+        super().__init__(message)

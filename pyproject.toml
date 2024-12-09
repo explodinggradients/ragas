@@ -1,5 +1,6 @@
 [project]
 name = "ragas"
+requires-python = ">=3.9"
 dependencies = [
     "numpy",
     "datasets",
@@ -41,6 +42,32 @@ docs = [
     "mkdocs-git-committers-plugin-2",
     "mkdocs-git-revision-date-localized-plugin",
 ]
+dev = [
+    "rich",
+    "ruff",
+    "isort",
+    "black[jupyter]",
+    "pyright",
+    "llama_index",
+    "notebook",
+    "sphinx-autobuild",
+    "sentence-transformers",
+    "transformers",
+    "fastembed",
+    "graphene",
+    "rouge_score",
+    "nltk",
+    "rapidfuzz",
+    "pandas",
+    "datacompy",
+]
+test = [
+    "pytest",
+    "pytest-xdist[psutil]",
+    "pytest-asyncio",
+    "llama_index",
+    "nbmake",
+]
 [tool.setuptools]
 package-dir = {"" = "src"}
 
@@ -65,3 +92,9 @@ addopts = "-n 0"
 asyncio_default_fixture_loop_scope = "function"
 [pytest]
 testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "arize-phoenix>=6.1.0",
+    "openinference-instrumentation-langchain>=0.1.29",
+]

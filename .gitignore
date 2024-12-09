@@ -169,6 +169,6 @@ experiments/
 **/fil-result/
 src/ragas/_version.py
 .vscode
-
-# Cache
+.envrc
+uv.lock
 .cache/
