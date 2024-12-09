@@ -143,7 +143,7 @@ class Testset(RagasDataset[TestsetSample]):
             data_json_string=packet.model_dump_json(),
             base_url=base_url,
         )
-        testset_endpoint = f"{RAGAS_APP_URL}/alignment/testset/{self.run_id}"
+        testset_endpoint = f"{RAGAS_APP_URL}/dashboard/alignment/testset/{self.run_id}"
         if response.status_code == 409:
             # this testset already exists
             if verbose:
