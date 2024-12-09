@@ -531,7 +531,7 @@ class EvaluationResult:
 
         # check status codes
         evaluation_endpoint = (
-            f"{RAGAS_APP_URL}/alignment/evaluation/{root_trace.run_id}"
+            f"{RAGAS_APP_URL}/dashboard/alignment/evaluation/{root_trace.run_id}"
         )
         if response.status_code == 409:
             # this evalution already exists
