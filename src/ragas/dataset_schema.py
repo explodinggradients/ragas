@@ -554,7 +554,7 @@ class PromptAnnotation(BaseModel):
     prompt_input: t.Dict[str, t.Any]
     prompt_output: t.Dict[str, t.Any]
     is_accepted: bool
-    edited_output: t.Union[t.Dict[str, t.Any], None]
+    edited_output: t.Optional[t.Dict[str, t.Any]] = None
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -801,3 +801,13 @@ class SingleMetricAnnotation(BaseModel):
                 all_batches.append(batch)
 
         return all_batches
+
+    def get_prompt_annotations(self) -> t.Dict[str, t.List[PromptAnnotation]]:
+        """
+        Get all the prompt annotations for each prompt as a list.
+        """
+        prompt_annotations = defaultdict(list)
+        for sample in self.samples:
+            for prompt_name, prompt_annotation in sample.prompts.items():
+                prompt_annotations[prompt_name].append(prompt_annotation)
+        return prompt_annotations
