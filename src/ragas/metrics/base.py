@@ -12,8 +12,9 @@ from pysbd import Segmenter
 
 from ragas._analytics import EvaluationEvent, _analytics_batcher
 from ragas.callbacks import ChainType, new_group
-from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
+from ragas.dataset_schema import MetricAnnotation, MultiTurnSample, SingleTurnSample
 from ragas.executor import is_event_loop_running
+from ragas.losses import BinaryMetricLoss, MSELoss
 from ragas.prompt import PromptMixin
 from ragas.run_config import RunConfig
 from ragas.utils import (
@@ -232,12 +233,77 @@ class MetricWithLLM(Metric, PromptMixin):
     def train(
         self,
         path: str,
-        demonstration_config: DemonstrationConfig,
-        instruction_config: InstructionConfig,
-        callbacks: Callbacks,
+        demonstration_config: t.Optional[DemonstrationConfig] = None,
+        instruction_config: t.Optional[InstructionConfig] = None,
+        callbacks: t.Optional[Callbacks] = None,
+        run_config: t.Optional[RunConfig] = None,
+        batch_size: t.Optional[int] = None,
+        with_debugging_logs=False,
+        raise_exceptions: bool = True,
     ) -> None:
 
-        raise NotImplementedError("Training is not implemented for this metric.")
+        if not path.endswith(".json"):
+            raise ValueError("Train data must be in json format")
+
+        if instruction_config is None:
+            from ragas.config import InstructionConfig
+
+            instruction_config = InstructionConfig()
+
+        if demonstration_config is None:
+            from ragas.config import DemonstrationConfig
+
+            demonstration_config = DemonstrationConfig()
+
+        dataset = MetricAnnotation.from_json(path, metric_name=self.name)
+
+        optimizer = instruction_config.optimizer
+        llm = instruction_config.llm or self.llm
+        if llm is None:
+            raise ValueError(
+                f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please initantiate a the metric with an LLM to run."  # noqa
+            )
+        if optimizer.llm is None:
+            optimizer.llm = llm
+
+        if instruction_config.loss is None:
+            if self.output_type is None:
+                raise ValueError(
+                    f"Output type for metric '{self.name}' is not defined. Please set the output type in the metric or in the instruction config."
+                )
+
+            if self.output_type.name == MetricOutputType.BINARY.name:
+                loss_fun = BinaryMetricLoss()
+            elif (
+                self.output_type.name == MetricOutputType.CONTINUOUS.name
+                or self.output_type.name == MetricOutputType.DISCRETE.name
+            ):
+                loss_fun = MSELoss()
+            else:
+                raise NotImplementedError(
+                    f"Output type '{self.output_type.name}' not implemented"
+                )
+        else:
+            loss_fun = instruction_config.loss
+
+        optimizer.metric = self
+
+        optimizer_config = instruction_config.optimizer_config or {}
+        optimized_prompts = optimizer.optimize(
+            dataset[self.name],
+            loss_fun,
+            optimizer_config,
+            callbacks=callbacks,
+            run_config=run_config,
+            batch_size=batch_size,
+            with_debugging_logs=with_debugging_logs,
+            raise_exceptions=raise_exceptions,
+        )
+        prompts = self.get_prompts()
+        for key, val in optimized_prompts.items():
+            prompts[key].instruction = val
+        self.set_prompts(**prompts)
+        return
 
 
 @dataclass

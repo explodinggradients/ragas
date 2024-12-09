@@ -70,11 +70,12 @@ import google.auth
 from langchain_google_vertexai import ChatVertexAI, VertexAIEmbeddings
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
+from langchain_core.outputs import LLMResult, ChatGeneration
 
 config = {
     "project_id": "<your-project-id>",
-    "chat_model_id": "gemini-1.0-pro-002",
-    "embedding_model_id": "textembedding-gecko",
+    "chat_model_id": "gemini-1.5-pro-002",
+    "embedding_model_id": "text-embedding-005",
 }
 
 # authenticate to GCP
@@ -89,7 +90,41 @@ vertextai_embeddings = VertexAIEmbeddings(
     credentials=creds, model_name=config["embedding_model_id"]
 )
 
-vertextai_llm = LangchainLLMWrapper(vertextai_llm)
+# Create a custom is_finished_parser to capture Gemini generation completion signals
+def gemini_is_finished_parser(response: LLMResult) -> bool:
+    is_finished_list = []
+    for g in response.flatten():
+        resp = g.generations[0][0]
+        
+        # Check generation_info first
+        if resp.generation_info is not None:
+            finish_reason = resp.generation_info.get("finish_reason")
+            if finish_reason is not None:
+                is_finished_list.append(
+                    finish_reason in ["STOP", "MAX_TOKENS"]
+                )
+                continue
+                
+        # Check response_metadata as fallback
+        if isinstance(resp, ChatGeneration) and resp.message is not None:
+            metadata = resp.message.response_metadata
+            if metadata.get("finish_reason"):
+                is_finished_list.append(
+                    metadata["finish_reason"] in ["STOP", "MAX_TOKENS"]
+                )
+            elif metadata.get("stop_reason"):
+                is_finished_list.append(
+                    metadata["stop_reason"] in ["STOP", "MAX_TOKENS"] 
+                )
+        
+        # If no finish reason found, default to True
+        if not is_finished_list:
+            is_finished_list.append(True)
+            
+    return all(is_finished_list)
+
+
+vertextai_llm = LangchainLLMWrapper(vertextai_llm, is_finished_parser=gemini_is_finished_parser)
 vertextai_embeddings = LangchainEmbeddingsWrapper(vertextai_embeddings)
 ```
 Yay! Now are you ready to use ragas with Google VertexAI endpoints

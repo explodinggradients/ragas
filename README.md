@@ -64,9 +64,10 @@ pip install git+https://github.com/explodinggradients/ragas
 
 ### Evaluate your RAG with Ragas metrics
 
-This is 4 main lines:
+This is 5 main lines:
 
 ```python
+from ragas import evaluate
 from ragas.metrics import LLMContextRecall, Faithfulness, FactualCorrectness
 from langchain_openai.chat_models import ChatOpenAI
 from ragas.llms import LangchainLLMWrapper
