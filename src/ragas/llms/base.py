@@ -13,10 +13,10 @@ from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI
 from langchain_openai.llms import AzureOpenAI, OpenAI
 from langchain_openai.llms.base import BaseOpenAI
 
+from ragas.cache import cacher
 from ragas.exceptions import LLMDidNotFinishException
 from ragas.integrations.helicone import helicone_config
 from ragas.run_config import RunConfig, add_async_retry
-from ragas.cache import cacher
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks

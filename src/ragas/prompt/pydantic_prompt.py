@@ -12,7 +12,6 @@ from langchain_core.prompt_values import StringPromptValue as PromptValue
 from pydantic import BaseModel
 
 from ragas._version import __version__
-from ragas.cache import cacher
 from ragas.callbacks import ChainType, new_group
 from ragas.exceptions import RagasOutputParserException
 
