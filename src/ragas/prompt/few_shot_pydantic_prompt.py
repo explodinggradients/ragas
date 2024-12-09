@@ -36,7 +36,7 @@ class ExampleStore(ABC):
 
 @dataclass
 class InMemoryExampleStore(ExampleStore):
-    embeddings: BaseRagasEmbeddings = field(default_factory=embedding_factory)
+    embeddings: BaseRagasEmbeddings
     _examples_list: t.List[t.Tuple[BaseModel, BaseModel]] = field(
         default_factory=list, repr=False
     )
@@ -51,13 +51,13 @@ class InMemoryExampleStore(ExampleStore):
         self._examples_list.append((input, output))
 
     def get_examples(
-        self, data: BaseModel, top_k: int = 5
+        self, data: BaseModel, top_k: int = 5, threshold: float = 0.7
     ) -> t.Sequence[t.Tuple[BaseModel, BaseModel]]:
         data_embedding = self.embeddings.embed_query(data.model_dump_json())
         return [
             self._examples_list[i]
             for i in self.get_nearest_examples(
-                data_embedding, self._embeddings_of_examples, top_k
+                data_embedding, self._embeddings_of_examples, top_k, threshold
             )
         ]
 
@@ -65,7 +65,7 @@ class InMemoryExampleStore(ExampleStore):
     def get_nearest_examples(
         query_embedding: t.List[float],
         embeddings: t.List[t.List[float]],
-        top_k: int = 5,
+        top_k: int = 3,
         threshold: float = 0.7,
     ) -> t.List[int]:
         # Convert to numpy arrays for efficient computation
@@ -91,8 +91,9 @@ class InMemoryExampleStore(ExampleStore):
 
 @dataclass
 class FewShotPydanticPrompt(PydanticPrompt, t.Generic[InputModel, OutputModel]):
+    example_store: ExampleStore
     top_k_for_examples: int = 5
-    example_store: ExampleStore = field(default_factory=InMemoryExampleStore)
+    threshold_for_examples: float = 0.7
 
     def __post_init__(self):
         self.examples: t.Sequence[t.Tuple[InputModel, OutputModel]] = []
@@ -118,10 +119,12 @@ class FewShotPydanticPrompt(PydanticPrompt, t.Generic[InputModel, OutputModel]):
 
     @classmethod
     def from_pydantic_prompt(
-        cls, pydantic_prompt: PydanticPrompt[InputModel, OutputModel]
+        cls,
+        pydantic_prompt: PydanticPrompt[InputModel, OutputModel],
+        embeddings: BaseRagasEmbeddings,
     ) -> FewShotPydanticPrompt[InputModel, OutputModel]:
         # add examples to the example store
-        example_store = InMemoryExampleStore()
+        example_store = InMemoryExampleStore(embeddings=embeddings)
         for example in pydantic_prompt.examples:
             example_store.add_example(example[0], example[1])
         few_shot_prompt = cls(

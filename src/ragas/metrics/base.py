@@ -10,6 +10,7 @@ from enum import Enum
 
 from pydantic import ValidationError
 from pysbd import Segmenter
+from tqdm import tqdm
 
 from ragas._analytics import EvaluationEvent, _analytics_batcher
 from ragas.callbacks import ChainType, new_group
@@ -241,21 +242,20 @@ class MetricWithLLM(Metric, PromptMixin):
         with_debugging_logs: bool,
         raise_exceptions: bool,
     ):
-        optimizer = instruction_config.optimizer
-        llm = instruction_config.llm or self.llm
-        if llm is None:
+        if self.llm is None:
             raise ValueError(
                 f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please initantiate a the metric with an LLM to run."  # noqa
             )
+        optimizer = instruction_config.optimizer
         if optimizer.llm is None:
-            optimizer.llm = llm
+            optimizer.llm = instruction_config.llm
 
+        # figure out the loss function
         if instruction_config.loss is None:
             if self.output_type is None:
                 raise ValueError(
                     f"Output type for metric '{self.name}' is not defined. Please set the output type in the metric or in the instruction config."
                 )
-
             if self.output_type.name == MetricOutputType.BINARY.name:
                 loss_fun = BinaryMetricLoss()
             elif (
@@ -270,8 +270,8 @@ class MetricWithLLM(Metric, PromptMixin):
         else:
             loss_fun = instruction_config.loss
 
+        # Optimize the prompts
         optimizer.metric = self
-
         optimizer_config = instruction_config.optimizer_config or {}
         optimized_prompts = optimizer.optimize(
             dataset[self.name],
@@ -331,11 +331,22 @@ class MetricWithLLM(Metric, PromptMixin):
                         f"Skipping prompt '{prompt_name}' example {i} because of validation error: {e}"
                     )
                     continue
+            embedding_model = demonstration_config.embedding
             few_shot_prompt = FewShotPydanticPrompt.from_pydantic_prompt(
-                pydantic_prompt
+                pydantic_prompt=pydantic_prompt,
+                embeddings=embedding_model,
             )
+
+            # add the top k examples to the few shot prompt
+            few_shot_prompt.top_k_for_examples = demonstration_config.top_k
+            few_shot_prompt.threshold_for_examples = demonstration_config.threshold
+
             # add examples to the few shot prompt
-            for input_example, output_example in zip(input_examples, output_examples):
+            for input_example, output_example in tqdm(
+                zip(input_examples, output_examples),
+                total=len(input_examples),
+                desc=f"Few-shot examples [{prompt_name}]",
+            ):
                 few_shot_prompt.add_example(input_example, output_example)
             prompts[prompt_name] = few_shot_prompt
         self.set_prompts(**prompts)

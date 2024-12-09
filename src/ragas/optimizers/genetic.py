@@ -36,7 +36,6 @@ class FormattedExamples(BaseModel):
 
     @classmethod
     def from_examples(cls, examples: t.List[example_type]) -> "FormattedExamples":
-
         formated_examples = []
         for example in examples:
             input_, output = example.values()
@@ -52,9 +51,7 @@ class OutputInstruction(BaseModel):
 
 class ReverseEngineerPrompt(PydanticPrompt[FormattedExamples, OutputInstruction]):
     name: str = "reverse_engineer"
-    instruction: str = (
-        "Given a set of (input containing (user_input, response, reference, etc), expected output) pairs that were manually annotated, guess and generate the instruction given to the annotator."
-    )
+    instruction: str = "Given a set of (input containing (user_input, response, reference, etc), expected output) pairs that were manually annotated, guess and generate the instruction given to the annotator."
     input_model = FormattedExamples
     output_model = OutputInstruction
 
@@ -123,9 +120,7 @@ class FeedbackMutationPromptGeneration(
     PydanticPrompt[FeedbackMutationPromptInput, OutputInstruction]
 ):
     name: str = "feedback_mutation_generation"
-    instruction: str = (
-        "You are a mutator. Given an instruction and a set of feedbacks on how the instruction can be improved generate a new instruction that incorporates the feedback."
-    )
+    instruction: str = "You are a mutator. Given an instruction and a set of feedbacks on how the instruction can be improved generate a new instruction that incorporates the feedback."
     input_model = FeedbackMutationPromptInput
     output_model = OutputInstruction
 
@@ -151,7 +146,6 @@ class GeneticOptimizer(Optimizer):
         with_debugging_logs=False,
         raise_exceptions: bool = True,
     ) -> t.Dict[str, str]:
-
         callbacks = callbacks or []
 
         if self.metric is None:
@@ -187,7 +181,6 @@ class GeneticOptimizer(Optimizer):
         with tqdm(
             total=total_steps, desc="Overall Progress", dynamic_ncols=True
         ) as parent_pbar:
-
             parent_pbar.set_description(f"{stages[0]['name']} Step 1/{len(stages)}")
             initial_population = self.initialize_population(
                 dataset=dataset,
@@ -262,7 +255,6 @@ class GeneticOptimizer(Optimizer):
         raise_exceptions: bool = True,
         parent_pbar: t.Optional[tqdm] = None,
     ) -> t.List[t.Dict[str, str]]:
-
         initialize_population_rm, initialize_population_grp = new_group(
             name="Initializing Population",
             inputs={"population_size": population_size},
@@ -308,7 +300,6 @@ class GeneticOptimizer(Optimizer):
     async def _reverse_engineer_instruction(
         self, batch: t.List[SampleAnnotation], callbacks: Callbacks = None
     ) -> t.Dict[str, str]:
-
         if self.llm is None:
             raise ValueError("No llm provided for optimization.")
 
@@ -344,7 +335,6 @@ class GeneticOptimizer(Optimizer):
     async def _cross_over_prompts(
         self, parent_1: str, parent_2: str, callbacks: Callbacks = None
     ) -> str:
-
         if self.llm is None:
             raise ValueError("No llm provided for optimization.")
 
@@ -373,7 +363,6 @@ class GeneticOptimizer(Optimizer):
         raise_exceptions: bool = True,
         parent_pbar: t.Optional[tqdm] = None,
     ) -> t.List[t.Dict[str, str]]:
-
         if self.metric is None:
             raise ValueError("No metric provided for optimization.")
 
@@ -430,7 +419,6 @@ class GeneticOptimizer(Optimizer):
         raise_exceptions: bool = True,
         parent_pbar: t.Optional[tqdm] = None,
     ) -> t.Dict[str, str]:
-
         if self.llm is None:
             raise ValueError("No llm provided for optimization.")
 
@@ -470,7 +458,6 @@ class GeneticOptimizer(Optimizer):
         feedbacks: t.Dict[str, t.List[str]],
         callbacks: Callbacks = None,
     ) -> t.Dict[str, str]:
-
         if self.llm is None:
             raise ValueError("No llm provided for optimization.")
 
@@ -501,7 +488,6 @@ class GeneticOptimizer(Optimizer):
         target: t.List[float],
         callbacks: Callbacks = None,
     ) -> t.Dict[str, t.List[str]]:
-
         def dict_to_str(dict: t.Dict[str, t.Any]) -> str:
             return "".join(f"\n{key}:\n\t{val}\n" for key, val in dict.items())
 
@@ -549,7 +535,6 @@ class GeneticOptimizer(Optimizer):
     def _get_evaluation_dataset(
         self, dataset: SingleMetricAnnotation
     ) -> t.Tuple[EvaluationDataset, t.List[float]]:
-
         if self.metric is None:
             raise ValueError("No metric provided for optimization.")
 
@@ -582,7 +567,6 @@ class GeneticOptimizer(Optimizer):
         run_id: t.Optional[UUID] = None,
         parent_pbar: t.Optional[tqdm] = None,
     ) -> EvaluationResult:
-
         if self.metric is None:
             raise ValueError("No metric provided for optimization.")
 
@@ -620,7 +604,6 @@ class GeneticOptimizer(Optimizer):
         raise_exceptions: bool = True,
         parent_pbar: t.Optional[tqdm] = None,
     ) -> t.List[float]:
-
         if self.metric is None:
             raise ValueError("No metric provided for optimization.")
 
@@ -635,7 +618,6 @@ class GeneticOptimizer(Optimizer):
         )
         run_id = initialize_population_rm.run_id
         for candidate in candidates:
-
             results = self.evaluate_candidate(
                 candidate=candidate,
                 eval_dataset=eval_dataset,
@@ -660,7 +642,6 @@ class GeneticOptimizer(Optimizer):
         parent_y: t.Dict[str, str],
         callbacks: Callbacks,
     ):
-
         if parent_x.keys() != parent_y.keys():
             raise ValueError("The parents must have the same prompt names.")
 
@@ -684,7 +665,6 @@ class GeneticOptimizer(Optimizer):
         raise_exceptions: bool = True,
         parent_pbar: t.Optional[tqdm] = None,
     ):
-
         if self.metric is None:
             raise ValueError("No metric provided for optimization.")
 
@@ -701,7 +681,6 @@ class GeneticOptimizer(Optimizer):
         run_id = cross_over_rm.run_id
         prediction_vectors = []
         for candidate in candidates:
-
             results = self.evaluate_candidate(
                 candidate=candidate,
                 eval_dataset=eval_dataset,

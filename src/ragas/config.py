@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import typing as t
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
-from ragas.embeddings import BaseRagasEmbeddings, embedding_factory
-from ragas.llms import BaseRagasLLM, llm_factory
+from ragas.embeddings.base import BaseRagasEmbeddings
+from ragas.llms.base import BaseRagasLLM
 from ragas.losses import Loss
 from ragas.optimizers import GeneticOptimizer, Optimizer
 
@@ -13,14 +13,21 @@ DEFAULT_OPTIMIZER_CONFIG = {"max_steps": 100}
 
 
 class DemonstrationConfig(BaseModel):
-    embedding: BaseRagasEmbeddings = Field(default_factory=embedding_factory)
+    embedding: t.Any  # this has to be of type Any because BaseRagasEmbedding is an ABC
     enabled: bool = True
     top_k: int = 3
+    threshold: float = 0.7
     technique: t.Literal["random", "similarity"] = "similarity"
+
+    @field_validator("embedding")
+    def validate_embedding(cls, v):
+        if not isinstance(v, BaseRagasEmbeddings):
+            raise ValueError("embedding must be an instance of BaseRagasEmbeddings")
+        return v
 
 
 class InstructionConfig(BaseModel):
-    llm: BaseRagasLLM = Field(default_factory=llm_factory)
+    llm: BaseRagasLLM
     enabled: bool = True
     loss: t.Optional[Loss] = None
     optimizer: Optimizer = GeneticOptimizer()
