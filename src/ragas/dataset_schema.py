@@ -14,8 +14,10 @@ from pydantic import BaseModel, field_validator
 
 from ragas.callbacks import ChainRunEncoder, parse_run_traces
 from ragas.cost import CostCallbackHandler
+from ragas.exceptions import UploadException
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
-from ragas.utils import RAGAS_API_URL, safe_nanmean
+from ragas.sdk import RAGAS_API_URL, RAGAS_APP_URL, upload_packet
+from ragas.utils import safe_nanmean
 
 if t.TYPE_CHECKING:
     from pathlib import Path
@@ -509,8 +511,6 @@ class EvaluationResult:
     def upload(self, base_url: str = RAGAS_API_URL, verbose: bool = True) -> str:
         from datetime import datetime, timezone
 
-        import requests
-
         timestamp = datetime.now(timezone.utc).isoformat()
         root_trace = [
             trace for trace in self.ragas_traces.values() if trace.parent_run_id is None
@@ -523,19 +523,28 @@ class EvaluationResult:
             },
             cls=ChainRunEncoder,
         )
-
-        response = requests.post(
-            f"{base_url}/alignment/evaluation",
-            data=packet,
-            headers={"Content-Type": "application/json"},
+        response = upload_packet(
+            path="/alignment/evaluation",
+            data_json_string=packet,
+            base_url=base_url,
         )
 
-        if response.status_code != 200:
-            raise Exception(f"Failed to upload results: {response.text}")
-
+        # check status codes
         evaluation_endpoint = (
-            f"https://app.ragas.io/alignment/evaluation/{root_trace.run_id}"
+            f"{RAGAS_APP_URL}/alignment/evaluation/{root_trace.run_id}"
         )
+        if response.status_code == 409:
+            # this evalution already exists
+            if verbose:
+                print(f"Evaluation run already exists. View at {evaluation_endpoint}")
+            return evaluation_endpoint
+        elif response.status_code != 200:
+            # any other error
+            raise UploadException(
+                status_code=response.status_code,
+                message=f"Failed to upload results: {response.text}",
+            )
+
         if verbose:
             print(f"Evaluation results uploaded! View at {evaluation_endpoint}")
         return evaluation_endpoint
@@ -563,7 +572,6 @@ class SampleAnnotation(BaseModel):
 
 
 class MetricAnnotation(BaseModel):
-
     root: t.Dict[str, t.List[SampleAnnotation]]
 
     def __getitem__(self, key):
@@ -571,7 +579,6 @@ class MetricAnnotation(BaseModel):
 
     @classmethod
     def from_json(cls, path, metric_name: t.Optional[str]) -> "MetricAnnotation":
-
         dataset = json.load(open(path))
         if metric_name is not None and metric_name not in dataset:
             raise ValueError(f"Split {metric_name} not found in the dataset.")
@@ -613,7 +620,6 @@ class SingleMetricAnnotation(BaseModel):
 
     @classmethod
     def from_json(cls, path) -> "SingleMetricAnnotation":
-
         dataset = json.load(open(path))
 
         return cls(
@@ -622,7 +628,6 @@ class SingleMetricAnnotation(BaseModel):
         )
 
     def filter(self, function: t.Optional[t.Callable] = None):
-
         if function is None:
             function = lambda x: True  # noqa: E731
 
