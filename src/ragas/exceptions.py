@@ -41,9 +41,11 @@ class LLMDidNotFinishException(RagasException):
         super().__init__(msg)
 
 
-class RagasAppUploadException(RagasException):
+class UploadException(RagasException):
     """
     Exception raised when the app fails to upload the results.
     """
 
-    ...
+    def __init__(self, status_code: int, message: str):
+        self.status_code = status_code
+        super().__init__(message)

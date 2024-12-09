@@ -13,8 +13,10 @@ from pydantic import BaseModel, field_validator
 
 from ragas.callbacks import ChainRunEncoder, parse_run_traces
 from ragas.cost import CostCallbackHandler
+from ragas.exceptions import UploadException
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
-from ragas.utils import RAGAS_API_URL, RAGAS_APP_URL, safe_nanmean, upload_packet
+from ragas.sdk import RAGAS_API_URL, RAGAS_APP_URL, upload_packet
+from ragas.utils import safe_nanmean
 
 if t.TYPE_CHECKING:
     from pathlib import Path
@@ -511,15 +513,28 @@ class EvaluationResult:
             },
             cls=ChainRunEncoder,
         )
-        upload_packet(
+        response = upload_packet(
             path="/alignment/evaluation",
-            data=packet,
+            data_json_string=packet,
             base_url=base_url,
         )
 
+        # check status codes
         evaluation_endpoint = (
             f"{RAGAS_APP_URL}/alignment/evaluation/{root_trace.run_id}"
         )
+        if response.status_code == 409:
+            # this evalution already exists
+            if verbose:
+                print(f"Evaluation run already exists. View at {evaluation_endpoint}")
+            return evaluation_endpoint
+        elif response.status_code != 200:
+            # any other error
+            raise UploadException(
+                status_code=response.status_code,
+                message=f"Failed to upload results: {response.text}",
+            )
+
         if verbose:
             print(f"Evaluation results uploaded! View at {evaluation_endpoint}")
         return evaluation_endpoint
