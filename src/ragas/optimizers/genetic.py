@@ -514,7 +514,7 @@ class GeneticOptimizer(Optimizer):
                                 exclude_none=True
                             )
                         ),
-                        output=traces[idx][prompt_name]["output"][0].model_dump(
+                        output=traces[idx][prompt_name]["output"].model_dump(
                             exclude_none=True
                         ),
                         expected_output=dataset[idx]["prompts"][prompt_name][
@@ -586,14 +586,6 @@ class GeneticOptimizer(Optimizer):
             _run_id=run_id,
             _pbar=parent_pbar,
         )
-        # remap the traces to the original prompt names
-        remap_traces = {val.name: key for key, val in self.metric.get_prompts().items()}
-        for trace in results.traces:
-            for key in remap_traces:
-                if key in trace[self.metric.name]:
-                    trace[self.metric.name][remap_traces[key]] = trace[
-                        self.metric.name
-                    ].pop(key)
         return results
 
     def evaluate_fitness(
