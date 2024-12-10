@@ -15,21 +15,18 @@ class BleuScore(SingleTurnMetric):
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
     )
-    weights: t.Tuple[float, ...] = (0.25, 0.25, 0.25, 0.25)
     sentence_segmenter: t.Optional[HasSegmentMethod] = None
     language: str = "english"
 
     def __post_init__(self):
         try:
-            from nltk.tokenize import word_tokenize
-            from nltk.translate.bleu_score import corpus_bleu
+            from sacrebleu import corpus_bleu
         except ImportError:
             raise ImportError(
-                "nltk is required for bleu score. Please install it using `pip install nltk`"
+                "sacrebleu is required for bleu score. Please install it using `pip install sacrebleu`"
             )
         if not self.sentence_segmenter:
             self.sentence_segmenter = get_segmenter(language=self.language, clean=False)
-        self.word_tokenizer = word_tokenize
         self.corpus_bleu = corpus_bleu
 
     def init(self, run_config: RunConfig):
@@ -46,10 +43,10 @@ class BleuScore(SingleTurnMetric):
         response_sentences = self.sentence_segmenter.segment(sample.response)
 
         reference = [
-            [self.word_tokenizer(reference)] for reference in reference_sentences
+            [reference] for reference in reference_sentences
         ]
-        response = [self.word_tokenizer(response) for response in response_sentences]
-        score = self.corpus_bleu(reference, response, weights=self.weights)
+        response = response_sentences
+        score = self.corpus_bleu(response, reference).score / 100
         assert isinstance(score, float), "Expecting a float"
         return score
 

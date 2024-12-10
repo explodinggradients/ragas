@@ -29,7 +29,7 @@ scorer = NonLLMStringSimilarity(distance_measure=DistanceMeasure.HAMMING)
 
 ## BLEU Score
 
-The `BleuScore` score is a metric used to evaluate the quality of `response` by comparing it with `reference`. It measures the similarity between the response and the reference based on n-gram precision and brevity penalty. BLEU score was originally designed to evaluate machine translation systems, but it is also used in other natural language processing tasks. Since it was designed to evaluate machine translation systems, it expects the response and reference to contain same number of sentences. The comparison is done at sentence level. BLEU score ranges from 0 to 1, where 1 indicates a perfect match between the response and the reference. This is a non LLM based metric.
+The `BleuScore` score is a metric used to evaluate the quality of `response` by comparing it with `reference`. It measures the similarity between the response and the reference based on n-gram precision and brevity penalty. BLEU score was originally designed to evaluate machine translation systems, but it is also used in other natural language processing tasks. BLEU score ranges from 0 to 1, where 1 indicates a perfect match between the response and the reference. This is a non LLM based metric.
 
 ### Example
 ```python
@@ -44,12 +44,6 @@ sample = SingleTurnSample(
 scorer = BleuScore()
 await scorer.single_turn_ascore(sample)
 ```
-Custom weights may be supplied to fine-tune the BLEU score further. A tuple of float weights for unigrams, bigrams, trigrams and so on can be given by
-
-```python
-scorer = BleuScore(weights=(0.25, 0.25, 0.25, 0.25))
-```
-
 
 
 ## ROUGE Score
