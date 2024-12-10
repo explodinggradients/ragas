@@ -160,7 +160,7 @@ class GeneticOptimizer(Optimizer):
 
         population_size = config.get("population_size", 3)
         num_demonstrations = config.get("num_demonstrations", 3)
-        sample_size = config.get("sample_size", 10)
+        sample_size = config.get("sample_size", 12)
 
         # new group for optimization
         optimization_generation_rm, optimization_generation_grp = new_group(
@@ -518,6 +518,8 @@ class GeneticOptimizer(Optimizer):
                             exclude_none=True
                         ),
                         expected_output=dataset[idx]["prompts"][prompt_name][
+                            "edited_output"
+                        ] or dataset[idx]["prompts"][prompt_name][
                             "prompt_output"
                         ],
                     )

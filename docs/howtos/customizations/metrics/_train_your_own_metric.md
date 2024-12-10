@@ -36,20 +36,25 @@ Here, we are loading the sample dataset for evaluation. You can replace it with 
 ```python
 dataset = load_dataset("explodinggradients/ELI5",split="test")
 eval_dataset = EvaluationDataset.from_hf_dataset(dataset)
-print(dataset[10])
+print(eval_dataset[10].to_string())
 ```
 
 
 ```
-{
-  "user_input": "What is the Theory of Cosmic Inflation and how does it explain the early universe?",
-  "reference": "The Theory of Cosmic Inflation proposes that the universe underwent an exponential expansion in its earliest moments, just after the Big Bang. This rapid expansion helps to explain several observed phenomena in cosmology, such as the uniformity of the cosmic microwave background radiation and the large-scale structure of the universe. Inflation theory suggests that tiny quantum fluctuations were stretched to macroscopic scales, seeding the formation of galaxies and other cosmic structures. It also addresses the horizon and flatness problems, providing a more comprehensive understanding of the universe's initial conditions.",
-  "response": "The Theory of Cosmic Inflation is like saying the universe blew up like a giant balloon really fast right after it was born. This helps us understand why the universe looks the same everywhere we look and how galaxies and stars started to form. It also helps answer some big questions about why the universe is so flat and even."
-}
+user_input:
+	What is the Theory of Glacial Cycles and how does it explain the occurrence of ice ages?
+
+response:
+	The Theory of Glacial Cycles, or Milankovitch Cycles, is like a big clock for Earth's ice ages. It says that the way Earth moves around the sun changes over a long time, like how it tilts and wobbles. These changes make the sunlight hit Earth differently, which can make it colder or warmer. Over thousands of years, this can make big ice sheets grow or melt. It's like a chain reaction where these changes also affect things like greenhouse gases and how shiny Earth is, making the ice ages come and go.
+
+reference:
+	The Theory of Glacial Cycles, also known as the Milankovitch Cycles, explains the occurrence of ice ages through variations in Earth's orbit and axial tilt. These cycles include changes in eccentricity, axial tilt, and precession, which affect the distribution and intensity of sunlight received by Earth. Over tens of thousands of years, these variations lead to significant climate changes, including the advance and retreat of ice sheets. The theory suggests that these orbital changes trigger feedback mechanisms, such as changes in greenhouse gas concentrations and albedo, amplifying the climatic effects and leading to glacial and interglacial periods.
 ```
 
 
-The dataset contains user input, reference and response. The metric will evaluate the response based on the reference. The response here is in ELI5 format, which is a simple way of explaining complex topics. This is a good example to align the metric with human evaluators as in this situation the human evaluator will consider the response as correct if the ELI5 response is accurate and complete compared to the reference and incorrect if the response contains any factual inaccuracy.
+The dataset contains user input, reference and response. Our goal is to evaluate the response based on the reference. The response here is in ELI5 format, which is a simple way of explaining complex topics. 
+In this particular application, we need to align our evaluation metric to evaluate the correctness of the response compared to the reference. LLM as judge by default may regard the response as incorrect as it's not written in the same way as the reference, which is not the case here. Although, we also need it to catch instances where response makes factual errors or misrepresents the reference.
+
 
 ### Setup the Metric
 You may use any LLM based metric. For simplicity, I am using aspect critic metric and setting it up so that it can compare the response with the reference.
