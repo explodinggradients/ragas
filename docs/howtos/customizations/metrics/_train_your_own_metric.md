@@ -53,7 +53,7 @@ reference:
 
 
 The dataset contains user input, reference and response. Our goal is to evaluate the response based on the reference. The response here is in ELI5 format, which is a simple way of explaining complex topics. 
-In this particular application, we need to align our evaluation metric to evaluate the correctness of the response compared to the reference. LLM as judge by default may regard the response as incorrect as it's not written in the same way as the reference, which is not the case here. Although, we also need it to catch instances where response makes factual errors or misrepresents the reference.
+In this particular application, we need to align our evaluation metric to evaluate the correctness of the response compared to the reference. LLM as judge by default may regard the response as incorrect as it's not written in the same way as the reference, which is not the case here. At the same time, we also need it to identify instances where response makes factual errors or misrepresents the reference.
 
 
 ### Setup the Metric
