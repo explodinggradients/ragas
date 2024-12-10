@@ -158,3 +158,19 @@ class Testset(RagasDataset[TestsetSample]):
         if verbose:
             print(f"Testset uploaded! View at {testset_endpoint}")
         return testset_endpoint
+
+    @classmethod
+    def from_annotated(cls, path: str) -> Testset:
+        """
+        Loads a testset from an annotated JSON file from app.ragas.io.
+        """
+        import json
+
+        with open(path, "r") as f:
+            annotated_testset = json.load(f)
+
+        samples = []
+        for sample in annotated_testset:
+            if sample["approval_status"] == "approved":
+                samples.append(TestsetSample(**sample))
+        return cls(samples=samples)
