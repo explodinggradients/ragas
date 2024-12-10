@@ -1,9 +1,9 @@
-## Train your own metric
+# Train your own metric
 
 LLM as judge metric often makes mistakes and lack alignment with human evaluators. This makes them risky to use as their results cannot be trusted fully. Now, you can fix this using ragas. This simple tutorial notebook showcasing how to train and align any LLM as judge metric using ragas. One can use this to train any LLM based metric in ragas. 
 
 
-### Import required modules
+## Import required modules
 
 
 ```python
@@ -35,6 +35,8 @@ from langchain_openai import OpenAIEmbeddings
 llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o-mini"))
 embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
 ```
+
+## Evaluation
 
 ### Load sample evaluation dataset
 Here, we are loading the sample dataset for evaluation. You can replace it with your own dataset. 
@@ -74,6 +76,7 @@ Evaluation results uploaded! View at https://app.ragas.io/dashboard/alignment/ev
 'https://app.ragas.io/dashboard/alignment/evaluation/a6baf6ff-027f-4097-89e3-e11c70b8cf61'
 
 
+## Annotation
 
 ### Review and annotate some results
 You may now view and annotate the evaluation results in app.ragas. These annotations will be used to train the metric. Please make sure to annotate at least 15-20 examples for good results.
@@ -82,6 +85,9 @@ You may now view and annotate the evaluation results in app.ragas. These annotat
   ![Annotating](../../../_static/imgs/annotation.png){width="600"}
   <figcaption>Annotating results</figcaption>
 </figure>
+
+
+## Training and Alignment
 
 ### Train the metric
 Download the annotated samples from app.ragas using `Download annotated json` button. 
@@ -102,7 +108,7 @@ critic.train(path="edited_chain_runs.json",demonstration_config=demo_config,inst
     Few-shot examples [single_turn_aspect_critic_prompt]: 100%|██████████████| 18/18 [00:09<00:00,  1.82it/s]
 
 
-### Inspect
+### Analysis
 Now, let's do some analysis on the trained metric.
 
 First, let's take a look at new instructions that was obtained for the metric after training.
@@ -119,7 +125,7 @@ critic.get_prompts()['single_turn_aspect_critic_prompt'].instruction
 
 
 
-#### Re-evaluate
+### Re-evaluate
 Let's evaluate again and see if the metric has improved for any un-annotated examples.
 
 
@@ -139,7 +145,9 @@ results.upload()
 Evaluation results uploaded! View at https://app.ragas.io/dashboard/alignment/evaluation/687e7cdf-ff31-4c15-9780-c179207c929c
 'https://app.ragas.io/dashboard/alignment/evaluation/687e7cdf-ff31-4c15-9780-c179207c929c'
 
+### Inspect and compare results
 
+Go to app.ragas dashboard and compare the results before and after training.
 
 Here in my case, the metric has improved significantly. You can see the difference in the scores. To show the difference, let's compares the scores and changed reasoning for one specific example before and after training.
 
