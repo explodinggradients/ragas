@@ -353,7 +353,7 @@
                 "response": "General Relativity is a big idea from Albert Einstein in 1915 that changed how we think about gravity. Instead of just pulling things down, gravity is like a big invisible blanket that bends around heavy stuff like stars and planets. This helps us understand cool things like black holes, ripples in space called gravitational waves, and how the universe is getting smaller. Scientists have tested it a lot, like seeing how light bends around big things in space and how planets move just right. It also helps us learn about the Big Bang and how the universe is put together!",
                 "reference": "General Relativity, formulated by Albert Einstein in 1915, revolutionized our understanding of gravity by describing it as the curvature of spacetime caused by mass and energy. This theory has significant implications in modern physics, providing the framework for understanding phenomena such as black holes, gravitational waves, and the expansion of the universe. It has been confirmed by numerous experiments and observations, including the bending of light around massive objects and the precise orbit of planets. General Relativity also plays a crucial role in the field of cosmology, influencing our understanding of the Big Bang and the overall structure of the universe."
             },
-            "metric_output": 1,
+            "metric_output": 0,
             "prompts": {
                 "single_turn_aspect_critic_prompt": {
                     "prompt_input": {
@@ -374,7 +374,7 @@
                     }
                 }
             },
-            "is_accepted": false
+            "is_accepted": true
         },
         {
             "metric_input": {
