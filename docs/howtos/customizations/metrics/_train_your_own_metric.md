@@ -36,7 +36,20 @@ Here, we are loading the sample dataset for evaluation. You can replace it with 
 ```python
 dataset = load_dataset("explodinggradients/ELI5",split="test")
 eval_dataset = EvaluationDataset.from_hf_dataset(dataset)
+print(dataset[10])
 ```
+
+
+```
+{
+  "user_input": "What is the Theory of Cosmic Inflation and how does it explain the early universe?",
+  "reference": "The Theory of Cosmic Inflation proposes that the universe underwent an exponential expansion in its earliest moments, just after the Big Bang. This rapid expansion helps to explain several observed phenomena in cosmology, such as the uniformity of the cosmic microwave background radiation and the large-scale structure of the universe. Inflation theory suggests that tiny quantum fluctuations were stretched to macroscopic scales, seeding the formation of galaxies and other cosmic structures. It also addresses the horizon and flatness problems, providing a more comprehensive understanding of the universe's initial conditions.",
+  "response": "The Theory of Cosmic Inflation is like saying the universe blew up like a giant balloon really fast right after it was born. This helps us understand why the universe looks the same everywhere we look and how galaxies and stars started to form. It also helps answer some big questions about why the universe is so flat and even."
+}
+```
+
+
+The dataset contains user input, reference and response. The metric will evaluate the response based on the reference. The response here is in ELI5 format, which is a simple way of explaining complex topics. This is a good example to align the metric with human evaluators as in this situation the human evaluator will consider the response as correct if the ELI5 response is accurate and complete compared to the reference and incorrect if the response contains any factual inaccuracy.
 
 ### Setup the Metric
 You may use any LLM based metric. For simplicity, I am using aspect critic metric and setting it up so that it can compare the response with the reference.
