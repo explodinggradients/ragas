@@ -164,7 +164,7 @@ def parse_run_traces(
                 prompt_trace = traces[prompt_uuid]
                 prompt_traces[f"{prompt_trace.name}"] = {
                     "input": prompt_trace.inputs.get("data", {}),
-                    "output": prompt_trace.outputs.get("output", {}),
+                    "output": prompt_trace.outputs.get("output", {})[0],
                 }
             metric_traces[f"{metric_trace.name}"] = prompt_traces
         parased_traces.append(metric_traces)
