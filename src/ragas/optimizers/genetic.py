@@ -106,7 +106,7 @@ class FeedbackMutationPrompt(
 ):
     name: str = "feedback_mutation"
     instruction: str = (
-        "You're an expert reviewer. Given an instruction and a set of (input  containing (user_input, response, reference, etc), output, expected_output) examples. After analyzing the examples, give maximum 3 concrete feedbacks on how the instruction can be improved to correct the mistakes in incorrect outputs and arrive at the expected output."
+        "You're an expert reviewer. Given an instruction and a set of (input  containing (user_input, response, reference, etc), output, expected_output) examples. After analyzing the examples, give maximum 3 concrete feedbacks on how the instruction can be modified so that the model arrives at the expected output."
         "Do not provide the feedback to add examples with the instruction."
     )
     input_model = FeedbackMutationInput
