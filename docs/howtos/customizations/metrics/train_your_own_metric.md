@@ -83,11 +83,11 @@ results = evaluate(eval_dataset,metrics=[critic])
 
 ## Review and Annotate
 
-Now you have the evaluation results. Now it's time to review the evaluations and give feedback to the metric. This feedback will be used to train the metric. For this you can use [app.ragas](https://app.ragas.io) or any other annotation tool like prodigy, label studio etc.
+Now you have the evaluation results. Now it's time to review the evaluations and give feedback to the metric. This feedback will be used to train the metric. For this you can use [app.ragas.io](https://app.ragas.io) or any other annotation tool like prodigy, label studio etc.
 
-If you're using app.ragas,
+If you're using app.ragas.io,
 
-- Go to [app.ragas](https://app.ragas.io) and login.
+- Go to [app.ragas.io](https://app.ragas.io) and login.
 - Then go to [App tokens](https://app.ragas.io/dashboard/settings/app-tokens) and create a new app token.
 - Set the token in the environment variable
 
@@ -107,7 +107,7 @@ Evaluation results uploaded! View at https://app.ragas.io/dashboard/alignment/ev
 
 
 ### Review and annotate some results
-You may now view and annotate the evaluation results in app.ragas. These annotations will be used to train the metric. Please make sure to annotate at least 15-20 examples for good results.
+You may now view and annotate the evaluation results in app.ragas.io. These annotations will be used to train the metric. Please make sure to annotate at least 15-20 examples for good results.
 
 <figure markdown="span">
   ![Annotating](../../../_static/imgs/annotation.png){width="600"}
@@ -119,7 +119,7 @@ Here is a sample annotation for the above example. You can [download](../../../_
 ## Training and Alignment
 
 ### Train the metric
-Download the annotated samples from app.ragas using `Download annotated json` button. 
+Download the annotated samples from app.ragas.io using `Download annotated json` button. 
 Instruction and demonstration configurations are required tells ragas how to optimize instruction and few shot demonstrations respectively. You can customize these configurations as per your requirements.
 
 ```python
