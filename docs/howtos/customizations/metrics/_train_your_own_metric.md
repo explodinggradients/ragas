@@ -14,15 +14,6 @@ from ragas.metrics import AspectCritic
 
 ```
 
-
-Now, sign up for a free account at [app.ragas](https://app.ragas.io) and get your API key.
-Navigate to App tokens -> Create new token. Copy the key and paste it in the below code. Store it safely.
-
-
-```python
-os.environ['RAGAS_APP_TOKEN'] = 'your_app_token'
-```
-
 ### Setup the models used for evaluation and training
 You may choose any LLM model for training and evaluation. Here's [how to do it](../customize_models.md)
 
@@ -56,7 +47,7 @@ critic = AspectCritic(name="answer_correctness",definition="Given the user_input
 
 ```
 
-### Evaluate and Upload the results
+### Evaluate
 
 
 ```python
@@ -68,6 +59,22 @@ results = evaluate(eval_dataset,metrics=[critic])
 
 
 
+## Review and Annotate
+
+Now you have the evaluation results. Now it's time to review the evaluations and give feedback to the metric. This feedback will be used to train the metric. For this you can use [app.ragas](https://app.ragas.io) or any other annotation tool like prodigy, label studio etc.
+
+If you're using app.ragas,
+
+- Go to [app.ragas](https://app.ragas.io) and login.
+- Then go to [App tokens](https://app.ragas.io/dashboard/settings/app-tokens) and create a new app token.
+- Set the token in the environment variable
+
+```python
+os.environ['RAGAS_APP_TOKEN'] = 'your_app_token'
+```
+
+Once that's done, you can upload the evaluation results to app.ragas using the following code.
+
 ```python
 results.upload()
 ```
@@ -76,7 +83,6 @@ Evaluation results uploaded! View at https://app.ragas.io/dashboard/alignment/ev
 'https://app.ragas.io/dashboard/alignment/evaluation/a6baf6ff-027f-4097-89e3-e11c70b8cf61'
 
 
-## Annotation
 
 ### Review and annotate some results
 You may now view and annotate the evaluation results in app.ragas. These annotations will be used to train the metric. Please make sure to annotate at least 15-20 examples for good results.
