@@ -105,6 +105,7 @@ You may now view and annotate the evaluation results in app.ragas. These annotat
   <figcaption>Annotating results</figcaption>
 </figure>
 
+Here is a sample annotation for the above example. You can [download](../../../_static/edited_chain_runs.json) and use it.
 
 ## Training and Alignment
 
