@@ -78,11 +78,10 @@ Evaluation results uploaded! View at https://app.ragas.io/dashboard/alignment/ev
 ### Review and annotate some results
 You may now view and annotate the evaluation results in app.ragas. These annotations will be used to train the metric. Please make sure to annotate at least 15-20 examples for good results.
 
-```html
-<div style="text-align: center;">
-    <img src="../../../_static/imgs/annotation.png" alt="Annotate Results" width="600"/>
-</div>
-```
+<figure markdown="span">
+  ![Annotating](../../../_static/imgs/annotation.png){width="600"}
+  <figcaption>Annotating results</figcaption>
+</figure>
 
 ### Train the metric
 Download the annotated samples from app.ragas using `Download annotated json` button. 
@@ -144,8 +143,6 @@ Evaluation results uploaded! View at https://app.ragas.io/dashboard/alignment/ev
 
 Here in my case, the metric has improved significantly. You can see the difference in the scores. To show the difference, let's compares the scores and changed reasoning for one specific example before and after training.
 
-```html
-<div style="text-align: center;">
-    <img src="../../../_static/imgs/before_and_after_training.png" alt="Changed Results for single row" width="600"/>
-</div>
-```
+| ![Image 1](../../../_static/imgs/before_training.png) | ![Image 2](../../../_static/imgs/after_training.png) |
+|:-------------------------------:|:-------------------------------:|
+| *Before training*           | *After training*           |
