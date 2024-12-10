@@ -160,7 +160,7 @@ Evaluation results uploaded! View at https://app.ragas.io/dashboard/alignment/ev
 
 Go to [app.ragas](https://app.ragas.io/dashboard) dashboard and compare the results before and after training.
 
-Here in my case, the metric has improved significantly. You can see the difference in the scores. To show the difference, let's compares the scores and changed reasoning for one specific example before and after training.
+Here in this case, the metric has improved significantly. You can see the difference in the scores. To show the difference, let's compares the scores and changed reasoning for one specific example before and after training.
 
 | ![Image 1](../../../_static/imgs/before_training.png) | ![Image 2](../../../_static/imgs/after_training.png) |
 |:-------------------------------:|:-------------------------------:|
