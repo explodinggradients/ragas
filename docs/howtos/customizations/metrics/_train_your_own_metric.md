@@ -121,14 +121,19 @@ First, let's take a look at new instructions that was obtained for the metric af
 
 
 ```python
-critic.get_prompts()['single_turn_aspect_critic_prompt'].instruction
+print(critic.get_prompts()['single_turn_aspect_critic_prompt'].instruction)
 ```
 
+```
+Evaluate the provided user responses against the reference information for accuracy and completeness. 
+Assign a verdict of 1 if the response is accurate and aligns well with the reference, or 0 if it contains inaccuracies or misrepresentations.
+```
 
-
-
-    'Evaluate the provided user responses against the reference information for accuracy and completeness. Assign a verdict of 1 if the response is accurate and aligns well with the reference, or 0 if it contains inaccuracies or misrepresentations.'
-
+compared with old prompt
+```
+Evaluate the Input based on the criterial defined. Use only 'Yes' (1) and 'No' (0) as verdict.
+Criteria Definition: Given the user_input, reference and response. Is the response correct compared with the reference
+```
 
 
 ### Re-evaluate
