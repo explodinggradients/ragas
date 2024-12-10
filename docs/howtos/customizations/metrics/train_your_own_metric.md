@@ -1,5 +1,7 @@
 # Train and Align your own Metric
 
+[Open notebook in colab](https://colab.research.google.com/drive/16RIHEAJ0Ded3RuPoMq5498vBuhvPIruv?usp=sharing)
+
 LLM as judge metric often makes mistakes and lack alignment with human evaluators. This makes them risky to use as their results cannot be trusted fully. Now, you can fix this using ragas. This simple tutorial notebook showcasing how to train and align any LLM as judge metric using ragas. One can use this to train any LLM based metric in ragas. 
 
 
