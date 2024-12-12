@@ -100,7 +100,7 @@ os.environ['RAGAS_APP_TOKEN'] = 'your_app_token'
 Once that's done, you can upload the evaluation results to app.ragas using the following code.
 !!! note
     Please ensure that you're in ragas 0.2.8 or above to use this feature.
-
+    
 ```python
 results.upload()
 ```
