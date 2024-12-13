@@ -1,6 +1,6 @@
-# RunConfig
+# Customize timeouts and rate limits
 
-The `RunConfig` allows you to pass in the run parameters to functions like `evaluate()` and `TestsetGenerator.generate()`. Depending on your LLM providers rate limits, SLAs and traffic, controlling these parameters can improve the speed and reliablility of Ragas runs.
+The `RunConfig` allows you to pass in the run parameters to functions like `evaluate()` and `TestsetGenerator.generate()`. Depending on your LLM providers rate limits, SLAs and traffic, controlling these parameters can improve the speed and reliability and set failure tolerance of Ragas runs.
 
 How to configure the `RunConfig` in
 
