@@ -162,9 +162,11 @@ def parse_run_traces(
             prompt_traces = {}
             for i, prompt_uuid in enumerate(metric_trace.children):
                 prompt_trace = traces[prompt_uuid]
+                output = prompt_trace.outputs.get("output", {})
+                output = output[0] if isinstance(output, list) else output
                 prompt_traces[f"{prompt_trace.name}"] = {
                     "input": prompt_trace.inputs.get("data", {}),
-                    "output": prompt_trace.outputs.get("output", {})[0],
+                    "output": output,
                 }
             metric_traces[f"{metric_trace.name}"] = prompt_traces
         parased_traces.append(metric_traces)
