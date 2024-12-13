@@ -53,7 +53,9 @@ metrics = [
 results = evaluate(dataset=eval_dataset, metrics=metrics)
 ```
 
-### Exporting and analyzing results
+### Analyzing results
+
+You can use the `to_pandas()` method to get a pandas dataframe of the results and do various analysis on it.
 
 ```python
 df = results.to_pandas()
@@ -62,12 +64,9 @@ df.head()
 
 ![evaluation-result](./raga_evaluation_output.png)
 
-### Analyzing the results with Ragas Dashboard (optional)
+Once you have evaluated, you may want to view, analyse and share results. For this you can use app.ragas.io or any other similar tools available for you in the [Integrations](../howtos/integrations/index.md) section.
 
-!!! note
-    This section is optional. The dashboard provides additional visualization capabilities like being able to see the traces of evaluator LLMs but is not required for basic RAG evaluation and can be configured with other tools in the [Integrations](../howtos/integrations/index.md) section.
-
-In order to use the dashboard, you need to have an account on [app.ragas.io](https://app.ragas.io/). If you don't have one, you can sign up for one [here](https://app.ragas.io/login). You will also need to have a [Ragas API key](https://app.ragas.io/settings/api-keys).
+In order to use the [app.ragas.io](http://app.ragas.io) dashboard, you need to have an account on [app.ragas.io](https://app.ragas.io/). If you don't have one, you can sign up for one [here](https://app.ragas.io/login). You will also need to generate a [Ragas API key](https://app.ragas.io/settings/api-keys).
 
 Once you have the API key, you can use the `upload()` method to export the results to the dashboard.
 
