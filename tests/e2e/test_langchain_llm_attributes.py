@@ -3,7 +3,7 @@ from langchain_anthropic import ChatAnthropic
 from langchain_aws import ChatBedrock, ChatBedrockConverse
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_google_vertexai import ChatVertexAI
-from langchain_openai import AzureChatOpenAI, ChatOpenAI
+from langchain_openai import ChatOpenAI
 
 models = [
     ChatOpenAI(model="gpt-4o"),
