@@ -53,6 +53,24 @@ dataset.to_pandas()
 
 ![testset](./testset_output.png)
 
+### View and Select your Testset with Ragas Dashboard (optional)
+
+!!! note
+    This section is optional. The Dashboard makes it easier to view the testset generated and choose the queries you want to include in your testset. You can use other tools to do this as well, check out the [Integrations](../howtos/integrations/index.md) section for more information.
+
+In order to use the dashboard, you need to have an account on [app.ragas.io](https://app.ragas.io/). If you don't have one, you can sign up for one [here](https://app.ragas.io/login). You will also need to have a [Ragas API key](https://app.ragas.io/settings/api-keys).
+
+Once you have the API key, you can use the `upload()` method to export the results to the dashboard.
+
+```python
+import os
+os.environ["RAGAS_API_KEY"] = "your_api_key"
+dataset.upload()
+```
+
+Now you can view the results in the dashboard by following the link in the output of the `upload()` method.
+
+![Visualization with Ragas Dashboard](./testset_output_dashboard.png)
 
 ## A Deeper Look
 
