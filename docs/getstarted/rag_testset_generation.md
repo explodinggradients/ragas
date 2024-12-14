@@ -43,9 +43,9 @@ generator = TestsetGenerator(llm=generator_llm, embedding_model=generator_embedd
 dataset = generator.generate_with_langchain_docs(docs, testset_size=10)
 ```
 
-### Export
+### Analyzing the testset
 
-You may now export and inspect the generated testset.
+Once you have generated a testset, you would want to view it and select the queries you see fit to include in your final testset. You can export the testset to a pandas dataframe and do various analysis on it.
 
 ```python
 dataset.to_pandas()
@@ -53,6 +53,21 @@ dataset.to_pandas()
 
 ![testset](./testset_output.png)
 
+You can also use other tools like [app.ragas.io](https://app.ragas.io/) or any other similar tools available for you in the [Integrations](../howtos/integrations/index.md) section.
+
+In order to use the [app.ragas.io](https://app.ragas.io/) dashboard, you need to have an account on [app.ragas.io](https://app.ragas.io/). If you don't have one, you can sign up for one [here](https://app.ragas.io/login). You will also need to have a [Ragas API key](https://app.ragas.io/settings/api-keys).
+
+Once you have the API key, you can use the `upload()` method to export the results to the dashboard.
+
+```python
+import os
+os.environ["RAGAS_API_KEY"] = "your_api_key"
+dataset.upload()
+```
+
+Now you can view the results in the dashboard by following the link in the output of the `upload()` method.
+
+![Visualization with Ragas Dashboard](./testset_output_dashboard.png)
 
 ## A Deeper Look
 
