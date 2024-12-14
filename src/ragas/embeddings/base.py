@@ -13,7 +13,7 @@ from pydantic.dataclasses import dataclass
 from pydantic_core import CoreSchema, core_schema
 
 from ragas.run_config import RunConfig, add_async_retry, add_retry
-from ragas.cache import CacheInterface, cacher
+from ragas.cache import CacheInterface, CacherMixin
 
 if t.TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import BaseEmbedding
@@ -80,7 +80,7 @@ class BaseRagasEmbeddings(Embeddings, ABC):
         )
 
 
-class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
+class LangchainEmbeddingsWrapper(BaseRagasEmbeddings, CacherMixin):
     """
     Wrapper for any embeddings from langchain.
     """
@@ -90,16 +90,17 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
         run_config: t.Optional[RunConfig] = None,
         cache: t.Optional[CacheInterface] = None
     ):
+        CacherMixin.__init__(self, cache)
+
         self.embeddings = embeddings
         if run_config is None:
             run_config = RunConfig()
         self.set_run_config(run_config)
 
-        if cache is not None:
-            self.embed_query = cacher(cache_backend=cache)(self.embed_query)
-            self.embed_documents = cacher(cache_backend=cache)(self.embed_documents)
-            self.aembed_query = cacher(cache_backend=cache)(self.aembed_query)
-            self.aembed_documents = cacher(cache_backend=cache)(self.aembed_documents)
+        self.embed_query = self.wrap_method_with_cache(self.embed_query)
+        self.embed_documents = self.wrap_method_with_cache(self.embed_documents)
+        self.aembed_query = self.wrap_method_with_cache(self.aembed_query)
+        self.aembed_documents = self.wrap_method_with_cache(self.aembed_documents)
 
     def embed_query(self, text: str) -> List[float]:
         """
@@ -147,7 +148,7 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
 
 
 @dataclass
-class HuggingfaceEmbeddings(BaseRagasEmbeddings):
+class HuggingfaceEmbeddings(BaseRagasEmbeddings, CacherMixin):
     """
     Hugging Face embeddings class for generating embeddings using pre-trained models.
 
@@ -204,6 +205,7 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
         """
         Initialize the model after the object is created.
         """
+        CacherMixin.__init__(self, self.cache)
         try:
             import sentence_transformers
             from transformers import AutoConfig
@@ -236,10 +238,9 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
         if "convert_to_tensor" not in self.encode_kwargs:
             self.encode_kwargs["convert_to_tensor"] = True
 
-        if self.cache is not None:
-            self.embed_query = cacher(cache_backend=self.cache)(self.embed_query)
-            self.embed_documents = cacher(cache_backend=self.cache)(self.embed_documents)
-            self.predict = cacher(cache_backend=self.cache)(self.predict)
+        self.embed_query = self.wrap_method_with_cache(self.embed_query)
+        self.embed_documents = self.wrap_method_with_cache(self.embed_documents)
+        self.predict = self.wrap_method_with_cache(self.predict)
 
     def embed_query(self, text: str) -> List[float]:
         """
@@ -281,7 +282,7 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
         return predictions.tolist()
 
 
-class LlamaIndexEmbeddingsWrapper(BaseRagasEmbeddings):
+class LlamaIndexEmbeddingsWrapper(BaseRagasEmbeddings, CacherMixin):
     """
     Wrapper for any embeddings from llama-index.
 
@@ -314,16 +315,17 @@ class LlamaIndexEmbeddingsWrapper(BaseRagasEmbeddings):
     def __init__(
         self, embeddings: BaseEmbedding, run_config: t.Optional[RunConfig] = None, cache: t.Optional[CacheInterface] = None
     ):
+        CacherMixin.__init__(self, cache)
+
         self.embeddings = embeddings
         if run_config is None:
             run_config = RunConfig()
         self.set_run_config(run_config)
 
-        if cache is not None:
-            self.embed_query = cacher(cache_backend=cache)(self.embed_query)
-            self.embed_documents = cacher(cache_backend=cache)(self.embed_documents)
-            self.aembed_query = cacher(cache_backend=cache)(self.aembed_query)
-            self.aembed_documents = cacher(cache_backend=cache)(self.aembed_documents)
+        self.embed_query = self.wrap_method_with_cache(self.embed_query)
+        self.embed_documents = self.wrap_method_with_cache(self.embed_documents)
+        self.aembed_query = self.wrap_method_with_cache(self.aembed_query)
+        self.aembed_documents = self.wrap_method_with_cache(self.aembed_documents)
 
     def embed_query(self, text: str) -> t.List[float]:
         return self.embeddings.get_query_embedding(text)

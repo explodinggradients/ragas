@@ -110,3 +110,22 @@ def cacher(cache_backend: Optional[CacheInterface] = None):
         return async_wrapper if is_async else sync_wrapper
 
     return decorator
+
+
+class CacherMixin:
+    """
+    A mixin that provides a method to wrap functions with the cacher decorator.
+    Instances of classes inheriting this mixin can specify a cache backend.
+    """
+
+    def __init__(self, cache: Optional[CacheInterface] = None):
+        self.cache_backend = cache
+
+    def wrap_method_with_cache(self, func):
+        """
+        Wrap the given function with the cacher decorator if a cache_backend is available.
+        Otherwise, return the original function.
+        """
+        if self.cache_backend is None:
+            return func
+        return cacher(cache_backend=self.cache_backend)(func)
