@@ -13,7 +13,7 @@ from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI
 from langchain_openai.llms import AzureOpenAI, OpenAI
 from langchain_openai.llms.base import BaseOpenAI
 
-from ragas.cache import cacher
+from ragas.cache import cacher, CacheInterface
 from ragas.exceptions import LLMDidNotFinishException
 from ragas.integrations.helicone import helicone_config
 from ragas.run_config import RunConfig, add_async_retry
@@ -82,7 +82,6 @@ class BaseRagasLLM(ABC):
         callbacks: Callbacks = None,
     ) -> LLMResult: ...
 
-    @cacher()
     async def generate(
         self,
         prompt: PromptValue,
@@ -126,12 +125,17 @@ class LangchainLLMWrapper(BaseRagasLLM):
         langchain_llm: BaseLanguageModel,
         run_config: t.Optional[RunConfig] = None,
         is_finished_parser: t.Optional[t.Callable[[LLMResult], bool]] = None,
+        cache: t.Optional[CacheInterface] = None,
     ):
         self.langchain_llm = langchain_llm
         if run_config is None:
             run_config = RunConfig()
         self.set_run_config(run_config)
         self.is_finished_parser = is_finished_parser
+
+        if cache is not None:
+            self.generate_text = cacher(cache_backend=cache)(self.generate_text)
+            self.agenerate_text = cacher(cache_backend=cache)(self.agenerate_text)
 
     def is_finished(self, response: LLMResult) -> bool:
         """
@@ -275,6 +279,7 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
         self,
         llm: BaseLLM,
         run_config: t.Optional[RunConfig] = None,
+        cache: t.Optional[CacheInterface] = None,
     ):
         self.llm = llm
 
@@ -286,6 +291,10 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
         if run_config is None:
             run_config = RunConfig()
         self.set_run_config(run_config)
+
+        if cache is not None:
+            self.generate_text = cacher(cache_backend=cache)(self.generate_text)
+            self.agenerate_text = cacher(cache_backend=cache)(self.agenerate_text)
 
     def check_args(
         self,
