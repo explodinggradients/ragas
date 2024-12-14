@@ -13,7 +13,7 @@ from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI
 from langchain_openai.llms import AzureOpenAI, OpenAI
 from langchain_openai.llms.base import BaseOpenAI
 
-from ragas.cache import CacheInterface, CacherMixin
+from ragas.cache import cacher, CacheInterface
 from ragas.exceptions import LLMDidNotFinishException
 from ragas.integrations.helicone import helicone_config
 from ragas.run_config import RunConfig, add_async_retry
@@ -112,7 +112,7 @@ class BaseRagasLLM(ABC):
         return result
 
 
-class LangchainLLMWrapper(BaseRagasLLM, CacherMixin):
+class LangchainLLMWrapper(BaseRagasLLM):
     """
     A simple base class for RagasLLMs that is based on Langchain's BaseLanguageModel
     interface. it implements 2 functions:
@@ -127,15 +127,15 @@ class LangchainLLMWrapper(BaseRagasLLM, CacherMixin):
         is_finished_parser: t.Optional[t.Callable[[LLMResult], bool]] = None,
         cache: t.Optional[CacheInterface] = None,
     ):
-        CacherMixin.__init__(self, cache)
         self.langchain_llm = langchain_llm
         if run_config is None:
             run_config = RunConfig()
         self.set_run_config(run_config)
         self.is_finished_parser = is_finished_parser
 
-        self.generate_text = self.wrap_method_with_cache(self.generate_text)
-        self.agenerate_text = self.wrap_method_with_cache(self.agenerate_text)
+        if cache is not None:
+            self.generate_text = cacher(cache_backend=cache)(self.generate_text)
+            self.agenerate_text = cacher(cache_backend=cache)(self.agenerate_text)
 
     def is_finished(self, response: LLMResult) -> bool:
         """
@@ -270,7 +270,7 @@ class LangchainLLMWrapper(BaseRagasLLM, CacherMixin):
         return f"{self.__class__.__name__}(langchain_llm={self.langchain_llm.__class__.__name__}(...))"
 
 
-class LlamaIndexLLMWrapper(BaseRagasLLM, CacherMixin):
+class LlamaIndexLLMWrapper(BaseRagasLLM):
     """
     A Adaptor for LlamaIndex LLMs
     """
@@ -281,7 +281,6 @@ class LlamaIndexLLMWrapper(BaseRagasLLM, CacherMixin):
         run_config: t.Optional[RunConfig] = None,
         cache: t.Optional[CacheInterface] = None,
     ):
-        CacherMixin.__init__(self, cache)
         self.llm = llm
 
         try:
@@ -293,8 +292,9 @@ class LlamaIndexLLMWrapper(BaseRagasLLM, CacherMixin):
             run_config = RunConfig()
         self.set_run_config(run_config)
 
-        self.generate_text = self.wrap_method_with_cache(self.generate_text)
-        self.agenerate_text = self.wrap_method_with_cache(self.agenerate_text)
+        if cache is not None:
+            self.generate_text = cacher(cache_backend=cache)(self.generate_text)
+            self.agenerate_text = cacher(cache_backend=cache)(self.agenerate_text)
 
     def check_args(
         self,
