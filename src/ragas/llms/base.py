@@ -132,7 +132,9 @@ class LangchainLLMWrapper(BaseRagasLLM):
         langchain_llm: BaseLanguageModel,
         run_config: t.Optional[RunConfig] = None,
         is_finished_parser: t.Optional[t.Callable[[LLMResult], bool]] = None,
+        cache: t.Optional[CacheInterface] = None,
     ):
+        super().__init__(cache=cache)
         self.langchain_llm = langchain_llm
         if run_config is None:
             run_config = RunConfig()
