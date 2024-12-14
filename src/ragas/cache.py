@@ -2,7 +2,6 @@ import functools
 import hashlib
 import inspect
 import json
-import os
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
@@ -83,6 +82,9 @@ def _generate_cache_key(func, args, kwargs):
 
 def cacher(cache_backend: Optional[CacheInterface] = None):
     def decorator(func):
+        if cache_backend is None:
+            return func
+
         is_async = inspect.iscoroutinefunction(func)
 
         @functools.wraps(func)
@@ -126,6 +128,4 @@ class CacherMixin:
         Wrap the given function with the cacher decorator if a cache_backend is available.
         Otherwise, return the original function.
         """
-        if self.cache_backend is None:
-            return func
         return cacher(cache_backend=self.cache_backend)(func)

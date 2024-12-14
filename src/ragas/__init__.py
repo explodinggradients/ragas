@@ -1,4 +1,4 @@
-from ragas.cache import CacheInterface, DiskCacheBackend, CacherMixin
+from ragas.cache import CacheInterface, CacherMixin, DiskCacheBackend, cacher
 from ragas.dataset_schema import EvaluationDataset, MultiTurnSample, SingleTurnSample
 from ragas.evaluation import evaluate
 from ragas.run_config import RunConfig
@@ -19,4 +19,5 @@ __all__ = [
     "CacheInterface",
     "DiskCacheBackend",
     "CacherMixin",
+    "cacher",
 ]

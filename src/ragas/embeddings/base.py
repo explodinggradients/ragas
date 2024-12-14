@@ -12,8 +12,8 @@ from langchain_openai.embeddings import OpenAIEmbeddings
 from pydantic.dataclasses import dataclass
 from pydantic_core import CoreSchema, core_schema
 
-from ragas.run_config import RunConfig, add_async_retry, add_retry
 from ragas.cache import CacheInterface, CacherMixin
+from ragas.run_config import RunConfig, add_async_retry, add_retry
 
 if t.TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import BaseEmbedding
@@ -86,9 +86,10 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings, CacherMixin):
     """
 
     def __init__(
-        self, embeddings: Embeddings,
+        self,
+        embeddings: Embeddings,
         run_config: t.Optional[RunConfig] = None,
-        cache: t.Optional[CacheInterface] = None
+        cache: t.Optional[CacheInterface] = None,
     ):
         CacherMixin.__init__(self, cache)
 
@@ -313,7 +314,10 @@ class LlamaIndexEmbeddingsWrapper(BaseRagasEmbeddings, CacherMixin):
     """
 
     def __init__(
-        self, embeddings: BaseEmbedding, run_config: t.Optional[RunConfig] = None, cache: t.Optional[CacheInterface] = None
+        self,
+        embeddings: BaseEmbedding,
+        run_config: t.Optional[RunConfig] = None,
+        cache: t.Optional[CacheInterface] = None,
     ):
         CacherMixin.__init__(self, cache)
 
