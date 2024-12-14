@@ -12,8 +12,8 @@ from langchain_openai.embeddings import OpenAIEmbeddings
 from pydantic.dataclasses import dataclass
 from pydantic_core import CoreSchema, core_schema
 
-from ragas.run_config import RunConfig, add_async_retry, add_retry
 from ragas.cache import CacheInterface, cacher
+from ragas.run_config import RunConfig, add_async_retry, add_retry
 
 if t.TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import BaseEmbedding
@@ -239,7 +239,9 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
 
         if self.cache is not None:
             self.embed_query = cacher(cache_backend=self.cache)(self.embed_query)
-            self.embed_documents = cacher(cache_backend=self.cache)(self.embed_documents)
+            self.embed_documents = cacher(cache_backend=self.cache)(
+                self.embed_documents
+            )
             self.predict = cacher(cache_backend=self.cache)(self.predict)
 
     def embed_query(self, text: str) -> List[float]:

@@ -85,28 +85,31 @@ def cacher(cache_backend: Optional[CacheInterface] = None):
         if cache_backend is None:
             return func
 
+        # hack to make pyright happy
+        backend: CacheInterface = cache_backend
+
         is_async = inspect.iscoroutinefunction(func)
 
         @functools.wraps(func)
         async def async_wrapper(*args, **kwargs):
             cache_key = _generate_cache_key(func, args, kwargs)
 
-            if cache_backend.has_key(cache_key):
-                return cache_backend.get(cache_key)
+            if backend.has_key(cache_key):
+                return backend.get(cache_key)
 
             result = await func(*args, **kwargs)
-            cache_backend.set(cache_key, result)
+            backend.set(cache_key, result)
             return result
 
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
             cache_key = _generate_cache_key(func, args, kwargs)
 
-            if cache_backend.has_key(cache_key):
-                return cache_backend.get(cache_key)
+            if backend.has_key(cache_key):
+                return backend.get(cache_key)
 
             result = func(*args, **kwargs)
-            cache_backend.set(cache_key, result)
+            backend.set(cache_key, result)
             return result
 
         return async_wrapper if is_async else sync_wrapper
