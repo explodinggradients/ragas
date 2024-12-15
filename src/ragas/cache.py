@@ -5,8 +5,7 @@ import json
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
-from pydantic import BaseModel, GetCoreSchemaHandler
-from pydantic_core import CoreSchema, core_schema
+from pydantic import BaseModel
 
 
 class CacheInterface(ABC):
@@ -21,17 +20,6 @@ class CacheInterface(ABC):
     @abstractmethod
     def has_key(self, key: str) -> bool:
         pass
-
-    @classmethod
-    def __get_pydantic_core_schema__(
-        cls, source_type: Any, handler: GetCoreSchemaHandler
-    ) -> CoreSchema:
-        """
-        Define how Pydantic generates a schema for BaseRagasEmbeddings.
-        """
-        return core_schema.no_info_after_validator_function(
-            cls, core_schema.is_instance_schema(cls)  # The validator function
-        )
 
 
 class DiskCacheBackend(CacheInterface):
