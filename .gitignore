@@ -171,3 +171,4 @@ src/ragas/_version.py
 .vscode
 .envrc
 uv.lock
+.cache/
