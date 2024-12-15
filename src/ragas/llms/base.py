@@ -13,6 +13,7 @@ from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI
 from langchain_openai.llms import AzureOpenAI, OpenAI
 from langchain_openai.llms.base import BaseOpenAI
 
+from ragas.cache import CacheInterface, cacher
 from ragas.exceptions import LLMDidNotFinishException
 from ragas.integrations.helicone import helicone_config
 from ragas.run_config import RunConfig, add_async_retry
@@ -47,6 +48,13 @@ def is_multiple_completion_supported(llm: BaseLanguageModel) -> bool:
 class BaseRagasLLM(ABC):
     run_config: RunConfig = field(default_factory=RunConfig, repr=False)
     multiple_completion_supported: bool = field(default=False, repr=False)
+    cache: t.Optional[CacheInterface] = field(default=None, repr=False)
+
+    def __post_init__(self):
+        # If a cache_backend is provided, wrap the implementation methods at construction time.
+        if self.cache is not None:
+            self.generate_text = cacher(cache_backend=self.cache)(self.generate_text)
+            self.agenerate_text = cacher(cache_backend=self.cache)(self.agenerate_text)
 
     def set_run_config(self, run_config: RunConfig):
         self.run_config = run_config
@@ -124,7 +132,9 @@ class LangchainLLMWrapper(BaseRagasLLM):
         langchain_llm: BaseLanguageModel,
         run_config: t.Optional[RunConfig] = None,
         is_finished_parser: t.Optional[t.Callable[[LLMResult], bool]] = None,
+        cache: t.Optional[CacheInterface] = None,
     ):
+        super().__init__(cache=cache)
         self.langchain_llm = langchain_llm
         if run_config is None:
             run_config = RunConfig()
@@ -273,7 +283,9 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
         self,
         llm: BaseLLM,
         run_config: t.Optional[RunConfig] = None,
+        cache: t.Optional[CacheInterface] = None,
     ):
+        super().__init__(cache=cache)
         self.llm = llm
 
         try:

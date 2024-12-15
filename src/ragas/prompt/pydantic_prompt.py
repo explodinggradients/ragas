@@ -175,6 +175,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             If there's an error parsing the output.
         """
         callbacks = callbacks or []
+
         processed_data = self.process_input(data)
         prompt_rm, prompt_cb = new_group(
             name=self.name,
