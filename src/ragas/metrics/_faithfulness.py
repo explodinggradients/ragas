@@ -223,11 +223,7 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
 
         text, question = row["response"], row["user_input"]
         sentences = self.sentence_segmenter.segment(text)
-        sentences_with_index = {
-            i: sentence
-            for i, sentence in enumerate(sentences)
-            if sentence.strip().endswith((".", "。", "!", "！"))
-        }
+        sentences_with_index = {i: sentence for i, sentence in enumerate(sentences)}
 
         statements_simplified = await self.statement_prompt.generate(
             llm=self.llm,
@@ -320,7 +316,7 @@ class FaithfulnesswithHHEM(Faithfulness):
         assert self.llm is not None, "LLM is not set"
 
         statements_simplified = await self._create_statements(row, callbacks)
-        if statements_simplified is None:
+        if len(statements_simplified.sentences) == 0:
             return np.nan
 
         statements = []
@@ -334,7 +330,9 @@ class FaithfulnesswithHHEM(Faithfulness):
             batch_scores = (
                 self.nli_classifier.predict(input_pairs).cpu().detach().round()
             )
-            scores += batch_scores
+            # convert tensor to list of floats
+            scores.extend(batch_scores.tolist())
+
         return sum(scores) / len(scores)
 
 
