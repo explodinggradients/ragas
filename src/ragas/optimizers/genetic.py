@@ -519,9 +519,8 @@ class GeneticOptimizer(Optimizer):
                         ),
                         expected_output=dataset[idx]["prompts"][prompt_name][
                             "edited_output"
-                        ] or dataset[idx]["prompts"][prompt_name][
-                            "prompt_output"
-                        ],
+                        ]
+                        or dataset[idx]["prompts"][prompt_name]["prompt_output"],
                     )
                     for idx in indices
                 ]
