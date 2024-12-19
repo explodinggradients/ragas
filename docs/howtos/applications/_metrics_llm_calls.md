@@ -1,4 +1,4 @@
-## Debug LLM based metrics using tracing
+# Explain or debug LLM based metrics using tracing
 
 While evaluating using LLM based metrics, each metric may make one or more calls to the LLM. These traces are important to understand the results of the metrics and to debug any issues.
 This notebook demonstrates how to export the LLM traces and analyze them.
