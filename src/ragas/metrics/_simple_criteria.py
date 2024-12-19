@@ -49,9 +49,7 @@ class SingleTurnSimpleCriteriaInput(BaseModel):
 
 
 class MultiTurnSimpleCriteriaInput(BaseModel):
-    user_input: t.Optional[str] = Field(
-        description="The input to the model", default=None
-    )
+    user_input: str = Field(description="The input to the model")
     reference: t.Optional[str] = Field(
         description="The reference response", default=None
     )
@@ -172,20 +170,18 @@ class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "set LLM before use"
 
-        user_input, context, response = (
-            row["user_input"],
+        user_input, response, retrieved_contexts, reference = (
+            row.get("user_input"),
+            row.get("response"),
             row.get("retrieved_contexts"),
-            row["response"],
+            row.get("reference"),
         )
-
-        if context is not None:
-            if isinstance(context, list):
-                context = "\n".join(context)
-            user_input = f"Question: {user_input} Answer using context: {context}"
 
         prompt_input = SingleTurnSimpleCriteriaInput(
             user_input=user_input,
             response=response,
+            retrieved_contexts=retrieved_contexts,
+            reference=reference,
         )
 
         response = await self.single_turn_prompt.generate(
@@ -200,11 +196,11 @@ class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         self, sample: MultiTurnSample, callbacks: Callbacks
     ) -> float:
         assert self.llm is not None, "LLM is not set"
-        assert sample.reference is not None, "Reference is not set"
 
         interaction = sample.pretty_repr()
         prompt_input = MultiTurnSimpleCriteriaInput(
             user_input=interaction,
+            reference=sample.reference,
         )
         response = await self.multi_turn_prompt.generate(
             data=prompt_input,
