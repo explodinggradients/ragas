@@ -30,7 +30,8 @@ class CacheInterface(ABC):
         Define how Pydantic generates a schema for BaseRagasEmbeddings.
         """
         return core_schema.no_info_after_validator_function(
-            cls, core_schema.is_instance_schema(cls)  # The validator function
+            cls,
+            core_schema.is_instance_schema(cls),  # The validator function
         )
 
 
@@ -57,6 +58,9 @@ class DiskCacheBackend(CacheInterface):
     def __del__(self):
         if hasattr(self, "cache"):
             self.cache.close()
+
+    def __repr__(self):
+        return f"DiskCacheBackend(cache_dir={self.cache.directory})"
 
 
 def _make_hashable(o):
