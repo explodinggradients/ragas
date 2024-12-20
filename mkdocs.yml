@@ -77,6 +77,7 @@ nav:
           - General:
               - Customise models: howtos/customizations/customize_models.md
               - Run Config: howtos/customizations/_run_config.md
+              - Caching: howtos/customizations/_caching.md
           - Metrics:
               - Modify Prompts: howtos/customizations/metrics/_modifying-prompts-metrics.md
               - Adapt Metrics to Languages: howtos/customizations/metrics/_metrics_language_adaptation.md
@@ -88,6 +89,7 @@ nav:
               - Persona Generation: howtos/customizations/testgenerator/_persona_generator.md
               - Custom Single-hop Query: howtos/customizations/testgenerator/_testgen-custom-single-hop.md
               - Custom Multi-hop Query: howtos/customizations/testgenerator/_testgen-customisation.md
+
       - Applications:
           - howtos/applications/index.md
           - Metrics:
