@@ -553,7 +553,6 @@ class EvaluationResult:
 class PromptAnnotation(BaseModel):
     prompt_input: t.Dict[str, t.Any]
     prompt_output: t.Dict[str, t.Any]
-    is_accepted: bool
     edited_output: t.Optional[t.Dict[str, t.Any]] = None
 
     def __getitem__(self, key):
@@ -808,6 +807,7 @@ class SingleMetricAnnotation(BaseModel):
         """
         prompt_annotations = defaultdict(list)
         for sample in self.samples:
-            for prompt_name, prompt_annotation in sample.prompts.items():
-                prompt_annotations[prompt_name].append(prompt_annotation)
+            if sample.is_accepted:
+                for prompt_name, prompt_annotation in sample.prompts.items():
+                    prompt_annotations[prompt_name].append(prompt_annotation)
         return prompt_annotations
