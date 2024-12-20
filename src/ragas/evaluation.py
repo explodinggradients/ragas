@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import typing as t
 from uuid import UUID
 
@@ -7,8 +8,6 @@ from datasets import Dataset
 from langchain_core.callbacks import BaseCallbackHandler, BaseCallbackManager
 from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.language_models import BaseLanguageModel as LangchainLLM
-from tqdm.auto import tqdm
-
 from ragas._analytics import track_was_completed
 from ragas.callbacks import ChainType, RagasTracer, new_group
 from ragas.dataset_schema import (
@@ -44,6 +43,7 @@ from ragas.validation import (
     validate_required_columns,
     validate_supported_metrics,
 )
+from tqdm.auto import tqdm
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -203,11 +203,21 @@ def evaluate(
             binary_metrics.append(metric.name)
         if isinstance(metric, MetricWithLLM) and metric.llm is None:
             if llm is None:
+                assert 'OPENAI_API_KEY' in os.environ, \
+                    f"parameters llm is None, so we will automatically call OpenAI's model. " \
+                    f"However, you haven't set your OPENAI_API_KEY. " \
+                    f"Before calling the evaluate function, you need to add the code " \
+                    f"os.environ['OPENAI_API_KEY'] = 'your-openai-key'."
                 llm = llm_factory()
             metric.llm = llm
             llm_changed.append(i)
         if isinstance(metric, MetricWithEmbeddings) and metric.embeddings is None:
             if embeddings is None:
+                assert 'OPENAI_API_KEY' in os.environ, \
+                    f"parameters embeddings is None, so we will automatically call OpenAI's model. " \
+                    f"However, you haven't set your OPENAI_API_KEY. " \
+                    f"Before calling the evaluate function, you need to add the code " \
+                    f"os.environ['OPENAI_API_KEY'] = 'your-openai-key'."
                 embeddings = embedding_factory()
             metric.embeddings = embeddings
             embeddings_changed.append(i)
