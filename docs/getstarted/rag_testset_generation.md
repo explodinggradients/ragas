@@ -15,7 +15,11 @@ git clone https://huggingface.co/datasets/explodinggradients/Sample_Docs_Markdow
 
 ### Load documents
 
-Now we will load the documents from the sample dataset using `DirectoryLoader`, which is one of document loaders from [langchain_community](https://python.langchain.com/v0.1/docs/modules/data_connection/document_loaders/). You may also use any loaders from [llama_index](https://docs.llamaindex.ai/en/stable/understanding/loading/llamahub/)
+Now we will load the documents from the sample dataset using `DirectoryLoader`, which is one of the document loaders from [langchain_community](https://python.langchain.com/docs/concepts/document_loaders/). You may also use any loaders from [llama_index](https://docs.llamaindex.ai/en/stable/understanding/loading/llamahub/)
+
+```shell
+pip install langchain-community
+```
 
 ```python
 from langchain_community.document_loaders import DirectoryLoader
