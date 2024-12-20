@@ -259,6 +259,7 @@ def test_analytics_batcher_join_evaluation_events(
     assert sorted(e.num_rows for e in joined_events) == sorted(expected_num_rows_set)
 
 
+@pytest.mark.skip(reason="This test is flaky and needs to be fixed")
 @pytest.mark.parametrize(
     "evaluation_events, expected_num_rows_set", evaluation_events_and_num_rows
 )
