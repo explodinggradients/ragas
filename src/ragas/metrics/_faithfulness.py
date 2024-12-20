@@ -262,7 +262,8 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
 
         statements_simplified = await self._create_statements(row, callbacks)
         if statements_simplified is None:
-            return np.nan
+            logger.warning("Failed to create statements from the answer.")
+            return 0.0  # Return 0.0 instead of np.nan
 
         # unwrap the statements
         statements = []
