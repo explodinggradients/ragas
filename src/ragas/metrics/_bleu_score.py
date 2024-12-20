@@ -42,9 +42,7 @@ class BleuScore(SingleTurnMetric):
         reference_sentences = self.sentence_segmenter.segment(sample.reference)
         response_sentences = self.sentence_segmenter.segment(sample.response)
 
-        reference = [
-            [reference] for reference in reference_sentences
-        ]
+        reference = [[reference] for reference in reference_sentences]
         response = response_sentences
         score = self.corpus_bleu(response, reference).score / 100
         assert isinstance(score, float), "Expecting a float"

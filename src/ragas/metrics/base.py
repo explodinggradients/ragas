@@ -311,9 +311,6 @@ class MetricWithLLM(Metric, PromptMixin):
             input_examples, output_examples = [], []
             for i, prompt_annotation in enumerate(prompt_annotation_list):
                 try:
-                    # skip if the prompt is not accepted
-                    if not prompt_annotation.is_accepted:
-                        continue
                     input_examples.append(
                         input_model.model_validate(prompt_annotation.prompt_input)
                     )
