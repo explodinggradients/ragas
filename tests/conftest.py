@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import typing as t
 
+import numpy as np
 import pytest
 from langchain_core.outputs import Generation, LLMResult
 
+from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.llms.base import BaseRagasLLM
 
 if t.TYPE_CHECKING:
@@ -46,6 +48,26 @@ class EchoLLM(BaseRagasLLM):
         return LLMResult(generations=[[Generation(text=prompt.to_string())]])
 
 
+class EchoEmbedding(BaseRagasEmbeddings):
+
+    async def aembed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
+        return [np.random.rand(768).tolist() for _ in texts]
+
+    async def aembed_query(self, text: str) -> t.List[float]:
+        return [np.random.rand(768).tolist()]
+
+    def embed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
+        return [np.random.rand(768).tolist() for _ in texts]
+
+    def embed_query(self, text: str) -> t.List[float]:
+        return [np.random.rand(768).tolist()]
+
+
 @pytest.fixture
 def fake_llm():
     return EchoLLM()
+
+
+@pytest.fixture
+def fake_embedding():
+    return EchoEmbedding()
