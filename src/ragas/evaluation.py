@@ -357,4 +357,9 @@ def evaluate(
         for i in reproducable_metrics:
             metrics[i].reproducibility = 1  # type: ignore
 
+        # flush the analytics batcher
+        from ragas._analytics import _analytics_batcher
+
+        _analytics_batcher.flush()
+
     return result
