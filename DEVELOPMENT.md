@@ -84,3 +84,26 @@ make test
 4. Provide a clear description of the changes in your pull request.
 
 Thank you for contributing to ragas!
+
+
+## Debugging Logs
+
+To view the debug logs for any module, you can set the following.
+```py
+import logging
+
+# Configure logging for the ragas._analytics module
+analytics_logger = logging.getLogger('ragas._analytics')
+analytics_logger.setLevel(logging.DEBUG)
+
+# Create a console handler and set its level
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+
+# Create a formatter and add it to the handler
+formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+
+# Add the handler to the logger
+analytics_logger.addHandler(console_handler)
+```
