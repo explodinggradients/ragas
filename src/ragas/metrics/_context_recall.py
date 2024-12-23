@@ -8,7 +8,7 @@ import numpy as np
 from pydantic import BaseModel
 
 from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics._string import NonLLMStringSimilarity
+from ragas.metrics._string import DistanceMeasure, NonLLMStringSimilarity
 from ragas.metrics.base import (
     MetricOutputType,
     MetricType,
@@ -210,18 +210,22 @@ class NonLLMContextRecall(SingleTurnMetric):
         }
     )
     output_type: MetricOutputType = MetricOutputType.CONTINUOUS
-    distance_measure: SingleTurnMetric = field(
+    _distance_measure: SingleTurnMetric = field(
         default_factory=lambda: NonLLMStringSimilarity()
     )
     threshold: float = 0.5
 
-    def __post_init__(self):
-        if isinstance(self.distance_measure, MetricWithLLM):
-            raise ValueError(
-                "distance_measure must not be an instance of MetricWithLLM for NonLLMContextPrecisionWithReference"
-            )
-
     def init(self, run_config: RunConfig) -> None: ...
+
+    @property
+    def distance_measure(self) -> SingleTurnMetric:
+        return self._distance_measure
+
+    @distance_measure.setter
+    def distance_measure(self, distance_measure: DistanceMeasure) -> None:
+        self._distance_measure = NonLLMStringSimilarity(
+            distance_measure=distance_measure
+        )
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
