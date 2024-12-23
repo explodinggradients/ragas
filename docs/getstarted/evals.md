@@ -16,22 +16,21 @@ The purpose of this guide is to illustrate a simple workflow for testing and eva
 Here is a simple example that uses `BleuScore` score to score summary
 
 ```python
-from ragas import evaluate
-from ragas import EvaluationDataset
+from ragas import SingleTurnSample
 from ragas.metrics import BleuScore
-tests = [{
+
+test_data = {
     "user_input": "summarise given text\nThe company reported an 8% rise in Q3 2024, driven by strong performance in the Asian market. Sales in this region have significantly contributed to the overall growth. Analysts attribute this success to strategic marketing and product localization. The positive trend in the Asian market is expected to continue into the next quarter.",
     "response": "The company experienced an 8% increase in Q3 2024, largely due to effective marketing strategies and product adaptation, with expectations of continued growth in the coming quarter.",
     "reference": "The company reported an 8% growth in Q3 2024, primarily driven by strong sales in the Asian market, attributed to strategic marketing and localized products, with continued growth anticipated in the next quarter."
-}]
-
-test_data = EvaluationDataset.from_list(tests)
-results = evaluate(test_data, metrics=[BleuScore()])
-results
+}
+metric = BleuScore()
+test_data = SingleTurnSample(**test_data)
+metric.single_turn_score(test_data)
 ```
 
 ```
-{'bleu_score': 0.1372}
+0.137
 ```
 
 Here we used,
@@ -57,23 +56,22 @@ choose_evaluator_llm.md
 **Evaluation**
 
 ```python
-from ragas import evaluate
-from ragas import EvaluationDataset
+from ragas import SingleTurnSample
 from ragas.metrics import AspectCritic
 
-tests = [{
+test_data = {
     "user_input": "summarise given text\nThe company reported an 8% rise in Q3 2024, driven by strong performance in the Asian market. Sales in this region have significantly contributed to the overall growth. Analysts attribute this success to strategic marketing and product localization. The positive trend in the Asian market is expected to continue into the next quarter.",
     "response": "The company experienced an 8% increase in Q3 2024, largely due to effective marketing strategies and product adaptation, with expectations of continued growth in the coming quarter.",
-}]
+}
 
 metric = AspectCritic(name="summary_accuracy",llm=evaluator_llm, definition="Verify if the summary is accurate.")
-test_data = EvaluationDataset.from_list(tests)
-results = evaluate(test_data, metrics=[metric])
-results
+test_data = SingleTurnSample(**test_data)
+await metric.single_turn_ascore(test_data)
+
 ```
 
 ```
-{'summary_accuracy': 1.0000}
+1
 ```
 
 Success! Here 1 means pass and 0 means fail
