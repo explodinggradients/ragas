@@ -48,12 +48,17 @@ To tackle this, let's try an LLM based metric without reference next.
 
 ### Evaluating using a LLM based Metric
 
+
 **Choose your LLM**
 --8<--
 choose_evaluator_llm.md
 --8<--
 
 **Evaluation**
+
+
+Here we will use `AspectCritic`, which an LLM based metric that outputs pass/fail given the evaluation criteria.
+
 
 ```python
 from ragas import SingleTurnSample
