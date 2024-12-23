@@ -2,7 +2,12 @@
 
 The purpose of this guide is to illustrate a simple workflow for testing and evaluating an LLM application with `ragas`. It assumed minimum knowledge in AI application building and evaluation. Please refer to our [installation instruction](./install.md) for installing `ragas`
 
+
 ## Evaluation
+
+
+!!! note
+    For the sake of this guide, you will be evaluating a text summarization pipeline. The goal is to ensure that the output summary captures all the important details specified in text such as growth numbers, market details, etc.
 
 `ragas` provides a dozen of methods for analyzing the performance of an LLM application, called [metrics](../concepts/metrics/). Each metric expects a predefined set of data points using which it calculates scores indicating performance. 
 
