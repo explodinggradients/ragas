@@ -83,11 +83,19 @@ Success!
 In both of the above examples, we have only used one sample to evaluate our application, which is not very robust. To make sure the evaluation is robust enough to trust, we can add few more test samples to our test data. Here I am loading dataset from HF, one may load it from any source like production logs, etc. Just make sure that each sample has all the required attributes for the chosen metric. Here in our case it's `user_input` and `reference`. 
 
 ```python
-from datasets import Dataset
-from ragas import EvaluationDataset
-
-eval_dataset = Dataset.from_json("summary_alignment_eval.json")
+from datasets import load_dataset
+eval_dataset = load_dataset("explodinggradients/earning_report_summary")
 eval_dataset = EvaluationDataset.from_hf_dataset(eval_dataset)
+eval_dataset
+```
+
+```
+EvaluationDataset(features=['user_input', 'response'], len=50)
+```
+
+Evaluate using dataset
+
+```python
 results = evaluate(test_data, metrics=[metric])
 results
 ```
@@ -96,7 +104,7 @@ results
 {'summary_accuracy': 0.84}
 ```
 
-Let's view the sample level scores
+Export the sample level scores to pandas dataframe
 
 ```python
 results.to_pandas()
