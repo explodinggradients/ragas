@@ -76,7 +76,7 @@ results
 {'summary_accuracy': 1.0000}
 ```
 
-Success! 
+Success! Here 1 means pass and 0 means fail
 
 ### Evaluating on a Dataset
 
@@ -103,6 +103,8 @@ results
 ```
 {'summary_accuracy': 0.84}
 ```
+
+This score shows that out of all the samples in our test data, only 84% of summaries passes the given evaluation criteria.
 
 Export the sample level scores to pandas dataframe
 
@@ -138,11 +140,11 @@ results.upload()
 
 ## Aligning metrics
 
-When you're viewing the evaluation results in [app.ragas.io](https://app.ragas.io/), you may notice that sometimes the LLM based metric makes mistakes while evaluating the application. For example, 
+When you're viewing the evaluation results in [app.ragas.io](https://app.ragas.io/), you may notice that sometimes the LLM based metric makes mistakes while evaluating the application using given criteria. For example, 
 
 ![](../_static/imgs/eval_mistake1.png)
 
-Even though the `response` summary drops most of the important information such as growth numbers, market domain, etc the LLM based metric mistakenly marks it as accurate. You may observe many other samples like this. 
+Even though the `response` summary drops most of the important information such as growth numbers, market domain, etc the LLM based metric mistakenly marks it as accurate which is not what we want. You may observe many other samples like this. 
 
 To fix these results, you need to align the LLM based metric with your preferences so that ragas `metric` learns your preferences like a machine learning model. To make this possible, ragas has a feature to train your own metric using preference data collected from the app. Here the two step process for this,
 
