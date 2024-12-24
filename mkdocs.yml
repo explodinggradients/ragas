@@ -8,7 +8,7 @@ watch:
 nav:
   - "": index.md
   - 🚀 Get Started:
-      - getstarted/eval.md
+      - getstarted/index.md
       - Installation: getstarted/install.md
       - Evaluate your first AI app: getstarted/eval.md
       - Evaluate Using Metrics: getstarted/rag_evaluation.md
