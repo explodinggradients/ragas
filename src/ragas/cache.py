@@ -13,16 +13,44 @@ logger = logging.getLogger(__name__)
 
 
 class CacheInterface(ABC):
+    """Abstract base class defining the interface for cache implementations.
+
+    This class provides a standard interface that all cache implementations must follow.
+    It supports basic cache operations like get, set and key checking.
+    """
+
     @abstractmethod
     def get(self, key: str) -> Any:
+        """Retrieve a value from the cache by key.
+
+        Args:
+            key: The key to look up in the cache.
+
+        Returns:
+            The cached value associated with the key.
+        """
         pass
 
     @abstractmethod
     def set(self, key: str, value) -> None:
+        """Store a value in the cache with the given key.
+
+        Args:
+            key: The key to store the value under.
+            value: The value to cache.
+        """
         pass
 
     @abstractmethod
     def has_key(self, key: str) -> bool:
+        """Check if a key exists in the cache.
+
+        Args:
+            key: The key to check for.
+
+        Returns:
+            True if the key exists in the cache, False otherwise.
+        """
         pass
 
     @classmethod
@@ -39,6 +67,15 @@ class CacheInterface(ABC):
 
 
 class DiskCacheBackend(CacheInterface):
+    """A cache implementation that stores data on disk using the diskcache library.
+
+    This cache backend persists data to disk, allowing it to survive between program runs.
+    It implements the CacheInterface for use with Ragas caching functionality.
+
+    Args:
+        cache_dir (str, optional): Directory where cache files will be stored. Defaults to ".cache".
+    """
+
     def __init__(self, cache_dir: str = ".cache"):
         try:
             from diskcache import Cache
@@ -50,19 +87,47 @@ class DiskCacheBackend(CacheInterface):
         self.cache = Cache(cache_dir)
 
     def get(self, key: str) -> Any:
+        """Retrieve a value from the disk cache by key.
+
+        Args:
+            key: The key to look up in the cache.
+
+        Returns:
+            The cached value associated with the key, or None if not found.
+        """
         return self.cache.get(key)
 
     def set(self, key: str, value) -> None:
+        """Store a value in the disk cache with the given key.
+
+        Args:
+            key: The key to store the value under.
+            value: The value to cache.
+        """
         self.cache.set(key, value)
 
     def has_key(self, key: str) -> bool:
+        """Check if a key exists in the disk cache.
+
+        Args:
+            key: The key to check for.
+
+        Returns:
+            True if the key exists in the cache, False otherwise.
+        """
         return key in self.cache
 
     def __del__(self):
+        """Cleanup method to properly close the cache when the object is destroyed."""
         if hasattr(self, "cache"):
             self.cache.close()
 
     def __repr__(self):
+        """Return string representation of the cache object.
+
+        Returns:
+            String showing the cache directory location.
+        """
         return f"DiskCacheBackend(cache_dir={self.cache.directory})"
 
 
@@ -100,6 +165,19 @@ def _generate_cache_key(func, args, kwargs):
 
 
 def cacher(cache_backend: Optional[CacheInterface] = None):
+    """Decorator that adds caching functionality to a function.
+
+    This decorator can be applied to both synchronous and asynchronous functions to cache their results.
+    If no cache backend is provided, the original function is returned unchanged.
+
+    Args:
+        cache_backend (Optional[CacheInterface]): The cache backend to use for storing results.
+            If None, caching is disabled.
+
+    Returns:
+        Callable: A decorated function that implements caching behavior.
+    """
+
     def decorator(func):
         if cache_backend is None:
             return func

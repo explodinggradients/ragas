@@ -40,7 +40,7 @@ build-docsite: ## Use GPT4 to rewrite the documentation
 	@echo "convert ipynb notebooks to md files"
 	$(Q)python $(GIT_ROOT)/docs/ipynb_to_md.py
 	@(Q)mkdocs build
-run-docsite: ## Build and serve documentation
+serve-docsite: ## Build and serve documentation
 	$(Q)mkdocs serve --dirtyreload
 
 # Benchmarks

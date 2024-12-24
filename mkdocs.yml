@@ -109,6 +109,7 @@ nav:
       - Embeddings: references/embeddings.md
       - RunConfig: references/run_config.md
       - Executor: references/executor.md
+      - Cache: references/cache.md
     - Evaluation: 
       - Schemas: references/evaluation_schema.md
       - Metrics: references/metrics.md
