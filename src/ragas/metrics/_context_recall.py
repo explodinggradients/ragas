@@ -7,7 +7,8 @@ from dataclasses import dataclass, field
 import numpy as np
 from pydantic import BaseModel
 
-from ragas.dataset_schema import SingleTurnSamplefrom ragas.metrics._string import DistanceMeasure, NonLLMStringSimilarity
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics._string import DistanceMeasure, NonLLMStringSimilarity
 from ragas.metrics.base import (
     MetricOutputType,
     MetricType,

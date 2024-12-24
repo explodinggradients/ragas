@@ -341,7 +341,6 @@ def evaluate(
                 AnswerCorrectness, metrics[answer_correctness_is_set]
             ).answer_similarity = None
 
-
         # flush the analytics batcher
         from ragas._analytics import _analytics_batcher
 
