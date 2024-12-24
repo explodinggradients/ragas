@@ -186,7 +186,7 @@ Now you can view the results in the dashboard by following the link in the outpu
 results.upload()
 ```
 
-![](../_static/imgs/ragas_get_started_evals.gif)
+![](ragas_get_started_evals.gif)
 
 
 
@@ -194,7 +194,7 @@ results.upload()
 
 In the example above, we can see that the LLM-based metric mistakenly marks some summary as accurate, even though it missed critical details like growth numbers and market domain. Such mistakes can occur when the metric does not align with your specific evaluation preferences. For example, 
 
-![](../_static/imgs/eval_mistake1.png)
+![](eval_mistake1.png)
 
 
 To fix these results, ragas provides a way to align the metric with your preferences, allowing it to learn like a machine learning model. Here's how you can do this in three simple steps:
