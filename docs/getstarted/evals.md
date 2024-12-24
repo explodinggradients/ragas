@@ -81,6 +81,8 @@ await metric.single_turn_ascore(test_data)
 
 Success! Here 1 means pass and 0 means fail
 
+There are many other types of metrics that are available in ragas, and you may also create your own metrics if none of those fits your case. To explore this more checkout [more on metrics](../concepts/metrics/index.md). 
+
 ### Evaluating on a Dataset
 
 In both of the above examples, we have only used one sample to evaluate our application, which is not very robust. To make sure the evaluation is robust enough to trust, we can add few more test samples to our test data. Here I am loading dataset from HF, one may load it from any source like production logs, etc. Just make sure that each sample has all the required attributes for the chosen metric. Here in our case it's `user_input` and `reference`. 
