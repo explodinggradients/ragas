@@ -35,7 +35,6 @@ from ragas.metrics.base import (
     MetricWithLLM,
     MultiTurnMetric,
     SingleTurnMetric,
-    is_reproducable,
 )
 from ragas.run_config import RunConfig
 from ragas.utils import convert_v1_to_v2_dataset
@@ -60,7 +59,6 @@ def evaluate(
     llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
     callbacks: Callbacks = None,
-    in_ci: bool = False,
     run_config: t.Optional[RunConfig] = None,
     token_usage_parser: t.Optional[TokenUsageParser] = None,
     raise_exceptions: bool = False,
@@ -93,10 +91,6 @@ def evaluate(
         Lifecycle Langchain Callbacks to run during evaluation. Check the
         [langchain documentation](https://python.langchain.com/docs/modules/callbacks/)
         for more information.
-    in_ci: bool
-        Whether the evaluation is running in CI or not. If set to True then some
-        metrics will be run to increase the reproducability of the evaluations. This
-        will increase the runtime and cost of evaluations. Default is False.
     run_config: RunConfig, optional
         Configuration for runtime settings like timeout and retries. If not provided,
         default values are used.
