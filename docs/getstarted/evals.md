@@ -146,7 +146,8 @@ Output
 {'summary_accuracy': 0.84}
 ```
 
-This score shows that out of all the samples in our test data, only 84% of summaries passes the given evaluation criteria.
+This score shows that out of all the samples in our test data, only 84% of summaries passes the given evaluation criteria. Now, **It
+s important to see why is this the case**.
 
 Export the sample level scores to pandas dataframe
 
