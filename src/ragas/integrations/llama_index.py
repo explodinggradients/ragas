@@ -97,7 +97,6 @@ def evaluate(
         callbacks=callbacks,
         show_progress=show_progress,
         run_config=run_config or RunConfig(),
-        in_ci=in_ci,
         token_usage_parser=token_usage_parser,
     )
 

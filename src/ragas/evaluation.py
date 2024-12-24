@@ -35,7 +35,6 @@ from ragas.metrics.base import (
     MetricWithLLM,
     MultiTurnMetric,
     SingleTurnMetric,
-    is_reproducable,
 )
 from ragas.run_config import RunConfig
 from ragas.utils import convert_v1_to_v2_dataset
@@ -60,7 +59,6 @@ def evaluate(
     llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
     callbacks: Callbacks = None,
-    in_ci: bool = False,
     run_config: t.Optional[RunConfig] = None,
     token_usage_parser: t.Optional[TokenUsageParser] = None,
     raise_exceptions: bool = False,
@@ -93,10 +91,6 @@ def evaluate(
         Lifecycle Langchain Callbacks to run during evaluation. Check the
         [langchain documentation](https://python.langchain.com/docs/modules/callbacks/)
         for more information.
-    in_ci: bool
-        Whether the evaluation is running in CI or not. If set to True then some
-        metrics will be run to increase the reproducability of the evaluations. This
-        will increase the runtime and cost of evaluations. Default is False.
     run_config: RunConfig, optional
         Configuration for runtime settings like timeout and retries. If not provided,
         default values are used.
@@ -193,7 +187,6 @@ def evaluate(
     binary_metrics = []
     llm_changed: t.List[int] = []
     embeddings_changed: t.List[int] = []
-    reproducable_metrics: t.List[int] = []
     answer_correctness_is_set = -1
 
     # loop through the metrics and perform initializations
@@ -214,12 +207,6 @@ def evaluate(
         if isinstance(metric, AnswerCorrectness):
             if metric.answer_similarity is None:
                 answer_correctness_is_set = i
-        # set reproducibility for metrics if in CI
-        if in_ci and is_reproducable(metric):
-            if metric.reproducibility == 1:  # type: ignore
-                # only set a value if not already set
-                metric.reproducibility = 3  # type: ignore
-                reproducable_metrics.append(i)
 
         # init all the models
         metric.init(run_config)
@@ -353,9 +340,6 @@ def evaluate(
             t.cast(
                 AnswerCorrectness, metrics[answer_correctness_is_set]
             ).answer_similarity = None
-
-        for i in reproducable_metrics:
-            metrics[i].reproducibility = 1  # type: ignore
 
         # flush the analytics batcher
         from ragas._analytics import _analytics_batcher

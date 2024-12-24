@@ -113,28 +113,6 @@ class LLMContextRecall(MetricWithLLM, SingleTurnMetric):
         default_factory=ContextRecallClassificationPrompt
     )
     max_retries: int = 1
-    _reproducibility: int = 1
-
-    @property
-    def reproducibility(self):
-        return self._reproducibility
-
-    @reproducibility.setter
-    def reproducibility(self, value):
-        if value < 1:
-            logger.warning("reproducibility cannot be less than 1, setting to 1")
-            value = 1
-        elif value % 2 == 0:
-            logger.warning(
-                "reproducibility level cannot be set to even number, setting to odd"
-            )
-            value += 1
-        self._reproducibility = value
-
-    def __post_init__(self) -> None:
-        if self.reproducibility < 1:
-            logger.warning("reproducibility cannot be less than 1, setting to 1")
-            self.reproducibility = 1
 
     def _compute_score(self, responses: t.List[ContextRecallClassification]) -> float:
         response = [1 if item.attributed else 0 for item in responses]
@@ -166,7 +144,6 @@ class LLMContextRecall(MetricWithLLM, SingleTurnMetric):
                 ),
                 llm=self.llm,
                 callbacks=callbacks,
-                n=self.reproducibility,
             )
         )
         classification_dicts = []
