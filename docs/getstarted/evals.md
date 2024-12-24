@@ -1,4 +1,4 @@
-# Get Started
+# Evaluating your first AI app
 
 The purpose of this guide is to illustrate a simple workflow for testing and evaluating an LLM application with `ragas`. It assumed minimum knowledge in AI application building and evaluation. Please refer to our [installation instruction](./install.md) for installing `ragas`
 
@@ -35,7 +35,7 @@ Output
 Here we used:
 
 - A test sample containing `user_input`, `response` (the output from the LLM), and `reference` (the expected output from the LLM) as data points to evaluate the summary.
-- A non-LLM metric called `BleuScore`.
+- A non-LLM metric called [BleuScore](../concepts/metrics/available_metrics/traditional.md#bleu-score)
 
 
 As you may observe, this approach has two key limitations:
@@ -62,7 +62,7 @@ choose_evaluator_llm.md
 **Evaluation**
 
 
-Here we will use [`AspectCritic`](../concepts/metrics/available_metrics/aspect_critic.md), which an LLM based metric that outputs pass/fail given the evaluation criteria.
+Here we will use [AspectCritic](../concepts/metrics/available_metrics/aspect_critic.md), which an LLM based metric that outputs pass/fail given the evaluation criteria.
 
 
 ```python
@@ -202,6 +202,8 @@ To fix these results, ragas provides a way to align the metric with your prefere
 1. **Annotate**: Accept, reject, or edit evaluation results to create training data (at least 15-20 samples).
 2. **Download**: Save the annotated data using the `Annotated JSON` button in [app.ragas.io](https://app.ragas.io/).
 3. **Train**: Use the annotated data to train your custom metric.
+
+To learn more about this, refer to how to [train your own metric guide](../howtos/customizations/metrics/train_your_own_metric.md)
 
 [Download sample annotated JSON](../_static/sample_annotated_summary.json)
 

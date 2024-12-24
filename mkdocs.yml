@@ -8,8 +8,9 @@ watch:
 nav:
   - "": index.md
   - 🚀 Get Started:
-      - getstarted/index.md
+      - getstarted/eval.md
       - Installation: getstarted/install.md
+      - Evaluate your first AI app: getstarted/eval.md
       - Evaluate Using Metrics: getstarted/rag_evaluation.md
       - Generate Synthetic Testset for RAG: getstarted/rag_testset_generation.md
   - 📚 Core Concepts:
