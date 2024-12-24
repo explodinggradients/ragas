@@ -56,23 +56,21 @@ Now let's run a simple evaluation.
 from ragas import evaluate
 from ragas import EvaluationDataset
 
-from ragas.metrics import FactualCorrectness, AspectCritic 
+from ragas.metrics import FactualCorrectness, AspectCritic
 from datasets import load_dataset
 
 # Define Answer Correctness with AspectCritic
 answer_correctness = AspectCritic(
     name="answer_correctness",
     definition="Is the answer correct? Does it match the reference answer?",
-    llm=cached_llm
+    llm=cached_llm,
 )
 
 metrics = [answer_correctness, FactualCorrectness(llm=cached_llm)]
 
 # load the dataset
 dataset = load_dataset(
-    "explodinggradients/amnesty_qa",
-    "english_v3",
-    trust_remote_code=True
+    "explodinggradients/amnesty_qa", "english_v3", trust_remote_code=True
 )
 eval_dataset = EvaluationDataset.from_hf_dataset(dataset["eval"])
 
@@ -90,7 +88,8 @@ This took almost 2mins to run in our local machine. Now let's run it again to se
 
 ```python
 results = evaluate(
-    dataset=eval_dataset, metrics=metrics,
+    dataset=eval_dataset,
+    metrics=metrics,
 )
 
 results
