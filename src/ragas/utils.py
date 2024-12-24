@@ -240,3 +240,22 @@ def batched(iterable: t.Iterable, n: int) -> t.Iterator[t.Tuple]:
     iterator = iter(iterable)
     while batch := tuple(itertools.islice(iterator, n)):
         yield batch
+
+
+def set_logging_level(logger_name: str, level: int):
+    """
+    Set the logging level for a logger. Useful for debugging.
+    """
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(level)
+
+    # Create a console handler and set its level
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.DEBUG)
+
+    # Create a formatter and add it to the handler
+    formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
+    console_handler.setFormatter(formatter)
+
+    # Add the handler to the logger
+    logger.addHandler(console_handler)

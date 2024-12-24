@@ -77,6 +77,7 @@ nav:
           - General:
               - Customise models: howtos/customizations/customize_models.md
               - Run Config: howtos/customizations/_run_config.md
+              - Caching: howtos/customizations/_caching.md
           - Metrics:
               - Modify Prompts: howtos/customizations/metrics/_modifying-prompts-metrics.md
               - Adapt Metrics to Languages: howtos/customizations/metrics/_metrics_language_adaptation.md
@@ -88,6 +89,7 @@ nav:
               - Persona Generation: howtos/customizations/testgenerator/_persona_generator.md
               - Custom Single-hop Query: howtos/customizations/testgenerator/_testgen-custom-single-hop.md
               - Custom Multi-hop Query: howtos/customizations/testgenerator/_testgen-customisation.md
+
       - Applications:
           - howtos/applications/index.md
           - Metrics:
@@ -107,6 +109,7 @@ nav:
       - Embeddings: references/embeddings.md
       - RunConfig: references/run_config.md
       - Executor: references/executor.md
+      - Cache: references/cache.md
     - Evaluation: 
       - Schemas: references/evaluation_schema.md
       - Metrics: references/metrics.md
@@ -237,3 +240,4 @@ extra_javascript:
   - _static/js/header_border.js
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
   - _static/js/toggle.js
+  - https://cdn.octolane.com/tag.js?pk=c7c9b2b863bf7eaf4e2a # octolane for analytics
