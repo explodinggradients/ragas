@@ -84,11 +84,9 @@ Find the complete [Quickstart Guide](https://docs.ragas.io/en/latest/getstarted/
 
 ### Analyze your Evaluation
 
-<p align="center">
-    <a href="https://app.ragas.io">Sign up for app.ragas.io to review, share and analyze your evaluations</a>
-</p>
+Sign up for [app.ragas.io]() to review, share and analyze your evaluations</a>
 
-<p align="center">
+<p align="left">
     <img src="docs/_static/imgs/ragas_get_started_evals.gif" height="300">
 </p>
 
