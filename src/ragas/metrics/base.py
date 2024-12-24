@@ -712,11 +712,4 @@ def get_segmenter(
     )
 
 
-def is_reproducable(metric: Metric) -> bool:
-    """
-    Check if a metric is reproducible by checking if it has a `_reproducibility` attribute.
-    """
-    return hasattr(metric, "_reproducibility")
-
-
 ensembler = Ensember()

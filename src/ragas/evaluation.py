@@ -193,7 +193,6 @@ def evaluate(
     binary_metrics = []
     llm_changed: t.List[int] = []
     embeddings_changed: t.List[int] = []
-    reproducable_metrics: t.List[int] = []
     answer_correctness_is_set = -1
 
     # loop through the metrics and perform initializations
@@ -214,12 +213,6 @@ def evaluate(
         if isinstance(metric, AnswerCorrectness):
             if metric.answer_similarity is None:
                 answer_correctness_is_set = i
-        # set reproducibility for metrics if in CI
-        if in_ci and is_reproducable(metric):
-            if metric.reproducibility == 1:  # type: ignore
-                # only set a value if not already set
-                metric.reproducibility = 3  # type: ignore
-                reproducable_metrics.append(i)
 
         # init all the models
         metric.init(run_config)
@@ -354,8 +347,6 @@ def evaluate(
                 AnswerCorrectness, metrics[answer_correctness_is_set]
             ).answer_similarity = None
 
-        for i in reproducable_metrics:
-            metrics[i].reproducibility = 1  # type: ignore
 
         # flush the analytics batcher
         from ragas._analytics import _analytics_batcher
