@@ -43,7 +43,7 @@ As you may observe, this has two shortcomings
 - Evaluating the application requires you to prepare the expected output against each input, which can be time consuming and hard.
 - Even though the `response` and `reference` are similar, the output score was low. This is a known limitation of non llm metrics like Blue Score. Here by non-LLM metric, we mean a metric that does not use LLM to evaluate.
 
-To tackle this, let's try an LLM based metric without reference next.
+To tackle this, let's try an LLM based metric that can be used without needing to prepare `reference`.
 
 
 ### Evaluating using a LLM based Metric
@@ -82,7 +82,7 @@ await metric.single_turn_ascore(test_data)
 Success! Here 1 means pass and 0 means fail
 
 !!! note
-    There are many other types of metrics that are available in ragas, and you may also create your own metrics if none of those fits your case. To explore this more checkout [more on metrics](../concepts/metrics/index.md). 
+    There are many other types of metrics that are available in ragas (with and without `reference`), and you may also create your own metrics if none of those fits your case. To explore this more checkout [more on metrics](../concepts/metrics/index.md). 
 
 ### Evaluating on a Dataset
 
