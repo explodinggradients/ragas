@@ -81,7 +81,8 @@ await metric.single_turn_ascore(test_data)
 
 Success! Here 1 means pass and 0 means fail
 
-There are many other types of metrics that are available in ragas, and you may also create your own metrics if none of those fits your case. To explore this more checkout [more on metrics](../concepts/metrics/index.md). 
+!!! note
+    There are many other types of metrics that are available in ragas, and you may also create your own metrics if none of those fits your case. To explore this more checkout [more on metrics](../concepts/metrics/index.md). 
 
 ### Evaluating on a Dataset
 
