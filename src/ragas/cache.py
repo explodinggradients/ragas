@@ -2,11 +2,14 @@ import functools
 import hashlib
 import inspect
 import json
+import logging
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
 from pydantic import BaseModel, GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
+
+logger = logging.getLogger(__name__)
 
 
 class CacheInterface(ABC):
@@ -111,6 +114,7 @@ def cacher(cache_backend: Optional[CacheInterface] = None):
             cache_key = _generate_cache_key(func, args, kwargs)
 
             if backend.has_key(cache_key):
+                logger.debug(f"Cache hit for {cache_key}")
                 return backend.get(cache_key)
 
             result = await func(*args, **kwargs)
@@ -122,6 +126,7 @@ def cacher(cache_backend: Optional[CacheInterface] = None):
             cache_key = _generate_cache_key(func, args, kwargs)
 
             if backend.has_key(cache_key):
+                logger.debug(f"Cache hit for {cache_key}")
                 return backend.get(cache_key)
 
             result = func(*args, **kwargs)
