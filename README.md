@@ -87,8 +87,10 @@ Find the complete [Quickstart Guide](https://docs.ragas.io/en/latest/getstarted/
 Sign up for [app.ragas.io]() to review, share and analyze your evaluations</a>
 
 <p align="left">
-    <img src="docs/_static/imgs/ragas_get_started_evals.gif" height="300">
+    <img src="docs/getstarted/ragas_get_started_evals.gif" height="300">
 </p>
+
+See [how to use it](https://docs.ragas.io/en/latest/getstarted/evals/#analyzing-results)
 
 ## 🫂 Community
 
