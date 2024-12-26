@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from uuid import UUID
 
 import numpy as np
+import requests
 from datasets import Dataset as HFDataset
 from pydantic import BaseModel, field_validator
 
@@ -16,8 +17,17 @@ from ragas.callbacks import ChainRunEncoder, parse_run_traces
 from ragas.cost import CostCallbackHandler
 from ragas.exceptions import UploadException
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
-from ragas.sdk import RAGAS_API_URL, RAGAS_APP_URL, upload_packet
+from ragas.sdk import (
+    RAGAS_API_URL,
+    RAGAS_APP_URL,
+    upload_packet,
+    RAGAS_API_SOURCE,
+    get_app_token,
+    check_api_response,
+    build_evaluation_app_url,
+)
 from ragas.utils import safe_nanmean
+from ragas._version import __version__
 
 if t.TYPE_CHECKING:
     from pathlib import Path
@@ -508,7 +518,12 @@ class EvaluationResult:
             cost_per_input_token, cost_per_output_token, per_model_costs
         )
 
-    def upload(self, base_url: str = RAGAS_API_URL, verbose: bool = True) -> str:
+    def upload(
+        self,
+        base_url: str = RAGAS_API_URL,
+        verbose: bool = True,
+        app_url: t.Optional[str] = RAGAS_APP_URL,
+    ) -> str:
         from datetime import datetime, timezone
 
         timestamp = datetime.now(timezone.utc).isoformat()
@@ -530,14 +545,12 @@ class EvaluationResult:
         )
 
         # check status codes
-        evaluation_endpoint = (
-            f"{RAGAS_APP_URL}/dashboard/alignment/evaluation/{root_trace.run_id}"
-        )
+        evaluation_app_url = build_evaluation_app_url(app_url, root_trace.run_id)
         if response.status_code == 409:
             # this evalution already exists
             if verbose:
-                print(f"Evaluation run already exists. View at {evaluation_endpoint}")
-            return evaluation_endpoint
+                print(f"Evaluation run already exists. View at {evaluation_app_url}")
+            return evaluation_app_url
         elif response.status_code != 200:
             # any other error
             raise UploadException(
@@ -546,8 +559,8 @@ class EvaluationResult:
             )
 
         if verbose:
-            print(f"Evaluation results uploaded! View at {evaluation_endpoint}")
-        return evaluation_endpoint
+            print(f"Evaluation results uploaded! View at {evaluation_app_url}")
+        return evaluation_app_url
 
 
 class PromptAnnotation(BaseModel):
@@ -577,8 +590,24 @@ class MetricAnnotation(BaseModel):
         return SingleMetricAnnotation(name=key, samples=self.root[key])
 
     @classmethod
-    def from_json(cls, path, metric_name: t.Optional[str]) -> "MetricAnnotation":
-        dataset = json.load(open(path))
+    def _process_dataset(
+        cls, dataset: dict, metric_name: t.Optional[str]
+    ) -> "MetricAnnotation":
+        """
+        Process raw dataset into MetricAnnotation format
+
+        Parameters
+        ----------
+        dataset : dict
+            Raw dataset to process
+        metric_name : str, optional
+            Name of the specific metric to filter
+
+        Returns
+        -------
+        MetricAnnotation
+            Processed annotation data
+        """
         if metric_name is not None and metric_name not in dataset:
             raise ValueError(f"Split {metric_name} not found in the dataset.")
 
@@ -589,6 +618,84 @@ class MetricAnnotation(BaseModel):
                 if metric_name is None or key == metric_name
             }
         )
+
+    @classmethod
+    def from_json(cls, path: str, metric_name: t.Optional[str]) -> "MetricAnnotation":
+        """Load annotations from a JSON file"""
+        dataset = json.load(open(path))
+        return cls._process_dataset(dataset, metric_name)
+
+    @classmethod
+    def from_url(
+        cls,
+        evaluation_result: EvaluationResult,
+        metric_name: t.Optional[str],
+        base_url: t.Optional[str] = RAGAS_API_URL,
+        app_url: t.Optional[str] = RAGAS_APP_URL,
+    ) -> "MetricAnnotation":
+        """
+        Fetch annotations from a URL using the evaluation result's run_id
+
+        Parameters
+        ----------
+        evaluation_result : EvaluationResult
+            The evaluation result containing the run_id
+        metric_name : str, optional
+            Name of the specific metric to filter
+        base_url : str, optional
+            Base API URL, defaults to RAGAS_API_URL
+        app_url : str, optional
+            Ragas platform URL, defaults to RAGAS_APP_URL
+
+        Returns
+        -------
+        MetricAnnotation
+            Annotation data from the API
+
+        Raises
+        ------
+        ValueError
+            If no traces found, no root trace found, or no annotations available
+        """
+        # Find root trace run_id
+        if not evaluation_result.ragas_traces:
+            raise ValueError("No traces found in evaluation_result")
+
+        root_trace = [
+            trace
+            for trace in evaluation_result.ragas_traces.values()
+            if trace.parent_run_id is None
+        ]
+
+        if not root_trace:
+            raise ValueError("No root trace found in evaluation_result")
+
+        run_id = root_trace[0].run_id
+
+        endpoint = f"/api/v1/alignment/evaluation/annotation/{run_id}"
+
+        app_token = get_app_token()
+        response = requests.get(
+            f"{base_url}{endpoint}",
+            headers={
+                "Content-Type": "application/json",
+                "x-app-token": app_token,
+                "x-source": RAGAS_API_SOURCE,
+                "x-app-version": __version__,
+            },
+        )
+
+        check_api_response(response)
+        dataset = response.json()["data"]
+
+        if not dataset:
+            evaluation_url = build_evaluation_app_url(app_url, run_id)
+            raise ValueError(
+                f"No annotations found. Please annotate the Evaluation first then run this method. "
+                f"\nNote: you can annotate the evaluations using the Ragas app by going to {evaluation_url}"
+            )
+
+        return cls._process_dataset(dataset, metric_name)
 
     def __len__(self):
         return sum(len(value) for value in self.root.values())

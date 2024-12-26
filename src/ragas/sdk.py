@@ -36,9 +36,31 @@ def upload_packet(path: str, data_json_string: str, base_url: str = RAGAS_API_UR
             "x-app-version": __version__,
         },
     )
+    check_api_response(response)
+    return response
+
+
+def check_api_response(response: requests.Response) -> None:
+    """
+    Check API response status and raise appropriate exceptions
+
+    Parameters
+    ----------
+    response : requests.Response
+        Response object from API request
+
+    Raises
+    ------
+    UploadException
+        If authentication fails or other API errors occur
+    """
     if response.status_code == 403:
         raise UploadException(
             status_code=response.status_code,
             message="AUTHENTICATION_ERROR: The app token is invalid. Please check your RAGAS_APP_TOKEN environment variable.",
         )
-    return response
+    response.raise_for_status()
+
+
+def build_evaluation_app_url(app_url: str, run_id: str) -> str:
+    return f"{app_url}/dashboard/alignment/evaluation/{run_id}"
