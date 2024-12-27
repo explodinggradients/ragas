@@ -624,17 +624,20 @@ class MetricAnnotation(BaseModel):
         return cls._process_dataset(dataset, metric_name)
 
     @classmethod
-    def from_ragas_platform(
+    def from_app(
         cls,
-        evaluation_result: EvaluationResult,
-        metric_name: t.Optional[str],
+        run_id: t.Optional[str] = None,
+        evaluation_result: t.Optional[EvaluationResult] = None,
+        metric_name: t.Optional[str] = None,
     ) -> "MetricAnnotation":
         """
-        Fetch annotations from a URL using the evaluation result's run_id
+        Fetch annotations from a URL using either evaluation result or run_id
 
         Parameters
         ----------
-        evaluation_result : EvaluationResult
+        run_id : str, optional
+            Direct run ID to fetch annotations
+        evaluation_result : EvaluationResult, optional
             The evaluation result containing the run_id
         metric_name : str, optional
             Name of the specific metric to filter
@@ -647,22 +650,30 @@ class MetricAnnotation(BaseModel):
         Raises
         ------
         ValueError
-            If no traces found, no root trace found, or no annotations available
+            If neither evaluation_result nor run_id is provided, or if both are provided
+            If no traces found or no root trace found when using evaluation_result
         """
-        # Find root trace run_id
-        if not evaluation_result.ragas_traces:
-            raise ValueError("No traces found in evaluation_result")
+        if evaluation_result is None and run_id is None:
+            raise ValueError("Either evaluation_result or run_id must be provided")
+        if evaluation_result is not None and run_id is not None:
+            raise ValueError(
+                "Only one of evaluation_result or run_id should be provided"
+            )
 
-        root_trace = [
-            trace
-            for trace in evaluation_result.ragas_traces.values()
-            if trace.parent_run_id is None
-        ]
+        if evaluation_result is not None:
+            if not evaluation_result.ragas_traces:
+                raise ValueError("No traces found in evaluation_result")
 
-        if not root_trace:
-            raise ValueError("No root trace found in evaluation_result")
+            root_trace = [
+                trace
+                for trace in evaluation_result.ragas_traces.values()
+                if trace.parent_run_id is None
+            ]
 
-        run_id = root_trace[0].run_id
+            if not root_trace:
+                raise ValueError("No root trace found in evaluation_result")
+
+            run_id = root_trace[0].run_id
 
         endpoint = f"/api/v1/alignment/evaluation/annotation/{run_id}"
 

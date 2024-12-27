@@ -71,7 +71,23 @@ def check_api_response(response: requests.Response) -> None:
             status_code=response.status_code,
             message="AUTHENTICATION_ERROR: The app token is invalid. Please check your RAGAS_APP_TOKEN environment variable.",
         )
-    response.raise_for_status()
+
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        error_msg = ""
+        try:
+            error_data = response.json()
+            if "message" in error_data:
+                error_msg += f"\nAPI Message: {error_data['message']}"
+            if "debug_error_info" in error_data:
+                error_msg += f"\nDebug Info: {error_data['debug_error_info']}"
+        except:
+            error_msg = f"\nStatus Code: {response.status_code}"
+
+        raise UploadException(
+            status_code=response.status_code, message=f"Request failed: {error_msg}"
+        )
 
 
 def build_evaluation_app_url(app_url: str, run_id: str) -> str:
