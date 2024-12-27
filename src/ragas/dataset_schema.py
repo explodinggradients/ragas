@@ -18,13 +18,13 @@ from ragas.cost import CostCallbackHandler
 from ragas.exceptions import UploadException
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 from ragas.sdk import (
-    RAGAS_API_URL,
-    RAGAS_APP_URL,
     upload_packet,
     RAGAS_API_SOURCE,
     get_app_token,
     check_api_response,
     build_evaluation_app_url,
+    get_api_url,
+    get_app_url,
 )
 from ragas.utils import safe_nanmean
 from ragas._version import __version__
@@ -520,9 +520,7 @@ class EvaluationResult:
 
     def upload(
         self,
-        base_url: str = RAGAS_API_URL,
         verbose: bool = True,
-        app_url: t.Optional[str] = RAGAS_APP_URL,
     ) -> str:
         from datetime import datetime, timezone
 
@@ -541,10 +539,10 @@ class EvaluationResult:
         response = upload_packet(
             path="/alignment/evaluation",
             data_json_string=packet,
-            base_url=base_url,
         )
 
         # check status codes
+        app_url = get_app_url()
         evaluation_app_url = build_evaluation_app_url(app_url, root_trace.run_id)
         if response.status_code == 409:
             # this evalution already exists
@@ -626,12 +624,10 @@ class MetricAnnotation(BaseModel):
         return cls._process_dataset(dataset, metric_name)
 
     @classmethod
-    def from_url(
+    def from_ragas_platform(
         cls,
         evaluation_result: EvaluationResult,
         metric_name: t.Optional[str],
-        base_url: t.Optional[str] = RAGAS_API_URL,
-        app_url: t.Optional[str] = RAGAS_APP_URL,
     ) -> "MetricAnnotation":
         """
         Fetch annotations from a URL using the evaluation result's run_id
@@ -642,10 +638,6 @@ class MetricAnnotation(BaseModel):
             The evaluation result containing the run_id
         metric_name : str, optional
             Name of the specific metric to filter
-        base_url : str, optional
-            Base API URL, defaults to RAGAS_API_URL
-        app_url : str, optional
-            Ragas platform URL, defaults to RAGAS_APP_URL
 
         Returns
         -------
@@ -675,6 +667,9 @@ class MetricAnnotation(BaseModel):
         endpoint = f"/api/v1/alignment/evaluation/annotation/{run_id}"
 
         app_token = get_app_token()
+        base_url = get_api_url()
+        app_url = get_app_url()
+
         response = requests.get(
             f"{base_url}{endpoint}",
             headers={

@@ -16,7 +16,7 @@ from ragas.dataset_schema import (
     SingleTurnSample,
 )
 from ragas.exceptions import UploadException
-from ragas.sdk import RAGAS_API_URL, RAGAS_APP_URL, upload_packet
+from ragas.sdk import upload_packet, get_app_url
 
 
 class TestsetSample(BaseSample):
@@ -136,14 +136,15 @@ class Testset(RagasDataset[TestsetSample]):
             cost_per_output_token=cost_per_output_token,
         )
 
-    def upload(self, base_url: str = RAGAS_API_URL, verbose: bool = True) -> str:
+    def upload(self, verbose: bool = True) -> str:
         packet = TestsetPacket(samples_original=self.samples, run_id=self.run_id)
         response = upload_packet(
             path="/alignment/testset",
             data_json_string=packet.model_dump_json(),
-            base_url=base_url,
         )
-        testset_endpoint = f"{RAGAS_APP_URL}/dashboard/alignment/testset/{self.run_id}"
+        app_url = get_app_url()
+
+        testset_endpoint = f"{app_url}/dashboard/alignment/testset/{self.run_id}"
         if response.status_code == 409:
             # this testset already exists
             if verbose:

@@ -24,8 +24,20 @@ def get_app_token() -> str:
     return app_token
 
 
-def upload_packet(path: str, data_json_string: str, base_url: str = RAGAS_API_URL):
+@lru_cache(maxsize=1)
+def get_api_url() -> str:
+    return os.environ.get("RAGAS_API_URL", RAGAS_API_URL)
+
+
+@lru_cache(maxsize=1)
+def get_app_url() -> str:
+    return os.environ.get("RAGAS_APP_URL", RAGAS_APP_URL)
+
+
+def upload_packet(path: str, data_json_string: str):
     app_token = get_app_token()
+    base_url = get_api_url()
+
     response = requests.post(
         f"{base_url}/api/v1{path}",
         data=data_json_string,
