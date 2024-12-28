@@ -212,7 +212,7 @@ from ragas.config import InstructionConfig, DemonstrationConfig
 demo_config = DemonstrationConfig(embedding=evaluator_embeddings)
 inst_config = InstructionConfig(llm=evaluator_llm)
 
-evaluator.train(path="<your-annotated-json.json>", demonstration_config=demo_config, instruction_config=inst_config)
+metric.train(path="<your-annotated-json.json>", demonstration_config=demo_config, instruction_config=inst_config)
 ```
 
 Once trained, you can re-evaluate the same or different test datasets. You should notice that the metric now aligns with your preferences and makes fewer mistakes, improving its accuracy.
