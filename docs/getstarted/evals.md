@@ -1,4 +1,4 @@
-# Evaluating your first AI app
+# Evaluating your first LLM application
 
 The purpose of this guide is to illustrate a simple workflow for testing and evaluating an LLM application with `ragas`. It assumed minimum knowledge in AI application building and evaluation. Please refer to our [installation instruction](./install.md) for installing `ragas`
 
