@@ -6,6 +6,7 @@ import typing as t
 from dataclasses import dataclass, field
 
 from langchain_core.callbacks import BaseCallbackManager
+from langchain_core.documents import Document as LCDocument
 
 from ragas._analytics import TestsetGenerationEvent, track
 from ragas.callbacks import new_group
@@ -27,7 +28,6 @@ from ragas.testset.transforms import Transforms, apply_transforms, default_trans
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
-    from langchain_core.documents import Document as LCDocument
     from langchain_core.embeddings import Embeddings as LangchainEmbeddings
     from langchain_core.language_models import BaseLanguageModel as LangchainLLM
     from llama_index.core.base.embeddings.base import (
