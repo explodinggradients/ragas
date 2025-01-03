@@ -109,26 +109,9 @@ class LLMContextPrecisionWithReference(MetricWithLLM, SingleTurnMetric):
         default_factory=ContextPrecisionPrompt
     )
     max_retries: int = 1
-    _reproducibility: int = 1
 
     def _get_row_attributes(self, row: t.Dict) -> t.Tuple[str, t.List[str], t.Any]:
         return row["user_input"], row["retrieved_contexts"], row["reference"]
-
-    @property
-    def reproducibility(self):
-        return self._reproducibility
-
-    @reproducibility.setter
-    def reproducibility(self, value):
-        if value < 1:
-            logger.warning("reproducibility cannot be less than 1, setting to 1")
-            value = 1
-        elif value % 2 == 0:
-            logger.warning(
-                "reproducibility level cannot be set to even number, setting to odd"
-            )
-            value += 1
-        self._reproducibility = value
 
     def _calculate_average_precision(
         self, verifications: t.List[Verification]
@@ -173,7 +156,6 @@ class LLMContextPrecisionWithReference(MetricWithLLM, SingleTurnMetric):
                         context=context,
                         answer=reference,
                     ),
-                    n=self.reproducibility,
                     llm=self.llm,
                     callbacks=callbacks,
                 )

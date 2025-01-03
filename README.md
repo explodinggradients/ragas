@@ -63,38 +63,34 @@ pip install git+https://github.com/explodinggradients/ragas
 
 ## :fire: Quickstart
 
-### Evaluate your RAG with Ragas metrics
+### Evaluate your LLM App
 
 This is 5 main lines:
 
 ```python
-from ragas import evaluate
-from ragas.metrics import LLMContextRecall, Faithfulness, FactualCorrectness
-from langchain_openai.chat_models import ChatOpenAI
-from ragas.llms import LangchainLLMWrapper
+from ragas import SingleTurnSample
+from ragas.metrics import AspectCritic
 
+test_data = {
+    "user_input": "summarise given text\nThe company reported an 8% rise in Q3 2024, driven by strong performance in the Asian market. Sales in this region have significantly contributed to the overall growth. Analysts attribute this success to strategic marketing and product localization. The positive trend in the Asian market is expected to continue into the next quarter.",
+    "response": "The company experienced an 8% increase in Q3 2024, largely due to effective marketing strategies and product adaptation, with expectations of continued growth in the coming quarter.",
+}
 evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
-metrics = [LLMContextRecall(), FactualCorrectness(), Faithfulness()]
-results = evaluate(dataset=eval_dataset, metrics=metrics, llm=evaluator_llm)
+metric = AspectCritic(name="summary_accuracy",llm=evaluator_llm, definition="Verify if the summary is accurate.")
+await metric.single_turn_ascore(SingleTurnSample(**test_data))
 ```
 
-Find the complete RAG Evaluation Quickstart here: [https://docs.ragas.io/en/latest/getstarted/rag_evaluation/](https://docs.ragas.io/en/latest/getstarted/rag_evaluation/)
+Find the complete [Quickstart Guide](https://docs.ragas.io/en/latest/getstarted/evals)
 
-<details>
-<summary>🖱️Click to see preview of RESULTS</summary>
+### Analyze your Evaluation
 
-| user_input | retrieved_contexts | response | reference | context_recall | factual_correctness | faithfulness |
-|------------|---------------------|----------|-----------|-----------------|---------------------|---------------|
-| What are the global implications of the USA Supreme Court ruling on abortion? | "- In 2022, the USA Supreme Court ... - The ruling has created a chilling effect ..." | The global implications ... Here are some potential implications: | The global implications ... Additionally, the ruling has had an impact beyond national borders ... | 1 | 0.47 | 0.516129 |
-| Which companies are the main contributors to GHG emissions ... ? | "- Fossil fuel companies ... - Between 2010 and 2020, human mortality ..." | According to the Carbon Majors database ... Here are the top contributors: | According to the Carbon Majors database ... Additionally, between 2010 and 2020, human mortality ... | 1 | 0.11 | 0.172414 |
-| Which private companies in the Americas are the largest GHG emitters ... ? | "The private companies responsible ... The largest emitter amongst state-owned companies ..." | According to the Carbon Majors database, the largest private companies ... | The largest private companies in the Americas ... | 1 | 0.26 | 0 |
-</details>
+Sign up for [app.ragas.io]() to review, share and analyze your evaluations</a>
 
-### Generate a test dataset for comprehensive RAG evaluation
+<p align="left">
+    <img src="docs/getstarted/ragas_get_started_evals.gif" height="300">
+</p>
 
-What if you don't have the data for folks asking questions when they interact with your RAG system? 
-
-Ragas can help by generating [synthetic test set generation](https://docs.ragas.io/en/latest/getstarted/rag_testset_generation/) -- where you can seed it with your data and control the difficulty, variety, and complexity. 
+See [how to use it](https://docs.ragas.io/en/latest/getstarted/evals/#analyzing-results)
 
 ## 🫂 Community
 

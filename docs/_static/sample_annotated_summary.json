@@ -1,0 +1,460 @@
+{
+  "summary_accuracy": [
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nThe Q2 earnings report revealed a significant 15% increase in revenue, which was largely driven by strong performance in the European market. Analysts were impressed by the company's ability to capitalize on opportunities in this region. The European market's growth played a crucial role in the overall financial success of the quarter. Investors are optimistic about future prospects given these positive results.",
+        "response": "The Q2 earnings report showed a 15% revenue increase, driven by strong European market performance, impressing analysts and boosting investor optimism."
+      },
+      "metric_output": 1,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nThe Q2 earnings report revealed a significant 15% increase in revenue, which was largely driven by strong performance in the European market. Analysts were impressed by the company's ability to capitalize on opportunities in this region. The European market's growth played a crucial role in the overall financial success of the quarter. Investors are optimistic about future prospects given these positive results.",
+            "response": "The Q2 earnings report showed a 15% revenue increase, driven by strong European market performance, impressing analysts and boosting investor optimism.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the key points of the original text, including the 15% revenue increase, the strong performance in the European market, the impression on analysts, and the optimism of investors.",
+            "verdict": 1
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": true
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nIn 2023, North American sales experienced a 5% decline compared to the previous year. This downturn was attributed to various market challenges and changing consumer preferences. Companies are now strategizing to recover and adapt to the evolving economic landscape. Despite the decline, there are opportunities for growth in emerging sectors.",
+        "response": "Companies are strategizing to adapt to market challenges and changing consumer preferences, with growth opportunities in emerging sectors despite recent downturns."
+      },
+      "metric_output": 1,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nIn 2023, North American sales experienced a 5% decline compared to the previous year. This downturn was attributed to various market challenges and changing consumer preferences. Companies are now strategizing to recover and adapt to the evolving economic landscape. Despite the decline, there are opportunities for growth in emerging sectors.",
+            "response": "Companies are strategizing to adapt to market challenges and changing consumer preferences, with growth opportunities in emerging sectors despite recent downturns.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the key points of the original text, including the strategizing of companies to adapt to market challenges and changing consumer preferences, as well as the mention of growth opportunities in emerging sectors despite the downturn.",
+            "verdict": 1
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": false
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nIn 2022, European expansion was a significant focus for many companies, leading to a remarkable 15% growth in various sectors. This growth was driven by strategic investments and increased market penetration across the continent. Analysts noted that the European expansion efforts were crucial in achieving such impressive results. The 15% growth in 2022 set a new benchmark for future endeavors in the region.",
+        "response": "Many companies experienced a notable 15% growth due to strategic investments and increased market penetration, setting a new benchmark for future endeavors in the region."
+      },
+      "metric_output": 1,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nIn 2022, European expansion was a significant focus for many companies, leading to a remarkable 15% growth in various sectors. This growth was driven by strategic investments and increased market penetration across the continent. Analysts noted that the European expansion efforts were crucial in achieving such impressive results. The 15% growth in 2022 set a new benchmark for future endeavors in the region.",
+            "response": "Many companies experienced a notable 15% growth due to strategic investments and increased market penetration, setting a new benchmark for future endeavors in the region.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the key points of the original text, including the 15% growth, strategic investments, increased market penetration, and the setting of a new benchmark for future endeavors.",
+            "verdict": 1
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": false
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nSupply chain challenges have significantly impacted businesses across North America, leading to a reported 5% loss in revenue for many companies. These disruptions have been attributed to a variety of factors, including labor shortages and transportation delays. As a result, organizations are seeking innovative solutions to mitigate these losses and improve efficiency. The ongoing situation highlights the need for robust contingency planning in the face of global supply chain vulnerabilities.",
+        "response": "Supply chain challenges in North America, caused by labor shortages and transportation delays, have led to a 5% revenue loss for many companies, prompting the need for innovative solutions and robust contingency planning."
+      },
+      "metric_output": 1,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nSupply chain challenges have significantly impacted businesses across North America, leading to a reported 5% loss in revenue for many companies. These disruptions have been attributed to a variety of factors, including labor shortages and transportation delays. As a result, organizations are seeking innovative solutions to mitigate these losses and improve efficiency. The ongoing situation highlights the need for robust contingency planning in the face of global supply chain vulnerabilities.",
+            "response": "Supply chain challenges in North America, caused by labor shortages and transportation delays, have led to a 5% revenue loss for many companies, prompting the need for innovative solutions and robust contingency planning.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the key points of the original text, including the impact of supply chain challenges on revenue, the causes of these challenges, and the need for innovative solutions and contingency planning.",
+            "verdict": 1
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": true
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nIn Q2 2023, the company reported a significant 15% rise in revenue compared to the previous quarter. This increase in revenue was attributed to strong sales in the new product line and improved market conditions. Analysts were optimistic about the company's future performance, citing the 15% rise as a positive indicator. The management expressed confidence in maintaining this growth trajectory in the upcoming quarters.",
+        "response": "The company experienced a notable increase in earnings due to strong sales in the new product line and favorable market conditions, with analysts and management expressing optimism about future growth."
+      },
+      "metric_output": 0,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nIn Q2 2023, the company reported a significant 15% rise in revenue compared to the previous quarter. This increase in revenue was attributed to strong sales in the new product line and improved market conditions. Analysts were optimistic about the company's future performance, citing the 15% rise as a positive indicator. The management expressed confidence in maintaining this growth trajectory in the upcoming quarters.",
+            "response": "The company experienced a notable increase in earnings due to strong sales in the new product line and favorable market conditions, with analysts and management expressing optimism about future growth.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary inaccurately states an increase in earnings instead of revenue, and it omits the specific 15% rise and the comparison to the previous quarter.",
+            "verdict": 0
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": false
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nIn 2023, marketing campaigns in North America have seen a significant shift towards digital platforms. Companies are increasingly leveraging social media and online advertising to reach their target audiences. This trend is driven by the growing internet penetration and the changing consumer behavior in the region. As a result, businesses are investing more in innovative strategies to stay competitive in the North American market.",
+        "response": "In 2023, marketing campaigns in North America are increasingly leveraging digital platforms, driven by growing internet penetration and changing consumer behavior, prompting businesses to invest in innovative strategies to stay competitive."
+      },
+      "metric_output": 1,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nIn 2023, marketing campaigns in North America have seen a significant shift towards digital platforms. Companies are increasingly leveraging social media and online advertising to reach their target audiences. This trend is driven by the growing internet penetration and the changing consumer behavior in the region. As a result, businesses are investing more in innovative strategies to stay competitive in the North American market.",
+            "response": "In 2023, marketing campaigns in North America are increasingly leveraging digital platforms, driven by growing internet penetration and changing consumer behavior, prompting businesses to invest in innovative strategies to stay competitive.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the key points of the original text, including the shift towards digital platforms, the role of internet penetration and changing consumer behavior, and the investment in innovative strategies by businesses.",
+            "verdict": 1
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": true
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nThe company's international expansion strategy has been a significant success, particularly in the European market. Over the past year, they have achieved a remarkable 15% growth in this region. This expansion has been driven by a combination of innovative products and strategic partnerships. As a result, the company is well-positioned to continue its upward trajectory in the coming years.",
+        "response": "The company's international expansion strategy has led to a 15% growth in the European market, driven by innovative products and strategic partnerships."
+      },
+      "metric_output": 1,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nThe company's international expansion strategy has been a significant success, particularly in the European market. Over the past year, they have achieved a remarkable 15% growth in this region. This expansion has been driven by a combination of innovative products and strategic partnerships. As a result, the company is well-positioned to continue its upward trajectory in the coming years.",
+            "response": "The company's international expansion strategy has led to a 15% growth in the European market, driven by innovative products and strategic partnerships.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the key points of the original text, including the 15% growth in the European market and the factors driving this growth, such as innovative products and strategic partnerships.",
+            "verdict": 1
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": true
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nIn 2024, companies are increasingly focusing on targeted marketing strategies to capture the North American market. By leveraging data analytics, businesses can tailor their campaigns to meet the specific needs and preferences of consumers in this region. This approach not only enhances customer engagement but also boosts sales and brand loyalty. As competition intensifies, targeted marketing becomes a crucial tool for success in the North American market.",
+        "response": "Companies are using data analytics to customize campaigns, improving customer engagement, sales, and brand loyalty as competition grows."
+      },
+      "metric_output": 1,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nIn 2024, companies are increasingly focusing on targeted marketing strategies to capture the North American market. By leveraging data analytics, businesses can tailor their campaigns to meet the specific needs and preferences of consumers in this region. This approach not only enhances customer engagement but also boosts sales and brand loyalty. As competition intensifies, targeted marketing becomes a crucial tool for success in the North American market.",
+            "response": "Companies are using data analytics to customize campaigns, improving customer engagement, sales, and brand loyalty as competition grows.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the main points of the original text, including the use of data analytics for targeted marketing, the focus on customer engagement, sales, and brand loyalty, and the context of increasing competition.",
+            "verdict": 1
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": false
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nIn 2023, logistics investments in North America have seen a significant surge, driven by advancements in technology and infrastructure. Companies are focusing on enhancing supply chain efficiency to meet the growing demand in the region. This trend is expected to continue as North America remains a key player in the global logistics market. Investors are keen on capitalizing on these opportunities to maximize returns.",
+        "response": "Driven by technological and infrastructural advancements, companies are enhancing supply chain efficiency to meet growing demand, with investors eager to capitalize on these opportunities for maximum returns."
+      },
+      "metric_output": 1,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nIn 2023, logistics investments in North America have seen a significant surge, driven by advancements in technology and infrastructure. Companies are focusing on enhancing supply chain efficiency to meet the growing demand in the region. This trend is expected to continue as North America remains a key player in the global logistics market. Investors are keen on capitalizing on these opportunities to maximize returns.",
+            "response": "Driven by technological and infrastructural advancements, companies are enhancing supply chain efficiency to meet growing demand, with investors eager to capitalize on these opportunities for maximum returns.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the key points of the original text, including the focus on technological and infrastructural advancements, supply chain efficiency, growing demand, and investor interest.",
+            "verdict": 1
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": false
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nIn 2023, the company experienced a 5% decline in its market share, raising concerns among investors. Analysts attributed this drop to increased competition and changing consumer preferences. Despite the decline, the company is implementing new strategies to regain its market position. The management remains optimistic about reversing the trend by the end of the year.",
+        "response": "The company faced challenges due to competition and shifting consumer preferences, but is optimistic about reversing the trend with new strategies by year-end."
+      },
+      "metric_output": 1,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nIn 2023, the company experienced a 5% decline in its market share, raising concerns among investors. Analysts attributed this drop to increased competition and changing consumer preferences. Despite the decline, the company is implementing new strategies to regain its market position. The management remains optimistic about reversing the trend by the end of the year.",
+            "response": "The company faced challenges due to competition and shifting consumer preferences, but is optimistic about reversing the trend with new strategies by year-end.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the main points of the original text, including the decline in market share, the reasons for the decline, and the company's optimism and strategies to reverse the trend.",
+            "verdict": 1
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": false
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nThe company reported a significant profit due to an 8% rise in Q3 2024. This growth was largely driven by strong performance in the Asian market. Analysts attribute the success to strategic investments and increased consumer demand in the region. The positive results have bolstered investor confidence moving forward.",
+        "response": "The company's significant profit in Q3 2024, driven by an 8% rise and strong performance in the Asian market, is attributed to strategic investments and increased consumer demand, bolstering investor confidence."
+      },
+      "metric_output": 1,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nThe company reported a significant profit due to an 8% rise in Q3 2024. This growth was largely driven by strong performance in the Asian market. Analysts attribute the success to strategic investments and increased consumer demand in the region. The positive results have bolstered investor confidence moving forward.",
+            "response": "The company's significant profit in Q3 2024, driven by an 8% rise and strong performance in the Asian market, is attributed to strategic investments and increased consumer demand, bolstering investor confidence.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the key points of the original text, including the significant profit, 8% rise, strong performance in the Asian market, strategic investments, increased consumer demand, and bolstered investor confidence.",
+            "verdict": 1
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": true
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nThe global market has experienced a significant shift, with sales showing a 15% decline in Q3 2024. This downturn has raised concerns among investors and stakeholders worldwide. Analysts are closely monitoring the situation to understand the underlying factors contributing to this decline. Companies are now strategizing to adapt to the changing dynamics of the global market.",
+        "response": "The recent downturn has raised concerns among investors and stakeholders, prompting companies to strategize and adapt to changing dynamics."
+      },
+      "metric_output": 1,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nThe global market has experienced a significant shift, with sales showing a 15% decline in Q3 2024. This downturn has raised concerns among investors and stakeholders worldwide. Analysts are closely monitoring the situation to understand the underlying factors contributing to this decline. Companies are now strategizing to adapt to the changing dynamics of the global market.",
+            "response": "The recent downturn has raised concerns among investors and stakeholders, prompting companies to strategize and adapt to changing dynamics.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the main points of the original text, including the downturn, concerns among investors and stakeholders, and companies strategizing to adapt to changing dynamics.",
+            "verdict": 1
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": false
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nThe logistics industry in North America is projected to experience a 20% growth in 2024. This surge is attributed to advancements in technology and increased demand for efficient supply chain solutions. Companies are investing heavily in infrastructure to capitalize on this growth. As a result, the region is poised to become a leader in global logistics innovation.",
+        "response": "The industry is expected to grow by 20% in 2024 due to technological advancements and a higher demand for efficient supply chain solutions, with companies investing in infrastructure to lead in global innovation."
+      },
+      "metric_output": 1,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nThe logistics industry in North America is projected to experience a 20% growth in 2024. This surge is attributed to advancements in technology and increased demand for efficient supply chain solutions. Companies are investing heavily in infrastructure to capitalize on this growth. As a result, the region is poised to become a leader in global logistics innovation.",
+            "response": "The industry is expected to grow by 20% in 2024 due to technological advancements and a higher demand for efficient supply chain solutions, with companies investing in infrastructure to lead in global innovation.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the key points of the original text, including the projected 20% growth in 2024, the reasons for this growth (technological advancements and increased demand for efficient supply chain solutions), and the investment in infrastructure to lead in global innovation.",
+            "verdict": 1
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": true
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nThe company reported an 8% rise in Q3 2024, driven by strong performance in the Asian market. Sales in this region have significantly contributed to the overall growth. Analysts attribute this success to strategic marketing and product localization. The positive trend in the Asian market is expected to continue into the next quarter.",
+        "response": "The company experienced an 8% increase in Q3 2024, largely due to effective marketing strategies and product adaptation, with expectations of continued growth in the coming quarter."
+      },
+      "metric_output": 1,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nThe company reported an 8% rise in Q3 2024, driven by strong performance in the Asian market. Sales in this region have significantly contributed to the overall growth. Analysts attribute this success to strategic marketing and product localization. The positive trend in the Asian market is expected to continue into the next quarter.",
+            "response": "The company experienced an 8% increase in Q3 2024, largely due to effective marketing strategies and product adaptation, with expectations of continued growth in the coming quarter.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the key points of the original text, including the 8% rise in Q3 2024, the contribution of the Asian market, and the role of marketing strategies and product localization. It also mentions the expectation of continued growth.",
+            "verdict": 1
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": true
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nIn 2022, the Asian market experienced a significant 15% decline, impacting various sectors. This downturn led to increased scrutiny over expenses as companies sought to mitigate losses. Analysts noted that the decline was one of the most substantial in recent years for the region. Businesses are now strategizing to recover and stabilize their financial standing.",
+        "response": "In 2022, the Asian market experienced a significant 15% decline, leading to increased scrutiny over expenses as companies strategize to recover and stabilize their financial standing."
+      },
+      "metric_output": 1,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nIn 2022, the Asian market experienced a significant 15% decline, impacting various sectors. This downturn led to increased scrutiny over expenses as companies sought to mitigate losses. Analysts noted that the decline was one of the most substantial in recent years for the region. Businesses are now strategizing to recover and stabilize their financial standing.",
+            "response": "In 2022, the Asian market experienced a significant 15% decline, leading to increased scrutiny over expenses as companies strategize to recover and stabilize their financial standing.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the key points of the original text, including the 15% decline in the Asian market, the impact on expenses, and the efforts by companies to recover and stabilize their financial standing.",
+            "verdict": 1
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": true
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nThe global market has witnessed a significant shift with a 10% increase in Q1 2023. This surge has positively impacted the revenue streams of many multinational corporations. Analysts attribute this growth to strategic investments and expanding consumer bases. As a result, the global market outlook remains optimistic for the remainder of the year.",
+        "response": "The global market experienced a 10% increase in Q1 2023, boosting multinational corporations' revenue streams and leading to an optimistic outlook for the year, attributed to strategic investments and expanding consumer bases."
+      },
+      "metric_output": 1,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nThe global market has witnessed a significant shift with a 10% increase in Q1 2023. This surge has positively impacted the revenue streams of many multinational corporations. Analysts attribute this growth to strategic investments and expanding consumer bases. As a result, the global market outlook remains optimistic for the remainder of the year.",
+            "response": "The global market experienced a 10% increase in Q1 2023, boosting multinational corporations' revenue streams and leading to an optimistic outlook for the year, attributed to strategic investments and expanding consumer bases.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the key points of the original text, including the 10% increase in Q1 2023, the positive impact on multinational corporations' revenue, the attribution to strategic investments and expanding consumer bases, and the optimistic outlook for the year.",
+            "verdict": 1
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": true
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nThe company reported a 10% increase in 2023, significantly boosting its Revenue. This growth was primarily driven by strong performance in the European market. Analysts attribute the success to strategic investments and expanding customer base in the region. As a result, the company is optimistic about maintaining this upward trend in the coming years.",
+        "response": "The company experienced significant growth due to strategic investments and an expanding customer base, leading to optimism about future trends."
+      },
+      "metric_output": 0,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nThe company reported a 10% increase in 2023, significantly boosting its Revenue. This growth was primarily driven by strong performance in the European market. Analysts attribute the success to strategic investments and expanding customer base in the region. As a result, the company is optimistic about maintaining this upward trend in the coming years.",
+            "response": "The company experienced significant growth due to strategic investments and an expanding customer base, leading to optimism about future trends.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the key points of the original text, including the company's growth, strategic investments, expanding customer base, and optimism about future trends. However, it omits specific details such as the 10% increase in revenue and the strong performance in the European market, which are important aspects of the original text.",
+            "verdict": 0
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": false
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nThe company's revenue saw an 8% rise in 2023, largely driven by its expansion into the European market. This growth in the European market has been a significant contributor to the overall financial success. Analysts attribute the 8% rise in 2023 to strategic investments and increased consumer demand in Europe. The company plans to continue leveraging the European market to sustain its revenue growth.",
+        "response": "The company's financial success was significantly influenced by strategic investments and increased consumer demand, with plans to sustain growth through continued efforts in Europe."
+      },
+      "metric_output": 1,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nThe company's revenue saw an 8% rise in 2023, largely driven by its expansion into the European market. This growth in the European market has been a significant contributor to the overall financial success. Analysts attribute the 8% rise in 2023 to strategic investments and increased consumer demand in Europe. The company plans to continue leveraging the European market to sustain its revenue growth.",
+            "response": "The company's financial success was significantly influenced by strategic investments and increased consumer demand, with plans to sustain growth through continued efforts in Europe.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the key points of the original text, including the company's revenue growth, the influence of strategic investments and consumer demand, and the focus on the European market for sustaining growth.",
+            "verdict": 1
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": false
+    },
+    {
+      "metric_input": {
+        "user_input": "summarise given text\nThe Marketing team is strategizing to address the challenges posed by the projected 15% decline in 2024 within the Asian market. This downturn is prompting companies to innovate and adapt their approaches to maintain competitiveness. Analysts suggest that understanding local consumer behavior will be crucial in mitigating the impact of this decline. As a result, businesses are investing in targeted campaigns to better engage with the Asian market.",
+        "response": "The team is strategizing to address the challenges posed by the projected 15% decline in 2024 within the Asian market, prompting companies to innovate and adapt their approaches to maintain competitiveness."
+      },
+      "metric_output": 1,
+      "prompts": {
+        "single_turn_aspect_critic_prompt": {
+          "prompt_input": {
+            "user_input": "summarise given text\nThe Marketing team is strategizing to address the challenges posed by the projected 15% decline in 2024 within the Asian market. This downturn is prompting companies to innovate and adapt their approaches to maintain competitiveness. Analysts suggest that understanding local consumer behavior will be crucial in mitigating the impact of this decline. As a result, businesses are investing in targeted campaigns to better engage with the Asian market.",
+            "response": "The team is strategizing to address the challenges posed by the projected 15% decline in 2024 within the Asian market, prompting companies to innovate and adapt their approaches to maintain competitiveness.",
+            "retrieved_contexts": null,
+            "reference_contexts": null,
+            "reference": null
+          },
+          "prompt_output": {
+            "reason": "The summary accurately captures the main points of the original text, including the strategizing to address the decline, the need for innovation and adaptation, and the focus on maintaining competitiveness.",
+            "verdict": 1
+          },
+          "edited_output": null
+        }
+      },
+      "is_accepted": true
+    }
+  ]
+}
