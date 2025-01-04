@@ -13,7 +13,7 @@ $$
 \text{Refusal rate} = \frac{\text{Total number of refused requests}}{\text{Total number of human requests}}
 $$
 
-**Step 2**: Decide how are you going to derive this information from the sample. Here I am going to use LLM to do it, ie to check weather the request was refused or answered. You may use Non LLM based methods too. Since I am using LLM based method, this would become an LLM based metric. 
+**Step 2**: Decide how are you going to derive this information from the sample. Here I am going to use LLM to do it, ie to check whether the request was refused or answered. You may use Non LLM based methods too. Since I am using LLM based method, this would become an LLM based metric.
 
 **Step 3**: Decide if your metric should work in Single Turn and or Multi Turn data. 
 

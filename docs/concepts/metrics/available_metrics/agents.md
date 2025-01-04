@@ -101,7 +101,7 @@ scorer.llm = your_llm
 await scorer.multi_turn_ascore(sample)
 ```
 
-The tool call sequence specified in `reference_tool_calls` is used as the ideal outcome. If the tool calls made by the AI does not the the order or sequence of the `reference_tool_calls`, the metric will return a score of 0. This helps to ensure that the AI is able to identify and call the required tools in the correct order to complete a given task.
+The tool call sequence specified in `reference_tool_calls` is used as the ideal outcome. If the tool calls made by the AI does not match the order or sequence of the `reference_tool_calls`, the metric will return a score of 0. This helps to ensure that the AI is able to identify and call the required tools in the correct order to complete a given task.
 
 By default the tool names and arguments are compared using exact string matching. But sometimes this might not be optimal, for example if the args are natural language strings. You can also use any ragas metrics (values between 0 and 1) as distance measure to identify if a retrieved context is relevant or not. For example,
 

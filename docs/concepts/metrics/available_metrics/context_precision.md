@@ -17,7 +17,7 @@ The following metrics uses LLM to identify if a retrieved context is relevant or
 
 ### Context Precision without reference
 
-`LLMContextPrecisionWithoutReference` metric is can be used when you have both retrieved contexts and also reference contexts associated with a `user_input`. To estimate if a retrieved contexts is relevant or not this method uses the LLM to compare each of the retrieved context or chunk present in `retrieved_contexts` with `response`. 
+`LLMContextPrecisionWithoutReference` metric can be used when you have both retrieved contexts and also reference contexts associated with a `user_input`. To estimate if a retrieved contexts is relevant or not this method uses the LLM to compare each of the retrieved context or chunk present in `retrieved_contexts` with `response`.
 
 #### Example
     
