@@ -196,3 +196,7 @@ results.upload()
 ```
 
 ![](rag_eval.gif)
+
+## Up Next
+
+- [Generate test data for evaluating RAG](rag_testset_generation.md)

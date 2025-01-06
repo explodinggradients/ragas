@@ -221,4 +221,3 @@ Once trained, you can re-evaluate the same or different test datasets. You shoul
 ## Up Next
 
 - [Evaluate a simple RAG application](rag_eval.md)
-- [Generate test data for evaluating RAG](rag_testset_generation.md)
