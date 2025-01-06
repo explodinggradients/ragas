@@ -22,7 +22,7 @@ To build a simple RAG system, we need to define the following components:
 - Define a method to retrieve the relevant docs
 - Define a method to generate the response
 
-???+ note "Click to View the Code"
+??? note "Click to View the Code"
 
     ```python
 
