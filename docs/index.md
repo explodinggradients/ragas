@@ -9,7 +9,7 @@ Ragas is a library that provides tools to supercharge the evaluation of Large La
 
     Install with `pip` and get started with Ragas with these tutorials.
 
-    [:octicons-arrow-right-24: Get Started](getstarted/index.md)
+    [:octicons-arrow-right-24: Get Started](getstarted/evals.md)
 
 - 📚 **Core Concepts**
 
