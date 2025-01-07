@@ -8,7 +8,7 @@ happy to look into it 🙂
 
 ## Frameworks
 
-- [Langchain](./_langchain.md) - Langchain is a framework for building LLM applications, more information can be found [here](https://www.langchain.com/).
+- [Langchain](./langchain.md) - Langchain is a framework for building LLM applications, more information can be found [here](https://www.langchain.com/).
 - [LlamaIndex](./_llamaindex.md) - LlamaIndex is a framework for building RAG applications, more information can be found [here](https://www.llamaindex.ai/).
 
 ## Tracing Tools
