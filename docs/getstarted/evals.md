@@ -171,13 +171,13 @@ Viewing the sample-level results in a CSV file, as shown above, is fine for quic
 
 For this you may sign up and setup [app.ragas.io]() easily. If not, you may use any alternative tools available to you. 
 
-In order to use the [app.ragas.io](http://app.ragas.io) dashboard, you need to have an account on [app.ragas.io](https://app.ragas.io/). If you don't have one, you can sign up for one [here](https://app.ragas.io/login). You will also need to generate a [Ragas API key](https://app.ragas.io/dashboard/settings/app-tokens).
+In order to use the [app.ragas.io](http://app.ragas.io) dashboard, you need to have an account on [app.ragas.io](https://app.ragas.io/). If you don't have one, you can sign up for one [here](https://app.ragas.io/login). You will also need to generate a [Ragas APP token](https://app.ragas.io/dashboard/settings/app-tokens).
 
 Once you have the API key, you can use the `upload()` method to export the results to the dashboard.
 
 ```python
 import os
-os.environ["RAGAS_API_KEY"] = "your_api_key"
+os.environ["RAGAS_APP_TOKEN"] = "your_app_token"
 ```
 
 Now you can view the results in the dashboard by following the link in the output of the `upload()` method.
