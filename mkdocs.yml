@@ -10,8 +10,8 @@ nav:
   - 🚀 Get Started:
       - getstarted/index.md
       - Installation: getstarted/install.md
-      - Evaluate your first AI app: getstarted/evals.md
-      - Evaluate Using Metrics: getstarted/rag_evaluation.md
+      - Evaluate your first LLM App: getstarted/evals.md
+      - Evaluate a simple RAG: getstarted/rag_eval.md
       - Generate Synthetic Testset for RAG: getstarted/rag_testset_generation.md
   - 📚 Core Concepts:
       - concepts/index.md

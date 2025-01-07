@@ -1,6 +1,6 @@
-# Evaluating your first AI app
+# Evaluate a simple LLM application
 
-The purpose of this guide is to illustrate a simple workflow for testing and evaluating an LLM application with `ragas`. It assumed minimum knowledge in AI application building and evaluation. Please refer to our [installation instruction](./install.md) for installing `ragas`
+The purpose of this guide is to illustrate a simple workflow for testing and evaluating an LLM application with `ragas`. It assumes minimum knowledge in AI application building and evaluation. Please refer to our [installation instruction](./install.md) for installing `ragas`
 
 
 ## Evaluation
@@ -220,5 +220,4 @@ Once trained, you can re-evaluate the same or different test datasets. You shoul
 
 ## Up Next
 
-- [Run ragas metrics for evaluating RAG](rag_evaluation.md)
-- [Generate test data for evaluating RAG](rag_testset_generation.md)
+- [Evaluate a simple RAG application](rag_eval.md)
