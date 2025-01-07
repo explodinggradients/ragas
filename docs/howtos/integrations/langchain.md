@@ -115,7 +115,7 @@ expected_responses = [
 ]
 ```
 
-To evaluate the Q&A system we need to structure the queries, expected_responses and other metric secpific requirments to `EvaluationDataset`.
+To evaluate the Q&A system we need to structure the queries, expected_responses and other metric secpific requirments to [EvaluationDataset][ragas.dataset_schema.EvaluationDataset].
 
 
 ```python
@@ -170,22 +170,4 @@ Output
 {'context_recall': 1.0000, 'faithfulness': 0.9000, 'factual_correctness': 0.9260}
 ```
 
-### Analyze Results
-
-To access the [app.ragas.io](http://app.ragas.io) dashboard, you must first create an account on [app.ragas.io](https://app.ragas.io/). If you don't already have an account, you can sign up [here](https://app.ragas.io/login). Additionally, you'll need to generate a [Ragas API key](https://app.ragas.io/dashboard/settings/app-tokens) to authenticate and interact with the dashboard.  
-
-After obtaining your API key, you can use the `upload()` method to export the results directly to the dashboard.
-
-
-```python
-import os
-
-os.environ["RAGAS_APP_TOKEN"] = os.getenv("RAGAS_APP_TOKEN")
-```
-
-To view the results, simply follow the link provided in the output of the `upload()` method and you'll be directed to the dashboard.
-
-
-```python
-result.upload()
-```
+Check out [app.ragas.io](http://app.ragas.io) for a more detailed analysis, including interactive visualizations and metrics. You'll need to create an account and generate a [Ragas API key](https://app.ragas.io/dashboard/settings/app-tokens) to upload and explore your results.
