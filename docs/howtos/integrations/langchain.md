@@ -88,12 +88,10 @@ query = "Who is the CEO of OpenAI?"
 relevant_docs = retriever.invoke(query)
 qa_chain.invoke({"context": format_docs(relevant_docs), "query": query})
 ```
-
-
-
-
-    'The CEO of OpenAI is Sam Altman.'
-
+Output:
+```
+'The CEO of OpenAI is Sam Altman.'
+```
 
 
 ### Evaluate
@@ -167,16 +165,10 @@ result = evaluate(
 result
 ```
 
-
-    Evaluating:   0%|          | 0/15 [00:00<?, ?it/s]
-
-
-
-
-
-    {'context_recall': 1.0000, 'faithfulness': 0.9000, 'factual_correctness': 0.9260}
-
-
+Output
+```
+{'context_recall': 1.0000, 'faithfulness': 0.9000, 'factual_correctness': 0.9260}
+```
 
 ### Analyze Results
 
@@ -197,13 +189,3 @@ To view the results, simply follow the link provided in the output of the `uploa
 ```python
 result.upload()
 ```
-
-    Evaluation results uploaded! View at https://app.ragas.io/dashboard/alignment/evaluation/05eb9371-cd09-4f40-9e1a-8f8982efceab
-
-
-
-
-
-    'https://app.ragas.io/dashboard/alignment/evaluation/05eb9371-cd09-4f40-9e1a-8f8982efceab'
-
-
