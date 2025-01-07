@@ -59,13 +59,13 @@ dataset.to_pandas()
 
 You can also use other tools like [app.ragas.io](https://app.ragas.io/) or any other similar tools available for you in the [Integrations](../howtos/integrations/index.md) section.
 
-In order to use the [app.ragas.io](https://app.ragas.io/) dashboard, you need to have an account on [app.ragas.io](https://app.ragas.io/). If you don't have one, you can sign up for one [here](https://app.ragas.io/login). You will also need to have a [Ragas API key](https://app.ragas.io/settings/api-keys).
+In order to use the [app.ragas.io](https://app.ragas.io/) dashboard, you need to have an account on [app.ragas.io](https://app.ragas.io/). If you don't have one, you can sign up for one [here](https://app.ragas.io/login). You will also need to have a [Ragas APP token](https://app.ragas.io/settings/api-keys).
 
 Once you have the API key, you can use the `upload()` method to export the results to the dashboard.
 
 ```python
 import os
-os.environ["RAGAS_API_KEY"] = "your_api_key"
+os.environ["RAGAS_APP_TOKEN"] = "your_app_token"
 dataset.upload()
 ```
 
