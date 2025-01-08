@@ -82,7 +82,7 @@ def check_api_response(response: requests.Response) -> None:
                 error_msg += f"\nAPI Message: {error_data['message']}"
             if "debug_error_info" in error_data:
                 error_msg += f"\nDebug Info: {error_data['debug_error_info']}"
-        except:
+        except Exception as _e:
             error_msg = f"\nStatus Code: {response.status_code}"
 
         raise UploadException(
