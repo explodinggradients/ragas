@@ -355,7 +355,7 @@ class MetricWithLLM(Metric, PromptMixin):
     def train(
         self,
         path: t.Optional[str] = None,
-        run_id: t.Optional[str] = None,
+        run_id: str = None,
         demonstration_config: t.Optional[DemonstrationConfig] = None,
         instruction_config: t.Optional[InstructionConfig] = None,
         callbacks: t.Optional[Callbacks] = None,
@@ -371,7 +371,7 @@ class MetricWithLLM(Metric, PromptMixin):
         ----------
         path : str, optional
             Path to local JSON training data file
-        run_id : str, optional
+        run_id : str
             Direct run ID to fetch annotations
         demonstration_config : DemonstrationConfig, optional
             Configuration for demonstration optimization
@@ -396,13 +396,9 @@ class MetricWithLLM(Metric, PromptMixin):
         # Validate input parameters
         provided_inputs = sum(x is not None for x in [path, run_id])
         if provided_inputs == 0:
-            raise ValueError(
-                "One of path or run_id must be provided"
-            )
+            raise ValueError("One of path or run_id must be provided")
         if provided_inputs > 1:
-            raise ValueError(
-                "Only one of path or run_id should be provided"
-            )
+            raise ValueError("Only one of path or run_id should be provided")
 
         run_config = run_config or RunConfig()
         callbacks = callbacks or []
@@ -436,6 +432,7 @@ class MetricWithLLM(Metric, PromptMixin):
                 demonstration_config=demonstration_config,
                 dataset=dataset,
             )
+
 
 @dataclass
 class MetricWithEmbeddings(Metric):
