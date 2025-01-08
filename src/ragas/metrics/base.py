@@ -408,7 +408,7 @@ class MetricWithLLM(Metric, PromptMixin):
             if not path.endswith(".json"):
                 raise ValueError("Train data must be in json format")
             dataset = MetricAnnotation.from_json(path, metric_name=self.name)
-        if run_id is not None:
+        elif run_id is not None:
             dataset = MetricAnnotation.from_app(
                 run_id=run_id,
                 metric_name=self.name,
