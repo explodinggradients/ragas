@@ -357,7 +357,6 @@ class MetricWithLLM(Metric, PromptMixin):
         self,
         path: t.Optional[str] = None,
         run_id: t.Optional[str] = None,
-        evaluation_result: t.Optional[EvaluationResult] = None,
         demonstration_config: t.Optional[DemonstrationConfig] = None,
         instruction_config: t.Optional[InstructionConfig] = None,
         callbacks: t.Optional[Callbacks] = None,
@@ -375,8 +374,6 @@ class MetricWithLLM(Metric, PromptMixin):
             Path to local JSON training data file
         run_id : str, optional
             Direct run ID to fetch annotations
-        evaluation_result : EvaluationResult, optional
-            Evaluation result to fetch training data from Ragas platform
         demonstration_config : DemonstrationConfig, optional
             Configuration for demonstration optimization
         instruction_config : InstructionConfig, optional
@@ -395,17 +392,17 @@ class MetricWithLLM(Metric, PromptMixin):
         Raises
         ------
         ValueError
-            If invalid combination of path, run_id, and evaluation_result is provided
+            If invalid combination of path, and run_id is provided
         """
         # Validate input parameters
-        provided_inputs = sum(x is not None for x in [path, run_id, evaluation_result])
+        provided_inputs = sum(x is not None for x in [path, run_id])
         if provided_inputs == 0:
             raise ValueError(
-                "One of path, run_id, or evaluation_result must be provided"
+                "One of path or run_id must be provided"
             )
         if provided_inputs > 1:
             raise ValueError(
-                "Only one of path, run_id, or evaluation_result should be provided"
+                "Only one of path or run_id should be provided"
             )
 
         run_config = run_config or RunConfig()
@@ -418,7 +415,6 @@ class MetricWithLLM(Metric, PromptMixin):
             dataset = MetricAnnotation.from_json(path, metric_name=self.name)
         else:
             dataset = MetricAnnotation.from_app(
-                evaluation_result=evaluation_result,
                 run_id=run_id,
                 metric_name=self.name,
             )

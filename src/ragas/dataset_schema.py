@@ -626,8 +626,7 @@ class MetricAnnotation(BaseModel):
     @classmethod
     def from_app(
         cls,
-        run_id: t.Optional[str] = None,
-        evaluation_result: t.Optional[EvaluationResult] = None,
+        run_id: str = None,
         metric_name: t.Optional[str] = None,
     ) -> "MetricAnnotation":
         """
@@ -635,10 +634,8 @@ class MetricAnnotation(BaseModel):
 
         Parameters
         ----------
-        run_id : str, optional
+        run_id : str
             Direct run ID to fetch annotations
-        evaluation_result : EvaluationResult, optional
-            The evaluation result containing the run_id
         metric_name : str, optional
             Name of the specific metric to filter
 
@@ -650,30 +647,10 @@ class MetricAnnotation(BaseModel):
         Raises
         ------
         ValueError
-            If neither evaluation_result nor run_id is provided, or if both are provided
-            If no traces found or no root trace found when using evaluation_result
+            If run_id is not provided
         """
-        if evaluation_result is None and run_id is None:
-            raise ValueError("Either evaluation_result or run_id must be provided")
-        if evaluation_result is not None and run_id is not None:
-            raise ValueError(
-                "Only one of evaluation_result or run_id should be provided"
-            )
-
-        if evaluation_result is not None:
-            if not evaluation_result.ragas_traces:
-                raise ValueError("No traces found in evaluation_result")
-
-            root_trace = [
-                trace
-                for trace in evaluation_result.ragas_traces.values()
-                if trace.parent_run_id is None
-            ]
-
-            if not root_trace:
-                raise ValueError("No root trace found in evaluation_result")
-
-            run_id = root_trace[0].run_id
+        if run_id is None:
+            raise ValueError("run_id must be provided")
 
         endpoint = f"/api/v1/alignment/evaluation/annotation/{run_id}"
 
