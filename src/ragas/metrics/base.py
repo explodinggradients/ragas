@@ -413,6 +413,8 @@ class MetricWithLLM(Metric, PromptMixin):
                 run_id=run_id,
                 metric_name=self.name,
             )
+        else:
+            raise ValueError("One of path or run_id must be provided")
 
         # only optimize the instruction if instruction_config is provided
         if instruction_config is not None:
