@@ -626,7 +626,7 @@ class MetricAnnotation(BaseModel):
     @classmethod
     def from_app(
         cls,
-        run_id: str = None,
+        run_id: str,
         metric_name: t.Optional[str] = None,
     ) -> "MetricAnnotation":
         """
