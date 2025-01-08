@@ -18,7 +18,6 @@ from ragas.dataset_schema import (
     MetricAnnotation,
     MultiTurnSample,
     SingleTurnSample,
-    EvaluationResult,
 )
 from ragas.executor import is_event_loop_running
 from ragas.losses import BinaryMetricLoss, MSELoss
