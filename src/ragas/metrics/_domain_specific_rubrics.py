@@ -168,7 +168,7 @@ class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         rubrics_text = "\n".join(
             f"{key}: {value}" for key, value in self.rubrics.items()
         )
-        self.multi_turn_scoring_prompt.instruction = f"{self.multi_turn_scoring_prompt.instruction}\n\nScoring Rubrics:\n{rubrics_text}\n"
+        self.multi_turn_scoring_prompt.instruction += f"\n\nScoring Rubrics:\n{rubrics_text}\n"
 
         output = await self.multi_turn_scoring_prompt.generate(
             data=prompt_input,
