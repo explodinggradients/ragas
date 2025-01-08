@@ -25,6 +25,7 @@ from ragas.run_config import RunConfig
 logger = logging.getLogger(__name__)
 
 RAGAS_OPTIMIZATION_GROUP = "ragas_optimization"
+MIN_ANNOTATIONS = 10
 
 example_type = t.TypeVar(
     "example_type", bound=t.Dict[t.Dict[str, t.Any], t.Dict[str, t.Any]]
@@ -158,6 +159,11 @@ class GeneticOptimizer(Optimizer):
         if self.llm is None:
             raise ValueError("No llm provided for optimization.")
 
+        if len(dataset) < MIN_ANNOTATIONS:
+            raise ValueError(
+                f"Number of annotations should be greater than {MIN_ANNOTATIONS}. Please annotate {MIN_ANNOTATIONS-len(dataset)} more samples"
+            )
+
         population_size = config.get("population_size", 3)
         num_demonstrations = config.get("num_demonstrations", 3)
         sample_size = config.get("sample_size", 12)
@@ -198,12 +204,13 @@ class GeneticOptimizer(Optimizer):
             )
 
             # get the default prompt used in the metric as seed prompt
-            seed_prompts = {
-                key: val.instruction
-                for key, val in self.metric.get_prompts().items()
-                if key in initial_population[0].keys()
-            }
-            initial_population.append(seed_prompts)
+            if len(initial_population) > 0:
+                seed_prompts = {
+                    key: val.instruction
+                    for key, val in self.metric.get_prompts().items()
+                    if key in initial_population[0].keys()
+                }
+                initial_population.append(seed_prompts)
 
             parent_pbar.set_description(f"{stages[1]['name']} Step 2/{len(stages)}")
             improved_prompts = self.feedback_mutation(
