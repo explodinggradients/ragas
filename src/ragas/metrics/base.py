@@ -355,7 +355,7 @@ class MetricWithLLM(Metric, PromptMixin):
     def train(
         self,
         path: t.Optional[str] = None,
-        run_id: str = None,
+        run_id: t.Optional[str] = None,
         demonstration_config: t.Optional[DemonstrationConfig] = None,
         instruction_config: t.Optional[InstructionConfig] = None,
         callbacks: t.Optional[Callbacks] = None,
@@ -371,7 +371,7 @@ class MetricWithLLM(Metric, PromptMixin):
         ----------
         path : str, optional
             Path to local JSON training data file
-        run_id : str
+        run_id : str, optional
             Direct run ID to fetch annotations
         demonstration_config : DemonstrationConfig, optional
             Configuration for demonstration optimization
@@ -408,7 +408,7 @@ class MetricWithLLM(Metric, PromptMixin):
             if not path.endswith(".json"):
                 raise ValueError("Train data must be in json format")
             dataset = MetricAnnotation.from_json(path, metric_name=self.name)
-        else:
+        if run_id is not None:
             dataset = MetricAnnotation.from_app(
                 run_id=run_id,
                 metric_name=self.name,
