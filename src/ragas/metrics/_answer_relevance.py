@@ -16,6 +16,7 @@ from ragas.metrics.base import (
     SingleTurnMetric,
 )
 from ragas.prompt import PydanticPrompt
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -136,14 +137,15 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         assert self.llm is not None, "LLM is not set"
 
         prompt_input = ResponseRelevanceInput(response=row["response"])
-        responses = []
-        for _ in range(self.strictness):
-            response = await self.question_generation.generate(
+        tasks = [
+            self.question_generation.generate(
                 data=prompt_input,
                 llm=self.llm,
                 callbacks=callbacks,
             )
-            responses.append(response)
+            for _ in range(self.strictness)
+        ]
+        responses = await asyncio.gather(*tasks)
 
         return self._calculate_score(responses, row)
 

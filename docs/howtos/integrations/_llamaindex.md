@@ -85,38 +85,38 @@ df.head()
   <tbody>
     <tr>
       <th>0</th>
-      <td>Why was New York named after the Duke of York?</td>
-      <td>[Etymology ==\n\nIn 1664, New York was named i...</td>
-      <td>New York was named after the Duke of York in 1...</td>
-      <td>AbstractQuerySynthesizer</td>
+      <td>Cud yu pleese explane the role of New York Cit...</td>
+      <td>[New York, often called New York City or NYC, ...</td>
+      <td>New York City serves as the geographical and d...</td>
+      <td>single_hop_specifc_query_synthesizer</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>How did the early Europan exploraton and setle...</td>
-      <td>[History ==\n\n\n=== Early history ===\nIn the...</td>
-      <td>The early European exploration and settlement ...</td>
-      <td>AbstractQuerySynthesizer</td>
+      <td>So like, what was New York City called before ...</td>
+      <td>[History == === Early history === In the pre-C...</td>
+      <td>Before it was called New York, the area was kn...</td>
+      <td>single_hop_specifc_query_synthesizer</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>New York City population culture finance diver...</td>
-      <td>[New York City, the most populous city in the ...</td>
-      <td>New York City is a global cultural, financial,...</td>
-      <td>ComparativeAbstractQuerySynthesizer</td>
+      <td>what happen in new york with slavery and how i...</td>
+      <td>[and rechristened it "New Orange" after Willia...</td>
+      <td>In the early 18th century, New York became a c...</td>
+      <td>single_hop_specifc_query_synthesizer</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>How do the economic aspects of New York City, ...</td>
-      <td>[New York City, the most populous city in the ...</td>
-      <td>New York City's economic aspects, such as its ...</td>
-      <td>ComparativeAbstractQuerySynthesizer</td>
+      <td>What historical significance does Long Island ...</td>
+      <td>[&lt;1-hop&gt;\n\nHistory == === Early history === I...</td>
+      <td>Long Island holds historical significance in t...</td>
+      <td>multi_hop_specific_query_synthesizer</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>What role do biomedical research institutions ...</td>
-      <td>[Education ==\n\n \n\nNew York City has the la...</td>
-      <td>Biomedical research institutions in New York C...</td>
-      <td>SpecificQuerySynthesizer</td>
+      <td>What role does the Staten Island Ferry play in...</td>
+      <td>[&lt;1-hop&gt;\n\nto start service in 2017; this wou...</td>
+      <td>The Staten Island Ferry plays a significant ro...</td>
+      <td>multi_hop_specific_query_synthesizer</td>
     </tr>
   </tbody>
 </table>
@@ -154,7 +154,7 @@ df["user_input"][0]
 
 
 
-    'Why was New York named after the Duke of York?'
+    'Cud yu pleese explane the role of New York City within the Northeast megalopolis, and how it contributes to the cultural and economic vibrancy of the region?'
 
 
 
@@ -165,7 +165,7 @@ response_vector = query_engine.query(df["user_input"][0])
 print(response_vector)
 ```
 
-    New York was named after the Duke of York because in 1664, the city was named in honor of the Duke of York, who later became King James II of England.
+    New York City serves as a key hub within the Northeast megalopolis, playing a significant role in enhancing the cultural and economic vibrancy of the region. Its status as a global center of creativity, entrepreneurship, and cultural diversity contributes to the overall dynamism of the area. The city's renowned arts scene, including Broadway theatre and numerous cultural institutions, attracts artists and audiences from around the world, enriching the cultural landscape of the Northeast megalopolis. Economically, New York City's position as a leading financial and fintech center, home to major stock exchanges and a bustling real estate market, bolsters the region's economic strength and influence. Additionally, the city's diverse culinary scene, influenced by its immigrant history, adds to the cultural richness of the region, making New York City a vital component of the Northeast megalopolis's cultural and economic tapestry.
 
 
 ## Evaluating the `QueryEngine`
@@ -216,7 +216,7 @@ ragas_dataset
 
 
 
-    EvaluationDataset(features=['user_input', 'reference_contexts', 'reference'], len=7)
+    EvaluationDataset(features=['user_input', 'reference_contexts', 'reference'], len=6)
 
 
 
@@ -239,7 +239,7 @@ result = evaluate(
 print(result)
 ```
 
-    {'faithfulness': 0.9746, 'answer_relevancy': 0.9421, 'context_precision': 0.9286, 'context_recall': 0.6857}
+    {'faithfulness': 0.7454, 'answer_relevancy': 0.9348, 'context_precision': 0.6667, 'context_recall': 0.4667}
 
 
 You can convert into a pandas dataframe to run more analysis on it.
@@ -284,87 +284,75 @@ result.to_pandas()
   <tbody>
     <tr>
       <th>0</th>
-      <td>What events led to New York being named after ...</td>
-      <td>[New York City is the headquarters of the glob...</td>
-      <td>[Etymology ==\n\nIn 1664, New York was named i...</td>
-      <td>New York was named in honor of the Duke of Yor...</td>
-      <td>New York was named after the Duke of York in 1...</td>
-      <td>1.000000</td>
-      <td>0.950377</td>
-      <td>1.0</td>
-      <td>1.0</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>How early European explorers and Native Americ...</td>
-      <td>[=== Dutch rule ===\n\nA permanent European pr...</td>
-      <td>[History ==\n\n\n=== Early history ===\nIn the...</td>
-      <td>Early European explorers established a permane...</td>
-      <td>Early European explorers and Native Americans ...</td>
-      <td>1.000000</td>
-      <td>0.896300</td>
-      <td>1.0</td>
-      <td>0.8</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>New York City population economy challenges</td>
-      <td>[=== Wealth and income disparity ===\nNew York...</td>
-      <td>[New York City, the most populous city in the ...</td>
-      <td>New York City has faced challenges related to ...</td>
-      <td>New York City, as the most populous city in th...</td>
-      <td>1.000000</td>
-      <td>0.915717</td>
-      <td>1.0</td>
+      <td>Cud yu pleese explane the role of New York Cit...</td>
+      <td>[and its ideals of liberty and peace. In the 2...</td>
+      <td>[New York, often called New York City or NYC, ...</td>
+      <td>New York City plays a significant role within ...</td>
+      <td>New York City serves as the geographical and d...</td>
+      <td>0.615385</td>
+      <td>0.918217</td>
+      <td>0.0</td>
       <td>0.0</td>
     </tr>
     <tr>
-      <th>3</th>
-      <td>How do the economic aspects of New York City, ...</td>
-      <td>[=== Wealth and income disparity ===\nNew York...</td>
-      <td>[New York City, the most populous city in the ...</td>
-      <td>The economic aspects of New York City, as a gl...</td>
-      <td>New York City's economic aspects as a global c...</td>
-      <td>0.913043</td>
-      <td>0.929317</td>
+      <th>1</th>
+      <td>So like, what was New York City called before ...</td>
+      <td>[New York City is the headquarters of the glob...</td>
+      <td>[History == === Early history === In the pre-C...</td>
+      <td>New York City was named New Amsterdam before i...</td>
+      <td>Before it was called New York, the area was kn...</td>
+      <td>1.000000</td>
+      <td>0.967821</td>
       <td>1.0</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>what happen in new york with slavery and how i...</td>
+      <td>[=== Province of New York and slavery ===\n\nI...</td>
+      <td>[and rechristened it "New Orange" after Willia...</td>
+      <td>Slavery became a significant part of New York'...</td>
+      <td>In the early 18th century, New York became a c...</td>
+      <td>1.000000</td>
+      <td>0.919264</td>
+      <td>1.0</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>What historical significance does Long Island ...</td>
+      <td>[==== River crossings ====\n\nNew York City is...</td>
+      <td>[&lt;1-hop&gt;\n\nHistory == === Early history === I...</td>
+      <td>Long Island played a significant role in the e...</td>
+      <td>Long Island holds historical significance in t...</td>
+      <td>0.500000</td>
+      <td>0.931895</td>
+      <td>0.0</td>
       <td>0.0</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>What are some of the cultural and architectura...</td>
-      <td>[==== Staten Island ====\nStaten Island (Richm...</td>
-      <td>[Geography ==\n\nDuring the Wisconsin glaciati...</td>
-      <td>Brooklyn is known for its cultural diversity, ...</td>
-      <td>Brooklyn is distinct within New York City due ...</td>
-      <td>1.000000</td>
-      <td>0.902664</td>
-      <td>0.5</td>
+      <td>What role does the Staten Island Ferry play in...</td>
+      <td>[==== Buses ====\n\nNew York City's public bus...</td>
+      <td>[&lt;1-hop&gt;\n\nto start service in 2017; this wou...</td>
+      <td>The Staten Island Ferry serves as a vital mode...</td>
+      <td>The Staten Island Ferry plays a significant ro...</td>
+      <td>0.500000</td>
+      <td>0.936920</td>
       <td>1.0</td>
+      <td>0.0</td>
     </tr>
     <tr>
       <th>5</th>
-      <td>What measures has New York City implemented to...</td>
-      <td>[==== International events ====\nIn terms of h...</td>
-      <td>[Environment ==\n\n \nEnvironmental issues in ...</td>
-      <td>New York City has implemented various measures...</td>
-      <td>New York City has implemented several measures...</td>
-      <td>0.909091</td>
-      <td>1.000000</td>
+      <td>How does Central Park's role as a cultural and...</td>
+      <td>[==== State parks ====\n\nThere are seven stat...</td>
+      <td>[&lt;1-hop&gt;\n\nCity has over 28,000 acres (110 km...</td>
+      <td>Central Park's role as a cultural and historic...</td>
+      <td>Central Park, located in middle-upper Manhatta...</td>
+      <td>0.857143</td>
+      <td>0.934841</td>
       <td>1.0</td>
-      <td>1.0</td>
-    </tr>
-    <tr>
-      <th>6</th>
-      <td>What role did New York City play during the Am...</td>
-      <td>[=== Province of New York and slavery ===\n\nI...</td>
-      <td>[History ==\n\n\n=== Early history ===\nIn the...</td>
-      <td>New York City served as a significant military...</td>
-      <td>During the American Revolution, New York City ...</td>
-      <td>1.000000</td>
-      <td>1.000000</td>
-      <td>1.0</td>
-      <td>1.0</td>
+      <td>0.8</td>
     </tr>
   </tbody>
 </table>

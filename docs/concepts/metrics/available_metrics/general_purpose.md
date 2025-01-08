@@ -98,10 +98,10 @@ Instance specific evaluation metric is a rubric-based evaluation metric that is 
 #### Example
 ```python
 from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics import InstanceRubricsScore
+from ragas.metrics import InstanceRubrics
 
 
-SingleTurnSample(
+sample = SingleTurnSample(
     user_input="Where is the Eiffel Tower located?",
     response="The Eiffel Tower is located in Paris.",
     rubrics = {
@@ -113,6 +113,6 @@ SingleTurnSample(
 }
 )
 
-scorer =  InstanceRubricsScore(llm=evaluator_llm)
+scorer =  InstanceRubrics(llm=evaluator_llm)
 await scorer.single_turn_ascore(sample)
 ```

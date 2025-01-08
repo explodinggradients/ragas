@@ -10,8 +10,8 @@ nav:
   - 🚀 Get Started:
       - getstarted/index.md
       - Installation: getstarted/install.md
-      - Evaluate your first AI app: getstarted/evals.md
-      - Evaluate Using Metrics: getstarted/rag_evaluation.md
+      - Evaluate your first LLM App: getstarted/evals.md
+      - Evaluate a simple RAG: getstarted/rag_eval.md
       - Generate Synthetic Testset for RAG: getstarted/rag_testset_generation.md
   - 📚 Core Concepts:
       - concepts/index.md
@@ -100,6 +100,7 @@ nav:
           - howtos/integrations/index.md
           - LlamaIndex: howtos/integrations/_llamaindex.md
           - Arize: howtos/integrations/_arize.md
+          - LangChain: howtos/integrations/langchain.md
           - LangGraph: howtos/integrations/_langgraph_agent_evaluation.md
       - Migrations:
           - From v0.1 to v0.2: howtos/migrations/migrate_from_v01_to_v02.md

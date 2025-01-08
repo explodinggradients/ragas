@@ -20,7 +20,7 @@
         <img alt="Open In Colab" src="https://img.shields.io/pypi/dm/ragas">
     </a>
     <a href="https://discord.gg/5djav8GGNZ">
-        <img alt="discord-invite" src="https://dcbadge.vercel.app/api/server/5djav8GGNZ?style=flat">
+        <img alt="discord-invite" src="https://img.shields.io/discord/1119637219561451644">
     </a>
 </p>
 
