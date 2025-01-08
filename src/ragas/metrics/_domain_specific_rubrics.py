@@ -111,6 +111,12 @@ class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
                 "reference:optional",
             },
         }
+
+        # Add rubrics to the scoring prompts
+        rubrics_text = "\n".join(f"{key}: {value}" for key, value in self.rubrics.items())
+        self.single_turn_scoring_prompt.instruction = f"{self.single_turn_scoring_prompt.instruction}\n\nScoring Rubrics:\n{rubrics_text}\n"
+        self.multi_turn_scoring_prompt.instruction = f"{self.multi_turn_scoring_prompt.instruction}\n\nScoring Rubrics:\n{rubrics_text}\n"
+
         super().__init__(
             name=name,
             llm=llm,
@@ -143,11 +149,6 @@ class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
             reference_contexts=reference_contexts,
         )
 
-        rubrics_text = "\n".join(
-            f"{key}: {value}" for key, value in self.rubrics.items()
-        )
-        self.single_turn_scoring_prompt.instruction = f"{self.single_turn_scoring_prompt.instruction}\n\nScoring Rubrics:\n{rubrics_text}\n"
-
         output = await self.single_turn_scoring_prompt.generate(
             data=prompt_input,
             llm=self.llm,
@@ -164,11 +165,6 @@ class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         prompt_input = MultiTurnInputWithoutRubric(
             user_input=interaction,
         )
-
-        rubrics_text = "\n".join(
-            f"{key}: {value}" for key, value in self.rubrics.items()
-        )
-        self.multi_turn_scoring_prompt.instruction = f"{self.multi_turn_scoring_prompt.instruction}\n\nScoring Rubrics:\n{rubrics_text}\n"
 
         output = await self.multi_turn_scoring_prompt.generate(
             data=prompt_input,
