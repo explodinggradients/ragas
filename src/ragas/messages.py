@@ -27,13 +27,13 @@ class ToolCall(BaseModel):
     ----------
     name : str
         The name of the tool being called.
-    args : Dict[str, Union[str, int, float]]
+    args : Dict[str, Any]
         A dictionary of arguments for the tool call, where keys are argument names
         and values can be strings, integers, or floats.
     """
 
     name: str
-    args: t.Dict[str, t.Union[str, int, float]]
+    args: t.Dict[str, t.Any]
 
 
 class HumanMessage(Message):
