@@ -24,19 +24,19 @@ logger = logging.getLogger(__name__)
 
 
 DEFAULT_REFERENCE_FREE_RUBRICS = {
-    "score1_description": "The response is incorrect or does not answer the question.",
-    "score2_description": "The response is partially correct but may include errors or incomplete information.",
-    "score3_description": "The response is generally correct but lacks clarity or completeness.",
-    "score4_description": "The response is correct and clear, with minor issues or missing details.",
-    "score5_description": "The response is completely accurate, clear, and answers the question directly.",
+    "score1_description": "The response is entirely incorrect and fails to address any aspect of the user input.",
+    "score2_description": "The response contains partial accuracy but includes major errors or significant omissions that affect its relevance to the user input.",
+    "score3_description": "The response is mostly accurate but lacks clarity, thoroughness, or minor details needed to fully address the user input.",
+    "score4_description": "The response is accurate and clear, with only minor omissions or slight inaccuracies in addressing the user input.",
+    "score5_description": "The response is completely accurate, clear, and thoroughly addresses the user input without any errors or omissions.",
 }
 
 DEFAULT_WITH_REFERENCE_RUBRICS = {
-    "score1_description": "The response is incorrect, irrelevant, or does not align with the ground truth.",
-    "score2_description": "The response partially matches the ground truth but includes significant errors, omissions, or irrelevant information.",
-    "score3_description": "The response generally aligns with the ground truth but may lack detail, clarity, or have minor inaccuracies.",
-    "score4_description": "The response is mostly accurate and aligns well with the ground truth, with only minor issues or missing details.",
-    "score5_description": "The response is fully accurate, aligns completely with the ground truth, and is clear and detailed.",
+    "score1_description": "The response is entirely incorrect, irrelevant, or does not align with the reference in any meaningful way.",
+    "score2_description": "The response partially matches the reference but contains major errors, significant omissions, or irrelevant information.",
+    "score3_description": "The response aligns with the reference overall but lacks sufficient detail, clarity, or contains minor inaccuracies.",
+    "score4_description": "The response is mostly accurate, aligns closely with the reference, and contains only minor issues or omissions.",
+    "score5_description": "The response is fully accurate, completely aligns with the reference, and is clear, thorough, and detailed.",
 }
 
 
@@ -71,13 +71,13 @@ class MultiTurnInputWithoutRubric(BaseModel):
 
 
 class SingleTurnPrompt(PydanticPrompt[SingleTurnInputWithoutRubric, ScoreFeedback]):
-    instruction = ""  # this will be set in the constructor
+    instruction = "Your task is to assign an appropriate score and provide feedback to the inputs based solely on the scoring criteria."
     input_model = SingleTurnInputWithoutRubric
     output_model = ScoreFeedback
 
 
 class MultiTurnPrompt(PydanticPrompt[MultiTurnInputWithoutRubric, ScoreFeedback]):
-    instruction = ""  # this will be set in the constructor
+    instruction = "Your task is to assign an appropriate score and provide feedback to the inputs based solely on the scoring criteria."
     input_model = MultiTurnInputWithoutRubric
     output_model = ScoreFeedback
 
@@ -111,6 +111,12 @@ class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
                 "reference:optional",
             },
         }
+
+        # Add rubrics to the scoring prompts
+        rubrics_text = "\n".join(f"{key}: {value}" for key, value in self.rubrics.items())
+        self.single_turn_scoring_prompt.instruction = f"{self.single_turn_scoring_prompt.instruction}\n\nScoring Rubrics:\n{rubrics_text}\n"
+        self.multi_turn_scoring_prompt.instruction = f"{self.multi_turn_scoring_prompt.instruction}\n\nScoring Rubrics:\n{rubrics_text}\n"
+
         super().__init__(
             name=name,
             llm=llm,
@@ -142,6 +148,7 @@ class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
             reference=reference,
             reference_contexts=reference_contexts,
         )
+
         output = await self.single_turn_scoring_prompt.generate(
             data=prompt_input,
             llm=self.llm,
@@ -158,6 +165,7 @@ class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         prompt_input = MultiTurnInputWithoutRubric(
             user_input=interaction,
         )
+
         output = await self.multi_turn_scoring_prompt.generate(
             data=prompt_input,
             llm=self.llm,

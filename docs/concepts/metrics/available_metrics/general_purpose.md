@@ -69,26 +69,36 @@ await scorer.single_turn_ascore(sample)
 
 ## Rubrics based criteria scoring
 
-Domain specific evaluation metric is a rubric-based evaluation metric that is used to evaluate responses on a specific domain. The rubric consists of descriptions for each score, typically ranging from 1 to 5. The response here is evaluation and scored using the LLM using description specified in the rubric. This metric also have reference free and reference based variations.
+The Rubric-Based Criteria Scoring Metric is used to do evaluations based on user-defined rubrics. Each rubric defines a detailed score description, typically ranging from 1 to 5. The LLM assesses and scores responses according to these descriptions, ensuring a consistent and objective evaluation. 
+!!! note
+    When defining rubrics, ensure consistency in terminology to match the schema used in the `SingleTurnSample` or `MultiTurnSample` respectively. For instance, if the schema specifies a term such as reference, ensure that the rubrics use the same term instead of alternatives like ground truth.
 
 #### Example
 ```python
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics import RubricsScore
+
 sample = SingleTurnSample(
-    user_input="Where is the Eiffel Tower located?",
-    response="The Eiffel Tower is located in Paris.",
-    reference="The Eiffel Tower is located in Paris.",
+    response="The Earth is flat and does not orbit the Sun.",
+    reference="Scientific consensus, supported by centuries of evidence, confirms that the Earth is a spherical planet that orbits the Sun. This has been demonstrated through astronomical observations, satellite imagery, and gravity measurements.",
 )
+
 rubrics = {
-    "score1_description": "The response is incorrect, irrelevant, or does not align with the ground truth.",
-    "score2_description": "The response partially matches the ground truth but includes significant errors, omissions, or irrelevant information.",
-    "score3_description": "The response generally aligns with the ground truth but may lack detail, clarity, or have minor inaccuracies.",
-    "score4_description": "The response is mostly accurate and aligns well with the ground truth, with only minor issues or missing details.",
-    "score5_description": "The response is fully accurate, aligns completely with the ground truth, and is clear and detailed.",
+    "score1_description": "The response is entirely incorrect and fails to address any aspect of the reference.",
+    "score2_description": "The response contains partial accuracy but includes major errors or significant omissions that affect its relevance to the reference.",
+    "score3_description": "The response is mostly accurate but lacks clarity, thoroughness, or minor details needed to fully address the reference.",
+    "score4_description": "The response is accurate and clear, with only minor omissions or slight inaccuracies in addressing the reference.",
+    "score5_description": "The response is completely accurate, clear, and thoroughly addresses the reference without any errors or omissions.",
 }
-scorer =  RubricsScore(rubrics=rubrics, llm=evaluator_llm)
+
+
+scorer = RubricsScore(rubrics=rubrics, llm=evaluator_llm)
 await scorer.single_turn_ascore(sample)
+```
+
+Output
+```
+1
 ```
 
 ## Instance Specific rubrics criteria scoring
