@@ -14,7 +14,7 @@ from ragas.metrics import SemanticSimilarity
 
 sample = SingleTurnSample(
     response="The Eiffel Tower is located in Paris.",
-    reference="The Eiffel Tower is located in Paris. I has a height of 1000ft."
+    reference="The Eiffel Tower is located in Paris. It has a height of 1000ft."
 )
 
 scorer = SemanticSimilarity()
