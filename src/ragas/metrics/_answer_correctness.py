@@ -10,9 +10,9 @@ from pydantic import BaseModel
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics._answer_similarity import AnswerSimilarity
 from ragas.metrics._faithfulness import (
-    FaithfulnessStatements,
-    HasSegmentMethod,
-    LongFormAnswerPrompt,
+    StatementGeneratorInput,
+    StatementGeneratorOutput,
+    StatementGeneratorPrompt,
 )
 from ragas.metrics.base import (
     MetricOutputType,
@@ -20,7 +20,6 @@ from ragas.metrics.base import (
     MetricWithEmbeddings,
     MetricWithLLM,
     SingleTurnMetric,
-    get_segmenter,
 )
 from ragas.metrics.utils import fbeta_score
 from ragas.prompt import PydanticPrompt
@@ -28,9 +27,6 @@ from ragas.run_config import RunConfig
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
-
-    from ragas.metrics._faithfulness import SentencesSimplified
-
 
 logger = logging.getLogger(__name__)
 
@@ -166,13 +162,12 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     )
     output_type = MetricOutputType.CONTINUOUS
     correctness_prompt: PydanticPrompt = field(default_factory=CorrectnessClassifier)
-    long_form_answer_prompt: PydanticPrompt = field(
-        default_factory=LongFormAnswerPrompt
+    statement_generator_prompt: PydanticPrompt = field(
+        default_factory=StatementGeneratorPrompt
     )
     weights: list[float] = field(default_factory=lambda: [0.75, 0.25])
     beta: float = 1.0
     answer_similarity: t.Optional[AnswerSimilarity] = None
-    sentence_segmenter: t.Optional[HasSegmentMethod] = None
     max_retries: int = 1
 
     def __post_init__(self):
@@ -184,10 +179,6 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
             raise ValueError("At least one weight must be non-zero")
         if not all([w >= 0 for w in self.weights]):
             raise ValueError("Weights must be non-negative")
-
-        if self.sentence_segmenter is None:
-            language = self.long_form_answer_prompt.language
-            self.sentence_segmenter = get_segmenter(language=language, clean=False)
 
         if type(self.beta) is not float:
             raise ValueError(
@@ -210,25 +201,17 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
 
     async def _create_simplified_statements(
         self, question: str, text: str, callbacks: Callbacks
-    ) -> SentencesSimplified:
-        assert self.sentence_segmenter is not None, "sentence_segmenter is not set"
+    ) -> StatementGeneratorOutput:
         assert self.llm is not None, "llm is not set"
 
-        sentences = self.sentence_segmenter.segment(text)
-        sentences_with_index = {
-            i: sentence
-            for i, sentence in enumerate(sentences)
-            if sentence.strip().endswith(".")
-        }
-
-        statements_simplified = await self.long_form_answer_prompt.generate(
+        prompt_input = StatementGeneratorInput(question=question, answer=text)
+        statements = await self.statement_generator_prompt.generate(
             llm=self.llm,
-            data=FaithfulnessStatements(
-                question=question, answer=text, sentences=sentences_with_index
-            ),
+            data=prompt_input,
             callbacks=callbacks,
         )
-        return statements_simplified
+
+        return statements
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
@@ -244,13 +227,11 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         question = row["user_input"]
         statements: t.Dict[str, t.List[str]] = {}
         for item in ["response", "reference"]:
-            simplified_statements = await self._create_simplified_statements(
+            statements_x = await self._create_simplified_statements(
                 question, row[item], callbacks
             )
-            _statements_unwrapped = []
-            for component in simplified_statements.sentences:
-                _statements_unwrapped.extend(component.simpler_statements)
-            statements[item] = _statements_unwrapped
+            statements_x = statements_x.statements
+            statements[item] = statements_x
 
         if not all([val == [] for val in statements.values()]):
             ground_truth = [statement for statement in statements["reference"]]
