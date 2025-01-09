@@ -39,8 +39,8 @@ All LLM based metrics in ragas are inherited from `Metric` class.
 ```python
 from ragas.metrics import FactualCorrectness
 
-metric = FactualCorrectness()
-await metric.single_turn_ascore(sample)
+scorer = FactualCorrectness()
+await scorer.single_turn_ascore(sample)
 ```
 
 &nbsp;&nbsp;&nbsp;&nbsp; **Multi-turn metrics**: These metrics evaluate the performance of the AI application based on multiple turns of interaction between the user and the AI. All metrics in ragas that supports multi turn evaluation are inherited from `MultiTurnMetric` class and scored using `multi_turn_ascore` method. It also expects a [Multi Turn Sample]() object as input.
@@ -50,7 +50,7 @@ from ragas.metrics import AgentGoalAccuracy
 from ragas import MultiTurnSample
 
 scorer = AgentGoalAccuracy()
-await metric.multi_turn_ascore(sample)
+await scorer.multi_turn_ascore(sample)
 ```
 
 ## Metric Design Principles
