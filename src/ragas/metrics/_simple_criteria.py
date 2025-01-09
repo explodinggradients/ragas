@@ -124,7 +124,7 @@ class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         self.multi_turn_prompt = multi_turn_prompt or MultiTurnSimpleCriteriaPrompt()
 
         # update the instruction for the prompts with the definition
-        instruction = f"Evaluate the Input based on the criterial defined. Give a score between 0 and 5.\nCriteria Definition: {self._definition}"
+        instruction = f"Evaluate the input based on the criteria defined. Give a score between 0 and 5.\nCriteria Definition: {self._definition}"
         self.single_turn_prompt.instruction = instruction
         self.multi_turn_prompt.instruction = instruction
 
@@ -145,7 +145,7 @@ class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     def definition(self, value: str) -> None:
         self._definition = value
         # Update the instruction for both prompts with the new definition
-        instruction = f"Evaluate the Input based on the criterial defined. Give a score between 0 and 5.\nCriteria Definition: {self._definition}"
+        instruction = f"Evaluate the input based on the criteria defined. Give a score between 0 and 5.\nCriteria Definition: {self._definition}"
         self.single_turn_prompt.instruction = instruction
         self.multi_turn_prompt.instruction = instruction
 
