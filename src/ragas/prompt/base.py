@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from langchain_core.prompt_values import StringPromptValue
 from pydantic import BaseModel
 
-from ragas.utils import RAGAS_SUPPORTED_LANGUAGE_CODES, camel_to_snake
+from ragas.utils import camel_to_snake
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -15,13 +15,6 @@ if t.TYPE_CHECKING:
     from ragas.llms.base import BaseRagasLLM
 
 logger = logging.getLogger(__name__)
-
-
-def _check_if_language_is_supported(language: str):
-    if language not in RAGAS_SUPPORTED_LANGUAGE_CODES:
-        raise ValueError(
-            f"Language '{language}' not supported. Supported languages: {RAGAS_SUPPORTED_LANGUAGE_CODES.keys()}"
-        )
 
 
 class BasePrompt(ABC):
@@ -34,7 +27,6 @@ class BasePrompt(ABC):
         if name is None:
             self.name = camel_to_snake(self.__class__.__name__)
 
-        _check_if_language_is_supported(language)
         self.language = language
         self.original_hash = original_hash
 

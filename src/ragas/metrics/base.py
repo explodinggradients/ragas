@@ -9,7 +9,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 from pydantic import ValidationError
-from pysbd import Segmenter
 from tqdm import tqdm
 
 from ragas._analytics import EvaluationEvent, _analytics_batcher
@@ -23,12 +22,7 @@ from ragas.executor import is_event_loop_running
 from ragas.losses import BinaryMetricLoss, MSELoss
 from ragas.prompt import FewShotPydanticPrompt, PromptMixin
 from ragas.run_config import RunConfig
-from ragas.utils import (
-    RAGAS_SUPPORTED_LANGUAGE_CODES,
-    camel_to_snake,
-    deprecated,
-    get_metric_language,
-)
+from ragas.utils import camel_to_snake, deprecated, get_metric_language
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -741,24 +735,6 @@ class Ensember:
             verdict_agg.append(item)
 
         return verdict_agg
-
-
-def get_segmenter(
-    language: str = "english", clean: bool = False, char_span: bool = False
-):
-    """
-    Get a sentence segmenter for a given language
-    """
-    language = language.lower()
-    if language not in RAGAS_SUPPORTED_LANGUAGE_CODES:
-        raise ValueError(
-            f"Language '{language}' not supported. Supported languages: {RAGAS_SUPPORTED_LANGUAGE_CODES.keys()}"
-        )
-    return Segmenter(
-        language=RAGAS_SUPPORTED_LANGUAGE_CODES[language],
-        clean=clean,
-        char_span=char_span,
-    )
 
 
 ensembler = Ensember()

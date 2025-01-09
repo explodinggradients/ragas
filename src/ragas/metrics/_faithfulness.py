@@ -13,77 +13,46 @@ from ragas.metrics.base import (
     MetricType,
     MetricWithLLM,
     SingleTurnMetric,
-    get_segmenter,
 )
 from ragas.prompt import PydanticPrompt
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
-
-class HasSegmentMethod(t.Protocol):
-    def segment(self, text) -> t.Any: ...
-
-
 logger = logging.getLogger(__name__)
 
 
-class FaithfulnessStatements(BaseModel):
+class StatementGeneratorInput(BaseModel):
     question: str = Field(description="The question to answer")
     answer: str = Field(description="The answer to the question")
-    sentences: t.Dict[int, str] = Field(
-        description="A mapping of sentence index to the sentence"
-    )
 
 
-class SentenceComponents(BaseModel):
-    sentence_index: int = Field(description="The index of the sentence")
-    simpler_statements: t.List[str] = Field(
-        description="A list of simpler statements that can be directly inferred from the context"
-    )
+class StatementGeneratorOutput(BaseModel):
+    statements: t.List[str] = Field(description="The generated statements")
 
 
-class SentencesSimplified(BaseModel):
-    sentences: t.List[SentenceComponents] = Field(
-        description="A list of sentences and their simpler versions"
-    )
-
-
-# examples
-example_input_1 = FaithfulnessStatements(
-    question="Who was Albert Einstein and what is he best known for?",
-    answer="He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.",
-    sentences={
-        0: "He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time.",
-        1: "He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.",
-    },
-)
-
-example_output_1 = SentencesSimplified(
-    sentences=[
-        SentenceComponents(
-            sentence_index=0,
-            simpler_statements=[
-                "Albert Einstein was a German-born theoretical physicist.",
-                "Albert Einstein is recognized as one of the greatest and most influential physicists of all time.",
-            ],
-        ),
-        SentenceComponents(
-            sentence_index=1,
-            simpler_statements=[
-                "Albert Einstein was best known for developing the theory of relativity.",
-                "Albert Einstein also made important contributions to the development of the theory of quantum mechanics.",
-            ],
-        ),
-    ]
-)
-
-
-class LongFormAnswerPrompt(PydanticPrompt[FaithfulnessStatements, SentencesSimplified]):
+class StatementGeneratorPrompt(
+    PydanticPrompt[StatementGeneratorInput, StatementGeneratorOutput]
+):
     instruction = "Given a question, an answer, and sentences from the answer analyze the complexity of each sentence given under 'sentences' and break down each sentence into one or more fully understandable statements while also ensuring no pronouns are used in each statement. Format the outputs in JSON."
-    input_model = FaithfulnessStatements
-    output_model = SentencesSimplified
-    examples = [(example_input_1, example_output_1)]
+    input_model = StatementGeneratorInput
+    output_model = StatementGeneratorOutput
+    examples = [
+        (
+            StatementGeneratorInput(
+                question="Who was Albert Einstein and what is he best known for?",
+                answer="He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.",
+            ),
+            StatementGeneratorOutput(
+                statements=[
+                    "Albert Einstein was a German-born theoretical physicist.",
+                    "Albert Einstein is recognized as one of the greatest and most influential physicists of all time.",
+                    "Albert Einstein was best known for developing the theory of relativity.",
+                    "Albert Einstein also made important contributions to the development of the theory of quantum mechanics.",
+                ]
+            ),
+        )
+    ]
 
 
 class StatementFaithfulnessAnswer(BaseModel):
@@ -174,15 +143,11 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
         }
     )
     output_type: t.Optional[MetricOutputType] = MetricOutputType.CONTINUOUS
-    nli_statements_message: PydanticPrompt = field(default_factory=NLIStatementPrompt)
-    statement_prompt: PydanticPrompt = field(default_factory=LongFormAnswerPrompt)
-    sentence_segmenter: t.Optional[HasSegmentMethod] = None
+    nli_statements_prompt: PydanticPrompt = field(default_factory=NLIStatementPrompt)
+    statement_generator_prompt: PydanticPrompt = field(
+        default_factory=StatementGeneratorPrompt
+    )
     max_retries: int = 1
-
-    def __post_init__(self):
-        if self.sentence_segmenter is None:
-            language = self.nli_statements_message.language
-            self.sentence_segmenter = get_segmenter(language=language, clean=False)
 
     async def _create_verdicts(
         self, row: t.Dict, statements: t.List[str], callbacks: Callbacks
@@ -190,7 +155,7 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
         assert self.llm is not None, "llm must be set to compute score"
 
         contexts_str: str = "\n".join(row["retrieved_contexts"])
-        verdicts = await self.nli_statements_message.generate(
+        verdicts = await self.nli_statements_prompt.generate(
             data=NLIStatementInput(context=contexts_str, statements=statements),
             llm=self.llm,
             callbacks=callbacks,
@@ -200,22 +165,19 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
 
     async def _create_statements(
         self, row: t.Dict, callbacks: Callbacks
-    ) -> SentencesSimplified:
+    ) -> StatementGeneratorOutput:
         assert self.llm is not None, "llm is not set"
-        assert self.sentence_segmenter is not None, "sentence_segmenter is not set"
 
         text, question = row["response"], row["user_input"]
-        sentences = self.sentence_segmenter.segment(text)
-        sentences_with_index = {i: sentence for i, sentence in enumerate(sentences)}
 
-        statements_simplified = await self.statement_prompt.generate(
+        prompt_input = StatementGeneratorInput(question=question, answer=text)
+        statements = await self.statement_generator_prompt.generate(
             llm=self.llm,
-            data=FaithfulnessStatements(
-                question=question, answer=text, sentences=sentences_with_index
-            ),
+            data=prompt_input,
             callbacks=callbacks,
         )
-        return statements_simplified
+
+        return statements
 
     def _compute_score(self, answers: NLIStatementOutput):
         # check the verdicts and compute the score
@@ -243,14 +205,10 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
         """
         assert self.llm is not None, "LLM is not set"
 
-        statements_simplified = await self._create_statements(row, callbacks)
-        if statements_simplified is None:
+        statements = await self._create_statements(row, callbacks)
+        statements = statements.statements
+        if statements == []:
             return np.nan
-
-        # unwrap the statements
-        statements = []
-        for component in statements_simplified.sentences:
-            statements.extend(component.simpler_statements)
 
         verdicts = await self._create_verdicts(row, statements, callbacks)
         return self._compute_score(verdicts)
@@ -298,14 +256,10 @@ class FaithfulnesswithHHEM(Faithfulness):
         """
         assert self.llm is not None, "LLM is not set"
 
-        statements_simplified = await self._create_statements(row, callbacks)
-        if len(statements_simplified.sentences) == 0:
+        statements = await self._create_statements(row, callbacks)
+        statements = statements.statements
+        if statements == []:
             return np.nan
-
-        statements = []
-        for components in statements_simplified.sentences:
-            statements.extend(components.simpler_statements)
-        assert isinstance(statements, t.List), "statements must be a list"
 
         scores = []
         pairs = self._create_pairs(row, statements)

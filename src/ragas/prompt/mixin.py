@@ -5,7 +5,6 @@ import logging
 import os
 import typing as t
 
-from .base import _check_if_language_is_supported
 from .pydantic_prompt import PydanticPrompt
 
 if t.TYPE_CHECKING:
@@ -111,7 +110,6 @@ class PromptMixin:
                 "Language not specified, loading prompts for default language: %s",
                 language,
             )
-        _check_if_language_is_supported(language)
 
         loaded_prompts = {}
         for prompt_name, prompt in self.get_prompts().items():

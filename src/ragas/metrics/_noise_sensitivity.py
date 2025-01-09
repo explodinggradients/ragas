@@ -8,18 +8,16 @@ import numpy as np
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics._faithfulness import (
-    FaithfulnessStatements,
-    HasSegmentMethod,
-    LongFormAnswerPrompt,
     NLIStatementInput,
     NLIStatementPrompt,
+    StatementGeneratorInput,
+    StatementGeneratorPrompt,
 )
 from ragas.metrics.base import (
     MetricOutputType,
     MetricType,
     MetricWithLLM,
     SingleTurnMetric,
-    get_segmenter,
 )
 from ragas.prompt import PydanticPrompt
 
@@ -45,15 +43,14 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
         }
     )
     output_type: t.Optional[MetricOutputType] = MetricOutputType.CONTINUOUS
-    nli_statements_message: PydanticPrompt = field(default_factory=NLIStatementPrompt)
-    statement_prompt: PydanticPrompt = field(default_factory=LongFormAnswerPrompt)
-    sentence_segmenter: t.Optional[HasSegmentMethod] = None
+    nli_statements_prompt: PydanticPrompt = field(default_factory=NLIStatementPrompt)
+    statement_generator_prompt: PydanticPrompt = field(
+        default_factory=StatementGeneratorPrompt
+    )
     max_retries: int = 1
 
     def __post_init__(self):
-        if self.sentence_segmenter is None:
-            language = self.nli_statements_message.language
-            self.sentence_segmenter = get_segmenter(language=language, clean=False)
+
         if self.focus not in {"relevant", "irrelevant"}:
             raise ValueError(
                 f"Invalid argument passed for 'focus': {self.focus}. Must be 'relevant' or 'irrelevant'."
@@ -65,7 +62,7 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
     ) -> t.List[int]:
         assert self.llm is not None, "LLM is not set"
 
-        verdicts = await self.nli_statements_message.generate(
+        verdicts = await self.nli_statements_prompt.generate(
             data=NLIStatementInput(context=context, statements=statements),
             llm=self.llm,
             callbacks=callbacks,
@@ -80,24 +77,13 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
         self, text: str, question: str, callbacks: Callbacks
     ) -> t.List[str]:
         assert self.llm is not None, "LLM is not set"
-        assert self.sentence_segmenter is not None, "sentence_segmenter is not set"
 
-        sentences = self.sentence_segmenter.segment(text)
-        sentences_with_index = {i: sentence for i, sentence in enumerate(sentences)}
-
-        statements_simplified = await self.statement_prompt.generate(
+        statements = await self.statement_generator_prompt.generate(
             llm=self.llm,
-            data=FaithfulnessStatements(
-                question=question, answer=text, sentences=sentences_with_index
-            ),
+            data=StatementGeneratorInput(question=question, answer=text),
             callbacks=callbacks,
         )
-
-        statements = []
-        if statements_simplified is None:
-            return statements
-        for component in statements_simplified.sentences:
-            statements.extend(component.simpler_statements)
+        statements = statements.statements
         return statements
 
     def _compute_score(self, answers: t.Dict) -> float:
