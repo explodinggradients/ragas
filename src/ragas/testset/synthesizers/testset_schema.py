@@ -16,7 +16,7 @@ from ragas.dataset_schema import (
     SingleTurnSample,
 )
 from ragas.exceptions import UploadException
-from ragas.sdk import upload_packet, get_app_url
+from ragas.sdk import get_app_url, upload_packet
 
 
 class TestsetSample(BaseSample):
