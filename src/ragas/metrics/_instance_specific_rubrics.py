@@ -38,13 +38,13 @@ class MultiTurnInputWithRubric(MultiTurnInputWithoutRubric):
 
 
 class SingleTurnPrompt(PydanticPrompt[SingleTurnInputWithRubric, ScoreFeedback]):
-    instruction = ""  # this will be set in the constructor
+    instruction = "Your task is to assign an appropriate score and provide feedback to the inputs based solely on the scoring criteria passed in the input."
     input_model = SingleTurnInputWithRubric
     output_model = ScoreFeedback
 
 
 class MultiTurnPrompt(PydanticPrompt[MultiTurnInputWithRubric, ScoreFeedback]):
-    instruction = ""  # this will be set in the constructor
+    instruction = "Your task is to assign an appropriate score and provide feedback to the inputs based solely on the scoring criteria passed in the input."
     input_model = MultiTurnInputWithRubric
     output_model = ScoreFeedback
 
