@@ -33,8 +33,8 @@ class BleuScore(SingleTurnMetric):
     ) -> float:
 
         reference, response = sample.reference, sample.response
-        assert isinstance(reference, str), "Expecting a string"
-        assert isinstance(response, str), "Expecting a string"
+        assert isinstance(reference, str), "BleuScore expects a valid reference string"
+        assert isinstance(response, str), "BleuScore expects a valid response string"
 
         reference_sentences = reference.split(". ")
         response_sentences = response.split(". ")
