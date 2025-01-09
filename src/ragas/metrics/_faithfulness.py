@@ -13,7 +13,6 @@ from ragas.metrics.base import (
     MetricType,
     MetricWithLLM,
     SingleTurnMetric,
-    get_segmenter,
 )
 from ragas.prompt import PydanticPrompt
 
@@ -153,13 +152,7 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
     statement_generator_prompt: PydanticPrompt = field(
         default_factory=StatementGeneratorPrompt
     )
-    sentence_segmenter: t.Optional[HasSegmentMethod] = None
     max_retries: int = 1
-
-    def __post_init__(self):
-        if self.sentence_segmenter is None:
-            language = self.nli_statements_prompt.language
-            self.sentence_segmenter = get_segmenter(language=language, clean=False)
 
     async def _create_verdicts(
         self, row: t.Dict, statements: t.List[str], callbacks: Callbacks
@@ -179,7 +172,6 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
         self, row: t.Dict, callbacks: Callbacks
     ) -> StatementGeneratorOutput:
         assert self.llm is not None, "llm is not set"
-        assert self.sentence_segmenter is not None, "sentence_segmenter is not set"
 
         text, question = row["response"], row["user_input"]
 
