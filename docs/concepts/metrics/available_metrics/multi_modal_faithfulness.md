@@ -7,7 +7,7 @@ The generated answer is regarded as faithful if all the claims made in the answe
 ### Example
 
 ```python
-from ragas.database_schema import SingleTurnSample 
+from ragas.dataset_schema import SingleTurnSample 
 from ragas.metrics import MultiModalFaithfulness
 
 sample = SingleTurnSample(

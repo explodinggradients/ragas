@@ -7,7 +7,7 @@ The generated answer is regarded as relevant if it aligns with the visual or tex
 ### Example
 
 ```python
-from ragas.database_schema import SingleTurnSample 
+from ragas.dataset_schema import SingleTurnSample 
 from ragas.metrics import MultiModalRelevance
 
 sample = SingleTurnSample(
