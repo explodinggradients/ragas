@@ -13,7 +13,6 @@ dependencies = [
     "appdirs",
     "pydantic>=2",
     "openai>1",
-    "pysbd>=0.3.4",
     "diskcache>=5.6.3",
 ]
 dynamic = ["version", "readme"]

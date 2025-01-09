@@ -11,15 +11,11 @@ from functools import lru_cache
 import numpy as np
 import tiktoken
 from datasets import Dataset
-from pysbd.languages import LANGUAGE_CODES
 
 if t.TYPE_CHECKING:
     from ragas.metrics.base import Metric
 
 DEBUG_ENV_VAR = "RAGAS_DEBUG"
-RAGAS_SUPPORTED_LANGUAGE_CODES = {
-    v.__name__.lower(): k for k, v in LANGUAGE_CODES.items()
-}
 
 
 @lru_cache(maxsize=1)

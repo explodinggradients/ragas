@@ -15,7 +15,7 @@ from ragas._version import __version__
 from ragas.callbacks import ChainType, new_group
 from ragas.exceptions import RagasOutputParserException
 
-from .base import BasePrompt, StringIO, _check_if_language_is_supported
+from .base import BasePrompt, StringIO
 from .utils import extract_json, get_all_strings, update_strings
 
 if t.TYPE_CHECKING:
@@ -226,9 +226,6 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         """
         Adapt the prompt to a new language.
         """
-
-        # throws ValueError if language is not supported
-        _check_if_language_is_supported(target_language)
 
         # set the original hash, this is used to
         # identify the original prompt object when loading from file
