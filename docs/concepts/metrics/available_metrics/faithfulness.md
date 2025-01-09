@@ -12,7 +12,7 @@ $$
 ### Example
 
 ```python
-from ragas.database_schema import SingleTurnSample 
+from ragas.dataset_schema import SingleTurnSample 
 from ragas.metrics import Faithfulness
 
 sample = SingleTurnSample(
@@ -32,7 +32,7 @@ await scorer.single_turn_ascore(sample)
 [Vectara's HHEM-2.1-Open](https://vectara.com/blog/hhem-2-1-a-better-hallucination-detection-model/) is a classifier model (T5) that is trained to detect hallucinations from LLM generated text. This model can be used in the second step of calculating faithfulness, i.e. when claims are cross-checked with the given context to determine if it can be inferred from the context. The model is free, small, and open-source, making it very efficient in production use cases. To use the model to calculate faithfulness, you can use the following code snippet:
 
 ```python
-from ragas.database_schema import SingleTurnSample 
+from ragas.dataset_schema import SingleTurnSample 
 from ragas.metrics import FaithfulnesswithHHEM
 
 
