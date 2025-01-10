@@ -146,7 +146,7 @@ To evauate our Q&A application we will use the following metrices.
 - `Faithfulness`: Assesses whether all claims in the generated answer can be inferred directly from the provided context.
 - `Factual Correctness`: Checks the factual accuracy of the generated response by comparing it with a reference, using claim-based evaluation and natural language inference.  
 
-For more details on these metrics and how they apply to evaluating RAG systems, visit [Ragas Metrics Documentation](/docs/concepts/metrics/available_metrics/).
+For more details on these metrics and how they apply to evaluating RAG systems, visit [Ragas Metrics Documentation](./../../concepts/metrics/available_metrics/).
 
 
 ```python

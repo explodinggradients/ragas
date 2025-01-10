@@ -203,7 +203,7 @@ To fix these results, ragas provides a way to align the metric with your prefere
 2. **Download**: Save the annotated data using the `Annotated JSON` button in [app.ragas.io](https://app.ragas.io/).
 3. **Train**: Use the annotated data to train your custom metric.
 
-To learn more about this, refer to how to [train your own metric guide](../howtos/customizations/metrics/train_your_own_metric.md)
+To learn more about this, refer to how to [train your own metric guide](./../howtos/customizations/metrics/train_your_own_metric.md)
 
 [Download sample annotated JSON](../_static/sample_annotated_summary.json)
 

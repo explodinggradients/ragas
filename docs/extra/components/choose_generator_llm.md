@@ -125,7 +125,7 @@
     generator_llm = LangchainLLMWrapper(your_llm_instance)
     ```
 
-    For a more detailed guide, checkout [the guide on customizing models](../../howtos/customizations/customize_models/).
+    For a more detailed guide, checkout [the guide on customizing models](../../howtos/customizations/customize_models.md).
 
     If you using LlamaIndex, you can use the `LlamaIndexLLMWrapper` to wrap your LLM so that it can be used with ragas.
 
@@ -134,6 +134,6 @@
     generator_llm = LlamaIndexLLMWrapper(your_llm_instance)
     ```
 
-    For more information on how to use LlamaIndex, please refer to the [LlamaIndex Integration guide](../../howtos/integrations/_llamaindex/).
+    For more information on how to use LlamaIndex, please refer to the [LlamaIndex Integration guide](./../../howtos/integrations/_llamaindex.md).
 
     If your still not able use Ragas with your favorite LLM provider, please let us know by by commenting on this [issue](https://github.com/explodinggradients/ragas/issues/1617) and we'll add support for it 🙂.

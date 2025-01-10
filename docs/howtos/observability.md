@@ -464,4 +464,4 @@ Evaluating:   0%|          | 0/15 [00:00<?, ?it/s]
 ```
 
 ### 4. LangSmith Dashboard
-![jpeg](../../_static/langsmith_dashboard.png)
+![jpeg](./../_static/langsmith_dashboard.png)

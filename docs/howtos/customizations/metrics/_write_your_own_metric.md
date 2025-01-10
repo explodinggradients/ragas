@@ -61,12 +61,10 @@ hallucinations_binary = AspectCritic(
 
 await hallucinations_binary.single_turn_ascore(eval_dataset[0])
 ```
-
-
-
-
-    0
-
+Output
+```
+0
+```
 
 
 ## Domain Specific Metrics or Rubric based Metrics
@@ -98,12 +96,10 @@ hallucinations_rubric = RubricsScore(
 
 await hallucinations_rubric.single_turn_ascore(eval_dataset[0])
 ```
-
-
-
-
-    3
-
+Output
+```
+3
+```
 
 
 ## Custom Metrics
@@ -173,11 +169,10 @@ hallucinations_metric = HallucinationsMetric(llm=evaluator_llm)
 await hallucinations_metric.single_turn_ascore(eval_dataset[0])
 ```
 
-
-
-
-    0.5
-
+Output
+```
+0.5
+```
 
 
 Now let's evaluate the entire dataset with the metrics we have created.
@@ -194,14 +189,11 @@ results = evaluate(
 
 
 ```python
-results
+
+Output
 ```
-
-
-
-
-    {'hallucinations_metric': 0.5932, 'hallucinations_rubric': 3.1500, 'hallucinations_binary': 0.1000}
-
+{'hallucinations_metric': 0.5932, 'hallucinations_rubric': 3.1500, 'hallucinations_binary': 0.1000}
+```
 
 
 
@@ -210,8 +202,7 @@ results_df = results.to_pandas()
 results_df.head()
 ```
 
-
-
+Output
 
 <div>
 <style scoped>

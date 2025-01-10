@@ -31,7 +31,7 @@ docs = loader.load()
 
 ### Choose your LLM
 
-You may choose to use any [LLM of your choice](../howtos/customizations/customize_models.md)
+You may choose to use any [LLM of your choice](./../howtos/customizations/customize_models.md)
 --8<--
 choose_generator_llm.md
 --8<--
@@ -58,7 +58,7 @@ dataset.to_pandas()
 Output
 ![testset](./testset_output.png)
 
-You can also use other tools like [app.ragas.io](https://app.ragas.io/) or any other similar tools available for you in the [Integrations](../howtos/integrations/index.md) section.
+You can also use other tools like [app.ragas.io](https://app.ragas.io/) or any other similar tools available for you in the [Integrations](./../howtos/integrations/index.md) section.
 
 In order to use the [app.ragas.io](https://app.ragas.io/) dashboard, you need to have an account on [app.ragas.io](https://app.ragas.io/). If you don't have one, you can sign up for one [here](https://app.ragas.io/login). You will also need to have a [Ragas APP token](https://app.ragas.io/settings/api-keys).
 

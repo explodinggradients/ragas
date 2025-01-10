@@ -43,7 +43,7 @@ for doc in docs:
 ```
 
 ### Set up the LLM and Embedding Model
-You may use any of [your choice](/docs/howtos/customizations/customize_models.md), here I am using models from open-ai.
+You may use any of [your choice](./../../customizations/customize_models.md), here I am using models from open-ai.
 
 
 ```python

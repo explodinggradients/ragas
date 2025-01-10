@@ -157,7 +157,7 @@ evaluation_dataset = EvaluationDataset.from_list(dataset)
 
 ## Evaluate
 
-We have successfully collected the evaluation data. Now, we can evaluate our RAG system on the collected dataset using a set of commonly used RAG evaluation metrics. You may choose any model as [evaluator LLM](/docs/howtos/customizations/customize_models.md) for evaluation. 
+We have successfully collected the evaluation data. Now, we can evaluate our RAG system on the collected dataset using a set of commonly used RAG evaluation metrics. You may choose any model as [evaluator LLM](./../howtos/customizations/customize_models.md) for evaluation. 
 
 ```python
 from ragas import evaluate

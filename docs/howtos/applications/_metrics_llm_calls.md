@@ -47,7 +47,7 @@ Output
 ```
 
 
-Each of these are [`MetricTrace`](ragas.callbacks.MetricTrace) objects that contain the following fields:
+Each of these are [`MetricTrace`][ragas.callbacks.MetricTrace] objects that contain the following fields:
 - The input to the prompt 
 - The output from the model
 
