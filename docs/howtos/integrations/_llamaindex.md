@@ -6,11 +6,11 @@ This guide assumes you have familarity with the LlamaIndex framework.
 
 ## Building the Testset
 
-You will need an testset to evaluate your `QueryEngine` against. You can either build one yourself or use the [Testset Generator Module](../../getstarted/testset_generation.md) in Ragas to get started with a small synthetic one.
+You will need an testset to evaluate your `QueryEngine` against. You can either build one yourself or use the [Testset Generator Module](./../../getstarted/rag_testset_generation.md) in Ragas to get started with a small synthetic one.
 
 Let's see how that works with Llamaindex
 
-# load the documents
+## load the documents
 
 
 ```python

@@ -24,12 +24,10 @@ from ragas.cost import get_token_usage_for_openai
 
 get_token_usage_for_openai(llm_result)
 ```
-
-
-
-
-    TokenUsage(input_tokens=9, output_tokens=9, model='')
-
+Output
+```
+TokenUsage(input_tokens=9, output_tokens=9, model='')
+```
 
 
 You can define your own or import parsers if they are defined. If you would like to suggest parser for LLM providers or contribute your own ones please check out this [issue](https://github.com/explodinggradients/ragas/issues/1151) 🙂.
@@ -47,9 +45,10 @@ dataset = load_dataset("explodinggradients/amnesty_qa", "english_v3")
 
 eval_dataset = EvaluationDataset.from_hf_dataset(dataset["eval"])
 ```
-
-    Repo card metadata block was not found. Setting CardData to empty.
-
+Output
+```
+Repo card metadata block was not found. Setting CardData to empty.
+```
 
 You can pass in the parser to the `evaluate()` function and the cost will be calculated and returned in the `Result` object.
 
@@ -67,21 +66,19 @@ result = evaluate(
     token_usage_parser=get_token_usage_for_openai,
 )
 ```
-
-
-    Evaluating:   0%|          | 0/20 [00:00<?, ?it/s]
-
+Output
+```
+Evaluating:   0%|          | 0/20 [00:00<?, ?it/s]
+```
 
 
 ```python
 result.total_tokens()
 ```
-
-
-
-
-    TokenUsage(input_tokens=25097, output_tokens=3757, model='')
-
+Output
+```
+TokenUsage(input_tokens=25097, output_tokens=3757, model='')
+```
 
 
 You can compute the cost for each run by passing in the cost per token to `Result.total_cost()` function.
@@ -93,11 +90,10 @@ In this case GPT-4o costs $5 for 1M input tokens and $15 for 1M output tokens.
 result.total_cost(cost_per_input_token=5 / 1e6, cost_per_output_token=15 / 1e6)
 ```
 
-
-
-
-    1.1692900000000002
-
+Output
+```
+1.1692900000000002
+```
 
 
 ## Token Usage for Testset Generation
@@ -116,10 +112,9 @@ kg = KnowledgeGraph.load("../../../experiments/scratchpad_kg.json")
 kg
 ```
 
-
-
-
-    KnowledgeGraph(nodes: 47, relationships: 109)
+Output
+```
+KnowledgeGraph(nodes: 47, relationships: 109)
 
 
 
@@ -145,9 +140,8 @@ testset = tg.generate(testset_size=10, token_usage_parser=get_token_usage_for_op
 testset.total_cost(cost_per_input_token=5 / 1e6, cost_per_output_token=15 / 1e6)
 ```
 
-
-
-
-    0.20967000000000002
-
+Output
+```
+0.20967000000000002
+```
 

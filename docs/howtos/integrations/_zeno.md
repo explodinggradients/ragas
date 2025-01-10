@@ -13,7 +13,7 @@ pip install zeno-client
 
 Next, create an account at [hub.zenoml.com](https://hub.zenoml.com) and generate an API key on your [account page](https://hub.zenoml.com/account).
 
-We can now pick up the evaluation where we left off at the [Getting Started](../../getstarted/evaluation.md) guide:
+We can now pick up the evaluation where we left off at the [Getting Started](./../../getstarted/index.md) guide:
 
 
 ```python

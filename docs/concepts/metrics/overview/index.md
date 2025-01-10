@@ -18,14 +18,14 @@ A metric is a quantitative measure used to evaluate the performance of a AI appl
 
 &nbsp;&nbsp;&nbsp;&nbsp; **LLM-based metrics**: These metrics use LLM underneath to do the evaluation. There might be one or more LLM calls that are performed to arrive at the score or result. These metrics can be somewhat non deterministic as the LLM might not always return the same result for the same input. On the other hand, these metrics has shown to be more accurate and closer to human evaluation.
 
-All LLM based metrics in ragas are inherited from `MetricWithLLM` class. These metrics expects a [LLM]() object to be set before scoring.
+All LLM based metrics in ragas are inherited from `MetricWithLLM` class. These metrics expects a LLM object to be set before scoring.
 
 ```python
 from ragas.metrics import FactualCorrectness
 scorer = FactualCorrectness(llm=evaluation_llm)
 ```
 
-Each LLM based metrics also will have prompts associated with it written using [Prompt Object]().
+Each LLM based metrics also will have prompts associated with it written using [Prompt Object](./../../components/prompt.md).
 
 
 &nbsp;&nbsp;&nbsp;&nbsp; **Non-LLM-based metrics**: These metrics do not use LLM underneath to do the evaluation. These metrics are deterministic and can be used to evaluate the performance of the AI application without using LLM. These metrics rely on traditional methods to evaluate the performance of the AI application, such as string similarity, BLEU score, etc. Due to the same, these metrics are known to have a lower correlation with human evaluation.
@@ -34,7 +34,7 @@ All LLM based metrics in ragas are inherited from `Metric` class.
 
 **Metrics can be broadly classified into two categories based on the type of data they evaluate**:
 
-&nbsp;&nbsp;&nbsp;&nbsp; **Single turn metrics**: These metrics evaluate the performance of the AI application based on a single turn of interaction between the user and the AI. All metrics in ragas that supports single turn evaluation are inherited from `SingleTurnMetric` class and scored using `single_turn_ascore` method. It also expects a [Single Turn Sample]() object as input.
+&nbsp;&nbsp;&nbsp;&nbsp; **Single turn metrics**: These metrics evaluate the performance of the AI application based on a single turn of interaction between the user and the AI. All metrics in ragas that supports single turn evaluation are inherited from [SingleTurnMetric][ragas.metrics.base.SingleTurnMetric] class and scored using `single_turn_ascore` method. It also expects a [Single Turn Sample][ragas.dataset_schema.SingleTurnSample] object as input.
 
 ```python
 from ragas.metrics import FactualCorrectness
@@ -43,7 +43,7 @@ scorer = FactualCorrectness()
 await scorer.single_turn_ascore(sample)
 ```
 
-&nbsp;&nbsp;&nbsp;&nbsp; **Multi-turn metrics**: These metrics evaluate the performance of the AI application based on multiple turns of interaction between the user and the AI. All metrics in ragas that supports multi turn evaluation are inherited from `MultiTurnMetric` class and scored using `multi_turn_ascore` method. It also expects a [Multi Turn Sample]() object as input.
+&nbsp;&nbsp;&nbsp;&nbsp; **Multi-turn metrics**: These metrics evaluate the performance of the AI application based on multiple turns of interaction between the user and the AI. All metrics in ragas that supports multi turn evaluation are inherited from [MultiTurnMetric][ragas.metrics.base.MultiTurnMetric] class and scored using `multi_turn_ascore` method. It also expects a [Multi Turn Sample][ragas.dataset_schema.MultiTurnSample] object as input.
 
 ```python
 from ragas.metrics import AgentGoalAccuracy

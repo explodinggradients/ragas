@@ -1,6 +1,6 @@
 While evaluating your LLM application with Ragas metrics, you may find yourself needing to create a custom metric. This guide will help you do just that. When building your custom metric with Ragas, you also benefit from features such as asynchronous processing, metric language adaptation, and aligning LLM metrics with human evaluators.
 
-It assumes that you are already familiar with the concepts of [Metrics](/concepts/metrics/overview/) and [Prompt Objects](/concepts/components/prompt) in Ragas. If not, please review those topics before proceeding.
+It assumes that you are already familiar with the concepts of [Metrics](/concepts/metrics/overview/index.md) and [Prompt Objects](/concepts/components/prompt.md) in Ragas. If not, please review those topics before proceeding.
 
 For the sake of this tutorial, let's build a custom metric that scores the refusal rate in applications. 
 

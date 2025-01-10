@@ -103,7 +103,7 @@ graph TD
 
 ### Extractors
 
-Different extractors are used to extract information from each nodes that can be used to establish the relationship between the nodes. For example, in the case of financial documents, the extractor that can be used are entity extractor to extract the entities like Company Name, Keyphrase extractor to extract important key phrases present in each node, etc. You can write your own [custom extractors]() to extract the information that is relevant to your domain.
+Different extractors are used to extract information from each nodes that can be used to establish the relationship between the nodes. For example, in the case of financial documents, the extractor that can be used are entity extractor to extract the entities like Company Name, Keyphrase extractor to extract important key phrases present in each node, etc. You can write your own custom extractors to extract the information that is relevant to your domain.
 
 Extractors can be LLM based which are inherited from `LLMBasedExtractor` or rule based which are inherited from `Extractor`.
 
@@ -165,6 +165,7 @@ graph TD
 
 The extracted information is used to establish the relationship between the nodes. For example, in the case of financial documents, the relationship can be established between the nodes based on the entities present in the nodes.
 You can write your own [custom relationship builder]() to establish the relationship between the nodes based on the information that is relevant to your domain.
+# Link missing above
 
 #### Example 
 

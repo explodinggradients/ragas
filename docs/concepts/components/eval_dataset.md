@@ -20,7 +20,7 @@ An evaluation dataset consists of:
 
 - **Define Clear Objectives**: Identify the specific aspects of the AI application that you want to evaluate and the scenarios you want to test. Collect data samples that reflect these objectives.
 
-- **Collect Representative Data**: Ensure that the dataset covers a diverse range of scenarios, user inputs, and expected responses to provide a comprehensive evaluation of the AI application. This can be achieved by collecting data from various sources or [generating synthetic data]().
+- **Collect Representative Data**: Ensure that the dataset covers a diverse range of scenarios, user inputs, and expected responses to provide a comprehensive evaluation of the AI application. This can be achieved by collecting data from various sources or [generating synthetic data](./../../howtos/customizations/index.md#testset-generation).
 
 - **Quality and Size**: Aim for a dataset that is large enough to provide meaningful insights but not so large that it becomes unwieldy. Ensure that the data is of high quality and accurately reflects the real-world scenarios you want to evaluate.
 

@@ -1,8 +1,12 @@
 # Create custom single-hop queries from your documents
 
 ### Load sample documents
-I am using documents from [gitlab handbook](https://huggingface.co/datasets/explodinggradients/Sample_Docs_Markdown). You can download it by running the below command.
+I am using documents from [sample of gitlab handbook](https://huggingface.co/datasets/explodinggradients/Sample_Docs_Markdown). You can download it by running the below command.
 
+```
+git clone https://huggingface.co/datasets/explodinggradients/Sample_Docs_Markdown
+
+```
 
 ```python
 from langchain_community.document_loaders import DirectoryLoader
@@ -36,13 +40,8 @@ for doc in docs:
     )
 ```
 
-    /opt/homebrew/Caskroom/miniforge/base/envs/ragas/lib/python3.9/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
-      from .autonotebook import tqdm as notebook_tqdm
-
-
 ### Set up the LLM and Embedding Model
-You may use any of [your choice](/docs/howtos/customizations/customize_models.md), here I am using models from open-ai.
-
+You may use any of [your choice](./../../customizations/customize_models.md), here I am using models from open-ai.
 
 ```python
 from ragas.llms.base import llm_factory
@@ -76,10 +75,7 @@ headline_splitter = HeadlineSplitter(min_tokens=300, max_tokens=1000)
 keyphrase_extractor = KeyphrasesExtractor(
     llm=llm, property_name="keyphrases", max_num=10
 )
-```
 
-
-```python
 transforms = [
     headline_extractor,
     headline_splitter,
@@ -89,18 +85,20 @@ transforms = [
 apply_transforms(kg, transforms=transforms)
 ```
 
-    Applying KeyphrasesExtractor:   6%| | 2/36 [00:01<00:20,  1Property 'keyphrases' already exists in node '514fdc'. Skipping!
-    Applying KeyphrasesExtractor:  11%| | 4/36 [00:01<00:10,  2Property 'keyphrases' already exists in node '84a0f6'. Skipping!
-    Applying KeyphrasesExtractor:  64%|▋| 23/36 [00:03<00:01,  Property 'keyphrases' already exists in node '93f19d'. Skipping!
-    Applying KeyphrasesExtractor:  72%|▋| 26/36 [00:04<00:00, 1Property 'keyphrases' already exists in node 'a126bf'. Skipping!
-    Applying KeyphrasesExtractor:  81%|▊| 29/36 [00:04<00:00,  Property 'keyphrases' already exists in node 'c230df'. Skipping!
-    Applying KeyphrasesExtractor:  89%|▉| 32/36 [00:04<00:00, 1Property 'keyphrases' already exists in node '4f2765'. Skipping!
-    Property 'keyphrases' already exists in node '4a4777'. Skipping!
-                                                               
+Output
+```
+Applying KeyphrasesExtractor:   6%| | 2/36 [00:01<00:20,  1Property 'keyphrases' already exists in node '514fdc'. Skipping!
+Applying KeyphrasesExtractor:  11%| | 4/36 [00:01<00:10,  2Property 'keyphrases' already exists in node '84a0f6'. Skipping!
+Applying KeyphrasesExtractor:  64%|▋| 23/36 [00:03<00:01,  Property 'keyphrases' already exists in node '93f19d'. Skipping!
+Applying KeyphrasesExtractor:  72%|▋| 26/36 [00:04<00:00, 1Property 'keyphrases' already exists in node 'a126bf'. Skipping!
+Applying KeyphrasesExtractor:  81%|▊| 29/36 [00:04<00:00,  Property 'keyphrases' already exists in node 'c230df'. Skipping!
+Applying KeyphrasesExtractor:  89%|▉| 32/36 [00:04<00:00, 1Property 'keyphrases' already exists in node '4f2765'. Skipping!
+Property 'keyphrases' already exists in node '4a4777'. Skipping!
+```                                                               
 
 ### Configure personas
 
-You can also do this automatically by using the [automatic persona generator](/docs/howtos/customizations/testgenerator/_persona_generator.md)
+You can also do this automatically by using the [automatic persona generator](./_persona_generator.md)
 
 
 ```python
@@ -178,35 +176,24 @@ class MySingleHopScenario(SingleHopQuerySynthesizer):
             )
 
         return scenarios
-```
 
-
-```python
 query = MySingleHopScenario(llm=llm)
-```
 
-
-```python
 scenarios = await query.generate_scenarios(
     n=5, knowledge_graph=kg, persona_list=persona_list
 )
-```
 
-
-```python
 scenarios[0]
 ```
-
-
-
-
-    SingleHopScenario(
-    nodes=1
-    term=what is an ally
-    persona=name='Hiring manager at gitlab' role_description='A hiring manager at gitlab trying to underestand hiring policies in gitlab'
-    style=Web search like queries
-    length=long)
-
+Output
+```
+SingleHopScenario(
+nodes=1
+term=what is an ally
+persona=name='Hiring manager at gitlab' role_description='A hiring manager at gitlab trying to underestand hiring policies in gitlab'
+style=Web search like queries
+length=long)
+```
 
 
 
@@ -235,10 +222,6 @@ to the query. Do not add any information not included in or inferable from the c
 prompt = query.get_prompts()["generate_query_reference_prompt"]
 prompt.instruction = instruction
 query.set_prompts(**{"generate_query_reference_prompt": prompt})
-```
-
-
-```python
 result = await query.generate_sample(scenario=scenarios[-1])
 ```
 
@@ -246,27 +229,15 @@ result = await query.generate_sample(scenario=scenarios[-1])
 ```python
 result.user_input
 ```
-
-
-
-
-    'Does the Diversity, Inclusion & Belonging (DIB) Team at GitLab have a structured approach to encourage collaborations among team members through various communication methods?'
-
-
-
+Output
+```
+'Does the Diversity, Inclusion & Belonging (DIB) Team at GitLab have a structured approach to encourage collaborations among team members through various communication methods?'
+```
 
 ```python
 result.reference
 ```
-
-
-
-
-    'Yes'
-
-
-
-
-```python
-
+Output
+```
+'Yes'
 ```

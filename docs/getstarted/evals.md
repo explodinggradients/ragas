@@ -7,7 +7,7 @@ The purpose of this guide is to illustrate a simple workflow for testing and eva
 
 In this guide, you will evaluate a **text summarization pipeline**. The goal is to ensure that the output summary accurately captures all the key details specified in the text, such as growth figures, market insights, and other essential information.
 
-`ragas` offers a variety of methods for analyzing the performance of LLM applications, referred to as [metrics](../concepts/metrics/). Each metric requires a predefined set of data points, which it uses to calculate scores that indicate performance.
+`ragas` offers a variety of methods for analyzing the performance of LLM applications, referred to as [metrics](../concepts/metrics/available_metrics/index.md). Each metric requires a predefined set of data points, which it uses to calculate scores that indicate performance.
 
 ### Evaluating using a Non-LLM Metric
 
@@ -203,7 +203,7 @@ To fix these results, ragas provides a way to align the metric with your prefere
 2. **Download**: Save the annotated data using the `Annotated JSON` button in [app.ragas.io](https://app.ragas.io/).
 3. **Train**: Use the annotated data to train your custom metric.
 
-To learn more about this, refer to how to [train your own metric guide](../howtos/customizations/metrics/train_your_own_metric.md)
+To learn more about this, refer to how to [train your own metric guide](./../howtos/customizations/metrics/train_your_own_metric.md)
 
 [Download sample annotated JSON](../_static/sample_annotated_summary.json)
 

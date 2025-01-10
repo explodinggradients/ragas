@@ -31,7 +31,7 @@ docs = loader.load()
 
 ### Choose your LLM
 
-You may choose to use any [LLM of your choice](../howtos/customizations/customize_models.md)
+You may choose to use any [LLM of your choice](./../howtos/customizations/customize_models.md)
 --8<--
 choose_generator_llm.md
 --8<--
@@ -55,9 +55,10 @@ Once you have generated a testset, you would want to view it and select the quer
 dataset.to_pandas()
 ```
 
+Output
 ![testset](./testset_output.png)
 
-You can also use other tools like [app.ragas.io](https://app.ragas.io/) or any other similar tools available for you in the [Integrations](../howtos/integrations/index.md) section.
+You can also use other tools like [app.ragas.io](https://app.ragas.io/) or any other similar tools available for you in the [Integrations](./../howtos/integrations/index.md) section.
 
 In order to use the [app.ragas.io](https://app.ragas.io/) dashboard, you need to have an account on [app.ragas.io](https://app.ragas.io/). If you don't have one, you can sign up for one [here](https://app.ragas.io/login). You will also need to have a [Ragas APP token](https://app.ragas.io/settings/api-keys).
 
@@ -93,6 +94,7 @@ from ragas.testset.graph import KnowledgeGraph
 
 kg = KnowledgeGraph()
 ```
+Output
 ```
 KnowledgeGraph(nodes: 0, relationships: 0)
 ```
@@ -110,6 +112,7 @@ for doc in docs:
         )
     )
 ```
+Output
 ```
 KnowledgeGraph(nodes: 10, relationships: 0)
 ```
@@ -137,6 +140,8 @@ kg.save("knowledge_graph.json")
 loaded_kg = KnowledgeGraph.load("knowledge_graph.json")
 loaded_kg
 ```
+
+Output
 ```
 KnowledgeGraph(nodes: 48, relationships: 605)
 ```
@@ -158,11 +163,13 @@ from ragas.testset.synthesizers import default_query_distribution
 
 query_distribution = default_query_distribution(generator_llm)
 ```
+
+Output
 ```
 [
-        (SingleHopSpecificQuerySynthesizer(llm=llm), 0.5),
-        (MultiHopAbstractQuerySynthesizer(llm=llm), 0.25),
-        (MultiHopSpecificQuerySynthesizer(llm=llm), 0.25),
+    (SingleHopSpecificQuerySynthesizer(llm=llm), 0.5),
+    (MultiHopAbstractQuerySynthesizer(llm=llm), 0.25),
+    (MultiHopSpecificQuerySynthesizer(llm=llm), 0.25),
 ]
 ```
 
@@ -172,5 +179,5 @@ Now we can generate the testset.
 testset = generator.generate(testset_size=10, query_distribution=query_distribution)
 testset.to_pandas()
 ```
-
+Output
 ![testset](./testset_output.png)
