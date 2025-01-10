@@ -5,7 +5,7 @@ The `RunConfig` allows you to pass in the run parameters to functions like `eval
 How to configure the `RunConfig` in
 
 - [Evaluate](#evaluate)
-- [TestsetGenerator]()
+- [TestsetGenerator][ragas.testset.generator.TestsetGenerator]
 
 ## Rate Limits
 

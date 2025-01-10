@@ -7,7 +7,7 @@ The purpose of this guide is to illustrate a simple workflow for testing and eva
 
 In this guide, you will evaluate a **text summarization pipeline**. The goal is to ensure that the output summary accurately captures all the key details specified in the text, such as growth figures, market insights, and other essential information.
 
-`ragas` offers a variety of methods for analyzing the performance of LLM applications, referred to as [metrics](../concepts/metrics/). Each metric requires a predefined set of data points, which it uses to calculate scores that indicate performance.
+`ragas` offers a variety of methods for analyzing the performance of LLM applications, referred to as [metrics](../concepts/metrics/available_metrics/index.md). Each metric requires a predefined set of data points, which it uses to calculate scores that indicate performance.
 
 ### Evaluating using a Non-LLM Metric
 
