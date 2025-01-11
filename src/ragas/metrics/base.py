@@ -2,27 +2,33 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import nltk
 import typing as t
+
 from abc import ABC, abstractmethod
 from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
 
 from pydantic import ValidationError
+from pysbd import Segmenter
+
 from tqdm import tqdm
 
 from ragas._analytics import EvaluationEvent, _analytics_batcher
 from ragas.callbacks import ChainType, new_group
-from ragas.dataset_schema import (
-    MetricAnnotation,
-    MultiTurnSample,
-    SingleTurnSample,
-)
+from ragas.dataset_schema import MetricAnnotation, MultiTurnSample, SingleTurnSample
 from ragas.executor import is_event_loop_running
 from ragas.losses import BinaryMetricLoss, MSELoss
 from ragas.prompt import FewShotPydanticPrompt, PromptMixin
 from ragas.run_config import RunConfig
-from ragas.utils import camel_to_snake, deprecated, get_metric_language
+from ragas.utils import (
+    RAGAS_SUPPORTED_LANGUAGE_CODES,
+    RAGAS_SUPPORTED_LANGUAGE_CODES_PYSBD,
+    camel_to_snake,
+    deprecated,
+    get_metric_language,
+)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -348,8 +354,7 @@ class MetricWithLLM(Metric, PromptMixin):
 
     def train(
         self,
-        path: t.Optional[str] = None,
-        run_id: t.Optional[str] = None,
+        path: str,
         demonstration_config: t.Optional[DemonstrationConfig] = None,
         instruction_config: t.Optional[InstructionConfig] = None,
         callbacks: t.Optional[Callbacks] = None,
@@ -358,57 +363,13 @@ class MetricWithLLM(Metric, PromptMixin):
         with_debugging_logs=False,
         raise_exceptions: bool = True,
     ) -> None:
-        """
-        Train the metric using local JSON data or annotations from Ragas platform
-
-        Parameters
-        ----------
-        path : str, optional
-            Path to local JSON training data file
-        run_id : str, optional
-            Direct run ID to fetch annotations
-        demonstration_config : DemonstrationConfig, optional
-            Configuration for demonstration optimization
-        instruction_config : InstructionConfig, optional
-            Configuration for instruction optimization
-        callbacks : Callbacks, optional
-            List of callback functions
-        run_config : RunConfig, optional
-            Run configuration
-        batch_size : int, optional
-            Batch size for training
-        with_debugging_logs : bool, default=False
-            Enable debugging logs
-        raise_exceptions : bool, default=True
-            Whether to raise exceptions during training
-
-        Raises
-        ------
-        ValueError
-            If invalid combination of path, and run_id is provided
-        """
-        # Validate input parameters
-        provided_inputs = sum(x is not None for x in [path, run_id])
-        if provided_inputs == 0:
-            raise ValueError("One of path or run_id must be provided")
-        if provided_inputs > 1:
-            raise ValueError("Only one of path or run_id should be provided")
-
         run_config = run_config or RunConfig()
         callbacks = callbacks or []
 
-        # Load the dataset based on input type
-        if path is not None:
-            if not path.endswith(".json"):
-                raise ValueError("Train data must be in json format")
-            dataset = MetricAnnotation.from_json(path, metric_name=self.name)
-        elif run_id is not None:
-            dataset = MetricAnnotation.from_app(
-                run_id=run_id,
-                metric_name=self.name,
-            )
-        else:
-            raise ValueError("One of path or run_id must be provided")
+        # load the dataset from path
+        if not path.endswith(".json"):
+            raise ValueError("Train data must be in json format")
+        dataset = MetricAnnotation.from_json(path, metric_name=self.name)
 
         # only optimize the instruction if instruction_config is provided
         if instruction_config is not None:
@@ -737,4 +698,70 @@ class Ensember:
         return verdict_agg
 
 
+def get_segmenter(
+    language: str = "english", clean: bool = False, char_span: bool = False
+):
+    """
+    Get a sentence segmenter for a given language
+    """
+    language = language.lower()
+    if language not in RAGAS_SUPPORTED_LANGUAGE_CODES:
+        raise ValueError(
+            f"Language '{language}' not supported. Supported languages: {RAGAS_SUPPORTED_LANGUAGE_CODES.keys()}"
+        )
+    
+    if language in RAGAS_SUPPORTED_LANGUAGE_CODES_PYSBD:
+            return Segmenter(
+            language=RAGAS_SUPPORTED_LANGUAGE_CODES_PYSBD[language],
+            clean=clean,
+            char_span=char_span,
+        )
+    else:
+        nltk.download('punkt_tab')
+        return NLTKSegmenter(language=language, char_span=char_span)
+
+
 ensembler = Ensember()
+
+
+class NLTKSegmenter:
+    def __init__(self, language: str = "english", char_span: bool = False, clean: bool = False):
+        self.language = language.lower()
+        self.char_span = char_span
+        self.clean = clean
+
+    def sentences_with_char_spans(self, sentences):
+        sent_spans = []
+        prior_end_char_idx = 0
+        for sent in sentences:
+            for match in re.finditer('{0}\s*'.format(re.escape(sent)), self.original_text):
+                match_str = match.group()
+                match_start_idx, match_end_idx = match.span()
+                if match_end_idx > prior_end_char_idx:
+                    sent_spans.append(
+                        TextSpan(match_str, match_start_idx, match_end_idx))
+                    prior_end_char_idx = match_end_idx
+                    break
+        return sent_spans
+    
+    def cleaner(self, text):
+        return Cleaner(text, self.language_module)
+        
+    def segment(self, text):
+        self.original_text = text
+        if not text:
+            return []
+
+        if self.clean:
+            text = self.cleaner(text).clean()
+
+        postprocessed_sents = nltk.tokenize.sent_tokenize(text, language=self.language)
+        sentence_w_char_spans = self.sentences_with_char_spans(postprocessed_sents)
+        if self.char_span:
+            return sentence_w_char_spans
+        elif self.clean:
+            # clean and destructed sentences
+            return postprocessed_sents
+        else:
+            # nondestructive with whitespaces
+            return [textspan.sent for textspan in sentence_w_char_spans]
