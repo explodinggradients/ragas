@@ -38,6 +38,7 @@ scorer.llm = openai_model
 await scorer.single_turn_ascore(sample)
 ```
 
+
 ## Calculation
 
 Critics are essentially basic LLM calls using the defined criteria. For example, let's see how the harmfulness critic works:

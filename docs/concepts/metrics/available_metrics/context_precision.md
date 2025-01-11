@@ -25,7 +25,7 @@ The following metrics uses LLM to identify if a retrieved context is relevant or
 from ragas import SingleTurnSample
 from ragas.metrics import LLMContextPrecisionWithoutReference
 
-context_precision = LLMContextPrecisionWithoutReference()
+context_precision = LLMContextPrecisionWithoutReference(llm=evaluator_llm)
 
 sample = SingleTurnSample(
     user_input="Where is the Eiffel Tower located?",
@@ -35,6 +35,10 @@ sample = SingleTurnSample(
 
 
 await context_precision.single_turn_ascore(sample)
+```
+Output
+```
+0.9999999999
 ```
 
 ### Context Precision with reference
@@ -47,7 +51,7 @@ await context_precision.single_turn_ascore(sample)
 from ragas import SingleTurnSample
 from ragas.metrics import LLMContextPrecisionWithReference
 
-context_precision = LLMContextPrecisionWithReference()
+context_precision = LLMContextPrecisionWithReference(llm=evaluator_llm)
 
 sample = SingleTurnSample(
     user_input="Where is the Eiffel Tower located?",
@@ -56,6 +60,10 @@ sample = SingleTurnSample(
 )
 
 await context_precision.single_turn_ascore(sample)
+```
+Output
+```
+0.9999999999
 ```
 
 ## Non LLM Based Context Precision
@@ -80,4 +88,8 @@ sample = SingleTurnSample(
 )
 
 await context_precision.single_turn_ascore(sample)
+```
+Output
+```
+0.9999999999
 ```

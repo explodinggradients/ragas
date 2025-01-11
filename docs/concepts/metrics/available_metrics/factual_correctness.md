@@ -42,15 +42,22 @@ sample = SingleTurnSample(
     reference="The Eiffel Tower is located in Paris. I has a height of 1000ft."
 )
 
-scorer = FactualCorrectness()
-scorer.llm = openai_model
+scorer = FactualCorrectness(llm = evaluator_llm)
 await scorer.single_turn_ascore(sample)
+```
+Output
+```
+0.67
 ```
 
 By default, the mode is set to `F1`, you can change the mode to `precision` or `recall` by setting the `mode` parameter.
 
 ```python
-scorer = FactualCorrectness(mode="precision")
+scorer = FactualCorrectness(llm = evaluator_llm, mode="precision")
+```
+Output
+```
+1.0
 ```
 
 ### Controlling the Number of Claims
@@ -62,6 +69,10 @@ Each sentence in the response and reference can be broken down into one or more 
 
 ```python
 scorer = FactualCorrectness(mode="precision",atomicity="low")
+```
+Output
+```
+1.0
 ```
 
 

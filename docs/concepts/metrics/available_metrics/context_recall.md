@@ -29,9 +29,13 @@ sample = SingleTurnSample(
     retrieved_contexts=["Paris is the capital of France."], 
 )
 
-context_recall = LLMContextRecall()
+context_recall = LLMContextRecall(llm=evaluator_llm)
 await context_recall.single_turn_ascore(sample)
 
+```
+Output
+```
+1.0
 ```
 
 ## Non LLM Based Context Recall
@@ -61,4 +65,8 @@ context_recall = NonLLMContextRecall()
 await context_recall.single_turn_ascore(sample)
 
 
+```
+Output
+```
+0.5
 ```

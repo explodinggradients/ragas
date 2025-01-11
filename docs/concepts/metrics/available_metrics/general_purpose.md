@@ -26,6 +26,10 @@ scorer =  AspectCritic(
     )
 await scorer.single_turn_ascore(sample)
 ```
+Output
+```
+0
+```
 
 ### How it works
 
@@ -53,7 +57,7 @@ from ragas.metrics import SimpleCriteriaScore
 
 
 sample = SingleTurnSample(
-    user_input="Where is the Eiffel Tower loc
+    user_input="Where is the Eiffel Tower located?",
     response="The Eiffel Tower is located in Paris.",
     reference="The Eiffel Tower is located in Egypt"
 )
@@ -65,6 +69,10 @@ scorer =  SimpleCriteriaScore(
 )
 
 await scorer.single_turn_ascore(sample)
+```
+Output
+```
+0
 ```
 
 ## Rubrics based criteria scoring

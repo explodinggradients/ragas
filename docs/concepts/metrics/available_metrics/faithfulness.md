@@ -27,8 +27,12 @@ sample = SingleTurnSample(
             "The First AFL–NFL World Championship Game was an American football game played on January 15, 1967, at the Los Angeles Memorial Coliseum in Los Angeles."
         ]
     )
-scorer = Faithfulness()
+scorer = Faithfulness(llm=evaluator_llm)
 await scorer.single_turn_ascore(sample)
+```
+Output
+```
+1.0
 ```
 
 
@@ -48,7 +52,7 @@ sample = SingleTurnSample(
             "The First AFL–NFL World Championship Game was an American football game played on January 15, 1967, at the Los Angeles Memorial Coliseum in Los Angeles."
         ]
     )
-scorer = FaithfulnesswithHHEM()
+scorer = FaithfulnesswithHHEM(llm=evaluator_llm)
 await scorer.single_turn_ascore(sample)
 
 ```

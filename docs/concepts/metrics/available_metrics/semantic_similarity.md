@@ -10,17 +10,20 @@ Measuring the semantic similarity between answers can offer valuable insights in
 ```python
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics import SemanticSimilarity
-
+from ragas.embeddings import LangchainEmbeddingsWrapper
 
 sample = SingleTurnSample(
     response="The Eiffel Tower is located in Paris.",
     reference="The Eiffel Tower is located in Paris. It has a height of 1000ft."
 )
 
-scorer = SemanticSimilarity()
-scorer.embeddings = embedding_model
+scorer = SemanticSimilarity(embeddings=LangchainEmbeddingsWrapper(evaluator_embedding))
 await scorer.single_turn_ascore(sample)
 
+```
+Output
+```
+0.8151371879226978
 ```
 
 ### How It’s Calculated 

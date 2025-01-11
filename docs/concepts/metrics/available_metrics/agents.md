@@ -52,17 +52,24 @@ AIMessage(content="I found a great recipe for chocolate cake! Would you like the
 
 
 sample = MultiTurnSample(user_input=sample_input_4, reference_topics=["science"])
-scorer = TopicAdherenceScore(mode="precision")
-scorer.llm = openai_model
+scorer = TopicAdherenceScore(llm = evaluator_llm, mode="precision")
 await scorer.multi_turn_ascore(sample)
+```
+Output
+```
+0.6666666666444444
 ```
 
 
 To change the mode to recall, set the `mode` parameter to `recall`.
 
 ```python
-scorer = TopicAdherenceScore(mode="recall")
+scorer = TopicAdherenceScore(llm = evaluator_llm, mode="recall")
 ```  
+Output
+```
+0.99999999995
+```
 
 
 
@@ -96,9 +103,12 @@ sample = MultiTurnSample(
     ]
 )
 
-scorer = ToolCallAccuracy()
-scorer.llm = your_llm
+scorer = ToolCallAccuracy(llm = evaluator_llm)
 await scorer.multi_turn_ascore(sample)
+```
+Output
+```
+1.0
 ```
 
 The tool call sequence specified in `reference_tool_calls` is used as the ideal outcome. If the tool calls made by the AI does not match the order or sequence of the `reference_tool_calls`, the metric will return a score of 0. This helps to ensure that the AI is able to identify and call the required tools in the correct order to complete a given task.
@@ -109,7 +119,7 @@ By default the tool names and arguments are compared using exact string matching
 from ragas.metrics._string import NonLLMStringSimilarity
 from ragas.metrics._tool_call_accuracy import ToolCallAccuracy
 
-metric = ToolCallAccuracy()
+metric = ToolCallAccuracy(llm = evaluator_llm)
 metric.arg_comparison_metric = NonLLMStringSimilarity()
 ```
 
@@ -146,10 +156,13 @@ sample = MultiTurnSample(user_input=[
 ],
     reference="Table booked at one of the chinese restaurants at 8 pm")
 
-scorer = AgentGoalAccuracyWithReference()
-scorer.llm = your_llm
+scorer = AgentGoalAccuracyWithReference(llm = evaluator_llm)
 await scorer.multi_turn_ascore(sample)
 
+```
+Output
+```
+1.0
 ```
 
 ### Without reference
@@ -181,7 +194,11 @@ sample = MultiTurnSample(user_input=[
     HumanMessage(content="thanks"),
 ])
 
-scorer = AgentGoalAccuracyWithoutReference()
-await metric.multi_turn_ascore(sample)
+scorer = AgentGoalAccuracyWithoutReference(llm = evaluator_llm)
+await scorer.multi_turn_ascore(sample)
 
+```
+Output
+```
+1.0
 ```

@@ -39,8 +39,12 @@ sample = SingleTurnSample(
         ]
     )
 
-scorer = ResponseRelevancy()
+scorer = ResponseRelevancy(llm=evaluator_llm, embeddings=evaluator_embedding)
 await scorer.single_turn_ascore(sample)
+```
+Output
+```
+0.9165088378587264
 ```
 
 ### How It’s Calculated

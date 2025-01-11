@@ -25,9 +25,13 @@ sample = SingleTurnSample(
     retrieved_contexts=["The Eiffel Tower is located in Paris."], 
 )
 
-scorer = ContextEntityRecall()
+scorer = ContextEntityRecall(llm=evaluator_llm)
 
 await scorer.single_turn_ascore(sample)
+```
+Output
+```
+0.999999995
 ```
 
 ### How It’s Calculated
