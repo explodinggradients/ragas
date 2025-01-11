@@ -6,17 +6,27 @@ import os
 import re
 import typing as t
 import warnings
+import nltk
 from functools import lru_cache
 
 import numpy as np
 import tiktoken
 from datasets import Dataset
+from pysbd.languages import LANGUAGE_CODES
 
 if t.TYPE_CHECKING:
     from ragas.metrics.base import Metric
 
 DEBUG_ENV_VAR = "RAGAS_DEBUG"
 
+RAGAS_SUPPORTED_LANGUAGE_CODES_PYSBD = {
+    v.__name__.lower(): k for k, v in LANGUAGE_CODES.items()
+}
+
+RAGAS_SUPPORTED_LANGUAGE_CODES = {
+    **RAGAS_SUPPORTED_LANGUAGE_CODES_PYSBD,
+    "portuguese": "pt",
+}
 
 @lru_cache(maxsize=1)
 def get_cache_dir() -> str:
