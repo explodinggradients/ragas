@@ -328,13 +328,13 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         }
         if os.path.exists(file_path):
             raise FileExistsError(f"The file '{file_path}' already exists.")
-        with open(file_path, "w") as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
             print(f"Prompt saved to {file_path}")
 
     @classmethod
     def load(cls, file_path: str) -> "PydanticPrompt[InputModel, OutputModel]":
-        with open(file_path, "r") as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         # You might want to add version compatibility checks here
