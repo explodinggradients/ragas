@@ -260,6 +260,7 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
         tp = sum(reference_response)
         fp = sum(~reference_response)
         if self.mode != "precision":
+            response_reference = np.array(response_reference, dtype=bool)
             fn = sum(~response_reference)
         else:
             fn = 0
