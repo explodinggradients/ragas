@@ -6,7 +6,6 @@ import os
 import re
 import typing as t
 import warnings
-import nltk
 from functools import lru_cache
 
 import numpy as np
