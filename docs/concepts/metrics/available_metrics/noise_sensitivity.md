@@ -29,8 +29,12 @@ sample = SingleTurnSample(
     ]
 )
 
-scorer = NoiseSensitivity()
+scorer = NoiseSensitivity(llm=evaluator_llm)
 await scorer.single_turn_ascore(sample)
+```
+Output
+```
+0.3333333333333333
 ```
 
 To calculate noise sensivity of irrelevant context, you can set the `focus` parameter to `irrelevant`.

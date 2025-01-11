@@ -17,6 +17,10 @@ sample = SingleTurnSample(
 scorer = NonLLMStringSimilarity()
 await scorer.single_turn_ascore(sample)
 ```
+Output
+```
+0.8918918918918919
+```
 
 One can choose from available string distance measures from `DistanceMeasure`. Here is an example of using Hamming distance.
 
@@ -44,6 +48,10 @@ sample = SingleTurnSample(
 scorer = BleuScore()
 await scorer.single_turn_ascore(sample)
 ```
+Output
+```
+0.7071067811865478
+```
 
 
 ## ROUGE Score
@@ -61,6 +69,10 @@ sample = SingleTurnSample(
 
 scorer = RougeScore()
 await scorer.single_turn_ascore(sample)
+```
+Output
+```
+0.8571428571428571
 ```
 
 You can change the `rouge_type` to `rouge-1`, `rouge-2`, or `rouge-l` to calculate the ROUGE score based on unigrams, bigrams, or longest common subsequence respectively.
@@ -90,6 +102,10 @@ sample = SingleTurnSample(
 scorer = ExactMatch()
 await scorer.single_turn_ascore(sample)
 ```
+Output
+```
+0.0
+```
 
 ## String Presence
 The `StringPresence` metric checks if the response contains the reference text. It is useful in scenarios where you need to ensure that the generated response contains certain keywords or phrases. The metric returns 1 if the response contains the reference, and 0 otherwise.
@@ -104,4 +120,8 @@ sample = SingleTurnSample(
 )
 scorer = StringPresence()
 await scorer.single_turn_ascore(sample)
+```
+Output
+```
+1.0
 ```

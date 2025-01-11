@@ -1,27 +1,29 @@
 ## Response Relevancy
 
-`ResponseRelevancy` metric focuses on assessing how pertinent the generated answer is to the given prompt. A lower score is assigned to answers that are incomplete or contain redundant information and higher scores indicate better relevancy. This metric is computed using the `user_input`, the `retrived_contexts` and the `response`. 
+The `ResponseRelevancy` metric measures how relevant a response is to the user input. Higher scores indicate better alignment with the user input, while lower scores are given if the response is incomplete or includes redundant information.  
 
-The Answer Relevancy is defined as the mean cosine similarity of the original `user_input` to a number of artificial questions, which where generated (reverse engineered) based on the `response`: 
+This metric is calculated using the `user_input` and the `response` as follows:  
+
+1. Generate a set of artificial questions (default is 3) based on the response. These questions are designed to reflect the content of the response.  
+2. Compute the cosine similarity between the embedding of the user input ($E_o$) and the embedding of each generated question ($E_{g_i}$).  
+3. Take the average of these cosine similarity scores to get the **Answer Relevancy**:  
 
 $$
-\text{answer relevancy} = \frac{1}{N} \sum_{i=1}^{N} cos(E_{g_i}, E_o)
-$$
+\text{Answer Relevancy} = \frac{1}{N} \sum_{i=1}^{N} \text{cosine similarity}(E_{g_i}, E_o)
+$$  
 
 $$
-\text{answer relevancy} = \frac{1}{N} \sum_{i=1}^{N} \frac{E_{g_i} \cdot E_o}{\|E_{g_i}\|\|E_o\|}
-$$
+\text{Answer Relevancy} = \frac{1}{N} \sum_{i=1}^{N} \frac{E_{g_i} \cdot E_o}{\|E_{g_i}\| \|E_o\|}
+$$  
 
-Where: 
+Where:  
+- $E_{g_i}$: Embedding of the $i^{th}$ generated question.  
+- $E_o$: Embedding of the user input.  
+- $N$: Number of generated questions (default is 3).  
 
-* $E_{g_i}$ is the embedding of the generated question $i$.
-* $E_o$ is the embedding of the original question.
-* $N$ is the number of generated questions, which is 3 default.
+**Note**: While the score usually falls between 0 and 1, it is not guaranteed due to cosine similarity's mathematical range of -1 to 1.
 
-Please note, that even though in practice the score will range between 0 and 1 most of the time, this is not mathematically guaranteed, due to the nature of the cosine similarity ranging from -1 to 1.
-
-An answer is deemed relevant when it directly and appropriately addresses the original question. Importantly, our assessment of answer relevance does not consider factuality but instead penalizes cases where the answer lacks completeness or contains redundant details. To calculate this score, the LLM is prompted to generate an appropriate question for the generated answer multiple times, and the mean cosine similarity between these generated questions and the original question is measured. The underlying idea is that if the generated answer accurately addresses the initial question, the LLM should be able to generate questions from the answer that align with the original question.
-
+An answer is considered relevant if it directly and appropriately addresses the original question. This metric focuses on how well the answer matches the intent of the question, without evaluating factual accuracy. It penalizes answers that are incomplete or include unnecessary details.
 
 ### Example
 
@@ -37,8 +39,12 @@ sample = SingleTurnSample(
         ]
     )
 
-scorer = ResponseRelevancy()
+scorer = ResponseRelevancy(llm=evaluator_llm, embeddings=evaluator_embedding)
 await scorer.single_turn_ascore(sample)
+```
+Output
+```
+0.9165088378587264
 ```
 
 ### How It’s Calculated

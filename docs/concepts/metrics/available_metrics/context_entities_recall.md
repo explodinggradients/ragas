@@ -2,10 +2,15 @@
 
 `ContextEntityRecall` metric gives the measure of recall of the retrieved context, based on the number of entities present in both `reference` and `retrieved_contexts` relative to the number of entities present in the `reference` alone. Simply put, it is a measure of what fraction of entities are recalled from `reference`. This metric is useful in fact-based use cases like tourism help desk, historical QA, etc. This metric can help evaluate the retrieval mechanism for entities, based on comparison with entities present in `reference`, because in cases where entities matter, we need the `retrieved_contexts` which cover them.
 
-To compute this metric, we use two sets, $GE$ and $CE$, as set of entities present in `reference` and set of entities present in `retrieved_contexts` respectively. We then take the number of elements in intersection of these sets and divide it by the number of elements present in the $GE$, given by the formula:
+To compute this metric, we use two sets:  
+
+- **$RE$**: The set of entities in the reference.  
+- **$RCE$**: The set of entities in the retrieved contexts.  
+
+We calculate the number of entities common to both sets ($RCE \cap RE$) and divide it by the total number of entities in the reference ($RE$). The formula is:  
 
 $$
-\text{context entity recall} = \frac{| CE \cap GE |}{| GE |}
+\text{Context Entity Recall} = \frac{\text{Number of common entities between $RCE$ and $RE$}}{\text{Total number of entities in $RE$}}
 $$
 
 
@@ -20,9 +25,13 @@ sample = SingleTurnSample(
     retrieved_contexts=["The Eiffel Tower is located in Paris."], 
 )
 
-scorer = ContextEntityRecall()
+scorer = ContextEntityRecall(llm=evaluator_llm)
 
 await scorer.single_turn_ascore(sample)
+```
+Output
+```
+0.999999995
 ```
 
 ### How It’s Calculated
@@ -34,25 +43,25 @@ await scorer.single_turn_ascore(sample)
     **High entity recall context**: The Taj Mahal is a symbol of love and architectural marvel located in Agra, India. It was built by the Mughal emperor Shah Jahan in memory of his beloved wife, Mumtaz Mahal. The structure is renowned for its intricate marble work and beautiful gardens surrounding it.
     **Low entity recall context**: The Taj Mahal is an iconic monument in India. It is a UNESCO World Heritage Site and attracts millions of visitors annually. The intricate carvings and stunning architecture make it a must-visit destination.
 
-Let us consider the ground truth and the contexts given above.
+Let us consider the refrence and the retrieved contexts given above.
 
-- **Step-1**: Find entities present in the ground truths.
-    - Entities in ground truth (GE) - ['Taj Mahal', 'Yamuna', 'Agra', '1631', 'Shah Jahan', 'Mumtaz Mahal']
-- **Step-2**: Find entities present in the context.
-    - Entities in context (CE1) - ['Taj Mahal', 'Agra', 'Shah Jahan', 'Mumtaz Mahal', 'India']
-    - Entities in context (CE2) - ['Taj Mahal', 'UNESCO', 'India']
+- **Step-1**: Find entities present in the refrence.
+    - Entities in ground truth (RE) - ['Taj Mahal', 'Yamuna', 'Agra', '1631', 'Shah Jahan', 'Mumtaz Mahal']
+- **Step-2**: Find entities present in the retrieved contexts.
+    - Entities in context (RCE1) - ['Taj Mahal', 'Agra', 'Shah Jahan', 'Mumtaz Mahal', 'India']
+    - Entities in context (RCE2) - ['Taj Mahal', 'UNESCO', 'India']
 - **Step-3**: Use the formula given above to calculate entity-recall
     
     $$
-    \text{context entity recall 1} = \frac{| CE1 \cap GE |}{| GE |}
+    \text{context entity recall 1} = \frac{| RCE1 \cap RE |}{| RE |}
                                  = 4/6
                                  = 0.666
     $$
 
     $$
-    \text{context entity recall 2} = \frac{| CE2 \cap GE |}{| GE |}
+    \text{context entity recall 2} = \frac{| RCE2 \cap RE |}{| RE |}
                                  = 1/6
     $$
 
-    We can see that the first context had a high entity recall, because it has a better entity coverage given the ground truth. If these two contexts were fetched by two retrieval mechanisms on same set of documents, we could say that the first mechanism was better than the other in use-cases where entities are of importance.
+    We can see that the first context had a high entity recall, because it has a better entity coverage given the refrence. If these two retrieved contexts were fetched by two retrieval mechanisms on same set of documents, we could say that the first mechanism was better than the other in use-cases where entities are of importance.
 

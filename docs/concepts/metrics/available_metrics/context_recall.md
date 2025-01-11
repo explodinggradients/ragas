@@ -13,7 +13,7 @@ In short, recall is about not missing anything important. Since it is about not 
 The formula for calculating context recall is as follows:
 
 $$
-\text{context recall} = {|\text{GT claims that can be attributed to context}| \over |\text{Number of claims in GT}|}
+\text{Context Recall} = \frac{\text{Number of claims in the reference supported by the retrieved context}}{\text{Total number of claims in the reference}}
 $$
 
 ### Example
@@ -29,9 +29,13 @@ sample = SingleTurnSample(
     retrieved_contexts=["Paris is the capital of France."], 
 )
 
-context_recall = LLMContextRecall()
+context_recall = LLMContextRecall(llm=evaluator_llm)
 await context_recall.single_turn_ascore(sample)
 
+```
+Output
+```
+1.0
 ```
 
 ## Non LLM Based Context Recall
@@ -61,4 +65,8 @@ context_recall = NonLLMContextRecall()
 await context_recall.single_turn_ascore(sample)
 
 
+```
+Output
+```
+0.5
 ```
