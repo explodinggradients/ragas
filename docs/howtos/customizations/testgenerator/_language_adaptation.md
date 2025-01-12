@@ -43,7 +43,7 @@ len(docs)
 
 
 
-### Intialize required models
+### Initialize required models
 
 
 ```python
@@ -83,7 +83,7 @@ from ragas.testset.transforms.splitters import HeadlineSplitter
 transforms = [HeadlineSplitter(), NERExtractor()]
 ```
 
-### Intialize test generator
+### Initialize test generator
 
 
 ```python
