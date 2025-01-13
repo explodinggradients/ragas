@@ -13,11 +13,7 @@ from tqdm import tqdm
 
 from ragas._analytics import EvaluationEvent, _analytics_batcher
 from ragas.callbacks import ChainType, new_group
-from ragas.dataset_schema import (
-    MetricAnnotation,
-    MultiTurnSample,
-    SingleTurnSample,
-)
+from ragas.dataset_schema import MetricAnnotation, MultiTurnSample, SingleTurnSample
 from ragas.executor import is_event_loop_running
 from ragas.losses import BinaryMetricLoss, MSELoss
 from ragas.prompt import FewShotPydanticPrompt, PromptMixin
