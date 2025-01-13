@@ -14,12 +14,7 @@ In this tutorial, we will create an intelligent customer support agent using [sw
 - Managing product returns
 - Providing order tracking information.
 
-
-In this tutorial, we will be building an intelligent customer support agent and then we will be evaluating the agents usign the ragas agent evaluation metrices, The agent that can handle specific types of customer requests in a structured and efficient manner. The agent will focus on two main tasks: 
-- Managing product returns
-- Providing order tracking information.  
-
-For product returns, the agent will collect essential details from the customer, such as the order ID and the reason for the return. It will then determine whether the return meets predefined eligibility criteria. If the return is eligible, the agent will guide the customer through the necessary steps to complete the process. If the return is not eligible, the agent will explain the reasons clearly and professionally, ensuring the customer understands the decision.
+For product returns, the agent will collect details from the customer about their order ID and the reason for the return. It will then determine whether the return meets predefined eligibility criteria. If the return is eligible, the agent will guide the customer through the necessary steps to complete the process. If the return is not eligible, the agent will explain the reasons clearly.
 
 For order tracking, the agent will retrieve the current status of the customer’s order and provide a friendly and detailed update. 
 
@@ -27,7 +22,7 @@ Throughout the interaction, the agent will adhere strictly to the outlined proce
 
 ### Setting Up the Agents
 
-To build our customer support agent, we will use a modular design with three specialized agents, each responsible for a specific part of the customer service workflow.  
+To build the customer support agent, we will use a modular design with three specialized agents, each responsible for a specific part of the customer service workflow.  
 
 Each agent will follow a set of instructions, called routines, to handle customer requests. A routine is essentially a step-by-step guide written in natural language that helps the agent complete tasks like processing a return or tracking an order. These routines ensure that the agent follows a clear and consistent process for every task.  
 
@@ -35,7 +30,7 @@ If you want to learn more about routines and how they shape agent behavior, chec
 
 #### Triage Agent
 
-The Triage Agent is the first point of contact for all customer requests. Its main job is to understand the customer’s inquiry and direct it to the right specialized agent. By analyzing the customer’s message, the Triage Agent determines whether the query is about an order, a return, or something else. Based on this assessment, it connects the request to either the Tracker Agent or the Return Agent.
+The Triage Agent is the first point of contact for all customer requests. Its main job is to understand the customer’s inquiry and determines whether the query is about an order, a return, or something else. Based on this assessment, it connects the request to either the Tracker Agent or the Return Agent.
 
 
 ```python
@@ -54,7 +49,7 @@ triage_agent = Agent(name="Triage Agent", instructions=TRIAGE_PROMPT)
 
 #### Tracker Agent
 
-The Tracker Agent is responsible for handling order tracking requests. When a customer asks about the status of their order, the Triage Agent forwards the query to the Tracker Agent. The Tracker Agent retrieves the latest order status, shares a clear and positive update with the customer, and ensures the customer has no further questions before closing the case.
+The Tracker Agent retrieves the order status, shares a clear and positive update with the customer, and ensures the customer has no further questions before closing the case.
 
 
 ```python
@@ -67,12 +62,12 @@ tracker_agent = Agent(name="Tracker Agent", instructions=TRACKER_AGENT_INSTRUCTI
 
 #### Return Agent
 
-The Return Agent is responsible for handling product return requests. When a customer wants to return a product, the Triage Agent directs the request to the Return Agent. The Return Agent follows a structured routine to ensure the process is handled smoothly, using specific tools (`valid_to_return`, `initiate_return`, and `case_resolved`) at key steps.  
+The Return Agent is responsible for handling product return requests. The Return Agent follows a structured routine to ensure the process is handled smoothly, using specific tools (`valid_to_return`, `initiate_return`, and `case_resolved`) at key steps.  
 
 The routine works as follows:  
 
 1. **Ask for Order ID**:  
-   The agent collects and validates the customer’s order ID to proceed.  
+   The agent collects the customer’s order ID to proceed.  
 
 2. **Ask for Return Reason**:  
    The agent asks the customer for the reason for the return. It then checks whether the reason matches a predefined list of acceptable return reasons.  
@@ -155,6 +150,7 @@ def transfer_to_tracker_agnet():
 
 ### Defining Tools
 
+In this section, we will define the tools for the agents. Internally, in Swarm, each function is converted into its corresponding schema before being passed to the LLM.
 
 ```python
 from datetime import datetime, timedelta
