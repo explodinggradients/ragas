@@ -1,11 +1,10 @@
-from typing import Dict, List, Union
-from ragas.messages import HumanMessage, AIMessage, ToolCall, ToolMessage
-from swarm.types import Response
 import json
+from typing import Any, Dict, List, Union
+from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 
 
 def convert_to_ragas_messages(
-    messages: List[Union[Response, Dict]]
+    messages: List[Dict[str, Any]],
 ) -> List[Union[HumanMessage, AIMessage, ToolMessage]]:
     """
     Convert Swarm messages to Ragas message format.
@@ -31,7 +30,7 @@ def convert_to_ragas_messages(
         If a message is missing the required 'role' key
     """
 
-    def convert_tool_calls(tool_calls_data: List[Dict]) -> List[ToolCall]:
+    def convert_tool_calls(tool_calls_data: List[Dict[str, Any]]) -> List[ToolCall]:
         """Convert tool calls data to Ragas ToolCall objects"""
         return [
             ToolCall(
@@ -41,7 +40,7 @@ def convert_to_ragas_messages(
             for tool_call in tool_calls_data
         ]
 
-    def handle_assistant_message(message: Dict) -> AIMessage:
+    def handle_assistant_message(message: Dict[str, Any]) -> AIMessage:
         """Convert assistant message to Ragas AIMessage"""
         tool_calls = (
             convert_tool_calls(message["tool_calls"]) if message["tool_calls"] else []
@@ -52,11 +51,11 @@ def convert_to_ragas_messages(
             tool_calls=tool_calls,
         )
 
-    def handle_tool_message(message: Dict) -> ToolMessage:
+    def handle_tool_message(message: Dict[str, str]) -> ToolMessage:
         """Convert tool message to Ragas ToolMessage"""
         return ToolMessage(content=message["content"])
 
-    def handle_user_message(message: Dict) -> HumanMessage:
+    def handle_user_message(message: Dict[str, str]) -> HumanMessage:
         """Convert user message to Ragas HumanMessage"""
         return HumanMessage(content=message["content"])
 
