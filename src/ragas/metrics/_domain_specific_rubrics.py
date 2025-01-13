@@ -113,7 +113,9 @@ class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         }
 
         # Add rubrics to the scoring prompts
-        rubrics_text = "\n".join(f"{key}: {value}" for key, value in self.rubrics.items())
+        rubrics_text = "\n".join(
+            f"{key}: {value}" for key, value in self.rubrics.items()
+        )
         self.single_turn_scoring_prompt.instruction = f"{self.single_turn_scoring_prompt.instruction}\n\nScoring Rubrics:\n{rubrics_text}\n"
         self.multi_turn_scoring_prompt.instruction = f"{self.multi_turn_scoring_prompt.instruction}\n\nScoring Rubrics:\n{rubrics_text}\n"
 

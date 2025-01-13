@@ -13,21 +13,21 @@ import requests
 from datasets import Dataset as HFDataset
 from pydantic import BaseModel, field_validator
 
+from ragas._version import __version__
 from ragas.callbacks import ChainRunEncoder, parse_run_traces
 from ragas.cost import CostCallbackHandler
 from ragas.exceptions import UploadException
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 from ragas.sdk import (
-    upload_packet,
     RAGAS_API_SOURCE,
-    get_app_token,
-    check_api_response,
     build_evaluation_app_url,
+    check_api_response,
     get_api_url,
+    get_app_token,
     get_app_url,
+    upload_packet,
 )
 from ragas.utils import safe_nanmean
-from ragas._version import __version__
 
 if t.TYPE_CHECKING:
     from pathlib import Path
