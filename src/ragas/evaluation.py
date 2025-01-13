@@ -58,6 +58,7 @@ def evaluate(
     metrics: t.Optional[t.Sequence[Metric]] = None,
     llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
     embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
+    experiment_name: t.Optional[str] = None,
     callbacks: Callbacks = None,
     run_config: t.Optional[RunConfig] = None,
     token_usage_parser: t.Optional[TokenUsageParser] = None,
@@ -87,6 +88,8 @@ def evaluate(
         The embeddings to use for the metrics. If not provided then ragas will use
         the default embeddings for metrics which require embeddings. This can we overridden by the embeddings specified in
         the metric level with `metric.embeddings`.
+    experiment_name: str, optional
+        The name of the experiment to track. This is used to track the evaluation in the tracing tools.
     callbacks: Callbacks, optional
         Lifecycle Langchain Callbacks to run during evaluation. Check the
         [langchain documentation](https://python.langchain.com/docs/modules/callbacks/)
@@ -246,7 +249,7 @@ def evaluate(
     # new evaluation chain
     row_run_managers = []
     evaluation_rm, evaluation_group_cm = new_group(
-        name=RAGAS_EVALUATION_CHAIN_NAME,
+        name=experiment_name or RAGAS_EVALUATION_CHAIN_NAME,
         inputs={},
         callbacks=callbacks,
         metadata={"type": ChainType.EVALUATION},
