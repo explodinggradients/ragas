@@ -103,6 +103,7 @@ nav:
           - LangGraph: howtos/integrations/_langgraph_agent_evaluation.md
           - LangSmith: howtos/integrations/langsmith.md
           - LlamaIndex: howtos/integrations/_llamaindex.md
+          - Swarm: howtos/integrations/swarm_agent_evaluation.md
       - Migrations:
           - From v0.1 to v0.2: howtos/migrations/migrate_from_v01_to_v02.md
   - 📖 References: 
