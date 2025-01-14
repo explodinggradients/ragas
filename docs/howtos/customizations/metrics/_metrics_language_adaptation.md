@@ -35,18 +35,6 @@ from ragas.llms import llm_factory
 llm = llm_factory()
 ```
 
-To view the supported language codes
-
-
-```python
-from ragas.utils import RAGAS_SUPPORTED_LANGUAGE_CODES
-
-print(list(RAGAS_SUPPORTED_LANGUAGE_CODES.keys()))
-```
-
-    ['english', 'hindi', 'marathi', 'chinese', 'spanish', 'amharic', 'arabic', 'armenian', 'bulgarian', 'urdu', 'russian', 'polish', 'persian', 'dutch', 'danish', 'french', 'burmese', 'greek', 'italian', 'japanese', 'deutsch', 'kazakh', 'slovak']
-
-
 Now let's adapt it to 'hindi' as the target language using `adapt` method.
 Language adaptation in Ragas works by translating few shot examples given along with the prompts to the target language. Instructions remains in english. 
 
