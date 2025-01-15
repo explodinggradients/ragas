@@ -119,9 +119,10 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
         )
 
     async def _generate_sample(
-        self, scenario: SingleHopScenario, callbacks: Callbacks
+        self, scenario: Scenario, callbacks: Callbacks
     ) -> SingleTurnSample:
-
+        if not isinstance(scenario, SingleHopScenario):
+            logger.warning('scenario type should be SingleHopScenario')
         reference_context = scenario.nodes[0].properties.get("page_content", "")
         prompt_input = QueryCondition(
             persona=scenario.persona,
