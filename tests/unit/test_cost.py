@@ -6,6 +6,7 @@ from ragas.cost import (
     CostCallbackHandler,
     TokenUsage,
     get_token_usage_for_anthropic,
+    get_token_usage_for_bedrock,
     get_token_usage_for_openai,
 )
 
@@ -62,7 +63,7 @@ openai_llm_result = LLMResult(
     },
 )
 
-athropic_llm_result = LLMResult(
+anthropic_llm_result = LLMResult(
     generations=[
         [
             ChatGeneration(
@@ -82,6 +83,52 @@ athropic_llm_result = LLMResult(
     llm_output={},
 )
 
+bedrock_llama_result = LLMResult(
+    generations=[
+        [
+            ChatGeneration(
+                text="Hello, world!",
+                message=AIMessage(
+                    content="Hello, world!",
+                    response_metadata={
+                        "usage": {
+                            "prompt_tokens": 10,
+                            "completion_tokens": 10,
+                            "total_tokens": 20,
+                        },
+                        "stop_reason": "stop",
+                        "model_id": "us.meta.llama3-1-70b-instruct-v1:0",
+                    },
+                ),
+            )
+        ]
+    ],
+    llm_output={},
+)
+
+bedrock_claude_result = LLMResult(
+    generations=[
+        [
+            ChatGeneration(
+                text="Hello, world!",
+                message=AIMessage(
+                    content="Hello, world!",
+                    response_metadata={
+                        "usage": {
+                            "prompt_tokens": 10,
+                            "completion_tokens": 10,
+                            "total_tokens": 20,
+                        },
+                        "stop_reason": "end_turn",
+                        "model_id": "us.anthropic.claude-3-5-sonnet-20240620-v1:0",
+                    },
+                ),
+            )
+        ]
+    ],
+    llm_output={},
+)
+
 
 def test_parse_llm_results():
     # openai
@@ -89,8 +136,16 @@ def test_parse_llm_results():
     assert token_usage == TokenUsage(input_tokens=10, output_tokens=10)
 
     # anthropic
-    token_usage = get_token_usage_for_anthropic(athropic_llm_result)
+    token_usage = get_token_usage_for_anthropic(anthropic_llm_result)
     assert token_usage == TokenUsage(input_tokens=9, output_tokens=12)
+
+    # Bedrock LLaMa
+    token_usage = get_token_usage_for_bedrock(bedrock_llama_result)
+    assert token_usage == TokenUsage(input_tokens=10, output_tokens=10)
+
+    # Bedrock Claude
+    token_usage = get_token_usage_for_bedrock(bedrock_claude_result)
+    assert token_usage == TokenUsage(input_tokens=10, output_tokens=10)
 
 
 def test_cost_callback_handler():
