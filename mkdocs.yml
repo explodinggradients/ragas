@@ -1,4 +1,5 @@
 site_name: Ragas
+site_url: !ENV READTHEDOCS_CANONICAL_URL
 repo_name: explodinggradients/ragas
 repo_url: https://github.com/explodinggradients/ragas
 watch:
