@@ -394,7 +394,7 @@ class RagasOutputParser(PydanticOutputParser[OutputModel]):
         llm: BaseRagasLLM,
         callbacks: Callbacks,
         retries_left: int = 1,
-    ):
+    ) -> OutputModel:
         callbacks = callbacks or []
         try:
             jsonstr = extract_json(output_string)
@@ -416,7 +416,7 @@ class RagasOutputParser(PydanticOutputParser[OutputModel]):
                     retries_left=retries_left - 1,
                 )
                 retry_rm.on_chain_end({"fixed_output_string": fixed_output_string})
-                result = fixed_output_string
+                result = super().parse(fixed_output_string.text)
             else:
                 raise RagasOutputParserException()
         return result
