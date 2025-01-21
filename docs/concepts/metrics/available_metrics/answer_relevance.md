@@ -39,7 +39,7 @@ sample = SingleTurnSample(
         ]
     )
 
-scorer = ResponseRelevancy(llm=evaluator_llm, embeddings=evaluator_embedding)
+scorer = ResponseRelevancy(llm=evaluator_llm, embeddings=evaluator_embeddings)
 await scorer.single_turn_ascore(sample)
 ```
 Output
