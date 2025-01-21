@@ -68,11 +68,11 @@ Output
 
 ## Non LLM Based Context Precision
 
-The following metrics uses traditional methods to identify if a retrieved context is relevant or not. You can use any non LLM based metrics as distance measure to identify if a retrieved context is relevant or not.
+This metric uses traditional methods to determine whether a retrieved context is relevant. It relies on non-LLM-based metrics as a distance measure to evaluate the relevance of retrieved contexts.
 
 ### Context Precision with reference contexts
 
-`NonLLMContextPrecisionWithReference` metric is can be used when you have both retrieved contexts and also reference contexts associated with a `user_input`. To estimate if a retrieved contexts is relevant or not this method uses the LLM to compare each of the retrieved context or chunk present in `retrieved_contexts` with each ones present in `reference_contexts`. 
+The `NonLLMContextPrecisionWithReference` metric is designed for scenarios where both retrieved contexts and reference contexts are available for a `user_input`. To determine if a retrieved context is relevant, this method compares each retrieved context or chunk in `retrieved_context`s with every context in `reference_contexts` using a non-LLM-based similarity measure.
 
 #### Example
     
