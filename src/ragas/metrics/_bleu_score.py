@@ -15,6 +15,7 @@ class BleuScore(SingleTurnMetric):
         default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
     )
     language: str = "english"
+    use_effective_order: bool=False
 
     def __post_init__(self):
         try:
