@@ -15,6 +15,7 @@ class BleuScore(SingleTurnMetric):
         default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
     )
     language: str = "english"
+    kwargs: t.Dict[str, t.Any] = field(default_factory=dict)
 
     def __post_init__(self):
         try:
@@ -41,7 +42,7 @@ class BleuScore(SingleTurnMetric):
 
         reference = [[reference] for reference in reference_sentences]
         response = response_sentences
-        score = self.corpus_bleu(response, reference).score / 100
+        score = self.corpus_bleu(response, reference, **self.kwargs).score / 100
         assert isinstance(score, float), "Expecting a float"
         return score
 
