@@ -161,7 +161,7 @@ class MultiHopQuerySynthesizer(BaseSynthesizer[Scenario]):
         self, scenario: Scenario, callbacks: Callbacks
     ) -> SingleTurnSample:
         if not isinstance(scenario, MultiHopScenario):
-            raise TypeError('scenario type should be MultiHopScenario')
+            raise TypeError("scenario type should be MultiHopScenario")
         reference_context = self.make_contexts(scenario)
         prompt_input = QueryConditions(
             persona=scenario.persona,
