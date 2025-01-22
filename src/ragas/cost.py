@@ -100,6 +100,33 @@ def get_token_usage_for_anthropic(
         return TokenUsage(input_tokens=0, output_tokens=0)
 
 
+def get_token_usage_for_bedrock(
+    llm_result: t.Union[LLMResult, ChatResult],
+) -> TokenUsage:
+    token_usages = []
+    for gs in llm_result.generations:
+        for g in gs:
+            if isinstance(g, ChatGeneration):
+                if g.message.response_metadata != {}:
+                    token_usages.append(
+                        TokenUsage(
+                            input_tokens=get_from_dict(
+                                g.message.response_metadata,
+                                "usage.prompt_tokens",
+                                0,
+                            ),
+                            output_tokens=get_from_dict(
+                                g.message.response_metadata,
+                                "usage.completion_tokens",
+                                0,
+                            ),
+                        )
+                    )
+
+        return sum(token_usages, TokenUsage(input_tokens=0, output_tokens=0))
+    return TokenUsage(input_tokens=0, output_tokens=0)
+
+
 class CostCallbackHandler(BaseCallbackHandler):
     def __init__(self, token_usage_parser: TokenUsageParser):
         self.token_usage_parser = token_usage_parser

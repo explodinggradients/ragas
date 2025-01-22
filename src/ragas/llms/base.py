@@ -182,7 +182,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
                 elif resp_message.response_metadata.get("stop_reason") is not None:
                     stop_reason = resp_message.response_metadata.get("stop_reason")
                     is_finished_list.append(
-                        stop_reason in ["end_turn", "STOP", "MAX_TOKENS"]
+                        stop_reason in ["end_turn", "stop", "STOP", "MAX_TOKENS"]
                     )
             # default to True
             else:

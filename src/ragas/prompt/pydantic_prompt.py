@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import logging
 import os
-import hashlib
-
 import typing as t
 
 from langchain_core.exceptions import OutputParserException
@@ -228,7 +227,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         """
         Adapt the prompt to a new language.
         """
-        
+
         strings = get_all_strings(self.examples)
         translated_strings = await translate_statements_prompt.generate(
             llm=llm,
@@ -275,7 +274,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             ensure_ascii=False,
         )[1:-1]
         return f"{self.__class__.__name__}({json_str})"
-        
+
     def __hash__(self):
         # convert examples to json string for hashing
         examples = []
@@ -284,23 +283,23 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             examples.append(
                 (input_model.model_dump_json(), output_model.model_dump_json())
             )
-    
+
         # create a SHA-256 hash object
         hasher = hashlib.sha256()
-    
+
         # update the hash object with the bytes of each attribute
-        hasher.update(self.name.encode('utf-8'))
-        hasher.update(self.input_model.__name__.encode('utf-8'))
-        hasher.update(self.output_model.__name__.encode('utf-8'))
-        hasher.update(self.instruction.encode('utf-8'))
+        hasher.update(self.name.encode("utf-8"))
+        hasher.update(self.input_model.__name__.encode("utf-8"))
+        hasher.update(self.output_model.__name__.encode("utf-8"))
+        hasher.update(self.instruction.encode("utf-8"))
         for example in examples:
-            hasher.update(example[0].encode('utf-8'))
-            hasher.update(example[1].encode('utf-8'))
-        hasher.update(self.language.encode('utf-8'))
-    
+            hasher.update(example[0].encode("utf-8"))
+            hasher.update(example[1].encode("utf-8"))
+        hasher.update(self.language.encode("utf-8"))
+
         # return the integer value of the hash
         return int(hasher.hexdigest(), 16)
-    
+
     def __eq__(self, other):
         if not isinstance(other, PydanticPrompt):
             return False
@@ -395,7 +394,7 @@ class RagasOutputParser(PydanticOutputParser[OutputModel]):
         llm: BaseRagasLLM,
         callbacks: Callbacks,
         retries_left: int = 1,
-    ):
+    ) -> OutputModel:
         callbacks = callbacks or []
         try:
             jsonstr = extract_json(output_string)
@@ -417,7 +416,7 @@ class RagasOutputParser(PydanticOutputParser[OutputModel]):
                     retries_left=retries_left - 1,
                 )
                 retry_rm.on_chain_end({"fixed_output_string": fixed_output_string})
-                result = fixed_output_string
+                result = super().parse(fixed_output_string.text)
             else:
                 raise RagasOutputParserException()
         return result
