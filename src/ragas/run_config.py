@@ -23,7 +23,7 @@ class RunConfig:
     Parameters
     ----------
     timeout : int, optional
-        Maximum time (in seconds) to wait for a single operation, by default 60.
+        Maximum time (in seconds) to wait for a single operation, by default 180.
     max_retries : int, optional
         Maximum number of retry attempts, by default 10.
     max_wait : int, optional
