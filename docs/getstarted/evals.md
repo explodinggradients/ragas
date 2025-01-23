@@ -137,6 +137,8 @@ Total samples in dataset: 50
 Evaluate using dataset
 
 ```python
+from ragas import evaluate
+
 results = evaluate(eval_dataset, metrics=[metric])
 results
 ```
