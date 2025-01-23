@@ -48,17 +48,21 @@ Second is that [`metrics.ascore`][ragas.metrics.base.Metric.ascore] is now being
 ```python
 # create a Single Turn Sample
 from ragas import SingleTurnSample
+
 sample = SingleTurnSample(
-	user_input="user query",
-	response="response from your pipeline"
+    user_input="user query", 
+    response="response from your pipeline",
+    retrieved_contexts=["retrieved", "contexts", "from your pipeline" ]
 )
 
 # Init the metric
 from ragas.metrics import Faithfulness
 faithfulness_metric = Faithfulness(llm=your_evaluator_llm)
-score = faithfulness.single_turn_ascore(sample=sample)
-print(score)
-# 0.9
+await faithfulness_metric.single_turn_ascore(sample)
+```
+Output
+```
+1
 ```
 
 ## Testset Generation
