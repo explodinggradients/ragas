@@ -65,7 +65,9 @@ class SemanticSimilarity(MetricWithEmbeddings, SingleTurnMetric):
         return await self._ascore(row, callbacks)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        assert self.embeddings is not None, "embeddings must be set"
+        assert (
+            self.embeddings is not None
+        ), f"Error: '{self.name}' requires embeddings to be set."
 
         ground_truth = t.cast(str, row["reference"])
         answer = t.cast(str, row["response"])

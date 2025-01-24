@@ -95,7 +95,9 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     strictness: int = 3
 
     def calculate_similarity(self, question: str, generated_questions: list[str]):
-        assert self.embeddings is not None
+        assert (
+            self.embeddings is not None
+        ), f"Error: '{self.name}' requires embeddings to be set."
         question_vec = np.asarray(self.embeddings.embed_query(question)).reshape(1, -1)
         gen_question_vec = np.asarray(
             self.embeddings.embed_documents(generated_questions)
