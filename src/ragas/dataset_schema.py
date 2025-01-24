@@ -188,9 +188,10 @@ class RagasDataset(ABC, t.Generic[Sample]):
         if len(samples) == 0:
             return samples
 
-        first_sample_type = type(self.samples[0])
-        if not all(isinstance(sample, first_sample_type) for sample in self.samples):
-            raise ValueError("All samples must be of the same type")
+        first_sample_type = type(samples[0])
+        for i, sample in enumerate(samples):
+            if not isinstance(sample, first_sample_type):
+                raise ValueError(f"Sample at index {i} is of type {type(sample)}, expected {first_sample_type}")
 
         return samples
 
