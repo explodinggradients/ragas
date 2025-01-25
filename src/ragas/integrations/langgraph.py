@@ -7,7 +7,7 @@ import ragas.messages as r
 
 
 def convert_to_ragas_messages(
-    messages: List[Union[HumanMessage, SystemMessage, AIMessage, ToolMessage]]
+    messages: List[Union[HumanMessage, SystemMessage, AIMessage, ToolMessage]], metadata: bool = False
 ) -> List[Union[r.HumanMessage, r.AIMessage, r.ToolMessage]]:
     """
     Convert LangChain messages into Ragas messages with metadata for agent evaluation.
@@ -43,7 +43,10 @@ def convert_to_ragas_messages(
         return message.content
 
     def _extract_metadata(message) -> dict:
-        return {k: v for k, v in message.__dict__.items() if k != 'content'}
+        if metadata:
+            return {k: v for k, v in message.__dict__.items() if k != 'content'}
+        else:
+            None
 
     MESSAGE_TYPE_MAP = {
         HumanMessage: lambda m: r.HumanMessage(
