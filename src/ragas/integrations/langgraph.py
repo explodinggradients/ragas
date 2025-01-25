@@ -93,11 +93,11 @@ def convert_to_ragas_messages(
                 tool_calls=tool_calls
             )
 
-    def _convert_message(message):
+    def _convert_message(message, metadata: bool = False):
         if isinstance(message, SystemMessage):
             return None  # Skip SystemMessages
         if isinstance(message, AIMessage):
-            return _convert_ai_message(message)
+            return _convert_ai_message(message, metadata)
         converter = MESSAGE_TYPE_MAP.get(type(message))
         if converter is None:
             raise ValueError(f"Unsupported message type: {type(message).__name__}")
