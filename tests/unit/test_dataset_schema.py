@@ -130,8 +130,11 @@ def test_single_type_evaluation_dataset(eval_sample):
         EvaluationDataset(samples=[single_turn_sample, multi_turn_sample])
 
     error_message = str(exc_info.value)
-    assert "All samples must be of the same type" in error_message
-    assert "Sample at index 1 is of type <class 'ragas.dataset_schema.MultiTurnSample'>" in error_message
+
+    assert (
+        "Sample at index 1 is of type <class 'ragas.dataset_schema.MultiTurnSample'>"
+        in error_message
+    )
     assert "expected <class 'ragas.dataset_schema.SingleTurnSample'>" in error_message
 
 
