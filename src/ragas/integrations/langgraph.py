@@ -79,7 +79,7 @@ def convert_to_ragas_messages(
             for tool_call in tool_calls
         ]
 
-    def _convert_ai_message(message: AIMessage) -> r.AIMessage:
+    def _convert_ai_message(message: AIMessage, metadata: bool) -> r.AIMessage:
         tool_calls = _extract_tool_calls(message) if message.additional_kwargs else None
         if metadata:
             return r.AIMessage(
