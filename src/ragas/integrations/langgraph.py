@@ -46,7 +46,7 @@ def convert_to_ragas_messages(
         if metadata:
             return {k: v for k, v in message.__dict__.items() if k != 'content'}
         else:
-            None
+            return None
 
     MESSAGE_TYPE_MAP = {
         HumanMessage: lambda m: r.HumanMessage(
