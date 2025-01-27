@@ -12,7 +12,6 @@ import numpy as np
 import tiktoken
 from datasets import Dataset
 
-import logging
 from datetime import datetime
 from typing import Optional
 
@@ -241,9 +240,13 @@ def batched(iterable: t.Iterable, n: int) -> t.Iterator[t.Tuple]:
     while batch := tuple(itertools.islice(iterator, n)):
         yield batch
 
+
 _LOGGER_DATE_TIME = "%Y-%m-%d %H:%M:%S"
 
-def set_logging_level(logger_name: Optional[str] = __name__, level: Optional[int] = logging.DEBUG):
+
+def set_logging_level(
+    logger_name: Optional[str] = __name__, level: Optional[int] = logging.DEBUG
+):
     """
     Set the logging level for a logger. Useful for debugging.
     """
@@ -291,7 +294,11 @@ class _ContextualFormatter(logging.Formatter):
         return super().format(record)
 
     def format_time(self, record, datefmt=None, local_time=False):
-        dt = self.utc_converter(record.created) if not local_time else datetime.fromtimestamp(record.created)
+        dt = (
+            self.utc_converter(record.created)
+            if not local_time
+            else datetime.fromtimestamp(record.created)
+        )
         if datefmt:
             return dt.strftime(datefmt)
         return dt.isoformat()
