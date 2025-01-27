@@ -191,7 +191,9 @@ class RagasDataset(ABC, t.Generic[Sample]):
         first_sample_type = type(samples[0])
         for i, sample in enumerate(samples):
             if not isinstance(sample, first_sample_type):
-                raise ValueError(f"Sample at index {i} is of type {type(sample)}, expected {first_sample_type}")
+                raise ValueError(
+                    f"Sample at index {i} is of type {type(sample)}, expected {first_sample_type}"
+                )
 
         return samples
 
