@@ -244,9 +244,7 @@ def batched(iterable: t.Iterable, n: int) -> t.Iterator[t.Tuple]:
 _LOGGER_DATE_TIME = "%Y-%m-%d %H:%M:%S"
 
 
-def set_logging_level(
-    logger_name: Optional[str] = __name__, level: Optional[int] = logging.DEBUG
-):
+def set_logging_level(logger_name: str = __name__, level: int = logging.DEBUG):
     """
     Set the logging level for a logger. Useful for debugging.
     """
