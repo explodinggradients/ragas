@@ -100,6 +100,7 @@ nav:
       - Integrations:
           - howtos/integrations/index.md
           - Arize: howtos/integrations/_arize.md
+          - Haystack: howtos/integrations/haystack.md
           - LangChain: howtos/integrations/langchain.md
           - LangGraph: howtos/integrations/_langgraph_agent_evaluation.md
           - LangSmith: howtos/integrations/langsmith.md
