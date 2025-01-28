@@ -110,15 +110,6 @@ chat_generator = OpenAIChatGenerator(model="gpt-4o-mini")
 
 #### Setting up the RagasEvaluator
 
-Pass all the Ragas Metrics that you would like to evaluate, and also make sure that all the required information for calculating the selected metrics is provided.
-
-For example in the case below:
-- AnswerRelevancy: requires query and response
-- ContextPrecision: requires query, documents retieved and reference
-- Faithfulness:requires query, documents retieved and response
-
-#### Setting up the RagasEvaluator
-
 Pass all the Ragas metrics you want to use for evaluation, ensuring that all the necessary information to calculate each selected metric is provided.
 
 For example:
