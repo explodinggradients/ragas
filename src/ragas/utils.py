@@ -13,7 +13,6 @@ import tiktoken
 from datasets import Dataset
 
 from datetime import datetime
-from typing import Optional
 
 if t.TYPE_CHECKING:
     from ragas.metrics.base import Metric
