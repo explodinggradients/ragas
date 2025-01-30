@@ -215,49 +215,6 @@ Meta AI's LLaMA models stand out due to their open-source nature, which allows r
 
 Instead of using the default ragas metrics, you can change them to fit your needs or even create your own custom metrics. After that, you can pass these to the RagasEvaluator component. To learn more about how to customize ragas metrics, check out the [docs](https://docs.ragas.io/en/stable/howtos/customizations/).
 
-In the example below, I'm modifying the default prompt for the Context utilization metric so that it always gives a score of 0, no matter what the input is.
-
-
-```python
-from ragas.metrics import ContextUtilization
-
-Modified_Context_Utilization = ContextUtilization()
-
-prompt = Modified_Context_Utilization.get_prompts()["context_precision_prompt"]
-prompt.instruction = "Give a score of 0"
-prompt.examples = []
-Modified_Context_Utilization.set_prompts(**{"context_precision_prompt": prompt})
-```
-
-
-```python
-evaluator = RagasEvaluator(
-    ragas_metrics=[Modified_Context_Utilization],
-    evaluator_llm=evaluator_llm
-)
-
-output = evaluator.run(
-    query="Which is the most popular global sport?",
-    documents=[
-        "Football is undoubtedly the world's most popular sport with"
-        " major events like the FIFA World Cup and sports personalities"
-        " like Ronaldo and Messi, drawing a followership of more than 4"
-        " billion people."
-    ],
-    response="Football is the most popular sport with around 4 billion"
-                " followers worldwide",
-)
-
-output['result']
-```
-Output
-```
-Evaluating: 100%|██████████| 1/1 [00:01<00:00,  1.17s/it]
-
-{'context_utilization': 0.0000}
-```
-
-
 In the example below, we will define two custom Ragas metrics:
 
 1. **SportsRelevanceMetric**: This metric evaluates whether a question and its response are related to sports.
