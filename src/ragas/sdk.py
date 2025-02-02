@@ -7,8 +7,10 @@ from functools import lru_cache
 
 import requests
 
+from ragas._analytics import get_userid
 from ragas._version import __version__
 from ragas.exceptions import UploadException
+from ragas.utils import base_logger
 
 # endpoint for uploading results
 RAGAS_API_URL = "https://api.ragas.io"
@@ -46,6 +48,7 @@ def upload_packet(path: str, data_json_string: str):
             "x-app-token": app_token,
             "x-source": RAGAS_API_SOURCE,
             "x-app-version": __version__,
+            "x-ragas-lib-user-uuid": get_userid(),
         },
     )
     check_api_response(response)
@@ -67,6 +70,11 @@ def check_api_response(response: requests.Response) -> None:
         If authentication fails or other API errors occur
     """
     if response.status_code == 403:
+        base_logger.error(
+            "[AUTHENTICATION_ERROR] The app token is invalid. "
+            "Please check your RAGAS_APP_TOKEN environment variable. "
+            f"Response Status: {response.status_code}, URL: {response.url}"
+        )
         raise UploadException(
             status_code=response.status_code,
             message="AUTHENTICATION_ERROR: The app token is invalid. Please check your RAGAS_APP_TOKEN environment variable.",
@@ -85,6 +93,11 @@ def check_api_response(response: requests.Response) -> None:
         except Exception as _e:
             error_msg = f"\nStatus Code: {response.status_code}"
 
+        base_logger.error(
+            f"[API_ERROR] Request failed. "
+            f"Status Code: {response.status_code}, URL: {response.url}, "
+            f"Error Message: {error_msg}"
+        )
         raise UploadException(
             status_code=response.status_code, message=f"Request failed: {error_msg}"
         )

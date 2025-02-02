@@ -12,6 +12,8 @@ import numpy as np
 import tiktoken
 from datasets import Dataset
 
+from datetime import datetime
+
 if t.TYPE_CHECKING:
     from ragas.metrics.base import Metric
 
@@ -238,20 +240,69 @@ def batched(iterable: t.Iterable, n: int) -> t.Iterator[t.Tuple]:
         yield batch
 
 
-def set_logging_level(logger_name: str, level: int):
+_LOGGER_DATE_TIME = "%Y-%m-%d %H:%M:%S"
+
+
+def set_logging_level(logger_name: str = __name__, level: int = logging.DEBUG):
     """
     Set the logging level for a logger. Useful for debugging.
     """
     logger = logging.getLogger(logger_name)
     logger.setLevel(level)
 
+    log_format = (
+        "[%(local_time)s - (%(utc_time)s UTC)] "
+        "[%(levelname)s] [%(name)s] "
+        "[RagasID: %(ragas_id)s, App-Version: %(app_version)s] %(message)s"
+    )
+
+    # Create a formatter with the custom formatter
+    formatter = _ContextualFormatter(log_format, datefmt=_LOGGER_DATE_TIME)
+
     # Create a console handler and set its level
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.DEBUG)
+    console_handler.setLevel(level)
 
-    # Create a formatter and add it to the handler
-    formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
+    # Apply the formatter to the handler
     console_handler.setFormatter(formatter)
 
     # Add the handler to the logger
     logger.addHandler(console_handler)
+
+    return logger
+
+
+class _ContextualFormatter(logging.Formatter):
+    """
+    Custom logging formatter that adds context to the log records.
+    """
+
+    def format(self, record):
+        from ragas._analytics import get_userid
+        from ragas import __version__
+
+        # Add UTC time
+        record.utc_time = self.format_time(record, _LOGGER_DATE_TIME)
+        # Add local time
+        record.local_time = self.format_time(record, _LOGGER_DATE_TIME, local_time=True)
+        # Add additional context
+        record.ragas_id = get_userid()
+        record.app_version = __version__
+        return super().format(record)
+
+    def format_time(self, record, datefmt=None, local_time=False):
+        dt = (
+            self.utc_converter(record.created)
+            if not local_time
+            else datetime.fromtimestamp(record.created)
+        )
+        if datefmt:
+            return dt.strftime(datefmt)
+        return dt.isoformat()
+
+    @staticmethod
+    def utc_converter(timestamp):
+        return datetime.utcfromtimestamp(timestamp)  # UTC time conversion
+
+
+base_logger = set_logging_level()

@@ -46,6 +46,8 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             f"Please return the output in a JSON format that complies with the "
             f"following schema as specified in JSON Schema:\n"
             f"{self.output_model.model_json_schema()}"
+            "Do not use single quotes in your response but double quotes,"
+            "properly escaped with a backslash."
         )
 
     def _generate_examples(self):

@@ -100,6 +100,7 @@ nav:
       - Integrations:
           - howtos/integrations/index.md
           - Arize: howtos/integrations/_arize.md
+          - Haystack: howtos/integrations/haystack.md
           - LangChain: howtos/integrations/langchain.md
           - LangGraph: howtos/integrations/_langgraph_agent_evaluation.md
           - LangSmith: howtos/integrations/langsmith.md
@@ -138,8 +139,27 @@ validation:
 # Material-Docs Theme
 theme:
   name: material
+  custom_dir: docs/extra/overrides
   logo: _static/imgs/ragas-logo.png
   favicon: _static/favicon.ico
+  features:
+    - announce.dismiss
+    - content.tabs.link
+    - content.code.annotate
+    - content.code.copy
+    - announce.dismiss
+    - navigation.tabs
+    - navigation.path
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.preview
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - navigation.indexes
+    - navigation.footer
+    - search.suggest
+    - search.highlight
   palette:
     # Palette toggle for automatic mode
     - media: "(prefers-color-scheme)"
@@ -160,23 +180,7 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to system preference
-  features:
-    - content.tabs.link
-    - content.code.annotate
-    - content.code.copy
-    - announce.dismiss
-    - navigation.tabs
-    - navigation.path
-    - navigation.instant
-    - navigation.instant.prefetch
-    - navigation.instant.preview
-    - navigation.sections
-    - navigation.top
-    - navigation.tracking
-    - navigation.indexes
-    - navigation.footer
-    - search.suggest
-    - search.highlight
+
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
@@ -215,7 +219,6 @@ extra:
     property: !ENV GOOGLE_ANALYTICS_KEY
 plugins:
   - search
-  - social
   - git-revision-date-localized:
       enabled: !ENV [MKDOCS_CI, false]
       enable_creation_date: true
@@ -238,9 +241,9 @@ plugins:
             show_signature_annotations: true
             signature_crossrefs: true
   - glightbox
-  - gen-files:
-      scripts:
-        - docs/ipynb_to_md.py
+  # - gen-files:
+  #     scripts:
+  #       - docs/ipynb_to_md.py
 extra_javascript:
   - _static/js/mathjax.js
   - _static/js/header_border.js
