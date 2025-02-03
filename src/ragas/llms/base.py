@@ -5,6 +5,8 @@ import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
+from haystack.components.generators import OpenAIGenerator, AzureOpenAIGenerator
+
 from langchain_community.chat_models.vertexai import ChatVertexAI
 from langchain_community.llms import VertexAI
 from langchain_core.language_models import BaseLanguageModel
@@ -23,6 +25,7 @@ if t.TYPE_CHECKING:
     from langchain_core.messages import BaseMessage
     from langchain_core.prompt_values import PromptValue
     from llama_index.core.base.llms.base import BaseLLM
+
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +122,56 @@ class BaseRagasLLM(ABC):
         return result
 
 
+class HaystackLLMWrapper(BaseRagasLLM):
+    """ """
+
+    def __init__(
+        self,
+        haystack_generator: OpenAIGenerator,
+        run_config: t.Optional[RunConfig] = None,
+        cache: t.Optional[CacheInterface] = None,
+    ):
+        super().__init__(cache=cache)
+
+        self.haystack_client = haystack_generator
+
+        if run_config is None:
+            run_config = RunConfig()
+        self.set_run_config(run_config)
+
+    def generate_text(
+        self,
+        prompt: PromptValue,
+        n: int = 1,
+        temperature: float = 1e-8,
+        stop: t.Optional[t.List[str]] = None,
+        callbacks: Callbacks = None,
+    ):
+        print("generating...")
+        hs_response = self.haystack_client.run(prompt.to_string)
+        return LLMResult(generations=[[Generation(text=hs_response.get("replies")[0])]])
+
+    async def agenerate_text(
+        self,
+        prompt: PromptValue,
+        n: int = 1,
+        temperature: t.Optional[float] = None,
+        stop: t.Optional[t.List[str]] = None,
+        callbacks: Callbacks = None,
+    ):
+        print("1. async generating...")
+        raise ValueError("This is a custom error message.")
+        hs_response = self.haystack_client.run(prompt.to_string)
+        return LLMResult(generations=[[Generation(text=hs_response.get("replies")[0])]])
+
+    def set_run_config(self, run_config: RunConfig):
+        self.run_config = run_config
+        pass
+
+    def __repr__(self):
+        return f"{self.__name__}(llm={self.llm.model}(...))"
+
+
 class LangchainLLMWrapper(BaseRagasLLM):
     """
     A simple base class for RagasLLMs that is based on Langchain's BaseLanguageModel
@@ -183,7 +236,8 @@ class LangchainLLMWrapper(BaseRagasLLM):
                 elif resp_message.response_metadata.get("stop_reason") is not None:
                     stop_reason = resp_message.response_metadata.get("stop_reason")
                     is_finished_list.append(
-                        stop_reason in ["end_turn", "stop", "STOP", "MAX_TOKENS", "eos_token"]
+                        stop_reason
+                        in ["end_turn", "stop", "STOP", "MAX_TOKENS", "eos_token"]
                     )
             # default to True
             else:
