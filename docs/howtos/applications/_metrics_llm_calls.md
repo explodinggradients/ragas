@@ -46,7 +46,7 @@ results = evaluate(evaluation_dataset, metrics=[metric])
 ```
 Output
 ```
-Evaluating:   0%|██████████| 5/5 [00:00<?, ?it/s]
+Evaluating: 100%|██████████| 5/5 [00:00<?, ?it/s]
 ```
 
 ## Exploring the evaluation traces
@@ -69,6 +69,6 @@ Then, use the `upload()` method to send the results to the dashboard:
 results.upload()
 ```
 
-After uploading, you can view the results in the dashboard by following the link shown in the output.
+Once the upload is complete, you can view the results in the dashboard by following the link provided in the output. Simply click on the scores to access the associated prompt and the LLM calls made.
 
 ![](./metrics_llm_calls.png)
