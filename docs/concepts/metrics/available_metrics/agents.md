@@ -103,7 +103,7 @@ sample = MultiTurnSample(
     ]
 )
 
-scorer = ToolCallAccuracy(llm = evaluator_llm)
+scorer = ToolCallAccuracy()
 await scorer.multi_turn_ascore(sample)
 ```
 Output
@@ -119,7 +119,7 @@ By default the tool names and arguments are compared using exact string matching
 from ragas.metrics._string import NonLLMStringSimilarity
 from ragas.metrics._tool_call_accuracy import ToolCallAccuracy
 
-metric = ToolCallAccuracy(llm = evaluator_llm)
+metric = ToolCallAccuracy()
 metric.arg_comparison_metric = NonLLMStringSimilarity()
 ```
 
