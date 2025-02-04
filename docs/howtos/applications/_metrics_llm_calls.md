@@ -70,3 +70,5 @@ results.upload()
 ```
 
 After uploading, you can view the results in the dashboard by following the link shown in the output.
+
+![](./metrics_llm_calls.png)
