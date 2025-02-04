@@ -6,13 +6,12 @@ import os
 import re
 import typing as t
 import warnings
+from datetime import datetime
 from functools import lru_cache
 
 import numpy as np
 import tiktoken
 from datasets import Dataset
-
-from datetime import datetime
 
 if t.TYPE_CHECKING:
     from ragas.metrics.base import Metric
@@ -278,8 +277,8 @@ class _ContextualFormatter(logging.Formatter):
     """
 
     def format(self, record):
-        from ragas._analytics import get_userid
         from ragas import __version__
+        from ragas._analytics import get_userid
 
         # Add UTC time
         record.utc_time = self.format_time(record, _LOGGER_DATE_TIME)
