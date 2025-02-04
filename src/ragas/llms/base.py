@@ -5,8 +5,13 @@ import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
-from haystack.components.generators import OpenAIGenerator, AzureOpenAIGenerator
-
+from haystack.components.generators import (
+    AzureOpenAIGenerator,
+    HuggingFaceAPIGenerator,
+    HuggingFaceLocalGenerator,
+    OpenAIGenerator,
+)
+from haystack_experimental.core import AsyncPipeline
 from langchain_community.chat_models.vertexai import ChatVertexAI
 from langchain_community.llms import VertexAI
 from langchain_core.language_models import BaseLanguageModel
@@ -123,11 +128,14 @@ class BaseRagasLLM(ABC):
 
 
 class HaystackLLMWrapper(BaseRagasLLM):
-    """ """
-
     def __init__(
         self,
-        haystack_generator: OpenAIGenerator,
+        haystack_generator: t.Union[
+            OpenAIGenerator,
+            AzureOpenAIGenerator,
+            HuggingFaceAPIGenerator,
+            HuggingFaceLocalGenerator,
+        ],
         run_config: t.Optional[RunConfig] = None,
         cache: t.Optional[CacheInterface] = None,
     ):
@@ -138,6 +146,12 @@ class HaystackLLMWrapper(BaseRagasLLM):
         if run_config is None:
             run_config = RunConfig()
         self.set_run_config(run_config)
+        self.generator = haystack_generator
+        self.async_pipeline = AsyncPipeline()
+        self.async_pipeline.add_component("llm", self.generator)
+
+    def is_finished(self, response: LLMResult) -> bool:
+        return True
 
     def generate_text(
         self,
@@ -147,9 +161,8 @@ class HaystackLLMWrapper(BaseRagasLLM):
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ):
-        print("generating...")
-        hs_response = self.haystack_client.run(prompt.to_string)
-        return LLMResult(generations=[[Generation(text=hs_response.get("replies")[0])]])
+        hs_response = self.haystack_client.run(prompt.to_string())
+        return LLMResult(generations=[[Generation(text=hs_response)]])
 
     async def agenerate_text(
         self,
@@ -159,17 +172,28 @@ class HaystackLLMWrapper(BaseRagasLLM):
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ):
-        print("1. async generating...")
-        raise ValueError("This is a custom error message.")
-        hs_response = self.haystack_client.run(prompt.to_string)
-        return LLMResult(generations=[[Generation(text=hs_response.get("replies")[0])]])
+        async def query_pipeline(question: str):
+            async for output in self.async_pipeline.run({"llm": {"prompt": question}}):
+                return output["llm"]["replies"][0]
+
+        hs_response = await query_pipeline(question=prompt.to_string())
+        return LLMResult(generations=[[Generation(text=hs_response)]])
 
     def set_run_config(self, run_config: RunConfig):
         self.run_config = run_config
         pass
 
     def __repr__(self):
-        return f"{self.__name__}(llm={self.llm.model}(...))"
+        if isinstance(self.generator, (OpenAIGenerator, HuggingFaceLocalGenerator)):
+            model = self.generator.model
+        elif isinstance(self.generator, HuggingFaceAPIGenerator):
+            model = self.generator.api_params
+        elif isinstance(self.generator, AzureOpenAIGenerator):
+            model = self.generator.azure_deployment
+        else:
+            model = "Unknown"
+
+        return f"{self.__class__}(llm={model}(...))"
 
 
 class LangchainLLMWrapper(BaseRagasLLM):
