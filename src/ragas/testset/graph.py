@@ -174,12 +174,12 @@ class KnowledgeGraph:
 
     def save(self, path: t.Union[str, Path]):
         """Saves the knowledge graph to a JSON file.
-        
+
         Parameters
         ----------
         path : Union[str, Path]
             Path where the JSON file should be saved.
-            
+
         Notes
         -----
         The file is saved using UTF-8 encoding to ensure proper handling of Unicode characters
@@ -192,23 +192,23 @@ class KnowledgeGraph:
             "nodes": [node.model_dump() for node in self.nodes],
             "relationships": [rel.model_dump() for rel in self.relationships],
         }
-        with open(path, "w", encoding='utf-8') as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, cls=UUIDEncoder, indent=2, ensure_ascii=False)
 
     @classmethod
     def load(cls, path: t.Union[str, Path]) -> "KnowledgeGraph":
         """Loads a knowledge graph from a path.
-        
+
         Parameters
         ----------
         path : Union[str, Path]
             Path to the JSON file containing the knowledge graph.
-            
+
         Returns
         -------
         KnowledgeGraph
             The loaded knowledge graph.
-            
+
         Notes
         -----
         The file is read using UTF-8 encoding to ensure proper handling of Unicode characters
@@ -217,7 +217,7 @@ class KnowledgeGraph:
         if isinstance(path, str):
             path = Path(path)
 
-        with open(path, "r", encoding='utf-8') as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         nodes = [Node(**node_data) for node_data in data["nodes"]]
