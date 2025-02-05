@@ -47,6 +47,10 @@ def upload_packet(path: str, data_json_string: str):
     app_token = get_app_token()
     base_url = get_api_url()
     app_url = get_app_url()
+
+    connection_timeout = 300  # 5 minutes
+    read_timeout = 300  # 5 minutes
+
     headers = {
         "Content-Type": "application/json",
         "x-app-token": app_token,
@@ -75,6 +79,11 @@ def upload_packet(path: str, data_json_string: str):
         print(f"app_url: {app_url}")
         print(section_delimiter)
 
+        print("timeout_config:")
+        print(f"  connection_timeout: {connection_timeout}s")
+        print(f"  read_timeout: {read_timeout}s")
+        print(section_delimiter)
+
         # Create a copy of headers and set x-app-token to [REDACTED] if it exists
         log_headers = headers.copy()
         if "x-app-token" in log_headers:
@@ -93,6 +102,7 @@ def upload_packet(path: str, data_json_string: str):
         f"{base_url}/api/v1{path}",
         data=data_json_string,
         headers=headers,
+        timeout=(connection_timeout, read_timeout)
     )
 
     if enable_http_log:
