@@ -5,12 +5,6 @@ import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
-from haystack.components.generators import (
-    AzureOpenAIGenerator,
-    HuggingFaceAPIGenerator,
-    HuggingFaceLocalGenerator,
-    OpenAIGenerator,
-)
 from haystack_experimental.core import AsyncPipeline
 from langchain_community.chat_models.vertexai import ChatVertexAI
 from langchain_community.llms import VertexAI
@@ -30,6 +24,12 @@ if t.TYPE_CHECKING:
     from langchain_core.messages import BaseMessage
     from langchain_core.prompt_values import PromptValue
     from llama_index.core.base.llms.base import BaseLLM
+    from haystack.components.generators import (
+        AzureOpenAIGenerator,
+        HuggingFaceAPIGenerator,
+        HuggingFaceLocalGenerator,
+        OpenAIGenerator,
+    )
 
 
 logger = logging.getLogger(__name__)
@@ -172,11 +172,13 @@ class HaystackLLMWrapper(BaseRagasLLM):
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ):
-        async def query_pipeline(question: str):
-            async for output in self.async_pipeline.run({"llm": {"prompt": question}}):
-                return output["llm"]["replies"][0]
+        async def llm_pipeline(query: str):
+            result = ""
+            async for output in self.async_pipeline.run({"llm": {"prompt": query}}):
+                result = output["llm"]["replies"][0]
+            return result
 
-        hs_response = await query_pipeline(question=prompt.to_string())
+        hs_response = await llm_pipeline(query=prompt.to_string())
         return LLMResult(generations=[[Generation(text=hs_response)]])
 
     def set_run_config(self, run_config: RunConfig):

@@ -7,12 +7,6 @@ from dataclasses import field
 from typing import List, Union
 
 import numpy as np
-from haystack.components.embedders import (
-    AzureOpenAITextEmbedder,
-    HuggingFaceAPITextEmbedder,
-    OpenAITextEmbedder,
-    SentenceTransformersTextEmbedder,
-)
 from haystack_experimental.core import AsyncPipeline
 from langchain_core.embeddings import Embeddings
 from langchain_openai.embeddings import OpenAIEmbeddings
@@ -25,6 +19,12 @@ from ragas.run_config import RunConfig, add_async_retry, add_retry
 if t.TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import BaseEmbedding
     from pydantic import GetCoreSchemaHandler
+    from haystack.components.embedders import (
+        AzureOpenAITextEmbedder,
+        HuggingFaceAPITextEmbedder,
+        OpenAITextEmbedder,
+        SentenceTransformersTextEmbedder,
+    )
 
 
 DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
@@ -144,9 +144,15 @@ class HaystackEmbeddingsWrapper(BaseRagasEmbeddings):
         Asynchronously embed a single query text.
         """
 
-        async def embedding_pipeline(text: str) -> List[float]:
+        async def embedding_pipeline(text: str):
+            result = []
+
             async for output in self.async_pipeline.run({"embedder": {"text": text}}):
-                return output["embedder"]["embedding"]
+                if "embedder" in output and "embedding" in output["embedder"]:
+                    result = output["embedder"]["embedding"]
+                    break
+
+            return result
 
         return await embedding_pipeline(text=text)
 
