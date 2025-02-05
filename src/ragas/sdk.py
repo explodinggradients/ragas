@@ -75,9 +75,10 @@ def upload_packet(path: str, data_json_string: str):
         print(f"app_url: {app_url}")
         print(section_delimiter)
 
-        # Create a copy of headers without the sensitive x-app-token
+        # Create a copy of headers and set x-app-token to [REDACTED] if it exists
         log_headers = headers.copy()
-        log_headers.pop("x-app-token")
+        if "x-app-token" in log_headers:
+            log_headers["x-app-token"] = "***[REDACTED]***"
 
         print("\nheaders:")
         for key, value in log_headers.items():
