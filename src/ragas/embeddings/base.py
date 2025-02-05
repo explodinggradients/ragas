@@ -17,14 +17,14 @@ from ragas.cache import CacheInterface, cacher
 from ragas.run_config import RunConfig, add_async_retry, add_retry
 
 if t.TYPE_CHECKING:
-    from llama_index.core.base.embeddings.base import BaseEmbedding
-    from pydantic import GetCoreSchemaHandler
     from haystack.components.embedders import (
         AzureOpenAITextEmbedder,
         HuggingFaceAPITextEmbedder,
         OpenAITextEmbedder,
         SentenceTransformersTextEmbedder,
     )
+    from llama_index.core.base.embeddings.base import BaseEmbedding
+    from pydantic import GetCoreSchemaHandler
 
 
 DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"

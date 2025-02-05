@@ -20,16 +20,16 @@ from ragas.integrations.helicone import helicone_config
 from ragas.run_config import RunConfig, add_async_retry
 
 if t.TYPE_CHECKING:
-    from langchain_core.callbacks import Callbacks
-    from langchain_core.messages import BaseMessage
-    from langchain_core.prompt_values import PromptValue
-    from llama_index.core.base.llms.base import BaseLLM
     from haystack.components.generators import (
         AzureOpenAIGenerator,
         HuggingFaceAPIGenerator,
         HuggingFaceLocalGenerator,
         OpenAIGenerator,
     )
+    from langchain_core.callbacks import Callbacks
+    from langchain_core.messages import BaseMessage
+    from langchain_core.prompt_values import PromptValue
+    from llama_index.core.base.llms.base import BaseLLM
 
 
 logger = logging.getLogger(__name__)
