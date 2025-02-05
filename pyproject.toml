@@ -27,7 +27,7 @@ all = [
     "pandas",
     "datacompy",
     "llama_index",
-    "pip install haystack-experimental==0.4.0"
+    "haystack-experimental==0.4.0"
 ]
 docs = [
     "mkdocs>=1.6.1",
