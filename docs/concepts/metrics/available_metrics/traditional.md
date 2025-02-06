@@ -75,16 +75,16 @@ Output
 0.8571428571428571
 ```
 
-You can change the `rouge_type` to `rouge-1`, `rouge-2`, or `rouge-l` to calculate the ROUGE score based on unigrams, bigrams, or longest common subsequence respectively.
+You can change the `rouge_type` to `rouge1` or `rougeL` to calculate the ROUGE score based on unigrams or longest common subsequence respectively.
 
 ```python
-scorer = RougeScore(rouge_type="rouge-1")
+scorer = RougeScore(rouge_type="rouge1")
 ```
 
-You can change the `measure_type` to `precision`, `recall`, or `f1` to calculate the ROUGE score based on precision, recall, or F1 score respectively.
+You can change the `mode` to `precision`, `recall`, or `fmeasure` to calculate the ROUGE score based on precision, recall, or F1 score respectively.
 
 ```python
-scorer = RougeScore(measure_type="recall")
+scorer = RougeScore(mode="recall")
 ```
 
 ## Exact Match

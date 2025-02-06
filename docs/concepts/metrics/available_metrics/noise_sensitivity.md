@@ -37,10 +37,10 @@ Output
 0.3333333333333333
 ```
 
-To calculate noise sensivity of irrelevant context, you can set the `focus` parameter to `irrelevant`.
+To calculate noise sensivity of irrelevant context, you can set the `mode` parameter to `irrelevant`.
 
 ```python
-scorer = NoiseSensitivity(focus="irrelevant")
+scorer = NoiseSensitivity(mode="irrelevant")
 await scorer.single_turn_ascore(sample)
 ```
 

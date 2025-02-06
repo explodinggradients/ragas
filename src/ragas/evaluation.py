@@ -303,7 +303,8 @@ def evaluate(
         for i, _ in enumerate(dataset):
             s = {}
             for j, m in enumerate(metrics):
-                s[m.name] = results[len(metrics) * i + j]
+                key = f"{m.name}(mode={m.mode})" if hasattr(m, "mode") else m.name
+                s[key] = results[len(metrics) * i + j]
             scores.append(s)
             # close the row chain
             row_rm, row_group_cm = row_run_managers[i]
