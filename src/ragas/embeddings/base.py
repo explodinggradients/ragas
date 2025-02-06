@@ -4,10 +4,8 @@ import asyncio
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import field
-from typing import List, Union
 
 import numpy as np
-from haystack_experimental.core import AsyncPipeline
 from langchain_core.embeddings import Embeddings
 from langchain_openai.embeddings import OpenAIEmbeddings
 from pydantic.dataclasses import dataclass
@@ -17,12 +15,6 @@ from ragas.cache import CacheInterface, cacher
 from ragas.run_config import RunConfig, add_async_retry, add_retry
 
 if t.TYPE_CHECKING:
-    from haystack.components.embedders import (
-        AzureOpenAITextEmbedder,
-        HuggingFaceAPITextEmbedder,
-        OpenAITextEmbedder,
-        SentenceTransformersTextEmbedder,
-    )
     from llama_index.core.base.embeddings.base import BaseEmbedding
     from pydantic import GetCoreSchemaHandler
 
@@ -58,7 +50,7 @@ class BaseRagasEmbeddings(Embeddings, ABC):
                 self.aembed_documents
             )
 
-    async def embed_text(self, text: str, is_async=True) -> List[float]:
+    async def embed_text(self, text: str, is_async=True) -> t.List[float]:
         """
         Embed a single text string.
         """
@@ -66,7 +58,7 @@ class BaseRagasEmbeddings(Embeddings, ABC):
         return embs[0]
 
     async def embed_texts(
-        self, texts: List[str], is_async: bool = True
+        self, texts: t.List[str], is_async: bool = True
     ) -> t.List[t.List[float]]:
         """
         Embed multiple texts.
@@ -84,10 +76,10 @@ class BaseRagasEmbeddings(Embeddings, ABC):
             return await loop.run_in_executor(None, embed_documents_with_retry, texts)
 
     @abstractmethod
-    async def aembed_query(self, text: str) -> List[float]: ...
+    async def aembed_query(self, text: str) -> t.List[float]: ...
 
     @abstractmethod
-    async def aembed_documents(self, texts: List[str]) -> t.List[t.List[float]]: ...
+    async def aembed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]: ...
 
     def set_run_config(self, run_config: RunConfig):
         """
@@ -107,77 +99,6 @@ class BaseRagasEmbeddings(Embeddings, ABC):
         )
 
 
-class HaystackEmbeddingsWrapper(BaseRagasEmbeddings):
-    def __init__(
-        self,
-        embedder: Union[
-            OpenAITextEmbedder,
-            SentenceTransformersTextEmbedder,
-            HuggingFaceAPITextEmbedder,
-            AzureOpenAITextEmbedder,
-        ],
-        run_config: t.Optional[RunConfig] = None,
-        cache: t.Optional[CacheInterface] = None,
-    ):
-        super().__init__(cache=cache)
-        self.embedder = embedder
-        self.async_pipeline = AsyncPipeline()
-        self.async_pipeline.add_component("embedder", self.embedder)
-        if run_config is None:
-            run_config = RunConfig()
-        self.set_run_config(run_config)
-
-    def embed_query(self, text: str) -> t.List[float]:
-        """
-        Embed a single query text.
-        """
-        return self.embedder.run(text=text)["embedding"]
-
-    def embed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
-        """
-        Embed multiple documents.
-        """
-        return [self.embed_query(text) for text in texts]
-
-    async def aembed_query(self, text: str) -> t.List[float]:
-        """
-        Asynchronously embed a single query text.
-        """
-
-        async def embedding_pipeline(text: str):
-            result = []
-
-            async for output in self.async_pipeline.run({"embedder": {"text": text}}):
-                if "embedder" in output and "embedding" in output["embedder"]:
-                    result = output["embedder"]["embedding"]
-                    break
-
-            return result
-
-        return await embedding_pipeline(text=text)
-
-    async def aembed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
-        """
-        Asynchronously embed multiple documents.
-        """
-        results = await asyncio.gather(*(self.aembed_query(text) for text in texts))
-        return results
-
-    def __repr__(self) -> str:
-        if isinstance(
-            self.embedder, (OpenAITextEmbedder, SentenceTransformersTextEmbedder)
-        ):
-            model = self.embedder.model
-        elif isinstance(self.embedder, AzureOpenAITextEmbedder):
-            model = self.embedder.azure_deployment
-        elif isinstance(self.embedder, HuggingFaceAPITextEmbedder):
-            model = self.embedder.api_params
-        else:
-            model = "Unknown"
-
-        return f"{self.__class__.__name__}(embeddings={model}(...))"
-
-
 class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
     """
     Wrapper for any embeddings from langchain.
@@ -195,25 +116,25 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
             run_config = RunConfig()
         self.set_run_config(run_config)
 
-    def embed_query(self, text: str) -> List[float]:
+    def embed_query(self, text: str) -> t.List[float]:
         """
         Embed a single query text.
         """
         return self.embeddings.embed_query(text)
 
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+    def embed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
         """
         Embed multiple documents.
         """
         return self.embeddings.embed_documents(texts)
 
-    async def aembed_query(self, text: str) -> List[float]:
+    async def aembed_query(self, text: str) -> t.List[float]:
         """
         Asynchronously embed a single query text.
         """
         return await self.embeddings.aembed_query(text)
 
-    async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
+    async def aembed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
         """
         Asynchronously embed multiple documents.
         """
@@ -334,13 +255,13 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
         if self.cache is not None:
             self.predict = cacher(cache_backend=self.cache)(self.predict)
 
-    def embed_query(self, text: str) -> List[float]:
+    def embed_query(self, text: str) -> t.List[float]:
         """
         Embed a single query text.
         """
         return self.embed_documents([text])[0]
 
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+    def embed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
         """
         Embed multiple documents.
         """
@@ -357,7 +278,7 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
         assert isinstance(embeddings, Tensor)
         return embeddings.tolist()
 
-    def predict(self, texts: List[List[str]]) -> List[List[float]]:
+    def predict(self, texts: t.List[t.List[str]]) -> t.List[t.List[float]]:
         """
         Make predictions using a cross-encoder model.
         """
