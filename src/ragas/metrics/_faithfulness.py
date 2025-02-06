@@ -34,7 +34,7 @@ class StatementGeneratorOutput(BaseModel):
 class StatementGeneratorPrompt(
     PydanticPrompt[StatementGeneratorInput, StatementGeneratorOutput]
 ):
-    instruction = "Given a question, an answer, and sentences from the answer analyze the complexity of each sentence given under 'sentences' and break down each sentence into one or more fully understandable statements while also ensuring no pronouns are used in each statement. Format the outputs in JSON."
+    instruction = "Given a question and an answer, analyze the complexity of each sentence in the answer. Break down each sentence into one or more fully understandable statements. Ensure that no pronouns are used in any statement. Format the outputs in JSON."
     input_model = StatementGeneratorInput
     output_model = StatementGeneratorOutput
     examples = [
