@@ -31,6 +31,7 @@ from ragas.metrics import AspectCritic
 from ragas.metrics._answer_correctness import AnswerCorrectness
 from ragas.metrics.base import (
     Metric,
+    ModeMetric,
     MetricWithEmbeddings,
     MetricWithLLM,
     MultiTurnMetric,
@@ -303,7 +304,10 @@ def evaluate(
         for i, _ in enumerate(dataset):
             s = {}
             for j, m in enumerate(metrics):
-                key = f"{m.name}(mode={m.mode})" if hasattr(m, "mode") else m.name
+                if isinstance(m, ModeMetric):
+                    key = f"{m.name}(mode={m.mode})"  # type: ignore
+                else:
+                    key = m.name
                 s[key] = results[len(metrics) * i + j]
             scores.append(s)
             # close the row chain
