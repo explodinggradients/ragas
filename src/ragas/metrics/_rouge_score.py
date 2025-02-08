@@ -15,7 +15,7 @@ class RougeScore(SingleTurnMetric):
         default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
     )
     rouge_type: t.Literal["rouge1", "rougeL"] = "rougeL"
-    measure_type: t.Literal["fmeasure", "precision", "recall"] = "fmeasure"
+    mode: t.Literal["fmeasure", "precision", "recall"] = "fmeasure"
 
     def __post_init__(self):
         try:
@@ -36,7 +36,7 @@ class RougeScore(SingleTurnMetric):
         assert isinstance(sample.response, str), "Sample response must be a string"
         scorer = self.rouge_scorer.RougeScorer([self.rouge_type], use_stemmer=True)
         scores = scorer.score(sample.reference, sample.response)
-        return getattr(scores[self.rouge_type], self.measure_type)
+        return getattr(scores[self.rouge_type], self.mode)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)

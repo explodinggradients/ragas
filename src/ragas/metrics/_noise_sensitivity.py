@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
     name: str = "noise_sensitivity"
-    focus: t.Literal["relevant", "irrelevant"] = "relevant"
+    mode: t.Literal["relevant", "irrelevant"] = "relevant"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {
@@ -51,11 +51,11 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
 
     def __post_init__(self):
 
-        if self.focus not in {"relevant", "irrelevant"}:
+        if self.mode not in {"relevant", "irrelevant"}:
             raise ValueError(
-                f"Invalid argument passed for 'focus': {self.focus}. Must be 'relevant' or 'irrelevant'."
+                f"Invalid argument passed for 'mode': {self.mode}. Must be 'relevant' or 'irrelevant'."
             )
-        self.name = f"{self.name}_{self.focus}"
+        self.name = f"{self.name}_{self.mode}"
 
     async def _evaluate_statement_faithfulness(
         self, statements: t.List[str], context: str, callbacks: Callbacks
@@ -110,7 +110,7 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
         noise_sensitivity_in_relevant = np.mean(relevant_faithful & incorrect)
         noise_sensitivity_in_irrelevant = np.mean(irrelevant_faithful & incorrect)
 
-        if self.focus == "irrelevant":
+        if self.mode == "irrelevant":
             return noise_sensitivity_in_irrelevant
 
         return noise_sensitivity_in_relevant
