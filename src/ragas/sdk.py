@@ -1,8 +1,10 @@
 """
 SDK module for interacting with the Ragas API service.
 """
+
 import json
 import os
+from datetime import datetime, timezone
 from functools import lru_cache
 
 import requests
@@ -11,7 +13,6 @@ from ragas._analytics import get_userid
 from ragas._version import __version__
 from ragas.exceptions import UploadException
 from ragas.utils import base_logger
-from datetime import datetime, timezone
 
 # endpoint for uploading results
 RAGAS_API_URL = "https://api.ragas.io"
@@ -102,7 +103,7 @@ def upload_packet(path: str, data_json_string: str):
         f"{base_url}/api/v1{path}",
         data=data_json_string,
         headers=headers,
-        timeout=(connection_timeout, read_timeout)
+        timeout=(connection_timeout, read_timeout),
     )
 
     if enable_http_log:
@@ -118,7 +119,11 @@ def upload_packet(path: str, data_json_string: str):
             print(f"    {json.dumps(response_data, indent=2)}")
         except Exception:
             print("\nresponse:")
-            print("  status: ERROR" if response.status_code >= 400 else "  status: SUCCESS")
+            print(
+                "  status: ERROR"
+                if response.status_code >= 400
+                else "  status: SUCCESS"
+            )
             print(f"  status_code: {response.status_code}")
             print("  data:")
             print(f"    {response.text}")
