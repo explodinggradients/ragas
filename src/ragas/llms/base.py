@@ -24,6 +24,7 @@ if t.TYPE_CHECKING:
     from langchain_core.prompt_values import PromptValue
     from llama_index.core.base.llms.base import BaseLLM
 
+
 logger = logging.getLogger(__name__)
 
 MULTIPLE_COMPLETION_SUPPORTED = [

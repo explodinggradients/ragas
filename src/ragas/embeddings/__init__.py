@@ -5,11 +5,13 @@ from ragas.embeddings.base import (
     LlamaIndexEmbeddingsWrapper,
     embedding_factory,
 )
+from ragas.embeddings.haystack_wrapper import HaystackEmbeddingsWrapper
 
 __all__ = [
     "BaseRagasEmbeddings",
+    "HaystackEmbeddingsWrapper",
+    "HuggingfaceEmbeddings",
     "LangchainEmbeddingsWrapper",
     "LlamaIndexEmbeddingsWrapper",
-    "HuggingfaceEmbeddings",
     "embedding_factory",
 ]

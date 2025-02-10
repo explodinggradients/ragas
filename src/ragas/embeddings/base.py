@@ -4,7 +4,6 @@ import asyncio
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import field
-from typing import List
 
 import numpy as np
 from langchain_core.embeddings import Embeddings
@@ -51,7 +50,7 @@ class BaseRagasEmbeddings(Embeddings, ABC):
                 self.aembed_documents
             )
 
-    async def embed_text(self, text: str, is_async=True) -> List[float]:
+    async def embed_text(self, text: str, is_async=True) -> t.List[float]:
         """
         Embed a single text string.
         """
@@ -59,7 +58,7 @@ class BaseRagasEmbeddings(Embeddings, ABC):
         return embs[0]
 
     async def embed_texts(
-        self, texts: List[str], is_async: bool = True
+        self, texts: t.List[str], is_async: bool = True
     ) -> t.List[t.List[float]]:
         """
         Embed multiple texts.
@@ -77,10 +76,10 @@ class BaseRagasEmbeddings(Embeddings, ABC):
             return await loop.run_in_executor(None, embed_documents_with_retry, texts)
 
     @abstractmethod
-    async def aembed_query(self, text: str) -> List[float]: ...
+    async def aembed_query(self, text: str) -> t.List[float]: ...
 
     @abstractmethod
-    async def aembed_documents(self, texts: List[str]) -> t.List[t.List[float]]: ...
+    async def aembed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]: ...
 
     def set_run_config(self, run_config: RunConfig):
         """
@@ -117,25 +116,25 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
             run_config = RunConfig()
         self.set_run_config(run_config)
 
-    def embed_query(self, text: str) -> List[float]:
+    def embed_query(self, text: str) -> t.List[float]:
         """
         Embed a single query text.
         """
         return self.embeddings.embed_query(text)
 
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+    def embed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
         """
         Embed multiple documents.
         """
         return self.embeddings.embed_documents(texts)
 
-    async def aembed_query(self, text: str) -> List[float]:
+    async def aembed_query(self, text: str) -> t.List[float]:
         """
         Asynchronously embed a single query text.
         """
         return await self.embeddings.aembed_query(text)
 
-    async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
+    async def aembed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
         """
         Asynchronously embed multiple documents.
         """
@@ -256,13 +255,13 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
         if self.cache is not None:
             self.predict = cacher(cache_backend=self.cache)(self.predict)
 
-    def embed_query(self, text: str) -> List[float]:
+    def embed_query(self, text: str) -> t.List[float]:
         """
         Embed a single query text.
         """
         return self.embed_documents([text])[0]
 
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+    def embed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
         """
         Embed multiple documents.
         """
@@ -279,7 +278,7 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
         assert isinstance(embeddings, Tensor)
         return embeddings.tolist()
 
-    def predict(self, texts: List[List[str]]) -> List[List[float]]:
+    def predict(self, texts: t.List[t.List[str]]) -> t.List[t.List[float]]:
         """
         Make predictions using a cross-encoder model.
         """
