@@ -58,7 +58,7 @@ class MultiTurnSimpleCriteriaInput(BaseModel):
 class SingleTurnSimpleCriteriaPrompt(
     PydanticPrompt[SingleTurnSimpleCriteriaInput, SimpleCriteriaOutput]
 ):
-    instruction = "Evaluate the input based on the criteria defined."
+    instruction = ""
     input_model = SingleTurnSimpleCriteriaInput
     output_model = SimpleCriteriaOutput
 
@@ -66,7 +66,7 @@ class SingleTurnSimpleCriteriaPrompt(
 class MultiTurnSimpleCriteriaPrompt(
     PydanticPrompt[MultiTurnSimpleCriteriaInput, SimpleCriteriaOutput]
 ):
-    instruction = "Evaluate the input based on the criteria defined."
+    instruction = ""
     input_model = MultiTurnSimpleCriteriaInput
     output_model = SimpleCriteriaOutput
 
@@ -123,6 +123,11 @@ class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         self.single_turn_prompt = single_turn_prompt or SingleTurnSimpleCriteriaPrompt()
         self.multi_turn_prompt = multi_turn_prompt or MultiTurnSimpleCriteriaPrompt()
 
+        # update the instruction for the prompts with the definition
+        instruction = f"Evaluate the input based on the criteria defined.\nCriteria Definition: {self._definition}"
+        self.single_turn_prompt.instruction = instruction
+        self.multi_turn_prompt.instruction = instruction
+
         # ensure odd number of checks to avoid tie in majority vote.
         self.strictness = strictness
         self.strictness = (
@@ -140,9 +145,9 @@ class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     def definition(self, value: str) -> None:
         self._definition = value
         # Update the instruction for both prompts with the new definition
-        instruction = f"\nCriteria Definition: {self._definition}"
-        self.single_turn_prompt.instruction += instruction
-        self.multi_turn_prompt.instruction += instruction
+        instruction = f"Evaluate the input based on the criteria defined.\nCriteria Definition: {self._definition}"
+        self.single_turn_prompt.instruction = instruction
+        self.multi_turn_prompt.instruction = instruction
 
     def _compute_score(
         self, safe_loaded_responses: t.List[SimpleCriteriaOutput]
