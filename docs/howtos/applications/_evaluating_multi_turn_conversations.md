@@ -101,10 +101,10 @@ result = evaluate(
 
 result.to_pandas()
 ```
-
-
-    Evaluating:   0%|          | 0/2 [00:00<?, ?it/s]
-
+Output
+```
+Evaluating: 100%|██████████| 2/2 [00:00<?, ?it/s]
+```
 
 
 
@@ -220,13 +220,10 @@ result = evaluate(
 
 result.to_pandas()
 ```
-
-
-    Evaluating:   0%|          | 0/2 [00:00<?, ?it/s]
-
-
-
-
+Output
+```
+Evaluating: 100%|██████████| 2/2 [00:00<?, ?it/s]
+```
 
 <div>
 <style scoped>
@@ -338,10 +335,10 @@ result = evaluate(
 
 result.to_pandas()
 ```
-
-
-    Evaluating:   0%|          | 0/4 [00:00<?, ?it/s]
-
+Output
+```
+Evaluating: 100%|██████████| 4/4 [00:00<?, ?it/s]
+```
 
 
 
@@ -448,11 +445,10 @@ result = evaluate(
 
 result.to_pandas()
 ```
-
-
-    Evaluating:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
+Output
+```
+Evaluating:   100%|██████████| 1/1 [00:00<?, ?it/s]
+```
 
 
 
