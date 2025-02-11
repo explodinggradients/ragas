@@ -1,10 +1,7 @@
 from ragas.metrics._answer_accuracy import (
-    Answer_Accuracy,
-    answer_accuracy,
-    Context_Relevance,
-    context_relevance,
-    Response_Groundedness,
-    response_groundedness,
+    AnswerAccuracy,
+    ContextRelevance,
+    ResponseGroundedness,
 )
 from ragas.metrics._answer_relevance import (
     AnswerRelevancy,
@@ -86,6 +83,9 @@ __all__ = [
     "MultiTurnMetric",
     "MetricOutputType",
     # specific metrics
+    "AnswerAccuracy",
+    "ContextRelevance",
+    "ResponseGroundedness",
     "AnswerCorrectness",
     "answer_correctness",
     "Faithfulness",

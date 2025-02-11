@@ -33,7 +33,7 @@ class StatementsWithReason(BaseModel):
 logger = logging.getLogger(__name__)
 
 @dataclass
-class Answer_Accuracy(MetricWithLLM, SingleTurnMetric):
+class AnswerAccuracy(MetricWithLLM, SingleTurnMetric):
     """
     Measures answer accuracy compared to ground truth given a user_input.
     This metric averages two distinct judge prompts to evaluate.
@@ -189,7 +189,7 @@ class Answer_Accuracy(MetricWithLLM, SingleTurnMetric):
 
 
 @dataclass
-class Context_Relevance(MetricWithLLM, SingleTurnMetric):
+class ContextRelevance(MetricWithLLM, SingleTurnMetric):
     """Parameters:
     Score the relevance of the retrieved contexts be based on the user input.
 
@@ -319,7 +319,7 @@ class Context_Relevance(MetricWithLLM, SingleTurnMetric):
 
 
 @dataclass
-class Response_Groundedness(MetricWithLLM, SingleTurnMetric):
+class ResponseGroundedness(MetricWithLLM, SingleTurnMetric):
     """Parameters:
     Score the groundedness of the response based on the retrieved contexts.
 
@@ -441,7 +441,3 @@ class Response_Groundedness(MetricWithLLM, SingleTurnMetric):
     # For compatibility
     async def _ascore(self, row):
         raise NotImplementedError("You are using deprecated RAGAS version, please update to RAGAS>0.2.6")
-
-answer_accuracy = Answer_Accuracy()
-context_relevance = Context_Relevance()
-response_groundedness = Response_Groundedness()
