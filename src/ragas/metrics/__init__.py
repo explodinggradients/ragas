@@ -1,4 +1,4 @@
-from ragas.metrics._answer_accuracy import (
+from ragas.metrics._nv_metrics import (
     AnswerAccuracy,
     ContextRelevance,
     ResponseGroundedness,

@@ -1,16 +1,12 @@
 from __future__ import annotations
 
 import logging
+import numpy as np
 import typing as t
-from dataclasses import dataclass, field
-import numpy as np
-
-import numpy as np
 from pydantic import BaseModel
-
-from ragas.dataset_schema import SingleTurnSample
-
 from ragas.run_config import RunConfig
+from dataclasses import dataclass, field
+from ragas.dataset_schema import SingleTurnSample
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -37,7 +33,7 @@ class AnswerAccuracy(MetricWithLLM, SingleTurnMetric):
     """
     Measures answer accuracy compared to ground truth given a user_input.
     This metric averages two distinct judge prompts to evaluate.
-    
+
     Top10, Zero-shoot LLM-as-a-Judge Leaderboard:
     1)- mistralai/mixtral-8x22b-instruct-v0.1
     2)- mistralai/mixtral-8x7b-instruct-v0.1
@@ -59,7 +55,7 @@ class AnswerAccuracy(MetricWithLLM, SingleTurnMetric):
     answer_accuracy:
         The AnswerAccuracy object
     """
-    name: str = field(default="answer_accuracy", repr=True)  # type: ignore
+    name: str = field(default="nv_accuracy", repr=True)  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {
@@ -201,7 +197,7 @@ class ContextRelevance(MetricWithLLM, SingleTurnMetric):
         1.0: retrieved_contexts is fully relevant for the user_input
     """
 
-    name: str = field(default="context_relevance", repr=True)  # type: ignore
+    name: str = field(default="nv_context_relevance", repr=True)  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {
@@ -331,7 +327,7 @@ class ResponseGroundedness(MetricWithLLM, SingleTurnMetric):
         1.0: response is fully grounded in the retrieved contexts
     """
 
-    name: str = field(default="response_groundedness", repr=True)  # type: ignore
+    name: str = field(default="nv_response_groundedness", repr=True)  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {
