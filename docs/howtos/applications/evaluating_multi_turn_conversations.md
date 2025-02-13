@@ -9,7 +9,7 @@ Ragas offers **AspectCritic**, a powerful evaluation metric for assessing multi-
 **[AspectCritic](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/general_purpose/#aspect-critic)**  
 AspectCritic evaluates responses based on predefined aspects written in free-form natural language. It returns a binary output indicating whether the response aligns with the defined aspect.
 
-This metric perfectly aligns with Hamel's [suggestion](https://hamel.dev/notes/llm/officehours/evalmultiturn.html#focus-on-binary-decisions) to focus on binary decisions, which eliminate ambiguity and provide a clear, actionable approach to improving conversation quality.
+This metric aligns with Hamel's [suggestion](https://hamel.dev/notes/llm/officehours/evalmultiturn.html#focus-on-binary-decisions) to focus on binary decisions, which eliminate ambiguity and provide a clear, actionable approach to improving conversation quality.
 
 ### Practical Example – Evaluating a Banking Chatbot  
 
@@ -391,7 +391,7 @@ The above evaluation result highlights that what is considered polite in Mexico 
 
 In this section, we will explore how to evaluate whether the chatbot’s tone is consistent with the business’s values, target audience, and overall brand identity.  
 
-#### What is a Brand Tone of Voice?  
+**What is a Brand Tone of Voice?**
 A brand’s tone of voice refers to its choice of words when communicating with its audience in written or spoken interactions. By defining a unique tone of voice, brands can develop an authentic personality, style, and attitude.  
 [Reference](https://filestage.io/blog/brand-tone-of-voice-examples/)  
 
