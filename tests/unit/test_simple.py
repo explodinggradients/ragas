@@ -5,7 +5,7 @@ import typing as t
 
 def test_import():
     import ragas
-    from ragas.testset.generator import TestsetGenerator
+    from ragas.testset import TestsetGenerator
 
     assert TestsetGenerator is not None
     assert ragas is not None
@@ -16,6 +16,6 @@ def test_type_casting():
 
 
 def test_import_metrics():
-    from ragas.metrics.critique import harmfulness
+    from ragas.metrics._aspect_critic import harmfulness
 
     assert harmfulness is not None

@@ -1,5 +1,6 @@
 [project]
 name = "ragas"
+requires-python = ">=3.9"
 dependencies = [
     "numpy",
     "datasets",
@@ -8,23 +9,72 @@ dependencies = [
     "langchain-core",
     "langchain-community",
     "langchain_openai",
-    "openai>1",
-    "pysbd>=0.3.4",
     "nest-asyncio",
     "appdirs",
+    "pydantic>=2",
+    "openai>1",
+    "diskcache>=5.6.3",
 ]
 dynamic = ["version", "readme"]
 
 [project.optional-dependencies]
 all = [
     "sentence-transformers",
+    "transformers",
+    "nltk",
+    "rouge_score",
+    "rapidfuzz",
+    "pandas",
+    "datacompy",
+    "llama_index",
 ]
-
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material",
+    "mkdocs-material[imaging]",
+    "mkdocstrings[python]",
+    "mkdocs-glightbox",
+    "mkdocs-autorefs",
+    "mkdocs-gen-files",
+    "mkdocs-literate-nav",
+    "mkdocs-section-index",
+    "mkdocs-git-committers-plugin-2",
+    "mkdocs-git-revision-date-localized-plugin",
+]
+dev = [
+    "rich",
+    "ruff",
+    "isort",
+    "black[jupyter]",
+    "pyright",
+    "llama_index",
+    "notebook",
+    "sphinx-autobuild",
+    "sentence-transformers",
+    "transformers",
+    "fastembed",
+    "graphene",
+    "rouge_score",
+    "nltk",
+    "rapidfuzz",
+    "pandas",
+    "datacompy",
+]
+test = [
+    "pytest",
+    "pytest-xdist[psutil]",
+    "pytest-asyncio",
+    "llama_index",
+    "nbmake",
+]
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.dynamic]
-readme = {file = ["README.md"], content-type = "text/plain"}
+readme = {file = ["README.md"], content-type = "text/markdown"}
+
+[tool.ruff]
+exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
 ignore = ["E501"]
@@ -35,3 +85,15 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 write_to = "src/ragas/_version.py"
+
+[tool.pytest.ini_options]
+addopts = "-n 0"
+asyncio_default_fixture_loop_scope = "function"
+[pytest]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "arize-phoenix>=6.1.0",
+    "openinference-instrumentation-langchain>=0.1.29",
+]

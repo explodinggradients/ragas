@@ -1,18 +1,12 @@
-import time
-
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from llama_index import download_loader
+from llama_index.core import download_loader
 
-from ragas.testset.evolutions import conditional, multi_context, reasoning, simple
-from ragas.testset.generator import TestsetGenerator
+from ragas.testset.synthesizers.generate import TestsetGenerator
 
-generator_llm = ChatOpenAI(model="gpt-3.5-turbo-16k")
-critic_llm = ChatOpenAI(model="gpt-4")
+generator_llm = ChatOpenAI(model="gpt-4o")
 embeddings = OpenAIEmbeddings()
 
-generator = TestsetGenerator.from_langchain(generator_llm, critic_llm, embeddings)
-
-distributions = {simple: 0.5, multi_context: 0.3, reasoning: 0.1, conditional: 0.1}
+generator = TestsetGenerator.from_langchain(generator_llm, embeddings)
 
 
 def get_documents():
@@ -26,33 +20,12 @@ def get_documents():
     return documents
 
 
-IGNORE_THREADS = False
 IGNORE_ASYNCIO = False
 # os.environ["PYTHONASYNCIODEBUG"] = "1"
 
 if __name__ == "__main__":
     documents = get_documents()
-
-    # asyncio
-    if not IGNORE_ASYNCIO:
-        print("Starting [Asyncio]")
-        start = time.time()
-        generator.generate_with_llamaindex_docs(
-            documents=documents,
-            test_size=50,
-            distributions=distributions,
-            is_async=True,
-        )
-        print(f"Time taken: {time.time() - start:.2f}s")
-
-    # Threads
-    if not IGNORE_THREADS:
-        print("Starting [Threads]")
-        start = time.time()
-        generator.generate_with_llamaindex_docs(
-            documents=documents,
-            test_size=50,
-            distributions=distributions,
-            is_async=False,
-        )
-        print(f"Time taken [Threads]: {time.time() - start:.2f}s")
+    generator.generate_with_llamaindex_docs(
+        documents=documents,
+        testset_size=50,
+    )

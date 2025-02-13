@@ -3,7 +3,7 @@
   src="./docs/_static/imgs/logo.png">
 </h1>
 <p align="center">
-  <i>Evaluation framework for your Retrieval Augmented Generation (RAG) pipelines</i>
+  <i>Supercharge Your LLM Application Evaluations 🚀</i>
 </p>
 
 <p align="center">
@@ -16,37 +16,43 @@
     <a href="https://github.com/explodinggradients/ragas/blob/master/LICENSE">
         <img alt="License" src="https://img.shields.io/github/license/explodinggradients/ragas.svg?color=green">
     </a>
-    <a href="https://colab.research.google.com/github/explodinggradients/ragas/blob/main/docs/quickstart.ipynb">
-        <img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg">
+    <a href="https://pypi.org/project/ragas/">
+        <img alt="Open In Colab" src="https://img.shields.io/pypi/dm/ragas">
     </a>
     <a href="https://discord.gg/5djav8GGNZ">
-        <img alt="discord-invite" src="https://dcbadge.vercel.app/api/server/5djav8GGNZ?style=flat">
-    </a>
-    <a href="https://github.com/explodinggradients/ragas/">
-        <img alt="Downloads" src="https://badges.frapsoft.com/os/v1/open-source.svg?v=103">
+        <img alt="discord-invite" src="https://img.shields.io/discord/1119637219561451644">
     </a>
 </p>
 
 <h4 align="center">
     <p>
         <a href="https://docs.ragas.io/">Documentation</a> |
-        <a href="#shield-installation">Installation</a> |
-        <a href="#fire-quickstart">Quickstart</a> |
-        <a href="#-community">Community</a> |
-        <a href="#-open-analytics">Open Analytics</a> |
-        <a href="https://huggingface.co/explodinggradients">Hugging Face</a>
+        <a href="#fire-quickstart">Quick start</a> |
+        <a href="https://discord.gg/5djav8GGNZ">Join Discord</a> |
+        <a href="https://blog.ragas.io/">Blog</a> |
+        <a href="https://newsletter.ragas.io/">NewsLetter</a> |
+        <a href="https://www.ragas.io/careers">Careers</a>
     <p>
 </h4>
 
-> 🚀 Dedicated solutions to evaluate, monitor and improve performance of LLM & RAG application in production including custom models for production quality monitoring.[Talk to founders](https://cal.com/shahul-ragas/30min)
+Objective metrics, intelligent test generation, and data-driven insights for LLM apps
 
-Ragas is a framework that helps you evaluate your Retrieval Augmented Generation (RAG) pipelines. RAG denotes a class of LLM applications that use external data to augment the LLM’s context. There are existing tools and frameworks that help you build these pipelines but evaluating it and quantifying your pipeline performance can be hard. This is where Ragas (RAG Assessment) comes in.
+Ragas is your ultimate toolkit for evaluating and optimizing Large Language Model (LLM) applications. Say goodbye to time-consuming, subjective assessments and hello to data-driven, efficient evaluation workflows.
+Don't have a test dataset ready? We also do production-aligned test set generation.
 
-Ragas provides you with the tools based on the latest research for evaluating LLM-generated text to give you insights about your RAG pipeline. Ragas can be integrated with your CI/CD to provide continuous checks to ensure performance.
+> [!NOTE]
+> Need help setting up Evals for your AI application? We'd love to help! We are conducting Office Hours every week. You can sign up [here](https://cal.com/team/ragas/office-hours).
+
+## Key Features
+
+- 🎯 Objective Metrics: Evaluate your LLM applications with precision using both LLM-based and traditional metrics.
+- 🧪 Test Data Generation: Automatically create comprehensive test datasets covering a wide range of scenarios.
+- 🔗 Seamless Integrations: Works flawlessly with popular LLM frameworks like LangChain and major observability tools.
+- 📊 Build feedback loops: Leverage production data to continually improve your LLM applications.
 
 ## :shield: Installation
 
-From release:
+Pypi: 
 
 ```bash
 pip install ragas
@@ -60,40 +66,69 @@ pip install git+https://github.com/explodinggradients/ragas
 
 ## :fire: Quickstart
 
-This is a small example program you can run to see ragas in action!
+### Evaluate your LLM App
+
+This is 5 main lines:
 
 ```python
+from ragas import SingleTurnSample
+from ragas.metrics import AspectCritic
 
-from datasets import Dataset 
-import os
-from ragas import evaluate
-from ragas.metrics import faithfulness, answer_correctness
-
-os.environ["OPENAI_API_KEY"] = "your-openai-key"
-
-data_samples = {
-    'question': ['When was the first super bowl?', 'Who won the most super bowls?'],
-    'answer': ['The first superbowl was held on Jan 15, 1967', 'The most super bowls have been won by The New England Patriots'],
-    'contexts' : [['The First AFL–NFL World Championship Game was an American football game played on January 15, 1967, at the Los Angeles Memorial Coliseum in Los Angeles,'], 
-    ['The Green Bay Packers...Green Bay, Wisconsin.','The Packers compete...Football Conference']],
-    'ground_truth': ['The first superbowl was held on January 15, 1967', 'The New England Patriots have won the Super Bowl a record six times']
+test_data = {
+    "user_input": "summarise given text\nThe company reported an 8% rise in Q3 2024, driven by strong performance in the Asian market. Sales in this region have significantly contributed to the overall growth. Analysts attribute this success to strategic marketing and product localization. The positive trend in the Asian market is expected to continue into the next quarter.",
+    "response": "The company experienced an 8% increase in Q3 2024, largely due to effective marketing strategies and product adaptation, with expectations of continued growth in the coming quarter.",
 }
-
-dataset = Dataset.from_dict(data_samples)
-
-score = evaluate(dataset,metrics=[faithfulness,answer_correctness])
-score.to_pandas()
+evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
+metric = AspectCritic(name="summary_accuracy",llm=evaluator_llm, definition="Verify if the summary is accurate.")
+await metric.single_turn_ascore(SingleTurnSample(**test_data))
 ```
 
-Refer to our [documentation](https://docs.ragas.io/) to learn more.
+Find the complete [Quickstart Guide](https://docs.ragas.io/en/latest/getstarted/evals)
 
+### Analyze your Evaluation
+
+Sign up for [app.ragas.io](https://app.ragas.io) to review, share and analyze your evaluations</a>
+
+<p align="left">
+    <img src="docs/getstarted/ragas_get_started_evals.gif" height="300">
+</p>
+
+See [how to use it](https://docs.ragas.io/en/latest/getstarted/evals/#analyzing-results)
 
 ## 🫂 Community
 
-If you want to get more involved with Ragas, check out our [discord server](https://discord.gg/5djav8GGNZ). It's a fun community where we geek out about LLM, Retrieval, Production issues, and more.
+If you want to get more involved with Ragas, check out our [discord server](https://discord.gg/5qGUJ6mh7C). It's a fun community where we geek out about LLM, Retrieval, Production issues, and more.
+
+## Contributors
+
+```yml
++----------------------------------------------------------------------------+
+|     +----------------------------------------------------------------+     |
+|     | Developers: Those who built with `ragas`.                      |     |
+|     | (You have `import ragas` somewhere in your project)            |     |
+|     |     +----------------------------------------------------+     |     |
+|     |     | Contributors: Those who make `ragas` better.       |     |     |
+|     |     | (You make PR to this repo)                         |     |     |
+|     |     +----------------------------------------------------+     |     |
+|     +----------------------------------------------------------------+     |
++----------------------------------------------------------------------------+
+```
+
+We welcome contributions from the community! Whether it's bug fixes, feature additions, or documentation improvements, your input is valuable.
+
+1. Fork the repository
+2. Create your feature branch (git checkout -b feature/AmazingFeature)
+3. Commit your changes (git commit -m 'Add some AmazingFeature')
+4. Push to the branch (git push origin feature/AmazingFeature)
+5. Open a Pull Request
 
 ## 🔍 Open Analytics
+At Ragas, we believe in transparency. We collect minimal, anonymized usage data to improve our product and guide our development efforts.
 
-We track very basic usage metrics to guide us to figure out what our users want, what is working, and what's not. As a young startup, we have to be brutally honest about this which is why we are tracking these metrics. But as an Open Startup, we open-source all the data we collect. You can read more about this [here](https://github.com/explodinggradients/ragas/issues/49). **Ragas does not track any information that can be used to identify you or your company**. You can take a look at exactly what we track in the [code](./src/ragas/_analytics.py)
+✅ No personal or company-identifying information
 
-To disable usage-tracking you set the `RAGAS_DO_NOT_TRACK` flag to true.
+✅ Open-source data collection [code](./src/ragas/_analytics.py)
+
+✅ Publicly available aggregated [data](https://github.com/explodinggradients/ragas/issues/49)
+
+To opt-out, set the `RAGAS_DO_NOT_TRACK` environment variable to `true`.

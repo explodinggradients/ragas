@@ -1,16 +1,8 @@
-(community)=
 # ❤️ Community 
 
-**"Alone we can do so little; together we can do so much." - Helen Keller**
+> "Alone we can do so little; together we can do so much." - Helen Keller
 
 Our project thrives on the vibrant energy, diverse skills, and shared passion of our community. It's not just about code; it's about people coming together to create something extraordinary. This space celebrates every contribution, big or small, and features the amazing people who make it all happen.
-
-:::{note}
-**📅 Upcomming Events**
-
-- [Greg Loughnane's](https://www.youtube.com/@AI-Makerspace) YT live event on RAG eval with LangChain and RAGAS on [Feb 7](https://lu.ma/theartofrag)
-:::
-
 
 ## **🌟  Contributors**
 
@@ -24,6 +16,10 @@ Meet some of our outstanding members who made significant contributions !
 
 Explore insightful articles, tutorials, and stories written by and for our community members.
 
+- [Luka Panić](https://www.linkedin.com/in/luka-pani%C4%87-20b671277/) shares his work on 
+    - [Ragas Evaluation: In-Depth Insights | PIXION Blog](https://pixion.co/blog/ragas-evaluation-in-depth-insights): A detailed explanation of the metrics and how they are calculated.
+    - [RAG in practice - Test Set Generation | PIXION Blog](https://pixion.co/blog/rag-in-practice-test-set-generation): A tutorial on how to generate a test set using Ragas.
+- [Shanthi Vardhan](https://www.linkedin.com/in/shanthivardhan/) shares how his team at [Atomicwork uses ragas](https://www.atomicwork.com/blog/ragas-improving-atom-accuracy) to improve their AI system's ability to accurately identify and retrieve more precise information for enhanced service management.
 - [Pinecone's](https://pinecone.io/blog) study on how RAGs can enhance capabilities of LLMs in ["RAG makes LLMs better and equal"](https://www.pinecone.io/blog/rag-study/) uses ragas to proves context retrieval makes LLMs provide significantly better results, even when increasing the data size to 1 billion.
 - [Aishwarya Prabhat](https://www.linkedin.com/in/aishwaryaprabhat/) shares her expertise on advanced RAG techniques in her comprehensive guide, ["Performing, Evaluating & Tracking Advanced RAG (ft. AzureML, LlamaIndex & Ragas)"](https://www.linkedin.com/pulse/performing-evaluating-tracking-advanced-rag-ft-azureml-prabhat-i1rkc/).
 - Leonie (aka [@helloiamleonie](https://twitter.com/helloiamleonie?source=about_page-------------------------------------))  offers her perspective in the detailed article, ["Evaluating RAG Applications with RAGAs"](https://towardsdatascience.com/evaluating-rag-applications-with-ragas-81d67b0ee31a).
@@ -37,6 +33,17 @@ Explore insightful articles, tutorials, and stories written by and for our commu
     - [RAG Evaluation: Necessity and Challenge](https://tech.beatrust.com/entry/2024/05/02/RAG_Evaluation%3A_Necessity_and_Challenge)
     - [RAG Evaluation : Computational Metrics in RAG and Calculation Methods in Ragas](https://tech.beatrust.com/entry/2024/05/02/RAG_Evaluation_%3A_Computational_Metrics_in_RAG_and_Calculation_Methods_in_Ragas)
     - [RAG Evaluation: Assessing the Usefulness of Ragas](https://tech.beatrust.com/entry/2024/05/02/RAG_Evaluation%3A_Assessing_the_Usefulness_of_Ragas)
+- [Atita Arora](https://www.linkedin.com/in/atitaarora/) writes about [Evaluating Retrieval Augmented Generation using RAGAS](https://superlinked.com/vectorhub/articles/retrieval-augmented-generation-eval-qdrant-ragas), an end-to-end tutorial on building RAG using [Qdrant](https://qdrant.tech/) and [Langchain](https://www.langchain.com/) and evaluating it with RAGAS. 
+    - *Bonus content* : Learn how to create an evaluation dataset that serves as a reference point for evaluating our RAG pipeline, Understand the RAGAS evaluation metrics and how to make sense of them and putting them in action to test a Naive RAG pipeline and measure its performance using RAGAS metrics. 
+    - *Code walkthrough* : https://github.com/qdrant/qdrant-rag-eval/tree/master/workshop-rag-eval-qdrant-ragas
+    - *Code walkthrough using [Deepset Haystack](https://haystack.deepset.ai/) and [Mixedbread.ai](https://www.mixedbread.ai/)* : https://github.com/qdrant/qdrant-rag-eval/tree/master/workshop-rag-eval-qdrant-ragas-haystack
+- [Minoru Onda](https://x.com/minorun365) writes for beginners about how to start Ragas v0.2 evaluation with Amazon Bedrock, and integrate with Langfuse.
+    - [RAG精度評価の定番ツール「Ragas」にAWSのBedrockで入門しよう！（v0.2対応） - Qiita](https://qiita.com/minorun365/items/2f4e238f8bbc6e393ba5)
+    - [生成AIアプリの出力をRagasで評価して、LangfuseでGUI監視しよう！ - Qiita](https://qiita.com/minorun365/items/70ad2f5a0afaac6e5cb9)
+- [Yunnglin](https://github.com/Yunnglin) has penned a guide on integrating Ragas v0.2 into [EvalScope](https://github.com/modelscope/eval-scope) (an evaluation framework for large models), thereby utilizing the [ModelScope](https://github.com/modelscope/modelscope) ecosystem.
+    - Tutorial: [Using Ragas with EvalScope](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/ragas.html)
+    - 教程: [在EvalScope中使用Ragas一键发起RAG评估](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/ragas.html)
+    - 最佳实践: [打破文本边界：如何进行多模态RAG评估](https://evalscope.readthedocs.io/zh-cn/latest/blog/RAG/multimodal_RAG.html#multimodal-rag)
 
 ## **📅 Events**
 
