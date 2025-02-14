@@ -4,7 +4,7 @@
 I am using documents from [sample of gitlab handbook](https://huggingface.co/datasets/explodinggradients/Sample_Docs_Markdown). You can download it by running the below command.
 
 ```
-git clone https://huggingface.co/datasets/explodinggradients/Sample_Docs_Markdown
+! git clone https://huggingface.co/datasets/explodinggradients/Sample_Docs_Markdown
 
 ```
 
