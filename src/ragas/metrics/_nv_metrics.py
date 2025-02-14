@@ -3,8 +3,6 @@ from __future__ import annotations
 import logging
 import numpy as np
 import typing as t
-from pydantic import BaseModel
-from ragas.run_config import RunConfig
 from dataclasses import dataclass, field
 from ragas.dataset_schema import SingleTurnSample
 
@@ -17,16 +15,9 @@ from ragas.metrics.base import (
     MetricWithLLM,
     SingleTurnMetric,
 )
-class QuestionAnswerGroundTruth(BaseModel):
-    question: str
-    answer: list[str]
-    ground_truth: list[str]
-
-class StatementsWithReason(BaseModel):
-    statement: str
-    reason: str
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class AnswerAccuracy(MetricWithLLM, SingleTurnMetric):
@@ -130,7 +121,7 @@ class AnswerAccuracy(MetricWithLLM, SingleTurnMetric):
                 req0 = self.llm.agenerate_text(
                     formatted_prompt,
                     n=1,
-                    temperature=0.10
+                    temperature=0.10,
                 )
                 resp0 = await req0
                 score_ref_gen = resp0.generations[0][0].text
