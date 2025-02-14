@@ -6,8 +6,7 @@ import typing as t
 from dataclasses import dataclass, field
 from ragas.dataset_schema import SingleTurnSample
 
-if t.TYPE_CHECKING:
-    from langchain_core.callbacks import Callbacks
+from langchain_core.callbacks import Callbacks
 from langchain_core.prompt_values import StringPromptValue
 
 from ragas.metrics.base import (
@@ -108,6 +107,7 @@ class AnswerAccuracy(MetricWithLLM, SingleTurnMetric):
         assert sample.reference is not None, "Reference is not set"
 
         try:
+            score_ref_gen = score_gen_ref = np.nan
             for retry in range(self.retry):
                 formatted_prompt = StringPromptValue(
                     text=self.template_accuracy1.format(
@@ -167,12 +167,6 @@ class AnswerAccuracy(MetricWithLLM, SingleTurnMetric):
             score = np.nan
 
         return score
-
-    # For compatibility
-    async def _ascore(self, row):
-        raise NotImplementedError(
-            "You are using deprecated RAGAS version, please update to RAGAS>0.2.6"
-        )
 
 
 @dataclass
@@ -300,10 +294,6 @@ class ContextRelevance(MetricWithLLM, SingleTurnMetric):
 
         return score
 
-    # For compatibility
-    async def _ascore(self, row):
-        raise NotImplementedError("You are using deprecated RAGAS version, please update to RAGAS>0.2.6")
-
 
 @dataclass
 class ResponseGroundedness(MetricWithLLM, SingleTurnMetric):
@@ -424,7 +414,3 @@ class ResponseGroundedness(MetricWithLLM, SingleTurnMetric):
             score = np.nan
 
         return score
-
-    # For compatibility
-    async def _ascore(self, row):
-        raise NotImplementedError("You are using deprecated RAGAS version, please update to RAGAS>0.2.6")
