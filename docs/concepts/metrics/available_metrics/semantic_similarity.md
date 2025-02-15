@@ -2,7 +2,7 @@
 
 The concept of Answer Semantic Similarity pertains to the assessment of the semantic resemblance between the generated answer and the ground truth. This evaluation is based on the `ground truth` and the `answer`, with values falling within the range of 0 to 1. A higher score signifies a better alignment between the generated answer and the ground truth.
 
-Measuring the semantic similarity between answers can offer valuable insights into the quality of the generated response. This evaluation utilizes a cross-encoder model to calculate the semantic similarity score.
+Measuring the semantic similarity between answers can offer valuable insights into the quality of the generated response. This evaluation utilizes a bi-encoder model to calculate the semantic similarity score.
 
 
 ### Example

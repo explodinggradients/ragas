@@ -97,6 +97,7 @@ nav:
           - Metrics:
             - Cost Analysis: howtos/applications/_cost.md
             - Debug LLM Based Metrics: howtos/applications/_metrics_llm_calls.md
+            - Evaluating Multi-turn Conversations: howtos/applications/evaluating_multi_turn_conversations.md
       - Integrations:
           - howtos/integrations/index.md
           - Arize: howtos/integrations/_arize.md
