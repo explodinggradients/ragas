@@ -6,23 +6,24 @@ R2R is an all-in-one solution for AI Retrieval-Augmented Generation (RAG) with p
 In this tutorial, we will:
 
 - Leverage the `/rag` endpoint from R2R to perform Retrieval-Augmented Generation (RAG) on a small dataset.
-- Evaluate the generated responses using the `RagasEvaluator`.
-- Analyze the trace of evaluation performed.
+- Evaluate the generated responses.
+- Analyze the traces of evaluation.
 
 ## R2R Setup
 
-#### Intalling the Dependencies
+#### Installing the Dependencies
 
 To begin, install the necessary packages:
 
 
 ```python
-%pip install r2r<=3.3.32 litellm -q
+%pip install r2r -q
 ```
 
-#### Setting up the local evnoirnment
+#### Setting up the local environment
 
 Configure the `R2R_API_KEY`, `OPENAI_API_KEY` and `RAGAS_APP_TOKEN`(Optional).
+
 
 ```python
 from dotenv import load_dotenv
@@ -52,12 +53,13 @@ dataset = [
 
 
 ```python
-from r2r import R2RClient
+from r2r import R2RAsyncClient
 
-client = R2RClient()
+client = R2RAsyncClient()
 ```
 
 #### Ingesting the Data
+
 
 ```python
 ingest_response = client.documents.create(
@@ -67,75 +69,48 @@ ingest_response = client.documents.create(
 
 #### Using the `/rag` Endpoint
 
-The [`/rag`](https://r2r-docs.sciphi.ai/api-and-sdks/retrieval/rag-app) endpoint executes a Retrieval-Augmented Generation (RAG) query. This endpoint combines search results with language model generation. 
-
-The generation process can be customized using the `rag_generation_config` parameter, while the retrieval process can be configured using the `search_settings`. It also supports filtering capabilities similar to the [`/search`](https://r2r-docs.sciphi.ai/api-and-sdks/retrieval/search-app) endpoint, offering precise control over the retrieved context.
+The [`/rag`](https://r2r-docs.sciphi.ai/api-and-sdks/retrieval/rag-app) endpoint facilitate Retrieval-Augmented Generation by integrating search results with language model outputs. The generation process can be customized using the `rag_generation_config` parameter, while the retrieval process can be configured using the `search_settings`.
 
 
 ```python
 query = "What makes Meta AI’s LLaMA models stand out?"
 
-response = client.retrieval.rag(
-    query=query,
-    search_settings={
+search_settings = {
         "limit": 2,
         "graph_settings": {"enabled": False, "limit": 2},
-    },
+    }
+
+response = await client.retrieval.rag(
+    query=query,
+    search_settings=search_settings
 )
 
-print(response["results"]["completion"])
+print(response.results.generated_answer)
 ```
 Output
 ```
-Meta AI’s LLaMA models stand out due to their open-source nature, which supports innovation and experimentation by making high-quality models accessible to researchers and developers [1]. This approach democratizes AI development, fostering collaboration across industries and providing opportunities for those without access to expensive resources [2].
+Meta AI’s LLaMA models stand out due to their open-source nature, which supports innovation and experimentation by making high-quality models accessible to researchers and developers [1]. This approach democratizes AI development, fostering collaboration across industries and enabling researchers without access to expensive resources to work with advanced AI models [2].
 ```
 
 ## Evaluations
 
-#### Initializing the RagasEvaluator
+#### **Evaluating the `R2R Client` with Ragas**  
 
-The `RagasEvaluator` provides an abstract interface for R2R to access the Ragas library. You can find more information about the RagasEvaluator [here](ragas.integrations.r2r.RagasEvaluator).
+With the `R2R Client` in place, we can use Ragas `r2r` integration for evaluation. This process involves the following key components:  
 
-To evaluate our RAG endpoint, we will use the following metrics:
+- **1. R2R Client and Configurations**  
+The `R2RAsyncClient` and `/rag` configurations specifying RAG settings.   
 
-- [Response Relevancy](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/answer_relevance/#response-relevancy): Measures how relevant a response is to the user’s input (query).
-- [Context Precision](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/context_precision/): Measures how many of the relevant documents (or pieces of information) were successfully retrieved.
-- [Faithfulness](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/faithfulness/): Measures how factually consistent a response is with the retrieved context.
+- **2. Evaluation Dataset**  
+You need a Ragas `EvaluationDataset` that includes all necessary inputs required by Ragas metrics, except for the response and reference context provided by the /rag endpoint. 
 
-
-```python
-from ragas.integrations.r2r import RagasEvaluator
-from langchain_openai import ChatOpenAI
-from ragas.llms import LangchainLLMWrapper
-from ragas.metrics import ResponseRelevancy, ContextPrecision, Faithfulness
-
-llm = ChatOpenAI(model="gpt-4o-mini")
-evaluator_llm = LangchainLLMWrapper(llm)
-
-ragas_evaluator = RagasEvaluator(
-    metrics=[ResponseRelevancy(), ContextPrecision(), Faithfulness()],
-    evaluator_llm=evaluator_llm,
-)
-```
-
-#### Performing the Single Evaluation
+- **3. Ragas Metrics**  
+Ragas provides various evaluation metrics to assess different aspects of the RAG, such as faithfulness, answer relevance, and context recall. You can explore the full list of available metrics in the [Ragas documentation](https://docs.ragas.io/en/latest/concepts/metrics/available_metrics/).  
 
 
-```python
-# For evaluating a single query, we use the evaluate method
-reference = "Meta AI’s LLaMA models stand out for being open-source, supporting innovation and experimentation due to their accessibility and strong performance."
+#### Constructing a Ragas EvaluationDataset  
 
-ragas_evaluator.evaluate(query=query, response=response, reference=reference)
-```
-Output
-```
-Evaluating: 100%|██████████| 3/3 [00:00<?, ?it/s]
-
-{'answer_relevancy': 0.9810, 'context_precision': 1.0000, 'faithfulness': 1.0000}
-```
-
-
-#### Performing the Multiple Evaluations 
+The [`EvaluationDataset`](../../concepts/components/eval_dataset.md) is a data type in Ragas designed to represent evaluation samples. You can find more details about its structure and usage in the [core concepts section](../../concepts/components/eval_dataset.md).
 
 
 ```python
@@ -154,27 +129,64 @@ references = [
 
 
 ```python
-responses = []
+from ragas.dataset_schema import EvaluationDataset
 
-for i in questions:
-    response = client.retrieval.rag(
-        query=i,
-        search_mode="basic",
-        search_settings={"limit": 2},
-    )
-    responses.append(response)
+sample_list = []
+for i in range(len(questions)):
+	sample = {
+		"user_input":questions[i],
+		"reference":references[i],
+		}
+	sample_list.append(sample)
+		
+eval_dataset = EvaluationDataset.from_list(sample_list)
+eval_dataset
 ```
+Output
+```
+EvaluationDataset(features=['user_input', 'reference'], len=3)
+```
+
+
+#### Selecting the Metrics
+
+To evaluate our RAG endpoint, we will use the following metrics:
+
+- [Response Relevancy](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/answer_relevance/#response-relevancy): Measures how relevant a response is to the user’s input (query).
+- [Context Precision](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/context_precision/): Measures how many of the relevant documents (or pieces of information) were successfully retrieved.
+- [Faithfulness](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/faithfulness/): Measures how factually consistent a response is with the retrieved context.
 
 
 ```python
-# For evaluating multiple queries, we can use the evaluate_dataset method
-results = ragas_evaluator.evaluate_dataset(
-    queries=questions, responses=responses, references=references
-)
+from ragas.metrics import AnswerRelevancy, ContextPrecision, Faithfulness
+from ragas.integrations.r2r import evaluate
+from langchain_openai import ChatOpenAI
+from ragas.llms import LangchainLLMWrapper
 
+llm = ChatOpenAI(model="gpt-4o-mini")
+evaluator_llm = LangchainLLMWrapper(llm)
+ragas_metrics = [AnswerRelevancy(), ContextPrecision(), Faithfulness()]
+
+search_settings = {
+    "limit": 2,
+    "graph_settings": {"enabled": False, "limit": 2},
+}
+
+results = evaluate(
+    r2r_client=client,
+    search_settings=search_settings,
+    dataset=eval_dataset,
+    llm=evaluator_llm,
+    metrics=ragas_metrics,
+)
 results.to_pandas()
 ```
+Output
+```
+Querying Client: 100%|██████████| 3/3 [00:00<?, ?it/s]
+
 Evaluating: 100%|██████████| 9/9 [00:00<?, ?it/s]
+```
 
 <div>
 <style scoped>
@@ -212,7 +224,7 @@ Evaluating: 100%|██████████| 9/9 [00:00<?, ?it/s]
       <td>The major players include OpenAI (GPT Series),...</td>
       <td>1.000000</td>
       <td>1.0</td>
-      <td>0.875</td>
+      <td>1.000000</td>
     </tr>
     <tr>
       <th>1</th>
@@ -220,9 +232,9 @@ Evaluating: 100%|██████████| 9/9 [00:00<?, ?it/s]
       <td>[Microsoft’s Azure AI platform is famous for i...</td>
       <td>Microsoft’s Azure AI platform is known for int...</td>
       <td>Microsoft’s Azure AI platform is known for int...</td>
-      <td>0.951571</td>
+      <td>0.948908</td>
       <td>1.0</td>
-      <td>1.000</td>
+      <td>0.833333</td>
     </tr>
     <tr>
       <th>2</th>
@@ -230,9 +242,9 @@ Evaluating: 100%|██████████| 9/9 [00:00<?, ?it/s]
       <td>[Cohere is well-known for its language models ...</td>
       <td>Cohere provides language models tailored for b...</td>
       <td>Cohere provides language models tailored for b...</td>
-      <td>0.900705</td>
+      <td>0.903765</td>
       <td>1.0</td>
-      <td>1.000</td>
+      <td>1.000000</td>
     </tr>
   </tbody>
 </table>
@@ -249,6 +261,5 @@ To gain a better understanding of the scores from the evaluation, we can obtain 
 results.upload()
 ```
 ![](../../_static/r2r_integration_ragas_app.png)
-
 
 Happy Coding
