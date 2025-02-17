@@ -1,8 +1,4 @@
-from ragas.metrics._nv_metrics import (
-    AnswerAccuracy,
-    ContextRelevance,
-    ResponseGroundedness,
-)
+from ragas.metrics._answer_correctness import AnswerCorrectness, answer_correctness
 from ragas.metrics._answer_relevance import (
     AnswerRelevancy,
     ResponseRelevancy,
@@ -51,6 +47,11 @@ from ragas.metrics._multi_modal_relevance import (
     multimodal_relevance,
 )
 from ragas.metrics._noise_sensitivity import NoiseSensitivity
+from ragas.metrics._nv_metrics import (
+    AnswerAccuracy,
+    ContextRelevance,
+    ResponseGroundedness,
+)
 from ragas.metrics._rouge_score import RougeScore
 from ragas.metrics._simple_criteria import SimpleCriteriaScore
 from ragas.metrics._sql_semantic_equivalence import LLMSQLEquivalence

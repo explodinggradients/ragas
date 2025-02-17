@@ -1,19 +1,15 @@
 from __future__ import annotations
 
 import logging
-import numpy as np
 import typing as t
 from dataclasses import dataclass, field
-from ragas.dataset_schema import SingleTurnSample
 
+import numpy as np
 from langchain_core.callbacks import Callbacks
 from langchain_core.prompt_values import StringPromptValue
 
-from ragas.metrics.base import (
-    MetricType,
-    MetricWithLLM,
-    SingleTurnMetric,
-)
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +41,7 @@ class AnswerAccuracy(MetricWithLLM, SingleTurnMetric):
     answer_accuracy:
         The AnswerAccuracy object
     """
+
     name: str = field(default="nv_accuracy", repr=True)  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
@@ -129,9 +126,7 @@ class AnswerAccuracy(MetricWithLLM, SingleTurnMetric):
                 if score_ref_gen == score_ref_gen:
                     break
                 else:
-                    logger.warning(
-                        f"Retry: {retry}"
-                    )
+                    logger.warning(f"Retry: {retry}")
 
             for retry in range(self.retry):
                 formatted_prompt = StringPromptValue(
@@ -154,9 +149,7 @@ class AnswerAccuracy(MetricWithLLM, SingleTurnMetric):
                 if score_gen_ref == score_gen_ref:
                     break
                 else:
-                    logger.warning(
-                        f"Retry: {retry}"
-                    )
+                    logger.warning(f"Retry: {retry}")
 
             score = self.average_scores(score_ref_gen, score_gen_ref)
 
@@ -243,12 +236,14 @@ class ContextRelevance(MetricWithLLM, SingleTurnMetric):
         assert sample.user_input is not None, "User input is not set"
         assert sample.retrieved_contexts is not None, "Retrieved Context is not set"
 
-        if (sample.user_input.strip() == "") or ("\n".join(sample.retrieved_contexts).strip() == ""):
-            return 0.
+        if (sample.user_input.strip() == "") or (
+            "\n".join(sample.retrieved_contexts).strip() == ""
+        ):
+            return 0.0
         if sample.user_input.strip() == "\n".join(sample.retrieved_contexts).strip():
-            return 0.
+            return 0.0
         if "\n".join(sample.retrieved_contexts).strip() in sample.user_input.strip():
-            return 0.
+            return 0.0
 
         try:
             score0 = score1 = np.nan
@@ -289,7 +284,9 @@ class ContextRelevance(MetricWithLLM, SingleTurnMetric):
             score = self.average_scores(score0, score1)
 
         except Exception as e:
-            print(f"An error occurred: {e}. Skipping a sample by assigning it nan score.")
+            print(
+                f"An error occurred: {e}. Skipping a sample by assigning it nan score."
+            )
             score = np.nan
 
         return score
@@ -368,12 +365,14 @@ class ResponseGroundedness(MetricWithLLM, SingleTurnMetric):
         assert sample.response is not None, "Response is not set"
         assert sample.retrieved_contexts is not None, "Retrieved Context is not set"
 
-        if (sample.response.strip() == "") or ("\n".join(sample.retrieved_contexts).strip().strip() == ""):
-            return 0.
+        if (sample.response.strip() == "") or (
+            "\n".join(sample.retrieved_contexts).strip().strip() == ""
+        ):
+            return 0.0
         if sample.response.strip() == "\n".join(sample.retrieved_contexts).strip():
-            return 1.
+            return 1.0
         if sample.response.strip() in "\n".join(sample.retrieved_contexts).strip():
-            return 1.
+            return 1.0
 
         try:
             score0 = score1 = np.nan
@@ -410,7 +409,9 @@ class ResponseGroundedness(MetricWithLLM, SingleTurnMetric):
             score = self.average_scores(score0, score1)
 
         except Exception as e:
-            print(f"An error occurred: {e}. Skipping a sample by assigning it nan score.")
+            print(
+                f"An error occurred: {e}. Skipping a sample by assigning it nan score."
+            )
             score = np.nan
 
         return score
