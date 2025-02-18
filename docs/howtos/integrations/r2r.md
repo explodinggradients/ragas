@@ -53,9 +53,9 @@ dataset = [
 
 
 ```python
-from r2r import R2RAsyncClient
+from r2r import R2RClient
 
-client = R2RAsyncClient()
+client = R2RClient()
 ```
 
 #### Ingesting the Data
@@ -80,7 +80,7 @@ search_settings = {
         "graph_settings": {"enabled": False, "limit": 2},
     }
 
-response = await client.retrieval.rag(
+response = client.retrieval.rag(
     query=query,
     search_settings=search_settings
 )
@@ -102,16 +102,16 @@ With the `R2R Client` in place, we can use Ragas `r2r` integration for evaluatio
 The `R2RAsyncClient` and `/rag` configurations specifying RAG settings.   
 
 - **2. Evaluation Dataset**  
-You need a Ragas `EvaluationDataset` that includes all necessary inputs required by Ragas metrics, except for the response and reference context provided by the /rag endpoint. 
+You need a Ragas `EvaluationDataset` that includes all necessary inputs required by Ragas metrics. 
 
 - **3. Ragas Metrics**  
 Ragas provides various evaluation metrics to assess different aspects of the RAG, such as faithfulness, answer relevance, and context recall. You can explore the full list of available metrics in the [Ragas documentation](https://docs.ragas.io/en/latest/concepts/metrics/available_metrics/).  
 
 
 #### Constructing a Ragas EvaluationDataset  
-
 The [`EvaluationDataset`](../../concepts/components/eval_dataset.md) is a data type in Ragas designed to represent evaluation samples. You can find more details about its structure and usage in the [core concepts section](../../concepts/components/eval_dataset.md).
 
+We will use the `transform_to_ragas_dataset` function from ragas to get the EvaluationDataset for our data.
 
 ```python
 questions = [
@@ -125,26 +125,30 @@ references = [
     "Microsoft’s Azure AI platform is known for integrating OpenAI’s GPT models, enabling businesses to use these models in a scalable and secure cloud environment.",
     "Cohere provides language models tailored for business use, excelling in tasks like search, summarization, and customer support.",
 ]
+
+r2r_responses = []
+
+search_settings = {
+    "limit": 2,
+    "graph_settings": {"enabled": False, "limit": 2},
+}
+
+for que in questions:
+    response = client.retrieval.rag(query=que, search_settings=search_settings)
+    r2r_responses.append(response)
 ```
 
 
 ```python
-from ragas.dataset_schema import EvaluationDataset
+from ragas.integrations.r2r import transform_to_ragas_dataset
 
-sample_list = []
-for i in range(len(questions)):
-	sample = {
-		"user_input":questions[i],
-		"reference":references[i],
-		}
-	sample_list.append(sample)
-		
-eval_dataset = EvaluationDataset.from_list(sample_list)
-eval_dataset
+ragas_eval_dataset = transform_to_ragas_dataset(
+    user_inputs=questions, r2r_responses=r2r_responses, references=references
+)
 ```
 Output
 ```
-EvaluationDataset(features=['user_input', 'reference'], len=3)
+EvaluationDataset(features=['user_input', 'retrieved_contexts', 'response', 'reference'], len=3)
 ```
 
 
@@ -159,27 +163,16 @@ To evaluate our RAG endpoint, we will use the following metrics:
 
 ```python
 from ragas.metrics import AnswerRelevancy, ContextPrecision, Faithfulness
-from ragas.integrations.r2r import evaluate
+from ragas import evaluate
 from langchain_openai import ChatOpenAI
 from ragas.llms import LangchainLLMWrapper
 
 llm = ChatOpenAI(model="gpt-4o-mini")
 evaluator_llm = LangchainLLMWrapper(llm)
-ragas_metrics = [AnswerRelevancy(), ContextPrecision(), Faithfulness()]
 
-search_settings = {
-    "limit": 2,
-    "graph_settings": {"enabled": False, "limit": 2},
-}
+ragas_metrics = [AnswerRelevancy(llm=evaluator_llm ), ContextPrecision(llm=evaluator_llm ), Faithfulness(llm=evaluator_llm )]
 
-results = evaluate(
-    r2r_client=client,
-    search_settings=search_settings,
-    dataset=eval_dataset,
-    llm=evaluator_llm,
-    metrics=ragas_metrics,
-)
-results.to_pandas()
+results = evaluate(dataset=ragas_eval_dataset, metrics=ragas_metrics)
 ```
 Output
 ```
