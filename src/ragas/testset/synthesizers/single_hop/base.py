@@ -64,9 +64,9 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
             if any(term.lower() in concepts for term in terms):
                 if persona_list[persona]:
                     valid_personas.append(persona_list[persona])
-            sample["personas"] = valid_personas
-            sample["styles"] = list(QueryStyle)
-            sample["lengths"] = list(QueryLength)
+        sample["personas"] = valid_personas
+        sample["styles"] = list(QueryStyle)
+        sample["lengths"] = list(QueryLength)
 
         return [sample]
 

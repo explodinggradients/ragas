@@ -24,7 +24,7 @@
     ```
 
 
-=== "Amazon Bedrock"
+=== "AWS"
     Install the langchain-aws package
 
     ```bash
@@ -67,7 +67,124 @@
 
     If you want more information on how to use other AWS services, please refer to the [langchain-aws](https://python.langchain.com/docs/integrations/providers/aws/) documentation.
 
-=== "Azure OpenAI"
+=== "Google Cloud"
+    Google offers two ways to access their models: Google AI and Google Cloud Vertex AI. Google AI requires just a Google account and API key, while Vertex AI requires a Google Cloud account with enterprise features.
+
+    First, install the required packages:
+
+    ```bash
+    pip install langchain-google-genai langchain-google-vertexai
+    ```
+
+    Then set up your credentials based on your chosen API:
+
+    For Google AI:
+
+    ```python
+    import os
+    os.environ["GOOGLE_API_KEY"] = "your-google-ai-key"  # From https://ai.google.dev/
+    ```
+
+    For Vertex AI:
+
+    ```python
+    # Ensure you have credentials configured (gcloud, workload identity, etc.)
+    # Or set service account JSON path:
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "path/to/service-account.json"
+    ```
+
+    Define your configuration:
+
+    ```python
+    config = {
+        "model": "gemini-1.5-pro",  # or other model IDs
+        "temperature": 0.4,
+        "max_tokens": None,
+        "top_p": 0.8,
+        # For Vertex AI only:
+        "project": "your-project-id",  # Required for Vertex AI
+        "location": "us-central1",     # Required for Vertex AI
+    }
+    ```
+
+    Initialize the LLM and wrap it for use with ragas:
+
+    ```python
+    from ragas.llms import LangchainLLMWrapper
+    from ragas.embeddings import LangchainEmbeddingsWrapper
+    
+    # Choose the appropriate import based on your API:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain_google_vertexai import ChatVertexAI
+    
+    # Initialize with Google AI Studio
+    generator_llm = LangchainLLMWrapper(ChatGoogleGenerativeAI(
+        model=config["model"],
+        temperature=config["temperature"],
+        max_tokens=config["max_tokens"],
+        top_p=config["top_p"],
+    ))
+    
+    # Or initialize with Vertex AI
+    generator_llm = LangchainLLMWrapper(ChatVertexAI(
+        model=config["model"],
+        temperature=config["temperature"],
+        max_tokens=config["max_tokens"],
+        top_p=config["top_p"],
+        project=config["project"],
+        location=config["location"],
+    ))
+    ```
+
+
+    You can optionally configure safety settings:
+
+    ```python
+    from langchain_google_genai import HarmCategory, HarmBlockThreshold
+    
+    safety_settings = {
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+        # Add other safety settings as needed
+    }
+    
+    # Apply to your LLM initialization
+    generator_llm = LangchainLLMWrapper(ChatGoogleGenerativeAI(
+        model=config["model"],
+        temperature=config["temperature"],
+        safety_settings=safety_settings,
+    ))
+    ```
+
+    Initialize the embeddings and wrap them for use with ragas:
+
+    ```python
+    # Google AI Studio Embeddings
+    from langchain_google_genai import GoogleGenerativeAIEmbeddings
+    
+    generator_embeddings = LangchainEmbeddingsWrapper(GoogleGenerativeAIEmbeddings(
+        model="models/embedding-001",  # Google's text embedding model
+        task_type="retrieval_document"  # Optional: specify the task type
+    ))
+    ```
+
+    ```python
+    # Vertex AI Embeddings
+    from langchain_google_vertexai import VertexAIEmbeddings
+    
+    generator_embeddings = LangchainEmbeddingsWrapper(VertexAIEmbeddings(
+        model_name="textembedding-gecko@001",  # or other available model
+        project=config["project"],  # Your GCP project ID
+        location=config["location"]  # Your GCP location
+    ))
+    ```
+
+    For more information on available models, features, and configurations, refer to: [Google AI documentation](https://ai.google.dev/docs)
+    - [Vertex AI documentation](https://cloud.google.com/vertex-ai/docs)
+    - [LangChain Google AI integration](https://python.langchain.com/docs/integrations/chat/google_generative_ai)
+    - [LangChain Vertex AI integration](https://python.langchain.com/docs/integrations/chat/google_vertex_ai)
+
+
+=== "Azure"
     Install the langchain-openai package
 
     ```bash

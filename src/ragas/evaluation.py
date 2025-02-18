@@ -33,6 +33,7 @@ from ragas.metrics.base import (
     Metric,
     MetricWithEmbeddings,
     MetricWithLLM,
+    ModeMetric,
     MultiTurnMetric,
     SingleTurnMetric,
 )
@@ -303,7 +304,11 @@ def evaluate(
         for i, _ in enumerate(dataset):
             s = {}
             for j, m in enumerate(metrics):
-                s[m.name] = results[len(metrics) * i + j]
+                if isinstance(m, ModeMetric):  # type: ignore
+                    key = f"{m.name}(mode={m.mode})"
+                else:
+                    key = m.name
+                s[key] = results[len(metrics) * i + j]
             scores.append(s)
             # close the row chain
             row_rm, row_group_cm = row_run_managers[i]

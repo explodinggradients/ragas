@@ -332,7 +332,6 @@ sample = MultiTurnSample(
 )
 
 tool_accuracy_scorer = ToolCallAccuracy()
-tool_accuracy_scorer.llm = ChatOpenAI(model="gpt-4o-mini")
 await tool_accuracy_scorer.multi_turn_ascore(sample)
 ```
 Output
@@ -381,7 +380,6 @@ sample = MultiTurnSample(
 )
 
 tool_accuracy_scorer = ToolCallAccuracy()
-tool_accuracy_scorer.llm = ChatOpenAI(model="gpt-4o-mini")
 await tool_accuracy_scorer.multi_turn_ascore(sample)
 ```
 Output

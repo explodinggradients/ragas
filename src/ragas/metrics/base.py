@@ -733,4 +733,9 @@ class Ensember:
         return verdict_agg
 
 
+class ModeMetric(t.Protocol):
+    name: str
+    mode: str
+
+
 ensembler = Ensember()
