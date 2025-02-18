@@ -99,7 +99,7 @@ Meta AI’s LLaMA models stand out due to their open-source nature, which suppor
 With the `R2R Client` in place, we can use Ragas `r2r` integration for evaluation. This process involves the following key components:  
 
 - **1. R2R Client and Configurations**  
-The `R2RAsyncClient` and `/rag` configurations specifying RAG settings.   
+The `R2RClient` and `/rag` configurations specifying RAG settings.   
 
 - **2. Evaluation Dataset**  
 You need a Ragas `EvaluationDataset` that includes all necessary inputs required by Ragas metrics. 
