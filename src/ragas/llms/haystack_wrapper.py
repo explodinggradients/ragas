@@ -1,22 +1,5 @@
 import typing as t
 
-try:
-    from haystack_experimental.core import AsyncPipeline
-except ImportError:
-    raise ImportError(
-        "haystack-experimental is not installed. Please install it using `pip install haystack-experimental==0.4.0`."
-    )
-try:
-    from haystack.components.generators import (  # type: ignore
-        AzureOpenAIGenerator,
-        HuggingFaceAPIGenerator,
-        HuggingFaceLocalGenerator,
-        OpenAIGenerator,
-    )
-except ImportError:
-    raise ImportError(
-        "pip install haystack-ai is not installed. Please install it using `pip install pip install haystack-ai`."
-    )
 from langchain_core.callbacks import Callbacks
 from langchain_core.outputs import Generation, LLMResult
 from langchain_core.prompt_values import PromptValue
@@ -27,27 +10,70 @@ from ragas.run_config import RunConfig
 
 
 class HaystackLLMWrapper(BaseRagasLLM):
+    """
+    A wrapper class for using Haystack LLM generators within the Ragas framework.
+
+    This class integrates Haystack's LLM components (e.g., `OpenAIGenerator`,
+    `HuggingFaceAPIGenerator`, etc.) into Ragas, enabling both synchronous and
+    asynchronous text generation.
+
+    Parameters
+    ----------
+    haystack_generator : AzureOpenAIGenerator | HuggingFaceAPIGenerator | HuggingFaceLocalGenerator | OpenAIGenerator
+        An instance of a Haystack generator.
+    run_config : RunConfig, optional
+        Configuration object to manage LLM execution settings, by default None.
+    cache : CacheInterface, optional
+        A cache instance for storing results, by default None.
+    """
+
     def __init__(
         self,
-        haystack_generator: t.Union[
-            OpenAIGenerator,  # type: ignore
-            AzureOpenAIGenerator,  # type: ignore
-            HuggingFaceAPIGenerator,  # type: ignore
-            HuggingFaceLocalGenerator,  # type: ignore
-        ],
+        haystack_generator: t.Any,
         run_config: t.Optional[RunConfig] = None,
         cache: t.Optional[CacheInterface] = None,
     ):
         super().__init__(cache=cache)
 
-        self.haystack_client = haystack_generator
+        # Lazy Import of required Haystack components
+        try:
+            from haystack import AsyncPipeline
+            from haystack.components.generators import (
+                AzureOpenAIGenerator,
+                HuggingFaceAPIGenerator,
+                HuggingFaceLocalGenerator,
+                OpenAIGenerator,
+            )
+        except ImportError as exc:
+            raise ImportError(
+                "Haystack is not installed. Please install it using `pip install haystack-ai`."
+            ) from exc
+
+        # Validate haystack_generator type
+        if not isinstance(
+            haystack_generator,
+            (
+                AzureOpenAIGenerator,
+                HuggingFaceAPIGenerator,
+                HuggingFaceLocalGenerator,
+                OpenAIGenerator,
+            ),
+        ):
+            raise TypeError(
+                "Expected 'haystack_generator' to be one of: "
+                "AzureOpenAIGenerator, HuggingFaceAPIGenerator, "
+                "HuggingFaceLocalGenerator, or OpenAIGenerator, but received "
+                f"{type(haystack_generator).__name__}."
+            )
+
+        # Set up Haystack pipeline and generator
+        self.generator = haystack_generator
+        self.async_pipeline = AsyncPipeline()
+        self.async_pipeline.add_component("llm", self.generator)
 
         if run_config is None:
             run_config = RunConfig()
         self.set_run_config(run_config)
-        self.generator = haystack_generator
-        self.async_pipeline = AsyncPipeline()
-        self.async_pipeline.add_component("llm", self.generator)
 
     def is_finished(self, response: LLMResult) -> bool:
         return True
@@ -58,10 +84,14 @@ class HaystackLLMWrapper(BaseRagasLLM):
         n: int = 1,
         temperature: float = 1e-8,
         stop: t.Optional[t.List[str]] = None,
-        callbacks: Callbacks = None,
-    ):
-        hs_response = self.haystack_client.run(prompt.to_string())
-        return LLMResult(generations=[[Generation(text=hs_response)]])
+        callbacks: t.Optional[Callbacks] = None,
+    ) -> LLMResult:
+
+        component_output: t.Dict[str, t.Any] = self.generator.run(prompt.to_string())
+        replies = component_output.get("llm", {}).get("replies", [])
+        output_text = replies[0] if replies else ""
+
+        return LLMResult(generations=[[Generation(text=output_text)]])
 
     async def agenerate_text(
         self,
@@ -69,29 +99,43 @@ class HaystackLLMWrapper(BaseRagasLLM):
         n: int = 1,
         temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
-        callbacks: Callbacks = None,
-    ):
-        async def llm_pipeline(query: str):
-            result = ""
-            async for output in self.async_pipeline.run({"llm": {"prompt": query}}):
-                result = output["llm"]["replies"][0]
-            return result
+        callbacks: t.Optional[Callbacks] = None,
+    ) -> LLMResult:
+        # Prepare input parameters for the LLM component
+        llm_input = {
+            "prompt": prompt.to_string(),
+            "generation_kwargs": {"temperature": temperature},
+        }
 
-        hs_response = await llm_pipeline(query=prompt.to_string())
-        return LLMResult(generations=[[Generation(text=hs_response)]])
+        # Run the async pipeline with the LLM input
+        pipeline_output = await self.async_pipeline.run_async(data={"llm": llm_input})
+        replies = pipeline_output.get("llm", {}).get("replies", [])
+        output_text = replies[0] if replies else ""
 
-    def set_run_config(self, run_config: RunConfig):
-        self.run_config = run_config
-        pass
+        return LLMResult(generations=[[Generation(text=output_text)]])
 
-    def __repr__(self):
-        if isinstance(self.generator, (OpenAIGenerator, HuggingFaceLocalGenerator)):  # type: ignore
-            model = self.generator.model
-        elif isinstance(self.generator, HuggingFaceAPIGenerator):  # type: ignore
-            model = self.generator.api_params
-        elif isinstance(self.generator, AzureOpenAIGenerator):  # type: ignore
-            model = self.generator.azure_deployment
+    def __repr__(self) -> str:
+        try:
+            from haystack.components.generators import (
+                AzureOpenAIGenerator,
+                HuggingFaceAPIGenerator,
+                HuggingFaceLocalGenerator,
+                OpenAIGenerator,
+            )
+        except ImportError:
+            return f"{self.__class__.__name__}(llm=Unknown(...))"
+
+        generator = self.generator
+
+        if isinstance(generator, OpenAIGenerator):
+            model_info = generator.model
+        elif isinstance(generator, HuggingFaceLocalGenerator):
+            model_info = generator.huggingface_pipeline_kwargs.get("model")
+        elif isinstance(generator, HuggingFaceAPIGenerator):
+            model_info = generator.api_params.get("model")
+        elif isinstance(generator, AzureOpenAIGenerator):
+            model_info = generator.azure_deployment
         else:
-            model = "Unknown"
+            model_info = "Unknown"
 
-        return f"{self.__class__}(llm={model}(...))"
+        return f"{self.__class__.__name__}(llm={model_info}(...))"
