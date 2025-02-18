@@ -4,20 +4,11 @@ import logging
 import typing as t
 import warnings
 
-from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
-from ragas.evaluation import evaluate as ragas_evaluate
-from ragas.executor import Executor
-from ragas.run_config import RunConfig
+from ragas.dataset_schema import EvaluationDataset
 
 if t.TYPE_CHECKING:
-    from langchain_core.callbacks import Callbacks
-    from r2r import R2RAsyncClient
 
-    from ragas.cost import TokenUsageParser
-    from ragas.embeddings import BaseRagasEmbeddings
-    from ragas.evaluation import EvaluationResult
-    from ragas.llms import BaseRagasLLM
-    from ragas.metrics.base import Metric
+    pass
 
 
 logger = logging.getLogger(__name__)
@@ -108,22 +99,30 @@ def transform_to_ragas_dataset(
     # Ensure all provided lists have the same length
     for key, lst in provided_lists.items():
         if lst and len(lst) != max_len:
-            raise ValueError(f"Inconsistent length for {key}: expected {max_len}, got {len(lst)}")
+            raise ValueError(
+                f"Inconsistent length for {key}: expected {max_len}, got {len(lst)}"
+            )
 
     # Create samples while handling missing values
     samples = []
     for i in range(max_len):
-        sample = SingleTurnSample(
-            user_input=user_inputs[i] if user_inputs else None,
-            response=(r2r_responses[i].results.generated_answer if r2r_responses else None),
-            retrieved_contexts=(
-                _process_search_results(r2r_responses[i].results.search_results.as_dict())
-                if r2r_responses else None
+        sample = {
+            "user_input": user_inputs[i] if user_inputs else None,
+            "retrieved_contexts": (
+                _process_search_results(
+                    r2r_responses[i].results.search_results.as_dict()
+                )
+                if r2r_responses
+                else None
             ),
-            reference_contexts=reference_contexts[i] if reference_contexts else None,
-            reference=references[i] if references else None,
-            rubric=rubrics[i] if rubrics else None,
-        )
+            "reference_contexts": reference_contexts[i] if reference_contexts else None,
+            "response": (
+                r2r_responses[i].results.generated_answer if r2r_responses else None
+            ),
+            "reference": references[i] if references else None,
+            "rubrics": rubrics[i] if rubrics else None,
+        }
+
         samples.append(sample)
 
-    return EvaluationDataset(samples=samples)
+    return EvaluationDataset.from_list(data=samples)
