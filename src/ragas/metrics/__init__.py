@@ -47,6 +47,11 @@ from ragas.metrics._multi_modal_relevance import (
     multimodal_relevance,
 )
 from ragas.metrics._noise_sensitivity import NoiseSensitivity
+from ragas.metrics._nv_metrics import (
+    AnswerAccuracy,
+    ContextRelevance,
+    ResponseGroundedness,
+)
 from ragas.metrics._rouge_score import RougeScore
 from ragas.metrics._simple_criteria import SimpleCriteriaScore
 from ragas.metrics._sql_semantic_equivalence import LLMSQLEquivalence
@@ -79,6 +84,9 @@ __all__ = [
     "MultiTurnMetric",
     "MetricOutputType",
     # specific metrics
+    "AnswerAccuracy",
+    "ContextRelevance",
+    "ResponseGroundedness",
     "AnswerCorrectness",
     "answer_correctness",
     "Faithfulness",
