@@ -60,6 +60,8 @@ dev = [
     "rapidfuzz",
     "pandas",
     "datacompy",
+    "haystack-ai",
+    "sacrebleu",
     "r2r",
 ]
 test = [

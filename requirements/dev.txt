@@ -17,3 +17,4 @@ nltk
 rapidfuzz
 pandas
 datacompy
+haystack-ai
