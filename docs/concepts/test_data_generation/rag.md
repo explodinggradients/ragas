@@ -165,7 +165,6 @@ graph TD
 
 The extracted information is used to establish the relationship between the nodes. For example, in the case of financial documents, the relationship can be established between the nodes based on the entities present in the nodes.
 You can write your own [custom relationship builder]() to establish the relationship between the nodes based on the information that is relevant to your domain.
-# Link missing above
 
 #### Example 
 
