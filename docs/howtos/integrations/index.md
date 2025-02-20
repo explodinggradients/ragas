@@ -11,6 +11,7 @@ happy to look into it 🙂
 - [Langchain](./langchain.md) - Langchain is a framework for building LLM applications, more information can be found [here](https://www.langchain.com/).
 - [LlamaIndex](./_llamaindex.md) - LlamaIndex is a framework for building RAG applications, more information can be found [here](https://www.llamaindex.ai/).
 - [Haystack](./haystack.md) - Haystack is a LLM orchestration framework to build customizable, production-ready LLM applications, more information can be found [here](https://haystack.deepset.ai/).
+- [R2R](./r2r.md) - R2R is an all-in-one solution for AI Retrieval-Augmented Generation (RAG) with production-ready features, more information can be found [here](https://r2r-docs.sciphi.ai/introduction)
 - [Swarm](./swarm_agent_evaluation.md) - Swarm is a framework for orchestrating multiple AI agents, more information can be found [here](https://github.com/openai/swarm).
 
 ## Tracing Tools

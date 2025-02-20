@@ -144,7 +144,7 @@ def transfer_to_return_agent():
     return return_agent
 
 
-def transfer_to_tracker_agnet():
+def transfer_to_tracker_agent():
     return tracker_agent
 ```
 
@@ -186,7 +186,7 @@ def initiate_return():
 
 
 ```py
-triage_agent.functions = [transfer_to_tracker_agnet, transfer_to_return_agent]
+triage_agent.functions = [transfer_to_tracker_agent, transfer_to_return_agent]
 tracker_agent.functions = [transfer_to_triage_agent, track_order, case_resolved]
 return_agent.functions = [transfer_to_triage_agent, valid_to_return, initiate_return, case_resolved]
 ```
@@ -249,7 +249,7 @@ shipment_update_interaction = run_demo_loop(triage_agent)
 Output
 ```
 Starting Swarm CLI 🐝
-[94mTriage Agent[0m: [95mtransfer_to_tracker_agnet[0m()
+[94mTriage Agent[0m: [95mtransfer_to_tracker_agent[0m()
 [94mTracker Agent[0m: [95mtrack_order[0m("order_id"= "3000")
 [94mTracker Agent[0m: Woohoo! Your order #3000 is in transit and zooming its way to you! 🎉 It's expected to make its grand arrival on January 15, 2025. How exciting is that? If you need anything else, feel free to ask!
 [94mTracker Agent[0m: [95mcase_resolved[0m()
@@ -280,7 +280,7 @@ shipment_update_ragas_trace
 Output
 ```
 [HumanMessage(content='Hi I would like to would like to know where my order is with order number #3000?', metadata=None, type='human'),
-AIMessage(content='', metadata=None, type='ai', tool_calls=[ToolCall(name='transfer_to_tracker_agnet', args={})]),
+AIMessage(content='', metadata=None, type='ai', tool_calls=[ToolCall(name='transfer_to_tracker_agent', args={})]),
 ToolMessage(content='{"assistant": "Tracker Agent"}', metadata=None, type='tool'),
 AIMessage(content='', metadata=None, type='ai', tool_calls=[ToolCall(name='track_order', args={'order_id': '3000'})]),
 ToolMessage(content='{"order_id": "3000", "status": "In Transit", "estimated_delivery": "Jan 15, 2025"}', metadata=None, type='tool'),
@@ -325,7 +325,7 @@ from ragas.dataset_schema import MultiTurnSample
 sample = MultiTurnSample(
     user_input=shipment_update_ragas_trace,
     reference_tool_calls=[
-        ToolCall(name="transfer_to_tracker_agnet", args={}),
+        ToolCall(name="transfer_to_tracker_agent", args={}),
         ToolCall(name="track_order", args={"order_id": "3000"}),
         ToolCall(name="case_resolved", args={}),
     ],

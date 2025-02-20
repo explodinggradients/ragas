@@ -27,6 +27,7 @@ all = [
     "pandas",
     "datacompy",
     "llama_index",
+    "r2r"
 ]
 docs = [
     "mkdocs>=1.6.1",
@@ -59,6 +60,7 @@ dev = [
     "rapidfuzz",
     "pandas",
     "datacompy",
+    "r2r",
 ]
 test = [
     "pytest",
