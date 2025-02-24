@@ -79,7 +79,7 @@ class AnswerAccuracy(MetricWithLLM, SingleTurnMetric):
         "{answer1}: {sentence_true}\n\n"
         "Rating: "
     )
-    retry = 5
+    retry = 5 # Number of retries if rating is not in the first 8 tokens.
 
     def process_score(self, response):
         for i in range(5):
@@ -214,6 +214,7 @@ class ContextRelevance(MetricWithLLM, SingleTurnMetric):
         "Do not try to explain.\n"
         "Based on the provided Question and Context, the Relevance score is  ["
     )
+    retry = 5 # Number of retries if rating is not in the first 8 tokens.
 
     def process_score(self, response):
         for i in [2, 1, 0]:
@@ -247,11 +248,11 @@ class ContextRelevance(MetricWithLLM, SingleTurnMetric):
 
         try:
             score0 = score1 = np.nan
-            for retry in range(5):
+            for retry in range(self.retry):
                 formatted_prompt = StringPromptValue(
                     text=self.template_relevance1.format(
                         query=sample.user_input,
-                        context="\n".join(sample.retrieved_contexts)[:4192],
+                        context="\n".join(sample.retrieved_contexts)[:7000],
                     )
                 )
                 req = self.llm.agenerate_text(
@@ -263,12 +264,14 @@ class ContextRelevance(MetricWithLLM, SingleTurnMetric):
                 score0 = self.process_score(resp.generations[0][0].text)
                 if score0 == score0:
                     break
+                else:
+                    logger.warning(f"Retry: {retry}")
 
-            for retry in range(5):
+            for retry in range(self.retry):
                 formatted_prompt = StringPromptValue(
                     text=self.template_relevance1.format(
                         query=sample.user_input,
-                        context="\n".join(sample.retrieved_contexts)[:4192],
+                        context="\n".join(sample.retrieved_contexts)[:7000],
                     )
                 )
                 req = self.llm.agenerate_text(
@@ -280,6 +283,8 @@ class ContextRelevance(MetricWithLLM, SingleTurnMetric):
                 score1 = self.process_score(resp.generations[0][0].text)
                 if score1 == score1:
                     break
+                else:
+                    logger.warning(f"Retry: {retry}")
 
             score = self.average_scores(score0, score1)
 
@@ -343,6 +348,7 @@ class ResponseGroundedness(MetricWithLLM, SingleTurnMetric):
         "Do not explain."
         "Based on the provided context and response, the Groundedness score is:"
     )
+    retry = 5 # Number of retries if rating is not in the first 8 tokens.
 
     def process_score(self, response):
         for i in [2, 1, 0]:
@@ -376,10 +382,10 @@ class ResponseGroundedness(MetricWithLLM, SingleTurnMetric):
 
         try:
             score0 = score1 = np.nan
-            for retry in range(5):
+            for retry in range(self.retry):
                 formatted_prompt = StringPromptValue(
                     text=self.template_groundedness1.format(
-                        context="\n".join(sample.retrieved_contexts)[:8192],
+                        context="\n".join(sample.retrieved_contexts)[:7000],
                         response=sample.response,
                     )
                 )
@@ -390,11 +396,15 @@ class ResponseGroundedness(MetricWithLLM, SingleTurnMetric):
                 )
                 resp = await req
                 score0 = self.process_score(resp.generations[0][0].text)
+                if score0 == score0:
+                    break
+                else:
+                    logger.warning(f"Retry: {retry}")
 
-            for retry in range(5):
+            for retry in range(self.retry):
                 formatted_prompt = StringPromptValue(
                     text=self.template_groundedness2.format(
-                        context="\n".join(sample.retrieved_contexts)[:8192],
+                        context="\n".join(sample.retrieved_contexts)[:7000],
                         response=sample.response,
                     )
                 )
@@ -405,6 +415,10 @@ class ResponseGroundedness(MetricWithLLM, SingleTurnMetric):
                 )
                 resp = await req
                 score1 = self.process_score(resp.generations[0][0].text)
+                if score1 == score1:
+                    break
+                else:
+                    logger.warning(f"Retry: {retry}")
 
             score = self.average_scores(score0, score1)
 
