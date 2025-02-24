@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 
 
 class UUIDEncoder(json.JSONEncoder):
@@ -132,6 +132,10 @@ class Relationship(BaseModel):
         if isinstance(other, Relationship):
             return self.id == other.id
         return False
+        
+    @field_serializer("source", "target")
+    def serialize_node(self, node: Node):
+        return node.id
 
 
 @dataclass
@@ -221,7 +225,19 @@ class KnowledgeGraph:
             data = json.load(f)
 
         nodes = [Node(**node_data) for node_data in data["nodes"]]
-        relationships = [Relationship(**rel_data) for rel_data in data["relationships"]]
+        
+        nodes_map = {str(node.id): node for node in nodes}
+        relationships = [
+            Relationship(
+                id=rel_data["id"],
+                type=rel_data["type"],
+                source=nodes_map[rel_data["source"]],
+                target=nodes_map[rel_data["target"]],
+                bidirectional=rel_data["bidirectional"],
+                properties=rel_data["properties"],
+            )
+            for rel_data in data["relationships"]
+        ]
 
         kg = cls()
         kg.nodes.extend(nodes)
