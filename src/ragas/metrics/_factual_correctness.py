@@ -233,7 +233,13 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
         response = await self.nli_prompt.generate(
             data=prompt_input, llm=self.llm, callbacks=callbacks
         )
-        return np.array([bool(result.verdict) for result in response.statements])
+        if response.statements:
+            claim_verifications = np.array(
+                [bool(result.verdict) for result in response.statements]
+            )
+        else:
+            claim_verifications = np.array([], dtype=bool)
+        return claim_verifications
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
@@ -255,9 +261,8 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
                 premise=response, hypothesis_list=reference_claims, callbacks=callbacks
             )
         else:
-            response_reference = np.array([])
+            response_reference = np.array([], dtype=bool)
 
-        response_reference = np.array(response_reference, dtype=bool)
         tp = sum(reference_response)
         fp = sum(~reference_response)
         if self.mode != "precision":

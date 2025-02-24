@@ -37,7 +37,7 @@ class LLMDidNotFinishException(RagasException):
     """
 
     def __init__(self):
-        msg = "The LLM generation was not completed. Please increase try increasing the max_tokens and try again."
+        msg = "The LLM generation was not completed. Please increase the max_tokens and try again."
         super().__init__(msg)
 
 
