@@ -14,6 +14,11 @@ Each metric are essentially paradigms that are designed to evaluate a particular
 - [Multimodal Faithfulness](multi_modal_faithfulness.md)
 - [Multimodal Relevance](multi_modal_relevance.md)
 
+## Nvidia Metrics
+- [Answer Accuracy](nvidia_metrics.md#answer-accuracy)
+- [Context Relevance](nvidia_metrics.md#context-relevance)
+- [Response Groundedness](nvidia_metrics.md#response-groundedness)
+
 ## Agents or Tool use cases
 
 - [Topic adherence](agents.md#topic_adherence)

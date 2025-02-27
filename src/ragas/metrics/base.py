@@ -732,6 +732,7 @@ class Ensember:
 
         return verdict_agg
 
+
 @t.runtime_checkable
 class ModeMetric(t.Protocol):
     name: str
