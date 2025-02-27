@@ -79,7 +79,7 @@ class AnswerAccuracy(MetricWithLLM, SingleTurnMetric):
         "{answer1}: {sentence_true}\n\n"
         "Rating: "
     )
-    retry = 5 # Number of retries if rating is not in the first 8 tokens.
+    retry = 5  # Number of retries if rating is not in the first 8 tokens.
 
     def process_score(self, response):
         for i in range(5):
@@ -214,7 +214,7 @@ class ContextRelevance(MetricWithLLM, SingleTurnMetric):
         "Do not try to explain.\n"
         "Based on the provided Question and Context, the Relevance score is  ["
     )
-    retry = 5 # Number of retries if rating is not in the first 8 tokens.
+    retry = 5  # Number of retries if rating is not in the first 8 tokens.
 
     def process_score(self, response):
         for i in [2, 1, 0]:
@@ -348,7 +348,7 @@ class ResponseGroundedness(MetricWithLLM, SingleTurnMetric):
         "Do not explain."
         "Based on the provided context and response, the Groundedness score is:"
     )
-    retry = 5 # Number of retries if rating is not in the first 8 tokens.
+    retry = 5  # Number of retries if rating is not in the first 8 tokens.
 
     def process_score(self, response):
         for i in [2, 1, 0]:
