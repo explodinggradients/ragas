@@ -154,7 +154,7 @@ def default_transforms(
             summary_extractor,
             node_filter,
             Parallel(summary_emb_extractor, theme_extractor, ner_extractor),
-            ner_overlap_sim,
+            Parallel(cosine_sim_builder, ner_overlap_sim),
         ]
     else:
         raise ValueError(
