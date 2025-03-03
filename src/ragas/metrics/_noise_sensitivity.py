@@ -55,7 +55,6 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
             raise ValueError(
                 f"Invalid argument passed for 'mode': {self.mode}. Must be 'relevant' or 'irrelevant'."
             )
-        self.name = f"{self.name}_{self.mode}"
 
     async def _evaluate_statement_faithfulness(
         self, statements: t.List[str], context: str, callbacks: Callbacks
