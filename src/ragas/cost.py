@@ -22,6 +22,7 @@ class TokenUsage(BaseModel):
             return TokenUsage(
                 input_tokens=self.input_tokens + y.input_tokens,
                 output_tokens=self.output_tokens + y.output_tokens,
+                model=self.model
             )
         else:
             raise ValueError("Cannot add TokenUsage objects with different models")
@@ -67,8 +68,10 @@ def get_token_usage_for_openai(
         return TokenUsage(input_tokens=0, output_tokens=0)
     output_tokens = get_from_dict(llm_output, "token_usage.completion_tokens", 0)
     input_tokens = get_from_dict(llm_output, "token_usage.prompt_tokens", 0)
+    model_name = get_from_dict(llm_output, "model_name", "")
 
-    return TokenUsage(input_tokens=input_tokens, output_tokens=output_tokens)
+
+    return TokenUsage(input_tokens=input_tokens, output_tokens=output_tokens, model=model_name)
 
 
 def get_token_usage_for_anthropic(
