@@ -22,6 +22,7 @@ class TokenUsage(BaseModel):
             return TokenUsage(
                 input_tokens=self.input_tokens + y.input_tokens,
                 output_tokens=self.output_tokens + y.output_tokens,
+                model=self.model
             )
         else:
             raise ValueError("Cannot add TokenUsage objects with different models")
