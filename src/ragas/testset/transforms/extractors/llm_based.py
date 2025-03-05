@@ -156,6 +156,58 @@ class NERPrompt(PydanticPrompt[TextWithExtractionLimit, NEROutput]):
     ]
 
 
+class TopicDescription(BaseModel):
+    description: str
+
+
+class TopicDescriptionPrompt(PydanticPrompt[StringIO, TopicDescription]):
+    instruction: str = (
+        "Provide a concise description of the main topic(s) discussed in the following text."
+    )
+    input_model: t.Type[StringIO] = StringIO
+    output_model: t.Type[TopicDescription] = TopicDescription
+    examples: t.List[t.Tuple[StringIO, TopicDescription]] = [
+        (
+            StringIO(
+                text="Quantum Computing\n\nQuantum computing leverages the principles of quantum mechanics to perform complex computations more efficiently than classical computers. It has the potential to revolutionize fields like cryptography, material science, and optimization problems by solving tasks that are currently intractable for classical systems."
+            ),
+            TopicDescription(
+                description="An introduction to quantum computing and its potential to outperform classical computers in complex computations, impacting areas such as cryptography and material science."
+            ),
+        )
+    ]
+
+
+class ThemesAndConcepts(BaseModel):
+    output: t.List[str]
+
+
+class ThemesAndConceptsExtractorPrompt(
+    PydanticPrompt[TextWithExtractionLimit, ThemesAndConcepts]
+):
+    instruction: str = "Extract the main themes and concepts from the given text."
+    input_model: t.Type[TextWithExtractionLimit] = TextWithExtractionLimit
+    output_model: t.Type[ThemesAndConcepts] = ThemesAndConcepts
+    examples: t.List[t.Tuple[TextWithExtractionLimit, ThemesAndConcepts]] = [
+        (
+            TextWithExtractionLimit(
+                text="Artificial intelligence is transforming industries by automating tasks requiring human intelligence. AI analyzes vast data quickly and accurately, driving innovations like self-driving cars and personalized recommendations.",
+                max_num=10,
+            ),
+            ThemesAndConcepts(
+                output=[
+                    "Artificial intelligence",
+                    "Automation",
+                    "Data analysis",
+                    "Innovation",
+                    "Self-driving cars",
+                    "Personalized recommendations",
+                ]
+            ),
+        )
+    ]
+
+
 @dataclass
 class SummaryExtractor(LLMBasedExtractor):
     """
@@ -301,28 +353,6 @@ class NERExtractor(LLMBasedExtractor):
         return self.property_name, entities
 
 
-class TopicDescription(BaseModel):
-    description: str
-
-
-class TopicDescriptionPrompt(PydanticPrompt[StringIO, TopicDescription]):
-    instruction: str = (
-        "Provide a concise description of the main topic(s) discussed in the following text."
-    )
-    input_model: t.Type[StringIO] = StringIO
-    output_model: t.Type[TopicDescription] = TopicDescription
-    examples: t.List[t.Tuple[StringIO, TopicDescription]] = [
-        (
-            StringIO(
-                text="Quantum Computing\n\nQuantum computing leverages the principles of quantum mechanics to perform complex computations more efficiently than classical computers. It has the potential to revolutionize fields like cryptography, material science, and optimization problems by solving tasks that are currently intractable for classical systems."
-            ),
-            TopicDescription(
-                description="An introduction to quantum computing and its potential to outperform classical computers in complex computations, impacting areas such as cryptography and material science."
-            ),
-        )
-    ]
-
-
 @dataclass
 class TopicDescriptionExtractor(LLMBasedExtractor):
     """
@@ -346,36 +376,6 @@ class TopicDescriptionExtractor(LLMBasedExtractor):
         chunks = self.split_text_by_token_limit(node_text, self.max_token_limit)
         result = await self.prompt.generate(self.llm, data=StringIO(text=chunks[0]))
         return self.property_name, result.description
-
-
-class ThemesAndConcepts(BaseModel):
-    output: t.List[str]
-
-
-class ThemesAndConceptsExtractorPrompt(
-    PydanticPrompt[TextWithExtractionLimit, ThemesAndConcepts]
-):
-    instruction: str = "Extract the main themes and concepts from the given text."
-    input_model: t.Type[TextWithExtractionLimit] = TextWithExtractionLimit
-    output_model: t.Type[ThemesAndConcepts] = ThemesAndConcepts
-    examples: t.List[t.Tuple[TextWithExtractionLimit, ThemesAndConcepts]] = [
-        (
-            TextWithExtractionLimit(
-                text="Artificial intelligence is transforming industries by automating tasks requiring human intelligence. AI analyzes vast data quickly and accurately, driving innovations like self-driving cars and personalized recommendations.",
-                max_num=10,
-            ),
-            ThemesAndConcepts(
-                output=[
-                    "Artificial intelligence",
-                    "Automation",
-                    "Data analysis",
-                    "Innovation",
-                    "Self-driving cars",
-                    "Personalized recommendations",
-                ]
-            ),
-        )
-    ]
 
 
 @dataclass

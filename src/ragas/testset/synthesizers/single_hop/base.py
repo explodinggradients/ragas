@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 class SingleHopScenario(BaseScenario):
     """
-    Scenario for multi-hop queries.
+    Scenario for single-hop queries.
 
     Attributes
     ----------
