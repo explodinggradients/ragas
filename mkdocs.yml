@@ -36,9 +36,9 @@ nav:
                   - Response Relevancy: concepts/metrics/available_metrics/answer_relevance.md
                   - Faithfulness: concepts/metrics/available_metrics/faithfulness.md
               - Nvidia Metrics:
-                  - Answer Accuracy: concepts/metrics/available_metrics/nvidia_metrics.md#answer-accuracy
-                  - Context Relevance: concepts/metrics/available_metrics/nvidia_metrics.md#context-relevance
-                  - Response Groundedness: concepts/metrics/available_metrics/nvidia_metrics.md#response-groundedness
+                  - Answer Accuracy: concepts/metrics/available_metrics/nvidia_metrics/#answer-accuracy
+                  - Context Relevance: concepts/metrics/available_metrics/nvidia_metrics/#context-relevance
+                  - Response Groundedness: concepts/metrics/available_metrics/nvidia_metrics/#response-groundedness
               - Agents or Tool Use Cases:
                     - concepts/metrics/available_metrics/agents.md
                     - Topic Adherence: concepts/metrics/available_metrics/agents/#topic-adherence
