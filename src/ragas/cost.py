@@ -68,9 +68,9 @@ def get_token_usage_for_openai(
         return TokenUsage(input_tokens=0, output_tokens=0)
     output_tokens = get_from_dict(llm_output, "token_usage.completion_tokens", 0)
     input_tokens = get_from_dict(llm_output, "token_usage.prompt_tokens", 0)
-    model_name = get_from_dict(llm_output, "model_name", "")
+    model = get_from_dict(llm_output, "model_name", "")
 
-    return TokenUsage(input_tokens=input_tokens, output_tokens=output_tokens, model=model_name)
+    return TokenUsage(input_tokens=input_tokens, output_tokens=output_tokens, model=model)
 
 
 def get_token_usage_for_anthropic(
@@ -100,8 +100,10 @@ def get_token_usage_for_anthropic(
                                 "")
                         )
                     )
-
-        return sum(token_usages, TokenUsage(input_tokens=0, output_tokens=0, model=token_usages[0].model))
+        model = next(
+        (usage.model for usage in token_usages if usage.model), ""
+        )
+        return sum(token_usages, TokenUsage(input_tokens=0, output_tokens=0, model=model))
     else:
         return TokenUsage(input_tokens=0, output_tokens=0)
 
@@ -128,13 +130,15 @@ def get_token_usage_for_bedrock(
                             ),
                             model=get_from_dict(
                                 g.message.response_metadata,
-                                "model_id"
+                                "model_id",
+                                ""
                             )
-
                         )
                     )
-
-        return sum(token_usages, TokenUsage(input_tokens=0, output_tokens=0, model=token_usages[0].model))
+        model = next(
+        (usage.model for usage in token_usages if usage.model), ""
+        )
+        return sum(token_usages, TokenUsage(input_tokens=0, output_tokens=0, model=model))
     return TokenUsage(input_tokens=0, output_tokens=0)
 
 
