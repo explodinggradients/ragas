@@ -42,9 +42,10 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
     concept_combination_prompt: PydanticPrompt = ConceptCombinationPrompt()
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
 
-    def get_node_clusters(self, knowledge_graph: KnowledgeGraph) -> t.List[t.Set[Node]]:
+    def get_node_clusters(self, n: int, knowledge_graph: KnowledgeGraph) -> t.List[t.Set[Node]]:
 
-        node_clusters = knowledge_graph.find_indirect_clusters(
+        node_clusters = knowledge_graph.find_n_indirect_clusters(
+            n,
             relationship_condition=lambda rel: (
                 True if rel.get_property("summary_similarity") else False
             ),
@@ -72,7 +73,7 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
         4. Sample diverse combinations of scenarios to get n samples
         """
 
-        node_clusters = self.get_node_clusters(knowledge_graph)
+        node_clusters = self.get_node_clusters(n, knowledge_graph)
         scenarios = []
 
         if len(node_clusters) == 0:

@@ -1,6 +1,7 @@
 import json
 import typing as t
 import uuid
+import random
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
@@ -132,7 +133,7 @@ class Relationship(BaseModel):
         if isinstance(other, Relationship):
             return self.id == other.id
         return False
-        
+
     @field_serializer("source", "target")
     def serialize_node(self, node: Node):
         return node.id
@@ -225,7 +226,7 @@ class KnowledgeGraph:
             data = json.load(f)
 
         nodes = [Node(**node_data) for node_data in data["nodes"]]
-        
+
         nodes_map = {str(node.id): node for node in nodes}
         relationships = [
             Relationship(
@@ -311,6 +312,129 @@ class KnowledgeGraph:
         ]
 
         return unique_clusters
+
+    def find_n_indirect_clusters(
+        self,
+        n: int,
+        relationship_condition: t.Callable[[Relationship], bool] = lambda _: True,
+        depth_limit: int = 3,
+    ) -> t.List[t.Set[Node]]:
+        """
+        Finds n indirect clusters of nodes in the knowledge graph based on a relationship condition.
+        This is performant for large datasets as it only searches ~n paths and uses an adjacency index for lookups.
+        Here if A -> B -> C -> D, then A, B, C, and D form a cluster. If there's also a path A -> B -> C -> E,
+        it will form a separate cluster.  
+        The end result is a list of n sets, where each set represents a full path from a starting node to a leaf node. 
+        Paths are randomized in a way that maximizes variance by selecting n random starting nodes, grouping all their 
+        paths and then iteratively selecting one item from each starting node group in a round-robin fashion until n 
+        unique clusters are found. 
+        To boost information breadth, we also lazily replace any subsets with found supersets when possible (non-exhaustive).
+        
+        Parameters
+        ----------
+        n : int
+            Maximum number of clusters to return. The algorithm will use randomized path
+            exploration to maximize variance.
+        relationship_condition : Callable[[Relationship], bool], optional
+            A function that takes a Relationship and returns a boolean, by default lambda _: True
+        depth_limit : int, optional
+            Maximum depth for path exploration, by default 3
+
+        Returns
+        -------
+        List[Set[Node]]
+            A list of sets, where each set contains nodes that form a cluster.
+        """
+        # Filter relationships once upfront
+        filtered_relationships: list[Relationship] = [
+            rel for rel in self.relationships if relationship_condition(rel)
+        ]
+
+        # Build adjacency list for faster neighbor lookup - optimized for large datasets
+        adjacency_list: dict[Node, set[Node]] = {}
+        for rel in filtered_relationships:
+            # Lazy initialization since we only care about nodes with relationships
+            if rel.source not in adjacency_list:
+                adjacency_list[rel.source] = set()
+            adjacency_list[rel.source].add(rel.target)
+
+            if rel.bidirectional:
+                if rel.target not in adjacency_list:
+                    adjacency_list[rel.target] = set()
+                adjacency_list[rel.target].add(rel.source)
+
+        # Aggregate clusters for each start node
+        start_node_clusters: dict[Node, set[frozenset[Node]]] = {}
+
+        def dfs(node: Node, current_path: t.List[Node]):
+            # Only check for cycles, depth limit is handled later
+            if node in current_path:
+                return
+
+            current_path.append(node)
+
+            # Check if we have any neighbors to explore
+            neighbors = adjacency_list.get(node, set())
+            
+            # Filter out neighbors that are already in the current_path to handle cycles
+            unvisited_neighbors = [n for n in neighbors if n not in current_path]
+
+            # If this is a leaf node (no unvisited neighbors) or we've reached depth limit
+            # and we have a valid path of at least 2 nodes, add it as a cluster
+            is_leaf = len(unvisited_neighbors) == 0
+            at_max_depth = len(current_path) == depth_limit
+            start_node = current_path[0]
+            if (is_leaf or at_max_depth) and len(current_path) > 1:
+                # Lazy initialization of the set for this start node
+                if start_node not in start_node_clusters:
+                    start_node_clusters[start_node] = set()
+                start_node_clusters[start_node].add(frozenset(current_path))
+            else:
+                for neighbor in unvisited_neighbors:
+                    dfs(neighbor, current_path)
+
+            # Backtrack by removing the current node from path
+            current_path.pop()
+
+        # Create a copy of nodes and shuffle them for random starting points
+        # Use adjacency list since that has filtered out isolated nodes
+        start_nodes = list(adjacency_list.keys())
+        random.shuffle(start_nodes)
+        # Get all the possible clusters for n start nodes
+        for start_node in start_nodes[:n]:
+            dfs(start_node, [])
+
+        # Convert to list of sets for easier manipulation
+        start_node_clusters_list: list[set[frozenset[Node]]] = list(start_node_clusters.values())
+        
+        # Iteratively pop from each start_node_clusters until we have n unique clusters
+        unique_clusters = set()
+        i = 0
+        while len(unique_clusters) < n and start_node_clusters_list:
+            # Cycle through the start node clusters
+            current_index = i % len(start_node_clusters_list)
+            
+            # Pop a cluster and add it to unique_clusters
+            cluster: frozenset[Node] = start_node_clusters_list[current_index].pop()
+            
+            # Remove any existing clusters that are subsets of this cluster
+            existing_subsets = {c for c in unique_clusters if cluster.issuperset(c)}
+            if existing_subsets:
+                unique_clusters -= existing_subsets
+            
+            # Check if this cluster is a subset of any existing cluster
+            if not any(cluster.issubset(c) for c in unique_clusters):
+                # Add the cluster if it's not a subset of any existing cluster
+                unique_clusters.add(cluster)
+            
+            # If this set is now empty, remove it
+            if not start_node_clusters_list[current_index]:
+                start_node_clusters_list.pop(current_index)
+                # Don't increment i since we removed an element to account for shift
+            else:
+                i += 1
+                
+        return list(unique_clusters)
 
     def remove_node(
         self, node: Node, inplace: bool = True
