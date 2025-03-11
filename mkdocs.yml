@@ -103,6 +103,8 @@ nav:
             - Debug LLM Based Metrics: howtos/applications/_metrics_llm_calls.md
             - Evaluating Multi-turn Conversations: howtos/applications/evaluating_multi_turn_conversations.md
             - Evaluations with Vertex AI models: howtos/applications/vertexai_x_ragas.md
+          - Testset Generation:
+            - Single-hop Query Testset: howtos/applications/singlehop_testset_gen.md
       - Integrations:
           - howtos/integrations/index.md
           - Arize: howtos/integrations/_arize.md
