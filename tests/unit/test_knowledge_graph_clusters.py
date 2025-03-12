@@ -1,6 +1,7 @@
 import pytest
 import uuid
 from ragas.testset.graph import KnowledgeGraph, Node, NodeType, Relationship
+import random
 
 
 class DebugUUID(uuid.UUID):
@@ -73,11 +74,8 @@ def create_chain_of_similarities(starting_node, node_count=5, cycle=False):
     tuple
         (list of nodes, list of relationships)
     """
-    # Create document nodes
-    nodes = []
-
     # Use starting_node as the first node
-    nodes.append(starting_node)
+    nodes = [starting_node]
 
     # Create remaining nodes
     for i in range(node_count - 1):
@@ -95,6 +93,7 @@ def create_chain_of_similarities(starting_node, node_count=5, cycle=False):
         relationships.append(rel)
 
     if cycle and node_count > 1:
+        # For the cycle, the last node should share an entity with the first node
         cycle_rel = Relationship(
             source=nodes[-1],
             target=nodes[0],
@@ -161,7 +160,6 @@ def create_chain_of_overlaps(starting_node, node_count=3, cycle=False):
 
     if cycle and node_count > 1:
         # For the cycle, the last node should share an entity with the first node
-        # Add the first entity to the last node's entities
         first_entity = f"E_{starting_node.id}_1"
         nodes[-1].properties["entities"].append(first_entity)
 
@@ -311,6 +309,19 @@ def assert_clusters_equal(actual_clusters, expected_clusters):
     ), f"Expected clusters: {expected_clusters_set}\nActual clusters: {actual_clusters_set}"
 
 
+def assert_n_clusters_with_varying_params(kg, param_list):
+    """
+    Helper function to test find_n_indirect_clusters with various combinations of n and depth_limit.
+
+    Args:
+        kg: KnowledgeGraph instance to test
+        param_list: List of tuples (n, depth_limit) to test
+    """
+    for n, depth_limit in param_list:
+        clusters = kg.find_n_indirect_clusters(n=n, depth_limit=depth_limit)
+        assert len(clusters) == n
+
+
 def test_find_indirect_clusters_with_document_and_children():
     """Test find_indirect_clusters with a document and its child nodes."""
     nodes, relationships = create_document_and_child_nodes()
@@ -320,23 +331,26 @@ def test_find_indirect_clusters_with_document_and_children():
     # Define expected clusters based on the graph structure and the find_indirect_clusters algorithm
     # The algorithm creates clusters for each path through the graph
 
-    assert_clusters_equal(clusters, [
-        {nodes["A"], nodes["B"]},
-        {nodes["A"], nodes["C"]},
-        {nodes["A"], nodes["D"]},
-        {nodes["A"], nodes["E"]},
-        {nodes["B"], nodes["C"]},
-        {nodes["C"], nodes["D"]},
-        {nodes["D"], nodes["E"]},
-        {nodes["A"], nodes["B"], nodes["C"]},
-        {nodes["A"], nodes["C"], nodes["D"]},
-        {nodes["A"], nodes["D"], nodes["E"]},
-        {nodes["B"], nodes["C"], nodes["D"]},
-        {nodes["C"], nodes["D"], nodes["E"]},
-        {nodes["A"], nodes["B"], nodes["C"], nodes["D"]},
-        {nodes["B"], nodes["C"], nodes["D"], nodes["E"]},
-        {nodes["A"], nodes["C"], nodes["D"], nodes["E"]},
-    ])
+    assert_clusters_equal(
+        clusters,
+        [
+            {nodes["A"], nodes["B"]},
+            {nodes["A"], nodes["C"]},
+            {nodes["A"], nodes["D"]},
+            {nodes["A"], nodes["E"]},
+            {nodes["B"], nodes["C"]},
+            {nodes["C"], nodes["D"]},
+            {nodes["D"], nodes["E"]},
+            {nodes["A"], nodes["B"], nodes["C"]},
+            {nodes["A"], nodes["C"], nodes["D"]},
+            {nodes["A"], nodes["D"], nodes["E"]},
+            {nodes["B"], nodes["C"], nodes["D"]},
+            {nodes["C"], nodes["D"], nodes["E"]},
+            {nodes["A"], nodes["B"], nodes["C"], nodes["D"]},
+            {nodes["B"], nodes["C"], nodes["D"], nodes["E"]},
+            {nodes["A"], nodes["C"], nodes["D"], nodes["E"]},
+        ],
+    )
 
 
 def test_find_n_indirect_clusters_with_document_and_children():
@@ -347,11 +361,19 @@ def test_find_n_indirect_clusters_with_document_and_children():
 
     # Define expected clusters based on the graph structure and the find_indirect_clusters algorithm
     # The algorithm creates clusters for each path through the graph
-    assert_clusters_equal(clusters, [
-        {nodes["A"], nodes["B"], nodes["C"], nodes["D"]},
-        {nodes["A"], nodes["C"], nodes["D"], nodes["E"]},
-        {nodes["B"], nodes["C"], nodes["D"], nodes["E"]},
-    ])
+    assert_clusters_equal(
+        clusters,
+        [
+            {nodes["A"], nodes["B"], nodes["C"], nodes["D"]},
+            {nodes["A"], nodes["C"], nodes["D"], nodes["E"]},
+            {nodes["B"], nodes["C"], nodes["D"], nodes["E"]},
+        ],
+    )
+
+    # Test different combinations of n and depth_limit parameters
+    assert_n_clusters_with_varying_params(
+        kg, [(3, 4), (3, 3), (3, 2), (2, 4), (2, 3), (2, 2)]
+    )
 
 
 def test_find_indirect_clusters_with_similarity_relationships():
@@ -362,15 +384,17 @@ def test_find_indirect_clusters_with_similarity_relationships():
     kg = build_knowledge_graph(nodes, relationships)
     clusters = kg.find_indirect_clusters(depth_limit=4)
 
-    # With bidirectional relationships, we expect clusters for each possible path
-    assert_clusters_equal(clusters, [
-        {nodes[0], nodes[1]},  # A->1
-        {nodes[1], nodes[2]},  # 1->2
-        {nodes[2], nodes[3]},  # 2->3
-        {nodes[0], nodes[1], nodes[2]},  # A->1->2
-        {nodes[1], nodes[2], nodes[3]},  # 1->2->3
-        {nodes[0], nodes[1], nodes[2], nodes[3]},  # A->1->2->3
-    ])
+    assert_clusters_equal(
+        clusters,
+        [
+            {nodes[0], nodes[1]},
+            {nodes[1], nodes[2]},
+            {nodes[2], nodes[3]},
+            {nodes[0], nodes[1], nodes[2]},
+            {nodes[1], nodes[2], nodes[3]},
+            {nodes[0], nodes[1], nodes[2], nodes[3]},
+        ],
+    )
 
 
 def test_find_n_indirect_clusters_with_similarity_relationships():
@@ -381,10 +405,12 @@ def test_find_n_indirect_clusters_with_similarity_relationships():
     kg = build_knowledge_graph(nodes, relationships)
     clusters = kg.find_n_indirect_clusters(n=5, depth_limit=4)
 
-    # With bidirectional relationships, we expect clusters for each possible path
-    assert_clusters_equal(clusters, [
-        {nodes[0], nodes[1], nodes[2], nodes[3]},  # A->1->2->3
-    ])
+    assert_clusters_equal(
+        clusters,
+        [
+            {nodes[0], nodes[1], nodes[2], nodes[3]},
+        ],
+    )
 
     # create 5 node cycle branching off node 2
     five_node_cycle, fnc_relationships = create_chain_of_similarities(
@@ -400,25 +426,30 @@ def test_find_n_indirect_clusters_with_similarity_relationships():
     for item in new_nodes + fnc_relationships + tnc_relationships:
         kg.add(item)
 
-    clusters = kg.find_n_indirect_clusters(n=15, depth_limit=3)
+    clusters = kg.find_n_indirect_clusters(n=12, depth_limit=3)
 
-    assert_clusters_equal(clusters, [
-        {nodes[0], nodes[1], nodes[2]},
-        {nodes[1], nodes[2], nodes[3]},
-        {nodes[2], nodes[3], nodes[4]},
-        {nodes[1], nodes[2], nodes[4]},
-        {nodes[1], nodes[2], nodes[7]},
-        {nodes[2], nodes[4], nodes[5]},
-        {nodes[2], nodes[4], nodes[7]},
-        {nodes[2], nodes[3], nodes[7]},
-        {nodes[2], nodes[6], nodes[7]},
-        {nodes[4], nodes[5], nodes[6]},
-        {nodes[5], nodes[6], nodes[7]},
-        {nodes[8], nodes[9]},  # independent two node cycle
-    ])
+    assert_clusters_equal(
+        clusters,
+        [
+            {nodes[0], nodes[1], nodes[2]},
+            {nodes[1], nodes[2], nodes[3]},
+            {nodes[2], nodes[3], nodes[4]},
+            {nodes[1], nodes[2], nodes[4]},
+            {nodes[1], nodes[2], nodes[7]},
+            {nodes[2], nodes[4], nodes[5]},
+            {nodes[2], nodes[4], nodes[7]},
+            {nodes[2], nodes[3], nodes[7]},
+            {nodes[2], nodes[6], nodes[7]},
+            {nodes[4], nodes[5], nodes[6]},
+            {nodes[5], nodes[6], nodes[7]},
+            {nodes[8], nodes[9]},  # independent two node cycle
+        ],
+    )
 
-    clusters = kg.find_n_indirect_clusters(n=2, depth_limit=4)
-    assert len(clusters) == 2
+    # Test different combinations of n and depth_limit parameters
+    assert_n_clusters_with_varying_params(
+        kg, [(4, 4), (4, 3), (4, 2), (3, 4), (3, 3), (3, 2), (2, 4), (2, 3), (2, 2)]
+    )
 
 
 def test_find_indirect_clusters_with_overlap_relationships():
@@ -429,14 +460,16 @@ def test_find_indirect_clusters_with_overlap_relationships():
     kg = build_knowledge_graph(nodes, relationships)
     clusters = kg.find_indirect_clusters(depth_limit=3)
 
-    # With unidirectional relationships, we expect clusters for each path
-    assert_clusters_equal(clusters, [
-        {nodes[0], nodes[1]},  # Start->1
-        {nodes[1], nodes[2]},  # 1->2
-        {nodes[2], nodes[3]},  # 2->3
-        {nodes[0], nodes[1], nodes[2]},  # Start->1->2
-        {nodes[1], nodes[2], nodes[3]},  # 1->2->3
-    ])
+    assert_clusters_equal(
+        clusters,
+        [
+            {nodes[0], nodes[1]},
+            {nodes[1], nodes[2]},
+            {nodes[2], nodes[3]},
+            {nodes[0], nodes[1], nodes[2]},
+            {nodes[1], nodes[2], nodes[3]},
+        ],
+    )
 
 
 def test_find_n_indirect_clusters_with_overlap_relationships():
@@ -487,8 +520,42 @@ def test_find_n_indirect_clusters_with_overlap_relationships():
         ],
     )
 
-    clusters = kg.find_n_indirect_clusters(n=2, depth_limit=4)
-    assert len(clusters) == 2
+    # Test different combinations of n and depth_limit parameters
+    assert_n_clusters_with_varying_params(
+        kg, [(3, 4), (3, 3), (3, 2), (2, 4), (2, 3), (2, 2)]
+    )
+
+
+def test_find_n_indirect_clusters_handles_worst_case_grouping():
+    """
+    Test that the algorithm will still return n indirect clusters when `n == depth_limit` and all nodes
+    are grouped into independent clusters of `n` nodes.
+    """
+    # The edge case is dependent on random.shuffle() so set a specific seed to expose it deterministically.
+    # Otherwise it only fails 50% of the time when the 2 starting nodes are from the same cluster.
+    original_state = random.getstate()
+    random.seed(5)
+
+    try:
+        nodes_A, relationships_A = create_chain_of_similarities(
+            create_document_node("A"), node_count=2
+        )
+        nodes_B, relationships_B = create_chain_of_similarities(
+            create_document_node("B"), node_count=2
+        )
+        kg = build_knowledge_graph(nodes_A + nodes_B, relationships_A + relationships_B)
+        clusters = kg.find_n_indirect_clusters(n=2, depth_limit=2)
+
+        assert_clusters_equal(
+            clusters,
+            [
+                {nodes_A[0], nodes_A[1]},
+                {nodes_B[0], nodes_B[1]},
+            ],
+        )
+    finally:
+        # Restore original random state to avoid affecting other tests
+        random.setstate(original_state)
 
 
 def test_find_indirect_clusters_with_condition():
@@ -502,13 +569,16 @@ def test_find_indirect_clusters_with_condition():
     clusters = kg.find_indirect_clusters(relationship_condition=condition)
 
     # Only "next" relationships are considered, so we should only have paths between B, C, D, and E
-    assert_clusters_equal(clusters, [
-        {nodes["B"], nodes["C"]},  # B->C
-        {nodes["C"], nodes["D"]},  # C->D
-        {nodes["D"], nodes["E"]},  # D->E
-        {nodes["B"], nodes["C"], nodes["D"]},  # B->C->D
-        {nodes["C"], nodes["D"], nodes["E"]},  # C->D->E
-    ])
+    assert_clusters_equal(
+        clusters,
+        [
+            {nodes["B"], nodes["C"]},
+            {nodes["C"], nodes["D"]},
+            {nodes["D"], nodes["E"]},
+            {nodes["B"], nodes["C"], nodes["D"]},
+            {nodes["C"], nodes["D"], nodes["E"]},
+        ],
+    )
 
 
 def test_find_n_indirect_clusters_with_condition():
@@ -522,10 +592,16 @@ def test_find_n_indirect_clusters_with_condition():
     clusters = kg.find_n_indirect_clusters(n=5, relationship_condition=condition)
 
     # Only "next" relationships are considered, so we should only have paths between B, C, D, and E
-    assert_clusters_equal(clusters, [
-        {nodes["B"], nodes["C"], nodes["D"]},  # B->C->D
-        {nodes["C"], nodes["D"], nodes["E"]},  # C->D->E
-    ])
+    assert_clusters_equal(
+        clusters,
+        [
+            {nodes["B"], nodes["C"], nodes["D"]},
+            {nodes["C"], nodes["D"], nodes["E"]},
+        ],
+    )
+
+    # Test various combinations of n and depth_limit with the condition
+    assert_n_clusters_with_varying_params(kg, [(2, 3), (2, 2)])
 
 
 # test cyclic relationships for bidirectional relationships
@@ -545,18 +621,21 @@ def test_find_indirect_clusters_with_cyclic_similarity_relationships():
     clusters = kg.find_indirect_clusters(depth_limit=10)
 
     # With a cycle, we expect additional clusters that include paths through the cycle
-    assert_clusters_equal(clusters, [
-        {nodes[0], nodes[1]},
-        {nodes[1], nodes[2]},
-        {nodes[2], nodes[3]},
-        {nodes[2], nodes[0]},
-        {nodes[0], nodes[1], nodes[2]},
-        {nodes[0], nodes[2], nodes[3]},
-        {nodes[1], nodes[2], nodes[0]},
-        {nodes[2], nodes[0], nodes[1]},
-        {nodes[1], nodes[2], nodes[3]},
-        {nodes[0], nodes[1], nodes[2], nodes[3]},
-    ])
+    assert_clusters_equal(
+        clusters,
+        [
+            {nodes[0], nodes[1]},
+            {nodes[1], nodes[2]},
+            {nodes[2], nodes[3]},
+            {nodes[2], nodes[0]},
+            {nodes[0], nodes[1], nodes[2]},
+            {nodes[0], nodes[2], nodes[3]},
+            {nodes[1], nodes[2], nodes[0]},
+            {nodes[2], nodes[0], nodes[1]},
+            {nodes[1], nodes[2], nodes[3]},
+            {nodes[0], nodes[1], nodes[2], nodes[3]},
+        ],
+    )
 
 
 # test cyclic relationships for bidirectional relationships
@@ -573,21 +652,26 @@ def test_find_n_indirect_clusters_with_cyclic_similarity_relationships():
     relationships.extend(branched_relationships)
 
     kg = build_knowledge_graph(nodes, relationships)
-    clusters = kg.find_n_indirect_clusters(n=15, depth_limit=3)
+    clusters = kg.find_n_indirect_clusters(n=5, depth_limit=3)
 
     # With a cycle, we expect additional clusters that include paths through the cycle
-    assert_clusters_equal(clusters, [
-        {nodes[0], nodes[1], nodes[2]},
-        {nodes[0], nodes[2], nodes[3]},
-        {nodes[1], nodes[2], nodes[0]},
-        {nodes[2], nodes[0], nodes[1]},
-        {nodes[1], nodes[2], nodes[3]},
-    ])
+    assert_clusters_equal(
+        clusters,
+        [
+            {nodes[0], nodes[1], nodes[2]},
+            {nodes[0], nodes[2], nodes[3]},
+            {nodes[1], nodes[2], nodes[0]},
+            {nodes[2], nodes[0], nodes[1]},
+            {nodes[1], nodes[2], nodes[3]},
+        ],
+    )
+
+    # Test various combinations of n and depth_limit
+    assert_n_clusters_with_varying_params(kg, [(1, 4), (3, 3), (2, 3), (2, 2)])
 
 
 def test_find_indirect_clusters_with_spider_web_graph():
     """Test find_indirect_clusters with a spider web graph where all nodes connect to all other nodes."""
-    # Create nodes
     # Create nodes as a dictionary with letters as keys
     nodes = {
         "A": create_document_node("A"),
@@ -602,39 +686,38 @@ def test_find_indirect_clusters_with_spider_web_graph():
     for i in range(len(node_list)):
         for j in range(len(node_list)):
             if i != j:  # Don't connect node to itself
-                rel = Relationship(
-                    source=node_list[i],
-                    target=node_list[j],
-                    type="cosine_similarity",
-                    bidirectional=True,
-                    properties={"summary_similarity": 0.9},
+                relationships.append(
+                    Relationship(
+                        source=node_list[i],
+                        target=node_list[j],
+                        type="cosine_similarity",
+                        bidirectional=True,
+                        properties={"summary_similarity": 0.9},
+                    )
                 )
-                relationships.append(rel)
 
     kg = build_knowledge_graph(nodes, relationships)
     clusters = kg.find_indirect_clusters(depth_limit=3)
 
-    # In a spider web, we expect:
-    # 1. All pairs of nodes (directly connected)
-    # 2. All triplets of nodes (connected through intermediate nodes)
-    # 3. The complete set of all nodes
-    assert_clusters_equal(clusters, [
-        {nodes["A"], nodes["B"]},
-        {nodes["A"], nodes["C"]},
-        {nodes["A"], nodes["D"]},
-        {nodes["B"], nodes["C"]},
-        {nodes["B"], nodes["D"]},
-        {nodes["C"], nodes["D"]},
-        {nodes["A"], nodes["B"], nodes["C"]},
-        {nodes["A"], nodes["B"], nodes["D"]},
-        {nodes["A"], nodes["C"], nodes["D"]},
-        {nodes["B"], nodes["C"], nodes["D"]},
-    ])
+    assert_clusters_equal(
+        clusters,
+        [
+            {nodes["A"], nodes["B"]},
+            {nodes["A"], nodes["C"]},
+            {nodes["A"], nodes["D"]},
+            {nodes["B"], nodes["C"]},
+            {nodes["B"], nodes["D"]},
+            {nodes["C"], nodes["D"]},
+            {nodes["A"], nodes["B"], nodes["C"]},
+            {nodes["A"], nodes["B"], nodes["D"]},
+            {nodes["A"], nodes["C"], nodes["D"]},
+            {nodes["B"], nodes["C"], nodes["D"]},
+        ],
+    )
 
 
 def test_find_n_indirect_clusters_with_spider_web_graph():
     """Test find_indirect_clusters with a spider web graph where all nodes connect to all other nodes."""
-    # Create nodes
     # Create nodes as a dictionary with letters as keys
     nodes = {
         "A": create_document_node("A"),
@@ -649,171 +732,55 @@ def test_find_n_indirect_clusters_with_spider_web_graph():
     for i in range(len(node_list)):
         for j in range(len(node_list)):
             if i != j:  # Don't connect node to itself
-                rel = Relationship(
-                    source=node_list[i],
-                    target=node_list[j],
-                    type="cosine_similarity",
-                    bidirectional=True,
-                    properties={"summary_similarity": 0.9},
+                relationships.append(
+                    Relationship(
+                        source=node_list[i],
+                        target=node_list[j],
+                        type="cosine_similarity",
+                        bidirectional=True,
+                        properties={"summary_similarity": 0.9},
+                    )
                 )
-                relationships.append(rel)
 
     kg = build_knowledge_graph(nodes, relationships)
     clusters = kg.find_n_indirect_clusters(n=10, depth_limit=3)
 
-    assert_clusters_equal(clusters, [
-        {nodes["A"], nodes["B"], nodes["C"]},
-        {nodes["A"], nodes["B"], nodes["D"]},
-        {nodes["A"], nodes["C"], nodes["D"]},
-        {nodes["B"], nodes["C"], nodes["D"]},
-    ])
-
-
-def test_find_two_nodes_single_rel_with_similarity():
-    """Test find_two_nodes_single_rel with cosine similarity relationships."""
-    nodes, relationships = create_chain_of_similarities(
-        create_document_node("A"), node_count=3
-    )
-    kg = build_knowledge_graph(nodes, relationships)
-    triplets = kg.find_two_nodes_single_rel()
-
-    # Verify triplets
-    assert len(triplets) == 2
-
-    # Check if all triplets have the correct relationship type
-    for triplet in triplets:
-        assert triplet[1].type == "cosine_similarity"
-        assert "summary_similarity" in triplet[1].properties
-
-
-def test_find_two_nodes_single_rel_with_overlap():
-    """Test find_two_nodes_single_rel with entity overlap relationships."""
-    nodes, relationships = create_chain_of_overlaps(
-        create_document_node("A"), node_count=3
-    )
-    kg = build_knowledge_graph(nodes, relationships)
-    triplets = kg.find_two_nodes_single_rel()
-
-    # Verify triplets
-    assert len(triplets) == 2
-
-    # Check if all triplets have the correct relationship type
-    for triplet in triplets:
-        assert triplet[1].type == "entities_overlap"
-        assert "entities_overlap_score" in triplet[1].properties
-        assert "overlapped_items" in triplet[1].properties
-
-
-def test_find_two_nodes_single_rel_with_condition():
-    """Test find_two_nodes_single_rel with a relationship condition."""
-    nodes, relationships = create_document_and_child_nodes()
-    kg = build_knowledge_graph(nodes, relationships)
-
-    def condition(rel):
-        return rel.type == "child"
-
-    triplets = kg.find_two_nodes_single_rel(relationship_condition=condition)
-
-    # Verify triplets
-    assert len(triplets) == 4  # Should have 4 child relationships
-
-    # Check if all triplets have the correct relationship type
-    for triplet in triplets:
-        assert triplet[1].type == "child"
-
-        # Verify that one of the nodes is the document node (A)
-        # and the other is one of the chunk nodes (B, C, D, or E)
-        assert nodes["A"] in [triplet[0], triplet[2]]
-        assert triplet[0] == nodes["A"] or triplet[2] == nodes["A"]
-
-        # The other node should be one of the chunk nodes
-        other_node = triplet[0] if triplet[2] == nodes["A"] else triplet[2]
-        assert other_node in [nodes["B"], nodes["C"], nodes["D"], nodes["E"]]
-
-
-def test_find_two_nodes_single_rel_normalized_order():
-    """Test that find_two_nodes_single_rel normalizes the order of nodes based on ID."""
-    # Create nodes with specific UUIDs to ensure consistent ordering
-    node_a = Node(
-        id=DebugUUID("A"),
-        type=NodeType.CHUNK,
-        properties={
-            "page_content": "A content",
-            "summary": "A summary",
-            "summary_embedding": [0.001, 0.002, 0.003],
-            "themes": [],
-            "entities": [],
-        },
+    assert_clusters_equal(
+        clusters,
+        [
+            {nodes["A"], nodes["B"], nodes["C"]},
+            {nodes["A"], nodes["B"], nodes["D"]},
+            {nodes["A"], nodes["C"], nodes["D"]},
+            {nodes["B"], nodes["C"], nodes["D"]},
+        ],
     )
 
-    node_b = Node(
-        id=DebugUUID("B"),
-        type=NodeType.CHUNK,
-        properties={
-            "page_content": "B content",
-            "summary": "B summary",
-            "summary_embedding": [0.001, 0.002, 0.003],
-            "themes": [],
-            "entities": [],
-        },
-    )
-
-    # Create relationship from B to A (reverse of ID order)
-    rel_ba = Relationship(
-        source=node_b, target=node_a, type="next", bidirectional=False, properties={}
-    )
-
-    # Build knowledge graph
-    kg = build_knowledge_graph([node_a, node_b], [rel_ba])
-
-    # Find two-node relationships
-    triplets = kg.find_two_nodes_single_rel()
-
-    # Verify triplets - should have the relationship in the correct order
-    assert len(triplets) == 1
-    triplet = triplets[0]
-
-    # Check the relationship is correct
-    assert triplet[1].type == "next"
-
-    # Check source and target - the actual order depends on how the KnowledgeGraph.find_two_nodes_single_rel
-    # implementation sorts nodes, which may be by string representation or internal UUID value
-    # So we just verify that the relationship is between the two nodes we created
-    assert {triplet[0], triplet[2]} == {node_a, node_b}
-    assert (triplet[0] == node_a and triplet[2] == node_b) or (
-        triplet[0] == node_b and triplet[2] == node_a
+    # Test various combinations of n and depth_limit
+    assert_n_clusters_with_varying_params(
+        kg, [(4, 3), (3, 3), (3, 2), (2, 3), (2, 2), (1, 2)]
     )
 
 
-def test_find_two_nodes_single_rel_with_self_loops():
-    """Test find_two_nodes_single_rel with self-loops (should be excluded)."""
-    node_a = create_chunk_node("A")
-    node_b = create_chunk_node("B")
+def test_find_n_indirect_clusters_with_large_spider_web_graph():
+    """Test find_n_indirect_clusters with a large 100 node spider web graph where all nodes connect to all other nodes."""
+    node_list = []
+    relationships = []
+    for i in range(100):
+        node_list.append(create_document_node(i))
 
-    # Create relationships including a self-loop
-    rel_ab = Relationship(
-        source=node_a, target=node_b, type="next", bidirectional=False, properties={}
-    )
-    rel_aa = Relationship(
-        source=node_a,
-        target=node_a,
-        type="self_loop",
-        bidirectional=True,
-        properties={},
-    )
+    for i in range(len(node_list)):
+        for j in range(len(node_list)):
+            if i != j:
+                relationships.append(
+                    Relationship(
+                        source=node_list[i],
+                        target=node_list[j],
+                        type="cosine_similarity",
+                        bidirectional=True,
+                        properties={"summary_similarity": 0.9},
+                    )
+                )
 
-    # Build knowledge graph
-    kg = build_knowledge_graph([node_a, node_b], [rel_ab, rel_aa])
-
-    # Find two-node relationships
-    triplets = kg.find_two_nodes_single_rel()
-
-    # Verify triplets - self-loops should be excluded
-    assert len(triplets) == 1
-
-    # Check if we have only the A-B relationship
-    # The actual implementation returns nodes in a different order than expected
-    assert (triplets[0][0] == node_a and triplets[0][2] == node_b) or (
-        triplets[0][0] == node_b and triplets[0][2] == node_a
-    )
-    assert triplets[0][1].type == "next"
+    kg = build_knowledge_graph(node_list, relationships)
+    # Test various combinations of n and depth_limit
+    assert_n_clusters_with_varying_params(kg, [(30, 10), (20, 8), (10, 5), (5, 3)])
