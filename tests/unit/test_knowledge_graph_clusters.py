@@ -2,6 +2,7 @@ import pytest
 import uuid
 from ragas.testset.graph import KnowledgeGraph, Node, NodeType, Relationship
 import random
+import time
 
 
 class DebugUUID(uuid.UUID):
@@ -178,6 +179,46 @@ def create_chain_of_overlaps(starting_node, node_count=3, cycle=False):
     return nodes, relationships
 
 
+def create_web_of_similarities(node_count=4, similarity_score=0.9):
+    """
+    Create a web of document nodes with cosine similarity relationships between them.
+    This represents the worst case scenario knowledge graph for the node_count in terms
+    of time complexity.
+
+    Parameters
+    ----------
+    node_count : int
+        Number of nodes to create
+    similarity_score : float
+        Similarity score to use for all relationships
+
+    Returns
+    -------
+    tuple
+        (list of nodes, list of relationships)
+    """
+    # Create nodes
+    nodes = []
+    for i in range(node_count):
+        nodes.append(create_document_node(name=f"{i}"))
+
+    # Create relationships
+    relationships = []
+    for i in range(node_count):
+        for j in range(node_count):
+            if i != j:  # Don't connect node to itself
+                rel = Relationship(
+                    source=nodes[i],
+                    target=nodes[j],
+                    type="cosine_similarity",
+                    bidirectional=True,
+                    properties={"summary_similarity": similarity_score},
+                )
+                relationships.append(rel)
+
+    return nodes, relationships
+
+
 def create_document_and_child_nodes():
     """
     Create a document node and its child chunk nodes with the same structure as create_branched_graph.
@@ -319,7 +360,14 @@ def assert_n_clusters_with_varying_params(kg, param_list):
     """
     for n, depth_limit in param_list:
         clusters = kg.find_n_indirect_clusters(n=n, depth_limit=depth_limit)
-        assert len(clusters) == n
+        if len(clusters) != n:
+            # Convert clusters to sets of node IDs for more readable error messages
+            cluster_ids = [{str(node.id) for node in cluster} for cluster in clusters]
+            pytest.fail(
+                f"Expected {n} clusters with params (n={n}, depth_limit={depth_limit}), "
+                f"but got {len(clusters)} clusters.\n"
+                f"Actual clusters: {cluster_ids}"
+            )
 
 
 def test_find_indirect_clusters_with_document_and_children():
@@ -347,8 +395,8 @@ def test_find_indirect_clusters_with_document_and_children():
             {nodes["B"], nodes["C"], nodes["D"]},
             {nodes["C"], nodes["D"], nodes["E"]},
             {nodes["A"], nodes["B"], nodes["C"], nodes["D"]},
-            {nodes["B"], nodes["C"], nodes["D"], nodes["E"]},
             {nodes["A"], nodes["C"], nodes["D"], nodes["E"]},
+            {nodes["B"], nodes["C"], nodes["D"], nodes["E"]},
         ],
     )
 
@@ -357,10 +405,9 @@ def test_find_n_indirect_clusters_with_document_and_children():
     """Test find_indirect_clusters with a document and its child nodes."""
     nodes, relationships = create_document_and_child_nodes()
     kg = build_knowledge_graph(nodes, relationships)
-    clusters = kg.find_n_indirect_clusters(n=5, depth_limit=4)
 
-    # Define expected clusters based on the graph structure and the find_indirect_clusters algorithm
-    # The algorithm creates clusters for each path through the graph
+    # It should not include subsets of found nodes
+    clusters = kg.find_n_indirect_clusters(n=4, depth_limit=4)
     assert_clusters_equal(
         clusters,
         [
@@ -372,7 +419,7 @@ def test_find_n_indirect_clusters_with_document_and_children():
 
     # Test different combinations of n and depth_limit parameters
     assert_n_clusters_with_varying_params(
-        kg, [(3, 4), (3, 3), (3, 2), (2, 4), (2, 3), (2, 2)]
+        kg, [(3, 3), (3, 2), (2, 4), (2, 3), (2, 2), (1, 2)]
     )
 
 
@@ -522,7 +569,7 @@ def test_find_n_indirect_clusters_with_overlap_relationships():
 
     # Test different combinations of n and depth_limit parameters
     assert_n_clusters_with_varying_params(
-        kg, [(3, 4), (3, 3), (3, 2), (2, 4), (2, 3), (2, 2)]
+        kg, [(3, 4), (3, 4), (3, 3), (3, 2), (2, 4), (2, 3), (2, 2)]
     )
 
 
@@ -600,7 +647,6 @@ def test_find_n_indirect_clusters_with_condition():
         ],
     )
 
-    # Test various combinations of n and depth_limit with the condition
     assert_n_clusters_with_varying_params(kg, [(2, 3), (2, 2)])
 
 
@@ -666,35 +712,15 @@ def test_find_n_indirect_clusters_with_cyclic_similarity_relationships():
         ],
     )
 
-    # Test various combinations of n and depth_limit
     assert_n_clusters_with_varying_params(kg, [(1, 4), (3, 3), (2, 3), (2, 2)])
 
 
-def test_find_indirect_clusters_with_spider_web_graph():
+def test_find_indirect_clusters_with_web_graph():
     """Test find_indirect_clusters with a spider web graph where all nodes connect to all other nodes."""
-    # Create nodes as a dictionary with letters as keys
-    nodes = {
-        "A": create_document_node("A"),
-        "B": create_document_node("B"),
-        "C": create_document_node("C"),
-        "D": create_document_node("D"),
-    }
+    nodes, relationships = create_web_of_similarities(node_count=4)
 
-    # Create relationships - each node connects to every other node
-    relationships = []
-    node_list = list(nodes.values())
-    for i in range(len(node_list)):
-        for j in range(len(node_list)):
-            if i != j:  # Don't connect node to itself
-                relationships.append(
-                    Relationship(
-                        source=node_list[i],
-                        target=node_list[j],
-                        type="cosine_similarity",
-                        bidirectional=True,
-                        properties={"summary_similarity": 0.9},
-                    )
-                )
+    # Convert nodes list to dictionary for easier assertion
+    node_dict = {f"{i}": nodes[i] for i in range(len(nodes))}
 
     kg = build_knowledge_graph(nodes, relationships)
     clusters = kg.find_indirect_clusters(depth_limit=3)
@@ -702,45 +728,26 @@ def test_find_indirect_clusters_with_spider_web_graph():
     assert_clusters_equal(
         clusters,
         [
-            {nodes["A"], nodes["B"]},
-            {nodes["A"], nodes["C"]},
-            {nodes["A"], nodes["D"]},
-            {nodes["B"], nodes["C"]},
-            {nodes["B"], nodes["D"]},
-            {nodes["C"], nodes["D"]},
-            {nodes["A"], nodes["B"], nodes["C"]},
-            {nodes["A"], nodes["B"], nodes["D"]},
-            {nodes["A"], nodes["C"], nodes["D"]},
-            {nodes["B"], nodes["C"], nodes["D"]},
+            {node_dict["0"], node_dict["1"]},
+            {node_dict["0"], node_dict["2"]},
+            {node_dict["0"], node_dict["3"]},
+            {node_dict["1"], node_dict["2"]},
+            {node_dict["1"], node_dict["3"]},
+            {node_dict["2"], node_dict["3"]},
+            {node_dict["0"], node_dict["1"], node_dict["2"]},
+            {node_dict["0"], node_dict["1"], node_dict["3"]},
+            {node_dict["0"], node_dict["2"], node_dict["3"]},
+            {node_dict["1"], node_dict["2"], node_dict["3"]},
         ],
     )
 
 
-def test_find_n_indirect_clusters_with_spider_web_graph():
+def test_find_n_indirect_clusters_with_web_graph():
     """Test find_indirect_clusters with a spider web graph where all nodes connect to all other nodes."""
-    # Create nodes as a dictionary with letters as keys
-    nodes = {
-        "A": create_document_node("A"),
-        "B": create_document_node("B"),
-        "C": create_document_node("C"),
-        "D": create_document_node("D"),
-    }
+    nodes, relationships = create_web_of_similarities(node_count=4)
 
-    # Create relationships - each node connects to every other node
-    relationships = []
-    node_list = list(nodes.values())
-    for i in range(len(node_list)):
-        for j in range(len(node_list)):
-            if i != j:  # Don't connect node to itself
-                relationships.append(
-                    Relationship(
-                        source=node_list[i],
-                        target=node_list[j],
-                        type="cosine_similarity",
-                        bidirectional=True,
-                        properties={"summary_similarity": 0.9},
-                    )
-                )
+    # Convert nodes list to dictionary for easier assertion
+    node_dict = {f"{i}": nodes[i] for i in range(len(nodes))}
 
     kg = build_knowledge_graph(nodes, relationships)
     clusters = kg.find_n_indirect_clusters(n=10, depth_limit=3)
@@ -748,39 +755,205 @@ def test_find_n_indirect_clusters_with_spider_web_graph():
     assert_clusters_equal(
         clusters,
         [
-            {nodes["A"], nodes["B"], nodes["C"]},
-            {nodes["A"], nodes["B"], nodes["D"]},
-            {nodes["A"], nodes["C"], nodes["D"]},
-            {nodes["B"], nodes["C"], nodes["D"]},
+            {node_dict["0"], node_dict["1"], node_dict["2"]},
+            {node_dict["0"], node_dict["1"], node_dict["3"]},
+            {node_dict["0"], node_dict["2"], node_dict["3"]},
+            {node_dict["1"], node_dict["2"], node_dict["3"]},
         ],
     )
 
-    # Test various combinations of n and depth_limit
     assert_n_clusters_with_varying_params(
         kg, [(4, 3), (3, 3), (3, 2), (2, 3), (2, 2), (1, 2)]
     )
 
 
-def test_find_n_indirect_clusters_with_large_spider_web_graph():
-    """Test find_n_indirect_clusters with a large 100 node spider web graph where all nodes connect to all other nodes."""
-    node_list = []
-    relationships = []
-    for i in range(100):
-        node_list.append(create_document_node(i))
+def test_performance_find_n_indirect_clusters_web():
+    """
+    Test the time complexity performance of find_n_indirect_clusters with graphs of maximal connectivity.
+    The use of n to cap sampling should keep the time complexity <quadratic.
+    """
+    # List of graph sizes to test (number of nodes)
+    graph_sizes = [5, 10, 20, 80]
+    results = []
 
-    for i in range(len(node_list)):
-        for j in range(len(node_list)):
-            if i != j:
-                relationships.append(
-                    Relationship(
-                        source=node_list[i],
-                        target=node_list[j],
-                        type="cosine_similarity",
-                        bidirectional=True,
-                        properties={"summary_similarity": 0.9},
-                    )
-                )
+    for size in graph_sizes:
+        nodes, relationships = create_web_of_similarities(node_count=size)
+        kg = build_knowledge_graph(nodes, relationships)
 
-    kg = build_knowledge_graph(node_list, relationships)
-    # Test various combinations of n and depth_limit
-    assert_n_clusters_with_varying_params(kg, [(30, 10), (20, 8), (10, 5), (5, 3)])
+        # Measure execution time
+        start_time = time.time()
+        clusters = kg.find_n_indirect_clusters(n=size, depth_limit=4)
+        end_time = time.time()
+
+        execution_time = end_time - start_time
+
+        # Store results
+        results.append(
+            {"size": size, "time": execution_time, "clusters": len(clusters)}
+        )
+
+        # Make sure we actually got the clusters
+        assert len(clusters) == size
+
+    # Print all results at the end of the test
+    print("\nPerformance test results:")
+    print("------------------------")
+    print("Size | Time (s)")
+    print("------------------------")
+
+    for result in results:
+        print(f"{result['size']:4d} | {result['time']:.6f}")
+
+    print("------------------------")
+
+    # Check if time complexity is reasonable
+    for i in range(1, len(results)):
+        size_ratio = results[i]["size"] / results[i - 1]["size"]
+        time_ratio = results[i]["time"] / results[i - 1]["time"]
+        # Goal is to be better than cubic since relationships grow exponentially with graph_size w/ a worst-case "web" graph.
+        scaled_size_ratio = size_ratio**3
+        print(
+            f"Size ratio: {size_ratio:.2f}, Time ratio: {time_ratio:.2f}, Scaled ratio: {scaled_size_ratio:.2f}"
+        )
+
+        assert (
+            time_ratio < scaled_size_ratio
+        ), f"Time complexity growing faster than expected: size {results[i]['size']} vs {results[i-1]['size']}, time ratio {time_ratio:.2f} vs {scaled_size_ratio:.2f}"
+
+
+def test_performance_find_n_indirect_clusters_independent_chains():
+    """
+    Test the time complexity performance of find_n_indirect_clusters with independent chains of 4 nodes.
+    This uses the inflated sample size due to the fact that the nodes are isolated.
+    """
+    # List of total node counts to test
+    graph_sizes = [8, 16, 32, 128, 1024]
+    results = []
+
+    for size in graph_sizes:
+        # Calculate how many chains of 4 nodes we need
+        num_chains = size // 4
+
+        # Create independent chains of 4 nodes each
+        all_nodes = []
+        all_relationships = []
+
+        for i in range(num_chains):
+            chain_nodes, chain_relationships = create_chain_of_similarities(
+                create_document_node(f"{i}_start"), node_count=4, cycle=False
+            )
+            all_nodes.extend(chain_nodes)
+            all_relationships.extend(chain_relationships)
+
+        kg = build_knowledge_graph(all_nodes, all_relationships)
+
+        # Measure execution time
+        start_time = time.time()
+        clusters = kg.find_n_indirect_clusters(n=num_chains, depth_limit=3)
+        end_time = time.time()
+
+        execution_time = end_time - start_time
+
+        # Store results
+        results.append(
+            {
+                "size": size,
+                "chains": num_chains,
+                "time": execution_time,
+                "clusters": len(clusters),
+            }
+        )
+
+        # Make sure we got the expected number of clusters (one per chain)
+        assert (
+            len(clusters) == num_chains
+        ), f"Expected {num_chains} clusters, got {len(clusters)}"
+
+    # Print all results at the end of the test
+    print("\nPerformance test results (independent chains):")
+    print("------------------------")
+    print("Size | Chains | Time (s)")
+    print("------------------------")
+
+    for result in results:
+        print(f"{result['size']:4d} | {result['chains']:6d} | {result['time']:.6f}")
+
+    print("------------------------")
+
+    for i in range(1, len(results)):
+        size_ratio = results[i]["size"] / results[i - 1]["size"]
+        time_ratio = results[i]["time"] / results[i - 1]["time"]
+        # Goal is to be ~quadratic or better.
+        scaled_size_ratio = size_ratio**2
+        print(
+            f"Size ratio: {size_ratio:.2f} (scaled: {scaled_size_ratio:.2f}), Time ratio: {time_ratio:.2f}"
+        )
+
+        assert (
+            time_ratio < scaled_size_ratio
+        ), f"Time complexity growing faster than expected: size {results[i]['size']} vs {results[i-1]['size']}, time ratio {time_ratio:.2f} vs {scaled_size_ratio:.2f}"
+
+
+def test_performance_find_n_indirect_clusters_constant_n():
+    """
+    Test the time complexity performance of find_n_indirect_clusters with a constant n=10
+    but dramatically increasing graph sizes. This tests how the algorithm scales when we're
+    only interested in a fixed number of clusters regardless of graph size.
+    """
+    # List of graph sizes to test (number of nodes)
+    graph_sizes = [10, 100, 1000]
+    constant_n = 10
+    results = []
+
+    for size in graph_sizes:
+        nodes, relationships = create_web_of_similarities(node_count=size)
+        kg = build_knowledge_graph(nodes, relationships)
+
+        # Measure execution time
+        start_time = time.time()
+        clusters = kg.find_n_indirect_clusters(n=constant_n, depth_limit=3)
+        end_time = time.time()
+
+        execution_time = end_time - start_time
+
+        # Store results
+        results.append(
+            {
+                "size": size,
+                "n": constant_n,
+                "time": execution_time,
+                "clusters": len(clusters),
+            }
+        )
+
+        # Make sure we got clusters (may be less than n if graph doesn't support that many)
+        assert (
+            len(clusters) <= constant_n
+        ), f"Expected at most {constant_n} clusters, got {len(clusters)}"
+
+    # Print all results at the end of the test
+    print("\nPerformance test results (constant n=10):")
+    print("----------------------------------")
+    print("Graph Size | n | Clusters | Time (s)")
+    print("----------------------------------")
+
+    for result in results:
+        print(
+            f"{result['size']:10d} | {result['n']:1d} | {result['clusters']:8d} | {result['time']:.6f}"
+        )
+
+    print("----------------------------------")
+
+    # Check if time complexity is reasonable
+    for i in range(1, len(results)):
+        size_ratio = results[i]["size"] / results[i - 1]["size"]
+        time_ratio = results[i]["time"] / results[i - 1]["time"]
+
+        scaled_size_ratio = size_ratio**2
+        print(
+            f"Size ratio: {size_ratio:.2f}, (Scaled: {scaled_size_ratio:.2f}), Time ratio: {time_ratio:.2f}"
+        )
+
+        assert (
+            time_ratio < scaled_size_ratio
+        ), f"Time complexity growing faster than expected: size {results[i]['size']} vs {results[i-1]['size']}, time ratio {time_ratio:.2f} vs {scaled_size_ratio:.2f}"

@@ -320,24 +320,28 @@ class KnowledgeGraph:
         depth_limit: int = 3,
     ) -> t.List[t.Set[Node]]:
         """
-        Finds n indirect clusters of nodes in the knowledge graph based on a relationship condition.
-        This is performant for large datasets as it only searches ~n paths and uses an adjacency index for lookups.
-        Here if A -> B -> C -> D, then A, B, C, and D form a cluster. If there's also a path A -> B -> C -> E,
-        it will form a separate cluster. 
-        The end result is a list of n sets, where each set represents a full path from a starting node to a leaf node or a
-        segment of that path of a number of nodes equal to the `depth_limit`.
-        Paths are randomized in a way that maximizes variance by selecting n random starting nodes, grouping all their
-        paths and then iteratively selecting one item from each starting node group in a round-robin fashion until n
-        unique clusters are found.
-        To boost information breadth, we also lazily replace any subsets with found supersets if a superset is discovered. 
-        So for a `depth_limit` of 4, if we have A -> B -> C -> D then we will return only {A,B,C,D} and not subsets like {A,B,C}.
-        This is non-exhaustive so subsets are still possible if the superset is not discovered. 
+        Finds up to n indirect clusters of nodes in the knowledge graph based on a relationship condition.
+        Optimized for large datasets by using an adjacency index for lookups and limiting path exploration.
+
+        A cluster represents a path through the graph. For example, if A -> B -> C -> D exists in the graph,
+        then {A, B, C, D} forms a cluster. If there's also a path A -> B -> C -> E, it forms a separate cluster.
+
+        The method returns a list of up to n sets, where each set contains nodes forming a complete path
+        from a starting node to a leaf node or a path segment up to depth_limit nodes long. The result may contain
+        fewer than n clusters if the graph is very sparse or if there aren't enough nodes to form n distinct clusters.
+
+        To maximize diversity in the results:
+        1. Random starting nodes are selected
+        2. Paths from each starting node are grouped
+        3. Clusters are selected in round-robin fashion from each group until n unique clusters are found
+        4. Duplicate clusters are eliminated
+        5. When a superset cluster is found (e.g., {A,B,C,D}), any existing subset clusters (e.g., {A,B,C})
+           are removed to avoid redundancy
 
         Parameters
         ----------
         n : int
-            Maximum number of clusters to return. The algorithm will use randomized path
-            exploration to maximize variance.
+            Maximum number of clusters to return. Must be at least 1.
         relationship_condition : Callable[[Relationship], bool], optional
             A function that takes a Relationship and returns a boolean, by default lambda _: True
         depth_limit : int, optional
@@ -347,12 +351,15 @@ class KnowledgeGraph:
         -------
         List[Set[Node]]
             A list of sets, where each set contains nodes that form a cluster.
+
+        Raises
+        ------
+        ValueError
+            If depth_limit < 2, n < 1, or no relationships match the provided condition.
         """
         # A cluster must be at least 2 nodes by definition.
         if depth_limit < 2:
-            raise ValueError(
-                "depth_limit must be at least 2 to form valid clusters"
-            )
+            raise ValueError("depth_limit must be at least 2 to form valid clusters")
 
         if n < 1:
             raise ValueError("n must be at least 1")
@@ -362,14 +369,20 @@ class KnowledgeGraph:
             rel for rel in self.relationships if relationship_condition(rel)
         ]
 
+        if not filtered_relationships:
+            raise ValueError(
+                "No relationships match the provided condition. Cannot form clusters."
+            )
+
         # Build adjacency list for faster neighbor lookup - optimized for large datasets
         adjacency_list: dict[Node, set[Node]] = {}
+        unique_edges: set[frozenset[Node]] = set()
         for rel in filtered_relationships:
             # Lazy initialization since we only care about nodes with relationships
             if rel.source not in adjacency_list:
                 adjacency_list[rel.source] = set()
             adjacency_list[rel.source].add(rel.target)
-
+            unique_edges.add(frozenset({rel.source, rel.target}))
             if rel.bidirectional:
                 if rel.target not in adjacency_list:
                     adjacency_list[rel.target] = set()
@@ -377,52 +390,58 @@ class KnowledgeGraph:
 
         # Aggregate clusters for each start node
         start_node_clusters: dict[Node, set[frozenset[Node]]] = {}
+        # sample enough starting nodes to handle worst case grouping scenario where nodes are grouped
+        # in independent clusters of size equal to depth_limit. This only surfaces when there are less
+        # unique edges than nodes.
+        connected_nodes = set().union(*unique_edges)
+        sample_size = (
+            (n - 1) * depth_limit + 1
+            if len(unique_edges) < len(connected_nodes)
+            else max(n, depth_limit, 10)
+        )
+        print(f"sample_size: {sample_size}")
 
-        def dfs(node: Node, current_path: t.List[Node]):
-            # Only check for cycles, depth limit is handled later
-            if node in current_path:
+        def dfs(node: Node, start_node: Node, current_path: t.Set[Node]):
+            # Terminate exploration when max usable clusters is reached so complexity doesn't spiral
+            if len(start_node_clusters.get(start_node, [])) > sample_size:
                 return
 
-            current_path.append(node)
-
-            # Check if we have any neighbors to explore
-            neighbors = adjacency_list.get(node, set())
-
-            # Filter out neighbors that are already in the current_path to handle cycles
-            unvisited_neighbors = [n for n in neighbors if n not in current_path]
-
-            # If this is a leaf node (no unvisited neighbors) or we've reached depth limit
+            current_path.add(node)
+            path_length = len(current_path)
+            at_max_depth = path_length >= depth_limit
+            neighbors = adjacency_list.get(node, None)
+            
+            # If this is a leaf node or we've reached depth limit
             # and we have a valid path of at least 2 nodes, add it as a cluster
-            is_leaf = len(unvisited_neighbors) == 0
-            at_max_depth = len(current_path) >= depth_limit
-            start_node = current_path[0]
-            if (is_leaf or at_max_depth) and len(current_path) > 1:
+            if path_length > 1 and (at_max_depth or not neighbors or all(n in current_path for n in neighbors)):
                 # Lazy initialization of the set for this start node
                 if start_node not in start_node_clusters:
                     start_node_clusters[start_node] = set()
                 start_node_clusters[start_node].add(frozenset(current_path))
             else:
-                for neighbor in unvisited_neighbors:
-                    dfs(neighbor, current_path)
+                for neighbor in neighbors:
+                    # Block cycles
+                    if neighbor not in current_path:
+                        dfs(neighbor, start_node, current_path)
 
             # Backtrack by removing the current node from path
-            current_path.pop()
+            current_path.remove(node)
 
-        # Create a copy of nodes and shuffle them for random starting points
+        # Shuffle nodes for random starting points
         # Use adjacency list since that has filtered out isolated nodes
         start_nodes = list(adjacency_list.keys())
         random.shuffle(start_nodes)
-        # sample enough starting nodes to handle worst case grouping scenario where
-        # all nodes are grouped into independent clusters of `n` nodes and `depth_limit == n`.
-        sample_size = (n - 1) * depth_limit + 1
-        for start_node in start_nodes[:sample_size]:
-            dfs(start_node, [])
+        samples = start_nodes[:sample_size]
+        for start_node in samples:
+            dfs(start_node, start_node, set())
 
         start_node_clusters_list: list[set[frozenset[Node]]] = list(
             start_node_clusters.values()
         )
 
         # Iteratively pop from each start_node_clusters until we have n unique clusters
+        # Avoid adding duplicates and subset/superset pairs so we have good diversity. We
+        # favor supersets over subsets if we are given a choice.
         unique_clusters = set()
         i = 0
         while len(unique_clusters) < n and start_node_clusters_list:
@@ -432,14 +451,22 @@ class KnowledgeGraph:
             # Pop a cluster and add it to unique_clusters
             cluster: frozenset[Node] = start_node_clusters_list[current_index].pop()
 
-            # Remove any existing clusters that are subsets of this cluster
-            existing_subsets = {c for c in unique_clusters if cluster.issuperset(c)}
-            if existing_subsets:
-                unique_clusters -= existing_subsets
-
-            # Check if this cluster is a subset of any existing cluster
-            if not any(cluster.issubset(c) for c in unique_clusters):
-                # Add the cluster if it's not a subset of any existing cluster
+            # Check if the new cluster is a subset of any existing cluster
+            # and collect any existing clusters that are subsets of this cluster
+            is_subset = False
+            subsets_to_remove = set()
+            
+            for existing in unique_clusters:
+                if cluster.issubset(existing):
+                    is_subset = True
+                    break
+                elif cluster.issuperset(existing):
+                    subsets_to_remove.add(existing)
+            
+            # Only add the new cluster if it's not a subset of any existing cluster
+            if not is_subset:
+                # Remove any subsets of the new cluster
+                unique_clusters -= subsets_to_remove
                 unique_clusters.add(cluster)
 
             # If this set is now empty, remove it
