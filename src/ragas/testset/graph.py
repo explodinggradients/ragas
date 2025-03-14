@@ -1,7 +1,7 @@
 import json
+import random
 import typing as t
 import uuid
-import random
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
@@ -321,7 +321,8 @@ class KnowledgeGraph:
     ) -> t.List[t.Set[Node]]:
         """
         Finds up to n indirect clusters of nodes in the knowledge graph based on a relationship condition.
-        Optimized for large datasets by using an adjacency index for lookups and limiting path exploration.
+        Optimized for large datasets by using an adjacency index for lookups and limiting path exploration
+        relative to n.
 
         A cluster represents a path through the graph. For example, if A -> B -> C -> D exists in the graph,
         then {A, B, C, D} forms a cluster. If there's also a path A -> B -> C -> E, it forms a separate cluster.
@@ -345,7 +346,7 @@ class KnowledgeGraph:
         relationship_condition : Callable[[Relationship], bool], optional
             A function that takes a Relationship and returns a boolean, by default lambda _: True
         depth_limit : int, optional
-            Maximum depth for path exploration, by default 3. Must be >1 for obvious reasons.
+            Maximum depth for path exploration, by default 3. Must be at least 2 to form clusters by definition.
 
         Returns
         -------
@@ -357,7 +358,6 @@ class KnowledgeGraph:
         ValueError
             If depth_limit < 2, n < 1, or no relationships match the provided condition.
         """
-        # A cluster must be at least 2 nodes by definition.
         if depth_limit < 2:
             raise ValueError("depth_limit must be at least 2 to form valid clusters")
 
@@ -393,13 +393,12 @@ class KnowledgeGraph:
         # sample enough starting nodes to handle worst case grouping scenario where nodes are grouped
         # in independent clusters of size equal to depth_limit. This only surfaces when there are less
         # unique edges than nodes.
-        connected_nodes = set().union(*unique_edges)
-        sample_size = (
+        connected_nodes: set[Node] = set().union(*unique_edges)
+        sample_size: int = (
             (n - 1) * depth_limit + 1
             if len(unique_edges) < len(connected_nodes)
             else max(n, depth_limit, 10)
         )
-        print(f"sample_size: {sample_size}")
 
         def dfs(node: Node, start_node: Node, current_path: t.Set[Node]):
             # Terminate exploration when max usable clusters is reached so complexity doesn't spiral
@@ -410,15 +409,19 @@ class KnowledgeGraph:
             path_length = len(current_path)
             at_max_depth = path_length >= depth_limit
             neighbors = adjacency_list.get(node, None)
-            
+
             # If this is a leaf node or we've reached depth limit
             # and we have a valid path of at least 2 nodes, add it as a cluster
-            if path_length > 1 and (at_max_depth or not neighbors or all(n in current_path for n in neighbors)):
+            if path_length > 1 and (
+                at_max_depth
+                or not neighbors
+                or all(n in current_path for n in neighbors)
+            ):
                 # Lazy initialization of the set for this start node
                 if start_node not in start_node_clusters:
                     start_node_clusters[start_node] = set()
                 start_node_clusters[start_node].add(frozenset(current_path))
-            else:
+            elif neighbors:
                 for neighbor in neighbors:
                     # Block cycles
                     if neighbor not in current_path:
@@ -429,9 +432,9 @@ class KnowledgeGraph:
 
         # Shuffle nodes for random starting points
         # Use adjacency list since that has filtered out isolated nodes
-        start_nodes = list(adjacency_list.keys())
+        start_nodes: list[Node] = list(adjacency_list.keys())
         random.shuffle(start_nodes)
-        samples = start_nodes[:sample_size]
+        samples: list[Node] = start_nodes[:sample_size]
         for start_node in samples:
             dfs(start_node, start_node, set())
 
@@ -440,29 +443,29 @@ class KnowledgeGraph:
         )
 
         # Iteratively pop from each start_node_clusters until we have n unique clusters
-        # Avoid adding duplicates and subset/superset pairs so we have good diversity. We
+        # Avoid adding duplicates and subset/superset pairs so we have diversity. We
         # favor supersets over subsets if we are given a choice.
-        unique_clusters = set()
+        unique_clusters: set[frozenset[Node]] = set()
         i = 0
         while len(unique_clusters) < n and start_node_clusters_list:
             # Cycle through the start node clusters
             current_index = i % len(start_node_clusters_list)
 
-            # Pop a cluster and add it to unique_clusters
-            cluster: frozenset[Node] = start_node_clusters_list[current_index].pop()
+            current_start_node_clusters: set[frozenset[Node]] = start_node_clusters_list[current_index]
+            cluster: frozenset[Node] = current_start_node_clusters.pop()
 
             # Check if the new cluster is a subset of any existing cluster
             # and collect any existing clusters that are subsets of this cluster
             is_subset = False
-            subsets_to_remove = set()
-            
+            subsets_to_remove: set[frozenset[Node]] = set()
+
             for existing in unique_clusters:
                 if cluster.issubset(existing):
                     is_subset = True
                     break
                 elif cluster.issuperset(existing):
                     subsets_to_remove.add(existing)
-            
+
             # Only add the new cluster if it's not a subset of any existing cluster
             if not is_subset:
                 # Remove any subsets of the new cluster
@@ -470,13 +473,13 @@ class KnowledgeGraph:
                 unique_clusters.add(cluster)
 
             # If this set is now empty, remove it
-            if not start_node_clusters_list[current_index]:
+            if not current_start_node_clusters:
                 start_node_clusters_list.pop(current_index)
                 # Don't increment i since we removed an element to account for shift
             else:
                 i += 1
 
-        return list(unique_clusters)
+        return [set(cluster) for cluster in unique_clusters]
 
     def remove_node(
         self, node: Node, inplace: bool = True

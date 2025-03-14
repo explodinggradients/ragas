@@ -42,7 +42,9 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
     concept_combination_prompt: PydanticPrompt = ConceptCombinationPrompt()
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
 
-    def get_node_clusters(self, n: int, knowledge_graph: KnowledgeGraph) -> t.List[t.Set[Node]]:
+    def get_node_clusters(
+        self, n: int, knowledge_graph: KnowledgeGraph
+    ) -> t.List[t.Set[Node]]:
 
         node_clusters = knowledge_graph.find_n_indirect_clusters(
             n,
