@@ -39,8 +39,8 @@ def create_document_node(name: str) -> Node:
             "summary": f"{name} summary",
             "document_metadata": {},
             "summary_embedding": [0.001, 0.002, 0.003],
-            "themes": [],
-            "entities": [],
+            "themes": [f"T_{name}"],
+            "entities": [f"E_d_{name}"],
         },
     )
 
@@ -54,8 +54,8 @@ def create_chunk_node(name: str) -> Node:
             "page_content": f"{name} content",
             "summary": f"{name} summary",
             "summary_embedding": [0.001, 0.002, 0.003],
-            "themes": [],
-            "entities": [],
+            "themes": [f"T_{name}"],
+            "entities": [f"E_c_{name}"],
         },
     )
 
@@ -133,7 +133,8 @@ def create_chain_of_overlaps(starting_node: Node, node_count: int = 3, cycle: bo
     relationships: list[Relationship] = []
 
     # Use starting_node as the first node and set its entity
-    starting_node.properties["entities"] = [f"E_{starting_node.id}_1"]
+    first_entity = f"E_{starting_node.id}_1"
+    starting_node.properties["entities"] = [first_entity, *starting_node.properties["entities"]]
     nodes.append(starting_node)
 
     # Create relationships and remaining node
@@ -164,7 +165,6 @@ def create_chain_of_overlaps(starting_node: Node, node_count: int = 3, cycle: bo
 
     if cycle and node_count > 1:
         # For the cycle, the last node should share an entity with the first node
-        first_entity = f"E_{starting_node.id}_1"
         nodes[-1].properties["entities"].append(first_entity)
 
         cycle_rel = Relationship(
