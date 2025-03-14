@@ -18,11 +18,16 @@ Let’s get started!
 
 ## Download and Load documents
 
+Run the command below to download the dummy Ragas Airline dataset and load the documents using LangChain.
+
+```sh
+! git clone https://huggingface.co/datasets/explodinggradients/Ragas_Airline
+```
 
 ```python
 from langchain_community.document_loaders import DirectoryLoader
 
-path = "dummy_data"
+path = "Ragas_Airline"
 loader = DirectoryLoader(path, glob="**/*.md")
 docs = loader.load()
 ```
