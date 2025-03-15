@@ -358,6 +358,7 @@ def assert_clusters_equal(actual_clusters: list[set[Node]], expected_clusters: l
 def assert_n_clusters_with_varying_params(kg: KnowledgeGraph, param_list: list[Tuple[int, int]]) -> None:
     """
     Helper function to test find_n_indirect_clusters with various combinations of n and depth_limit.
+    Assert that the number of clusters returned is equal to n.
 
     Args:
         kg: KnowledgeGraph instance to test
@@ -419,7 +420,7 @@ def test_find_n_indirect_clusters_with_document_and_children():
         ],
     )
 
-    # Test different combinations of n and depth_limit parameters
+    # Test different combinations of n and depth_limit parameters yield n clusters
     assert_n_clusters_with_varying_params(
         kg, [(3, 3), (3, 2), (2, 4), (2, 3), (2, 2), (1, 2)]
     )
@@ -457,6 +458,8 @@ def test_find_n_indirect_clusters_with_similarity_relationships():
     kg: KnowledgeGraph = build_knowledge_graph(nodes, relationships)
     clusters: list[set[Node]] = kg.find_n_indirect_clusters(n=5, depth_limit=4)
 
+    # It should not include subsets of found nodes.  Since for n=5 it will always find the four-node superset,
+    # it should only return that one cluster.
     assert_clusters_equal(
         clusters,
         [
@@ -498,7 +501,7 @@ def test_find_n_indirect_clusters_with_similarity_relationships():
         ],
     )
 
-    # Test different combinations of n and depth_limit parameters
+    # Test different combinations of n and depth_limit parameters yield n clusters
     assert_n_clusters_with_varying_params(
         kg, [(4, 4), (4, 3), (4, 2), (3, 4), (3, 3), (3, 2), (2, 4), (2, 3), (2, 2)]
     )
@@ -535,6 +538,7 @@ def test_find_n_indirect_clusters_with_overlap_relationships():
     kg: KnowledgeGraph = build_knowledge_graph(nodes, relationships)
     clusters: list[set[Node]] = kg.find_n_indirect_clusters(n=5, depth_limit=3)
 
+    # Assert the two supersets from above are returned.
     assert_clusters_equal(
         clusters,
         [
@@ -543,7 +547,7 @@ def test_find_n_indirect_clusters_with_overlap_relationships():
         ],
     )
 
-    # create 5 node cycle branching off node 2
+    # create 5 node cycle branching off node[2]
     five_node_cycle, fnc_relationships = create_chain_of_overlaps(
         nodes[2], node_count=5, cycle=True
     )
@@ -552,6 +556,7 @@ def test_find_n_indirect_clusters_with_overlap_relationships():
         create_document_node("C"), node_count=2, cycle=True
     )
 
+    # Don't include the starting node twice.
     new_nodes = five_node_cycle[1:] + two_node_cycle
     nodes.extend(new_nodes)
     for item in new_nodes + fnc_relationships + tnc_relationships:
@@ -575,7 +580,7 @@ def test_find_n_indirect_clusters_with_overlap_relationships():
         ],
     )
 
-    # Test different combinations of n and depth_limit parameters
+    # Test different combinations of n and depth_limit parameters yield n clusters
     assert_n_clusters_with_varying_params(
         kg, [(3, 4), (3, 4), (3, 3), (3, 2), (2, 4), (2, 3), (2, 2)]
     )
@@ -706,9 +711,11 @@ def test_find_n_indirect_clusters_with_cyclic_similarity_relationships():
     relationships.extend(branched_relationships)
 
     kg: KnowledgeGraph = build_knowledge_graph(nodes, relationships)
+    # Using a depth limit of 3 which should yield the 5 clusters of three nodes from the previous test.
     clusters: list[set[Node]] = kg.find_n_indirect_clusters(n=5, depth_limit=3)
 
-    # With a cycle, we expect additional clusters that include paths through the cycle
+    # With a cycle, we expect additional clusters that include paths through the cycle. Using depth_limit=3
+    # here so it should yield the 5 3-node clusters from the previous test.
     assert_clusters_equal(
         clusters,
         [
@@ -760,6 +767,8 @@ def test_find_n_indirect_clusters_with_web_graph():
     kg: KnowledgeGraph = build_knowledge_graph(nodes, relationships)
     clusters: list[set[Node]] = kg.find_n_indirect_clusters(n=10, depth_limit=3)
 
+    # Using a depth_limit=3 which should yield the 4 clusters of three nodes seen in the previous test.
+    # This method ignores the subsets.
     assert_clusters_equal(
         clusters,
         [
@@ -777,7 +786,7 @@ def test_find_n_indirect_clusters_with_web_graph():
 
 def test_performance_find_n_indirect_clusters_max_density():
     """
-    Test the time complexity performance of find_n_indirect_clusters with graphs of maximum density.
+    Test the time complexity performance of find_n_indirect_clusters with "web"graphs of maximum density.
     Capping sampling relative to n should keep the time complexity <cubic.
     """
     # List of graph sizes to test (number of nodes)
@@ -803,7 +812,6 @@ def test_performance_find_n_indirect_clusters_max_density():
         # Make sure we actually got the clusters
         assert len(clusters) == size
 
-    # Print all results at the end of the test
     print("\nPerformance test results:")
     print("------------------------")
     print("Size | Time (s)")
@@ -877,7 +885,6 @@ def test_performance_find_n_indirect_clusters_large_web_constant_n(
             len(clusters) <= constant_n
         ), f"Expected at most {constant_n} clusters, got {len(clusters)}"
 
-    # Print all results at the end of the test
     print("\nPerformance test results (constant n=10):")
     print("----------------------------------")
     print("Graph Size | n | Clusters | Time (s)")
@@ -908,7 +915,7 @@ def test_performance_find_n_indirect_clusters_large_web_constant_n(
 def test_performance_find_n_indirect_clusters_independent_chains():
     """
     Test the time complexity performance of find_n_indirect_clusters with independent chains of 4 nodes.
-    This uses the inflated sample size that is triggered when the nodes are isolated such that edges are less than nodes.
+    This uses the inflated sample size that is used when the nodes are isolated such that there are less edges than nodes.
     """
     # List of total node counts to test
     graph_sizes = [8, 16, 32, 128, 1024]
@@ -953,7 +960,6 @@ def test_performance_find_n_indirect_clusters_independent_chains():
             len(clusters) == num_chains
         ), f"Expected {num_chains} clusters, got {len(clusters)}"
 
-    # Print all results at the end of the test
     print("\nPerformance test results (independent chains):")
     print("------------------------")
     print("Size | Chains | Time (s)")

@@ -40,7 +40,7 @@ class MockThemePersonaMatchingPrompt(PydanticPrompt):
 def _assert_scenario_properties(
     scenarios: list[t.Any], personas: list[Persona]
 ) -> None:
-    """Validate scenario properties."""
+    """Validate scenario has the expected properties."""
     for scenario in scenarios:
         assert hasattr(scenario, "nodes")
         assert hasattr(scenario, "persona")

@@ -320,7 +320,7 @@ class KnowledgeGraph:
         depth_limit: int = 3,
     ) -> t.List[t.Set[Node]]:
         """
-        Finds up to n indirect clusters of nodes in the knowledge graph based on a relationship condition.
+        Return n indirect clusters of nodes in the knowledge graph based on a relationship condition.
         Optimized for large datasets by using an adjacency index for lookups and limiting path exploration
         relative to n.
 
@@ -342,7 +342,8 @@ class KnowledgeGraph:
         Parameters
         ----------
         n : int
-            Maximum number of clusters to return. Must be at least 1.
+            Target number of clusters to return. Must be at least 1. Should return n clusters unless the graph is 
+            extremely sparse.
         relationship_condition : Callable[[Relationship], bool], optional
             A function that takes a Relationship and returns a boolean, by default lambda _: True
         depth_limit : int, optional
