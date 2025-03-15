@@ -27,7 +27,7 @@ Run the command below to download the dummy Ragas Airline dataset and load the d
 ```python
 from langchain_community.document_loaders import DirectoryLoader
 
-path = "Ragas_Airline"
+path = "ragas-airline-dataset"
 loader = DirectoryLoader(path, glob="**/*.md")
 docs = loader.load()
 ```
