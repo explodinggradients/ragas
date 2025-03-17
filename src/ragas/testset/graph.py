@@ -342,7 +342,7 @@ class KnowledgeGraph:
         Parameters
         ----------
         n : int
-            Target number of clusters to return. Must be at least 1. Should return n clusters unless the graph is 
+            Target number of clusters to return. Must be at least 1. Should return n clusters unless the graph is
             extremely sparse.
         relationship_condition : Callable[[Relationship], bool], optional
             A function that takes a Relationship and returns a boolean, by default lambda _: True
@@ -452,7 +452,9 @@ class KnowledgeGraph:
             # Cycle through the start node clusters
             current_index = i % len(start_node_clusters_list)
 
-            current_start_node_clusters: set[frozenset[Node]] = start_node_clusters_list[current_index]
+            current_start_node_clusters: set[frozenset[Node]] = (
+                start_node_clusters_list[current_index]
+            )
             cluster: frozenset[Node] = current_start_node_clusters.pop()
 
             # Check if the new cluster is a subset of any existing cluster

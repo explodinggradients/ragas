@@ -1,7 +1,7 @@
 import random
 import time
+import typing as t
 import uuid
-from typing import Tuple
 
 import pytest
 
@@ -60,7 +60,9 @@ def create_chunk_node(name: str) -> Node:
     )
 
 
-def create_chain_of_similarities(starting_node: Node, node_count: int = 5, cycle: bool = False) -> Tuple[list[Node], list[Relationship]]:
+def create_chain_of_similarities(
+    starting_node: Node, node_count: int = 5, cycle: bool = False
+) -> t.Tuple[list[Node], list[Relationship]]:
     """
     Create a chain of document nodes with cosine similarity relationships.
 
@@ -110,7 +112,9 @@ def create_chain_of_similarities(starting_node: Node, node_count: int = 5, cycle
     return nodes, relationships
 
 
-def create_chain_of_overlaps(starting_node: Node, node_count: int = 3, cycle: bool = False) -> Tuple[list[Node], list[Relationship]]:
+def create_chain_of_overlaps(
+    starting_node: Node, node_count: int = 3, cycle: bool = False
+) -> t.Tuple[list[Node], list[Relationship]]:
     """
     Create a chain of nodes with entity overlap relationships.
 
@@ -134,7 +138,10 @@ def create_chain_of_overlaps(starting_node: Node, node_count: int = 3, cycle: bo
 
     # Use starting_node as the first node and set its entity
     first_entity = f"E_{starting_node.id}_1"
-    starting_node.properties["entities"] = [first_entity, *starting_node.properties["entities"]]
+    starting_node.properties["entities"] = [
+        first_entity,
+        *starting_node.properties["entities"],
+    ]
     nodes.append(starting_node)
 
     # Create relationships and remaining node
@@ -182,7 +189,9 @@ def create_chain_of_overlaps(starting_node: Node, node_count: int = 3, cycle: bo
     return nodes, relationships
 
 
-def create_web_of_similarities(node_count=4, similarity_score=0.9) -> Tuple[list[Node], list[Relationship]]:
+def create_web_of_similarities(
+    node_count=4, similarity_score=0.9
+) -> t.Tuple[list[Node], list[Relationship]]:
     """
     Create a web of document nodes with cosine similarity relationships between them.
     This represents the worst case scenario knowledge graph for the node_count in terms
@@ -222,7 +231,7 @@ def create_web_of_similarities(node_count=4, similarity_score=0.9) -> Tuple[list
     return nodes, relationships
 
 
-def create_document_and_child_nodes() -> Tuple[list[Node], list[Relationship]]:
+def create_document_and_child_nodes() -> t.Tuple[list[Node], list[Relationship]]:
     """
     Create a document node and its child chunk nodes with the same structure as create_branched_graph.
 
@@ -303,7 +312,9 @@ def create_document_and_child_nodes() -> Tuple[list[Node], list[Relationship]]:
     return nodes, relationships
 
 
-def build_knowledge_graph(nodes: list[Node], relationships: list[Relationship]) -> KnowledgeGraph:
+def build_knowledge_graph(
+    nodes: list[Node], relationships: list[Relationship]
+) -> KnowledgeGraph:
     """
     Build a knowledge graph from nodes and relationships.
 
@@ -320,7 +331,10 @@ def build_knowledge_graph(nodes: list[Node], relationships: list[Relationship]) 
         The constructed knowledge graph
     """
     kg: KnowledgeGraph = KnowledgeGraph()
-    isolated_nodes: list[Node] = [create_document_node("Iso_A"), create_document_node("Iso_B")]
+    isolated_nodes: list[Node] = [
+        create_document_node("Iso_A"),
+        create_document_node("Iso_B"),
+    ]
     nodes = nodes + isolated_nodes
 
     # Add nodes to the graph
@@ -338,7 +352,9 @@ def build_knowledge_graph(nodes: list[Node], relationships: list[Relationship]) 
     return kg
 
 
-def assert_clusters_equal(actual_clusters: list[set[Node]], expected_clusters: list[set[Node]]) -> None:
+def assert_clusters_equal(
+    actual_clusters: list[set[Node]], expected_clusters: list[set[Node]]
+) -> None:
     """
     Helper function to compare clusters with unordered comparison.
 
@@ -347,15 +363,21 @@ def assert_clusters_equal(actual_clusters: list[set[Node]], expected_clusters: l
         expected_clusters: List of sets representing the expected clusters
     """
     # Convert both lists to sets of frozensets for unordered comparison
-    actual_clusters_set: set[frozenset[Node]] = {frozenset(cluster) for cluster in actual_clusters}
-    expected_clusters_set: set[frozenset[Node]] = {frozenset(cluster) for cluster in expected_clusters}
+    actual_clusters_set: set[frozenset[Node]] = {
+        frozenset(cluster) for cluster in actual_clusters
+    }
+    expected_clusters_set: set[frozenset[Node]] = {
+        frozenset(cluster) for cluster in expected_clusters
+    }
 
     assert (
         actual_clusters_set == expected_clusters_set
     ), f"Expected clusters: {expected_clusters_set}\nActual clusters: {actual_clusters_set}"
 
 
-def assert_n_clusters_with_varying_params(kg: KnowledgeGraph, param_list: list[Tuple[int, int]]) -> None:
+def assert_n_clusters_with_varying_params(
+    kg: KnowledgeGraph, param_list: list[t.Tuple[int, int]]
+) -> None:
     """
     Helper function to test find_n_indirect_clusters with various combinations of n and depth_limit.
     Assert that the number of clusters returned is equal to n.
@@ -365,7 +387,9 @@ def assert_n_clusters_with_varying_params(kg: KnowledgeGraph, param_list: list[T
         param_list: List of tuples (n, depth_limit) to test
     """
     for n, depth_limit in param_list:
-        clusters: list[set[Node]] = kg.find_n_indirect_clusters(n=n, depth_limit=depth_limit)
+        clusters: list[set[Node]] = kg.find_n_indirect_clusters(
+            n=n, depth_limit=depth_limit
+        )
         if len(clusters) != n:
             # Convert clusters to sets of node IDs for more readable error messages
             cluster_ids = [{str(node.id) for node in cluster} for cluster in clusters]
@@ -603,7 +627,9 @@ def test_find_n_indirect_clusters_handles_worst_case_grouping():
         nodes_B, relationships_B = create_chain_of_similarities(
             create_document_node("B"), node_count=2
         )
-        kg: KnowledgeGraph = build_knowledge_graph(nodes_A + nodes_B, relationships_A + relationships_B)
+        kg: KnowledgeGraph = build_knowledge_graph(
+            nodes_A + nodes_B, relationships_A + relationships_B
+        )
         clusters: list[set[Node]] = kg.find_n_indirect_clusters(n=2, depth_limit=2)
 
         assert_clusters_equal(
@@ -626,7 +652,9 @@ def test_find_indirect_clusters_with_condition():
     def condition(rel):
         return rel.type == "next"
 
-    clusters: list[set[Node]] = kg.find_indirect_clusters(relationship_condition=condition)
+    clusters: list[set[Node]] = kg.find_indirect_clusters(
+        relationship_condition=condition
+    )
 
     # Only "next" relationships are considered, so we should only have paths between B, C, D, and E
     assert_clusters_equal(
@@ -649,7 +677,9 @@ def test_find_n_indirect_clusters_with_condition():
     def condition(rel):
         return rel.type == "next"
 
-    clusters: list[set[Node]] = kg.find_n_indirect_clusters(n=5, relationship_condition=condition)
+    clusters: list[set[Node]] = kg.find_n_indirect_clusters(
+        n=5, relationship_condition=condition
+    )
 
     # Only "next" relationships are considered, so we should only have paths between B, C, D, and E
     assert_clusters_equal(
@@ -865,7 +895,9 @@ def test_performance_find_n_indirect_clusters_large_web_constant_n(
     for kg, size in constant_n_knowledge_graphs:
         # Measure execution time
         start_time = time.time()
-        clusters: list[set[Node]] = kg.find_n_indirect_clusters(n=constant_n, depth_limit=3)
+        clusters: list[set[Node]] = kg.find_n_indirect_clusters(
+            n=constant_n, depth_limit=3
+        )
         end_time = time.time()
 
         execution_time = end_time - start_time
@@ -940,7 +972,9 @@ def test_performance_find_n_indirect_clusters_independent_chains():
 
         # Measure execution time
         start_time = time.time()
-        clusters: list[set[Node]] = kg.find_n_indirect_clusters(n=num_chains, depth_limit=3)
+        clusters: list[set[Node]] = kg.find_n_indirect_clusters(
+            n=num_chains, depth_limit=3
+        )
         end_time = time.time()
 
         execution_time = end_time - start_time

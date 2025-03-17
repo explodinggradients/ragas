@@ -8,7 +8,6 @@ import numpy as np
 
 from ragas.prompt import PydanticPrompt
 from ragas.testset.graph import KnowledgeGraph, Node
-from ragas.testset.graph_queries import get_child_nodes
 from ragas.testset.persona import Persona
 from ragas.testset.synthesizers.multi_hop.base import (
     MultiHopQuerySynthesizer,
@@ -85,14 +84,18 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
             )
         num_sample_per_cluster = int(np.ceil(n / len(node_clusters)))
 
-        child_relationships = [rel for rel in knowledge_graph.relationships if rel.type == "child"]
-        
+        child_relationships = [
+            rel for rel in knowledge_graph.relationships if rel.type == "child"
+        ]
+
         for cluster in node_clusters:
             if len(scenarios) >= n:
                 break
             nodes = []
             for node in cluster:
-                child_nodes = [rel.target for rel in child_relationships if rel.source == node]
+                child_nodes = [
+                    rel.target for rel in child_relationships if rel.source == node
+                ]
                 if child_nodes:
                     nodes.extend(child_nodes)
                 else:

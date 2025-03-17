@@ -1,23 +1,22 @@
-import pytest
 import typing as t
-from tests.unit.test_knowledge_graph_clusters import (
-    create_document_and_child_nodes,
-    create_chain_of_similarities,
-    build_knowledge_graph,
-)
+
+import pytest
+
 from ragas.prompt import PydanticPrompt
 from ragas.testset.persona import Persona
 from ragas.testset.synthesizers.base import QueryLength, QueryStyle
 from ragas.testset.synthesizers.multi_hop.abstract import (
     MultiHopAbstractQuerySynthesizer,
 )
-from ragas.testset.synthesizers.multi_hop.prompts import ConceptCombinations
-from ragas.testset.synthesizers.prompts import PersonaThemesMapping
 from ragas.testset.synthesizers.multi_hop.prompts import (
+    ConceptCombinations,
     ConceptsList,
 )
-from ragas.testset.synthesizers.prompts import (
-    ThemesPersonasInput,
+from ragas.testset.synthesizers.prompts import PersonaThemesMapping, ThemesPersonasInput
+from tests.unit.test_knowledge_graph_clusters import (
+    build_knowledge_graph,
+    create_chain_of_similarities,
+    create_document_and_child_nodes,
 )
 
 
@@ -121,7 +120,7 @@ async def test_generate_scenarios(fake_llm):
         )
 
         # Assert we got the expected number of scenarios
-        # Must be a range to compensate for num_sample_per_cluster rounding 
+        # Must be a range to compensate for num_sample_per_cluster rounding
         assert (
             n <= len(scenarios) <= n + 2
         ), f"Expected {n} or {n+1} scenarios, got {len(scenarios)}"

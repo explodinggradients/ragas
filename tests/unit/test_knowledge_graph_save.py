@@ -13,14 +13,14 @@ def test_knowledge_graph_save_with_problematic_chars(tmp_path):
         "\u2192",  # arrow
         "\u2665",  # heart
         "\u2605",  # star
-        "\u221E",  # infinity
-        "\u00B5",  # micro
+        "\u221e",  # infinity
+        "\u00b5",  # micro
         "\u2264",  # less than or equal
         "\u2265",  # greater than or equal
         "\u0391",  # Greek letters
         "\u0392",
         "\u0393",
-        "\uFFFF",  # Special Unicode characters
+        "\uffff",  # Special Unicode characters
     ]
 
     # Create multiple nodes with combinations of problematic characters
