@@ -164,6 +164,10 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 
+# Cursor
+.cursorignore
+.cursor/
+
 # Ragas specific
 experiments/
 **/fil-result/
