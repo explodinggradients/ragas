@@ -101,7 +101,7 @@ def upload_packet(path: str, data_json_string: str):
 
     response = requests.post(
         f"{base_url}/api/v1{path}",
-        data=data_json_string,
+        data=data_json_string.encode('utf-8'),
         headers=headers,
         timeout=(connection_timeout, read_timeout),
     )
