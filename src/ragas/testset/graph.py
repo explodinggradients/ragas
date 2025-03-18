@@ -132,7 +132,7 @@ class Relationship(BaseModel):
         if isinstance(other, Relationship):
             return self.id == other.id
         return False
-        
+
     @field_serializer("source", "target")
     def serialize_node(self, node: Node):
         return node.id
@@ -225,7 +225,7 @@ class KnowledgeGraph:
             data = json.load(f)
 
         nodes = [Node(**node_data) for node_data in data["nodes"]]
-        
+
         nodes_map = {str(node.id): node for node in nodes}
         relationships = [
             Relationship(
