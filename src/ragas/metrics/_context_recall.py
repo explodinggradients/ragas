@@ -235,4 +235,59 @@ class NonLLMContextRecall(SingleTurnMetric):
         return score
 
 
+@dataclass
+class IDBasedContextRecall(SingleTurnMetric):
+    """
+    Calculates context recall by directly comparing retrieved context IDs with reference context IDs.
+    The score represents what proportion of the reference IDs were successfully retrieved.
+    
+    This metric works with both string and integer IDs.
+    
+    Attributes
+    ----------
+    name : str
+        Name of the metric
+    """
+
+    name: str = "id_based_context_recall"
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {
+                "retrieved_context_ids",
+                "reference_context_ids",
+            }
+        }
+    )
+    output_type: MetricOutputType = MetricOutputType.CONTINUOUS
+
+    def init(self, run_config: RunConfig) -> None: ...
+
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        retrieved_context_ids = sample.retrieved_context_ids
+        reference_context_ids = sample.reference_context_ids
+        assert retrieved_context_ids is not None, "retrieved_context_ids is empty"
+        assert reference_context_ids is not None, "reference_context_ids is empty"
+
+        # Convert all IDs to strings to ensure consistent comparison
+        retrieved_ids_set = set(str(id) for id in retrieved_context_ids)
+        reference_ids_set = set(str(id) for id in reference_context_ids)
+
+        # Calculate how many reference IDs appear in retrieved IDs
+        hits = sum(1 for ref_id in reference_ids_set if str(ref_id) in retrieved_ids_set)
+        
+        # Calculate recall score
+        total_refs = len(reference_ids_set)
+        score = hits / total_refs if total_refs > 0 else np.nan
+
+        if np.isnan(score):
+            logger.warning("No reference context IDs provided, cannot calculate recall.")
+            
+        return score
+
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
+
+
 context_recall = ContextRecall()

@@ -63,6 +63,10 @@ class SingleTurnSample(BaseSample):
         List of contexts retrieved for the query.
     reference_contexts : Optional[List[str]]
         List of reference contexts for the query.
+    retrieved_context_ids : Optional[List[Union[str, int]]]
+        List of IDs for retrieved contexts.
+    reference_context_ids : Optional[List[Union[str, int]]]
+        List of IDs for reference contexts.    
     response : Optional[str]
         The generated response for the query.
     multi_responses : Optional[List[str]]
@@ -76,6 +80,8 @@ class SingleTurnSample(BaseSample):
     user_input: t.Optional[str] = None
     retrieved_contexts: t.Optional[t.List[str]] = None
     reference_contexts: t.Optional[t.List[str]] = None
+    retrieved_context_ids: t.Optional[t.List[t.Union[str, int]]] = None
+    reference_context_ids: t.Optional[t.List[t.Union[str, int]]] = None
     response: t.Optional[str] = None
     multi_responses: t.Optional[t.List[str]] = None
     reference: t.Optional[str] = None

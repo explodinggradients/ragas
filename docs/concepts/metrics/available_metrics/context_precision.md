@@ -162,3 +162,36 @@ Output
 ```
 0.9999999999
 ```
+
+## ID Based Context Precision
+
+IDBasedContextPrecision provides a direct and efficient way to measure precision by comparing the IDs of retrieved contexts with reference context IDs. This metric is particularly useful when you have a unique ID system for your documents and want to evaluate retrieval performance without comparing the actual content.
+
+The metric computes precision using retrieved_context_ids and reference_context_ids, with values ranging between 0 and 1. Higher values indicate better performance. It works with both string and integer IDs.
+
+The formula for calculating ID-based context precision is as follows:
+
+$$ \text{ID-Based Context Precision} = \frac{\text{Number of retrieved context IDs found in reference context IDs}}{\text{Total number of retrieved context IDs}} $$
+
+### Example
+
+```python
+from ragas import SingleTurnSample
+from ragas.metrics import IDBasedContextPrecision
+
+sample = SingleTurnSample(
+    retrieved_context_ids=["doc_1", "doc_2", "doc_3", "doc_4"],
+    reference_context_ids=["doc_1", "doc_4", "doc_5", "doc_6"]
+)
+
+id_precision = IDBasedContextPrecision()
+await id_precision.single_turn_ascore(sample)
+
+```
+
+Output
+```
+0.5
+```
+
+In this example, out of the 4 retrieved context IDs, only 2 ("doc_1" and "doc_4") are found in the reference context IDs, resulting in a precision score of 0.5 or 50%.

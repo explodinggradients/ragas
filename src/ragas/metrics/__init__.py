@@ -22,12 +22,14 @@ from ragas.metrics._context_precision import (
     LLMContextPrecisionWithoutReference,
     LLMContextPrecisionWithReference,
     NonLLMContextPrecisionWithReference,
+    IDBasedContextPrecision,
     context_precision,
 )
 from ragas.metrics._context_recall import (
     ContextRecall,
     LLMContextRecall,
     NonLLMContextRecall,
+    IDBasedContextRecall,
     context_recall,
 )
 from ragas.metrics._datacompy_score import DataCompyScore
@@ -130,8 +132,10 @@ __all__ = [
     "LLMContextPrecisionWithoutReference",
     "NonLLMContextPrecisionWithReference",
     "LLMContextPrecisionWithoutReference",
+    "IDBasedContextPrecision",
     "LLMContextRecall",
     "NonLLMContextRecall",
+    "IDBasedContextRecall",
     "FactualCorrectness",
     "InstanceRubrics",
     "NonLLMStringSimilarity",
