@@ -8,6 +8,7 @@ happy to look into it 🙂
 
 ## Frameworks
 
+- [AWS Bedrock](./aws_bedrock.md) - AWS Bedrock is a fully managed framework that empowers you to build, deploy, and scale intelligent agents with advanced AI models and integrated services, more information can be found [here](https://aws.amazon.com/bedrock/).
 - [Langchain](./langchain.md) - Langchain is a framework for building LLM applications, more information can be found [here](https://www.langchain.com/).
 - [LlamaIndex](./_llamaindex.md) - LlamaIndex is a framework for building RAG applications, more information can be found [here](https://www.llamaindex.ai/).
 - [Haystack](./haystack.md) - Haystack is a LLM orchestration framework to build customizable, production-ready LLM applications, more information can be found [here](https://haystack.deepset.ai/).
