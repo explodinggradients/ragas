@@ -5,503 +5,503 @@ In this notebook, you will learn how to evaluate an Amazon Bedrock Agent. The ag
 
 The architecture is illustrated below:
 
-<img src="../../_static/architecture.png" style="width:70%;display:block;margin: 0 auto;">
-<br/>
+![architecture image](../../_static/architecture.png)
 
 The steps covered in this notebook include:
 
-1. Importing necessary libraries
-2. Creating the agent
-3. Defining the Ragas metrics
-4. Evaluating the agent
-5. Cleaning up the created resources
+- Importing necessary libraries
+- Creating the agent
+- Defining the Ragas metrics
+- Evaluating the agent
+- Cleaning up the created resources
 
-## 1. Import the needed libraries
+??? note "Click to View the Agent creation"
+    ## Import the needed libraries
 
-First step is to install the pre-requisites packages
-
-
-```python
-%pip install --upgrade -q boto3 opensearch-py botocore awscli retrying ragas
-```
+    First step is to install the pre-requisites packages
 
 
-```python
-import os
-import time
-import boto3
-import logging
-import pprint
-import json
-
-from knowledge_base import BedrockKnowledgeBase
-from agent import (
-    create_agent_role_and_policies,
-    create_lambda_role,
-    delete_agent_roles_and_policies,
-    create_dynamodb,
-    create_lambda,
-    clean_up_resources,
-)
-```
+    ```python
+    %pip install --upgrade -q boto3 opensearch-py botocore awscli retrying ragas
+    ```
 
 
-```python
-# Clients
-s3_client = boto3.client("s3")
-sts_client = boto3.client("sts")
-session = boto3.session.Session()
-region = session.region_name
-account_id = sts_client.get_caller_identity()["Account"]
-bedrock_agent_client = boto3.client("bedrock-agent")
-bedrock_agent_runtime_client = boto3.client("bedrock-agent-runtime")
-logging.basicConfig(
-    format="[%(asctime)s] p%(process)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
-    level=logging.INFO,
-)
-logger = logging.getLogger(__name__)
-region, account_id
-```
+    ```python
+    import os
+    import time
+    import boto3
+    import logging
+    import pprint
+    import json
+
+    from knowledge_base import BedrockKnowledgeBase
+    from agent import (
+        create_agent_role_and_policies,
+        create_lambda_role,
+        delete_agent_roles_and_policies,
+        create_dynamodb,
+        create_lambda,
+        clean_up_resources,
+    )
+    ```
 
 
-```python
-suffix = f"{region}-{account_id}"
-agent_name = "booking-agent"
-knowledge_base_name = f"{agent_name}-kb"
-knowledge_base_description = (
-    "Knowledge Base containing the restaurant menu's collection"
-)
-agent_alias_name = "booking-agent-alias"
-bucket_name = f"{agent_name}-{suffix}"
-agent_bedrock_allow_policy_name = f"{agent_name}-ba"
-agent_role_name = f"AmazonBedrockExecutionRoleForAgents_{agent_name}"
-agent_foundation_model = "amazon.nova-pro-v1:0"
-
-agent_description = "Agent in charge of a restaurants table bookings"
-agent_instruction = """
-You are a restaurant agent responsible for managing clients’ bookings (retrieving, creating, or canceling reservations) and assisting with menu inquiries. When handling menu requests, provide detailed information about the requested items. Offer recommendations only when:
-
-1. The customer explicitly asks for a recommendation, even if the item is available (include complementary dishes).
-2. The requested item is unavailable—inform the customer and suggest suitable alternatives.
-3. For general menu inquiries, provide the full menu and add a recommendation only if the customer asks for one.
-
-In all cases, ensure that any recommended items are present in the menu.
-
-Ensure all responses are clear, contextually relevant, and enhance the customer's experience.
-"""
-
-agent_action_group_description = """
-Actions for getting table booking information, create a new booking or delete an existing booking"""
-
-agent_action_group_name = "TableBookingsActionGroup"
-```
-
-## 2. Setting up Agent
-
-### 2.1 Create Knowledge Base for Amazon Bedrock
-
-Let's start by creating a [Knowledge Base for Amazon Bedrock](https://aws.amazon.com/bedrock/knowledge-bases/) to store the restaurant menus. For this example, we will integrate the knowledge base with Amazon OpenSearch Serverless.
+    ```python
+    # Clients
+    s3_client = boto3.client("s3")
+    sts_client = boto3.client("sts")
+    session = boto3.session.Session()
+    region = session.region_name
+    account_id = sts_client.get_caller_identity()["Account"]
+    bedrock_agent_client = boto3.client("bedrock-agent")
+    bedrock_agent_runtime_client = boto3.client("bedrock-agent-runtime")
+    logging.basicConfig(
+        format="[%(asctime)s] p%(process)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
+        level=logging.INFO,
+    )
+    logger = logging.getLogger(__name__)
+    region, account_id
+    ```
 
 
-```python
-knowledge_base = BedrockKnowledgeBase(
-    kb_name=knowledge_base_name,
-    kb_description=knowledge_base_description,
-    data_bucket_name=bucket_name,
-)
-```
+    ```python
+    suffix = f"{region}-{account_id}"
+    agent_name = "booking-agent"
+    knowledge_base_name = f"{agent_name}-kb"
+    knowledge_base_description = (
+        "Knowledge Base containing the restaurant menu's collection"
+    )
+    agent_alias_name = "booking-agent-alias"
+    bucket_name = f"{agent_name}-{suffix}"
+    agent_bedrock_allow_policy_name = f"{agent_name}-ba"
+    agent_role_name = f"AmazonBedrockExecutionRoleForAgents_{agent_name}"
+    agent_foundation_model = "amazon.nova-pro-v1:0"
 
-### 2.2 Upload the Dataset to Amazon S3
+    agent_description = "Agent in charge of a restaurants table bookings"
+    agent_instruction = """
+    You are a restaurant agent responsible for managing clients’ bookings (retrieving, creating, or canceling reservations) and assisting with menu inquiries. When handling menu requests, provide detailed information about the requested items. Offer recommendations only when:
 
-Now that we have created the knowledge base, let’s populate it with the restaurant menus dataset. In this example, we will use the [boto3 abstraction](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/bedrock-agent/client/start_ingestion_job.html) of the API, via our helper classe. 
+    1. The customer explicitly asks for a recommendation, even if the item is available (include complementary dishes).
+    2. The requested item is unavailable—inform the customer and suggest suitable alternatives.
+    3. For general menu inquiries, provide the full menu and add a recommendation only if the customer asks for one.
 
-Let’s first upload the menu data available in the dataset folder to Amazon S3.
+    In all cases, ensure that any recommended items are present in the menu.
 
+    Ensure all responses are clear, contextually relevant, and enhance the customer's experience.
+    """
 
-```python
-def upload_directory(path, bucket_name):
-    for root, dirs, files in os.walk(path):
-        for file in files:
-            file_to_upload = os.path.join(root, file)
-            print(f"uploading file {file_to_upload} to {bucket_name}")
-            s3_client.upload_file(file_to_upload, bucket_name, file)
+    agent_action_group_description = """
+    Actions for getting table booking information, create a new booking or delete an existing booking"""
 
+    agent_action_group_name = "TableBookingsActionGroup"
+    ```
 
-upload_directory("dataset", bucket_name)
-```
+    ## Setting up Agent
 
-Now we start the ingestion job
+    ### Create Knowledge Base for Amazon Bedrock
 
-
-```python
-# ensure that the kb is available
-time.sleep(30)
-# sync knowledge base
-knowledge_base.start_ingestion_job()
-```
-
-Finally we collect the Knowledge Base Id to integrate it with our Agent later on.
-
-
-```python
-kb_id = knowledge_base.get_knowledge_base_id()
-```
-
-#### Testing Knowledge Base with Retrieve and Generate API
-
-First, let’s test the knowledge base using the Retrieve and Generate API to ensure that the knowledge base is functioning correctly.
+    Let's start by creating a [Knowledge Base for Amazon Bedrock](https://aws.amazon.com/bedrock/knowledge-bases/) to store the restaurant menus. For this example, we will integrate the knowledge base with Amazon OpenSearch Serverless.
 
 
-```python
-response = bedrock_agent_runtime_client.retrieve_and_generate(
-    input={"text": "Which are the mains available in the childrens menu?"},
-    retrieveAndGenerateConfiguration={
-        "type": "KNOWLEDGE_BASE",
-        "knowledgeBaseConfiguration": {
-            "knowledgeBaseId": kb_id,
-            "modelArn": "arn:aws:bedrock:{}::foundation-model/{}".format(
-                region, agent_foundation_model
-            ),
-            "retrievalConfiguration": {
-                "vectorSearchConfiguration": {"numberOfResults": 5}
+    ```python
+    knowledge_base = BedrockKnowledgeBase(
+        kb_name=knowledge_base_name,
+        kb_description=knowledge_base_description,
+        data_bucket_name=bucket_name,
+    )
+    ```
+
+    ### Upload the Dataset to Amazon S3
+
+    Now that we have created the knowledge base, let’s populate it with the restaurant menus dataset. In this example, we will use the [boto3 abstraction](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/bedrock-agent/client/start_ingestion_job.html) of the API, via our helper classe. 
+
+    Let’s first upload the menu data available in the dataset folder to Amazon S3.
+
+
+    ```python
+    def upload_directory(path, bucket_name):
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                file_to_upload = os.path.join(root, file)
+                print(f"uploading file {file_to_upload} to {bucket_name}")
+                s3_client.upload_file(file_to_upload, bucket_name, file)
+
+
+    upload_directory("dataset", bucket_name)
+    ```
+
+    Now we start the ingestion job
+
+
+    ```python
+    # ensure that the kb is available
+    time.sleep(30)
+    # sync knowledge base
+    knowledge_base.start_ingestion_job()
+    ```
+
+    Finally we collect the Knowledge Base Id to integrate it with our Agent later on.
+
+
+    ```python
+    kb_id = knowledge_base.get_knowledge_base_id()
+    ```
+
+    #### Testing Knowledge Base with Retrieve and Generate API
+
+    First, let’s test the knowledge base using the Retrieve and Generate API to ensure that the knowledge base is functioning correctly.
+
+
+    ```python
+    response = bedrock_agent_runtime_client.retrieve_and_generate(
+        input={"text": "Which are the mains available in the childrens menu?"},
+        retrieveAndGenerateConfiguration={
+            "type": "KNOWLEDGE_BASE",
+            "knowledgeBaseConfiguration": {
+                "knowledgeBaseId": kb_id,
+                "modelArn": "arn:aws:bedrock:{}::foundation-model/{}".format(
+                    region, agent_foundation_model
+                ),
+                "retrievalConfiguration": {
+                    "vectorSearchConfiguration": {"numberOfResults": 5}
+                },
             },
         },
-    },
-)
+    )
 
-print(response["output"]["text"], end="\n" * 2)
-```
+    print(response["output"]["text"], end="\n" * 2)
+    ```
 
-### 2.3 Create the DynamoDB Table
+    ### Create the DynamoDB Table
 
-We will create a DynamoDB table that contains restaurant booking information.
-
-
-```python
-table_name = "restaurant_bookings"
-create_dynamodb(table_name)
-```
-
-### 2.4 Create the Lambda Function
-
-We will now create a Lambda function that interacts with the DynamoDB table.
-
-#### Create the Function Code
-
-Create the Lambda function that implements the functions for `get_booking_details`, `create_booking`, and `delete_booking`.
+    We will create a DynamoDB table that contains restaurant booking information.
 
 
-```python
-%%writefile lambda_function.py
-import json
-import uuid
-import boto3
+    ```python
+    table_name = "restaurant_bookings"
+    create_dynamodb(table_name)
+    ```
 
-dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('restaurant_bookings')
+    ### Create the Lambda Function
 
-def get_named_parameter(event, name):
-    """
-    Get a parameter from the lambda event
-    """
-    return next(item for item in event['parameters'] if item['name'] == name)['value']
+    We will now create a Lambda function that interacts with the DynamoDB table.
+
+    #### Create the Function Code
+
+    Create the Lambda function that implements the functions for `get_booking_details`, `create_booking`, and `delete_booking`.
 
 
-def get_booking_details(booking_id):
-    """
-    Retrieve details of a restaurant booking
-    
-    Args:
-        booking_id (string): The ID of the booking to retrieve
-    """
-    try:
-        response = table.get_item(Key={'booking_id': booking_id})
-        if 'Item' in response:
-            return response['Item']
+    ```python
+    %%writefile lambda_function.py
+    import json
+    import uuid
+    import boto3
+
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table('restaurant_bookings')
+
+    def get_named_parameter(event, name):
+        """
+        Get a parameter from the lambda event
+        """
+        return next(item for item in event['parameters'] if item['name'] == name)['value']
+
+
+    def get_booking_details(booking_id):
+        """
+        Retrieve details of a restaurant booking
+        
+        Args:
+            booking_id (string): The ID of the booking to retrieve
+        """
+        try:
+            response = table.get_item(Key={'booking_id': booking_id})
+            if 'Item' in response:
+                return response['Item']
+            else:
+                return {'message': f'No booking found with ID {booking_id}'}
+        except Exception as e:
+            return {'error': str(e)}
+
+
+    def create_booking(date, name, hour, num_guests):
+        """
+        Create a new restaurant booking
+        
+        Args:
+            date (string): The date of the booking
+            name (string): Name to idenfity your reservation
+            hour (string): The hour of the booking
+            num_guests (integer): The number of guests for the booking
+        """
+        try:
+            booking_id = str(uuid.uuid4())[:8]
+            table.put_item(
+                Item={
+                    'booking_id': booking_id,
+                    'date': date,
+                    'name': name,
+                    'hour': hour,
+                    'num_guests': num_guests
+                }
+            )
+            return {'booking_id': booking_id}
+        except Exception as e:
+            return {'error': str(e)}
+
+
+    def delete_booking(booking_id):
+        """
+        Delete an existing restaurant booking
+        
+        Args:
+            booking_id (str): The ID of the booking to delete
+        """
+        try:
+            response = table.delete_item(Key={'booking_id': booking_id})
+            if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                return {'message': f'Booking with ID {booking_id} deleted successfully'}
+            else:
+                return {'message': f'Failed to delete booking with ID {booking_id}'}
+        except Exception as e:
+            return {'error': str(e)}
+        
+
+    def lambda_handler(event, context):
+        # get the action group used during the invocation of the lambda function
+        actionGroup = event.get('actionGroup', '')
+        
+        # name of the function that should be invoked
+        function = event.get('function', '')
+        
+        # parameters to invoke function with
+        parameters = event.get('parameters', [])
+
+        if function == 'get_booking_details':
+            booking_id = get_named_parameter(event, "booking_id")
+            if booking_id:
+                response = str(get_booking_details(booking_id))
+                responseBody = {'TEXT': {'body': json.dumps(response)}}
+            else:
+                responseBody = {'TEXT': {'body': 'Missing booking_id parameter'}}
+
+        elif function == 'create_booking':
+            date = get_named_parameter(event, "date")
+            name = get_named_parameter(event, "name")
+            hour = get_named_parameter(event, "hour")
+            num_guests = get_named_parameter(event, "num_guests")
+
+            if date and hour and num_guests:
+                response = str(create_booking(date, name, hour, num_guests))
+                responseBody = {'TEXT': {'body': json.dumps(response)}}
+            else:
+                responseBody = {'TEXT': {'body': 'Missing required parameters'}}
+
+        elif function == 'delete_booking':
+            booking_id = get_named_parameter(event, "booking_id")
+            if booking_id:
+                response = str(delete_booking(booking_id))
+                responseBody = {'TEXT': {'body': json.dumps(response)}}
+            else:
+                responseBody = {'TEXT': {'body': 'Missing booking_id parameter'}}
+
         else:
-            return {'message': f'No booking found with ID {booking_id}'}
-    except Exception as e:
-        return {'error': str(e)}
+            responseBody = {'TEXT': {'body': 'Invalid function'}}
 
-
-def create_booking(date, name, hour, num_guests):
-    """
-    Create a new restaurant booking
-    
-    Args:
-        date (string): The date of the booking
-        name (string): Name to idenfity your reservation
-        hour (string): The hour of the booking
-        num_guests (integer): The number of guests for the booking
-    """
-    try:
-        booking_id = str(uuid.uuid4())[:8]
-        table.put_item(
-            Item={
-                'booking_id': booking_id,
-                'date': date,
-                'name': name,
-                'hour': hour,
-                'num_guests': num_guests
+        action_response = {
+            'actionGroup': actionGroup,
+            'function': function,
+            'functionResponse': {
+                'responseBody': responseBody
             }
-        )
-        return {'booking_id': booking_id}
-    except Exception as e:
-        return {'error': str(e)}
-
-
-def delete_booking(booking_id):
-    """
-    Delete an existing restaurant booking
-    
-    Args:
-        booking_id (str): The ID of the booking to delete
-    """
-    try:
-        response = table.delete_item(Key={'booking_id': booking_id})
-        if response['ResponseMetadata']['HTTPStatusCode'] == 200:
-            return {'message': f'Booking with ID {booking_id} deleted successfully'}
-        else:
-            return {'message': f'Failed to delete booking with ID {booking_id}'}
-    except Exception as e:
-        return {'error': str(e)}
-    
-
-def lambda_handler(event, context):
-    # get the action group used during the invocation of the lambda function
-    actionGroup = event.get('actionGroup', '')
-    
-    # name of the function that should be invoked
-    function = event.get('function', '')
-    
-    # parameters to invoke function with
-    parameters = event.get('parameters', [])
-
-    if function == 'get_booking_details':
-        booking_id = get_named_parameter(event, "booking_id")
-        if booking_id:
-            response = str(get_booking_details(booking_id))
-            responseBody = {'TEXT': {'body': json.dumps(response)}}
-        else:
-            responseBody = {'TEXT': {'body': 'Missing booking_id parameter'}}
-
-    elif function == 'create_booking':
-        date = get_named_parameter(event, "date")
-        name = get_named_parameter(event, "name")
-        hour = get_named_parameter(event, "hour")
-        num_guests = get_named_parameter(event, "num_guests")
-
-        if date and hour and num_guests:
-            response = str(create_booking(date, name, hour, num_guests))
-            responseBody = {'TEXT': {'body': json.dumps(response)}}
-        else:
-            responseBody = {'TEXT': {'body': 'Missing required parameters'}}
-
-    elif function == 'delete_booking':
-        booking_id = get_named_parameter(event, "booking_id")
-        if booking_id:
-            response = str(delete_booking(booking_id))
-            responseBody = {'TEXT': {'body': json.dumps(response)}}
-        else:
-            responseBody = {'TEXT': {'body': 'Missing booking_id parameter'}}
-
-    else:
-        responseBody = {'TEXT': {'body': 'Invalid function'}}
-
-    action_response = {
-        'actionGroup': actionGroup,
-        'function': function,
-        'functionResponse': {
-            'responseBody': responseBody
         }
-    }
 
-    function_response = {'response': action_response, 'messageVersion': event['messageVersion']}
-    print("Response: {}".format(function_response))
+        function_response = {'response': action_response, 'messageVersion': event['messageVersion']}
+        print("Response: {}".format(function_response))
 
-    return function_response
-```
+        return function_response
+    ```
 
-#### Create the required permissions
-
-
-```python
-lambda_iam_role = create_lambda_role(agent_name, table_name)
-```
-
-#### Create the function
+    #### Create the required permissions
 
 
-```python
-lambda_function_name = f"{agent_name}-lambda"
-lambda_function = create_lambda(lambda_function_name, lambda_iam_role)
-```
+    ```python
+    lambda_iam_role = create_lambda_role(agent_name, table_name)
+    ```
 
-### 2.5 Create the IAM Policies Needed for the Agent
-
-Now that we have created the Knowledge Base, our DynamoDB table, and the Lambda function to execute the tasks for our Agent, let’s start creating our Agent.
+    #### Create the function
 
 
-```python
-agent_role = create_agent_role_and_policies(
-    agent_name, agent_foundation_model, kb_id=kb_id
-)
-```
+    ```python
+    lambda_function_name = f"{agent_name}-lambda"
+    lambda_function = create_lambda(lambda_function_name, lambda_iam_role)
+    ```
 
-### 2.6 Create the Agent
+    ### Create the IAM Policies Needed for the Agent
 
-Now that we have created the necessary IAM role, we can use the [`create_agent`](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/bedrock-agent/client/create_agent.html) API from boto3 to create a new agent.
-
-
-```python
-response = bedrock_agent_client.create_agent(
-    agentName=agent_name,
-    agentResourceRoleArn=agent_role["Role"]["Arn"],
-    description=agent_description,
-    idleSessionTTLInSeconds=1800,
-    foundationModel=agent_foundation_model,
-    instruction=agent_instruction,
-)
-```
-
-Let's get our Agent ID. It will be important to perform operations with our agent
+    Now that we have created the Knowledge Base, our DynamoDB table, and the Lambda function to execute the tasks for our Agent, let’s start creating our Agent.
 
 
-```python
-agent_id = response["agent"]["agentId"]
-print("The agent id is:", agent_id)
-```
+    ```python
+    agent_role = create_agent_role_and_policies(
+        agent_name, agent_foundation_model, kb_id=kb_id
+    )
+    ```
 
-### 2.7 Create the Agent Action Group
+    ### Create the Agent
 
-We will now create an Agent Action Group that uses the Lambda function created earlier. To inform the agent about the capabilities of the action group, we will provide a description outlining its functionalities.
-
-To define the functions using a function schema, you need to provide the name, description, and parameters for each function.
+    Now that we have created the necessary IAM role, we can use the [`create_agent`](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/bedrock-agent/client/create_agent.html) API from boto3 to create a new agent.
 
 
-```python
-agent_functions = [
-    {
-        "name": "get_booking_details",
-        "description": "Retrieve details of a restaurant booking",
-        "parameters": {
-            "booking_id": {
-                "description": "The ID of the booking to retrieve",
-                "required": True,
-                "type": "string",
-            }
-        },
-    },
-    {
-        "name": "create_booking",
-        "description": "Create a new restaurant booking",
-        "parameters": {
-            "date": {
-                "description": "The date of the booking",
-                "required": True,
-                "type": "string",
-            },
-            "name": {
-                "description": "Name to idenfity your reservation",
-                "required": True,
-                "type": "string",
-            },
-            "hour": {
-                "description": "The hour of the booking",
-                "required": True,
-                "type": "string",
-            },
-            "num_guests": {
-                "description": "The number of guests for the booking",
-                "required": True,
-                "type": "integer",
+    ```python
+    response = bedrock_agent_client.create_agent(
+        agentName=agent_name,
+        agentResourceRoleArn=agent_role["Role"]["Arn"],
+        description=agent_description,
+        idleSessionTTLInSeconds=1800,
+        foundationModel=agent_foundation_model,
+        instruction=agent_instruction,
+    )
+    ```
+
+    Let's get our Agent ID. It will be important to perform operations with our agent
+
+
+    ```python
+    agent_id = response["agent"]["agentId"]
+    print("The agent id is:", agent_id)
+    ```
+
+    ### Create the Agent Action Group
+
+    We will now create an Agent Action Group that uses the Lambda function created earlier. To inform the agent about the capabilities of the action group, we will provide a description outlining its functionalities.
+
+    To define the functions using a function schema, you need to provide the name, description, and parameters for each function.
+
+
+    ```python
+    agent_functions = [
+        {
+            "name": "get_booking_details",
+            "description": "Retrieve details of a restaurant booking",
+            "parameters": {
+                "booking_id": {
+                    "description": "The ID of the booking to retrieve",
+                    "required": True,
+                    "type": "string",
+                }
             },
         },
-    },
-    {
-        "name": "delete_booking",
-        "description": "Delete an existing restaurant booking",
-        "parameters": {
-            "booking_id": {
-                "description": "The ID of the booking to delete",
-                "required": True,
-                "type": "string",
-            }
+        {
+            "name": "create_booking",
+            "description": "Create a new restaurant booking",
+            "parameters": {
+                "date": {
+                    "description": "The date of the booking",
+                    "required": True,
+                    "type": "string",
+                },
+                "name": {
+                    "description": "Name to idenfity your reservation",
+                    "required": True,
+                    "type": "string",
+                },
+                "hour": {
+                    "description": "The hour of the booking",
+                    "required": True,
+                    "type": "string",
+                },
+                "num_guests": {
+                    "description": "The number of guests for the booking",
+                    "required": True,
+                    "type": "integer",
+                },
+            },
         },
-    },
-]
-```
+        {
+            "name": "delete_booking",
+            "description": "Delete an existing restaurant booking",
+            "parameters": {
+                "booking_id": {
+                    "description": "The ID of the booking to delete",
+                    "required": True,
+                    "type": "string",
+                }
+            },
+        },
+    ]
+    ```
 
-We now use the function schema to create the agent action group using the [`create_agent_action_group`](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/bedrock-agent/client/create_agent_action_group.html) API
-
-
-```python
-# Pause to make sure agent is created
-time.sleep(30)
-
-# Now, we can configure and create an action group here:
-agent_action_group_response = bedrock_agent_client.create_agent_action_group(
-    agentId=agent_id,
-    agentVersion="DRAFT",
-    actionGroupExecutor={"lambda": lambda_function["FunctionArn"]},
-    actionGroupName=agent_action_group_name,
-    functionSchema={"functions": agent_functions},
-    description=agent_action_group_description,
-)
-```
-
-### 2.8 Allow the Agent to invoke the Action Group Lambda
+    We now use the function schema to create the agent action group using the [`create_agent_action_group`](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/bedrock-agent/client/create_agent_action_group.html) API
 
 
-```python
-# Create allow to invoke permission on lambda
-lambda_client = boto3.client("lambda")
-response = lambda_client.add_permission(
-    FunctionName=lambda_function_name,
-    StatementId="allow_bedrock",
-    Action="lambda:InvokeFunction",
-    Principal="bedrock.amazonaws.com",
-    SourceArn=f"arn:aws:bedrock:{region}:{account_id}:agent/{agent_id}",
-)
-```
+    ```python
+    # Pause to make sure agent is created
+    time.sleep(30)
 
-### 2.9 Associate the Knowledge Base to the agent
+    # Now, we can configure and create an action group here:
+    agent_action_group_response = bedrock_agent_client.create_agent_action_group(
+        agentId=agent_id,
+        agentVersion="DRAFT",
+        actionGroupExecutor={"lambda": lambda_function["FunctionArn"]},
+        actionGroupName=agent_action_group_name,
+        functionSchema={"functions": agent_functions},
+        description=agent_action_group_description,
+    )
+    ```
 
-
-```python
-response = bedrock_agent_client.associate_agent_knowledge_base(
-    agentId=agent_id,
-    agentVersion="DRAFT",
-    description="Access the knowledge base when customers ask about the plates in the menu.",
-    knowledgeBaseId=kb_id,
-    knowledgeBaseState="ENABLED",
-)
-```
-
-### 2.10 Prepare the Agent and create an alias
-
-Let's create a DRAFT version of the agent that can be used for internal testing.
+    ### Allow the Agent to invoke the Action Group Lambda
 
 
-```python
-response = bedrock_agent_client.prepare_agent(agentId=agent_id)
-print(response)
-# Pause to make sure agent is prepared
-time.sleep(30)
-```
+    ```python
+    # Create allow to invoke permission on lambda
+    lambda_client = boto3.client("lambda")
+    response = lambda_client.add_permission(
+        FunctionName=lambda_function_name,
+        StatementId="allow_bedrock",
+        Action="lambda:InvokeFunction",
+        Principal="bedrock.amazonaws.com",
+        SourceArn=f"arn:aws:bedrock:{region}:{account_id}:agent/{agent_id}",
+    )
+    ```
+
+    ### Associate the Knowledge Base to the agent
 
 
-```python
-response = bedrock_agent_client.create_agent_alias(
-    agentAliasName="TestAlias",
-    agentId=agent_id,
-    description="Test alias",
-)
+    ```python
+    response = bedrock_agent_client.associate_agent_knowledge_base(
+        agentId=agent_id,
+        agentVersion="DRAFT",
+        description="Access the knowledge base when customers ask about the plates in the menu.",
+        knowledgeBaseId=kb_id,
+        knowledgeBaseState="ENABLED",
+    )
+    ```
 
-alias_id = response["agentAlias"]["agentAliasId"]
-print("The Agent alias is:", alias_id)
-time.sleep(30)
-```
+    ### Prepare the Agent and create an alias
+
+    Let's create a DRAFT version of the agent that can be used for internal testing.
+
+
+    ```python
+    response = bedrock_agent_client.prepare_agent(agentId=agent_id)
+    print(response)
+    # Pause to make sure agent is prepared
+    time.sleep(30)
+    ```
+
+
+    ```python
+    response = bedrock_agent_client.create_agent_alias(
+        agentAliasName="TestAlias",
+        agentId=agent_id,
+        description="Test alias",
+    )
+
+    alias_id = response["agentAlias"]["agentAliasId"]
+    print("The Agent alias is:", alias_id)
+    time.sleep(30)
+    ```
 
 
 ```python
@@ -539,7 +539,7 @@ def invokeAgent(query, session_id, enable_trace=True, session_state=dict()):
         raise Exception("unexpected event.", e)
 ```
 
-## 3. Defining the Ragas metrics
+## Defining the Ragas metrics
 
 Evaluating agents is different from testing traditional software, where you can simply verify whether the output matches expected results. These agents perform complex tasks that often have multiple valid approaches.
 
@@ -623,7 +623,7 @@ brand_tone = AspectCritic(
 )
 ```
 
-## 4. Evaluating Agent with Ragas
+## Evaluating Agent with Ragas
 
 In order to perform evaluations using Ragas, the traces need to be converted into the format recognized by Ragas. To convert an AWS Bedrock agent trace into a format suitable for Ragas evaluation, Ragas provides the function [convert_to_ragas_messages][ragas.integrations.aws_bedrock.convert_to_ragas_messages], which can be used to transform AWS Bedrock messages into the format expected by Ragas. You can read more about it [here](../../concepts/components/eval_dataset.md).
 
@@ -1094,7 +1094,7 @@ Evaluating: 100%|██████████| 1/1 [00:00<?, ?it/s]
 
 In both scenarios, the agent earned a score of 1 by comprehensively providing all available options—whether listing all children’s entrees.
 
-## 5. Clean-up 
+## Clean-up 
 Let's delete all the associated resources created to avoid unnecessary costs. 
 
 ```python
