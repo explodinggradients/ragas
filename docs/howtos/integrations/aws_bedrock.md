@@ -553,9 +553,10 @@ We’ll define metrics to evaluate these priorities. Ragas provides several user
 
 When defining evaluation criteria, focus on binary decisions or discrete classification scores rather than ambiguous scores. Binary or clear classifications compel you to explicitly define success criteria. Avoid metrics yielding scores between 0 and 100 without clear interpretation, as distinguishing between close scores like 87 and 91 can be challenging, especially when evaluations occur independently.
 
-Ragas includes metrics suited to such evaluations, and we will explore some of them in action:
-- [**Aspect Critic Metric**](../../concepts/metrics/available_metrics/aspect_critic.md): Evaluates whether a submission follows user-defined criteria by leveraging LLM judgments to yield a binary outcome.
-- [**Rubric Score Metric**](../../concepts/metrics/available_metrics/general_purpose.md#rubrics-based-criteria-scoring): Assesses responses against detailed, user-defined rubrics to consistently assign scores reflecting quality.
+Ragas includes metrics suited to such evaluations, and we will explore some of them in action:  
+
+- [Aspect Critic Metric](../../concepts/metrics/available_metrics/aspect_critic.md): Evaluates whether a submission follows user-defined criteria by leveraging LLM judgments to yield a binary outcome.
+- [Rubric Score Metric](../../concepts/metrics/available_metrics/general_purpose.md#rubrics-based-criteria-scoring): Assesses responses against detailed, user-defined rubrics to consistently assign scores reflecting quality.
 
 
 ```python
@@ -848,10 +849,11 @@ For the Recommendation metric, the chicken wings inquiry scored 0 since the item
 
 To evaluate how well our agent utilizes information retrieved from the knowledge base, we use the RAG evaluation metrics provided by Ragas. You can learn more about these metrics [here]().
 
-In this tutorial, we will use the following RAG metrics:
-- [**ContextRelevance**](../../concepts/metrics/available_metrics/nvidia_metrics.md#context-relevance): Measures how well the retrieved contexts address the user’s query by evaluating their pertinence through dual LLM judgments.
-- [**Faithfulness**](../../concepts/metrics/available_metrics/faithfulness.md): Assesses the factual consistency of the response by determining whether all its claims can be supported by the provided retrieved contexts.
-- [**ResponseGroundedness**](../../concepts/metrics/available_metrics/nvidia_metrics.md#response-groundedness): Determines the extent to which each claim in the response is directly supported or “grounded” in the provided contexts.
+In this tutorial, we will use the following RAG metrics:  
+
+- [ContextRelevance](../../concepts/metrics/available_metrics/nvidia_metrics.md#context-relevance): Measures how well the retrieved contexts address the user’s query by evaluating their pertinence through dual LLM judgments.
+- [Faithfulness](../../concepts/metrics/available_metrics/faithfulness.md): Assesses the factual consistency of the response by determining whether all its claims can be supported by the provided retrieved contexts.
+- [ResponseGroundedness](../../concepts/metrics/available_metrics/nvidia_metrics.md#response-groundedness): Determines the extent to which each claim in the response is directly supported or “grounded” in the provided contexts.
 
 
 ```python
@@ -952,9 +954,10 @@ Evaluating: 100%|██████████| 6/6 [00:00<?, ?it/s]
 
 Corrected Snippet:
 
-To evaluate whether the agent is able to achieve its goal, we can use the following metrics:
-- [**AgentGoalAccuracyWithReference**](../../concepts/metrics/available_metrics/agents.md#agent-goal-accuracy): Determines if the AI achieved the user’s goal by comparing its final outcome against an annotated ideal outcome, yielding a binary result.
-- [**AgentGoalAccuracyWithoutReference**](../../concepts/metrics/available_metrics/agents.md#agent-goal-accuracy): Infers whether the AI met the user’s goal solely based on conversational interactions, providing a binary success indicator without an explicit reference.
+To evaluate whether the agent is able to achieve its goal, we can use the following metrics:  
+
+- [AgentGoalAccuracyWithReference](../../concepts/metrics/available_metrics/agents.md#agent-goal-accuracy): Determines if the AI achieved the user’s goal by comparing its final outcome against an annotated ideal outcome, yielding a binary result.
+- [AgentGoalAccuracyWithoutReference](../../concepts/metrics/available_metrics/agents.md#agent-goal-accuracy): Infers whether the AI met the user’s goal solely based on conversational interactions, providing a binary success indicator without an explicit reference.
 
 
 ```python
