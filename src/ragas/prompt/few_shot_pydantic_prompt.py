@@ -82,12 +82,12 @@ class InMemoryExampleStore(ExampleStore):
         # Sort by similarity and get top-k
         top_indices = valid_indices[np.argsort(similarities[valid_indices])[-top_k:]]
 
-        result = top_indices.tolist()
-        if isinstance(result, int):
-            return [result]  # Convert single int to a list
-        elif not isinstance(result, list):
-            return []  # Handle unexpected cases with an empty list
-        return result  # Already a list of integers
+        # Ensure the result is a proper List[int]
+        result = []
+        for idx in top_indices:
+            result.append(int(idx))  # Explicitly convert each element to int
+        
+        return result
 
     def __repr__(self):
         return f"InMemoryExampleStore(n_examples={len(self._examples_list)})"
