@@ -634,6 +634,7 @@ class GeneticOptimizer(Optimizer):
             )
             values = results.to_pandas()[self.metric.name].values
             y_pred = values.tolist() if isinstance(values, np.ndarray) else [values]
+            y_pred = t.cast(t.List[float], y_pred)
 
             loss = loss_fn(y_true, y_pred)
             losses.append(loss)

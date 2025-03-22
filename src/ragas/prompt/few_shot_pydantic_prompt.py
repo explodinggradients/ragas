@@ -86,7 +86,7 @@ class InMemoryExampleStore(ExampleStore):
         result = []
         for idx in top_indices:
             result.append(int(idx))  # Explicitly convert each element to int
-        
+
         return result
 
     def __repr__(self):
