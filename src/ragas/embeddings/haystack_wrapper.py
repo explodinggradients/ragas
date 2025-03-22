@@ -1,6 +1,8 @@
 import asyncio
 import typing as t
 
+import numpy as np
+
 from ragas.cache import CacheInterface
 from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.run_config import RunConfig
@@ -75,7 +77,9 @@ class HaystackEmbeddingsWrapper(BaseRagasEmbeddings):
 
     def embed_query(self, text: str) -> t.List[float]:
         result = self.embedder.run(text=text)
-        return result["embedding"]
+        embedding = result["embedding"]
+        # Force conversion to float using NumPy's vectorized conversion.
+        return t.cast(t.List[float], np.asarray(embedding, dtype=float).tolist())
 
     def embed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
         return [self.embed_query(text) for text in texts]
