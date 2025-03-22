@@ -632,7 +632,9 @@ class GeneticOptimizer(Optimizer):
                 run_id=run_id,
                 parent_pbar=parent_pbar,
             )
-            y_pred = results.to_pandas()[self.metric.name].values.tolist()
+            values = results.to_pandas()[self.metric.name].values
+            y_pred = values.tolist() if isinstance(values, np.ndarray) else [values]
+
             loss = loss_fn(y_true, y_pred)
             losses.append(loss)
 
