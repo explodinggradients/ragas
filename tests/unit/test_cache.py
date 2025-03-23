@@ -41,7 +41,7 @@ def test_generate_cache_key():
 
 
 def test_generate_cache_key_bound_method():
-    """Test that cache keys change when arguments or kwargs differ with a bound method."""
+    """Test that cache keys stay the same, when caching bound methods of different objects."""
 
     class Clazz():
         def __init__(self, irrelevant):
