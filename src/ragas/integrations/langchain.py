@@ -174,12 +174,15 @@ class EvaluatorChain(Chain, RunEvaluator):
                 f"Got: {[k for k in run.outputs.keys()]}"
             )
 
+    @t.no_type_check
     def evaluate_run(
         self, run: Run, example: t.Optional[Example] = None
     ) -> EvaluationResult:
         """
         Evaluate a langsmith run
         """
+        # Moved away from this implementation in LangChain evaluations;
+        # we can safely ignore type checking for this legacy function.
         self._validate_langsmith_eval(run, example)
 
         # this is just to suppress the type checker error
