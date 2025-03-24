@@ -95,7 +95,7 @@ class SemanticSimilarity(MetricWithEmbeddings, SingleTurnMetric):
         if self.threshold:
             score = score >= self.threshold
 
-        return score.tolist()[0]
+        return float(score.item())
 
 
 class AnswerSimilarity(SemanticSimilarity):
