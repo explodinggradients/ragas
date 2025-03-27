@@ -1,5 +1,5 @@
 
-# Create and Evaluate an Agent Integrated with Bedrock Knowledge Bases and Attached Action Group
+# Create and Evaluate an Amazon Bedrock Agent and Amazon Bedrock Knowledge Bases
 
 In this notebook, you will learn how to evaluate an Amazon Bedrock Agent. The agent we'll evaluate is a restaurant agent whose tasks include providing clients with information about adult and children's menus and managing the table booking system. This agent is inspired by a [features example notebooks](https://github.com/aws-samples/amazon-bedrock-samples/tree/main/agents-and-function-calling/bedrock-agents/features-examples/05-create-agent-with-knowledge-base-and-action-group) of [Amazon Bedrock Agents](https://aws.amazon.com/bedrock/agents/) with minor changes. You can learn more about the agent creation process [here](https://github.com/aws-samples/amazon-bedrock-samples/tree/main/agents-and-function-calling/bedrock-agents/features-examples/05-create-agent-with-knowledge-base-and-action-group).
 
@@ -625,7 +625,7 @@ brand_tone = AspectCritic(
 
 ## Evaluating Agent with Ragas
 
-In order to perform evaluations using Ragas, the traces need to be converted into the format recognized by Ragas. To convert an AWS Bedrock agent trace into a format suitable for Ragas evaluation, Ragas provides the function [convert_to_ragas_messages][ragas.integrations.aws_bedrock.convert_to_ragas_messages], which can be used to transform AWS Bedrock messages into the format expected by Ragas. You can read more about it [here](../../concepts/components/eval_dataset.md).
+In order to perform evaluations using Ragas, the traces need to be converted into the format recognized by Ragas. To convert an Amazon Bedrock agent trace into a format suitable for Ragas evaluation, Ragas provides the function [convert_to_ragas_messages][ragas.integrations.amazon_bedrock.convert_to_ragas_messages], which can be used to transform Amazon Bedrock messages into the format expected by Ragas. You can read more about it [here](../../concepts/components/eval_dataset.md).
 
 
 ```python
@@ -654,10 +654,10 @@ Your reservation was found and has been successfully canceled.
 ```
 
 ```python
-from ragas.integrations.aws_bedrock import convert_to_ragas_messages
+from ragas.integrations.amazon_bedrock import convert_to_ragas_messages
 
-# Convert AWS traces to messages accepted by RAGAS.
-# The convert_to_ragas_messages function transforms AWS-specific trace data 
+# Convert Amazon Bedrock traces to messages accepted by RAGAS.
+# The convert_to_ragas_messages function transforms Bedrock-specific trace data 
 # into a format that RAGAS can process as conversation messages.
 ragas_messages_trace_1 = convert_to_ragas_messages(traces_1)
 ragas_messages_trace_2 = convert_to_ragas_messages(traces_2)
@@ -782,7 +782,7 @@ I could not find Indian food on our menu. However, we offer a variety of other c
 ```
 
 ```python
-from ragas.integrations.aws_bedrock import convert_to_ragas_messages
+from ragas.integrations.amazon_bedrock import convert_to_ragas_messages
 
 ragas_messages_trace_3 = convert_to_ragas_messages(traces_3)
 ragas_messages_trace_4 = convert_to_ragas_messages(traces_4)
@@ -868,7 +868,7 @@ metrics = [
 
 
 ```python
-from ragas.integrations.aws_bedrock import extract_kb_trace
+from ragas.integrations.amazon_bedrock import extract_kb_trace
 
 kb_trace_3 = extract_kb_trace(traces_3)
 kb_trace_4 = extract_kb_trace(traces_4)
@@ -992,7 +992,7 @@ Here are the entrees available for children:
 ``` 
 
 ```python
-from ragas.integrations.aws_bedrock import convert_to_ragas_messages
+from ragas.integrations.amazon_bedrock import convert_to_ragas_messages
 
 ragas_messages_trace_6 = convert_to_ragas_messages(traces_6)
 
