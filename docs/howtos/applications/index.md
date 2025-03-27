@@ -14,3 +14,6 @@ usecases to solve problems you might encounter when you're building.
 ## Testset Generation:
 
 - [Single-hop Query Testset](singlehop_testset_gen.md)
+
+## Benchmarking
+- [Benchmarking Gemini models](gemini_benchmarking.md)

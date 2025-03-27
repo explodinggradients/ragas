@@ -105,6 +105,8 @@ nav:
             - Evaluations with Vertex AI models: howtos/applications/vertexai_x_ragas.md
           - Testset Generation:
             - Single-hop Query Testset: howtos/applications/singlehop_testset_gen.md
+          - Benchmarking:
+            - Benchmarking Gemini models: howtos/applications/gemini_benchmarking.md
       - Integrations:
           - howtos/integrations/index.md
           - Arize: howtos/integrations/_arize.md
