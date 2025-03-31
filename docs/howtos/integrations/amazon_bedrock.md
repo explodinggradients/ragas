@@ -22,7 +22,7 @@ The steps covered in this notebook include:
 
 
     ```python
-    %pip install --upgrade -q boto3 opensearch-py botocore awscli retrying ragas
+    %pip install --upgrade -q boto3 opensearch-py botocore awscli retrying ragas langchain-aws
     ```
 
 
@@ -560,24 +560,12 @@ Ragas includes metrics suited to such evaluations, and we will explore some of t
 
 
 ```python
-import getpass
-import os
+from langchain_aws import ChatBedrock
 
-if "OPENAI_API_KEY" not in os.environ:
-    os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter your OpenAI API key: ")
-```
+model_id = "us.amazon.nova-pro-v1:0"   # Choose your desired model
+region_name = "us-east-1"              # Choose your desired AWS region
 
-
-```python
-from ragas.llms import LangchainLLMWrapper
-from ragas.embeddings import LangchainEmbeddingsWrapper
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-
-
-evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o-mini"))
-evaluator_embeddings = LangchainEmbeddingsWrapper(
-    OpenAIEmbeddings(model="text-embedding-3-small")
-)
+evaluator_llm = ChatBedrock(model_id=model_id, region_name=region_name)
 ```
 
 
