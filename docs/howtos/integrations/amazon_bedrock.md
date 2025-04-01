@@ -1,7 +1,7 @@
 
-# Create and Evaluate an Amazon Bedrock Agent and Amazon Bedrock Knowledge Bases
+# Create and Evaluate an Amazon Bedrock Agent Integrated with an Amazon Bedrock Knowledge Base and Action Groups
 
-In this notebook, you will learn how to evaluate an Amazon Bedrock Agent. The agent we'll evaluate is a restaurant agent whose tasks include providing clients with information about adult and children's menus and managing the table booking system. This agent is inspired by a [features example notebooks](https://github.com/aws-samples/amazon-bedrock-samples/tree/main/agents-and-function-calling/bedrock-agents/features-examples/05-create-agent-with-knowledge-base-and-action-group) of [Amazon Bedrock Agents](https://aws.amazon.com/bedrock/agents/) with minor changes. You can learn more about the agent creation process [here](https://github.com/aws-samples/amazon-bedrock-samples/tree/main/agents-and-function-calling/bedrock-agents/features-examples/05-create-agent-with-knowledge-base-and-action-group).
+In this notebook, you will learn how to evaluate an Amazon Bedrock Agent. The agent we'll evaluate is a restaurant agent that provides clients with information about adult and children's menus and manages the table booking system. This agent is inspired by a [features example notebooks](https://github.com/aws-samples/amazon-bedrock-samples/tree/main/agents-and-function-calling/bedrock-agents/features-examples/05-create-agent-with-knowledge-base-and-action-group) of [Amazon Bedrock Agents](https://aws.amazon.com/bedrock/agents/) with minor changes. You can learn more about the agent creation process [here](https://github.com/aws-samples/amazon-bedrock-samples/tree/main/agents-and-function-calling/bedrock-agents/features-examples/05-create-agent-with-knowledge-base-and-action-group).
 
 The architecture is illustrated below:
 
@@ -112,8 +112,7 @@ The steps covered in this notebook include:
     ```
 
     ### Upload the Dataset to Amazon S3
-
-    Now that we have created the knowledge base, let’s populate it with the restaurant menus dataset. In this example, we will use the [boto3 abstraction](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/bedrock-agent/client/start_ingestion_job.html) of the API, via our helper classe. 
+    Now that we have created the knowledge base, let's populate it with the restaurant menus dataset. In this example, we will use [boto3 abstraction](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/bedrock-agent/client/start_ingestion_job.html) of the API, via our helper classes.
 
     Let’s first upload the menu data available in the dataset folder to Amazon S3.
 
@@ -565,7 +564,8 @@ from langchain_aws import ChatBedrock
 model_id = "us.amazon.nova-pro-v1:0"   # Choose your desired model
 region_name = "us-east-1"              # Choose your desired AWS region
 
-evaluator_llm = ChatBedrock(model_id=model_id, region_name=region_name)
+bedrock_llm = ChatBedrock(model_id=model_id, region_name=region_name)
+evaluator_llm = LangchainLLMWrapper(bedrock_llm)
 ```
 
 
@@ -579,8 +579,7 @@ rubrics = {
         "The item requested by the customer is not present in the menu and no recommendations were made."
     ),
     "score0_description": (
-        "Either the item requested by the customer is present in the menu, or the conversation does not include any food or menu inquiry (e.g., booking, cancellation), "
-        "regardless of whether any recommendation was provided."
+        "Either the item requested by the customer is present in the menu, or the conversation does not include any food or menu inquiry (e.g., booking, cancellation). This score applies regardless of whether any recommendation was provided."
     ),
     "score1_description": (
         "The item requested by the customer is not present in the menu and a recommendation was provided."
@@ -631,7 +630,7 @@ Your booking for 2 people at 7pm on the 5th of May 2025 has been successfully cr
 ```
 
 ```python
-query = "Can you check if my previous booking? can you please delete the booking"
+query = "Can you check my previous booking? Can you please delete the booking?"
 agent_answer, traces_2 = invokeAgent(query, session_id)
 
 print(agent_answer)
@@ -833,7 +832,7 @@ Evaluating: 100%|██████████| 3/3 [00:00<?, ?it/s]
 
 
 
-For the Recommendation metric, the chicken wings inquiry scored 0 since the item was available, while both the chocolate truffle cake and Indian food inquiries scored 1 because the requested items were not on the menu and alternative recommendations were provided.
+For the Recommendation metric, the chicken wings inquiry scored 0 since the item was available. Both the chocolate truffle cake and Indian food inquiries scored 1 because the requested items were not on the menu and alternative recommendations were provided.
 
 To evaluate how well our agent utilizes information retrieved from the knowledge base, we use the RAG evaluation metrics provided by Ragas. You can learn more about these metrics [here]().
 
@@ -872,7 +871,7 @@ trace_4_single_turn_sample = SingleTurnSample(
     user_input=kb_trace_4[0].get("user_input"),
     retrieved_contexts=kb_trace_4[0].get("retrieved_contexts"),
     response=kb_trace_4[0].get("response"),
-    reference="The desserts on the adult menu are:\n1. Classic New York Cheesecake\n2. Apple Pie à la Mode\n3. Chocolate Lava Cake\4. Pecan Pie Bars\n5. Banana Pudding Parfait",
+    reference="The desserts on the adult menu are:\n1. Classic New York Cheesecake\n2. Apple Pie à la Mode\n3. Chocolate Lava Cake\n4. Pecan Pie Bars\n5. Banana Pudding Parfait",
 )
 
 single_turn_samples = [trace_3_single_turn_sample, trace_4_single_turn_sample]
@@ -1080,7 +1079,7 @@ Evaluating: 100%|██████████| 1/1 [00:00<?, ?it/s]
 
 
 
-In both scenarios, the agent earned a score of 1 by comprehensively providing all available options—whether listing all children’s entrees.
+In both scenarios, the agent earned a score of 1 by comprehensively providing all available options—specifically by listing all children's entrees.
 
 ## Clean-up 
 Let's delete all the associated resources created to avoid unnecessary costs. 
