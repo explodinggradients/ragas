@@ -502,9 +502,10 @@ The steps covered in this notebook include:
     time.sleep(30)
     ```
 
+The `invokeAgent` function sends a user query to the Bedrock agent and returns both the agent’s response and trace data. It processes the event stream, capturing trace information for evaluation purposes.
 
 ```python
-def invokeAgent(query, session_id, enable_trace=True, session_state=dict()):
+def invokeAgent(query, session_id, session_state=dict()):
     end_session: bool = False
 
     # invoke the agent API
@@ -513,7 +514,7 @@ def invokeAgent(query, session_id, enable_trace=True, session_state=dict()):
         agentId=agent_id,
         agentAliasId=alias_id,
         sessionId=session_id,
-        enableTrace=enable_trace,
+        enableTrace=True,
         endSession=end_session,
         sessionState=session_state,
     )
