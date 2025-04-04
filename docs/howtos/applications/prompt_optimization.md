@@ -10,7 +10,8 @@ For our tutorial, we will focus on evaluating prompts for a Diabetes Medication 
 
 **Dataset Overview**
 
-Our evaluation uses a carefully curated dataset of 15 representative queries:
+Our evaluation uses a carefully curated dataset of 15 representative queries:  
+
 - 10 on-topic questions within the assistant's domain expertise (medication management, glucose monitoring, etc.)
 - 5 out-of-scope questions designed to test the assistant's ability to recognize its limitations and decline to provide advice
 
@@ -142,7 +143,7 @@ incentive_prompt = diabetes_assistant_prompt + incentive
 
 In this section, we define a function that transforms our raw dataset into the format required for Ragas evaluation.
 
-The function first checks and converts the retrieved contexts into the correct list format if needed, then combines each user’s question with its related contexts using a template. It sends this complete prompt to the language model with a built-in retry mechanism to handle any errors, and finally compiles the responses into a Ragas Evaluation Dataset. You can read more about it [here]().
+The function first checks and converts the retrieved contexts into the correct list format if needed, then combines each user’s question with its related contexts using a template. It sends this complete prompt to the language model with a built-in retry mechanism to handle any errors, and finally compiles the responses into a Ragas Evaluation Dataset. You can read more about it [here](../../concepts/components/eval_dataset.md).
 
 
 ```python
@@ -255,7 +256,7 @@ Ragas provides several built-in metrics, and we can also create custom metrics f
 
 ### Choosing NVIDIA Metrics for Efficient Evaluation
 
-For our evaluation, we'll use NVIDIA metrics from the Ragas framework, which offer significant advantages for prompt engineering workflows:
+For our evaluation, we'll use [NVIDIA metrics](../../concepts/metrics/available_metrics/nvidia_metrics.md) from the Ragas framework, which offer significant advantages for prompt engineering workflows:
 
 - **Faster computation**: Requires fewer LLM calls than alternative metrics
 - **Lower token consumption**: Reduces API costs during iterative testing
@@ -264,8 +265,8 @@ For our evaluation, we'll use NVIDIA metrics from the Ragas framework, which off
 These characteristics make NVIDIA metrics particularly suitable for prompt optimization, where multiple iterations and experiments are often necessary.
 
 For our diabetes assistant, we will use:
-- [AnswerAccuracy](): Evaluates how well the model's response aligns with the reference answer.
-- [ResponseGroundedness](): Measures whether the response is grounded in the provided context, helping to identify hallucinations or made-up information.
+- [AnswerAccuracy](../../concepts/metrics/available_metrics/nvidia_metrics.md#answer-accuracy): Evaluates how well the model's response aligns with the reference answer.
+- [ResponseGroundedness](../../concepts/metrics/available_metrics/nvidia_metrics.md#response-groundedness): Measures whether the response is grounded in the provided context, helping to identify hallucinations or made-up information.
 
 
 
@@ -366,10 +367,10 @@ Ragas offers several built-in metrics and allows you to create custom metrics ta
 As with our previous evaluation, we'll use the NVIDIA AnswerAccuracy metric for its computational efficiency and low token consumption. For non-answerable questions, we'll complement this with a custom metric tailored to our specific requirement.
 
 Let's understand what each metric measures:
-- [AnswerAccuracy](): Evaluates how well the model's response aligns with the reference answer.
-- Non-Answer Compliance: A custom metric that checks whether the model appropriately declines to answer when required, which is crucial for safety in a medical context. For example, Non-Answer Compliance is built using [AspectCritique]().
+- [AnswerAccuracy](../../concepts/metrics/available_metrics/nvidia_metrics.md#answer-accuracy): Evaluates how well the model's response aligns with the reference answer.
+- Non-Answer Compliance: A custom metric that checks whether the model appropriately declines to answer when required, which is crucial for safety in a medical context. For example, Non-Answer Compliance is built using [AspectCritique](../../concepts/metrics/available_metrics/aspect_critic.md).
 
-Ragas offers flexible tools to create custom metrics that measure your specific business goals. You can learn more about these capabilities by clicking [here]().
+Ragas offers flexible tools to create custom metrics that measure your specific business goals. You can learn more about these capabilities by clicking [here](../../concepts/metrics/available_metrics/general_purpose.md).
 
 
 ```python
