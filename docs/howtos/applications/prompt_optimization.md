@@ -8,11 +8,19 @@ This tutorial demonstrates how to implement a systematic, data-driven approach t
 
 For our tutorial, we will focus on evaluating prompts for a Diabetes Medication Management Assistant—an AI tool designed to help diabetes patients manage their medication, monitor their health, and receive personalized support.
 
-Our dataset consists of 15 representative samples:
-- 10 questions that are within the assistant’s expertise.
-- 5 questions that should trigger an “I don’t have enough expertise” response.
+**Dataset Overview**
 
-We will test two prompts that differ by only one line to see how each performs on both types of questions.
+Our evaluation uses a carefully curated dataset of 15 representative queries:
+- 10 on-topic questions within the assistant's domain expertise (medication management, glucose monitoring, etc.)
+- 5 out-of-scope questions designed to test the assistant's ability to recognize its limitations and decline to provide advice
+
+This balanced dataset allows us to assess both the assistant's helpfulness when appropriate and its safety guardrails when faced with queries beyond its expertise.
+
+First, download the dataset:
+```
+!curl -O https://huggingface.co/datasets/explodinggradients/diabetes_assistant_dataset/resolve/main/diabetes_assistant_dataset.csv
+```
+We'll test two nearly identical prompts that differ by only a single line - one with standard instructions and another with an added financial incentive statement. This minimal variation will help us investigate our hypothesis: do LLMs demonstrate improved instruction-following when presented with financial incentives?
 
 ## Understanding the Data
 
