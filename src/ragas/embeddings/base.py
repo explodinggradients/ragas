@@ -244,10 +244,9 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
                 self.model_name, **self.model_kwargs
             )
         else:
-            self.model = sentence_transformers.SentenceTransformer(
+            self.model = sentence_transformers.SentenceTransformer(  # type: ignore
                 self.model_name, cache_folder=self.cache_folder, **self.model_kwargs
             )
-
         # ensure outputs are tensors
         if "convert_to_tensor" not in self.encode_kwargs:
             self.encode_kwargs["convert_to_tensor"] = True
