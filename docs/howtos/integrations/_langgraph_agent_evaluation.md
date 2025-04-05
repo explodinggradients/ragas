@@ -15,7 +15,7 @@ Click the [link](https://colab.research.google.com/github/explodinggradients/rag
 - Basic understanding of LangGraph, LangChain and LLMs
 
 ## Installing Ragas and Other Dependencies
-Install Ragas and Langgraph with pip:
+Install Ragas and LangGraph with pip:
 
 
 ```python
@@ -29,13 +29,13 @@ Install Ragas and Langgraph with pip:
 ### Initializing External Components
 To begin, you have two options for setting up the external components:
 
-1. Use a Live API Key:  
+1. Use a Live API Key:
 
-    - Sign up for an account on [metals.dev](https://metals.dev/) to get your API key.  
-    
-2. Simulate the API Response:  
+    - Sign up for an account on [metals.dev](https://metals.dev/) to get your API key.
 
-    - Alternatively, you can use a predefined JSON object to simulate the API response. This allows you to get started more quickly without needing a live API key.  
+2. Simulate the API Response:
+
+    - Alternatively, you can use a predefined JSON object to simulate the API response. This allows you to get started more quickly without needing a live API key.
 
 
 Choose the method that best fits your needs to proceed with the setup.
@@ -229,9 +229,9 @@ display(Image(react_graph.get_graph(xray=True).draw_mermaid_png()))
 ```
 
 
-    
+
 ![jpeg](_langgraph_agent_evaluation_files/_langgraph_agent_evaluation_23_0.jpg)
-    
+
 
 
 To test our setup, we will run the agent with a query. The agent will fetch the price of copper using the metals.dev API.
@@ -273,7 +273,7 @@ Each time a message is exchanged during agent execution, it gets added to the me
 
 Ragas uses its own format to evaluate agent interactions. So, if you're using LangGraph, you will need to convert the LangChain message objects into Ragas message objects. This allows you to evaluate your AI agents with Ragas’ built-in evaluation tools.
 
-**Goal:**  Convert the list of LangChain messages (e.g., HumanMessage, AIMessage, and ToolMessage) into the format expected by Ragas, so the evaluation framework can understand and process them properly.
+**Goal:** Convert the list of LangChain messages (e.g., HumanMessage, AIMessage, and ToolMessage) into the format expected by Ragas, so the evaluation framework can understand and process them properly.
 
 To convert a list of LangChain messages into a format suitable for Ragas evaluation, Ragas provides the function [convert_to_ragas_messages][ragas.integrations.langgraph.convert_to_ragas_messages], which can be used to transform LangChain messages into the format expected by Ragas.
 
@@ -306,7 +306,7 @@ ragas_trace  # List of Ragas messages
 
 For this tutorial, let us evaluate the Agent with the following metrics:
 
-- [Tool call Accuracy](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/agents/#tool-call-accuracy):ToolCallAccuracy is a metric that can be used to evaluate the performance of the LLM in identifying and calling the required tools to complete a given task.  
+- [Tool call Accuracy](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/agents/#tool-call-accuracy):ToolCallAccuracy is a metric that can be used to evaluate the performance of the LLM in identifying and calling the required tools to complete a given task.
 
 - [Agent Goal accuracy](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/agents/#agent-goal-accuracy): Agent goal accuracy is a metric that can be used to evaluate the performance of the LLM in identifying and achieving the goals of the user. This is a binary metric, with 1 indicating that the AI has achieved the goal and 0 indicating that the AI has not achieved the goal.
 
@@ -358,7 +358,7 @@ result = react_graph.invoke({"messages": messages})
 
 
 ```python
-result["messages"]  # List of Langchain messages
+result["messages"]  # List of LangChain messages
 ```
 
 

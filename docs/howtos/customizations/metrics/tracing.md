@@ -1,8 +1,8 @@
 # Tracing and logging evaluations with Observability tools
 
-Logging and tracing results from llm are important for any language model-based application. This is a tutorial on how to do tracing with Ragas. Ragas provides `callbacks` functionality which allows you to hook various tracers like Langmsith, wandb, Opik, etc easily.  In this notebook, I will be using Langmith for tracing.
+Logging and tracing results from LLM are important for any language model-based application. This is a tutorial on how to do tracing with Ragas. Ragas provides `callbacks` functionality which allows you to hook various tracers like LangSmith, wandb, Opik, etc easily.  In this notebook, I will be using LangSmith for tracing.
 
-To set up Langsmith, we need to set some environment variables that it needs. For more information, you can refer to the [docs](https://docs.smith.langchain.com/)
+To set up LangSmith, we need to set some environment variables that it needs. For more information, you can refer to the [docs](https://docs.smith.langchain.com/)
 
 ```bash
 export LANGCHAIN_TRACING_V2=true
@@ -11,10 +11,10 @@ export LANGCHAIN_API_KEY=<your-api-key>
 export LANGCHAIN_PROJECT=<your-project>  # if not specified, defaults to "default"
 ```
 
-Now we have to import the required tracer from langchain, here we are using `LangChainTracer` but you can similarly use any tracer supported by langchain like [WandbTracer](https://python.langchain.com/docs/integrations/providers/wandb_tracing) or [OpikTracer](https://comet.com/docs/opik/tracing/integrations/ragas?utm_source=ragas&utm_medium=docs&utm_campaign=opik&utm_content=tracing_how_to)
+Now we have to import the required tracer from LangChain, here we are using `LangChainTracer`, but you can similarly use any tracer supported by LangChain like [WandbTracer](https://python.langchain.com/docs/integrations/providers/wandb_tracing) or [OpikTracer](https://comet.com/docs/opik/tracing/integrations/ragas?utm_source=ragas&utm_medium=docs&utm_campaign=opik&utm_content=tracing_how_to)
 
 ```python
-# langsmith
+# LangSmith
 from langchain.callbacks.tracers import LangChainTracer
 
 tracer = LangChainTracer(project_name="callback-experiments")
@@ -37,9 +37,9 @@ evaluate(dataset, metrics=[LLMContextRecall()],callbacks=[tracer])
 {'context_precision': 1.0000}
 ```
 <figure markdown="span">
-  ![Tracing with Langsmith](../../../_static/imgs/trace-langsmith.png)
-  <figcaption>Tracing with Langsmith</figcaption>
+  ![Tracing with LangSmith](../../../_static/imgs/trace-langsmith.png)
+  <figcaption>Tracing with LangSmith</figcaption>
 </figure>
- 
 
-You can also write your own custom callbacks using langchain’s `BaseCallbackHandler`, refer [here](https://www.notion.so/Docs-logging-and-tracing-6f21cde9b3cb4d499526f48fd615585d?pvs=21) to read more about it.
+
+You can also write your own custom callbacks using LangChain’s `BaseCallbackHandler`, refer [here](https://www.notion.so/Docs-logging-and-tracing-6f21cde9b3cb4d499526f48fd615585d?pvs=21) to read more about it.

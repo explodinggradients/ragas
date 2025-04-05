@@ -1,14 +1,14 @@
 # LlamaIndex
 
-[LlamaIndex](https://github.com/run-llama/llama_index) is a data framework for LLM applications to ingest, structure, and access private or domain-specific data. Makes it super easy to connect LLMs with your own data. But in order to figure out the best configuration for llamaIndex and your data you need a object measure of the performance. This is where ragas comes in. Ragas will help you evaluate your `QueryEngine` and gives you the confidence to tweak the configuration to get hightest score.
+[LlamaIndex](https://github.com/run-llama/llama_index) is a data framework for LLM applications to ingest, structure, and access private or domain-specific data. Makes it super easy to connect LLMs with your own data. But in order to figure out the best configuration for LlamaIndex and your data you need an object measure of the performance. This is where ragas comes in. Ragas will help you evaluate your `QueryEngine` and gives you the confidence to tweak the configuration to get the highest score.
 
-This guide assumes you have familarity with the LlamaIndex framework.
+This guide assumes you are familiar with the LlamaIndex framework.
 
 ## Building the Testset
 
-You will need an testset to evaluate your `QueryEngine` against. You can either build one yourself or use the [Testset Generator Module](./../../getstarted/rag_testset_generation.md) in Ragas to get started with a small synthetic one.
+You will need a testset to evaluate your `QueryEngine` against. You can either build one yourself or use the [Testset Generator Module](./../../getstarted/rag_testset_generation.md) in Ragas to get started with a small synthetic one.
 
-Let's see how that works with Llamaindex
+Let's see how that works with LlamaIndex
 
 ## load the documents
 
@@ -19,7 +19,7 @@ from llama_index.core import SimpleDirectoryReader
 documents = SimpleDirectoryReader("./nyc_wikipedia").load_data()
 ```
 
-Now  lets init the `TestsetGenerator` object with the corresponding generator and critic llms
+Now let's initialize the `TestsetGenerator` object with the corresponding generator and critic LLMs
 
 
 ```python
@@ -128,7 +128,7 @@ with a test dataset to test our `QueryEngine` lets now build one and evaluate it
 
 ## Building the `QueryEngine`
 
-To start lets build an `VectorStoreIndex` over the New York Citie's [wikipedia page](https://en.wikipedia.org/wiki/New_York_City) as an example and use ragas to evaluate it. 
+To start lets build a `VectorStoreIndex` over the New York Cities' [Wikipedia page](https://en.wikipedia.org/wiki/New_York_City) as an example and use ragas to evaluate it.
 
 Since we already loaded the dataset into `documents` lets use that.
 
@@ -142,7 +142,7 @@ vector_index = VectorStoreIndex.from_documents(documents)
 query_engine = vector_index.as_query_engine()
 ```
 
-Lets try an sample question from the generated testset to see if it is working
+Let's try a sample question from the generated testset to see if it is working
 
 
 ```python
@@ -170,17 +170,17 @@ print(response_vector)
 
 ## Evaluating the `QueryEngine`
 
-Now that we have a `QueryEngine` for the `VectorStoreIndex` we can use the llama_index integration Ragas has to evaluate it. 
+Now that we have a `QueryEngine` for the `VectorStoreIndex` we can use the llama_index integration Ragas has to evaluate it.
 
 In order to run an evaluation with Ragas and LlamaIndex you need 3 things
 
 1. LlamaIndex `QueryEngine`: what we will be evaluating
 2. Metrics: Ragas defines a set of metrics that can measure different aspects of the `QueryEngine`. The available metrics and their meaning can be found [here](https://docs.ragas.io/en/latest/concepts/metrics/available_metrics/)
-3. Questions: A list of questions that ragas will test the `QueryEngine` against. 
+3. Questions: A list of questions that ragas will test the `QueryEngine` against.
 
-first lets generate the questions. Ideally you should use that you see in production so that the distribution of question with which we evaluate matches the distribution of questions seen in production. This ensures that the scores reflect the performance seen in production but to start off we'll be using a few example question.
+first let's generate the questions. Ideally you should use that you see in production so that the distribution of question with which we evaluate matches the distribution of questions seen in production. This ensures that the scores reflect the performance seen in production but to start off we'll be using a few example questions.
 
-Now lets import the metrics we will be using to evaluate
+Now let's import the metrics we will be using to evaluate
 
 
 ```python
@@ -220,7 +220,7 @@ ragas_dataset
 
 
 
-Finally lets run the evaluation
+Finally, let's run the evaluation
 
 
 ```python
@@ -242,7 +242,7 @@ print(result)
     {'faithfulness': 0.7454, 'answer_relevancy': 0.9348, 'context_precision': 0.6667, 'context_recall': 0.4667}
 
 
-You can convert into a pandas dataframe to run more analysis on it.
+You can convert into a pandas DataFrame to run more analysis on it.
 
 
 ```python
