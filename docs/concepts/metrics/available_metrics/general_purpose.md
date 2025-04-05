@@ -1,10 +1,10 @@
 # General Purpose Metrics
 
-General purpose evaluation metrics are used to evaluate any given task. 
+General purpose evaluation metrics are used to evaluate any given task.
 
-## Aspect Critic 
+## Aspect Critic
 
-`AspectCritic` is an evaluation metric that can be used to evaluate responses based on predefined aspects in free form natural language. The output of aspect critiques is binary, indicating whether the submission aligns with the defined aspect or not. 
+`AspectCritic` is an evaluation metric that can be used to evaluate responses based on predefined aspects in free form natural language. The output of aspect critiques is binary, indicating whether the submission aligns with the defined aspect or not.
 
 
 ### Example
@@ -49,7 +49,7 @@ Critics are essentially basic LLM calls using the defined criteria. For example,
 
 ## Simple Criteria Scoring
 
-Course graned evaluation method is an evaluation metric that can be used to score (integer) responses based on predefined single free form scoring criteria. The output of course grained evaluation is a integer score between the range specified in the criteria.
+Course grained evaluation method is an evaluation metric that can be used to score (integer) responses based on predefined single free form scoring criteria. The output of course grained evaluation is an integer score between the range specified in the criteria.
 
 ```python
 from ragas.dataset_schema import SingleTurnSample
@@ -63,7 +63,7 @@ sample = SingleTurnSample(
 )
 
 scorer =  SimpleCriteriaScore(
-    name="course_grained_score", 
+    name="course_grained_score",
     definition="Score 0 to 5 by similarity",
     llm=evaluator_llm
 )
@@ -77,7 +77,7 @@ Output
 
 ## Rubrics based criteria scoring
 
-The Rubric-Based Criteria Scoring Metric is used to do evaluations based on user-defined rubrics. Each rubric defines a detailed score description, typically ranging from 1 to 5. The LLM assesses and scores responses according to these descriptions, ensuring a consistent and objective evaluation. 
+The Rubric-Based Criteria Scoring Metric is used to do evaluations based on user-defined rubrics. Each rubric defines a detailed score description, typically ranging from 1 to 5. The LLM assesses and scores responses according to these descriptions, ensuring a consistent and objective evaluation.
 !!! note
     When defining rubrics, ensure consistency in terminology to match the schema used in the `SingleTurnSample` or `MultiTurnSample` respectively. For instance, if the schema specifies a term such as reference, ensure that the rubrics use the same term instead of alternatives like ground truth.
 
@@ -111,10 +111,10 @@ Output
 
 ## Instance Specific rubrics criteria scoring
 
-Instance Specific Evaluation Metric is a rubric-based method used to evaluate each item in a dataset individually. To use this metric, you need to provide a rubric along with the items you want to evaluate. 
+Instance Specific Evaluation Metric is a rubric-based method used to evaluate each item in a dataset individually. To use this metric, you need to provide a rubric along with the items you want to evaluate.
 
 !!! note
-    This differs from the `Rubric Based Criteria Scoring Metric`, where a single rubric is applied to uniformly evaluate all items in the dataset. In the `Instance-Specific Evaluation Metric`, you decide which rubric to use for each item. It's like the difference between giving the entire class the same quiz (rubric-based) and creating a personalized quiz for each student (instance-specific).  
+    This differs from the `Rubric Based Criteria Scoring Metric`, where a single rubric is applied to uniformly evaluate all items in the dataset. In the `Instance-Specific Evaluation Metric`, you decide which rubric to use for each item. It's like the difference between giving the entire class the same quiz (rubric-based) and creating a personalized quiz for each student (instance-specific).
 
 #### Example
 ```python

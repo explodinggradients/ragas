@@ -2,7 +2,7 @@
 
 ## Answer Accuracy
 
-**Answer Accuracy** measures the agreement between a model’s response and a reference ground truth for a given question. This is done via two distinct "LLM-as-a-judge" prompts that each return a rating (0, 2, or 4). The metric converts these ratings into a [0,1] scale and then takes the average of the two scores from the judges. Higher scores indicate that the model’s answer closely matches the reference.
+**Answer Accuracy** measures the agreement between a model’s response and a reference ground truth for a given question. This is done via two distinct "LLM-as-a-Judge" prompts that each return a rating (0, 2, or 4). The metric converts these ratings into a [0,1] scale and then takes the average of the two scores from the judges. Higher scores indicate that the model’s answer closely matches the reference.
 
 - **0** → The **response** is inaccurate or does not address the same question as the **reference**.
 - **2** → The **response** partially align with the **reference**.
@@ -67,7 +67,7 @@ Thus, the final **Answer Accuracy** score is **1**.
 - **Explainability:** Answer Correctness offers high explainability by providing detailed insights into factual correctness and semantic similarity, whereas Answer Accuracy provides a straightforward raw score.
 - **Robust Evaluation:** Answer Accuracy ensures consistency through dual LLM evaluations, while Answer Correctness offers a holistic view by deeply assessing the quality of the response.
 
-#### Answer Accuracy vs. Rubric Score  
+#### Answer Accuracy vs. Rubric Score
 
 - **LLM Calls**: Answer Accuracy makes two calls (one per LLM judge), while Rubric Score requires only one.
 - **Token Usage**: Answer Accuracy is minimal since it outputs just a score, whereas Rubric Score generates reasoning, increasing token consumption.
@@ -76,7 +76,7 @@ Thus, the final **Answer Accuracy** score is **1**.
 
 ## Context Relevance
 
-**Context Relevance** evaluates whether the **retrieved_contexts** (chunks or passages) are pertinent to the **user_input**. This is done via two independent "LLM-as-a-judge" prompt calls that each rate the relevance on a scale of **0, 1, or 2**. The ratings are then converted to a [0,1] scale and averaged to produce the final score. Higher scores indicate that the contexts are more closely aligned with the user's query.
+**Context Relevance** evaluates whether the **retrieved_contexts** (chunks or passages) are pertinent to the **user_input**. This is done via two independent "LLM-as-a-Judge" prompt calls that each rate the relevance on a scale of **0, 1, or 2**. The ratings are then converted to a [0,1] scale and averaged to produce the final score. Higher scores indicate that the contexts are more closely aligned with the user's query.
 
 - **0** → The retrieved contexts are not relevant to the user’s query at all.
 - **1** → The contexts are partially relevant.
@@ -117,7 +117,7 @@ Output
   - "Albert Einstein was born March 14, 1879."
   - "Albert Einstein was born at Ulm, in Württemberg, Germany."
 
-In this example, the two retrieved contexts together fully address the user's query by providing both the birth date and location of Albert Einstein. Consequently, both prompts would rate the combined contexts as **2** (fully relevant). Normalizing each score yields **1.0** (2/2), and averaging the two results maintains the final Context Relevance score at **1**.
+In this example, the two retrieved contexts together fully address the user's query by providing both the birthdate and location of Albert Einstein. Consequently, both prompts would rate the combined contexts as **2** (fully relevant). Normalizing each score yields **1.0** (2/2), and averaging the two results maintains the final Context Relevance score at **1**.
 
 ### Similar Ragas Metrics
 
@@ -177,13 +177,13 @@ Output
   - "Albert Einstein was born March 14, 1879."
   - "Albert Einstein was born at Ulm, in Württemberg, Germany."
 
-In this example, the retrieved contexts provide both the birth date and location of Albert Einstein. Since the response's claim is supported by the context (even though the date is partially provided), both prompts would likely rate the grounding as **2** (fully grounded). Normalizing a score of 2 gives **1.0** (2/2), and averaging the two normalized ratings maintains the final Response Groundedness score at **1**.
+In this example, the retrieved contexts provide both the birthdate and location of Albert Einstein. Since the response's claim is supported by the context (even though the date is partially provided), both prompts would likely rate the grounding as **2** (fully grounded). Normalizing a score of 2 gives **1.0** (2/2), and averaging the two normalized ratings maintains the final Response Groundedness score at **1**.
 
 ### Similar Ragas Metrics
 
 1. [Faithfulness](faithfulness.md): This metric measures how factually consistent a response is with the retrieved context, ensuring that every claim in the response is supported by the provided information. The Faithfulness score ranges from 0 to 1, with higher scores indicating better consistency.
 
-2. [Rubric Score](general_purpose.md#rubrics-based-criteria-scoring): This is a general-purpose metric that evaluates responses based on user-defined criteria and can be adapted to assess Answer Accuracy, Context Relevance or Response Groundedness by aligning the rubric with the requirements. 
+2. [Rubric Score](general_purpose.md#rubrics-based-criteria-scoring): This is a general-purpose metric that evaluates responses based on user-defined criteria and can be adapted to assess Answer Accuracy, Context Relevance or Response Groundedness by aligning the rubric with the requirements.
 
 ### Comparison of Metrics
 

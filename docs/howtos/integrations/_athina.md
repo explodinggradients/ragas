@@ -74,7 +74,7 @@ pd.DataFrame(batch_eval_result)
 If you are [logging your production inferences to Athina](https://docs.athina.ai/logging/log_via_api), you can configure Ragas metrics to run automatically against your production logs.
 
 1. Navigate to the [Athina Dashboard](https://app.athina.ai/evals/config)
-   
+
 2. Open the **Evals** page (lightning icon on the left)
 3. Click the "New Eval" button on the top right
 4. Select the **Ragas** tab
@@ -85,5 +85,5 @@ If you are [logging your production inferences to Athina](https://docs.athina.ai
 #### Learn more about Athina
 - **Website:** [https://athina.ai](https://athina.ai)
 - **Docs:** [https://docs.athina.ai](https://docs.athina.ai)
-- **Github Library:** [https://github.com/athina-ai/athina-evals](https://github.com/athina-ai/athina-evals)
+- **GitHub Library:** [https://github.com/athina-ai/athina-evals](https://github.com/athina-ai/athina-evals)
 - **Sandbox**: [https://demo.athina.ai](https://demo.athina.ai/observe?filters=dateSpan%3D30)

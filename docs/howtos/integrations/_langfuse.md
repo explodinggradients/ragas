@@ -4,7 +4,7 @@ Ragas and Langfuse is a powerful combination that can help you evaluate and moni
 
 ## What is Langfuse?
 
-Langfuse ([GitHub](https://github.com/langfuse/langfuse)) is an open-source platform for LLM [tracing](https://langfuse.com/docs/tracing), [prompt management](https://langfuse.com/docs/prompts/get-started), and [evaluation](https://langfuse.com/docs/scores/overview). It allows you to score your traces and spans, providing insights into the performance of your RAG pipelines. Langfuse supports various integrations, including [OpenAI](https://langfuse.com/docs/integrations/openai/python/get-started), [Langchain](https://langfuse.com/docs/integrations/langchain/tracing), and [more](https://langfuse.com/docs/integrations/overview).
+Langfuse ([GitHub](https://github.com/langfuse/langfuse)) is an open-source platform for LLM [tracing](https://langfuse.com/docs/tracing), [prompt management](https://langfuse.com/docs/prompts/get-started), and [evaluation](https://langfuse.com/docs/scores/overview). It allows you to score your traces and spans, providing insights into the performance of your RAG pipelines. Langfuse supports various integrations, including [OpenAI](https://langfuse.com/docs/integrations/openai/python/get-started), [LangChain](https://langfuse.com/docs/integrations/langchain/tracing), and [more](https://langfuse.com/docs/integrations/overview).
 
 ## Key Benefits of using Langfuse with Ragas
 
@@ -142,7 +142,7 @@ In this cookbook, we'll show you how to setup both.
 
 ### Score the Trace
 
-Lets take a small example of a single trace and see how you can score that with Ragas. First lets load the data.
+Let's take a small example of a single trace and see how you can score that with Ragas. First lets load the data.
 
 
 ```python
@@ -153,23 +153,23 @@ print("answer: ", row["answer"])
 
     question:  What are the global implications of the USA Supreme Court ruling on abortion?
     answer:  The global implications of the USA Supreme Court ruling on abortion can be significant, as it sets a precedent for other countries and influences the global discourse on reproductive rights. Here are some potential implications:
-    
+
     1. Influence on other countries: The Supreme Court's ruling can serve as a reference point for other countries grappling with their own abortion laws. It can provide legal arguments and reasoning that advocates for reproductive rights can use to challenge restrictive abortion laws in their respective jurisdictions.
-    
+
     2. Strengthening of global reproductive rights movements: A favorable ruling by the Supreme Court can energize and empower reproductive rights movements worldwide. It can serve as a rallying point for activists and organizations advocating for women's rights, leading to increased mobilization and advocacy efforts globally.
-    
+
     3. Counteracting anti-abortion movements: Conversely, a ruling that restricts abortion rights can embolden anti-abortion movements globally. It can provide legitimacy to their arguments and encourage similar restrictive measures in other countries, potentially leading to a rollback of existing reproductive rights.
-    
+
     4. Impact on international aid and policies: The Supreme Court's ruling can influence international aid and policies related to reproductive health. It can shape the priorities and funding decisions of donor countries and organizations, potentially leading to increased support for reproductive rights initiatives or conversely, restrictions on funding for abortion-related services.
-    
+
     5. Shaping international human rights standards: The ruling can contribute to the development of international human rights standards regarding reproductive rights. It can influence the interpretation and application of existing human rights treaties and conventions, potentially strengthening the recognition of reproductive rights as fundamental human rights globally.
-    
+
     6. Global health implications: The Supreme Court's ruling can have implications for global health outcomes, particularly in countries with restrictive abortion laws. It can impact the availability and accessibility of safe and legal abortion services, potentially leading to an increase in unsafe abortions and related health complications.
-    
+
     It is important to note that the specific implications will depend on the nature of the Supreme Court ruling and the subsequent actions taken by governments, activists, and organizations both within and outside the United States.
 
 
-Now lets init a Langfuse client SDK to instrument you app.
+Now let's initialize a Langfuse client SDK to instrument you app.
 
 
 ```python
@@ -225,7 +225,7 @@ You compute the score with each request. Below we've outlined a dummy applicatio
 2. Fetch context from the database or vector store that can be used to answer the question from the user
 3. Pass the question and the contexts to the LLM to generate the answer
 
-All these step are logged as spans in a single trace in Langfuse. You can read more about traces and spans from the [Langfuse documentation](https://langfuse.com/docs/tracing).
+All these steps are logged as spans in a single trace in Langfuse. You can read more about traces and spans from the [Langfuse documentation](https://langfuse.com/docs/tracing).
 
 
 ```python

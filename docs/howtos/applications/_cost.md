@@ -4,7 +4,7 @@ When using LLMs for evaluation and test set generation, cost will be an importan
 
 ## Implement `TokenUsageParser`
 
-By default Ragas does not calculate the usage of tokens for `evaluate()`. This is because langchain's LLMs do not always return information about token usage in a uniform way. So in order to get the usage data, we have to implement a `TokenUsageParser`. 
+By default, Ragas does not calculate the usage of tokens for `evaluate()`. This is because langchain's LLMs do not always return information about token usage in a uniform way. So in order to get the usage data, we have to implement a `TokenUsageParser`.
 
 A `TokenUsageParser` is function that parses the `LLMResult` or `ChatResult` from langchain models `generate_prompt()` function and outputs `TokenUsage` which Ragas expects.
 
@@ -98,7 +98,7 @@ Output
 
 ## Token Usage for Testset Generation
 
-You can use the same parser for testset generation but you need to pass in the `token_usage_parser` to the `generate()` function. For now it only calculates the cost for the generation process and not the cost for the transforms.
+You can use the same parser for testset generation, but you need to pass in the `token_usage_parser` to the `generate()` function. For now, it only calculates the cost for the generation process and not the cost for the transforms.
 
 For an example let's load an existing KnowledgeGraph and generate a testset. If you want to know more about how to generate a testset please check out the [testset generation](../../getstarted/rag_testset_generation.md#a-deeper-look).
 

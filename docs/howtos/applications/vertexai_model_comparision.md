@@ -1,10 +1,10 @@
 # Compare models provided by VertexAI on RAG-based Q&A task using Ragas metrics
 
-This tutorial is part of a three-part series on how to use Vertex AI models with Ragas. It is recommeded that you have gone through [Getting Started: Ragas with Vertex AI](./vertexai_x_ragas.md), even if you have not followed it you’ll be golden. You can check to the Align LLM Metrics tutorial by [clicking](./vertexai_alignment.md).
+This tutorial is part of a three-part series on how to use Vertex AI models with Ragas. It is recommended that you have gone through [Getting Started: Ragas with Vertex AI](./vertexai_x_ragas.md), even if you have not followed it you’ll be golden. You can check to the Align LLM Metrics tutorial by [clicking](./vertexai_alignment.md).
 
 ## Overview
 
-In this tutorial, you will learn how to use the Ragas to score and evaluate different LLM models  for a  **Question Answering** (QA) task. Then visualise and compare the evaluation results to select a generative model.
+In this tutorial, you will learn how to use the Ragas to score and evaluate different LLM models for a **Question Answering** (QA) task. Then visualise and compare the evaluation results to select a generative model.
 
 ## Getting Started
 
@@ -427,7 +427,7 @@ Evaluating: 100%|██████████| 12/12 [00:00<?, ?it/s]
 Evaluating: 100%|██████████| 12/12 [00:00<?, ?it/s]
 ```
 
-Wrap the results into google’s EvalResult structure:
+Wrap the results into Google’s EvalResult structure:
 
 
 ```python

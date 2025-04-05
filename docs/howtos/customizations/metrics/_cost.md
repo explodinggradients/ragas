@@ -4,9 +4,9 @@ When using LLMs for evaluation and test set generation, cost will be an importan
 
 ## Understanding `TokenUsageParser`
 
-By default Ragas does not calculate the usage of tokens for `evaluate()`. This is because langchain's LLMs do not always return information about token usage in a uniform way. So in order to get the usage data, we have to implement a `TokenUsageParser`. 
+By default, Ragas does not calculate the usage of tokens for `evaluate()`. This is because LangChain's LLMs do not always return information about token usage in a uniform way. So in order to get the usage data, we have to implement a `TokenUsageParser`.
 
-A `TokenUsageParser` is function that parses the `LLMResult` or `ChatResult` from langchain models `generate_prompt()` function and outputs `TokenUsage` which Ragas expects.
+A `TokenUsageParser` is function that parses the `LLMResult` or `ChatResult` from LangChain models `generate_prompt()` function and outputs `TokenUsage` which Ragas expects.
 
 For an example here is one that will parse OpenAI by using a parser we have defined.
 

@@ -1,4 +1,4 @@
-# OpenLayer
+# Openlayer
 ## Evaluating RAG pipelines with Openlayer and Ragas
 
 [Openlayer](https://www.openlayer.com/) is an evaluation tool that fits into your development and production pipelines to help you ship high-quality models with confidence.

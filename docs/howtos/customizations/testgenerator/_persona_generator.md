@@ -1,8 +1,8 @@
 ## Persona's in Testset Generation
 
-You can add different persona's to the testset generation process by defining the [Persona][ragas.testset.persona.Persona] class with the name and role description of the different persona's that might be relevant to your use case and you want to generate testset for.
+You can add different persona's to the testset generation process by defining the [Persona][ragas.testset.persona.Persona] class with the name and role description of the different persona's that might be relevant to your use case, and you want to generate testset for.
 
-For example, for the [gitlab handbook](https://about.gitlab.com/handbook/) we might want to generate testset for different persona's like a new joinee, a manager, a senior manager, etc. And hence we will define them as follows:
+For example, for the [GitLab handbook](https://about.gitlab.com/handbook/) we might want to generate testset for different persona's like a new joinee, a manager, a senior manager, etc. And hence we will define them as follows:
 
 1. New Joinee: Don't know much about the company and is looking for information on how to get started.
 2. Manager: Wants to know about the different teams and how they collaborate with each other.
@@ -40,7 +40,7 @@ personas
 
 
 
-And then you can use these persona's in the testset generation process by passing them to the [TestsetGenerator][ragas.testset.generator.TestsetGenerator] class.
+And then you can use these personas in the testset generation process by passing them to the [TestsetGenerator][ragas.testset.generator.TestsetGenerator] class.
 
 
 ```python
