@@ -1,6 +1,6 @@
 # Aligning LLM Evaluators with Human Judgment
 
-This tutorial is part of a three-part series on how to use Vertex AI models with Ragas. It is recommeded that you have gone through [Getting Started: Ragas with Vertex AI](./vertexai_x_ragas.md), even if you have not you can eaisly follow this. You can navigate to the Model Comparison tutorial using the [link](./vertexai_model_comparision.md).
+This tutorial is part of a three-part series on how to use Vertex AI models with Ragas. It is recommended that you have gone through [Getting Started: Ragas with Vertex AI](./vertexai_x_ragas.md), even if you have not, you can easily follow this. You can navigate to the Model Comparison tutorial using the [link](./vertexai_model_comparision.md).
 
 ## Overview
 
@@ -140,7 +140,7 @@ def alignment_score(human_score: List[float], llm_score: List[float]) -> float:
 
 ## Prepare your dataset
 
-The `process_hhh_dataset` function prepares data from the  [HHH dataset](https://paperswithcode.com/dataset/hhh?utm_source=chatgpt.com) for use in training and aligning of the LLM evaluator. Alternate  0 and 1 scores (1 for helpful, 0 for non-helpful) are assigned to each example, indicating which response is preferred.
+The `process_hhh_dataset` function prepares data from the [HHH dataset](https://paperswithcode.com/dataset/hhh?utm_source=chatgpt.com) for use in training and aligning of the LLM evaluator. Alternate 0 and 1 scores (1 for helpful, 0 for non-helpful) are assigned to each example, indicating which response is preferred.
 
 
 ```python
@@ -169,7 +169,7 @@ def process_hhh_dataset(split: str = "helpful", total_count: int = 50):
 			score = 0
 
 		label_index = labels.index(target_label)
-		
+
 		response = choices[label_index]
 
 		data.append({

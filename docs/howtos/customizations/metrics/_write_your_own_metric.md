@@ -1,8 +1,8 @@
-While Ragas has [a number of built-in metrics](./../../../concepts/metrics/available_metrics/index.md), you may find yourself needing to create a custom metric for your use case. This guide will help you do just that. 
+While Ragas has [a number of built-in metrics](./../../../concepts/metrics/available_metrics/index.md), you may find yourself needing to create a custom metric for your use case. This guide will help you do just that.
 
 For the sake of this tutorial, let's assume we want to build a custom metric that measures the hallucinations in a LLM application. While we do have a built-in metric called [Faithfulness][ragas.metrics.Faithfulness] which is similar but not exactly the same. `Faithfulness` measures the factual consistency of the generated answer against the given context while `Hallucinations` measures the presence of hallucinations in the generated answer.
 
-before we start, lets load the dataset and define the llm
+before we start, let's load the dataset and define the LLM:
 
 
 ```python
@@ -39,7 +39,7 @@ evaluator_llm = llm_factory("gpt-4o")
 
 ## Aspect Critic - Simple Criteria Scoring
 
-[Aspect Critic](./../../../concepts/metrics/available_metrics/aspect_critic.md) that outputs a binary score for `definition` you provide. A simple pass/fail metric can be bring clarity and focus to what you are trying to measure and is a better alocation of effort than building a more complex metric from scratch, especially when starting out. 
+[Aspect Critic](./../../../concepts/metrics/available_metrics/aspect_critic.md) that outputs a binary score for `definition` you provide. A simple pass/fail metric can bring clarity and focus to what you are trying to measure and is a better allocation of effort than building a more complex metric from scratch, especially when starting out.
 
 Check out these resources to learn more about the effectiveness of having a simple pass/fail metric:
 
@@ -84,7 +84,7 @@ rubric = {
 }
 ```
 
-Now lets init the metric with the rubric and evaluator llm and evaluate the dataset.
+Now let's initialize the metric with the rubric and evaluator LLM and evaluate the dataset.
 
 
 ```python
@@ -115,9 +115,9 @@ If your use case is not covered by those two, you can build a custom metric by s
 4. Do I need to use both LLM and Embeddings to evaluate my metric? If yes, subclass both the [MetricWithLLM][ragas.metrics.base.MetricWithLLM] and [MetricWithEmbeddings][ragas.metrics.base.MetricWithEmbeddings] classes.
 
 
-For our example, we need to to use LLMs to evaluate our metric so we will subclass the [MetricWithLLM][ragas.metrics.base.MetricWithLLM] class and we are working for only single turn interactions for now so we will subclass the [SingleTurnMetric][ragas.metrics.base.SingleTurnMetric] class. 
+For our example, we need to use LLMs to evaluate our metric so we will subclass the [MetricWithLLM][ragas.metrics.base.MetricWithLLM] class, and we are working for only single turn interactions for now so we will subclass the [SingleTurnMetric][ragas.metrics.base.SingleTurnMetric] class.
 
-As for the implementation, we will use the [Faithfulness][ragas.metrics.Faithfulness] metric to evaluate our metric to measure the hallucinations with the formula 
+As for the implementation, we will use the [Faithfulness][ragas.metrics.Faithfulness] metric to evaluate our metric to measure the hallucinations with the formula
 
 $$
 \text{Hallucinations} = 1 - \text{Faithfulness}

@@ -9,7 +9,7 @@ How to configure the `RunConfig` in
 
 ## Rate Limits
 
-Ragas leverages parallelism with Async in python but the `RunConfig` has a field called `max_workers` which control the number of concurent requests allowed together. You adjust this to get the maximum concurency your provider allows
+Ragas leverages parallelism with Async in python but the `RunConfig` has a field called `max_workers` which control the number of concurrent requests allowed together. You adjust this to get the maximum concurrency your provider allows
 
 
 ```python

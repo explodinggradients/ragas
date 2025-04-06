@@ -82,7 +82,7 @@ vertexai.init(project=PROJECT_ID, location=LOCATION)
 
 In the sections below, you will learn how to leverage the various types of metrics available in Ragas:
 
-- **Custom Metrics:** Define and integrate your own metrics best tailored for you application evaluations.
+- **Custom Metrics:** Define and integrate your own metrics best tailored for your application evaluations.
 - **Model-based Metrics:** Evaluations that analyse model outputs against specific criteria using LLM calls, either with or without references.
 - **Computation-based Metrics:** Quantitative measures based on mathematical formulas that do not require LLM calls.
 

@@ -1,6 +1,6 @@
-# Evaluation Sample 
+# Evaluation Sample
 
-An evaluation sample is a single structured data instance that is used to asses and measure the performance of your LLM application in specific scenarios. It represents a single unit of interaction or a specific use case that the AI application is expected to handle. In Ragas, evaluation samples are represented using the `SingleTurnSample` and `MultiTurnSample` classes.
+An evaluation sample is a single structured data instance that is used to assess and measure the performance of your LLM application in specific scenarios. It represents a single unit of interaction or a specific use case that the AI application is expected to handle. In Ragas, evaluation samples are represented using the `SingleTurnSample` and `MultiTurnSample` classes.
 
 ## SingleTurnSample
 SingleTurnSample represents a single-turn interaction between a user, LLM, and expected results for evaluation. It is suitable for evaluations that involve a single question and answer pair, possibly with additional context or reference information.

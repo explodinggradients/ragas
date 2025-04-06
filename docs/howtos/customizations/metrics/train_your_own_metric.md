@@ -1,8 +1,8 @@
 # Train and Align your own Metric
 
-[Open notebook in colab](https://colab.research.google.com/drive/16RIHEAJ0Ded3RuPoMq5498vBuhvPIruv?usp=sharing)
+[Open notebook in Colab](https://colab.research.google.com/drive/16RIHEAJ0Ded3RuPoMq5498vBuhvPIruv?usp=sharing)
 
-LLM as judge metric often makes mistakes and lack alignment with human evaluators. This makes them risky to use as their results cannot be trusted fully. Now, you can fix this using ragas. This simple tutorial notebook showcasing how to train and align any LLM as judge metric using ragas. One can use this to train any LLM based metric in ragas. 
+LLM as judge metric often makes mistakes and lack alignment with human evaluators. This makes them risky to use as their results cannot be trusted fully. Now, you can fix this using ragas. This simple tutorial notebook showcasing how to train and align any LLM as judge metric using ragas. One can use this to train any LLM based metric in ragas.
 
 
 ## Import required modules
@@ -32,7 +32,7 @@ embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
 ## Evaluation
 
 ### Load sample evaluation dataset
-Here, we are loading the sample dataset for evaluation. You can replace it with your own dataset. 
+Here, we are loading the sample dataset for evaluation. You can replace it with your own dataset.
 
 
 ```python
@@ -54,11 +54,11 @@ reference:
 ```
 
 
-The dataset contains user input, reference and response. Our goal is to evaluate the response based on the reference. The response here is in ELI5 format, which is a simple way of explaining complex topics. 
+The dataset contains user input, reference and response. Our goal is to evaluate the response based on the reference. The response here is in ELI5 format, which is a simple way of explaining complex topics.
 
-In this particular application, we need to align our evaluation metric to evaluate the correctness of the response compared to the reference. 
+In this particular application, we need to align our evaluation metric to evaluate the correctness of the response compared to the reference.
 
-- LLM as judge by default may regard the response as incorrect as it's not written in the same way as the reference, which is not the case here. 
+- LLM as judge by default may regard the response as incorrect as it's not written in the same way as the reference, which is not the case here.
 - At the same time, we also need it to identify instances where response makes factual errors or misrepresents the reference.
 
 
@@ -100,7 +100,7 @@ os.environ['RAGAS_APP_TOKEN'] = 'your_app_token'
 Once that's done, you can upload the evaluation results to app.ragas using the following code.
 !!! note
     Please ensure that you're in ragas 0.2.8 or above to use this feature.
-    
+
 ```python
 results.upload()
 ```
@@ -123,7 +123,7 @@ Here is a sample annotation for the above example. You can [download](../../../_
 ## Training and Alignment
 
 ### Train the metric
-Download the annotated samples from app.ragas.io using `Download annotated json` button. 
+Download the annotated samples from app.ragas.io using `Download annotated json` button.
 Instruction and demonstration configurations are required tells ragas how to optimize instruction and few shot demonstrations respectively. You can customize these configurations as per your requirements.
 
 ```python
@@ -152,7 +152,7 @@ print(critic.get_prompts()['single_turn_aspect_critic_prompt'].instruction)
 ```
 
 ```
-Evaluate the provided user responses against the reference information for accuracy and completeness. 
+Evaluate the provided user responses against the reference information for accuracy and completeness.
 Assign a verdict of 1 if the response is accurate and aligns well with the reference, or 0 if it contains inaccuracies or misrepresentations.
 ```
 
@@ -187,7 +187,7 @@ Evaluation results uploaded! View at https://app.ragas.io/dashboard/alignment/ev
 
 Go to [app.ragas](https://app.ragas.io/dashboard) dashboard and compare the results before and after training.
 
-Here in this case, the metric has improved significantly. You can see the difference in the scores. To show the difference, let's compares the scores and changed reasoning for one specific example before and after training.
+Here in this case, the metric has improved significantly. You can see the difference in the scores. To show the difference, let's compare the scores and changed reasoning for one specific example before and after training.
 
 | ![Image 1](../../../_static/imgs/before_training.png) | ![Image 2](../../../_static/imgs/after_training.png) |
 |:-------------------------------:|:-------------------------------:|
