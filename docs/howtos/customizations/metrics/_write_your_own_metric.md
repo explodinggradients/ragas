@@ -39,7 +39,7 @@ evaluator_llm = llm_factory("gpt-4o")
 
 ## Aspect Critic - Simple Criteria Scoring
 
-[Aspect Critic](./../../../concepts/metrics/available_metrics/aspect_critic.md) that outputs a binary score for `definition` you provide. A simple pass/fail metric can be brought clarity and focus to what you are trying to measure and is a better allocation of effort than building a more complex metric from scratch, especially when starting out.
+[Aspect Critic](./../../../concepts/metrics/available_metrics/aspect_critic.md) that outputs a binary score for `definition` you provide. A simple pass/fail metric can bring clarity and focus to what you are trying to measure and is a better allocation of effort than building a more complex metric from scratch, especially when starting out.
 
 Check out these resources to learn more about the effectiveness of having a simple pass/fail metric:
 
