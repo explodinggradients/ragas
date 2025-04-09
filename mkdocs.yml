@@ -110,7 +110,7 @@ nav:
       - Integrations:
           - howtos/integrations/index.md
           - Arize: howtos/integrations/_arize.md
-          - AWS Bedrock: howtos/integrations/aws_bedrock.md
+          - Amazon Bedrock: howtos/integrations/amazon_bedrock.md
           - Haystack: howtos/integrations/haystack.md
           - LangChain: howtos/integrations/langchain.md
           - LangGraph: howtos/integrations/_langgraph_agent_evaluation.md
