@@ -42,7 +42,9 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
 
     def get_node_clusters(
-        self, n: int, knowledge_graph: KnowledgeGraph
+        self,
+        knowledge_graph: KnowledgeGraph,
+        n: int = 1,
     ) -> t.List[t.Set[Node]]:
         """Find n indirect clusters of nodes based on relationship condition"""
 
@@ -75,7 +77,7 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
         4. Sample diverse combinations of scenarios to get n samples
         """
 
-        node_clusters = self.get_node_clusters(n, knowledge_graph)
+        node_clusters = self.get_node_clusters(knowledge_graph, n)
         scenarios = []
 
         if len(node_clusters) == 0:
