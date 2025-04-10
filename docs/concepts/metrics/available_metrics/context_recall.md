@@ -70,3 +70,35 @@ Output
 ```
 0.5
 ```
+
+## ID BasedContext Recall
+
+ID Based Context Recall
+IDBasedContextRecall provides a direct and efficient way to measure recall by comparing the IDs of retrieved contexts with reference context IDs. This metric is particularly useful when you have a unique ID system for your documents and want to evaluate retrieval performance without comparing the actual content.
+
+The metric computes recall using retrieved_context_ids and reference_context_ids, with values ranging between 0 and 1. Higher values indicate better performance. It works with both string and integer IDs.
+
+The formula for calculating ID-based context recall is as follows:
+
+$$ \text{ID-Based Context Recall} = \frac{\text{Number of reference context IDs found in retrieved context IDs}}{\text{Total number of reference context IDs}} $$
+
+### Example
+
+```python
+
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics import IDBasedContextRecall
+
+sample = SingleTurnSample(
+    retrieved_context_ids=["doc_1", "doc_2", "doc_3"], 
+    reference_context_ids=["doc_1", "doc_4", "doc_5", "doc_6"]
+)
+
+id_recall = IDBasedContextRecall()
+await id_recall.single_turn_ascore(sample)
+```
+
+Output
+```
+0.25
+```
