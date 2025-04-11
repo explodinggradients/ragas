@@ -141,6 +141,19 @@ def get_token_usage_for_bedrock(
     return TokenUsage(input_tokens=0, output_tokens=0)
 
 
+def get_token_usage_for_azure_ai(
+    llm_result: t.Union[LLMResult, ChatResult],
+) -> TokenUsage:
+    # AzureAI like interfaces
+    llm_output = llm_result.llm_output
+    if llm_output is None:
+        logger.info("No llm_output found in the LLMResult")
+        return TokenUsage(input_tokens=0, output_tokens=0)
+    output_tokens = get_from_dict(llm_output, "token_usage.input_tokens", 0)
+    input_tokens = get_from_dict(llm_output, "token_usage.output_tokens", 0)
+    return TokenUsage(input_tokens=input_tokens, output_tokens=output_tokens)
+
+
 class CostCallbackHandler(BaseCallbackHandler):
     def __init__(self, token_usage_parser: TokenUsageParser):
         self.token_usage_parser = token_usage_parser
