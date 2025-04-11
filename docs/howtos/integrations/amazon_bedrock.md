@@ -25,6 +25,12 @@ The steps covered in this notebook include:
     %pip install --upgrade -q boto3 opensearch-py botocore awscli retrying ragas langchain-aws
     ```
 
+    This command will clone the repository containing helper files needed for this tutorial. 
+
+    ```
+    ! git clone https://huggingface.co/datasets/explodinggradients/booking_agent_utils
+    ```
+
 
     ```python
     import os
@@ -34,8 +40,8 @@ The steps covered in this notebook include:
     import pprint
     import json
 
-    from knowledge_base import BedrockKnowledgeBase
-    from agent import (
+    from booking_agent_utils.knowledge_base import BedrockKnowledgeBase
+    from booking_agent_utils.agent import (
         create_agent_role_and_policies,
         create_lambda_role,
         delete_agent_roles_and_policies,
@@ -126,7 +132,7 @@ The steps covered in this notebook include:
                 s3_client.upload_file(file_to_upload, bucket_name, file)
 
 
-    upload_directory("dataset", bucket_name)
+    upload_directory("booking_agent_utils/dataset", bucket_name)
     ```
 
     Now we start the ingestion job
@@ -530,8 +536,7 @@ def invokeAgent(query, session_id, session_state=dict()):
                 return agent_answer, traces
                 # End event indicates that the request finished successfully
             elif "trace" in event:
-                if enable_trace:
-                    traces.append(event["trace"])
+                traces.append(event["trace"])
             else:
                 raise Exception("unexpected event.", event)
         return agent_answer, traces
@@ -561,6 +566,7 @@ Ragas includes metrics suited to such evaluations, and we will explore some of t
 
 ```python
 from langchain_aws import ChatBedrock
+from ragas.llms import LangchainLLMWrapper
 
 model_id = "us.amazon.nova-pro-v1:0"   # Choose your desired model
 region_name = "us-east-1"              # Choose your desired AWS region
