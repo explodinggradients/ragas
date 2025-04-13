@@ -29,6 +29,7 @@ nav:
           - Available Metrics:
               - concepts/metrics/available_metrics/index.md
               - Retrieval Augmented Generation:
+                  - RAG Metrics Overview: concepts/metrics/available_metrics/rag_metrics_overview.md
                   - Context Precision: concepts/metrics/available_metrics/context_precision.md
                   - Context Recall: concepts/metrics/available_metrics/context_recall.md
                   - Context Entities Recall: concepts/metrics/available_metrics/context_entities_recall.md
