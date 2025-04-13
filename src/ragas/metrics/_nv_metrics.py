@@ -134,8 +134,8 @@ class AnswerAccuracy(MetricWithLLM, SingleTurnMetric):
                         query=sample.user_input,
                         answer0="Reference Answer",
                         answer1="User Answer",
-                        sentence_inference=sample.reference,
-                        sentence_true=sample.response,
+                        sentence_inference=sample.response,
+                        sentence_true=sample.reference,
                     )
                 )
                 req1 = self.llm.agenerate_text(
