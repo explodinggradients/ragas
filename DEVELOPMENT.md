@@ -65,6 +65,11 @@ make run-ci V=1
 
 ## Running Tests
 
+To install the libraries required for testing:
+```bash
+pip install -e ".[test]"
+```
+
 To run the test suite:
 
 ```bash
