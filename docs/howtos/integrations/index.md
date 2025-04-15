@@ -9,9 +9,10 @@ happy to look into it 🙂
 ## Frameworks
 
 - [Amazon Bedrock](./amazon_bedrock.md) - Amazon Bedrock is a managed framework for building, deploying, and scaling intelligent agents and integrated AI solutions; more information can be found [here](https://aws.amazon.com/bedrock/).
+- [Haystack](./haystack.md) - Haystack is a LLM orchestration framework to build customizable, production-ready LLM applications, more information can be found [here](https://haystack.deepset.ai/).
 - [Langchain](./langchain.md) - Langchain is a framework for building LLM applications, more information can be found [here](https://www.langchain.com/).
 - [LlamaIndex](./_llamaindex.md) - LlamaIndex is a framework for building RAG applications, more information can be found [here](https://www.llamaindex.ai/).
-- [Haystack](./haystack.md) - Haystack is a LLM orchestration framework to build customizable, production-ready LLM applications, more information can be found [here](https://haystack.deepset.ai/).
+- [LlamaStack](./llama_stack.md) – A unified framework by Meta for building and deploying generative AI apps across local, cloud, and mobile; [docs](https://llama-stack.readthedocs.io/en/latest/)
 - [R2R](./r2r.md) - R2R is an all-in-one solution for AI Retrieval-Augmented Generation (RAG) with production-ready features, more information can be found [here](https://r2r-docs.sciphi.ai/introduction)
 - [Swarm](./swarm_agent_evaluation.md) - Swarm is a framework for orchestrating multiple AI agents, more information can be found [here](https://github.com/openai/swarm).
 
