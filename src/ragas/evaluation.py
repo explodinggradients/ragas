@@ -162,6 +162,17 @@ def evaluate(
     if dataset is None:
         raise ValueError("Provide dataset!")
 
+    # Check metrics are correct type
+    if not isinstance(metrics, None | list):
+        raise TypeError(
+            "Metrics should be provded in a list, e.g: metrics=[BleuScore()]"
+        )
+
+    if isinstance(metrics, list) and any(not isinstance(m, Metric) for m in metrics):
+        raise TypeError(
+            "All metrics must be initialised metric objects, e.g: metrics=[BleuScore(), AspectCritic()]"
+        )
+
     # default metrics
     if metrics is None:
         from ragas.metrics import (
