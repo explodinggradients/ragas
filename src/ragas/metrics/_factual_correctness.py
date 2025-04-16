@@ -193,12 +193,20 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
     beta: float = 1.0
     atomicity: t.Literal["low", "high"] = "low"
     coverage: t.Literal["low", "high"] = "low"
-    claim_decomposition_prompt: PydanticPrompt = ClaimDecompositionPrompt()
-    nli_prompt: PydanticPrompt = NLIStatementPrompt()
+    claim_decomposition_prompt: PydanticPrompt = field(
+        default_factory=ClaimDecompositionPrompt
+    )
+    nli_prompt: PydanticPrompt = field(default_factory=NLIStatementPrompt)
     language: str = "english"
 
     def __post_init__(self):
         value = f"{self.atomicity}_atomicity_{self.coverage}_coverage"
+
+        # This creates a new instance-specific examples list, isolating
+        # changes to just this instance and preventing cross-contamination
+        # with other metrics.
+        self.claim_decomposition_prompt.examples = []
+
         for item in DecompositionType:
             if item.value == value:
                 self.claim_decomposition_prompt.examples.extend(
