@@ -76,7 +76,7 @@ Thus, the final **Answer Accuracy** score is **1**.
 
 ## Context Relevance
 
-**Context Relevance** evaluates whether the **retrieved_contexts** (chunks or passages) are pertinent to the **user_input**. This is done via two independent "LLM-as-a-judge" prompt calls that each rate the relevance on a scale of **0, 1, or 2**. The ratings are then converted to a [0,1] scale and averaged to produce the final score. Higher scores indicate that the contexts are more closely aligned with the user's query.
+**Context Relevance** evaluates how much the relevant **retrieved_contexts** (chunks or passages) are pertinent to the **user_input** (Completely non-relevant chunks are ignored from the score and won't affect the score. Only the chunks which are either completely relevant or partailly relevant are considered for the score calculation). This is done via two independent "LLM-as-a-judge" prompt calls that each rate the relevance on a scale of **0, 1, or 2**. The ratings are then converted to a [0,1] scale and averaged to produce the final score. Higher scores indicate that the contexts are more closely aligned with the user's query.
 
 - **0** → The retrieved contexts are not relevant to the user’s query at all.
 - **1** → The contexts are partially relevant.
