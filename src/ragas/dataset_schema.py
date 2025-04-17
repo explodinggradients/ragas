@@ -133,18 +133,34 @@ class MultiTurnSample(BaseSample):
                 "All inputs must be instances of HumanMessage, AIMessage, or ToolMessage."
             )
 
-        prev_message = None
-        for m in messages:
-            if isinstance(m, ToolMessage):
-                if not isinstance(prev_message, AIMessage):
+        has_seen_ai_message = False
+
+        for i, m in enumerate(messages):
+            if isinstance(m, AIMessage):
+                has_seen_ai_message = True
+
+            elif isinstance(m, ToolMessage):
+                # Rule 1: ToolMessage must be preceded by an AIMessage somewhere in the conversation
+                if not has_seen_ai_message:
                     raise ValueError(
-                        "ToolMessage instances must be preceded by an AIMessage instance."
+                        "ToolMessage must be preceded by an AIMessage somewhere in the conversation."
                     )
-                if prev_message.tool_calls is None:
-                    raise ValueError(
-                        f"ToolMessage instances must be preceded by an AIMessage instance with tool_calls. Got {prev_message}"
-                    )
-            prev_message = m
+
+                # Rule 2: ToolMessage must follow an AIMessage or another ToolMessage
+                if i > 0:
+                    prev_message = messages[i - 1]
+
+                    if isinstance(prev_message, AIMessage):
+                        # Rule 3: If following AIMessage, that message must have tool_calls
+                        if not prev_message.tool_calls:
+                            raise ValueError(
+                                "ToolMessage must follow an AIMessage where tools were called."
+                            )
+                    elif not isinstance(prev_message, ToolMessage):
+                        # Not following AIMessage or ToolMessage
+                        raise ValueError(
+                            "ToolMessage must follow an AIMessage or another ToolMessage."
+                        )
 
         return messages
 
