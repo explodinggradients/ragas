@@ -619,6 +619,7 @@ def embedding_factory(
     run_config: t.Optional[RunConfig] = None,
     client: t.Optional[t.Any] = None,
     interface: str = "auto",
+    base_url: t.Optional[str] = None,
     **kwargs: t.Any,
 ) -> t.Union[BaseRagasEmbeddings, BaseRagasEmbedding]:
     """
@@ -643,6 +644,8 @@ def embedding_factory(
     interface : str, optional
         Interface type: "legacy", "modern", or "auto" (default).
         "auto" detects based on parameters.
+    base_url : str, optional
+        Base URL for the API, by default None.
     **kwargs : Any
         Additional provider-specific arguments.
 
@@ -682,7 +685,7 @@ def embedding_factory(
             if _looks_like_model_name(provider)
             else (model or "text-embedding-ada-002")
         )
-        openai_embeddings = OpenAIEmbeddings(model=model_name)
+        openai_embeddings = OpenAIEmbeddings(model=model_name, base_url=base_url)
         if run_config is not None:
             openai_embeddings.request_timeout = run_config.timeout
         else:
@@ -701,7 +704,9 @@ def embedding_factory(
         )
         return result
 
-    # Modern interface
+    # Modern interface - pass base_url through kwargs for modern providers
+    if base_url is not None:
+        kwargs["base_url"] = base_url
     result = _create_modern_embedding(provider, model, client, **kwargs)
 
     # Track factory usage (modern)
