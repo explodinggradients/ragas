@@ -222,7 +222,7 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
         super().__init__(cache=self.cache)
         try:
             import sentence_transformers
-            from transformers import AutoConfig
+            from transformers import AutoConfig  # type: ignore
             from transformers.models.auto.modeling_auto import (
                 MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING_NAMES,
             )
