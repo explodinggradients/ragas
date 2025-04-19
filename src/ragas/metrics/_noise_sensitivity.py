@@ -127,16 +127,24 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
         assert self.llm is not None, "LLM is not set"
 
         if "reference" not in row or not row["reference"]:
-            raise ValueError("reference is missing in the test sample. Please add reference to the test sample.")
+            raise ValueError(
+                "reference is missing in the test sample. Please add reference to the test sample."
+            )
 
         if "user_input" not in row or not row["user_input"]:
-            raise ValueError("user_input is missing in the test sample. Please add user_input to the test sample.")
+            raise ValueError(
+                "user_input is missing in the test sample. Please add user_input to the test sample."
+            )
 
         if "response" not in row or not row["response"]:
-            raise ValueError("response is missing in the test sample. Please add response to the test sample.")
+            raise ValueError(
+                "response is missing in the test sample. Please add response to the test sample."
+            )
 
         if "retrieved_contexts" not in row or not row["retrieved_contexts"]:
-            raise ValueError("retrieved_contexts is missing in the test sample. Please add retrieved_contexts to the test sample.")
+            raise ValueError(
+                "retrieved_contexts is missing in the test sample. Please add retrieved_contexts to the test sample."
+            )
 
         gt_statements = await self._decompose_answer_into_statements(
             row["reference"], row["user_input"], callbacks

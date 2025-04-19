@@ -116,6 +116,7 @@ nav:
           - LangGraph: howtos/integrations/_langgraph_agent_evaluation.md
           - LangSmith: howtos/integrations/langsmith.md
           - LlamaIndex: howtos/integrations/_llamaindex.md
+          - LlamaStack: howtos/integrations/llama_stack.md
           - R2R: howtos/integrations/r2r.md
           - Swarm: howtos/integrations/swarm_agent_evaluation.md
       - Migrations:
