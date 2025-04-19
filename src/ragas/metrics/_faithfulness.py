@@ -222,7 +222,7 @@ class FaithfulnesswithHHEM(Faithfulness):
 
     def __post_init__(self):
         try:
-            from transformers import AutoModelForSequenceClassification
+            from transformers import AutoModelForSequenceClassification  # type: ignore
         except ImportError:
             raise ImportError(
                 "Huggingface transformers must be installed to use this feature, try `pip install transformers`"
