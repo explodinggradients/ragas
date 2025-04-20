@@ -112,6 +112,7 @@ nav:
           - Arize: howtos/integrations/_arize.md
           - Amazon Bedrock: howtos/integrations/amazon_bedrock.md
           - Haystack: howtos/integrations/haystack.md
+          - Griptape: howtos/integrations/griptape.md
           - LangChain: howtos/integrations/langchain.md
           - LangGraph: howtos/integrations/_langgraph_agent_evaluation.md
           - LangSmith: howtos/integrations/langsmith.md

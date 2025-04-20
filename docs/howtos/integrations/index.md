@@ -10,6 +10,7 @@ happy to look into it 🙂
 
 - [Amazon Bedrock](./amazon_bedrock.md) - Amazon Bedrock is a managed framework for building, deploying, and scaling intelligent agents and integrated AI solutions; more information can be found [here](https://aws.amazon.com/bedrock/).
 - [Haystack](./haystack.md) - Haystack is a LLM orchestration framework to build customizable, production-ready LLM applications, more information can be found [here](https://haystack.deepset.ai/).
+- [Griptape](./griptape.md) - Griptape framework simplifies generative AI application development through flexible abstractions for LLMs, RAG, and more, additional information can be found [here](https://docs.griptape.ai/stable/griptape-framework/).
 - [Langchain](./langchain.md) - Langchain is a framework for building LLM applications, more information can be found [here](https://www.langchain.com/).
 - [LlamaIndex](./_llamaindex.md) - LlamaIndex is a framework for building RAG applications, more information can be found [here](https://www.llamaindex.ai/).
 - [LlamaStack](./llama_stack.md) – A unified framework by Meta for building and deploying generative AI apps across local, cloud, and mobile; [docs](https://llama-stack.readthedocs.io/en/latest/)
