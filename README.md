@@ -85,7 +85,7 @@ await metric.single_turn_ascore(SingleTurnSample(**test_data))
 
 Find the complete [Quickstart Guide](https://docs.ragas.io/en/latest/getstarted/evals)
 
-### Exclusive acesss to Ragas App ( To be released soon in opensource)
+### Exclusive access to Ragas App (soon to be open-sourced)
 
 With Ragas and Ragas App, we are building the infra to replace vibe checks with eval loops so that you can focus on building great AI applications.
 We are inviting early design partners to help us shape the product. 
