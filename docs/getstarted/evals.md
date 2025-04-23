@@ -179,7 +179,7 @@ No vague dashboards or useless metrics, Just sharp feedback, fast iteration, and
 
 🔗 Book a [slot](https://bit.ly/3EBYq4J) or drop us a line: [founders@explodinggradients.com](mailto:founders@explodinggradients.com).
 
-![](/docs/_static/ragas_app.gif)
+![](../_static/ragas_app.gif)
 
 
 
