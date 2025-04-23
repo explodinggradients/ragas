@@ -169,5 +169,3 @@ Output
 ```
 {'context_recall': 1.0000, 'faithfulness': 0.9000, 'factual_correctness': 0.9260}
 ```
-
-Check out [app.ragas.io](http://app.ragas.io) for a more detailed analysis, including interactive visualizations and metrics. You'll need to create an account and generate a [Ragas API key](https://app.ragas.io/dashboard/settings/app-tokens) to upload and explore your results.
