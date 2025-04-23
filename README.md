@@ -85,15 +85,21 @@ await metric.single_turn_ascore(SingleTurnSample(**test_data))
 
 Find the complete [Quickstart Guide](https://docs.ragas.io/en/latest/getstarted/evals)
 
-### Analyze your Evaluation
+### Exclusive acesss to Ragas App ( To be released soon in opensource)
 
-Sign up for [app.ragas.io](https://app.ragas.io) to review, share and analyze your evaluations</a>
+With Ragas and Ragas App, we are building the infra to replace vibe checks with eval loops so that you can focus on building great AI applications.
+We are inviting early design partners to help us shape the product. 
 
-<p align="left">
-    <img src="docs/getstarted/ragas_get_started_evals.gif" height="300">
-</p>
+We’ll work shoulder-to-shoulder with your team to build your own evaluation loop—custom to your use case.
 
-See [how to use it](https://docs.ragas.io/en/latest/getstarted/evals/#analyzing-results)
+No vague dashboards. Just sharp feedback, fast iteration, and real progress.
+
+If we don’t hit your outcome targets, you owe us nothing.
+
+🔗 Book a [slot](https://cal.com/shahul-ragas/30min) or drop us a line: [founders@explodinggradients.com](mailto:founders@explodinggradients.com).
+
+![](/docs/_static/ragas_app.gif)
+
 
 ## 🫂 Community
 
