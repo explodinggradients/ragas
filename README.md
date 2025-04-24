@@ -136,3 +136,13 @@ At Ragas, we believe in transparency. We collect minimal, anonymized usage data 
 ✅ Publicly available aggregated [data](https://github.com/explodinggradients/ragas/issues/49)
 
 To opt-out, set the `RAGAS_DO_NOT_TRACK` environment variable to `true`.
+
+### Cite Us
+```
+@misc{ragas2025,
+  author       = {ExplodingGradients},
+  title        = {Ragas: Supercharge Your LLM Application Evaluations},
+  year         = {2024},
+  howpublished = {\url{https://github.com/explodinggradients/ragas}},
+}
+```
