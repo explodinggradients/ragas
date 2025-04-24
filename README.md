@@ -94,7 +94,7 @@ We are compressing this knowledge into a product to replace vibe checks with eva
 
 If you want help with improving and scaling up your AI application using evals.
 
-![](../_static/ragas_app.gif)
+![](/docs/_static/ragas_app.gif)
 
 
 
