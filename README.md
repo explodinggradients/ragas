@@ -139,7 +139,7 @@ To opt-out, set the `RAGAS_DO_NOT_TRACK` environment variable to `true`.
 
 ### Cite Us
 ```
-@misc{ragas2025,
+@misc{ragas2024,
   author       = {ExplodingGradients},
   title        = {Ragas: Supercharge Your LLM Application Evaluations},
   year         = {2024},
