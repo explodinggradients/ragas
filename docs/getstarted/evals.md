@@ -171,7 +171,9 @@ Viewing the sample-level results in a CSV file, as shown above, is fine for quic
 ### Want help in improving your AI application using evals?
 
 In the past 2 years, we have seen and helped improve many AI applications using evals. 
+
 We are compressing this knowledge into a product to replace vibe checks with eval loops so that you can focus on building great AI applications.
+
 If you want help with improving and scaling up your AI application using evals.
 
 
