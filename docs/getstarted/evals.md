@@ -172,10 +172,11 @@ Viewing the sample-level results in a CSV file, as shown above, is fine for quic
 
 In the past 2 years, we have seen and helped improve many AI applications using evals. 
 We are compressing this knowledge into a product to replace vibe checks with eval loops so that you can focus on building great AI applications.
+If you want help with improving and scaling up your AI application using evals.
+
 
 🔗 Book a [slot](https://bit.ly/3EBYq4J) or drop us a line: [founders@explodinggradients.com](mailto:founders@explodinggradients.com).
 
-If you want help with improving and scaling up your AI application using evals.
 
 ![](../_static/ragas_app.gif)
 
