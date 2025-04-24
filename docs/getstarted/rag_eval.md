@@ -176,18 +176,18 @@ Output
 {'context_recall': 1.0000, 'faithfulness': 0.8571, 'factual_correctness': 0.7280}
 ```
 
-### Exclusive access to Ragas App (soon to be open-sourced)
+### Want help in improving your AI application using evals?
 
-With Ragas and Ragas App, we are building the infra to replace vibe checks with eval loops so that you can focus on building great AI applications.
-We are inviting early design partners to help us shape the product. 
+In the past 2 years, we have seen and helped improve many AI applications using evals. 
 
-We’ll work shoulder-to-shoulder with your team to build your own evaluation loop—custom to your use case.
+We are compressing this knowledge into a product to replace vibe checks with eval loops so that you can focus on building great AI applications.
 
-No vague dashboards or useless metrics, Just sharp feedback, fast iteration, and real progress.
+If you want help with improving and scaling up your AI application using evals.
+
 
 🔗 Book a [slot](https://bit.ly/3EBYq4J) or drop us a line: [founders@explodinggradients.com](mailto:founders@explodinggradients.com).
 
-![](/docs/_static/ragas_app.gif)
+![](../_static/ragas_app.gif)
 
 
 ## Up Next
