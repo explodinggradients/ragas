@@ -85,15 +85,21 @@ await metric.single_turn_ascore(SingleTurnSample(**test_data))
 
 Find the complete [Quickstart Guide](https://docs.ragas.io/en/latest/getstarted/evals)
 
-### Analyze your Evaluation
+## Want help in improving your AI application using evals?
 
-Sign up for [app.ragas.io](https://app.ragas.io) to review, share and analyze your evaluations</a>
+In the past 2 years, we have seen and helped improve many AI applications using evals. 
 
-<p align="left">
-    <img src="docs/getstarted/ragas_get_started_evals.gif" height="300">
-</p>
+We are compressing this knowledge into a product to replace vibe checks with eval loops so that you can focus on building great AI applications. 
 
-See [how to use it](https://docs.ragas.io/en/latest/getstarted/evals/#analyzing-results)
+If you want help with improving and scaling up your AI application using evals.
+
+
+🔗 Book a [slot](https://bit.ly/3EBYq4J) or drop us a line: [founders@explodinggradients.com](mailto:founders@explodinggradients.com).
+
+
+![](/docs/_static/ragas_app.gif)
+
+
 
 ## 🫂 Community
 
@@ -132,3 +138,13 @@ At Ragas, we believe in transparency. We collect minimal, anonymized usage data 
 ✅ Publicly available aggregated [data](https://github.com/explodinggradients/ragas/issues/49)
 
 To opt-out, set the `RAGAS_DO_NOT_TRACK` environment variable to `true`.
+
+### Cite Us
+```
+@misc{ragas2024,
+  author       = {ExplodingGradients},
+  title        = {Ragas: Supercharge Your LLM Application Evaluations},
+  year         = {2024},
+  howpublished = {\url{https://github.com/explodinggradients/ragas}},
+}
+```
