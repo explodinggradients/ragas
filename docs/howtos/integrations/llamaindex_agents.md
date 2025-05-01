@@ -1,13 +1,13 @@
 # Evaluating LlamaIndex Agents
 
-Building agents that can intelligently use tools and make decisions is only half the journey; ensuring that these agents are accurate, reliable, and performant is what truly defines their success. [LlamaIndex](https://docs.llamaindex.ai/en/stable/understanding/agent/) provides various ways to create agents including [FunctionAgents](https://docs.llamaindex.ai/en/stable/module_guides/deploying/agents/), [CodeActAgents](https://docs.llamaindex.ai/en/stable/examples/agent/code_act_agent/), and [ReActAgents](https://docs.llamaindex.ai/en/stable/examples/agent/react_agent/). In this tutorial, we'll explore how to evaluate these different agent types using both pre-built Ragas metrics and custom evaluation metrics.
+Building agents that can intelligently use tools and make decisions is only half the journey; ensuring that these agents are accurate, reliable, and performant is what truly defines their success. [LlamaIndex](https://docs.llamaindex.ai/en/stable/understanding/agent/) provides various ways to create agents including [FunctionAgents](https://docs.llamaindex.ai/en/stable/module_guides/deploying/agents/), [CodeActAgents](https://docs.llamaindex.ai/en/stable/examples/agent/code_act_agent/), and [ReActAgents](https://docs.llamaindex.ai/en/stable/examples/agent/react_agent/). In this tutorial, we will explore how to evaluate these different agent types using both pre-built Ragas metrics and custom evaluation metrics.
 
 Let's get started.
 
 The tutorial is divided into three comprehensive sections:
 
 1. **Evaluating with Off-the-Shelf Ragas Metrics**
-   Here we'll examine two fundamental evaluation tools: AgentGoalAccuracy, which measures how effectively an agent identifies and achieves the user's intended objective, and Tool Call Accuracy, which assesses the agent's ability to select and invoke appropriate tools in the correct sequence to complete tasks.
+   Here we will examine two fundamental evaluation tools: AgentGoalAccuracy, which measures how effectively an agent identifies and achieves the user's intended objective, and Tool Call Accuracy, which assesses the agent's ability to select and invoke appropriate tools in the correct sequence to complete tasks.
 
 2. **Custom Metrics for CodeActAgent Evaluation**
    This section focuses on LlamaIndex's prebuilt CodeActAgent, demonstrating how to develop tailored evaluation metrics that address the specific requirements and capabilities of code-generating agents.
@@ -17,7 +17,7 @@ The tutorial is divided into three comprehensive sections:
 
 ## Ragas Agentic Metrics
 
-To demonstrate evaluations using Ragas metrics, we'll create a simple workflow with a single LlamaIndex Function Agent, and use that to cover the basic functionality.
+To demonstrate evaluations using Ragas metrics, we will create a simple workflow with a single LlamaIndex Function Agent, and use that to cover the basic functionality.
 
 ??? note "Click to View the Function Agent Setup"
 
@@ -159,12 +159,13 @@ Output:
 
 
 ## Evaluating LlamaIndex CodeAct Agents
-    LlamaIndex offers a prebuilt CodeAct Agent that can be used to write and execute code, inspired by the original CodeAct paper. The idea is: instead of outputting a simple JSON object, a Code Agent generates an executable code block—typically in a high-level language like Python. Writing actions in code rather than JSON-like snippets provides better:
 
-    - Composability: could you nest JSON actions within each other, or define a set of JSON actions to re-use later, the same way you could just define a python function?
-    - Object management: how do you store the output of an action like `generate_image` in JSON?
-    - Generality: code is built to express simply anything you can have a computer do.
-    - Representation in LLM training data: plenty of quality code actions is already included in LLMs’ training data which means they’re already trained for this!
+LlamaIndex offers a prebuilt CodeAct Agent that can be used to write and execute code, inspired by the original CodeAct paper. The idea is: instead of outputting a simple JSON object, a Code Agent generates an executable code block—typically in a high-level language like Python. Writing actions in code rather than JSON-like snippets provides better:
+
+- Composability: Code naturally allows nesting and reuse of functions; JSON actions lack this flexibility.
+- Object management: Code elegantly handles operation outputs (image = generate_image()); JSON has no clean equivalent.
+- Generality: Code expresses any computational task; JSON imposes unnecessary constraints.
+- Representation in LLM training data: LLMs already understand code from training data, making it a more natural interface than specialized JSON.
 
 ??? note "Click to View the CodeActAgent Setup"
 
@@ -452,9 +453,9 @@ Output:
 
 ## Evaluating Query Engine Tool
 
-When evaluating with Ragas metrics, we need to ensure that our data is format suitable to do evaluations. When working with a query engine tool within an agentic system, we can approach the evaluation as you would for any retrieval-augmented generation (RAG) system.
+When evaluating with Ragas metrics, we need to ensure that our data is formatted suitably for evaluations. When working with a query engine tool within an agentic system, we can approach the evaluation as we would for any retrieval-augmented generation (RAG) system.
 
-We will extract all instances where the query engine tool was called during user interactions using that we can construct a proper RAG evaluation dataset based on your event stream data. Once your data is properly formatted, you can apply the full suite of Ragas evaluation metrics. In this section we will setup a Functional Agent with Query Engine Tools. The agent has access to two "tools" one to query the 2021 Lyft 10-K and the other to query the 2021 Uber 10-K. 
+We will extract all instances where the query engine tool was called during user interactions. Using that, we can construct a Ragas RAG evaluation dataset based on our event stream data. Once the dataset is ready, we can apply the full suite of Ragas evaluation metrics. In this section, we will set up a Functional Agent with Query Engine Tools. The agent has access to two "tools": one to query the 2021 Lyft 10-K and the other to query the 2021 Uber 10-K.
 
 ??? note "Click to View the Agent Setup"
 
@@ -618,9 +619,7 @@ from ragas.dataset_schema import EvaluationDataset
 dataset = EvaluationDataset(samples=ragas_samples)
 dataset.to_pandas()
 ```
-
-
-
+Output:
 
 <div>
 <style scoped>
@@ -664,11 +663,11 @@ dataset.to_pandas()
 
 
 
-The resulting dataset will not include reference answers by default, so we’ll be limited to using metrics that do not require references. However, if you wish to run reference-based evaluations, you can simply add a reference column to the dataset and then apply the relevant Ragas metrics.
+The resulting dataset will not include reference answers by default, so we’ll be limited to using metrics that do not require references. However, if you wish to run reference-based evaluations, you can add a reference column to the dataset and then apply the relevant Ragas metrics.
 
 ### Evaluating using Ragas RAG Metrics
 
-Let's assess the effectiveness of query engines, particularly regarding retrieval quality and hallucination prevention. To accomplish this evaluation, We'll employ two key Ragas metrics: faithfulness and context relevance. For more you can visit [here]().
+Let's assess the effectiveness of query engines, particularly regarding retrieval quality and hallucination prevention. To accomplish this evaluation, We will employ two key Ragas metrics: faithfulness and context relevance. For more you can visit [here](../../concepts/metrics/available_metrics/).
 
 This evaluation approach allows us to identify potential issues with either retrieval quality or response generation that could impact overall system performance.
 - [Faithfulness](../../concepts/metrics/available_metrics/faithfulness.md) - Measures how accurately the generated response adheres to the facts presented in the retrieved context, ensuring claims made by the system can be directly supported by the information provided.
@@ -698,6 +697,7 @@ Evaluating: 100%|██████████| 4/4 [00:03<00:00,  1.19it/s]
 ```python
 result.to_pandas()
 ```
+Output:
 
 <div>
 <style scoped>
@@ -713,7 +713,7 @@ result.to_pandas()
         text-align: right;
     }
 </style>
-<table border="1" class="dataframe">
+<table border="1">
   <thead>
     <tr style="text-align: right;">
       <th></th>
