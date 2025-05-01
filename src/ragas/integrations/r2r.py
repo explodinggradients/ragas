@@ -57,7 +57,7 @@ def transform_to_ragas_dataset(
     rubrics: t.Optional[t.List[t.Dict[str, str]]] = None,
 ) -> EvaluationDataset:
     """
-    Converts input data into a RAGAS EvaluationDataset, ensuring flexibility
+    Converts input data into a Ragas EvaluationDataset, ensuring flexibility
     for cases where only some lists are provided.
 
     Parameters

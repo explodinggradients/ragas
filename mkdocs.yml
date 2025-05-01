@@ -114,7 +114,8 @@ nav:
           - LangChain: howtos/integrations/langchain.md
           - LangGraph: howtos/integrations/_langgraph_agent_evaluation.md
           - LangSmith: howtos/integrations/langsmith.md
-          - LlamaIndex: howtos/integrations/_llamaindex.md
+          - LlamaIndex RAG: howtos/integrations/_llamaindex.md
+          - LlamaIndex Agents: howtos/integrations/llamaindex_agents.md
           - LlamaStack: howtos/integrations/llama_stack.md
           - R2R: howtos/integrations/r2r.md
           - Swarm: howtos/integrations/swarm_agent_evaluation.md
