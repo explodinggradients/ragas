@@ -650,14 +650,14 @@ Your reservation was found and has been successfully canceled.
 ```python
 from ragas.integrations.amazon_bedrock import convert_to_ragas_messages
 
-# Convert Amazon Bedrock traces to messages accepted by RAGAS.
+# Convert Amazon Bedrock traces to messages accepted by Ragas.
 # The convert_to_ragas_messages function transforms Bedrock-specific trace data 
-# into a format that RAGAS can process as conversation messages.
+# into a format that Ragas can process as conversation messages.
 ragas_messages_trace_1 = convert_to_ragas_messages(traces_1)
 ragas_messages_trace_2 = convert_to_ragas_messages(traces_2)
 
 # Initialize MultiTurnSample objects.
-# MultiTurnSample is a data type defined in RAGAS that encapsulates conversation
+# MultiTurnSample is a data type defined in Ragas that encapsulates conversation
 # data for multi-turn evaluation. This conversion is necessary to perform evaluations.
 sample_1 = MultiTurnSample(user_input=ragas_messages_trace_1)
 sample_2 = MultiTurnSample(user_input=ragas_messages_trace_2)
@@ -943,10 +943,6 @@ Evaluating: 100%|██████████| 6/6 [00:00<?, ?it/s]
   </tbody>
 </table>
 </div>
-
-
-
-Corrected Snippet:
 
 To evaluate whether the agent is able to achieve its goal, we can use the following metrics:  
 

@@ -8,6 +8,8 @@ from ragas.embeddings import LlamaIndexEmbeddingsWrapper
 from ragas.evaluation import evaluate as ragas_evaluate
 from ragas.executor import Executor
 from ragas.llms import LlamaIndexLLMWrapper
+from ragas.messages import AIMessage, HumanMessage, Message, ToolCall, ToolMessage
+from ragas.metrics.base import Metric
 from ragas.run_config import RunConfig
 
 if t.TYPE_CHECKING:
@@ -16,10 +18,10 @@ if t.TYPE_CHECKING:
         BaseEmbedding as LlamaIndexEmbeddings,
     )
     from llama_index.core.base.llms.base import BaseLLM as LlamaindexLLM
+    from llama_index.core.workflow import Event
 
     from ragas.cost import TokenUsageParser
     from ragas.evaluation import EvaluationResult
-    from ragas.metrics.base import Metric
 
 
 logger = logging.getLogger(__name__)
@@ -101,3 +103,90 @@ def evaluate(
     )
 
     return results
+
+
+def convert_to_ragas_messages(events: t.List[Event]) -> t.List[Message]:
+    """
+    Convert a sequence of LlamIndex agent events into Ragas message objects.
+
+    This function processes a list of `Event` objects (e.g., `AgentInput`, `AgentOutput`,
+    and `ToolCallResult`) and converts them into a list of `Message` objects (`HumanMessage`,
+    `AIMessage`, and `ToolMessage`) that can be used for evaluation with the Ragas framework.
+
+    Parameters
+    ----------
+    events : List[Event]
+        A list of agent events that represent a conversation trace. These can include
+        user inputs (`AgentInput`), model outputs (`AgentOutput`), and tool responses
+        (`ToolCallResult`).
+
+    Returns
+    -------
+    List[Message]
+        A list of Ragas `Message` objects corresponding to the structured conversation.
+        Tool calls are de-duplicated using their tool ID to avoid repeated entries.
+    """
+    try:
+        from llama_index.core.agent.workflow import (
+            AgentInput,
+            AgentOutput,
+            ToolCallResult,
+        )
+        from llama_index.core.base.llms.types import MessageRole, TextBlock
+    except ImportError:
+        raise ImportError(
+            "Please install the llama_index package to use this function."
+        )
+    ragas_messages = []
+    tool_call_ids = set()
+
+    for event in events:
+        if isinstance(event, AgentInput):
+            last_chat_message = event.input[-1]
+
+            content = ""
+            if last_chat_message.blocks:
+                content = "\n".join(
+                    str(block.text)
+                    for block in last_chat_message.blocks
+                    if isinstance(block, TextBlock)
+                )
+
+            if last_chat_message.role == MessageRole.USER:
+                if ragas_messages and isinstance(ragas_messages[-1], ToolMessage):
+                    continue
+                ragas_messages.append(HumanMessage(content=content))
+
+        elif isinstance(event, AgentOutput):
+            content = "\n".join(
+                str(block.text)
+                for block in event.response.blocks
+                if isinstance(block, TextBlock)
+            )
+            ragas_tool_calls = None
+
+            if hasattr(event, "tool_calls"):
+                raw_tool_calls = event.tool_calls
+                ragas_tool_calls = []
+                for tc in raw_tool_calls:
+                    if tc.tool_id not in tool_call_ids:
+                        tool_call_ids.add(tc.tool_id)
+                        ragas_tool_calls.append(
+                            ToolCall(
+                                name=tc.tool_name,
+                                args=tc.tool_kwargs,
+                            )
+                        )
+            ragas_messages.append(
+                AIMessage(
+                    content=content,
+                    tool_calls=ragas_tool_calls if ragas_tool_calls else None,
+                )
+            )
+        elif isinstance(event, ToolCallResult):
+            if event.return_direct:
+                ragas_messages.append(AIMessage(content=event.tool_output.content))
+            else:
+                ragas_messages.append(ToolMessage(content=event.tool_output.content))
+
+    return ragas_messages
