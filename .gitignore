@@ -172,3 +172,7 @@ src/ragas/_version.py
 .envrc
 uv.lock
 .cache/
+
+# nbdev
+_proc/
+site/

@@ -6,8 +6,8 @@ Q := $(if $(V),,@)
 help: ## Show all Makefile targets
 	$(Q)grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[33m%-30s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: format lint type style clean run-benchmarks
-format: ## Running code formatter: black and isort
+.PHONY: format lint type style clean run-benchmarks format-experimental lint-experimental type-experimental
+format: ## Running code formatter for ragas
 	@echo "(isort) Ordering imports..."
 	$(Q)isort .
 	@echo "(black) Formatting codebase..."
@@ -16,30 +16,72 @@ format: ## Running code formatter: black and isort
 	$(Q)find src -name "*.pyi" ! -name "*_pb2*" -exec black --pyi --config pyproject.toml {} \;
 	@echo "(ruff) Running fix only..."
 	$(Q)ruff check src docs tests --fix-only
-lint: ## Running lint checker: ruff
-	@echo "(ruff) Linting development project..."
+
+format-experimental: ## Running code formatter for experimental
+	@echo "(black) Formatting experimental codebase..."
+	$(Q)cd experimental && black ragas_experimental
+	@echo "(ruff) Running fix only on experimental..."
+	$(Q)ruff check experimental/ragas_experimental --fix-only
+
+format-all: format format-experimental ## Format all code in the monorepo
+
+lint: ## Running lint checker for ragas
+	@echo "(ruff) Linting ragas project..."
 	$(Q)ruff check src docs tests
-type: ## Running type checker: pyright
-	@echo "(pyright) Typechecking codebase..."
+
+lint-experimental: ## Running lint checker for experimental
+	@echo "(ruff) Linting experimental project..."
+	$(Q)ruff check experimental/ragas_experimental
+
+lint-all: lint lint-experimental ## Lint all code in the monorepo
+
+type: ## Running type checker for ragas
+	@echo "(pyright) Typechecking ragas codebase..."
 	PYRIGHT_PYTHON_FORCE_VERSION=latest pyright src/ragas
+
+type-experimental: ## Running type checker for experimental
+	@echo "(pyright) Typechecking experimental codebase..."
+	PYRIGHT_PYTHON_FORCE_VERSION=latest pyright experimental/ragas_experimental
+
+type-all: type type-experimental ## Type check all code in the monorepo
 clean: ## Clean all generated files
 	@echo "Cleaning all generated files..."
 	$(Q)cd $(GIT_ROOT)/docs && $(MAKE) clean
 	$(Q)cd $(GIT_ROOT) || exit 1
 	$(Q)find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
-test: ## Run tests
-	@echo "Running tests..."
+
+test: ## Run ragas tests
+	@echo "Running ragas tests..."
 	$(Q)pytest --nbmake tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
-test-e2e: ## Run end2end tests
-	echo "running end2end tests..."
+
+test-e2e: ## Run ragas end2end tests
+	echo "running ragas end2end tests..."
 	$(Q)pytest --nbmake tests/e2e -s
-run-ci: format lint type test ## Running all CI checks
+
+test-experimental: ## Run experimental tests
+	@echo "Running experimental tests..."
+	$(Q)cd experimental && pytest
+
+test-all: test test-experimental ## Run all tests
+
+run-ci: format lint type test ## Running all CI checks for ragas
+
+run-ci-experimental: format-experimental lint-experimental type-experimental test-experimental ## Running all CI checks for experimental
+
+run-ci-all: format-all lint-all type-all test-all ## Running all CI checks for both projects
 
 # Docs
-build-docsite: ## Use GPT4 to rewrite the documentation
+build-docsite-ragas: ## Build ragas documentation
 	@echo "convert ipynb notebooks to md files"
 	$(Q)python $(GIT_ROOT)/docs/ipynb_to_md.py
 	$(Q)mkdocs build
+
+build-docsite-experimental: ## Build experimental documentation
+	@echo "Building experimental documentation..."
+	$(Q)cd experimental && nbdev_docs
+
+build-docsite: build-docsite-ragas build-docsite-experimental ## Build all documentation
+
 serve-docsite: ## Build and serve documentation
 	$(Q)mkdocs serve --dirtyreload
 

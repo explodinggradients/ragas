@@ -1,0 +1,36 @@
+website:
+  sidebar:
+    contents:
+      - index.ipynb
+      - section: Project
+        contents:
+          - project/core.ipynb
+          - project/experiments.ipynb
+          - project/naming.ipynb
+      - model/pydantic_mode.ipynb
+      - typing.ipynb
+      - dataset.ipynb
+      - experiment.ipynb
+      - section: Metric
+        contents:
+          - metric/base.ipynb
+          - metric/decorator.ipynb
+          - metric/discrete.ipynb
+          - metric/numeric.ipynb
+          - metric/ranking.ipynb
+          - metric/result.ipynb
+      - embedding/base.ipynb
+      - llm/llm.ipynb
+      - section: Prompt
+        contents:
+          - prompt/base.ipynb
+          - prompt/dynamic_few_shot.ipynb
+      - section: Tracing
+        contents:
+          - tracing/langfuse.ipynb
+      - section: Backends
+        contents:
+          - backends/factory.ipynb
+          - backends/ragas_api_client.ipynb
+      - utils.ipynb
+      - exceptions.ipynb

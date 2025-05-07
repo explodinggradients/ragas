@@ -141,6 +141,41 @@ nav:
       - Synthesizers: references/synthesizers.md
       - Generation: references/generate.md
     - Integrations: references/integrations.md
+  - 🧪 Experimental API:
+    - Overview: experimental/api/index.html.md
+    - Core:
+      - Project:
+        - Core: experimental/api/project/core.html.md
+        - Experiments: experimental/api/project/experiments.html.md
+        - Naming: experimental/api/project/naming.html.md
+      - Dataset: experimental/api/dataset.html.md
+      - Experiment: experimental/api/experiment.html.md
+      - Utils: experimental/api/utils.html.md
+      - Typing: experimental/api/typing.html.md
+    - Models:
+      - Pydantic Models: experimental/api/model/pydantic_model.html.md
+    - Components:
+      - LLM:
+        - Base: experimental/api/llm/llm.html.md
+      - Embedding:
+        - Base: experimental/api/embedding/base.md
+      - Prompt:
+        - Base: experimental/api/prompt/base.md
+        - Dynamic Few Shot: experimental/api/prompt/dynamic_few_shot.html.md
+      - Metric:
+        - Base: experimental/api/metric/base.html.md
+        - Decorator: experimental/api/metric/decorator.html.md
+        - Discrete: experimental/api/metric/discrete.html.md
+        - Numeric: experimental/api/metric/numeric.html.md
+        - Ranking: experimental/api/metric/ranking.html.md
+        - Result: experimental/api/metric/result.html.md
+    - Backends:
+      - Factory: experimental/api/backends/factory.html.md
+      - Ragas API Client: experimental/api/backends/ragas_api_client.html.md
+    - Tracing:
+      - Langfuse: experimental/api/tracing/langfuse.html.md
+      - MLflow: experimental/api/tracing/mlflow.html.md
+    - Exceptions: experimental/api/exceptions.html.md
   - ❤️ Community: community/index.md
 
 # https://www.mkdocs.org/user-guide/configuration/#validation
