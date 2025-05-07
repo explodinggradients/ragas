@@ -9,13 +9,13 @@ help: ## Show all Makefile targets
 .PHONY: format lint type style clean run-benchmarks format-experimental lint-experimental type-experimental
 format: ## Running code formatter for ragas
 	@echo "(isort) Ordering imports..."
-	$(Q)isort .
+	$(Q)cd ragas && isort .
 	@echo "(black) Formatting codebase..."
-	$(Q)black --config pyproject.toml src tests docs
+	$(Q)black --config ragas/pyproject.toml ragas/src ragas/tests docs
 	@echo "(black) Formatting stubs..."
-	$(Q)find src -name "*.pyi" ! -name "*_pb2*" -exec black --pyi --config pyproject.toml {} \;
+	$(Q)find ragas/src -name "*.pyi" ! -name "*_pb2*" -exec black --pyi --config ragas/pyproject.toml {} \;
 	@echo "(ruff) Running fix only..."
-	$(Q)ruff check src docs tests --fix-only
+	$(Q)ruff check ragas/src docs ragas/tests --fix-only
 
 format-experimental: ## Running code formatter for experimental
 	@echo "(black) Formatting experimental codebase..."
@@ -27,7 +27,7 @@ format-all: format format-experimental ## Format all code in the monorepo
 
 lint: ## Running lint checker for ragas
 	@echo "(ruff) Linting ragas project..."
-	$(Q)ruff check src docs tests
+	$(Q)ruff check ragas/src docs ragas/tests
 
 lint-experimental: ## Running lint checker for experimental
 	@echo "(ruff) Linting experimental project..."
@@ -37,7 +37,7 @@ lint-all: lint lint-experimental ## Lint all code in the monorepo
 
 type: ## Running type checker for ragas
 	@echo "(pyright) Typechecking ragas codebase..."
-	PYRIGHT_PYTHON_FORCE_VERSION=latest pyright src/ragas
+	PYRIGHT_PYTHON_FORCE_VERSION=latest pyright ragas/src/ragas
 
 type-experimental: ## Running type checker for experimental
 	@echo "(pyright) Typechecking experimental codebase..."
@@ -52,11 +52,11 @@ clean: ## Clean all generated files
 
 test: ## Run ragas tests
 	@echo "Running ragas tests..."
-	$(Q)pytest --nbmake tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
+	$(Q)cd ragas && pytest --nbmake tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 
 test-e2e: ## Run ragas end2end tests
 	echo "running ragas end2end tests..."
-	$(Q)pytest --nbmake tests/e2e -s
+	$(Q)cd ragas && pytest --nbmake tests/e2e -s
 
 test-experimental: ## Run experimental tests
 	@echo "Running experimental tests..."
@@ -88,12 +88,12 @@ serve-docsite: ## Build and serve documentation
 # Benchmarks
 run-benchmarks-eval: ## Run benchmarks for Evaluation
 	@echo "Running benchmarks for Evaluation..."
-	$(Q)cd $(GIT_ROOT)/tests/benchmarks && python benchmark_eval.py
+	$(Q)cd $(GIT_ROOT)/ragas/tests/benchmarks && python benchmark_eval.py
 run-benchmarks-testset: ## Run benchmarks for TestSet Generation
 	@echo "Running benchmarks for TestSet Generation..."
-	$(Q)cd $(GIT_ROOT)/tests/benchmarks && python benchmark_testsetgen.py
+	$(Q)cd $(GIT_ROOT)/ragas/tests/benchmarks && python benchmark_testsetgen.py
 run-benchmarks-in-docker: ## Run benchmarks in docker
 	@echo "Running benchmarks in docker..."
 	$(Q)cd $(GIT_ROOT)
-	docker buildx build --build-arg OPENAI_API_KEY=$(OPENAI_API_KEY) -t ragas-benchmark -f $(GIT_ROOT)/tests/benchmarks/Dockerfile .
+	docker buildx build --build-arg OPENAI_API_KEY=$(OPENAI_API_KEY) -t ragas-benchmark -f $(GIT_ROOT)/ragas/tests/benchmarks/Dockerfile .
 	docker inspect ragas-benchmark:latest | jq ".[0].Size" | numfmt --to=si

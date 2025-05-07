@@ -17,7 +17,7 @@ target-version = ["py39"]
 include = '\.pyi?$'
 
 [tool.pyright]
-include = ["src/ragas", "experimental/ragas_experimental"]
+include = ["ragas/src/ragas", "experimental/ragas_experimental"]
 excludeTypeshedPaths = ["@types/*"]
 pythonVersion = "3.9"
 pythonPlatform = "All"
@@ -26,4 +26,4 @@ typeCheckingMode = "basic"
 [tool.pytest.ini_options]
 addopts = "-n 0"
 asyncio_default_fixture_loop_scope = "function"
-testpaths = ["tests"]
+testpaths = ["ragas/tests"]
