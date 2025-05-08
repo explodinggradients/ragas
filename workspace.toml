@@ -1,0 +1,29 @@
+[workspace]
+# This file configures the workspace-wide tools and settings
+# Each project still maintains its own pyproject.toml for package-specific config
+
+[tool.ruff]
+select = ["E", "F", "I"]
+ignore = ["E501"]  # Line length handled by formatter
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.lint.isort]
+known-first-party = ["ragas", "ragas_experimental"]
+
+[tool.black]
+line-length = 88
+target-version = ["py39"]
+include = '\.pyi?$'
+
+[tool.pyright]
+include = ["ragas/src/ragas", "experimental/ragas_experimental"]
+excludeTypeshedPaths = ["@types/*"]
+pythonVersion = "3.9"
+pythonPlatform = "All"
+typeCheckingMode = "basic"
+
+[tool.pytest.ini_options]
+addopts = "-n 0"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["ragas/tests"]

@@ -168,7 +168,12 @@ cython_debug/
 experiments/
 **/fil-result/
 src/ragas/_version.py
+experimental/ragas_experimental/_version.py
 .vscode
 .envrc
 uv.lock
 .cache/
+
+# nbdev
+_proc/
+site/

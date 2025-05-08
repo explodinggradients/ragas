@@ -3,7 +3,7 @@ site_url: !ENV READTHEDOCS_CANONICAL_URL
 repo_name: explodinggradients/ragas
 repo_url: https://github.com/explodinggradients/ragas
 watch:
-  - src
+  - ragas/src
 
 # Navigation
 nav:
@@ -76,6 +76,42 @@ nav:
               - concepts/test_data_generation/agents.md
       - Feedback Intelligence:
           - concepts/feedback/index.md
+  - 🧪 Experimental:
+    - Overview: experimental/index.html.md
+    - Core:
+      - Project:
+        - Core: experimental/project/core.html.md
+        - Experiments: experimental/project/experiments.html.md
+        - Naming: experimental/project/naming.html.md
+      - Dataset: experimental/dataset.html.md
+      - Experiment: experimental/experiment.html.md
+      - Utils: experimental/utils.html.md
+      - Typing: experimental/typing.html.md
+    - Models:
+      - Pydantic Models: experimental/model/pydantic_mode.html.md
+    - Components:
+      - LLM:
+        - Base: experimental/llm/llm.html.md
+      - Embedding:
+        - Base: experimental/embedding/base.md
+      - Prompt:
+        - Base: experimental/prompt/base.md
+        - Dynamic Few Shot: experimental/prompt/dynamic_few_shot.html.md
+      - Metric:
+        - Base: experimental/metric/base.html.md
+        - Decorator: experimental/metric/decorator.html.md
+        - Discrete: experimental/metric/discrete.html.md
+        - Numeric: experimental/metric/numeric.html.md
+        - Ranking: experimental/metric/ranking.html.md
+        - Result: experimental/metric/result.html.md
+    - Backends:
+      - Factory: experimental/backends/factory.html.md
+      - Ragas API Client: experimental/backends/ragas_api_client.html.md
+    - Tracing:
+      - Langfuse: experimental/tracing/langfuse.html.md
+      - MLflow: experimental/tracing/mlflow.html.md
+    - Exceptions: experimental/exceptions.html.md
+    - Init Module: experimental/init_module.md
   - 🛠️ How-to Guides:
       - howtos/index.md
       - Customizations:
@@ -141,7 +177,7 @@ nav:
       - Synthesizers: references/synthesizers.md
       - Generation: references/generate.md
     - Integrations: references/integrations.md
-  - ❤️ Community: community/index.md
+  - Community: community/index.md
 
 # https://www.mkdocs.org/user-guide/configuration/#validation
 validation:
