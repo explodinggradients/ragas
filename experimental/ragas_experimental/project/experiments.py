@@ -125,7 +125,7 @@ from pathlib import Path
 
 # %% ../../nbs/project/experiments.ipynb 17
 def find_git_root(
-    start_path: t.Union[str, Path, None] = None,  # starting path to search from
+    start_path: t.Union[str, Path, None] = None  # starting path to search from
 ) -> Path:
     """Find the root directory of a git repository by traversing up from the start path."""
     # Start from the current directory if no path is provided

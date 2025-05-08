@@ -1,6 +1,8 @@
 from pkg_resources import parse_version
 from configparser import ConfigParser
 import setuptools, shlex
+import os
+import pathlib
 assert parse_version(setuptools.__version__)>=parse_version('36.2')
 
 # note: all settings are in settings.ini; edit there, not here
@@ -8,9 +10,20 @@ config = ConfigParser(delimiters=['='])
 config.read('settings.ini', encoding='utf-8')
 cfg = config['DEFAULT']
 
-cfg_keys = 'version description keywords author author_email'.split()
+# Configure setuptools_scm - this should match pyproject.toml configuration
+use_scm_version = {
+    "root": "..",                   # Path to monorepo root
+    "relative_to": __file__,        # Resolve paths relative to this file
+    "fallback_version": "0.0.0",    # Fallback if Git data is not available
+}
+
+# Modify expected keys to handle setuptools_scm version management
+cfg_keys = 'description keywords author author_email'.split()
 expected = cfg_keys + "lib_name user branch license status min_python audience language".split()
 for o in expected: assert o in cfg, "missing expected setting: {}".format(o)
+
+# Add version to cfg so the setup still works even though it's not in settings.ini
+cfg['version'] = '0.0.0'  # This will be overridden by setuptools_scm
 setup_cfg = {o:cfg[o] for o in cfg_keys}
 
 licenses = {
@@ -40,6 +53,7 @@ setup_cfg['package_data'] = package_data
 setuptools.setup(
     name = cfg['lib_name'],
     license = lic[0],
+    use_scm_version = use_scm_version,  # Use Git tags for versioning
     classifiers = [
         'Development Status :: ' + statuses[int(cfg['status'])],
         'Intended Audience :: ' + cfg['audience'].title(),
@@ -59,6 +73,6 @@ setuptools.setup(
         'console_scripts': cfg.get('console_scripts','').split(),
         'nbdev': [f'{cfg.get("lib_path")}={cfg.get("lib_path")}._modidx:d']
     },
-    **setup_cfg)
+    **{k: v for k, v in setup_cfg.items() if k != 'version'})
 
 
