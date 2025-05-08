@@ -1,5 +1,5 @@
 project:
-  output-dir: _docs
+  output-dir: experimental
 
 website:
   title: "ragas_experimental"

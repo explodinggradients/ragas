@@ -6,7 +6,7 @@ Q := $(if $(V),,@)
 help: ## Show all Makefile targets
 	$(Q)grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[33m%-30s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: format lint type style clean run-benchmarks format-experimental lint-experimental type-experimental
+.PHONY: format lint type style clean run-benchmarks format-experimental lint-experimental type-experimental process-experimental-notebooks
 format: ## Running code formatter for ragas
 	@echo "(isort) Ordering imports..."
 	$(Q)cd ragas && isort .
@@ -76,11 +76,15 @@ build-docsite-ragas: ## Build ragas documentation
 	$(Q)python $(GIT_ROOT)/docs/ipynb_to_md.py
 	$(Q)mkdocs build
 
-build-docsite-experimental: ## Build experimental documentation
+process-experimental-notebooks: ## Process experimental notebooks to markdown for MkDocs
+	@echo "Processing experimental notebooks..."
+	$(Q)python $(GIT_ROOT)/scripts/process_experimental_notebooks.py
+
+build-docsite-experimental: process-experimental-notebooks ## Build experimental documentation
 	@echo "Building experimental documentation..."
 	$(Q)cd experimental && nbdev_docs
 
-build-docsite: build-docsite-ragas build-docsite-experimental ## Build all documentation
+build-docsite: build-docsite-ragas ## Build all documentation
 
 serve-docsite: ## Build and serve documentation
 	$(Q)mkdocs serve --dirtyreload
