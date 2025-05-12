@@ -28,6 +28,7 @@ website:
           - section: "project"
             contents:
               - api/project/core.ipynb
+              - api/project/datasets.ipynb
               - api/project/experiments.ipynb
               - api/project/naming.ipynb
           
