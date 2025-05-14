@@ -22,6 +22,13 @@
     <a href="https://discord.gg/5djav8GGNZ">
         <img alt="discord-invite" src="https://img.shields.io/discord/1119637219561451644">
     </a>
+    <a target="_blank" href="https://deepwiki.com/explodinggradients/ragas">
+    <img 
+      src="https://devin.ai/assets/deepwiki-badge.png" 
+      alt="Ask DeepWiki.com" 
+      height="20" 
+    />
+  </a>
 </p>
 
 <h4 align="center">
