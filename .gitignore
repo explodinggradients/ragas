@@ -172,3 +172,6 @@ src/ragas/_version.py
 .envrc
 uv.lock
 .cache/
+experimental/_proc
+experimental/site
+experimental/ragas_experimental/_version.py
