@@ -718,6 +718,7 @@ def save(self: Dataset, item: BaseModelType) -> None:
     self._update_local_entry(item)
 
 
+@patch
 def _update_local_entry(self: Dataset, item: BaseModelType) -> None:
     """Update an entry in the local cache.
 
