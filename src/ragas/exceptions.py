@@ -26,8 +26,21 @@ class RagasOutputParserException(RagasException):
     Exception raised when the output parser fails to parse the output.
     """
 
-    def __init__(self):
-        msg = "The output parser failed to parse the output including retries."
+    def __init__(self, details: str = None):
+        base_msg = "The output parser failed to parse the output including retries."
+        if details:
+            msg = f"{base_msg} Details: {details}"
+        else:
+            msg = base_msg
+            
+        # Add suggestions for local LLMs
+        msg += "\nFor local LLMs, consider the following:\n" \
+               "1. Increase the timeout in RunConfig (default is now 300 seconds)\n" \
+               "2. Use a more capable local model that can better follow JSON formatting instructions\n" \
+               "3. Reduce batch size to process fewer examples at once\n" \
+               "4. For metrics that require structured output (context_recall, faithfulness, context_precision), " \
+               "consider using simpler metrics like answer_correctness and answer_similarity if the issues persist"
+        
         super().__init__(msg)
 
 
