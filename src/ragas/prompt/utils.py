@@ -68,29 +68,49 @@ def update_strings(obj: t.Any, old_strings: list[str], new_strings: list[str]) -
 
 def extract_json(text: str) -> str:
     """Identify json from a text blob by matching '[]' or '{}'.
-
-    Warning: This will identify the first json structure!"""
-
-    # check for markdown indicator; if present, start there
-    md_json_idx = text.find("```json")
-    if md_json_idx != -1:
-        text = text[md_json_idx:]
-
-    # search for json delimiter pairs
+    
+    This function attempts to extract valid JSON from text, handling various formats
+    including markdown code blocks and malformed JSON that might be produced by local models.
+    
+    Warning: This will identify the first json structure!
+    """
+    import json
+    import re
+    
+    # Remove any leading/trailing whitespace
+    text = text.strip()
+    
+    # Check for markdown code blocks (```json or ```), and extract content if present
+    md_json_pattern = r"```(?:json)?\s*([\s\S]*?)\s*```"
+    md_matches = re.findall(md_json_pattern, text)
+    
+    if md_matches:
+        # Try each markdown code block
+        for md_content in md_matches:
+            try:
+                # Validate if it's proper JSON
+                json.loads(md_content.strip())
+                return md_content.strip()
+            except json.JSONDecodeError:
+                # If not valid JSON, continue with next match or fallback to other methods
+                pass
+    
+    # Search for json delimiter pairs
     left_bracket_idx = text.find("[")
     left_brace_idx = text.find("{")
-
+    
     indices = [idx for idx in (left_bracket_idx, left_brace_idx) if idx != -1]
-    start_idx = min(indices) if indices else None
-
+    
     # If no delimiter found, return the original text
-    if start_idx is None:
+    if not indices:
         return text
-
+    
+    start_idx = min(indices)
+    
     # Identify the exterior delimiters defining JSON
     open_char = text[start_idx]
     close_char = "]" if open_char == "[" else "}"
-
+    
     # Initialize a count to keep track of delimiter pairs
     count = 0
     for i, char in enumerate(text[start_idx:], start=start_idx):
@@ -98,9 +118,29 @@ def extract_json(text: str) -> str:
             count += 1
         elif char == close_char:
             count -= 1
-
+        
         # When count returns to zero, we've found a complete structure
         if count == 0:
-            return text[start_idx : i + 1]
-
-    return text  # In case of unbalanced JSON, return the original text
+            potential_json = text[start_idx : i + 1]
+            try:
+                # Validate if it's proper JSON
+                json.loads(potential_json)
+                return potential_json
+            except json.JSONDecodeError:
+                # If not valid JSON, try to fix common issues
+                fixed_json = potential_json
+                # Replace single quotes with double quotes (common issue with local models)
+                fixed_json = re.sub(r"(?<![\\])\'", "\"", fixed_json)
+                # Fix trailing commas in arrays and objects
+                fixed_json = re.sub(r",\s*}", "}", fixed_json)
+                fixed_json = re.sub(r",\s*\]", "]", fixed_json)
+                
+                try:
+                    json.loads(fixed_json)
+                    return fixed_json
+                except json.JSONDecodeError:
+                    # If still not valid, continue searching
+                    pass
+    
+    # If we couldn't find a valid JSON structure, return the original text
+    return text

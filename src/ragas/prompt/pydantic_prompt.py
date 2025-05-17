@@ -399,15 +399,19 @@ class RagasOutputParser(PydanticOutputParser[OutputModel]):
     ) -> OutputModel:
         callbacks = callbacks or []
         try:
+            # First attempt to extract JSON from the output
             jsonstr = extract_json(output_string)
             result = super().parse(jsonstr)
         except OutputParserException:
+            # If JSON extraction fails, try more aggressive parsing
             if retries_left != 0:
                 retry_rm, retry_cb = new_group(
                     name="fix_output_format",
                     inputs={"output_string": output_string},
                     callbacks=callbacks,
                 )
+                
+                # Add more explicit instructions for the fix_output_format prompt
                 fixed_output_string = await fix_output_format_prompt.generate(
                     llm=llm,
                     data=OutputStringAndPrompt(
@@ -418,7 +422,32 @@ class RagasOutputParser(PydanticOutputParser[OutputModel]):
                     retries_left=retries_left - 1,
                 )
                 retry_rm.on_chain_end({"fixed_output_string": fixed_output_string})
-                result = super().parse(fixed_output_string.text)
+                
+                try:
+                    # Try to parse the fixed output
+                    fixed_jsonstr = extract_json(fixed_output_string.text)
+                    result = super().parse(fixed_jsonstr)
+                except OutputParserException:
+                    # If still failing, try one more time with a more lenient approach
+                    # This is especially helpful for local models that might not format JSON perfectly
+                    try:
+                        # Try to find anything that looks like JSON
+                        import re
+                        json_pattern = r'\{(?:[^{}]|(?R))*\}'
+                        json_matches = re.findall(json_pattern, fixed_output_string.text)
+                        
+                        if json_matches:
+                            for potential_json in json_matches:
+                                try:
+                                    result = super().parse(potential_json)
+                                    return result
+                                except:
+                                    continue
+                        
+                        # If we got here, all parsing attempts failed
+                        raise RagasOutputParserException()
+                    except:
+                        raise RagasOutputParserException()
             else:
                 raise RagasOutputParserException()
         return result
