@@ -36,6 +36,9 @@ class RunConfig:
         Whether to log retry attempts using tenacity, by default False.
     seed : int, optional
         Random seed for reproducibility, by default 42.
+    is_local_model : bool, optional
+        Whether the LLM is a local model (e.g., via Ollama), by default False.
+        Local models may need longer timeouts.
 
     Attributes
     ----------
@@ -58,9 +61,13 @@ class RunConfig:
     ] = (Exception,)
     log_tenacity: bool = False
     seed: int = 42
+    is_local_model: bool = False
 
     def __post_init__(self):
         self.rng = np.random.default_rng(seed=self.seed)
+        # Increase timeout for local models which may need more time
+        if self.is_local_model:
+            self.timeout = 600  # 10 minutes for local models
 
 
 def add_retry(fn: WrappedFn, run_config: RunConfig) -> WrappedFn:
