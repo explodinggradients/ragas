@@ -395,19 +395,33 @@ class RagasOutputParser(PydanticOutputParser[OutputModel]):
         prompt_value: PromptValue,
         llm: BaseRagasLLM,
         callbacks: Callbacks,
-        retries_left: int = 1,
+        retries_left: int = 3,  # Increased default retries from 1 to 3
     ) -> OutputModel:
+        import json
+        import logging
+        
+        logger = logging.getLogger(__name__)
         callbacks = callbacks or []
+        
         try:
+            # First attempt: Extract and parse JSON directly
             jsonstr = extract_json(output_string)
-            result = super().parse(jsonstr)
-        except OutputParserException:
-            if retries_left != 0:
+            try:
+                result = super().parse(jsonstr)
+                return result
+            except (OutputParserException, json.JSONDecodeError) as e:
+                logger.debug(f"Initial parsing failed: {str(e)}")
+                # Continue to retry logic
+                
+            # If we're here, the first attempt failed
+            if retries_left > 0:
                 retry_rm, retry_cb = new_group(
                     name="fix_output_format",
                     inputs={"output_string": output_string},
                     callbacks=callbacks,
                 )
+                
+                # Use the fix_output_format prompt to try to fix the output
                 fixed_output_string = await fix_output_format_prompt.generate(
                     llm=llm,
                     data=OutputStringAndPrompt(
@@ -418,10 +432,72 @@ class RagasOutputParser(PydanticOutputParser[OutputModel]):
                     retries_left=retries_left - 1,
                 )
                 retry_rm.on_chain_end({"fixed_output_string": fixed_output_string})
-                result = super().parse(fixed_output_string.text)
-            else:
-                raise RagasOutputParserException()
-        return result
+                
+                # Try to parse the fixed output
+                try:
+                    fixed_jsonstr = extract_json(fixed_output_string.text)
+                    result = super().parse(fixed_jsonstr)
+                    return result
+                except (OutputParserException, json.JSONDecodeError) as e:
+                    logger.debug(f"Parsing fixed output failed: {str(e)}")
+                    
+                    # Last resort: Try to manually construct a valid JSON
+                    # This is especially helpful for local LLMs that might not follow the exact format
+                    try:
+                        # Get the expected schema
+                        schema = self.pydantic_object.model_json_schema()
+                        required_fields = schema.get("required", [])
+                        properties = schema.get("properties", {})
+                        
+                        # Create a minimal valid JSON with default values
+                        minimal_json = {}
+                        for field in required_fields:
+                            field_type = properties.get(field, {}).get("type")
+                            if field_type == "string":
+                                minimal_json[field] = "Unable to parse"
+                            elif field_type == "integer":
+                                minimal_json[field] = 0
+                            elif field_type == "number":
+                                minimal_json[field] = 0.0
+                            elif field_type == "boolean":
+                                minimal_json[field] = False
+                            elif field_type == "array":
+                                minimal_json[field] = []
+                            elif field_type == "object":
+                                minimal_json[field] = {}
+                        
+                        # Try to parse with this minimal JSON
+                        if minimal_json:
+                            logger.warning(f"Using fallback minimal JSON: {minimal_json}")
+                            result = self.pydantic_object.model_validate(minimal_json)
+                            return result
+                    except Exception as e:
+                        logger.debug(f"Minimal JSON fallback failed: {str(e)}")
+                
+                # If we've exhausted all retries and approaches
+                if retries_left > 1:
+                    # Recursive call with one less retry
+                    return await self.parse_output_string(
+                        output_string=fixed_output_string.text,
+                        prompt_value=prompt_value,
+                        llm=llm,
+                        callbacks=callbacks,
+                        retries_left=retries_left - 1,
+                    )
+            
+            # If all attempts fail
+            raise RagasOutputParserException(details=f"Failed after {3-retries_left+1} attempts with output: {output_string[:100]}...")
+        except Exception as e:
+            if retries_left > 0:
+                logger.warning(f"Unexpected error during parsing: {str(e)}. Retrying...")
+                return await self.parse_output_string(
+                    output_string=output_string,
+                    prompt_value=prompt_value,
+                    llm=llm,
+                    callbacks=callbacks,
+                    retries_left=retries_left - 1,
+                )
+            raise RagasOutputParserException(details=f"Unexpected error: {str(e)}")
 
 
 # Ragas Adaptation

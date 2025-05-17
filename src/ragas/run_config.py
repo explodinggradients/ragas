@@ -23,7 +23,8 @@ class RunConfig:
     Parameters
     ----------
     timeout : int, optional
-        Maximum time (in seconds) to wait for a single operation, by default 180.
+        Maximum time (in seconds) to wait for a single operation, by default 300.
+        For local LLMs, a higher timeout may be needed.
     max_retries : int, optional
         Maximum number of retry attempts, by default 10.
     max_wait : int, optional
@@ -48,7 +49,7 @@ class RunConfig:
     number generator using the specified seed.
     """
 
-    timeout: int = 180
+    timeout: int = 300  # Increased from 180 to 300 to accommodate slower local LLMs
     max_retries: int = 10
     max_wait: int = 60
     max_workers: int = 16
