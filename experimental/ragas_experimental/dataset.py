@@ -21,6 +21,7 @@ from ragas_experimental.model.pydantic_model import (
 from .utils import create_nano_id, async_to_sync
 from .backends.ragas_api_client import RagasApiClient
 from .typing import SUPPORTED_BACKENDS
+import ragas_experimental.typing as rt
 from .metric import MetricResult
 
 # %% ../nbs/api/dataset.ipynb 4
@@ -225,7 +226,14 @@ class RagasAppBackend(DatasetBackend):
 class LocalBackend(DatasetBackend):
     """Backend for storing datasets using local CSV files."""
 
-    def __init__(self, local_root_dir, project_id, dataset_id, dataset_name):
+    def __init__(
+        self,
+        local_root_dir,
+        project_id,
+        dataset_id,
+        dataset_name,
+        type: t.Literal["datasets", "experiments"],
+    ):
         """Initialize the LocalBackend.
 
         Args:
@@ -239,6 +247,7 @@ class LocalBackend(DatasetBackend):
         self.dataset_id = dataset_id
         self.dataset_name = dataset_name
         self.dataset = None
+        self.type = type
 
     def __str__(self):
         return f"LocalBackend(local_root_dir={self.local_root_dir}, project_id={self.project_id}, dataset_id={self.dataset_id}, dataset_name={self.dataset_name})"
@@ -272,15 +281,16 @@ class LocalBackend(DatasetBackend):
     def _get_csv_path(self):
         """Get the path to the CSV file."""
         return os.path.join(
-            self.local_root_dir, self.project_id, "datasets", f"{self.dataset_name}.csv"
+            self.local_root_dir, self.project_id, self.type, f"{self.dataset_name}.csv"
         )
 
-    def get_column_mapping(self, model):
+    def get_column_mapping(self, model) -> t.Dict:
         """Get mapping between model fields and CSV columns.
 
         For CSV, column names directly match field names.
         """
-        return {field: field for field in model.__annotations__}
+        # Simple dictionary comprehension
+        return model.model_fields
 
     def load_entries(self, model_class):
         """Load all entries from the CSV file."""
@@ -305,8 +315,8 @@ class LocalBackend(DatasetBackend):
                     # Convert types as needed
                     typed_row = {}
                     for field, value in model_data.items():
-                        if field in model_class.__annotations__:
-                            field_type = model_class.__annotations__[field]
+                        if field in model_class.model_fields:
+                            field_type = model_class.model_fields[field].annotation
 
                             # Handle basic type conversions
                             if field_type == int:
@@ -351,7 +361,7 @@ class LocalBackend(DatasetBackend):
         row_id = getattr(entry, "_row_id", None) or str(uuid.uuid4())
 
         # Get field names including row_id
-        field_names = ["_row_id"] + list(entry.__class__.__annotations__.keys())
+        field_names = ["_row_id"] + list(entry.model_fields.keys())
 
         # Convert entry to dict
         entry_dict = entry.model_dump()
@@ -494,6 +504,7 @@ class Dataset(t.Generic[BaseModelType]):
         model: t.Type[BaseModel],
         project_id: str,
         dataset_id: str,
+        datatable_type: t.Literal["datasets", "experiments"],
         ragas_api_client: t.Optional[RagasApiClient] = None,
         backend: SUPPORTED_BACKENDS = "local",
         local_root_dir: t.Optional[str] = None,
@@ -515,6 +526,7 @@ class Dataset(t.Generic[BaseModelType]):
         self.project_id = project_id
         self.dataset_id = dataset_id
         self.backend_type = backend
+        self.datatable_type = datatable_type
         self._entries: t.List[BaseModelType] = []
 
         # Create the appropriate backend
@@ -535,6 +547,7 @@ class Dataset(t.Generic[BaseModelType]):
                 "project_id": project_id,
                 "dataset_id": dataset_id,
                 "dataset_name": name,
+                "type": self.datatable_type,
             }
 
         self._backend = create_dataset_backend(backend, **backend_params)
@@ -604,7 +617,7 @@ class Dataset(t.Generic[BaseModelType]):
         """Iterate over the entries in the dataset."""
         return iter(self._entries)
 
-# %% ../nbs/api/dataset.ipynb 19
+# %% ../nbs/api/dataset.ipynb 20
 @patch
 def append(self: Dataset, entry: BaseModelType) -> None:
     """Add a new entry to the dataset and sync to backend.
@@ -624,7 +637,7 @@ def append(self: Dataset, entry: BaseModelType) -> None:
     # Add to local cache
     self._entries.append(entry)
 
-# %% ../nbs/api/dataset.ipynb 22
+# %% ../nbs/api/dataset.ipynb 23
 @patch
 def pop(self: Dataset, index: int = -1) -> BaseModelType:
     """Remove and return entry at index, sync deletion to backend.
@@ -651,14 +664,14 @@ def pop(self: Dataset, index: int = -1) -> BaseModelType:
     # Remove from local cache
     return self._entries.pop(index)
 
-# %% ../nbs/api/dataset.ipynb 26
+# %% ../nbs/api/dataset.ipynb 27
 @patch
 def load(self: Dataset) -> None:
     """Load all entries from the backend."""
     # Get entries from backend
     self._entries = self._backend.load_entries(self.model)
 
-# %% ../nbs/api/dataset.ipynb 28
+# %% ../nbs/api/dataset.ipynb 29
 @patch
 def load_as_dicts(self: Dataset) -> t.List[t.Dict]:
     """Load all entries as dictionaries.
@@ -673,7 +686,7 @@ def load_as_dicts(self: Dataset) -> t.List[t.Dict]:
     # Convert to dictionaries
     return [entry.model_dump() for entry in self._entries]
 
-# %% ../nbs/api/dataset.ipynb 30
+# %% ../nbs/api/dataset.ipynb 31
 @patch
 def to_pandas(self: Dataset) -> "pd.DataFrame":
     """Convert dataset to pandas DataFrame."""
@@ -686,7 +699,7 @@ def to_pandas(self: Dataset) -> "pd.DataFrame":
     data = [entry.model_dump() for entry in self._entries]
     return pd.DataFrame(data)
 
-# %% ../nbs/api/dataset.ipynb 32
+# %% ../nbs/api/dataset.ipynb 33
 @patch
 def save(self: Dataset, item: BaseModelType) -> None:
     """Save changes to an item to the backend.
@@ -736,7 +749,7 @@ def _update_local_entry(self: Dataset, item: BaseModelType) -> None:
                 self._entries[i] = item
             break
 
-# %% ../nbs/api/dataset.ipynb 36
+# %% ../nbs/api/dataset.ipynb 37
 @patch
 def get(
     self: Dataset, field_value: t.Any, field_name: str = "_row_id"
@@ -771,7 +784,7 @@ def get(
 
     return None
 
-# %% ../nbs/api/dataset.ipynb 40
+# %% ../nbs/api/dataset.ipynb 41
 @patch
 def to_pandas(self: Dataset) -> "pd.DataFrame":
     """Convert dataset to pandas DataFrame.
