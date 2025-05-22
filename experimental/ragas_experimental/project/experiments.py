@@ -476,8 +476,8 @@ def experiment(
     self: Project,
     experiment_model,
     name_prefix: str = "",
-    save_to_git: bool = True,
-    stage_all: bool = True,
+    save_to_git: bool = False,
+    stage_all: bool = False,
     backend: t.Optional[rt.SUPPORTED_BACKENDS] = None,
 ):
     """Decorator for creating experiment functions.

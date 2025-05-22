@@ -783,7 +783,7 @@ def get(
 
     return None
 
-# %% ../nbs/api/dataset.ipynb 39
+# %% ../nbs/api/dataset.ipynb 38
 @patch
 def to_pandas(self: Dataset) -> "pd.DataFrame":
     """Convert dataset to pandas DataFrame.
