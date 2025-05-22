@@ -5,7 +5,7 @@
 # %% auto 0
 __all__ = ['BaseModelType', 'DatasetBackend', 'RagasAppBackend', 'LocalBackend', 'create_dataset_backend', 'Dataset']
 
-# %% ../nbs/api/dataset.ipynb 3
+# %% ../nbs/api/dataset.ipynb 2
 from abc import ABC, abstractmethod
 import os
 import typing as t
@@ -18,13 +18,13 @@ import pandas as pd
 from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
 )
-from .utils import create_nano_id, async_to_sync
+from .utils import create_nano_id, async_to_sync, get_test_directory
 from .backends.ragas_api_client import RagasApiClient
 from .typing import SUPPORTED_BACKENDS
 import ragas_experimental.typing as rt
 from .metric import MetricResult
 
-# %% ../nbs/api/dataset.ipynb 4
+# %% ../nbs/api/dataset.ipynb 3
 BaseModelType = t.TypeVar("BaseModelType", bound=BaseModel)
 
 
@@ -69,7 +69,7 @@ class DatasetBackend(ABC):
         """Get an entry by field value"""
         pass
 
-# %% ../nbs/api/dataset.ipynb 5
+# %% ../nbs/api/dataset.ipynb 4
 class RagasAppBackend(DatasetBackend):
     """Backend for storing datasets using the Ragas API."""
 
@@ -222,10 +222,8 @@ class RagasAppBackend(DatasetBackend):
 
         return None
 
-# %% ../nbs/api/dataset.ipynb 6
+# %% ../nbs/api/dataset.ipynb 5
 class LocalBackend(DatasetBackend):
-    """Backend for storing datasets using local CSV files."""
-
     def __init__(
         self,
         local_root_dir,
@@ -438,14 +436,14 @@ class LocalBackend(DatasetBackend):
 
         if not entries:
             # If no entries, just create an empty CSV with headers
-            field_names = ["_row_id"] + list(self.dataset.model.__annotations__.keys())
+            field_names = ["_row_id"] + list(self.dataset.model.model_fields.keys())
             with open(csv_path, "w", newline="") as f:
                 writer = csv.DictWriter(f, fieldnames=field_names)
                 writer.writeheader()
             return
 
         # Get field names including _row_id
-        field_names = ["_row_id"] + list(entries[0].__class__.__annotations__.keys())
+        field_names = ["_row_id"] + list(entries[0].__class__.model_fields.keys())
 
         # Write all entries
         with open(csv_path, "w", newline="") as f:
@@ -469,7 +467,7 @@ class LocalBackend(DatasetBackend):
 
         return None
 
-# %% ../nbs/api/dataset.ipynb 7
+# %% ../nbs/api/dataset.ipynb 6
 def create_dataset_backend(backend_type: SUPPORTED_BACKENDS, **kwargs):
     """Factory function to create the appropriate backend.
 
@@ -490,7 +488,7 @@ def create_dataset_backend(backend_type: SUPPORTED_BACKENDS, **kwargs):
 
     return backend_classes[backend_type](**kwargs)
 
-# %% ../nbs/api/dataset.ipynb 9
+# %% ../nbs/api/dataset.ipynb 8
 class Dataset(t.Generic[BaseModelType]):
     """A list-like interface for managing dataset entries with backend synchronization.
 
@@ -578,6 +576,7 @@ class Dataset(t.Generic[BaseModelType]):
                 project_id=self.project_id,
                 dataset_id=self.dataset_id,
                 backend=self.backend_type,
+                datatable_type=self.datatable_type,
             )
             # Copy the backend reference
             new_dataset._backend = self._backend
@@ -617,7 +616,7 @@ class Dataset(t.Generic[BaseModelType]):
         """Iterate over the entries in the dataset."""
         return iter(self._entries)
 
-# %% ../nbs/api/dataset.ipynb 20
+# %% ../nbs/api/dataset.ipynb 16
 @patch
 def append(self: Dataset, entry: BaseModelType) -> None:
     """Add a new entry to the dataset and sync to backend.
@@ -637,7 +636,7 @@ def append(self: Dataset, entry: BaseModelType) -> None:
     # Add to local cache
     self._entries.append(entry)
 
-# %% ../nbs/api/dataset.ipynb 23
+# %% ../nbs/api/dataset.ipynb 20
 @patch
 def pop(self: Dataset, index: int = -1) -> BaseModelType:
     """Remove and return entry at index, sync deletion to backend.
@@ -664,14 +663,14 @@ def pop(self: Dataset, index: int = -1) -> BaseModelType:
     # Remove from local cache
     return self._entries.pop(index)
 
-# %% ../nbs/api/dataset.ipynb 27
+# %% ../nbs/api/dataset.ipynb 24
 @patch
 def load(self: Dataset) -> None:
     """Load all entries from the backend."""
     # Get entries from backend
     self._entries = self._backend.load_entries(self.model)
 
-# %% ../nbs/api/dataset.ipynb 29
+# %% ../nbs/api/dataset.ipynb 26
 @patch
 def load_as_dicts(self: Dataset) -> t.List[t.Dict]:
     """Load all entries as dictionaries.
@@ -686,7 +685,7 @@ def load_as_dicts(self: Dataset) -> t.List[t.Dict]:
     # Convert to dictionaries
     return [entry.model_dump() for entry in self._entries]
 
-# %% ../nbs/api/dataset.ipynb 31
+# %% ../nbs/api/dataset.ipynb 29
 @patch
 def to_pandas(self: Dataset) -> "pd.DataFrame":
     """Convert dataset to pandas DataFrame."""
@@ -699,7 +698,7 @@ def to_pandas(self: Dataset) -> "pd.DataFrame":
     data = [entry.model_dump() for entry in self._entries]
     return pd.DataFrame(data)
 
-# %% ../nbs/api/dataset.ipynb 33
+# %% ../nbs/api/dataset.ipynb 31
 @patch
 def save(self: Dataset, item: BaseModelType) -> None:
     """Save changes to an item to the backend.
@@ -749,7 +748,7 @@ def _update_local_entry(self: Dataset, item: BaseModelType) -> None:
                 self._entries[i] = item
             break
 
-# %% ../nbs/api/dataset.ipynb 37
+# %% ../nbs/api/dataset.ipynb 35
 @patch
 def get(
     self: Dataset, field_value: t.Any, field_name: str = "_row_id"
@@ -784,7 +783,7 @@ def get(
 
     return None
 
-# %% ../nbs/api/dataset.ipynb 41
+# %% ../nbs/api/dataset.ipynb 39
 @patch
 def to_pandas(self: Dataset) -> "pd.DataFrame":
     """Convert dataset to pandas DataFrame.
