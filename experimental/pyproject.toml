@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8", "nbdev>=2.3.35"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name="ragas_experimental"
+description = "Experimental extensions for Ragas"
+requires-python=">=3.9"
+# List all fields that might be defined outside pyproject.toml as dynamic
+dynamic = ["version", "readme", "license", "authors", "dependencies", "optional-dependencies"]
+
+[tool.setuptools_scm]
+root = ".."  # Points to monorepo root, one directory up
+version_file = "ragas_experimental/_version.py"  # Creates a version file
+
+[dependency-groups]
+dev = [
+    "nbdev>=2.3.35",
+]
