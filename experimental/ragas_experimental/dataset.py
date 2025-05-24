@@ -569,19 +569,23 @@ class Dataset(t.Generic[BaseModelType]):
     ) -> t.Union[BaseModelType, "Dataset[BaseModelType]"]:
         """Get an entry by index or slice."""
         if isinstance(key, slice):
-            # Create a new dataset with the sliced entries
-            new_dataset = type(self)(
-                name=self.name,
-                model=self.model,
-                project_id=self.project_id,
-                dataset_id=self.dataset_id,
-                backend=self.backend_type,
-                datatable_type=self.datatable_type,
-            )
-            # Copy the backend reference
+            # Create a shallow copy of the dataset
+            new_dataset = object.__new__(type(self))
+            
+            # Copy all attributes
+            new_dataset.name = self.name
+            new_dataset.model = self.model
+            new_dataset.project_id = self.project_id
+            new_dataset.dataset_id = self.dataset_id
+            new_dataset.backend_type = self.backend_type
+            new_dataset.datatable_type = self.datatable_type
+            
+            # Share the same backend reference
             new_dataset._backend = self._backend
+            
             # Set the entries to the sliced entries
             new_dataset._entries = self._entries[key]
+            
             return new_dataset
         else:
             return self._entries[key]
