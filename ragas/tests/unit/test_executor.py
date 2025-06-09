@@ -86,3 +86,67 @@ def test_executor_timings():
     assert len(results) == n_tasks
     assert all(r == 1 for r in results)
     assert end_time - start_time < 0.2
+
+
+def test_executor_exception_handling():
+    """Test that exceptions are returned as np.nan when raise_exceptions is False."""
+    import numpy as np
+
+    async def fail_task():
+        raise ValueError("fail")
+
+    executor = Executor()
+    executor.submit(fail_task)
+    results = executor.results()
+    assert len(results) == 1
+    assert np.isnan(results[0])
+
+
+def test_executor_exception_raises():
+    """Test that exceptions are raised when raise_exceptions is True."""
+
+    async def fail_task():
+        raise ValueError("fail")
+
+    executor = Executor(raise_exceptions=True)
+    executor.submit(fail_task)
+    with pytest.raises(ValueError):
+        executor.results()
+
+
+def test_executor_empty_jobs():
+    """Test that results() returns an empty list if no jobs are submitted."""
+    executor = Executor()
+    assert executor.results() == []
+
+
+def test_executor_job_index_after_clear():
+    """Test that job indices reset after clearing jobs."""
+
+    async def echo(x):
+        return x
+
+    executor = Executor()
+    executor.submit(echo, 1)
+    executor.clear_jobs()
+    executor.submit(echo, 42)
+    results = executor.results()
+    assert results == [42]
+
+
+def test_executor_batch_size_edge_cases():
+    """Test batch_size=1 and batch_size > number of jobs."""
+
+    async def echo(x):
+        return x
+
+    # batch_size=1
+    executor = Executor(batch_size=1)
+    for i in range(3):
+        executor.submit(echo, i)
+    assert executor.results() == [0, 1, 2]
+    # batch_size > jobs
+    executor = Executor(batch_size=10)
+    for i in range(3):
+        executor.submit(echo, i)
+    assert executor.results() == [0, 1, 2]
