@@ -50,8 +50,9 @@ class Executor:
     raise_exceptions: bool = False
     batch_size: t.Optional[int] = None
     run_config: t.Optional[RunConfig] = field(default=None, repr=False)
-    _nest_asyncio_applied: bool = field(default=False, repr=False)
     pbar: t.Optional[tqdm] = None
+    _jobs_processed: int = field(default=0, repr=False)
+    _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
     _cancel_event: threading.Event = field(default_factory=threading.Event, repr=False)
 
     def cancel(self) -> None:
@@ -65,9 +66,7 @@ class Executor:
     def wrap_callable_with_index(
         self, callable: t.Callable, counter: int
     ) -> t.Callable:
-        async def wrapped_callable_async(
-            *args, **kwargs
-        ) -> t.Tuple[int, t.Callable | float]:
+        async def wrapped_callable_async(*args, **kwargs) -> t.Tuple[int, t.Any]:
             try:
                 result = await callable(*args, **kwargs)
                 return counter, result
@@ -98,31 +97,53 @@ class Executor:
         """
         Submit a job to be executed, wrapping the callable with error handling and indexing to keep track of the job index.
         """
-        callable_with_index = self.wrap_callable_with_index(callable, len(self.jobs))
-        self.jobs.append((callable_with_index, args, kwargs, name))
+        # Use _jobs_processed for consistent indexing across multiple runs
+        with self._lock:
+            callable_with_index = self.wrap_callable_with_index(
+                callable, self._jobs_processed
+            )
+            self.jobs.append((callable_with_index, args, kwargs, name))
+            self._jobs_processed += 1
+
+    def clear_jobs(self) -> None:
+        """Clear all submitted jobs and reset counter."""
+        with self._lock:
+            self.jobs.clear()
+            self._jobs_processed = 0
 
     async def _process_jobs(self) -> t.List[t.Any]:
         """Execute jobs with optional progress tracking."""
-        max_workers = (self.run_config or RunConfig()).max_workers
+        with self._lock:
+            if not self.jobs:
+                return []
+
+            # Make a copy of jobs to process and clear the original list to prevent re-execution
+            jobs_to_process = self.jobs.copy()
+            self.jobs.clear()
+
+        max_workers = (
+            self.run_config.max_workers
+            if self.run_config and hasattr(self.run_config, "max_workers")
+            else -1
+        )
         results = []
         pbm = ProgressBarManager(self.desc, self.show_progress)
 
         if not self.batch_size:
             # Use external progress bar if provided, otherwise create one
             if self.pbar is None:
-                with pbm.create_single_bar(len(self.jobs)) as internal_pbar:
+                with pbm.create_single_bar(len(jobs_to_process)) as internal_pbar:
                     await self._process_coroutines(
-                        self.jobs, internal_pbar, results, max_workers
+                        jobs_to_process, internal_pbar, results, max_workers
                     )
             else:
                 await self._process_coroutines(
-                    self.jobs, self.pbar, results, max_workers
+                    jobs_to_process, self.pbar, results, max_workers
                 )
-
             return results
 
         # Process jobs in batches with nested progress bars
-        await self._process_batched_jobs(self.jobs, pbm, max_workers, results)
+        await self._process_batched_jobs(jobs_to_process, pbm, max_workers, results)
         return results
 
     async def _process_batched_jobs(
