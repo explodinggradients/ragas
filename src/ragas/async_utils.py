@@ -9,6 +9,22 @@ from tqdm.auto import tqdm
 logger = logging.getLogger(__name__)
 
 
+def apply_nest_asyncio():
+    NEST_ASYNCIO_APPLIED: bool = False
+    if is_event_loop_running():
+        # an event loop is running so call nested_asyncio to fix this
+        try:
+            import nest_asyncio
+        except ImportError:
+            raise ImportError(
+                "It seems like your running this in a jupyter-like environment. Please install nest_asyncio with `pip install nest_asyncio` to make it work."
+            )
+
+        if not NEST_ASYNCIO_APPLIED:
+            nest_asyncio.apply()
+            NEST_ASYNCIO_APPLIED = True
+
+
 def is_event_loop_running() -> bool:
     """
     Check if an event loop is currently running.
