@@ -6,15 +6,12 @@ import threading
 import typing as t
 from dataclasses import dataclass, field
 
-import nest_asyncio
 import numpy as np
 from tqdm.auto import tqdm
 
-from ragas.async_utils import as_completed, process_futures
+from ragas.async_utils import run
 from ragas.run_config import RunConfig
-from ragas.utils import batched
-
-nest_asyncio.apply()
+from ragas.utils import ProgressBarManager, batched
 
 logger = logging.getLogger(__name__)
 
@@ -108,15 +105,12 @@ class Executor:
         """Execute jobs with optional progress tracking."""
         max_workers = (self.run_config or RunConfig()).max_workers
         results = []
+        pbm = ProgressBarManager(self.desc, self.show_progress)
 
         if not self.batch_size:
             # Use external progress bar if provided, otherwise create one
             if self.pbar is None:
-                with tqdm(
-                    total=len(self.jobs),
-                    desc=self.desc,
-                    disable=not self.show_progress,
-                ) as internal_pbar:
+                with pbm.create_single_bar(len(self.jobs)) as internal_pbar:
                     await self._process_coroutines(
                         self.jobs, internal_pbar, results, max_workers
                     )
@@ -127,33 +121,27 @@ class Executor:
 
             return results
 
-        # With batching, show nested progress bars
-        batches = batched(self.jobs, self.batch_size)  # generator of job tuples
-        n_batches = (len(self.jobs) + self.batch_size - 1) // self.batch_size
+        # Process jobs in batches with nested progress bars
+        await self._process_batched_jobs(self.jobs, pbm, max_workers, results)
+        return results
 
-        with (
-            tqdm(
-                total=len(self.jobs),
-                desc=self.desc,
-                disable=not self.show_progress,
-                position=1,
-                leave=True,
-            ) as overall_pbar,
-            tqdm(
-                total=min(self.batch_size, len(self.jobs)),
-                desc=f"Batch 1/{n_batches}",
-                disable=not self.show_progress,
-                position=0,
-                leave=False,
-            ) as batch_pbar,
-        ):
+    async def _process_batched_jobs(
+        self, jobs_to_process, progress_manager, max_workers, results
+    ):
+        """Process jobs in batches with nested progress tracking."""
+        batch_size = self.batch_size or len(jobs_to_process)
+        batches = batched(jobs_to_process, batch_size)
+        overall_pbar, batch_pbar, n_batches = progress_manager.create_nested_bars(
+            len(jobs_to_process), batch_size
+        )
+
+        with overall_pbar, batch_pbar:
             for i, batch in enumerate(batches, 1):
                 # Check for cancellation before processing each batch
                 if self._cancel_event.is_set():
                     break
 
-                batch_pbar.reset(total=len(batch))
-                batch_pbar.set_description(f"Batch {i}/{n_batches}")
+                progress_manager.update_batch_bar(batch_pbar, i, n_batches, len(batch))
 
                 # Create coroutines per batch
                 coroutines = [
@@ -223,27 +211,28 @@ class Executor:
             except asyncio.CancelledError:
                 continue
 
+    async def aresults(self) -> t.List[t.Any]:
+        """
+        Execute all submitted jobs and return their results asynchronously.
+        The results are returned in the order of job submission.
+
+        This is the async entry point for executing async jobs when already in an async context.
+        """
+        results = await self._process_jobs()
+        sorted_results = sorted(results, key=lambda x: x[0])
+        return [r[1] for r in sorted_results]
+
     def results(self) -> t.List[t.Any]:
         """
         Execute all submitted jobs and return their results. The results are returned in the order of job submission.
-        """
-        if is_event_loop_running():
-            # an event loop is running so call nested_asyncio to fix this
-            try:
-                import nest_asyncio
-            except ImportError as e:
-                raise ImportError(
-                    "It seems like your running this in a jupyter-like environment. "
-                    "Please install nest_asyncio with `pip install nest_asyncio` to make it work."
-                ) from e
-            else:
-                if not self._nest_asyncio_applied:
-                    nest_asyncio.apply()
-                    self._nest_asyncio_applied = True
 
-        results = asyncio.run(self._process_jobs())
-        sorted_results = sorted(results, key=lambda x: x[0])
-        return [r[1] for r in sorted_results]
+        This is the main sync entry point for executing async jobs.
+        """
+
+        async def _async_wrapper():
+            return await self.aresults()
+
+        return run(_async_wrapper)
 
 
 def run_async_batch(
