@@ -21,7 +21,7 @@ def is_event_loop_running() -> bool:
         return loop.is_running()
 
 
-async def as_completed(
+def as_completed(
     coroutines: t.Sequence[t.Coroutine], max_workers: int = -1
 ) -> t.Iterator[asyncio.Future]:
     """
@@ -43,6 +43,59 @@ async def as_completed(
     return asyncio.as_completed(tasks)
 
 
+async def process_futures(
+    futures: t.Iterator[asyncio.Future], pbar: t.Optional[tqdm] = None
+) -> t.AsyncGenerator[t.Any, None]:
+    """
+    Process futures with optional progress tracking.
+
+    Args:
+        futures: Iterator of asyncio futures to process (e.g., from asyncio.as_completed)
+        pbar: Optional progress bar to update
+
+    Yields:
+        Results from completed futures as they finish
+    """
+    # Process completed futures as they finish
+    for future in futures:
+        try:
+            result = await future
+        except Exception as e:
+            result = e
+
+        if pbar:
+            pbar.update(1)
+        yield result
+
+
+def run(
+    async_func: t.Union[
+        t.Callable[[], t.Coroutine[t.Any, t.Any, t.Any]],
+        t.Coroutine[t.Any, t.Any, t.Any],
+    ],
+) -> t.Any:
+    """Run an async function in the current event loop or a new one if not running."""
+    try:
+        # Check if we're already in a running event loop
+        loop = asyncio.get_running_loop()
+        # If we get here, we're in a running loop - need nest_asyncio
+        try:
+            import nest_asyncio
+        except ImportError as e:
+            raise ImportError(
+                "It seems like you're running this in a jupyter-like environment. "
+                "Please install nest_asyncio with `pip install nest_asyncio` to make it work."
+            ) from e
+
+        nest_asyncio.apply()
+        # Create the coroutine if it's a callable, otherwise use directly
+        coro = async_func() if callable(async_func) else async_func
+        return loop.run_until_complete(coro)
+
+    except RuntimeError:
+        # No running event loop, so we can use asyncio.run
+        coro = async_func() if callable(async_func) else async_func
+        return asyncio.run(coro)
 
 
 def run_async_tasks(
