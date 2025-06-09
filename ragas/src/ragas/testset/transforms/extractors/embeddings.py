@@ -39,5 +39,5 @@ class EmbeddingExtractor(Extractor):
             raise ValueError(
                 f"node.property('{self.embed_property_name}') must be a string, found '{type(text)}'"
             )
-        embedding = self.embedding_model.embed_query(text)
+        embedding = await self.embedding_model.embed_text(text)
         return self.property_name, embedding
