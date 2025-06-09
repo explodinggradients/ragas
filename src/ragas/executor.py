@@ -52,7 +52,6 @@ class Executor:
     run_config: t.Optional[RunConfig] = field(default=None, repr=False)
     pbar: t.Optional[tqdm] = None
     _jobs_processed: int = field(default=0, repr=False)
-    _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
     _cancel_event: threading.Event = field(default_factory=threading.Event, repr=False)
 
     def cancel(self) -> None:
@@ -98,28 +97,25 @@ class Executor:
         Submit a job to be executed, wrapping the callable with error handling and indexing to keep track of the job index.
         """
         # Use _jobs_processed for consistent indexing across multiple runs
-        with self._lock:
-            callable_with_index = self.wrap_callable_with_index(
-                callable, self._jobs_processed
-            )
-            self.jobs.append((callable_with_index, args, kwargs, name))
-            self._jobs_processed += 1
+        callable_with_index = self.wrap_callable_with_index(
+            callable, self._jobs_processed
+        )
+        self.jobs.append((callable_with_index, args, kwargs, name))
+        self._jobs_processed += 1
 
     def clear_jobs(self) -> None:
         """Clear all submitted jobs and reset counter."""
-        with self._lock:
-            self.jobs.clear()
-            self._jobs_processed = 0
+        self.jobs.clear()
+        self._jobs_processed = 0
 
     async def _process_jobs(self) -> t.List[t.Any]:
         """Execute jobs with optional progress tracking."""
-        with self._lock:
-            if not self.jobs:
-                return []
+        if not self.jobs:
+            return []
 
-            # Make a copy of jobs to process and clear the original list to prevent re-execution
-            jobs_to_process = self.jobs.copy()
-            self.jobs.clear()
+        # Make a copy of jobs to process and clear the original list to prevent re-execution
+        jobs_to_process = self.jobs.copy()
+        self.jobs.clear()
 
         max_workers = (
             self.run_config.max_workers
