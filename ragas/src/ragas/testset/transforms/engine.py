@@ -49,7 +49,7 @@ async def run_coroutines(
     coroutines: t.Sequence[t.Coroutine], desc: str, max_workers: int
 ):
     """
-    Run a list of coroutines in parallel.
+    Run a sequence of coroutines in parallel.
     """
     for future in tqdm(
         as_completed(coroutines, max_workers=max_workers),
@@ -86,7 +86,7 @@ def apply_transforms(
 
     max_workers = getattr(run_config, "max_workers", -1)
 
-    if isinstance(transforms, list):
+    if isinstance(transforms, t.Sequence):
         for transform in transforms:
             apply_transforms(kg, transform, run_config, callbacks)
     elif isinstance(transforms, Parallel):
@@ -106,14 +106,14 @@ def apply_transforms(
         )
     else:
         raise ValueError(
-            f"Invalid transforms type: {type(transforms)}. Expects a list of BaseGraphTransformations or a Parallel instance."
+            f"Invalid transforms type: {type(transforms)}. Expects a sequence of BaseGraphTransformations or a Parallel instance."
         )
     logger.debug("All transformations applied successfully.")
 
 
 def rollback_transforms(kg: KnowledgeGraph, transforms: Transforms):
     """
-    Rollback a list of transformations from a knowledge graph.
+    Rollback a sequence of transformations from a knowledge graph.
 
     Note
     ----
