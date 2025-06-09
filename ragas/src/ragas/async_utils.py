@@ -114,67 +114,36 @@ def run_async_tasks(
         tasks: List of coroutines to execute
         batch_size: Optional size for batching tasks. If None, runs all concurrently
         show_progress: Whether to display progress bars
+        max_workers: Maximum number of concurrent tasks (-1 for unlimited)
     """
-    from ragas.utils import batched
+    from ragas.utils import ProgressBarManager, batched
 
     async def _run():
         total_tasks = len(tasks)
         results = []
+        pbm = ProgressBarManager(progress_bar_desc, show_progress)
 
-        # If no batching, run all tasks concurrently with single progress bar
         if not batch_size:
-            with tqdm(
-                total=total_tasks,
-                desc=progress_bar_desc,
-                disable=not show_progress,
-            ) as pbar:
-                for future in asyncio.as_completed(tasks):
-                    result = await future
+            with pbm.create_single_bar(total_tasks) as pbar:
+                async for result in process_futures(
+                    as_completed(tasks, max_workers), pbar
+                ):
                     results.append(result)
-                    pbar.update(1)
-            return results
-
-        # With batching, show nested progress bars
-        batches = batched(tasks, batch_size)  # generator
-        n_batches = (total_tasks + batch_size - 1) // batch_size
-        with (
-            tqdm(
-                total=total_tasks,
-                desc=progress_bar_desc,
-                disable=not show_progress,
-                position=0,
-                leave=True,
-            ) as overall_pbar,
-            tqdm(
-                total=batch_size,
-                desc=f"Batch 1/{n_batches}",
-                disable=not show_progress,
-                position=1,
-                leave=False,
-            ) as batch_pbar,
-        ):
-            for i, batch in enumerate(batches, 1):
-                batch_pbar.reset(total=len(batch))
-                batch_pbar.set_description(f"Batch {i}/{n_batches}")
-                for future in asyncio.as_completed(batch):
-                    result = await future
-                    results.append(result)
-                    overall_pbar.update(1)
-                    batch_pbar.update(1)
+        else:
+            total_tasks = len(tasks)
+            batches = batched(tasks, batch_size)
+            overall_pbar, batch_pbar, n_batches = pbm.create_nested_bars(
+                total_tasks, batch_size
+            )
+            with overall_pbar, batch_pbar:
+                for i, batch in enumerate(batches, 1):
+                    pbm.update_batch_bar(batch_pbar, i, n_batches, len(batch))
+                    async for result in process_futures(
+                        as_completed(batch, max_workers), batch_pbar
+                    ):
+                        results.append(result)
+                    overall_pbar.update(len(batch))
 
         return results
 
-    if is_event_loop_running():
-        # an event loop is running so call nested_asyncio to fix this
-        try:
-            import nest_asyncio
-        except ImportError:
-            raise ImportError(
-                "It seems like your running this in a jupyter-like environment. "
-                "Please install nest_asyncio with `pip install nest_asyncio` to make it work."
-            )
-        else:
-            nest_asyncio.apply()
-
-    results = asyncio.run(_run())
-    return results
+    return run(_run)
