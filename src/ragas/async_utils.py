@@ -1,20 +1,57 @@
 """Async utils."""
 
 import asyncio
-from typing import Any, Coroutine, List, Optional
+import logging
+import typing as t
 
 from tqdm.auto import tqdm
 
-from ragas.executor import is_event_loop_running
-from ragas.utils import batched
+logger = logging.getLogger(__name__)
+
+
+def is_event_loop_running() -> bool:
+    """
+    Check if an event loop is currently running.
+    """
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return False
+    else:
+        return loop.is_running()
+
+
+async def as_completed(
+    coroutines: t.Sequence[t.Coroutine], max_workers: int = -1
+) -> t.Iterator[asyncio.Future]:
+    """
+    Wrap coroutines with a semaphore if max_workers is specified.
+
+    Returns an iterator of futures that completes as tasks finish.
+    """
+    if max_workers == -1:
+        tasks = [asyncio.create_task(coro) for coro in coroutines]
+    else:
+        semaphore = asyncio.Semaphore(max_workers)
+
+        async def sema_coro(coro):
+            async with semaphore:
+                return await coro
+
+        tasks = [asyncio.create_task(sema_coro(coro)) for coro in coroutines]
+
+    return asyncio.as_completed(tasks)
+
+
 
 
 def run_async_tasks(
-    tasks: List[Coroutine],
-    batch_size: Optional[int] = None,
+    tasks: t.List[t.Coroutine],
+    batch_size: t.Optional[int] = None,
     show_progress: bool = True,
     progress_bar_desc: str = "Running async tasks",
-) -> List[Any]:
+    max_workers: int = -1,
+) -> t.List[t.Any]:
     """
     Execute async tasks with optional batching and progress tracking.
 
@@ -25,6 +62,7 @@ def run_async_tasks(
         batch_size: Optional size for batching tasks. If None, runs all concurrently
         show_progress: Whether to display progress bars
     """
+    from ragas.utils import batched
 
     async def _run():
         total_tasks = len(tasks)

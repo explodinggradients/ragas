@@ -1,6 +1,29 @@
+import asyncio
+
 import pytest
 
-from ragas.async_utils import run_async_tasks
+from ragas.async_utils import as_completed, is_event_loop_running, run_async_tasks
+
+
+def test_is_event_loop_running_in_script():
+    assert is_event_loop_running() is False
+
+
+def test_as_completed_in_script():
+    async def echo_order(index: int):
+        await asyncio.sleep(index)
+        return index
+
+    async def _run():
+        results = []
+        for t in await as_completed([echo_order(1), echo_order(2), echo_order(3)], 3):
+            r = await t
+            results.append(r)
+        return results
+
+    results = asyncio.run(_run())
+
+    assert results == [1, 2, 3]
 
 
 @pytest.fixture

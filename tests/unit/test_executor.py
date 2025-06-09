@@ -66,31 +66,6 @@ async def test_executor_with_running_loop(batch_size):
     assert results == list(range(1, 4))
 
 
-def test_is_event_loop_running_in_script():
-    from ragas.executor import is_event_loop_running
-
-    assert is_event_loop_running() is False
-
-
-def test_as_completed_in_script():
-    from ragas.executor import as_completed
-
-    async def echo_order(index: int):
-        await asyncio.sleep(index)
-        return index
-
-    async def _run():
-        results = []
-        for t in await as_completed([echo_order(1), echo_order(2), echo_order(3)], 3):
-            r = await t
-            results.append(r)
-        return results
-
-    results = asyncio.run(_run())
-
-    assert results == [1, 2, 3]
-
-
 def test_executor_timings():
     # if we submit n tasks that take 1 second each,
     # the total time taken should be close to 1 second

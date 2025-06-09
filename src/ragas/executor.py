@@ -10,46 +10,13 @@ import nest_asyncio
 import numpy as np
 from tqdm.auto import tqdm
 
+from ragas.async_utils import as_completed, process_futures
 from ragas.run_config import RunConfig
 from ragas.utils import batched
 
 nest_asyncio.apply()
 
 logger = logging.getLogger(__name__)
-
-
-def is_event_loop_running() -> bool:
-    """
-    Check if an event loop is currently running.
-    """
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        return False
-    else:
-        return loop.is_running()
-
-
-async def as_completed(
-    coroutines: t.List[t.Coroutine], max_workers: int
-) -> t.Iterator[asyncio.Future]:
-    """
-    Wrap coroutines with a semaphore if max_workers is specified.
-
-    Returns an iterator of futures that completes as tasks finish.
-    """
-    if max_workers == -1:
-        tasks = [asyncio.create_task(coro) for coro in coroutines]
-
-    else:
-        semaphore = asyncio.Semaphore(max_workers)
-
-        async def sema_coro(coro):
-            async with semaphore:
-                return await coro
-
-        tasks = [asyncio.create_task(sema_coro(coro)) for coro in coroutines]
-    return asyncio.as_completed(tasks)
 
 
 @dataclass
