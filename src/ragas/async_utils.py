@@ -115,7 +115,7 @@ def run(
 
 
 def run_async_tasks(
-    tasks: t.List[t.Coroutine],
+    tasks: t.Sequence[t.Coroutine],
     batch_size: t.Optional[int] = None,
     show_progress: bool = True,
     progress_bar_desc: str = "Running async tasks",
@@ -127,7 +127,7 @@ def run_async_tasks(
     NOTE: Order of results is not guaranteed!
 
     Args:
-        tasks: List of coroutines to execute
+        tasks: Sequence of coroutines to execute
         batch_size: Optional size for batching tasks. If None, runs all concurrently
         show_progress: Whether to display progress bars
         max_workers: Maximum number of concurrent tasks (-1 for unlimited)
