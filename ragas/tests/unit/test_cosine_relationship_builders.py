@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import random
 from uuid import UUID
 
@@ -216,89 +217,207 @@ def test__find_similar_embedding_pairs(n_test_embeddings, threshold, block_size)
                 break
 
 
-@pytest.mark.asyncio
-async def test_cosine_similarity_builder_basic(simple_kg):
-    # Act
-    builder = CosineSimilarityBuilder(property_name="embedding", threshold=0.5)
-    relationships = await builder.transform(simple_kg)
-    # Assert
-    assert all(isinstance(r, Relationship) for r in relationships)
-    assert all(r.type == "cosine_similarity" for r in relationships)
-    # 2 <-> 3 (~0.6520 similarity)
-    assert any(
-        str(r.source.id) == "f353e5c2-e432-4d1e-84a8-d750c93d4edf"
-        and str(r.target.id) == "437c8c08-cef6-4ebf-a35f-93d6168b61a4"
-        for r in relationships
-    )
-    # 1 <-> 3 (~0.8258 similarity)
-    assert any(
-        str(r.source.id) == "4da47a69-539c-49a2-b289-01780989d82c"
-        and str(r.target.id) == "437c8c08-cef6-4ebf-a35f-93d6168b61a4"
-        for r in relationships
-    )
+class TestCosineSimilarityBuilder:
+    @pytest.mark.asyncio
+    async def test_no_self_similarity_relationships(self, simple_kg):
+        builder = CosineSimilarityBuilder(property_name="embedding", threshold=0.1)
+        relationships = await builder.transform(copy.deepcopy(simple_kg))
+        for r in relationships:
+            assert r.source.id != r.target.id, (
+                "Self-relationships should not be created"
+            )
+
+    @pytest.mark.asyncio
+    async def test_no_duplicate_relationships(self, simple_kg):
+        builder = CosineSimilarityBuilder(property_name="embedding", threshold=0.1)
+        relationships = await builder.transform(copy.deepcopy(simple_kg))
+        seen = set()
+        for r in relationships:
+            pair = tuple(sorted([r.source.id, r.target.id]))
+            assert pair not in seen, "Duplicate relationships found"
+            seen.add(pair)
+
+    @pytest.mark.asyncio
+    async def test_similarity_at_threshold(self):
+        node1 = Node(type=NodeType.CHUNK, properties={"embedding": [1, 0, 0]})
+        node2 = Node(type=NodeType.CHUNK, properties={"embedding": [1, 0, 0]})
+        kg = KnowledgeGraph(nodes=[node1, node2])
+        builder = CosineSimilarityBuilder(property_name="embedding", threshold=1.0)
+        relationships = await builder.transform(kg)
+        assert len(relationships) == 1, "Should create relationship at threshold"
+
+    @pytest.mark.asyncio
+    async def test_all_below_threshold(self):
+        node1 = Node(type=NodeType.CHUNK, properties={"embedding": [1, 0, 0]})
+        node2 = Node(type=NodeType.CHUNK, properties={"embedding": [-1, 0, 0]})
+        kg = KnowledgeGraph(nodes=[node1, node2])
+        builder = CosineSimilarityBuilder(property_name="embedding", threshold=0.5)
+        relationships = await builder.transform(kg)
+        assert len(relationships) == 0, (
+            "No relationships should be created below threshold"
+        )
+
+    @pytest.mark.asyncio
+    async def test_all_above_threshold(self):
+        node1 = Node(type=NodeType.CHUNK, properties={"embedding": [1, 0, 0]})
+        node2 = Node(type=NodeType.CHUNK, properties={"embedding": [1, 0, 0]})
+        node3 = Node(type=NodeType.CHUNK, properties={"embedding": [1, 0, 0]})
+        kg = KnowledgeGraph(nodes=[node1, node2, node3])
+        builder = CosineSimilarityBuilder(property_name="embedding", threshold=0.9)
+        relationships = await builder.transform(kg)
+        assert len(relationships) == 3
+
+    @pytest.mark.asyncio
+    async def test_malformed_embedding_raises(self):
+        node1 = Node(type=NodeType.CHUNK, properties={"embedding": [1, 0, 0]})
+        node2 = Node(type=NodeType.CHUNK, properties={"embedding": ["a", 0, 0]})
+        kg = KnowledgeGraph(nodes=[node1, node2])
+        builder = CosineSimilarityBuilder(property_name="embedding", threshold=0.5)
+        with pytest.raises(Exception):
+            await builder.transform(kg)
+
+    @pytest.mark.asyncio
+    async def test_cosine_similarity_builder_empty_graph(self):
+        kg = KnowledgeGraph(nodes=[])
+        builder = CosineSimilarityBuilder(property_name="embedding")
+        with pytest.raises(ValueError, match="No nodes have a valid embedding"):
+            await builder.transform(kg)
+
+    @pytest.mark.asyncio
+    async def test_cosine_similarity_builder_basic(self, simple_kg):
+        # Act
+        builder = CosineSimilarityBuilder(property_name="embedding", threshold=0.5)
+        relationships = await builder.transform(simple_kg)
+        # Assert
+        assert all(isinstance(r, Relationship) for r in relationships)
+        assert all(r.type == "cosine_similarity" for r in relationships)
+        # 2 <-> 3 (~0.6520 similarity)
+        assert any(
+            str(r.source.id) == "f353e5c2-e432-4d1e-84a8-d750c93d4edf"
+            and str(r.target.id) == "437c8c08-cef6-4ebf-a35f-93d6168b61a4"
+            for r in relationships
+        )
+        # 1 <-> 3 (~0.8258 similarity)
+        assert any(
+            str(r.source.id) == "4da47a69-539c-49a2-b289-01780989d82c"
+            and str(r.target.id) == "437c8c08-cef6-4ebf-a35f-93d6168b61a4"
+            for r in relationships
+        )
+
+    @pytest.mark.asyncio
+    async def test_cosine_similarity_builder_no_embeddings(self):
+        kg = KnowledgeGraph(nodes=[Node(type=NodeType.DOCUMENT, properties={})])
+        builder = CosineSimilarityBuilder(property_name="embedding")
+        with pytest.raises(ValueError, match="has no embedding"):
+            await builder.transform(kg)
+
+    @pytest.mark.asyncio
+    async def test_cosine_similarity_builder_shape_validation(self):
+        kg = KnowledgeGraph(
+            nodes=[
+                Node(type=NodeType.DOCUMENT, properties={"embedding": [1.0, 0.0]}),
+                Node(
+                    type=NodeType.DOCUMENT,
+                    properties={"embedding": [0.0, 1.0, 2.0]},
+                ),
+            ]
+        )
+        builder = CosineSimilarityBuilder(property_name="embedding")
+        with pytest.raises(
+            ValueError, match="Embedding at index 1 has length 3, expected 2"
+        ):
+            await builder.transform(kg)
+
+    @pytest.mark.asyncio
+    async def test_apply_transforms_cosine_similarity_builder(self, simple_kg):
+        from ragas.run_config import RunConfig
+        from ragas.testset.transforms.engine import apply_transforms
+
+        # CosineSimilarityBuilder should add relationships to the graph
+        builder = CosineSimilarityBuilder(property_name="embedding", threshold=0.5)
+        kg = simple_kg
+        # Should mutate kg in-place
+        apply_transforms(kg, builder, run_config=RunConfig(max_workers=2))
+        # Check that relationships were added
+        assert any(r.type == "cosine_similarity" for r in kg.relationships), (
+            "No cosine_similarity relationships found after apply_transforms"
+        )
+        # Check that expected relationship exists
+        assert any(
+            str(r.source.id) == "f353e5c2-e432-4d1e-84a8-d750c93d4edf"
+            and str(r.target.id) == "437c8c08-cef6-4ebf-a35f-93d6168b61a4"
+            for r in kg.relationships
+        )
+        # 1 <-> 3 (~0.8258 similarity)
+        assert any(
+            str(r.source.id) == "4da47a69-539c-49a2-b289-01780989d82c"
+            and str(r.target.id) == "437c8c08-cef6-4ebf-a35f-93d6168b61a4"
+            for r in kg.relationships
+        )
+
+
+class TestSummaryCosineSimilarityBuilder:
+    @pytest.mark.asyncio
+    async def test_summary_cosine_similarity_builder_basic(self, simple_kg):
+        builder = SummaryCosineSimilarityBuilder(
+            property_name="summary_embedding", threshold=0.5
+        )
+        relationships = await builder.transform(simple_kg)
+        assert all(isinstance(r, Relationship) for r in relationships)
+        assert all(r.type == "summary_cosine_similarity" for r in relationships)
+        assert any(
+            str(r.source.id) == "f353e5c2-e432-4d1e-84a8-d750c93d4edf"
+            and str(r.target.id) == "437c8c08-cef6-4ebf-a35f-93d6168b61a4"
+            for r in relationships
+        )
+        assert any(
+            str(r.source.id) == "4da47a69-539c-49a2-b289-01780989d82c"
+            and str(r.target.id) == "437c8c08-cef6-4ebf-a35f-93d6168b61a4"
+            for r in relationships
+        )
+
+    @pytest.mark.asyncio
+    async def test_summary_cosine_similarity_only_document_nodes(self):
+        node1 = Node(
+            type=NodeType.DOCUMENT, properties={"summary_embedding": [1, 0, 0]}
+        )
+        node2 = Node(type=NodeType.CHUNK, properties={"summary_embedding": [1, 0, 0]})
+        kg = KnowledgeGraph(nodes=[node1, node2])
+        builder = SummaryCosineSimilarityBuilder(
+            property_name="summary_embedding", threshold=0.5
+        )
+        relationships = await builder.transform(kg)
+        assert len(relationships) == 0
+
+    @pytest.mark.asyncio
+    async def test_summary_cosine_similarity_builder_filter_and_error(self):
+        kg = KnowledgeGraph(nodes=[Node(type=NodeType.DOCUMENT, properties={})])
+        builder = SummaryCosineSimilarityBuilder(property_name="summary_embedding")
+        with pytest.raises(ValueError, match="has no summary_embedding"):
+            await builder.transform(kg)
 
 
 @pytest.mark.asyncio
-async def test_summary_cosine_similarity_builder_basic(simple_kg):
-    # Act
+async def test_apply_transforms_summary_cosine_similarity_builder(simple_kg):
+    from ragas.run_config import RunConfig
+    from ragas.testset.transforms.engine import apply_transforms
+
     builder = SummaryCosineSimilarityBuilder(
         property_name="summary_embedding", threshold=0.5
     )
-    relationships = await builder.transform(simple_kg)
-    # Assert
-    assert all(isinstance(r, Relationship) for r in relationships)
-    assert all(r.type == "summary_cosine_similarity" for r in relationships)
-    # 2 <-> 3 (~0.6520 similarity)
+    kg = simple_kg
+    apply_transforms(kg, builder, run_config=RunConfig(max_workers=2))
+    assert any(r.type == "summary_cosine_similarity" for r in kg.relationships), (
+        "No summary_cosine_similarity relationships found after apply_transforms"
+    )
     assert any(
         str(r.source.id) == "f353e5c2-e432-4d1e-84a8-d750c93d4edf"
         and str(r.target.id) == "437c8c08-cef6-4ebf-a35f-93d6168b61a4"
-        for r in relationships
+        for r in kg.relationships
     )
     # 1 <-> 3 (~0.8258 similarity)
     assert any(
         str(r.source.id) == "4da47a69-539c-49a2-b289-01780989d82c"
         and str(r.target.id) == "437c8c08-cef6-4ebf-a35f-93d6168b61a4"
-        for r in relationships
+        for r in kg.relationships
     )
-
-
-@pytest.mark.asyncio
-async def test_cosine_similarity_builder_no_embeddings():
-    kg = KnowledgeGraph(nodes=[Node(type=NodeType.DOCUMENT, properties={})])
-    builder = CosineSimilarityBuilder(property_name="embedding")
-    with pytest.raises(ValueError, match="has no embedding"):
-        await builder.transform(kg)
-
-
-@pytest.mark.asyncio
-async def test_summary_cosine_similarity_builder_filter_and_error():
-    kg = KnowledgeGraph(nodes=[Node(type=NodeType.DOCUMENT, properties={})])
-    builder = SummaryCosineSimilarityBuilder(property_name="summary_embedding")
-    with pytest.raises(ValueError, match="has no summary_embedding"):
-        await builder.transform(kg)
-
-
-@pytest.mark.asyncio
-async def test_cosine_similarity_builder_shape_validation():
-    kg = KnowledgeGraph(
-        nodes=[
-            Node(type=NodeType.DOCUMENT, properties={"embedding": [1.0, 0.0]}),
-            Node(
-                type=NodeType.DOCUMENT,
-                properties={"embedding": [0.0, 1.0, 2.0]},
-            ),
-        ]
-    )
-    builder = CosineSimilarityBuilder(property_name="embedding")
-    with pytest.raises(
-        ValueError, match="Embedding at index 1 has length 3, expected 2"
-    ):
-        await builder.transform(kg)
-
-
-@pytest.mark.asyncio
-async def test_cosine_similarity_builder_empty_graph():
-    kg = KnowledgeGraph(nodes=[])
-    builder = CosineSimilarityBuilder(property_name="embedding")
-    with pytest.raises(ValueError, match="No nodes have a valid embedding"):
-        await builder.transform(kg)
