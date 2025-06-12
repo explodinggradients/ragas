@@ -265,7 +265,7 @@ class MetricWithLLM(Metric, PromptMixin):
             loss_fun = instruction_config.loss
 
         # Optimize the prompts
-        optimizer.metric = t.cast(MetricWithLLM, self)
+        optimizer.metric = self
         optimizer_config = instruction_config.optimizer_config or {}
         optimized_prompts = optimizer.optimize(
             dataset[self.name],

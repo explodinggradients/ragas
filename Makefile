@@ -37,7 +37,7 @@ lint-all: lint lint-experimental ## Lint all code in the monorepo
 
 type: ## Running type checker for ragas
 	@echo "(pyright) Typechecking ragas codebase..."
-	PYRIGHT_PYTHON_FORCE_VERSION=latest pyright ragas/src/ragas
+	cd ragas && PYRIGHT_PYTHON_FORCE_VERSION=latest pyright src
 
 type-experimental: ## Running type checker for experimental
 	@echo "(pyright) Typechecking experimental codebase..."
