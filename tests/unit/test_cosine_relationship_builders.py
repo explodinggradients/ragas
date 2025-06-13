@@ -14,8 +14,12 @@ from ragas.testset.transforms.relationship_builders.cosine import (
 
 
 def generate_test_vectors(
-    n=16, d=32, min_similarity=0.5, similar_fraction=0.3, seed=None
-):
+    n: int = 16,
+    d: int = 32,
+    min_similarity: float = 0.5,
+    similar_fraction: float = 0.3,
+    seed: int | None = None,
+) -> np.ndarray:
     """
     Generate `n` unit vectors of dimension `d`, where at least `similar_fraction` of them
     are similar to each other (cosine similarity > `min_similarity`), and the result is shuffled.
@@ -69,7 +73,8 @@ def generate_test_vectors(
     return np.stack(all_vectors)
 
 
-def cosine_similarity(embeddings: np.ndarray):
+def cosine_similarity_matrix(embeddings: np.ndarray):
+    """Calculate cosine similarity matrix for a set of embeddings."""
     from scipy.spatial.distance import cdist
 
     similarity = 1 - cdist(embeddings, embeddings, metric="cosine")
@@ -80,8 +85,9 @@ def cosine_similarity(embeddings: np.ndarray):
 
 
 def cosine_similarity_pair(embeddings: np.ndarray, threshold: float):
+    """Find pairs of embeddings with cosine similarity >= threshold."""
     # Find pairs with similarity >= threshold
-    similarity_matrix = cosine_similarity(embeddings)
+    similarity_matrix = cosine_similarity_matrix(embeddings)
     similar_pairs = np.argwhere(similarity_matrix >= threshold)
 
     # Filter out self-comparisons and duplicate pairs
@@ -93,6 +99,7 @@ def cosine_similarity_pair(embeddings: np.ndarray, threshold: float):
 
 
 def vector_cosine_similarity(a, b):
+    """Find pairwise cosine similarity between two vectors."""
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
 
@@ -159,7 +166,7 @@ def test__cosine_similarity(n_test_embeddings):
         min_similarity=min(threshold + 0.025, 1.0),
         similar_fraction=0.3,
     )
-    expected = cosine_similarity(embeddings)
+    expected = cosine_similarity_matrix(embeddings)
 
     builder = CosineSimilarityBuilder(property_name="embedding", threshold=threshold)
     result = builder._block_cosine_similarity(embeddings, embeddings)
@@ -306,7 +313,12 @@ class TestCosineSimilarityBuilder:
 
     @pytest.mark.asyncio
     async def test_cosine_similarity_builder_no_embeddings(self):
-        kg = KnowledgeGraph(nodes=[Node(type=NodeType.DOCUMENT, properties={})])
+        kg = KnowledgeGraph(
+            nodes=[
+                Node(type=NodeType.DOCUMENT, properties={}),
+                Node(type=NodeType.DOCUMENT, properties={}),
+            ]
+        )
         builder = CosineSimilarityBuilder(property_name="embedding")
         with pytest.raises(ValueError, match="has no embedding"):
             await builder.transform(kg)
