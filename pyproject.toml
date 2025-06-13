@@ -19,6 +19,7 @@ dependencies = [
     "instructor",
     "gitpython",
     "pillow>=10.4.0",
+    "scipy",
 
     # LangChain ecosystem
     "langchain",
@@ -49,7 +50,7 @@ all = [
     "r2r"
 ]
 
-# Specific integrations  
+# Specific integrations
 tracing = ["langfuse>=3.2.4", "mlflow>=3.1.4"]
 gdrive = [
     "google-api-python-client>=2.178.0",
@@ -147,7 +148,7 @@ dev = [
     # Core dev tools (shared with minimal)
     "ruff",
     "pyright>=1.1.403",
-    "pre-commit>=4.3.0", 
+    "pre-commit>=4.3.0",
     "pytest",
     "pytest-xdist[psutil]",
     "pytest-asyncio",
