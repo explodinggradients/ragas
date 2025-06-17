@@ -31,6 +31,17 @@ class CosineSimilarityBuilder(RelationshipBuilder):
             if pair[0] < pair[1]
         ]
 
+    def _validate_embedding_shapes(self, embeddings: t.List[t.Any]):
+        if not embeddings:
+            return
+        first_len = len(embeddings[0])
+        for idx, emb in enumerate(embeddings):
+            if len(emb) != first_len:
+                raise ValueError(
+                    f"Embedding at index {idx} has length {len(emb)}, expected {first_len}. "
+                    "All embeddings must have the same length."
+                )
+
     async def transform(self, kg: KnowledgeGraph) -> t.List[Relationship]:
         if self.property_name is None:
             self.property_name = "embedding"
@@ -42,6 +53,7 @@ class CosineSimilarityBuilder(RelationshipBuilder):
                 raise ValueError(f"Node {node.id} has no {self.property_name}")
             embeddings.append(embedding)
 
+        self._validate_embedding_shapes(embeddings)
         similar_pairs = self._find_similar_embedding_pairs(
             np.array(embeddings), self.threshold
         )
@@ -85,6 +97,7 @@ class SummaryCosineSimilarityBuilder(CosineSimilarityBuilder):
         ]
         if not embeddings:
             raise ValueError(f"No nodes have a valid {self.property_name}")
+        self._validate_embedding_shapes(embeddings)
         similar_pairs = self._find_similar_embedding_pairs(
             np.array(embeddings), self.threshold
         )
