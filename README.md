@@ -140,7 +140,7 @@ At Ragas, we believe in transparency. We collect minimal, anonymized usage data 
 
 ✅ No personal or company-identifying information
 
-✅ Open-source data collection [code](./src/ragas/_analytics.py)
+✅ Open-source data collection [code](./ragas/src/ragas/_analytics.py)
 
 ✅ Publicly available aggregated [data](https://github.com/explodinggradients/ragas/issues/49)
 
