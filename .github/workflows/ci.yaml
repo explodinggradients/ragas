@@ -31,16 +31,16 @@ jobs:
           token: ${{ github.token }}
           filters: |
             related: &related
-              - .github/workflows/ci.yml
+              - .github/workflows/ci.yaml
               - codecov.yml
               - pyproject.toml
               - requirements/test.txt
             ragas:
               - *related
-              - "src/ragas/**"
-              - "tests/**"
+              - "ragas/src/ragas/**"
+              - "ragas/tests/**"
             ragas_experimental:
-              - "src/experimental/**"
+              - "experimental/ragas_experimental/**"
             docs:
               - *related
               - requirements/docs-requirements.txt
@@ -85,7 +85,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install "."
+          pip install "./ragas"
           pip install -r requirements/test.txt
 
 
@@ -97,7 +97,7 @@ jobs:
             OPTS=(--dist loadfile -n auto)
           fi
           # Now run the unit tests
-          pytest --nbmake tests/unit "${OPTS[@]}"
+          pytest --nbmake ragas/tests/unit "${OPTS[@]}"
         env:
           __RAGAS_DEBUG_TRACKING: true
           RAGAS_DO_NOT_TRACK: true
@@ -140,7 +140,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install .
+          pip install ./ragas
           pip install -r requirements/dev.txt
 
       - name: Lint check
