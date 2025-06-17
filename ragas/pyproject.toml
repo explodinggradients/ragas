@@ -63,6 +63,7 @@ dev = [
     "haystack-ai",
     "sacrebleu",
     "r2r",
+    "scipy",
 ]
 test = [
     "pytest",
