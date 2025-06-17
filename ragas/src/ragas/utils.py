@@ -81,7 +81,7 @@ def is_nan(x):
         return False
 
 
-def get_metric_language(metric: Metric) -> str:
+def get_metric_language(metric: "Metric") -> str:
     from ragas.prompt import BasePrompt
 
     languags = [
