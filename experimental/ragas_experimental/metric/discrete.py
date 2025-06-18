@@ -8,9 +8,8 @@ __all__ = ['discrete_metric', 'DiscreteMetric']
 # %% ../../nbs/api/metric/discrete.ipynb 2
 import typing as t
 from dataclasses import dataclass, field
-from pydantic import BaseModel, create_model
-from collections import Counter
-from . import Metric, MetricResult
+from pydantic import create_model
+from . import Metric
 from .decorator import create_metric_decorator
 
 
@@ -18,38 +17,13 @@ from .decorator import create_metric_decorator
 class DiscreteMetric(Metric):
     values: t.List[str] = field(default_factory=lambda: ["pass", "fail"])
 
-    def _get_response_model(self, with_reasoning: bool) -> t.Type[BaseModel]:
-        """Get or create a response model based on reasoning parameter."""
-
-        if with_reasoning in self._response_models:
-            return self._response_models[with_reasoning]
-
-        model_name = "response_model"
+    def __post_init__(self):
+        super().__post_init__()
         values = tuple(self.values)
-        fields = {"result": (t.Literal[values], ...)}
+        self._response_model = create_model("response_model", 
+                           result=(t.Literal[values], ...),
+                           reason=(str, ...))
 
-        if with_reasoning:
-            fields["reason"] = (str, ...)  # type: ignore
-
-        model = create_model(model_name, **fields)  # type: ignore
-        self._response_models[with_reasoning] = model
-        return model
-
-    def _ensemble(self, results: t.List[MetricResult]) -> MetricResult:
-
-        if len(results) == 1:
-            return results[0]
-
-        candidates = [candidate.result for candidate in results]
-        counter = Counter(candidates)
-        max_count = max(counter.values())
-        for candidate in results:
-            if counter[candidate.result] == max_count:
-                result = candidate.result
-                reason = candidate.reason
-                return MetricResult(result=result, reason=reason)
-
-        return results[0]
 
 
 discrete_metric = create_metric_decorator(DiscreteMetric)

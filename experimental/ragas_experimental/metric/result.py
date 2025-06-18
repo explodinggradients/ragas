@@ -26,7 +26,7 @@ class MetricResult:
     def __init__(
         self,
         result: t.Any,
-        reason: t.Optional[str] = None,
+        reason: str,
         traces: t.Optional[t.Dict[str, t.Any]] = None,
     ):
         if traces is not None:

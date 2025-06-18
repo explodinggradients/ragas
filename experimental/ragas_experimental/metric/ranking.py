@@ -7,79 +7,24 @@ __all__ = ['ranking_metric', 'RankingMetric']
 
 # %% ../../nbs/api/metric/ranking.ipynb 2
 import typing as t
-from dataclasses import dataclass
-from pydantic import BaseModel, Field
-from . import Metric, MetricResult
+from dataclasses import dataclass, field
+from pydantic import Field
+from pydantic import create_model
+from . import Metric
 from .decorator import create_metric_decorator
 
 
 @dataclass
 class RankingMetric(Metric):
-    num_ranks: int
-
-    def _get_response_model(self, with_reasoning: bool) -> t.Type[BaseModel]:
-        """Get or create a response model based on reasoning parameter."""
-
-        if with_reasoning in self._response_models:
-            return self._response_models[with_reasoning]
-
-        # Store values needed for validation
-        num_ranks = self.num_ranks
-
-        # Create explicit model classes instead of using create_model
-        if with_reasoning:
-            # Model with result and reason
-            class ResponseModelWithReason(BaseModel):
-                result: t.List[int] = Field(...)
-                reason: str = Field(...)
-
-                def model_post_init(self, __context):
-                    expected = set(range(num_ranks))
-                    if set(self.result) != expected:
-                        raise ValueError(
-                            f"'result' must contain exactly the numbers {sorted(expected)} without repetition."
-                        )
-
-            self._response_models[with_reasoning] = ResponseModelWithReason
-            return ResponseModelWithReason
-        else:
-            # Model with just result
-            class ResponseModel(BaseModel):
-                result: t.List[int] = Field(...)
-
-                def model_post_init(self, __context):
-                    expected = set(range(num_ranks))
-                    if set(self.result) != expected:
-                        raise ValueError(
-                            f"'result' must contain exactly the numbers {sorted(expected)} without repetition."
-                        )
-
-            self._response_models[with_reasoning] = ResponseModel
-            return ResponseModel
-
-    def _ensemble(self, results: t.List[MetricResult]) -> MetricResult:
-        if len(results) == 1:
-            return results[0]
-
-        n_items = self.num_ranks  # Use the class attribute instead of len(results)
-        borda_scores = [0] * n_items
-
-        for result in results:
-            for position_idx, item_idx in enumerate(result.result):
-                borda_scores[item_idx] += n_items - position_idx  # Fixed the formula
-
-        indexed_scores = [(score, i) for i, score in enumerate(borda_scores)]
-        indexed_scores.sort(key=lambda x: (-x[0], x[1]))
-        final_ranking = [pos for _, pos in indexed_scores]
-
-        if any(r.reason for r in results):
-            reason = "Ensemble ranking based on multiple evaluations.\n" + "\n".join(
-                [r.reason for r in results if r.reason]
-            )
-        else:
-            reason = None
-
-        return MetricResult(result=final_ranking, reason=reason)
+    num_ranks: int = 2
+    
+    def __post_init__(self):
+        super().__post_init__()
+        self._response_model = create_model(
+            "RankingResponseModel",
+            result=(t.List[str], Field(..., description="List of ranked items")),
+            reason=(str, Field(..., description="Reasoning for the ranking")),
+        )
 
 
 ranking_metric = create_metric_decorator(RankingMetric)
