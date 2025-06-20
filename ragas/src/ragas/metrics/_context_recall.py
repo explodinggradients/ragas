@@ -48,7 +48,7 @@ class ContextRecallClassificationPrompt(
 ):
     name: str = "context_recall_classification"
     instruction: str = (
-        "Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not. Use only 'Yes' (1) or 'No' (0) as a binary classification. Output json with reason."
+        "Given a context, and an answer, analyse each sentence in the answer and classify if the sentence can be attributed to the given context or not. Use only 'Yes' (1) or 'No' (0) as a binary classification. Output json with reason."
     )
     input_model = QCA
     output_model = ContextRecallClassifications
