@@ -21,8 +21,8 @@ class DiscreteMetric(Metric):
         super().__post_init__()
         values = tuple(self.values)
         self._response_model = create_model("response_model", 
-                           result=(t.Literal[values], ...),
-                           reason=(str, ...))
+                        reason=(str, ...),
+                        result=(t.Literal[values], ...),)
 
 
 
