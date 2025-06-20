@@ -1,0 +1,368 @@
+"""
+Ragas CLI for running experiments from command line.
+"""
+import asyncio
+import importlib.util
+import sys
+from pathlib import Path
+import typer
+from typing import Optional, Any, Dict
+import traceback
+
+from ragas_experimental.metric import MetricResult
+from .project.core import Project
+from .model.pydantic_model import ExtendedPydanticBaseModel as BaseModel
+
+app = typer.Typer(help="Ragas CLI for running LLM evaluations")
+
+
+def load_eval_module(eval_path: str) -> Any:
+    """Load an evaluation module from a file path."""
+    eval_path = Path(eval_path).resolve()
+    if not eval_path.exists():
+        typer.echo(f"Error: Evaluation file not found: {eval_path}")
+        raise typer.Exit(1)
+    
+    # Add the eval directory to Python path so imports work
+    eval_dir = eval_path.parent
+    if str(eval_dir) not in sys.path:
+        sys.path.insert(0, str(eval_dir))
+    
+    # Load the module
+    spec = importlib.util.spec_from_file_location("eval_module", eval_path)
+    if spec is None or spec.loader is None:
+        typer.echo(f"Error: Could not load evaluation file: {eval_path}")
+        raise typer.Exit(1)
+    
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+async def run_experiments(project, experiment_func, dataset_name: str, input_data_class: type, baseline_name: Optional[str] = None):
+    """Run experiments using ragas dataset system."""
+    typer.echo(f"Getting dataset: {dataset_name}")
+    
+    # Get the dataset using project's get_dataset method
+    try:
+        dataset = project.get_dataset(dataset_name=dataset_name, model=input_data_class)
+        dataset.load()  # Load the dataset data
+        typer.echo(f"✓ Loaded dataset with {len(dataset)} rows")
+    except Exception as e:
+        typer.echo(f"Error loading dataset '{dataset_name}': {e}")
+        raise typer.Exit(1)
+    
+    # Run the experiment using the run_async method
+    typer.echo("Running experiments...")
+    try:
+        experiment_result = await experiment_func.run_async(dataset)
+        typer.echo(f"✓ Completed experiments successfully")
+    except Exception as e:
+        typer.echo(f"Error running experiments: {e}")
+        raise typer.Exit(1)
+        
+    # Handle baseline comparison if specified
+    if baseline_name:
+        typer.echo(f"Comparing against baseline: {baseline_name}")
+        try:
+            # The experiment model should be the return type or we can infer it
+            baseline = project.get_experiment(baseline_name, model=experiment_result.model)
+            # Compare results
+            baseline_data = baseline.load()
+            
+            # Create comparison table
+            typer.echo("────────────────────────────────────────────────────────────")
+            typer.echo(f"dataset   :  {dataset_name}   ({len(dataset)} rows)")
+            typer.echo("────────────────────────────────────────────────────────────")
+            
+            # Find metrics in current results using the same method as the non-baseline case
+            current_metric_fields = experiment_result.get_fields_by_type(MetricResult)
+            current_metrics = {field_name: [] for field_name in current_metric_fields}
+            # Iterate through all entries in the current experiment
+            for entry in experiment_result:
+                for field_name in current_metric_fields:
+                    field_value = getattr(entry, field_name)
+                    current_metrics[field_name].append(field_value.result)
+            
+            # Calculate average scores for each current metric
+            current_agg_metrics = {}
+            for metric_name in current_metric_fields:
+                scores = current_metrics[metric_name]
+                avg_score = sum(scores) / len(scores) if scores else 0
+                current_agg_metrics[metric_name] = {"score": avg_score}
+            
+            # Find metrics in baseline results using the same method
+            baseline_metric_fields = baseline_data.get_fields_by_type(MetricResult)
+            baseline_metrics = {field_name: [] for field_name in baseline_metric_fields}
+            # Iterate through all entries in the baseline experiment
+            for entry in baseline_data:
+                for field_name in baseline_metric_fields:
+                    field_value = getattr(entry, field_name)
+                    baseline_metrics[field_name].append(field_value.result)
+            
+            # Calculate average scores for each baseline metric
+            baseline_agg_metrics = {}
+            for metric_name in baseline_metric_fields:
+                scores = baseline_metrics[metric_name]
+                avg_score = sum(scores) / len(scores) if scores else 0
+                baseline_agg_metrics[metric_name] = {"score": avg_score}
+            
+            # Print comparison table
+            typer.echo("metric                 current   baseline   Δ         gate")
+            typer.echo("───────────────────────────────────────────────────────────")
+            
+            failures = 0
+            for metric_name, current_metric in current_agg_metrics.items():
+                if metric_name in baseline_agg_metrics:
+                    baseline_metric = baseline_agg_metrics[metric_name]
+                    current_value = current_metric.get("score", 0)
+                    baseline_value = baseline_metric.get("score", 0)
+                    delta = current_value - baseline_value
+                    
+                    # Format values
+                    current_str = f"{current_value:.3f}".ljust(8)
+                    baseline_str = f"{baseline_value:.3f}".ljust(8)
+                    
+                    # Determine if delta is improvement (depends on metric)
+                    is_improvement = delta > 0
+                    if "error" in metric_name or "rate" in metric_name:
+                        is_improvement = delta < 0
+                    
+                    # Format delta with arrow
+                    arrow = "▲" if delta > 0 else "▼"
+                    delta_str = f"{arrow}{abs(delta):.3f}".ljust(8)
+                    
+                    # Determine if test passes (allow small regression)
+                    passed = is_improvement or abs(delta) < 0.01
+                    gate_str = "pass" if passed else "**fail**"
+                    
+                    if not passed:
+                        failures += 1
+                    
+                    # Print row
+                    metric_display = metric_name.replace("_", " ").ljust(20)
+                    typer.echo(f"{metric_display} {current_str} {baseline_str} {delta_str} {gate_str}")
+            
+            typer.echo("────────────────────────────────────────────────────────────")
+            if failures > 0:
+                typer.echo(f"{failures} examples regressed (≤ -0.1).  use  -k failed  to re-run")
+            
+            typer.echo(f"✓ Comparison completed")
+            
+        except Exception as e:
+            typer.echo(f"Error comparing with baseline: {e}")
+            # Continue without comparison
+    else:
+        # No baseline provided, just print the current experiment metrics
+        typer.echo("────────────────────────────────────────────────────────────")
+        typer.echo(f"dataset   :  {dataset_name}   ({len(dataset)} rows)")
+        typer.echo("────────────────────────────────────────────────────────────")
+        
+        # Find metrics in results
+        metric_fields = experiment_result.get_fields_by_type(MetricResult)
+        metrics = {field_name: [] for field_name in metric_fields}
+        # Iterate through all entries in the experiment
+        for entry in experiment_result:
+            # Get the entry's data as a dict
+            for field_name in metric_fields:
+                field_value = getattr(entry, field_name)
+                metrics[field_name].append(field_value.result)
+        
+        # Calculate average scores for each metric
+        agg_metrics = {}
+        for metric_name in metric_fields:
+            scores = metrics[metric_name]
+            avg_score = sum(scores) / len(scores) if scores else 0
+            agg_metrics[metric_name] = {"score": avg_score}
+        
+        # Print metrics table
+        typer.echo(f"metric                {experiment_result.name}(current)  ")
+        typer.echo("─────────────────────────────────")
+        
+        for metric_name, metric in agg_metrics.items():
+            metric_value = metric.get("score", 0)
+            metric_display = metric_name.replace("_", " ").ljust(20)
+            value_str = f"{metric_value:.3f}".ljust(8)
+            typer.echo(f"{metric_display} {value_str}")
+            
+        typer.echo("────────────────────────────────────")
+        typer.echo("✓ Experiment results displayed")
+
+    
+    
+
+
+@app.command()
+def eval(
+    eval_file: str = typer.Argument(..., help="Path to the evaluation file"),
+    dataset: str = typer.Option(..., "--dataset", help="Name of the dataset in the project"),
+    baseline: Optional[str] = typer.Option(None, "--baseline", help="Baseline experiment name to compare against"),
+):
+    """Run evaluations on a dataset."""
+    typer.echo(f"Running evaluation: {eval_file}")
+    typer.echo(f"Dataset: {dataset}")
+    if baseline:
+        typer.echo(f"Baseline: {baseline}")
+    
+    try:
+        # Load the evaluation module
+        eval_module = load_eval_module(eval_file)
+        
+        # Find the project and experiment function
+        project = None
+        experiment_func = None
+        input_data_class = None
+        
+        # Look for project and experiment in the module
+        for attr_name in dir(eval_module):
+            attr = getattr(eval_module, attr_name)
+            if isinstance(attr, Project):
+                project = attr
+            elif hasattr(attr, 'run_async'):
+                experiment_func = attr
+                # Get input type from the experiment function's signature
+                import inspect
+                sig = inspect.signature(attr)
+                if sig.parameters:
+                    # Get the first parameter's annotation
+                    first_param = next(iter(sig.parameters.values()))
+                    if first_param.annotation and first_param.annotation != inspect.Parameter.empty:
+                        input_data_class = first_param.annotation
+        
+        if project is None:
+            typer.echo("Error: No Project instance found in evaluation file")
+            raise typer.Exit(1)
+        
+        if experiment_func is None:
+            typer.echo("Error: No experiment function with run_async method found in evaluation file")
+            raise typer.Exit(1)
+            
+        if input_data_class is None:
+            typer.echo("Error: Could not determine input data class from experiment function")
+            raise typer.Exit(1)
+        
+        # Run the experiments
+        asyncio.run(run_experiments(project, experiment_func, dataset, input_data_class, baseline))
+        typer.echo("✓ Evaluation completed successfully")
+        
+    except Exception as e:
+        typer.echo(f"Error running evaluation: {e}")
+        traceback.print_exc()
+        raise typer.Exit(1)
+
+
+@app.command()
+def create(
+    name: str = typer.Option(..., "--name", help="Name of the evaluation project"),
+    directory: str = typer.Option(".", "--directory", help="Directory to create the project in"),
+):
+    """Create a new evaluation project."""
+    typer.echo(f"Creating new evaluation project: {name}")
+    
+    project_dir = Path(directory) / name
+    project_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Create basic project structure
+    (project_dir / "evals").mkdir(exist_ok=True)
+    (project_dir / "datasets").mkdir(exist_ok=True)
+    (project_dir / "experiments").mkdir(exist_ok=True)
+    
+    # Create a sample evaluation file
+    eval_content = f'''"""
+Sample evaluation for {name}
+"""
+import asyncio
+from ragas_experimental import Project, BaseModel
+from ragas_experimental.metric import MetricResult
+from ragas_experimental.llm import ragas_llm
+import typing as t
+import subprocess
+
+# Initialize project
+p = Project(
+    project_id="{name}",
+    backend="local",
+    root_dir="./evals/",
+)
+
+# Define your LLM
+# llm = ragas_llm(provider="openai", model="gpt-4o")
+
+class TestDataRow(BaseModel):
+    id: t.Optional[int]
+    query: str
+    expected_output: str
+
+class ExperimentDataRow(TestDataRow):
+    response: str
+    # Add your metrics here
+    # metric_result: MetricResult
+
+@p.experiment(ExperimentDataRow)
+async def run_experiment(row: TestDataRow):
+    # Your app endpoint call
+    # response = await your_app_endpoint(row.query)
+    response = f"Sample response to: {{row.query}}"
+    
+    # Your metric evaluations
+    # metric = await your_metric.ascore(
+    #     llm=llm,
+    #     query=row.query,
+    #     response=response,
+    #     expected_output=row.expected_output
+    # )
+    
+    experiment_view = ExperimentDataRow(
+        **row.model_dump(),
+        response=response,
+        # metric_result=metric,
+    )
+    return experiment_view
+'''
+    
+    eval_file = project_dir / "evals" / f"{name}_eval.py"
+    eval_file.write_text(eval_content)
+    
+    # Create a sample dataset
+    dataset_content = """id,query,expected_output
+1,What is the capital of France?,Paris is the capital of France.
+2,Who wrote 'To Kill a Mockingbird'?,Harper Lee wrote 'To Kill a Mockingbird.'
+"""
+    
+    dataset_file = project_dir / "datasets" / "sample_dataset.csv"
+    dataset_file.write_text(dataset_content)
+    
+    # Create README
+    readme_content = f"""# {name} Evaluation Project
+
+## Getting Started
+
+1. Edit the evaluation logic in `evals/{name}_eval.py`
+2. Update the dataset in `datasets/sample_dataset.csv`
+3. Run the evaluation:
+
+```bash
+ragas eval evals/{name}_eval.py --dataset datasets/sample_dataset.csv
+```
+
+## Project Structure
+
+- `evals/` - Evaluation scripts
+- `datasets/` - Test datasets  
+- `experiments/` - Experiment results
+"""
+    
+    readme_file = project_dir / "README.md"
+    readme_file.write_text(readme_content)
+    
+    typer.echo(f"✓ Project created successfully in: {project_dir}")
+    typer.echo(f"✓ Sample evaluation: {eval_file}")
+    typer.echo(f"✓ Sample dataset: {dataset_file}")
+    typer.echo(f"\nNext steps:")
+    typer.echo(f"1. cd {project_dir}")
+    typer.echo(f"2. Edit evals/{name}_eval.py with your evaluation logic")
+    typer.echo(f"3. Run: ragas eval evals/{name}_eval.py --dataset datasets/sample_dataset.csv")
+
+
+if __name__ == "__main__":
+    app()
