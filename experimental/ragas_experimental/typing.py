@@ -10,10 +10,8 @@ __all__ = ['SUPPORTED_BACKENDS', 'DEFAULT_COLUMN_SETTINGS', 'COLOR_MAP', 'Column
 # %% ../nbs/api/typing.ipynb 2
 import typing as t
 from enum import Enum
-import inspect
 from datetime import datetime, date
 
-from pydantic import BaseModel, create_model
 from fastcore.utils import patch
 
 from .metric.result import MetricResult

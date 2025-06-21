@@ -6,7 +6,6 @@
 __all__ = ['NotionModelMeta', 'NotionModel']
 
 # %% ../../nbs/model/notion_model.ipynb 3
-from dataclasses import dataclass
 import typing as t
 from datetime import datetime
 

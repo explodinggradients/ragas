@@ -16,7 +16,6 @@ from .core import Project
 from ..model.notion_model import NotionModel
 import ragas_experimental.model.notion_typing as nmt
 from ..experiment import Experiment
-from ..dataset import Dataset
 
 # %% ../../nbs/project/comparison.ipynb 4
 logger = logging.getLogger(__name__)

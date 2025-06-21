@@ -9,19 +9,15 @@ __all__ = ['create_dataset_columns', 'get_dataset_from_ragas_app', 'get_dataset_
 import typing as t
 import os
 import asyncio
-import tempfile
 
 from fastcore.utils import patch
 from pydantic import BaseModel
 
 from .core import Project
 from ..typing import SUPPORTED_BACKENDS
-from ..backends.factory import RagasApiClientFactory
-from ..backends.ragas_api_client import RagasApiClient
 import ragas_experimental.typing as rt
 from ..utils import async_to_sync, create_nano_id
 from ..dataset import Dataset
-from ..utils import get_test_directory
 
 # %% ../../nbs/api/project/datasets.ipynb 4
 async def create_dataset_columns(

@@ -20,7 +20,7 @@ from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
 )
 from ..utils import async_to_sync, create_nano_id
-from ..dataset import Dataset, BaseModelType
+from ..dataset import Dataset
 from ..experiment import Experiment
 import ragas_experimental.typing as rt
 

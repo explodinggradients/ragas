@@ -8,8 +8,6 @@ __all__ = ['NotionBackend', 'get_page_id', 'get_database_id']
 # %% ../../nbs/backends/notion.ipynb 3
 import typing as t
 import os
-from datetime import datetime
-import uuid
 
 from notion_client import Client as NotionClient
 from fastcore.utils import patch_to, patch

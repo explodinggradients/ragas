@@ -465,7 +465,6 @@ async def get_experiment_by_name(
     )
 
 # %% ../../nbs/api/backends/ragas_api_client.ipynb 33
-from ..typing import ColumnType
 
 # %% ../../nbs/api/backends/ragas_api_client.ipynb 34
 # ---- Dataset Columns ----

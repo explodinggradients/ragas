@@ -7,7 +7,6 @@ __all__ = ['T', 'Field', 'ID', 'Text', 'Title', 'Select', 'MultiSelect', 'URL', 
 
 # %% ../../nbs/model/notion_types.ipynb 2
 import typing as t
-from datetime import datetime
 
 from ..exceptions import ValidationError
 

@@ -8,7 +8,6 @@ __all__ = ['Experiment']
 # %% ../nbs/api/experiment.ipynb 2
 import typing as t
 
-from fastcore.utils import patch
 
 from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,

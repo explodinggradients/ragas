@@ -7,7 +7,7 @@ __all__ = ['ranking_metric', 'RankingMetric']
 
 # %% ../../nbs/api/metric/ranking.ipynb 2
 import typing as t
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pydantic import Field
 from pydantic import create_model
 from . import Metric

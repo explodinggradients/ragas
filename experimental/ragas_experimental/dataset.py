@@ -18,11 +18,9 @@ import pandas as pd
 from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
 )
-from .utils import create_nano_id, async_to_sync, get_test_directory
+from .utils import create_nano_id, async_to_sync
 from .backends.ragas_api_client import RagasApiClient
 from .typing import SUPPORTED_BACKENDS
-import ragas_experimental.typing as rt
-from .metric import MetricResult
 
 # %% ../nbs/api/dataset.ipynb 3
 BaseModelType = t.TypeVar("BaseModelType", bound=BaseModel)

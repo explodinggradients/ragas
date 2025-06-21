@@ -53,7 +53,7 @@ def test_metric_score_single(mock_llm):
     metric = CustomMetric(name="test_metric", prompt="What is the result of {input}?")
 
     # Mock the LLM to return a valid response
-    def mock_generate(response_model):
+    def mock_generate(prompt, response_model):
         return response_model(result=1, reason="test reason")
 
     mock_llm.generate = mock_generate
