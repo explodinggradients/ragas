@@ -17,9 +17,9 @@ help: ## Show all Makefile targets
 install: ## Install dependencies for both ragas and experimental
 	@echo "Installing dependencies..."
 	@echo "Installing ragas dependencies..."
-	$(Q)pip install -e "./ragas[dev]"
+	$(Q)uv pip install -e "./ragas[dev]"
 	@echo "Installing experimental dependencies..."
-	$(Q)pip install -e "./experimental[dev]"
+	$(Q)uv pip install -e "./experimental[dev]"
 
 setup: install ## Complete development environment setup
 	@echo "Development environment setup complete!"
@@ -33,28 +33,28 @@ setup: install ## Complete development environment setup
 format: ## Format and lint all code in the monorepo
 	@echo "Formatting and linting all code..."
 	@echo "(isort) Ordering imports in ragas..."
-	$(Q)cd ragas && isort .
+	$(Q)cd ragas && uv run isort .
 	@echo "(black) Formatting ragas..."
-	$(Q)black --config ragas/pyproject.toml $(RAGAS_PATHS)
+	$(Q)uv run black --config ragas/pyproject.toml $(RAGAS_PATHS)
 	@echo "(black) Formatting stubs..."
-	$(Q)find ragas/src -name "*.pyi" ! -name "*_pb2*" -exec black --pyi --config ragas/pyproject.toml {} \;
+	$(Q)find ragas/src -name "*.pyi" ! -name "*_pb2*" -exec uv run black --pyi --config ragas/pyproject.toml {} \;
 	@echo "(ruff) Auto-fixing ragas (includes unused imports)..."
-	$(Q)ruff check $(RAGAS_PATHS) --fix-only
+	$(Q)uv run ruff check $(RAGAS_PATHS) --fix-only
 	@echo "(ruff) Final linting check for ragas..."
-	$(Q)ruff check $(RAGAS_PATHS)
+	$(Q)uv run ruff check $(RAGAS_PATHS)
 	@echo "(black) Formatting experimental..."
-	$(Q)cd experimental && black $(EXPERIMENTAL_PATH)
+	$(Q)cd experimental && uv run black $(EXPERIMENTAL_PATH)
 	@echo "(ruff) Auto-fixing experimental (includes unused imports)..."
-	$(Q)cd experimental && ruff check $(EXPERIMENTAL_PATH) --fix-only
+	$(Q)cd experimental && uv run ruff check $(EXPERIMENTAL_PATH) --fix-only
 	@echo "(ruff) Final linting check for experimental..."
-	$(Q)cd experimental && ruff check $(EXPERIMENTAL_PATH)
+	$(Q)cd experimental && uv run ruff check $(EXPERIMENTAL_PATH)
 
 type: ## Type check all code in the monorepo
 	@echo "Type checking all code..."
 	@echo "(pyright) Typechecking ragas..."
-	$(Q)cd ragas && PYRIGHT_PYTHON_FORCE_VERSION=latest pyright src
+	$(Q)cd ragas && PYRIGHT_PYTHON_FORCE_VERSION=latest uv run pyright src
 	@echo "(pyright) Typechecking experimental..."
-	$(Q)PYRIGHT_PYTHON_FORCE_VERSION=latest pyright $(EXPERIMENTAL_PATH)
+	$(Q)PYRIGHT_PYTHON_FORCE_VERSION=latest uv run pyright $(EXPERIMENTAL_PATH)
 
 check: format type ## Quick health check (format + type, no tests)
 	@echo "Code quality check complete!"
@@ -65,9 +65,9 @@ check: format type ## Quick health check (format + type, no tests)
 benchmarks: ## Run all benchmarks locally
 	@echo "Running all benchmarks..."
 	@echo "Running evaluation benchmarks..."
-	$(Q)cd $(GIT_ROOT)/ragas/tests/benchmarks && python benchmark_eval.py
+	$(Q)cd $(GIT_ROOT)/ragas/tests/benchmarks && uv run python benchmark_eval.py
 	@echo "Running testset generation benchmarks..."
-	$(Q)cd $(GIT_ROOT)/ragas/tests/benchmarks && python benchmark_testsetgen.py
+	$(Q)cd $(GIT_ROOT)/ragas/tests/benchmarks && uv run python benchmark_testsetgen.py
 
 benchmarks-docker: ## Run benchmarks in docker
 	@echo "Running benchmarks in docker..."
@@ -94,18 +94,18 @@ clean: ## Clean all generated files
 test: ## Run all unit tests in the monorepo
 	@echo "Running all unit tests..."
 	@echo "Running ragas tests..."
-	$(Q)cd ragas && pytest --nbmake tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
+	$(Q)cd ragas && uv run pytest --nbmake tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 	@echo "Running experimental tests..."
-	$(Q)cd experimental && pytest
+	$(Q)cd experimental && uv run pytest
 
 test-e2e: ## Run all end-to-end tests
 	@echo "Running all end-to-end tests..."
 	@echo "Running ragas e2e tests..."
-	$(Q)cd ragas && pytest --nbmake tests/e2e -s
+	$(Q)cd ragas && uv run pytest --nbmake tests/e2e -s
 	@echo "Checking for experimental e2e tests..."
 	$(Q)if [ -d "experimental/tests/e2e" ]; then \
 		echo "Running experimental e2e tests..."; \
-		cd experimental && pytest tests/e2e -s; \
+		cd experimental && uv run pytest tests/e2e -s; \
 	else \
 		echo "No experimental e2e tests found."; \
 	fi

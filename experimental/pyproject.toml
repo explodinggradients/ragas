@@ -16,6 +16,19 @@ version_file = "ragas_experimental/_version.py"  # Creates a version file
 [dependency-groups]
 dev = [
     "nbdev>=2.3.35",
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0", 
+    "pytest-mock>=3.10.0",
+    "black",
+    "fastcore",
+    "tqdm",
+    "langfuse",
+    "instructor",
+    "pydantic",
+    "numpy",
+    "plotly",
+    "mlflow",
+    "gitpython",
 ]
 test = [
     "pytest>=7.0.0",

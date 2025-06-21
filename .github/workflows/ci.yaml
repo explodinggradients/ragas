@@ -76,6 +76,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.os == 'macos-latest' && 'arm64' || 'x64' }}
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Get pip cache dir
         id: cache-dir
         run: |
@@ -90,8 +93,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -U setuptools
-          pip install -e "./ragas[dev]"
+          uv pip install -e "./ragas[dev]"
 
       - name: Run unit tests
         run: |
@@ -101,7 +103,7 @@ jobs:
             OPTS=(--dist loadfile -n auto)
           fi
           # Now run the unit tests
-          cd ragas && pytest --nbmake tests/unit "${OPTS[@]}"
+          cd ragas && uv run pytest --nbmake tests/unit "${OPTS[@]}"
         env:
           __RAGAS_DEBUG_TRACKING: true
           RAGAS_DO_NOT_TRACK: true
@@ -131,6 +133,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: x64
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Get pip cache dir
         id: cache-dir
         run: |
@@ -145,13 +150,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -U setuptools
-          pip install -e "./ragas[dev]"
-          pip install -e "./experimental[dev]"
+          uv pip install -e "./ragas[dev]"
+          uv pip install -e "./experimental[dev]"
 
       - name: Run experimental tests
         run: |
-          cd experimental && pytest
+          cd experimental && uv run pytest
         env:
           __RAGAS_DEBUG_TRACKING: true
           RAGAS_DO_NOT_TRACK: true
@@ -172,6 +176,9 @@ jobs:
           python-version: "3.11"
           architecture: x64
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Get pip cache dir
         id: cache-dir
         run: |
@@ -191,12 +198,12 @@ jobs:
         run: |
           # Check if code is properly formatted (without making changes)
           echo "Checking ragas formatting..."
-          cd ragas && isort --check-only .
-          black --check --config ragas/pyproject.toml ragas/src ragas/tests docs
-          ruff check ragas/src docs ragas/tests
+          cd ragas && uv run isort --check-only .
+          uv run black --check --config ragas/pyproject.toml ragas/src ragas/tests docs
+          uv run ruff check ragas/src docs ragas/tests
           echo "Checking experimental formatting..."
-          cd experimental && black --check ragas_experimental
-          cd experimental && ruff check ragas_experimental
+          cd experimental && uv run black --check ragas_experimental
+          cd experimental && uv run ruff check ragas_experimental
 
       - name: Type check
         run: make type

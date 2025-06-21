@@ -63,6 +63,10 @@ dev = [
     "haystack-ai",
     "sacrebleu",
     "r2r",
+    "pytest",
+    "pytest-xdist[psutil]",
+    "pytest-asyncio",
+    "nbmake",
 ]
 test = [
     "pytest",
