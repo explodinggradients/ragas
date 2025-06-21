@@ -17,3 +17,15 @@ version_file = "ragas_experimental/_version.py"  # Creates a version file
 dev = [
     "nbdev>=2.3.35",
 ]
+test = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-mock>=3.10.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "experimental_ci: Set of tests that will be run as part of Experimental CI",
+    "e2e: End-to-End tests for Experimental",
+]
