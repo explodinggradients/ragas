@@ -8,13 +8,16 @@ from pathlib import Path
 import typer
 from typing import Optional, Any, Dict
 import traceback
-from colorama import Fore, Style, init
+from rich.console import Console
+from rich.table import Table
+from rich.text import Text
+from rich.panel import Panel
 from ragas_experimental.metric import MetricResult
 from .project.core import Project
 from .model.pydantic_model import ExtendedPydanticBaseModel as BaseModel
+from .utils import console
 
-# Initialize colorama
-init(autoreset=True)
+
 
 app = typer.Typer(help="Ragas CLI for running LLM evaluations")
 
@@ -25,60 +28,148 @@ def main():
     pass
 
 
-# Color utility functions
-def success(text: str) -> str:
-    """Return text in green color for success messages."""
-    return f"{Fore.GREEN}{text}{Style.RESET_ALL}"
+# Rich utility functions
+def success(text: str) -> None:
+    """Print text in green color for success messages."""
+    console.print(text, style="green")
 
-def error(text: str) -> str:
-    """Return text in red color for error messages."""
-    return f"{Fore.RED}{text}{Style.RESET_ALL}"
+def error(text: str) -> None:
+    """Print text in red color for error messages."""
+    console.print(text, style="red")
 
-def info(text: str) -> str:
-    """Return text in yellow color for info messages."""
-    return f"{Fore.YELLOW}{text}{Style.RESET_ALL}"
+def info(text: str) -> None:
+    """Print text in cyan color for info messages."""
+    console.print(text, style="cyan")
 
-def warning(text: str) -> str:
-    """Return text in yellow color for warning messages."""
-    return f"{Fore.YELLOW}{text}{Style.RESET_ALL}"
+def warning(text: str) -> None:
+    """Print text in yellow color for warning messages."""
+    console.print(text, style="yellow")
 
-def metric_pass(text: str) -> str:
-    """Return text in green for passing metrics."""
-    return f"{Fore.GREEN}{text}{Style.RESET_ALL}"
 
-def metric_fail(text: str) -> str:
-    """Return text in red for failing metrics."""
-    return f"{Fore.RED}{text}{Style.RESET_ALL}"
+def create_numerical_metrics_table(metrics_data: Dict[str, Dict], has_baseline: bool = False) -> Table:
+    """Create a Rich table for numerical metrics."""
+    table = Table(title="Numerical Metrics")
+    
+    # Add columns based on whether we have baseline comparison
+    table.add_column("Metric", style="yellow", no_wrap=True)
+    table.add_column("Current", justify="right")
+    
+    if has_baseline:
+        table.add_column("Baseline", justify="right")
+        table.add_column("Delta", justify="right")
+        table.add_column("Gate", justify="center")
+    
+    for metric_name, values in metrics_data.items():
+        current_value = values['current']
+        
+        if has_baseline:
+            baseline_value = values['baseline']
+            delta = current_value - baseline_value
+            
+            # Determine if delta is improvement (depends on metric)
+            is_improvement = delta > 0
+            if "error" in metric_name.lower() or "rate" in metric_name.lower():
+                is_improvement = delta < 0
+            
+            # Format delta with arrow and color
+            arrow = "▲" if delta > 0 else "▼"
+            delta_str = f"{arrow}{abs(delta):.3f}"
+            delta_color = "green" if is_improvement else "red"
+            
+            # Determine if test passes (allow small regression)
+            passed = is_improvement or abs(delta) < 0.01
+            gate_str = Text("pass", style="green") if passed else Text("fail", style="red")
+            
+            table.add_row(
+                metric_name.replace("_", " "),
+                f"{current_value:.3f}",
+                f"{baseline_value:.3f}",
+                Text(delta_str, style=delta_color),
+                gate_str
+            )
+        else:
+            table.add_row(
+                metric_name.replace("_", " "),
+                f"{current_value:.3f}"
+            )
+    
+    return table
 
-def improvement(text: str) -> str:
-    """Return text in green for improvements."""
-    return f"{Fore.GREEN}{text}{Style.RESET_ALL}"
 
-def regression(text: str) -> str:
-    """Return text in red for regressions."""
-    return f"{Fore.RED}{text}{Style.RESET_ALL}"
-
-def metric_name_color(text: str) -> str:
-    """Return text in yellow for metric names."""
-    return f"{Fore.YELLOW}{text}{Style.RESET_ALL}"
+def create_categorical_metrics_table(metrics_data: Dict[str, Dict], has_baseline: bool = False) -> Table:
+    """Create a Rich table for categorical metrics."""
+    table = Table(title="Categorical Metrics")
+    
+    # Add columns
+    table.add_column("Metric", style="yellow", no_wrap=True)
+    table.add_column("Category", style="cyan")
+    table.add_column("Current", justify="right")
+    
+    if has_baseline:
+        table.add_column("Baseline", justify="right")
+        table.add_column("Delta", justify="right")
+    
+    for metric_name, values in metrics_data.items():
+        current_value = values['current']
+        
+        if has_baseline:
+            baseline_value = values['baseline']
+            
+            # Get all unique categories
+            all_categories = set(current_value.keys()) | set(baseline_value.keys())
+            
+            for i, category in enumerate(sorted(all_categories)):
+                current_count = current_value.get(category, 0)
+                baseline_count = baseline_value.get(category, 0)
+                delta = current_count - baseline_count
+                
+                if delta > 0:
+                    delta_str = Text(f"▲{delta}", style="green")
+                elif delta < 0:
+                    delta_str = Text(f"▼{abs(delta)}", style="red")
+                else:
+                    delta_str = Text("→", style="dim")
+                
+                # Only show metric name on first row for this metric
+                metric_display = metric_name.replace("_", " ") if i == 0 else ""
+                
+                table.add_row(
+                    metric_display,
+                    category,
+                    str(current_count),
+                    str(baseline_count),
+                    delta_str
+                )
+        else:
+            # Sort by count (descending) for better readability
+            if current_value:
+                sorted_items = sorted(current_value.items(), key=lambda x: x[1], reverse=True)
+                for i, (category, count) in enumerate(sorted_items):
+                    # Only show metric name on first row for this metric
+                    metric_display = metric_name.replace("_", " ") if i == 0 else ""
+                    table.add_row(metric_display, category, str(count))
+            else:
+                table.add_row(metric_name.replace("_", " "), "N/A", "0")
+    
+    return table
 
 
 def load_eval_module(eval_path: str) -> Any:
     """Load an evaluation module from a file path."""
-    eval_path = Path(eval_path).resolve()
-    if not eval_path.exists():
-        typer.echo(error(f"Error: Evaluation file not found: {eval_path}"))
+    eval_path_obj = Path(eval_path).resolve()
+    if not eval_path_obj.exists():
+        error(f"Error: Evaluation file not found: {eval_path_obj}")
         raise typer.Exit(1)
     
     # Add the eval directory to Python path so imports work
-    eval_dir = eval_path.parent
+    eval_dir = eval_path_obj.parent
     if str(eval_dir) not in sys.path:
         sys.path.insert(0, str(eval_dir))
     
     # Load the module
-    spec = importlib.util.spec_from_file_location("eval_module", eval_path)
+    spec = importlib.util.spec_from_file_location("eval_module", eval_path_obj)
     if spec is None or spec.loader is None:
-        typer.echo(error(f"Error: Could not load evaluation file: {eval_path}"))
+        error(f"Error: Could not load evaluation file: {eval_path_obj}")
         raise typer.Exit(1)
     
     module = importlib.util.module_from_spec(spec)
@@ -88,38 +179,37 @@ def load_eval_module(eval_path: str) -> Any:
 
 async def run_experiments(project, experiment_func, dataset_name: str, input_data_class: type, baseline_name: Optional[str] = None, metrics: str = None):
     """Run experiments using ragas dataset system."""
-    typer.echo(f"Getting dataset: {dataset_name}")
+    console.print(f"Getting dataset: {dataset_name}")
     
     # Get the dataset using project's get_dataset method
     try:
         dataset = project.get_dataset(dataset_name=dataset_name, model=input_data_class)
         dataset.load()  # Load the dataset data
-        typer.echo(success(f"✓ Loaded dataset with {len(dataset)} rows"))
+        success(f"✓ Loaded dataset with {len(dataset)} rows")
     except Exception as e:
-        typer.echo(error(f"Error loading dataset '{dataset_name}': {e}"))
+        error(f"Error loading dataset '{dataset_name}': {e}")
         raise typer.Exit(1)
     
     # Run the experiment using the run_async method
     try:
         experiment_result = await experiment_func.run_async(dataset)
-        typer.echo(success("✓ Completed experiments successfully"))
+        success("✓ Completed experiments successfully")
     except Exception as e:
-        typer.echo(error(f"Error running experiments: {e}"))
+        error(f"Error running experiments: {e}")
         raise typer.Exit(1)
         
     # Handle baseline comparison if specified
     if baseline_name:
-        typer.echo(f"Comparing against baseline: {baseline_name}")
+        console.print(f"Comparing against baseline: {baseline_name}")
         try:
             # The experiment model should be the return type or we can infer it
             baseline = project.get_experiment(baseline_name, model=experiment_result.model)
             # Compare results
             baseline.load()
             
-            # Create comparison table
-            typer.echo(info("────────────────────────────────────────────────────────────"))
-            typer.echo(info(f"dataset   :  {dataset_name}   ({len(dataset)} rows)"))
-            typer.echo(info("────────────────────────────────────────────────────────────"))
+            # Create comparison header with panel
+            header_content = f"Experiment: {experiment_result.name}\nDataset: {dataset_name} ({len(dataset)} rows)\nBaseline: {baseline_name}"
+            console.print(Panel(header_content, title="Ragas Evaluation Results", style="bold white", width=80))
             
             # Parse metrics from provided list
             current_metric_fields = [metric.strip() for metric in metrics.split(',')]
@@ -191,90 +281,26 @@ async def run_experiments(project, experiment_func, dataset_name: str, input_dat
                             'baseline': baseline_value
                         }
             
-            # Print numeric metrics table
-            failures = 0
+            # Display numeric metrics table
             if numeric_metrics:
-                typer.echo(info("metric                 current   baseline   Δ         gate"))
-                typer.echo(info("───────────────────────────────────────────────────────────"))
-                
-                for metric_name, values in numeric_metrics.items():
-                    current_value = values['current']
-                    baseline_value = values['baseline']
-                    delta = current_value - baseline_value
-                    
-                    # Format values
-                    current_str = f"{current_value:.3f}".ljust(9)
-                    baseline_str = f"{baseline_value:.3f}".ljust(9)
-                    
-                    # Determine if delta is improvement (depends on metric)
-                    is_improvement = delta > 0
-                    if "error" in metric_name or "rate" in metric_name:
-                        is_improvement = delta < 0
-                    
-                    # Format delta with arrow and color
-                    arrow = "▲" if delta > 0 else "▼"
-                    delta_value = f"{arrow}{abs(delta):.3f}"
-                    # Pad the original value, then apply color
-                    padded_delta = delta_value.ljust(9)
-                    if is_improvement:
-                        delta_str = improvement(padded_delta)
-                    else:
-                        delta_str = regression(padded_delta)
-                    
-                    # Determine if test passes (allow small regression)
-                    passed = is_improvement or abs(delta) < 0.01
-                    gate_str = metric_pass("pass") if passed else metric_fail("fail")
-                    
-                    if not passed:
-                        failures += 1
-                    
-                    # Print row
-                    metric_display_name = metric_name.replace("_", " ").ljust(20)
-                    metric_display_colored = metric_name_color(metric_display_name)
-                    typer.echo(f"{metric_display_colored} {current_str} {baseline_str} {delta_str} {gate_str}")
-                
-                typer.echo(info("────────────────────────────────────────────────────────────"))
+                table = create_numerical_metrics_table(numeric_metrics, has_baseline=True)
+                console.print(table)
             
-            # Print categorical metrics
-            categorical_failures = 0
-            for metric_name_key, values in categorical_metrics.items():
-                current_value = values['current'] 
-                baseline_value = values['baseline']
-                
-                typer.echo(f"\n{metric_name_color(metric_name_key)}")
-                
-                # Get all unique categories
-                all_categories = set(current_value.keys()) | set(baseline_value.keys())
-                
-                for category in sorted(all_categories):
-                    current_count = current_value.get(category, 0)
-                    baseline_count = baseline_value.get(category, 0)
-                    delta = current_count - baseline_count
-                    
-                    if delta > 0:
-                        delta_str = improvement(f"▲{delta}")
-                    elif delta < 0:
-                        delta_str = regression(f"▼{abs(delta)}")
-                    else:
-                        delta_str = "→"
-                    
-                    typer.echo(f"  {category:<15} current: {current_count:<3} baseline: {baseline_count:<3}   {delta_str}")
-            
+            # Display categorical metrics table
             if categorical_metrics:
-                typer.echo(info("────────────────────────────────────────────────────────────"))
+                table = create_categorical_metrics_table(categorical_metrics, has_baseline=True)
+                console.print(table)
             
-            
-            typer.echo(success("✓ Comparison completed"))
+            success("✓ Comparison completed")
             
         except Exception as e:
-            typer.echo(error(f"Error comparing with baseline: {e}"))
+            error(f"Error comparing with baseline: {e}")
             traceback.print_exc()  # Print the full traceback with line numbers
             # Continue without comparison
     else:
         # No baseline provided, just print the current experiment metrics
-        typer.echo(info("────────────────────────────────────────────────────────────"))
-        typer.echo(info(f"dataset   :  {dataset_name}   ({len(dataset)} rows)"))
-        typer.echo(info("────────────────────────────────────────────────────────────"))
+        header_content = f"Experiment: {experiment_result.name}\nDataset: {dataset_name} ({len(dataset)} rows)"
+        console.print(Panel(header_content, title="Ragas Evaluation Results", style="bold white", width=80))
         
         # Parse metrics from provided list
         metric_fields = [metric.strip() for metric in metrics.split(',')]
@@ -303,33 +329,27 @@ async def run_experiments(project, experiment_func, dataset_name: str, input_dat
                 avg_score = dict(Counter(scores))
             agg_metrics[metric_name] = {"score": avg_score}
         
-        # Print metrics table
-        typer.echo(info(f"metric                {experiment_result.name}(current)  "))
-        typer.echo(info("─────────────────────────────────"))
+        # Separate numeric and categorical metrics
+        numeric_metrics = {}
+        categorical_metrics = {}
         
         for metric_name, metric in agg_metrics.items():
             metric_value = metric.get("score", 0)
-            metric_display_name = metric_name.replace("_", " ").ljust(20)
-            metric_display = metric_name_color(metric_display_name)
-            
-            # Handle different metric types for display
             if isinstance(metric_value, dict):
-                # Categorical metric - show all values with counts
-                if metric_value:
-                    # Sort by count (descending) for better readability
-                    sorted_items = sorted(metric_value.items(), key=lambda x: x[1], reverse=True)
-                    value_parts = [f"{val}({count})" for val, count in sorted_items]
-                    value_str = ", ".join(value_parts)
-                else:
-                    value_str = "N/A"
-                typer.echo(f"{metric_display} {value_str}")
+                categorical_metrics[metric_name] = {'current': metric_value}
             else:
-                # Numeric metric
-                value_str = f"{metric_value:.3f}".ljust(8)
-                typer.echo(f"{metric_display} {value_str}")
+                numeric_metrics[metric_name] = {'current': metric_value}
+        
+        # Display tables
+        if numeric_metrics:
+            table = create_numerical_metrics_table(numeric_metrics, has_baseline=False)
+            console.print(table)
+        
+        if categorical_metrics:
+            table = create_categorical_metrics_table(categorical_metrics, has_baseline=False)
+            console.print(table)
             
-        typer.echo(info("────────────────────────────────────"))
-        typer.echo(success("✓ Experiment results displayed"))
+        success("✓ Experiment results displayed")
 
     
     
@@ -343,10 +363,10 @@ def evals(
     baseline: Optional[str] = typer.Option(None, "--baseline", help="Baseline experiment name to compare against"),
 ):
     """Run evaluations on a dataset."""
-    typer.echo(f"Running evaluation: {eval_file}")
-    typer.echo(f"Dataset: {dataset}")
+    console.print(f"Running evaluation: {eval_file}")
+    console.print(f"Dataset: {dataset}")
     if baseline:
-        typer.echo(f"Baseline: {baseline}")
+        console.print(f"Baseline: {baseline}")
     
     try:
         # Load the evaluation module
@@ -374,23 +394,23 @@ def evals(
                         input_data_class = first_param.annotation
         
         if project is None:
-            typer.echo(error("Error: No Project instance found in evaluation file"))
+            error("Error: No Project instance found in evaluation file")
             raise typer.Exit(1)
         
         if experiment_func is None:
-            typer.echo(error("Error: No experiment function with run_async method found in evaluation file"))
+            error("Error: No experiment function with run_async method found in evaluation file")
             raise typer.Exit(1)
             
         if input_data_class is None:
-            typer.echo(error("Error: Could not determine input data class from experiment function"))
+            error("Error: Could not determine input data class from experiment function")
             raise typer.Exit(1)
         
         # Run the experiments
         asyncio.run(run_experiments(project, experiment_func, dataset, input_data_class, baseline, metrics))
-        typer.echo(success("✓ Evaluation completed successfully"))
+        success("✓ Evaluation completed successfully")
         
     except Exception as e:
-        typer.echo(error(f"Error running evaluation: {e}"))
+        error(f"Error running evaluation: {e}")
         traceback.print_exc()
         raise typer.Exit(1)
 
