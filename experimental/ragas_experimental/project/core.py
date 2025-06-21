@@ -11,8 +11,6 @@ from ..backends.factory import RagasApiClientFactory
 from ..backends.ragas_api_client import RagasApiClient
 import ragas_experimental.typing as rt
 from ..utils import async_to_sync
-
-
 class Project:
     def __init__(
         self,
@@ -59,8 +57,6 @@ class Project:
         os.makedirs(os.path.join(self._root_dir, "datasets"), exist_ok=True)
         # Create experiments directory
         os.makedirs(os.path.join(self._root_dir, "experiments"), exist_ok=True)
-
-
 @patch(cls_method=True)
 def create(
     cls: Project,
@@ -83,9 +79,6 @@ def create(
         # For local backend, we use the name as the project_id
         project_id = name
         return cls(project_id, backend="local", root_dir=root_dir)
-
-
-# %% ../../nbs/api/project/core.ipynb 9
 @patch
 def delete(self: Project):
     if self.backend == "ragas_app":
@@ -105,9 +98,6 @@ def delete(self: Project):
     @patch
     def __repr__(self: Project):
         return f"Project(name='{self.name}', backend='{self.backend}')"
-
-
-# %% ../../nbs/api/project/core.ipynb 11
 @patch(cls_method=True)
 def get(
     cls: Project,
@@ -159,16 +149,12 @@ def get(
         )
     else:
         raise ValueError(f"Invalid backend: {backend}")
-
-
 @patch
 def get_dataset_path(self: Project, dataset_name: str) -> str:
     """Get the path to a dataset file in the local backend"""
     if self.backend != "local":
         raise ValueError("This method is only available for local backend")
     return os.path.join(self._root_dir, "datasets", f"{dataset_name}.csv")
-
-
 @patch
 def get_experiment_path(self: Project, experiment_name: str) -> str:
     """Get the path to an experiment file in the local backend"""
