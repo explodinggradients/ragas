@@ -3,101 +3,129 @@ GIT_ROOT ?= $(shell git rev-parse --show-toplevel)
 # Optionally show commands being executed with V=1
 Q := $(if $(V),,@)
 
+# Common paths
+RAGAS_PATHS := ragas/src ragas/tests docs
+EXPERIMENTAL_PATH := experimental/ragas_experimental
+
 help: ## Show all Makefile targets
 	$(Q)grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[33m%-30s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: format lint type style clean run-benchmarks format-experimental lint-experimental type-experimental process-experimental-notebooks
-format: ## Running code formatter for ragas
-	@echo "(isort) Ordering imports..."
-	$(Q)cd ragas && isort .
-	@echo "(black) Formatting codebase..."
-	$(Q)black --config ragas/pyproject.toml ragas/src ragas/tests docs
+# =============================================================================
+# SETUP & INSTALLATION
+# =============================================================================
+
+install: ## Install dependencies for both ragas and experimental
+	@echo "Installing dependencies..."
+	@echo "Installing ragas dependencies..."
+	$(Q)uv pip install -e "./ragas[dev]"
+	@echo "Installing experimental dependencies..."
+	$(Q)uv pip install -e "./experimental[dev]"
+
+setup: install ## Complete development environment setup
+	@echo "Development environment setup complete!"
+	@echo "Available commands: make help"
+
+# =============================================================================
+# CODE QUALITY
+# =============================================================================
+
+.PHONY: help install setup format type check clean test test-e2e benchmarks benchmarks-docker run-ci build-docs serve-docs process-experimental-notebooks
+format: ## Format and lint all code in the monorepo
+	@echo "Formatting and linting all code..."
+	@echo "(isort) Ordering imports in ragas..."
+	$(Q)cd ragas && uv run isort .
+	@echo "(black) Formatting ragas..."
+	$(Q)uv run black --config ragas/pyproject.toml $(RAGAS_PATHS)
 	@echo "(black) Formatting stubs..."
-	$(Q)find ragas/src -name "*.pyi" ! -name "*_pb2*" -exec black --pyi --config ragas/pyproject.toml {} \;
-	@echo "(ruff) Running fix only..."
-	$(Q)ruff check ragas/src docs ragas/tests --fix-only
+	$(Q)find ragas/src -name "*.pyi" ! -name "*_pb2*" -exec uv run black --pyi --config ragas/pyproject.toml {} \;
+	@echo "(ruff) Auto-fixing ragas (includes unused imports)..."
+	$(Q)uv run ruff check $(RAGAS_PATHS) --fix-only
+	@echo "(ruff) Final linting check for ragas..."
+	$(Q)uv run ruff check $(RAGAS_PATHS)
+	@echo "(black) Formatting experimental..."
+	$(Q)cd experimental && uv run black $(EXPERIMENTAL_PATH)
+	@echo "(ruff) Auto-fixing experimental (includes unused imports)..."
+	$(Q)cd experimental && uv run ruff check $(EXPERIMENTAL_PATH) --fix-only
+	@echo "(ruff) Final linting check for experimental..."
+	$(Q)cd experimental && uv run ruff check $(EXPERIMENTAL_PATH)
 
-format-experimental: ## Running code formatter for experimental
-	@echo "(black) Formatting experimental codebase..."
-	$(Q)cd experimental && black ragas_experimental
-	@echo "(ruff) Running fix only on experimental..."
-	$(Q)ruff check experimental/ragas_experimental --fix-only
+type: ## Type check all code in the monorepo
+	@echo "Type checking all code..."
+	@echo "(pyright) Typechecking ragas..."
+	$(Q)cd ragas && PYRIGHT_PYTHON_FORCE_VERSION=latest uv run pyright src
+	@echo "(pyright) Typechecking experimental..."
+	$(Q)PYRIGHT_PYTHON_FORCE_VERSION=latest uv run pyright $(EXPERIMENTAL_PATH)
 
-format-all: format format-experimental ## Format all code in the monorepo
+check: format type ## Quick health check (format + type, no tests)
+	@echo "Code quality check complete!"
 
-lint: ## Running lint checker for ragas
-	@echo "(ruff) Linting ragas project..."
-	$(Q)ruff check ragas/src docs ragas/tests
+# =============================================================================
+# TESTING
+# =============================================================================
+benchmarks: ## Run all benchmarks locally
+	@echo "Running all benchmarks..."
+	@echo "Running evaluation benchmarks..."
+	$(Q)cd $(GIT_ROOT)/ragas/tests/benchmarks && uv run python benchmark_eval.py
+	@echo "Running testset generation benchmarks..."
+	$(Q)cd $(GIT_ROOT)/ragas/tests/benchmarks && uv run python benchmark_testsetgen.py
 
-lint-experimental: ## Running lint checker for experimental
-	@echo "(ruff) Linting experimental project..."
-	$(Q)ruff check experimental/ragas_experimental
+benchmarks-docker: ## Run benchmarks in docker
+	@echo "Running benchmarks in docker..."
+	$(Q)cd $(GIT_ROOT)
+	docker buildx build --build-arg OPENAI_API_KEY=$(OPENAI_API_KEY) -t ragas-benchmark -f $(GIT_ROOT)/ragas/tests/benchmarks/Dockerfile .
+	docker inspect ragas-benchmark:latest | jq ".[0].Size" | numfmt --to=si
 
-lint-all: lint lint-experimental ## Lint all code in the monorepo
+# =============================================================================
+# CI/BUILD
+# =============================================================================
 
-type: ## Running type checker for ragas
-	@echo "(pyright) Typechecking ragas codebase..."
-	cd ragas && PYRIGHT_PYTHON_FORCE_VERSION=latest pyright src
+run-ci: format type test ## Run complete CI pipeline
+	@echo "All CI checks passed!"
 
-type-experimental: ## Running type checker for experimental
-	@echo "(pyright) Typechecking experimental codebase..."
-	PYRIGHT_PYTHON_FORCE_VERSION=latest pyright experimental/ragas_experimental
-
-type-all: type type-experimental ## Type check all code in the monorepo
 clean: ## Clean all generated files
 	@echo "Cleaning all generated files..."
 	$(Q)cd $(GIT_ROOT)/docs && $(MAKE) clean
-	$(Q)cd $(GIT_ROOT) || exit 1
 	$(Q)find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 
-test: ## Run ragas tests
+# =============================================================================
+# DOCUMENTATION
+# =============================================================================
+
+test: ## Run all unit tests in the monorepo
+	@echo "Running all unit tests..."
 	@echo "Running ragas tests..."
-	$(Q)cd ragas && pytest --nbmake tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
-
-test-e2e: ## Run ragas end2end tests
-	echo "running ragas end2end tests..."
-	$(Q)cd ragas && pytest --nbmake tests/e2e -s
-
-test-experimental: ## Run experimental tests
+	$(Q)cd ragas && uv run pytest --nbmake tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 	@echo "Running experimental tests..."
-	$(Q)cd experimental && pytest
+	$(Q)cd experimental && uv run pytest
 
-test-all: test test-experimental ## Run all tests
+test-e2e: ## Run all end-to-end tests
+	@echo "Running all end-to-end tests..."
+	@echo "Running ragas e2e tests..."
+	$(Q)cd ragas && uv run pytest --nbmake tests/e2e -s
+	@echo "Checking for experimental e2e tests..."
+	$(Q)if [ -d "experimental/tests/e2e" ]; then \
+		echo "Running experimental e2e tests..."; \
+		cd experimental && uv run pytest tests/e2e -s; \
+	else \
+		echo "No experimental e2e tests found."; \
+	fi
 
-run-ci: format lint type test ## Running all CI checks for ragas
-
-run-ci-experimental: format-experimental lint-experimental type-experimental test-experimental ## Running all CI checks for experimental
-
-run-ci-all: format-all lint-all type-all test-all ## Running all CI checks for both projects
-
-# Docs
-build-docsite-ragas: ## Build ragas documentation
-	@echo "convert ipynb notebooks to md files"
-	$(Q)python $(GIT_ROOT)/docs/ipynb_to_md.py
-	$(Q)mkdocs build
+# =============================================================================
+# BENCHMARKS
+# =============================================================================
 
 process-experimental-notebooks: ## Process experimental notebooks to markdown for MkDocs
 	@echo "Processing experimental notebooks..."
 	$(Q)python $(GIT_ROOT)/scripts/process_experimental_notebooks.py
 
-build-docsite-experimental: process-experimental-notebooks ## Build experimental documentation
+build-docs: process-experimental-notebooks ## Build all documentation
+	@echo "Building all documentation..."
+	@echo "Converting ipynb notebooks to md files..."
+	$(Q)python $(GIT_ROOT)/docs/ipynb_to_md.py
+	@echo "Building ragas documentation..."
+	$(Q)mkdocs build
 	@echo "Building experimental documentation..."
 	$(Q)cd experimental && nbdev_docs
 
-build-docsite: build-docsite-ragas ## Build all documentation
-
-serve-docsite: ## Build and serve documentation
+serve-docs: ## Build and serve documentation locally
 	$(Q)mkdocs serve --dirtyreload
-
-# Benchmarks
-run-benchmarks-eval: ## Run benchmarks for Evaluation
-	@echo "Running benchmarks for Evaluation..."
-	$(Q)cd $(GIT_ROOT)/ragas/tests/benchmarks && python benchmark_eval.py
-run-benchmarks-testset: ## Run benchmarks for TestSet Generation
-	@echo "Running benchmarks for TestSet Generation..."
-	$(Q)cd $(GIT_ROOT)/ragas/tests/benchmarks && python benchmark_testsetgen.py
-run-benchmarks-in-docker: ## Run benchmarks in docker
-	@echo "Running benchmarks in docker..."
-	$(Q)cd $(GIT_ROOT)
-	docker buildx build --build-arg OPENAI_API_KEY=$(OPENAI_API_KEY) -t ragas-benchmark -f $(GIT_ROOT)/ragas/tests/benchmarks/Dockerfile .
-	docker inspect ragas-benchmark:latest | jq ".[0].Size" | numfmt --to=si
