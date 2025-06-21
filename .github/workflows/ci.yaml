@@ -93,7 +93,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv pip install -e "./ragas[dev]"
+          uv pip install --system -e "./ragas[dev]"
 
       - name: Run unit tests
         run: |
@@ -150,8 +150,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv pip install -e "./ragas[dev]"
-          uv pip install -e "./experimental[dev]"
+          uv pip install --system -e "./ragas[dev]"
+          uv pip install --system -e "./experimental[dev]"
 
       - name: Run experimental tests
         run: |
@@ -192,7 +192,9 @@ jobs:
           key: codestyle-${{ hashFiles('requirements/dev.txt') }}
 
       - name: Install dependencies
-        run: make install
+        run: |
+          uv pip install --system -e "./ragas[dev]"
+          uv pip install --system -e "./experimental[dev]"
 
       - name: Format check (dry run)
         run: |
