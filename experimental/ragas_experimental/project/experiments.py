@@ -13,13 +13,13 @@ import typing as t
 import os
 
 from fastcore.utils import patch
-from rich.progress import Progress
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
 
 from .core import Project
 from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
 )
-from ..utils import async_to_sync, create_nano_id
+from ..utils import async_to_sync, create_nano_id, console
 from ..dataset import Dataset, BaseModelType
 from ..experiment import Experiment
 import ragas_experimental.typing as rt
@@ -535,7 +535,15 @@ def experiment(
 
                 # Use rich Progress for combined progress tracking
                 results = []
-                with Progress() as progress:
+                with Progress(
+                        SpinnerColumn(),
+                        TextColumn("[progress.description]{task.description}"),
+                        BarColumn(),
+                        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+                        TimeElapsedColumn(),
+                        console=console,
+                        transient=True
+                        ) as progress:
                     task = progress.add_task("Running experiment", total=total_operations)
 
                     # Process all items
