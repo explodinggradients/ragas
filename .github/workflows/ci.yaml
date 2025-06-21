@@ -151,11 +151,11 @@ jobs:
       - name: Install dependencies
         run: |
           uv pip install --system -e "./ragas[dev]"
-          uv pip install --system -e "./experimental[dev]"
+          cd experimental && uv pip install --system -e "." --group dev
 
       - name: Run experimental tests
         run: |
-          cd experimental && uv run pytest
+          cd experimental && uv run pytest -v --tb=short
         env:
           __RAGAS_DEBUG_TRACKING: true
           RAGAS_DO_NOT_TRACK: true
@@ -194,7 +194,7 @@ jobs:
       - name: Install dependencies
         run: |
           uv pip install --system -e "./ragas[dev]"
-          uv pip install --system -e "./experimental[dev]"
+          cd experimental && uv pip install --system -e "." --group dev
 
       - name: Format check (dry run)
         run: |
