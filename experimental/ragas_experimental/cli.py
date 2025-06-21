@@ -9,7 +9,6 @@ import typer
 from typing import Optional, Any, Dict
 import traceback
 from colorama import Fore, Style, init
-
 from ragas_experimental.metric import MetricResult
 from .project.core import Project
 from .model.pydantic_model import ExtendedPydanticBaseModel as BaseModel
@@ -30,8 +29,8 @@ def error(text: str) -> str:
     return f"{Fore.RED}{text}{Style.RESET_ALL}"
 
 def info(text: str) -> str:
-    """Return text in blue color for info messages."""
-    return f"{Fore.BLUE}{text}{Style.RESET_ALL}"
+    """Return text in yellow color for info messages."""
+    return f"{Fore.YELLOW}{text}{Style.RESET_ALL}"
 
 def warning(text: str) -> str:
     """Return text in yellow color for warning messages."""
@@ -52,6 +51,10 @@ def improvement(text: str) -> str:
 def regression(text: str) -> str:
     """Return text in red for regressions."""
     return f"{Fore.RED}{text}{Style.RESET_ALL}"
+
+def metric_name_color(text: str) -> str:
+    """Return text in yellow for metric names."""
+    return f"{Fore.YELLOW}{text}{Style.RESET_ALL}"
 
 
 def load_eval_module(eval_path: str) -> Any:
@@ -77,7 +80,7 @@ def load_eval_module(eval_path: str) -> Any:
     return module
 
 
-async def run_experiments(project, experiment_func, dataset_name: str, input_data_class: type, baseline_name: Optional[str] = None):
+async def run_experiments(project, experiment_func, dataset_name: str, input_data_class: type, baseline_name: Optional[str] = None, metrics: str = None):
     """Run experiments using ragas dataset system."""
     typer.echo(f"Getting dataset: {dataset_name}")
     
@@ -91,7 +94,6 @@ async def run_experiments(project, experiment_func, dataset_name: str, input_dat
         raise typer.Exit(1)
     
     # Run the experiment using the run_async method
-    typer.echo("Running experiments...")
     try:
         experiment_result = await experiment_func.run_async(dataset)
         typer.echo(success("✓ Completed experiments successfully"))
@@ -113,55 +115,90 @@ async def run_experiments(project, experiment_func, dataset_name: str, input_dat
             typer.echo(info(f"dataset   :  {dataset_name}   ({len(dataset)} rows)"))
             typer.echo(info("────────────────────────────────────────────────────────────"))
             
-            # Find metrics in current results using the same method as the non-baseline case
-            current_metric_fields = experiment_result.get_fields_by_type(MetricResult)
+            # Parse metrics from provided list
+            current_metric_fields = [metric.strip() for metric in metrics.split(',')]
             current_metrics = {field_name: [] for field_name in current_metric_fields}
             # Iterate through all entries in the current experiment
             for entry in experiment_result:
                 for field_name in current_metric_fields:
                     field_value = getattr(entry, field_name)
-                    current_metrics[field_name].append(field_value.result)
+                    current_metrics[field_name].append(field_value)
             
             # Calculate average scores for each current metric
             current_agg_metrics = {}
             for metric_name in current_metric_fields:
                 scores = current_metrics[metric_name]
-                avg_score = sum(scores) / len(scores) if scores else 0
+                if not scores:
+                    avg_score = 0
+                elif isinstance(scores[0], (int, float)):
+                    # Numeric metric - calculate average
+                    avg_score = sum(scores) / len(scores)
+                else:
+                    # Categorical metric - create frequency distribution
+                    from collections import Counter
+                    avg_score = dict(Counter(scores))
                 current_agg_metrics[metric_name] = {"score": avg_score}
             
-            # Find metrics in baseline results using the same method
-            baseline_metric_fields = baseline.get_fields_by_type(MetricResult)
+            # Use same metrics for baseline results
+            baseline_metric_fields = current_metric_fields
             baseline_metrics = {field_name: [] for field_name in baseline_metric_fields}
             # Iterate through all entries in the baseline experiment
             for entry in baseline:
                 for field_name in baseline_metric_fields:
                     field_value = getattr(entry, field_name)
-                    baseline_metrics[field_name].append(field_value.result)
+                    baseline_metrics[field_name].append(field_value)
             
             # Calculate average scores for each baseline metric
             baseline_agg_metrics = {}
             for metric_name in baseline_metric_fields:
                 scores = baseline_metrics[metric_name]
                 # TODO: remove temporary fix for empty scores
-                scores = [eval(score) for score in scores if score is not None]
-                avg_score = sum(scores) / len(scores) if scores else 0
+                scores = [score for score in scores if score is not None]
+                if not scores:
+                    avg_score = 0
+                elif isinstance(scores[0], (int, float)):
+                    # Numeric metric - calculate average
+                    avg_score = sum(scores) / len(scores)
+                else:
+                    # Categorical metric - create frequency distribution
+                    from collections import Counter
+                    avg_score = dict(Counter(scores))
                 baseline_agg_metrics[metric_name] = {"score": avg_score}
             
-            # Print comparison table
-            typer.echo(info("metric                 current   baseline   Δ         gate"))
-            typer.echo(info("───────────────────────────────────────────────────────────"))
+            # Separate numeric and categorical metrics
+            numeric_metrics = {}
+            categorical_metrics = {}
             
-            failures = 0
             for metric_name, current_metric in current_agg_metrics.items():
                 if metric_name in baseline_agg_metrics:
-                    baseline_metric = baseline_agg_metrics[metric_name]
                     current_value = current_metric.get("score", 0)
-                    baseline_value = baseline_metric.get("score", 0)
+                    baseline_value = baseline_agg_metrics[metric_name].get("score", 0)
+                    
+                    if isinstance(current_value, dict) and isinstance(baseline_value, dict):
+                        categorical_metrics[metric_name] = {
+                            'current': current_value,
+                            'baseline': baseline_value
+                        }
+                    else:
+                        numeric_metrics[metric_name] = {
+                            'current': current_value,
+                            'baseline': baseline_value
+                        }
+            
+            # Print numeric metrics table
+            failures = 0
+            if numeric_metrics:
+                typer.echo(info("metric                 current   baseline   Δ         gate"))
+                typer.echo(info("───────────────────────────────────────────────────────────"))
+                
+                for metric_name, values in numeric_metrics.items():
+                    current_value = values['current']
+                    baseline_value = values['baseline']
                     delta = current_value - baseline_value
                     
                     # Format values
-                    current_str = f"{current_value:.3f}".ljust(8)
-                    baseline_str = f"{baseline_value:.3f}".ljust(8)
+                    current_str = f"{current_value:.3f}".ljust(9)
+                    baseline_str = f"{baseline_value:.3f}".ljust(9)
                     
                     # Determine if delta is improvement (depends on metric)
                     is_improvement = delta > 0
@@ -172,7 +209,7 @@ async def run_experiments(project, experiment_func, dataset_name: str, input_dat
                     arrow = "▲" if delta > 0 else "▼"
                     delta_value = f"{arrow}{abs(delta):.3f}"
                     # Pad the original value, then apply color
-                    padded_delta = delta_value.ljust(8)
+                    padded_delta = delta_value.ljust(9)
                     if is_improvement:
                         delta_str = improvement(padded_delta)
                     else:
@@ -180,23 +217,58 @@ async def run_experiments(project, experiment_func, dataset_name: str, input_dat
                     
                     # Determine if test passes (allow small regression)
                     passed = is_improvement or abs(delta) < 0.01
-                    gate_str = metric_pass("pass") if passed else metric_fail("**fail**")
+                    gate_str = metric_pass("pass") if passed else metric_fail("fail")
                     
                     if not passed:
                         failures += 1
                     
                     # Print row
-                    metric_display = metric_name.replace("_", " ").ljust(20)
-                    typer.echo(f"{metric_display} {current_str} {baseline_str} {delta_str} {gate_str}")
+                    metric_display_name = metric_name.replace("_", " ").ljust(20)
+                    metric_display_colored = metric_name_color(metric_display_name)
+                    typer.echo(f"{metric_display_colored} {current_str} {baseline_str} {delta_str} {gate_str}")
+                
+                typer.echo(info("────────────────────────────────────────────────────────────"))
             
-            typer.echo(info("────────────────────────────────────────────────────────────"))
-            if failures > 0:
-                typer.echo(warning(f"{failures} examples regressed (≤ -0.1).  use  -k failed  to re-run"))
+            # Print categorical metrics
+            categorical_failures = 0
+            for metric_name_key, values in categorical_metrics.items():
+                current_value = values['current'] 
+                baseline_value = values['baseline']
+                
+                typer.echo(f"\n{metric_name_color(metric_name_key)}")
+                
+                # Get all unique categories
+                all_categories = set(current_value.keys()) | set(baseline_value.keys())
+                
+                for category in sorted(all_categories):
+                    current_count = current_value.get(category, 0)
+                    baseline_count = baseline_value.get(category, 0)
+                    delta = current_count - baseline_count
+                    
+                    if delta > 0:
+                        delta_str = improvement(f"▲{delta}")
+                    elif delta < 0:
+                        delta_str = regression(f"▼{abs(delta)}")
+                    else:
+                        delta_str = "→"
+                    
+                    typer.echo(f"  {category:<15} current: {current_count:<3} baseline: {baseline_count:<3}   {delta_str}")
+            
+            if categorical_metrics:
+                typer.echo(info("────────────────────────────────────────────────────────────"))
+            
+            # Final verdict (only for numeric metrics)
+            if numeric_metrics:
+                if failures > 0:
+                    typer.echo("final verdict: FAIL")
+                    typer.echo(warning(f"{failures} numeric metrics failed"))
+                else:
+                    typer.echo("final verdict: PASS")
             
             typer.echo(success("✓ Comparison completed"))
             
         except Exception as e:
-            typer.echo(error(f"Error comparing with baseline: {e}, {baseline_metrics}"))
+            typer.echo(error(f"Error comparing with baseline: {e}"))
             traceback.print_exc()  # Print the full traceback with line numbers
             # Continue without comparison
     else:
@@ -205,21 +277,31 @@ async def run_experiments(project, experiment_func, dataset_name: str, input_dat
         typer.echo(info(f"dataset   :  {dataset_name}   ({len(dataset)} rows)"))
         typer.echo(info("────────────────────────────────────────────────────────────"))
         
-        # Find metrics in results
-        metric_fields = experiment_result.get_fields_by_type(MetricResult)
-        metrics = {field_name: [] for field_name in metric_fields}
+        # Parse metrics from provided list
+        metric_fields = [metric.strip() for metric in metrics.split(',')]
+        metrics_data = {field_name: [] for field_name in metric_fields}
         # Iterate through all entries in the experiment
         for entry in experiment_result:
             # Get the entry's data as a dict
             for field_name in metric_fields:
                 field_value = getattr(entry, field_name)
-                metrics[field_name].append(field_value.result)
+                metrics_data[field_name].append(field_value)
         
         # Calculate average scores for each metric
         agg_metrics = {}
         for metric_name in metric_fields:
-            scores = metrics[metric_name]
-            avg_score = sum(scores) / len(scores) if scores else 0
+            scores = metrics_data[metric_name]
+            # Remove None values like in baseline code
+            scores = [score for score in scores if score is not None]
+            if not scores:
+                avg_score = 0
+            elif isinstance(scores[0], (int, float)):
+                # Numeric metric - calculate average
+                avg_score = sum(scores) / len(scores)
+            else:
+                # Categorical metric - create frequency distribution
+                from collections import Counter
+                avg_score = dict(Counter(scores))
             agg_metrics[metric_name] = {"score": avg_score}
         
         # Print metrics table
@@ -228,9 +310,24 @@ async def run_experiments(project, experiment_func, dataset_name: str, input_dat
         
         for metric_name, metric in agg_metrics.items():
             metric_value = metric.get("score", 0)
-            metric_display = metric_name.replace("_", " ").ljust(20)
-            value_str = f"{metric_value:.3f}".ljust(8)
-            typer.echo(f"{metric_display} {value_str}")
+            metric_display_name = metric_name.replace("_", " ").ljust(20)
+            metric_display = metric_name_color(metric_display_name)
+            
+            # Handle different metric types for display
+            if isinstance(metric_value, dict):
+                # Categorical metric - show all values with counts
+                if metric_value:
+                    # Sort by count (descending) for better readability
+                    sorted_items = sorted(metric_value.items(), key=lambda x: x[1], reverse=True)
+                    value_parts = [f"{val}({count})" for val, count in sorted_items]
+                    value_str = ", ".join(value_parts)
+                else:
+                    value_str = "N/A"
+                typer.echo(f"{metric_display} {value_str}")
+            else:
+                # Numeric metric
+                value_str = f"{metric_value:.3f}".ljust(8)
+                typer.echo(f"{metric_display} {value_str}")
             
         typer.echo(info("────────────────────────────────────"))
         typer.echo(success("✓ Experiment results displayed"))
@@ -244,6 +341,7 @@ def evals(
     eval_file: str = typer.Argument(..., help="Path to the evaluation file"),
     dataset: str = typer.Option(..., "--dataset", help="Name of the dataset in the project"),
     baseline: Optional[str] = typer.Option(None, "--baseline", help="Baseline experiment name to compare against"),
+    metrics: str = typer.Option(..., "--metrics", help="Comma-separated list of metric field names to evaluate"),
 ):
     """Run evaluations on a dataset."""
     typer.echo(f"Running evaluation: {eval_file}")
@@ -289,7 +387,7 @@ def evals(
             raise typer.Exit(1)
         
         # Run the experiments
-        asyncio.run(run_experiments(project, experiment_func, dataset, input_data_class, baseline))
+        asyncio.run(run_experiments(project, experiment_func, dataset, input_data_class, baseline, metrics))
         typer.echo(success("✓ Evaluation completed successfully"))
         
     except Exception as e:
