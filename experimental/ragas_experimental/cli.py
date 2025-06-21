@@ -257,13 +257,6 @@ async def run_experiments(project, experiment_func, dataset_name: str, input_dat
             if categorical_metrics:
                 typer.echo(info("────────────────────────────────────────────────────────────"))
             
-            # Final verdict (only for numeric metrics)
-            if numeric_metrics:
-                if failures > 0:
-                    typer.echo("final verdict: FAIL")
-                    typer.echo(warning(f"{failures} numeric metrics failed"))
-                else:
-                    typer.echo("final verdict: PASS")
             
             typer.echo(success("✓ Comparison completed"))
             
@@ -340,8 +333,8 @@ async def run_experiments(project, experiment_func, dataset_name: str, input_dat
 def evals(
     eval_file: str = typer.Argument(..., help="Path to the evaluation file"),
     dataset: str = typer.Option(..., "--dataset", help="Name of the dataset in the project"),
-    baseline: Optional[str] = typer.Option(None, "--baseline", help="Baseline experiment name to compare against"),
     metrics: str = typer.Option(..., "--metrics", help="Comma-separated list of metric field names to evaluate"),
+    baseline: Optional[str] = typer.Option(None, "--baseline", help="Baseline experiment name to compare against"),
 ):
     """Run evaluations on a dataset."""
     typer.echo(f"Running evaluation: {eval_file}")
