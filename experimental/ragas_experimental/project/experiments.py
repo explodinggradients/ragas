@@ -13,7 +13,7 @@ import typing as t
 import os
 
 from fastcore.utils import patch
-from tqdm import tqdm
+from rich.progress import Progress
 
 from .core import Project
 from ragas_experimental.model.pydantic_model import (
@@ -533,23 +533,22 @@ def experiment(
                     len(tasks) * 2
                 )  # Each item requires processing and appending
 
-                # Use tqdm for combined progress tracking
+                # Use rich Progress for combined progress tracking
                 results = []
-                progress_bar = tqdm(total=total_operations, desc="Running experiment")
+                with Progress() as progress:
+                    task = progress.add_task("Running experiment", total=total_operations)
 
-                # Process all items
-                for future in asyncio.as_completed(tasks):
-                    result = await future
-                    if result is not None:
-                        results.append(result)
-                    progress_bar.update(1)  # Update for task completion
+                    # Process all items
+                    for future in asyncio.as_completed(tasks):
+                        result = await future
+                        if result is not None:
+                            results.append(result)
+                        progress.update(task, advance=1)  # Update for task completion
 
-                # Append results to experiment view
-                for result in results:
-                    experiment_view.append(result)
-                    progress_bar.update(1)  # Update for append operation
-
-                progress_bar.close()
+                    # Append results to experiment view
+                    for result in results:
+                        experiment_view.append(result)
+                        progress.update(task, advance=1)  # Update for append operation
 
             except Exception as e:
                 # Clean up the experiment if there was an error and it was created
@@ -792,19 +791,22 @@ def compare_and_plot(
         model: Model class defining the experiment structure
     """
     results = {}
-    for experiment_name in tqdm(experiment_names, desc="Fetching experiments"):
-        experiment = self.get_experiment(experiment_name, model)
-        experiment.load()
-        results[experiment_name] = {}
-        for row in experiment:
-            for metric in metric_names:
-                if metric not in results[experiment_name]:
-                    results[experiment_name][metric] = []
-                if hasattr(row, metric):
-                    results[experiment_name][metric].append(getattr(row, metric))
-                else:
-                    results[metric].append(None)
-                    logging.warning(f"Metric {metric} not found in row: {row}")
+    with Progress() as progress:
+        task = progress.add_task("Fetching experiments", total=len(experiment_names))
+        for experiment_name in experiment_names:
+            experiment = self.get_experiment(experiment_name, model)
+            experiment.load()
+            results[experiment_name] = {}
+            for row in experiment:
+                for metric in metric_names:
+                    if metric not in results[experiment_name]:
+                        results[experiment_name][metric] = []
+                    if hasattr(row, metric):
+                        results[experiment_name][metric].append(getattr(row, metric))
+                    else:
+                        results[metric].append(None)
+                        logging.warning(f"Metric {metric} not found in row: {row}")
+            progress.update(task, advance=1)
 
     fig = plot_experiments_as_subplots(results, experiment_ids=experiment_names)
     fig.show()
