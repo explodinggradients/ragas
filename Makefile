@@ -17,7 +17,7 @@ help: ## Show all Makefile targets
 install: ## Install dependencies for both ragas and experimental
 	@echo "Installing dependencies..."
 	@echo "Installing ragas dependencies..."
-	$(Q)pip install -e ".[dev]"
+	$(Q)pip install -e "./ragas[dev]"
 	@echo "Installing experimental dependencies..."
 	$(Q)pip install -e "./experimental[dev]"
 
