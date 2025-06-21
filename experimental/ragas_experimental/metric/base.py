@@ -11,7 +11,7 @@ import asyncio
 from dataclasses import dataclass, field
 from pydantic import BaseModel
 import typing as t
-from tqdm import tqdm
+from rich.progress import Progress
 import string
 
 
@@ -118,7 +118,8 @@ class Metric(ABC):
         total_items = sum([len(dataset) for dataset in datasets])
         input_vars = self.get_variables()
         output_vars = [self.name, f"{self.name}_reason"]
-        with tqdm(total=total_items, desc="Processing examples") as pbar:
+        with Progress() as progress:
+            task = progress.add_task("Processing examples", total=total_items)
             for dataset in datasets:
                 for row in dataset:
                     inputs = {
@@ -133,4 +134,4 @@ class Metric(ABC):
                     }
                     if output:
                         self.prompt.add_example(inputs, output)
-                    pbar.update(1)
+                    progress.update(task, advance=1)
