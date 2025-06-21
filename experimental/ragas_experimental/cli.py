@@ -18,6 +18,12 @@ init(autoreset=True)
 
 app = typer.Typer(help="Ragas CLI for running LLM evaluations")
 
+# Create a callback for the main app to make it a group
+@app.callback()
+def main():
+    """Ragas CLI for running LLM evaluations"""
+    pass
+
 
 # Color utility functions
 def success(text: str) -> str:
