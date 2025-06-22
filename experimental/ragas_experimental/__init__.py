@@ -19,9 +19,6 @@ from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
 )
 
-# just import to run the module
-import ragas_experimental.project.datasets
-import ragas_experimental.project.experiments
-import ragas_experimental.project.comparison
+# Import the main Project class - decorators are added automatically in core.py
 
 __all__ = ["Project", "NotionModel", "nmt", "BaseModel"]
