@@ -172,9 +172,9 @@ def test__cosine_similarity(n_test_embeddings):
     result = builder._block_cosine_similarity(embeddings, embeddings)
 
     assert result.shape == expected.shape, "Result shape does not match expected shape"
-    assert np.allclose(result, expected, atol=1e-5), (
-        "Cosine similarity does not match expected values"
-    )
+    assert np.allclose(
+        result, expected, atol=1e-5
+    ), "Cosine similarity does not match expected values"
 
 
 # Test for the internal _find_similar_embedding_pairs method
@@ -212,14 +212,14 @@ def test__find_similar_embedding_pairs(n_test_embeddings, threshold, block_size)
 
     for i, j, similarity_float in result:
         assert i < j, "Pairs should be ordered (i < j)"
-        assert similarity_float >= threshold, (
-            f"Similarity {similarity_float} should be >= {threshold}"
-        )
+        assert (
+            similarity_float >= threshold
+        ), f"Similarity {similarity_float} should be >= {threshold}"
         for x, y, expected_similarity in expected:
             if i == x and j == y:
-                assert similarity_float == pytest.approx(expected_similarity), (
-                    "Cosine similarity does not match expected value"
-                )
+                assert similarity_float == pytest.approx(
+                    expected_similarity
+                ), "Cosine similarity does not match expected value"
 
                 break
 
@@ -230,9 +230,9 @@ class TestCosineSimilarityBuilder:
         builder = CosineSimilarityBuilder(property_name="embedding", threshold=0.1)
         relationships = await builder.transform(copy.deepcopy(simple_kg))
         for r in relationships:
-            assert r.source.id != r.target.id, (
-                "Self-relationships should not be created"
-            )
+            assert (
+                r.source.id != r.target.id
+            ), "Self-relationships should not be created"
 
     @pytest.mark.asyncio
     async def test_no_duplicate_relationships(self, simple_kg):
@@ -260,9 +260,9 @@ class TestCosineSimilarityBuilder:
         kg = KnowledgeGraph(nodes=[node1, node2])
         builder = CosineSimilarityBuilder(property_name="embedding", threshold=0.5)
         relationships = await builder.transform(kg)
-        assert len(relationships) == 0, (
-            "No relationships should be created below threshold"
-        )
+        assert (
+            len(relationships) == 0
+        ), "No relationships should be created below threshold"
 
     @pytest.mark.asyncio
     async def test_all_above_threshold(self):
@@ -351,9 +351,9 @@ class TestCosineSimilarityBuilder:
         # Should mutate kg in-place
         apply_transforms(kg, builder, run_config=RunConfig(max_workers=2))
         # Check that relationships were added
-        assert any(r.type == "cosine_similarity" for r in kg.relationships), (
-            "No cosine_similarity relationships found after apply_transforms"
-        )
+        assert any(
+            r.type == "cosine_similarity" for r in kg.relationships
+        ), "No cosine_similarity relationships found after apply_transforms"
         # Check that expected relationship exists
         assert any(
             str(r.source.id) == "f353e5c2-e432-4d1e-84a8-d750c93d4edf"
@@ -419,9 +419,9 @@ async def test_apply_transforms_summary_cosine_similarity_builder(simple_kg):
     )
     kg = simple_kg
     apply_transforms(kg, builder, run_config=RunConfig(max_workers=2))
-    assert any(r.type == "summary_cosine_similarity" for r in kg.relationships), (
-        "No summary_cosine_similarity relationships found after apply_transforms"
-    )
+    assert any(
+        r.type == "summary_cosine_similarity" for r in kg.relationships
+    ), "No summary_cosine_similarity relationships found after apply_transforms"
     assert any(
         str(r.source.id) == "f353e5c2-e432-4d1e-84a8-d750c93d4edf"
         and str(r.target.id) == "437c8c08-cef6-4ebf-a35f-93d6168b61a4"
