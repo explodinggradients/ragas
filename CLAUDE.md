@@ -188,3 +188,7 @@ console_handler.setFormatter(formatter)
 # Add the handler to the logger
 analytics_logger.addHandler(console_handler)
 ```
+
+## Memories
+
+- whenever you create such docs put in in /experiments because that is gitignored and you can use it as a scratchpad or tmp directory for storing these

@@ -22,5 +22,4 @@ class NumericMetric(Metric):
         self._response_model = create_model("response_model", reason=(str, ...), result=(float, ...))
 
 
-
 numeric_metric = create_metric_decorator(NumericMetric)
