@@ -8,13 +8,10 @@ from pathlib import Path
 import typer
 from typing import Optional, Any, Dict
 import traceback
-from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 from rich.panel import Panel
-from ragas_experimental.metric import MetricResult
 from .project.core import Project
-from .model.pydantic_model import ExtendedPydanticBaseModel as BaseModel
 from .utils import console
 
 
