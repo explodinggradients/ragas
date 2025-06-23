@@ -1,4 +1,4 @@
-"""Utils to help with interact with langfuse traces"""
+"""Utils to help to interact with langfuse traces"""
 __all__ = ["observe", "logger", "LangfuseTrace", "sync_trace", "add_query_param"]
 
 import typing as t

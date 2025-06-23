@@ -3,8 +3,6 @@ import typing as t
 import pytest
 from unittest.mock import Mock
 from dataclasses import dataclass, field
-from pydantic import BaseModel
-
 from ragas_experimental.project.core import Project
 from ragas_experimental.model.pydantic_model import ExtendedPydanticBaseModel as BaseModel
 from ragas_experimental.metric import MetricResult
@@ -163,7 +161,7 @@ def test_batch_evaluation_workflow(temp_project, mock_llm):
     # Create metric
     metric = IntegrationMetric(
         name="batch_metric",
-        prompt="Evaluate: {question} -> {answer}"
+        prompt="Evaluate: {question} with context: {context} -> {answer} vs ground_truth: {ground_truth}"
     )
     
     # Run individual evaluations (since batch_score doesn't exist in the real API)

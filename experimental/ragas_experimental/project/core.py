@@ -182,7 +182,6 @@ class Project:
             name = model.__name__
             
         dataset_id = self._backend.create_dataset(name, model)
-        dataset_backend = self._backend.get_dataset_backend(dataset_id, name, model)
         
         backend_name = "ragas_app" if isinstance(self._backend, PlatformProjectBackend) else "local"
         
@@ -251,7 +250,6 @@ class Project:
             Experiment: An experiment object for managing results
         """
         experiment_id = self._backend.create_experiment(name, model)
-        experiment_backend = self._backend.get_experiment_backend(experiment_id, name, model)
         
         backend_name = "ragas_app" if isinstance(self._backend, PlatformProjectBackend) else "local"
         
@@ -337,5 +335,5 @@ class Project:
     
     def __repr__(self) -> str:
         """String representation of the project."""
-        backend_name = "platform" if isinstance(self._backend, PlatformProjectBackend) else "local_csv"
+        backend_name = "ragas_app" if isinstance(self._backend, PlatformProjectBackend) else "local"
         return f"Project(name='{self.name}', backend='{backend_name}')"

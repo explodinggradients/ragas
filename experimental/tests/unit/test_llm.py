@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 from pydantic import BaseModel
 
 from ragas_experimental.llm.llm import RagasLLM, ragas_llm

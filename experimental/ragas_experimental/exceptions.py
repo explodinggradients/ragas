@@ -1,4 +1,4 @@
-"""All the exceptions specific to the `notion_annotator` project."""
+"""All the exceptions specific to the `ragas_experimental` project."""
 __all__ = [
     "RagasError",
     "ValidationError",
@@ -17,15 +17,15 @@ class RagasError(Exception):
     """Base class for all Ragas-related exceptions."""
 
     pass
-class ValidationError(Exception):
+class ValidationError(RagasError):
     """Raised when field validation fails."""
 
     pass
-class DuplicateError(Exception):
+class DuplicateError(RagasError):
     """Raised when multiple items are found but only one was expected."""
 
     pass
-class NotFoundError(Exception):
+class NotFoundError(RagasError):
     """Raised when an item is not found."""
 
     pass

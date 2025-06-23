@@ -232,7 +232,7 @@ make run-ci  # Runs: format + type + test
 - **Architecture**: Modular metrics and evaluation framework
 
 ### Experimental
-- **Dependencies**: Defined in both `pyproject.toml` and `settings.ini`
+- **Dependencies**: Defined in `pyproject.toml`
 - **Testing**: Pure pytest (no nbdev)
 - **Features**: Advanced evaluation tools and UI components
 

@@ -68,13 +68,7 @@ dev = [
     "pytest-asyncio",
     "nbmake",
 ]
-test = [
-    "pytest",
-    "pytest-xdist[psutil]",
-    "pytest-asyncio",
-    "llama_index",
-    "nbmake",
-]
+test = []
 [tool.setuptools]
 package-dir = {"" = "src"}
 

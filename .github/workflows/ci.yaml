@@ -204,8 +204,7 @@ jobs:
           uv run black --check --config ragas/pyproject.toml ragas/src ragas/tests docs
           uv run ruff check ragas/src docs ragas/tests
           echo "Checking experimental formatting..."
-          cd experimental && uv run black --check ragas_experimental
-          cd experimental && uv run ruff check ragas_experimental
+          cd experimental && uv run black --check ragas_experimental && uv run ruff check ragas_experimental
 
       - name: Type check
         run: make type

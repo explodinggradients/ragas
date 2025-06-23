@@ -6,6 +6,8 @@ import typing as t
 from mlflow.entities.trace import Trace
 from mlflow.entities.span import Span
 from mlflow import get_last_active_trace
+
+
 class MLflowTrace:
 
     def __init__(self, trace: Trace):
@@ -33,6 +35,8 @@ class MLflowTrace:
     def get_filter(self, span_name) -> t.List[Span]:
 
         return self.trace.search_spans(name=span_name)
+
+
 async def sync_trace():
 
     trace = get_last_active_trace()

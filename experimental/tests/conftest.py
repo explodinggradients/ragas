@@ -47,9 +47,11 @@ class MockEmbedding(BaseEmbedding):
     """Mock Embedding for testing purposes"""
 
     def embed_text(self, text: str, **kwargs: t.Any) -> t.List[float]:
+        np.random.seed(42)  # Set seed for deterministic tests
         return np.random.rand(768).tolist()
 
     async def aembed_text(self, text: str, **kwargs: t.Any) -> t.List[float]:
+        np.random.seed(42)  # Set seed for deterministic tests
         return np.random.rand(768).tolist()
 
     def embed_document(

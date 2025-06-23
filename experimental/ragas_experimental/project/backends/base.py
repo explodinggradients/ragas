@@ -12,12 +12,12 @@ class DatasetBackend(ABC):
     """
     
     @abstractmethod
-    def initialize(self, dataset) -> None:
+    def initialize(self, dataset: t.Any) -> None:
         """Initialize the backend with dataset information"""
         pass
         
     @abstractmethod
-    def get_column_mapping(self, model) -> t.Dict[str, str]:
+    def get_column_mapping(self, model: t.Type[BaseModel]) -> t.Dict[str, str]:
         """Get mapping between model fields and backend columns"""
         pass
         

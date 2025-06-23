@@ -71,7 +71,7 @@ class Metric(ABC):
         self,
         llm: RagasLLM,
         inputs: t.List[t.Dict[str, t.Any]],
-    ) -> t.List[t.Any]:
+    ) -> t.List[MetricResult]:
         return [self.score(llm, **input_dict) for input_dict in inputs]
 
     async def abatch_score(

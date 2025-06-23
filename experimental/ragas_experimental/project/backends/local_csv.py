@@ -198,8 +198,6 @@ class LocalCSVDatasetBackend(DatasetBackend):
             # If no entries, just create an empty CSV with headers
             if self.dataset is None:
                 raise ValueError("Dataset must be initialized")
-            if self.dataset is None:
-                raise ValueError("Dataset must be initialized")
             field_names = ["_row_id"] + list(self.dataset.model.model_fields.keys())
             with open(csv_path, "w", newline="") as f:
                 writer = csv.DictWriter(f, fieldnames=field_names)

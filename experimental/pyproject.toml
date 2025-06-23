@@ -34,11 +34,7 @@ dev = [
     "mlflow",
     "gitpython",
 ]
-test = [
-    "pytest>=7.0.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-mock>=3.10.0",
-]
+test = []
 
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "function"

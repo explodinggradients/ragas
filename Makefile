@@ -71,7 +71,7 @@ benchmarks: ## Run all benchmarks locally
 
 benchmarks-docker: ## Run benchmarks in docker
 	@echo "Running benchmarks in docker..."
-	$(Q)cd $(GIT_ROOT)
+	$(Q)cd $(GIT_ROOT) || exit 1
 	docker buildx build --build-arg OPENAI_API_KEY=$(OPENAI_API_KEY) -t ragas-benchmark -f $(GIT_ROOT)/ragas/tests/benchmarks/Dockerfile .
 	docker inspect ragas-benchmark:latest | jq ".[0].Size" | numfmt --to=si
 

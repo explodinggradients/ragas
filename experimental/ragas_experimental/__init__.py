@@ -1,5 +1,3 @@
-__all__ = []
-
 # Get version from setuptools_scm-generated file
 try:
     from ._version import version as __version__

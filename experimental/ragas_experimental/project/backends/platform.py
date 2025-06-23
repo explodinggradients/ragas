@@ -246,8 +246,8 @@ class PlatformProjectBackend(ProjectBackend):
         
         # Create the columns for the dataset
         column_types = rt.ModelConverter.model_to_columns(model)
-        sync_version = async_to_sync(create_dataset_columns)
-        sync_version(
+        sync_create_columns = async_to_sync(create_dataset_columns)
+        sync_create_columns(
             project_id=self.project_id,
             dataset_id=dataset_info["id"],
             columns=column_types,
