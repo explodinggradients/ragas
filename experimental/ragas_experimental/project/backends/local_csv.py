@@ -42,6 +42,8 @@ class LocalCSVDatasetBackend(DatasetBackend):
         # Create file with headers if it doesn't exist
         if not os.path.exists(csv_path):
             # Include _row_id in the headers
+            if self.dataset is None:
+                raise ValueError("Dataset must be initialized before creating CSV headers")
             field_names = ["_row_id"] + list(self.dataset.model.__annotations__.keys())
             
             with open(csv_path, "w", newline="") as f:
@@ -85,11 +87,11 @@ class LocalCSVDatasetBackend(DatasetBackend):
                             field_type = model_class.model_fields[field].annotation
                             
                             # Handle basic type conversions
-                            if field_type == int:
+                            if field_type is int:
                                 typed_row[field] = int(value) if value else 0
-                            elif field_type == float:
+                            elif field_type is float:
                                 typed_row[field] = float(value) if value else 0.0
-                            elif field_type == bool:
+                            elif field_type is bool:
                                 typed_row[field] = value.lower() in ("true", "t", "yes", "y", "1")
                             else:
                                 typed_row[field] = value
@@ -106,7 +108,7 @@ class LocalCSVDatasetBackend(DatasetBackend):
                     
         return entries
         
-    def append_entry(self, entry):
+    def append_entry(self, entry) -> str:
         """Add a new entry to the CSV file and return a generated ID."""
         csv_path = self._get_csv_path()
         
@@ -144,9 +146,11 @@ class LocalCSVDatasetBackend(DatasetBackend):
         # Return the row ID
         return row_id
         
-    def update_entry(self, entry):
+    def update_entry(self, entry) -> bool:
         """Update an existing entry in the CSV file."""
         # Create a copy of entries to modify
+        if self.dataset is None:
+            raise ValueError("Dataset must be initialized")
         entries_to_save = list(self.dataset._entries)  # Make a copy
         
         # Find the entry to update
@@ -171,9 +175,11 @@ class LocalCSVDatasetBackend(DatasetBackend):
         
         return True
         
-    def delete_entry(self, entry_id):
+    def delete_entry(self, entry_id) -> bool:
         """Delete an entry from the CSV file."""
         # Create a copy of entries to modify, excluding the one to delete
+        if self.dataset is None:
+            raise ValueError("Dataset must be initialized")
         entries_to_save = []
         for e in self.dataset._entries:
             if not (hasattr(e, "_row_id") and e._row_id == entry_id):
@@ -190,6 +196,10 @@ class LocalCSVDatasetBackend(DatasetBackend):
         
         if not entries:
             # If no entries, just create an empty CSV with headers
+            if self.dataset is None:
+                raise ValueError("Dataset must be initialized")
+            if self.dataset is None:
+                raise ValueError("Dataset must be initialized")
             field_names = ["_row_id"] + list(self.dataset.model.model_fields.keys())
             with open(csv_path, "w", newline="") as f:
                 writer = csv.DictWriter(f, fieldnames=field_names)
@@ -211,7 +221,7 @@ class LocalCSVDatasetBackend(DatasetBackend):
                 
                 writer.writerow(entry_dict)
                 
-    def get_entry_by_field(self, field_name, field_value, model_class):
+    def get_entry_by_field(self, field_name, field_value, model_class) -> t.Optional[t.Any]:
         """Get an entry by field value."""
         entries = self.load_entries(model_class)
         
@@ -227,7 +237,7 @@ class LocalCSVProjectBackend(ProjectBackend):
     
     def __init__(self, root_dir: str):
         self.root_dir = root_dir
-        self.project_id = None
+        self.project_id: t.Optional[str] = None
         
     def initialize(self, project_id: str, **kwargs):
         """Initialize the backend with project information."""
@@ -287,6 +297,8 @@ class LocalCSVProjectBackend(ProjectBackend):
         
     def get_dataset_backend(self, dataset_id: str, name: str, model: t.Type[BaseModel]) -> DatasetBackend:
         """Get a DatasetBackend instance for a specific dataset."""
+        if self.project_id is None:
+            raise ValueError("Backend must be initialized before creating dataset backend")
         return LocalCSVDatasetBackend(
             local_root_dir=self.root_dir,
             project_id=self.project_id,
@@ -297,6 +309,8 @@ class LocalCSVProjectBackend(ProjectBackend):
         
     def get_experiment_backend(self, experiment_id: str, name: str, model: t.Type[BaseModel]) -> DatasetBackend:
         """Get a DatasetBackend instance for a specific experiment."""
+        if self.project_id is None:
+            raise ValueError("Backend must be initialized before creating experiment backend")
         return LocalCSVDatasetBackend(
             local_root_dir=self.root_dir,
             project_id=self.project_id,

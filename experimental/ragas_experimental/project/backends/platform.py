@@ -49,7 +49,7 @@ class PlatformDatasetBackend(DatasetBackend):
                 
         return column_mapping
         
-    def load_entries(self, model_class):
+    def load_entries(self, model_class) -> t.List[t.Any]:
         """Load all entries from the API."""
         # Get all rows
         if self.datatable_type == "datasets":
@@ -84,7 +84,7 @@ class PlatformDatasetBackend(DatasetBackend):
             
         return entries
         
-    def append_entry(self, entry):
+    def append_entry(self, entry) -> str:
         """Add a new entry to the API and return its ID."""
         # Get column mapping
         column_id_map = entry.__class__.__column_mapping__
@@ -119,7 +119,7 @@ class PlatformDatasetBackend(DatasetBackend):
         # Return the row ID
         return response["id"]
         
-    def update_entry(self, entry):
+    def update_entry(self, entry) -> bool:
         """Update an existing entry in the API."""
         # Get the row ID
         row_id = None
@@ -157,7 +157,7 @@ class PlatformDatasetBackend(DatasetBackend):
             
         return response
         
-    def delete_entry(self, entry_id):
+    def delete_entry(self, entry_id) -> bool:
         """Delete an entry from the API."""
         # Delete the row
         if self.datatable_type == "datasets":
@@ -173,7 +173,7 @@ class PlatformDatasetBackend(DatasetBackend):
             
         return response
         
-    def get_entry_by_field(self, field_name, field_value, model_class):
+    def get_entry_by_field(self, field_name, field_value, model_class) -> t.Optional[t.Any]:
         """Get an entry by field value."""
         # We don't have direct filtering in the API, so load all and filter
         entries = self.load_entries(model_class)
@@ -229,7 +229,7 @@ class PlatformProjectBackend(ProjectBackend):
     
     def __init__(self, ragas_api_client: RagasApiClient):
         self.ragas_api_client = ragas_api_client
-        self.project_id = None
+        self.project_id: t.Optional[str] = None
         
     def initialize(self, project_id: str, **kwargs):
         """Initialize the backend with project information."""
@@ -291,6 +291,8 @@ class PlatformProjectBackend(ProjectBackend):
         
     def get_dataset_backend(self, dataset_id: str, name: str, model: t.Type[BaseModel]) -> DatasetBackend:
         """Get a DatasetBackend instance for a specific dataset."""
+        if self.project_id is None:
+            raise ValueError("Backend must be initialized before creating dataset backend")
         return PlatformDatasetBackend(
             ragas_api_client=self.ragas_api_client,
             project_id=self.project_id,
@@ -300,6 +302,8 @@ class PlatformProjectBackend(ProjectBackend):
         
     def get_experiment_backend(self, experiment_id: str, name: str, model: t.Type[BaseModel]) -> DatasetBackend:
         """Get a DatasetBackend instance for a specific experiment."""
+        if self.project_id is None:
+            raise ValueError("Backend must be initialized before creating experiment backend")
         return PlatformDatasetBackend(
             ragas_api_client=self.ragas_api_client,
             project_id=self.project_id,

@@ -12,37 +12,37 @@ class DatasetBackend(ABC):
     """
     
     @abstractmethod
-    def initialize(self, dataset):
+    def initialize(self, dataset) -> None:
         """Initialize the backend with dataset information"""
         pass
         
     @abstractmethod
-    def get_column_mapping(self, model):
+    def get_column_mapping(self, model) -> t.Dict[str, str]:
         """Get mapping between model fields and backend columns"""
         pass
         
     @abstractmethod
-    def load_entries(self, model_class):
+    def load_entries(self, model_class) -> t.List[t.Any]:
         """Load all entries from storage"""
         pass
         
     @abstractmethod
-    def append_entry(self, entry):
+    def append_entry(self, entry) -> str:
         """Add a new entry to storage and return its ID"""
         pass
         
     @abstractmethod
-    def update_entry(self, entry):
+    def update_entry(self, entry) -> bool:
         """Update an existing entry in storage"""
         pass
         
     @abstractmethod
-    def delete_entry(self, entry_id):
+    def delete_entry(self, entry_id) -> bool:
         """Delete an entry from storage"""
         pass
         
     @abstractmethod
-    def get_entry_by_field(self, field_name: str, field_value: t.Any, model_class):
+    def get_entry_by_field(self, field_name: str, field_value: t.Any, model_class) -> t.Optional[t.Any]:
         """Get an entry by field value"""
         pass
 
@@ -54,7 +54,7 @@ class ProjectBackend(ABC):
     """
     
     @abstractmethod
-    def initialize(self, project_id: str, **kwargs):
+    def initialize(self, project_id: str, **kwargs) -> None:
         """Initialize the backend with project information"""
         pass
         
