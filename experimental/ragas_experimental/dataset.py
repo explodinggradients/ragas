@@ -6,7 +6,11 @@ __all__ = [
 ]
 
 import typing as t
-import pandas as pd
+
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
 
 from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
@@ -222,7 +226,16 @@ class Dataset(t.Generic[BaseModelType]):
 
         Returns:
             pd.DataFrame: A DataFrame containing all entries
+            
+        Raises:
+            ImportError: If pandas is not installed
         """
+        if pd is None:
+            raise ImportError(
+                "pandas is required for to_pandas(). Install with: pip install pandas "
+                "or pip install ragas_experimental[all]"
+            )
+            
         # Make sure we have data
         if not self._entries:
             self.load()
