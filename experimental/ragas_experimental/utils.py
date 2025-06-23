@@ -244,3 +244,28 @@ def get_test_directory():
     os.makedirs(test_dir, exist_ok=True)
 
     return test_dir
+
+
+def setup_hello_world_dataset(root_dir: str):
+    """Setup a hello world dataset for testing purposes."""
+    import pandas as pd
+    
+    hello_world_data = [
+        {"id": 1, "query": "What is the capital of France?", "expected_output": "Paris"},
+        {"id": 2, "query": "What is 2 + 2?", "expected_output": "4"},
+        {"id": 3, "query": "What is the largest mammal?", "expected_output": "Blue Whale"},
+        {"id": 4, "query": "Who developed the theory of relativity?", "expected_output": "Einstein"},
+        {"id": 5, "query": "What is the programming language used for data science?", "expected_output": "Python"},
+        {"id": 6, "query": "What is the highest mountain in the world?", "expected_output": "Mount Everest"},
+        {"id": 7, "query": "Who wrote 'Romeo and Juliet'?", "expected_output": "Shakespeare"},
+        {"id": 8, "query": "What is the fourth planet from the Sun?", "expected_output": "Mars"},
+        {"id": 9, "query": "What is the name of the fruit that keeps the doctor away?", "expected_output": "Apple"},
+        {"id": 10, "query": "Who painted the Mona Lisa?", "expected_output": "Leonardo da Vinci"}
+    ]
+
+    df = pd.DataFrame(hello_world_data)
+    if os.path.exists(os.path.join(root_dir, "datasets", "hello_world.csv")):
+        return
+    df.to_csv(os.path.join(root_dir, "datasets", "hello_world.csv"), index=False)
+    
+    

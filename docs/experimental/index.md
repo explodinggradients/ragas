@@ -117,7 +117,7 @@ hello_world
 │   ├── mystifying_diffie.csv
 ```
 
-![](hello_world.png)
+![](./hello_world.png)
 
 - Run your next experiment and compare the results:
 
