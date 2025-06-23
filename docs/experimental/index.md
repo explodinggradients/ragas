@@ -99,7 +99,6 @@ Getting dataset: hello_world
 - View the results by opening the `hello_world/experiments` directory:
 
 ```sh
-```bash
 ❯ tree hello_world
 hello_world
 ├── datasets
@@ -108,7 +107,7 @@ hello_world
 │   ├── mystifying_diffie.csv
 ```
 
-![](./hello_world.png)
+![](./experimental/hello_world.png)
 
 - Run your next experiment and compare the results:
 
