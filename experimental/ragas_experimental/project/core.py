@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from ..backends.factory import RagasApiClientFactory
 from ..backends.ragas_api_client import RagasApiClient
 import ragas_experimental.typing as rt
-from ..utils import async_to_sync, create_nano_id
+from ..utils import async_to_sync, create_nano_id, setup_hello_world_dataset
 from ..dataset import Dataset
 from ..experiment import Experiment
 
@@ -38,6 +38,9 @@ class Project:
             self._root_dir = os.path.join(root_dir, project_id)
             # Ensure project directory structure exists
             self._create_local_project_structure()
+            if project_id == "hello_world":
+                setup_hello_world_dataset(root_dir=self._root_dir)
+                
         elif backend == "ragas_app":
             if ragas_api_client is None:
                 self._ragas_api_client = RagasApiClientFactory.create()
