@@ -9,6 +9,10 @@ requires-python=">=3.9"
 # List all fields that might be defined outside pyproject.toml as dynamic
 dynamic = ["version", "readme", "license", "authors", "dependencies", "optional-dependencies"]
 
+[project.entry-points."ragas.backends"]
+local_csv = "ragas_experimental.project.backends.local_csv:LocalCSVProjectBackend"
+platform = "ragas_experimental.project.backends.platform:PlatformProjectBackend"
+
 [tool.setuptools_scm]
 root = ".."  # Points to monorepo root, one directory up
 version_file = "ragas_experimental/_version.py"  # Creates a version file

@@ -6,7 +6,14 @@ multiple backend storage options including local CSV files and the Ragas platfor
 
 from .core import Project
 from .utils import MemorableNames, memorable_names, create_nano_id
-from .backends import ProjectBackend, DatasetBackend, create_project_backend
+from .backends import (
+    ProjectBackend, 
+    DatasetBackend, 
+    create_project_backend,
+    list_backends,
+    print_available_backends,
+    register_backend,
+)
 
 __all__ = [
     "Project",
@@ -18,6 +25,9 @@ __all__ = [
     "ProjectBackend",
     "DatasetBackend",
     "create_project_backend",
+    "list_backends",
+    "print_available_backends", 
+    "register_backend",
 ]
 
 
