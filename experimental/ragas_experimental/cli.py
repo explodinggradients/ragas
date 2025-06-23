@@ -63,11 +63,7 @@ def create_numerical_metrics_table(metrics_data: Dict[str, Dict], has_baseline: 
             baseline_value = values['baseline']
             delta = current_value - baseline_value
             
-            # Determine if delta is improvement (depends on metric)
             is_improvement = delta > 0
-            if "error" in metric_name.lower() or "rate" in metric_name.lower():
-                is_improvement = delta < 0
-            
             # Format delta with arrow and color
             arrow = "▲" if delta > 0 else "▼"
             delta_str = f"{arrow}{abs(delta):.3f}"
