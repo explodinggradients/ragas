@@ -39,17 +39,8 @@ def accuracy_score(response: str, expected: str):
 def mock_app_endpoint(**kwargs) -> str:
     """Mock AI endpoint for testing purposes."""
     mock_responses = [
-        "Paris",
-        "4",
-        "Blue Whale",
-        "Einstein",
-        "Python",
-        "Mount Everest",
-        "Shakespeare",
-        "Mars",
-        "Apple",
-        "Leonardo da Vinci",
-    ]
+        "Paris","4","Blue Whale","Einstein","Python","Mount Everest","Shakespeare",
+        "Mars","Apple","Leonardo da Vinci",]
     return np.random.choice(mock_responses)
 
 
