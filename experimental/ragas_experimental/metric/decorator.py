@@ -1,4 +1,5 @@
 """decorator factory for creating custom metrics"""
+
 __all__ = ["create_metric_decorator"]
 
 import typing as t
@@ -7,6 +8,8 @@ import asyncio
 from dataclasses import dataclass
 from . import MetricResult
 from ..llm import RagasLLM
+
+
 def create_metric_decorator(metric_class):
     """
     Factory function that creates decorator factories for different metric types.

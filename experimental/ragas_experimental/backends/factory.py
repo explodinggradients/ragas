@@ -1,10 +1,13 @@
 """Factory class for creating the backends or mocked backends."""
+
 __all__ = ["RagasApiClientFactory"]
 
 import typing as t
 import os
 
 from .ragas_api_client import RagasApiClient
+
+
 class RagasApiClientFactory:
     """Factory for creating Ragas API client instances."""
 

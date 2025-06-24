@@ -1,4 +1,5 @@
 """base class for all type of metrics in ragas"""
+
 __all__ = ["Metric"]
 
 from abc import ABC
@@ -17,6 +18,8 @@ from ..prompt.dynamic_few_shot import DynamicFewShotPrompt
 
 if t.TYPE_CHECKING:
     from ragas_experimental.project.core import Project
+
+
 @dataclass
 class Metric(ABC):
     """Base class for all metrics in the LLM evaluation library."""

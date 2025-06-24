@@ -15,7 +15,10 @@ except ImportError:
 from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
 )
-from .project.backends import DatasetBackend, LocalCSVProjectBackend, PlatformProjectBackend
+from .project.backends import (
+    LocalCSVProjectBackend,
+    PlatformProjectBackend,
+)
 from .backends.ragas_api_client import RagasApiClient
 from .typing import SUPPORTED_BACKENDS
 
@@ -65,28 +68,36 @@ class Dataset(t.Generic[BaseModelType]):
         if backend == "ragas_app":
             if ragas_api_client is None:
                 raise ValueError("ragas_api_client is required for ragas_app backend")
-            
+
             # Create a platform project backend and get dataset backend from it
             project_backend = PlatformProjectBackend(ragas_api_client)
             project_backend.initialize(project_id)
-            
+
             if datatable_type == "datasets":
-                self._backend = project_backend.get_dataset_backend(dataset_id, name, model)
+                self._backend = project_backend.get_dataset_backend(
+                    dataset_id, name, model
+                )
             else:  # experiments
-                self._backend = project_backend.get_experiment_backend(dataset_id, name, model)
-                
+                self._backend = project_backend.get_experiment_backend(
+                    dataset_id, name, model
+                )
+
         elif backend == "local":
             if local_root_dir is None:
                 raise ValueError("local_root_dir is required for local backend")
-            
+
             # Create a local CSV project backend and get dataset backend from it
             project_backend = LocalCSVProjectBackend(local_root_dir)
             project_backend.initialize(project_id)
-            
+
             if datatable_type == "datasets":
-                self._backend = project_backend.get_dataset_backend(dataset_id, name, model)
+                self._backend = project_backend.get_dataset_backend(
+                    dataset_id, name, model
+                )
             else:  # experiments
-                self._backend = project_backend.get_experiment_backend(dataset_id, name, model)
+                self._backend = project_backend.get_experiment_backend(
+                    dataset_id, name, model
+                )
         else:
             raise ValueError(f"Unsupported backend: {backend}")
 
@@ -226,7 +237,7 @@ class Dataset(t.Generic[BaseModelType]):
 
         Returns:
             pd.DataFrame: A DataFrame containing all entries
-            
+
         Raises:
             ImportError: If pandas is not installed
         """
@@ -235,7 +246,7 @@ class Dataset(t.Generic[BaseModelType]):
                 "pandas is required for to_pandas(). Install with: pip install pandas "
                 "or pip install ragas_experimental[all]"
             )
-            
+
         # Make sure we have data
         if not self._entries:
             self.load()

@@ -1,4 +1,5 @@
 """An Extended version of Pydantics `BaseModel` for some ragas specific stuff"""
+
 __all__ = ["ExtendedPydanticBaseModel"]
 
 import typing as t
@@ -6,6 +7,8 @@ import typing as t
 from pydantic import BaseModel, PrivateAttr
 
 from ..typing import FieldMeta as RagasFieldMeta
+
+
 class ExtendedPydanticBaseModel(BaseModel):
     """Extended Pydantic BaseModel with database integration capabilities"""
 

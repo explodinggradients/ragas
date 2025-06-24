@@ -1,9 +1,14 @@
 """MetricResult object to store the result of a metric"""
+
 __all__ = ["MetricResult"]
 
 import typing as t
 
 from fastcore.utils import patch
+from pydantic_core import core_schema
+from pydantic import GetCoreSchemaHandler, ValidationInfo
+
+
 class MetricResult:
     """Class to hold the result of a metric evaluation.
 
@@ -176,14 +181,16 @@ class MetricResult:
     def to_dict(self):
         """Convert the result to a dictionary."""
         return {"result": self._result, "reason": self.reason}
-from pydantic_core import core_schema
-from pydantic import GetCoreSchemaHandler, ValidationInfo
+
+
 @patch(cls_method=True)
 def validate(cls: MetricResult, value: t.Any, info: ValidationInfo):
     """Provide compatibility with older Pydantic versions."""
     if isinstance(value, MetricResult):
         return value
     return MetricResult(result=value)
+
+
 @patch
 def __json__(self: MetricResult):
     """Return data for JSON serialization.
@@ -195,6 +202,8 @@ def __json__(self: MetricResult):
         "result": self._result,
         "reason": self.reason,
     }
+
+
 @patch(cls_method=True)
 def __get_pydantic_core_schema__(
     cls: MetricResult, _source_type: t.Any, _handler: GetCoreSchemaHandler

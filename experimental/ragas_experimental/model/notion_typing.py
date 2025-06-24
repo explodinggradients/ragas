@@ -1,4 +1,5 @@
 """Represents the types of Notion objects like text, number, select, multi-select, etc."""
+
 __all__ = [
     "T",
     "Field",
@@ -17,6 +18,8 @@ import typing as t
 from ..exceptions import ValidationError
 
 T = t.TypeVar("T")
+
+
 class Field(t.Generic[T]):
     """Base class for all Notion field types."""
 
@@ -65,6 +68,8 @@ class Field(t.Generic[T]):
     def _to_notion_property(self) -> dict:
         """Convert field to Notion property definition format."""
         return {self.name: {"type": self.NOTION_FIELD_TYPE, self.NOTION_FIELD_TYPE: {}}}
+
+
 class ID(Field[int], int):
     """System ID field type for integer IDs."""
 
@@ -103,6 +108,8 @@ class ID(Field[int], int):
 
     def _to_notion_property(self) -> dict:
         return {self.name: {"type": "unique_id", "unique_id": {"prefix": None}}}
+
+
 class Text(Field[str], str):
     """Rich text property type."""
 
@@ -141,6 +148,8 @@ class Text(Field[str], str):
 
         # Combine all text chunks into a single string
         return "".join(item["text"]["content"] for item in rich_text if "text" in item)
+
+
 class Title(Field[str], str):
     """Title property type."""
 
@@ -164,6 +173,8 @@ class Title(Field[str], str):
         if not title:
             return None
         return title[0]["text"]["content"]
+
+
 class Select(Field[str], str):
     """Select property type."""
 
@@ -206,6 +217,8 @@ class Select(Field[str], str):
                 {"name": option} for option in self.options
             ]
         return prop
+
+
 class MultiSelect(Field[list[str]], list):
     """Multi-select property type."""
 
@@ -250,6 +263,8 @@ class MultiSelect(Field[list[str]], list):
                 {"name": option} for option in self.options
             ]
         return prop
+
+
 class URL(Field[str], str):
     """URL property type."""
 
@@ -277,7 +292,11 @@ class URL(Field[str], str):
         else:
             url = data[self.name][self.NOTION_FIELD_TYPE]
         return url
+
+
 T = t.TypeVar("T")
+
+
 class NotionFieldMeta:
     """Base metadata class for Notion field types."""
 
@@ -308,6 +327,8 @@ class NotionFieldMeta:
     def to_notion_property(self) -> dict:
         """Convert field to Notion property definition."""
         return {self.name: {"type": self.NOTION_FIELD_TYPE, self.NOTION_FIELD_TYPE: {}}}
+
+
 class TextNew(NotionFieldMeta):
     """Rich text property type for Notion."""
 

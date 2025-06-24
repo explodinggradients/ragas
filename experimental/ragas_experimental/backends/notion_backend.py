@@ -1,4 +1,5 @@
 """`Project` uses this backend to interact with the Notion API."""
+
 __all__ = ["NotionBackend", "get_page_id", "get_database_id"]
 
 import typing as t
@@ -8,6 +9,8 @@ from notion_client import Client as NotionClient
 from fastcore.utils import patch_to, patch
 
 from ..exceptions import DuplicateError, NotFoundError
+
+
 class NotionBackend:
     """A backend for interacting with the Notion API"""
 
@@ -81,7 +84,7 @@ class NotionBackend:
         try:
             self.client.pages.retrieve(page_id)
             return True
-        except:
+        except Exception:
             return False
 
     def create_new_database(
@@ -103,6 +106,8 @@ class NotionBackend:
             properties=properties,
         )
         return response["id"]
+
+
 @t.overload
 def get_page_id(
     self, parent_id: str, page_name: str, return_multiple: t.Literal[False] = False
@@ -159,6 +164,8 @@ def get_page_id(
         if len(matching_pages) > 1:
             raise DuplicateError(f"Multiple pages found with name '{page_name}'")
         return matching_pages[0]
+
+
 @t.overload
 def get_database_id(
     self, parent_page_id: str, name: str, return_multiple: t.Literal[False] = False
@@ -213,6 +220,8 @@ def get_database_id(
         if len(matching_databases) > 1:
             raise DuplicateError(f"Multiple databases found with name '{name}'")
         return matching_databases[0]
+
+
 @patch
 def create_page_in_database(
     self: NotionBackend,
@@ -243,6 +252,8 @@ def create_page_in_database(
     response = self.client.pages.create(parent=parent, properties=filtered_properties)
 
     return response
+
+
 @patch
 def get_database(self: NotionBackend, database_id: str) -> dict:
     """Get a database by ID.
@@ -254,6 +265,8 @@ def get_database(self: NotionBackend, database_id: str) -> dict:
         dict: The database object
     """
     return self.client.databases.retrieve(database_id=database_id)
+
+
 @patch
 def query_database(
     self: NotionBackend,
@@ -308,6 +321,8 @@ def query_database(
 
     # Return combined results
     return {"results": all_results, "has_more": False, "next_cursor": None}
+
+
 @patch
 def update_page(
     self: NotionBackend,

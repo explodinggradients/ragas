@@ -1,4 +1,5 @@
 """Python client to api.ragas.io"""
+
 __all__ = [
     "DEFAULT_SETTINGS",
     "RagasApiClient",
@@ -11,6 +12,8 @@ __all__ = [
 import httpx
 import asyncio
 import typing as t
+import uuid
+import string
 from pydantic import BaseModel, Field
 from fastcore.utils import patch
 
@@ -22,6 +25,8 @@ from ragas_experimental.exceptions import (
     ExperimentNotFoundError,
     DuplicateExperimentError,
 )
+
+
 class RagasApiClient:
     """Client for the Ragas Relay API."""
 
@@ -92,6 +97,8 @@ class RagasApiClient:
     async def _delete_resource(self, path):
         """Generic resource deletion."""
         return await self._request("DELETE", path)
+
+
 @patch
 async def _get_resource_by_name(
     self: RagasApiClient,
@@ -176,6 +183,8 @@ async def _get_resource_by_name(
         )
     else:
         return await get_method(matching_resources[0].get("id"))
+
+
 # ---- Projects ----
 @patch
 async def list_projects(
@@ -199,11 +208,15 @@ async def list_projects(
         params["sort_dir"] = sort_dir
 
     return await self._list_resources("projects", **params)
+
+
 @patch
 async def get_project(self: RagasApiClient, project_id: str) -> t.Dict:
     """Get a specific project by ID."""
     # TODO: Need get project by title
     return await self._get_resource(f"projects/{project_id}")
+
+
 @patch
 async def create_project(
     self: RagasApiClient, title: str, description: t.Optional[str] = None
@@ -213,6 +226,8 @@ async def create_project(
     if description:
         data["description"] = description
     return await self._create_resource("projects", data)
+
+
 @patch
 async def update_project(
     self: RagasApiClient,
@@ -227,10 +242,14 @@ async def update_project(
     if description:
         data["description"] = description
     return await self._update_resource(f"projects/{project_id}", data)
+
+
 @patch
 async def delete_project(self: RagasApiClient, project_id: str) -> None:
     """Delete a project."""
     await self._delete_resource(f"projects/{project_id}")
+
+
 @patch
 async def get_project_by_name(self: RagasApiClient, project_name: str) -> t.Dict:
     """Get a project by its name.
@@ -254,6 +273,8 @@ async def get_project_by_name(self: RagasApiClient, project_name: str) -> t.Dict
         duplicate_error=DuplicateProjectError,
         resource_type_name="project",
     )
+
+
 # ---- Datasets ----
 @patch
 async def list_datasets(
@@ -271,10 +292,14 @@ async def list_datasets(
     if sort_dir:
         params["sort_dir"] = sort_dir
     return await self._list_resources(f"projects/{project_id}/datasets", **params)
+
+
 @patch
 async def get_dataset(self: RagasApiClient, project_id: str, dataset_id: str) -> t.Dict:
     """Get a specific dataset."""
     return await self._get_resource(f"projects/{project_id}/datasets/{dataset_id}")
+
+
 @patch
 async def create_dataset(
     self: RagasApiClient,
@@ -287,6 +312,8 @@ async def create_dataset(
     if description:
         data["description"] = description
     return await self._create_resource(f"projects/{project_id}/datasets", data)
+
+
 @patch
 async def update_dataset(
     self: RagasApiClient,
@@ -304,12 +331,16 @@ async def update_dataset(
     return await self._update_resource(
         f"projects/{project_id}/datasets/{dataset_id}", data
     )
+
+
 @patch
 async def delete_dataset(
     self: RagasApiClient, project_id: str, dataset_id: str
 ) -> None:
     """Delete a dataset."""
     await self._delete_resource(f"projects/{project_id}/datasets/{dataset_id}")
+
+
 @patch
 async def get_dataset_by_name(
     self: RagasApiClient, project_id: str, dataset_name: str
@@ -337,6 +368,8 @@ async def get_dataset_by_name(
         resource_type_name="dataset",
         project_id=project_id,
     )
+
+
 # ---- Experiments ----
 @patch
 async def list_experiments(
@@ -354,6 +387,8 @@ async def list_experiments(
     if sort_dir:
         params["sort_dir"] = sort_dir
     return await self._list_resources(f"projects/{project_id}/experiments", **params)
+
+
 @patch
 async def get_experiment(
     self: RagasApiClient, project_id: str, experiment_id: str
@@ -362,6 +397,8 @@ async def get_experiment(
     return await self._get_resource(
         f"projects/{project_id}/experiments/{experiment_id}"
     )
+
+
 @patch
 async def create_experiment(
     self: RagasApiClient,
@@ -374,6 +411,8 @@ async def create_experiment(
     if description:
         data["description"] = description
     return await self._create_resource(f"projects/{project_id}/experiments", data)
+
+
 @patch
 async def update_experiment(
     self: RagasApiClient,
@@ -391,12 +430,16 @@ async def update_experiment(
     return await self._update_resource(
         f"projects/{project_id}/experiments/{experiment_id}", data
     )
+
+
 @patch
 async def delete_experiment(
     self: RagasApiClient, project_id: str, experiment_id: str
 ) -> None:
     """Delete an experiment."""
     await self._delete_resource(f"projects/{project_id}/experiments/{experiment_id}")
+
+
 @patch
 async def get_experiment_by_name(
     self: RagasApiClient, project_id: str, experiment_name: str
@@ -424,6 +467,8 @@ async def get_experiment_by_name(
         resource_type_name="experiment",
         project_id=project_id,
     )
+
+
 # ---- Dataset Columns ----
 @patch
 async def list_dataset_columns(
@@ -444,6 +489,8 @@ async def list_dataset_columns(
     return await self._list_resources(
         f"projects/{project_id}/datasets/{dataset_id}/columns", **params
     )
+
+
 @patch
 async def get_dataset_column(
     self: RagasApiClient, project_id: str, dataset_id: str, column_id: str
@@ -452,6 +499,8 @@ async def get_dataset_column(
     return await self._get_resource(
         f"projects/{project_id}/datasets/{dataset_id}/columns/{column_id}"
     )
+
+
 @patch
 async def create_dataset_column(
     self: RagasApiClient,
@@ -472,6 +521,8 @@ async def create_dataset_column(
     return await self._create_resource(
         f"projects/{project_id}/datasets/{dataset_id}/columns", data
     )
+
+
 @patch
 async def update_dataset_column(
     self: RagasApiClient,
@@ -485,6 +536,8 @@ async def update_dataset_column(
         f"projects/{project_id}/datasets/{dataset_id}/columns/{column_id}",
         column_data,
     )
+
+
 @patch
 async def delete_dataset_column(
     self: RagasApiClient, project_id: str, dataset_id: str, column_id: str
@@ -493,6 +546,8 @@ async def delete_dataset_column(
     await self._delete_resource(
         f"projects/{project_id}/datasets/{dataset_id}/columns/{column_id}"
     )
+
+
 # ---- Dataset Rows ----
 @patch
 async def list_dataset_rows(
@@ -513,6 +568,8 @@ async def list_dataset_rows(
     return await self._list_resources(
         f"projects/{project_id}/datasets/{dataset_id}/rows", **params
     )
+
+
 @patch
 async def get_dataset_row(
     self: RagasApiClient, project_id: str, dataset_id: str, row_id: str
@@ -521,6 +578,8 @@ async def get_dataset_row(
     return await self._get_resource(
         f"projects/{project_id}/datasets/{dataset_id}/rows/{row_id}"
     )
+
+
 @patch
 async def create_dataset_row(
     self: RagasApiClient, project_id: str, dataset_id: str, id: str, data: t.Dict
@@ -530,6 +589,8 @@ async def create_dataset_row(
     return await self._create_resource(
         f"projects/{project_id}/datasets/{dataset_id}/rows", row_data
     )
+
+
 @patch
 async def update_dataset_row(
     self: RagasApiClient, project_id: str, dataset_id: str, row_id: str, data: t.Dict
@@ -540,6 +601,8 @@ async def update_dataset_row(
         f"projects/{project_id}/datasets/{dataset_id}/rows/{row_id}",
         row_data,
     )
+
+
 @patch
 async def delete_dataset_row(
     self: RagasApiClient, project_id: str, dataset_id: str, row_id: str
@@ -548,8 +611,8 @@ async def delete_dataset_row(
     await self._delete_resource(
         f"projects/{project_id}/datasets/{dataset_id}/rows/{row_id}"
     )
-import uuid
-import string
+
+
 def create_nano_id(size=12):
     # Define characters to use (alphanumeric)
     alphabet = string.ascii_letters + string.digits
@@ -565,23 +628,12 @@ def create_nano_id(size=12):
 
     # Pad if necessary and return desired length
     return result[:size]
-def create_nano_id(size=12):
-    # Define characters to use (alphanumeric)
-    alphabet = string.ascii_letters + string.digits
 
-    # Generate UUID and convert to int
-    uuid_int = uuid.uuid4().int
 
-    # Convert to base62
-    result = ""
-    while uuid_int:
-        uuid_int, remainder = divmod(uuid_int, len(alphabet))
-        result = alphabet[remainder] + result
-
-    # Pad if necessary and return desired length
-    return result[:size]
 # Default settings for columns
 DEFAULT_SETTINGS = {"is_required": False, "max_length": 1000}
+
+
 # Model definitions
 class Column(BaseModel):
     id: str = Field(default_factory=create_nano_id)
@@ -589,12 +641,18 @@ class Column(BaseModel):
     type: str = Field(...)
     settings: t.Dict = Field(default_factory=lambda: DEFAULT_SETTINGS.copy())
     col_order: t.Optional[int] = Field(default=None)
+
+
 class RowCell(BaseModel):
     data: t.Any = Field(...)
     column_id: str = Field(...)
+
+
 class Row(BaseModel):
     id: str = Field(default_factory=create_nano_id)
     data: t.List[RowCell] = Field(...)
+
+
 # ---- Resource With Data Helper Methods ----
 @patch
 async def _create_with_data(
@@ -687,9 +745,11 @@ async def _create_with_data(
         if "resource" in locals():
             try:
                 await delete_fn(project_id, resource["id"])
-            except:
+            except Exception:
                 pass  # Ignore cleanup errors
         raise e
+
+
 @patch
 async def create_dataset_with_data(
     self: RagasApiClient,
@@ -719,6 +779,8 @@ async def create_dataset_with_data(
     return await self._create_with_data(
         "dataset", project_id, name, description, columns, rows, batch_size
     )
+
+
 # ---- Experiment Columns ----
 @patch
 async def list_experiment_columns(
@@ -739,6 +801,8 @@ async def list_experiment_columns(
     return await self._list_resources(
         f"projects/{project_id}/experiments/{experiment_id}/columns", **params
     )
+
+
 @patch
 async def get_experiment_column(
     self: RagasApiClient, project_id: str, experiment_id: str, column_id: str
@@ -747,6 +811,8 @@ async def get_experiment_column(
     return await self._get_resource(
         f"projects/{project_id}/experiments/{experiment_id}/columns/{column_id}"
     )
+
+
 @patch
 async def create_experiment_column(
     self: RagasApiClient,
@@ -767,6 +833,8 @@ async def create_experiment_column(
     return await self._create_resource(
         f"projects/{project_id}/experiments/{experiment_id}/columns", data
     )
+
+
 @patch
 async def update_experiment_column(
     self: RagasApiClient,
@@ -780,6 +848,8 @@ async def update_experiment_column(
         f"projects/{project_id}/experiments/{experiment_id}/columns/{column_id}",
         column_data,
     )
+
+
 @patch
 async def delete_experiment_column(
     self: RagasApiClient, project_id: str, experiment_id: str, column_id: str
@@ -788,6 +858,8 @@ async def delete_experiment_column(
     await self._delete_resource(
         f"projects/{project_id}/experiments/{experiment_id}/columns/{column_id}"
     )
+
+
 # ---- Experiment Rows ----
 @patch
 async def list_experiment_rows(
@@ -808,6 +880,8 @@ async def list_experiment_rows(
     return await self._list_resources(
         f"projects/{project_id}/experiments/{experiment_id}/rows", **params
     )
+
+
 @patch
 async def get_experiment_row(
     self: RagasApiClient, project_id: str, experiment_id: str, row_id: str
@@ -816,6 +890,8 @@ async def get_experiment_row(
     return await self._get_resource(
         f"projects/{project_id}/experiments/{experiment_id}/rows/{row_id}"
     )
+
+
 @patch
 async def create_experiment_row(
     self: RagasApiClient, project_id: str, experiment_id: str, id: str, data: t.Dict
@@ -825,6 +901,8 @@ async def create_experiment_row(
     return await self._create_resource(
         f"projects/{project_id}/experiments/{experiment_id}/rows", row_data
     )
+
+
 @patch
 async def update_experiment_row(
     self: RagasApiClient, project_id: str, experiment_id: str, row_id: str, data: t.Dict
@@ -835,6 +913,8 @@ async def update_experiment_row(
         f"projects/{project_id}/experiments/{experiment_id}/rows/{row_id}",
         row_data,
     )
+
+
 @patch
 async def delete_experiment_row(
     self: RagasApiClient, project_id: str, experiment_id: str, row_id: str
@@ -843,6 +923,8 @@ async def delete_experiment_row(
     await self._delete_resource(
         f"projects/{project_id}/experiments/{experiment_id}/rows/{row_id}"
     )
+
+
 @patch
 async def create_experiment_with_data(
     self: RagasApiClient,
@@ -872,6 +954,8 @@ async def create_experiment_with_data(
     return await self._create_with_data(
         "experiment", project_id, name, description, columns, rows, batch_size
     )
+
+
 # ---- Utility Methods ----
 @patch
 def create_column(
@@ -903,6 +987,8 @@ def create_column(
         params["id"] = id
 
     return Column(**params)
+
+
 @patch
 def create_row(
     self: RagasApiClient,
@@ -930,6 +1016,8 @@ def create_row(
         params["id"] = id
 
     return Row(**params)
+
+
 @patch
 def create_column_map(
     self: RagasApiClient, columns: t.List[Column]
@@ -943,6 +1031,8 @@ def create_column_map(
         Dictionary mapping column names to IDs
     """
     return {col.name: col.id for col in columns}
+
+
 @patch
 async def convert_raw_data(
     self: RagasApiClient, column_defs: t.List[t.Dict], row_data: t.List[t.Dict]

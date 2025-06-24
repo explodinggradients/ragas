@@ -19,12 +19,12 @@ from .platform import PlatformProjectBackend
 __all__ = [
     "ProjectBackend",
     "DatasetBackend",
-    "BackendRegistry", 
+    "BackendRegistry",
     "get_registry",
     "register_backend",
     "list_backends",
     "get_backend_info",
-    "list_backend_info", 
+    "list_backend_info",
     "print_available_backends",
     "create_project_backend",
     # Concrete backends for backward compatibility

@@ -12,11 +12,15 @@ from pydantic import BaseModel, Field
 
 from .llm.llm import RagasLLM
 from .prompt.base import Prompt
+
+
 class Message(BaseModel):
     """Represents a single message in a conversation."""
 
     role: t.Literal["user", "assistant"]
     content: t.Union[str, t.Dict[str, t.Any], t.List[t.Dict[str, t.Any]]]
+
+
 class ConversationHistory(BaseModel):
     """Represents the full conversation history."""
 
@@ -37,6 +41,8 @@ class ConversationHistory(BaseModel):
     def to_dict_list(self) -> t.List[t.Dict[str, t.Any]]:
         """Convert conversation history to a list of dictionaries."""
         return [{"role": msg.role, "content": msg.content} for msg in self.messages]
+
+
 def validate_agent_function(func: t.Callable) -> None:
     """
     Validate agent function signature and behavior.
@@ -72,6 +78,8 @@ def validate_agent_function(func: t.Callable) -> None:
 
     except TypeError as e:
         raise ValueError(f"Agent function signature invalid: {e}")
+
+
 def validate_stopping_criteria(func: t.Callable[[ConversationHistory], bool]) -> None:
     """
     Validate stopping criteria function signature and behavior.
@@ -107,6 +115,8 @@ def validate_stopping_criteria(func: t.Callable[[ConversationHistory], bool]) ->
 
     except TypeError as e:
         raise ValueError(f"Stopping criteria signature invalid: {e}")
+
+
 class UserSimulatorResponse(BaseModel):
     """Response from the user simulator."""
 
@@ -114,6 +124,8 @@ class UserSimulatorResponse(BaseModel):
     should_continue: bool = Field(
         default=True, description="Whether the conversation should continue"
     )
+
+
 class UserSimulator:
     """
     Simulates realistic user interactions for conversational AI evaluation.
@@ -302,6 +314,8 @@ class UserSimulator:
                     break
 
         return conversation_history
+
+
 def default_stopping_criteria(conversation_history: ConversationHistory) -> bool:
     """
     Default stopping criteria function.

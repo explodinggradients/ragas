@@ -9,6 +9,15 @@ import string
 import uuid
 import functools
 import asyncio
+import tempfile
+import os
+from collections import Counter
+
+import numpy as np
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+
 def create_nano_id(size=12):
     # Define characters to use (alphanumeric)
     alphabet = string.ascii_letters + string.digits
@@ -24,6 +33,8 @@ def create_nano_id(size=12):
 
     # Pad if necessary and return desired length
     return result[:size]
+
+
 def async_to_sync(async_func):
     """Convert an async function to a sync function"""
 
@@ -43,10 +54,8 @@ def async_to_sync(async_func):
             return asyncio.run(async_func(*args, **kwargs))
 
     return sync_wrapper
-import numpy as np
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-from collections import Counter
+
+
 def plot_experiments_as_subplots(data, experiment_names=None):
     """
     Plot metrics comparison across experiments.
@@ -216,8 +225,8 @@ def plot_experiments_as_subplots(data, experiment_names=None):
     )
 
     return fig
-import tempfile
-import os
+
+
 # Helper function for tests
 def get_test_directory():
     """Create a test directory that will be cleaned up on process exit.

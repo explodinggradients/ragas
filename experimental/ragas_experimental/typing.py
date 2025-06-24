@@ -1,4 +1,5 @@
 """Field Metadata for python's `t.Annotate`."""
+
 __all__ = [
     "SUPPORTED_BACKENDS",
     "DEFAULT_COLUMN_SETTINGS",
@@ -26,8 +27,11 @@ from datetime import datetime, date
 from fastcore.utils import patch
 
 from .metric.result import MetricResult
+
 # Define supported backends
 SUPPORTED_BACKENDS = t.Literal["ragas_app", "local"]
+
+
 class ColumnType(str, Enum):
     """Column types supported by the Ragas API."""
 
@@ -39,11 +43,15 @@ class ColumnType(str, Enum):
     DATE = "date"
     URL = "url"
     CUSTOM = "custom"
+
+
 DEFAULT_COLUMN_SETTINGS = {
     "width": 255,
     "isVisible": True,
     "isEditable": True,
 }
+
+
 class FieldMeta:
     """Base metadata for field type annotations."""
 
@@ -61,6 +69,8 @@ class FieldMeta:
         # if settings is provided, update the settings
         if settings:
             self.settings.update(settings)
+
+
 class Number(FieldMeta):
     """Number field metadata."""
 
@@ -79,6 +89,8 @@ class Number(FieldMeta):
             if max_value is not None:
                 settings["range"]["max"] = max_value
         super().__init__(ColumnType.NUMBER, required, id, settings=settings)
+
+
 class Text(FieldMeta):
     """Text field metadata."""
 
@@ -89,12 +101,16 @@ class Text(FieldMeta):
         if max_length is not None:
             settings["max_length"] = max_length
         super().__init__(ColumnType.TEXT, required, id, settings=settings)
+
+
 class Url(FieldMeta):
     """Url field metadata."""
 
     def __init__(self, required: bool = True, id: t.Optional[str] = None):
         settings = {}
         super().__init__(ColumnType.URL, required, id, settings=settings)
+
+
 # dict of possible colors for select fields
 COLOR_MAP = {
     "red": "hsl(0, 85%, 60%)",
@@ -113,6 +129,8 @@ COLOR_MAP = {
     "fuchsia": "hsl(300, 85%, 60%)",
     "pink": "hsl(330, 85%, 60%)",
 }
+
+
 def get_colors_for_options(options, color_names=None):
     """
     Assign colors to options from the COLOR_MAP.
@@ -146,6 +164,8 @@ def get_colors_for_options(options, color_names=None):
         {"name": option, "value": option, "color": color_values[i]}
         for i, option in enumerate(options)
     ]
+
+
 class Select(FieldMeta):
     """Select field metadata."""
 
@@ -166,6 +186,8 @@ class Select(FieldMeta):
             else:
                 settings["options"] = get_colors_for_options(options)
         super().__init__(ColumnType.SELECT, required, settings=settings)
+
+
 class MultiSelect(FieldMeta):
     """MultiSelect field metadata."""
 
@@ -174,11 +196,15 @@ class MultiSelect(FieldMeta):
         if options:
             settings["options"] = [{"name": option} for option in options]
         super().__init__(ColumnType.MULTI_SELECT, required, settings=settings)
+
+
 class Checkbox(FieldMeta):
     """Checkbox field metadata."""
 
     def __init__(self, required: bool = True):
         super().__init__(ColumnType.CHECKBOX, required)
+
+
 class Date(FieldMeta):
     """Date field metadata."""
 
@@ -187,6 +213,8 @@ class Date(FieldMeta):
         if include_time:
             settings["include_time"] = include_time
         super().__init__(ColumnType.DATE, required, settings=settings)
+
+
 class Custom(FieldMeta):
     """Custom field metadata."""
 
@@ -195,8 +223,12 @@ class Custom(FieldMeta):
         if custom_type:
             settings["type"] = custom_type
         super().__init__(ColumnType.CUSTOM, required, settings=settings)
+
+
 class ModelConverter:
     """Convert Pydantic models to Ragas API columns and rows."""
+
+
 def infer_metric_result_type(field_value):
     """Infer field type from a MetricResult instance."""
     if field_value is None:
@@ -215,6 +247,8 @@ def infer_metric_result_type(field_value):
     else:
         # Default to Text for string or other types
         return Text()
+
+
 def infer_field_type(annotation, field_info):
     """Infer field type from Python type annotation."""
     # Check for Annotated with our custom metadata
@@ -302,6 +336,8 @@ def infer_field_type(annotation, field_info):
 
     # Default to Text for complex or unknown types
     return Text()
+
+
 @patch(cls_method=True)
 def model_to_columns(cls: ModelConverter, model_class):
     """Convert a Pydantic model class to Ragas API column definitions."""
@@ -359,6 +395,8 @@ def model_to_columns(cls: ModelConverter, model_class):
     for i in range(len(columns)):
         columns[i]["settings"]["position"] = i
     return columns
+
+
 @patch(cls_method=True)
 def instance_to_row(cls: ModelConverter, instance, model_class=None):
     """Convert a Pydantic model instance to a Ragas API row."""
@@ -408,6 +446,8 @@ def instance_to_row(cls: ModelConverter, instance, model_class=None):
                 row_cells.append({"column_id": field_name, "data": processed_value})
 
     return {"data": row_cells}
+
+
 @patch(cls_method=True)
 def instances_to_rows(cls: ModelConverter, instances, model_class=None):
     """Convert multiple Pydantic model instances to Ragas API rows."""

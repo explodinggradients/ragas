@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 
 from .base import Prompt
 from ..embedding import BaseEmbedding
+
+
 class ExampleStore(ABC):
     @abstractmethod
     def get_examples(
@@ -18,6 +20,8 @@ class ExampleStore(ABC):
     def add_example(self, inputs: t.Dict, output: t.Dict) -> None:
         """Add an example to the store."""
         pass
+
+
 class InMemoryExampleStore(ExampleStore):
     def __init__(self, embedding_model=None):
         """
@@ -107,6 +111,8 @@ class InMemoryExampleStore(ExampleStore):
 
     def __len__(self):
         return len(self._examples)
+
+
 class DynamicFewShotPrompt(Prompt):
 
     def __init__(

@@ -1,4 +1,5 @@
 """Helps with testing `ragas_annotator` better."""
+
 __all__ = [
     "MockPagesAPI",
     "MockDatabasesAPI",
@@ -12,6 +13,8 @@ from copy import deepcopy
 from datetime import datetime
 
 from ..exceptions import NotFoundError
+
+
 class MockPagesAPI:
     """Mock implementation of notion_client.Client.pages"""
 
@@ -93,6 +96,8 @@ class MockPagesAPI:
                     ):
                         return text_obj["text"]["content"]
         return "Untitled"
+
+
 class MockDatabasesAPI:
     """Mock implementation of notion_client.Client.databases"""
 
@@ -178,6 +183,8 @@ class MockDatabasesAPI:
             if text_obj.get("type") == "text" and "content" in text_obj.get("text", {}):
                 return text_obj["text"]["content"]
         return "Untitled"
+
+
 class MockBlocksAPI:
     """Mock implementation of notion_client.Client.blocks"""
 
@@ -191,6 +198,8 @@ class MockBlocksAPI:
             raise NotFoundError(f"Block {block_id} not found")
 
         return deepcopy(self.client._blocks[block_id])
+
+
 class MockBlockChildrenAPI:
     """Mock implementation of notion_client.Client.blocks.children"""
 
@@ -204,6 +213,8 @@ class MockBlockChildrenAPI:
         # TODO: Implement pagination if needed
 
         return {"results": deepcopy(children), "has_more": False, "next_cursor": None}
+
+
 class MockNotionClient:
     """Mock implementation of notion_client.Client for testing."""
 

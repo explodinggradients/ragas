@@ -1,4 +1,5 @@
 """tracing using mlflow"""
+
 __all__ = ["MLflowTrace", "sync_trace"]
 
 import os

@@ -1,4 +1,5 @@
 """NotionModel is a class that allows you to create a model of a Notion database."""
+
 __all__ = ["NotionModelMeta", "NotionModel"]
 
 import typing as t
@@ -8,6 +9,8 @@ from fastcore.utils import patch, patch_to
 
 from ..exceptions import ValidationError
 from .notion_typing import Field, ID
+
+
 class NotionModelMeta(type):
     """Metaclass for NotionModel to handle field registration."""
 
@@ -38,6 +41,8 @@ class NotionModelMeta(type):
 
         namespace["_fields"] = _fields
         return super().__new__(mcs, name, bases, namespace)
+
+
 class NotionModel(metaclass=NotionModelMeta):
     """Base class for Notion database models.
 
@@ -115,6 +120,8 @@ class NotionModel(metaclass=NotionModelMeta):
                         parts.append(f"{name}={repr(value)}")
 
         return f"{class_name}({' '.join(parts)})"
+
+
 @patch
 def to_notion(self: NotionModel) -> dict:
     """Convert the model to Notion API format."""
@@ -125,6 +132,8 @@ def to_notion(self: NotionModel) -> dict:
             if value is not None:
                 properties.update(field._to_notion(value))
     return {"properties": properties}
+
+
 @patch_to(NotionModel, cls_method=True)
 def from_notion(cls, data: dict) -> "NotionModel":
     """Create a model instance from Notion API data."""

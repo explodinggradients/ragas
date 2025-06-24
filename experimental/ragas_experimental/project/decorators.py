@@ -17,7 +17,9 @@ from ..utils import async_to_sync
 @t.runtime_checkable
 class ExperimentProtocol(t.Protocol):
     async def __call__(self, *args, **kwargs): ...
-    async def run_async(self, dataset: Dataset, name: t.Optional[str] = None, **kwargs): ...
+    async def run_async(
+        self, dataset: Dataset, name: t.Optional[str] = None, **kwargs
+    ): ...
 
 
 def find_git_root(start_path: t.Union[str, Path, None] = None) -> Path:
@@ -91,7 +93,7 @@ def version_experiment(
 
     # Create branch if requested
     if create_branch:
-        branch = repo.create_head(version_name, commit_hash)
+        repo.create_head(version_name, commit_hash)
         print(f"Created branch: {version_name}")
 
     return commit_hash
@@ -99,10 +101,10 @@ def version_experiment(
 
 class ExperimentDecorator:
     """Base class for experiment decorators that adds methods to Project instances."""
-    
+
     def __init__(self, project):
         self.project = project
-    
+
     def experiment(
         self,
         experiment_model,
@@ -154,11 +156,15 @@ class ExperimentDecorator:
                         tasks.append(wrapped_experiment(item))
 
                     # Calculate total operations (processing + appending)
-                    total_operations = len(tasks) * 2  # Each item requires processing and appending
+                    total_operations = (
+                        len(tasks) * 2
+                    )  # Each item requires processing and appending
 
                     # Use tqdm for combined progress tracking
                     results = []
-                    progress_bar = tqdm(total=total_operations, desc="Running experiment")
+                    progress_bar = tqdm(
+                        total=total_operations, desc="Running experiment"
+                    )
 
                     # Process all items
                     for future in asyncio.as_completed(tasks):
@@ -179,7 +185,7 @@ class ExperimentDecorator:
                     if experiment_view is not None:
                         try:
                             # For platform backend, delete via API
-                            if hasattr(self.project._backend, 'ragas_api_client'):
+                            if hasattr(self.project._backend, "ragas_api_client"):
                                 sync_version = async_to_sync(
                                     self.project._backend.ragas_api_client.delete_experiment
                                 )
@@ -189,11 +195,15 @@ class ExperimentDecorator:
                                 )
                             else:
                                 # For local backend, delete the file
-                                experiment_path = self.project.get_experiment_path(experiment_view.name)
+                                experiment_path = self.project.get_experiment_path(
+                                    experiment_view.name
+                                )
                                 if os.path.exists(experiment_path):
                                     os.remove(experiment_path)
                         except Exception as cleanup_error:
-                            print(f"Failed to clean up experiment after error: {cleanup_error}")
+                            print(
+                                f"Failed to clean up experiment after error: {cleanup_error}"
+                            )
 
                     # Re-raise the original exception
                     raise e
@@ -211,7 +221,7 @@ class ExperimentDecorator:
             return t.cast(ExperimentProtocol, wrapped_experiment)
 
         return decorator
-    
+
     def langfuse_experiment(
         self,
         experiment_model,
@@ -233,7 +243,9 @@ class ExperimentDecorator:
         try:
             from langfuse.decorators import observe
         except ImportError:
-            raise ImportError("langfuse package is required for langfuse_experiment decorator")
+            raise ImportError(
+                "langfuse package is required for langfuse_experiment decorator"
+            )
 
         def decorator(func: t.Callable) -> ExperimentProtocol:
             @wraps(func)
@@ -253,7 +265,7 @@ class ExperimentDecorator:
             return t.cast(ExperimentProtocol, experiment_wrapper)
 
         return decorator
-    
+
     def mlflow_experiment(
         self,
         experiment_model,
@@ -275,7 +287,9 @@ class ExperimentDecorator:
         try:
             from mlflow import trace
         except ImportError:
-            raise ImportError("mlflow package is required for mlflow_experiment decorator")
+            raise ImportError(
+                "mlflow package is required for mlflow_experiment decorator"
+            )
 
         def decorator(func: t.Callable) -> ExperimentProtocol:
             @wraps(func)
@@ -299,21 +313,21 @@ class ExperimentDecorator:
 
 def add_experiment_decorators(project):
     """Add experiment decorator methods to a Project instance.
-    
+
     This function dynamically adds the experiment decorator methods to a Project instance,
     maintaining the same interface as the @patch decorators but without using fastcore.
-    
+
     Args:
         project: Project instance to add decorators to
-        
+
     Returns:
         The project instance with added decorator methods
     """
     decorator_instance = ExperimentDecorator(project)
-    
+
     # Add decorator methods to the project instance
     project.experiment = decorator_instance.experiment
-    project.langfuse_experiment = decorator_instance.langfuse_experiment  
+    project.langfuse_experiment = decorator_instance.langfuse_experiment
     project.mlflow_experiment = decorator_instance.mlflow_experiment
-    
+
     return project

@@ -2,6 +2,8 @@ __all__ = ["Prompt"]
 
 import typing as t
 import re
+
+
 class Prompt:
     def __init__(
         self,

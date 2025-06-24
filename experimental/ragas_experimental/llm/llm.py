@@ -8,6 +8,8 @@ from pydantic import BaseModel
 import instructor
 
 T = t.TypeVar("T", bound=BaseModel)
+
+
 class RagasLLM:
     def __init__(self, provider: str, model: str, client: t.Any, **model_args):
         self.provider = provider.lower()
@@ -135,5 +137,7 @@ class RagasLLM:
             response_model=response_model,
             **self.model_args,
         )
+
+
 def ragas_llm(provider: str, model: str, client: t.Any, **model_args) -> RagasLLM:
     return RagasLLM(provider=provider, client=client, model=model, **model_args)

@@ -1,4 +1,5 @@
 """Utils to help to interact with langfuse traces"""
+
 __all__ = ["observe", "logger", "LangfuseTrace", "sync_trace", "add_query_param"]
 
 import typing as t
@@ -14,6 +15,8 @@ from langfuse.utils.langfuse_singleton import LangfuseSingleton
 observe = observe
 
 logger = logging.getLogger(__name__)
+
+
 class LangfuseTrace:
     def __init__(self, trace: TraceWithFullDetails):
         self.trace = trace
@@ -25,6 +28,8 @@ class LangfuseTrace:
     def filter(self, span_name: str) -> t.List[Observation]:
         trace = self._langfuse_client.fetch_trace(self.trace.id)
         return [span for span in trace.data.observations if span.name == span_name]
+
+
 async def sync_trace(
     trace_id: t.Optional[str] = None, max_retries: int = 10, delay: float = 2
 ) -> LangfuseTrace:
@@ -60,6 +65,8 @@ async def sync_trace(
         await asyncio.sleep(delay)
 
     raise ValueError(f"Trace {trace_id} not found after {max_retries} attempts")
+
+
 def add_query_param(url, param_name, param_value):
     """Add a query parameter to a URL."""
     # Parse the URL

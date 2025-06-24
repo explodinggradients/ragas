@@ -3,6 +3,7 @@ __all__ = ["BaseEmbedding", "OpenAIEmbeddings", "ragas_embedding"]
 import typing as t
 from abc import ABC, abstractmethod
 
+
 # TODO: Add support for other providers like HuggingFace, Cohere, etc.
 # TODO: handle async calls properly and ensure that the client supports async if needed.
 class BaseEmbedding(ABC):
@@ -25,6 +26,8 @@ class BaseEmbedding(ABC):
         self, documents: t.List[str], **kwargs: t.Any
     ) -> t.List[t.List[float]]:
         pass
+
+
 class OpenAIEmbeddings(BaseEmbedding):
     def __init__(self, client: t.Any, model: str):
         self.client = client
@@ -58,6 +61,8 @@ class OpenAIEmbeddings(BaseEmbedding):
             input=documents, model=self.model, **kwargs
         )
         return [embedding.embedding for embedding in embeddings.data]
+
+
 def ragas_embedding(provider: str, model: str, client: t.Any) -> BaseEmbedding:
     """
     Factory function to create an embedding instance based on the provider.
