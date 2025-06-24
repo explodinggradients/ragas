@@ -2,8 +2,8 @@
 
 __all__ = ["RagasApiClientFactory"]
 
-import typing as t
 import os
+import typing as t
 
 from .ragas_api_client import RagasApiClient
 

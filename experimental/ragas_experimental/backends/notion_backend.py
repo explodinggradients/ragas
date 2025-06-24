@@ -2,11 +2,11 @@
 
 __all__ = ["NotionBackend", "get_page_id", "get_database_id"]
 
-import typing as t
 import os
+import typing as t
 
+from fastcore.utils import patch, patch_to
 from notion_client import Client as NotionClient
-from fastcore.utils import patch_to, patch
 
 from ..exceptions import DuplicateError, NotFoundError
 

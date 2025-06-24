@@ -1,8 +1,9 @@
 """Backend registry for managing and discovering project backends."""
 
-import typing as t
 import logging
+import typing as t
 from importlib import metadata
+
 from .base import ProjectBackend
 
 logger = logging.getLogger(__name__)

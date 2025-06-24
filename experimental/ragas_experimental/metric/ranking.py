@@ -4,8 +4,9 @@ __all__ = ["ranking_metric", "RankingMetric"]
 
 import typing as t
 from dataclasses import dataclass
-from pydantic import Field
-from pydantic import create_model
+
+from pydantic import Field, create_model
+
 from . import Metric
 from .decorator import create_metric_decorator
 

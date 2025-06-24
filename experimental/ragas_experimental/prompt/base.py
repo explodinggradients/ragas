@@ -1,7 +1,7 @@
 __all__ = ["Prompt"]
 
-import typing as t
 import re
+import typing as t
 
 
 class Prompt:

@@ -200,7 +200,6 @@ jobs:
         run: |
           # Check if code is properly formatted (without making changes)
           echo "Checking ragas formatting..."
-          cd ragas && uv run isort --check-only .
           uv run black --check --config ragas/pyproject.toml ragas/src ragas/tests docs
           uv run ruff check ragas/src docs ragas/tests
           echo "Checking experimental formatting..."

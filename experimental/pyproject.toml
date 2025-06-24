@@ -67,3 +67,13 @@ markers = [
     "experimental_ci: Set of tests that will be run as part of Experimental CI",
     "e2e: End-to-End tests for Experimental",
 ]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]  # Enable isort rules (I) along with existing rules
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+# Import sorting configuration to match isort behavior
+known-first-party = ["ragas_experimental"]
+force-single-line = false
+combine-as-imports = true

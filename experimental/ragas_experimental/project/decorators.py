@@ -1,17 +1,17 @@
 """Experiment decorators for running and tracking experiments."""
 
-from functools import wraps
 import asyncio
-import typing as t
 import os
+import typing as t
+from functools import wraps
 from pathlib import Path
 
-from tqdm import tqdm
 import git
+from tqdm import tqdm
 
-from .utils import memorable_names
 from ..dataset import Dataset
 from ..utils import async_to_sync
+from .utils import memorable_names
 
 
 @t.runtime_checkable

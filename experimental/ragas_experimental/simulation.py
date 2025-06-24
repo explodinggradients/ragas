@@ -5,9 +5,10 @@ This module provides functionality to simulate realistic user interactions
 for evaluating conversational AI systems.
 """
 
-import typing as t
 import inspect
 import re
+import typing as t
+
 from pydantic import BaseModel, Field
 
 from .llm.llm import RagasLLM

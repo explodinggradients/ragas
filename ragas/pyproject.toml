@@ -45,7 +45,6 @@ docs = [
 dev = [
     "rich",
     "ruff",
-    "isort",
     "black[jupyter]",
     "pyright",
     "llama_index",
@@ -80,6 +79,13 @@ exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
 ignore = ["E501"]
+select = ["E", "F", "I"]  # Add isort rules (I)
+
+[tool.ruff.lint.isort]
+# Import sorting configuration to match isort behavior
+known-first-party = ["ragas"]
+force-single-line = false
+combine-as-imports = true
 
 [build-system]
 requires = ["setuptools>=64", "setuptools_scm>=8"]

@@ -5,12 +5,12 @@ __all__ = [
     "get_test_directory",
 ]
 
-import string
-import uuid
-import functools
 import asyncio
-import tempfile
+import functools
 import os
+import string
+import tempfile
+import uuid
 from collections import Counter
 
 import numpy as np

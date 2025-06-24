@@ -1,11 +1,12 @@
 __all__ = ["ExampleStore", "InMemoryExampleStore", "DynamicFewShotPrompt"]
 
 import typing as t
-import numpy as np
 from abc import ABC, abstractmethod
 
-from .base import Prompt
+import numpy as np
+
 from ..embedding import BaseEmbedding
+from .base import Prompt
 
 
 class ExampleStore(ABC):

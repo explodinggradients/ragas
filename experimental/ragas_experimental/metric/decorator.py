@@ -2,12 +2,13 @@
 
 __all__ = ["create_metric_decorator"]
 
-import typing as t
-import inspect
 import asyncio
+import inspect
+import typing as t
 from dataclasses import dataclass
-from . import MetricResult
+
 from ..llm import RagasLLM
+from . import MetricResult
 
 
 def create_metric_decorator(metric_class):

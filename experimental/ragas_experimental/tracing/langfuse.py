@@ -2,10 +2,10 @@
 
 __all__ = ["observe", "logger", "LangfuseTrace", "sync_trace", "add_query_param"]
 
-import typing as t
 import asyncio
 import logging
-from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
+import typing as t
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from langfuse.api import Observation, TraceWithFullDetails
 from langfuse.decorators import langfuse_context, observe

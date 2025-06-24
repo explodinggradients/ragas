@@ -21,8 +21,8 @@ __all__ = [
 ]
 
 import typing as t
+from datetime import date, datetime
 from enum import Enum
-from datetime import datetime, date
 
 from fastcore.utils import patch
 

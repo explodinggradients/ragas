@@ -4,9 +4,10 @@ __all__ = ["MLflowTrace", "sync_trace"]
 
 import os
 import typing as t
-from mlflow.entities.trace import Trace
-from mlflow.entities.span import Span
+
 from mlflow import get_last_active_trace
+from mlflow.entities.span import Span
+from mlflow.entities.trace import Trace
 
 
 class MLflowTrace:

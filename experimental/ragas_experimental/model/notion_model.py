@@ -8,7 +8,7 @@ from datetime import datetime
 from fastcore.utils import patch, patch_to
 
 from ..exceptions import ValidationError
-from .notion_typing import Field, ID
+from .notion_typing import ID, Field
 
 
 class NotionModelMeta(type):

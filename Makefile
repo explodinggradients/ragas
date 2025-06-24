@@ -32,22 +32,20 @@ setup: install ## Complete development environment setup
 .PHONY: help install setup format type check clean test test-e2e benchmarks benchmarks-docker run-ci build-docs serve-docs process-experimental-notebooks
 format: ## Format and lint all code in the monorepo
 	@echo "Formatting and linting all code..."
-	@echo "(isort) Ordering imports in ragas..."
-	$(Q)cd ragas && uv run isort .
 	@echo "(black) Formatting ragas..."
 	$(Q)uv run black --config ragas/pyproject.toml $(RAGAS_PATHS)
 	@echo "(black) Formatting stubs..."
 	$(Q)find ragas/src -name "*.pyi" ! -name "*_pb2*" -exec uv run black --pyi --config ragas/pyproject.toml {} \;
-	@echo "(ruff) Auto-fixing ragas (includes unused imports)..."
+	@echo "(ruff) Auto-fixing ragas (includes import sorting and unused imports)..."
 	$(Q)uv run ruff check $(RAGAS_PATHS) --fix-only
 	@echo "(ruff) Final linting check for ragas..."
 	$(Q)uv run ruff check $(RAGAS_PATHS)
 	@echo "(black) Formatting experimental..."
-	$(Q)cd experimental && uv run black $(EXPERIMENTAL_PATH)
-	@echo "(ruff) Auto-fixing experimental (includes unused imports)..."
-	$(Q)cd experimental && uv run ruff check $(EXPERIMENTAL_PATH) --fix-only
+	$(Q)cd experimental && uv run black ragas_experimental
+	@echo "(ruff) Auto-fixing experimental (includes import sorting and unused imports)..."
+	$(Q)cd experimental && uv run ruff check ragas_experimental --fix-only
 	@echo "(ruff) Final linting check for experimental..."
-	$(Q)cd experimental && uv run ruff check $(EXPERIMENTAL_PATH)
+	$(Q)cd experimental && uv run ruff check ragas_experimental
 
 type: ## Type check all code in the monorepo
 	@echo "Type checking all code..."

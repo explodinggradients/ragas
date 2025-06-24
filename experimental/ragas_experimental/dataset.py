@@ -15,11 +15,12 @@ except ImportError:
 from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
 )
+
+from .backends.ragas_api_client import RagasApiClient
 from .project.backends import (
     LocalCSVProjectBackend,
     PlatformProjectBackend,
 )
-from .backends.ragas_api_client import RagasApiClient
 from .typing import SUPPORTED_BACKENDS
 
 BaseModelType = t.TypeVar("BaseModelType", bound=BaseModel)

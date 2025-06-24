@@ -1,8 +1,8 @@
 """Shared utilities for project module."""
 
-import uuid
-import string
 import random
+import string
+import uuid
 
 
 def create_nano_id(size=12):

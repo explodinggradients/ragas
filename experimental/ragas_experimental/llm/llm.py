@@ -1,11 +1,12 @@
 __all__ = ["T", "RagasLLM", "ragas_llm"]
 
-import typing as t
 import asyncio
 import inspect
 import threading
-from pydantic import BaseModel
+import typing as t
+
 import instructor
+from pydantic import BaseModel
 
 T = t.TypeVar("T", bound=BaseModel)
 

@@ -5,8 +5,8 @@ __all__ = ["MetricResult"]
 import typing as t
 
 from fastcore.utils import patch
-from pydantic_core import core_schema
 from pydantic import GetCoreSchemaHandler, ValidationInfo
+from pydantic_core import core_schema
 
 
 class MetricResult:

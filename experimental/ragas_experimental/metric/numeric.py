@@ -4,7 +4,9 @@ __all__ = ["numeric_metric", "NumericMetric"]
 
 import typing as t
 from dataclasses import dataclass
+
 from pydantic import create_model
+
 from . import Metric
 from .decorator import create_metric_decorator
 

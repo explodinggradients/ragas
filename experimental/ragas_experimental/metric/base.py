@@ -2,19 +2,21 @@
 
 __all__ = ["Metric"]
 
-from abc import ABC
 import asyncio
-from dataclasses import dataclass, field
-from pydantic import BaseModel
-import typing as t
-from tqdm import tqdm
 import string
-from ..prompt.base import Prompt
+import typing as t
+from abc import ABC
+from dataclasses import dataclass, field
+
+from pydantic import BaseModel
+from tqdm import tqdm
+
 from ..embedding.base import BaseEmbedding
-from . import MetricResult
 from ..llm import RagasLLM
 from ..model.notion_model import NotionModel
+from ..prompt.base import Prompt
 from ..prompt.dynamic_few_shot import DynamicFewShotPrompt
+from . import MetricResult
 
 if t.TYPE_CHECKING:
     from ragas_experimental.project.core import Project
