@@ -29,7 +29,7 @@ setup: install ## Complete development environment setup
 # CODE QUALITY
 # =============================================================================
 
-.PHONY: help install setup format type check clean test test-e2e benchmarks benchmarks-docker run-ci build-docs serve-docs process-experimental-notebooks
+.PHONY: help install setup format type check clean test test-e2e benchmarks benchmarks-docker run-ci run-ci-fast run-ci-format-check run-ci-type run-ci-tests build-docs serve-docs process-experimental-notebooks
 format: ## Format and lint all code in the monorepo
 	@echo "Formatting and linting all code..."
 	@echo "(black) Formatting ragas..."
@@ -77,8 +77,38 @@ benchmarks-docker: ## Run benchmarks in docker
 # CI/BUILD
 # =============================================================================
 
-run-ci: format type test ## Run complete CI pipeline
+run-ci: run-ci-format-check run-ci-type run-ci-tests ## Run complete CI pipeline (mirrors GitHub CI exactly)
 	@echo "All CI checks passed!"
+
+run-ci-format-check: ## Run format check in dry-run mode (like GitHub CI)
+	@echo "Running format check (dry-run, like GitHub CI)..."
+	@echo "Checking ragas formatting..."
+	$(Q)uv run black --check --config ragas/pyproject.toml ragas/src ragas/tests docs
+	$(Q)uv run ruff check ragas/src docs ragas/tests
+	@echo "Checking experimental formatting..."
+	$(Q)cd experimental && uv run black --check ragas_experimental && uv run ruff check ragas_experimental
+
+run-ci-type: ## Run type checking (matches GitHub CI)
+	@echo "Running type checking (matches GitHub CI)..."
+	$(Q)$(MAKE) type
+
+run-ci-tests: ## Run all tests with GitHub CI options
+	@echo "Running unit tests with CI options..."
+	$(Q)cd ragas && __RAGAS_DEBUG_TRACKING=true RAGAS_DO_NOT_TRACK=true uv run pytest --nbmake tests/unit --dist loadfile -n auto
+	@echo "Running experimental tests with CI options..."
+	$(Q)cd experimental && __RAGAS_DEBUG_TRACKING=true RAGAS_DO_NOT_TRACK=true uv run pytest -v --tb=short
+
+run-ci-fast: ## Fast CI check for quick local validation (2-3 minutes)
+	@echo "Running fast CI check for quick feedback..."
+	@echo "Format check..."
+	$(Q)uv run black --check --config ragas/pyproject.toml ragas/src ragas/tests docs
+	$(Q)uv run ruff check ragas/src docs ragas/tests
+	$(Q)cd experimental && uv run black --check ragas_experimental && uv run ruff check ragas_experimental
+	@echo "Core unit tests (no nbmake for speed)..."
+	$(Q)cd ragas && uv run pytest tests/unit --dist loadfile -n auto -x
+	@echo "Essential experimental tests..."
+	$(Q)cd experimental && uv run pytest -v --tb=short -x
+	@echo "Fast CI check completed!"
 
 clean: ## Clean all generated files
 	@echo "Cleaning all generated files..."
