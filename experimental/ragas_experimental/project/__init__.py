@@ -1,7 +1,7 @@
 """Project management module for Ragas experimental framework.
 
 This module provides a clean interface for managing AI projects with support for
-multiple backend storage options including local CSV files and the Ragas platform.
+multiple backend storage options including local CSV files and the Ragas app.
 """
 
 from .backends import (
@@ -32,14 +32,14 @@ __all__ = [
 
 
 def create_project(
-    name: str, description: str = "", backend: str = "local_csv", **kwargs
+    name: str, description: str = "", backend: str = "local/csv", **kwargs
 ) -> Project:
     """Create a new project with the specified backend.
 
     Args:
         name: Name of the project
         description: Description of the project
-        backend: Backend type ("local_csv" or "platform")
+        backend: Backend type ("local/csv" or "ragas/app")
         **kwargs: Additional backend-specific arguments
 
     Returns:
@@ -47,20 +47,20 @@ def create_project(
 
     Examples:
         >>> # Create a local project
-        >>> project = create_project("my_project", backend="local_csv", root_dir="/path/to/projects")
+        >>> project = create_project("my_project", backend="local/csv", root_dir="/path/to/projects")
 
-        >>> # Create a platform project
-        >>> project = create_project("my_project", backend="platform", ragas_api_client=client)
+        >>> # Create a ragas/app project
+        >>> project = create_project("my_project", backend="ragas/app", ragas_api_client=client)
     """
     return Project.create(name=name, description=description, backend=backend, **kwargs)
 
 
-def get_project(name: str, backend: str = "local_csv", **kwargs) -> Project:
+def get_project(name: str, backend: str = "local/csv", **kwargs) -> Project:
     """Get an existing project by name.
 
     Args:
         name: Name of the project to retrieve
-        backend: Backend type ("local_csv" or "platform")
+        backend: Backend type ("local/csv" or "ragas/app")
         **kwargs: Additional backend-specific arguments
 
     Returns:
@@ -68,9 +68,9 @@ def get_project(name: str, backend: str = "local_csv", **kwargs) -> Project:
 
     Examples:
         >>> # Get a local project
-        >>> project = get_project("my_project", backend="local_csv", root_dir="/path/to/projects")
+        >>> project = get_project("my_project", backend="local/csv", root_dir="/path/to/projects")
 
-        >>> # Get a platform project
-        >>> project = get_project("my_project", backend="platform", ragas_api_client=client)
+        >>> # Get a ragas/app project
+        >>> project = get_project("my_project", backend="ragas/app", ragas_api_client=client)
     """
     return Project.get(name=name, backend=backend, **kwargs)

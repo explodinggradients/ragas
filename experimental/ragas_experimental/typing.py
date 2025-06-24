@@ -29,7 +29,7 @@ from fastcore.utils import patch
 from .metric.result import MetricResult
 
 # Define supported backends
-SUPPORTED_BACKENDS = t.Literal["ragas_app", "local"]
+SUPPORTED_BACKENDS = t.Literal["ragas/app", "local/csv"]
 
 
 class ColumnType(str, Enum):

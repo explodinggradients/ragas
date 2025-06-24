@@ -20,7 +20,7 @@ class Experiment(Dataset):
         project_id: str,
         experiment_id: str,
         ragas_api_client: t.Optional[RagasApiClient] = None,
-        backend: t.Literal["ragas_app", "local"] = "ragas_app",
+        backend: t.Literal["ragas/app", "local/csv"] = "ragas/app",
         local_root_dir: t.Optional[str] = None,
     ):
         self.experiment_id = experiment_id

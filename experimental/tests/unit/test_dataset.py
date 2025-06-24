@@ -29,7 +29,7 @@ def temp_dir():
 @pytest.fixture
 def test_project(temp_dir):
     """Create a test project."""
-    return Project.create(name="test_project", backend="local", root_dir=temp_dir)
+    return Project.create(name="test_project", backend="local/csv", root_dir=temp_dir)
 
 
 @pytest.fixture

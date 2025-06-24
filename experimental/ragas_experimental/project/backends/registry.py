@@ -170,15 +170,11 @@ class BackendRegistry:
         try:
             from .local_csv import LocalCSVProjectBackend
 
-            self.register_backend(
-                "local_csv", LocalCSVProjectBackend, aliases=["local"]
-            )
+            self.register_backend("local/csv", LocalCSVProjectBackend)
 
             from .platform import PlatformProjectBackend
 
-            self.register_backend(
-                "platform", PlatformProjectBackend, aliases=["ragas_app"]
-            )
+            self.register_backend("ragas/app", PlatformProjectBackend)
 
         except ImportError as e:
             logger.warning(f"Failed to import built-in backend: {e}")

@@ -39,7 +39,7 @@ def temp_project():
         project = Project.create(
             name="integration_test_project",
             description="Project for integration testing",
-            backend="local",
+            backend="local/csv",
             root_dir=temp_dir
         )
         yield project

@@ -41,7 +41,7 @@ class Dataset(t.Generic[BaseModelType]):
         dataset_id: str,
         datatable_type: t.Literal["datasets", "experiments"],
         ragas_api_client: t.Optional[RagasApiClient] = None,
-        backend: SUPPORTED_BACKENDS = "local",
+        backend: SUPPORTED_BACKENDS = "local/csv",
         local_root_dir: t.Optional[str] = None,
     ):
         """Initialize a Dataset with the specified backend.
@@ -52,8 +52,8 @@ class Dataset(t.Generic[BaseModelType]):
             project_id: The ID of the parent project
             dataset_id: The ID of this dataset
             datatable_type: Whether this is for "datasets" or "experiments"
-            ragas_api_client: Required for ragas_app backend
-            backend: The storage backend to use (ragas_app or local)
+            ragas_api_client: Required for ragas/app backend
+            backend: The storage backend to use (ragas/app or local/csv)
             local_root_dir: Required for local backend
         """
         # Store basic properties
@@ -66,9 +66,9 @@ class Dataset(t.Generic[BaseModelType]):
         self._entries: t.List[BaseModelType] = []
 
         # Create the appropriate backend using the project backend system
-        if backend == "ragas_app":
+        if backend == "ragas/app":
             if ragas_api_client is None:
-                raise ValueError("ragas_api_client is required for ragas_app backend")
+                raise ValueError("ragas_api_client is required for ragas/app backend")
 
             # Create a platform project backend and get dataset backend from it
             project_backend = PlatformProjectBackend(ragas_api_client)
@@ -83,9 +83,9 @@ class Dataset(t.Generic[BaseModelType]):
                     dataset_id, name, model
                 )
 
-        elif backend == "local":
+        elif backend == "local/csv":
             if local_root_dir is None:
-                raise ValueError("local_root_dir is required for local backend")
+                raise ValueError("local_root_dir is required for local/csv backend")
 
             # Create a local CSV project backend and get dataset backend from it
             project_backend = LocalCSVProjectBackend(local_root_dir)

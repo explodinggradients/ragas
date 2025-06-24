@@ -56,7 +56,7 @@ class Project:
         cls,
         name: str,
         description: str = "",
-        backend: rt.SUPPORTED_BACKENDS = "local_csv",
+        backend: rt.SUPPORTED_BACKENDS = "local/csv",
         root_dir: t.Optional[str] = None,
         ragas_api_client: t.Optional[RagasApiClient] = None,
     ) -> "Project":
@@ -65,14 +65,14 @@ class Project:
         Args:
             name: Name of the project
             description: Description of the project
-            backend: Backend type ("local_csv" or "platform")
+            backend: Backend type ("local/csv" or "ragas/app")
             root_dir: Root directory for local backends
-            ragas_api_client: API client for platform backend
+            ragas_api_client: API client for ragas/app backend
 
         Returns:
             Project: A new project instance
         """
-        if backend in ("platform", "ragas_app"):
+        if backend == "ragas/app":
             ragas_api_client = ragas_api_client or RagasApiClientFactory.create()
             sync_version = async_to_sync(ragas_api_client.create_project)
             new_project = sync_version(title=name, description=description)
@@ -84,9 +84,9 @@ class Project:
                 name=new_project["title"],
                 description=new_project["description"],
             )
-        elif backend in ("local_csv", "local"):
+        elif backend == "local/csv":
             if root_dir is None:
-                raise ValueError("root_dir is required for local_csv backend")
+                raise ValueError("root_dir is required for local/csv backend")
 
             project_backend = LocalCSVProjectBackend(root_dir)
             return cls(
@@ -102,7 +102,7 @@ class Project:
     def get(
         cls,
         name: str,
-        backend: rt.SUPPORTED_BACKENDS = "local_csv",
+        backend: rt.SUPPORTED_BACKENDS = "local/csv",
         root_dir: t.Optional[str] = None,
         ragas_api_client: t.Optional[RagasApiClient] = None,
     ) -> "Project":
@@ -110,14 +110,14 @@ class Project:
 
         Args:
             name: The name of the project to get
-            backend: The backend to use ("local_csv" or "platform")
+            backend: The backend to use ("local/csv" or "ragas/app")
             root_dir: The root directory for local backends
             ragas_api_client: Optional custom Ragas API client
 
         Returns:
             Project: The project instance
         """
-        if backend in ("platform", "ragas_app"):
+        if backend == "ragas/app":
             if ragas_api_client is None:
                 ragas_api_client = RagasApiClientFactory.create()
 
@@ -132,9 +132,9 @@ class Project:
                 name=project_info["title"],
                 description=project_info["description"],
             )
-        elif backend in ("local_csv", "local"):
+        elif backend == "local/csv":
             if root_dir is None:
-                raise ValueError("root_dir is required for local_csv backend")
+                raise ValueError("root_dir is required for local/csv backend")
 
             # For local backend, check if project directory exists
             project_path = os.path.join(root_dir, name)
@@ -189,9 +189,9 @@ class Project:
         dataset_id = self._backend.create_dataset(name, model)
 
         backend_name = (
-            "ragas_app"
+            "ragas/app"
             if isinstance(self._backend, PlatformProjectBackend)
-            else "local"
+            else "local/csv"
         )
 
         return Dataset(
@@ -224,9 +224,9 @@ class Project:
         )
 
         backend_name = (
-            "ragas_app"
+            "ragas/app"
             if isinstance(self._backend, PlatformProjectBackend)
-            else "local"
+            else "local/csv"
         )
 
         return Dataset(
@@ -267,9 +267,9 @@ class Project:
         experiment_id = self._backend.create_experiment(name, model)
 
         backend_name = (
-            "ragas_app"
+            "ragas/app"
             if isinstance(self._backend, PlatformProjectBackend)
-            else "local"
+            else "local/csv"
         )
 
         return Experiment(
@@ -301,9 +301,9 @@ class Project:
         )
 
         backend_name = (
-            "ragas_app"
+            "ragas/app"
             if isinstance(self._backend, PlatformProjectBackend)
-            else "local"
+            else "local/csv"
         )
 
         return Experiment(
@@ -339,7 +339,7 @@ class Project:
             ValueError: If not using local backend
         """
         if not isinstance(self._backend, LocalCSVProjectBackend):
-            raise ValueError("This method is only available for local_csv backend")
+            raise ValueError("This method is only available for local/csv backend")
         return os.path.join(
             self._backend._project_dir, "datasets", f"{dataset_name}.csv"
         )
@@ -357,7 +357,7 @@ class Project:
             ValueError: If not using local backend
         """
         if not isinstance(self._backend, LocalCSVProjectBackend):
-            raise ValueError("This method is only available for local_csv backend")
+            raise ValueError("This method is only available for local/csv backend")
         return os.path.join(
             self._backend._project_dir, "experiments", f"{experiment_name}.csv"
         )
@@ -365,8 +365,8 @@ class Project:
     def __repr__(self) -> str:
         """String representation of the project."""
         backend_name = (
-            "ragas_app"
+            "ragas/app"
             if isinstance(self._backend, PlatformProjectBackend)
-            else "local"
+            else "local/csv"
         )
         return f"Project(name='{self.name}', backend='{backend_name}')"

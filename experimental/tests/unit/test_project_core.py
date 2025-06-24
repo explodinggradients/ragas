@@ -11,7 +11,7 @@ def test_local_backend_creation():
         local_project = Project.create(
             name="test_local_project",
             description="A test project using local backend",
-            backend="local",
+            backend="local/csv",
             root_dir=temp_dir
         )
         
@@ -27,7 +27,7 @@ def test_local_backend_deletion():
         local_project = Project.create(
             name="test_local_project",
             description="A test project using local backend",
-            backend="local",
+            backend="local/csv",
             root_dir=temp_dir
         )
         
@@ -45,14 +45,14 @@ def test_project_get_existing():
         local_project = Project.create(
             name="test_local_project",
             description="A test project using local backend",
-            backend="local",
+            backend="local/csv",
             root_dir=temp_dir
         )
         
         # Get the project
         retrieved_project = Project.get(
             name="test_local_project",
-            backend="local",
+            backend="local/csv",
             root_dir=temp_dir
         )
         
@@ -68,7 +68,7 @@ def test_project_get_nonexistent():
         with pytest.raises(ValueError, match="Local project 'nonexistent' does not exist"):
             Project.get(
                 name="nonexistent",
-                backend="local",
+                backend="local/csv",
                 root_dir=temp_dir
             )
 
@@ -79,7 +79,7 @@ def test_project_paths():
         local_project = Project.create(
             name="test_local_project",
             description="A test project using local backend",
-            backend="local",
+            backend="local/csv",
             root_dir=temp_dir
         )
         
@@ -100,9 +100,9 @@ def test_project_repr():
         local_project = Project.create(
             name="test_local_project",
             description="A test project using local backend",
-            backend="local",
+            backend="local/csv",
             root_dir=temp_dir
         )
         
         assert "test_local_project" in str(local_project)
-        assert "local" in str(local_project)
+        assert "local/csv" in str(local_project)
