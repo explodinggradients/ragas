@@ -8,7 +8,7 @@ import typing as t
 from dataclasses import dataclass
 
 from ..llm import RagasLLM
-from . import MetricResult
+from .result import MetricResult
 
 
 def create_metric_decorator(metric_class):

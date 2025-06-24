@@ -16,7 +16,7 @@ from ..llm import RagasLLM
 from ..model.notion_model import NotionModel
 from ..prompt.base import Prompt
 from ..prompt.dynamic_few_shot import DynamicFewShotPrompt
-from . import MetricResult
+from .result import MetricResult
 
 if t.TYPE_CHECKING:
     from ragas_experimental.project.core import Project
