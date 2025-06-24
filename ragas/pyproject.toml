@@ -74,18 +74,7 @@ package-dir = {"" = "src"}
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/markdown"}
 
-[tool.ruff]
-exclude = ["*.ipynb"]
-
-[tool.ruff.lint]
-ignore = ["E501"]
-select = ["E", "F", "I"]  # Add isort rules (I)
-
-[tool.ruff.lint.isort]
-# Import sorting configuration to match isort behavior
-known-first-party = ["ragas"]
-force-single-line = false
-combine-as-imports = true
+# Ruff configuration is inherited from workspace.toml at the monorepo root
 
 [build-system]
 requires = ["setuptools>=64", "setuptools_scm>=8"]

@@ -3,7 +3,8 @@ try:
     from ._version import version as __version__
 except ImportError:
     # Fallback for installed package
-    from importlib.metadata import PackageNotFoundError, version as pkg_version
+    from importlib.metadata import PackageNotFoundError
+    from importlib.metadata import version as pkg_version
 
     try:
         __version__ = pkg_version("ragas_experimental")
