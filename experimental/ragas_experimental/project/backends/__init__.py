@@ -5,6 +5,12 @@ from .base import DatasetBackend, ProjectBackend
 # Import concrete backends for backward compatibility
 from .local_csv import LocalCSVProjectBackend
 from .platform import PlatformProjectBackend
+
+# Optional backends with dependencies
+try:
+    from .box_csv import BoxCSVProjectBackend
+except ImportError:
+    BoxCSVProjectBackend = None
 from .registry import (
     BackendRegistry,
     create_project_backend,
@@ -30,4 +36,5 @@ __all__ = [
     # Concrete backends for backward compatibility
     "LocalCSVProjectBackend",
     "PlatformProjectBackend",
+    "BoxCSVProjectBackend",
 ]

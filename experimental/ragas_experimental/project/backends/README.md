@@ -1,3 +1,170 @@
+# Ragas Experimental Project Backends
+
+This directory contains backend implementations for storing Ragas project data in various storage systems.
+
+## Available Backends
+
+### Local CSV (`local/csv`)
+Stores data in local CSV files organized in a folder structure.
+
+**Configuration:**
+```python
+from ragas_experimental.project.backends import create_project_backend
+
+backend = create_project_backend("local/csv", root_dir="/path/to/data")
+```
+
+### Ragas Platform (`ragas/app`)
+Integration with the official Ragas platform service.
+
+### Box CSV (`box/csv`)
+Stores CSV files on Box cloud storage with the same organization as local CSV.
+
+**Installation:**
+```bash
+# Install Box backend dependencies
+pip install -e ".[box]"
+```
+
+**JWT Authentication (Recommended for server applications):**
+```python
+from ragas_experimental.project.backends import create_project_backend
+
+config = {
+    "auth_type": "jwt",
+    "client_id": "your_box_app_client_id",
+    "client_secret": "your_box_app_client_secret", 
+    "enterprise_id": "your_enterprise_id",
+    "jwt_key_id": "your_jwt_key_id",
+    "private_key_path": "/path/to/private_key.pem",
+    "private_key_passphrase": "optional_passphrase",  # if key is encrypted
+    # Optional: specify root folder (default is Box root folder "0")
+    "root_folder_id": "123456789"
+}
+
+backend = create_project_backend("box/csv", auth_config=config)
+```
+
+**OAuth2 Authentication (For user-facing applications):**
+```python
+config = {
+    "auth_type": "oauth2",
+    "client_id": "your_box_app_client_id",
+    "client_secret": "your_box_app_client_secret",
+    "access_token": "user_access_token",
+    "refresh_token": "user_refresh_token",  # optional
+}
+
+backend = create_project_backend("box/csv", auth_config=config)
+```
+
+**Alternative: Private Key Content**
+Instead of `private_key_path`, you can provide the key content directly:
+```python
+config = {
+    "auth_type": "jwt",
+    # ... other fields ...
+    "private_key": "-----BEGIN ENCRYPTED PRIVATE KEY-----\n...\n-----END ENCRYPTED PRIVATE KEY-----",
+}
+```
+
+## Box Backend Features
+
+- **Folder Organization**: Creates `project_id/datasets/` and `project_id/experiments/` structure
+- **CSV Format**: Same CSV format as local backend with `_row_id` column
+- **Streaming**: Efficient memory usage for large files via streaming upload/download
+- **Error Handling**: Graceful handling of Box API errors, rate limits, and network issues
+- **Authentication**: Supports both JWT (enterprise) and OAuth2 (user) authentication
+- **CRUD Operations**: Full create, read, update, delete support for dataset entries
+
+## Setting Up Box Application
+
+To use the Box backend, you need to create a Box application:
+
+1. Go to [Box Developer Console](https://app.box.com/developers/console)
+2. Create a new app with "Custom App" using JWT or OAuth2
+3. Configure authentication method:
+   - **JWT**: Generate public/private key pair, note down all credentials
+   - **OAuth2**: Note down client credentials, implement OAuth2 flow for user tokens
+4. Set appropriate scopes (read/write files and folders)
+5. For JWT: Get enterprise authorization from Box admin
+
+## Environment Variables
+
+You can also configure Box backend using environment variables:
+
+```bash
+# JWT Authentication
+export BOX_AUTH_TYPE=jwt
+export BOX_CLIENT_ID=your_client_id
+export BOX_CLIENT_SECRET=your_client_secret  
+export BOX_ENTERPRISE_ID=your_enterprise_id
+export BOX_JWT_KEY_ID=your_jwt_key_id
+export BOX_PRIVATE_KEY_PATH=/path/to/private_key.pem
+export BOX_PRIVATE_KEY_PASSPHRASE=optional_passphrase
+export BOX_ROOT_FOLDER_ID=optional_root_folder_id
+
+# OAuth2 Authentication  
+export BOX_AUTH_TYPE=oauth2
+export BOX_CLIENT_ID=your_client_id
+export BOX_CLIENT_SECRET=your_client_secret
+export BOX_ACCESS_TOKEN=your_access_token
+export BOX_REFRESH_TOKEN=your_refresh_token
+```
+
+Then create backend without explicit config:
+```python
+import os
+
+# Build config from environment variables
+config = {k.lower().replace('box_', ''): v for k, v in os.environ.items() if k.startswith('BOX_')}
+backend = create_project_backend("box/csv", auth_config=config)
+```
+
+## Error Handling
+
+The Box backend includes comprehensive error handling:
+
+- **Authentication Errors**: Clear error messages for invalid credentials
+- **Network Errors**: Automatic retry logic for transient failures  
+- **Rate Limiting**: Respects Box API rate limits
+- **Permission Errors**: Helpful messages for insufficient permissions
+- **File Not Found**: Graceful handling of missing files/folders
+
+## Testing
+
+The Box backend includes comprehensive tests using VCR.py for recording/replaying API interactions:
+
+```bash
+# Run tests (requires Box dependencies)
+pytest tests/backends/test_box_csv.py
+
+# Run with VCR recording (requires real Box credentials)
+pytest tests/backends/test_box_csv.py --vcr-record=once
+```
+
+For CI/CD environments, VCR cassettes allow testing without real Box API calls.
+
+## Limitations
+
+- **Large Files**: Box has file size limits (5GB for regular uploads, larger via chunked upload)
+- **Rate Limits**: Box API has rate limits that may affect high-volume operations
+- **Network Dependency**: Requires internet connection unlike local backend
+- **Authentication Complexity**: JWT setup requires Box admin configuration
+
+## Migration
+
+To migrate from local CSV to Box CSV backend:
+
+1. Set up Box application and authentication
+2. Create Box backend instance
+3. Export data from local backend
+4. Import data to Box backend using same project/dataset names
+
+The CSV format is identical, so data migration involves copying files to Box storage with the same folder structure.
+
+---
+
 # Backend Development Guide
 
 This guide shows you how to add new storage backends to the Ragas project system. The backend architecture supports multiple storage solutions like CSV files, databases, cloud platforms, and more.
