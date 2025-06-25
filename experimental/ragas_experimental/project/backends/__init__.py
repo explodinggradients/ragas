@@ -2,15 +2,24 @@
 
 from .base import DatasetBackend, ProjectBackend
 
-# Import concrete backends for backward compatibility
+# Import concrete backends
 from .local_csv import LocalCSVProjectBackend
-from .platform import PlatformProjectBackend
+from .ragas_app import RagasAppProjectBackend
 
 # Optional backends with dependencies
 try:
     from .box_csv import BoxCSVProjectBackend
 except ImportError:
     BoxCSVProjectBackend = None
+
+# Import configuration classes
+from .config import BackendConfig, LocalCSVConfig, RagasAppConfig
+
+try:
+    from .config import BoxCSVConfig
+except ImportError:
+    BoxCSVConfig = None
+
 from .registry import (
     BackendRegistry,
     create_project_backend,
@@ -33,8 +42,13 @@ __all__ = [
     "list_backend_info",
     "print_available_backends",
     "create_project_backend",
-    # Concrete backends for backward compatibility
+    # Configuration classes
+    "BackendConfig",
+    "LocalCSVConfig",
+    "RagasAppConfig",
+    "BoxCSVConfig",
+    # Concrete backends
     "LocalCSVProjectBackend",
-    "PlatformProjectBackend",
+    "RagasAppProjectBackend",
     "BoxCSVProjectBackend",
 ]

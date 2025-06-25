@@ -10,12 +10,36 @@ Stores data in local CSV files organized in a folder structure.
 **Configuration:**
 ```python
 from ragas_experimental.project.backends import create_project_backend
+from ragas_experimental.project.backends.config import LocalCSVConfig
 
+# Option 1: Using configuration objects (recommended - best IDE support)
+config = LocalCSVConfig(root_dir="/path/to/data")
+backend = create_project_backend("local/csv", config=config)
+
+# Option 2: Using kwargs (still structured via Pydantic validation)
 backend = create_project_backend("local/csv", root_dir="/path/to/data")
 ```
 
-### Ragas Platform (`ragas/app`)
-Integration with the official Ragas platform service.
+### Ragas App (`ragas/app`)
+Integration with the official Ragas platform service for cloud-based storage.
+
+**Configuration:**
+```python
+from ragas_experimental.project.backends import create_project_backend
+from ragas_experimental.project.backends.config import RagasAppConfig
+
+# Option 1: Using configuration objects (recommended)
+config = RagasAppConfig(
+    api_key="your_api_key",
+    api_url="https://api.ragas.io",  # optional, defaults to production
+    timeout=30,  # optional
+    max_retries=3  # optional
+)
+backend = create_project_backend("ragas/app", config=config)
+
+# Option 2: Using kwargs
+backend = create_project_backend("ragas/app", api_key="your_api_key")
+```
 
 ### Box CSV (`box/csv`)
 Stores CSV files on Box cloud storage with the same organization as local CSV.
@@ -29,43 +53,66 @@ pip install -e ".[box]"
 **JWT Authentication (Recommended for server applications):**
 ```python
 from ragas_experimental.project.backends import create_project_backend
+from ragas_experimental.project.backends.config import BoxCSVConfig
 
-config = {
-    "auth_type": "jwt",
-    "client_id": "your_box_app_client_id",
-    "client_secret": "your_box_app_client_secret", 
-    "enterprise_id": "your_enterprise_id",
-    "jwt_key_id": "your_jwt_key_id",
-    "private_key_path": "/path/to/private_key.pem",
-    "private_key_passphrase": "optional_passphrase",  # if key is encrypted
-    # Optional: specify root folder (default is Box root folder "0")
-    "root_folder_id": "123456789"
-}
+# Option 1: Using configuration objects (recommended - best IDE support)
+config = BoxCSVConfig(
+    auth_type="jwt",
+    client_id="your_box_app_client_id",
+    client_secret="your_box_app_client_secret", 
+    enterprise_id="your_enterprise_id",
+    jwt_key_id="your_jwt_key_id",
+    private_key_path="/path/to/private_key.pem",
+    private_key_passphrase="optional_passphrase",  # if key is encrypted
+    root_folder_id="123456789"  # optional, defaults to "0" (Box root)
+)
+backend = create_project_backend("box/csv", config=config)
 
-backend = create_project_backend("box/csv", auth_config=config)
+# Option 2: Using kwargs (still structured via Pydantic validation)
+backend = create_project_backend(
+    "box/csv",
+    auth_type="jwt",
+    client_id="your_box_app_client_id",
+    client_secret="your_box_app_client_secret",
+    enterprise_id="your_enterprise_id",
+    jwt_key_id="your_jwt_key_id",
+    private_key_path="/path/to/private_key.pem"
+)
 ```
 
 **OAuth2 Authentication (For user-facing applications):**
 ```python
-config = {
-    "auth_type": "oauth2",
-    "client_id": "your_box_app_client_id",
-    "client_secret": "your_box_app_client_secret",
-    "access_token": "user_access_token",
-    "refresh_token": "user_refresh_token",  # optional
-}
+# Using configuration objects
+config = BoxCSVConfig(
+    auth_type="oauth2",
+    client_id="your_box_app_client_id",
+    client_secret="your_box_app_client_secret",
+    access_token="user_access_token",
+    refresh_token="user_refresh_token"  # optional but recommended
+)
+backend = create_project_backend("box/csv", config=config)
 
-backend = create_project_backend("box/csv", auth_config=config)
+# Using kwargs
+backend = create_project_backend(
+    "box/csv",
+    auth_type="oauth2",
+    client_id="your_box_app_client_id",
+    client_secret="your_box_app_client_secret",
+    access_token="user_access_token"
+)
 ```
 
 **Alternative: Private Key Content**
 Instead of `private_key_path`, you can provide the key content directly:
 ```python
-config = {
-    "auth_type": "jwt",
-    # ... other fields ...
-    "private_key": "-----BEGIN ENCRYPTED PRIVATE KEY-----\n...\n-----END ENCRYPTED PRIVATE KEY-----",
-}
+config = BoxCSVConfig(
+    auth_type="jwt",
+    client_id="...",
+    client_secret="...",
+    enterprise_id="...",
+    jwt_key_id="...",
+    private_key="-----BEGIN ENCRYPTED PRIVATE KEY-----\n...\n-----END ENCRYPTED PRIVATE KEY-----"
+)
 ```
 
 ## Box Backend Features
@@ -91,8 +138,9 @@ To use the Box backend, you need to create a Box application:
 
 ## Environment Variables
 
-You can also configure Box backend using environment variables:
+All backend configurations support environment variables using Pydantic's built-in environment variable support:
 
+### Box Backend Environment Variables
 ```bash
 # JWT Authentication
 export BOX_AUTH_TYPE=jwt
@@ -112,13 +160,29 @@ export BOX_ACCESS_TOKEN=your_access_token
 export BOX_REFRESH_TOKEN=your_refresh_token
 ```
 
-Then create backend without explicit config:
-```python
-import os
+### Ragas App Environment Variables
+```bash
+export RAGAS_API_KEY=your_api_key
+export RAGAS_API_URL=https://api.ragas.io  # optional
+export RAGAS_TIMEOUT=30  # optional
+export RAGAS_MAX_RETRIES=3  # optional
+```
 
-# Build config from environment variables
-config = {k.lower().replace('box_', ''): v for k, v in os.environ.items() if k.startswith('BOX_')}
-backend = create_project_backend("box/csv", auth_config=config)
+### Using Environment Variables
+Configuration classes automatically load from environment variables:
+```python
+from ragas_experimental.project.backends import create_project_backend
+from ragas_experimental.project.backends.config import BoxCSVConfig, RagasAppConfig
+
+# Environment variables are automatically loaded
+config = BoxCSVConfig()  # Loads BOX_* environment variables
+backend = create_project_backend("box/csv", config=config)
+
+# Or create backend directly (also loads environment variables)
+backend = create_project_backend("box/csv")  # Automatically creates BoxCSVConfig from env vars
+
+# Same for Ragas App
+app_backend = create_project_backend("ragas/app")  # Loads RAGAS_* env vars
 ```
 
 ## Error Handling

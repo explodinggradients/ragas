@@ -41,8 +41,8 @@ readme = "README.md"
 all = ["pandas"]
 
 [project.entry-points."ragas.backends"]
-local_csv = "ragas_experimental.project.backends.local_csv:LocalCSVProjectBackend"
-platform = "ragas_experimental.project.backends.platform:PlatformProjectBackend"
+"local/csv" = "ragas_experimental.project.backends.local_csv:LocalCSVProjectBackend"
+"ragas/app" = "ragas_experimental.project.backends.ragas_app:RagasAppProjectBackend"
 "box/csv" = "ragas_experimental.project.backends.box_csv:BoxCSVProjectBackend"
 
 [tool.setuptools.packages.find]

@@ -1,4 +1,4 @@
-"""Platform (Ragas API) backend implementation for projects and datasets."""
+"""Ragas App (Platform API) backend implementation for projects and datasets."""
 
 import asyncio
 import typing as t
@@ -12,10 +12,11 @@ from ...backends.ragas_api_client import RagasApiClient
 from ...utils import async_to_sync
 from ..utils import create_nano_id
 from .base import DatasetBackend, ProjectBackend
+from .config import RagasAppConfig
 
 
-class PlatformDatasetBackend(DatasetBackend):
-    """Platform API implementation of DatasetBackend."""
+class RagasAppDatasetBackend(DatasetBackend):
+    """Ragas App API implementation of DatasetBackend."""
 
     def __init__(
         self,
@@ -236,11 +237,15 @@ async def create_experiment_columns(
     return await asyncio.gather(*tasks)
 
 
-class PlatformProjectBackend(ProjectBackend):
-    """Platform API implementation of ProjectBackend."""
+class RagasAppProjectBackend(ProjectBackend):
+    """Ragas App API implementation of ProjectBackend."""
 
-    def __init__(self, ragas_api_client: RagasApiClient):
-        self.ragas_api_client = ragas_api_client
+    def __init__(self, config: RagasAppConfig):
+        self.config = config
+        self.ragas_api_client = RagasApiClient(
+            base_url=config.api_url,
+            app_token=config.api_key,
+        )
         self.project_id: t.Optional[str] = None
 
     def initialize(self, project_id: str, **kwargs):
@@ -309,7 +314,7 @@ class PlatformProjectBackend(ProjectBackend):
             raise ValueError(
                 "Backend must be initialized before creating dataset backend"
             )
-        return PlatformDatasetBackend(
+        return RagasAppDatasetBackend(
             ragas_api_client=self.ragas_api_client,
             project_id=self.project_id,
             dataset_id=dataset_id,
@@ -324,7 +329,7 @@ class PlatformProjectBackend(ProjectBackend):
             raise ValueError(
                 "Backend must be initialized before creating experiment backend"
             )
-        return PlatformDatasetBackend(
+        return RagasAppDatasetBackend(
             ragas_api_client=self.ragas_api_client,
             project_id=self.project_id,
             dataset_id=experiment_id,

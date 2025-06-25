@@ -172,9 +172,17 @@ class BackendRegistry:
 
             self.register_backend("local/csv", LocalCSVProjectBackend)
 
-            from .platform import PlatformProjectBackend
+            from .ragas_app import RagasAppProjectBackend
 
-            self.register_backend("ragas/app", PlatformProjectBackend)
+            self.register_backend("ragas/app", RagasAppProjectBackend)
+
+            # Box backend (optional import)
+            try:
+                from .box_csv import BoxCSVProjectBackend
+
+                self.register_backend("box/csv", BoxCSVProjectBackend)
+            except ImportError:
+                logger.debug("Box backend not available (optional dependency)")
 
         except ImportError as e:
             logger.warning(f"Failed to import built-in backend: {e}")
@@ -247,18 +255,32 @@ class BackendRegistry:
         self._aliases.clear()
         self._discovered = False
 
-    def create_backend(self, backend_type: str, **kwargs) -> ProjectBackend:
+    def create_backend(
+        self, backend_type: str, config: t.Optional["BackendConfig"] = None, **kwargs
+    ) -> ProjectBackend:
         """Create a backend instance.
 
         Args:
             backend_type: The type of backend to create
+            config: Pre-built configuration object (preferred)
             **kwargs: Arguments specific to the backend
 
         Returns:
             ProjectBackend: An instance of the requested backend
         """
         backend_class = self.get_backend(backend_type)
-        return backend_class(**kwargs)
+
+        if config is not None:
+            return backend_class(config)
+
+        # For backwards compatibility, try to create config from kwargs
+        try:
+            config_class = _get_config_class(backend_type)
+            config_instance = config_class(**kwargs)
+            return backend_class(config_instance)
+        except:
+            # Fall back to old behavior for backwards compatibility
+            return backend_class(**kwargs)
 
 
 # Global registry instance
@@ -320,14 +342,53 @@ def print_available_backends() -> None:
         print("-" * 50)
 
 
-def create_project_backend(backend_type: str, **kwargs) -> ProjectBackend:
-    """Create a project backend instance.
+def _get_config_class(backend_type: str) -> t.Type["BackendConfig"]:
+    """Get configuration class for backend type."""
+    from .config import LocalCSVConfig, RagasAppConfig
+
+    try:
+        from .config import BoxCSVConfig
+    except ImportError:
+        BoxCSVConfig = None
+
+    config_mapping = {
+        "local/csv": LocalCSVConfig,
+        "ragas/app": RagasAppConfig,
+    }
+
+    if BoxCSVConfig is not None:
+        config_mapping["box/csv"] = BoxCSVConfig
+
+    if backend_type not in config_mapping:
+        available = list(config_mapping.keys())
+        raise ValueError(
+            f"Unknown backend type '{backend_type}'. Available: {available}"
+        )
+
+    return config_mapping[backend_type]
+
+
+def create_project_backend(
+    backend_type: str, config: t.Optional["BackendConfig"] = None, **kwargs
+) -> ProjectBackend:
+    """Create a project backend instance with structured configuration.
 
     Args:
-        backend_type: The type of backend to create
-        **kwargs: Arguments specific to the backend
+        backend_type: The type of backend to create ("local/csv", "box/csv", "ragas/app")
+        config: Pre-built configuration object (preferred)
+        **kwargs: Configuration parameters (alternative to config object)
 
     Returns:
         ProjectBackend: An instance of the requested backend
     """
-    return _registry.create_backend(backend_type, **kwargs)
+    backend_class = _registry.get_backend(backend_type)
+
+    if config is not None:
+        # Use provided config object
+        return backend_class(config)
+
+    # Create config from kwargs
+    config_class = _get_config_class(backend_type)
+    config_instance = config_class(**kwargs)
+
+    return backend_class(config_instance)

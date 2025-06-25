@@ -5,13 +5,13 @@ import pytest
 from unittest.mock import MagicMock, Mock, patch
 
 # Skip all tests if box dependencies not available
-pytest_plugins = ["pytest_vcr"]
 
 try:
     from ragas_experimental.project.backends.box_csv import (
         BoxCSVDatasetBackend,
         BoxCSVProjectBackend,
     )
+    from ragas_experimental.project.backends.config import BoxCSVConfig
     from boxsdk import BoxAPIException, Client
     box_available = True
 except ImportError:
@@ -185,25 +185,25 @@ class TestBoxCSVProjectBackend:
     @pytest.fixture
     def jwt_config(self):
         """JWT authentication configuration for testing."""
-        return {
-            "auth_type": "jwt",
-            "client_id": "test_client_id",
-            "client_secret": "test_client_secret",
-            "enterprise_id": "test_enterprise_id",
-            "jwt_key_id": "test_jwt_key_id",
-            "private_key": "test_private_key_content",
-        }
+        return BoxCSVConfig(
+            auth_type="jwt",
+            client_id="test_client_id",
+            client_secret="test_client_secret",
+            enterprise_id="test_enterprise_id",
+            jwt_key_id="test_jwt_key_id",
+            private_key="test_private_key_content",
+        )
 
     @pytest.fixture
     def oauth2_config(self):
         """OAuth2 authentication configuration for testing."""
-        return {
-            "auth_type": "oauth2",
-            "client_id": "test_client_id",
-            "client_secret": "test_client_secret",
-            "access_token": "test_access_token",
-            "refresh_token": "test_refresh_token",
-        }
+        return BoxCSVConfig(
+            auth_type="oauth2",
+            client_id="test_client_id",
+            client_secret="test_client_secret",
+            access_token="test_access_token",
+            refresh_token="test_refresh_token",
+        )
 
     @patch('ragas_experimental.project.backends.box_csv.JWTAuth')
     @patch('ragas_experimental.project.backends.box_csv.Client')
@@ -444,16 +444,14 @@ class TestBoxCSVErrorHandling:
 
     def test_invalid_authentication(self):
         """Test handling of invalid authentication."""
-        invalid_config = {
-            "auth_type": "jwt",
-            "client_id": "invalid",
-            "client_secret": "invalid",
-        }
-        
-        backend = BoxCSVProjectBackend(invalid_config)
-        
-        with pytest.raises(Exception):
-            backend.initialize("test_project")
+        # This should raise validation error during config creation
+        with pytest.raises(ValueError):
+            BoxCSVConfig(
+                auth_type="jwt",
+                client_id="invalid",
+                client_secret="invalid",
+                # Missing required fields for JWT
+            )
 
     def test_network_timeout(self):
         """Test handling of network timeouts."""

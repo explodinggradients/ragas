@@ -19,8 +19,9 @@ from ragas_experimental.model.pydantic_model import (
 from .backends.ragas_api_client import RagasApiClient
 from .project.backends import (
     LocalCSVProjectBackend,
-    PlatformProjectBackend,
+    RagasAppProjectBackend,
 )
+from .project.backends.config import RagasAppConfig, LocalCSVConfig
 from .typing import SUPPORTED_BACKENDS
 
 BaseModelType = t.TypeVar("BaseModelType", bound=BaseModel)
@@ -71,7 +72,13 @@ class Dataset(t.Generic[BaseModelType]):
                 raise ValueError("ragas_api_client is required for ragas/app backend")
 
             # Create a platform project backend and get dataset backend from it
-            project_backend = PlatformProjectBackend(ragas_api_client)
+            config = RagasAppConfig(
+                api_url=getattr(ragas_api_client, "api_url", "https://api.ragas.io"),
+                api_key=getattr(ragas_api_client, "api_key", None),
+                timeout=getattr(ragas_api_client, "timeout", 30),
+                max_retries=getattr(ragas_api_client, "max_retries", 3),
+            )
+            project_backend = RagasAppProjectBackend(config)
             project_backend.initialize(project_id)
 
             if datatable_type == "datasets":
@@ -88,7 +95,8 @@ class Dataset(t.Generic[BaseModelType]):
                 raise ValueError("local_root_dir is required for local/csv backend")
 
             # Create a local CSV project backend and get dataset backend from it
-            project_backend = LocalCSVProjectBackend(local_root_dir)
+            config = LocalCSVConfig(root_dir=local_root_dir)
+            project_backend = LocalCSVProjectBackend(config)
             project_backend.initialize(project_id)
 
             if datatable_type == "datasets":

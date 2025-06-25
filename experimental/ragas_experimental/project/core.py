@@ -18,7 +18,8 @@ from ..experiment import Experiment
 from ..utils import async_to_sync
 from .backends import ProjectBackend
 from .backends.local_csv import LocalCSVProjectBackend
-from .backends.platform import PlatformProjectBackend
+from .backends.ragas_app import RagasAppProjectBackend
+from .backends.config import RagasAppConfig, LocalCSVConfig
 from .decorators import add_experiment_decorators
 
 
@@ -77,7 +78,14 @@ class Project:
             sync_version = async_to_sync(ragas_api_client.create_project)
             new_project = sync_version(title=name, description=description)
 
-            project_backend = PlatformProjectBackend(ragas_api_client)
+            # Create config from the API client
+            config = RagasAppConfig(
+                api_url=getattr(ragas_api_client, "api_url", "https://api.ragas.io"),
+                api_key=getattr(ragas_api_client, "api_key", None),
+                timeout=getattr(ragas_api_client, "timeout", 30),
+                max_retries=getattr(ragas_api_client, "max_retries", 3),
+            )
+            project_backend = RagasAppProjectBackend(config)
             return cls(
                 project_id=new_project["id"],
                 project_backend=project_backend,
@@ -88,7 +96,8 @@ class Project:
             if root_dir is None:
                 raise ValueError("root_dir is required for local/csv backend")
 
-            project_backend = LocalCSVProjectBackend(root_dir)
+            config = LocalCSVConfig(root_dir=root_dir)
+            project_backend = LocalCSVProjectBackend(config)
             return cls(
                 project_id=name,  # Use name as project_id for local
                 project_backend=project_backend,
@@ -125,7 +134,14 @@ class Project:
             sync_version = async_to_sync(ragas_api_client.get_project_by_name)
             project_info = sync_version(project_name=name)
 
-            project_backend = PlatformProjectBackend(ragas_api_client)
+            # Create config from the API client
+            config = RagasAppConfig(
+                api_url=getattr(ragas_api_client, "api_url", "https://api.ragas.io"),
+                api_key=getattr(ragas_api_client, "api_key", None),
+                timeout=getattr(ragas_api_client, "timeout", 30),
+                max_retries=getattr(ragas_api_client, "max_retries", 3),
+            )
+            project_backend = RagasAppProjectBackend(config)
             return cls(
                 project_id=project_info["id"],
                 project_backend=project_backend,
@@ -143,7 +159,8 @@ class Project:
                     f"Local project '{name}' does not exist at {project_path}"
                 )
 
-            project_backend = LocalCSVProjectBackend(root_dir)
+            config = LocalCSVConfig(root_dir=root_dir)
+            project_backend = LocalCSVProjectBackend(config)
             return cls(
                 project_id=name,
                 project_backend=project_backend,
@@ -155,7 +172,7 @@ class Project:
 
     def delete(self):
         """Delete the project and all its data."""
-        if isinstance(self._backend, PlatformProjectBackend):
+        if isinstance(self._backend, RagasAppProjectBackend):
             sync_version = async_to_sync(self._backend.ragas_api_client.delete_project)
             sync_version(project_id=self.project_id)
             print("Project deleted from Ragas platform!")
@@ -190,7 +207,7 @@ class Project:
 
         backend_name = (
             "ragas/app"
-            if isinstance(self._backend, PlatformProjectBackend)
+            if isinstance(self._backend, RagasAppProjectBackend)
             else "local/csv"
         )
 
@@ -225,7 +242,7 @@ class Project:
 
         backend_name = (
             "ragas/app"
-            if isinstance(self._backend, PlatformProjectBackend)
+            if isinstance(self._backend, RagasAppProjectBackend)
             else "local/csv"
         )
 
@@ -268,7 +285,7 @@ class Project:
 
         backend_name = (
             "ragas/app"
-            if isinstance(self._backend, PlatformProjectBackend)
+            if isinstance(self._backend, RagasAppProjectBackend)
             else "local/csv"
         )
 
@@ -302,7 +319,7 @@ class Project:
 
         backend_name = (
             "ragas/app"
-            if isinstance(self._backend, PlatformProjectBackend)
+            if isinstance(self._backend, RagasAppProjectBackend)
             else "local/csv"
         )
 
@@ -366,7 +383,7 @@ class Project:
         """String representation of the project."""
         backend_name = (
             "ragas/app"
-            if isinstance(self._backend, PlatformProjectBackend)
+            if isinstance(self._backend, RagasAppProjectBackend)
             else "local/csv"
         )
         return f"Project(name='{self.name}', backend='{backend_name}')"

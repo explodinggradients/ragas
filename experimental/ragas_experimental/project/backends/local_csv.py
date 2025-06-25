@@ -11,6 +11,7 @@ from ragas_experimental.model.pydantic_model import (
 
 from ..utils import create_nano_id
 from .base import DatasetBackend, ProjectBackend
+from .config import LocalCSVConfig
 
 
 class LocalCSVDatasetBackend(DatasetBackend):
@@ -138,7 +139,7 @@ class LocalCSVDatasetBackend(DatasetBackend):
         row_id = getattr(entry, "_row_id", None) or str(uuid.uuid4())
 
         # Get field names including row_id
-        field_names = ["_row_id"] + list(entry.model_fields.keys())
+        field_names = ["_row_id"] + list(entry.__class__.model_fields.keys())
 
         # Convert entry to dict
         entry_dict = entry.model_dump()
@@ -250,8 +251,9 @@ class LocalCSVDatasetBackend(DatasetBackend):
 class LocalCSVProjectBackend(ProjectBackend):
     """Local CSV implementation of ProjectBackend."""
 
-    def __init__(self, root_dir: str):
-        self.root_dir = root_dir
+    def __init__(self, config: LocalCSVConfig):
+        self.config = config
+        self.root_dir = config.root_dir
         self.project_id: t.Optional[str] = None
 
     def initialize(self, project_id: str, **kwargs):
