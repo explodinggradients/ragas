@@ -50,68 +50,106 @@ Stores CSV files on Box cloud storage with the same organization as local CSV.
 pip install -e ".[box]"
 ```
 
-**JWT Authentication (Recommended for server applications):**
+**Basic Usage (New in v2.0):**
+You must provide an authenticated Box client. The backend no longer handles authentication internally.
+
 ```python
-from ragas_experimental.project.backends import create_project_backend
+from boxsdk import OAuth2, Client
 from ragas_experimental.project.backends.config import BoxCSVConfig
+from ragas_experimental.project.backends.box_csv import BoxCSVProjectBackend
 
-# Option 1: Using configuration objects (recommended - best IDE support)
-config = BoxCSVConfig(
-    auth_type="jwt",
-    client_id="your_box_app_client_id",
-    client_secret="your_box_app_client_secret", 
-    enterprise_id="your_enterprise_id",
-    jwt_key_id="your_jwt_key_id",
-    private_key_path="/path/to/private_key.pem",
-    private_key_passphrase="optional_passphrase",  # if key is encrypted
-    root_folder_id="123456789"  # optional, defaults to "0" (Box root)
-)
-backend = create_project_backend("box/csv", config=config)
-
-# Option 2: Using kwargs (still structured via Pydantic validation)
-backend = create_project_backend(
-    "box/csv",
-    auth_type="jwt",
-    client_id="your_box_app_client_id",
-    client_secret="your_box_app_client_secret",
-    enterprise_id="your_enterprise_id",
-    jwt_key_id="your_jwt_key_id",
-    private_key_path="/path/to/private_key.pem"
-)
-```
-
-**OAuth2 Authentication (For user-facing applications):**
-```python
-# Using configuration objects
-config = BoxCSVConfig(
-    auth_type="oauth2",
+# Step 1: Create authenticated Box client (your responsibility)
+oauth = OAuth2(
     client_id="your_box_app_client_id",
     client_secret="your_box_app_client_secret",
     access_token="user_access_token",
     refresh_token="user_refresh_token"  # optional but recommended
 )
-backend = create_project_backend("box/csv", config=config)
+client = Client(oauth)
 
-# Using kwargs
-backend = create_project_backend(
-    "box/csv",
-    auth_type="oauth2",
+# Step 2: Create config with the authenticated client
+config = BoxCSVConfig(
+    client=client,
+    root_folder_id="123456789"  # optional, defaults to "0" (Box root)
+)
+
+# Step 3: Create backend
+backend = BoxCSVProjectBackend(config)
+```
+
+**JWT Authentication Example:**
+```python
+from boxsdk import JWTAuth, Client
+from ragas_experimental.project.backends.config import BoxCSVConfig
+from ragas_experimental.project.backends.box_csv import BoxCSVProjectBackend
+
+# Create JWT auth (your responsibility)
+auth = JWTAuth(
     client_id="your_box_app_client_id",
     client_secret="your_box_app_client_secret",
-    access_token="user_access_token"
+    enterprise_id="your_enterprise_id",
+    jwt_key_id="your_jwt_key_id",
+    rsa_private_key_file_sys_path="/path/to/private_key.pem",
+    rsa_private_key_passphrase="optional_passphrase".encode()
+)
+client = Client(auth)
+
+# Create config and backend
+config = BoxCSVConfig(client=client)
+backend = BoxCSVProjectBackend(config)
+```
+
+**Convenience Factory Methods:**
+For common authentication patterns, you can use these factory methods:
+
+```python
+from ragas_experimental.project.backends.box_csv import BoxCSVProjectBackend
+
+# From JWT config file
+backend = BoxCSVProjectBackend.from_jwt_file("box_config.json")
+
+# From developer token (testing only)
+backend = BoxCSVProjectBackend.from_developer_token("your_developer_token")
+
+# From OAuth2 credentials
+backend = BoxCSVProjectBackend.from_oauth2(
+    client_id="your_client_id",
+    client_secret="your_client_secret", 
+    access_token="your_access_token",
+    refresh_token="your_refresh_token"  # optional
 )
 ```
 
-**Alternative: Private Key Content**
-Instead of `private_key_path`, you can provide the key content directly:
+**Migration from v1.x:**
+If you're upgrading from v1.x, you need to change how you create the backend:
+
 ```python
+# OLD (v1.x) - Backend handled authentication
 config = BoxCSVConfig(
-    auth_type="jwt",
-    client_id="...",
-    client_secret="...",
-    enterprise_id="...",
-    jwt_key_id="...",
-    private_key="-----BEGIN ENCRYPTED PRIVATE KEY-----\n...\n-----END ENCRYPTED PRIVATE KEY-----"
+    auth_type="oauth2",
+    client_id="your_client_id",
+    client_secret="your_client_secret",
+    access_token="your_access_token"
+)
+backend = BoxCSVProjectBackend(config)
+
+# NEW (v2.x) - You provide authenticated client
+from boxsdk import OAuth2, Client
+
+oauth = OAuth2(
+    client_id="your_client_id", 
+    client_secret="your_client_secret",
+    access_token="your_access_token"
+)
+client = Client(oauth)
+config = BoxCSVConfig(client=client)
+backend = BoxCSVProjectBackend(config)
+
+# Or use convenience factory
+backend = BoxCSVProjectBackend.from_oauth2(
+    client_id="your_client_id",
+    client_secret="your_client_secret",
+    access_token="your_access_token"
 )
 ```
 
@@ -138,26 +176,34 @@ To use the Box backend, you need to create a Box application:
 
 ## Environment Variables
 
-All backend configurations support environment variables using Pydantic's built-in environment variable support:
+Some backend configurations support environment variables using Pydantic's built-in environment variable support:
 
 ### Box Backend Environment Variables
-```bash
-# JWT Authentication
-export BOX_AUTH_TYPE=jwt
-export BOX_CLIENT_ID=your_client_id
-export BOX_CLIENT_SECRET=your_client_secret  
-export BOX_ENTERPRISE_ID=your_enterprise_id
-export BOX_JWT_KEY_ID=your_jwt_key_id
-export BOX_PRIVATE_KEY_PATH=/path/to/private_key.pem
-export BOX_PRIVATE_KEY_PASSPHRASE=optional_passphrase
-export BOX_ROOT_FOLDER_ID=optional_root_folder_id
+The Box backend no longer supports environment variables for authentication since you must provide an authenticated client directly. However, you can still use environment variables for operational settings:
 
-# OAuth2 Authentication  
-export BOX_AUTH_TYPE=oauth2
-export BOX_CLIENT_ID=your_client_id
-export BOX_CLIENT_SECRET=your_client_secret
-export BOX_ACCESS_TOKEN=your_access_token
-export BOX_REFRESH_TOKEN=your_refresh_token
+```bash
+# Operational settings only
+export BOX_ROOT_FOLDER_ID=optional_root_folder_id
+```
+
+For authentication, create your Box client using environment variables in your own code:
+
+```python
+import os
+from boxsdk import OAuth2, Client
+from ragas_experimental.project.backends.config import BoxCSVConfig
+from ragas_experimental.project.backends.box_csv import BoxCSVProjectBackend
+
+# Use environment variables in your authentication code
+oauth = OAuth2(
+    client_id=os.getenv("BOX_CLIENT_ID"),
+    client_secret=os.getenv("BOX_CLIENT_SECRET"),
+    access_token=os.getenv("BOX_ACCESS_TOKEN"),
+    refresh_token=os.getenv("BOX_REFRESH_TOKEN")
+)
+client = Client(oauth)
+config = BoxCSVConfig(client=client)
+backend = BoxCSVProjectBackend(config)
 ```
 
 ### Ragas App Environment Variables
@@ -169,31 +215,29 @@ export RAGAS_MAX_RETRIES=3  # optional
 ```
 
 ### Using Environment Variables
-Configuration classes automatically load from environment variables:
+Configuration classes automatically load from environment variables where supported:
 ```python
 from ragas_experimental.project.backends import create_project_backend
-from ragas_experimental.project.backends.config import BoxCSVConfig, RagasAppConfig
+from ragas_experimental.project.backends.config import RagasAppConfig
 
-# Environment variables are automatically loaded
-config = BoxCSVConfig()  # Loads BOX_* environment variables
-backend = create_project_backend("box/csv", config=config)
-
-# Or create backend directly (also loads environment variables)
-backend = create_project_backend("box/csv")  # Automatically creates BoxCSVConfig from env vars
-
-# Same for Ragas App
+# Ragas App supports environment variables
 app_backend = create_project_backend("ragas/app")  # Loads RAGAS_* env vars
+
+# For Box backend, you must create the client yourself
+# (see Box Backend Environment Variables section above)
 ```
 
 ## Error Handling
 
 The Box backend includes comprehensive error handling:
 
-- **Authentication Errors**: Clear error messages for invalid credentials
+- **Client Verification**: Validates that the provided Box client is properly authenticated
 - **Network Errors**: Automatic retry logic for transient failures  
 - **Rate Limiting**: Respects Box API rate limits
 - **Permission Errors**: Helpful messages for insufficient permissions
 - **File Not Found**: Graceful handling of missing files/folders
+
+**Note**: Authentication errors are now handled at the client creation level (your responsibility), not within the backend.
 
 ## Testing
 

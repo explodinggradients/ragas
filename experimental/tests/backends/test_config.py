@@ -25,94 +25,85 @@ def test_local_csv_config():
 
 
 @pytest.mark.skipif(not HAS_BOX_CONFIG, reason="Box SDK not available")
-def test_box_csv_config_jwt():
-    """Test Box CSV configuration with JWT auth."""
-    config = BoxCSVConfig(
-        auth_type="jwt",
-        client_id="test_client",
-        client_secret="test_secret",
-        enterprise_id="test_enterprise",
-        jwt_key_id="test_key_id",
-        private_key="test_private_key"
-    )
+def test_box_csv_config_with_client():
+    """Test Box CSV configuration with authenticated client."""
+    from unittest.mock import MagicMock
     
-    assert config.auth_type == "jwt"
-    assert config.client_id == "test_client"
-    assert config.client_secret == "test_secret"
-    assert config.enterprise_id == "test_enterprise"
-    assert config.jwt_key_id == "test_key_id"
-    assert config.private_key == "test_private_key"
-
-
-@pytest.mark.skipif(not HAS_BOX_CONFIG, reason="Box SDK not available")
-def test_box_csv_config_oauth2():
-    """Test Box CSV configuration with OAuth2 auth."""
-    config = BoxCSVConfig(
-        auth_type="oauth2",
-        client_id="test_client",
-        client_secret="test_secret",
-        access_token="test_access_token"
-    )
+    # Mock an authenticated client
+    mock_client = MagicMock()
+    mock_user = MagicMock()
+    mock_user.name = "Test User"
+    mock_client.user().get.return_value = mock_user
     
-    assert config.auth_type == "oauth2"
-    assert config.client_id == "test_client"
-    assert config.client_secret == "test_secret"
-    assert config.access_token == "test_access_token"
+    config = BoxCSVConfig(client=mock_client)
+    
+    assert config.client == mock_client
+    assert config.root_folder_id == "0"  # default
+    assert config._authenticated_user == "Test User"
 
 
 @pytest.mark.skipif(not HAS_BOX_CONFIG, reason="Box SDK not available")
-def test_box_csv_config_validation_jwt_missing_fields():
-    """Test Box CSV configuration validation for JWT with missing fields."""
-    # Should raise error for JWT without required fields
-    with pytest.raises(ValueError, match="JWT auth requires enterprise_id and jwt_key_id"):
-        BoxCSVConfig(
-            auth_type="jwt",
-            client_id="test_client",
-            client_secret="test_secret"
-            # Missing enterprise_id, jwt_key_id, private_key
-        )
+def test_box_csv_config_with_custom_folder():
+    """Test Box CSV configuration with custom root folder."""
+    from unittest.mock import MagicMock
+    
+    mock_client = MagicMock()
+    mock_user = MagicMock()
+    mock_user.name = "Test User"
+    mock_client.user().get.return_value = mock_user
+    
+    config = BoxCSVConfig(client=mock_client, root_folder_id="123456")
+    
+    assert config.client == mock_client
+    assert config.root_folder_id == "123456"
 
 
 @pytest.mark.skipif(not HAS_BOX_CONFIG, reason="Box SDK not available")
-def test_box_csv_config_validation_jwt_missing_private_key():
-    """Test Box CSV configuration validation for JWT with missing private key."""
-    with pytest.raises(ValueError, match="JWT auth requires either private_key_path or private_key"):
-        BoxCSVConfig(
-            auth_type="jwt",
-            client_id="test_client",
-            client_secret="test_secret",
-            enterprise_id="test_enterprise",
-            jwt_key_id="test_key_id"
-            # Missing private_key or private_key_path
-        )
+def test_box_csv_config_validation_missing_client():
+    """Test Box CSV configuration validation for missing client."""
+    from pydantic import ValidationError
+    
+    # Should raise error when client is not provided
+    with pytest.raises(ValidationError):
+        BoxCSVConfig()
 
 
 @pytest.mark.skipif(not HAS_BOX_CONFIG, reason="Box SDK not available")
-def test_box_csv_config_validation_oauth2_missing_token():
-    """Test Box CSV configuration validation for OAuth2 with missing access token."""
-    with pytest.raises(ValueError, match="OAuth2 auth requires access_token"):
-        BoxCSVConfig(
-            auth_type="oauth2",
-            client_id="test_client",
-            client_secret="test_secret"
-            # Missing access_token
-        )
+def test_box_csv_config_validation_invalid_client():
+    """Test Box CSV configuration validation for invalid client."""
+    from unittest.mock import MagicMock
+    
+    # Mock client that fails authentication
+    mock_client = MagicMock()
+    mock_client.user().get.side_effect = Exception("Authentication failed")
+    
+    with pytest.raises(ValueError, match="Box client authentication failed"):
+        BoxCSVConfig(client=mock_client)
+
+
+@pytest.mark.skipif(not HAS_BOX_CONFIG, reason="Box SDK not available")
+def test_box_csv_config_none_client():
+    """Test Box CSV configuration with None client."""
+    from pydantic import ValidationError
+    
+    with pytest.raises(ValidationError):
+        BoxCSVConfig(client=None)
 
 
 @pytest.mark.skipif(not HAS_BOX_CONFIG, reason="Box SDK not available")
 def test_box_csv_config_defaults():
     """Test Box CSV configuration defaults."""
-    config = BoxCSVConfig(
-        client_id="test_client",
-        client_secret="test_secret",
-        enterprise_id="test_enterprise",
-        jwt_key_id="test_key_id",
-        private_key="test_private_key"
-    )
+    from unittest.mock import MagicMock
     
-    # Test defaults
-    assert config.auth_type == "jwt"  # default
-    assert config.root_folder_id == "0"  # default
+    mock_client = MagicMock()
+    mock_user = MagicMock()
+    mock_user.name = "Test User"
+    mock_client.user().get.return_value = mock_user
+    
+    config = BoxCSVConfig(client=mock_client)
+    
+    # Should default to root folder "0"
+    assert config.root_folder_id == "0"
 
 
 def test_ragas_app_config():

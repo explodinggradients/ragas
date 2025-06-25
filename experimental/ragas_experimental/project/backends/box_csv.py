@@ -14,23 +14,19 @@ from ragas_experimental.model.pydantic_model import (
 
 from ..utils import create_nano_id
 from .base import DatasetBackend, ProjectBackend
-from .config import BoxCSVConfig
+from .config import BoxCSVConfig, BoxClientProtocol, BoxFolderProtocol, BoxFileProtocol
 
 logger = logging.getLogger(__name__)
 
 # Type-only imports for static analysis
 if TYPE_CHECKING:
     from boxsdk import BoxAPIException, Client
-    from boxsdk.auth.jwt_auth import JWTAuth
-    from boxsdk.auth.oauth2 import OAuth2
     from boxsdk.object.folder import Folder
     from boxsdk.object.file import File
 else:
     # Runtime imports with fallbacks
     try:
         from boxsdk import BoxAPIException, Client
-        from boxsdk.auth.jwt_auth import JWTAuth
-        from boxsdk.auth.oauth2 import OAuth2
         from boxsdk.object.folder import Folder
         from boxsdk.object.file import File
     except ImportError:
@@ -42,8 +38,6 @@ else:
 
         BoxAPIException = Any
         Client = Any
-        JWTAuth = Any
-        OAuth2 = Any
         Folder = Any
         File = Any
 
@@ -53,7 +47,7 @@ class BoxCSVDatasetBackend(DatasetBackend):
 
     def __init__(
         self,
-        box_client: Client,
+        box_client: BoxClientProtocol,
         project_folder_id: str,
         dataset_id: str,
         dataset_name: str,
@@ -65,7 +59,7 @@ class BoxCSVDatasetBackend(DatasetBackend):
         self.dataset_name = dataset_name
         self.datatable_type = datatable_type
         self.dataset = None
-        self._csv_file: Optional[File] = None
+        self._csv_file: Optional[BoxFileProtocol] = None
 
     def initialize(self, dataset: t.Any) -> None:
         """Initialize the backend with dataset information."""
@@ -110,7 +104,7 @@ class BoxCSVDatasetBackend(DatasetBackend):
             logger.error(f"Error ensuring CSV exists on Box: {e}")
             raise
 
-    def _get_or_create_folder(self, parent_folder_id: str, folder_name: str) -> Folder:
+    def _get_or_create_folder(self, parent_folder_id: str, folder_name: str) -> BoxFolderProtocol:
         """Get existing folder or create new one."""
         try:
             parent_folder = self.box_client.folder(parent_folder_id)
@@ -129,7 +123,7 @@ class BoxCSVDatasetBackend(DatasetBackend):
             logger.error(f"Error creating/getting folder {folder_name}: {e}")
             raise
 
-    def _get_file_in_folder(self, folder: Folder, filename: str) -> Optional[File]:
+    def _get_file_in_folder(self, folder: BoxFolderProtocol, filename: str) -> Optional[BoxFileProtocol]:
         """Get file by name in folder, return None if not found."""
         try:
             for item in folder.get_items():
@@ -332,99 +326,113 @@ class BoxCSVProjectBackend(ProjectBackend):
     """Box CSV implementation of ProjectBackend."""
 
     def __init__(self, config: BoxCSVConfig):
-        """Initialize Box backend with authentication configuration.
+        """Initialize Box backend with authenticated client.
 
         Args:
-            config: BoxCSVConfig object containing Box authentication details.
+            config: BoxCSVConfig object containing authenticated Box client.
         """
         self.config = config
-        self.box_client: Optional[Client] = None
+        self.box_client: BoxClientProtocol = config.client
         self.project_id: Optional[str] = None
-        self.project_folder: Optional[Folder] = None
-
-    def _create_box_client(self) -> Client:
-        """Create Box client based on auth configuration."""
-        # Check if Box SDK is actually available at runtime
+        self.project_folder: Optional[BoxFolderProtocol] = None
+    
+    @classmethod
+    def from_jwt_file(cls, config_file_path: str, 
+                      root_folder_id: str = "0") -> 'BoxCSVProjectBackend':
+        """Convenience constructor for JWT authentication from config file.
+        
+        Args:
+            config_file_path: Path to Box JWT configuration file
+            root_folder_id: Box folder ID to use as root (defaults to "0")
+            
+        Returns:
+            BoxCSVProjectBackend instance with authenticated client
+        """
         try:
-            import boxsdk
+            # Import here to avoid dependency issues if not available
+            from boxsdk.auth.jwt_auth import JWTAuth
+            from boxsdk import Client
         except ImportError:
             raise ImportError(
                 "Box SDK not available. Install with: pip install 'ragas_experimental[box]'"
             )
-
-        auth_type = self.config.auth_type.lower()
-
-        if auth_type == "jwt":
-            return self._create_jwt_client()
-        elif auth_type == "oauth2":
-            return self._create_oauth2_client()
-        else:
-            raise ValueError(f"Unsupported auth type: {auth_type}")
-
-    def _create_jwt_client(self) -> Client:
-        """Create Box client using JWT authentication."""
+        
+        auth = JWTAuth.from_settings_file(config_file_path)
+        client = Client(auth)
+        config = BoxCSVConfig(client=client, root_folder_id=root_folder_id)
+        return cls(config)
+    
+    @classmethod
+    def from_developer_token(cls, token: str,
+                            root_folder_id: str = "0") -> 'BoxCSVProjectBackend':
+        """Convenience constructor for developer token (testing only).
+        
+        Args:
+            token: Box developer token
+            root_folder_id: Box folder ID to use as root (defaults to "0")
+            
+        Returns:
+            BoxCSVProjectBackend instance with authenticated client
+        """
         try:
-            # Handle private key - can be path or direct key content
-            if self.config.private_key_path and os.path.exists(
-                self.config.private_key_path
-            ):
-                auth = JWTAuth(
-                    client_id=self.config.client_id,
-                    client_secret=self.config.client_secret,
-                    enterprise_id=self.config.enterprise_id,
-                    jwt_key_id=self.config.jwt_key_id,
-                    rsa_private_key_file_sys_path=self.config.private_key_path,
-                    rsa_private_key_passphrase=(
-                        self.config.private_key_passphrase or ""
-                    ).encode(),
-                )
-            elif self.config.private_key:
-                auth = JWTAuth(
-                    client_id=self.config.client_id,
-                    client_secret=self.config.client_secret,
-                    enterprise_id=self.config.enterprise_id,
-                    jwt_key_id=self.config.jwt_key_id,
-                    rsa_private_key_data=self.config.private_key,
-                    rsa_private_key_passphrase=(
-                        self.config.private_key_passphrase or ""
-                    ).encode(),
-                )
-            else:
-                raise ValueError(
-                    "Either private_key_path or private_key must be provided for JWT auth"
-                )
-
-            return Client(auth)
-
-        except Exception as e:
-            logger.error(f"Error creating JWT Box client: {e}")
-            raise
-
-    def _create_oauth2_client(self) -> Client:
-        """Create Box client using OAuth2 authentication."""
-        try:
-            auth = OAuth2(
-                client_id=self.config.client_id,
-                client_secret=self.config.client_secret,
-                access_token=self.config.access_token,
-                refresh_token=self.config.refresh_token,
+            # Import here to avoid dependency issues if not available
+            from boxsdk.auth.oauth2 import OAuth2
+            from boxsdk import Client
+        except ImportError:
+            raise ImportError(
+                "Box SDK not available. Install with: pip install 'ragas_experimental[box]'"
             )
+        
+        oauth = OAuth2(
+            client_id='not_needed_for_dev_token',
+            client_secret='not_needed_for_dev_token',
+            access_token=token
+        )
+        client = Client(oauth)
+        config = BoxCSVConfig(client=client, root_folder_id=root_folder_id)
+        return cls(config)
+    
+    @classmethod  
+    def from_oauth2(cls, client_id: str, client_secret: str, access_token: str,
+                    refresh_token: Optional[str] = None, root_folder_id: str = "0") -> 'BoxCSVProjectBackend':
+        """Convenience constructor for OAuth2 authentication.
+        
+        Args:
+            client_id: Box application client ID
+            client_secret: Box application client secret
+            access_token: User access token
+            refresh_token: Optional refresh token
+            root_folder_id: Box folder ID to use as root (defaults to "0")
+            
+        Returns:
+            BoxCSVProjectBackend instance with authenticated client
+        """
+        try:
+            # Import here to avoid dependency issues if not available
+            from boxsdk.auth.oauth2 import OAuth2
+            from boxsdk import Client
+        except ImportError:
+            raise ImportError(
+                "Box SDK not available. Install with: pip install 'ragas_experimental[box]'"
+            )
+        
+        oauth = OAuth2(
+            client_id=client_id,
+            client_secret=client_secret,
+            access_token=access_token,
+            refresh_token=refresh_token
+        )
+        client = Client(oauth)
+        config = BoxCSVConfig(client=client, root_folder_id=root_folder_id)
+        return cls(config)
 
-            return Client(auth)
-
-        except Exception as e:
-            logger.error(f"Error creating OAuth2 Box client: {e}")
-            raise
 
     def initialize(self, project_id: str, **kwargs):
         """Initialize the backend with project information."""
         self.project_id = project_id
-        self.box_client = self._create_box_client()
 
         # Get or create project folder
         root_folder_id = self.config.root_folder_id
-        if self.box_client is None:
-            raise ValueError("Box client not initialized")
         root_folder = self.box_client.folder(root_folder_id)
 
         # Check if project folder exists
@@ -471,7 +479,7 @@ class BoxCSVProjectBackend(ProjectBackend):
 
     def list_datasets(self) -> t.List[t.Dict]:
         """List all datasets in the project."""
-        if self.project_folder is None or self.box_client is None:
+        if self.project_folder is None:
             return []
 
         try:
@@ -506,7 +514,7 @@ class BoxCSVProjectBackend(ProjectBackend):
 
     def list_experiments(self) -> t.List[t.Dict]:
         """List all experiments in the project."""
-        if self.project_folder is None or self.box_client is None:
+        if self.project_folder is None:
             return []
 
         try:
@@ -543,7 +551,7 @@ class BoxCSVProjectBackend(ProjectBackend):
         self, dataset_id: str, name: str, model: t.Type[BaseModel]
     ) -> DatasetBackend:
         """Get a DatasetBackend instance for a specific dataset."""
-        if self.box_client is None or self.project_folder is None:
+        if self.project_folder is None:
             raise ValueError("Backend not properly initialized")
 
         return BoxCSVDatasetBackend(
@@ -558,7 +566,7 @@ class BoxCSVProjectBackend(ProjectBackend):
         self, experiment_id: str, name: str, model: t.Type[BaseModel]
     ) -> DatasetBackend:
         """Get a DatasetBackend instance for a specific experiment."""
-        if self.box_client is None or self.project_folder is None:
+        if self.project_folder is None:
             raise ValueError("Backend not properly initialized")
 
         return BoxCSVDatasetBackend(
@@ -573,7 +581,7 @@ class BoxCSVProjectBackend(ProjectBackend):
         self, name: str, model: t.Type[BaseModel]
     ) -> t.Tuple[str, DatasetBackend]:
         """Get dataset ID and backend by name."""
-        if self.project_folder is None or self.box_client is None:
+        if self.project_folder is None:
             raise ValueError("Backend not initialized")
 
         try:
@@ -611,7 +619,7 @@ class BoxCSVProjectBackend(ProjectBackend):
         self, name: str, model: t.Type[BaseModel]
     ) -> t.Tuple[str, DatasetBackend]:
         """Get experiment ID and backend by name."""
-        if self.project_folder is None or self.box_client is None:
+        if self.project_folder is None:
             raise ValueError("Backend not initialized")
 
         try:

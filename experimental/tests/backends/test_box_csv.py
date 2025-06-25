@@ -183,76 +183,59 @@ class TestBoxCSVProjectBackend:
     """Test BoxCSVProjectBackend functionality."""
 
     @pytest.fixture
-    def jwt_config(self):
-        """JWT authentication configuration for testing."""
-        return BoxCSVConfig(
-            auth_type="jwt",
-            client_id="test_client_id",
-            client_secret="test_client_secret",
-            enterprise_id="test_enterprise_id",
-            jwt_key_id="test_jwt_key_id",
-            private_key="test_private_key_content",
-        )
+    def mock_client_config(self):
+        """Mock Box client configuration for testing."""
+        mock_client = MagicMock(spec=Client)
+        # Mock successful authentication verification
+        mock_user = MagicMock()
+        mock_user.name = "Test User"
+        mock_client.user().get.return_value = mock_user
+        
+        return BoxCSVConfig(client=mock_client)
 
     @pytest.fixture
-    def oauth2_config(self):
-        """OAuth2 authentication configuration for testing."""
-        return BoxCSVConfig(
-            auth_type="oauth2",
-            client_id="test_client_id",
-            client_secret="test_client_secret",
-            access_token="test_access_token",
-            refresh_token="test_refresh_token",
-        )
+    def mock_box_client_for_backend(self):
+        """Mock Box client for backend testing."""
+        mock_client = MagicMock(spec=Client)
+        # Mock successful authentication verification
+        mock_user = MagicMock()
+        mock_user.name = "Test User"
+        mock_client.user().get.return_value = mock_user
+        return mock_client
 
-    @patch('ragas_experimental.project.backends.box_csv.JWTAuth')
-    @patch('ragas_experimental.project.backends.box_csv.Client')
-    def test_create_jwt_client(self, mock_client_class, mock_jwt_auth, jwt_config):
-        """Test creating Box client with JWT authentication."""
-        backend = BoxCSVProjectBackend(jwt_config)
+    def test_backend_with_authenticated_client(self, mock_box_client_for_backend):
+        """Test creating backend with authenticated client."""
+        config = BoxCSVConfig(client=mock_box_client_for_backend)
+        backend = BoxCSVProjectBackend(config)
         
-        mock_auth = MagicMock()
-        mock_jwt_auth.return_value = mock_auth
-        mock_client = MagicMock()
-        mock_client_class.return_value = mock_client
-        
-        client = backend._create_jwt_client()
-        
-        mock_jwt_auth.assert_called_once()
-        mock_client_class.assert_called_once_with(mock_auth)
-        assert client == mock_client
+        assert backend.box_client == mock_box_client_for_backend
+        assert backend.config.client == mock_box_client_for_backend
 
-    @patch('ragas_experimental.project.backends.box_csv.OAuth2')
-    @patch('ragas_experimental.project.backends.box_csv.Client')
-    def test_create_oauth2_client(self, mock_client_class, mock_oauth2, oauth2_config):
-        """Test creating Box client with OAuth2 authentication."""
-        backend = BoxCSVProjectBackend(oauth2_config)
-        
-        mock_auth = MagicMock()
-        mock_oauth2.return_value = mock_auth
-        mock_client = MagicMock()
-        mock_client_class.return_value = mock_client
-        
-        client = backend._create_oauth2_client()
-        
-        mock_oauth2.assert_called_once()
-        mock_client_class.assert_called_once_with(mock_auth)
-        assert client == mock_client
+    def test_client_verification_success(self, mock_box_client_for_backend):
+        """Test that client verification works with valid client."""
+        # This should not raise an exception
+        config = BoxCSVConfig(client=mock_box_client_for_backend)
+        assert config._authenticated_user == "Test User"
 
-    @patch('ragas_experimental.project.backends.box_csv.Client')
-    def test_initialize(self, mock_client_class, jwt_config):
+    def test_client_verification_failure(self):
+        """Test that client verification fails with invalid client."""
+        mock_client = MagicMock(spec=Client)
+        # Make the user().get() call fail to simulate auth failure
+        mock_client.user().get.side_effect = Exception("Authentication failed")
+        
+        with pytest.raises(ValueError, match="Box client authentication failed"):
+            BoxCSVConfig(client=mock_client)
+
+    def test_initialize(self, mock_client_config):
         """Test backend initialization."""
-        backend = BoxCSVProjectBackend(jwt_config)
+        backend = BoxCSVProjectBackend(mock_client_config)
         
-        # Mock client and folder operations
-        mock_client = MagicMock()
-        mock_client_class.return_value = mock_client
-        
+        # Mock folder operations
         mock_root_folder = MagicMock()
         mock_project_folder = MagicMock()
         mock_project_folder.id = "project_folder_id"
         
-        mock_client.folder.return_value = mock_root_folder
+        backend.box_client.folder.return_value = mock_root_folder
         mock_root_folder.get_items.return_value = []
         mock_root_folder.create_subfolder.return_value = mock_project_folder
         mock_project_folder.get_items.return_value = []
@@ -261,34 +244,27 @@ class TestBoxCSVProjectBackend:
         backend.initialize("test_project")
         
         assert backend.project_id == "test_project"
-        assert backend.box_client == mock_client
         assert backend.project_folder == mock_project_folder
 
-    def test_create_dataset(self, jwt_config):
+    def test_create_dataset(self, mock_client_config):
         """Test dataset creation."""
-        backend = BoxCSVProjectBackend(jwt_config)
+        backend = BoxCSVProjectBackend(mock_client_config)
         dataset_id = backend.create_dataset("test_dataset", TestEntry)
         
         assert dataset_id is not None
         assert isinstance(dataset_id, str)
 
-    def test_create_experiment(self, jwt_config):
+    def test_create_experiment(self, mock_client_config):
         """Test experiment creation."""
-        backend = BoxCSVProjectBackend(jwt_config)
+        backend = BoxCSVProjectBackend(mock_client_config)
         experiment_id = backend.create_experiment("test_experiment", TestEntry)
         
         assert experiment_id is not None
         assert isinstance(experiment_id, str)
 
-    @patch('ragas_experimental.project.backends.box_csv.Client')
-    def test_list_datasets(self, mock_client_class, jwt_config):
+    def test_list_datasets(self, mock_client_config):
         """Test listing datasets."""
-        backend = BoxCSVProjectBackend(jwt_config)
-        
-        # Mock folder structure
-        mock_client = MagicMock()
-        mock_client_class.return_value = mock_client
-        backend.box_client = mock_client
+        backend = BoxCSVProjectBackend(mock_client_config)
         
         mock_project_folder = MagicMock()
         backend.project_folder = mock_project_folder
@@ -299,10 +275,14 @@ class TestBoxCSVProjectBackend:
         mock_csv_file.type = "file"
         mock_csv_file.name = "dataset1.csv"
         
-        mock_project_folder.get_items.return_value = [
-            MagicMock(type="folder", name="datasets", id="datasets_id")
-        ]
-        mock_client.folder.return_value = mock_datasets_folder
+        # Mock the item returned from project folder
+        mock_folder_item = MagicMock()
+        mock_folder_item.type = "folder"
+        mock_folder_item.name = "datasets"
+        mock_folder_item.id = "datasets_id"
+        
+        mock_project_folder.get_items.return_value = [mock_folder_item]
+        backend.box_client.folder.return_value = mock_datasets_folder
         mock_datasets_folder.get_items.return_value = [mock_csv_file]
         
         datasets = backend.list_datasets()
@@ -310,18 +290,86 @@ class TestBoxCSVProjectBackend:
         assert len(datasets) == 1
         assert datasets[0]["name"] == "dataset1"
 
-    def test_get_dataset_backend(self, jwt_config):
+    def test_get_dataset_backend(self, mock_client_config):
         """Test getting dataset backend instance."""
-        backend = BoxCSVProjectBackend(jwt_config)
-        backend.box_client = MagicMock()
+        backend = BoxCSVProjectBackend(mock_client_config)
         backend.project_folder = MagicMock()
-        backend.project_folder.id = "project_id"
+        backend.project_folder.object_id = "project_id"
         
         dataset_backend = backend.get_dataset_backend("ds_123", "test_dataset", TestEntry)
         
         assert isinstance(dataset_backend, BoxCSVDatasetBackend)
         assert dataset_backend.dataset_name == "test_dataset"
         assert dataset_backend.datatable_type == "datasets"
+
+    @patch('boxsdk.auth.jwt_auth.JWTAuth')
+    @patch('boxsdk.Client')
+    def test_from_jwt_file_factory(self, mock_client_class, mock_jwt_auth):
+        """Test JWT file factory method."""
+        mock_auth = MagicMock()
+        mock_jwt_auth.from_settings_file.return_value = mock_auth
+        mock_client = MagicMock()
+        mock_client_class.return_value = mock_client
+        
+        # Mock successful authentication verification
+        mock_user = MagicMock()
+        mock_user.name = "Test User"
+        mock_client.user().get.return_value = mock_user
+        
+        backend = BoxCSVProjectBackend.from_jwt_file("config.json")
+        
+        mock_jwt_auth.from_settings_file.assert_called_once_with("config.json")
+        mock_client_class.assert_called_once_with(mock_auth)
+        assert backend.config.client == mock_client
+
+    @patch('boxsdk.auth.oauth2.OAuth2')
+    @patch('boxsdk.Client')
+    def test_from_developer_token_factory(self, mock_client_class, mock_oauth2):
+        """Test developer token factory method."""
+        mock_auth = MagicMock()
+        mock_oauth2.return_value = mock_auth
+        mock_client = MagicMock()
+        mock_client_class.return_value = mock_client
+        
+        # Mock successful authentication verification
+        mock_user = MagicMock()
+        mock_user.name = "Test User"
+        mock_client.user().get.return_value = mock_user
+        
+        backend = BoxCSVProjectBackend.from_developer_token("test_token")
+        
+        mock_oauth2.assert_called_once()
+        mock_client_class.assert_called_once_with(mock_auth)
+        assert backend.config.client == mock_client
+
+    @patch('boxsdk.auth.oauth2.OAuth2')
+    @patch('boxsdk.Client')
+    def test_from_oauth2_factory(self, mock_client_class, mock_oauth2):
+        """Test OAuth2 factory method."""
+        mock_auth = MagicMock()
+        mock_oauth2.return_value = mock_auth
+        mock_client = MagicMock()
+        mock_client_class.return_value = mock_client
+        
+        # Mock successful authentication verification
+        mock_user = MagicMock()
+        mock_user.name = "Test User"
+        mock_client.user().get.return_value = mock_user
+        
+        backend = BoxCSVProjectBackend.from_oauth2(
+            client_id="test_id", 
+            client_secret="test_secret", 
+            access_token="test_token"
+        )
+        
+        mock_oauth2.assert_called_once_with(
+            client_id="test_id",
+            client_secret="test_secret", 
+            access_token="test_token",
+            refresh_token=None
+        )
+        mock_client_class.assert_called_once_with(mock_auth)
+        assert backend.config.client == mock_client
 
 
 @pytest.mark.skipif(not box_available, reason="Box SDK not available")
@@ -442,16 +490,12 @@ class TestBoxCSVPerformance:
 class TestBoxCSVErrorHandling:
     """Test error handling and edge cases."""
 
-    def test_invalid_authentication(self):
-        """Test handling of invalid authentication."""
-        # This should raise validation error during config creation
-        with pytest.raises(ValueError):
-            BoxCSVConfig(
-                auth_type="jwt",
-                client_id="invalid",
-                client_secret="invalid",
-                # Missing required fields for JWT
-            )
+    def test_invalid_client(self):
+        """Test handling of invalid Box client."""
+        # This should raise Pydantic validation error
+        from pydantic import ValidationError
+        with pytest.raises(ValidationError):
+            BoxCSVConfig(client=None)
 
     def test_network_timeout(self):
         """Test handling of network timeouts."""
