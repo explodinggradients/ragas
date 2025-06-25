@@ -22,7 +22,7 @@ from .metric.result import MetricResult
 import typing as t
 
 # Define supported backends
-SUPPORTED_BACKENDS = t.Literal["ragas_app", "local"]
+SUPPORTED_BACKENDS = t.Literal["ragas_app", "local", "gdrive"]
 
 # %% ../nbs/api/typing.ipynb 6
 class ColumnType(str, Enum):
