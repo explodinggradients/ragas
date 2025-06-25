@@ -101,6 +101,37 @@ def get_dataset_from_local(
         local_root_dir=os.path.dirname(self._root_dir),  # Root dir for all projects
     )
 
+# %% ../../nbs/api/project/datasets.ipynb 6a
+def get_dataset_from_gdrive(
+    self: Project, name: str, model: t.Type[BaseModel]
+) -> Dataset:
+    """Create a dataset in the Google Drive backend.
+
+    Args:
+        name: Name of the dataset
+        model: Pydantic model defining the structure
+
+    Returns:
+        Dataset: A new dataset configured to use the Google Drive backend
+    """
+    # Use a UUID as the dataset ID
+    dataset_id = create_nano_id()
+
+    # Return a new Dataset instance with Google Drive backend
+    return Dataset(
+        name=name if name is not None else model.__name__,
+        model=model,
+        datatable_type="datasets",
+        project_id=self.project_id,
+        dataset_id=dataset_id,
+        backend="gdrive",
+        # Pass Google Drive configuration from project
+        gdrive_folder_id=getattr(self, '_gdrive_folder_id', None),
+        gdrive_service_account_path=getattr(self, '_gdrive_service_account_path', None),
+        gdrive_credentials_path=getattr(self, '_gdrive_credentials_path', None),
+        gdrive_token_path=getattr(self, '_gdrive_token_path', None),
+    )
+
 # %% ../../nbs/api/project/datasets.ipynb 7
 @patch
 def create_dataset(
@@ -132,6 +163,8 @@ def create_dataset(
         return get_dataset_from_local(self, name, model)
     elif backend == "ragas_app":
         return get_dataset_from_ragas_app(self, name, model)
+    elif backend == "gdrive":
+        return get_dataset_from_gdrive(self, name, model)
     else:
         raise ValueError(f"Unsupported backend: {backend}")
 

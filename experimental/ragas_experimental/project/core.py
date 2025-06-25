@@ -43,6 +43,10 @@ class Project:
                 self._ragas_api_client = RagasApiClientFactory.create()
             else:
                 self._ragas_api_client = ragas_api_client
+        elif backend == "gdrive":
+            # Google Drive backend initialization is handled in create() method
+            # since it requires additional parameters
+            pass
         else:
             raise ValueError(f"Invalid backend: {backend}")
 
@@ -59,6 +63,12 @@ class Project:
         elif backend == "local":
             self.name = self.project_id
             self.description = ""
+        elif backend == "gdrive":
+            # For gdrive, name and description are set in create() method
+            if not hasattr(self, 'name'):
+                self.name = self.project_id
+            if not hasattr(self, 'description'):
+                self.description = ""
 
     def _create_local_project_structure(self):
         """Create the local directory structure for the project"""
@@ -77,6 +87,12 @@ def create(
     backend: rt.SUPPORTED_BACKENDS = "local",
     root_dir: t.Optional[str] = None,
     ragas_api_client: t.Optional[RagasApiClient] = None,
+    # Google Drive backend parameters
+    gdrive_folder_id: t.Optional[str] = None,
+    gdrive_service_account_path: t.Optional[str] = None,
+    gdrive_credentials_path: t.Optional[str] = None,
+    gdrive_token_path: t.Optional[str] = None,
+    **kwargs
 ):
     if backend == "ragas_app":
         ragas_api_client = ragas_api_client or RagasApiClientFactory.create()
@@ -91,6 +107,26 @@ def create(
         # For local backend, we use the name as the project_id
         project_id = name
         return cls(project_id, backend="local", root_dir=root_dir)
+    elif backend == "gdrive":
+        if gdrive_folder_id is None:
+            raise ValueError("gdrive_folder_id is required for Google Drive backend")
+        
+        # Create project instance with Google Drive backend
+        project = cls.__new__(cls)
+        project.project_id = name
+        project.name = name
+        project.description = description
+        project.backend = backend
+        
+        # Store Google Drive configuration
+        project._gdrive_folder_id = gdrive_folder_id
+        project._gdrive_service_account_path = gdrive_service_account_path
+        project._gdrive_credentials_path = gdrive_credentials_path
+        project._gdrive_token_path = gdrive_token_path
+        
+        return project
+    else:
+        raise ValueError(f"Unsupported backend: {backend}")
 
 # %% ../../nbs/api/project/core.ipynb 9
 @patch
