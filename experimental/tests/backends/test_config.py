@@ -1,14 +1,14 @@
 """Tests for backend configuration classes."""
 
 import pytest
-from ragas_experimental.project.backends.config import (
+from ragas_experimental.backends.config import (
     LocalCSVConfig,
     RagasAppConfig,
 )
 
 # Import BoxCSVConfig if available
 try:
-    from ragas_experimental.project.backends.config import BoxCSVConfig
+    from ragas_experimental.backends.config import BoxCSVConfig
     HAS_BOX_CONFIG = True
 except ImportError:
     HAS_BOX_CONFIG = False

@@ -4,7 +4,7 @@ This module provides a clean interface for managing AI projects with support for
 multiple backend storage options including local CSV files and the Ragas app.
 """
 
-from .backends import (
+from ..backends import (
     DataTableBackend,
     ProjectBackend,
     create_project_backend,

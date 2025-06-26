@@ -7,11 +7,11 @@ from unittest.mock import MagicMock, Mock, patch
 # Skip all tests if box dependencies not available
 
 try:
-    from ragas_experimental.project.backends.box_csv import (
+    from ragas_experimental.backends.box_csv import (
         BoxCSVDataTableBackend,
         BoxCSVProjectBackend,
     )
-    from ragas_experimental.project.backends.config import BoxCSVConfig
+    from ragas_experimental.backends.config import BoxCSVConfig
     from boxsdk import BoxAPIException, Client
     box_available = True
 except ImportError:
@@ -80,7 +80,7 @@ class TestBoxCSVDataTableBackend:
         mapping = backend.get_column_mapping(TestEntry)
         assert mapping == TestEntry.model_fields
 
-    @patch('ragas_experimental.project.backends.box_csv.csv')
+    @patch('ragas_experimental.backends.box_csv.csv')
     def test_load_entries_empty_file(self, mock_csv, backend, mock_box_client):
         """Test loading entries from empty CSV file."""
         # Mock empty CSV content
@@ -93,7 +93,7 @@ class TestBoxCSVDataTableBackend:
         entries = backend.load_entries(TestEntry)
         assert entries == []
 
-    @patch('ragas_experimental.project.backends.box_csv.csv')
+    @patch('ragas_experimental.backends.box_csv.csv')
     def test_load_entries_with_data(self, mock_csv, backend, mock_box_client):
         """Test loading entries from CSV with data."""
         # Mock CSV content with data
@@ -452,7 +452,7 @@ def mock_box_responses():
 @pytest.mark.skipif(not box_available, reason="Box SDK not available")
 def test_backend_registration():
     """Test that Box backend is properly registered."""
-    from ragas_experimental.project.backends.registry import get_registry
+    from ragas_experimental.backends.registry import get_registry
     
     registry = get_registry()
     available_backends = registry.list_available_backends()

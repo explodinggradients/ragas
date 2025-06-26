@@ -8,9 +8,9 @@ from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
 )
 
-from ...backends.ragas_api_client import RagasApiClient
-from ...utils import async_to_sync
-from ..utils import create_nano_id
+from .ragas_api_client import RagasApiClient
+from ..utils import async_to_sync
+from .utils import create_nano_id
 from .base import DataTableBackend, ProjectBackend
 from .config import RagasAppConfig
 

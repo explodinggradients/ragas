@@ -18,8 +18,8 @@ from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
 )
 
-from .backends.ragas_api_client import RagasApiClient
-from .project.backends import create_project_backend, DataTableBackend
+from .backends import RagasApiClient
+from .backends import create_project_backend, DataTableBackend
 from .typing import SUPPORTED_BACKENDS
 
 # Type-only imports

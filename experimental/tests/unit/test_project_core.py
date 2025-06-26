@@ -60,7 +60,7 @@ def test_project_get_existing():
         
         assert retrieved_project.name == "test_local_project"
         # Check backend type by checking if it's a LocalCSVProjectBackend
-        from ragas_experimental.project.backends.local_csv import LocalCSVProjectBackend
+        from ragas_experimental.backends.local_csv import LocalCSVProjectBackend
         assert isinstance(retrieved_project._backend, LocalCSVProjectBackend)
 
 

@@ -8,7 +8,7 @@ from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
 )
 
-from .backends.ragas_api_client import RagasApiClient
+from .backends import RagasApiClient
 from .dataset import DataTable
 
 

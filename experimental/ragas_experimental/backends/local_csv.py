@@ -9,7 +9,7 @@ from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
 )
 
-from ..utils import create_nano_id
+from .utils import create_nano_id
 from .base import DataTableBackend, ProjectBackend
 from .config import LocalCSVConfig
 

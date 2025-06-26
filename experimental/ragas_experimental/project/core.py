@@ -14,23 +14,23 @@ from ragas_experimental.model.pydantic_model import (
 
 from ..dataset import Dataset
 from ..experiment import Experiment
-from .backends import ProjectBackend, create_project_backend
+from ..backends import ProjectBackend, create_project_backend
 from .decorators import add_experiment_decorators
 
 # Type-only imports for Box client protocol
 if t.TYPE_CHECKING:
-    from .backends.config import BoxClientProtocol
+    from ..backends.config import BoxClientProtocol
     from ..backends.ragas_api_client import RagasApiClient
-    from .backends.local_csv import LocalCSVProjectBackend
-    from .backends.ragas_app import RagasAppProjectBackend
+    from ..backends.local_csv import LocalCSVProjectBackend
+    from ..backends.ragas_app import RagasAppProjectBackend
 else:
     # Runtime imports for isinstance checks
     try:
-        from .backends.local_csv import LocalCSVProjectBackend
+        from ..backends.local_csv import LocalCSVProjectBackend
     except ImportError:
         LocalCSVProjectBackend = None
     try:
-        from .backends.ragas_app import RagasAppProjectBackend
+        from ..backends.ragas_app import RagasAppProjectBackend
     except ImportError:
         RagasAppProjectBackend = None
 
