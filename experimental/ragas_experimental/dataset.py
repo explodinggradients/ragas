@@ -621,10 +621,36 @@ class Dataset(t.Generic[BaseModelType]):
         return iter(self._entries)
     
     def get_fields_by_type(self, target_type: t.Any) -> t.List[str]:
+        """Get field names that match the given type.
+        
+        Handles complex types like Union, Optional, etc. using typing helpers.
+        
+        Args:
+            target_type: The type to match against
+            
+        Returns:
+            List of field names with matching type
+        """
         return_fields = []
         for field_name, field_info in self.model.model_fields.items():
-            if field_info.annotation == target_type:
+            annotation = field_info.annotation
+            
+            # Handle direct type match
+            if annotation == target_type:
                 return_fields.append(field_name)
+                continue
+                
+            # Handle complex types like Union, Optional, etc.
+            origin = t.get_origin(annotation)
+            args = t.get_args(annotation)
+            
+            # Check for Optional[target_type] or Union[target_type, None]
+            if origin is t.Union and target_type in args:
+                return_fields.append(field_name)
+            # Check for List[target_type], Dict[_, target_type], etc.
+            elif origin and args and any(arg == target_type for arg in args):
+                return_fields.append(field_name)
+                
         return return_fields
 
 # %% ../nbs/api/dataset.ipynb 16

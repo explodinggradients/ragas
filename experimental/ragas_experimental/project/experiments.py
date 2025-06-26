@@ -812,7 +812,7 @@ def compare_and_plot(
                     if hasattr(row, metric):
                         results[experiment_name][metric].append(getattr(row, metric))
                     else:
-                        results[metric].append(None)
+                        results[experiment_name][metric].append(None)
                         logging.warning(f"Metric {metric} not found in row: {row}")
             progress.update(task, advance=1)
 
