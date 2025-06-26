@@ -273,14 +273,10 @@ class BackendRegistry:
         if config is not None:
             return backend_class(config)
 
-        # For backwards compatibility, try to create config from kwargs
-        try:
-            config_class = _get_config_class(backend_type)
-            config_instance = config_class(**kwargs)
-            return backend_class(config_instance)
-        except:
-            # Fall back to old behavior for backwards compatibility
-            return backend_class(**kwargs)
+        # Create config from kwargs using the appropriate config class
+        config_class = _get_config_class(backend_type)
+        config_instance = config_class(**kwargs)
+        return backend_class(config_instance)
 
 
 # Global registry instance

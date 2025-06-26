@@ -2,16 +2,17 @@ import os
 import tempfile
 import pytest
 
-from ragas_experimental.project.core import Project
+from ragas_experimental.project import Project
 
 
 def test_local_backend_creation():
     """Test creating a project with local backend creates proper directory structure."""
+    
     with tempfile.TemporaryDirectory() as temp_dir:
         local_project = Project.create(
             name="test_local_project",
+            backend_type="local/csv",
             description="A test project using local backend",
-            backend="local/csv",
             root_dir=temp_dir
         )
         
@@ -23,11 +24,12 @@ def test_local_backend_creation():
 
 def test_local_backend_deletion():
     """Test deleting a local backend project removes the directory."""
+    
     with tempfile.TemporaryDirectory() as temp_dir:
         local_project = Project.create(
             name="test_local_project",
+            backend_type="local/csv",
             description="A test project using local backend",
-            backend="local/csv",
             root_dir=temp_dir
         )
         
@@ -44,15 +46,15 @@ def test_project_get_existing():
         # Create a project
         local_project = Project.create(
             name="test_local_project",
+            backend_type="local/csv",
             description="A test project using local backend",
-            backend="local/csv",
             root_dir=temp_dir
         )
         
         # Get the project
         retrieved_project = Project.get(
             name="test_local_project",
-            backend="local/csv",
+            backend_type="local/csv",
             root_dir=temp_dir
         )
         
@@ -68,7 +70,7 @@ def test_project_get_nonexistent():
         with pytest.raises(ValueError, match="Local project 'nonexistent' does not exist"):
             Project.get(
                 name="nonexistent",
-                backend="local/csv",
+                backend_type="local/csv",
                 root_dir=temp_dir
             )
 
@@ -78,8 +80,8 @@ def test_project_paths():
     with tempfile.TemporaryDirectory() as temp_dir:
         local_project = Project.create(
             name="test_local_project",
+            backend_type="local/csv",
             description="A test project using local backend",
-            backend="local/csv",
             root_dir=temp_dir
         )
         
@@ -99,8 +101,8 @@ def test_project_repr():
     with tempfile.TemporaryDirectory() as temp_dir:
         local_project = Project.create(
             name="test_local_project",
+            backend_type="local/csv",
             description="A test project using local backend",
-            backend="local/csv",
             root_dir=temp_dir
         )
         

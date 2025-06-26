@@ -19,9 +19,7 @@ class Experiment(Dataset):
         model: t.Type[BaseModel],
         project_id: str,
         experiment_id: str,
-        ragas_api_client: t.Optional[RagasApiClient] = None,
-        backend: t.Literal["ragas/app", "local/csv"] = "ragas/app",
-        local_root_dir: t.Optional[str] = None,
+        backend,  # DatasetBackend instance
     ):
         self.experiment_id = experiment_id
         super().__init__(
@@ -29,10 +27,8 @@ class Experiment(Dataset):
             model=model,
             project_id=project_id,
             dataset_id=experiment_id,
-            ragas_api_client=ragas_api_client,
-            backend=backend,
-            local_root_dir=local_root_dir,
             datatable_type="experiments",
+            backend=backend,
         )
 
     def __str__(self):

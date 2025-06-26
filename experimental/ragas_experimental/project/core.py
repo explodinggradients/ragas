@@ -5,22 +5,34 @@ __all__ = ["Project"]
 import os
 import shutil
 import typing as t
+from typing import overload, Literal, Optional
 
 import ragas_experimental.typing as rt
 from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
 )
 
-from ..backends.factory import RagasApiClientFactory
-from ..backends.ragas_api_client import RagasApiClient
 from ..dataset import Dataset
 from ..experiment import Experiment
-from ..utils import async_to_sync
-from .backends import ProjectBackend
-from .backends.local_csv import LocalCSVProjectBackend
-from .backends.ragas_app import RagasAppProjectBackend
-from .backends.config import RagasAppConfig, LocalCSVConfig
+from .backends import ProjectBackend, create_project_backend
 from .decorators import add_experiment_decorators
+
+# Type-only imports for Box client protocol
+if t.TYPE_CHECKING:
+    from .backends.config import BoxClientProtocol
+    from ..backends.ragas_api_client import RagasApiClient
+    from .backends.local_csv import LocalCSVProjectBackend
+    from .backends.ragas_app import RagasAppProjectBackend
+else:
+    # Runtime imports for isinstance checks
+    try:
+        from .backends.local_csv import LocalCSVProjectBackend
+    except ImportError:
+        LocalCSVProjectBackend = None
+    try:
+        from .backends.ragas_app import RagasAppProjectBackend
+    except ImportError:
+        RagasAppProjectBackend = None
 
 
 class Project:
@@ -52,138 +64,198 @@ class Project:
         # Add experiment decorator methods
         add_experiment_decorators(self)
 
+    # Type-safe overloads for different backend types
+    @overload
     @classmethod
     def create(
         cls,
         name: str,
+        backend_type: Literal["local/csv"],
+        *,
         description: str = "",
-        backend: rt.SUPPORTED_BACKENDS = "local/csv",
-        root_dir: t.Optional[str] = None,
-        ragas_api_client: t.Optional[RagasApiClient] = None,
+        root_dir: str = "./ragas_data",
+    ) -> "Project": ...
+
+    @overload
+    @classmethod
+    def create(
+        cls,
+        name: str,
+        backend_type: Literal["ragas/app"],
+        *,
+        description: str = "",
+        api_key: Optional[str] = None,
+        api_url: str = "https://api.ragas.io",
+        timeout: int = 30,
+        max_retries: int = 3,
+        ragas_api_client: Optional["RagasApiClient"] = None,
+    ) -> "Project": ...
+
+    @overload
+    @classmethod
+    def create(
+        cls,
+        name: str,
+        backend_type: Literal["box/csv"],
+        *,
+        description: str = "",
+        client: "BoxClientProtocol",
+        root_folder_id: str = "0",
+    ) -> "Project": ...
+
+    @classmethod
+    def create(
+        cls,
+        name: str,
+        backend_type: str,
+        *,
+        description: str = "",
+        **kwargs
     ) -> "Project":
-        """Create a new project.
+        """Create a new project with the specified backend.
 
         Args:
             name: Name of the project
+            backend_type: Backend type ("local/csv", "ragas/app", or "box/csv")
             description: Description of the project
-            backend: Backend type ("local/csv" or "ragas/app")
-            root_dir: Root directory for local backends
-            ragas_api_client: API client for ragas/app backend
+            **kwargs: Backend-specific configuration parameters
 
         Returns:
             Project: A new project instance
+
+        Examples:
+            >>> # Create a local project with type-safe parameters
+            >>> project = Project.create(
+            ...     "my_project",
+            ...     backend_type="local/csv",
+            ...     root_dir="/path/to/projects"
+            ... )
+
+            >>> # Create a ragas/app project
+            >>> project = Project.create(
+            ...     "my_project", 
+            ...     backend_type="ragas/app",
+            ...     api_key="your_api_key"
+            ... )
+
+            >>> # Create a Box project
+            >>> project = Project.create(
+            ...     "my_project",
+            ...     backend_type="box/csv",
+            ...     client=authenticated_box_client,
+            ...     root_folder_id="123456"
+            ... )
         """
-        if backend == "ragas/app":
-            ragas_api_client = ragas_api_client or RagasApiClientFactory.create()
-            sync_version = async_to_sync(ragas_api_client.create_project)
-            new_project = sync_version(title=name, description=description)
+        # Use the registry-based approach for backend creation
+        backend = create_project_backend(backend_type, **kwargs)
+        
+        # Create and return the Project instance  
+        return cls(
+            project_id=name,  # Use name as project_id for simplicity
+            project_backend=backend,
+            name=name,
+            description=description
+        )
 
-            # Create config from the API client
-            config = RagasAppConfig(
-                api_url=getattr(ragas_api_client, "api_url", "https://api.ragas.io"),
-                api_key=getattr(ragas_api_client, "api_key", None),
-                timeout=getattr(ragas_api_client, "timeout", 30),
-                max_retries=getattr(ragas_api_client, "max_retries", 3),
-            )
-            project_backend = RagasAppProjectBackend(config)
-            return cls(
-                project_id=new_project["id"],
-                project_backend=project_backend,
-                name=new_project["title"],
-                description=new_project["description"],
-            )
-        elif backend == "local/csv":
-            if root_dir is None:
-                raise ValueError("root_dir is required for local/csv backend")
+    # Type-safe overloads for get_project
+    @overload
+    @classmethod
+    def get(
+        cls,
+        name: str,
+        backend_type: Literal["local/csv"],
+        *,
+        root_dir: str = "./ragas_data",
+    ) -> "Project": ...
 
-            config = LocalCSVConfig(root_dir=root_dir)
-            project_backend = LocalCSVProjectBackend(config)
-            return cls(
-                project_id=name,  # Use name as project_id for local
-                project_backend=project_backend,
-                name=name,
-                description=description,
-            )
-        else:
-            raise ValueError(f"Unsupported backend: {backend}")
+    @overload
+    @classmethod
+    def get(
+        cls,
+        name: str,
+        backend_type: Literal["ragas/app"],
+        *,
+        api_key: Optional[str] = None,
+        api_url: str = "https://api.ragas.io",
+        timeout: int = 30,
+        max_retries: int = 3,
+        ragas_api_client: Optional["RagasApiClient"] = None,
+    ) -> "Project": ...
+
+    @overload
+    @classmethod
+    def get(
+        cls,
+        name: str,
+        backend_type: Literal["box/csv"],
+        *,
+        client: "BoxClientProtocol",
+        root_folder_id: str = "0",
+    ) -> "Project": ...
 
     @classmethod
     def get(
         cls,
         name: str,
-        backend: rt.SUPPORTED_BACKENDS = "local/csv",
-        root_dir: t.Optional[str] = None,
-        ragas_api_client: t.Optional[RagasApiClient] = None,
+        backend_type: str,
+        **kwargs
     ) -> "Project":
         """Get an existing project by name.
 
         Args:
-            name: The name of the project to get
-            backend: The backend to use ("local/csv" or "ragas/app")
-            root_dir: The root directory for local backends
-            ragas_api_client: Optional custom Ragas API client
+            name: Name of the project to retrieve
+            backend_type: Backend type ("local/csv", "ragas/app", or "box/csv")
+            **kwargs: Backend-specific configuration parameters
 
         Returns:
-            Project: The project instance
+            Project: The existing project instance
+
+        Examples:
+            >>> # Get a local project
+            >>> project = Project.get("my_project", backend_type="local/csv", root_dir="/path/to/projects")
+
+            >>> # Get a ragas/app project
+            >>> project = Project.get("my_project", backend_type="ragas/app", api_key="your_api_key")
+
+            >>> # Get a Box project
+            >>> project = Project.get("my_project", backend_type="box/csv", client=authenticated_box_client)
         """
-        if backend == "ragas/app":
-            if ragas_api_client is None:
-                ragas_api_client = RagasApiClientFactory.create()
-
-            # Get the project by name
-            sync_version = async_to_sync(ragas_api_client.get_project_by_name)
-            project_info = sync_version(project_name=name)
-
-            # Create config from the API client
-            config = RagasAppConfig(
-                api_url=getattr(ragas_api_client, "api_url", "https://api.ragas.io"),
-                api_key=getattr(ragas_api_client, "api_key", None),
-                timeout=getattr(ragas_api_client, "timeout", 30),
-                max_retries=getattr(ragas_api_client, "max_retries", 3),
-            )
-            project_backend = RagasAppProjectBackend(config)
-            return cls(
-                project_id=project_info["id"],
-                project_backend=project_backend,
-                name=project_info["title"],
-                description=project_info["description"],
-            )
-        elif backend == "local/csv":
-            if root_dir is None:
-                raise ValueError("root_dir is required for local/csv backend")
-
-            # For local backend, check if project directory exists
-            project_path = os.path.join(root_dir, name)
-            if not os.path.exists(project_path):
-                raise ValueError(
-                    f"Local project '{name}' does not exist at {project_path}"
-                )
-
-            config = LocalCSVConfig(root_dir=root_dir)
-            project_backend = LocalCSVProjectBackend(config)
-            return cls(
-                project_id=name,
-                project_backend=project_backend,
-                name=name,
-                description="",
-            )
-        else:
-            raise ValueError(f"Unsupported backend: {backend}")
+        # Use the registry-based approach for backend creation
+        backend = create_project_backend(backend_type, **kwargs)
+        
+        # For local backend, check if project actually exists
+        if backend_type == "local/csv":
+            import os
+            root_dir = kwargs.get("root_dir", "./ragas_data")
+            project_dir = os.path.join(root_dir, name)
+            if not os.path.exists(project_dir):
+                raise ValueError(f"Local project '{name}' does not exist in {root_dir}")
+        
+        # Get the existing project using the backend
+        return cls(
+            project_id=name,
+            project_backend=backend,
+            name=name,
+            description=""  # Description will be loaded from backend if available
+        )
 
     def delete(self):
         """Delete the project and all its data."""
-        if isinstance(self._backend, RagasAppProjectBackend):
-            sync_version = async_to_sync(self._backend.ragas_api_client.delete_project)
-            sync_version(project_id=self.project_id)
-            print("Project deleted from Ragas platform!")
-        elif isinstance(self._backend, LocalCSVProjectBackend):
-            # Caution: this deletes the entire project directory
+        # Check if backend has a delete method, otherwise handle basic deletion
+        if hasattr(self._backend, 'delete_project'):
+            # Backend provides its own deletion logic
+            self._backend.delete_project(self.project_id)
+            print("Project deleted!")
+        elif hasattr(self._backend, 'root_dir'):
+            # Local backend - delete project directory
             project_dir = os.path.join(self._backend.root_dir, self.project_id)
             if os.path.exists(project_dir):
                 shutil.rmtree(project_dir)
                 print(f"Local project at {project_dir} deleted!")
             else:
                 print(f"Local project at {project_dir} does not exist")
+        else:
+            print("Project deletion not supported by this backend")
 
     # Dataset operations
     def create_dataset(
@@ -203,24 +275,8 @@ class Project:
         if name is None:
             name = model.__name__
 
-        dataset_id = self._backend.create_dataset(name, model)
-
-        backend_name = (
-            "ragas/app"
-            if isinstance(self._backend, RagasAppProjectBackend)
-            else "local/csv"
-        )
-
-        return Dataset(
-            name=name,
-            model=model,
-            project_id=self.project_id,
-            dataset_id=dataset_id,
-            datatable_type="datasets",
-            ragas_api_client=getattr(self._backend, "ragas_api_client", None),
-            backend=backend_name,
-            local_root_dir=getattr(self._backend, "root_dir", None),
-        )
+        # Use the new Dataset.create() method for cleaner interface
+        return Dataset.create(name, model, self, "datasets")
 
     def get_dataset(
         self,
@@ -236,26 +292,8 @@ class Project:
         Returns:
             Dataset: The retrieved dataset
         """
-        dataset_id, dataset_backend = self._backend.get_dataset_by_name(
-            dataset_name, model
-        )
-
-        backend_name = (
-            "ragas/app"
-            if isinstance(self._backend, RagasAppProjectBackend)
-            else "local/csv"
-        )
-
-        return Dataset(
-            name=dataset_name,
-            model=model,
-            project_id=self.project_id,
-            dataset_id=dataset_id,
-            datatable_type="datasets",
-            ragas_api_client=getattr(self._backend, "ragas_api_client", None),
-            backend=backend_name,
-            local_root_dir=getattr(self._backend, "root_dir", None),
-        )
+        # Use the new Dataset.get_dataset() method for cleaner interface
+        return Dataset.get_dataset(dataset_name, model, self, "datasets")
 
     def list_datasets(self) -> t.List[str]:
         """List all datasets in the project.
@@ -281,22 +319,17 @@ class Project:
         Returns:
             Experiment: An experiment object for managing results
         """
+        # Create experiment using backend
         experiment_id = self._backend.create_experiment(name, model)
-
-        backend_name = (
-            "ragas/app"
-            if isinstance(self._backend, RagasAppProjectBackend)
-            else "local/csv"
-        )
-
+        backend = self._backend.get_experiment_backend(experiment_id, name, model)
+        
+        # Return Experiment object for better UX
         return Experiment(
             name=name,
             model=model,
             project_id=self.project_id,
             experiment_id=experiment_id,
-            ragas_api_client=getattr(self._backend, "ragas_api_client", None),
-            backend=backend_name,
-            local_root_dir=getattr(self._backend, "root_dir", None),
+            backend=backend,
         )
 
     def get_experiment(
@@ -313,24 +346,16 @@ class Project:
         Returns:
             Experiment: The retrieved experiment
         """
-        experiment_id, experiment_backend = self._backend.get_experiment_by_name(
-            experiment_name, model
-        )
-
-        backend_name = (
-            "ragas/app"
-            if isinstance(self._backend, RagasAppProjectBackend)
-            else "local/csv"
-        )
-
+        # Get experiment using backend
+        experiment_id, experiment_backend = self._backend.get_experiment_by_name(experiment_name, model)
+        
+        # Return Experiment object for better UX
         return Experiment(
             name=experiment_name,
             model=model,
             project_id=self.project_id,
             experiment_id=experiment_id,
-            ragas_api_client=getattr(self._backend, "ragas_api_client", None),
-            backend=backend_name,
-            local_root_dir=getattr(self._backend, "root_dir", None),
+            backend=experiment_backend,
         )
 
     def list_experiments(self) -> t.List[str]:
@@ -355,7 +380,7 @@ class Project:
         Raises:
             ValueError: If not using local backend
         """
-        if not isinstance(self._backend, LocalCSVProjectBackend):
+        if LocalCSVProjectBackend is None or not isinstance(self._backend, LocalCSVProjectBackend):
             raise ValueError("This method is only available for local/csv backend")
         return os.path.join(
             self._backend._project_dir, "datasets", f"{dataset_name}.csv"
@@ -373,7 +398,7 @@ class Project:
         Raises:
             ValueError: If not using local backend
         """
-        if not isinstance(self._backend, LocalCSVProjectBackend):
+        if LocalCSVProjectBackend is None or not isinstance(self._backend, LocalCSVProjectBackend):
             raise ValueError("This method is only available for local/csv backend")
         return os.path.join(
             self._backend._project_dir, "experiments", f"{experiment_name}.csv"
@@ -383,7 +408,7 @@ class Project:
         """String representation of the project."""
         backend_name = (
             "ragas/app"
-            if isinstance(self._backend, RagasAppProjectBackend)
+            if RagasAppProjectBackend is not None and isinstance(self._backend, RagasAppProjectBackend)
             else "local/csv"
         )
         return f"Project(name='{self.name}', backend='{backend_name}')"
