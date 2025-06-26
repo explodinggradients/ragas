@@ -89,13 +89,14 @@ class ToolCallAccuracy(MultiTurnMetric):
         if pred_tool_calls:
             score = 0.0
             reference_tool_calls = sample.reference_tool_calls
-            for ref_tool_call in reference_tool_calls:
-                for pred_tool_call in pred_tool_calls:
-                    if ref_tool_call.name == pred_tool_call.name:
-                        arg_score = await self._get_arg_score(
-                            pred_tool_call.args, ref_tool_call.args, callbacks
-                        )
-                        score += arg_score
+            for ref_tool_call, pred_tool_call in zip(
+                reference_tool_calls, pred_tool_calls
+            ):
+                if ref_tool_call.name == pred_tool_call.name:
+                    arg_score = await self._get_arg_score(
+                        pred_tool_call.args, ref_tool_call.args, callbacks
+                    )
+                    score += arg_score
 
             score /= len(reference_tool_calls)
         else:
