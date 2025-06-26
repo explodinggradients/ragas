@@ -8,10 +8,11 @@ from ragas_experimental.model.pydantic_model import (
 )
 
 
-class DatasetBackend(ABC):
-    """Abstract base class for dataset backends.
+class DataTableBackend(ABC):
+    """Abstract base class for datatable backends.
 
-    All dataset storage backends must implement these methods.
+    All datatable storage backends must implement these methods.
+    Handles both datasets and experiments.
     """
 
     @abstractmethod
@@ -86,27 +87,27 @@ class ProjectBackend(ABC):
     @abstractmethod
     def get_dataset_backend(
         self, dataset_id: str, name: str, model: t.Type[BaseModel]
-    ) -> DatasetBackend:
-        """Get a DatasetBackend instance for a specific dataset"""
+    ) -> DataTableBackend:
+        """Get a DataTableBackend instance for a specific dataset"""
         pass
 
     @abstractmethod
     def get_experiment_backend(
         self, experiment_id: str, name: str, model: t.Type[BaseModel]
-    ) -> DatasetBackend:
-        """Get a DatasetBackend instance for a specific experiment"""
+    ) -> DataTableBackend:
+        """Get a DataTableBackend instance for a specific experiment"""
         pass
 
     @abstractmethod
     def get_dataset_by_name(
         self, name: str, model: t.Type[BaseModel]
-    ) -> t.Tuple[str, DatasetBackend]:
+    ) -> t.Tuple[str, DataTableBackend]:
         """Get dataset ID and backend by name. Returns (dataset_id, backend)"""
         pass
 
     @abstractmethod
     def get_experiment_by_name(
         self, name: str, model: t.Type[BaseModel]
-    ) -> t.Tuple[str, DatasetBackend]:
+    ) -> t.Tuple[str, DataTableBackend]:
         """Get experiment ID and backend by name. Returns (experiment_id, backend)"""
         pass

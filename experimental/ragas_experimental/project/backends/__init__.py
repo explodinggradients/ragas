@@ -1,6 +1,6 @@
 """Backend factory and exports for project backends."""
 
-from .base import DatasetBackend, ProjectBackend
+from .base import DataTableBackend, ProjectBackend
 
 # Import concrete backends
 from .local_csv import LocalCSVProjectBackend
@@ -33,7 +33,7 @@ from .registry import (
 
 __all__ = [
     "ProjectBackend",
-    "DatasetBackend",
+    "DataTableBackend",
     "BackendRegistry",
     "get_registry",
     "register_backend",

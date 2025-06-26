@@ -11,12 +11,12 @@ from ragas_experimental.model.pydantic_model import (
 from ...backends.ragas_api_client import RagasApiClient
 from ...utils import async_to_sync
 from ..utils import create_nano_id
-from .base import DatasetBackend, ProjectBackend
+from .base import DataTableBackend, ProjectBackend
 from .config import RagasAppConfig
 
 
-class RagasAppDatasetBackend(DatasetBackend):
-    """Ragas App API implementation of DatasetBackend."""
+class RagasAppDataTableBackend(DataTableBackend):
+    """Ragas App API implementation of DataTableBackend."""
 
     def __init__(
         self,
@@ -308,13 +308,13 @@ class RagasAppProjectBackend(ProjectBackend):
 
     def get_dataset_backend(
         self, dataset_id: str, name: str, model: t.Type[BaseModel]
-    ) -> DatasetBackend:
-        """Get a DatasetBackend instance for a specific dataset."""
+    ) -> DataTableBackend:
+        """Get a DataTableBackend instance for a specific dataset."""
         if self.project_id is None:
             raise ValueError(
                 "Backend must be initialized before creating dataset backend"
             )
-        return RagasAppDatasetBackend(
+        return RagasAppDataTableBackend(
             ragas_api_client=self.ragas_api_client,
             project_id=self.project_id,
             dataset_id=dataset_id,
@@ -323,13 +323,13 @@ class RagasAppProjectBackend(ProjectBackend):
 
     def get_experiment_backend(
         self, experiment_id: str, name: str, model: t.Type[BaseModel]
-    ) -> DatasetBackend:
-        """Get a DatasetBackend instance for a specific experiment."""
+    ) -> DataTableBackend:
+        """Get a DataTableBackend instance for a specific experiment."""
         if self.project_id is None:
             raise ValueError(
                 "Backend must be initialized before creating experiment backend"
             )
-        return RagasAppDatasetBackend(
+        return RagasAppDataTableBackend(
             ragas_api_client=self.ragas_api_client,
             project_id=self.project_id,
             dataset_id=experiment_id,
@@ -338,7 +338,7 @@ class RagasAppProjectBackend(ProjectBackend):
 
     def get_dataset_by_name(
         self, name: str, model: t.Type[BaseModel]
-    ) -> t.Tuple[str, DatasetBackend]:
+    ) -> t.Tuple[str, DataTableBackend]:
         """Get dataset ID and backend by name."""
         # Search for dataset with given name
         sync_version = async_to_sync(self.ragas_api_client.get_dataset_by_name)
@@ -349,7 +349,7 @@ class RagasAppProjectBackend(ProjectBackend):
 
     def get_experiment_by_name(
         self, name: str, model: t.Type[BaseModel]
-    ) -> t.Tuple[str, DatasetBackend]:
+    ) -> t.Tuple[str, DataTableBackend]:
         """Get experiment ID and backend by name."""
         # Search for experiment with given name
         sync_version = async_to_sync(self.ragas_api_client.get_experiment_by_name)

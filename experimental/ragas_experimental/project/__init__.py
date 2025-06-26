@@ -5,7 +5,7 @@ multiple backend storage options including local CSV files and the Ragas app.
 """
 
 from .backends import (
-    DatasetBackend,
+    DataTableBackend,
     ProjectBackend,
     create_project_backend,
     list_backends,
@@ -21,7 +21,7 @@ __all__ = [
     "memorable_names",
     "create_nano_id",
     "ProjectBackend",
-    "DatasetBackend",
+    "DataTableBackend",
     "create_project_backend",
     "list_backends",
     "print_available_backends",

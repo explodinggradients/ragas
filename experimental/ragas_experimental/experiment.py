@@ -9,17 +9,17 @@ from ragas_experimental.model.pydantic_model import (
 )
 
 from .backends.ragas_api_client import RagasApiClient
-from .dataset import Dataset
+from .dataset import DataTable
 
 
-class Experiment(Dataset):
+class Experiment(DataTable):
     def __init__(
         self,
         name: str,
         model: t.Type[BaseModel],
         project_id: str,
         experiment_id: str,
-        backend,  # DatasetBackend instance
+        backend,  # DataTableBackend instance
     ):
         self.experiment_id = experiment_id
         super().__init__(

@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 try:
     from ragas_experimental.project.backends.box_csv import (
-        BoxCSVDatasetBackend,
+        BoxCSVDataTableBackend,
         BoxCSVProjectBackend,
     )
     from ragas_experimental.project.backends.config import BoxCSVConfig
@@ -30,8 +30,8 @@ class TestEntry(BaseModel):
 
 
 @pytest.mark.skipif(not box_available, reason="Box SDK not available")
-class TestBoxCSVDatasetBackend:
-    """Test BoxCSVDatasetBackend functionality."""
+class TestBoxCSVDataTableBackend:
+    """Test BoxCSVDataTableBackend functionality."""
 
     @pytest.fixture
     def mock_box_client(self):
@@ -59,7 +59,7 @@ class TestBoxCSVDatasetBackend:
     @pytest.fixture
     def backend(self, mock_box_client):
         """Create backend instance for testing."""
-        return BoxCSVDatasetBackend(
+        return BoxCSVDataTableBackend(
             box_client=mock_box_client,
             project_folder_id="project_123",
             dataset_id="dataset_456",
@@ -298,7 +298,7 @@ class TestBoxCSVProjectBackend:
         
         dataset_backend = backend.get_dataset_backend("ds_123", "test_dataset", TestEntry)
         
-        assert isinstance(dataset_backend, BoxCSVDatasetBackend)
+        assert isinstance(dataset_backend, BoxCSVDataTableBackend)
         assert dataset_backend.dataset_name == "test_dataset"
         assert dataset_backend.datatable_type == "datasets"
 

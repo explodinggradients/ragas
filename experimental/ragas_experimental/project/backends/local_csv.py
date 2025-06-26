@@ -10,12 +10,12 @@ from ragas_experimental.model.pydantic_model import (
 )
 
 from ..utils import create_nano_id
-from .base import DatasetBackend, ProjectBackend
+from .base import DataTableBackend, ProjectBackend
 from .config import LocalCSVConfig
 
 
-class LocalCSVDatasetBackend(DatasetBackend):
-    """Local CSV implementation of DatasetBackend."""
+class LocalCSVDataTableBackend(DataTableBackend):
+    """Local CSV implementation of DataTableBackend."""
 
     def __init__(
         self,
@@ -318,13 +318,13 @@ class LocalCSVProjectBackend(ProjectBackend):
 
     def get_dataset_backend(
         self, dataset_id: str, name: str, model: t.Type[BaseModel]
-    ) -> DatasetBackend:
-        """Get a DatasetBackend instance for a specific dataset."""
+    ) -> DataTableBackend:
+        """Get a DataTableBackend instance for a specific dataset."""
         if self.project_id is None:
             raise ValueError(
                 "Backend must be initialized before creating dataset backend"
             )
-        return LocalCSVDatasetBackend(
+        return LocalCSVDataTableBackend(
             local_root_dir=self.root_dir,
             project_id=self.project_id,
             dataset_id=dataset_id,
@@ -334,13 +334,13 @@ class LocalCSVProjectBackend(ProjectBackend):
 
     def get_experiment_backend(
         self, experiment_id: str, name: str, model: t.Type[BaseModel]
-    ) -> DatasetBackend:
-        """Get a DatasetBackend instance for a specific experiment."""
+    ) -> DataTableBackend:
+        """Get a DataTableBackend instance for a specific experiment."""
         if self.project_id is None:
             raise ValueError(
                 "Backend must be initialized before creating experiment backend"
             )
-        return LocalCSVDatasetBackend(
+        return LocalCSVDataTableBackend(
             local_root_dir=self.root_dir,
             project_id=self.project_id,
             dataset_id=experiment_id,
@@ -350,7 +350,7 @@ class LocalCSVProjectBackend(ProjectBackend):
 
     def get_dataset_by_name(
         self, name: str, model: t.Type[BaseModel]
-    ) -> t.Tuple[str, DatasetBackend]:
+    ) -> t.Tuple[str, DataTableBackend]:
         """Get dataset ID and backend by name."""
         # Check if the dataset file exists
         dataset_path = os.path.join(self._project_dir, "datasets", f"{name}.csv")
@@ -365,7 +365,7 @@ class LocalCSVProjectBackend(ProjectBackend):
 
     def get_experiment_by_name(
         self, name: str, model: t.Type[BaseModel]
-    ) -> t.Tuple[str, DatasetBackend]:
+    ) -> t.Tuple[str, DataTableBackend]:
         """Get experiment ID and backend by name."""
         # Check if the experiment file exists
         experiment_path = os.path.join(self._project_dir, "experiments", f"{name}.csv")

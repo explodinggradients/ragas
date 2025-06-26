@@ -2,6 +2,7 @@
 
 __all__ = [
     "BaseModelType",
+    "DataTable",
     "Dataset",
 ]
 
@@ -18,7 +19,7 @@ from ragas_experimental.model.pydantic_model import (
 )
 
 from .backends.ragas_api_client import RagasApiClient
-from .project.backends import create_project_backend, DatasetBackend
+from .project.backends import create_project_backend, DataTableBackend
 from .typing import SUPPORTED_BACKENDS
 
 # Type-only imports
@@ -28,11 +29,11 @@ if t.TYPE_CHECKING:
 BaseModelType = t.TypeVar("BaseModelType", bound=BaseModel)
 
 
-class Dataset(t.Generic[BaseModelType]):
-    """A list-like interface for managing dataset entries with backend synchronization.
+class DataTable(t.Generic[BaseModelType]):
+    """A list-like interface for managing datatable entries with backend synchronization.
 
     This class behaves like a Python list while synchronizing operations with the
-    chosen backend (Ragas API or local filesystem).
+    chosen backend (Ragas API or local filesystem). Base class for Dataset and Experiment.
     """
 
     # Type-safe overloads for dataset creation
@@ -44,7 +45,7 @@ class Dataset(t.Generic[BaseModelType]):
         model: t.Type[BaseModel],
         project: "Project",
         dataset_type: Literal["datasets"] = "datasets"
-    ) -> "Dataset[BaseModel]": ...
+    ) -> "DataTable[BaseModel]": ...
 
     @overload
     @classmethod
@@ -54,7 +55,7 @@ class Dataset(t.Generic[BaseModelType]):
         model: t.Type[BaseModel],
         project: "Project", 
         dataset_type: Literal["experiments"]
-    ) -> "Dataset[BaseModel]": ...
+    ) -> "DataTable[BaseModel]": ...
 
     @classmethod
     def create(
@@ -63,7 +64,7 @@ class Dataset(t.Generic[BaseModelType]):
         model: t.Type[BaseModel],
         project: "Project",
         dataset_type: Literal["datasets", "experiments"] = "datasets"
-    ) -> "Dataset[BaseModel]":
+    ) -> "DataTable[BaseModel]":
         """Create a new dataset with type-safe parameters.
 
         Args:
@@ -109,7 +110,7 @@ class Dataset(t.Generic[BaseModelType]):
         model: t.Type[BaseModel],
         project: "Project",
         dataset_type: Literal["datasets"] = "datasets"
-    ) -> "Dataset[BaseModel]": ...
+    ) -> "DataTable[BaseModel]": ...
 
     @overload
     @classmethod
@@ -119,7 +120,7 @@ class Dataset(t.Generic[BaseModelType]):
         model: t.Type[BaseModel],
         project: "Project",
         dataset_type: Literal["experiments"]
-    ) -> "Dataset[BaseModel]": ...
+    ) -> "DataTable[BaseModel]": ...
 
     @classmethod
     def get_dataset(
@@ -128,7 +129,7 @@ class Dataset(t.Generic[BaseModelType]):
         model: t.Type[BaseModel],
         project: "Project",
         dataset_type: Literal["datasets", "experiments"] = "datasets"
-    ) -> "Dataset[BaseModel]":
+    ) -> "DataTable[BaseModel]":
         """Get an existing dataset by name with type-safe parameters.
 
         Args:
@@ -173,8 +174,8 @@ class Dataset(t.Generic[BaseModelType]):
         project_id: str,
         dataset_id: str,
         datatable_type: t.Literal["datasets", "experiments"],
-        backend: DatasetBackend
-    ) -> "Dataset[BaseModel]":
+        backend: DataTableBackend
+    ) -> "DataTable[BaseModel]":
         """Internal helper to create a dataset with a backend instance.
         
         Args:
@@ -186,7 +187,7 @@ class Dataset(t.Generic[BaseModelType]):
             backend: Backend instance
             
         Returns:
-            Dataset: New dataset instance
+            DataTable: New datatable instance
         """
         # Create the instance without calling __init__
         instance = cls.__new__(cls)
@@ -222,7 +223,7 @@ class Dataset(t.Generic[BaseModelType]):
         project_id: str,
         dataset_id: str,
         datatable_type: t.Literal["datasets", "experiments"],
-        backend: DatasetBackend,
+        backend: DataTableBackend,
     ):
         """Initialize a Dataset with a backend instance.
 
@@ -479,3 +480,12 @@ class Dataset(t.Generic[BaseModelType]):
             return self._backend.get_entry_by_field(field_name, field_value, self.model)
 
         return None
+
+
+class Dataset(DataTable[BaseModelType]):
+    """Dataset class for managing dataset entries.
+    
+    Inherits all functionality from DataTable. This class represents
+    datasets specifically (as opposed to experiments).
+    """
+    pass
