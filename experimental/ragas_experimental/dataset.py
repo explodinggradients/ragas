@@ -619,6 +619,13 @@ class Dataset(t.Generic[BaseModelType]):
     def __iter__(self) -> t.Iterator[BaseModelType]:
         """Iterate over the entries in the dataset."""
         return iter(self._entries)
+    
+    def get_fields_by_type(self, target_type: t.Any) -> t.List[str]:
+        return_fields = []
+        for field_name, field_info in self.model.model_fields.items():
+            if field_info.annotation == target_type:
+                return_fields.append(field_name)
+        return return_fields
 
 # %% ../nbs/api/dataset.ipynb 16
 @patch
