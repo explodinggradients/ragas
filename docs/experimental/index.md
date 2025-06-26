@@ -112,7 +112,7 @@ hello_world
 - Run your next experiment and compare the results:
 
 ```sh
-ragas evals evals.py --dataset hello_world --metrics accuracy --baseline latest
+ragas evals evals.py --dataset hello_world --metrics accuracy --baseline previous
 ```
 
 ```bash
