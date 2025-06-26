@@ -45,7 +45,6 @@ docs = [
 dev = [
     "rich",
     "ruff",
-    "isort",
     "black[jupyter]",
     "pyright",
     "llama_index",
@@ -63,25 +62,19 @@ dev = [
     "haystack-ai",
     "sacrebleu",
     "r2r",
-]
-test = [
     "pytest",
     "pytest-xdist[psutil]",
     "pytest-asyncio",
-    "llama_index",
     "nbmake",
 ]
+test = []
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/markdown"}
 
-[tool.ruff]
-exclude = ["*.ipynb"]
-
-[tool.ruff.lint]
-ignore = ["E501"]
+# Ruff configuration is inherited from workspace.toml at the monorepo root
 
 [build-system]
 requires = ["setuptools>=64", "setuptools_scm>=8"]

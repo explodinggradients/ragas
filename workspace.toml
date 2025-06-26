@@ -1,15 +1,20 @@
 [workspace]
-# This file configures the workspace-wide tools and settings
-# Each project still maintains its own pyproject.toml for package-specific config
+# This file configures the workspace-wide tools and settings for the Ragas monorepo
+# All code quality tools (ruff, black, pyright) inherit from these centralized settings
+# Individual projects only override when absolutely necessary for package-specific needs
 
 [tool.ruff]
 select = ["E", "F", "I"]
 ignore = ["E501"]  # Line length handled by formatter
 line-length = 88
 target-version = "py39"
+exclude = ["*.ipynb"]  # Exclude Jupyter notebooks from linting
 
 [tool.ruff.lint.isort]
+# Import sorting configuration for the entire monorepo
 known-first-party = ["ragas", "ragas_experimental"]
+force-single-line = false
+combine-as-imports = true
 
 [tool.black]
 line-length = 88
