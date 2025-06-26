@@ -8,41 +8,19 @@ __all__ = ['numeric_metric', 'NumericMetric']
 # %% ../../nbs/api/metric/numeric.ipynb 2
 import typing as t
 from dataclasses import dataclass, field
-from pydantic import BaseModel, create_model
-from . import Metric, MetricResult
+from pydantic import create_model
+from . import Metric
 from .decorator import create_metric_decorator
 
 
 @dataclass
 class NumericMetric(Metric):
-    range: t.Tuple[float, float]
+    range: t.Tuple[float, float] = (0.0, 1.0)
 
-    def _get_response_model(self, with_reasoning: bool) -> t.Type[BaseModel]:
-        """Get or create a response model based on reasoning parameter."""
+    def __post_init__(self):
+        super().__post_init__()
+        self._response_model = create_model("response_model", result=(float, ...))
 
-        if with_reasoning in self._response_models:
-            return self._response_models[with_reasoning]
-
-        model_name = "response_model"
-        fields = {"result": (float, ...)}
-
-        if with_reasoning:
-            fields["reason"] = (str, ...)  # type: ignore
-
-        model = create_model(model_name, **fields)
-        self._response_models[with_reasoning] = model
-        return model
-
-    def _ensemble(self, results: t.List[MetricResult]) -> MetricResult:
-
-        if len(results) == 1:
-            return results[0]
-
-        candidates = [candidate.result for candidate in results]
-        result = sum(candidates) / len(candidates)
-        reason = results[0].reason
-
-        return MetricResult(result=result, reason=reason)
 
 
 numeric_metric = create_metric_decorator(NumericMetric)
