@@ -22,8 +22,8 @@ class RankingMetric(Metric):
         super().__post_init__()
         self._response_model = create_model(
             "RankingResponseModel",
-            result=(t.List[str], Field(..., description="List of ranked items")),
             reason=(str, Field(..., description="Reasoning for the ranking")),
+            result=(t.List[str], Field(..., description="List of ranked items")),
         )
 
 

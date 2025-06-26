@@ -8,6 +8,9 @@ import string
 import uuid
 import functools
 import asyncio
+from rich.console import Console
+
+console = Console()
 
 # %% ../nbs/api/utils.ipynb 3
 def create_nano_id(size=12):
