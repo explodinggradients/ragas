@@ -8,6 +8,7 @@ from pathlib import Path
 import typer
 from typing import Optional, Any, Dict
 import traceback
+from collections import Counter
 from rich.table import Table
 from rich.text import Text
 from rich.panel import Panel
@@ -147,6 +148,76 @@ def create_categorical_metrics_table(metrics_data: Dict[str, Dict], has_baseline
     return table
 
 
+def extract_metrics_from_experiment(experiment, metric_fields: list) -> Dict[str, list]:
+    """Extract metric values from experiment entries."""
+    metrics_data = {field_name: [] for field_name in metric_fields}
+    for entry in experiment:
+        for field_name in metric_fields:
+            field_value = getattr(entry, field_name)
+            metrics_data[field_name].append(field_value)
+    return metrics_data
+
+
+def calculate_aggregated_metrics(metrics_data: Dict[str, list]) -> Dict[str, Dict]:
+    """Calculate aggregated scores for metrics (numeric average or categorical frequency)."""
+    agg_metrics = {}
+    for metric_name, scores in metrics_data.items():
+        # Remove None values
+        scores = [score for score in scores if score is not None]
+        if not scores:
+            avg_score = 0
+        elif isinstance(scores[0], (int, float)):
+            # Numeric metric - calculate average
+            avg_score = sum(scores) / len(scores)
+        else:
+            # Categorical metric - create frequency distribution
+            avg_score = dict(Counter(scores))
+        agg_metrics[metric_name] = {"score": avg_score}
+    return agg_metrics
+
+
+def separate_metrics_by_type(current_metrics: Dict, baseline_metrics: Optional[Dict] = None) -> tuple:
+    """Separate metrics into numeric and categorical dictionaries."""
+    numeric_metrics = {}
+    categorical_metrics = {}
+    
+    for metric_name, current_metric in current_metrics.items():
+        current_value = current_metric.get("score", 0)
+        
+        if baseline_metrics and metric_name in baseline_metrics:
+            baseline_value = baseline_metrics[metric_name].get("score", 0)
+            
+            if isinstance(current_value, dict) and isinstance(baseline_value, dict):
+                categorical_metrics[metric_name] = {
+                    'current': current_value,
+                    'baseline': baseline_value
+                }
+            else:
+                numeric_metrics[metric_name] = {
+                    'current': current_value,
+                    'baseline': baseline_value
+                }
+        else:
+            # No baseline comparison
+            if isinstance(current_value, dict):
+                categorical_metrics[metric_name] = {'current': current_value}
+            else:
+                numeric_metrics[metric_name] = {'current': current_value}
+    
+    return numeric_metrics, categorical_metrics
+
+
+def display_metrics_tables(numeric_metrics: Dict, categorical_metrics: Dict, has_baseline: bool = False) -> None:
+    """Display metrics tables for numeric and categorical data."""
+    if numeric_metrics:
+        table = create_numerical_metrics_table(numeric_metrics, has_baseline=has_baseline)
+        console.print(table)
+    
+    if categorical_metrics:
+        table = create_categorical_metrics_table(categorical_metrics, has_baseline=has_baseline)
+        console.print(table)
+
+
 def load_eval_module(eval_path: str) -> Any:
     """Load an evaluation module from a file path."""
     eval_path_obj = Path(eval_path).resolve()
@@ -191,98 +262,34 @@ async def run_experiments(project, experiment_func, dataset_name: str, input_dat
         error(f"Error running experiments: {e}")
         raise typer.Exit(1)
         
+    # Parse metrics from provided list
+    metric_fields = [metric.strip() for metric in metrics.split(',')]
+    
+    # Extract metrics from current experiment
+    current_metrics_data = extract_metrics_from_experiment(experiment_result, metric_fields)
+    current_agg_metrics = calculate_aggregated_metrics(current_metrics_data)
+    
     # Handle baseline comparison if specified
     if baseline_name:
         console.print(f"Comparing against baseline: {baseline_name}")
         try:
             # The experiment model should be the return type or we can infer it
             baseline = project.get_experiment(baseline_name, model=experiment_result.model)
-            # Compare results
             baseline.load()
             
             # Create comparison header with panel
             header_content = f"Experiment: {experiment_result.name}\nDataset: {dataset_name} ({len(dataset)} rows)\nBaseline: {baseline_name}"
             console.print(Panel(header_content, title="Ragas Evaluation Results", style="bold white", width=80))
             
-            # Parse metrics from provided list
-            current_metric_fields = [metric.strip() for metric in metrics.split(',')]
-            current_metrics = {field_name: [] for field_name in current_metric_fields}
-            # Iterate through all entries in the current experiment
-            for entry in experiment_result:
-                for field_name in current_metric_fields:
-                    field_value = getattr(entry, field_name)
-                    current_metrics[field_name].append(field_value)
+            # Extract metrics from baseline experiment
+            baseline_metrics_data = extract_metrics_from_experiment(baseline, metric_fields)
+            baseline_agg_metrics = calculate_aggregated_metrics(baseline_metrics_data)
             
-            # Calculate average scores for each current metric
-            current_agg_metrics = {}
-            for metric_name in current_metric_fields:
-                scores = current_metrics[metric_name]
-                if not scores:
-                    avg_score = 0
-                elif isinstance(scores[0], (int, float)):
-                    # Numeric metric - calculate average
-                    avg_score = sum(scores) / len(scores)
-                else:
-                    # Categorical metric - create frequency distribution
-                    from collections import Counter
-                    avg_score = dict(Counter(scores))
-                current_agg_metrics[metric_name] = {"score": avg_score}
+            # Separate metrics by type with baseline comparison
+            numeric_metrics, categorical_metrics = separate_metrics_by_type(current_agg_metrics, baseline_agg_metrics)
             
-            # Use same metrics for baseline results
-            baseline_metric_fields = current_metric_fields
-            baseline_metrics = {field_name: [] for field_name in baseline_metric_fields}
-            # Iterate through all entries in the baseline experiment
-            for entry in baseline:
-                for field_name in baseline_metric_fields:
-                    field_value = getattr(entry, field_name)
-                    baseline_metrics[field_name].append(field_value)
-            
-            # Calculate average scores for each baseline metric
-            baseline_agg_metrics = {}
-            for metric_name in baseline_metric_fields:
-                scores = baseline_metrics[metric_name]
-                # TODO: remove temporary fix for empty scores
-                scores = [score for score in scores if score is not None]
-                if not scores:
-                    avg_score = 0
-                elif isinstance(scores[0], (int, float)):
-                    # Numeric metric - calculate average
-                    avg_score = sum(scores) / len(scores)
-                else:
-                    # Categorical metric - create frequency distribution
-                    from collections import Counter
-                    avg_score = dict(Counter(scores))
-                baseline_agg_metrics[metric_name] = {"score": avg_score}
-            
-            # Separate numeric and categorical metrics
-            numeric_metrics = {}
-            categorical_metrics = {}
-            
-            for metric_name, current_metric in current_agg_metrics.items():
-                if metric_name in baseline_agg_metrics:
-                    current_value = current_metric.get("score", 0)
-                    baseline_value = baseline_agg_metrics[metric_name].get("score", 0)
-                    
-                    if isinstance(current_value, dict) and isinstance(baseline_value, dict):
-                        categorical_metrics[metric_name] = {
-                            'current': current_value,
-                            'baseline': baseline_value
-                        }
-                    else:
-                        numeric_metrics[metric_name] = {
-                            'current': current_value,
-                            'baseline': baseline_value
-                        }
-            
-            # Display numeric metrics table
-            if numeric_metrics:
-                table = create_numerical_metrics_table(numeric_metrics, has_baseline=True)
-                console.print(table)
-            
-            # Display categorical metrics table
-            if categorical_metrics:
-                table = create_categorical_metrics_table(categorical_metrics, has_baseline=True)
-                console.print(table)
+            # Display metrics tables
+            display_metrics_tables(numeric_metrics, categorical_metrics, has_baseline=True)
             
             success("✓ Comparison completed")
             
@@ -295,52 +302,11 @@ async def run_experiments(project, experiment_func, dataset_name: str, input_dat
         header_content = f"Experiment: {experiment_result.name}\nDataset: {dataset_name} ({len(dataset)} rows)"
         console.print(Panel(header_content, title="Ragas Evaluation Results", style="bold white", width=80))
         
-        # Parse metrics from provided list
-        metric_fields = [metric.strip() for metric in metrics.split(',')]
-        metrics_data = {field_name: [] for field_name in metric_fields}
-        # Iterate through all entries in the experiment
-        for entry in experiment_result:
-            # Get the entry's data as a dict
-            for field_name in metric_fields:
-                field_value = getattr(entry, field_name)
-                metrics_data[field_name].append(field_value)
+        # Separate metrics by type without baseline comparison
+        numeric_metrics, categorical_metrics = separate_metrics_by_type(current_agg_metrics)
         
-        # Calculate average scores for each metric
-        agg_metrics = {}
-        for metric_name in metric_fields:
-            scores = metrics_data[metric_name]
-            # Remove None values like in baseline code
-            scores = [score for score in scores if score is not None]
-            if not scores:
-                avg_score = 0
-            elif isinstance(scores[0], (int, float)):
-                # Numeric metric - calculate average
-                avg_score = sum(scores) / len(scores)
-            else:
-                # Categorical metric - create frequency distribution
-                from collections import Counter
-                avg_score = dict(Counter(scores))
-            agg_metrics[metric_name] = {"score": avg_score}
-        
-        # Separate numeric and categorical metrics
-        numeric_metrics = {}
-        categorical_metrics = {}
-        
-        for metric_name, metric in agg_metrics.items():
-            metric_value = metric.get("score", 0)
-            if isinstance(metric_value, dict):
-                categorical_metrics[metric_name] = {'current': metric_value}
-            else:
-                numeric_metrics[metric_name] = {'current': metric_value}
-        
-        # Display tables
-        if numeric_metrics:
-            table = create_numerical_metrics_table(numeric_metrics, has_baseline=False)
-            console.print(table)
-        
-        if categorical_metrics:
-            table = create_categorical_metrics_table(categorical_metrics, has_baseline=False)
-            console.print(table)
+        # Display metrics tables
+        display_metrics_tables(numeric_metrics, categorical_metrics, has_baseline=False)
             
         success("✓ Experiment results displayed")
 
