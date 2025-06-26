@@ -1,794 +1,197 @@
-# Ragas Experimental Project Backends
+# Ragas Backends
 
-This directory contains backend implementations for storing Ragas project data in various storage systems.
+Backends store your project data (datasets/experiments) in different places: local files, databases, cloud APIs. You implement 2 classes: `ProjectBackend` (manages projects) and `DataTableBackend` (handles data operations).
 
-## Available Backends
+```
+Project → ProjectBackend → DataTableBackend → Storage
+```
 
-### Local CSV (`local/csv`)
-Stores data in local CSV files organized in a folder structure.
+## Current State
 
-**Configuration:**
+**Available Backends:**
+- `local/csv` - Local CSV files
+- `ragas/app` - Ragas cloud platform  
+- `box/csv` - Box cloud storage
+
+**Import Path:** `ragas_experimental.backends`
+
+**Core Classes:**
+- `ProjectBackend` - Project-level operations (create datasets/experiments)
+- `DataTableBackend` - Data operations (read/write entries) 
+- `DataTable` - Base class for `Dataset` and `Experiment`
+
+## Learning Roadmap
+
+Follow this path to build your own backend:
+
+```
+□ 1. Understand: Read local_csv.py (simplest example)
+□ 2. Explore: Study base.py abstract methods  
+□ 3. Practice: Modify LocalCSVBackend to add logging
+□ 4. Build: Create your own backend following the pattern
+□ 5. Advanced: Study ragas_app.py for API/async patterns
+□ 6. Package: Create plugin (see Plugin Development)
+```
+
+## Quick Usage
+
+**Using existing backends:**
 ```python
-from ragas_experimental.project.backends import create_project_backend
-from ragas_experimental.project.backends.config import LocalCSVConfig
+from ragas_experimental.project import Project
 
-# Option 1: Using configuration objects (recommended - best IDE support)
-config = LocalCSVConfig(root_dir="/path/to/data")
-backend = create_project_backend("local/csv", config=config)
+# Local CSV
+project = Project.create("my_project", "local/csv", root_dir="./data")
 
-# Option 2: Using kwargs (still structured via Pydantic validation)
-backend = create_project_backend("local/csv", root_dir="/path/to/data")
+# Ragas platform  
+project = Project.create("my_project", "ragas/app", api_key="your_key")
 ```
 
-### Ragas App (`ragas/app`)
-Integration with the official Ragas platform service for cloud-based storage.
-
-**Configuration:**
+**Basic backend structure:**
 ```python
-from ragas_experimental.project.backends import create_project_backend
-from ragas_experimental.project.backends.config import RagasAppConfig
-
-# Option 1: Using configuration objects (recommended)
-config = RagasAppConfig(
-    api_key="your_api_key",
-    api_url="https://api.ragas.io",  # optional, defaults to production
-    timeout=30,  # optional
-    max_retries=3  # optional
-)
-backend = create_project_backend("ragas/app", config=config)
-
-# Option 2: Using kwargs
-backend = create_project_backend("ragas/app", api_key="your_api_key")
-```
-
-### Box CSV (`box/csv`)
-Stores CSV files on Box cloud storage with the same organization as local CSV.
-
-**Installation:**
-```bash
-# Install Box backend dependencies
-pip install -e ".[box]"
-```
-
-**Basic Usage (New in v2.0):**
-You must provide an authenticated Box client. The backend no longer handles authentication internally.
-
-```python
-from boxsdk import OAuth2, Client
-from ragas_experimental.project.backends.config import BoxCSVConfig
-from ragas_experimental.project.backends.box_csv import BoxCSVProjectBackend
-
-# Step 1: Create authenticated Box client (your responsibility)
-oauth = OAuth2(
-    client_id="your_box_app_client_id",
-    client_secret="your_box_app_client_secret",
-    access_token="user_access_token",
-    refresh_token="user_refresh_token"  # optional but recommended
-)
-client = Client(oauth)
-
-# Step 2: Create config with the authenticated client
-config = BoxCSVConfig(
-    client=client,
-    root_folder_id="123456789"  # optional, defaults to "0" (Box root)
-)
-
-# Step 3: Create backend
-backend = BoxCSVProjectBackend(config)
-```
-
-**JWT Authentication Example:**
-```python
-from boxsdk import JWTAuth, Client
-from ragas_experimental.project.backends.config import BoxCSVConfig
-from ragas_experimental.project.backends.box_csv import BoxCSVProjectBackend
-
-# Create JWT auth (your responsibility)
-auth = JWTAuth(
-    client_id="your_box_app_client_id",
-    client_secret="your_box_app_client_secret",
-    enterprise_id="your_enterprise_id",
-    jwt_key_id="your_jwt_key_id",
-    rsa_private_key_file_sys_path="/path/to/private_key.pem",
-    rsa_private_key_passphrase="optional_passphrase".encode()
-)
-client = Client(auth)
-
-# Create config and backend
-config = BoxCSVConfig(client=client)
-backend = BoxCSVProjectBackend(config)
-```
-
-**Convenience Factory Methods:**
-For common authentication patterns, you can use these factory methods:
-
-```python
-from ragas_experimental.project.backends.box_csv import BoxCSVProjectBackend
-
-# From JWT config file
-backend = BoxCSVProjectBackend.from_jwt_file("box_config.json")
-
-# From developer token (testing only)
-backend = BoxCSVProjectBackend.from_developer_token("your_developer_token")
-
-# From OAuth2 credentials
-backend = BoxCSVProjectBackend.from_oauth2(
-    client_id="your_client_id",
-    client_secret="your_client_secret", 
-    access_token="your_access_token",
-    refresh_token="your_refresh_token"  # optional
-)
-```
-
-**Migration from v1.x:**
-If you're upgrading from v1.x, you need to change how you create the backend:
-
-```python
-# OLD (v1.x) - Backend handled authentication
-config = BoxCSVConfig(
-    auth_type="oauth2",
-    client_id="your_client_id",
-    client_secret="your_client_secret",
-    access_token="your_access_token"
-)
-backend = BoxCSVProjectBackend(config)
-
-# NEW (v2.x) - You provide authenticated client
-from boxsdk import OAuth2, Client
-
-oauth = OAuth2(
-    client_id="your_client_id", 
-    client_secret="your_client_secret",
-    access_token="your_access_token"
-)
-client = Client(oauth)
-config = BoxCSVConfig(client=client)
-backend = BoxCSVProjectBackend(config)
-
-# Or use convenience factory
-backend = BoxCSVProjectBackend.from_oauth2(
-    client_id="your_client_id",
-    client_secret="your_client_secret",
-    access_token="your_access_token"
-)
-```
-
-## Box Backend Features
-
-- **Folder Organization**: Creates `project_id/datasets/` and `project_id/experiments/` structure
-- **CSV Format**: Same CSV format as local backend with `_row_id` column
-- **Streaming**: Efficient memory usage for large files via streaming upload/download
-- **Error Handling**: Graceful handling of Box API errors, rate limits, and network issues
-- **Authentication**: Supports both JWT (enterprise) and OAuth2 (user) authentication
-- **CRUD Operations**: Full create, read, update, delete support for dataset entries
-
-## Setting Up Box Application
-
-To use the Box backend, you need to create a Box application:
-
-1. Go to [Box Developer Console](https://app.box.com/developers/console)
-2. Create a new app with "Custom App" using JWT or OAuth2
-3. Configure authentication method:
-   - **JWT**: Generate public/private key pair, note down all credentials
-   - **OAuth2**: Note down client credentials, implement OAuth2 flow for user tokens
-4. Set appropriate scopes (read/write files and folders)
-5. For JWT: Get enterprise authorization from Box admin
-
-## Environment Variables
-
-Some backend configurations support environment variables using Pydantic's built-in environment variable support:
-
-### Box Backend Environment Variables
-The Box backend no longer supports environment variables for authentication since you must provide an authenticated client directly. However, you can still use environment variables for operational settings:
-
-```bash
-# Operational settings only
-export BOX_ROOT_FOLDER_ID=optional_root_folder_id
-```
-
-For authentication, create your Box client using environment variables in your own code:
-
-```python
-import os
-from boxsdk import OAuth2, Client
-from ragas_experimental.project.backends.config import BoxCSVConfig
-from ragas_experimental.project.backends.box_csv import BoxCSVProjectBackend
-
-# Use environment variables in your authentication code
-oauth = OAuth2(
-    client_id=os.getenv("BOX_CLIENT_ID"),
-    client_secret=os.getenv("BOX_CLIENT_SECRET"),
-    access_token=os.getenv("BOX_ACCESS_TOKEN"),
-    refresh_token=os.getenv("BOX_REFRESH_TOKEN")
-)
-client = Client(oauth)
-config = BoxCSVConfig(client=client)
-backend = BoxCSVProjectBackend(config)
-```
-
-### Ragas App Environment Variables
-```bash
-export RAGAS_API_KEY=your_api_key
-export RAGAS_API_URL=https://api.ragas.io  # optional
-export RAGAS_TIMEOUT=30  # optional
-export RAGAS_MAX_RETRIES=3  # optional
-```
-
-### Using Environment Variables
-Configuration classes automatically load from environment variables where supported:
-```python
-from ragas_experimental.project.backends import create_project_backend
-from ragas_experimental.project.backends.config import RagasAppConfig
-
-# Ragas App supports environment variables
-app_backend = create_project_backend("ragas/app")  # Loads RAGAS_* env vars
-
-# For Box backend, you must create the client yourself
-# (see Box Backend Environment Variables section above)
-```
-
-## Error Handling
-
-The Box backend includes comprehensive error handling:
-
-- **Client Verification**: Validates that the provided Box client is properly authenticated
-- **Network Errors**: Automatic retry logic for transient failures  
-- **Rate Limiting**: Respects Box API rate limits
-- **Permission Errors**: Helpful messages for insufficient permissions
-- **File Not Found**: Graceful handling of missing files/folders
-
-**Note**: Authentication errors are now handled at the client creation level (your responsibility), not within the backend.
-
-## Testing
-
-The Box backend includes comprehensive tests using VCR.py for recording/replaying API interactions:
-
-```bash
-# Run tests (requires Box dependencies)
-pytest tests/backends/test_box_csv.py
-
-# Run with VCR recording (requires real Box credentials)
-pytest tests/backends/test_box_csv.py --vcr-record=once
-```
-
-For CI/CD environments, VCR cassettes allow testing without real Box API calls.
-
-## Limitations
-
-- **Large Files**: Box has file size limits (5GB for regular uploads, larger via chunked upload)
-- **Rate Limits**: Box API has rate limits that may affect high-volume operations
-- **Network Dependency**: Requires internet connection unlike local backend
-- **Authentication Complexity**: JWT setup requires Box admin configuration
-
-## Migration
-
-To migrate from local CSV to Box CSV backend:
-
-1. Set up Box application and authentication
-2. Create Box backend instance
-3. Export data from local backend
-4. Import data to Box backend using same project/dataset names
-
-The CSV format is identical, so data migration involves copying files to Box storage with the same folder structure.
-
----
-
-# Backend Development Guide
-
-This guide shows you how to add new storage backends to the Ragas project system. The backend architecture supports multiple storage solutions like CSV files, databases, cloud platforms, and more.
-
-## Architecture Overview
-
-The backend system uses a two-layer architecture:
-
-1. **ProjectBackend**: Manages project-level operations (creating datasets/experiments, listing, etc.)
-2. **DatasetBackend**: Handles individual dataset operations (reading/writing entries, CRUD operations)
-
-```python
-# High-level flow
-Project -> ProjectBackend -> DatasetBackend -> Storage (CSV, DB, API, etc.)
-```
-
-### Plugin System
-
-Backends can be added in two ways:
-- **Internal backends**: Built into the main codebase
-- **External plugins**: Distributed as separate pip packages
-
-The system uses a registry pattern with automatic discovery via setuptools entry points.
-
-## Section 1: Adding Internal Backends
-
-Follow these steps to add a new backend to the main ragas_experimental codebase.
-
-### Step 1: Implement the Backend Classes
-
-Create a new file like `my_backend.py` in this directory:
-
-```python
-"""My custom backend implementation."""
-
-import typing as t
-from .base import ProjectBackend, DatasetBackend
-from ragas_experimental.model.pydantic_model import ExtendedPydanticBaseModel as BaseModel
-
-
-class MyDatasetBackend(DatasetBackend):
-    """Dataset backend for my storage system."""
-    
-    def __init__(self, connection_params: str, dataset_info: dict):
-        self.connection_params = connection_params
-        self.dataset_info = dataset_info
-        self.dataset = None
-    
-    def initialize(self, dataset):
-        """Initialize with dataset instance."""
-        self.dataset = dataset
-        # Setup storage connection, create tables/files, etc.
-    
-    def get_column_mapping(self, model):
-        """Map model fields to storage columns."""
-        # Return mapping between pydantic model fields and storage columns
-        return {field: field for field in model.__annotations__.keys()}
-    
-    def load_entries(self, model_class):
-        """Load all entries from storage."""
-        # Connect to your storage and return list of model instances
-        return []
-    
-    def append_entry(self, entry):
-        """Add new entry and return its ID."""
-        # Add entry to storage and return unique identifier
-        return "entry_id"
-    
-    def update_entry(self, entry):
-        """Update existing entry."""
-        # Update entry in storage based on entry._row_id
-        pass
-    
-    def delete_entry(self, entry_id):
-        """Delete entry by ID."""
-        # Remove entry from storage
-        pass
-    
-    def get_entry_by_field(self, field_name: str, field_value: t.Any, model_class):
-        """Find entry by field value."""
-        # Query storage and return matching entry or None
-        return None
-
+from ragas_experimental.backends.base import ProjectBackend, DataTableBackend
 
 class MyProjectBackend(ProjectBackend):
-    """Project backend for my storage system."""
+    def create_dataset(self, name, model): 
+        # Create storage space for dataset
+        pass
     
-    def __init__(self, connection_string: str, **kwargs):
-        self.connection_string = connection_string
-        self.project_id = None
-        # Store any additional config from **kwargs
-    
-    def initialize(self, project_id: str, **kwargs):
-        """Initialize with project ID."""
-        self.project_id = project_id
-        # Setup project-level storage, create directories/schemas, etc.
-    
-    def create_dataset(self, name: str, model: t.Type[BaseModel]) -> str:
-        """Create new dataset and return ID."""
-        # Create dataset in your storage system
-        dataset_id = f"dataset_{name}"
-        return dataset_id
-    
-    def create_experiment(self, name: str, model: t.Type[BaseModel]) -> str:
-        """Create new experiment and return ID."""
-        # Create experiment in your storage system  
-        experiment_id = f"experiment_{name}"
-        return experiment_id
-    
-    def list_datasets(self) -> t.List[t.Dict]:
-        """List all datasets."""
-        # Query your storage and return list of dataset info
-        return [{"id": "dataset_1", "name": "example"}]
-    
-    def list_experiments(self) -> t.List[t.Dict]:
-        """List all experiments."""
-        # Query your storage and return list of experiment info
-        return [{"id": "experiment_1", "name": "example"}]
-    
-    def get_dataset_backend(self, dataset_id: str, name: str, model: t.Type[BaseModel]) -> DatasetBackend:
-        """Get DatasetBackend for specific dataset."""
-        return MyDatasetBackend(
-            connection_params=self.connection_string,
-            dataset_info={"id": dataset_id, "name": name}
-        )
-    
-    def get_experiment_backend(self, experiment_id: str, name: str, model: t.Type[BaseModel]) -> DatasetBackend:
-        """Get DatasetBackend for specific experiment."""
-        return MyDatasetBackend(
-            connection_params=self.connection_string,
-            dataset_info={"id": experiment_id, "name": name}
-        )
-    
-    def get_dataset_by_name(self, name: str, model: t.Type[BaseModel]) -> t.Tuple[str, DatasetBackend]:
-        """Get dataset ID and backend by name."""
-        # Query your storage to find dataset by name
-        dataset_id = f"found_{name}"
-        backend = self.get_dataset_backend(dataset_id, name, model)
-        return dataset_id, backend
-    
-    def get_experiment_by_name(self, name: str, model: t.Type[BaseModel]) -> t.Tuple[str, DatasetBackend]:
-        """Get experiment ID and backend by name."""
-        # Query your storage to find experiment by name
-        experiment_id = f"found_{name}"
-        backend = self.get_experiment_backend(experiment_id, name, model)
-        return experiment_id, backend
-```
-
-### Step 2: Register the Backend
-
-Update `registry.py` to include your backend in the built-in backends:
-
-```python
-# In _register_builtin_backends method
-def _register_builtin_backends(self) -> None:
-    """Register the built-in backends."""
-    try:
-        from .local_csv import LocalCSVProjectBackend
-        self.register_backend("local_csv", LocalCSVProjectBackend, aliases=["local"])
-        
-        from .platform import PlatformProjectBackend
-        self.register_backend("platform", PlatformProjectBackend, aliases=["ragas_app"])
-        
-        # Add your backend here
-        from .my_backend import MyProjectBackend
-        self.register_backend("my_storage", MyProjectBackend, aliases=["custom"])
-        
-    except ImportError as e:
-        logger.warning(f"Failed to import built-in backend: {e}")
-```
-
-### Step 3: Add Entry Point Configuration
-
-Update `experimental/pyproject.toml` to include your backend:
-
-```toml
-[project.entry-points."ragas.backends"]
-local_csv = "ragas_experimental.project.backends.local_csv:LocalCSVProjectBackend"
-platform = "ragas_experimental.project.backends.platform:PlatformProjectBackend"
-my_storage = "ragas_experimental.project.backends.my_backend:MyProjectBackend"
-```
-
-### Step 4: Update Exports
-
-Add your backend to `__init__.py`:
-
-```python
-# Import concrete backends for backward compatibility
-from .local_csv import LocalCSVProjectBackend
-from .platform import PlatformProjectBackend
-from .my_backend import MyProjectBackend  # Add this
-
-__all__ = [
-    "ProjectBackend",
-    "DatasetBackend",
-    # ... other exports ...
-    "MyProjectBackend",  # Add this
-]
-```
-
-### Step 5: Write Tests
-
-Create `test_my_backend.py`:
-
-```python
-"""Tests for my custom backend."""
-
-import pytest
-import tempfile
-from ragas_experimental.project.backends.my_backend import MyProjectBackend, MyDatasetBackend
-
-
-def test_my_backend_creation():
-    """Test backend can be created."""
-    backend = MyProjectBackend(connection_string="test://connection")
-    assert backend.connection_string == "test://connection"
-
-
-def test_my_backend_integration():
-    """Test backend works with project system."""
-    from ragas_experimental.project import create_project
-    
-    project = create_project(
-        name="test_project",
-        backend="my_storage",
-        connection_string="test://connection"
-    )
-    
-    assert project.name == "test_project"
-    # Add more integration tests...
-```
-
-## Section 2: Creating Pip-Installable Backend Plugins
-
-Create a separate Python package that provides a backend plugin.
-
-### Plugin Package Structure
-
-```
-ragas-sqlite-backend/
-├── pyproject.toml
-├── README.md
-├── src/
-│   └── ragas_sqlite_backend/
-│       ├── __init__.py
-│       ├── backend.py
-│       └── dataset.py
-└── tests/
-    └── test_sqlite_backend.py
-```
-
-### Step 1: Create the Plugin Package
-
-**pyproject.toml**:
-```toml
-[build-system]
-requires = ["setuptools>=64", "setuptools_scm>=8"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "ragas-sqlite-backend"
-version = "0.1.0"
-description = "SQLite backend for Ragas experimental projects"
-authors = [{name = "Your Name", email = "your.email@example.com"}]
-requires-python = ">=3.9"
-dependencies = [
-    "ragas_experimental",  # Depend on the main package
-    "sqlite3",  # If not in stdlib
-]
-
-# Define the entry point for backend discovery
-[project.entry-points."ragas.backends"]
-sqlite = "ragas_sqlite_backend.backend:SQLiteProjectBackend"
-
-[project.optional-dependencies]
-dev = ["pytest", "pytest-asyncio"]
-```
-
-**src/ragas_sqlite_backend/backend.py**:
-```python
-"""SQLite backend implementation."""
-
-import sqlite3
-import typing as t
-from pathlib import Path
-
-# Import from the main ragas_experimental package
-from ragas_experimental.project.backends.base import ProjectBackend, DatasetBackend
-from ragas_experimental.model.pydantic_model import ExtendedPydanticBaseModel as BaseModel
-
-
-class SQLiteDatasetBackend(DatasetBackend):
-    """SQLite implementation of DatasetBackend."""
-    
-    def __init__(self, db_path: str, table_name: str):
-        self.db_path = db_path
-        self.table_name = table_name
-        self.dataset = None
-    
-    def initialize(self, dataset):
-        """Initialize with dataset and create table."""
-        self.dataset = dataset
-        self._create_table_if_not_exists()
-    
-    def _create_table_if_not_exists(self):
-        """Create SQLite table based on model schema."""
-        with sqlite3.connect(self.db_path) as conn:
-            # Create table based on model fields
-            model_fields = self.dataset.model.__annotations__
-            
-            columns = ["_row_id TEXT PRIMARY KEY"]
-            for field_name, field_type in model_fields.items():
-                sql_type = self._python_to_sql_type(field_type)
-                columns.append(f"{field_name} {sql_type}")
-            
-            create_sql = f"CREATE TABLE IF NOT EXISTS {self.table_name} ({', '.join(columns)})"
-            conn.execute(create_sql)
-    
-    def _python_to_sql_type(self, python_type):
-        """Convert Python type to SQLite type."""
-        type_mapping = {
-            str: "TEXT",
-            int: "INTEGER", 
-            float: "REAL",
-            bool: "INTEGER",
-        }
-        return type_mapping.get(python_type, "TEXT")
-    
-    # Implement all other abstract methods...
-    def get_column_mapping(self, model):
-        return {field: field for field in model.__annotations__.keys()}
-    
+class MyDataTableBackend(DataTableBackend):
     def load_entries(self, model_class):
-        # Implement SQLite loading logic
-        return []
-    
-    def append_entry(self, entry):
-        # Implement SQLite insertion logic
-        return "new_entry_id"
-    
-    # ... implement other required methods
-
-
-class SQLiteProjectBackend(ProjectBackend):
-    """SQLite implementation of ProjectBackend."""
-    
-    def __init__(self, db_path: str = None, **kwargs):
-        self.db_path = db_path or "ragas_project.db"
-        self.project_id = None
-    
-    def initialize(self, project_id: str, **kwargs):
-        """Initialize SQLite database for project."""
-        self.project_id = project_id
-        
-        # Create database file and project metadata table
-        Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
-        
-        with sqlite3.connect(self.db_path) as conn:
-            # Create metadata tables
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS projects (
-                    id TEXT PRIMARY KEY,
-                    name TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS datasets (
-                    id TEXT PRIMARY KEY,
-                    project_id TEXT,
-                    name TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (project_id) REFERENCES projects (id)
-                )
-            """)
-            
-            # Insert project if not exists
-            conn.execute(
-                "INSERT OR IGNORE INTO projects (id, name) VALUES (?, ?)",
-                (project_id, project_id)
-            )
-    
-    # Implement all abstract methods...
-    def create_dataset(self, name: str, model: t.Type[BaseModel]) -> str:
-        # Implement dataset creation in SQLite
-        dataset_id = f"dataset_{name}_{self.project_id}"
-        
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute(
-                "INSERT INTO datasets (id, project_id, name) VALUES (?, ?, ?)",
-                (dataset_id, self.project_id, name)
-            )
-        
-        return dataset_id
-    
-    def get_dataset_backend(self, dataset_id: str, name: str, model: t.Type[BaseModel]) -> DatasetBackend:
-        """Return SQLite dataset backend."""
-        table_name = f"data_{dataset_id}"
-        return SQLiteDatasetBackend(self.db_path, table_name)
-    
-    # ... implement other required methods
+        # Load entries from storage
+        pass
 ```
 
-**src/ragas_sqlite_backend/__init__.py**:
+## Essential Methods
+
+**ProjectBackend** (project management):
+- `create_dataset()` / `create_experiment()` - Create storage
+- `get_dataset_backend()` / `get_experiment_backend()` - Get data handler
+- `list_datasets()` / `list_experiments()` - List existing
+
+**DataTableBackend** (data operations):
+- `initialize()` - Setup with dataset instance
+- `load_entries()` - Load all entries
+- `append_entry()` - Add new entry
+- `update_entry()` / `delete_entry()` - Modify entries
+
+See `base.py` for complete interface.
+
+## Learn from Examples
+
+**Start here:**
+- `local_csv.py` - File-based storage, easiest to understand
+- `config.py` - Configuration patterns
+
+**Advanced patterns:**
+- `ragas_app.py` - API calls, async, error handling
+- `box_csv.py` - Cloud storage, authentication
+- `registry.py` - Backend discovery system
+
+## Quick Development
+
+**1. Copy template:**
+```bash
+cp local_csv.py my_backend.py
+```
+
+**2. Replace CSV logic with your storage**
+
+**3. Register backend:**
 ```python
-"""SQLite backend plugin for Ragas experimental."""
-
-from .backend import SQLiteProjectBackend, SQLiteDatasetBackend
-
-__all__ = ["SQLiteProjectBackend", "SQLiteDatasetBackend"]
+# In registry.py _register_builtin_backends()
+from .my_backend import MyProjectBackend
+self.register_backend("my_storage", MyProjectBackend)
 ```
 
-### Step 2: Publish the Plugin
-
-1. **Build the package**:
-   ```bash
-   pip install build
-   python -m build
-   ```
-
-2. **Upload to PyPI** (optional):
-   ```bash
-   pip install twine
-   twine upload dist/*
-   ```
-
-3. **Install and test**:
-   ```bash
-   pip install ragas-sqlite-backend
-   
-   # The backend should now be automatically discovered
-   python -c "from ragas_experimental.project import list_backends; print(list_backends())"
-   # Should include 'sqlite' in the output
-   ```
-
-### Step 3: Use the Plugin
-
-Once installed, users can use your backend:
-
+**4. Test:**
 ```python
-from ragas_experimental.project import create_project
-
-# Use your plugin backend
-project = create_project(
-    name="my_sqlite_project",
-    backend="sqlite",  # Your plugin's entry point name
-    db_path="/path/to/database.db"
-)
-
-# Backend works seamlessly with the rest of the system
-dataset = project.create_dataset("my_data", MyDataModel)
-dataset.add_entries([...])
+project = Project.create("test", "my_storage")
 ```
 
-## Best Practices
+## Plugin Development
 
-### Error Handling
-- Use proper logging: `import logging; logger = logging.getLogger(__name__)`
-- Handle connection failures gracefully
-- Provide meaningful error messages
+**Create separate package:**
+```
+my-backend-plugin/
+├── pyproject.toml
+├── src/my_backend/
+│   ├── __init__.py
+│   └── backend.py
+└── tests/
+```
 
-### Performance
-- Implement connection pooling for database backends
-- Use batch operations when possible
-- Consider caching for frequently accessed data
+**Entry point in pyproject.toml:**
+```toml
+[project.entry-points."ragas.backends"]
+my_storage = "my_backend.backend:MyProjectBackend"
+```
 
-### Testing
-- Test both ProjectBackend and DatasetBackend separately
-- Include integration tests with the Project class
-- Test error conditions and edge cases
-- Use temporary storage for tests (tempfile, in-memory DBs)
-
-### Documentation
-- Document all configuration parameters
-- Provide usage examples
-- Include troubleshooting guides
-
-### Configuration
-- Accept configuration through constructor kwargs
-- Support environment variables for sensitive data
-- Provide sensible defaults
+**Install and use:**
+```bash
+pip install my-backend-plugin
+python -c "from ragas_experimental.project import Project; Project.create('test', 'my_storage')"
+```
 
 ## Common Patterns
 
-### Connection Management
+**ID Generation:**
 ```python
-class MyBackend(ProjectBackend):
-    def __init__(self, connection_string: str, **kwargs):
-        self.connection_string = connection_string
-        self._connection = None
-    
-    def _get_connection(self):
-        """Lazy connection initialization."""
-        if self._connection is None:
-            self._connection = create_connection(self.connection_string)
-        return self._connection
+from .utils import create_nano_id
+dataset_id = create_nano_id()
 ```
 
-### ID Generation
+**Error Handling:**
 ```python
-from ragas_experimental.project.utils import create_nano_id
-
-def create_dataset(self, name: str, model):
-    dataset_id = create_nano_id()  # Creates unique short ID
-    # ... rest of implementation
+try:
+    # Storage operation
+except ConnectionError:
+    # Handle gracefully
 ```
 
-### Model Validation
+**Testing:**
 ```python
-def append_entry(self, entry):
-    # Validate entry is correct model type
-    if not isinstance(entry, self.dataset.model):
-        raise ValueError(f"Entry must be instance of {self.dataset.model}")
-    
-    # Add to storage...
+def test_my_backend():
+    backend = MyProjectBackend()
+    backend.initialize("test_project")
+    dataset_id = backend.create_dataset("test", MyModel)
+    assert dataset_id
 ```
 
-For more examples, see the existing `local_csv.py` and `platform.py` implementations in this directory.
+## Troubleshooting
+
+**Backend not found?** Check registry with:
+```python
+from ragas_experimental.backends import list_backends
+print(list_backends())
+```
+
+**Entries not loading?** Verify:
+- `initialize()` called before other methods
+- `load_entries()` returns list of model instances
+- Entry `_row_id` attributes set correctly
+
+**Need help?** Study existing backends - they handle most common patterns.
+
+## Configuration Examples
+
+**Local CSV:**
+```python
+from ragas_experimental.backends import LocalCSVConfig
+config = LocalCSVConfig(root_dir="/path/to/data")
+```
+
+**Ragas App:**
+```python  
+from ragas_experimental.backends import RagasAppConfig
+config = RagasAppConfig(api_key="key", api_url="https://api.ragas.io")
+```
+
+**Box CSV:**
+```python
+from ragas_experimental.backends import BoxCSVConfig
+config = BoxCSVConfig(client=authenticated_box_client)
+```
+
+---
+
+**Next Steps:** Start with modifying `local_csv.py`, then build your own following the same patterns.
