@@ -21,8 +21,10 @@ class DiscreteMetric(Metric):
         self._response_model = create_model(
             "response_model", result=(t.Literal[values], ...), reason=(str, ...)
         )
-        
-    def get_correlation(self, gold_labels: t.List[str], predictions: t.List[str]) -> float:
+
+    def get_correlation(
+        self, gold_labels: t.List[str], predictions: t.List[str]
+    ) -> float:
         """
         Calculate the correlation between gold labels and predictions.
         This is a placeholder method and should be implemented based on the specific metric.

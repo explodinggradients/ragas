@@ -22,7 +22,7 @@ class RankingMetric(Metric):
             result=(t.List[str], Field(..., description="List of ranked items")),
             reason=(str, Field(..., description="Reasoning for the ranking")),
         )
-        
+
     def get_correlation(
         self, gold_labels: t.List[str], predictions: t.List[str]
     ) -> float:
@@ -37,12 +37,12 @@ class RankingMetric(Metric):
                 "scikit-learn is required for correlation calculation. "
                 "Please install it with `pip install scikit-learn`."
             )
-            
+
         kappa_scores = []
         for gold_label, prediction in zip(gold_labels, predictions):
             kappa = cohen_kappa_score(gold_label, prediction, weights="quadratic")
             kappa_scores.append(kappa)
-     
+
         return sum(kappa_scores) / len(kappa_scores) if kappa_scores else 0.0
 
 
