@@ -35,11 +35,6 @@ class DiscreteMetric(Metric):
                 "Please install it with `pip install scikit-learn`."
             )
         return cohen_kappa_score(gold_labels, predictions)
-    
-    
-
-    
-    
 
 
 discrete_metric = create_metric_decorator(DiscreteMetric)

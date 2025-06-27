@@ -119,7 +119,7 @@ class Metric(ABC):
             embedding_model: The embedding model used for dynamic few-shot prompting.
             
         Align the metric with the specified experiments by different optimization methods.
-        ."""
+        """
 
         assert isinstance(self.prompt, Prompt)
         self.prompt = DynamicFewShotPrompt.from_prompt(self.prompt, embedding_model, **kwargs)
