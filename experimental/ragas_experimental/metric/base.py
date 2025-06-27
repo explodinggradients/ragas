@@ -15,9 +15,7 @@ from ..llm import RagasLLM
 from ..prompt.base import Prompt
 from ..prompt.dynamic_few_shot import DynamicFewShotPrompt
 from .result import MetricResult
-from ragas_experimental.model.pydantic_model import (
-    ExtendedPydanticBaseModel as BaseModel,
-)
+from pydantic import BaseModel
 
 if t.TYPE_CHECKING:
 
