@@ -177,3 +177,4 @@ uv.lock
 # nbdev
 _proc/
 site/
+**/old_nbs/*.md

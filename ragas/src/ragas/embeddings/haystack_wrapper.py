@@ -37,10 +37,18 @@ class HaystackEmbeddingsWrapper(BaseRagasEmbeddings):
         # Lazy Import of required Haystack components
         try:
             from haystack import AsyncPipeline
-            from haystack.components.embedders.azure_text_embedder import AzureOpenAITextEmbedder
-            from haystack.components.embedders.hugging_face_api_text_embedder import HuggingFaceAPITextEmbedder
-            from haystack.components.embedders.openai_text_embedder import OpenAITextEmbedder
-            from haystack.components.embedders.sentence_transformers_text_embedder import SentenceTransformersTextEmbedder
+            from haystack.components.embedders.azure_text_embedder import (
+                AzureOpenAITextEmbedder,
+            )
+            from haystack.components.embedders.hugging_face_api_text_embedder import (
+                HuggingFaceAPITextEmbedder,
+            )
+            from haystack.components.embedders.openai_text_embedder import (
+                OpenAITextEmbedder,
+            )
+            from haystack.components.embedders.sentence_transformers_text_embedder import (
+                SentenceTransformersTextEmbedder,
+            )
         except ImportError as exc:
             raise ImportError(
                 "Haystack is not installed. Please install it with `pip install haystack-ai`."
@@ -94,10 +102,18 @@ class HaystackEmbeddingsWrapper(BaseRagasEmbeddings):
 
     def __repr__(self) -> str:
         try:
-            from haystack.components.embedders.azure_text_embedder import AzureOpenAITextEmbedder
-            from haystack.components.embedders.hugging_face_api_text_embedder import HuggingFaceAPITextEmbedder
-            from haystack.components.embedders.openai_text_embedder import OpenAITextEmbedder
-            from haystack.components.embedders.sentence_transformers_text_embedder import SentenceTransformersTextEmbedder
+            from haystack.components.embedders.azure_text_embedder import (
+                AzureOpenAITextEmbedder,
+            )
+            from haystack.components.embedders.hugging_face_api_text_embedder import (
+                HuggingFaceAPITextEmbedder,
+            )
+            from haystack.components.embedders.openai_text_embedder import (
+                OpenAITextEmbedder,
+            )
+            from haystack.components.embedders.sentence_transformers_text_embedder import (
+                SentenceTransformersTextEmbedder,
+            )
         except ImportError:
             return f"{self.__class__.__name__}(embeddings=Unknown(...))"
 
