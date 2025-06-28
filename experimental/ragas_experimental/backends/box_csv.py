@@ -2,11 +2,12 @@
 
 import csv
 import io
+import json
 import logging
 import os
 import typing as t
 import uuid
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, get_origin
 
 from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
@@ -60,6 +61,11 @@ class BoxCSVDataTableBackend(DataTableBackend):
         self.datatable_type = datatable_type
         self.dataset = None
         self._csv_file: Optional[BoxFileProtocol] = None
+
+    def _is_json_serializable_type(self, field_type):
+        """Check if field needs JSON serialization."""
+        origin = get_origin(field_type)
+        return origin in (list, dict) or field_type in (list, dict)
 
     def initialize(self, dataset: t.Any) -> None:
         """Initialize the backend with dataset information."""
@@ -163,21 +169,29 @@ class BoxCSVDataTableBackend(DataTableBackend):
                         if field in model_class.model_fields:
                             field_type = model_class.model_fields[field].annotation
 
-                            # Handle basic type conversions
-                            if field_type is int:
-                                typed_row[field] = int(value) if value else 0
-                            elif field_type is float:
-                                typed_row[field] = float(value) if value else 0.0
-                            elif field_type is bool:
-                                typed_row[field] = value.lower() in (
-                                    "true",
-                                    "t",
-                                    "yes",
-                                    "y",
-                                    "1",
-                                )
-                            else:
-                                typed_row[field] = value
+                            try:
+                                if not value:  # Handle empty strings
+                                    typed_row[field] = None
+                                elif self._is_json_serializable_type(field_type):
+                                    # Deserialize JSON for lists/dicts
+                                    typed_row[field] = json.loads(value)
+                                elif field_type is int:
+                                    typed_row[field] = int(value)
+                                elif field_type is float:
+                                    typed_row[field] = float(value)
+                                elif field_type is bool:
+                                    typed_row[field] = value.lower() in (
+                                        "true",
+                                        "t", 
+                                        "yes",
+                                        "y",
+                                        "1",
+                                    )
+                                else:
+                                    typed_row[field] = value
+                            except (json.JSONDecodeError, ValueError) as e:
+                                logger.warning(f"Failed to convert field {field}='{value}' to {field_type}: {e}")
+                                typed_row[field] = value  # Fallback to string
 
                     # Create model instance
                     entry = model_class(**typed_row)
@@ -294,8 +308,14 @@ class BoxCSVDataTableBackend(DataTableBackend):
                 writer.writeheader()
 
                 for entry in entries:
-                    # Create a dict with model data + row_id
-                    entry_dict = entry.model_dump()
+                    # Create a dict with model data + row_id, handling JSON serialization
+                    entry_dict = {}
+                    for field_name, field_value in entry.model_dump().items():
+                        field_type = entry.__class__.model_fields[field_name].annotation
+                        if self._is_json_serializable_type(field_type):
+                            entry_dict[field_name] = json.dumps(field_value) if field_value is not None else ""
+                        else:
+                            entry_dict[field_name] = field_value
                     entry_dict["_row_id"] = getattr(entry, "_row_id", str(uuid.uuid4()))
                     writer.writerow(entry_dict)
 
