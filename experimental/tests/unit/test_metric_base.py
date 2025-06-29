@@ -19,6 +19,10 @@ class CustomMetric(Metric):
     def __post_init__(self):
         super().__post_init__()
         self._response_model = MetricResponseModel
+        
+    def get_correlation(self, gold_labels: t.List[str], predictions: t.List[str]) -> float:
+        
+        return 0.0  # Placeholder for correlation logic
 
 
 @pytest.fixture

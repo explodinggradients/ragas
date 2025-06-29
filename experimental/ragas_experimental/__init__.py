@@ -11,14 +11,12 @@ except ImportError:
     except PackageNotFoundError:
         __version__ = "unknown"
 
-import ragas_experimental.model.notion_typing as nmt
 from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
 )
 
-from .model.notion_model import NotionModel
 from .project.core import Project
 
 # Import the main Project class - decorators are added automatically in core.py
 
-__all__ = ["Project", "NotionModel", "nmt", "BaseModel"]
+__all__ = ["Project", "BaseModel"]

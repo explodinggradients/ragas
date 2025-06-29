@@ -30,6 +30,9 @@ class IntegrationMetric(Metric):
     def __post_init__(self):
         super().__post_init__()
         self._response_model = EvaluationResult
+        
+    def get_correlation(self, gold_label, predictions) -> float:
+        return super().get_correlation(gold_label, predictions)
 
 
 @pytest.fixture
