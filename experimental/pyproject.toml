@@ -1,13 +1,51 @@
 [build-system]
-requires = ["setuptools>=64", "setuptools_scm>=8", "nbdev>=2.3.35"]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name="ragas_experimental"
+name = "ragas_experimental"
 description = "Experimental extensions for Ragas"
-requires-python=">=3.9"
-# List all fields that might be defined outside pyproject.toml as dynamic
-dynamic = ["version", "readme", "license", "authors", "dependencies", "optional-dependencies"]
+requires-python = ">=3.9"
+authors = [
+    {name = "jjmachan", email = "jamesjithin97@gmail.com"}
+]
+license = {text = "Apache-2.0"}
+keywords = ["jupyter", "notebook", "python", "evaluation", "llm", "ragas"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "fastcore",
+    "tqdm", 
+    "langfuse",
+    "instructor",
+    "pydantic",
+    "numpy",
+    "plotly",
+    "mlflow",
+    "gitpython",
+    "httpx",
+]
+# Only version remains dynamic (managed by setuptools_scm)
+dynamic = ["version"]
+readme = "README.md"
+
+[project.optional-dependencies]
+all = ["pandas"]
+
+[project.entry-points."ragas.backends"]
+local_csv = "ragas_experimental.project.backends.local_csv:LocalCSVProjectBackend"
+platform = "ragas_experimental.project.backends.platform:PlatformProjectBackend"
+
+[tool.setuptools.packages.find]
+include = ["ragas_experimental*"]
+exclude = ["site*", "old_nbs*", "experiments*", "_proc*", "build*", "dist*"]
 
 [tool.setuptools_scm]
 root = ".."  # Points to monorepo root, one directory up
@@ -15,5 +53,19 @@ version_file = "ragas_experimental/_version.py"  # Creates a version file
 
 [dependency-groups]
 dev = [
-    "nbdev>=2.3.35",
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0", 
+    "pytest-mock>=3.10.0",
+    "black",
+    "ruff",
 ]
+test = []
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "experimental_ci: Set of tests that will be run as part of Experimental CI",
+    "e2e: End-to-End tests for Experimental",
+]
+
+# Ruff configuration is inherited from workspace.toml at the monorepo root
