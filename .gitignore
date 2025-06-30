@@ -177,3 +177,4 @@ uv.lock
 # nbdev
 _proc/
 site/
+_version.py
