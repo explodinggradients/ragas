@@ -189,6 +189,107 @@ from ragas.metrics._tool_call_accuracy import ToolCallAccuracy
 metric = ToolCallAccuracy()
 metric.arg_comparison_metric = NonLLMStringSimilarity()
 ```
+## Tool Call F1
+
+`ToolCallF1` is a metric that return F1-score based on precision and recall of tool calls made by an agent, comparing them to a set of expected calls (`reference_tool_calls`). While `ToolCallAccuracy` provides a binary score based on exact order and content match, `ToolCallF1` complements it by offering a softer evaluation useful for onboarding and iteration. It helps quantify how close the agent was to the expected behavior even if it over- or under-calls.
+
+### Formula
+
+ToolCallF1 is based on classic IR metrics:
+
+$$
+\text{Precision} = \frac{\text{tool calls that match both name and parameters}}{\text{tool calls that match both name and parameters} + \text{extra tool calls that were not expected}}
+$$
+
+$$
+\text{Recall} = \frac{\text{tool calls that match both name and parameters}}{\text{tool calls that match both name and parameters} + \text{expected tool calls that were not made}}
+$$
+
+$$
+\text{F1} = \frac{2 \cdot \text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}
+$$
+
+### How is it different from Topic Adherence?
+
+While both `ToolCallF1` and `TopicAdherenceScore` uses precision, recall, and F1-score, they evaluate different aspects:
+
+| Metric                | Evaluates                               | Based on                     |
+| --------------------- | --------------------------------------- | ---------------------------- |
+| `ToolCallF1`          | Correctness of tool executions          | Structured tool call objects |
+| `TopicAdherenceScore` | Whether the conversation stays on-topic | Comparison of domain topics  |
+
+Use `ToolCallF1` when you want to track whether the agent correctly **executed tools**. Use `TopicAdherenceScore` when evaluating whether the **content or intention** stays within allowed topics.
+
+### Example: Matching Expected Tool Calls
+
+```python
+from ragas.metrics import ToolCallF1
+from ragas.dataset_schema import MultiTurnSample
+from ragas.messages import HumanMessage, AIMessage, ToolMessage, ToolCall
+
+sample = [
+    HumanMessage(content="What's the weather like in Paris today?"),
+    AIMessage(content="Let me check that for you.", tool_calls=[
+        ToolCall(name="weather_check", args={"location": "Paris"})
+    ]),
+    HumanMessage(content="And the UV index?"),
+    AIMessage(content="Sure, here's the UV index for Paris.", tool_calls=[
+        ToolCall(name="uv_index_lookup", args={"location": "Paris"})
+    ])
+]
+
+sample = MultiTurnSample(
+    user_input=sample,
+    reference_tool_calls=[
+        ToolCall(name="weather_check", args={"location": "Paris"}),
+        ToolCall(name="uv_index_lookup", args={"location": "Paris"})
+    ]
+)
+
+scorer = ToolCallF1()
+await scorer.multi_turn_ascore(sample)
+```
+
+Output
+
+```
+1.0
+```
+
+### Example: Extra Tool Called
+
+```python
+sample = [
+    HumanMessage(content="What's the weather like in Paris today?"),
+    AIMessage(content="Let me check that for you.", tool_calls=[
+        ToolCall(name="weather_check", args={"location": "Paris"})
+    ]),
+    HumanMessage(content="And the UV index?"),
+    AIMessage(content="Sure, here's the UV index for Paris.", tool_calls=[
+        ToolCall(name="uv_index_lookup", args={"location": "Paris"}),
+        ToolCall(name="air_quality", args={"location": "Paris"})  # extra call
+    ])
+]
+
+sample = MultiTurnSample(
+    user_input=sample,
+    reference_tool_calls=[
+        ToolCall(name="uv_index_lookup", args={"location": "Paris"}),
+        ToolCall(name="weather_check", args={"location": "Paris"})
+    ]
+)
+
+await scorer.multi_turn_ascore(sample)
+```
+
+Output
+
+```
+0.67
+```
+
+In this case, the agent calls both correct tools but adds an extra `air_quality` call. The F1-score reflects partial correctness instead of failing the example completely.
+
 
 ## Agent Goal accuracy
 
