@@ -178,3 +178,5 @@ uv.lock
 _proc/
 site/
 _version.py
+test_resources
+.claude

@@ -1,4 +1,4 @@
-# 🛠️ How-to Guides
+# How-to Guides
 
 Each guide in this section provides a focused solution to real-world problems that you, as an experienced user, may encounter while using Ragas. These guides are designed to be concise and direct, offering quick solutions to your problems. We assume you have a foundational understanding and are comfortable with Ragas concepts. If not, feel free to explore the [Get Started](../getstarted/index.md) section first.
 

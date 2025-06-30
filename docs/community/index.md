@@ -1,10 +1,10 @@
-# ❤️ Community 
+# Community 
 
 > "Alone we can do so little; together we can do so much." - Helen Keller
 
 Our project thrives on the vibrant energy, diverse skills, and shared passion of our community. It's not just about code; it's about people coming together to create something extraordinary. This space celebrates every contribution, big or small, and features the amazing people who make it all happen.
 
-## **🌟  Contributors**
+## **  Contributors**
 
 Meet some of our outstanding members who made significant contributions !
 
@@ -12,7 +12,7 @@ Meet some of our outstanding members who made significant contributions !
 - [Da Chen](https://github.com/yuukidach)
 - [Yongtae Hwang](https://github.com/Yongtae723)
 
-## **📚 Blog & Insights**
+## ** Blog & Insights**
 
 Explore insightful articles, tutorials, and stories written by and for our community members.
 
@@ -45,7 +45,7 @@ Explore insightful articles, tutorials, and stories written by and for our commu
     - 教程: [在EvalScope中使用Ragas一键发起RAG评估](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/ragas.html)
     - 最佳实践: [打破文本边界：如何进行多模态RAG评估](https://evalscope.readthedocs.io/zh-cn/latest/blog/RAG/multimodal_RAG.html#multimodal-rag)
 
-## **📅 Events**
+## ** Events**
 
 Stay updated with our latest gatherings, meetups, and online webinars.
 
