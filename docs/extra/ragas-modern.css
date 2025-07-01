@@ -5,17 +5,17 @@
 
 /* Custom color scheme variables */
 :root {
-  --md-primary-fg-color: #bd8526;
-  --md-primary-fg-color--light: #d19a3d;
-  --md-primary-fg-color--dark: #a0711e;
-  --md-accent-fg-color: #bd8526;
+  --md-primary-fg-color: #8d692c;
+  --md-primary-fg-color--light: #a17d39;
+  --md-primary-fg-color--dark: #73551f;
+  --md-accent-fg-color: #8d692c;
 }
 
 [data-md-color-scheme="slate"] {
-  --md-primary-fg-color: #bd8526;
-  --md-primary-fg-color--light: #d19a3d;
-  --md-primary-fg-color--dark: #a0711e;
-  --md-accent-fg-color: #bd8526;
+  --md-primary-fg-color: #8d692c;
+  --md-primary-fg-color--light: #a17d39;
+  --md-primary-fg-color--dark: #73551f;
+  --md-accent-fg-color: #8d692c;
 }
 
 /* Only minimal, essential customizations - let Material Design handle the rest */
