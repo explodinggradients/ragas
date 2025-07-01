@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 import threading
 import typing as t
@@ -9,7 +8,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from tqdm.auto import tqdm
 
-from ragas.async_utils import apply_nest_asyncio, run
+from ragas.async_utils import apply_nest_asyncio, as_completed, process_futures, run
 from ragas.run_config import RunConfig
 from ragas.utils import ProgressBarManager, batched
 
@@ -155,7 +154,7 @@ class Executor:
         with overall_pbar, batch_pbar:
             for i, batch in enumerate(batches, 1):
                 # Check for cancellation before processing each batch
-                if self._cancel_event.is_set():
+                if self.is_cancelled():
                     break
 
                 progress_manager.update_batch_bar(batch_pbar, i, n_batches, len(batch))
@@ -165,68 +164,27 @@ class Executor:
                     afunc(*args, **kwargs) for afunc, args, kwargs, _ in batch
                 ]
 
-                # Create tasks for this batch
-                if max_workers == -1:
-                    batch_tasks = [asyncio.create_task(coro) for coro in coroutines]
-                else:
-                    semaphore = asyncio.Semaphore(max_workers)
-
-                    async def sema_coro(coro):
-                        async with semaphore:
-                            return await coro
-
-                    batch_tasks = [
-                        asyncio.create_task(sema_coro(coro)) for coro in coroutines
-                    ]
-
-                for future in asyncio.as_completed(batch_tasks):
-                    # Check for cancellation before processing each result in batch
-                    if self._cancel_event.is_set():
-                        for task in batch_tasks:
-                            if not task.done():
-                                task.cancel()
-                        break
-
-                    try:
-                        result = await future
-                        results.append(result)
-                        overall_pbar.update(1)
-                        batch_pbar.update(1)
-                    except asyncio.CancelledError:
-                        continue
-
-        return results
+                async for result in process_futures(
+                    as_completed(
+                        coroutines, max_workers, cancel_check=self.is_cancelled
+                    )
+                ):
+                    results.append(result)
+                    batch_pbar.update(1)
+                # Update overall progress bar for all futures in this batch
+                overall_pbar.update(len(batch))
 
     async def _process_coroutines(self, jobs, pbar, results, max_workers):
         """Helper function to process coroutines and update the progress bar."""
         coroutines = [afunc(*args, **kwargs) for afunc, args, kwargs, _ in jobs]
 
-        # Create tasks to track them
-        if max_workers == -1:
-            tasks = [asyncio.create_task(coro) for coro in coroutines]
-        else:
-            semaphore = asyncio.Semaphore(max_workers)
-
-            async def sema_coro(coro):
-                async with semaphore:
-                    return await coro
-
-            tasks = [asyncio.create_task(sema_coro(coro)) for coro in coroutines]
-
-        # Process tasks as they complete
-        for future in asyncio.as_completed(tasks):
-            if self._cancel_event.is_set():
-                for task in tasks:
-                    if not task.done():
-                        task.cancel()
-                break
-
-            try:
-                result = await future
-                results.append(result)
-                pbar.update(1)
-            except asyncio.CancelledError:
-                continue
+        async for result in process_futures(
+            as_completed(
+                coroutines, max_workers, cancel_check=self.is_cancelled
+            )
+        ):
+            results.append(result)
+            pbar.update(1)
 
     async def aresults(self) -> t.List[t.Any]:
         """

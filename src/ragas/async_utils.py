@@ -4,8 +4,6 @@ import asyncio
 import logging
 import typing as t
 
-from tqdm.auto import tqdm
-
 logger = logging.getLogger(__name__)
 
 
@@ -77,14 +75,13 @@ def as_completed(
 
 
 async def process_futures(
-    futures: t.Iterator[asyncio.Future], pbar: t.Optional[tqdm] = None
+    futures: t.Iterator[asyncio.Future],
 ) -> t.AsyncGenerator[t.Any, None]:
     """
     Process futures with optional progress tracking.
 
     Args:
         futures: Iterator of asyncio futures to process (e.g., from asyncio.as_completed)
-        pbar: Optional progress bar to update
 
     Yields:
         Results from completed futures as they finish
@@ -96,8 +93,6 @@ async def process_futures(
         except Exception as e:
             result = e
 
-        if pbar:
-            pbar.update(1)
         yield result
 
 
@@ -161,9 +156,10 @@ def run_async_tasks(
         if not batch_size:
             with pbm.create_single_bar(total_tasks) as pbar:
                 async for result in process_futures(
-                    as_completed(tasks, max_workers, cancel_check=cancel_check), pbar
+                    as_completed(tasks, max_workers, cancel_check=cancel_check)
                 ):
                     results.append(result)
+                    pbar.update(1)
         else:
             total_tasks = len(tasks)
             batches = batched(tasks, batch_size)
@@ -173,14 +169,12 @@ def run_async_tasks(
             with overall_pbar, batch_pbar:
                 for i, batch in enumerate(batches, 1):
                     pbm.update_batch_bar(batch_pbar, i, n_batches, len(batch))
-                    processed = 0
                     async for result in process_futures(
-                        as_completed(batch, max_workers, cancel_check=cancel_check),
-                        batch_pbar,
+                        as_completed(batch, max_workers, cancel_check=cancel_check)
                     ):
                         results.append(result)
-                        processed += 1
-                    overall_pbar.update(processed)
+                        batch_pbar.update(1)
+                    overall_pbar.update(len(batch))
 
         return results
 
