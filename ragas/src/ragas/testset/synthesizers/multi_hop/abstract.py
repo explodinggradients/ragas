@@ -42,7 +42,9 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
     def get_node_clusters(self, knowledge_graph: KnowledgeGraph) -> t.List[t.Set[Node]]:
         """Identify clusters of nodes based on the specified relationship condition."""
         node_clusters = knowledge_graph.find_indirect_clusters(
-            relationship_condition=lambda rel: bool(rel.get_property(self.relation_property)),
+            relationship_condition=lambda rel: bool(
+                rel.get_property(self.relation_property)
+            ),
             depth_limit=3,
         )
         logger.info("found %d clusters", len(node_clusters))
@@ -89,7 +91,9 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
                     nodes.append(node)
 
             base_scenarios = []
-            node_themes = [node.properties.get(self.abstract_property_name, []) for node in nodes]
+            node_themes = [
+                node.properties.get(self.abstract_property_name, []) for node in nodes
+            ]
             prompt_input = ConceptsList(
                 lists_of_concepts=node_themes, max_combinations=num_sample_per_cluster
             )
