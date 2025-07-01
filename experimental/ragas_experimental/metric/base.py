@@ -19,8 +19,7 @@ from pydantic import BaseModel
 
 if t.TYPE_CHECKING:
 
-    from ragas_experimental.project.core import Project
-    from ragas_experimental.experiment import Experiment
+    from ragas_experimental.dataset import Dataset
 
 
 @dataclass
@@ -101,18 +100,40 @@ class Metric(ABC):
         """
         pass
 
+    def align_and_validate(
+        self,
+        dataset: "Dataset",
+        embedding_model: BaseEmbedding,
+        llm: RagasLLM,
+        test_size: float = 0.2,
+        random_state: int = 42,
+        **kwargs: t.Dict[str, t.Any],
+    ):
+        """
+        Args:
+            dataset: experiment to align the metric with.
+            embedding_model: The embedding model used for dynamic few-shot prompting.
+            llm: The LLM instance to use for scoring.
+
+        Align the metric with the specified experiments and validate it against a gold standard experiment.
+        This method combines alignment and validation into a single step.
+        """
+        train_dataset, test_dataset = dataset.train_test_split(
+            test_size=test_size, random_state=random_state
+        )
+
+        self.align(train_dataset, embedding_model, **kwargs)
+        return self.validate_alignment(llm, test_dataset)
+
     def align(
         self,
-        project: "Project",
-        experiment_names: t.List[str],
-        model: t.Type[BaseModel],
+        dataset: "Dataset",
         embedding_model: BaseEmbedding,
         **kwargs: t.Dict[str, t.Any],
     ):
         """
         Args:
-            project: The Project instance containing the experiments.
-            experiment_names: A list of experiment names to align with the metric.
+            experiment: experiment to align the metric with.
             model: The Pydantic model used for the experiment data.
             embedding_model: The embedding model used for dynamic few-shot prompting.
 
@@ -123,42 +144,32 @@ class Metric(ABC):
         self.prompt = DynamicFewShotPrompt.from_prompt(
             self.prompt, embedding_model, **kwargs
         )
-        datasets = []
-        for experiment_name in experiment_names:
-            experiment_data = project.get_experiment(experiment_name, model)
-            experiment_data.load()
-            datasets.append(experiment_data)
-
-        total_items = sum([len(dataset) for dataset in datasets])
+        dataset.load()
+        total_items = len(dataset)
         input_vars = self.get_variables()
         output_vars = [self.name, f"{self.name}_reason"]
         with tqdm(total=total_items, desc="Processing examples") as pbar:
-            for dataset in datasets:
-                for row in dataset:
-                    inputs = {
-                        var: getattr(row, var)
-                        for var in input_vars
-                        if hasattr(row, var)
-                    }
-                    output = {
-                        var: getattr(row, var)
-                        for var in output_vars
-                        if hasattr(row, var)
-                    }
-                    if output:
-                        self.prompt.add_example(inputs, output)
-                    pbar.update(1)
+            for row in dataset:
+                inputs = {
+                    var: getattr(row, var) for var in input_vars if hasattr(row, var)
+                }
+                output = {
+                    var: getattr(row, var) for var in output_vars if hasattr(row, var)
+                }
+                if output:
+                    self.prompt.add_example(inputs, output)
+                pbar.update(1)
 
     def validate_alignment(
         self,
         llm: RagasLLM,
-        gold_experiment: "Experiment",
+        test_dataset: "Dataset",
         mapping: t.Dict[str, str] = {},
     ):
         """
         Args:
             llm: The LLM instance to use for scoring.
-            gold_experiment: An Experiment instance containing the gold standard scores.
+            test_dataset: An Dataset instance containing the gold standard scores.
             mapping: A dictionary mapping variable names expected by metrics to their corresponding names in the gold experiment.
 
         Validate the alignment of the metric by comparing the scores against a gold standard experiment.
@@ -166,10 +177,10 @@ class Metric(ABC):
         the predicted scores from the metric.
         """
 
-        gold_experiment.load()
-        gold_scores = [getattr(row, self.name) for row in gold_experiment]
+        test_dataset.load()
+        gold_scores = [getattr(row, self.name) for row in test_dataset]
         pred_scores = []
-        for row in tqdm(gold_experiment):
+        for row in tqdm(test_dataset):
             values = {
                 v: (
                     getattr(row, v)
@@ -181,7 +192,7 @@ class Metric(ABC):
             score = self.score(llm=llm, **values)
             pred_scores.append(score.result)
 
-        df = gold_experiment.to_pandas()
+        df = test_dataset.to_pandas()
         df[f"{self.name}_pred"] = pred_scores
         correlation = self.get_correlation(gold_scores, pred_scores)
         agreement_rate = sum(x == y for x, y in zip(gold_scores, pred_scores)) / len(
