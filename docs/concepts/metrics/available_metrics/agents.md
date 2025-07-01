@@ -195,7 +195,7 @@ metric.arg_comparison_metric = NonLLMStringSimilarity()
 
 ### Formula
 
-ToolCallF1 is based on classic IR metrics:
+ToolCallF1 is based on classic IR metrics.  It uses unordered matching: the order in which the tools are called does not impact the result, only the presence and correctness of tool names and parameters are considered.
 
 $$
 \text{Precision} = \frac{\text{tool calls that match both name and parameters}}{\text{tool calls that match both name and parameters} + \text{extra tool calls that were not expected}}
