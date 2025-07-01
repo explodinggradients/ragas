@@ -81,7 +81,11 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
                 overlapped_items = []
                 overlapped_items = triplet[1].properties[self.relation_overlap_property]
                 if overlapped_items:
-                    themes = list(dict(overlapped_items).keys())
+                    themes = (
+                        list(overlapped_items.keys())
+                        if isinstance(overlapped_items, dict)
+                        else overlapped_items
+                    )
                     prompt_input = ThemesPersonasInput(
                         themes=themes, personas=persona_list
                     )
