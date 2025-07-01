@@ -22,5 +22,21 @@ class DiscreteMetric(Metric):
             "response_model", result=(t.Literal[values], ...), reason=(str, ...)
         )
 
+    def get_correlation(
+        self, gold_labels: t.List[str], predictions: t.List[str]
+    ) -> float:
+        """
+        Calculate the correlation between gold labels and predictions.
+        This is a placeholder method and should be implemented based on the specific metric.
+        """
+        try:
+            from sklearn.metrics import cohen_kappa_score
+        except ImportError:
+            raise ImportError(
+                "scikit-learn is required for correlation calculation. "
+                "Please install it with `pip install scikit-learn`."
+            )
+        return cohen_kappa_score(gold_labels, predictions)
+
 
 discrete_metric = create_metric_decorator(DiscreteMetric)

@@ -5,21 +5,21 @@ __all__ = ["Metric"]
 import asyncio
 import string
 import typing as t
-from abc import ABC
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
-from pydantic import BaseModel
 from tqdm import tqdm
 
 from ..embedding.base import BaseEmbedding
 from ..llm import RagasLLM
-from ..model.notion_model import NotionModel
 from ..prompt.base import Prompt
 from ..prompt.dynamic_few_shot import DynamicFewShotPrompt
 from .result import MetricResult
+from pydantic import BaseModel
 
 if t.TYPE_CHECKING:
-    from ragas_experimental.project.core import Project
+
+    from ragas_experimental.dataset import Dataset
 
 
 @dataclass
@@ -92,39 +92,114 @@ class Metric(ABC):
         # Run all tasks concurrently and return results
         return await asyncio.gather(*async_tasks)
 
-    def train(
+    @abstractmethod
+    def get_correlation(self, gold_label, predictions) -> float:
+        """
+        Calculate the correlation between gold scores and predicted scores.
+        This is a placeholder method and should be implemented based on the specific metric.
+        """
+        pass
+
+    def align_and_validate(
         self,
-        project: "Project",
-        experiment_names: t.List[str],
-        model: NotionModel,
+        dataset: "Dataset",
         embedding_model: BaseEmbedding,
-        method: t.Dict[str, t.Any],
+        llm: RagasLLM,
+        test_size: float = 0.2,
+        random_state: int = 42,
+        **kwargs: t.Dict[str, t.Any],
     ):
+        """
+        Args:
+            dataset: experiment to align the metric with.
+            embedding_model: The embedding model used for dynamic few-shot prompting.
+            llm: The LLM instance to use for scoring.
+
+        Align the metric with the specified experiments and validate it against a gold standard experiment.
+        This method combines alignment and validation into a single step.
+        """
+        train_dataset, test_dataset = dataset.train_test_split(
+            test_size=test_size, random_state=random_state
+        )
+
+        self.align(train_dataset, embedding_model, **kwargs)
+        return self.validate_alignment(llm, test_dataset)
+
+    def align(
+        self,
+        dataset: "Dataset",
+        embedding_model: BaseEmbedding,
+        **kwargs: t.Dict[str, t.Any],
+    ):
+        """
+        Args:
+            experiment: experiment to align the metric with.
+            model: The Pydantic model used for the experiment data.
+            embedding_model: The embedding model used for dynamic few-shot prompting.
+
+        Align the metric with the specified experiments by different optimization methods.
+        """
 
         assert isinstance(self.prompt, Prompt)
-        self.prompt = DynamicFewShotPrompt.from_prompt(self.prompt, embedding_model)
-        datasets = []
-        for experiment_name in experiment_names:
-            experiment_data = project.get_experiment(experiment_name, model)
-            experiment_data.load()
-            datasets.append(experiment_data)
-
-        total_items = sum([len(dataset) for dataset in datasets])
+        self.prompt = DynamicFewShotPrompt.from_prompt(
+            self.prompt, embedding_model, **kwargs
+        )
+        dataset.load()
+        total_items = len(dataset)
         input_vars = self.get_variables()
         output_vars = [self.name, f"{self.name}_reason"]
         with tqdm(total=total_items, desc="Processing examples") as pbar:
-            for dataset in datasets:
-                for row in dataset:
-                    inputs = {
-                        var: getattr(row, var)
-                        for var in input_vars
-                        if hasattr(row, var)
-                    }
-                    output = {
-                        var: getattr(row, var)
-                        for var in output_vars
-                        if hasattr(row, var)
-                    }
-                    if output:
-                        self.prompt.add_example(inputs, output)
-                    pbar.update(1)
+            for row in dataset:
+                inputs = {
+                    var: getattr(row, var) for var in input_vars if hasattr(row, var)
+                }
+                output = {
+                    var: getattr(row, var) for var in output_vars if hasattr(row, var)
+                }
+                if output:
+                    self.prompt.add_example(inputs, output)
+                pbar.update(1)
+
+    def validate_alignment(
+        self,
+        llm: RagasLLM,
+        test_dataset: "Dataset",
+        mapping: t.Dict[str, str] = {},
+    ):
+        """
+        Args:
+            llm: The LLM instance to use for scoring.
+            test_dataset: An Dataset instance containing the gold standard scores.
+            mapping: A dictionary mapping variable names expected by metrics to their corresponding names in the gold experiment.
+
+        Validate the alignment of the metric by comparing the scores against a gold standard experiment.
+        This method computes the Cohen's Kappa score and agreement rate between the gold standard scores and
+        the predicted scores from the metric.
+        """
+
+        test_dataset.load()
+        gold_scores = [getattr(row, self.name) for row in test_dataset]
+        pred_scores = []
+        for row in tqdm(test_dataset):
+            values = {
+                v: (
+                    getattr(row, v)
+                    if v not in mapping
+                    else getattr(row, mapping.get(v, v))
+                )
+                for v in self.get_variables()
+            }
+            score = self.score(llm=llm, **values)
+            pred_scores.append(score.result)
+
+        df = test_dataset.to_pandas()
+        df[f"{self.name}_pred"] = pred_scores
+        correlation = self.get_correlation(gold_scores, pred_scores)
+        agreement_rate = sum(x == y for x, y in zip(gold_scores, pred_scores)) / len(
+            gold_scores
+        )
+        return {
+            "correlation": correlation,
+            "agreement_rate": agreement_rate,
+            "df": df,
+        }
