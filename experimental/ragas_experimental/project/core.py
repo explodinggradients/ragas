@@ -105,12 +105,7 @@ class Project:
 
     @classmethod
     def create(
-        cls,
-        name: str,
-        backend_type: str,
-        *,
-        description: str = "",
-        **kwargs
+        cls, name: str, backend_type: str, *, description: str = "", **kwargs
     ) -> "Project":
         """Create a new project with the specified backend.
 
@@ -133,7 +128,7 @@ class Project:
 
             >>> # Create a ragas/app project
             >>> project = Project.create(
-            ...     "my_project", 
+            ...     "my_project",
             ...     backend_type="ragas/app",
             ...     api_key="your_api_key"
             ... )
@@ -148,13 +143,13 @@ class Project:
         """
         # Use the registry-based approach for backend creation
         backend = create_project_backend(backend_type, **kwargs)
-        
-        # Create and return the Project instance  
+
+        # Create and return the Project instance
         return cls(
             project_id=name,  # Use name as project_id for simplicity
             project_backend=backend,
             name=name,
-            description=description
+            description=description,
         )
 
     # Type-safe overloads for get_project
@@ -194,12 +189,7 @@ class Project:
     ) -> "Project": ...
 
     @classmethod
-    def get(
-        cls,
-        name: str,
-        backend_type: str,
-        **kwargs
-    ) -> "Project":
+    def get(cls, name: str, backend_type: str, **kwargs) -> "Project":
         """Get an existing project by name.
 
         Args:
@@ -222,31 +212,32 @@ class Project:
         """
         # Use the registry-based approach for backend creation
         backend = create_project_backend(backend_type, **kwargs)
-        
+
         # For local backend, check if project actually exists
         if backend_type == "local/csv":
             import os
+
             root_dir = kwargs.get("root_dir", "./ragas_data")
             project_dir = os.path.join(root_dir, name)
             if not os.path.exists(project_dir):
                 raise ValueError(f"Local project '{name}' does not exist in {root_dir}")
-        
+
         # Get the existing project using the backend
         return cls(
             project_id=name,
             project_backend=backend,
             name=name,
-            description=""  # Description will be loaded from backend if available
+            description="",  # Description will be loaded from backend if available
         )
 
     def delete(self):
         """Delete the project and all its data."""
         # Check if backend has a delete method, otherwise handle basic deletion
-        if hasattr(self._backend, 'delete_project'):
+        if hasattr(self._backend, "delete_project"):
             # Backend provides its own deletion logic
             self._backend.delete_project(self.project_id)
             print("Project deleted!")
-        elif hasattr(self._backend, 'root_dir'):
+        elif hasattr(self._backend, "root_dir"):
             # Local backend - delete project directory
             project_dir = os.path.join(self._backend.root_dir, self.project_id)
             if os.path.exists(project_dir):
@@ -322,7 +313,7 @@ class Project:
         # Create experiment using backend
         experiment_id = self._backend.create_experiment(name, model)
         backend = self._backend.get_experiment_backend(experiment_id, name, model)
-        
+
         # Return Experiment object for better UX
         return Experiment(
             name=name,
@@ -347,8 +338,10 @@ class Project:
             Experiment: The retrieved experiment
         """
         # Get experiment using backend
-        experiment_id, experiment_backend = self._backend.get_experiment_by_name(experiment_name, model)
-        
+        experiment_id, experiment_backend = self._backend.get_experiment_by_name(
+            experiment_name, model
+        )
+
         # Return Experiment object for better UX
         return Experiment(
             name=experiment_name,
@@ -380,7 +373,9 @@ class Project:
         Raises:
             ValueError: If not using local backend
         """
-        if LocalCSVProjectBackend is None or not isinstance(self._backend, LocalCSVProjectBackend):
+        if LocalCSVProjectBackend is None or not isinstance(
+            self._backend, LocalCSVProjectBackend
+        ):
             raise ValueError("This method is only available for local/csv backend")
         return os.path.join(
             self._backend._project_dir, "datasets", f"{dataset_name}.csv"
@@ -398,7 +393,9 @@ class Project:
         Raises:
             ValueError: If not using local backend
         """
-        if LocalCSVProjectBackend is None or not isinstance(self._backend, LocalCSVProjectBackend):
+        if LocalCSVProjectBackend is None or not isinstance(
+            self._backend, LocalCSVProjectBackend
+        ):
             raise ValueError("This method is only available for local/csv backend")
         return os.path.join(
             self._backend._project_dir, "experiments", f"{experiment_name}.csv"
@@ -408,7 +405,8 @@ class Project:
         """String representation of the project."""
         backend_name = (
             "ragas/app"
-            if RagasAppProjectBackend is not None and isinstance(self._backend, RagasAppProjectBackend)
+            if RagasAppProjectBackend is not None
+            and isinstance(self._backend, RagasAppProjectBackend)
             else "local/csv"
         )
         return f"Project(name='{self.name}', backend='{backend_name}')"
