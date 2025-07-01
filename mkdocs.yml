@@ -7,14 +7,14 @@ watch:
 
 # Navigation
 nav:
-  - Home: index.md
-  - Get Started:
+  - "": index.md
+  - 🚀 Get Started:
       - getstarted/index.md
       - Installation: getstarted/install.md
       - Evaluate your first LLM App: getstarted/evals.md
       - Evaluate a simple RAG: getstarted/rag_eval.md
       - Generate Synthetic Testset for RAG: getstarted/rag_testset_generation.md
-  - Core Concepts:
+  - 📚 Core Concepts:
       - concepts/index.md
       - Components:
           - concepts/components/index.md
@@ -76,9 +76,9 @@ nav:
               - concepts/test_data_generation/agents.md
       - Feedback Intelligence:
           - concepts/feedback/index.md
-  - Experimental:
+  - 🧪 Experimental:
     - Overview: experimental/index.md
-  - How-to Guides:
+  - 🛠️ How-to Guides:
       - howtos/index.md
       - Customizations:
           - howtos/customizations/index.md
@@ -123,7 +123,7 @@ nav:
           - Swarm: howtos/integrations/swarm_agent_evaluation.md
       - Migrations:
           - From v0.1 to v0.2: howtos/migrations/migrate_from_v01_to_v02.md
-  - References:
+  - 📖 References:
     - references/index.md
     - Core:
       - Prompt: references/prompt.md

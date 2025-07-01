@@ -1,4 +1,4 @@
-# Core Concepts
+# 📚 Core Concepts
 
 
 <div class="grid cards" markdown>
