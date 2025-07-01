@@ -148,36 +148,19 @@ class Executor:
                     afunc(*args, **kwargs) for afunc, args, kwargs, _ in batch
                 ]
                 async for result in process_futures(
-                    as_completed(coroutines, max_workers), batch_pbar
+                    as_completed(coroutines, max_workers)
                 ):
-                    # Ensure result is always a tuple (counter, value)
-                    if isinstance(result, Exception):
-                        # Find the counter for this failed job
-                        idx = coroutines.index(result.__context__)
-                        counter = (
-                            batch[idx][0].__closure__[1].cell_contents
-                        )  # counter from closure
-                        results.append((counter, result))
-                    else:
-                        results.append(result)
+                    results.append(result)
+                    batch_pbar.update(1)
                 # Update overall progress bar for all futures in this batch
                 overall_pbar.update(len(batch))
 
     async def _process_coroutines(self, jobs, pbar, results, max_workers):
         """Helper function to process coroutines and update the progress bar."""
         coroutines = [afunc(*args, **kwargs) for afunc, args, kwargs, _ in jobs]
-        async for result in process_futures(
-            as_completed(coroutines, max_workers), pbar
-        ):
-            # Ensure result is always a tuple (counter, value)
-            if isinstance(result, Exception):
-                idx = coroutines.index(result.__context__)
-                counter = (
-                    jobs[idx][0].__closure__[1].cell_contents
-                )  # counter from closure
-                results.append((counter, result))
-            else:
-                results.append(result)
+        async for result in process_futures(as_completed(coroutines, max_workers)):
+            results.append(result)
+            pbar.update(1)
 
     async def aresults(self) -> t.List[t.Any]:
         """
