@@ -1,11 +1,18 @@
 """Configuration classes for all backend types."""
 
 from abc import ABC
-from typing import Optional, Literal, TYPE_CHECKING, Any, Protocol, runtime_checkable, Annotated
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+    Any,
+    Protocol,
+    runtime_checkable,
+    Annotated,
+)
 from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
 )
-from pydantic import ConfigDict, field_validator, Field, PlainValidator
+from pydantic import ConfigDict, PlainValidator
 
 # Type-only imports for Box SDK
 if TYPE_CHECKING:
@@ -21,18 +28,21 @@ else:
 @runtime_checkable
 class BoxUserProtocol(Protocol):
     """Protocol for Box user objects."""
+
     name: str
 
 
 @runtime_checkable
 class BoxUserManagerProtocol(Protocol):
     """Protocol for Box user manager objects."""
+
     def get(self) -> BoxUserProtocol: ...
 
 
 @runtime_checkable
 class BoxItemProtocol(Protocol):
     """Protocol for Box items (files/folders) returned by get_items()."""
+
     type: str  # "file" or "folder"
     name: str
     id: str
@@ -41,6 +51,7 @@ class BoxItemProtocol(Protocol):
 @runtime_checkable
 class BoxFileProtocol(Protocol):
     """Protocol for Box file objects."""
+
     def content(self) -> bytes: ...
     def update_contents_with_stream(self, stream) -> None: ...
 
@@ -48,8 +59,9 @@ class BoxFileProtocol(Protocol):
 @runtime_checkable
 class BoxFolderProtocol(Protocol):
     """Protocol for Box folder objects."""
+
     object_id: str
-    
+
     def get_items(self) -> list[BoxItemProtocol]: ...
     def create_subfolder(self, name: str) -> "BoxFolderProtocol": ...
     def upload_stream(self, stream, filename: str) -> BoxFileProtocol: ...
@@ -58,6 +70,7 @@ class BoxFolderProtocol(Protocol):
 @runtime_checkable
 class BoxClientProtocol(Protocol):
     """Protocol for Box client objects."""
+
     def user(self) -> BoxUserManagerProtocol: ...
     def folder(self, folder_id: str) -> BoxFolderProtocol: ...
     def file(self, file_id: str) -> BoxFileProtocol: ...
@@ -67,15 +80,15 @@ def validate_box_client(value: Any) -> Any:
     """Validate that the value implements the BoxClientProtocol interface."""
     if value is None:
         raise ValueError("Box client is required")
-    
+
     # Check if the object implements the required interface
     if not isinstance(value, BoxClientProtocol):
         # For mocks and other objects, check if they have the required methods
-        required_methods = ['user', 'folder', 'file']
+        required_methods = ["user", "folder", "file"]
         for method in required_methods:
             if not hasattr(value, method):
                 raise ValueError(f"Client must have {method} method")
-    
+
     return value
 
 

@@ -110,7 +110,9 @@ class BoxCSVDataTableBackend(DataTableBackend):
             logger.error(f"Error ensuring CSV exists on Box: {e}")
             raise
 
-    def _get_or_create_folder(self, parent_folder_id: str, folder_name: str) -> BoxFolderProtocol:
+    def _get_or_create_folder(
+        self, parent_folder_id: str, folder_name: str
+    ) -> BoxFolderProtocol:
         """Get existing folder or create new one."""
         try:
             parent_folder = self.box_client.folder(parent_folder_id)
@@ -129,7 +131,9 @@ class BoxCSVDataTableBackend(DataTableBackend):
             logger.error(f"Error creating/getting folder {folder_name}: {e}")
             raise
 
-    def _get_file_in_folder(self, folder: BoxFolderProtocol, filename: str) -> Optional[BoxFileProtocol]:
+    def _get_file_in_folder(
+        self, folder: BoxFolderProtocol, filename: str
+    ) -> Optional[BoxFileProtocol]:
         """Get file by name in folder, return None if not found."""
         try:
             for item in folder.get_items():
@@ -182,7 +186,7 @@ class BoxCSVDataTableBackend(DataTableBackend):
                                 elif field_type is bool:
                                     typed_row[field] = value.lower() in (
                                         "true",
-                                        "t", 
+                                        "t",
                                         "yes",
                                         "y",
                                         "1",
@@ -190,7 +194,9 @@ class BoxCSVDataTableBackend(DataTableBackend):
                                 else:
                                     typed_row[field] = value
                             except (json.JSONDecodeError, ValueError) as e:
-                                logger.warning(f"Failed to convert field {field}='{value}' to {field_type}: {e}")
+                                logger.warning(
+                                    f"Failed to convert field {field}='{value}' to {field_type}: {e}"
+                                )
                                 typed_row[field] = value  # Fallback to string
 
                     # Create model instance
@@ -313,7 +319,11 @@ class BoxCSVDataTableBackend(DataTableBackend):
                     for field_name, field_value in entry.model_dump().items():
                         field_type = entry.__class__.model_fields[field_name].annotation
                         if self._is_json_serializable_type(field_type):
-                            entry_dict[field_name] = json.dumps(field_value) if field_value is not None else ""
+                            entry_dict[field_name] = (
+                                json.dumps(field_value)
+                                if field_value is not None
+                                else ""
+                            )
                         else:
                             entry_dict[field_name] = field_value
                     entry_dict["_row_id"] = getattr(entry, "_row_id", str(uuid.uuid4()))
@@ -355,16 +365,17 @@ class BoxCSVProjectBackend(ProjectBackend):
         self.box_client: BoxClientProtocol = config.client
         self.project_id: Optional[str] = None
         self.project_folder: Optional[BoxFolderProtocol] = None
-    
+
     @classmethod
-    def from_jwt_file(cls, config_file_path: str, 
-                      root_folder_id: str = "0") -> 'BoxCSVProjectBackend':
+    def from_jwt_file(
+        cls, config_file_path: str, root_folder_id: str = "0"
+    ) -> "BoxCSVProjectBackend":
         """Convenience constructor for JWT authentication from config file.
-        
+
         Args:
             config_file_path: Path to Box JWT configuration file
             root_folder_id: Box folder ID to use as root (defaults to "0")
-            
+
         Returns:
             BoxCSVProjectBackend instance with authenticated client
         """
@@ -376,21 +387,22 @@ class BoxCSVProjectBackend(ProjectBackend):
             raise ImportError(
                 "Box SDK not available. Install with: pip install 'ragas_experimental[box]'"
             )
-        
+
         auth = JWTAuth.from_settings_file(config_file_path)
         client = Client(auth)
         config = BoxCSVConfig(client=client, root_folder_id=root_folder_id)
         return cls(config)
-    
+
     @classmethod
-    def from_developer_token(cls, token: str,
-                            root_folder_id: str = "0") -> 'BoxCSVProjectBackend':
+    def from_developer_token(
+        cls, token: str, root_folder_id: str = "0"
+    ) -> "BoxCSVProjectBackend":
         """Convenience constructor for developer token (testing only).
-        
+
         Args:
             token: Box developer token
             root_folder_id: Box folder ID to use as root (defaults to "0")
-            
+
         Returns:
             BoxCSVProjectBackend instance with authenticated client
         """
@@ -402,28 +414,34 @@ class BoxCSVProjectBackend(ProjectBackend):
             raise ImportError(
                 "Box SDK not available. Install with: pip install 'ragas_experimental[box]'"
             )
-        
+
         oauth = OAuth2(
-            client_id='not_needed_for_dev_token',
-            client_secret='not_needed_for_dev_token',
-            access_token=token
+            client_id="not_needed_for_dev_token",
+            client_secret="not_needed_for_dev_token",
+            access_token=token,
         )
         client = Client(oauth)
         config = BoxCSVConfig(client=client, root_folder_id=root_folder_id)
         return cls(config)
-    
-    @classmethod  
-    def from_oauth2(cls, client_id: str, client_secret: str, access_token: str,
-                    refresh_token: Optional[str] = None, root_folder_id: str = "0") -> 'BoxCSVProjectBackend':
+
+    @classmethod
+    def from_oauth2(
+        cls,
+        client_id: str,
+        client_secret: str,
+        access_token: str,
+        refresh_token: Optional[str] = None,
+        root_folder_id: str = "0",
+    ) -> "BoxCSVProjectBackend":
         """Convenience constructor for OAuth2 authentication.
-        
+
         Args:
             client_id: Box application client ID
             client_secret: Box application client secret
             access_token: User access token
             refresh_token: Optional refresh token
             root_folder_id: Box folder ID to use as root (defaults to "0")
-            
+
         Returns:
             BoxCSVProjectBackend instance with authenticated client
         """
@@ -435,17 +453,16 @@ class BoxCSVProjectBackend(ProjectBackend):
             raise ImportError(
                 "Box SDK not available. Install with: pip install 'ragas_experimental[box]'"
             )
-        
+
         oauth = OAuth2(
             client_id=client_id,
             client_secret=client_secret,
             access_token=access_token,
-            refresh_token=refresh_token
+            refresh_token=refresh_token,
         )
         client = Client(oauth)
         config = BoxCSVConfig(client=client, root_folder_id=root_folder_id)
         return cls(config)
-
 
     def initialize(self, project_id: str, **kwargs):
         """Initialize the backend with project information."""

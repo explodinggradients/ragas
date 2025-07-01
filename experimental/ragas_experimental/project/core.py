@@ -7,7 +7,6 @@ import shutil
 import typing as t
 from typing import overload, Literal, Optional
 
-import ragas_experimental.typing as rt
 from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
 )

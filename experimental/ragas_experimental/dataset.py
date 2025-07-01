@@ -7,7 +7,7 @@ __all__ = [
 ]
 
 import typing as t
-from typing import overload, Literal, Optional
+from typing import overload, Literal
 
 try:
     import pandas as pd
@@ -18,9 +18,7 @@ from ragas_experimental.model.pydantic_model import (
     ExtendedPydanticBaseModel as BaseModel,
 )
 
-from .backends import RagasApiClient
-from .backends import create_project_backend, DataTableBackend
-from .typing import SUPPORTED_BACKENDS
+from .backends import DataTableBackend
 
 # Type-only imports
 if t.TYPE_CHECKING:
@@ -44,7 +42,7 @@ class DataTable(t.Generic[BaseModelType]):
         name: str,
         model: t.Type[BaseModel],
         project: "Project",
-        dataset_type: Literal["datasets"] = "datasets"
+        dataset_type: Literal["datasets"] = "datasets",
     ) -> "DataTable[BaseModel]": ...
 
     @overload
@@ -53,8 +51,8 @@ class DataTable(t.Generic[BaseModelType]):
         cls,
         name: str,
         model: t.Type[BaseModel],
-        project: "Project", 
-        dataset_type: Literal["experiments"]
+        project: "Project",
+        dataset_type: Literal["experiments"],
     ) -> "DataTable[BaseModel]": ...
 
     @classmethod
@@ -63,7 +61,7 @@ class DataTable(t.Generic[BaseModelType]):
         name: str,
         model: t.Type[BaseModel],
         project: "Project",
-        dataset_type: Literal["datasets", "experiments"] = "datasets"
+        dataset_type: Literal["datasets", "experiments"] = "datasets",
     ) -> "DataTable[BaseModel]":
         """Create a new dataset with type-safe parameters.
 
@@ -79,7 +77,7 @@ class DataTable(t.Generic[BaseModelType]):
         Examples:
             >>> # Create a dataset
             >>> dataset = Dataset.create("my_data", MyModel, project)
-            
+
             >>> # Create an experiment
             >>> experiment = Dataset.create("my_experiment", MyModel, project, "experiments")
         """
@@ -98,7 +96,7 @@ class DataTable(t.Generic[BaseModelType]):
             project_id=project.project_id,
             dataset_id=dataset_id,
             datatable_type=dataset_type,
-            backend=backend
+            backend=backend,
         )
 
     # Type-safe overloads for getting existing datasets
@@ -109,7 +107,7 @@ class DataTable(t.Generic[BaseModelType]):
         name: str,
         model: t.Type[BaseModel],
         project: "Project",
-        dataset_type: Literal["datasets"] = "datasets"
+        dataset_type: Literal["datasets"] = "datasets",
     ) -> "DataTable[BaseModel]": ...
 
     @overload
@@ -119,7 +117,7 @@ class DataTable(t.Generic[BaseModelType]):
         name: str,
         model: t.Type[BaseModel],
         project: "Project",
-        dataset_type: Literal["experiments"]
+        dataset_type: Literal["experiments"],
     ) -> "DataTable[BaseModel]": ...
 
     @classmethod
@@ -128,7 +126,7 @@ class DataTable(t.Generic[BaseModelType]):
         name: str,
         model: t.Type[BaseModel],
         project: "Project",
-        dataset_type: Literal["datasets", "experiments"] = "datasets"
+        dataset_type: Literal["datasets", "experiments"] = "datasets",
     ) -> "DataTable[BaseModel]":
         """Get an existing dataset by name with type-safe parameters.
 
@@ -144,8 +142,8 @@ class DataTable(t.Generic[BaseModelType]):
         Examples:
             >>> # Get a dataset
             >>> dataset = Dataset.get_dataset("my_data", MyModel, project)
-            
-            >>> # Get an experiment  
+
+            >>> # Get an experiment
             >>> experiment = Dataset.get_dataset("my_experiment", MyModel, project, "experiments")
         """
         # Use the project's backend to get the dataset
@@ -163,7 +161,7 @@ class DataTable(t.Generic[BaseModelType]):
             project_id=project.project_id,
             dataset_id=dataset_id,
             datatable_type=dataset_type,
-            backend=backend
+            backend=backend,
         )
 
     @classmethod
@@ -174,10 +172,10 @@ class DataTable(t.Generic[BaseModelType]):
         project_id: str,
         dataset_id: str,
         datatable_type: t.Literal["datasets", "experiments"],
-        backend: DataTableBackend
+        backend: DataTableBackend,
     ) -> "DataTable[BaseModel]":
         """Internal helper to create a dataset with a backend instance.
-        
+
         Args:
             name: Dataset name
             model: Pydantic model class
@@ -185,26 +183,26 @@ class DataTable(t.Generic[BaseModelType]):
             dataset_id: Dataset ID
             datatable_type: Dataset or experiment type
             backend: Backend instance
-            
+
         Returns:
             DataTable: New datatable instance
         """
         # Create the instance without calling __init__
         instance = cls.__new__(cls)
-        
+
         # Set basic properties
         instance.name = name
         instance.model = model
         instance.project_id = project_id
         instance.dataset_id = dataset_id
-        instance.backend_type = getattr(backend, 'backend_type', 'unknown')
+        instance.backend_type = getattr(backend, "backend_type", "unknown")
         instance.datatable_type = datatable_type
         instance._entries = []
         instance._backend = backend
-        
+
         # Initialize the backend with this dataset
         instance._backend.initialize(instance)
-        
+
         # Initialize column mapping if it doesn't exist yet
         if not hasattr(instance.model, "__column_mapping__"):
             instance.model.__column_mapping__ = {}
@@ -213,7 +211,7 @@ class DataTable(t.Generic[BaseModelType]):
         column_mapping = instance._backend.get_column_mapping(model)
         for field_name, column_id in column_mapping.items():
             instance.model.__column_mapping__[field_name] = column_id
-            
+
         return instance
 
     def __init__(
@@ -243,7 +241,7 @@ class DataTable(t.Generic[BaseModelType]):
         self.model = model
         self.project_id = project_id
         self.dataset_id = dataset_id
-        self.backend_type = getattr(backend, 'backend_type', 'unknown')
+        self.backend_type = getattr(backend, "backend_type", "unknown")
         self.datatable_type = datatable_type
         self._entries: t.List[BaseModelType] = []
         self._backend = backend
@@ -484,8 +482,9 @@ class DataTable(t.Generic[BaseModelType]):
 
 class Dataset(DataTable[BaseModelType]):
     """Dataset class for managing dataset entries.
-    
+
     Inherits all functionality from DataTable. This class represents
     datasets specifically (as opposed to experiments).
     """
+
     pass
