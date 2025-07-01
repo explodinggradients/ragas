@@ -3,6 +3,21 @@
 /* Import Google Fonts - Professional Typography */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
 
+/* Custom color scheme variables */
+:root {
+  --md-primary-fg-color: #bd8526;
+  --md-primary-fg-color--light: #d19a3d;
+  --md-primary-fg-color--dark: #a0711e;
+  --md-accent-fg-color: #bd8526;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #bd8526;
+  --md-primary-fg-color--light: #d19a3d;
+  --md-primary-fg-color--dark: #a0711e;
+  --md-accent-fg-color: #bd8526;
+}
+
 /* Only minimal, essential customizations - let Material Design handle the rest */
 
 /* Reduce navigation font size only */
