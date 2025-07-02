@@ -1,0 +1,167 @@
+/* Ragas Modern Documentation Theme */
+
+/* Import Google Fonts - Professional Typography */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+
+/* Custom color scheme variables */
+:root {
+  --md-primary-fg-color: #bd8526;
+  --md-primary-fg-color--light: #d19a3d;
+  --md-primary-fg-color--dark: #a0711e;
+  --md-accent-fg-color: #bd8526;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #bd8526;
+  --md-primary-fg-color--light: #d19a3d;
+  --md-primary-fg-color--dark: #a0711e;
+  --md-accent-fg-color: #bd8526;
+  --md-default-bg-color: #171717;
+}
+
+/* Only minimal, essential customizations - let Material Design handle the rest */
+
+/* Reduce navigation font size only */
+.md-nav {
+  font-size: 0.8rem;
+}
+
+.md-nav__link {
+  font-size: 0.8rem;
+}
+
+.md-nav__title {
+  font-size: 0.8rem;
+}
+
+.md-tabs__link {
+  font-size: 0.8rem;
+}
+
+/* Clean repository info*/
+.md-source__fact--version {
+  display: none;
+}
+
+.md-source__fact:nth-child(1n + 2):before {
+  margin-left: 0 !important;
+}
+
+/* Ensure proper font family application */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+code, kbd, samp, pre {
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+}
+
+/* Modern Connected FAQ Styling */
+.toggle-list {
+  background: var(--md-default-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  margin: 0.5rem 0;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--md-default-fg-color);
+  transition: all 0.2s ease;
+  position: relative;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+}
+
+.toggle-list:hover {
+  border-color: var(--md-accent-fg-color);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.toggle-list.active {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-color: transparent;
+  margin-bottom: 0;
+}
+
+.toggle-list .arrow {
+  position: absolute;
+  right: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  color: var(--md-default-fg-color--light);
+  transition: all 0.2s ease;
+  font-weight: normal;
+}
+
+.toggle-list.active .arrow {
+  color: var(--md-accent-fg-color);
+}
+
+.toggle-list + div {
+  background: var(--md-default-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-top: none;
+  border-radius: 0 0 0.5rem 0.5rem;
+  padding: 1.25rem;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: var(--md-default-fg-color--light);
+  line-height: 1.6;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+}
+
+/* Header spacing fixes */
+.md-header__inner {
+  gap: 0.25rem !important;
+}
+
+.md-header__title {
+  margin-left: 0.25rem !important;
+}
+
+.md-header__button {
+  margin: 0 0.25rem !important;
+}
+
+/* Simple logo fixes - let MkDocs handle sizing */
+.md-header__button.md-logo {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.md-header__button.md-logo img {
+  height: 1.5rem !important;
+  width: auto !important;
+  display: block !important;
+}
+
+/* Remove yellow/orange divider in header */
+.md-header::after,
+.md-header__inner::after,
+.md-tabs::after {
+  display: none !important;
+}
+
+.md-tabs {
+  border-bottom: 1px solid var(--md-default-fg-color--lightest) !important;
+}
+
+
+/* Dark mode FAQ styling */
+[data-md-color-scheme="slate"] .toggle-list {
+  background: var(--md-code-bg-color);
+  border-color: var(--md-default-fg-color--lightest);
+}
+
+[data-md-color-scheme="slate"] .toggle-list + div {
+  background: var(--md-code-bg-color);
+  border-color: var(--md-default-fg-color--lightest);
+}
+
+/* FAQ Container spacing */
+.md-typeset h2 + .toggle-list:first-of-type {
+  margin-top: 1.5rem;
+}
+
+/* Let Material Design handle everything else - no custom colors, spacing, or layouts */

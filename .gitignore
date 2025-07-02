@@ -177,4 +177,7 @@ uv.lock
 # nbdev
 _proc/
 site/
+_version.py
+test_resources
+.claude
 **/old_nbs/*.md
