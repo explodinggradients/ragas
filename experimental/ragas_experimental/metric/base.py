@@ -18,7 +18,6 @@ from ..prompt.dynamic_few_shot import DynamicFewShotPrompt
 from .result import MetricResult
 
 if t.TYPE_CHECKING:
-
     from ragas_experimental.dataset import Dataset
 
 
@@ -47,7 +46,6 @@ class Metric(ABC):
         return vars
 
     def score(self, llm: RagasLLM, **kwargs) -> MetricResult:
-
         traces = {}
         traces["input"] = kwargs
         prompt_input = self.prompt.format(**kwargs)
@@ -58,7 +56,6 @@ class Metric(ABC):
         return result
 
     async def ascore(self, llm: RagasLLM, **kwargs) -> MetricResult:
-
         traces = {}
 
         prompt_input = self.prompt.format(**kwargs)
@@ -150,18 +147,13 @@ class Metric(ABC):
         output_vars = [self.name, f"{self.name}_reason"]
         with Progress() as progress:
             task = progress.add_task("Processing examples", total=total_items)
-            for dataset in datasets:
-                for row in dataset:
-                    inputs = {
-                        var: getattr(row, var)
-                        for var in input_vars
-                        if hasattr(row, var)
-                    }
-                    output = {
-                        var: getattr(row, var)
-                        for var in output_vars
-                        if hasattr(row, var)
-                    }
-                    if output:
-                        self.prompt.add_example(inputs, output)
-                    progress.update(task, advance=1)
+            for row in dataset:
+                inputs = {
+                    var: getattr(row, var) for var in input_vars if hasattr(row, var)
+                }
+                output = {
+                    var: getattr(row, var) for var in output_vars if hasattr(row, var)
+                }
+                if output:
+                    self.prompt.add_example(inputs, output)
+                progress.update(task, advance=1)
