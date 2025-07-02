@@ -157,3 +157,47 @@ class Metric(ABC):
                 if output:
                     self.prompt.add_example(inputs, output)
                 progress.update(task, advance=1)
+
+    def validate_alignment(
+        self,
+        llm: RagasLLM,
+        test_dataset: "Dataset",
+        mapping: t.Dict[str, str] = {},
+    ):
+        """
+        Args:
+            llm: The LLM instance to use for scoring.
+            test_dataset: An Dataset instance containing the gold standard scores.
+            mapping: A dictionary mapping variable names expected by metrics to their corresponding names in the gold experiment.
+
+        Validate the alignment of the metric by comparing the scores against a gold standard experiment.
+        This method computes the Cohen's Kappa score and agreement rate between the gold standard scores and
+        the predicted scores from the metric.
+        """
+
+        test_dataset.load()
+        gold_scores = [getattr(row, self.name) for row in test_dataset]
+        pred_scores = []
+        for row in test_dataset:
+            values = {
+                v: (
+                    getattr(row, v)
+                    if v not in mapping
+                    else getattr(row, mapping.get(v, v))
+                )
+                for v in self.get_variables()
+            }
+            score = self.score(llm=llm, **values)
+            pred_scores.append(score.result)
+
+        df = test_dataset.to_pandas()
+        df[f"{self.name}_pred"] = pred_scores
+        correlation = self.get_correlation(gold_scores, pred_scores)
+        agreement_rate = sum(x == y for x, y in zip(gold_scores, pred_scores)) / len(
+            gold_scores
+        )
+        return {
+            "correlation": correlation,
+            "agreement_rate": agreement_rate,
+            "df": df,
+        }
