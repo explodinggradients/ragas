@@ -16,6 +16,7 @@
   --md-primary-fg-color--light: #d19a3d;
   --md-primary-fg-color--dark: #a0711e;
   --md-accent-fg-color: #bd8526;
+  --md-default-bg-color: #171717;
 }
 
 /* Only minimal, essential customizations - let Material Design handle the rest */
