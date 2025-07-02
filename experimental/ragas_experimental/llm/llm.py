@@ -138,8 +138,17 @@ class InstructorLLM:
 
 
 def llm_factory(
-    provider: str, model: str, client: t.Any, **model_args
+    provider_model: str, client: t.Any, **model_args
 ) -> InstructorLLM:
+    # Parse provider/model string
+    if "/" not in provider_model:
+        raise ValueError(
+            f"Invalid provider_model format: '{provider_model}'. "
+            "Expected format: 'provider/model' (e.g., 'openai/gpt-4o')"
+        )
+    
+    provider, model = provider_model.split("/", 1)
+    
     def _initialize_client(provider: str, client: t.Any) -> t.Any:
         provider = provider.lower()
 
@@ -158,5 +167,5 @@ def llm_factory(
 
     instructor_patched_client = _initialize_client(provider=provider, client=client)
     return InstructorLLM(
-        provider=provider, client=instructor_patched_client, model=model, **model_args
+        client=instructor_patched_client, model=model, **model_args
     )
