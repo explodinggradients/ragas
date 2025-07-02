@@ -25,7 +25,7 @@ class BaseRagasLLM(ABC):
         """Asynchronously generate a response using the configured LLM."""
 
 
-class InstructorLLM:
+class InstructorLLM(BaseRagasLLM):
     def __init__(self, client: t.Any, model, **model_args):
         self.client = client
         self.model = model
@@ -137,18 +137,16 @@ class InstructorLLM:
         )
 
 
-def llm_factory(
-    provider_model: str, client: t.Any, **model_args
-) -> InstructorLLM:
+def llm_factory(provider_model: str, client: t.Any, **model_args) -> BaseRagasLLM:
     # Parse provider/model string
     if "/" not in provider_model:
         raise ValueError(
             f"Invalid provider_model format: '{provider_model}'. "
             "Expected format: 'provider/model' (e.g., 'openai/gpt-4o')"
         )
-    
+
     provider, model = provider_model.split("/", 1)
-    
+
     def _initialize_client(provider: str, client: t.Any) -> t.Any:
         provider = provider.lower()
 
@@ -166,6 +164,4 @@ def llm_factory(
             raise ValueError(f"Unsupported provider: {provider}")
 
     instructor_patched_client = _initialize_client(provider=provider, client=client)
-    return InstructorLLM(
-        client=instructor_patched_client, model=model, **model_args
-    )
+    return InstructorLLM(client=instructor_patched_client, model=model, **model_args)
