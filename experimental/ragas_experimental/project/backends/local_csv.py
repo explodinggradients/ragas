@@ -353,7 +353,7 @@ class LocalCSVProjectBackend(ProjectBackend):
         # Check if the dataset file exists
         dataset_path = os.path.join(self._project_dir, "datasets", f"{name}.csv")
         if not os.path.exists(dataset_path):
-            raise ValueError(f"Dataset '{name}' does not exist")
+            raise ValueError(f"Dataset '{name}' does not exist in path {dataset_path}")
 
         # Create dataset instance with a random ID
         dataset_id = create_nano_id()
