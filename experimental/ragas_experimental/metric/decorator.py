@@ -7,7 +7,7 @@ import inspect
 import typing as t
 from dataclasses import dataclass
 
-from ..llm import RagasLLM
+from ..llms import BaseRagasLLM
 from .result import MetricResult
 
 
@@ -132,11 +132,11 @@ def create_metric_decorator(metric_class):
                         error_msg = f"Error executing metric {self.name}: {str(e)}"
                         return MetricResult(result=None, reason=error_msg)
 
-                def score(self, llm: t.Optional[RagasLLM] = None, **kwargs):
+                def score(self, llm: t.Optional[BaseRagasLLM] = None, **kwargs):
                     """Synchronous scoring method."""
                     return self._execute_metric(llm, is_async_execution=False, **kwargs)
 
-                async def ascore(self, llm: t.Optional[RagasLLM] = None, **kwargs):
+                async def ascore(self, llm: t.Optional[BaseRagasLLM] = None, **kwargs):
                     """Asynchronous scoring method."""
                     # Prepare function arguments based on what the function expects
                     func_kwargs = kwargs.copy()

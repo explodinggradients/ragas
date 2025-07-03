@@ -16,7 +16,7 @@ from ragas_experimental.model.pydantic_model import (
 )
 
 from .project.core import Project
-from .llm import llm_factory
+from .llms import llm_factory
 
 # Import the main Project class - decorators are added automatically in core.py
 

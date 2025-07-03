@@ -1,4 +1,4 @@
-__all__ = ["T", "InstructorLLM ", "llm_factory "]
+__all__ = ["T", "InstructorLLM", "llm_factory", "BaseRagasLLM"]
 
 import asyncio
 from abc import ABC, abstractmethod
