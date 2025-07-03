@@ -4,8 +4,8 @@ import typing as t
 from dataclasses import dataclass, field
 
 from ragas.metrics.base import MultiTurnMetric, MetricType
-from ragas.types import MultiTurnSample
-from ragas.utils.typing import ScoreType
+from ragas.dataset_schema import MultiTurnSample
+from ragas.messages import AIMessage
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks.base import Callbacks
@@ -20,24 +20,27 @@ class ToolCallF1(MultiTurnMetric):
         default_factory=lambda: {
             MetricType.MULTI_TURN: {
                 "reference_tool_calls",
-                "agent_messages",
+                "user_input",
             }
         }
     )
 
+    def init(self, run_config):
+        pass
+
     async def _multi_turn_ascore(
         self, sample: MultiTurnSample, callbacks: t.Optional[Callbacks] = None
-    ) -> ScoreType:
+    ) -> float:
         expected: set[tuple[str, frozenset]] = set()
         if sample.reference_tool_calls:
             for call in sample.reference_tool_calls:
-                expected.add((call.name, frozenset(call.parameters.items())))
+                expected.add((call.name, frozenset(call.args.items())))
 
         actual: set[tuple[str, frozenset]] = set()
-        for msg in sample.agent_messages:
-            if msg.tool_calls:
+        for msg in sample.user_input:
+            if isinstance(msg, AIMessage) and msg.tool_calls is not None:
                 for call in msg.tool_calls:
-                    actual.add((call.name, frozenset(call.parameters.items())))
+                    actual.add((call.name, frozenset(call.args.items())))
 
         tp = len(actual & expected)
         fp = len(actual - expected)
@@ -45,9 +48,13 @@ class ToolCallF1(MultiTurnMetric):
 
         precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
         recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+        f1 = (
+            2 * precision * recall / (precision + recall)
+            if (precision + recall) > 0
+            else 0.0
+        )
 
         return round(f1, 4)
 
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> ScoreType:
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         return await self._multi_turn_ascore(MultiTurnSample(**row), callbacks)
