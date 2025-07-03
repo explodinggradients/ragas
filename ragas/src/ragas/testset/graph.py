@@ -256,61 +256,59 @@ class KnowledgeGraph:
         depth_limit: int = 3,
     ) -> t.List[t.Set[Node]]:
         """
-        Finds indirect clusters of nodes in the knowledge graph based on a relationship condition.
-        Here if A -> B -> C -> D, then A, B, C, and D form a cluster. If there's also a path A -> B -> C -> E,
-        it will form a separate cluster.
+        Finds clusters (connected components) of nodes in the knowledge graph reachable within
+        a limited number of hops, according to a relationship condition.
+
+        A cluster is defined as a set of nodes such that each node in the cluster can be reached
+        from any other node in the same cluster by traversing up to `depth_limit` relationships
+        (edges), following only relationships that satisfy the given `relationship_condition`.
+
+        For example, if A → B → C → D exists (and the relationships match the condition),
+        then {A, B, C, D} will be grouped in the same cluster if all are within `depth_limit`
+        of each other. Nodes that are not connected within this limit will be in separate clusters.
 
         Parameters
         ----------
         relationship_condition : Callable[[Relationship], bool], optional
-            A function that takes a Relationship and returns a boolean, by default lambda _: True
+            A function that takes a Relationship and returns a boolean indicating if it should be
+            considered during clustering. By default, all relationships are considered.
+
+        depth_limit : int, optional
+            The maximum number of hops to use for clustering. Default is 3.
 
         Returns
         -------
         List[Set[Node]]
-            A list of sets, where each set contains nodes that form a cluster.
+            A list of clusters: each cluster is a set of nodes, and no node appears in more than one cluster.
         """
         clusters = []
-        visited_paths = set()
+        assigned = set()
+        relationships = [rel for rel in self.relationships if relationship_condition(rel)]
 
-        relationships = [
-            rel for rel in self.relationships if relationship_condition(rel)
-        ]
-
-        def dfs(node: Node, cluster: t.Set[Node], depth: int, path: t.Tuple[Node, ...]):
-            if depth >= depth_limit or path in visited_paths:
-                return
-            visited_paths.add(path)
-            cluster.add(node)
-
-            for rel in relationships:
-                neighbor = None
-                if rel.source == node and rel.target not in cluster:
-                    neighbor = rel.target
-                elif (
-                    rel.bidirectional
-                    and rel.target == node
-                    and rel.source not in cluster
-                ):
-                    neighbor = rel.source
-
-                if neighbor is not None:
-                    dfs(neighbor, cluster.copy(), depth + 1, path + (neighbor,))
-
-            # Add completed path-based cluster
-            if len(cluster) > 1:
-                clusters.append(cluster)
+        # Build adjacency list
+        adjacency = {node: set() for node in self.nodes}
+        for rel in relationships:
+            adjacency[rel.source].add(rel.target)
+            if rel.bidirectional:
+                adjacency[rel.target].add(rel.source)
 
         for node in self.nodes:
-            initial_cluster = set()
-            dfs(node, initial_cluster, 0, (node,))
-
-        # Remove duplicates by converting clusters to frozensets
-        unique_clusters = [
-            set(cluster) for cluster in set(frozenset(c) for c in clusters)
-        ]
-
-        return unique_clusters
+            if node not in assigned:
+                # BFS for all nodes within depth_limit
+                cluster = set([node])
+                q = [(node, 0)]
+                while q:
+                    curr, depth = q.pop(0)
+                    if depth == depth_limit:
+                        continue
+                    for neighbor in adjacency.get(curr, []):
+                        if neighbor not in cluster:
+                            cluster.add(neighbor)
+                            q.append((neighbor, depth + 1))
+                if len(cluster) > 1:
+                    clusters.append(cluster)
+                    assigned.update(cluster)
+        return clusters
 
     def remove_node(
         self, node: Node, inplace: bool = True
