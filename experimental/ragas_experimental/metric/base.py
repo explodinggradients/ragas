@@ -3,22 +3,21 @@
 __all__ = ["Metric"]
 
 import asyncio
-import string
-import typing as t
-from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from pydantic import BaseModel
+import typing as t
+from rich.progress import Progress
+import string
+from abc import ABC, abstractmethod
 
-from tqdm import tqdm
 
 from ..embedding.base import BaseEmbedding
 from ..llm import RagasLLM
 from ..prompt.base import Prompt
 from ..prompt.dynamic_few_shot import DynamicFewShotPrompt
 from .result import MetricResult
-from pydantic import BaseModel
 
 if t.TYPE_CHECKING:
-
     from ragas_experimental.dataset import Dataset
 
 
@@ -47,7 +46,6 @@ class Metric(ABC):
         return vars
 
     def score(self, llm: RagasLLM, **kwargs) -> MetricResult:
-
         traces = {}
         traces["input"] = kwargs
         prompt_input = self.prompt.format(**kwargs)
@@ -58,7 +56,6 @@ class Metric(ABC):
         return result
 
     async def ascore(self, llm: RagasLLM, **kwargs) -> MetricResult:
-
         traces = {}
 
         prompt_input = self.prompt.format(**kwargs)
@@ -148,7 +145,8 @@ class Metric(ABC):
         total_items = len(dataset)
         input_vars = self.get_variables()
         output_vars = [self.name, f"{self.name}_reason"]
-        with tqdm(total=total_items, desc="Processing examples") as pbar:
+        with Progress() as progress:
+            task = progress.add_task("Processing examples", total=total_items)
             for row in dataset:
                 inputs = {
                     var: getattr(row, var) for var in input_vars if hasattr(row, var)
@@ -158,7 +156,7 @@ class Metric(ABC):
                 }
                 if output:
                     self.prompt.add_example(inputs, output)
-                pbar.update(1)
+                progress.update(task, advance=1)
 
     def validate_alignment(
         self,
@@ -180,7 +178,7 @@ class Metric(ABC):
         test_dataset.load()
         gold_scores = [getattr(row, self.name) for row in test_dataset]
         pred_scores = []
-        for row in tqdm(test_dataset):
+        for row in test_dataset:
             values = {
                 v: (
                     getattr(row, v)

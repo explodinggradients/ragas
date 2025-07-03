@@ -47,6 +47,9 @@ platform = "ragas_experimental.project.backends.platform:PlatformProjectBackend"
 include = ["ragas_experimental*"]
 exclude = ["site*", "old_nbs*", "experiments*", "_proc*", "build*", "dist*"]
 
+[project.scripts]
+ragas = "ragas_experimental.cli:app"
+
 [tool.setuptools_scm]
 root = ".."  # Points to monorepo root, one directory up
 version_file = "ragas_experimental/_version.py"  # Creates a version file
