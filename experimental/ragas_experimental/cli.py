@@ -439,5 +439,76 @@ def evals(
         raise typer.Exit(1)
 
 
+@app.command()
+def hello_world(
+    directory: Optional[str] = typer.Argument(
+        ".", help="Directory to run the hello world example in"
+    ),
+):
+
+    import pandas as pd
+    import os
+
+    if not os.path.exists(directory):
+        raise typer.Exit(f"Directory {directory} does not exist.")
+
+    os.mkdir(os.path.join(directory, "hello_world"))
+    os.makedirs(os.path.join(directory, "hello_world", "datasets"), exist_ok=True)
+    os.makedirs(os.path.join(directory, "hello_world", "experiments"), exist_ok=True)
+
+    hello_world_data = [
+        {
+            "id": 1,
+            "query": "What is the capital of France?",
+            "expected_output": "Paris",
+        },
+        {"id": 2, "query": "What is 2 + 2?", "expected_output": "4"},
+        {
+            "id": 3,
+            "query": "What is the largest mammal?",
+            "expected_output": "Blue Whale",
+        },
+        {
+            "id": 4,
+            "query": "Who developed the theory of relativity?",
+            "expected_output": "Einstein",
+        },
+        {
+            "id": 5,
+            "query": "What is the programming language used for data science?",
+            "expected_output": "Python",
+        },
+        {
+            "id": 6,
+            "query": "What is the highest mountain in the world?",
+            "expected_output": "Mount Everest",
+        },
+        {
+            "id": 7,
+            "query": "Who wrote 'Romeo and Juliet'?",
+            "expected_output": "Shakespeare",
+        },
+        {
+            "id": 8,
+            "query": "What is the fourth planet from the Sun?",
+            "expected_output": "Mars",
+        },
+        {
+            "id": 9,
+            "query": "What is the name of the fruit that keeps the doctor away?",
+            "expected_output": "Apple",
+        },
+        {
+            "id": 10,
+            "query": "Who painted the Mona Lisa?",
+            "expected_output": "Leonardo da Vinci",
+        },
+    ]
+    df = pd.DataFrame(hello_world_data)
+    df.to_csv(
+        os.path.join(directory, "hello_world", "datasets", "test_data.csv"), index=False
+    )
+
+
 if __name__ == "__main__":
     app()
