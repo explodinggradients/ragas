@@ -199,7 +199,7 @@ class LLMBasedExtractor(Extractor, PromptMixin):
     def split_text_by_token_limit(self, text, max_token_limit):
 
         # Tokenize the entire input string
-        tokens = self.tokenizer.encode(text)
+        tokens = self.tokenizer.encode(text, disallowed_special=())
 
         # Split tokens into chunks of max_token_limit or less
         chunks = []
