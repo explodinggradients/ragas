@@ -59,3 +59,27 @@ open hello_world/experiments/first_experiment.csv
 ```
 ragas evals hello_world/evals.py --dataset test_data --metrics accuracy --baseline first_experiment
 ```
+
+```
+Running evaluation: hello_world/evals.py
+Dataset: test_data
+Baseline: first_experiment
+Getting dataset: test_data
+✓ Loaded dataset with 10 rows
+Running experiment: 100%|█████████████████████████████| 20/20 [00:00<00:00, 4900.46it/s]
+✓ Completed experiments successfully
+Comparing against baseline: first_experiment
+╭────────────────────────── Ragas Evaluation Results ──────────────────────────╮
+│ Experiment: vigilant_brin                                                    │
+│ Dataset: test_data (10 rows)                                                 │
+│ Baseline: first_experiment                                                             │
+╰──────────────────────────────────────────────────────────────────────────────╯
+                Numerical Metrics
+┏━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━┳━━━━━━┓
+┃ Metric   ┃ Current ┃ Baseline ┃  Delta ┃ Gate ┃
+┡━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━╇━━━━━━┩
+│ accuracy │   0.000 │    0.000 │ ▼0.000 │ pass │
+└──────────┴─────────┴──────────┴────────┴──────┘
+✓ Comparison completed
+✓ Evaluation completed successfully
+```
