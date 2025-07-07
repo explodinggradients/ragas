@@ -459,7 +459,7 @@ def hello_world(
         console=console,
     ) as live:
         live.update(Spinner("dots", text="Creating directories...", style="green"))
-        os.mkdir(os.path.join(directory, "hello_world"))
+        Path(directory).joinpath('hello_world').mkdir(parents=True, exist_ok=True)
         os.makedirs(os.path.join(directory, "hello_world", "datasets"), exist_ok=True)
         os.makedirs(
             os.path.join(directory, "hello_world", "experiments"), exist_ok=True
