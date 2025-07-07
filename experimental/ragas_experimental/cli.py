@@ -545,7 +545,7 @@ def accuracy_score(response: str, expected: str):
     """
     Is the response a good response to the query?
     """
-    result = 1 if expected in response else 0
+    result = 1 if expected.lower().strip() == response.lower().strip() else 0
     return MetricResult(
         result=result,
         reason=(
