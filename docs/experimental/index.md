@@ -11,7 +11,7 @@ ragas hello-world
 2. Run your first experiment with Ragas CLI.
 
 ```
-ragas evals hello_world/evals.py --dataset test_data --metrics accuracy
+ragas evals hello_world/evals.py --dataset test_data --metrics accuracy --name first_experiment
 ```
 
 ```
@@ -43,7 +43,7 @@ tree hello_world/experiments
 
 ```
 hello_world/experiments
-└── lucid_codd.csv
+└── first_experiment.csv
 
 0 directories, 1 files
 ```
@@ -51,6 +51,11 @@ hello_world/experiments
 4. View the results in a spreadsheet application.
 
 ```
-open hello_world/experiments/lucid_codd.csv
+open hello_world/experiments/first_experiment.csv
 ```
 
+5. Run your second experiment and compare with the first one.
+
+```
+ragas evals hello_world/evals.py --dataset test_data --metrics accuracy --baseline first_experiment
+```

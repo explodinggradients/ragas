@@ -267,6 +267,7 @@ async def run_experiments(
     input_data_class: type,
     baseline_name: Optional[str] = None,
     metrics: str = None,
+    name: Optional[str] = None
 ):
     """Run experiments using ragas dataset system."""
     console.print(f"Getting dataset: {dataset_name}")
@@ -282,7 +283,7 @@ async def run_experiments(
 
     # Run the experiment using the run_async method
     try:
-        experiment_result = await experiment_func.run_async(dataset)
+        experiment_result = await experiment_func.run_async(dataset, name=name)
         success("✓ Completed experiments successfully")
     except Exception as e:
         error(f"Error running experiments: {e}")
@@ -375,6 +376,7 @@ def evals(
     baseline: Optional[str] = typer.Option(
         None, "--baseline", help="Baseline experiment name to compare against"
     ),
+    name: Optional[str] = typer.Option(None, "--name", help="Name of the experiment run")
 ):
     """Run evaluations on a dataset."""
     console.print(f"Running evaluation: {eval_file}")
@@ -430,7 +432,7 @@ def evals(
         # Run the experiments
         asyncio.run(
             run_experiments(
-                project, experiment_func, dataset, input_data_class, baseline, metrics
+                project, experiment_func, dataset, input_data_class, baseline, metrics, name
             )
         )
         success("✓ Evaluation completed successfully")
