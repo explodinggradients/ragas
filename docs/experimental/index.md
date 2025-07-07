@@ -2,13 +2,13 @@
 
 ## Hello World 👋
 
-Setup a sample experiment. 
+1. Setup a sample experiment. 
 
 ```
 ragas hello-world
 ```
 
-Run your first experiment with Ragas CLI.
+2. Run your first experiment with Ragas CLI.
 ```
 ragas evals hello_world/evals.py --dataset test_data --metrics accuracy
 ```
@@ -34,15 +34,20 @@ Running experiment: 100%|██████████████████�
 ✓ Evaluation completed successfully
 ```
 
-Inspect the results 
+3. Inspect the results 
 ```
 tree hello_world/experiments
-
 ```
 
 ```
 hello_world/experiments
 └── lucid_codd.csv
 
-0 directories, 2 files
+0 directories, 1 files
 ```
+
+4. View the results in a spreadsheet application.
+```
+open hello_world/experiments/lucid_codd.csv
+```
+
