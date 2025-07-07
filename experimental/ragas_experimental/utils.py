@@ -1,7 +1,6 @@
 __all__ = [
     "create_nano_id",
     "async_to_sync",
-    "plot_experiments_as_subplots",
     "get_test_directory",
 ]
 
@@ -11,9 +10,7 @@ import os
 import string
 import tempfile
 import uuid
-from collections import Counter
 
-import numpy as np
 from rich.console import Console
 
 console = Console()
@@ -55,6 +52,7 @@ def async_to_sync(async_func):
             return asyncio.run(async_func(*args, **kwargs))
 
     return sync_wrapper
+
 
 # Helper function for tests
 def get_test_directory():
