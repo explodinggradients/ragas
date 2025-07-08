@@ -13,6 +13,8 @@ from collections import Counter
 from rich.table import Table
 from rich.text import Text
 from rich.panel import Panel
+from rich.spinner import Spinner
+from rich.live import Live
 from .project.core import Project
 from .utils import console
 
@@ -265,6 +267,7 @@ async def run_experiments(
     input_data_class: type,
     baseline_name: Optional[str] = None,
     metrics: str = None,
+    name: Optional[str] = None,
 ):
     """Run experiments using ragas dataset system."""
     console.print(f"Getting dataset: {dataset_name}")
@@ -280,7 +283,7 @@ async def run_experiments(
 
     # Run the experiment using the run_async method
     try:
-        experiment_result = await experiment_func.run_async(dataset)
+        experiment_result = await experiment_func.run_async(dataset, name=name)
         success("✓ Completed experiments successfully")
     except Exception as e:
         error(f"Error running experiments: {e}")
@@ -373,6 +376,9 @@ def evals(
     baseline: Optional[str] = typer.Option(
         None, "--baseline", help="Baseline experiment name to compare against"
     ),
+    name: Optional[str] = typer.Option(
+        None, "--name", help="Name of the experiment run"
+    ),
 ):
     """Run evaluations on a dataset."""
     console.print(f"Running evaluation: {eval_file}")
@@ -428,7 +434,13 @@ def evals(
         # Run the experiments
         asyncio.run(
             run_experiments(
-                project, experiment_func, dataset, input_data_class, baseline, metrics
+                project,
+                experiment_func,
+                dataset,
+                input_data_class,
+                baseline,
+                metrics,
+                name,
             )
         )
         success("✓ Evaluation completed successfully")
@@ -437,6 +449,170 @@ def evals(
         error(f"Error running evaluation: {e}")
         traceback.print_exc()
         raise typer.Exit(1)
+
+
+@app.command()
+def hello_world(
+    directory: Optional[str] = typer.Argument(
+        ".", help="Directory to run the hello world example in"
+    ),
+):
+    import pandas as pd
+    import os
+    import time
+
+    if not os.path.exists(directory):
+        raise typer.Exit(f"Directory {directory} does not exist.")
+
+    with Live(
+        Spinner("dots", text="Creating hello world example...", style="green"),
+        console=console,
+    ) as live:
+        live.update(Spinner("dots", text="Creating directories...", style="green"))
+        Path(directory).joinpath("hello_world").mkdir(parents=True, exist_ok=True)
+        os.makedirs(os.path.join(directory, "hello_world", "datasets"), exist_ok=True)
+        os.makedirs(
+            os.path.join(directory, "hello_world", "experiments"), exist_ok=True
+        )
+        time.sleep(0.5)  # Brief pause to show spinner
+
+        live.update(Spinner("dots", text="Creating test dataset...", style="green"))
+        hello_world_data = [
+            {
+                "id": 1,
+                "query": "What is the capital of France?",
+                "expected_output": "Paris",
+            },
+            {"id": 2, "query": "What is 2 + 2?", "expected_output": "4"},
+            {
+                "id": 3,
+                "query": "What is the largest mammal?",
+                "expected_output": "Blue Whale",
+            },
+            {
+                "id": 4,
+                "query": "Who developed the theory of relativity?",
+                "expected_output": "Einstein",
+            },
+            {
+                "id": 5,
+                "query": "What is the programming language used for data science?",
+                "expected_output": "Python",
+            },
+            {
+                "id": 6,
+                "query": "What is the highest mountain in the world?",
+                "expected_output": "Mount Everest",
+            },
+            {
+                "id": 7,
+                "query": "Who wrote 'Romeo and Juliet'?",
+                "expected_output": "Shakespeare",
+            },
+            {
+                "id": 8,
+                "query": "What is the fourth planet from the Sun?",
+                "expected_output": "Mars",
+            },
+            {
+                "id": 9,
+                "query": "What is the name of the fruit that keeps the doctor away?",
+                "expected_output": "Apple",
+            },
+            {
+                "id": 10,
+                "query": "Who painted the Mona Lisa?",
+                "expected_output": "Leonardo da Vinci",
+            },
+        ]
+        df = pd.DataFrame(hello_world_data)
+        df.to_csv(
+            os.path.join(directory, "hello_world", "datasets", "test_data.csv"),
+            index=False,
+        )
+        time.sleep(0.5)  # Brief pause to show spinner
+
+        live.update(
+            Spinner("dots", text="Creating evaluation script...", style="green")
+        )
+        # Create evals.py file
+        evals_content = '''import typing as t
+
+import numpy as np
+from ragas_experimental import BaseModel, Project
+from ragas_experimental.project.backends import LocalCSVProjectBackend
+from ragas_experimental.metric.result import MetricResult
+from ragas_experimental.metric.numeric import numeric_metric
+
+p = Project(
+    project_id="hello_world",
+    project_backend=LocalCSVProjectBackend("."),
+)
+
+
+@numeric_metric(name="accuracy_score", range=(0, 1))
+def accuracy_score(response: str, expected: str):
+    """
+    Is the response a good response to the query?
+    """
+    result = 1 if expected.lower().strip() == response.lower().strip() else 0
+    return MetricResult(
+        result=result,
+        reason=(
+            f"Response contains {expected}"
+            if result
+            else f"Response does not contain {expected}"
+        ),
+    )
+
+
+def mock_app_endpoint(**kwargs) -> str:
+    """Mock AI endpoint for testing purposes."""
+    mock_responses = [
+        "Paris","4","Blue Whale","Einstein","Python","Mount Everest","Shakespeare",
+        "Mars","Apple","Leonardo da Vinci",]
+    return np.random.choice(mock_responses)
+
+
+class TestDataRow(BaseModel):
+    id: t.Optional[int]
+    query: str
+    expected_output: str
+
+
+class ExperimentDataRow(TestDataRow):
+    response: str
+    accuracy: int
+    accuracy_reason: t.Optional[str] = None
+
+
+@p.experiment(ExperimentDataRow)
+async def run_experiment(row: TestDataRow):
+    response = mock_app_endpoint(query=row.query)
+    accuracy = accuracy_score.score(response=response, expected=row.expected_output)
+
+    experiment_view = ExperimentDataRow(
+        **row.model_dump(),
+        response=response,
+        accuracy=accuracy.result,
+        accuracy_reason=accuracy.reason,
+    )
+    return experiment_view
+'''
+
+        evals_path = os.path.join(directory, "hello_world", "evals.py")
+        with open(evals_path, "w") as f:
+            f.write(evals_content)
+        time.sleep(0.5)  # Brief pause to show spinner
+
+        live.update(Spinner("dots", text="Finalizing hello world example..."))
+        time.sleep(0.5)  # Brief pause to show spinner
+
+    hello_world_path = os.path.join(directory, "hello_world")
+    success(f"✓ Created hello world example in {hello_world_path}")
+    success(
+        "✓ You can now run: ragas evals hello_world/evals.py --dataset test_data --metrics accuracy"
+    )
 
 
 if __name__ == "__main__":
