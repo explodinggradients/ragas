@@ -4,9 +4,7 @@ __all__ = ["Experiment"]
 
 import typing as t
 
-from ragas_experimental.model.pydantic_model import (
-    ExtendedPydanticBaseModel as BaseModel,
-)
+from pydantic import BaseModel
 
 from .dataset import DataTable
 
@@ -16,15 +14,13 @@ class Experiment(DataTable):
         self,
         name: str,
         model: t.Type[BaseModel],
-        project_id: str,
         experiment_id: str,
         backend,  # DataTableBackend instance
     ):
         self.experiment_id = experiment_id
         super().__init__(
             name=name,
-            model=model,
-            project_id=project_id,
+            data_model=model,
             dataset_id=experiment_id,
             datatable_type="experiments",
             backend=backend,

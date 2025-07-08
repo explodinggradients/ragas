@@ -7,221 +7,28 @@ __all__ = [
 ]
 
 import typing as t
-from typing import overload, Literal
 
-try:
-    import pandas as pd
-except ImportError:
-    pd = None
-
-from ragas_experimental.model.pydantic_model import (
-    ExtendedPydanticBaseModel as BaseModel,
-)
+from pydantic import BaseModel
 
 from .backends import DataTableBackend
-
-# Type-only imports
-if t.TYPE_CHECKING:
-    from .project.core import Project
 
 BaseModelType = t.TypeVar("BaseModelType", bound=BaseModel)
 
 
 class DataTable(t.Generic[BaseModelType]):
-    """A list-like interface for managing datatable entries with backend synchronization.
+    """A list-like interface for managing datatable entries with backend save and load.
 
     This class behaves like a Python list while synchronizing operations with the
     chosen backend (Ragas API or local filesystem). Base class for Dataset and Experiment.
     """
 
-    # Type-safe overloads for dataset creation
-    @overload
-    @classmethod
-    def create(
-        cls,
-        name: str,
-        model: t.Type[BaseModel],
-        project: "Project",
-        dataset_type: Literal["datasets"] = "datasets",
-    ) -> "DataTable[BaseModel]": ...
-
-    @overload
-    @classmethod
-    def create(
-        cls,
-        name: str,
-        model: t.Type[BaseModel],
-        project: "Project",
-        dataset_type: Literal["experiments"],
-    ) -> "DataTable[BaseModel]": ...
-
-    @classmethod
-    def create(
-        cls,
-        name: str,
-        model: t.Type[BaseModel],
-        project: "Project",
-        dataset_type: Literal["datasets", "experiments"] = "datasets",
-    ) -> "DataTable[BaseModel]":
-        """Create a new dataset with type-safe parameters.
-
-        Args:
-            name: Name of the dataset
-            model: Pydantic model class for entries
-            project: Project instance to create the dataset in
-            dataset_type: Type of dataset ("datasets" or "experiments")
-
-        Returns:
-            Dataset: A new dataset instance
-
-        Examples:
-            >>> # Create a dataset
-            >>> dataset = Dataset.create("my_data", MyModel, project)
-
-            >>> # Create an experiment
-            >>> experiment = Dataset.create("my_experiment", MyModel, project, "experiments")
-        """
-        # Use the project's backend to create the dataset
-        if dataset_type == "datasets":
-            dataset_id = project._backend.create_dataset(name, model)
-            backend = project._backend.get_dataset_backend(dataset_id, name, model)
-        else:  # experiments
-            dataset_id = project._backend.create_experiment(name, model)
-            backend = project._backend.get_experiment_backend(dataset_id, name, model)
-
-        # Create the dataset with the simplified constructor
-        return cls._create_with_backend(
-            name=name,
-            model=model,
-            project_id=project.project_id,
-            dataset_id=dataset_id,
-            datatable_type=dataset_type,
-            backend=backend,
-        )
-
-    # Type-safe overloads for getting existing datasets
-    @overload
-    @classmethod
-    def get_dataset(
-        cls,
-        name: str,
-        model: t.Type[BaseModel],
-        project: "Project",
-        dataset_type: Literal["datasets"] = "datasets",
-    ) -> "DataTable[BaseModel]": ...
-
-    @overload
-    @classmethod
-    def get_dataset(
-        cls,
-        name: str,
-        model: t.Type[BaseModel],
-        project: "Project",
-        dataset_type: Literal["experiments"],
-    ) -> "DataTable[BaseModel]": ...
-
-    @classmethod
-    def get_dataset(
-        cls,
-        name: str,
-        model: t.Type[BaseModel],
-        project: "Project",
-        dataset_type: Literal["datasets", "experiments"] = "datasets",
-    ) -> "DataTable[BaseModel]":
-        """Get an existing dataset by name with type-safe parameters.
-
-        Args:
-            name: Name of the dataset to retrieve
-            model: Pydantic model class for entries
-            project: Project instance containing the dataset
-            dataset_type: Type of dataset ("datasets" or "experiments")
-
-        Returns:
-            Dataset: The existing dataset instance
-
-        Examples:
-            >>> # Get a dataset
-            >>> dataset = Dataset.get_dataset("my_data", MyModel, project)
-
-            >>> # Get an experiment
-            >>> experiment = Dataset.get_dataset("my_experiment", MyModel, project, "experiments")
-        """
-        # Use the project's backend to get the dataset
-        if dataset_type == "datasets":
-            dataset_id, _ = project._backend.get_dataset_by_name(name, model)
-            backend = project._backend.get_dataset_backend(dataset_id, name, model)
-        else:  # experiments
-            dataset_id, _ = project._backend.get_experiment_by_name(name, model)
-            backend = project._backend.get_experiment_backend(dataset_id, name, model)
-
-        # Create the dataset with the simplified constructor
-        return cls._create_with_backend(
-            name=name,
-            model=model,
-            project_id=project.project_id,
-            dataset_id=dataset_id,
-            datatable_type=dataset_type,
-            backend=backend,
-        )
-
-    @classmethod
-    def _create_with_backend(
-        cls,
-        name: str,
-        model: t.Type[BaseModel],
-        project_id: str,
-        dataset_id: str,
-        datatable_type: t.Literal["datasets", "experiments"],
-        backend: DataTableBackend,
-    ) -> "DataTable[BaseModel]":
-        """Internal helper to create a dataset with a backend instance.
-
-        Args:
-            name: Dataset name
-            model: Pydantic model class
-            project_id: Project ID
-            dataset_id: Dataset ID
-            datatable_type: Dataset or experiment type
-            backend: Backend instance
-
-        Returns:
-            DataTable: New datatable instance
-        """
-        # Create the instance without calling __init__
-        instance = cls.__new__(cls)
-
-        # Set basic properties
-        instance.name = name
-        instance.model = model
-        instance.project_id = project_id
-        instance.dataset_id = dataset_id
-        instance.backend_type = getattr(backend, "backend_type", "unknown")
-        instance.datatable_type = datatable_type
-        instance._entries = []
-        instance._backend = backend
-
-        # Initialize the backend with this dataset
-        instance._backend.initialize(instance)
-
-        # Initialize column mapping if it doesn't exist yet
-        if not hasattr(instance.model, "__column_mapping__"):
-            instance.model.__column_mapping__ = {}
-
-        # Get column mappings from backend and update the model's mapping
-        column_mapping = instance._backend.get_column_mapping(model)
-        for field_name, column_id in column_mapping.items():
-            instance.model.__column_mapping__[field_name] = column_id
-
-        return instance
-
     def __init__(
         self,
         name: str,
-        model: t.Type[BaseModel],
-        project_id: str,
+        data_model: t.Type[BaseModel],
+        backend: DataTableBackend,
         dataset_id: str,
         datatable_type: t.Literal["datasets", "experiments"],
-        backend: DataTableBackend,
     ):
         """Initialize a Dataset with a backend instance.
 
@@ -238,7 +45,7 @@ class DataTable(t.Generic[BaseModelType]):
         """
         # Store basic properties
         self.name = name
-        self.model = model
+        self.model = data_model
         self.project_id = project_id
         self.dataset_id = dataset_id
         self.backend_type = getattr(backend, "backend_type", "unknown")
@@ -254,7 +61,7 @@ class DataTable(t.Generic[BaseModelType]):
             self.model.__column_mapping__ = {}
 
         # Get column mappings from backend and update the model's mapping
-        column_mapping = self._backend.get_column_mapping(model)
+        column_mapping = self._backend.get_column_mapping(data_model)
 
         # Update the model's column mapping
         for field_name, column_id in column_mapping.items():
