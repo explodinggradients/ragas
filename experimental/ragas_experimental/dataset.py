@@ -316,6 +316,39 @@ class DataTable(t.Generic[BaseModelType]):
         """Iterate over the entries in the dataset."""
         return iter(self._entries)
 
+    def get_fields_by_type(self, target_type: t.Any) -> t.List[str]:
+        """Get field names that match the given type.
+
+        Handles complex types like Union, Optional, etc. using typing helpers.
+
+        Args:
+            target_type: The type to match against
+
+        Returns:
+            List of field names with matching type
+        """
+        return_fields = []
+        for field_name, field_info in self.model.model_fields.items():
+            annotation = field_info.annotation
+
+            # Handle direct type match
+            if annotation == target_type:
+                return_fields.append(field_name)
+                continue
+
+            # Handle complex types like Union, Optional, etc.
+            origin = t.get_origin(annotation)
+            args = t.get_args(annotation)
+
+            # Check for Optional[target_type] or Union[target_type, None]
+            if origin is t.Union and target_type in args:
+                return_fields.append(field_name)
+            # Check for List[target_type], Dict[_, target_type], etc.
+            elif origin and args and any(arg == target_type for arg in args):
+                return_fields.append(field_name)
+
+        return return_fields
+
     def append(self, entry: BaseModelType) -> None:
         """Add a new entry to the dataset and sync to backend.
 
@@ -488,3 +521,52 @@ class Dataset(DataTable[BaseModelType]):
     """
 
     pass
+
+    def train_test_split(
+        self, test_size: float = 0.2, random_state: t.Optional[int] = None
+    ) -> t.Tuple["Dataset[BaseModelType]", "Dataset[BaseModelType]"]:
+        """Split the dataset into training and testing sets.
+
+        Args:
+            test_size: Proportion of the dataset to include in the test split (default: 0.2)
+            random_state: Random seed for reproducibility (default: None)
+        Returns:
+            A tuple of two Datasets: (train_dataset, test_dataset)
+        """
+        if not self._entries:
+            self.load()
+
+        # Shuffle entries if random_state is set
+        if random_state is not None:
+            import random
+
+            random.seed(random_state)
+            random.shuffle(self._entries)
+
+        # Calculate split index
+        split_index = int(len(self._entries) * (1 - test_size))
+
+        # Create new dataset instances without full initialization
+        train_dataset = object.__new__(type(self))
+        test_dataset = object.__new__(type(self))
+
+        # Copy essential attributes
+        for dataset in [train_dataset, test_dataset]:
+            dataset.model = self.model
+            dataset.project_id = self.project_id
+            dataset._backend = self._backend
+            dataset.backend_type = self.backend_type
+            dataset.datatable_type = self.datatable_type
+
+        # Set specific attributes for each dataset
+        train_dataset.name = f"{self.name}_train"
+        train_dataset.dataset_id = f"{self.dataset_id}_train"
+
+        test_dataset.name = f"{self.name}_test"
+        test_dataset.dataset_id = f"{self.dataset_id}_test"
+
+        # Assign entries to the new datasets
+        train_dataset._entries = self._entries[:split_index]
+        test_dataset._entries = self._entries[split_index:]
+
+        return train_dataset, test_dataset

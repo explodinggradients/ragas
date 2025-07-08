@@ -1,0 +1,29 @@
+# Documentation Development Setup
+
+## Prerequisites
+
+1. Install uv (Python package manager):
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+## Running Documentation Locally
+
+1. Install documentation dependencies:
+   ```bash
+   uv sync --extra docs --project ragas
+   ```
+
+2. Serve the documentation:
+   ```bash
+   source ragas/.venv/bin/activate && mkdocs serve --dirtyreload
+   ```
+
+The documentation will be available at http://127.0.0.1:8000/
+
+## Run dev
+
+You can also use the scripts command (after completing step 1 above and ensuring mkdocs is available in PATH):
+```bash
+./scripts/dev_docs.sh
+```

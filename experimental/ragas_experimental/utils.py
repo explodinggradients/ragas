@@ -14,8 +14,11 @@ import uuid
 from collections import Counter
 
 import numpy as np
+from rich.console import Console
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+
+console = Console()
 
 
 def create_nano_id(size=12):
