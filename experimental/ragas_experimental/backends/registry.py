@@ -4,7 +4,7 @@ import logging
 import typing as t
 from importlib import metadata
 
-from .base import ProjectBackend
+from .base import BaseBackend
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ class BackendRegistry:
     """Registry for managing project backends with plugin support."""
 
     _instance = None
-    _backends: t.Dict[str, t.Type[ProjectBackend]] = {}
+    _backends: t.Dict[str, t.Type[BaseBackend]] = {}
     _aliases: t.Dict[str, str] = {}
     _discovered = False
 
@@ -33,7 +33,7 @@ class BackendRegistry:
     def register_backend(
         self,
         name: str,
-        backend_class: t.Type[ProjectBackend],
+        backend_class: t.Type[BaseBackend],
         aliases: t.Optional[t.List[str]] = None,
         overwrite: bool = False,
     ) -> None:
@@ -46,15 +46,15 @@ class BackendRegistry:
             overwrite: Whether to overwrite existing backends with the same name
 
         Raises:
-            TypeError: If backend_class doesn't inherit from ProjectBackend
+            TypeError: If backend_class doesn't inherit from DataTableBackend
             ValueError: If backend name already exists and overwrite=False
         """
         if not name or not isinstance(name, str):
             raise ValueError("Backend name must be a non-empty string")
 
-        if not issubclass(backend_class, ProjectBackend):
+        if not issubclass(backend_class, BaseBackend):
             raise TypeError(
-                f"Backend class {backend_class} must inherit from ProjectBackend"
+                f"Backend class {backend_class} must inherit from DataTableBackend"
             )
 
         # Check for existing registration
@@ -82,7 +82,7 @@ class BackendRegistry:
                 self._aliases[alias] = name
                 logger.debug(f"Registered backend alias: {alias} -> {name}")
 
-    def get_backend(self, name: str) -> t.Type[ProjectBackend]:
+    def get_backend(self, name: str) -> t.Type[BaseBackend]:
         """Get a backend class by name.
 
         Args:
@@ -141,7 +141,7 @@ class BackendRegistry:
 
         return result
 
-    def discover_backends(self) -> t.Dict[str, t.Type[ProjectBackend]]:
+    def discover_backends(self) -> t.Dict[str, t.Type[BaseBackend]]:
         """Discover and register backends from entry points and manual registration.
 
         Returns:
@@ -168,13 +168,9 @@ class BackendRegistry:
     def _register_builtin_backends(self) -> None:
         """Register the built-in backends."""
         try:
-            from .local_csv import LocalCSVProjectBackend
+            from .local_csv import LocalCSVBackend
 
-            self.register_backend("local/csv", LocalCSVProjectBackend)
-
-            from .ragas_app import RagasAppProjectBackend
-
-            self.register_backend("ragas/app", RagasAppProjectBackend)
+            self.register_backend("local/csv", LocalCSVBackend)
 
             # Box backend (optional import)
             try:
@@ -257,7 +253,7 @@ class BackendRegistry:
 
     def create_backend(
         self, backend_type: str, config: t.Optional["BackendConfig"] = None, **kwargs
-    ) -> ProjectBackend:
+    ) -> BaseBackend:
         """Create a backend instance.
 
         Args:
@@ -266,7 +262,7 @@ class BackendRegistry:
             **kwargs: Arguments specific to the backend
 
         Returns:
-            ProjectBackend: An instance of the requested backend
+            DataTableBackend: An instance of the requested backend
         """
         backend_class = self.get_backend(backend_type)
 
@@ -290,7 +286,7 @@ def get_registry() -> BackendRegistry:
 
 def register_backend(
     name: str,
-    backend_class: t.Type[ProjectBackend],
+    backend_class: t.Type[BaseBackend],
     aliases: t.Optional[t.List[str]] = None,
 ) -> None:
     """Register a backend with the global registry.
@@ -366,7 +362,7 @@ def _get_config_class(backend_type: str) -> t.Type["BackendConfig"]:
 
 def create_project_backend(
     backend_type: str, config: t.Optional["BackendConfig"] = None, **kwargs
-) -> ProjectBackend:
+) -> BaseBackend:
     """Create a project backend instance with structured configuration.
 
     Args:
@@ -375,7 +371,7 @@ def create_project_backend(
         **kwargs: Configuration parameters (alternative to config object)
 
     Returns:
-        ProjectBackend: An instance of the requested backend
+        DataTableBackend: An instance of the requested backend
     """
     backend_class = _registry.get_backend(backend_type)
 

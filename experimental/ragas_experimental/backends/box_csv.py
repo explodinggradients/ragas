@@ -14,7 +14,7 @@ from ragas_experimental.model.pydantic_model import (
 )
 
 from .utils import create_nano_id
-from .base import DataTableBackend, ProjectBackend
+from .base import BaseBackend, ProjectBackend
 from .config import BoxCSVConfig, BoxClientProtocol, BoxFolderProtocol, BoxFileProtocol
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ else:
         File = Any
 
 
-class BoxCSVDataTableBackend(DataTableBackend):
+class BoxCSVDataTableBackend(BaseBackend):
     """Box CSV implementation of DataTableBackend."""
 
     def __init__(
@@ -586,7 +586,7 @@ class BoxCSVProjectBackend(ProjectBackend):
 
     def get_dataset_backend(
         self, dataset_id: str, name: str, model: t.Type[BaseModel]
-    ) -> DataTableBackend:
+    ) -> BaseBackend:
         """Get a DataTableBackend instance for a specific dataset."""
         if self.project_folder is None:
             raise ValueError("Backend not properly initialized")
@@ -601,7 +601,7 @@ class BoxCSVProjectBackend(ProjectBackend):
 
     def get_experiment_backend(
         self, experiment_id: str, name: str, model: t.Type[BaseModel]
-    ) -> DataTableBackend:
+    ) -> BaseBackend:
         """Get a DataTableBackend instance for a specific experiment."""
         if self.project_folder is None:
             raise ValueError("Backend not properly initialized")
@@ -616,7 +616,7 @@ class BoxCSVProjectBackend(ProjectBackend):
 
     def get_dataset_by_name(
         self, name: str, model: t.Type[BaseModel]
-    ) -> t.Tuple[str, DataTableBackend]:
+    ) -> t.Tuple[str, BaseBackend]:
         """Get dataset ID and backend by name."""
         if self.project_folder is None:
             raise ValueError("Backend not initialized")
@@ -654,7 +654,7 @@ class BoxCSVProjectBackend(ProjectBackend):
 
     def get_experiment_by_name(
         self, name: str, model: t.Type[BaseModel]
-    ) -> t.Tuple[str, DataTableBackend]:
+    ) -> t.Tuple[str, BaseBackend]:
         """Get experiment ID and backend by name."""
         if self.project_folder is None:
             raise ValueError("Backend not initialized")

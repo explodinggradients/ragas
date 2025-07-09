@@ -3,12 +3,10 @@
 import typing as t
 from abc import ABC, abstractmethod
 
-from ragas_experimental.model.pydantic_model import (
-    ExtendedPydanticBaseModel as BaseModel,
-)
+from pydantic import BaseModel
 
 
-class DataTableBackend(ABC):
+class BaseBackend(ABC):
     """Abstract base class for datatable backends.
 
     All datatable storage backends must implement these methods.
@@ -16,98 +14,36 @@ class DataTableBackend(ABC):
     """
 
     @abstractmethod
-    def initialize(self, dataset: t.Any) -> None:
+    def load_dataset(self, name: str) -> t.List[t.Dict[str, t.Any]]:
         """Initialize the backend with dataset information"""
         pass
 
     @abstractmethod
-    def get_column_mapping(self, model: t.Type[BaseModel]) -> t.Dict[str, str]:
-        """Get mapping between model fields and backend columns"""
+    def load_experiment(self, name: str) -> t.List[t.Dict[str, t.Any]]:
         pass
 
     @abstractmethod
-    def load_entries(self, model_class) -> t.List[t.Any]:
-        """Load all entries from storage"""
+    def save_dataset(
+        self,
+        name: str,
+        data: t.List[t.Dict[str, t.Any]],
+        data_model: t.Optional[t.Type[BaseModel]],
+    ) -> None:
         pass
 
     @abstractmethod
-    def append_entry(self, entry) -> str:
-        """Add a new entry to storage and return its ID"""
+    def save_experiment(
+        self,
+        name: str,
+        data: t.List[t.Dict[str, t.Any]],
+        data_model: t.Optional[t.Type[BaseModel]],
+    ) -> None:
         pass
 
     @abstractmethod
-    def update_entry(self, entry) -> bool:
-        """Update an existing entry in storage"""
+    def list_datasets() -> t.List[str]:
         pass
 
     @abstractmethod
-    def delete_entry(self, entry_id) -> bool:
-        """Delete an entry from storage"""
-        pass
-
-    @abstractmethod
-    def get_entry_by_field(
-        self, field_name: str, field_value: t.Any, model_class
-    ) -> t.Optional[t.Any]:
-        """Get an entry by field value"""
-        pass
-
-
-class ProjectBackend(ABC):
-    """Abstract base class for project backends.
-
-    Handles project-level operations like creating/listing datasets and experiments.
-    """
-
-    @abstractmethod
-    def initialize(self, project_id: str, **kwargs) -> None:
-        """Initialize the backend with project information"""
-        pass
-
-    @abstractmethod
-    def create_dataset(self, name: str, model: t.Type[BaseModel]) -> str:
-        """Create a new dataset and return its ID"""
-        pass
-
-    @abstractmethod
-    def create_experiment(self, name: str, model: t.Type[BaseModel]) -> str:
-        """Create a new experiment and return its ID"""
-        pass
-
-    @abstractmethod
-    def list_datasets(self) -> t.List[t.Dict]:
-        """List all datasets in the project"""
-        pass
-
-    @abstractmethod
-    def list_experiments(self) -> t.List[t.Dict]:
-        """List all experiments in the project"""
-        pass
-
-    @abstractmethod
-    def get_dataset_backend(
-        self, dataset_id: str, name: str, model: t.Type[BaseModel]
-    ) -> DataTableBackend:
-        """Get a DataTableBackend instance for a specific dataset"""
-        pass
-
-    @abstractmethod
-    def get_experiment_backend(
-        self, experiment_id: str, name: str, model: t.Type[BaseModel]
-    ) -> DataTableBackend:
-        """Get a DataTableBackend instance for a specific experiment"""
-        pass
-
-    @abstractmethod
-    def get_dataset_by_name(
-        self, name: str, model: t.Type[BaseModel]
-    ) -> t.Tuple[str, DataTableBackend]:
-        """Get dataset ID and backend by name. Returns (dataset_id, backend)"""
-        pass
-
-    @abstractmethod
-    def get_experiment_by_name(
-        self, name: str, model: t.Type[BaseModel]
-    ) -> t.Tuple[str, DataTableBackend]:
-        """Get experiment ID and backend by name. Returns (experiment_id, backend)"""
+    def list_experiments() -> t.List[str]:
         pass
