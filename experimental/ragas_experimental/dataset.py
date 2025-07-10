@@ -11,7 +11,14 @@ from pydantic import BaseModel
 
 from .backends import BaseBackend
 
+# For backwards compatibility, use typing_extensions for older Python versions
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
+
 T = t.TypeVar("T", bound=BaseModel)
+DataTableType = t.TypeVar("DataTableType", bound="DataTable")
 
 
 class DataTable(t.Generic[T]):
@@ -65,14 +72,18 @@ class DataTable(t.Generic[T]):
 
     @classmethod
     def load(
-        cls,
+        cls: t.Type[Self],
         name: str,
         backend: BaseBackend,
         data_model: t.Optional[t.Type[T]] = None,
-    ) -> t.Union["DataTable[T]", "DataTable[t.Any]"]:
+    ) -> Self:
         """Load dataset with optional validation"""
         # Backend always returns dicts
-        dict_data = backend.load_dataset(name)
+        # Use the correct backend method based on the class type
+        if hasattr(cls, 'DATATABLE_TYPE') and cls.DATATABLE_TYPE == "Experiment":
+            dict_data = backend.load_experiment(name)
+        else:
+            dict_data = backend.load_dataset(name)
 
         if data_model:
             # Validated mode - convert dicts to Pydantic models
@@ -95,9 +106,13 @@ class DataTable(t.Generic[T]):
                 raise TypeError(f"Unexpected type in dataset: {type(item)}")
 
         # Backend only sees dicts
-        self.backend.save_dataset(self.name, dict_data, data_model=self.data_model)
+        # Use the correct backend method based on the class type
+        if hasattr(self, 'DATATABLE_TYPE') and self.DATATABLE_TYPE == "Experiment":
+            self.backend.save_experiment(self.name, dict_data, data_model=self.data_model)
+        else:
+            self.backend.save_dataset(self.name, dict_data, data_model=self.data_model)
 
-    def validate_with(self, data_model: t.Type[T]) -> "DataTable":
+    def validate_with(self, data_model: t.Type[T]) -> Self:
         """Apply validation to an unvalidated dataset"""
         if self.data_model is not None:
             raise ValueError(
@@ -115,8 +130,8 @@ class DataTable(t.Generic[T]):
         # Validate each row
         validated_data = [data_model(**d) for d in dict_data]
 
-        # Return new validated dataset
-        return DataTable(
+        # Return new validated dataset with same type as self
+        return type(self)(
             name=self.name,
             backend=self.backend,
             data_model=data_model,
