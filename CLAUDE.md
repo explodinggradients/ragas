@@ -191,5 +191,5 @@ analytics_logger.addHandler(console_handler)
 
 ## Memories
 
-- whenever you create such docs put in in /experiments because that is gitignored and you can use it as a scratchpad or tmp directory for storing these
+- whenever you create such docs put in in /_experiments because that is gitignored and you can use it as a scratchpad or tmp directory for storing these
 - always use uv to run python and python related commandline tools like isort, ruff, pyright ect. This is because we are using uv to manage the .venv and dependencies.

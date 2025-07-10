@@ -41,9 +41,9 @@ class BaseBackend(ABC):
         pass
 
     @abstractmethod
-    def list_datasets() -> t.List[str]:
+    def list_datasets(self) -> t.List[str]:
         pass
 
     @abstractmethod
-    def list_experiments() -> t.List[str]:
+    def list_experiments(self) -> t.List[str]:
         pass
