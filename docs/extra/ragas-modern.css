@@ -9,6 +9,7 @@
   --md-primary-fg-color--light: #d19a3d;
   --md-primary-fg-color--dark: #a0711e;
   --md-accent-fg-color: #bd8526;
+  --md-default-bg-color: #ffffff;
 }
 
 [data-md-color-scheme="slate"] {
@@ -17,6 +18,16 @@
   --md-primary-fg-color--dark: #a0711e;
   --md-accent-fg-color: #bd8526;
   --md-default-bg-color: #171717;
+}
+
+/* Header background color for both light and dark modes */
+.md-header {
+  background-color: #14151a !important;
+}
+
+/* Tab navigation background color */
+.md-tabs {
+  background-color: #14151a !important;
 }
 
 /* Only minimal, essential customizations - let Material Design handle the rest */
