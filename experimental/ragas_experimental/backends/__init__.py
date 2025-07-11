@@ -3,7 +3,7 @@
 from .base import BaseBackend
 from .registry import (
     BackendRegistry,
-    create_project_backend,
+    create_backend,
     get_backend_info,
     get_registry,
     list_backend_info,
@@ -14,16 +14,19 @@ from .registry import (
 
 # concrete backends
 from .local_csv import LocalCSVBackend
+from .local_jsonl import LocalJSONLBackend
 
 
 __all__ = [
-    "BaseBackend ",
+    "BaseBackend",
     "BackendRegistry",
+    "LocalCSVBackend",
+    "LocalJSONLBackend",
     "get_registry",
     "register_backend",
     "list_backends",
     "get_backend_info",
     "list_backend_info",
     "print_available_backends",
-    "create_project_backend",
+    "create_backend",
 ]

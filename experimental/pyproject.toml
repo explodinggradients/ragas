@@ -41,9 +41,9 @@ readme = "README.md"
 all = ["pandas"]
 
 [project.entry-points."ragas.backends"]
-"local/csv" = "ragas_experimental.project.backends.local_csv:LocalCSVProjectBackend"
-"ragas/app" = "ragas_experimental.project.backends.ragas_app:RagasAppProjectBackend"
-"box/csv" = "ragas_experimental.project.backends.box_csv:BoxCSVProjectBackend"
+"local/csv" = "ragas_experimental.backends.local_csv:LocalCSVBackend"
+"local/jsonl" = "ragas_experimental.backends.local_jsonl:LocalJSONLBackend"
+"box/csv" = "ragas_experimental.backends.box_csv:BoxCSVDataTableBackend"
 
 [tool.setuptools.packages.find]
 include = ["ragas_experimental*"]
