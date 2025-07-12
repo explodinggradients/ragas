@@ -47,28 +47,103 @@ class DataTable(t.Generic[T]):
         data_model: None = None,
         data: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
     ) -> None: ...
+
+    @t.overload
     def __init__(
         self,
         name: str,
-        backend: BaseBackend,
+        backend: str,
+        data_model: t.Type[T],
+        data: t.Optional[t.List[T]] = None,
+        **kwargs,
+    ) -> None: ...
+
+    @t.overload
+    def __init__(
+        self,
+        name: str,
+        backend: str,
+        data_model: None = None,
+        data: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
+        **kwargs,
+    ) -> None: ...
+    def __init__(
+        self,
+        name: str,
+        backend: t.Union[BaseBackend, str],
         data_model: t.Optional[t.Type[T]] = None,
         data: t.Optional[t.List[t.Any]] = None,
+        **kwargs,
     ):
-        """Initialize a Dataset with a backend instance.
+        """Initialize a Dataset with a backend.
 
         Args:
             name: The name of the dataset
-            model: The Pydantic model class for entries
-            project_id: The ID of the parent project
-            dataset_id: The ID of this dataset
-            datatable_type: Whether this is for "datasets" or "experiments"
-            backend: The backend instance to use
+            backend: Either a BaseBackend instance or backend name string (e.g., "local/csv")
+            data_model: Optional Pydantic model class for entries
+            data: Optional initial data list
+            **kwargs: Additional arguments passed to backend constructor (when using string backend)
+
+        Examples:
+            # Using string backend name
+            dataset = Dataset("my_data", "local/csv", root_dir="./data")
+
+            # Using backend instance (existing behavior)
+            backend = LocalCSVBackend(root_dir="./data")
+            dataset = Dataset("my_data", backend)
         """
         # Store basic properties
         self.name = name
-        self.backend = backend
         self.data_model = data_model
+        # Resolve backend if string
+        self.backend = self._resolve_backend(backend, **kwargs)
         self._data: t.List[t.Union[t.Dict, T]] = data or []
+
+    @staticmethod
+    def _resolve_backend(backend: t.Union[BaseBackend, str], **kwargs) -> BaseBackend:
+        """Resolve backend from string or return existing BaseBackend instance.
+
+        Args:
+            backend: Either a BaseBackend instance or backend name string (e.g., "local/csv")
+            **kwargs: Additional arguments passed to backend constructor (when using string backend)
+
+        Returns:
+            BaseBackend instance
+
+        Raises:
+            ValueError: If backend string is not found in registry
+            TypeError: If backend is wrong type or constructor fails
+            RuntimeError: If backend initialization fails
+        """
+        if isinstance(backend, str):
+            registry = get_registry()
+            try:
+                backend_class = registry[backend]
+            except KeyError:
+                available = list(registry.keys())
+                raise ValueError(
+                    f"Backend '{backend}' not found. "
+                    f"Available backends: {available}. "
+                    f"Install a backend plugin or check the name."
+                )
+
+            try:
+                return backend_class(**kwargs)
+            except TypeError as e:
+                raise TypeError(
+                    f"Failed to create {backend} backend: {e}. "
+                    f"Check required arguments for {backend_class.__name__}."
+                )
+            except Exception as e:
+                raise RuntimeError(f"Failed to initialize {backend} backend: {e}")
+
+        # Validate backend type
+        if not isinstance(backend, BaseBackend):
+            raise TypeError(
+                f"Backend must be BaseBackend instance or string, got {type(backend)}"
+            )
+
+        return backend
 
     @classmethod
     def load(
@@ -79,54 +154,26 @@ class DataTable(t.Generic[T]):
         **kwargs,
     ) -> Self:
         """Load dataset with optional validation.
-        
+
         Args:
             name: Name of the dataset to load
-            backend: Either a BaseBackend instance or backend name string (e.g., "local/csv")  
+            backend: Either a BaseBackend instance or backend name string (e.g., "local/csv")
             data_model: Optional Pydantic model for validation
             **kwargs: Additional arguments passed to backend constructor (when using string backend)
-            
+
         Returns:
             Dataset instance with loaded data
-            
+
         Examples:
             # Using string backend name
             dataset = Dataset.load("my_data", "local/csv", root_dir="./data")
-            
+
             # Using backend instance (existing behavior)
             backend = LocalCSVBackend(root_dir="./data")
             dataset = Dataset.load("my_data", backend)
         """
         # Resolve backend if string
-        if isinstance(backend, str):
-            try:
-                registry = get_registry()
-                backend_class = registry[backend]
-            except KeyError:
-                available = list(registry.keys())
-                raise ValueError(
-                    f"Backend '{backend}' not found. "
-                    f"Available backends: {available}. "
-                    f"Install a backend plugin or check the name."
-                )
-            
-            try:
-                backend = backend_class(**kwargs)
-            except TypeError as e:
-                raise TypeError(
-                    f"Failed to create {backend} backend: {e}. "
-                    f"Check required arguments for {backend_class.__name__}."
-                )
-            except Exception as e:
-                raise RuntimeError(
-                    f"Failed to initialize {backend} backend: {e}"
-                )
-        
-        # Validate backend type
-        if not isinstance(backend, BaseBackend):
-            raise TypeError(
-                f"Backend must be BaseBackend instance or string, got {type(backend)}"
-            )
+        backend = cls._resolve_backend(backend, **kwargs)
 
         # Backend always returns dicts
         # Use the correct backend method based on the class type

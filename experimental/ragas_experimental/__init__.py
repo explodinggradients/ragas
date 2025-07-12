@@ -13,4 +13,4 @@ except ImportError:
 
 from ragas_experimental.dataset import Dataset
 
-__all__ = ["Project", "BaseModel"]
+__all__ = ["Dataset"]
