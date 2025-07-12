@@ -12,5 +12,6 @@ except ImportError:
         __version__ = "unknown"
 
 from ragas_experimental.dataset import Dataset
+from ragas_experimental.experiment import experiment, Experiment
 
-__all__ = ["Dataset"]
+__all__ = ["Dataset", "experiment", "Experiment"]
