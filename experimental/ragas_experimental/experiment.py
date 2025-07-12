@@ -77,8 +77,8 @@ def version_experiment(
 class ExperimentProtocol(t.Protocol):
     async def __call__(self, *args, **kwargs) -> t.Any: ...
     async def run_async(
-        self, 
-        dataset: Dataset, 
+        self,
+        dataset: Dataset,
         name: t.Optional[str] = None,
         backend: t.Optional[t.Union[BaseBackend, str]] = None,
     ) -> "Experiment": ...
@@ -86,9 +86,9 @@ class ExperimentProtocol(t.Protocol):
 
 class ExperimentWrapper:
     """Wrapper class that implements ExperimentProtocol for decorated functions."""
-    
+
     def __init__(
-        self, 
+        self,
         func: t.Callable,
         experiment_model: t.Type[BaseModel],
         default_backend: t.Optional[t.Union[BaseBackend, str]] = None,
@@ -99,16 +99,16 @@ class ExperimentWrapper:
         self.default_backend = default_backend
         self.name_prefix = name_prefix
         # Preserve function metadata
-        self.__name__ = getattr(func, '__name__', 'experiment_function')
-        self.__doc__ = getattr(func, '__doc__', None)
-    
+        self.__name__ = getattr(func, "__name__", "experiment_function")
+        self.__doc__ = getattr(func, "__doc__", None)
+
     async def __call__(self, *args, **kwargs) -> t.Any:
         """Call the original function."""
         if asyncio.iscoroutinefunction(self.func):
             return await self.func(*args, **kwargs)
         else:
             return self.func(*args, **kwargs)
-    
+
     async def run_async(
         self,
         dataset: Dataset,
@@ -121,30 +121,30 @@ class ExperimentWrapper:
             name = memorable_names.generate_unique_name()
         if self.name_prefix:
             name = f"{self.name_prefix}-{name}"
-        
+
         # Resolve backend
         experiment_backend = backend or self.default_backend
         if experiment_backend:
             resolved_backend = Experiment._resolve_backend(experiment_backend)
         else:
             resolved_backend = dataset.backend
-        
+
         # Create experiment
         experiment_view = Experiment(
             name=name,
             data_model=self.experiment_model,
             backend=resolved_backend,
         )
-        
+
         # Create tasks for all items
         tasks = []
         for item in dataset:
             tasks.append(self(item))
-        
+
         progress_bar = None
         try:
             progress_bar = tqdm(total=len(dataset), desc="Running experiment")
-            
+
             # Process all items
             for future in asyncio.as_completed(tasks):
                 try:
@@ -156,14 +156,14 @@ class ExperimentWrapper:
                     print(f"Warning: Task failed with error: {e}")
                 finally:
                     progress_bar.update(1)
-        
+
         finally:
             if progress_bar:
                 progress_bar.close()
-        
+
         # Save experiment
         experiment_view.save()
-        
+
         return experiment_view
 
 
@@ -173,21 +173,22 @@ def experiment(
     name_prefix: str = "",
 ) -> t.Callable[[t.Callable], ExperimentProtocol]:
     """Decorator for creating experiment functions.
-    
+
     Args:
         experiment_model: The Pydantic model type to use for experiment results
         backend: Optional backend to use for storing experiment results
         name_prefix: Optional prefix for experiment names
-    
+
     Returns:
         Decorator function that wraps experiment functions
-        
+
     Example:
         @experiment(ExperimentDataRow)
         async def run_experiment(row: TestDataRow):
             # experiment logic here
             return ExperimentDataRow(...)
     """
+
     def decorator(func: t.Callable) -> ExperimentProtocol:
         wrapper = ExperimentWrapper(
             func=func,
@@ -196,5 +197,5 @@ def experiment(
             name_prefix=name_prefix,
         )
         return t.cast(ExperimentProtocol, wrapper)
-    
+
     return decorator
