@@ -111,3 +111,8 @@ class LocalCSVBackend(BaseBackend):
     def list_experiments(self) -> t.List[str]:
         """List all available experiments."""
         return self._list("experiments")
+
+    def __repr__(self) -> str:
+        return f"LocalCSVBackend(root_dir='{self.root_dir}')"
+
+    __str__ = __repr__

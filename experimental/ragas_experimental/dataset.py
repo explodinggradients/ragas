@@ -9,7 +9,7 @@ import typing as t
 
 from pydantic import BaseModel
 
-from .backends import BaseBackend
+from .backends import BaseBackend, get_registry
 
 # For backwards compatibility, use typing_extensions for older Python versions
 try:
@@ -74,10 +74,60 @@ class DataTable(t.Generic[T]):
     def load(
         cls: t.Type[Self],
         name: str,
-        backend: BaseBackend,
+        backend: t.Union[BaseBackend, str],
         data_model: t.Optional[t.Type[T]] = None,
+        **kwargs,
     ) -> Self:
-        """Load dataset with optional validation"""
+        """Load dataset with optional validation.
+        
+        Args:
+            name: Name of the dataset to load
+            backend: Either a BaseBackend instance or backend name string (e.g., "local/csv")  
+            data_model: Optional Pydantic model for validation
+            **kwargs: Additional arguments passed to backend constructor (when using string backend)
+            
+        Returns:
+            Dataset instance with loaded data
+            
+        Examples:
+            # Using string backend name
+            dataset = Dataset.load("my_data", "local/csv", root_dir="./data")
+            
+            # Using backend instance (existing behavior)
+            backend = LocalCSVBackend(root_dir="./data")
+            dataset = Dataset.load("my_data", backend)
+        """
+        # Resolve backend if string
+        if isinstance(backend, str):
+            try:
+                registry = get_registry()
+                backend_class = registry[backend]
+            except KeyError:
+                available = list(registry.keys())
+                raise ValueError(
+                    f"Backend '{backend}' not found. "
+                    f"Available backends: {available}. "
+                    f"Install a backend plugin or check the name."
+                )
+            
+            try:
+                backend = backend_class(**kwargs)
+            except TypeError as e:
+                raise TypeError(
+                    f"Failed to create {backend} backend: {e}. "
+                    f"Check required arguments for {backend_class.__name__}."
+                )
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to initialize {backend} backend: {e}"
+                )
+        
+        # Validate backend type
+        if not isinstance(backend, BaseBackend):
+            raise TypeError(
+                f"Backend must be BaseBackend instance or string, got {type(backend)}"
+            )
+
         # Backend always returns dicts
         # Use the correct backend method based on the class type
         if hasattr(cls, "DATATABLE_TYPE") and cls.DATATABLE_TYPE == "Experiment":
