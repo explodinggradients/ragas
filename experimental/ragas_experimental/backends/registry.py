@@ -23,103 +23,63 @@ class BackendRegistry:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    @classmethod
-    def instance(cls) -> "BackendRegistry":
-        """Get the singleton registry instance."""
-        if cls._instance is None:
-            cls._instance = cls()
-        return cls._instance
+    def _resolve_name(self, name: str) -> str:
+        """Resolve alias to primary name, return name if not an alias."""
+        return self._aliases.get(name, name)
 
-    def register_backend(
-        self,
-        name: str,
-        backend_class: t.Type[BaseBackend],
-        aliases: t.Optional[t.List[str]] = None,
-        overwrite: bool = False,
-    ) -> None:
-        """Register a backend class with the registry.
+    def _get_available_names(self) -> t.List[str]:
+        """Get list of all available names (primary names + aliases) for error messages."""
+        if not self._discovered:
+            self.discover_backends()
+        return list(self._backends.keys()) + list(self._aliases.keys())
 
-        Args:
-            name: Primary name for the backend
-            backend_class: The backend class to register
-            aliases: Optional list of alternative names for the backend
-            overwrite: Whether to overwrite existing backends with the same name
+    def _get_aliases_for(self, primary_name: str) -> t.List[str]:
+        """Get all aliases pointing to a primary backend name."""
+        return [
+            alias for alias, target in self._aliases.items() if target == primary_name
+        ]
 
-        Raises:
-            TypeError: If backend_class doesn't inherit from DataTableBackend
-            ValueError: If backend name already exists and overwrite=False
-        """
+    def _validate_name(self, name: str) -> None:
+        """Validate backend name format."""
         if not name or not isinstance(name, str):
             raise ValueError("Backend name must be a non-empty string")
 
+    def _validate_backend_class(self, backend_class: t.Type[BaseBackend]) -> None:
+        """Validate backend class inheritance."""
         if not issubclass(backend_class, BaseBackend):
             raise TypeError(
-                f"Backend class {backend_class} must inherit from DataTableBackend"
+                f"Backend class {backend_class} must inherit from BaseBackend"
             )
 
-        # Check for existing registration
-        if name in self._backends and not overwrite:
-            raise ValueError(
-                f"Backend '{name}' is already registered. Use overwrite=True to replace."
-            )
-
-        self._backends[name] = backend_class
-        logger.debug(f"Registered backend: {name} -> {backend_class}")
-
-        # Register aliases
-        if aliases:
-            for alias in aliases:
-                if not alias or not isinstance(alias, str):
-                    logger.warning(
-                        f"Invalid alias '{alias}' for backend '{name}', skipping"
-                    )
-                    continue
-
-                if alias in self._aliases and not overwrite:
-                    logger.warning(f"Alias '{alias}' already exists, skipping")
-                    continue
-
-                self._aliases[alias] = name
-                logger.debug(f"Registered backend alias: {alias} -> {name}")
-
-    def get_backend(self, name: str) -> t.Type[BaseBackend]:
-        """Get a backend class by name.
+    def register_aliases(
+        self, name: str, aliases: t.List[str], overwrite: bool = False
+    ) -> None:
+        """Register aliases for an existing backend.
 
         Args:
-            name: Name or alias of the backend
-
-        Returns:
-            The backend class
+            name: Primary name of the backend
+            aliases: List of alternative names for the backend
+            overwrite: Whether to overwrite existing aliases
 
         Raises:
-            ValueError: If backend is not found
+            KeyError: If backend name doesn't exist
         """
-        # Ensure backends are discovered
-        if not self._discovered:
-            self.discover_backends()
-
-        # Check if it's an alias first
-        if name in self._aliases:
-            name = self._aliases[name]
-
         if name not in self._backends:
-            available = list(self._backends.keys()) + list(self._aliases.keys())
-            raise ValueError(
-                f"Backend '{name}' not found. Available backends: {available}"
-            )
+            raise KeyError(f"Backend '{name}' not found")
 
-        return self._backends[name]
+        for alias in aliases:
+            if not alias or not isinstance(alias, str):
+                logger.warning(
+                    f"Invalid alias '{alias}' for backend '{name}', skipping"
+                )
+                continue
 
-    def list_available_backends(self) -> t.List[str]:
-        """List all available backend names.
+            if alias in self._aliases and not overwrite:
+                logger.warning(f"Alias '{alias}' already exists, skipping")
+                continue
 
-        Returns:
-            List of backend names (primary names only, not aliases)
-        """
-        if not self._discovered:
-            self.discover_backends()
-
-        return list(self._backends.keys())
+            self._aliases[alias] = name
+            logger.debug(f"Registered backend alias: {alias} -> {name}")
 
     def list_all_names(self) -> t.Dict[str, t.List[str]]:
         """List all backend names including aliases.
@@ -129,20 +89,13 @@ class BackendRegistry:
         """
         if not self._discovered:
             self.discover_backends()
-
-        result = {}
-        for primary_name in self._backends.keys():
-            aliases = [
-                alias
-                for alias, target in self._aliases.items()
-                if target == primary_name
-            ]
-            result[primary_name] = [primary_name] + aliases
-
-        return result
+        return {
+            primary_name: [primary_name] + self._get_aliases_for(primary_name)
+            for primary_name in self._backends.keys()
+        }
 
     def discover_backends(self) -> t.Dict[str, t.Type[BaseBackend]]:
-        """Discover and register backends from entry points and manual registration.
+        """Discover and register backends from entry points.
 
         Returns:
             Dictionary of discovered backends
@@ -150,62 +103,24 @@ class BackendRegistry:
         if self._discovered:
             return self._backends.copy()
 
-        logger.debug("Discovering backends...")
-
-        # First register built-in backends manually (for now)
-        self._register_builtin_backends()
-
-        # Then discover from entry points
-        self._discover_from_entry_points()
-
+        self._discover_backends()
         self._discovered = True
-        logger.info(
-            f"Backend discovery complete. Found {len(self._backends)} backends."
-        )
+        logger.info(f"Discovered {len(self._backends)} backends from entry points.")
 
         return self._backends.copy()
 
-    def _register_builtin_backends(self) -> None:
-        """Register the built-in backends."""
-        try:
-            from .local_csv import LocalCSVBackend
-            from .local_jsonl import LocalJSONLBackend
-
-            self.register_backend("local/csv", LocalCSVBackend)
-            self.register_backend("local/jsonl", LocalJSONLBackend)
-
-            # Box backend (optional import)
-            try:
-                from .box_csv import BoxCSVDataTableBackend
-
-                self.register_backend("box/csv", BoxCSVDataTableBackend)
-            except ImportError:
-                logger.debug("Box backend not available (optional dependency)")
-
-        except ImportError as e:
-            logger.warning(f"Failed to import built-in backend: {e}")
-
-    def _discover_from_entry_points(self) -> None:
+    def _discover_backends(self) -> None:
         """Discover backends from setuptools entry points."""
         try:
-            # Look for entry points in the 'ragas.backends' group
             entry_points = metadata.entry_points().select(group="ragas.backends")
-
             for entry_point in entry_points:
                 try:
-                    backend_class = entry_point.load()
-                    self.register_backend(entry_point.name, backend_class)
-                    logger.info(
-                        f"Discovered backend from entry point: {entry_point.name}"
-                    )
-
+                    self[entry_point.name] = entry_point.load()
+                    logger.debug(f"Loaded backend: {entry_point.name}")
                 except Exception as e:
                     logger.warning(f"Failed to load backend '{entry_point.name}': {e}")
-
         except Exception as e:
-            logger.debug(
-                f"Entry point discovery failed (this is normal if no plugins installed): {e}"
-            )
+            logger.debug(f"No entry points found: {e}")
 
     def get_backend_info(self, name: str) -> t.Dict[str, t.Any]:
         """Get detailed information about a backend.
@@ -216,17 +131,9 @@ class BackendRegistry:
         Returns:
             Dictionary with backend information
         """
-        backend_class = self.get_backend(name)
-
-        # Resolve to primary name if it's an alias
-        primary_name = name
-        if name in self._aliases:
-            primary_name = self._aliases[name]
-
-        # Get all aliases for this backend
-        aliases = [
-            alias for alias, target in self._aliases.items() if target == primary_name
-        ]
+        backend_class = self[name]
+        primary_name = self._resolve_name(name)
+        aliases = self._get_aliases_for(primary_name)
 
         return {
             "name": primary_name,
@@ -245,7 +152,7 @@ class BackendRegistry:
         if not self._discovered:
             self.discover_backends()
 
-        return [self.get_backend_info(name) for name in self._backends.keys()]
+        return [self.get_backend_info(name) for name in self.keys()]
 
     def clear(self) -> None:
         """Clear all registered backends. Mainly for testing."""
@@ -263,17 +170,100 @@ class BackendRegistry:
         Returns:
             BaseBackend: An instance of the requested backend
         """
-        backend_class = self.get_backend(backend_type)
+        backend_class = self[backend_type]
         return backend_class(**kwargs)
+
+    def __getitem__(self, name: str) -> t.Type[BaseBackend]:
+        """Get a backend class by name (dict-like access)."""
+        if not self._discovered:
+            self.discover_backends()
+        resolved_name = self._resolve_name(name)
+
+        if resolved_name not in self._backends:
+            raise KeyError(
+                f"Backend '{name}' not found. Available backends: {self._get_available_names()}"
+            )
+
+        return self._backends[resolved_name]
+
+    def __setitem__(self, name: str, backend_class: t.Type[BaseBackend]) -> None:
+        """Register a backend class (dict-like assignment)."""
+        self._validate_name(name)
+        self._validate_backend_class(backend_class)
+
+        self._backends[name] = backend_class
+        logger.debug(f"Registered backend: {name} -> {backend_class}")
+
+    def __delitem__(self, name: str) -> None:
+        """Unregister a backend (dict-like deletion)."""
+        # Check if it's an alias first
+        if name in self._aliases:
+            del self._aliases[name]
+            logger.debug(f"Removed alias: {name}")
+            return
+
+        if name not in self._backends:
+            raise KeyError(f"Backend '{name}' not found")
+
+        # Remove the backend
+        del self._backends[name]
+        logger.debug(f"Unregistered backend: {name}")
+
+        # Remove any aliases pointing to this backend
+        for alias in self._get_aliases_for(name):
+            del self._aliases[alias]
+            logger.debug(f"Removed alias: {alias}")
+
+    def __contains__(self, name: str) -> bool:
+        """Check if a backend exists (dict-like 'in' operator)."""
+        if not self._discovered:
+            self.discover_backends()
+        return name in self._backends or name in self._aliases
+
+    def __iter__(self) -> t.Iterator[str]:
+        """Iterate over backend names (dict-like iteration)."""
+        if not self._discovered:
+            self.discover_backends()
+        return iter(self._backends.keys())
+
+    def __len__(self) -> int:
+        """Return number of registered backends (dict-like len())."""
+        if not self._discovered:
+            self.discover_backends()
+        return len(self._backends)
+
+    def keys(self) -> t.KeysView[str]:
+        """Return view of backend names."""
+        if not self._discovered:
+            self.discover_backends()
+        return self._backends.keys()
+
+    def values(self) -> t.ValuesView[t.Type[BaseBackend]]:
+        """Return view of backend classes."""
+        if not self._discovered:
+            self.discover_backends()
+        return self._backends.values()
+
+    def items(self) -> t.ItemsView[str, t.Type[BaseBackend]]:
+        """Return view of (name, backend_class) pairs."""
+        if not self._discovered:
+            self.discover_backends()
+        return self._backends.items()
+
+    def __repr__(self) -> str:
+        items = {name: backend_class for name, backend_class in self.items()}
+        return repr(items)
+
+    __str__ = __repr__
 
 
 # Global registry instance
-_registry = BackendRegistry.instance()
+BACKEND_REGISTRY = BackendRegistry()
 
 
 def get_registry() -> BackendRegistry:
     """Get the global backend registry instance."""
-    return _registry
+    return BACKEND_REGISTRY
 
 
 def register_backend(
@@ -288,27 +278,14 @@ def register_backend(
         backend_class: The backend class to register
         aliases: Optional list of alternative names for the backend
     """
-    _registry.register_backend(name, backend_class, aliases)
-
-
-def list_backends() -> t.List[str]:
-    """List all available backend names."""
-    return _registry.list_available_backends()
-
-
-def get_backend_info(name: str) -> t.Dict[str, t.Any]:
-    """Get detailed information about a specific backend."""
-    return _registry.get_backend_info(name)
-
-
-def list_backend_info() -> t.List[t.Dict[str, t.Any]]:
-    """List detailed information about all available backends."""
-    return _registry.list_backend_info()
+    BACKEND_REGISTRY[name] = backend_class
+    if aliases:
+        BACKEND_REGISTRY.register_aliases(name, aliases)
 
 
 def print_available_backends() -> None:
     """Print a formatted list of available backends."""
-    backends = _registry.list_backend_info()
+    backends = BACKEND_REGISTRY.list_backend_info()
 
     if not backends:
         print("No backends available.")
@@ -324,16 +301,3 @@ def print_available_backends() -> None:
         print(f"Module: {backend['module']}")
         print(f"Description: {backend['doc']}")
         print("-" * 50)
-
-
-def create_backend(backend_type: str, **kwargs) -> BaseBackend:
-    """Create a backend instance.
-
-    Args:
-        backend_type: The type of backend to create ("local/csv", "local/jsonl", "box/csv")
-        **kwargs: Arguments to pass to the backend constructor
-
-    Returns:
-        BaseBackend: An instance of the requested backend
-    """
-    return _registry.create_backend(backend_type, **kwargs)

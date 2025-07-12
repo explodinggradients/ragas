@@ -1,197 +1,229 @@
-# Ragas Backends
+# Backend Architecture Guide
 
-Backends store your project data (datasets/experiments) in different places: local files, databases, cloud APIs. You implement 2 classes: `ProjectBackend` (manages projects) and `DataTableBackend` (handles data operations).
+Simple plugin architecture for data storage backends. Implement one abstract class, register via entry points.
 
-```
-Project → ProjectBackend → DataTableBackend → Storage
-```
-
-## Current State
-
-**Available Backends:**
-- `local/csv` - Local CSV files
-- `ragas/app` - Ragas cloud platform  
-- `box/csv` - Box cloud storage
-
-**Import Path:** `ragas_experimental.backends`
-
-**Core Classes:**
-- `ProjectBackend` - Project-level operations (create datasets/experiments)
-- `DataTableBackend` - Data operations (read/write entries) 
-- `DataTable` - Base class for `Dataset` and `Experiment`
-
-## Learning Roadmap
-
-Follow this path to build your own backend:
+## Architecture
 
 ```
-□ 1. Understand: Read local_csv.py (simplest example)
-□ 2. Explore: Study base.py abstract methods  
-□ 3. Practice: Modify LocalCSVBackend to add logging
-□ 4. Build: Create your own backend following the pattern
-□ 5. Advanced: Study ragas_app.py for API/async patterns
-□ 6. Package: Create plugin (see Plugin Development)
+Registry (dict-like) → Backend (implements BaseBackend) → Storage
 ```
 
-## Quick Usage
+**Key Files:**
+- `base.py` - Abstract interface (6 methods)
+- `registry.py` - Plugin discovery & dict-like access
+- `local_csv.py`, `local_jsonl.py` - Reference implementations
 
-**Using existing backends:**
+## Quick Start
+
+**1. Implement BaseBackend:**
 ```python
-from ragas_experimental.project import Project
+from ragas_experimental.backends.base import BaseBackend
 
-# Local CSV
-project = Project.create("my_project", "local/csv", root_dir="./data")
-
-# Ragas platform  
-project = Project.create("my_project", "ragas/app", api_key="your_key")
-```
-
-**Basic backend structure:**
-```python
-from ragas_experimental.backends.base import ProjectBackend, DataTableBackend
-
-class MyProjectBackend(ProjectBackend):
-    def create_dataset(self, name, model): 
-        # Create storage space for dataset
+class MyBackend(BaseBackend):
+    def __init__(self, connection_string: str):
+        self.conn = connection_string
+    
+    def load_dataset(self, name: str) -> List[Dict[str, Any]]:
+        # Load dataset from your storage
+        return [{"id": 1, "text": "example"}]
+    
+    def save_dataset(self, name: str, data: List[Dict], model: Optional[Type[BaseModel]]):
+        # Save dataset to your storage
         pass
     
-class MyDataTableBackend(DataTableBackend):
-    def load_entries(self, model_class):
-        # Load entries from storage
-        pass
+    # ... implement other 4 methods (see base.py)
 ```
 
-## Essential Methods
-
-**ProjectBackend** (project management):
-- `create_dataset()` / `create_experiment()` - Create storage
-- `get_dataset_backend()` / `get_experiment_backend()` - Get data handler
-- `list_datasets()` / `list_experiments()` - List existing
-
-**DataTableBackend** (data operations):
-- `initialize()` - Setup with dataset instance
-- `load_entries()` - Load all entries
-- `append_entry()` - Add new entry
-- `update_entry()` / `delete_entry()` - Modify entries
-
-See `base.py` for complete interface.
-
-## Learn from Examples
-
-**Start here:**
-- `local_csv.py` - File-based storage, easiest to understand
-- `config.py` - Configuration patterns
-
-**Advanced patterns:**
-- `ragas_app.py` - API calls, async, error handling
-- `box_csv.py` - Cloud storage, authentication
-- `registry.py` - Backend discovery system
-
-## Quick Development
-
-**1. Copy template:**
-```bash
-cp local_csv.py my_backend.py
+**2. Register via entry points:**
+```toml
+# pyproject.toml
+[project.entry-points."ragas.backends"]
+"my_storage" = "my_package.backend:MyBackend"
 ```
 
-**2. Replace CSV logic with your storage**
-
-**3. Register backend:**
+**3. Use:**
 ```python
-# In registry.py _register_builtin_backends()
-from .my_backend import MyProjectBackend
-self.register_backend("my_storage", MyProjectBackend)
+from ragas_experimental.backends import get_registry
+registry = get_registry()
+backend = registry["my_storage"](connection_string="...")
 ```
 
-**4. Test:**
+## Required Methods
+
+**BaseBackend (6 methods):**
 ```python
-project = Project.create("test", "my_storage")
+# Data loading
+def load_dataset(name: str) -> List[Dict[str, Any]]
+def load_experiment(name: str) -> List[Dict[str, Any]]
+
+# Data saving  
+def save_dataset(name: str, data: List[Dict], model: Optional[Type[BaseModel]])
+def save_experiment(name: str, data: List[Dict], model: Optional[Type[BaseModel]])
+
+# Listing
+def list_datasets() -> List[str]
+def list_experiments() -> List[str]
+```
+
+## Registry Usage
+
+**Dict-like interface:**
+```python
+from ragas_experimental.backends import get_registry
+
+registry = get_registry()
+print(registry)  # {'local/csv': <class 'LocalCSVBackend'>, ...}
+
+# Access backend classes
+backend_class = registry["local/csv"]
+backend = backend_class(root_dir="./data")
+
+# Check availability
+if "my_backend" in registry:
+    backend = registry["my_backend"]()
+```
+
+## Reference Implementations
+
+**LocalCSVBackend** (`local_csv.py`):
+- **Pattern:** File-based storage with CSV format
+- **Init:** `LocalCSVBackend(root_dir="./data")`
+- **Storage:** `{root_dir}/datasets/{name}.csv`, `{root_dir}/experiments/{name}.csv`
+- **Features:** Directory auto-creation, UTF-8 encoding, proper CSV escaping
+
+**LocalJSONLBackend** (`local_jsonl.py`):
+- **Pattern:** File-based storage with JSONL format  
+- **Init:** `LocalJSONLBackend(root_dir="./data")`
+- **Storage:** `{root_dir}/datasets/{name}.jsonl`, `{root_dir}/experiments/{name}.jsonl`
+- **Features:** Handles complex nested data, preserves types
+
+## Implementation Patterns
+
+**Common backend structure:**
+```python
+class MyBackend(BaseBackend):
+    def __init__(self, **config):
+        # Initialize connection/client
+        
+    def _get_storage_path(self, data_type: str, name: str):
+        # Generate storage location
+        
+    def _load(self, data_type: str, name: str):
+        # Generic load implementation
+        
+    def _save(self, data_type: str, name: str, data, model):
+        # Generic save implementation
+        
+    # Implement required methods using _load/_save
+    def load_dataset(self, name): return self._load("datasets", name)
+    def save_dataset(self, name, data, model): self._save("datasets", name, data, model)
+    # ... etc
+```
+
+**Error handling:**
+```python
+def load_dataset(self, name: str):
+    try:
+        return self._load("datasets", name)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Dataset '{name}' not found")
+    except ConnectionError:
+        raise RuntimeError(f"Storage connection failed")
+```
+
+**Pydantic model handling:**
+```python
+def save_dataset(self, name: str, data: List[Dict], model: Optional[Type[BaseModel]]):
+    if model:
+        # Validate data against model if provided
+        validated_data = [model(**item).model_dump() for item in data]
+        self._save(name, validated_data)
+    else:
+        self._save(name, data)
+```
+
+## Testing Your Backend
+
+```python
+def test_backend():
+    backend = MyBackend(config="test")
+    
+    # Test save/load cycle
+    test_data = [{"id": 1, "text": "test"}]
+    backend.save_dataset("test_dataset", test_data, None)
+    loaded = backend.load_dataset("test_dataset")
+    assert loaded == test_data
+    
+    # Test listing
+    datasets = backend.list_datasets()
+    assert "test_dataset" in datasets
 ```
 
 ## Plugin Development
 
-**Create separate package:**
+**Full plugin structure:**
 ```
 my-backend-plugin/
-├── pyproject.toml
+├── pyproject.toml              # Entry point configuration
 ├── src/my_backend/
-│   ├── __init__.py
-│   └── backend.py
+│   ├── __init__.py            # Export backend class
+│   └── backend.py             # Backend implementation
 └── tests/
+    └── test_backend.py        # Integration tests
 ```
 
-**Entry point in pyproject.toml:**
+**Entry point registration:**
 ```toml
 [project.entry-points."ragas.backends"]
-my_storage = "my_backend.backend:MyProjectBackend"
+"s3" = "my_backend.backend:S3Backend"
+"postgres" = "my_backend.backend:PostgresBackend"
 ```
 
-**Install and use:**
+**Install & use:**
 ```bash
 pip install my-backend-plugin
-python -c "from ragas_experimental.project import Project; Project.create('test', 'my_storage')"
+python -c "from ragas_experimental.backends import get_registry; print(get_registry())"
 ```
 
-## Common Patterns
+## Registry Internals
 
-**ID Generation:**
+**Discovery process:**
+1. Registry loads entry points from group `"ragas.backends"`  
+2. Each entry point maps `name -> backend_class`
+3. Lazy loading - backends loaded on first access
+4. Dict-like interface for easy access
+
+**Debugging:**
 ```python
-from .utils import create_nano_id
-dataset_id = create_nano_id()
+from ragas_experimental.backends import get_registry
+registry = get_registry()
+
+# Check what's available
+print(f"Available backends: {list(registry.keys())}")
+
+# Get backend info
+for name in registry:
+    backend_class = registry[name]
+    print(f"{name}: {backend_class.__module__}.{backend_class.__name__}")
 ```
 
-**Error Handling:**
-```python
-try:
-    # Storage operation
-except ConnectionError:
-    # Handle gracefully
-```
+## Design Decisions
 
-**Testing:**
-```python
-def test_my_backend():
-    backend = MyProjectBackend()
-    backend.initialize("test_project")
-    dataset_id = backend.create_dataset("test", MyModel)
-    assert dataset_id
-```
+**Why BaseBackend instead of separate Project/DataTable backends?**
+- Simpler: One interface to implement vs. two
+- Clearer: Backend owns both storage and operations
+- Flexible: Backends can optimize cross-operation concerns
 
-## Troubleshooting
+**Why entry points vs. manual registration?**
+- Extensible: Third-party backends without code changes
+- Standard: Follows Python packaging conventions  
+- Discoverable: Automatic registration on install
 
-**Backend not found?** Check registry with:
-```python
-from ragas_experimental.backends import list_backends
-print(list_backends())
-```
-
-**Entries not loading?** Verify:
-- `initialize()` called before other methods
-- `load_entries()` returns list of model instances
-- Entry `_row_id` attributes set correctly
-
-**Need help?** Study existing backends - they handle most common patterns.
-
-## Configuration Examples
-
-**Local CSV:**
-```python
-from ragas_experimental.backends import LocalCSVConfig
-config = LocalCSVConfig(root_dir="/path/to/data")
-```
-
-**Ragas App:**
-```python  
-from ragas_experimental.backends import RagasAppConfig
-config = RagasAppConfig(api_key="key", api_url="https://api.ragas.io")
-```
-
-**Box CSV:**
-```python
-from ragas_experimental.backends import BoxCSVConfig
-config = BoxCSVConfig(client=authenticated_box_client)
-```
+**Why dict-like registry?**
+- Intuitive: Familiar `registry["name"]` access pattern
+- Debuggable: Shows available backends in repr
+- Flexible: Supports `in`, `keys()`, iteration
 
 ---
 
-**Next Steps:** Start with modifying `local_csv.py`, then build your own following the same patterns.
+**Quick Start:** Copy `local_csv.py`, replace CSV logic with your storage, add entry point, done.

@@ -1,7 +1,6 @@
 """Local JSONL backend implementation for projects and datasets."""
 
 import json
-import os
 import typing as t
 from datetime import datetime, date
 from pathlib import Path
@@ -13,7 +12,7 @@ from .base import BaseBackend
 
 class LocalJSONLBackend(BaseBackend):
     """Local JSONL implementation of DataTableBackend.
-    
+
     Uses JSON Lines format (one JSON object per line) which preserves
     data types and supports complex nested structures.
     """
@@ -50,12 +49,12 @@ class LocalJSONLBackend(BaseBackend):
         if isinstance(obj, str):
             # Try to parse as datetime
             try:
-                if 'T' in obj and (':' in obj or '.' in obj):
+                if "T" in obj and (":" in obj or "." in obj):
                     # Looks like datetime ISO format
-                    return datetime.fromisoformat(obj.replace('Z', '+00:00'))
-                elif '-' in obj and len(obj) == 10:
+                    return datetime.fromisoformat(obj.replace("Z", "+00:00"))
+                elif "-" in obj and len(obj) == 10:
                     # Looks like date ISO format (YYYY-MM-DD)
-                    return datetime.fromisoformat(obj + 'T00:00:00').date()
+                    return datetime.fromisoformat(obj + "T00:00:00").date()
             except (ValueError, TypeError):
                 # Not a valid datetime string, return as-is
                 pass
@@ -82,7 +81,7 @@ class LocalJSONLBackend(BaseBackend):
                 line = line.strip()
                 if not line:  # Skip empty lines
                     continue
-                
+
                 try:
                     # Parse JSON line
                     json_obj = json.loads(line)
@@ -122,8 +121,10 @@ class LocalJSONLBackend(BaseBackend):
                 # Serialize datetime objects
                 serialized_item = self._serialize_datetime(item)
                 # Write as JSON line
-                json_line = json.dumps(serialized_item, ensure_ascii=False, separators=(',', ':'))
-                f.write(json_line + '\n')
+                json_line = json.dumps(
+                    serialized_item, ensure_ascii=False, separators=(",", ":")
+                )
+                f.write(json_line + "\n")
 
     def _list(self, data_type: str) -> t.List[str]:
         """List all available datasets or experiments."""

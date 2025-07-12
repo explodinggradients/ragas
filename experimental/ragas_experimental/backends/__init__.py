@@ -3,11 +3,8 @@
 from .base import BaseBackend
 from .registry import (
     BackendRegistry,
-    create_backend,
-    get_backend_info,
+    BACKEND_REGISTRY,
     get_registry,
-    list_backend_info,
-    list_backends,
     print_available_backends,
     register_backend,
 )
@@ -24,9 +21,6 @@ __all__ = [
     "LocalJSONLBackend",
     "get_registry",
     "register_backend",
-    "list_backends",
-    "get_backend_info",
-    "list_backend_info",
     "print_available_backends",
-    "create_backend",
+    "BACKEND_REGISTRY",
 ]

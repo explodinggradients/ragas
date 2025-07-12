@@ -1,7 +1,6 @@
 """Local CSV backend implementation for projects and datasets."""
 
 import csv
-import os
 import typing as t
 from pathlib import Path
 

@@ -80,7 +80,7 @@ class DataTable(t.Generic[T]):
         """Load dataset with optional validation"""
         # Backend always returns dicts
         # Use the correct backend method based on the class type
-        if hasattr(cls, 'DATATABLE_TYPE') and cls.DATATABLE_TYPE == "Experiment":
+        if hasattr(cls, "DATATABLE_TYPE") and cls.DATATABLE_TYPE == "Experiment":
             dict_data = backend.load_experiment(name)
         else:
             dict_data = backend.load_dataset(name)
@@ -107,8 +107,10 @@ class DataTable(t.Generic[T]):
 
         # Backend only sees dicts
         # Use the correct backend method based on the class type
-        if hasattr(self, 'DATATABLE_TYPE') and self.DATATABLE_TYPE == "Experiment":
-            self.backend.save_experiment(self.name, dict_data, data_model=self.data_model)
+        if hasattr(self, "DATATABLE_TYPE") and self.DATATABLE_TYPE == "Experiment":
+            self.backend.save_experiment(
+                self.name, dict_data, data_model=self.data_model
+            )
         else:
             self.backend.save_dataset(self.name, dict_data, data_model=self.data_model)
 
