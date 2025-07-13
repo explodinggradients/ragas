@@ -12,11 +12,11 @@ from .base import BaseBackend
 
 class LocalJSONLBackend(BaseBackend):
     """File-based backend using JSONL format for local storage.
-    
+
     Stores datasets and experiments as JSONL files (one JSON object per line).
     Preserves data types and supports complex nested structures including
     datetime objects, lists, and nested dictionaries.
-    
+
     Directory Structure:
         root_dir/
         ├── datasets/
@@ -25,10 +25,10 @@ class LocalJSONLBackend(BaseBackend):
         └── experiments/
             ├── experiment1.jsonl
             └── experiment2.jsonl
-    
+
     Args:
         root_dir: Directory path for storing JSONL files
-        
+
     Features:
         - Preserves Python data types (int, float, bool, None)
         - Automatic datetime/date serialization to ISO format
@@ -36,7 +36,7 @@ class LocalJSONLBackend(BaseBackend):
         - Handles malformed JSON lines gracefully (skips with warning)
         - UTF-8 encoding for international text
         - Compact JSON formatting (no extra whitespace)
-        
+
     Best For:
         - Complex data structures with nesting
         - Mixed data types and datetime objects

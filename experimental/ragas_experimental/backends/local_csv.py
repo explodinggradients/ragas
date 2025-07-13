@@ -11,10 +11,10 @@ from .base import BaseBackend
 
 class LocalCSVBackend(BaseBackend):
     """File-based backend using CSV format for local storage.
-    
+
     Stores datasets and experiments as CSV files in separate subdirectories.
     Suitable for simple tabular data but has limitations with nested structures.
-    
+
     Directory Structure:
         root_dir/
         ├── datasets/
@@ -23,16 +23,16 @@ class LocalCSVBackend(BaseBackend):
         └── experiments/
             ├── experiment1.csv
             └── experiment2.csv
-    
+
     Args:
         root_dir: Directory path for storing CSV files
-        
+
     Limitations:
         - Flattens complex data structures to strings
         - Limited data type preservation (everything becomes strings)
         - Not suitable for nested objects, lists, or complex data
         - Use LocalJSONLBackend for complex data structures
-        
+
     Best For:
         - Simple tabular data with basic types (str, int, float)
         - When human-readable CSV format is desired
