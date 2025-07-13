@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from ..embedding import BaseEmbedding
+from ..embeddings import BaseEmbedding
 from .base import Prompt
 
 

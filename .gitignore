@@ -165,7 +165,7 @@ cython_debug/
 .idea/
 
 # Ragas specific
-experiments/
+_experiments/
 **/fil-result/
 ragas/src/ragas/_version.py
 experimental/ragas_experimental/_version.py
@@ -173,11 +173,4 @@ experimental/ragas_experimental/_version.py
 .envrc
 uv.lock
 .cache/
-
-# nbdev
-_proc/
-site/
-_version.py
-test_resources
 .claude
-**/old_nbs/*.md

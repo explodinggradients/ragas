@@ -11,12 +11,7 @@ except ImportError:
     except PackageNotFoundError:
         __version__ = "unknown"
 
-from ragas_experimental.model.pydantic_model import (
-    ExtendedPydanticBaseModel as BaseModel,
-)
+from ragas_experimental.dataset import Dataset
+from ragas_experimental.experiment import experiment, Experiment
 
-from .project.core import Project
-
-# Import the main Project class - decorators are added automatically in core.py
-
-__all__ = ["Project", "BaseModel"]
+__all__ = ["Dataset", "experiment", "Experiment"]
