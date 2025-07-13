@@ -251,7 +251,7 @@ class DataTable(t.Generic[T]):
                 else:
                     raise TypeError(f"Item must be {self.data_model.__name__} or dict")
             else:
-                raise TypeError(f"Item must be {self.data_model.__name__} or dict")  # type: ignore[unreachable]
+                raise TypeError(f"Item must be {self.data_model.__name__} or dict")
         else:
             # No model - only accept dicts
             if isinstance(item, dict):
@@ -311,22 +311,43 @@ class Dataset(DataTable[T]):
         # Calculate split index
         split_index = int(len(self._data) * (1 - test_size))
 
-        # Create new dataset instances without full initialization
-        train_dataset = object.__new__(type(self))
-        test_dataset = object.__new__(type(self))
+        # Create new dataset instances with proper initialization
+        # Handle type-safe constructor calls based on data_model presence
+        if self.data_model is not None:
+            # Validated dataset case - data should be List[T]
+            train_data = t.cast(t.List[T], self._data[:split_index])
+            test_data = t.cast(t.List[T], self._data[split_index:])
 
-        # Copy essential attributes
-        for dataset in [train_dataset, test_dataset]:
-            dataset.data_model = self.data_model
-            dataset.backend = self.backend
+            train_dataset = type(self)(
+                name=f"{self.name}_train",
+                backend=self.backend,
+                data_model=self.data_model,
+                data=train_data,
+            )
 
-        # Set specific attributes for each dataset
-        train_dataset.name = f"{self.name}_train"
+            test_dataset = type(self)(
+                name=f"{self.name}_test",
+                backend=self.backend,
+                data_model=self.data_model,
+                data=test_data,
+            )
+        else:
+            # Unvalidated dataset case - data should be List[Dict]
+            train_data = t.cast(t.List[t.Dict[str, t.Any]], self._data[:split_index])
+            test_data = t.cast(t.List[t.Dict[str, t.Any]], self._data[split_index:])
 
-        test_dataset.name = f"{self.name}_test"
+            train_dataset = type(self)(
+                name=f"{self.name}_train",
+                backend=self.backend,
+                data_model=None,
+                data=train_data,
+            )
 
-        # Assign entries to the new datasets
-        train_dataset._data = self._data[:split_index]
-        test_dataset._data = self._data[split_index:]
+            test_dataset = type(self)(
+                name=f"{self.name}_test",
+                backend=self.backend,
+                data_model=None,
+                data=test_data,
+            )
 
         return train_dataset, test_dataset
