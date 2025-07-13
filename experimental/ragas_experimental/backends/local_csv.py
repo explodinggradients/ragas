@@ -10,7 +10,34 @@ from .base import BaseBackend
 
 
 class LocalCSVBackend(BaseBackend):
-    """Local CSV implementation of DataTableBackend."""
+    """File-based backend using CSV format for local storage.
+    
+    Stores datasets and experiments as CSV files in separate subdirectories.
+    Suitable for simple tabular data but has limitations with nested structures.
+    
+    Directory Structure:
+        root_dir/
+        ├── datasets/
+        │   ├── dataset1.csv
+        │   └── dataset2.csv
+        └── experiments/
+            ├── experiment1.csv
+            └── experiment2.csv
+    
+    Args:
+        root_dir: Directory path for storing CSV files
+        
+    Limitations:
+        - Flattens complex data structures to strings
+        - Limited data type preservation (everything becomes strings)
+        - Not suitable for nested objects, lists, or complex data
+        - Use LocalJSONLBackend for complex data structures
+        
+    Best For:
+        - Simple tabular data with basic types (str, int, float)
+        - When human-readable CSV format is desired
+        - Integration with spreadsheet applications
+    """
 
     def __init__(
         self,
@@ -79,11 +106,11 @@ class LocalCSVBackend(BaseBackend):
 
     # Public interface methods (required by BaseBackend)
     def load_dataset(self, name: str) -> t.List[t.Dict[str, t.Any]]:
-        """Load a dataset from CSV file."""
+        """Load dataset from CSV file."""
         return self._load("datasets", name)
 
     def load_experiment(self, name: str) -> t.List[t.Dict[str, t.Any]]:
-        """Load an experiment from CSV file."""
+        """Load experiment from CSV file."""
         return self._load("experiments", name)
 
     def save_dataset(
@@ -92,7 +119,7 @@ class LocalCSVBackend(BaseBackend):
         data: t.List[t.Dict[str, t.Any]],
         data_model: t.Optional[t.Type[BaseModel]] = None,
     ) -> None:
-        """Save a dataset to CSV file."""
+        """Save dataset to CSV file."""
         self._save("datasets", name, data, data_model)
 
     def save_experiment(
@@ -101,15 +128,15 @@ class LocalCSVBackend(BaseBackend):
         data: t.List[t.Dict[str, t.Any]],
         data_model: t.Optional[t.Type[BaseModel]] = None,
     ) -> None:
-        """Save an experiment to CSV file."""
+        """Save experiment to CSV file."""
         self._save("experiments", name, data, data_model)
 
     def list_datasets(self) -> t.List[str]:
-        """List all available datasets."""
+        """List all dataset names."""
         return self._list("datasets")
 
     def list_experiments(self) -> t.List[str]:
-        """List all available experiments."""
+        """List all experiment names."""
         return self._list("experiments")
 
     def __repr__(self) -> str:

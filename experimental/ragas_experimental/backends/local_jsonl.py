@@ -11,10 +11,37 @@ from .base import BaseBackend
 
 
 class LocalJSONLBackend(BaseBackend):
-    """Local JSONL implementation of DataTableBackend.
-
-    Uses JSON Lines format (one JSON object per line) which preserves
-    data types and supports complex nested structures.
+    """File-based backend using JSONL format for local storage.
+    
+    Stores datasets and experiments as JSONL files (one JSON object per line).
+    Preserves data types and supports complex nested structures including
+    datetime objects, lists, and nested dictionaries.
+    
+    Directory Structure:
+        root_dir/
+        ├── datasets/
+        │   ├── dataset1.jsonl
+        │   └── dataset2.jsonl
+        └── experiments/
+            ├── experiment1.jsonl
+            └── experiment2.jsonl
+    
+    Args:
+        root_dir: Directory path for storing JSONL files
+        
+    Features:
+        - Preserves Python data types (int, float, bool, None)
+        - Automatic datetime/date serialization to ISO format
+        - Supports nested dictionaries and lists
+        - Handles malformed JSON lines gracefully (skips with warning)
+        - UTF-8 encoding for international text
+        - Compact JSON formatting (no extra whitespace)
+        
+    Best For:
+        - Complex data structures with nesting
+        - Mixed data types and datetime objects
+        - When data type preservation is important
+        - Large datasets (streaming line-by-line processing)
     """
 
     def __init__(
@@ -139,11 +166,11 @@ class LocalJSONLBackend(BaseBackend):
 
     # Public interface methods (required by BaseBackend)
     def load_dataset(self, name: str) -> t.List[t.Dict[str, t.Any]]:
-        """Load a dataset from JSONL file."""
+        """Load dataset from JSONL file."""
         return self._load("datasets", name)
 
     def load_experiment(self, name: str) -> t.List[t.Dict[str, t.Any]]:
-        """Load an experiment from JSONL file."""
+        """Load experiment from JSONL file."""
         return self._load("experiments", name)
 
     def save_dataset(
@@ -152,7 +179,7 @@ class LocalJSONLBackend(BaseBackend):
         data: t.List[t.Dict[str, t.Any]],
         data_model: t.Optional[t.Type[BaseModel]] = None,
     ) -> None:
-        """Save a dataset to JSONL file."""
+        """Save dataset to JSONL file."""
         self._save("datasets", name, data, data_model)
 
     def save_experiment(
@@ -161,15 +188,15 @@ class LocalJSONLBackend(BaseBackend):
         data: t.List[t.Dict[str, t.Any]],
         data_model: t.Optional[t.Type[BaseModel]] = None,
     ) -> None:
-        """Save an experiment to JSONL file."""
+        """Save experiment to JSONL file."""
         self._save("experiments", name, data, data_model)
 
     def list_datasets(self) -> t.List[str]:
-        """List all available datasets."""
+        """List all dataset names."""
         return self._list("datasets")
 
     def list_experiments(self) -> t.List[str]:
-        """List all available experiments."""
+        """List all experiment names."""
         return self._list("experiments")
 
     def __repr__(self) -> str:
