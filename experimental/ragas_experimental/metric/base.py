@@ -22,6 +22,37 @@ if t.TYPE_CHECKING:
 
 
 @dataclass
+class BaseMetric(ABC):
+    name: str
+
+    @abstractmethod
+    def score(self, **kwargs) -> MetricResult:
+        pass
+
+    @abstractmethod
+    async def ascore(self, **kwargs) -> MetricResult:
+        pass
+
+    def batch_score(
+        self,
+        inputs: t.List[t.Dict[str, t.Any]],
+    ) -> t.List[MetricResult]:
+        return [self.score(**input_dict) for input_dict in inputs]
+
+    async def abatch_score(
+        self,
+        inputs: t.List[t.Dict[str, t.Any]],
+    ) -> t.List[MetricResult]:
+        async_tasks = []
+        for input_dict in inputs:
+            # Add reasoning and n to the input parameters
+            async_tasks.append(self.ascore(**input_dict))
+
+        # Run all tasks concurrently and return results
+        return await asyncio.gather(*async_tasks)
+
+
+@dataclass
 class Metric(ABC):
     """Base class for all metrics in the LLM evaluation library."""
 
@@ -48,7 +79,12 @@ class Metric(ABC):
     def score(self, llm: RagasLLM, **kwargs) -> MetricResult:
         traces = {}
         traces["input"] = kwargs
+
+        # get prompt
+        if not self.prompt:
+            raise Exception("prompt not passed")
         prompt_input = self.prompt.format(**kwargs)
+
         response = llm.generate(prompt_input, response_model=self._response_model)
         traces["output"] = response.model_dump()
         result = MetricResult(**response.model_dump())
@@ -58,7 +94,11 @@ class Metric(ABC):
     async def ascore(self, llm: RagasLLM, **kwargs) -> MetricResult:
         traces = {}
 
+        # get prompt
+        if not self.prompt:
+            raise Exception("prompt not passed")
         prompt_input = self.prompt.format(**kwargs)
+
         traces["input"] = prompt_input
         response = await llm.agenerate(
             prompt_input,
@@ -137,11 +177,13 @@ class Metric(ABC):
         Align the metric with the specified experiments by different optimization methods.
         """
 
-        assert isinstance(self.prompt, Prompt)
+        # get prompt
+        if not self.prompt:
+            raise Exception("prompt not passed")
         self.prompt = DynamicFewShotPrompt.from_prompt(
             self.prompt, embedding_model, **kwargs
         )
-        dataset.load()
+        dataset.reload()
         total_items = len(dataset)
         input_vars = self.get_variables()
         output_vars = [self.name, f"{self.name}_reason"]
