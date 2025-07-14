@@ -211,6 +211,22 @@ class DataTable(t.Generic[T]):
         else:
             self.backend.save_dataset(self.name, dict_data, data_model=self.data_model)
 
+    def reload(self) -> None:
+        # Backend always returns dicts
+        # Use the correct backend method based on the class type
+        dict_data = []
+        if hasattr(self, "DATATABLE_TYPE") and self.DATATABLE_TYPE == "Experiment":
+            dict_data = self.backend.load_experiment(self.name)
+        else:
+            dict_data = self.backend.load_dataset(self.name)
+
+        if self.data_model:
+            # Validated mode - convert dicts to Pydantic models
+            self._data = [self.data_model(**d) for d in dict_data]
+        else:
+            # Unvalidated mode - keep as dicts but wrapped in Dataset API
+            self._data = dict_data  # type: ignore
+
     def validate_with(self, data_model: t.Type[T]) -> Self:
         """Apply validation to an unvalidated dataset"""
         if self.data_model is not None:
