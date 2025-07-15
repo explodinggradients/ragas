@@ -4,12 +4,8 @@ At the end of this tutorial you’ll learn how to iterate on a single prompt usi
 
 ```mermaid
 flowchart LR
-    A["Input:<br/>Movie Review Text<br/><br/>'This movie was amazing!<br/>Great acting and plot.'"] --> B["Movie Review<br/>Classifier Prompt<br/><br/>Analyze sentiment...<br/>Positive/Negative"]
-    B --> C["Output:<br/>Classification Result<br/><br/>Positive"]
-    
-    style A fill:#e3f2fd
-    style B fill:#fff3e0
-    style C fill:#e8f5e8
+    A["'This movie was amazing!<br/>Great acting and plot.'"] --> B["Classifier Prompt"]
+    B --> C["Positive"]
 ```
 
 
