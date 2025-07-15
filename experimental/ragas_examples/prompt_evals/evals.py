@@ -2,7 +2,7 @@ from ragas_experimental import Dataset, experiment
 from ragas_experimental.metric.result import MetricResult
 from ragas_experimental.metric.discrete import discrete_metric
 
-from main import run_prompt
+from experimental.ragas_examples.prompt_evals.prompt import run_prompt
 
 @discrete_metric(name="accuracy", values=["pass", "fail"])
 def my_metric(prediction: str, actual: str):
