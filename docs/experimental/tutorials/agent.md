@@ -3,10 +3,21 @@
 This tutorial demonstrates how to evaluate an AI agent using Ragas, specifically a mathematical agent that can solve complex expressions using atomic operations and function calling capabilities. By the end of this tutorial, you will learn how to evaluate and iterate on an agent using evaluation-driven development.
 
 ```mermaid
-flowchart LR
-    A["Expression<br/>'(2 + 3) * (4 - 1)'"] --> B["Math Tools Agent"]
-    B --> C["Result: 15"]
+graph TD
+    A[User Input<br/>Math Expression] --> B[MathToolsAgent]
+    B --> C[LLM Planner Agent]
+
+    subgraph LLM Agent Loop
+        C --> D{Need to use a Tool?}
+        D -- Yes --> E[Call Tool<br/>add/sub/mul/div]
+        E --> F[Tool Result]
+        F --> C
+        D -- No --> G[Emit Final Answer]
+    end
+
+    G --> H[Output Result + Logs]
 ```
+
 We will start by testing our simple agent that can solve mathematical expressions using atomic operations and function calling capabilities.
 
 ```bash
