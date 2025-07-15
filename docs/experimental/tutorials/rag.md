@@ -16,20 +16,8 @@ flowchart LR
 
 We will start by writing a simple RAG system that retrieves relevant documents from a corpus and generates an answer using an LLM.
 
-```python
-class ExampleRAG:
-    def __init__(self, llm, retriever):
-        self.llm = llm
-        self.retriever = retriever
-
-    def run(self, query):
-        # Retrieve relevant documents
-        docs = self.retriever.retrieve(query)
-        
-        # Generate answer using LLM
-        response = self.llm.generate(query, docs)
-        
-        return response
+```bash
+python -m ragas_examples.rag_eval.rag
 ```
 
 
@@ -57,7 +45,7 @@ my_metric = DiscreteMetric(
 )
 ```
 
-Next, we will write the evaluation function that will run our RAG system on the test dataset and evaluate it using the metric, and store the results in a CSV file.
+Next, we will write the experiment loop that will run our RAG system on the test dataset and evaluate it using the metric, and store the results in a CSV file.
 
 ```python
 @experiment()
@@ -78,6 +66,8 @@ async def run_experiment(row):
     }
     return experiment_view
 ```
+
+Now whenever you make a change to your RAG pipeline, you can run the experiment and see how it affects the performance of your RAG. 
 
 ## Running the example end to end
 

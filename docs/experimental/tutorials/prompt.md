@@ -9,12 +9,10 @@ flowchart LR
 ```
 
 
-We will start by writing a simple prompt that classifies movie reviews as positive or negative. 
+We will start by testing a simple prompt that classifies movie reviews as positive or negative. 
 
-```python
-SYSTEM_PROMPT = """
-You are a movie review classifier. You classify movie reviews as positive or negative.
-"""
+```bash
+python -m ragas_examples.prompt_evals.prompt
 ```
 
 Next, we will write down few sample inputs and expected outputs for our prompt. Then convert them to a a csv file
@@ -41,7 +39,7 @@ def my_metric(prediction: str, actual: str):
     return MetricResult(result="pass", reason="") if prediction == actual else MetricResult(result="fail", reason="")
 ```
 
-Next, we will write the evaluation function that will run our prompt on the test dataset and evaluate it using the metric, and store the results in a csv file. 
+Next, we will write the experiment loop that will run our prompt on the test dataset and evaluate it using the metric, and store the results in a csv file. 
 
 ```python
 from ragas_experimental import experiment
@@ -63,6 +61,7 @@ async def run_experiment(row):
     return experiment_view
 ```
 
+Now whenever you make a change to your prompt, you can run the experiment and see how it affects the performance of your prompt. 
 
 
 ## Running the example end to end
