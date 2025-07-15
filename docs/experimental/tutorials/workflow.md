@@ -4,9 +4,9 @@ This tutorial demonstrates how to evaluate an AI workflow using Ragas, here a si
 
 ```mermaid
 flowchart LR
-    A["Email Query<br/>'I need help with my order 1123'"] --> B["Rule based Extractor"<br/>Extracts Order ID"]
-    B --> C[Template + LLM Response]
-    C --> D[Email Reply]
+    A["Email Query"] --> B["Rule based Info Extractor"]
+    B --> C["Template + LLM Response"]
+    C --> D["Email Reply"]
 ```
 
 We will start by testing our simple workflow that extracts the necessary information from an email, routes it to the correct template and generates response using an LLM.
