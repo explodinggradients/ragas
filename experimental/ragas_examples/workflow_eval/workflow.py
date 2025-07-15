@@ -514,21 +514,6 @@ def main():
     result = agent.process_email(test_emails[0])
     print(f"Result: {result['response_template']}")
     
-    # Example 2: Using LLM extractor
-    print("\n=== Using LLM Extractor ===")
-    client = OpenAI(api_key=api_key)
-    llm_extractor = LLMExtractor(client)
-    agent = ConfigurableSupportTriageAgent(api_key=api_key, extractor=llm_extractor, logdir="logs")
-    
-    result = agent.process_email(test_emails[1])
-    print(f"Result: {result['response_template']}")
-    
-    # Example 3: Default (no extractor provided)
-    print("\n=== Using Default Extractor ===")
-    agent = ConfigurableSupportTriageAgent(api_key=api_key, logdir="logs")
-    
-    result = agent.process_email(test_emails[2])
-    print(f"Result: {result['response_template']}")
 
 
 if __name__ == "__main__":
