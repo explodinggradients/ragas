@@ -10,5 +10,3 @@ Install the ragas_experimental package with examples dependencies:
 pip install -e ".[examples]"
 ```
 
-## Usage
-
