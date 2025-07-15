@@ -75,7 +75,7 @@ class ExampleRAG:
     """
     Simple RAG system that:
     1. accepts a llm client 
-    2. uses simple TF-IDF similarity to retrieve relevant documents
+    2. uses simple keyword matching to retrieve relevant documents
     3. uses the llm client to generate a response based on the retrieved documents when a query is made
     """
     
@@ -400,7 +400,6 @@ def default_rag_client(llm_client, logdir: str = "logs") -> ExampleRAG:
     Create a default RAG client with OpenAI LLM and optional retriever.
     
     Args:
-        api_key: OpenAI API key
         retriever: Optional retriever instance (defaults to SimpleKeywordRetriever)
         logdir: Directory for trace logs
     Returns:
