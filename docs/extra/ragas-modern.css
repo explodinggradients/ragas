@@ -32,21 +32,21 @@
 
 /* Only minimal, essential customizations - let Material Design handle the rest */
 
-/* Reduce navigation font size only */
+/* Navigation font size */
 .md-nav {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
 }
 
 .md-nav__link {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
 }
 
 .md-nav__title {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
 }
 
 .md-tabs__link {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
 }
 
 /* Clean repository info*/
@@ -61,6 +61,20 @@
 /* Ensure proper font family application */
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 1.1rem; /* Increased from default */
+}
+
+/* Material Design typography overrides for main content */
+.md-typeset {
+  font-size: 1.01rem !important;
+}
+
+.md-typeset p {
+  font-size: 1.01rem !important;
+}
+
+.md-typeset li {
+  font-size: 1.01rem !important;
 }
 
 code, kbd, samp, pre {
