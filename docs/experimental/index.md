@@ -19,6 +19,23 @@
 
 </div>
 
+## Installation
+
+- Install ragas_experimental from pip
+
+```bash
+pip install ragas_experimental
+```
+
+- Install from source
+
+```bash
+git clone https://github.com/explodinggradients/ragas
+```
+
+```bash
+cd ragas/experimental && pip install -e .
+```
 
 
 ## Hello World 👋
