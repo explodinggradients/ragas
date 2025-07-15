@@ -332,6 +332,11 @@ class MathToolsAgent:
         return {"result": 0, "log_file": self.export_traces_to_log(run_id, problem, None)}
     
 
+def get_default_agent(model_name: str = "gpt-4o", logdir:str = "logs") -> MathToolsAgent:
+    """Get a default instance of the MathToolsAgent with OpenAI client"""
+    openai_client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    return MathToolsAgent(client=openai_client, model_name=model_name, logdir=logdir)
+
 
 if __name__ == "__main__":
     # Example usage
