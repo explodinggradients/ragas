@@ -8,13 +8,13 @@
 
     Install with `pip` and get started with Ragas with these tutorials.
 
-    [:octicons-arrow-right-24: Tutorials](experimental/tutorials/index.md)
+    [:octicons-arrow-right-24: Tutorials](tutorials/index.md)
 
 - 📚 **Explanations**
 
     In depth explanation and discussion of the concepts and working of different features available in Ragas.
 
-    [:octicons-arrow-right-24: Explanations](experimental/explanation/index.md)
+    [:octicons-arrow-right-24: Explanations](explanation/index.md)
 
 
 </div>
