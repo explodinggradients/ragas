@@ -353,11 +353,8 @@ class ExampleRAG:
                 }
             ))
             
-            # Export traces to log file
-            self.export_traces_to_log(run_id, question, result)
-            
-            return result
-            
+            return {"result": result, "logs": self.export_traces_to_log(run_id, question, result)}
+
         except Exception as e:
             self.traces.append(TraceEvent(
                 event_type="error",
@@ -368,14 +365,12 @@ class ExampleRAG:
                     "error": str(e)
                 }
             ))
-            
-            # Export traces even if query failed
-            self.export_traces_to_log(run_id, question, None)
+                        
             
             # Return error result
             return {
                 'answer': f"Error processing query: {str(e)}",
-                'run_id': run_id
+                'logs': self.export_traces_to_log(run_id, question, None)
             }
     
     def export_traces_to_log(self, run_id: str, query: Optional[str] = None, result: Optional[Dict[str, Any]] = None):
@@ -434,6 +429,5 @@ if __name__ == "__main__":
     response = rag_client.query(query, top_k=3)
     
     print("Response:", response['answer'])
-    print(f"Run ID: {response['run_id']}")
-    print(f"Documents retrieved: {response['num_documents_retrieved']}")
+    print(f"Run ID: {response['logs']}")
     

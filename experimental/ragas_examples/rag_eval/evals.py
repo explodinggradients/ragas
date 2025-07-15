@@ -51,6 +51,7 @@ async def run_experiment(row):
         **row,
         "response": response,
         "score": score.result,
+        "log_file": response.get("logs", " "),
     }
     return experiment_view
 
