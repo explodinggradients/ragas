@@ -16,6 +16,6 @@ export OPENAI_API_KEY = "your_openai_api_key"
 ## Tutorials
 
 1. [Evaluate a prompt](prompt.md)
-2. [Evaluate a simple RAG system](ragas/experimental/tutorials/evaluate_rag.md)
+2. [Evaluate a simple RAG system](rag.md)
 3. [Evaluate a AI Workflow](ragas/experimental/tutorials/evaluate_workflow.md)
 4. [Evaluate an AI Agent](ragas/experimental/tutorials/evaluate_agent.md)
