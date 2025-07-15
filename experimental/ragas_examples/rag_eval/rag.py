@@ -6,6 +6,14 @@ from datetime import datetime
 from dataclasses import dataclass, asdict
 
 
+DOCUMENTS = [
+    "Ragas are melodic frameworks in Indian classical music.",
+    "There are many types of ragas, each with its own mood and time of day.",
+    "Ragas are used to evoke specific emotions in the listener.",
+    "The performance of a raga involves improvisation within a set structure.",
+    "Ragas can be performed on various instruments or sung vocally."
+]
+
 @dataclass
 class TraceEvent:
     """Single event in the RAG application trace"""
@@ -330,11 +338,7 @@ class ExampleRAG:
             response = self.generate_response(question, top_k)
             
             result = {
-                'prompt': self.system_prompt,
-                'question': question,
                 'answer': response,
-                'retrieved_documents': retrieved_docs,
-                'num_documents_retrieved': len(retrieved_docs),
                 'run_id': run_id
             }
             
@@ -370,11 +374,7 @@ class ExampleRAG:
             
             # Return error result
             return {
-                'prompt': self.system_prompt,
-                'question': question,
                 'answer': f"Error processing query: {str(e)}",
-                'retrieved_documents': [],
-                'num_documents_retrieved': 0,
                 'run_id': run_id
             }
     
@@ -398,19 +398,28 @@ class ExampleRAG:
         
         print(f"RAG traces exported to: {log_filepath}")
         return log_filepath
+
+
+def default_rag_client(llm_client, logdir: str = "logs") -> ExampleRAG:
+    """
+    Create a default RAG client with OpenAI LLM and optional retriever.
     
-    
+    Args:
+        api_key: OpenAI API key
+        retriever: Optional retriever instance (defaults to SimpleKeywordRetriever)
+        logdir: Directory for trace logs
+    Returns:
+        ExampleRAG instance
+    """
+    retriever = SimpleKeywordRetriever()
+    client = ExampleRAG(llm_client=llm_client, retriever=retriever, logdir=logdir)
+    client.add_documents(DOCUMENTS)  # Add default documents
+    return client
+
+
 if __name__ == "__main__":
     
     api_key = os.environ["OPENAI_API_KEY"]
-
-    documents = [
-        "Ragas are melodic frameworks in Indian classical music.",
-        "There are many types of ragas, each with its own mood and time of day.",
-        "Ragas are used to evoke specific emotions in the listener.",
-        "The performance of a raga involves improvisation within a set structure.",
-        "Ragas can be performed on various instruments or sung vocally."
-    ]
     
     # Initialize RAG system with tracing enabled
     llm = OpenAI(api_key=api_key)
@@ -418,7 +427,7 @@ if __name__ == "__main__":
     rag_client = ExampleRAG(llm_client=llm, retriever=r, logdir="logs")
     
     # Add documents (this will be traced)
-    rag_client.add_documents(documents)
+    rag_client.add_documents(DOCUMENTS)
     
     # Run query with tracing
     query = "What is Ragas"
