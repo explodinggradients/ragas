@@ -3,7 +3,7 @@ from ragas_experimental.metric import DiscreteMetric
 from openai import OpenAI
 from ragas_experimental.llms import ragas_llm
 import os
-from rag import default_rag_client
+from .rag import default_rag_client
 
 openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 rag_client = default_rag_client(llm_client=openai_client)

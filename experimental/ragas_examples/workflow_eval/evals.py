@@ -3,7 +3,7 @@ from openai import OpenAI
 from ragas_experimental import Dataset, experiment
 from ragas_experimental.metric import DiscreteMetric
 from ragas_experimental.llms import ragas_llm
-from workflow import default_workflow_client
+from .workflow import default_workflow_client
 
 
 workflow_client = default_workflow_client()

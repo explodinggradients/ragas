@@ -1,7 +1,7 @@
 from ragas_experimental import Dataset, experiment
 from ragas_experimental.metric.numeric import numeric_metric
 from ragas_experimental.metric.result import MetricResult
-from agent import get_default_agent
+from .agent import get_default_agent
 
 math_agent = get_default_agent()
 
