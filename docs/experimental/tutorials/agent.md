@@ -5,17 +5,16 @@ This tutorial demonstrates how to evaluate an AI agent using Ragas, specifically
 ```mermaid
 graph TD
     A[User Input<br/>Math Expression] --> B[MathToolsAgent]
-    B --> C[LLM Planner Agent]
 
     subgraph LLM Agent Loop
-        C --> D{Need to use a Tool?}
+        B --> D{Need to use a Tool?}
         D -- Yes --> E[Call Tool<br/>add/sub/mul/div]
         E --> F[Tool Result]
-        F --> C
+        F --> B
         D -- No --> G[Emit Final Answer]
     end
 
-    G --> H[Output Result + Logs]
+    G --> H[Final Answer]
 ```
 
 We will start by testing our simple agent that can solve mathematical expressions using atomic operations and function calling capabilities.
