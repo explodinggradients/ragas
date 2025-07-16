@@ -230,7 +230,7 @@ class Metric(ABC):
                 for v in self.get_variables()
             }
             score = self.score(llm=llm, **values)
-            pred_scores.append(score.result)
+            pred_scores.append(score.value)
 
         df = test_dataset.to_pandas()
         df[f"{self.name}_pred"] = pred_scores

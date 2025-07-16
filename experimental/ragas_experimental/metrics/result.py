@@ -22,7 +22,7 @@ class MetricResult:
 
     def __init__(
         self,
-        result: t.Any,
+        value: t.Any,
         reason: t.Optional[str] = None,
         traces: t.Optional[t.Dict[str, t.Any]] = None,
     ):
@@ -34,125 +34,123 @@ class MetricResult:
                 raise ValueError(
                     f"Invalid keys in traces: {invalid_keys}. Allowed keys are 'input' and 'output'."
                 )
-        self._result = result
+        self._value = value
         self.reason = reason
         self.traces = traces
 
     def __repr__(self):
-        return repr(self._result)
+        return repr(self._value)
 
     # Access to underlying result
     @property
-    def result(self):
+    def value(self):
         """Get the raw result value."""
-        return self._result
+        return self._value
 
     # String conversion - works for all types
     def __str__(self):
-        return str(self._result)
+        return str(self._value)
 
     # Container-like behaviors for list results (RankingMetric)
     def __getitem__(self, key):
-        if not hasattr(self._result, "__getitem__"):
-            raise TypeError(
-                f"{type(self._result).__name__} object is not subscriptable"
-            )
-        return self._result[key]
+        if not hasattr(self._value, "__getitem__"):
+            raise TypeError(f"{type(self._value).__name__} object is not subscriptable")
+        return self._value[key]
 
     def __iter__(self):
-        if not hasattr(self._result, "__iter__"):
-            raise TypeError(f"{type(self._result).__name__} object is not iterable")
-        return iter(self._result)
+        if not hasattr(self._value, "__iter__"):
+            raise TypeError(f"{type(self._value).__name__} object is not iterable")
+        return iter(self._value)
 
     def __len__(self):
-        if not hasattr(self._result, "__len__"):
-            raise TypeError(f"{type(self._result).__name__} has no len()")
-        return len(self._result)
+        if not hasattr(self._value, "__len__"):
+            raise TypeError(f"{type(self._value).__name__} has no len()")
+        return len(self._value)
 
     # Numeric operations for numeric results (NumericMetric)
     def __float__(self):
-        if isinstance(self._result, (int, float)):
-            return float(self._result)
-        raise TypeError(f"Cannot convert {type(self._result).__name__} to float")
+        if isinstance(self._value, (int, float)):
+            return float(self._value)
+        raise TypeError(f"Cannot convert {type(self._value).__name__} to float")
 
     def __int__(self):
-        if isinstance(self._result, (int, float)):
-            return int(self._result)
-        raise TypeError(f"Cannot convert {type(self._result).__name__} to int")
+        if isinstance(self._value, (int, float)):
+            return int(self._value)
+        raise TypeError(f"Cannot convert {type(self._value).__name__} to int")
 
     def __add__(self, other):
-        if not isinstance(self._result, (int, float)):
-            raise TypeError(f"Cannot add {type(self._result).__name__} objects")
+        if not isinstance(self._value, (int, float)):
+            raise TypeError(f"Cannot add {type(self._value).__name__} objects")
         if isinstance(other, MetricResult):
-            return self._result + other._result
-        return self._result + other
+            return self._value + other._value
+        return self._value + other
 
     def __radd__(self, other):
-        if not isinstance(self._result, (int, float)):
-            raise TypeError(f"Cannot add {type(self._result).__name__} objects")
-        return other + self._result
+        if not isinstance(self._value, (int, float)):
+            raise TypeError(f"Cannot add {type(self._value).__name__} objects")
+        return other + self._value
 
     def __sub__(self, other):
-        if not isinstance(self._result, (int, float)):
-            raise TypeError(f"Cannot subtract {type(self._result).__name__} objects")
+        if not isinstance(self._value, (int, float)):
+            raise TypeError(f"Cannot subtract {type(self._value).__name__} objects")
         if isinstance(other, MetricResult):
-            return self._result - other._result
-        return self._result - other
+            return self._value - other._value
+        return self._value - other
 
     def __rsub__(self, other):
-        if not isinstance(self._result, (int, float)):
-            raise TypeError(f"Cannot subtract {type(self._result).__name__} objects")
-        return other - self._result
+        if not isinstance(self._value, (int, float)):
+            raise TypeError(f"Cannot subtract {type(self._value).__name__} objects")
+        return other - self._value
 
     def __mul__(self, other):
-        if not isinstance(self._result, (int, float)):
-            raise TypeError(f"Cannot multiply {type(self._result).__name__} objects")
+        if not isinstance(self._value, (int, float)):
+            raise TypeError(f"Cannot multiply {type(self._value).__name__} objects")
         if isinstance(other, MetricResult):
-            return self._result * other._result
-        return self._result * other
+            return self._value * other._value
+        return self._value * other
 
     def __rmul__(self, other):
-        if not isinstance(self._result, (int, float)):
-            raise TypeError(f"Cannot multiply {type(self._result).__name__} objects")
-        return other * self._result
+        if not isinstance(self._value, (int, float)):
+            raise TypeError(f"Cannot multiply {type(self._value).__name__} objects")
+        return other * self._value
 
     def __truediv__(self, other):
-        if not isinstance(self._result, (int, float)):
-            raise TypeError(f"Cannot divide {type(self._result).__name__} objects")
+        if not isinstance(self._value, (int, float)):
+            raise TypeError(f"Cannot divide {type(self._value).__name__} objects")
         if isinstance(other, MetricResult):
-            return self._result / other._result
-        return self._result / other
+            return self._value / other._value
+        return self._value / other
 
     def __rtruediv__(self, other):
-        if not isinstance(self._result, (int, float)):
-            raise TypeError(f"Cannot divide {type(self._result).__name__} objects")
-        return other / self._result
+        if not isinstance(self._value, (int, float)):
+            raise TypeError(f"Cannot divide {type(self._value).__name__} objects")
+        return other / self._value
 
     # Comparison operations - work for all types with same-type comparisons
     def __eq__(self, other):
         if isinstance(other, MetricResult):
-            return self._result == other._result
-        return self._result == other
+            return self._value == other._value
+        return self._value == other
 
     def __lt__(self, other):
         if isinstance(other, MetricResult):
-            return self._result < other._result
-        return self._result < other
+            return self._value < other._value
+        return self._value < other
 
     def __le__(self, other):
         if isinstance(other, MetricResult):
-            return self._result <= other._result
-        return self._result <= other
+            return self._value <= other._value
+        return self._value <= other
 
     def __gt__(self, other):
         if isinstance(other, MetricResult):
-            return self._result > other._result
-        return self._result > other
+            return self._value > other._value
+        return self._value > other
 
     def __ge__(self, other):
         if isinstance(other, MetricResult):
-            return self._result >= other._result
-        return self._result >= other
+            return self._value >= other._value
+        return self._value >= other
 
     # Method forwarding for type-specific behaviors
     def __getattr__(self, name):
@@ -161,15 +159,15 @@ class MetricResult:
         This allows calling string methods on discrete results,
         numeric methods on numeric results, and list methods on ranking results.
         """
-        if hasattr(self._result, name):
-            attr = getattr(self._result, name)
+        if hasattr(self._value, name):
+            attr = getattr(self._value, name)
             if callable(attr):
                 # If it's a method, wrap it to return MetricResult when appropriate
                 def wrapper(*args, **kwargs):
                     result = attr(*args, **kwargs)
                     # If the result is of the same type as self._result, wrap it
-                    if isinstance(result, type(self._result)):
-                        return MetricResult(result=result, reason=self.reason)
+                    if isinstance(result, type(self._value)):
+                        return MetricResult(value=result, reason=self.reason)
                     return result
 
                 return wrapper
@@ -179,14 +177,14 @@ class MetricResult:
     # JSON/dict serialization
     def to_dict(self):
         """Convert the result to a dictionary."""
-        return {"result": self._result, "reason": self.reason}
+        return {"result": self._value, "reason": self.reason}
 
     @classmethod
     def validate(cls, value: t.Any, info: ValidationInfo):
         """Provide compatibility with older Pydantic versions."""
         if isinstance(value, MetricResult):
             return value
-        return cls(result=value)
+        return cls(value=value)
 
     def __json__(self):
         """Return data for JSON serialization.
@@ -195,7 +193,7 @@ class MetricResult:
         to convert MetricResult to a JSON-compatible format.
         """
         return {
-            "result": self._result,
+            "value": self._value,
             "reason": self.reason,
         }
 
@@ -228,7 +226,7 @@ class MetricResult:
                         core_schema.any_schema(),
                         core_schema.no_info_plain_validator_function(
                             lambda value: (
-                                MetricResult(result=value)
+                                MetricResult(value=value)
                                 if not isinstance(value, MetricResult)
                                 else value
                             )

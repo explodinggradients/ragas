@@ -54,7 +54,6 @@ def create_metric_decorator(metric_class):
             # TODO: Move to dataclass type implementation
             @dataclass
             class CustomMetric(metric_class):
-
                 def _validate_result_value(self, result_value):
                     """Validate result value based on metric type constraints."""
                     # Discrete metric validation
@@ -121,16 +120,16 @@ def create_metric_decorator(metric_class):
                             )
 
                         # Validate the result based on metric type
-                        validation_error = self._validate_result_value(result.result)
+                        validation_error = self._validate_result_value(result.value)
                         if validation_error:
-                            return MetricResult(result=None, reason=validation_error)
+                            return MetricResult(value=None, reason=validation_error)
 
                         return result
 
                     except Exception as e:
                         # Handle errors gracefully
                         error_msg = f"Error executing metric {self.name}: {str(e)}"
-                        return MetricResult(result=None, reason=error_msg)
+                        return MetricResult(value=None, reason=error_msg)
 
                 def score(self, llm: t.Optional[RagasLLM] = None, **kwargs):
                     """Synchronous scoring method."""
@@ -163,9 +162,9 @@ def create_metric_decorator(metric_class):
                         )
 
                     # Validate the result based on metric type
-                    validation_error = self._validate_result_value(result.result)
+                    validation_error = self._validate_result_value(result.value)
                     if validation_error:
-                        return MetricResult(result=None, reason=validation_error)
+                        return MetricResult(value=None, reason=validation_error)
 
                     return result
 
