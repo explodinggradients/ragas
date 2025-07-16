@@ -123,7 +123,7 @@ nav:
           - Swarm: howtos/integrations/swarm_agent_evaluation.md
       - Migrations:
           - From v0.1 to v0.2: howtos/migrations/migrate_from_v01_to_v02.md
-  - 📖 References: 
+  - 📖 References:
     - references/index.md
     - Core:
       - Prompt: references/prompt.md
@@ -132,11 +132,11 @@ nav:
       - RunConfig: references/run_config.md
       - Executor: references/executor.md
       - Cache: references/cache.md
-    - Evaluation: 
+    - Evaluation:
       - Schemas: references/evaluation_schema.md
       - Metrics: references/metrics.md
       - evaluate(): references/evaluate.md
-    - Testset Generation: 
+    - Testset Generation:
       - Schemas: references/testset_schema.md
       - Graph: references/graph.md
       - Transforms: references/transforms.md
@@ -176,22 +176,21 @@ theme:
     - search.suggest
     - search.highlight
   palette:
-    # Palette toggle for automatic mode
     - media: "(prefers-color-scheme)"
       toggle:
         icon: material/brightness-auto
         name: Switch to light mode
-
-    # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
-      scheme: ragas_light
+      scheme: default
+      primary: "#bd8526"
+      accent: "#bd8526"
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-
-    # Palette toggle for dark mode
     - media: "(prefers-color-scheme: dark)"
-      scheme: ragas_dark
+      scheme: slate
+      primary: "#bd8526"
+      accent: "#bd8526"
       toggle:
         icon: material/brightness-4
         name: Switch to system preference
@@ -223,7 +222,7 @@ markdown_extensions:
 
 # Extra CSS
 extra_css:
-  - extra/style.css
+  - extra/ragas-modern.css
 
 # Plugins
 extra:
