@@ -1,7 +1,7 @@
 /* Ragas Modern Documentation Theme */
 
 /* Import Google Fonts - Professional Typography */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
 
 /* Custom color scheme variables */
 :root {
@@ -32,21 +32,21 @@
 
 /* Only minimal, essential customizations - let Material Design handle the rest */
 
-/* Navigation font size */
+/* Reduce navigation font size only */
 .md-nav {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .md-nav__link {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .md-nav__title {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .md-tabs__link {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 /* Clean repository info*/
@@ -60,21 +60,7 @@
 
 /* Ensure proper font family application */
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 1.1rem; /* Increased from default */
-}
-
-/* Material Design typography overrides for main content */
-.md-typeset {
-  font-size: 1.01rem !important;
-}
-
-.md-typeset p {
-  font-size: 1.01rem !important;
-}
-
-.md-typeset li {
-  font-size: 1.01rem !important;
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 code, kbd, samp, pre {
