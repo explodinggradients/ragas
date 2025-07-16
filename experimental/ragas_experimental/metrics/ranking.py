@@ -1,25 +1,26 @@
-"""Base class from which all discrete metrics should inherit."""
+"""Base class for ranking metrics"""
 
-__all__ = ["discrete_metric", "DiscreteMetric"]
+__all__ = ["ranking_metric", "RankingMetric"]
 
 import typing as t
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-from pydantic import create_model
+from pydantic import Field, create_model
 
 from . import Metric
 from .decorator import create_metric_decorator
 
 
 @dataclass
-class DiscreteMetric(Metric):
-    values: t.List[str] = field(default_factory=lambda: ["pass", "fail"])
+class RankingMetric(Metric):
+    allowed_values: int = 2
 
     def __post_init__(self):
         super().__post_init__()
-        values = tuple(self.values)
         self._response_model = create_model(
-            "response_model", result=(t.Literal[values], ...), reason=(str, ...)
+            "RankingResponseModel",
+            reason=(str, Field(..., description="Reasoning for the ranking")),
+            value=(t.List[str], Field(..., description="List of ranked items")),
         )
 
     def get_correlation(
@@ -36,7 +37,13 @@ class DiscreteMetric(Metric):
                 "scikit-learn is required for correlation calculation. "
                 "Please install it with `pip install scikit-learn`."
             )
-        return cohen_kappa_score(gold_labels, predictions)
+
+        kappa_scores = []
+        for gold_label, prediction in zip(gold_labels, predictions):
+            kappa = cohen_kappa_score(gold_label, prediction, weights="quadratic")
+            kappa_scores.append(kappa)
+
+        return sum(kappa_scores) / len(kappa_scores) if kappa_scores else 0.0
 
 
-discrete_metric = create_metric_decorator(DiscreteMetric)
+ranking_metric = create_metric_decorator(RankingMetric)

@@ -550,7 +550,7 @@ p = Project(
 )
 
 
-@numeric_metric(name="accuracy_score", range=(0, 1))
+@numeric_metric(name="accuracy_score", allowed_values=(0, 1))
 def accuracy_score(response: str, expected: str):
     """
     Is the response a good response to the query?

@@ -54,27 +54,38 @@ def create_metric_decorator(metric_class):
             # TODO: Move to dataclass type implementation
             @dataclass
             class CustomMetric(metric_class):
-
                 def _validate_result_value(self, result_value):
                     """Validate result value based on metric type constraints."""
                     # Discrete metric validation
-                    if hasattr(self, "values") and result_value not in self.values:
-                        return f"Metric {self.name} returned '{result_value}' but expected one of {self.values}"
+                    if hasattr(self, "allowed_values") and isinstance(
+                        self.allowed_values, list
+                    ):
+                        if result_value not in self.allowed_values:
+                            return f"Metric {self.name} returned '{result_value}' but expected one of {self.allowed_values}"
 
                     # Numeric metric validation
-                    if hasattr(self, "range"):
+                    if hasattr(self, "allowed_values") and isinstance(
+                        self.allowed_values, (tuple, range)
+                    ):
                         if not isinstance(result_value, (int, float)):
                             return f"Metric {self.name} returned '{result_value}' but expected a numeric value"
-                        min_val, max_val = self.range
-                        if not (min_val <= result_value <= max_val):
-                            return f"Metric {self.name} returned {result_value} but expected value in range {self.range}"
+
+                        if isinstance(self.allowed_values, tuple):
+                            min_val, max_val = self.allowed_values
+                            if not (min_val <= result_value <= max_val):
+                                return f"Metric {self.name} returned {result_value} but expected value in range {self.allowed_values}"
+                        elif isinstance(self.allowed_values, range):
+                            if result_value not in self.allowed_values:
+                                return f"Metric {self.name} returned {result_value} but expected value in range {self.allowed_values}"
 
                     # Ranking metric validation
-                    if hasattr(self, "num_ranks"):
+                    if hasattr(self, "allowed_values") and isinstance(
+                        self.allowed_values, int
+                    ):
                         if not isinstance(result_value, list):
                             return f"Metric {self.name} returned '{result_value}' but expected a list"
-                        if len(result_value) != self.num_ranks:
-                            return f"Metric {self.name} returned list of length {len(result_value)} but expected {self.num_ranks} items"
+                        if len(result_value) != self.allowed_values:
+                            return f"Metric {self.name} returned list of length {len(result_value)} but expected {self.allowed_values} items"
 
                     return None  # No validation error
 
@@ -121,16 +132,16 @@ def create_metric_decorator(metric_class):
                             )
 
                         # Validate the result based on metric type
-                        validation_error = self._validate_result_value(result.result)
+                        validation_error = self._validate_result_value(result.value)
                         if validation_error:
-                            return MetricResult(result=None, reason=validation_error)
+                            return MetricResult(value=None, reason=validation_error)
 
                         return result
 
                     except Exception as e:
                         # Handle errors gracefully
                         error_msg = f"Error executing metric {self.name}: {str(e)}"
-                        return MetricResult(result=None, reason=error_msg)
+                        return MetricResult(value=None, reason=error_msg)
 
                 def score(self, llm: t.Optional[RagasLLM] = None, **kwargs):
                     """Synchronous scoring method."""
@@ -163,9 +174,9 @@ def create_metric_decorator(metric_class):
                         )
 
                     # Validate the result based on metric type
-                    validation_error = self._validate_result_value(result.result)
+                    validation_error = self._validate_result_value(result.value)
                     if validation_error:
-                        return MetricResult(result=None, reason=validation_error)
+                        return MetricResult(value=None, reason=validation_error)
 
                     return result
 
