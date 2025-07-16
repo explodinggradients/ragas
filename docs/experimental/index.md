@@ -1,5 +1,43 @@
 # Ragas Experimental
 
+# ✨ Introduction
+
+
+<div class="grid cards" markdown>
+- 🚀 **Tutorials**
+
+    Install with `pip` and get started with Ragas with these tutorials.
+
+    [:octicons-arrow-right-24: Tutorials](tutorials/index.md)
+
+- 📚 **Explanations**
+
+    In depth explanation and discussion of the concepts and working of different features available in Ragas.
+
+    [:octicons-arrow-right-24: Explanations](explanation/index.md)
+
+
+</div>
+
+## Installation
+
+- Install ragas_experimental from pip
+
+```bash
+pip install ragas_experimental
+```
+
+- Install from source
+
+```bash
+git clone https://github.com/explodinggradients/ragas
+```
+
+```bash
+cd ragas/experimental && pip install -e .
+```
+
+
 ## Hello World 👋
 
 1. Setup a sample experiment. 
