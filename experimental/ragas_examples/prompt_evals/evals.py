@@ -1,6 +1,6 @@
 from ragas_experimental import Dataset, experiment
-from ragas_experimental.metric.result import MetricResult
-from ragas_experimental.metric.discrete import discrete_metric
+from ragas_experimental.metrics.result import MetricResult
+from ragas_experimental.metrics.discrete import discrete_metric
 
 from .prompt import run_prompt
 

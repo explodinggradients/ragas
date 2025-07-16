@@ -26,9 +26,10 @@ class BaseRagasLLM(ABC):
 
 
 class InstructorLLM(BaseRagasLLM):
-    def __init__(self, client: t.Any, model, **model_args):
+    def __init__(self, client: t.Any, model: str, provider: str, **model_args):
         self.client = client
         self.model = model
+        self.provider = provider
         self.model_args = model_args or {}
         # Check if client is async-capable at initialization
         self.is_async = self._check_client_async()
@@ -136,32 +137,128 @@ class InstructorLLM(BaseRagasLLM):
             **self.model_args,
         )
 
+    def _get_client_info(self) -> str:
+        """Get client type and async status information."""
+        client_type = self.client.__class__.__name__
+        async_status = "async" if self.is_async else "sync"
+        return f"<{client_type}:{async_status}>"
 
-def llm_factory(provider_model: str, client: t.Any, **model_args) -> BaseRagasLLM:
-    # Parse provider/model string
-    if "/" not in provider_model:
+    def _get_key_config(self) -> str:
+        """Get key configuration parameters as a string."""
+        config_parts = []
+
+        # Show important model arguments
+        important_args = [
+            "temperature",
+            "max_tokens",
+            "top_p",
+            "frequency_penalty",
+            "presence_penalty",
+        ]
+        for arg in important_args:
+            if arg in self.model_args:
+                config_parts.append(f"{arg}={self.model_args[arg]}")
+
+        # Show count of other args if there are any
+        other_args = len([k for k in self.model_args.keys() if k not in important_args])
+        if other_args > 0:
+            config_parts.append(f"+{other_args} more")
+
+        return ", ".join(config_parts)
+
+    def __repr__(self) -> str:
+        """Return a detailed string representation of the LLM."""
+        client_info = self._get_client_info()
+        key_config = self._get_key_config()
+
+        base_repr = f"InstructorLLM(provider='{self.provider}', model='{self.model}', client={client_info}"
+
+        if key_config:
+            base_repr += f", {key_config}"
+
+        base_repr += ")"
+        return base_repr
+
+    __str__ = __repr__
+
+
+def llm_factory(
+    provider: str,
+    model: t.Optional[str] = None,
+    client: t.Optional[t.Any] = None,
+    **kwargs: t.Any,
+) -> BaseRagasLLM:
+    """
+    Factory function to create an LLM instance based on the provider.
+
+    Args:
+        provider (str): The name of the LLM provider or provider/model string
+                       (e.g., "openai", "openai/gpt-4").
+        model (str, optional): The model name to use for generation.
+        client (Any, optional): Pre-initialized client for the provider.
+        **kwargs: Additional arguments for the LLM (model_args).
+
+    Returns:
+        BaseRagasLLM: An instance of the specified LLM provider.
+
+    Examples:
+        # OpenAI with separate parameters
+        llm = llm_factory("openai", "gpt-4", client=openai_client)
+
+        # OpenAI with provider/model string
+        llm = llm_factory("openai/gpt-4", client=openai_client)
+
+        # Anthropic
+        llm = llm_factory("anthropic", "claude-3-sonnet-20240229", client=anthropic_client)
+
+        # Cohere
+        llm = llm_factory("cohere", "command-r-plus", client=cohere_client)
+
+        # Gemini
+        llm = llm_factory("gemini", "gemini-pro", client=gemini_client)
+
+        # LiteLLM (supports 100+ models)
+        llm = llm_factory("litellm", "gpt-4", client=litellm_client)
+
+    Raises:
+        ValueError: If provider is unsupported or required parameters are missing.
+    """
+    # Handle provider/model string format
+    if "/" in provider and model is None:
+        provider_name, model_name = provider.split("/", 1)
+        provider = provider_name
+        model = model_name
+
+    if not model:
         raise ValueError(
-            f"Invalid provider_model format: '{provider_model}'. "
-            "Expected format: 'provider/model' (e.g., 'openai/gpt-4o')"
+            "Model name is required. Either provide it as a separate parameter "
+            "or use provider/model format (e.g., 'openai/gpt-4')"
         )
 
-    provider, model = provider_model.split("/", 1)
-
     def _initialize_client(provider: str, client: t.Any) -> t.Any:
-        provider = provider.lower()
+        """Initialize the instructor-patched client for the given provider."""
+        if not client:
+            raise ValueError(f"{provider.title()} provider requires a client instance")
 
-        if provider == "openai":
+        provider_lower = provider.lower()
+
+        if provider_lower == "openai":
             return instructor.from_openai(client)
-        elif provider == "anthropic":
+        elif provider_lower == "anthropic":
             return instructor.from_anthropic(client)
-        elif provider == "cohere":
+        elif provider_lower == "cohere":
             return instructor.from_cohere(client)
-        elif provider == "gemini":
+        elif provider_lower == "gemini":
             return instructor.from_gemini(client)
-        elif provider == "litellm":
+        elif provider_lower == "litellm":
             return instructor.from_litellm(client)
         else:
-            raise ValueError(f"Unsupported provider: {provider}")
+            raise ValueError(
+                f"Unsupported provider: {provider}. "
+                f"Supported providers: openai, anthropic, cohere, gemini, litellm"
+            )
 
     instructor_patched_client = _initialize_client(provider=provider, client=client)
-    return InstructorLLM(client=instructor_patched_client, model=model, **model_args)
+    return InstructorLLM(
+        client=instructor_patched_client, model=model, provider=provider, **kwargs
+    )

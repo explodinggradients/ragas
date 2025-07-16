@@ -76,7 +76,7 @@ def version_experiment(
 @t.runtime_checkable
 class ExperimentProtocol(t.Protocol):
     async def __call__(self, *args, **kwargs) -> t.Any: ...
-    async def run_async(
+    async def arun(
         self,
         dataset: Dataset,
         name: t.Optional[str] = None,
@@ -109,7 +109,7 @@ class ExperimentWrapper:
         else:
             return self.func(*args, **kwargs)
 
-    async def run_async(
+    async def arun(
         self,
         dataset: Dataset,
         name: t.Optional[str] = None,

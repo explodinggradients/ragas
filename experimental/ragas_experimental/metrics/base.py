@@ -4,18 +4,18 @@ __all__ = ["Metric"]
 
 import asyncio
 from dataclasses import dataclass, field
-from pydantic import BaseModel
 import typing as t
-from rich.progress import Progress
 import string
 from abc import ABC, abstractmethod
 
+from pydantic import BaseModel
+from rich.progress import Progress
 
-from ..embeddings.base import BaseEmbedding
-from ..llms import RagasLLM
-from ..prompt.base import Prompt
-from ..prompt.dynamic_few_shot import DynamicFewShotPrompt
-from .result import MetricResult
+from ragas_experimental.embeddings.base import BaseEmbedding
+from ragas_experimental.prompt.base import Prompt
+from ragas_experimental.prompt.dynamic_few_shot import DynamicFewShotPrompt
+from ragas_experimental.metrics.result import MetricResult
+from ragas_experimental.llms import BaseRagasLLM
 
 if t.TYPE_CHECKING:
     from ragas_experimental.dataset import Dataset
@@ -76,7 +76,7 @@ class Metric(ABC):
         ]
         return vars
 
-    def score(self, llm: RagasLLM, **kwargs) -> MetricResult:
+    def score(self, llm: BaseRagasLLM, **kwargs) -> MetricResult:
         traces = {}
         traces["input"] = kwargs
 
@@ -91,7 +91,7 @@ class Metric(ABC):
         result.traces = traces
         return result
 
-    async def ascore(self, llm: RagasLLM, **kwargs) -> MetricResult:
+    async def ascore(self, llm: BaseRagasLLM, **kwargs) -> MetricResult:
         traces = {}
 
         # get prompt
@@ -111,14 +111,14 @@ class Metric(ABC):
 
     def batch_score(
         self,
-        llm: RagasLLM,
+        llm: BaseRagasLLM,
         inputs: t.List[t.Dict[str, t.Any]],
     ) -> t.List[MetricResult]:
         return [self.score(llm, **input_dict) for input_dict in inputs]
 
     async def abatch_score(
         self,
-        llm: RagasLLM,
+        llm: BaseRagasLLM,
         inputs: t.List[t.Dict[str, t.Any]],
     ) -> t.List[MetricResult]:
         async_tasks = []
@@ -141,7 +141,7 @@ class Metric(ABC):
         self,
         dataset: "Dataset",
         embedding_model: BaseEmbedding,
-        llm: RagasLLM,
+        llm: BaseRagasLLM,
         test_size: float = 0.2,
         random_state: int = 42,
         **kwargs: t.Dict[str, t.Any],
@@ -202,7 +202,7 @@ class Metric(ABC):
 
     def validate_alignment(
         self,
-        llm: RagasLLM,
+        llm: BaseRagasLLM,
         test_dataset: "Dataset",
         mapping: t.Dict[str, str] = {},
     ):

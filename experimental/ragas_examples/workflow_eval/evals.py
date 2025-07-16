@@ -1,13 +1,13 @@
 import os
 from openai import OpenAI
 from ragas_experimental import Dataset, experiment
-from ragas_experimental.metric import DiscreteMetric
-from ragas_experimental.llms import ragas_llm
+from ragas_experimental.metrics import DiscreteMetric
+from ragas_experimental.llms import llm_factory
 from .workflow import default_workflow_client
 
 
 workflow_client = default_workflow_client()
-llm = ragas_llm("openai", "gpt-4o", OpenAI(api_key=os.environ.get("OPENAI_API_KEY")))
+llm = llm_factory("openai", "gpt-4o", OpenAI(api_key=os.environ.get("OPENAI_API_KEY")))
 
 
 
