@@ -7,7 +7,7 @@ import inspect
 import typing as t
 from dataclasses import dataclass
 
-from ..llm import RagasLLM
+from ..llms import RagasLLM
 from .result import MetricResult
 
 

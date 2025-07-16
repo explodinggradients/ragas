@@ -11,8 +11,8 @@ import string
 from abc import ABC, abstractmethod
 
 
-from ..embedding.base import BaseEmbedding
-from ..llm import RagasLLM
+from ..embeddings.base import BaseEmbedding
+from ..llms import RagasLLM
 from ..prompt.base import Prompt
 from ..prompt.dynamic_few_shot import DynamicFewShotPrompt
 from .result import MetricResult
