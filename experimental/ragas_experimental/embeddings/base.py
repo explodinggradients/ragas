@@ -10,7 +10,7 @@ from .utils import run_async_in_current_loop, validate_texts
 
 class BaseEmbedding(ABC):
     """Abstract base class for embedding implementations.
-    
+
     This class provides a consistent interface for embedding text using various
     providers. Implementations should provide both sync and async methods for
     embedding single texts, with batch methods automatically provided.
@@ -19,11 +19,11 @@ class BaseEmbedding(ABC):
     @abstractmethod
     def embed_text(self, text: str, **kwargs: t.Any) -> t.List[float]:
         """Embed a single text.
-        
+
         Args:
             text: The text to embed
             **kwargs: Additional arguments for the embedding call
-            
+
         Returns:
             List of floats representing the embedding
         """
@@ -32,11 +32,11 @@ class BaseEmbedding(ABC):
     @abstractmethod
     async def aembed_text(self, text: str, **kwargs: t.Any) -> t.List[float]:
         """Asynchronously embed a single text.
-        
+
         Args:
             text: The text to embed
             **kwargs: Additional arguments for the embedding call
-            
+
         Returns:
             List of floats representing the embedding
         """
@@ -44,14 +44,14 @@ class BaseEmbedding(ABC):
 
     def embed_texts(self, texts: t.List[str], **kwargs: t.Any) -> t.List[t.List[float]]:
         """Embed multiple texts.
-        
+
         Default implementation processes texts individually. Override for
         batch optimization.
-        
+
         Args:
             texts: List of texts to embed
             **kwargs: Additional arguments for the embedding calls
-            
+
         Returns:
             List of embeddings, one for each input text
         """
@@ -62,14 +62,14 @@ class BaseEmbedding(ABC):
         self, texts: t.List[str], **kwargs: t.Any
     ) -> t.List[t.List[float]]:
         """Asynchronously embed multiple texts.
-        
+
         Default implementation processes texts concurrently. Override for
         batch optimization.
-        
+
         Args:
             texts: List of texts to embed
             **kwargs: Additional arguments for the embedding calls
-            
+
         Returns:
             List of embeddings, one for each input text
         """
@@ -77,13 +77,15 @@ class BaseEmbedding(ABC):
         tasks = [self.aembed_text(text, **kwargs) for text in texts]
         return await asyncio.gather(*tasks)
 
-    def _check_client_async(self, client: t.Any, method_path: str = "embeddings.create") -> bool:
+    def _check_client_async(
+        self, client: t.Any, method_path: str = "embeddings.create"
+    ) -> bool:
         """Check if a client supports async operations.
-        
+
         Args:
             client: The client to check
             method_path: Dot-separated path to the method to check
-            
+
         Returns:
             True if the client supports async operations
         """
@@ -97,13 +99,13 @@ class BaseEmbedding(ABC):
 
     def _run_async_in_current_loop(self, coro):
         """Run an async coroutine in the current event loop if possible.
-        
+
         This handles Jupyter environments correctly by using a separate thread
         when a running event loop is detected.
-        
+
         Args:
             coro: The coroutine to run
-            
+
         Returns:
             The result of the coroutine
         """
@@ -112,7 +114,7 @@ class BaseEmbedding(ABC):
 
 class OpenAIEmbeddings(BaseEmbedding):
     """OpenAI embeddings implementation with batch optimization.
-    
+
     Supports both sync and async OpenAI clients with automatic detection.
     Provides optimized batch processing for better performance.
     """
@@ -124,13 +126,11 @@ class OpenAIEmbeddings(BaseEmbedding):
 
     def embed_text(self, text: str, **kwargs: t.Any) -> t.List[float]:
         """Embed a single text using OpenAI.
-        
+
         For async clients, this will run the async method in the appropriate event loop.
         """
         if self.is_async:
-            return self._run_async_in_current_loop(
-                self.aembed_text(text, **kwargs)
-            )
+            return self._run_async_in_current_loop(self.aembed_text(text, **kwargs))
         else:
             response = self.client.embeddings.create(
                 input=text, model=self.model, **kwargs
@@ -143,7 +143,7 @@ class OpenAIEmbeddings(BaseEmbedding):
             raise TypeError(
                 "Cannot use aembed_text() with a synchronous client. Use embed_text() instead."
             )
-        
+
         response = await self.client.embeddings.create(
             input=text, model=self.model, **kwargs
         )
@@ -154,11 +154,9 @@ class OpenAIEmbeddings(BaseEmbedding):
         texts = validate_texts(texts)
         if not texts:
             return []
-        
+
         if self.is_async:
-            return self._run_async_in_current_loop(
-                self.aembed_texts(texts, **kwargs)
-            )
+            return self._run_async_in_current_loop(self.aembed_texts(texts, **kwargs))
         else:
             # OpenAI supports batch embedding natively
             response = self.client.embeddings.create(
@@ -173,12 +171,12 @@ class OpenAIEmbeddings(BaseEmbedding):
         texts = validate_texts(texts)
         if not texts:
             return []
-        
+
         if not self.is_async:
             raise TypeError(
                 "Cannot use aembed_texts() with a synchronous client. Use embed_texts() instead."
             )
-        
+
         response = await self.client.embeddings.create(
             input=texts, model=self.model, **kwargs
         )
@@ -220,22 +218,22 @@ def embedding_factory(
     Examples:
         # OpenAI with client
         embedder = embedding_factory("openai", "text-embedding-3-small", client=openai_client)
-        
+
         # OpenAI with provider/model string
         embedder = embedding_factory("openai/text-embedding-3-small", client=openai_client)
-        
+
         # Google with Vertex AI
         embedder = embedding_factory(
-            "google", 
-            "text-embedding-004", 
+            "google",
+            "text-embedding-004",
             client=vertex_client,
             use_vertex=True,
             project_id="my-project"
         )
-        
+
         # LiteLLM (supports 100+ models)
         embedder = embedding_factory("litellm", "text-embedding-ada-002", api_key="sk-...")
-        
+
         # HuggingFace local model
         embedder = embedding_factory("huggingface", "sentence-transformers/all-MiniLM-L6-v2")
     """
@@ -244,40 +242,39 @@ def embedding_factory(
         provider_name, model_name = provider.split("/", 1)
         provider = provider_name
         model = model_name
-    
+
     provider_lower = provider.lower()
-    
+
     if provider_lower == "openai":
         if not client:
             raise ValueError("OpenAI provider requires a client instance")
         from .base import OpenAIEmbeddings
-        return OpenAIEmbeddings(
-            client=client,
-            model=model or "text-embedding-3-small"
-        )
-    
+
+        return OpenAIEmbeddings(client=client, model=model or "text-embedding-3-small")
+
     elif provider_lower == "google":
         if not client:
             raise ValueError("Google provider requires a client instance")
         from .google import GoogleEmbeddings
+
         return GoogleEmbeddings(
-            client=client,
-            model=model or "text-embedding-004",
-            **kwargs
+            client=client, model=model or "text-embedding-004", **kwargs
         )
-    
+
     elif provider_lower == "litellm":
         if not model:
             raise ValueError("LiteLLM provider requires a model name")
         from .litellm import LiteLLMEmbeddings
+
         return LiteLLMEmbeddings(model=model, **kwargs)
-    
+
     elif provider_lower == "huggingface":
         if not model:
             raise ValueError("HuggingFace provider requires a model name")
         from .huggingface import HuggingFaceEmbeddings
+
         return HuggingFaceEmbeddings(model=model, **kwargs)
-    
+
     else:
         raise ValueError(
             f"Unsupported provider: {provider}. "

@@ -16,7 +16,6 @@ from ragas_experimental.prompt.base import Prompt
 from ragas_experimental.prompt.dynamic_few_shot import DynamicFewShotPrompt
 from ragas_experimental.metric.result import MetricResult
 from ragas_experimental.llms import BaseRagasLLM
-from pydantic import BaseModel
 
 if t.TYPE_CHECKING:
     from ragas_experimental.dataset import Dataset

@@ -3,12 +3,12 @@
 import typing as t
 
 from .base import BaseEmbedding
-from .utils import validate_texts, batch_texts, run_sync_in_async, safe_import
+from .utils import validate_texts, batch_texts, run_sync_in_async
 
 
 class HuggingFaceEmbeddings(BaseEmbedding):
     """HuggingFace embeddings supporting both local and API-based models.
-    
+
     Supports sentence-transformers for local models and HuggingFace API for
     hosted models. Provides efficient batch processing and caching.
     """
@@ -30,7 +30,7 @@ class HuggingFaceEmbeddings(BaseEmbedding):
         self.normalize_embeddings = normalize_embeddings
         self.batch_size = batch_size
         self.model_kwargs = model_kwargs
-        
+
         if use_api:
             self._setup_api_client()
         else:
@@ -45,7 +45,7 @@ class HuggingFaceEmbeddings(BaseEmbedding):
                 "HuggingFace API support requires huggingface-hub. "
                 "Install with: pip install huggingface-hub"
             )
-        
+
         self.client = InferenceClient(
             model=self.model,
             token=self.api_key,
@@ -60,11 +60,9 @@ class HuggingFaceEmbeddings(BaseEmbedding):
                 "Local HuggingFace models require sentence-transformers. "
                 "Install with: pip install sentence-transformers"
             )
-        
+
         self.model_instance = SentenceTransformer(
-            self.model,
-            device=self.device,
-            **self.model_kwargs
+            self.model, device=self.device, **self.model_kwargs
         )
 
     def embed_text(self, text: str, **kwargs: t.Any) -> t.List[float]:
@@ -76,10 +74,7 @@ class HuggingFaceEmbeddings(BaseEmbedding):
 
     def _embed_text_api(self, text: str, **kwargs: t.Any) -> t.List[float]:
         """Embed text using HuggingFace API."""
-        response = self.client.feature_extraction(
-            text,
-            **kwargs
-        )
+        response = self.client.feature_extraction(text, **kwargs)
         # HuggingFace API returns nested list for single text
         if isinstance(response[0], list):
             return response[0]
@@ -88,9 +83,7 @@ class HuggingFaceEmbeddings(BaseEmbedding):
     def _embed_text_local(self, text: str, **kwargs: t.Any) -> t.List[float]:
         """Embed text using local sentence-transformers model."""
         embedding = self.model_instance.encode(
-            text,
-            normalize_embeddings=self.normalize_embeddings,
-            **kwargs
+            text, normalize_embeddings=self.normalize_embeddings, **kwargs
         )
         return embedding.tolist()
 
@@ -111,38 +104,39 @@ class HuggingFaceEmbeddings(BaseEmbedding):
         texts = validate_texts(texts)
         if not texts:
             return []
-        
+
         if self.use_api:
             return self._embed_texts_api(texts, **kwargs)
         else:
             return self._embed_texts_local(texts, **kwargs)
 
-    def _embed_texts_api(self, texts: t.List[str], **kwargs: t.Any) -> t.List[t.List[float]]:
+    def _embed_texts_api(
+        self, texts: t.List[str], **kwargs: t.Any
+    ) -> t.List[t.List[float]]:
         """Embed multiple texts using HuggingFace API with batching."""
         embeddings = []
         batches = batch_texts(texts, self.batch_size)
-        
+
         for batch in batches:
             # HuggingFace API can handle batch processing
-            response = self.client.feature_extraction(
-                batch,
-                **kwargs
-            )
+            response = self.client.feature_extraction(batch, **kwargs)
             # Response format varies, normalize to list of lists
             if isinstance(response[0][0], list):
                 embeddings.extend(response)
             else:
                 embeddings.extend([emb for emb in response])
-        
+
         return embeddings
 
-    def _embed_texts_local(self, texts: t.List[str], **kwargs: t.Any) -> t.List[t.List[float]]:
+    def _embed_texts_local(
+        self, texts: t.List[str], **kwargs: t.Any
+    ) -> t.List[t.List[float]]:
         """Embed multiple texts using local sentence-transformers model."""
         embeddings = self.model_instance.encode(
             texts,
             normalize_embeddings=self.normalize_embeddings,
             batch_size=self.batch_size,
-            **kwargs
+            **kwargs,
         )
         return embeddings.tolist()
 
@@ -153,7 +147,7 @@ class HuggingFaceEmbeddings(BaseEmbedding):
         texts = validate_texts(texts)
         if not texts:
             return []
-        
+
         if self.use_api:
             return await run_sync_in_async(self._embed_texts_api, texts, **kwargs)
         else:
@@ -169,34 +163,34 @@ class HuggingFaceEmbeddings(BaseEmbedding):
     def _get_key_config(self) -> str:
         """Get key configuration parameters as a string."""
         config_parts = []
-        
+
         config_parts.append(f"use_api={self.use_api}")
-        
+
         if not self.use_api:
             if self.device:
                 config_parts.append(f"device='{self.device}'")
             if not self.normalize_embeddings:
                 config_parts.append(f"normalize_embeddings={self.normalize_embeddings}")
-        
+
         if self.batch_size != 32:  # Only show if different from default
             config_parts.append(f"batch_size={self.batch_size}")
-        
+
         # Show count of other model kwargs if there are any
         if self.model_kwargs:
             config_parts.append(f"+{len(self.model_kwargs)} model_kwargs")
-        
+
         return ", ".join(config_parts)
 
     def __repr__(self) -> str:
         """Return a detailed string representation of the HuggingFace embeddings."""
         client_info = self._get_client_info()
         key_config = self._get_key_config()
-        
+
         base_repr = f"HuggingFaceEmbeddings(provider='huggingface', model='{self.model}', client={client_info}"
-        
+
         if key_config:
             base_repr += f", {key_config}"
-        
+
         base_repr += ")"
         return base_repr
 

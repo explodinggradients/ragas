@@ -1,15 +1,14 @@
 """Google embeddings implementation supporting both Vertex AI and Google AI (Gemini)."""
 
 import typing as t
-from concurrent.futures import ThreadPoolExecutor
 
 from .base import BaseEmbedding
-from .utils import run_sync_in_async, validate_texts, safe_import
+from .utils import run_sync_in_async, validate_texts
 
 
 class GoogleEmbeddings(BaseEmbedding):
     """Google embeddings using Vertex AI or Google AI (Gemini).
-    
+
     Supports both Vertex AI and Google AI (Gemini) embedding models.
     For Vertex AI, requires google-cloud-aiplatform package.
     For Google AI, requires google-generativeai package.
@@ -47,7 +46,7 @@ class GoogleEmbeddings(BaseEmbedding):
                 "Vertex AI support requires google-cloud-aiplatform. "
                 "Install with: pip install google-cloud-aiplatform"
             )
-        
+
         model = TextEmbeddingModel.from_pretrained(self.model)
         merged_kwargs = {**self.kwargs, **kwargs}
         embeddings = model.get_embeddings([text], **merged_kwargs)
@@ -57,15 +56,13 @@ class GoogleEmbeddings(BaseEmbedding):
         """Embed text using Google AI (Gemini)."""
         merged_kwargs = {**self.kwargs, **kwargs}
         result = self.client.embed_content(
-            model=f"models/{self.model}",
-            content=text,
-            **merged_kwargs
+            model=f"models/{self.model}", content=text, **merged_kwargs
         )
-        return result['embedding']
+        return result["embedding"]
 
     async def aembed_text(self, text: str, **kwargs: t.Any) -> t.List[float]:
         """Asynchronously embed a single text using Google's embedding service.
-        
+
         Google's SDK doesn't provide native async support, so we use ThreadPoolExecutor.
         """
         return await run_sync_in_async(self.embed_text, text, **kwargs)
@@ -75,13 +72,15 @@ class GoogleEmbeddings(BaseEmbedding):
         texts = validate_texts(texts)
         if not texts:
             return []
-        
+
         if self.use_vertex:
             return self._embed_texts_vertex(texts, **kwargs)
         else:
             return self._embed_texts_genai(texts, **kwargs)
 
-    def _embed_texts_vertex(self, texts: t.List[str], **kwargs: t.Any) -> t.List[t.List[float]]:
+    def _embed_texts_vertex(
+        self, texts: t.List[str], **kwargs: t.Any
+    ) -> t.List[t.List[float]]:
         """Embed multiple texts using Vertex AI batch processing."""
         try:
             from vertexai.language_models import TextEmbeddingModel
@@ -90,15 +89,17 @@ class GoogleEmbeddings(BaseEmbedding):
                 "Vertex AI support requires google-cloud-aiplatform. "
                 "Install with: pip install google-cloud-aiplatform"
             )
-        
+
         model = TextEmbeddingModel.from_pretrained(self.model)
         merged_kwargs = {**self.kwargs, **kwargs}
         embeddings = model.get_embeddings(texts, **merged_kwargs)
         return [emb.values for emb in embeddings]
 
-    def _embed_texts_genai(self, texts: t.List[str], **kwargs: t.Any) -> t.List[t.List[float]]:
+    def _embed_texts_genai(
+        self, texts: t.List[str], **kwargs: t.Any
+    ) -> t.List[t.List[float]]:
         """Embed multiple texts using Google AI (Gemini).
-        
+
         Google AI doesn't support batch processing, so we process individually.
         """
         return [self._embed_text_genai(text, **kwargs) for text in texts]
@@ -110,7 +111,7 @@ class GoogleEmbeddings(BaseEmbedding):
         texts = validate_texts(texts)
         if not texts:
             return []
-        
+
         return await run_sync_in_async(self.embed_texts, texts, **kwargs)
 
     def _get_client_info(self) -> str:
@@ -124,7 +125,7 @@ class GoogleEmbeddings(BaseEmbedding):
     def _get_key_config(self) -> str:
         """Get key configuration parameters as a string."""
         config_parts = []
-        
+
         if self.use_vertex:
             config_parts.append(f"use_vertex={self.use_vertex}")
             if self.project_id:
@@ -133,19 +134,19 @@ class GoogleEmbeddings(BaseEmbedding):
                 config_parts.append(f"location='{self.location}'")
         else:
             config_parts.append(f"use_vertex={self.use_vertex}")
-        
+
         return ", ".join(config_parts)
 
     def __repr__(self) -> str:
         """Return a detailed string representation of the Google embeddings."""
         client_info = self._get_client_info()
         key_config = self._get_key_config()
-        
+
         base_repr = f"GoogleEmbeddings(provider='google', model='{self.model}', client={client_info}"
-        
+
         if key_config:
             base_repr += f", {key_config}"
-        
+
         base_repr += ")"
         return base_repr
 

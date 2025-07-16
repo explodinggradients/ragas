@@ -8,7 +8,7 @@ from .utils import validate_texts, batch_texts, get_optimal_batch_size, safe_imp
 
 class LiteLLMEmbeddings(BaseEmbedding):
     """Universal embedding interface using LiteLLM.
-    
+
     Supports 100+ models across OpenAI, Azure, Google, Cohere, Anthropic, and more.
     Provides intelligent batching and provider-specific optimizations.
     """
@@ -43,14 +43,14 @@ class LiteLLMEmbeddings(BaseEmbedding):
             **self.litellm_params,
             **kwargs,
         }
-        
+
         if self.api_key:
             call_kwargs["api_key"] = self.api_key
         if self.api_base:
             call_kwargs["api_base"] = self.api_base
         if self.api_version:
             call_kwargs["api_version"] = self.api_version
-        
+
         return call_kwargs
 
     def embed_text(self, text: str, **kwargs: t.Any) -> t.List[float]:
@@ -70,15 +70,15 @@ class LiteLLMEmbeddings(BaseEmbedding):
         texts = validate_texts(texts)
         if not texts:
             return []
-        
+
         embeddings = []
         batches = batch_texts(texts, self.batch_size)
-        
+
         for batch in batches:
             call_kwargs = self._prepare_kwargs(**kwargs)
             response = self.litellm.embedding(input=batch, **call_kwargs)
             embeddings.extend([item["embedding"] for item in response.data])
-        
+
         return embeddings
 
     async def aembed_texts(
@@ -88,48 +88,48 @@ class LiteLLMEmbeddings(BaseEmbedding):
         texts = validate_texts(texts)
         if not texts:
             return []
-        
+
         embeddings = []
         batches = batch_texts(texts, self.batch_size)
-        
+
         for batch in batches:
             call_kwargs = self._prepare_kwargs(**kwargs)
             response = await self.litellm.aembedding(input=batch, **call_kwargs)
             embeddings.extend([item["embedding"] for item in response.data])
-        
+
         return embeddings
 
     def _get_key_config(self) -> str:
         """Get key configuration parameters as a string."""
         config_parts = []
-        
+
         if self.api_base:
             config_parts.append(f"api_base='{self.api_base}'")
-        
+
         if self.batch_size != 10:  # Only show if different from default
             config_parts.append(f"batch_size={self.batch_size}")
-        
+
         if self.timeout != 600:  # Only show if different from default
             config_parts.append(f"timeout={self.timeout}")
-        
+
         if self.max_retries != 3:  # Only show if different from default
             config_parts.append(f"max_retries={self.max_retries}")
-        
+
         # Show count of other litellm params if there are any
         if self.litellm_params:
             config_parts.append(f"+{len(self.litellm_params)} litellm_params")
-        
+
         return ", ".join(config_parts)
 
     def __repr__(self) -> str:
         """Return a detailed string representation of the LiteLLM embeddings."""
         key_config = self._get_key_config()
-        
+
         base_repr = f"LiteLLMEmbeddings(provider='litellm', model='{self.model}'"
-        
+
         if key_config:
             base_repr += f", {key_config}"
-        
+
         base_repr += ")"
         return base_repr
 

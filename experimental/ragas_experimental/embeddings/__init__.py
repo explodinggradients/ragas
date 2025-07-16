@@ -20,7 +20,7 @@ __all__ = [
     "BaseEmbedding",
     "OpenAIEmbeddings",
     "GoogleEmbeddings",
-    "LiteLLMEmbeddings", 
+    "LiteLLMEmbeddings",
     "HuggingFaceEmbeddings",
     "embedding_factory",
 ]
