@@ -13,7 +13,7 @@ from .decorator import create_metric_decorator
 
 @dataclass
 class RankingMetric(Metric):
-    num_ranks: int = 2
+    allowed_values: int = 2
 
     def __post_init__(self):
         super().__post_init__()

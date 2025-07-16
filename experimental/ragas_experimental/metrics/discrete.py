@@ -13,11 +13,11 @@ from .decorator import create_metric_decorator
 
 @dataclass
 class DiscreteMetric(Metric):
-    values: t.List[str] = field(default_factory=lambda: ["pass", "fail"])
+    allowed_values: t.List[str] = field(default_factory=lambda: ["pass", "fail"])
 
     def __post_init__(self):
         super().__post_init__()
-        values = tuple(self.values)
+        values = tuple(self.allowed_values)
         self._response_model = create_model(
             "response_model", value=(t.Literal[values], ...), reason=(str, ...)
         )

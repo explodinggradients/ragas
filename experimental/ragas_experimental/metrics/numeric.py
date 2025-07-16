@@ -13,7 +13,7 @@ from .decorator import create_metric_decorator
 
 @dataclass
 class NumericMetric(Metric):
-    range: t.Tuple[float, float] = (0.0, 1.0)
+    allowed_values: t.Union[t.Tuple[float, float], range] = (0.0, 1.0)
 
     def __post_init__(self):
         super().__post_init__()

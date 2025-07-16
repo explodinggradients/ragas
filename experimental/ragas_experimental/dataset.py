@@ -214,7 +214,6 @@ class DataTable(t.Generic[T]):
     def reload(self) -> None:
         # Backend always returns dicts
         # Use the correct backend method based on the class type
-        dict_data = []
         if hasattr(self, "DATATABLE_TYPE") and self.DATATABLE_TYPE == "Experiment":
             dict_data = self.backend.load_experiment(self.name)
         else:
