@@ -10,6 +10,7 @@ import typing as t
 from pydantic import BaseModel
 
 from .backends import BaseBackend, get_registry
+from .backends.inmemory import InMemoryBackend
 
 # For backwards compatibility, use typing_extensions for older Python versions
 try:
@@ -327,6 +328,9 @@ class Dataset(DataTable[T]):
         split_index = int(len(self._data) * (1 - test_size))
 
         # Create new dataset instances with proper initialization
+        # Use inmemory backend for split datasets (temporary datasets)
+        inmemory_backend = InMemoryBackend()
+
         # Handle type-safe constructor calls based on data_model presence
         if self.data_model is not None:
             # Validated dataset case - data should be List[T]
@@ -335,14 +339,14 @@ class Dataset(DataTable[T]):
 
             train_dataset = type(self)(
                 name=f"{self.name}_train",
-                backend=self.backend,
+                backend=inmemory_backend,
                 data_model=self.data_model,
                 data=train_data,
             )
 
             test_dataset = type(self)(
                 name=f"{self.name}_test",
-                backend=self.backend,
+                backend=inmemory_backend,
                 data_model=self.data_model,
                 data=test_data,
             )
@@ -353,14 +357,14 @@ class Dataset(DataTable[T]):
 
             train_dataset = type(self)(
                 name=f"{self.name}_train",
-                backend=self.backend,
+                backend=inmemory_backend,
                 data_model=None,
                 data=train_data,
             )
 
             test_dataset = type(self)(
                 name=f"{self.name}_test",
-                backend=self.backend,
+                backend=inmemory_backend,
                 data_model=None,
                 data=test_data,
             )

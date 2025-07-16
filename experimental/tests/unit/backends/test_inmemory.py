@@ -531,9 +531,9 @@ class TestInMemoryBackendIntegration:
         assert dataset.name == "test_dataset"
         assert len(dataset) == 3
 
-        # Test save/load cycle
+        # Test save/load cycle with same backend instance
         dataset.save()
-        loaded_dataset = Dataset.load("test_dataset", "inmemory")
+        loaded_dataset = Dataset.load("test_dataset", dataset.backend)
         assert len(loaded_dataset) == 3
         assert loaded_dataset[0]["name"] == "Alice"
 
