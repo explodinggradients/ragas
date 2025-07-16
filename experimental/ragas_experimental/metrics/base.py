@@ -11,11 +11,11 @@ import string
 from abc import ABC, abstractmethod
 
 
-from ..embeddings.base import BaseEmbedding
-from ..llms import RagasLLM
-from ..prompt.base import Prompt
-from ..prompt.dynamic_few_shot import DynamicFewShotPrompt
-from .result import MetricResult
+from ragas_experimental.embeddings.base import BaseEmbedding
+from ragas_experimental.prompt.base import Prompt
+from ragas_experimental.prompt.dynamic_few_shot import DynamicFewShotPrompt
+from ragas_experimental.metrics.result import MetricResult
+from ragas_experimental.llms import BaseRagasLLM
 
 if t.TYPE_CHECKING:
     from ragas_experimental.dataset import Dataset

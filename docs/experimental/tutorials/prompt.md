@@ -30,8 +30,8 @@ pd.DataFrame(samples).to_csv("datasets/test_dataset.csv", index=False)
 Now we need to have a way to measure the performance of our prompt in this task. We will define a metric that will compare the output of our prompt with the expected output and outputs pass/fail based on it. 
 
 ```python
-from ragas_experimental.metric import discrete_metric
-from ragas_experimental.metric.result import MetricResult
+from ragas_experimental.metrics import discrete_metric
+from ragas_experimental.metrics.result import MetricResult
 
 @discrete_metric(name="accuracy", values=["pass", "fail"])
 def my_metric(prediction: str, actual: str):
