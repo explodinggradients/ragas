@@ -90,7 +90,7 @@ class ExperimentWrapper:
     def __init__(
         self,
         func: t.Callable,
-        experiment_model: t.Type[BaseModel],
+        experiment_model: t.Optional[t.Type[BaseModel]] = None,
         default_backend: t.Optional[t.Union[BaseBackend, str]] = None,
         name_prefix: str = "",
     ):
@@ -168,7 +168,7 @@ class ExperimentWrapper:
 
 
 def experiment(
-    experiment_model: t.Type[BaseModel],
+    experiment_model: t.Optional[t.Type[BaseModel]] = None,
     backend: t.Optional[t.Union[BaseBackend, str]] = None,
     name_prefix: str = "",
 ) -> t.Callable[[t.Callable], ExperimentProtocol]:
