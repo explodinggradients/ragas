@@ -20,7 +20,7 @@ class RankingMetric(Metric):
         self._response_model = create_model(
             "RankingResponseModel",
             reason=(str, Field(..., description="Reasoning for the ranking")),
-            result=(t.List[str], Field(..., description="List of ranked items")),
+            value=(t.List[str], Field(..., description="List of ranked items")),
         )
 
     def get_correlation(

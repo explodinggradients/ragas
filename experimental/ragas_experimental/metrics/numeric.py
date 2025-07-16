@@ -17,7 +17,7 @@ class NumericMetric(Metric):
 
     def __post_init__(self):
         super().__post_init__()
-        self._response_model = create_model("response_model", result=(float, ...))
+        self._response_model = create_model("response_model", value=(float, ...))
 
     def get_correlation(
         self, gold_labels: t.List[float], predictions: t.List[float]
