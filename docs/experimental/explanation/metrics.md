@@ -1,5 +1,13 @@
 # Metrics for evaluating AI Applications
 
+## Why Metrics Matter
+
+You can’t improve what you don’t measure. Metrics are the feedback loop that makes iteration possible.
+
+In AI systems, progress depends on running many experiments—each a hypothesis about how to improve performance. But without a clear, reliable metric, you can’t tell the difference between a successful experiment (a positive delta between the new score and the old one) and a failed one.
+
+Metrics give you a compass. They let you quantify improvement, detect regressions, and align optimization efforts with user impact and business value.
+
 ## Types of Metrics in AI Applications
 
 1. **End-to-End Metrics**
