@@ -14,7 +14,7 @@ from rich.progress import Progress
 from ragas_experimental.embeddings.base import BaseEmbedding
 from ragas_experimental.prompt.base import Prompt
 from ragas_experimental.prompt.dynamic_few_shot import DynamicFewShotPrompt
-from ragas_experimental.metric.result import MetricResult
+from ragas_experimental.metrics.result import MetricResult
 from ragas_experimental.llms import BaseRagasLLM
 
 if t.TYPE_CHECKING:

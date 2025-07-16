@@ -1,5 +1,5 @@
 from ragas_experimental import Dataset, experiment
-from ragas_experimental.metric import DiscreteMetric
+from ragas_experimental.metrics import DiscreteMetric
 from openai import OpenAI
 from ragas_experimental.llms import llm_factory
 import os

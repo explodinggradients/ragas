@@ -541,8 +541,8 @@ def hello_world(
 import numpy as np
 from ragas_experimental import BaseModel, Project
 from ragas_experimental.project.backends import LocalCSVProjectBackend
-from ragas_experimental.metric.result import MetricResult
-from ragas_experimental.metric.numeric import numeric_metric
+from ragas_experimental.metrics.result import MetricResult
+from ragas_experimental.metrics.numeric import numeric_metric
 
 p = Project(
     project_id="hello_world",

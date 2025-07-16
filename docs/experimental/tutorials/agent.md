@@ -41,8 +41,8 @@ df.to_csv("datasets/test_dataset.csv", index=False)
 To evaluate the performance of our agent, we will define a non llm metric that compares if our agent's output is within a certain tolerance of the expected output and outputs 1/0 based on it.
 
 ```python
-from ragas_experimental.metric import numeric_metric
-from ragas_experimental.metric.result import MetricResult
+from ragas_experimental.metrics import numeric_metric
+from ragas_experimental.metrics.result import MetricResult
 
 @numeric_metric(name="correctness")
 def correctness_metric(prediction: float, actual: float):
