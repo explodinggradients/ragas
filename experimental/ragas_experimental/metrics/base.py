@@ -45,7 +45,7 @@ class BaseMetric(ABC):
     ) -> t.List[MetricResult]:
         async_tasks = []
         for input_dict in inputs:
-            # Add reasoning and n to the input parameters
+            # Process input asynchronously
             async_tasks.append(self.ascore(**input_dict))
 
         # Run all tasks concurrently and return results
