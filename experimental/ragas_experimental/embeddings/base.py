@@ -1,4 +1,4 @@
-__all__ = ["BaseEmbedding", "OpenAIEmbeddings", "ragas_embedding"]
+__all__ = ["BaseEmbedding", "OpenAIEmbeddings", "embedding_factory"]
 
 import typing as t
 from abc import ABC, abstractmethod
@@ -15,17 +15,13 @@ class BaseEmbedding(ABC):
     async def aembed_text(self, text: str, **kwargs: t.Any) -> t.List[float]:
         pass
 
-    @abstractmethod
-    def embed_document(
-        self, documents: t.List[str], **kwargs: t.Any
-    ) -> t.List[t.List[float]]:
-        pass
+    def embed_texts(self, texts: t.List[str], **kwargs: t.Any) -> t.List[t.List[float]]:
+        return [self.embed_text(text, **kwargs) for text in texts]
 
-    @abstractmethod
-    async def aembed_document(
-        self, documents: t.List[str], **kwargs: t.Any
+    async def aembed_texts(
+        self, texts: t.List[str], **kwargs: t.Any
     ) -> t.List[t.List[float]]:
-        pass
+        return [await self.aembed_text(text, **kwargs) for text in texts]
 
 
 class OpenAIEmbeddings(BaseEmbedding):
@@ -46,24 +42,8 @@ class OpenAIEmbeddings(BaseEmbedding):
         )
         return response.data[0].embedding
 
-    def embed_document(
-        self, documents: t.List[str], **kwargs: t.Any
-    ) -> t.List[t.List[float]]:
-        embeddings = self.client.embeddings.create(
-            input=documents, model=self.model, **kwargs
-        )
-        return [embedding.embedding for embedding in embeddings.data]
 
-    async def aembed_document(
-        self, documents: t.List[str], **kwargs: t.Any
-    ) -> t.List[t.List[float]]:
-        embeddings = await self.client.embeddings.create(
-            input=documents, model=self.model, **kwargs
-        )
-        return [embedding.embedding for embedding in embeddings.data]
-
-
-def ragas_embedding(provider: str, model: str, client: t.Any) -> BaseEmbedding:
+def embedding_factory(provider: str, model: str, client: t.Any) -> BaseEmbedding:
     """
     Factory function to create an embedding instance based on the provider.
 

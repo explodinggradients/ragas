@@ -1,3 +1,3 @@
-from .base import BaseEmbedding, ragas_embedding
+from .base import BaseEmbedding, embedding_factory
 
-__all__ = ["ragas_embedding", "BaseEmbedding"]
+__all__ = ["embedding_factory", "BaseEmbedding"]
