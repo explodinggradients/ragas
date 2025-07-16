@@ -164,14 +164,13 @@ class Metric(ABC):
 
     def align(
         self,
-        dataset: "Dataset",
+        train_dataset: "Dataset",
         embedding_model: BaseEmbedding,
         **kwargs: t.Dict[str, t.Any],
     ):
         """
         Args:
-            experiment: experiment to align the metric with.
-            model: The Pydantic model used for the experiment data.
+            train_dataset: train_dataset to align the metric with.
             embedding_model: The embedding model used for dynamic few-shot prompting.
 
         Align the metric with the specified experiments by different optimization methods.
@@ -183,13 +182,13 @@ class Metric(ABC):
         self.prompt = DynamicFewShotPrompt.from_prompt(
             self.prompt, embedding_model, **kwargs
         )
-        dataset.reload()
-        total_items = len(dataset)
+        train_dataset.reload()
+        total_items = len(train_dataset)
         input_vars = self.get_variables()
         output_vars = [self.name, f"{self.name}_reason"]
         with Progress() as progress:
             task = progress.add_task("Processing examples", total=total_items)
-            for row in dataset:
+            for row in train_dataset:
                 inputs = {
                     var: getattr(row, var) for var in input_vars if hasattr(row, var)
                 }
@@ -217,7 +216,7 @@ class Metric(ABC):
         the predicted scores from the metric.
         """
 
-        test_dataset.load()
+        test_dataset.reload()
         gold_scores = [getattr(row, self.name) for row in test_dataset]
         pred_scores = []
         for row in test_dataset:
