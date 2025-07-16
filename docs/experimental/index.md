@@ -40,11 +40,7 @@ cd ragas/experimental && pip install -e .
 
 ## Hello World 👋
 
-1. Running your first experiment 
-
-```bash
-python experiments/hello_world.py
-```
+Copy this snippet to a file named `hello_world.py` and run `python hello_world.py` 
 
 ```python
 import numpy as np
@@ -87,15 +83,16 @@ if __name__ == "__main__":
     results = asyncio.run(run_experiment.run_async(dataset, name="first_experiment"))
 ```
 
-2. View files 
-```.
+View Results 
+
+```
 ├── datasets
 │   └── test_dataset.csv
 └── experiments
     └── first_experiment.csv
 ```
 
-3. Open the results in a CSV file
+Open the results in a CSV file
 
 ```bash
 open experiments/first_experiment.csv
