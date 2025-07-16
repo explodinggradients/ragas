@@ -165,7 +165,7 @@ class MetricResult:
                 # If it's a method, wrap it to return MetricResult when appropriate
                 def wrapper(*args, **kwargs):
                     result = attr(*args, **kwargs)
-                    # If the result is of the same type as self._result, wrap it
+                    # If the result is of the same type as self._value, wrap it
                     if isinstance(result, type(self._value)):
                         return MetricResult(value=result, reason=self.reason)
                     return result
