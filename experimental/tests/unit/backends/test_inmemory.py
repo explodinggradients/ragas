@@ -565,7 +565,25 @@ class TestInMemoryBackendIntegration:
         When: I save the dataset and then load it
         Then: The loaded dataset should contain the original data
         """
-        pass
+        # Create Dataset with inmemory backend
+        dataset = Dataset("test_dataset", backend, data=simple_data)
+        assert len(dataset) == 3
+        
+        # Save the dataset
+        dataset.save()
+        
+        # Load the dataset using the same backend instance
+        loaded_dataset = Dataset.load("test_dataset", backend)
+        
+        # Verify the loaded dataset contains the original data
+        assert len(loaded_dataset) == 3
+        assert loaded_dataset[0]["name"] == "Alice"
+        assert loaded_dataset[1]["name"] == "Bob"
+        assert loaded_dataset[2]["name"] == "Charlie"
+        
+        # Verify the data is identical
+        for i in range(3):
+            assert loaded_dataset[i] == simple_data[i]
 
     def test_dataset_train_test_split_uses_inmemory(self, simple_data):
         """
@@ -574,7 +592,32 @@ class TestInMemoryBackendIntegration:
         When: I call train_test_split()
         Then: The returned train and test datasets should use inmemory backend
         """
-        pass
+        # Create Dataset with any backend (let's use a different backend)
+        from ragas_experimental.backends.local_csv import LocalCSVBackend
+        import tempfile
+        
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            csv_backend = LocalCSVBackend(tmp_dir)
+            dataset = Dataset("original_dataset", csv_backend, data=simple_data)
+            
+            # Call train_test_split
+            train_dataset, test_dataset = dataset.train_test_split(test_size=0.4, random_state=42)
+            
+            # Verify train and test datasets use inmemory backend
+            assert isinstance(train_dataset.backend, InMemoryBackend)
+            assert isinstance(test_dataset.backend, InMemoryBackend)
+            
+            # Verify original dataset still uses CSV backend
+            assert isinstance(dataset.backend, LocalCSVBackend)
+            
+            # Verify datasets have the expected sizes
+            # With 3 items and test_size=0.4: split_index = int(3 * (1 - 0.4)) = int(1.8) = 1
+            # So train gets data[:1] = 1 item, test gets data[1:] = 2 items
+            assert len(train_dataset) == 1  # train = 60% of 3 = 1.8 -> 1 (int truncation)
+            assert len(test_dataset) == 2   # test = 40% of 3 = 1.2 -> 2 (remaining items)
+            
+            # Verify total data is preserved
+            assert len(train_dataset) + len(test_dataset) == 3
 
     def test_train_test_split_preserves_original_backend(self, simple_data):
         """
@@ -583,7 +626,33 @@ class TestInMemoryBackendIntegration:
         When: I call train_test_split()
         Then: The original dataset should keep its original backend unchanged
         """
-        pass
+        # Create Dataset with CSV backend
+        from ragas_experimental.backends.local_csv import LocalCSVBackend
+        import tempfile
+        
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            csv_backend = LocalCSVBackend(tmp_dir)
+            original_dataset = Dataset("original_dataset", csv_backend, data=simple_data)
+            original_backend_id = id(original_dataset.backend)
+            
+            # Call train_test_split
+            train_dataset, test_dataset = original_dataset.train_test_split(test_size=0.3, random_state=42)
+            
+            # Verify original dataset still uses the same CSV backend instance
+            assert isinstance(original_dataset.backend, LocalCSVBackend)
+            assert id(original_dataset.backend) == original_backend_id
+            
+            # Verify split datasets use different inmemory backends
+            assert isinstance(train_dataset.backend, InMemoryBackend)
+            assert isinstance(test_dataset.backend, InMemoryBackend)
+            
+            # Verify original dataset data is unchanged (length and content)
+            assert len(original_dataset) == 3
+            # Note: data order might be shuffled due to random_state, so check if Alice is present
+            names = [original_dataset[i]["name"] for i in range(3)]
+            assert "Alice" in names
+            assert "Bob" in names
+            assert "Charlie" in names
 
     def test_train_test_split_data_integrity(self, simple_data):
         """
@@ -592,7 +661,30 @@ class TestInMemoryBackendIntegration:
         When: I call train_test_split()
         Then: The combined train and test data should equal original data
         """
-        pass
+        # Create Dataset with sample data
+        dataset = Dataset("original_dataset", "inmemory", data=simple_data)
+        
+        # Call train_test_split with fixed random state for reproducibility
+        train_dataset, test_dataset = dataset.train_test_split(test_size=0.33, random_state=42)
+        
+        # Collect all data from train and test datasets
+        train_data = [dict(item) for item in train_dataset]
+        test_data = [dict(item) for item in test_dataset]
+        combined_data = train_data + test_data
+        
+        # Verify total length is preserved
+        assert len(combined_data) == len(simple_data)
+        
+        # Verify all original data items are present in combined data
+        for original_item in simple_data:
+            assert original_item in combined_data
+        
+        # Verify no data is duplicated
+        assert len(combined_data) == len(set(str(item) for item in combined_data))
+        
+        # Verify train and test datasets use inmemory backend
+        assert isinstance(train_dataset.backend, InMemoryBackend)
+        assert isinstance(test_dataset.backend, InMemoryBackend)
 
     def test_pydantic_model_validation_with_inmemory(self, backend, simple_data):
         """
@@ -601,7 +693,36 @@ class TestInMemoryBackendIntegration:
         When: I save and load data with model validation
         Then: Data should be validated and converted to model instances
         """
-        pass
+        # Create Dataset with inmemory backend and Pydantic model validation
+        dataset = Dataset("test_dataset", backend, data_model=SimpleTestModel, data=simple_data)
+        
+        # Save the dataset
+        dataset.save()
+        
+        # Load the dataset with model validation
+        loaded_dataset = Dataset.load("test_dataset", backend, data_model=SimpleTestModel)
+        
+        # Verify data is loaded and validated
+        assert len(loaded_dataset) == 3
+        
+        # Verify all items are SimpleTestModel instances
+        for item in loaded_dataset:
+            assert isinstance(item, SimpleTestModel)
+            assert hasattr(item, 'name')
+            assert hasattr(item, 'age')
+            assert hasattr(item, 'score')
+            assert hasattr(item, 'is_active')
+        
+        # Verify data values are correct
+        assert loaded_dataset[0].name == "Alice"
+        assert loaded_dataset[0].age == 30
+        assert loaded_dataset[0].score == 85.5
+        assert loaded_dataset[0].is_active is True
+        
+        assert loaded_dataset[1].name == "Bob"
+        assert loaded_dataset[1].age == 25
+        assert loaded_dataset[1].score == 92.0
+        assert loaded_dataset[1].is_active is False
 
 
 # 4. Isolation and Concurrency Tests
@@ -645,7 +766,47 @@ class TestInMemoryBackendIsolation:
         When: I save different datasets concurrently
         Then: All saves should complete successfully without data corruption
         """
-        pass
+        import threading
+        import time
+        
+        backend = InMemoryBackend()
+        results = []
+        
+        def save_dataset(dataset_name, data):
+            try:
+                backend.save_dataset(dataset_name, data)
+                results.append(f"success_{dataset_name}")
+            except Exception as e:
+                results.append(f"error_{dataset_name}_{str(e)}")
+        
+        # Create multiple threads to save different datasets concurrently
+        threads = []
+        for i in range(5):
+            data = [{"id": i, "name": f"item_{i}", "value": i * 10}]
+            thread = threading.Thread(target=save_dataset, args=(f"dataset_{i}", data))
+            threads.append(thread)
+        
+        # Start all threads simultaneously
+        for thread in threads:
+            thread.start()
+        
+        # Wait for all threads to complete
+        for thread in threads:
+            thread.join()
+        
+        # Verify all saves completed successfully
+        assert len(results) == 5
+        for i in range(5):
+            assert f"success_dataset_{i}" in results
+        
+        # Verify all datasets are saved correctly
+        datasets = backend.list_datasets()
+        assert len(datasets) == 5
+        for i in range(5):
+            assert f"dataset_{i}" in datasets
+            loaded_data = backend.load_dataset(f"dataset_{i}")
+            assert loaded_data[0]["id"] == i
+            assert loaded_data[0]["value"] == i * 10
 
     def test_concurrent_read_operations(self, backend, simple_data):
         """
@@ -654,7 +815,45 @@ class TestInMemoryBackendIsolation:
         When: I read the same data from multiple threads concurrently
         Then: All reads should return the same correct data
         """
-        pass
+        import threading
+        
+        # Save initial data
+        backend.save_dataset("shared_dataset", simple_data)
+        
+        results = []
+        
+        def read_dataset():
+            try:
+                data = backend.load_dataset("shared_dataset")
+                results.append(data)
+            except Exception as e:
+                results.append(f"error_{str(e)}")
+        
+        # Create multiple threads to read the same dataset concurrently
+        threads = []
+        for i in range(10):
+            thread = threading.Thread(target=read_dataset)
+            threads.append(thread)
+        
+        # Start all threads simultaneously
+        for thread in threads:
+            thread.start()
+        
+        # Wait for all threads to complete
+        for thread in threads:
+            thread.join()
+        
+        # Verify all reads completed successfully
+        assert len(results) == 10
+        
+        # Verify all reads returned the same correct data
+        for result in results:
+            assert isinstance(result, list)
+            assert len(result) == 3
+            assert result == simple_data
+            assert result[0]["name"] == "Alice"
+            assert result[1]["name"] == "Bob"
+            assert result[2]["name"] == "Charlie"
 
     def test_mixed_concurrent_operations(self, backend, simple_data):
         """
@@ -663,7 +862,68 @@ class TestInMemoryBackendIsolation:
         When: I perform concurrent read and write operations
         Then: Operations should complete safely without data corruption
         """
-        pass
+        import threading
+        import time
+        
+        # Save initial data
+        backend.save_dataset("mixed_dataset", simple_data)
+        
+        results = []
+        
+        def read_operation():
+            try:
+                data = backend.load_dataset("mixed_dataset")
+                results.append(f"read_success_{len(data)}")
+            except Exception as e:
+                results.append(f"read_error_{str(e)}")
+        
+        def write_operation(dataset_name, data):
+            try:
+                backend.save_dataset(dataset_name, data)
+                results.append(f"write_success_{dataset_name}")
+            except Exception as e:
+                results.append(f"write_error_{dataset_name}_{str(e)}")
+        
+        # Create mixed read and write threads
+        threads = []
+        
+        # Add read threads
+        for i in range(3):
+            thread = threading.Thread(target=read_operation)
+            threads.append(thread)
+        
+        # Add write threads
+        for i in range(3):
+            data = [{"id": i, "name": f"concurrent_item_{i}"}]
+            thread = threading.Thread(target=write_operation, args=(f"concurrent_dataset_{i}", data))
+            threads.append(thread)
+        
+        # Start all threads simultaneously
+        for thread in threads:
+            thread.start()
+        
+        # Wait for all threads to complete
+        for thread in threads:
+            thread.join()
+        
+        # Verify all operations completed successfully
+        assert len(results) == 6
+        
+        # Check that reads succeeded
+        read_results = [r for r in results if r.startswith("read_success")]
+        assert len(read_results) == 3
+        for result in read_results:
+            assert "read_success_3" in result  # Should read 3 items
+        
+        # Check that writes succeeded
+        write_results = [r for r in results if r.startswith("write_success")]
+        assert len(write_results) == 3
+        
+        # Verify all datasets exist
+        datasets = backend.list_datasets()
+        assert "mixed_dataset" in datasets
+        for i in range(3):
+            assert f"concurrent_dataset_{i}" in datasets
 
     def test_memory_cleanup_on_overwrite(self, backend, simple_data):
         """
@@ -672,7 +932,39 @@ class TestInMemoryBackendIsolation:
         When: I overwrite the data multiple times
         Then: Memory should not grow indefinitely (old data should be cleaned up)
         """
-        pass
+        import sys
+        
+        # Save initial data
+        backend.save_dataset("cleanup_test", simple_data)
+        
+        # Get initial memory usage (number of datasets should stay constant)
+        initial_dataset_count = len(backend.list_datasets())
+        
+        # Overwrite the same dataset multiple times with different data
+        for i in range(100):
+            large_data = [{"id": j, "large_text": "X" * 1000} for j in range(i + 1)]
+            backend.save_dataset("cleanup_test", large_data)
+            
+            # Verify dataset count remains constant (no memory leak)
+            current_dataset_count = len(backend.list_datasets())
+            assert current_dataset_count == initial_dataset_count
+            
+            # Verify only the latest data is stored
+            loaded_data = backend.load_dataset("cleanup_test")
+            assert len(loaded_data) == i + 1
+            assert loaded_data[0]["id"] == 0
+            if i > 0:
+                assert loaded_data[i]["id"] == i
+        
+        # Verify final state
+        final_data = backend.load_dataset("cleanup_test")
+        assert len(final_data) == 100
+        assert final_data[0]["large_text"] == "X" * 1000
+        assert final_data[99]["large_text"] == "X" * 1000
+        
+        # Verify only one dataset still exists
+        assert len(backend.list_datasets()) == 1
+        assert "cleanup_test" in backend.list_datasets()
 
 
 # 5. Performance and Edge Cases
