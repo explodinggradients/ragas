@@ -369,4 +369,8 @@ class Dataset(DataTable[T]):
                 data=test_data,
             )
 
+        # save to inmemory backend
+        train_dataset.save()
+        test_dataset.save()
+
         return train_dataset, test_dataset
