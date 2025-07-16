@@ -157,10 +157,22 @@ make run-ci          # Run full CI pipeline
 
 ### Working with Specific Projects
 
+Each project directory (`ragas/` and `experimental/`) now has its own standalone Makefile with core development commands. You can work directly within each project directory using these local Makefiles.
+
 #### Ragas Core Development
 ```bash
 # Navigate to the ragas directory for project-specific work
 cd ragas
+
+# Use the local Makefile for development
+make help           # See available commands
+make format         # Format ragas code only
+make type           # Type check ragas code only
+make test           # Run ragas tests only
+make check          # Quick format + type check
+make run-ci         # Run full ragas CI pipeline
+
+# Or use direct commands for specific tasks
 uv run pytest tests/unit          # Run specific tests
 uv run pyright src               # Type check specific code
 ```
@@ -169,7 +181,26 @@ uv run pyright src               # Type check specific code
 ```bash
 # Navigate to experimental directory
 cd experimental  
+
+# Use the local Makefile for development
+make help           # See available commands
+make format         # Format experimental code only
+make type           # Type check experimental code only
+make test           # Run experimental tests only
+make check          # Quick format + type check
+make run-ci         # Run full experimental CI pipeline
+
+# Or use direct commands
 uv run pytest                   # Run experimental tests
+```
+
+#### Monorepo-Wide Development
+```bash
+# From the root directory, commands operate on both projects
+make format         # Format code in both ragas/ and experimental/
+make type           # Type check both projects
+make test           # Run all tests in both projects
+make run-ci         # Run full CI for both projects
 ```
 
 ## Testing Strategy
@@ -343,6 +374,10 @@ ls -la  # Check current directory structure
 # For code changes
 make format  # After making changes
 make test    # Verify functionality
+
+# For project-specific work
+cd ragas && make help           # See ragas-specific commands
+cd experimental && make help    # See experimental-specific commands
 
 # For investigation
 uv run pytest --collect-only  # See available tests
