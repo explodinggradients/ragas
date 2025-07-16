@@ -26,7 +26,7 @@ class BaseRagasLLM(ABC):
 
 
 class InstructorLLM(BaseRagasLLM):
-    def __init__(self, client: t.Any, model, provider, **model_args):
+    def __init__(self, client: t.Any, model: str, provider: str, **model_args):
         self.client = client
         self.model = model
         self.provider = provider

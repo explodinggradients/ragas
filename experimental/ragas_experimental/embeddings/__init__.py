@@ -1,6 +1,10 @@
-from .base import BaseEmbedding, OpenAIEmbeddings, embedding_factory
+from .base import BaseEmbedding, embedding_factory
 
 # Import provider classes for direct usage
+try:
+    from .openai import OpenAIEmbeddings
+except ImportError:
+    OpenAIEmbeddings = None
 try:
     from .google import GoogleEmbeddings
 except ImportError:

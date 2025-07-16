@@ -4,12 +4,12 @@ __all__ = ["Metric"]
 
 import asyncio
 from dataclasses import dataclass, field
-from pydantic import BaseModel
 import typing as t
-from rich.progress import Progress
 import string
 from abc import ABC, abstractmethod
 
+from pydantic import BaseModel
+from rich.progress import Progress
 
 from ragas_experimental.embeddings.base import BaseEmbedding
 from ragas_experimental.prompt.base import Prompt
