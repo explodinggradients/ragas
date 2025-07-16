@@ -37,27 +37,47 @@ Example:
 
 - Ticket deflection rate: Measures the percentage reduction of support tickets due to the deployment of an AI assistant.
 
-## Choosing the Right Metrics for Your Application
+## Types of Metrics in Ragas
 
-1. **Prioritize End-to-End Metrics**
+In Ragas, we categorize metrics based on the type of output they produce. This classification helps clarify how each metric behaves and how its results can be interpreted or aggregated. The three types are:
 
-Focus first on metrics reflecting overall user satisfaction. While many aspects influence user satisfaction—such as factual correctness, response tone, and explanation depth—concentrate initially on the few dimensions delivering maximum user value (e.g., answer and citation accuracy in a RAG-based assistant).
+1. **Discrete Metrics**
 
-2. **Ensure Interpretability**
+These return a single value from a predefined list of categorical classes. There is no implicit ordering among the classes. Common use cases include classifying outputs into categories such as pass/fail or good/okay/bad.
 
-Design metrics clear enough for the entire team to interpret and reason about. For example:
+Example:
+```python
+from ragas_experimental.metric import discrete_metric
 
-- Execution accuracy in a text-to-SQL system: Does the SQL query generated return precisely the same dataset as the ground truth query crafted by domain experts?
+@discrete_metric
+def my_metric(predicted: str, expected: str) -> str:
+    return "pass" if predicted.lower() == expected.lower() else "fail"
 
-3. **Emphasize Objective Over Subjective Metrics**
+```
 
-Prioritize metrics with objective criteria, minimizing subjective judgment. Assess objectivity by independently labeling samples across team members and measuring agreement levels. A high inter-rater agreement (≥80%) indicates greater objectivity.
+2. **Numeric Metrics**
 
-4. **Few Strong Signals over Many Weak Signals**
+These return an integer or float value within a specified range. Numeric metrics support aggregation functions such as mean, sum, or mode, making them useful for statistical analysis.
+    
+```python
+from ragas_experimental.metric import numeric_metric
 
-Avoid a proliferation of metrics that provide weak signals and impede clear decision-making. Instead, select fewer metrics offering strong, reliable signals. For instance:
+@numeric_metric
+def my_metric(predicted: float, expected: float) -> float:
+    return abs(predicted - expected)
+```
 
-- In a conversational AI, using a single metric such as goal accuracy (whether the user’s objective for interacting with the AI was met) provides strong proxy for the performance of the system than multiple weak proxies like coherence or helpfulness.
+3. **Ranked Metrics**
+
+These evaluate multiple outputs at once and return a ranked list based on a defined criterion. They are useful when the goal is to compare outputs relative to one another.
+
+```python
+from ragas_experimental.metric import ranked_metric
+@ranked_metric
+def my_metric(predicted: list, expected: list) -> list:
+    return sorted(predicted, key=lambda x: x['score'], reverse=True)
+```
+
 
 ## LLM-based vs. Non-LLM-based Metrics
 
@@ -91,3 +111,25 @@ When to use:
 
 - Tasks with numerous valid outcomes (e.g., paraphrased correct answers).
 - Complex evaluation criteria aligned with human or expert preferences (e.g., distinguishing “deep” vs. “shallow” insights in research reports). Although simpler metrics (length or keyword count) are possible, LLM-based metrics capture nuanced human judgment more effectively.
+
+## Choosing the Right Metrics for Your Application
+
+1. **Prioritize End-to-End Metrics**
+
+Focus first on metrics reflecting overall user satisfaction. While many aspects influence user satisfaction—such as factual correctness, response tone, and explanation depth—concentrate initially on the few dimensions delivering maximum user value (e.g., answer and citation accuracy in a RAG-based assistant).
+
+2. **Ensure Interpretability**
+
+Design metrics clear enough for the entire team to interpret and reason about. For example:
+
+- Execution accuracy in a text-to-SQL system: Does the SQL query generated return precisely the same dataset as the ground truth query crafted by domain experts?
+
+3. **Emphasize Objective Over Subjective Metrics**
+
+Prioritize metrics with objective criteria, minimizing subjective judgment. Assess objectivity by independently labeling samples across team members and measuring agreement levels. A high inter-rater agreement (≥80%) indicates greater objectivity.
+
+4. **Few Strong Signals over Many Weak Signals**
+
+Avoid a proliferation of metrics that provide weak signals and impede clear decision-making. Instead, select fewer metrics offering strong, reliable signals. For instance:
+
+- In a conversational AI, using a single metric such as goal accuracy (whether the user’s objective for interacting with the AI was met) provides strong proxy for the performance of the system than multiple weak proxies like coherence or helpfulness.
