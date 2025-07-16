@@ -1,4 +1,4 @@
-__all__ = ["BaseEmbedding", "OpenAIEmbeddings", "embedding_factory"]
+__all__ = ["BaseEmbedding", "embedding_factory"]
 
 import asyncio
 import inspect
