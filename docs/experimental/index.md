@@ -10,11 +10,11 @@
 
     [:octicons-arrow-right-24: Tutorials](tutorials/index.md)
 
-- 📚 **Explanations**
+- 📚 **Core Concepts**
 
     In depth explanation and discussion of the concepts and working of different features available in Ragas.
 
-    [:octicons-arrow-right-24: Explanations](explanation/index.md)
+    [:octicons-arrow-right-24: Core Concepts](core_concepts/index.md)
 
 
 </div>
