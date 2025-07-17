@@ -42,6 +42,7 @@ tracing = ["langfuse", "mlflow"]
 [project.entry-points."ragas.backends"]
 "local/csv" = "ragas_experimental.backends.local_csv:LocalCSVBackend"
 "local/jsonl" = "ragas_experimental.backends.local_jsonl:LocalJSONLBackend"
+"inmemory" = "ragas_experimental.backends.inmemory:InMemoryBackend"
 
 [tool.setuptools.packages.find]
 include = ["ragas_experimental*", "ragas_examples*"]

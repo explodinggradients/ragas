@@ -9,7 +9,11 @@ import typing as t
 
 from pydantic import BaseModel
 
+if t.TYPE_CHECKING:
+    from pandas import DataFrame as PandasDataFrame
+
 from .backends import BaseBackend, get_registry
+from .backends.inmemory import InMemoryBackend
 
 # For backwards compatibility, use typing_extensions for older Python versions
 try:
@@ -190,6 +194,59 @@ class DataTable(t.Generic[T]):
             # Unvalidated mode - keep as dicts but wrapped in Dataset API
             return cls(name, backend, None, dict_data)
 
+    @classmethod
+    def from_pandas(
+        cls: t.Type[Self],
+        dataframe: "PandasDataFrame",
+        name: str,
+        backend: t.Union[BaseBackend, str],
+        data_model: t.Optional[t.Type[T]] = None,
+        **kwargs,
+    ) -> Self:
+        """Create a DataTable from a pandas DataFrame.
+
+        Args:
+            dataframe: The pandas DataFrame to convert
+            name: Name of the dataset
+            backend: Either a BaseBackend instance or backend name string (e.g., "local/csv")
+            data_model: Optional Pydantic model for validation
+            **kwargs: Additional arguments passed to backend constructor (when using string backend)
+
+        Returns:
+            DataTable instance with data from the DataFrame
+
+        Examples:
+            # Using string backend name
+            dataset = Dataset.load_from_pandas(df, "my_data", "local/csv", root_dir="./data")
+
+            # Using backend instance
+            backend = LocalCSVBackend(root_dir="./data")
+            dataset = Dataset.load_from_pandas(df, "my_data", backend)
+        """
+        try:
+            import pandas as pd
+        except ImportError:
+            raise ImportError(
+                "pandas is not installed. Please install it to use this function."
+            )
+
+        if not isinstance(dataframe, pd.DataFrame):
+            raise TypeError(f"Expected pandas DataFrame, got {type(dataframe)}")
+
+        # Convert DataFrame to list of dictionaries
+        dict_data = dataframe.to_dict(orient="records")
+
+        # Resolve backend if string
+        backend = cls._resolve_backend(backend, **kwargs)
+
+        if data_model:
+            # Validated mode - convert dicts to Pydantic models
+            validated_data = [data_model(**d) for d in dict_data]
+            return cls(name, backend, data_model, validated_data)
+        else:
+            # Unvalidated mode - keep as dicts but wrapped in DataTable API
+            return cls(name, backend, None, dict_data)
+
     def save(self) -> None:
         """Save dataset - converts to dicts if needed"""
         dict_data: t.List[t.Dict[str, t.Any]] = []
@@ -252,6 +309,27 @@ class DataTable(t.Generic[T]):
             data=validated_data,
         )
 
+    def to_pandas(self) -> "PandasDataFrame":
+        """Convert the dataset to a pandas DataFrame."""
+        try:
+            import pandas as pd
+        except ImportError:
+            raise ImportError(
+                "pandas is not installed. Please install it to use this function."
+            )
+
+        # Convert data to list of dictionaries
+        dict_data: t.List[t.Dict[str, t.Any]] = []
+        for item in self._data:
+            if isinstance(item, BaseModel):
+                dict_data.append(item.model_dump())
+            elif isinstance(item, dict):
+                dict_data.append(item)
+            else:
+                raise TypeError(f"Unexpected type in dataset: {type(item)}")
+
+        return pd.DataFrame(dict_data)
+
     def append(self, item: t.Union[t.Dict, BaseModel]) -> None:
         """Add item to dataset with validation if model exists"""
         if self.data_model is not None:
@@ -290,21 +368,17 @@ class DataTable(t.Generic[T]):
 
         return f"{self.DATATABLE_TYPE}(name={self.name}, {data_model_str} len={len(self._data)})"
 
-    __repr__ = __str__
+    def get_row_value(self, row, key: str):
+        """Helper method to get value from row (dict or BaseModel)"""
 
-
-class Dataset(DataTable[T]):
-    """Dataset class for managing dataset entries.
-
-    Inherits all functionality from DataTable. This class represents
-    datasets specifically (as opposed to experiments).
-    """
-
-    DATATABLE_TYPE = "Dataset"
+        if isinstance(row, dict):
+            return row.get(key)
+        else:
+            return getattr(row, key, None)
 
     def train_test_split(
         self, test_size: float = 0.2, random_state: t.Optional[int] = None
-    ) -> t.Tuple["Dataset[T]", "Dataset[T]"]:
+    ) -> t.Tuple["DataTable[T]", "DataTable[T]"]:
         """Split the dataset into training and testing sets.
 
         Args:
@@ -327,6 +401,9 @@ class Dataset(DataTable[T]):
         split_index = int(len(self._data) * (1 - test_size))
 
         # Create new dataset instances with proper initialization
+        # Use inmemory backend for split datasets (temporary datasets)
+        inmemory_backend = InMemoryBackend()
+
         # Handle type-safe constructor calls based on data_model presence
         if self.data_model is not None:
             # Validated dataset case - data should be List[T]
@@ -335,14 +412,14 @@ class Dataset(DataTable[T]):
 
             train_dataset = type(self)(
                 name=f"{self.name}_train",
-                backend=self.backend,
+                backend=inmemory_backend,
                 data_model=self.data_model,
                 data=train_data,
             )
 
             test_dataset = type(self)(
                 name=f"{self.name}_test",
-                backend=self.backend,
+                backend=inmemory_backend,
                 data_model=self.data_model,
                 data=test_data,
             )
@@ -353,16 +430,32 @@ class Dataset(DataTable[T]):
 
             train_dataset = type(self)(
                 name=f"{self.name}_train",
-                backend=self.backend,
+                backend=inmemory_backend,
                 data_model=None,
                 data=train_data,
             )
 
             test_dataset = type(self)(
                 name=f"{self.name}_test",
-                backend=self.backend,
+                backend=inmemory_backend,
                 data_model=None,
                 data=test_data,
             )
 
+        # save to inmemory backend
+        train_dataset.save()
+        test_dataset.save()
+
         return train_dataset, test_dataset
+
+    __repr__ = __str__
+
+
+class Dataset(DataTable[T]):
+    """Dataset class for managing dataset entries.
+
+    Inherits all functionality from DataTable. This class represents
+    datasets specifically (as opposed to experiments).
+    """
+
+    DATATABLE_TYPE = "Dataset"
