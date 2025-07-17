@@ -247,6 +247,8 @@ jobs:
       - name: Format check (dry run)
         run: |
           # Check if code is properly formatted (without making changes)
+          # Note: We use direct commands here instead of the standalone Makefiles
+          # to have precise control over CI-specific options like --check for dry-run
           echo "Checking ragas formatting..."
           black --check --config ragas/pyproject.toml ragas/src ragas/tests docs
           ruff check ragas/src docs ragas/tests
