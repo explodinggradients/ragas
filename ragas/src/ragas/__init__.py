@@ -19,14 +19,14 @@ __all__ = [
     "cacher",
     "CacheInterface",
     "DiskCacheBackend",
-    "experimental",
 ]
 
 
 def __getattr__(name):
     if name == "experimental":
         try:
-            import ragas_experimental as experimental
+            import ragas_experimental as experimental  # type: ignore
+
             return experimental
         except ImportError:
             raise ImportError(
