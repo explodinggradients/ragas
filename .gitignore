@@ -174,3 +174,4 @@ experimental/ragas_experimental/_version.py
 uv.lock
 .cache/
 .claude
+node_modules
