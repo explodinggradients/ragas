@@ -179,6 +179,9 @@ class Metric(ABC):
         # get prompt
         if not self.prompt:
             raise Exception("prompt not passed")
+        self.prompt = (
+            self.prompt if isinstance(self.prompt, Prompt) else Prompt(self.prompt)
+        )
         self.prompt = DynamicFewShotPrompt.from_prompt(
             self.prompt, embedding_model, **kwargs
         )
@@ -186,15 +189,19 @@ class Metric(ABC):
         total_items = len(train_dataset)
         input_vars = self.get_variables()
         output_vars = [self.name, f"{self.name}_reason"]
+
         with Progress() as progress:
             task = progress.add_task("Processing examples", total=total_items)
             for row in train_dataset:
                 inputs = {
-                    var: getattr(row, var) for var in input_vars if hasattr(row, var)
+                    var: train_dataset.get_row_value(row, var) for var in input_vars
                 }
+                inputs = {k: v for k, v in inputs.items() if v is not None}
                 output = {
-                    var: getattr(row, var) for var in output_vars if hasattr(row, var)
+                    var: train_dataset.get_row_value(row, var) for var in output_vars
                 }
+                output = {k: v for k, v in output.items() if v is not None}
+
                 if output:
                     self.prompt.add_example(inputs, output)
                 progress.update(task, advance=1)
@@ -217,14 +224,16 @@ class Metric(ABC):
         """
 
         test_dataset.reload()
-        gold_scores = [getattr(row, self.name) for row in test_dataset]
+        gold_scores = [
+            test_dataset.get_row_value(row, self.name) for row in test_dataset
+        ]
         pred_scores = []
         for row in test_dataset:
             values = {
                 v: (
-                    getattr(row, v)
+                    test_dataset.get_row_value(row, v)
                     if v not in mapping
-                    else getattr(row, mapping.get(v, v))
+                    else test_dataset.get_row_value(row, mapping.get(v, v))
                 )
                 for v in self.get_variables()
             }

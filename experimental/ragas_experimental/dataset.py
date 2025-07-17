@@ -368,21 +368,17 @@ class DataTable(t.Generic[T]):
 
         return f"{self.DATATABLE_TYPE}(name={self.name}, {data_model_str} len={len(self._data)})"
 
-    __repr__ = __str__
+    def get_row_value(self, row, key: str):
+        """Helper method to get value from row (dict or BaseModel)"""
 
-
-class Dataset(DataTable[T]):
-    """Dataset class for managing dataset entries.
-
-    Inherits all functionality from DataTable. This class represents
-    datasets specifically (as opposed to experiments).
-    """
-
-    DATATABLE_TYPE = "Dataset"
+        if isinstance(row, dict):
+            return row.get(key)
+        else:
+            return getattr(row, key, None)
 
     def train_test_split(
         self, test_size: float = 0.2, random_state: t.Optional[int] = None
-    ) -> t.Tuple["Dataset[T]", "Dataset[T]"]:
+    ) -> t.Tuple["DataTable[T]", "DataTable[T]"]:
         """Split the dataset into training and testing sets.
 
         Args:
@@ -451,3 +447,15 @@ class Dataset(DataTable[T]):
         test_dataset.save()
 
         return train_dataset, test_dataset
+
+    __repr__ = __str__
+
+
+class Dataset(DataTable[T]):
+    """Dataset class for managing dataset entries.
+
+    Inherits all functionality from DataTable. This class represents
+    datasets specifically (as opposed to experiments).
+    """
+
+    DATATABLE_TYPE = "Dataset"
