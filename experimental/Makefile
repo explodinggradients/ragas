@@ -16,11 +16,11 @@ help: ## Show all Makefile targets
 format: ## Format and lint experimental code
 	@echo "Formatting and linting experimental code..."
 	@echo "(black) Formatting experimental..."
-	$(Q)uv run black ragas_experimental
+	$(Q)uv run black $(EXPERIMENTAL_PATH)
 	@echo "(ruff) Auto-fixing experimental (includes import sorting and unused imports)..."
-	$(Q)uv run ruff check ragas_experimental --fix-only
+	$(Q)uv run ruff check $(EXPERIMENTAL_PATH) --fix-only
 	@echo "(ruff) Final linting check for experimental..."
-	$(Q)uv run ruff check ragas_experimental
+	$(Q)uv run ruff check $(EXPERIMENTAL_PATH)
 
 type: ## Type check experimental code
 	@echo "Type checking experimental code..."
@@ -38,7 +38,7 @@ test: ## Run experimental unit tests
 run-ci: ## Run complete CI pipeline for experimental
 	@echo "Running experimental CI pipeline..."
 	@echo "Format check..."
-	$(Q)black --check ragas_experimental && ruff check ragas_experimental
+	$(Q)uv run black --check $(EXPERIMENTAL_PATH) && uv run ruff check $(EXPERIMENTAL_PATH)
 	@echo "Type check..."
 	$(Q)$(MAKE) type
 	@echo "Unit tests..."

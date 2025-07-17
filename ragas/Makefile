@@ -39,8 +39,8 @@ test: ## Run ragas unit tests
 run-ci: ## Run complete CI pipeline for ragas
 	@echo "Running ragas CI pipeline..."
 	@echo "Format check..."
-	$(Q)black --check --config pyproject.toml src tests ../docs
-	$(Q)ruff check src ../docs tests
+	$(Q)uv run black --check --config pyproject.toml $(RAGAS_PATHS)
+	$(Q)uv run ruff check $(RAGAS_PATHS)
 	@echo "Type check..."
 	$(Q)$(MAKE) type
 	@echo "Unit tests..."
