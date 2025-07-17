@@ -45,10 +45,10 @@ Copy this snippet to a file named `hello_world.py` and run `python hello_world.p
 ```python
 import numpy as np
 from ragas_experimental import experiment, Dataset
-from ragas_experimental.metric.result import MetricResult
-from ragas_experimental.metric.numeric import numeric_metric
+from ragas_experimental.metric import MetricResult, numeric_metric  
 
-@numeric_metric(name="accuracy_score", range=(0, 1))
+
+@numeric_metric(name="accuracy_score", allowed_values=(0, 1))
 def accuracy_score(response: str, expected: str):
     result = 1 if expected.lower().strip() == response.lower().strip() else 0
     return MetricResult(result=result, reason=f"Match: {result == 1}")
