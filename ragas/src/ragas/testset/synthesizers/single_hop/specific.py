@@ -39,12 +39,14 @@ class SingleHopScenario(BaseScenario):
 
 @dataclass
 class SingleHopSpecificQuerySynthesizer(SingleHopQuerySynthesizer):
-    name: str = "single_hop_specifc_query_synthesizer"
-    theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
+    """Synthesize single-hop queries based on an entity of interest."""
+
+    name: str = "single_hop_specific_query_synthesizer"
     property_name: str = "entities"
+    theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
 
     def get_node_clusters(self, knowledge_graph: KnowledgeGraph) -> t.List[Node]:
-
+        """Identify clusters of nodes based on the entity of interest."""
         node_type_dict = defaultdict(int)
         for node in knowledge_graph.nodes:
             if (
@@ -81,7 +83,8 @@ class SingleHopSpecificQuerySynthesizer(SingleHopQuerySynthesizer):
         callbacks: Callbacks,
     ) -> t.List[SingleHopScenario]:
         """
-        Generates a list of scenarios on type SingleHopSpecificQuerySynthesizer
+        Generate a list of scenarios of type SingleHopScenario.
+
         Steps to generate scenarios:
         1. Find nodes with CHUNK type and entities property
         2. Calculate the number of samples that should be created per node to get n samples in total
