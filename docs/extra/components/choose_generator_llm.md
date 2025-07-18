@@ -43,7 +43,7 @@
     }
     ```
 
-    Define you LLMs and wrap them in `LangchainLLMWrapper` so that it can be used with ragas.
+    Define your LLMs and wrap them in `LangchainLLMWrapper` so that it can be used with ragas.
 
     ```python
     from langchain_aws import ChatBedrockConverse
