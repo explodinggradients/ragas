@@ -12,7 +12,7 @@
     os.environ["OPENAI_API_KEY"] = "your-openai-key"
     ```
 
-    Wrapp the LLMs in `LangchainLLMWrapper` so that it can be used with ragas.
+    Wrap the LLMs in `LangchainLLMWrapper` so that it can be used with ragas.
 
     ```python
     from ragas.llms import LangchainLLMWrapper
