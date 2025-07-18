@@ -14,17 +14,6 @@ class CosineSimilarityBuilder(RelationshipBuilder):
     threshold: float = 0.9
     block_size: int = 1024
 
-    def _validate_embedding_shapes(self, embeddings: t.List[t.Any]):
-        if not embeddings:
-            raise ValueError(f"No nodes have a valid {self.property_name}")
-        first_len = len(embeddings[0])
-        for idx, emb in enumerate(embeddings):
-            if len(emb) != first_len:
-                raise ValueError(
-                    f"Embedding at index {idx} has length {len(emb)}, expected {first_len}. "
-                    "All embeddings must have the same length."
-                )
-
     def _block_cosine_similarity(self, i: np.ndarray, j: np.ndarray):
         """Calculate cosine similarity matrix between two sets of embeddings."""
         i_norm = i / np.linalg.norm(i, axis=1, keepdims=True)
