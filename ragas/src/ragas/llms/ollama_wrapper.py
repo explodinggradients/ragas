@@ -33,13 +33,7 @@ class OllamaLLMWrapper(BaseRagasLLM):
         cache: t.Optional[CacheInterface] = None,
     ):
         super().__init__(cache=cache)
-
-        self.llm = ChatOpenAI(
-            api_key="ollama",
-             model=ollama_llm.model,
-             base_url=f"{ollama_llm.base_url}/v1"
-            )
-
+        self.llm = ollama_llm  # 直接用 ChatOllama 实例
         if run_config is None:
             run_config = RunConfig()
         self.set_run_config(run_config)
@@ -54,10 +48,11 @@ class OllamaLLMWrapper(BaseRagasLLM):
         stop: t.Optional[t.List[str]] = None,
         run_manager: t.Optional[Callbacks] = None,
         **kwargs: t.Any,
-    ) -> str:
+    ) -> LLMResult:
         """Generate text from the model."""
         response = self.llm.invoke(prompt)
-        return response.content
+        print("LLM raw output:", response.content)
+        return LLMResult(generations=[[Generation(text=response.content)]])
 
     async def agenerate_text(
         self,
@@ -65,10 +60,11 @@ class OllamaLLMWrapper(BaseRagasLLM):
         stop: t.Optional[t.List[str]] = None,
         run_manager: t.Optional[Callbacks] = None,
         **kwargs: t.Any,
-    ) -> str:
+    ) -> LLMResult:
         """Generate text from the model asynchronously."""
         response = await self.llm.ainvoke(prompt)
-        return response.content
+        print("LLM raw output:", response.content)
+        return LLMResult(generations=[[Generation(text=response.content)]])
 
     def _generate(
         self,
