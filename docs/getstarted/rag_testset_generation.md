@@ -3,7 +3,6 @@
 This simple guide will help you generate a testset for evaluating your RAG pipeline using your own documents.
 
 ## Quickstart
-
 Let's walk through an quick example of generating a testset for a RAG pipeline. Following that we will explore the main components of the testset generation pipeline.
 
 ### Load Sample Documents
