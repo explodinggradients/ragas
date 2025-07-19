@@ -35,6 +35,11 @@ def generate_test_sets(
     - list: List of generated sets.
     """
 
+    if not (0 < min_similarity <= 1):
+        raise ValueError("min_similarity must be between 0 and 1.")
+    if not (0 <= similar_fraction <= 1):
+        raise ValueError("similar_fraction must be between 0 and 1.")
+
     def generate_entity(k: int = 5) -> str:
         """Generate a random entity of length k."""
         return "".join(random.choices(string.ascii_lowercase, k=k))
@@ -49,104 +54,99 @@ def generate_test_sets(
         # SciPy returns the Jaccard distance; similarity = 1 - distance
         return 1.0 - jaccard_dist(va, vb)
 
-    # bias toward shorter lengths (expovariate with λ=1.0)
-    def sample_length() -> int:
-        length = int(random.expovariate(1.0))
-        return min(length, max_len)
-
     total_pairs = n * (n - 1) // 2
-    target_similar = math.ceil(total_pairs * similar_fraction)
+    if total_pairs == 0:
+        return [set() for _ in range(n)]
 
-    # Initialize all sets with random, ragged lengths
-    sets = [{generate_entity() for _ in range(sample_length())} for _ in range(n)]
+    target_similar_pairs = math.ceil(total_pairs * similar_fraction)
 
-    # Count how many pairs are “similar” right now
-    current_similar = len(jaccard_similarity_pair(sets, min_similarity))
+    if target_similar_pairs == 0:
+        # Generate n random, dissimilar sets
+        sets = []
+        pool = {generate_entity() for _ in range(n * max_len)}
+        for _ in range(n):
+            length = random.randint(0, max_len)
+            s = set(random.sample(list(pool), min(length, len(pool))))
+            pool -= s
+            sets.append(s)
+        random.shuffle(sets)
+        return sets
 
-    # Iteratively fix random non‐similar pairs until we hit target
-    max_attempts = target_similar * 10
-    attempts = 0
+    # Calculate the size of a clique of similar sets needed
+    # n_clique * (n_clique - 1) / 2 >= target_similar_pairs
+    n_clique = math.ceil((1 + math.sqrt(1 + 8 * target_similar_pairs)) / 2)
+    n_clique = min(n, n_clique)
+    n_dissimilar = n - n_clique
 
-    while current_similar < target_similar and attempts < max_attempts:
-        # pick a non‐similar pair
-        bad_pairs = [
-            (i, j)
-            for i in range(n)
-            for j in range(i + 1, n)
-            if jaccard(sets[i], sets[j]) < min_similarity
-        ]
-        if not bad_pairs:
-            break
-        i, j = random.choice(bad_pairs)
-
-        # decide new lengths
-        Li, Lj = sample_length(), sample_length()
-        # solve for needed intersection size intersection_size such that
-        #   intersection_size / (Li + Lj - intersection_size) >= min_similarity
-        intersection_size = math.ceil(min_similarity * (Li + Lj) / (1 + min_similarity))
-
-        # build new similar pair
-        shared = {generate_entity() for _ in range(intersection_size)}
-        Ai = shared | {generate_entity() for _ in range(Li - intersection_size)}
-        Bj = shared | {generate_entity() for _ in range(Lj - intersection_size)}
-
-        sets[i], sets[j] = Ai, Bj
-
-        current_similar = len(jaccard_similarity_pair(sets, min_similarity))
-        attempts += 1
-    else:
+    # To guarantee a given similarity, the size of the core set
+    # and the number of unique elements added are constrained by the max_len.
+    # We need cs + unique_per_set <= max_len.
+    # And unique_per_set is a function of cs and min_similarity.
+    core_size = math.floor((2 * max_len * min_similarity) / (1 + min_similarity))
+    if core_size == 0 and max_len > 0 and min_similarity > 0:
         raise ValueError(
-            f"Could not generate enough similar pairs after {max_attempts} attempts."
+            "Cannot generate sets with these constraints. "
+            "Try increasing max_len or decreasing min_similarity."
         )
 
-    # Create a core set of shared elements for similar sets
-    core_size = max(1, int(max_len * min_similarity))
+    if min_similarity == 1.0:
+        max_additional_elements = 0
+    else:
+        # This is the max number of elements that can be non-core across TWO sets
+        max_additional_elements = math.floor(core_size * (1 / min_similarity - 1))
+
     core = {generate_entity() for _ in range(core_size)}
 
-    # Create a set of unique elements to draw from
-    base_pool = {generate_entity() for _ in range(n * max_len * 8)}
-    base_pool -= core
+    # A large pool of entities to draw from
+    pool_size = (n * max_len) * 2  # just to be safe
+    pool = {generate_entity() for _ in range(pool_size)} - core
 
-    n_similar = int(n * similar_fraction)
-    n_dissimilar = n - n_similar
-
-    # Pre-calculate max add'l unique elements that can be added to core while still guaranteeing min_similarity
-    max_unique = int(core_size * ((1 - min_similarity) / min_similarity))
-    if max_unique > max_len:
-        raise ValueError(
-            "max_unique exceeds max_len, cannot guarantee min_similarity with given parameters."
-        )
-
-    # Generate similar sets
-    similar = []
-    for _ in range(n_similar):
-        # Random size for this set, at least the core size
-        set_len = core_size + random.randint(0, max_unique)
+    similar_sets = []
+    for _ in range(n_clique):
         s = core.copy()
-        # Add random elements from the base pool until we reach set_len
-        while len(s) < set_len:
-            if not base_pool:
-                raise ValueError("Base pool is empty, cannot generate more sets.")
-            element = base_pool.pop()
-            if element not in s:
-                s.add(element)
-        similar.append(s)
 
-    # Generate dissimilar sets
-    dissimilar = []
+        # Max unique elements per set to guarantee similarity
+        max_unique_for_set = math.floor(max_additional_elements / 2)
+        # Also respect max_len
+        max_unique_for_set = min(max_unique_for_set, max_len - core_size)
+
+        if max_unique_for_set > 0:
+            num_unique = random.randint(0, max_unique_for_set)
+            if len(pool) < num_unique:
+                # Replenish pool if needed
+                pool.update({generate_entity() for _ in range(num_unique * 2)} - core)
+            new_elements = set(random.sample(list(pool), num_unique))
+            s.update(new_elements)
+            pool -= new_elements
+        similar_sets.append(s)
+
+    # --- Generate the dissimilar sets ---
+    dissimilar_sets = []
     for _ in range(n_dissimilar):
-        set_len = random.randint(0, max_len)
-        s = set()
-        while len(s) < set_len:
-            if not base_pool:
-                raise ValueError("Base pool is empty, cannot generate more sets.")
-            element = base_pool.pop()
-            if element not in s:
-                s.add(element)
-        dissimilar.append(s)
+        length = random.randint(0, max_len)
+        length = min(length, len(pool))
+        if length > 0:
+            s = set(random.sample(list(pool), length))
+            pool -= s
+        else:
+            s = set()
+        dissimilar_sets.append(s)
 
-    sets = similar + dissimilar
+    sets = similar_sets + dissimilar_sets
     random.shuffle(sets)
+
+    # --- Verify the result ---
+    actual_similar_pairs = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            if jaccard(sets[i], sets[j]) >= min_similarity:
+                actual_similar_pairs += 1
+
+    assert actual_similar_pairs >= target_similar_pairs, (
+        f"Failed to generate the required number of similar pairs. "
+        f"Target: {target_similar_pairs}, Actual: {actual_similar_pairs}"
+    )
+
     return sets
 
 
