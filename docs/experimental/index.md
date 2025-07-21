@@ -45,13 +45,13 @@ Copy this snippet to a file named `hello_world.py` and run `python hello_world.p
 ```python
 import numpy as np
 from ragas_experimental import experiment, Dataset
-from ragas_experimental.metrics import MetricResult, numeric_metric  
+from ragas_experimental.metrics import MetricResult, discrete_metric  
 
 
-@numeric_metric(name="accuracy_score", allowed_values=(0, 1))
+@discrete_metric(name="accuracy_score", allowed_values=["pass", "fail"])
 def accuracy_score(response: str, expected: str):
-    result = 1 if expected.lower().strip() == response.lower().strip() else 0
-    return MetricResult(result=result, reason=f"Match: {result == 1}")
+    result = "pass" if expected.lower().strip() == response.lower().strip() else "fail"
+    return MetricResult(value=result, reason=f"Match: {result == 'pass'}")
 
 def mock_app_endpoint(**kwargs) -> str:
     return np.random.choice(["Paris", "4", "Blue Whale", "Einstein", "Python"])
