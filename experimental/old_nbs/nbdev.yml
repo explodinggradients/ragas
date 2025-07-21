@@ -1,9 +1,0 @@
-project:
-  output-dir: experimental
-
-website:
-  title: "ragas_experimental"
-  site-url: "https://explodinggradients.github.io/ragas_experimental"
-  description: "Experimental Ragas Evaluation UI and Library"
-  repo-branch: main
-  repo-url: "https://github.com/explodinggradients/ragas_experimental"
