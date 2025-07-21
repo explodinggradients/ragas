@@ -29,92 +29,98 @@ pip install -e "./experimental[dev]"
 
 ## Common Commands
 
-### Build and Development
+### Monorepo-Wide Commands (from root directory)
 
 ```bash
-# Format code (ragas core)
-make format
+# Setup and installation
+make install        # Install dependencies for both projects
 
-# Format code (experimental)
-make format-experimental 
+# Code quality (runs on both ragas/ and experimental/)
+make format         # Format and lint all code
+make type           # Type check all code
+make check          # Quick health check (format + type, no tests)
 
-# Format all code in the monorepo
-make format-all
+# Testing
+make test           # Run all unit tests
+make test-e2e       # Run end-to-end tests
 
-# Lint code (ragas core)
-make lint
+# CI/Build
+make run-ci         # Run complete CI pipeline for both projects
+make clean          # Clean all generated files
 
-# Lint code (experimental)
-make lint-experimental
+# Documentation
+make build-docs     # Build all documentation
+make serve-docs     # Serve documentation locally
 
-# Lint all code in the monorepo
-make lint-all
+# Benchmarks
+make benchmarks     # Run performance benchmarks
+make benchmarks-docker # Run benchmarks in Docker
+```
 
-# Type check code (ragas core)
-make type
+### Project-Specific Commands
 
-# Type check code (experimental)
-make type-experimental
+Each project directory (`ragas/` and `experimental/`) has its own Makefile with core development commands:
 
-# Type check all code in the monorepo
-make type-all
+```bash
+# Ragas core development (from ragas/ directory)
+cd ragas
+make format         # Format ragas code only
+make type           # Type check ragas code only
+make check          # Quick format + type check
+make test           # Run ragas tests only
+make run-ci         # Run ragas CI pipeline only
 
-# Run all CI checks for ragas core
-make run-ci
-
-# Run all CI checks for experimental
-make run-ci-experimental
-
-# Run all CI checks for both projects
-make run-ci-all
+# Experimental development (from experimental/ directory)
+cd experimental
+make format         # Format experimental code only
+make type           # Type check experimental code only
+make check          # Quick format + type check
+make test           # Run experimental tests only
+make run-ci         # Run experimental CI pipeline only
 ```
 
 ### Testing
 
 ```bash
-# Run ragas core tests
+# Run all tests in the monorepo (from root)
 make test
 
 # Run specific test (using pytest -k flag)
 make test k="test_name"
 
-# Run ragas end-to-end tests
+# Run end-to-end tests
 make test-e2e
 
-# Run experimental tests
-make test-experimental
+# Run tests for specific projects
+cd ragas && make test           # Run ragas tests only
+cd experimental && make test    # Run experimental tests only
 
-# Run all tests in the monorepo
-make test-all
+# Direct pytest commands for more control
+cd ragas && uv run pytest tests/unit -k "test_name"
+cd experimental && uv run pytest -v
 ```
 
 ### Documentation
 
 ```bash
-# Build ragas documentation
-make build-docsite-ragas
-
-# Build experimental documentation
-make build-docsite-experimental
-
-# Build all documentation
-make build-docsite
+# Build all documentation (from root)
+make build-docs
 
 # Serve documentation locally
-make serve-docsite
+make serve-docs
+
+# Process experimental notebooks
+make process-experimental-notebooks
 ```
 
 ### Benchmarks
 
 ```bash
-# Run benchmarks for Evaluation
-make run-benchmarks-eval
+# Run all benchmarks locally
+make benchmarks
 
-# Run benchmarks for TestSet Generation
-make run-benchmarks-testset
-
-# Run benchmarks in docker
-make run-benchmarks-in-docker
+# Run benchmarks in Docker
+make benchmarks-docker
 ```
 
 ## Project Architecture

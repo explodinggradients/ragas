@@ -3,7 +3,7 @@ GIT_ROOT ?= $(shell git rev-parse --show-toplevel)
 # Optionally show commands being executed with V=1
 Q := $(if $(V),,@)
 
-# Common paths
+# Common paths - only used for monorepo-wide operations
 RAGAS_PATHS := ragas/src ragas/tests docs
 EXPERIMENTAL_PATH := experimental/ragas_experimental
 
@@ -21,10 +21,6 @@ install: ## Install dependencies for both ragas and experimental
 	@echo "Installing experimental dependencies..."
 	$(Q)uv pip install -e "./experimental[dev]"
 
-setup: install ## Complete development environment setup
-	@echo "Development environment setup complete!"
-	@echo "Available commands: make help"
-
 # =============================================================================
 # CODE QUALITY
 # =============================================================================
@@ -32,35 +28,23 @@ setup: install ## Complete development environment setup
 .PHONY: help install setup format type check clean test test-e2e benchmarks benchmarks-docker run-ci run-ci-fast run-ci-format-check run-ci-type run-ci-tests build-docs serve-docs process-experimental-notebooks
 format: ## Format and lint all code in the monorepo
 	@echo "Formatting and linting all code..."
-	@echo "(black) Formatting ragas..."
-	$(Q)uv run black --config ragas/pyproject.toml $(RAGAS_PATHS)
-	@echo "(black) Formatting stubs..."
-	$(Q)find ragas/src -name "*.pyi" ! -name "*_pb2*" -exec uv run black --pyi --config ragas/pyproject.toml {} \;
-	@echo "(ruff) Auto-fixing ragas (includes import sorting and unused imports)..."
-	$(Q)uv run ruff check $(RAGAS_PATHS) --fix-only
-	@echo "(ruff) Final linting check for ragas..."
-	$(Q)uv run ruff check $(RAGAS_PATHS)
-	@echo "(black) Formatting experimental..."
-	$(Q)cd experimental && uv run black ragas_experimental
-	@echo "(ruff) Auto-fixing experimental (includes import sorting and unused imports)..."
-	$(Q)cd experimental && uv run ruff check ragas_experimental --fix-only
-	@echo "(ruff) Final linting check for experimental..."
-	$(Q)cd experimental && uv run ruff check ragas_experimental
+	@echo "Formatting ragas..."
+	$(Q)$(MAKE) -C ragas format
+	@echo "Formatting experimental..."
+	$(Q)$(MAKE) -C experimental format
 
 type: ## Type check all code in the monorepo
 	@echo "Type checking all code..."
-	@echo "(pyright) Typechecking ragas..."
-	$(Q)cd ragas && PYRIGHT_PYTHON_FORCE_VERSION=latest pyright src
-	@echo "(pyright) Typechecking experimental..."
-	# TODO: Fix experimental type checking for 0.3 release - currently has 96 type errors
-	# $(Q)PYRIGHT_PYTHON_FORCE_VERSION=latest pyright $(EXPERIMENTAL_PATH)
-	@echo "Experimental type checking temporarily disabled - TODO: fix for 0.3 release"
+	@echo "Type checking ragas..."
+	$(Q)$(MAKE) -C ragas type
+	@echo "Type checking experimental..."
+	$(Q)$(MAKE) -C experimental type
 
 check: format type ## Quick health check (format + type, no tests)
 	@echo "Code quality check complete!"
 
 # =============================================================================
-# TESTING
+# BENCHMARKS
 # =============================================================================
 benchmarks: ## Run all benchmarks locally
 	@echo "Running all benchmarks..."
@@ -79,7 +63,12 @@ benchmarks-docker: ## Run benchmarks in docker
 # CI/BUILD
 # =============================================================================
 
-run-ci: run-ci-format-check run-ci-type run-ci-tests ## Run complete CI pipeline (mirrors GitHub CI exactly)
+run-ci: ## Run complete CI pipeline (mirrors GitHub CI exactly)
+	@echo "Running complete CI pipeline..."
+	@echo "Running ragas CI..."
+	$(Q)$(MAKE) -C ragas run-ci
+	@echo "Running experimental CI..."
+	$(Q)$(MAKE) -C experimental run-ci
 	@echo "All CI checks passed!"
 
 run-ci-format-check: ## Run format check in dry-run mode (like GitHub CI)
@@ -118,15 +107,15 @@ clean: ## Clean all generated files
 	$(Q)find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 
 # =============================================================================
-# DOCUMENTATION
+# TESTING
 # =============================================================================
 
 test: ## Run all unit tests in the monorepo
 	@echo "Running all unit tests..."
 	@echo "Running ragas tests..."
-	$(Q)cd ragas && uv run pytest --nbmake tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
+	$(Q)$(MAKE) -C ragas test $(shell if [ -n "$(k)" ]; then echo "k=$(k)"; fi)
 	@echo "Running experimental tests..."
-	$(Q)cd experimental && uv run pytest
+	$(Q)$(MAKE) -C experimental test
 
 test-e2e: ## Run all end-to-end tests
 	@echo "Running all end-to-end tests..."
@@ -141,7 +130,7 @@ test-e2e: ## Run all end-to-end tests
 	fi
 
 # =============================================================================
-# BENCHMARKS
+# DOCUMENTATION
 # =============================================================================
 
 process-experimental-notebooks: ## Process experimental notebooks to markdown for MkDocs

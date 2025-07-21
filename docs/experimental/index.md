@@ -1,85 +1,99 @@
 # Ragas Experimental
 
+# ✨ Introduction
+
+
+<div class="grid cards" markdown>
+- 🚀 **Tutorials**
+
+    Install with `pip` and get started with Ragas with these tutorials.
+
+    [:octicons-arrow-right-24: Tutorials](tutorials/index.md)
+
+- 📚 **Core Concepts**
+
+    In depth explanation and discussion of the concepts and working of different features available in Ragas.
+
+    [:octicons-arrow-right-24: Core Concepts](core_concepts/index.md)
+
+
+</div>
+
+## Installation
+
+- Install ragas_experimental from pip
+
+```bash
+pip install ragas_experimental
+```
+
+- Install from source
+
+```bash
+git clone https://github.com/explodinggradients/ragas
+```
+
+```bash
+cd ragas/experimental && pip install -e .
+```
+
+
 ## Hello World 👋
 
-1. Setup a sample experiment. 
+Copy this snippet to a file named `hello_world.py` and run `python hello_world.py` 
 
-```
-ragas hello-world
-```
+```python
+import numpy as np
+from ragas_experimental import experiment, Dataset
+from ragas_experimental.metrics import MetricResult, numeric_metric  
 
-2. Run your first experiment with Ragas CLI.
 
-```
-ragas evals hello_world/evals.py --dataset test_data --metrics accuracy --name first_experiment
-```
+@numeric_metric(name="accuracy_score", allowed_values=(0, 1))
+def accuracy_score(response: str, expected: str):
+    result = 1 if expected.lower().strip() == response.lower().strip() else 0
+    return MetricResult(result=result, reason=f"Match: {result == 1}")
 
-```
-Running evaluation: hello_world/evals.py
-Dataset: test_data
-Getting dataset: test_data
-✓ Loaded dataset with 10 rows
-Running experiment: 100%|████████████████████████████████████████████████| 20/20 [00:00<00:00, 4872.00it/s]
-✓ Completed experiments successfully
-╭────────────────────────── Ragas Evaluation Results ──────────────────────────╮
-│ Experiment: lucid_codd                                                       │
-│ Dataset: test_data (10 rows)                                                 │
-╰──────────────────────────────────────────────────────────────────────────────╯
-  Numerical Metrics   
-┏━━━━━━━━━━┳━━━━━━━━━┓
-┃ Metric   ┃ Current ┃
-┡━━━━━━━━━━╇━━━━━━━━━┩
-│ accuracy │   0.100 │
-└──────────┴─────────┘
-✓ Experiment results displayed
-✓ Evaluation completed successfully
-```
+def mock_app_endpoint(**kwargs) -> str:
+    return np.random.choice(["Paris", "4", "Blue Whale", "Einstein", "Python"])
 
-3. Inspect the results 
+@experiment()
+async def run_experiment(row):
+    response = mock_app_endpoint(query=row.get("query"))
+    accuracy = accuracy_score.score(response=response, expected=row.get("expected_output"))
+    return {**row, "response": response, "accuracy": accuracy.value}
 
-```
-tree hello_world/experiments
-```
-
-```
-hello_world/experiments
-└── first_experiment.csv
-
-0 directories, 1 files
+if __name__ == "__main__":
+    import asyncio
+    
+    # Create dataset inline
+    dataset = Dataset(name="test_dataset", backend="local/csv", root_dir=".")
+    test_data = [
+        {"query": "What is the capital of France?", "expected_output": "Paris"},
+        {"query": "What is 2 + 2?", "expected_output": "4"},
+        {"query": "What is the largest animal?", "expected_output": "Blue Whale"},
+        {"query": "Who developed the theory of relativity?", "expected_output": "Einstein"},
+        {"query": "What programming language is named after a snake?", "expected_output": "Python"},
+    ]
+    
+    for sample in test_data:
+        dataset.append(sample)
+    dataset.save()
+    
+    # Run experiment
+    results = asyncio.run(run_experiment.arun(dataset, name="first_experiment"))
 ```
 
-4. View the results in a spreadsheet application.
+View Results 
 
 ```
-open hello_world/experiments/first_experiment.csv
+├── datasets
+│   └── test_dataset.csv
+└── experiments
+    └── first_experiment.csv
 ```
 
-5. Run your second experiment and compare with the first one.
+Open the results in a CSV file
 
-```
-ragas evals hello_world/evals.py --dataset test_data --metrics accuracy --baseline first_experiment
-```
-
-```
-Running evaluation: hello_world/evals.py
-Dataset: test_data
-Baseline: first_experiment
-Getting dataset: test_data
-✓ Loaded dataset with 10 rows
-Running experiment: 100%|█████████████████████████████| 20/20 [00:00<00:00, 4900.46it/s]
-✓ Completed experiments successfully
-Comparing against baseline: first_experiment
-╭────────────────────────── Ragas Evaluation Results ──────────────────────────╮
-│ Experiment: vigilant_brin                                                    │
-│ Dataset: test_data (10 rows)                                                 │
-│ Baseline: first_experiment                                                             │
-╰──────────────────────────────────────────────────────────────────────────────╯
-                Numerical Metrics
-┏━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━┳━━━━━━┓
-┃ Metric   ┃ Current ┃ Baseline ┃  Delta ┃ Gate ┃
-┡━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━╇━━━━━━┩
-│ accuracy │   0.000 │    0.000 │ ▼0.000 │ pass │
-└──────────┴─────────┴──────────┴────────┴──────┘
-✓ Comparison completed
-✓ Evaluation completed successfully
+```bash
+open experiments/first_experiment.csv
 ```

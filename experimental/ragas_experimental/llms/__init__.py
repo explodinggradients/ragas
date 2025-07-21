@@ -1,3 +1,3 @@
-from ragas_experimental.llms.llm import RagasLLM, ragas_llm
+from ragas_experimental.llms.base import BaseRagasLLM, llm_factory
 
-__all__ = ["RagasLLM", "ragas_llm"]
+__all__ = ["BaseRagasLLM", "llm_factory"]

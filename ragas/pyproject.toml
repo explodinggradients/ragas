@@ -18,6 +18,7 @@ dependencies = [
 dynamic = ["version", "readme"]
 
 [project.optional-dependencies]
+experimental = ["ragas-experimental"]
 all = [
     "sentence-transformers",
     "transformers",
@@ -27,7 +28,8 @@ all = [
     "pandas",
     "datacompy",
     "llama_index",
-    "r2r"
+    "r2r",
+    "ragas-experimental"
 ]
 docs = [
     "mkdocs>=1.6.1",

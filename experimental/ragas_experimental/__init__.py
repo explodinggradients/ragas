@@ -13,5 +13,7 @@ except ImportError:
 
 from ragas_experimental.dataset import Dataset
 from ragas_experimental.experiment import experiment, Experiment
+from ragas_experimental.llms import llm_factory
+from ragas_experimental.embeddings import embedding_factory
 
-__all__ = ["Dataset", "experiment", "Experiment"]
+__all__ = ["Dataset", "experiment", "Experiment", "llm_factory", "embedding_factory"]

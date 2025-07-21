@@ -22,16 +22,13 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "fastcore",
     "tqdm",
-    "langfuse",
     "instructor",
     "pydantic",
     "numpy",
-    "plotly",
-    "mlflow",
     "gitpython",
-    "httpx",
+    "typer",
+    "rich",
 ]
 # Only version remains dynamic (managed by setuptools_scm)
 dynamic = ["version"]
@@ -39,13 +36,16 @@ readme = "README.md"
 
 [project.optional-dependencies]
 all = ["pandas"]
+examples = ["openai>=1.0.0"]
+tracing = ["langfuse", "mlflow"]
 
 [project.entry-points."ragas.backends"]
 "local/csv" = "ragas_experimental.backends.local_csv:LocalCSVBackend"
 "local/jsonl" = "ragas_experimental.backends.local_jsonl:LocalJSONLBackend"
+"inmemory" = "ragas_experimental.backends.inmemory:InMemoryBackend"
 
 [tool.setuptools.packages.find]
-include = ["ragas_experimental*"]
+include = ["ragas_experimental*", "ragas_examples*"]
 exclude = ["site*", "old_nbs*", "experiments*", "_proc*", "build*", "dist*"]
 
 [project.scripts]

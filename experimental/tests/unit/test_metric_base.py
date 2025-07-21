@@ -3,12 +3,12 @@ from dataclasses import dataclass
 import pytest
 from pydantic import BaseModel
 
-from ragas_experimental.metric.base import Metric
-from ragas_experimental.metric import MetricResult
+from ragas_experimental.metrics.base import Metric
+from ragas_experimental.metrics import MetricResult
 
 
 class MetricResponseModel(BaseModel):
-    result: int
+    value: int
     reason: t.Optional[str] = None
 
 
@@ -19,9 +19,10 @@ class CustomMetric(Metric):
     def __post_init__(self):
         super().__post_init__()
         self._response_model = MetricResponseModel
-        
-    def get_correlation(self, gold_labels: t.List[str], predictions: t.List[str]) -> float:
-        
+
+    def get_correlation(
+        self, gold_labels: t.List[str], predictions: t.List[str]
+    ) -> float:
         return 0.0  # Placeholder for correlation logic
 
 
@@ -58,7 +59,7 @@ def test_metric_score_single(mock_llm):
 
     # Mock the LLM to return a valid response
     def mock_generate(prompt, response_model):
-        return response_model(result=1, reason="test reason")
+        return response_model(value=1, reason="test reason")
 
     mock_llm.generate = mock_generate
 
@@ -76,7 +77,7 @@ async def test_metric_async_score(mock_llm):
 
     # Mock the async LLM method
     async def mock_agenerate(prompt, response_model):
-        return response_model(result=1, reason="test reason")
+        return response_model(value=1, reason="test reason")
 
     mock_llm.agenerate = mock_agenerate
 
@@ -99,4 +100,3 @@ def test_metric_prompt_conversion():
 
     # After __post_init__, prompt should be converted to Prompt object
     assert hasattr(metric.prompt, "format")
-

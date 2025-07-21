@@ -1,6 +1,6 @@
 const header_div = document.querySelector(".md-header");
 const navbar_div = document.querySelector(".md-tabs");
-const border_css = "2px solid #bd8526";
+const border_css = "2px solid #14151a";
 
 // Add smooth transition to borders
 if (header_div) {

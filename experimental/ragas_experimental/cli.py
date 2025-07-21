@@ -541,8 +541,8 @@ def hello_world(
 import numpy as np
 from ragas_experimental import BaseModel, Project
 from ragas_experimental.project.backends import LocalCSVProjectBackend
-from ragas_experimental.metric.result import MetricResult
-from ragas_experimental.metric.numeric import numeric_metric
+from ragas_experimental.metrics.result import MetricResult
+from ragas_experimental.metrics.numeric import numeric_metric
 
 p = Project(
     project_id="hello_world",
@@ -550,7 +550,7 @@ p = Project(
 )
 
 
-@numeric_metric(name="accuracy_score", range=(0, 1))
+@numeric_metric(name="accuracy_score", allowed_values=(0, 1))
 def accuracy_score(response: str, expected: str):
     """
     Is the response a good response to the query?

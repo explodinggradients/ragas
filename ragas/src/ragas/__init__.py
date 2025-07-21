@@ -20,3 +20,17 @@ __all__ = [
     "CacheInterface",
     "DiskCacheBackend",
 ]
+
+
+def __getattr__(name):
+    if name == "experimental":
+        try:
+            import ragas_experimental as experimental  # type: ignore
+
+            return experimental
+        except ImportError:
+            raise ImportError(
+                "ragas.experimental requires installation: "
+                "pip install ragas[experimental]"
+            )
+    raise AttributeError(f"module 'ragas' has no attribute '{name}'")

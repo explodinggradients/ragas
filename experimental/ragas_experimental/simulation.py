@@ -11,7 +11,7 @@ import typing as t
 
 from pydantic import BaseModel, Field
 
-from .llm.llm import RagasLLM
+from .llms.base import BaseRagasLLM
 from .prompt.base import Prompt
 
 
@@ -138,7 +138,7 @@ class UserSimulator:
     def __init__(
         self,
         prompt: Prompt,
-        llm: RagasLLM,
+        llm: BaseRagasLLM,
         agent_function: t.Callable,
         stopping_criteria: t.Optional[t.Callable[[ConversationHistory], bool]] = None,
         max_turns: int = 10,

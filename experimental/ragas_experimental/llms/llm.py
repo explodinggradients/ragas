@@ -1,6 +1,7 @@
-__all__ = ["T", "RagasLLM", "ragas_llm"]
+__all__ = ["T", "InstructorLLM", "llm_factory", "BaseRagasLLM"]
 
 import asyncio
+from abc import ABC, abstractmethod
 import inspect
 import threading
 import typing as t
@@ -11,12 +12,24 @@ from pydantic import BaseModel
 T = t.TypeVar("T", bound=BaseModel)
 
 
-class RagasLLM:
-    def __init__(self, provider: str, model: str, client: t.Any, **model_args):
-        self.provider = provider.lower()
+class BaseRagasLLM(ABC):
+    @abstractmethod
+    def generate(self, prompt: str, response_model: t.Type[T]) -> T:
+        """Generate a response using the configured LLM.
+
+        For async clients, this will run the async method in the appropriate event loop.
+        """
+
+    @abstractmethod
+    async def agenerate(self, prompt: str, response_model: t.Type[T]) -> T:
+        """Asynchronously generate a response using the configured LLM."""
+
+
+class InstructorLLM(BaseRagasLLM):
+    def __init__(self, client: t.Any, model, **model_args):
+        self.client = client
         self.model = model
         self.model_args = model_args or {}
-        self.client = self._initialize_client(provider, client)
         # Check if client is async-capable at initialization
         self.is_async = self._check_client_async()
 
@@ -29,22 +42,6 @@ class RagasLLM:
             return False
         except (AttributeError, TypeError):
             return False
-
-    def _initialize_client(self, provider: str, client: t.Any) -> t.Any:
-        provider = provider.lower()
-
-        if provider == "openai":
-            return instructor.from_openai(client)
-        elif provider == "anthropic":
-            return instructor.from_anthropic(client)
-        elif provider == "cohere":
-            return instructor.from_cohere(client)
-        elif provider == "gemini":
-            return instructor.from_gemini(client)
-        elif provider == "litellm":
-            return instructor.from_litellm(client)
-        else:
-            raise ValueError(f"Unsupported provider: {provider}")
 
     def _run_async_in_current_loop(self, coro):
         """Run an async coroutine in the current event loop if possible.
@@ -140,5 +137,31 @@ class RagasLLM:
         )
 
 
-def ragas_llm(provider: str, model: str, client: t.Any, **model_args) -> RagasLLM:
-    return RagasLLM(provider=provider, client=client, model=model, **model_args)
+def llm_factory(provider_model: str, client: t.Any, **model_args) -> BaseRagasLLM:
+    # Parse provider/model string
+    if "/" not in provider_model:
+        raise ValueError(
+            f"Invalid provider_model format: '{provider_model}'. "
+            "Expected format: 'provider/model' (e.g., 'openai/gpt-4o')"
+        )
+
+    provider, model = provider_model.split("/", 1)
+
+    def _initialize_client(provider: str, client: t.Any) -> t.Any:
+        provider = provider.lower()
+
+        if provider == "openai":
+            return instructor.from_openai(client)
+        elif provider == "anthropic":
+            return instructor.from_anthropic(client)
+        elif provider == "cohere":
+            return instructor.from_cohere(client)
+        elif provider == "gemini":
+            return instructor.from_gemini(client)
+        elif provider == "litellm":
+            return instructor.from_litellm(client)
+        else:
+            raise ValueError(f"Unsupported provider: {provider}")
+
+    instructor_patched_client = _initialize_client(provider=provider, client=client)
+    return InstructorLLM(client=instructor_patched_client, model=model, **model_args)
