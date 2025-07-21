@@ -90,6 +90,8 @@ async def process_futures(
     for future in futures:
         try:
             result = await future
+        except asyncio.CancelledError:
+            raise  # Re-raise CancelledError to ensure proper cancellation
         except Exception as e:
             result = e
 
@@ -102,27 +104,22 @@ def run(
         t.Coroutine[t.Any, t.Any, t.Any],
     ],
 ) -> t.Any:
-    """Run an async function in the current event loop or a new one if not running."""
+    """
+    Run an async function in the current event loop or a new one if not running.
+    """
+    # Ensure nest_asyncio is applied if we're in a running loop
+    # This is common in environments like Jupyter notebooks
+    apply_nest_asyncio()
+
+    # Create the coroutine if it's a callable, otherwise use directly
+    coro = async_func() if callable(async_func) else async_func
+
     try:
         # Check if we're already in a running event loop
         loop = asyncio.get_running_loop()
-        # If we get here, we're in a running loop - need nest_asyncio
-        try:
-            import nest_asyncio
-        except ImportError as e:
-            raise ImportError(
-                "It seems like you're running this in a jupyter-like environment. "
-                "Please install nest_asyncio with `pip install nest_asyncio` to make it work."
-            ) from e
-
-        nest_asyncio.apply()
-        # Create the coroutine if it's a callable, otherwise use directly
-        coro = async_func() if callable(async_func) else async_func
         return loop.run_until_complete(coro)
-
     except RuntimeError:
         # No running event loop, so we can use asyncio.run
-        coro = async_func() if callable(async_func) else async_func
         return asyncio.run(coro)
 
 
