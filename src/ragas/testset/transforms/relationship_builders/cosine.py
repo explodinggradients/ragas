@@ -84,8 +84,10 @@ class CosineSimilarityBuilder(RelationshipBuilder):
         """
         Generates a coroutine task for finding similar embedding pairs, which can be scheduled/executed by an Executor.
         """
+        filtered_kg = self.filter(kg)
+
         embeddings = []
-        for node in kg.nodes:
+        for node in filtered_kg.nodes:
             embedding = node.get_property(self.property_name)
             if embedding is None:
                 raise ValueError(f"Node {node.id} has no {self.property_name}")
@@ -98,8 +100,8 @@ class CosineSimilarityBuilder(RelationshipBuilder):
             )
             for i, j, similarity_float in similar_pairs:
                 rel = Relationship(
-                    source=kg.nodes[i],
-                    target=kg.nodes[j],
+                    source=filtered_kg.nodes[i],
+                    target=filtered_kg.nodes[j],
                     type=self.new_property_name,
                     properties={self.new_property_name: similarity_float},
                     bidirectional=True,
