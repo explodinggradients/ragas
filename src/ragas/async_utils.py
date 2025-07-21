@@ -113,14 +113,7 @@ def run(
 
     # Create the coroutine if it's a callable, otherwise use directly
     coro = async_func() if callable(async_func) else async_func
-
-    try:
-        # Check if we're already in a running event loop
-        loop = asyncio.get_running_loop()
-        return loop.run_until_complete(coro)
-    except RuntimeError:
-        # No running event loop, so we can use asyncio.run
-        return asyncio.run(coro)
+    return asyncio.run(coro)
 
 
 def run_async_tasks(
