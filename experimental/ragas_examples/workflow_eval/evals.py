@@ -80,7 +80,7 @@ def load_dataset():
 my_metric = DiscreteMetric(
     name="response_quality",
     prompt="Evaluate the response based on the pass criteria: {pass_criteria}. Does the response meet the criteria? Return 'pass' or 'fail'.\nResponse: {response}",
-    values=["pass", "fail"],
+    allowed_values=["pass", "fail"],
 )
 
 
@@ -99,7 +99,7 @@ async def run_experiment(row):
     experiment_view = {
         **row,
         "response": response.get("response_template", " "),
-        "score": score.result,
+        "score": score.value,
         "score_reason": score.reason,
     }
     return experiment_view
@@ -107,7 +107,7 @@ async def run_experiment(row):
 
 async def main():
     dataset = load_dataset()
-    _ = await run_experiment.run_async(dataset)
+    _ = await run_experiment.arun(dataset)
     
 if __name__ == "__main__":
     import asyncio
