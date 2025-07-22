@@ -36,6 +36,7 @@ pip install ragas-experimental && pip install "ragas-experimental[local]"
 
 2. Copy this snippet to a file named `hello_world.py` and run `python hello_world.py` 
 
+
 ```python
 import numpy as np
 from ragas_experimental import experiment, Dataset
@@ -79,13 +80,14 @@ if __name__ == "__main__":
     results = asyncio.run(run_experiment.arun(dataset, name="first_experiment"))
 ```
 
-3. Check your current directory structure to see the created dataset and experiment results
+3. Check your current directory structure to see the created dataset and experiment results.
 
 ```bash
 tree .
 ```
 
-```
+
+```bash
 ├── datasets
 │   └── test_dataset.csv
 └── experiments
