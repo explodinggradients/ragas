@@ -17,28 +17,20 @@
     [:octicons-arrow-right-24: Core Concepts](core_concepts/index.md)
 
 
-</div>
-
-## Installation
-
-- Install ragas_experimental from pip
-
-```bash
-pip install ragas_experimental
-```
-
-- Install from source
-
-```bash
-git clone https://github.com/explodinggradients/ragas
-```
-
-```bash
-cd ragas/experimental && pip install -e .
-```
 
 
 ## Hello World 👋
+
+![](hello_world.gif)
+
+1. Install Ragas Experimental with local backend
+
+```bash
+pip install ragas-experimental && pip install "ragas-experimental[local]"
+```
+
+
+3. Create a simple experiment with a mock application endpoint, a dataset and a custom metric for accuracy.
 
 Copy this snippet to a file named `hello_world.py` and run `python hello_world.py` 
 
@@ -83,7 +75,17 @@ if __name__ == "__main__":
     results = asyncio.run(run_experiment.arun(dataset, name="first_experiment"))
 ```
 
-View Results 
+4. Run the script
+
+```bash
+python hello_world.py
+```
+
+5. Check the results
+
+```bash
+tree .
+```
 
 ```
 ├── datasets
@@ -92,7 +94,7 @@ View Results
     └── first_experiment.csv
 ```
 
-Open the results in a CSV file
+6. View the results of your first experiment
 
 ```bash
 open experiments/first_experiment.csv
