@@ -38,14 +38,14 @@ class MyBackend(BaseBackend):
 ```toml
 # pyproject.toml
 [project.entry-points."ragas.backends"]
-"my_storage" = "my_package.backend:MyBackend"
+"my_backend" = "my_package.backend:MyBackend"
 ```
 
 **3. Use:**
 ```python
 from ragas_experimental.backends import get_registry
 registry = get_registry()
-backend = registry["my_storage"](connection_string="...")
+backend = registry["my_backend"](connection_string="...")
 ```
 
 ## Required Methods
