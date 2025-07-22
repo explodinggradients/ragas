@@ -35,7 +35,7 @@ pip install ragas-experimental && pip install "ragas-experimental[local]"
 ```
 
 
-3. Create a simple experiment with a mock application endpoint, a dataset and a custom metric for accuracy.
+2. Create a simple experiment with a mock application endpoint, a dataset and a custom metric for accuracy.
 
 Copy this snippet to a file named `hello_world.py` and run `python hello_world.py` 
 
@@ -80,13 +80,13 @@ if __name__ == "__main__":
     results = asyncio.run(run_experiment.arun(dataset, name="first_experiment"))
 ```
 
-4. Run the script
+3. Run the script
 
 ```bash
 python hello_world.py
 ```
 
-5. Check the results
+4. Check the results
 
 ```bash
 tree .
@@ -99,7 +99,7 @@ tree .
     └── first_experiment.csv
 ```
 
-6. View the results of your first experiment
+5. View the results of your first experiment
 
 ```bash
 open experiments/first_experiment.csv
