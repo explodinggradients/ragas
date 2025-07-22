@@ -1,9 +1,14 @@
 # Ragas Experimental
 
+A framework for applying Evaluation-Driven Development (EDD) to AI applications.
+
+The goal of Ragas Experimental is to evolve Ragas into a general-purpose evaluation framework for AI applications. It helps teams design, run, and reason about evaluations across any AI workflow. Beyond tooling, it provides a mental model for thinking about evaluations not just as a diagnostic tool, but as the backbone of iterative improvement.
+
 # ✨ Introduction
 
 
 <div class="grid cards" markdown>
+
 - 🚀 **Tutorials**
 
     Install with `pip` and get started with Ragas with these tutorials.
@@ -16,7 +21,7 @@
 
     [:octicons-arrow-right-24: Core Concepts](core_concepts/index.md)
 
-
+</div>
 
 
 ## Hello World 👋
