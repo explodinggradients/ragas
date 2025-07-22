@@ -11,13 +11,13 @@ The goal of Ragas Experimental is to evolve Ragas into a general-purpose evaluat
 
 - 🚀 **Tutorials**
 
-    Simple, step-by-step tutorials to get you started with Ragas Experimental and its features. Includes examples of how to evaluate various AI applications like RAGs and AI agents.
+    Step-by-step guides to help you get started with Ragas Experimental. Learn how to evaluate AI applications like RAGs and agents with practical examples.
 
     [:octicons-arrow-right-24: Tutorials](tutorials/index.md)
 
 - 📚 **Explanation**
 
-    In depth explanation and discussion of the various aspects of evaluating AI applications, and how Ragas Experimental helps you do that.
+    A deeper dive into the principles of evaluation and how Ragas Experimental supports evaluation-driven development for AI applications.
 
     [:octicons-arrow-right-24: Explanation](explanation/index.md)
 
@@ -34,25 +34,24 @@ The goal of Ragas Experimental is to evolve Ragas into a general-purpose evaluat
 pip install ragas-experimental && pip install "ragas-experimental[local]"
 ```
 
-
-2. Create a simple experiment with a mock application endpoint, a dataset and a custom metric for accuracy.
-
-Copy this snippet to a file named `hello_world.py` and run `python hello_world.py` 
+2. Copy this snippet to a file named `hello_world.py` and run `python hello_world.py` 
 
 ```python
 import numpy as np
 from ragas_experimental import experiment, Dataset
 from ragas_experimental.metrics import MetricResult, discrete_metric  
 
-
+# Define a custom metric for accuracy
 @discrete_metric(name="accuracy_score", allowed_values=["pass", "fail"])
 def accuracy_score(response: str, expected: str):
     result = "pass" if expected.lower().strip() == response.lower().strip() else "fail"
     return MetricResult(value=result, reason=f"Match: {result == 'pass'}")
 
+# Mock application endpoint that simulates an AI application response
 def mock_app_endpoint(**kwargs) -> str:
     return np.random.choice(["Paris", "4", "Blue Whale", "Einstein", "Python"])
 
+# Create an experiment that uses the mock application endpoint and the accuracy metric
 @experiment()
 async def run_experiment(row):
     response = mock_app_endpoint(query=row.get("query"))
@@ -80,13 +79,7 @@ if __name__ == "__main__":
     results = asyncio.run(run_experiment.arun(dataset, name="first_experiment"))
 ```
 
-3. Run the script
-
-```bash
-python hello_world.py
-```
-
-4. Check the results
+3. Check your current directory structure to see the created dataset and experiment results
 
 ```bash
 tree .
@@ -99,7 +92,7 @@ tree .
     └── first_experiment.csv
 ```
 
-5. View the results of your first experiment
+4. View the results of your first experiment
 
 ```bash
 open experiments/first_experiment.csv
