@@ -4,10 +4,10 @@ from ragas_experimental.metrics.discrete import discrete_metric
 
 from .prompt import run_prompt
 
-@discrete_metric(name="accuracy", values=["pass", "fail"])
+@discrete_metric(name="accuracy", allowed_values=["pass", "fail"])
 def my_metric(prediction: str, actual: str):
     """Calculate accuracy of the prediction."""
-    return MetricResult(result="pass", reason="") if prediction == actual else MetricResult(result="fail", reason="")
+    return MetricResult(value="pass", reason="") if prediction == actual else MetricResult(value="fail", reason="")
     
     
 @experiment()
@@ -22,7 +22,7 @@ async def run_experiment(row):
     experiment_view = {
         **row,
         "response":response,
-        "score":score.result,
+        "score":score.value,
     }
     return experiment_view
 
@@ -56,7 +56,7 @@ def load_dataset():
 
 async def main():
     dataset = load_dataset()
-    experiment_results = await run_experiment.run_async(dataset) 
+    experiment_results = await run_experiment.arun(dataset) 
     print("Experiment completed successfully!")
     print("Experiment results:", experiment_results)
     

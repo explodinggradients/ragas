@@ -5,13 +5,13 @@ from .agent import get_default_agent
 
 math_agent = get_default_agent()
 
-@numeric_metric(name="correctness")
+@numeric_metric(name="correctness", allowed_values=(0.0, 1.0))
 def correctness_metric(prediction: float, actual: float):
     """Calculate correctness of the prediction."""
     if isinstance(prediction, str) and "ERROR" in prediction:
         return 0.0
     result = 1.0 if abs(prediction - actual) < 1e-5 else 0.0
-    return MetricResult(result=result, reason=f"Prediction: {prediction}, Actual: {actual}")
+    return MetricResult(value=result, reason=f"Prediction: {prediction}, Actual: {actual}")
 
 
 def load_dataset():
@@ -56,13 +56,13 @@ async def run_experiment(row):
         "expected_answer": expected_answer,
         "prediction": prediction.get("result"),
         "log_file": prediction.get("log_file"),
-        "correctness": correctness.result
+        "correctness": correctness.value
     }
     
     
 async def main():
     dataset = load_dataset()
-    _ = await run_experiment.run_async(dataset)
+    _ = await run_experiment.arun(dataset)
     
     
 if __name__ == "__main__":

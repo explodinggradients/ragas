@@ -33,8 +33,8 @@ def load_dataset():
 
 my_metric = DiscreteMetric(
     name="correctness",
-    prompt = "Check if the response contains points mentioned from the grading notes and return 'pass' or 'fail'.\nResponse: {response} Grading Notes: {grading_notes}",
-    values=["pass", "fail"],
+    prompt="Check if the response contains points mentioned from the grading notes and return 'pass' or 'fail'.\nResponse: {response} Grading Notes: {grading_notes}",
+    allowed_values=["pass", "fail"],
 )
 
 @experiment()
@@ -50,7 +50,7 @@ async def run_experiment(row):
     experiment_view = {
         **row,
         "response": response,
-        "score": score.result,
+        "score": score.value,
         "log_file": response.get("logs", " "),
     }
     return experiment_view
@@ -59,7 +59,7 @@ async def run_experiment(row):
 async def main():
     dataset = load_dataset()
     print("dataset loaded successfully", dataset)
-    await run_experiment.run_async(dataset)
+    await run_experiment.arun(dataset)
 
 if __name__ == "__main__":
     import asyncio
