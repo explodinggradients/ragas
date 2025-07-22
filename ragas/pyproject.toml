@@ -9,6 +9,7 @@ dependencies = [
     "langchain-core",
     "langchain-community",
     "langchain_openai",
+    "langchain_ollama",
     "nest-asyncio",
     "appdirs",
     "pydantic>=2",
