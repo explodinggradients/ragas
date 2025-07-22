@@ -11,15 +11,15 @@ The goal of Ragas Experimental is to evolve Ragas into a general-purpose evaluat
 
 - 🚀 **Tutorials**
 
-    Install with `pip` and get started with Ragas with these tutorials.
+    Simple, step-by-step tutorials to get you started with Ragas Experimental and its features. Includes examples of how to evaluate various AI applications like RAGs and AI agents.
 
     [:octicons-arrow-right-24: Tutorials](tutorials/index.md)
 
-- 📚 **Core Concepts**
+- 📚 **Explanation**
 
-    In depth explanation and discussion of the concepts and working of different features available in Ragas.
+    In depth explanation and discussion of the various aspects of evaluating AI applications, and how Ragas Experimental helps you do that.
 
-    [:octicons-arrow-right-24: Core Concepts](core_concepts/index.md)
+    [:octicons-arrow-right-24: Explanation](explanation/index.md)
 
 </div>
 
