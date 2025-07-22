@@ -79,22 +79,33 @@ sample_docs = [
 ```
 
 ```python
-# Initialize RAG instance
-rag = RAG()
+from ragas import evaluate, EvaluationDataset
 
-# Load documents
-rag.load_documents(sample_docs)
+# The RAG() class and its methods are deprecated in Ragas v0.2+
+# Instead of initializing a RAG instance, we directly prepare the dataset
 
-# Query and retrieve the most relevant document
+# Sample data: query and expected response
 query = "Who introduced the theory of relativity?"
-relevant_doc = rag.get_most_relevant_docs(query)
+relevant_doc = ["Albert Einstein proposed the theory of relativity, which transformed our understanding of time, space, and gravity."]
+answer = "Albert Einstein introduced the theory of relativity."
 
-# Generate an answer
-answer = rag.generate_answer(query, relevant_doc)
+# Manually construct the dataset to align with the new API requirements
+dataset = [
+    {
+        "user_input": query,
+        "retrieved_contexts": relevant_doc,  # Manually specifying the relevant document
+        "response": answer,
+        "reference": answer  # Assuming the generated answer matches the expected response
+    }
+]
+
+# Load the structured dataset into an EvaluationDataset object
+evaluation_dataset = EvaluationDataset.from_list(dataset)
 
 print(f"Query: {query}")
 print(f"Relevant Document: {relevant_doc}")
 print(f"Answer: {answer}")
+
 ```
 
 
