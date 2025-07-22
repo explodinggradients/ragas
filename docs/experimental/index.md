@@ -86,8 +86,9 @@ if __name__ == "__main__":
 tree .
 ```
 
+Output:
 
-```bash
+```
 ├── datasets
 │   └── test_dataset.csv
 └── experiments
@@ -99,3 +100,7 @@ tree .
 ```bash
 open experiments/first_experiment.csv
 ```
+
+Output:
+
+![](output_first_experiment.png)
