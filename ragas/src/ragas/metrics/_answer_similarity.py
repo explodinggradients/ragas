@@ -97,7 +97,9 @@ class SemanticSimilarity(MetricWithEmbeddings, SingleTurnMetric):
 class AnswerSimilarity(SemanticSimilarity):
     name: str = "answer_similarity"
 
-    async def _single_turn_ascore(self, sample: SingleTurnSample, callbacks: Callbacks) -> float:
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
         return await super()._single_turn_ascore(sample, callbacks)
 
 

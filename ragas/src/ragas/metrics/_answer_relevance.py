@@ -150,7 +150,9 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
 
 
 class AnswerRelevancy(ResponseRelevancy):
-    async def _single_turn_ascore(self, sample: SingleTurnSample, callbacks: Callbacks) -> float:
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
         return await super()._single_turn_ascore(sample, callbacks)
 
 

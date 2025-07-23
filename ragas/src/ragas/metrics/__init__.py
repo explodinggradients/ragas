@@ -20,6 +20,7 @@ from ragas.metrics._context_precision import (
     LLMContextPrecisionWithReference,
     NonLLMContextPrecisionWithReference,
     context_precision,
+    context_utilization,
 )
 from ragas.metrics._context_recall import (
     LLMContextRecall,

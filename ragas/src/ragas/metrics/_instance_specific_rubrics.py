@@ -89,7 +89,6 @@ class InstanceRubrics(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
         assert self.llm is not None, "LLM is not set"
-        row = sample.to_dict()
 
         user_input, contexts, response, reference, rubrics = (
             sample.user_input,
@@ -103,7 +102,7 @@ class InstanceRubrics(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
             user_input = f"{user_input} answer using context: {contexts}"
 
         if rubrics is None:
-            raise ValueError(f"Rubrics are not set for the sample: {row}")
+            raise ValueError(f"Rubrics are not set for the sample: {sample.to_dict()}")
         prompt_input = SingleTurnInputWithRubric(
             user_input=user_input,
             response=response,
