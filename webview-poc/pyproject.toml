@@ -22,6 +22,8 @@ dependencies = [
     "fastapi>=0.100.0",
     "uvicorn[standard]>=0.23.0",
     "typer>=0.9.0",
+    "pydantic>=2.0.0",
+    "pendulum>=3.0.0",
 ]
 
 [project.optional-dependencies]
@@ -33,8 +35,7 @@ dev = [
     "ruff>=0.1.0",
 ]
 
-[project.scripts]
-ragas-webview-cli = "ragas_webview_cli.cli:main"
+# No scripts - use python -m ragas_webview_cli.cli or direct import
 
 [build-system]
 requires = ["hatchling"]
@@ -51,6 +52,8 @@ dev-dependencies = [
     "black>=23.0.0",
     "ruff>=0.1.0",
 ]
+
+# Removed ragas-experimental dependency
 
 [tool.ruff]
 select = ["E", "F", "I"]

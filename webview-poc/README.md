@@ -14,13 +14,29 @@ A web-based file viewer with React frontend and Python backend. Easily spin up a
 
 ### Using uv (recommended)
 
+```shell
+  #For development (both React + Python servers):
+  uv run python scripts/dev.py <directory>
+  # uv run python scripts/dev.py ./logs
+
+  #For production (Python server only):
+  uv run python -m ragas_webview_cli <directory>
+  # uv run python -m ragas_webview_cli ./logs
+
+```
+
+
 ```bash
 # Install with uv
-uv add ragas-webview-cli
+uv init
 
 # Or install from local directory
 cd webview-poc
 uv sync
+
+uv run python scripts/dev.py
+
+uv run python -m ragas_webview_cli logs
 ```
 
 ### Using pip

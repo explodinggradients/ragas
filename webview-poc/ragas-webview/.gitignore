@@ -22,3 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+!webview-poc/ragas-webview/src/lib/*/**
+!lib/*/**

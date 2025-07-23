@@ -1,0 +1,10 @@
+APP_IDENTIFIER = "ragas_webview_cli.bundled_server.main:bundled_server"
+APP_NAME = "Ragas Bundled Server"
+DEFAULT_ERROR_STATUS = 500
+DEFAULT_BUNDLED_SERVER_PORT = 8023
+DEFAULT_FRONTEND_PORT = 3024
+DEFAULT_BUNDLED_SERVER_HOST = "localhost"
+DEFAULT_FRONTEND_HOST = "localhost"
+DEFAULT_DATASETS_DIR = "datasets"
+DEFAULT_EXPERIMENTS_DIR = "experiments"
+DEFAULT_JS_BUNDLE_DIR = "js-bundle"

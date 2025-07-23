@@ -1,0 +1,11 @@
+[project]
+name = "ragas"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.116.1",
+    "pendulum>=3.0.0",
+    "ragas-experimental>=0.3.0",
+    "uvicorn>=0.35.0",
+]

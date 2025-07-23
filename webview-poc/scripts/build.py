@@ -9,12 +9,17 @@ import os
 import shutil
 from pathlib import Path
 
+# Add the parent directory to Python path so we can import ragas_webview_cli
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from ragas_webview_cli.bundled_server.core.common import DEFAULT_BUNDLED_SERVER_PORT, DEFAULT_JS_BUNDLE_DIR
+
 
 def check_dependencies():
     """Check if required tools are available."""
-    # Check for npm
-    if not shutil.which("npm"):
-        print("❌ npm not found! Please install Node.js")
+    # Check for pnpm
+    if not shutil.which("pnpm"):
+        print("❌ pnpm not found! Please install pnpm")
         sys.exit(1)
     
     print("✅ Dependencies check passed")
@@ -34,18 +39,18 @@ def build_react_app():
     if not (react_dir / "node_modules").exists():
         print("📦 Installing React dependencies...")
         install_result = subprocess.run(
-            ["npm", "install"],
+            ["pnpm", "install"],
             cwd=react_dir,
             capture_output=True,
             text=True
         )
         if install_result.returncode != 0:
-            print(f"❌ npm install failed: {install_result.stderr}")
+            print(f"❌ pnpm install failed: {install_result.stderr}")
             sys.exit(1)
     
-    # Run npm build
+    # Run pnpm build
     result = subprocess.run(
-        ["npm", "run", "build"],
+        ["pnpm", "run", "build"],
         cwd=react_dir,
         capture_output=True,
         text=True
@@ -57,8 +62,8 @@ def build_react_app():
     
     print("✅ React app built successfully!")
     
-    # Check if build output exists
-    js_bundle_dir = Path("js-bundle")
+    # Check if build output exists in js-bundle directory
+    js_bundle_dir = Path(DEFAULT_JS_BUNDLE_DIR)
     if js_bundle_dir.exists():
         print(f"📦 Build output saved to: {js_bundle_dir.absolute()}")
         
@@ -89,8 +94,8 @@ def main():
     build_react_app()
     
     print("\n✅ Build completed successfully!")
-    print("💡 Run with uv: uv run ragas-webview-cli")
-    print("💡 Run with python: python -m ragas_webview_cli.cli")
+    print("💡 Run with: python -m ragas_webview_cli <directory> --port <port>")
+    print(f"💡 Example: python -m ragas_webview_cli ./logs --port {DEFAULT_BUNDLED_SERVER_PORT}")
 
 
 if __name__ == "__main__":

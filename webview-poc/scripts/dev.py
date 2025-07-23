@@ -7,30 +7,40 @@ import subprocess
 import sys
 import os
 import time
-import signal
+import argparse
 from pathlib import Path
-from ragas_webview_cli.config import BACKEND_HOST, BACKEND_PORT, FRONTEND_HOST, FRONTEND_PORT, BACKEND_URL, FRONTEND_URL
+
+# Add the parent directory to Python path so we can import ragas_webview_cli
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from ragas_webview_cli.bundled_server.core.common import (
+    DEFAULT_BUNDLED_SERVER_HOST,
+    DEFAULT_BUNDLED_SERVER_PORT,
+    DEFAULT_FRONTEND_HOST,
+    DEFAULT_FRONTEND_PORT
+)
 
 
-def run_python_server():
+def run_python_server(directory: str):
     """Run the Python FastAPI server with development settings."""
-    print(f"🐍 Starting Python server on {BACKEND_URL}")
+    print(f"🐍 Starting Python server on http://{DEFAULT_BUNDLED_SERVER_HOST}:{DEFAULT_BUNDLED_SERVER_PORT}")
+    print(f"📁 Serving directory: {Path(directory).resolve()}")
     print("🔄 Auto-reload enabled for development")
     
     # Set environment variables for development mode
     env = os.environ.copy()
-    env["WEBVIEW_ENV"] = "DEVELOPMENT"
-    env["WEBVIEW_RELOAD"] = "ENABLED"
+    env["ENVIRONMENT"] = "DEVELOPMENT"
+    env["WEBVIEW_PROJECT_DIR"] = str(Path(directory).resolve())
+    env["FASTAPI_PORT"] = str(DEFAULT_BUNDLED_SERVER_PORT)
     
-    # Use the installed CLI command to avoid module import conflicts
+    # Use the CLI module with directory argument and port
     return subprocess.Popen([
-        "uv", "run", "ragas-webview-cli", "--port", str(BACKEND_PORT), "--host", BACKEND_HOST
+        "uv", "run", "python", "-m", "ragas_webview_cli", directory, "--port", str(DEFAULT_BUNDLED_SERVER_PORT)
     ], env=env)
-
 
 def run_react_server():
     """Run the React dev server."""
-    print(f"⚛️  Starting React dev server on {FRONTEND_URL}")
+    print(f"⚛️  Starting React dev server on http://{DEFAULT_FRONTEND_HOST}:{DEFAULT_FRONTEND_PORT}")
     react_dir = Path("ragas-webview").resolve()
     
     if not react_dir.exists():
@@ -39,23 +49,36 @@ def run_react_server():
     
     # Set environment variables for React dev server
     env = os.environ.copy()
-    env["VITE_API_HOST"] = BACKEND_HOST
-    env["VITE_API_PORT"] = str(BACKEND_PORT)
-    env["PORT"] = str(FRONTEND_PORT)
-    env["HOST"] = FRONTEND_HOST
+    env["VITE_DEFAULT_BUNDLED_SERVER_HOST"] = DEFAULT_BUNDLED_SERVER_HOST
+    env["VITE_DEFAULT_BUNDLED_SERVER_PORT"] = str(DEFAULT_BUNDLED_SERVER_PORT)
+    env["PORT"] = str(DEFAULT_FRONTEND_PORT)
+    env["HOST"] = DEFAULT_FRONTEND_HOST
     
     return subprocess.Popen([
-        "npm", "run", "dev"
+        "pnpm", "run", "dev"
     ], cwd=react_dir, env=env)
 
 
 def main():
     """Main function to start both servers."""
+    parser = argparse.ArgumentParser(description="Start development environment")
+    parser.add_argument("directory", help="Directory to serve and visualize")
+    args = parser.parse_args()
+    
+    # Validate directory exists
+    directory_path = Path(args.directory)
+    if not directory_path.exists():
+        print(f"❌ Directory does not exist: {directory_path}")
+        sys.exit(1)
+    if not directory_path.is_dir():
+        print(f"❌ Path is not a directory: {directory_path}")
+        sys.exit(1)
+    
     print("🚀 Starting Ragas Webview Development Environment")
     print("=" * 50)
     
     # Start Python server
-    python_process = run_python_server()
+    python_process = run_python_server(args.directory)
     time.sleep(2)  # Give Python server time to start
     
     # Start React server
@@ -66,8 +89,9 @@ def main():
         sys.exit(1)
     
     print("\n✅ Both servers started!")
-    print(f"📱 Frontend: {FRONTEND_URL}")
-    print(f"🔧 Backend API: {BACKEND_URL}")
+    print(f"📱 Frontend: http://{DEFAULT_FRONTEND_HOST}:{DEFAULT_FRONTEND_PORT}")
+    print(f"🔧 Backend API: http://{DEFAULT_BUNDLED_SERVER_HOST}:{DEFAULT_BUNDLED_SERVER_PORT}")
+    print(f"📁 Serving: {directory_path.resolve()}")
     print("\nPress Ctrl+C to stop both servers")
     
     try:
