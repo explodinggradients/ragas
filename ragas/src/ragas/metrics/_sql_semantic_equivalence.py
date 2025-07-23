@@ -98,6 +98,3 @@ class LLMSQLEquivalence(MetricWithLLM, SingleTurnMetric):
             data=input_data, llm=self.llm, callbacks=callbacks
         )
         return int(response.equivalence)
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)

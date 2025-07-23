@@ -167,17 +167,13 @@ class AspectCritic(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
-        row = sample.to_dict()
-        return await self._ascore(row, callbacks)
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "set LLM before use"
 
-        user_input = row.get("user_input")
-        response = row.get("response")
-        context = row.get("retrieved_contexts")
-        reference = row.get("reference")
-        reference_contexts = row.get("reference_contexts")
+        user_input = sample.user_input
+        response = sample.response
+        context = sample.retrieved_contexts
+        reference = sample.reference
+        reference_contexts = sample.reference_contexts
 
         prompt_input = AspectCriticInput(
             user_input=user_input,

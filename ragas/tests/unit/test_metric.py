@@ -18,9 +18,6 @@ def test_single_turn_metric():
         def init(self, run_config):
             pass
 
-        async def _ascore(self, row, callbacks) -> float:
-            return 0
-
         async def _single_turn_ascore(self, sample: SingleTurnSample, callbacks):
             return 0
 
@@ -46,9 +43,6 @@ def test_required_columns():
 
         def init(self, run_config):
             pass
-
-        async def _ascore(self, row, callbacks) -> float:
-            return 0
 
         async def _single_turn_ascore(self, sample: SingleTurnSample, callbacks):
             return 0

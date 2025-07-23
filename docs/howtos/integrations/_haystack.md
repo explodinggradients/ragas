@@ -1,6 +1,6 @@
 # Haystack Integration
 
-Haystack is a  LLM orchestration framework to build customizable, production-ready LLM applications. 
+Haystack is a  LLM orchestration framework to build customizable, production-ready LLM applications.
 
 The underlying concept of Haystack is that all individual tasks, such as storing documents, retrieving relevant data, and generating responses, are handled by modular components like Document Stores, Retrievers, and Generators, which are seamlessly connected and orchestrated using Pipelines.
 
@@ -125,7 +125,7 @@ Pass all the Ragas metrics you want to use for evaluation, ensuring that all the
 For example:
 
 - **AnswerRelevancy**: requires both the **query** and the **response**.
-- **ContextPrecision**: requires the **query**, **retrieved documents**, and the **reference**.
+- **LLMContextPrecisionWithReference**: requires the **query**, **retrieved documents**, and the **reference**.
 - **Faithfulness**: requires the **query**, **retrieved documents**, and the **response**.
 
 Make sure to include all relevant data for each metric to ensure accurate evaluation.
@@ -136,13 +136,13 @@ from haystack_integrations.components.evaluators.ragas import RagasEvaluator
 
 from langchain_openai import ChatOpenAI
 from ragas.llms import LangchainLLMWrapper
-from ragas.metrics import AnswerRelevancy, ContextPrecision, Faithfulness
+from ragas.metrics import AnswerRelevancy, LLMContextPrecisionWithReference, Faithfulness
 
 llm = ChatOpenAI(model="gpt-4o-mini")
 evaluator_llm = LangchainLLMWrapper(llm)
 
 ragas_evaluator = RagasEvaluator(
-    ragas_metrics=[AnswerRelevancy(), ContextPrecision(), Faithfulness()],
+    ragas_metrics=[AnswerRelevancy(), LLMContextPrecisionWithReference(), Faithfulness()],
     evaluator_llm=evaluator_llm,
 )
 ```
@@ -236,8 +236,8 @@ print(result["ragas_evaluator"]["result"])
     Evaluating: 100%|██████████| 3/3 [00:14<00:00,  4.72s/it]
 
 
-    Meta AI's LLaMA models stand out due to their open-source nature, which allows researchers and developers easy access to high-quality language models without the need for expensive resources. This accessibility fosters innovation and experimentation, enabling collaboration across various industries. Moreover, the strong performance of the LLaMA models further enhances their appeal, making them valuable tools for advancing AI development. 
-    
+    Meta AI's LLaMA models stand out due to their open-source nature, which allows researchers and developers easy access to high-quality language models without the need for expensive resources. This accessibility fosters innovation and experimentation, enabling collaboration across various industries. Moreover, the strong performance of the LLaMA models further enhances their appeal, making them valuable tools for advancing AI development.
+
     {'answer_relevancy': 0.9782, 'context_precision': 1.0000, 'faithfulness': 1.0000}
 
 
@@ -296,5 +296,3 @@ output["result"]
 
 
     {'sports_relevance_metric': 1.0000, 'domain_specific_rubrics': 3.0000}
-
-
