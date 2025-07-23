@@ -167,8 +167,8 @@ class MultiHopQuerySynthesizer(BaseSynthesizer[Scenario]):
             persona=scenario.persona,
             themes=scenario.combinations,
             context=reference_context,
-            query_length=scenario.length.name,
-            query_style=scenario.style.name,
+            query_length=scenario.length.value,
+            query_style=scenario.style.value,
         )
         response = await self.generate_query_reference_prompt.generate(
             data=prompt_input, llm=self.llm, callbacks=callbacks
