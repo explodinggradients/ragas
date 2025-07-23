@@ -31,7 +31,7 @@ class HeadlineSplitter(Splitter):
             if len(chunk_tokens) < self.min_tokens:
                 if current_chunk:
                     current_chunk += " " + chunk_str
-                    if num_tokens_from_string(current_chunk) >= self.min_tokens:
+                    if num_tokens_from_string(current_chunk, encoding_name=DEFAULT_TOKENIZER.name) >= self.min_tokens:
                         adjusted_chunks.append(current_chunk)
                         current_chunk = ""
                 else:
@@ -57,7 +57,7 @@ class HeadlineSplitter(Splitter):
         if headlines is None:
             raise ValueError("'headlines' property not found in this node")
 
-        if len(text.split()) < self.min_tokens:
+        if num_tokens_from_string(text, encoding_name=DEFAULT_TOKENIZER.name) < self.min_tokens:
             return [node], []
         # create the chunks for the different sections
         indices = [0]
