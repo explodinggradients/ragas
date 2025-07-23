@@ -13,6 +13,7 @@ try:
     from google.oauth2.service_account import Credentials
     from google_auth_oauthlib.flow import InstalledAppFlow
     from googleapiclient.discovery import build
+    from googleapiclient.errors import HttpError
 
     GDRIVE_AVAILABLE = True
 except ImportError:
@@ -148,10 +149,15 @@ class GDriveBackend(BaseBackend):
                 self.drive_service.files().get(fileId=self.folder_id).execute()
             )
             logger.debug(f"Found main folder: {folder_metadata.get('name')}")
-        except Exception:
-            raise ValueError(
-                f"Folder with ID {self.folder_id} not found or not accessible"
-            )
+        except HttpError as e:
+            if e.resp.status == 404:
+                raise ValueError(
+                    f"Folder with ID {self.folder_id} not found or not accessible"
+                )
+            else:
+                raise ValueError(
+                    f"Failed to access folder with ID {self.folder_id}: {e}"
+                )
 
         # Create datasets and experiments folders if they don't exist
         self.datasets_folder_id = self._get_or_create_folder("datasets", self.folder_id)
@@ -285,8 +291,13 @@ class GDriveBackend(BaseBackend):
 
             return data
 
+        except HttpError as e:
+            logger.error(
+                f"Error loading data from spreadsheet {name}: HTTP {e.resp.status} - {e}"
+            )
+            raise
         except Exception as e:
-            logger.error(f"Error loading data from spreadsheet {name}: {e}")
+            logger.error(f"Error processing data from spreadsheet {name}: {e}")
             raise
 
     def _save_data_to_spreadsheet(
@@ -343,8 +354,13 @@ class GDriveBackend(BaseBackend):
 
             logger.debug(f"Saved {len(data)} rows to {data_type} '{name}'")
 
+        except HttpError as e:
+            logger.error(
+                f"Error saving data to spreadsheet {name}: HTTP {e.resp.status} - {e}"
+            )
+            raise
         except Exception as e:
-            logger.error(f"Error saving data to spreadsheet {name}: {e}")
+            logger.error(f"Error processing data for spreadsheet {name}: {e}")
             raise
 
     def _list_data_names(self, data_type: str) -> t.List[str]:
