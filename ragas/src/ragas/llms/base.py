@@ -36,6 +36,8 @@ MULTIPLE_COMPLETION_SUPPORTED = [
     VertexAI,
 ]
 
+MODELS_NOT_SUPPORT_TEMP = ['o3-mini', 'o4-mini', 'o3']
+
 
 def is_multiple_completion_supported(llm: BaseLanguageModel) -> bool:
     """Return whether the given LLM supports n-completion."""
@@ -205,8 +207,10 @@ class LangchainLLMWrapper(BaseRagasLLM):
         if temperature is None:
             temperature = self.get_temperature(n=n)
         if hasattr(self.langchain_llm, "temperature"):
-            self.langchain_llm.temperature = temperature  # type: ignore
-            old_temperature = temperature
+            if hasattr(self.langchain_llm, "model_name"):
+                if self.langchain_llm.model_name not in MODELS_NOT_SUPPORT_TEMP:
+                    self.langchain_llm.temperature = temperature  # type: ignore
+                    old_temperature = temperature
 
         if is_multiple_completion_supported(self.langchain_llm):
             result = self.langchain_llm.generate_prompt(
@@ -245,8 +249,10 @@ class LangchainLLMWrapper(BaseRagasLLM):
         if temperature is None:
             temperature = self.get_temperature(n=n)
         if hasattr(self.langchain_llm, "temperature"):
-            self.langchain_llm.temperature = temperature  # type: ignore
-            old_temperature = temperature
+            if hasattr(self.langchain_llm, "model_name"):
+                if self.langchain_llm.model_name not in MODELS_NOT_SUPPORT_TEMP:
+                    self.langchain_llm.temperature = temperature  # type: ignore
+                    old_temperature = temperature
 
         # handle n
         if hasattr(self.langchain_llm, "n"):
