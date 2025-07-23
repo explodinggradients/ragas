@@ -184,7 +184,7 @@ Select and define the metrics that are most relevant to your application.
 
 ```python
 from ragas import evaluate
-from ragas.metrics import ContextPrecision, Faithfulness, RubricsScore, RougeScore
+from ragas.metrics import LLMContextPrecisionWithReference, Faithfulness, RubricsScore, RougeScore
 
 rouge_score = RougeScore()
 
@@ -197,7 +197,7 @@ helpfulness_rubrics = {
 }
 
 rubrics_score = RubricsScore(name="helpfulness", rubrics=helpfulness_rubrics)
-context_precision = ContextPrecision(llm=evaluator_llm)
+context_precision = LLMContextPrecisionWithReference(llm=evaluator_llm)
 faithfulness = Faithfulness(llm=evaluator_llm)
 ```
 

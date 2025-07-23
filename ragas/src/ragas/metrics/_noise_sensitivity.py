@@ -117,45 +117,21 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
-        row = sample.to_dict()
-        return await self._ascore(row, callbacks)
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         """
         returns the NLI score for each (q, c, a) pair
         """
         assert self.llm is not None, "LLM is not set"
 
-        if "reference" not in row or not row["reference"]:
-            raise ValueError(
-                "reference is missing in the test sample. Please add reference to the test sample."
-            )
-
-        if "user_input" not in row or not row["user_input"]:
-            raise ValueError(
-                "user_input is missing in the test sample. Please add user_input to the test sample."
-            )
-
-        if "response" not in row or not row["response"]:
-            raise ValueError(
-                "response is missing in the test sample. Please add response to the test sample."
-            )
-
-        if "retrieved_contexts" not in row or not row["retrieved_contexts"]:
-            raise ValueError(
-                "retrieved_contexts is missing in the test sample. Please add retrieved_contexts to the test sample."
-            )
-
         gt_statements = await self._decompose_answer_into_statements(
-            row["reference"], row["user_input"], callbacks
+            sample.reference, sample.user_input, callbacks
         )
         ans_statements = await self._decompose_answer_into_statements(
-            row["response"], row["user_input"], callbacks
+            sample.response, sample.user_input, callbacks
         )
         gt_verdictslist = []
         ans_verdictslist = []
 
-        for ctx in row["retrieved_contexts"]:
+        for ctx in sample.retrieved_contexts:
             verdicts = await self._evaluate_statement_faithfulness(
                 gt_statements, ctx, callbacks
             )
@@ -171,7 +147,7 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
         answers["retrieved2answer"] = np.array(ans_verdictslist).T
         answers["ground_truth2answer"] = np.array(
             await self._evaluate_statement_faithfulness(
-                ans_statements, row["reference"], callbacks
+                ans_statements, sample.reference, callbacks
             )
         )
         answers["ground_truth2answer"] = np.array([answers["ground_truth2answer"]])

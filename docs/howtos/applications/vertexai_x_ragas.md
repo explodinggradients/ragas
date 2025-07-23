@@ -140,9 +140,9 @@ Model-based metrics leverage pre-trained language models to assess generated tex
 
 ```python
 from ragas import evaluate
-from ragas.metrics import ContextPrecision, Faithfulness
+from ragas.metrics import LLMContextPrecisionWithReference, Faithfulness
 
-context_precision = ContextPrecision(llm=evaluator_llm)
+context_precision = LLMContextPrecisionWithReference(llm=evaluator_llm)
 faithfulness = Faithfulness(llm=evaluator_llm)
 ```
 

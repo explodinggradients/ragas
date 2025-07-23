@@ -203,15 +203,15 @@ Now, let's evaluate our RAG system using Ragas metrics:
 
 To evaluate our retrieval performance, we can utilize Ragas built-in metrics or create custom metrics tailored to our specific needs. For a comprehensive list of all available metrics and customization options, please visit the [documentation]().
 
-We will use `ContextPrecision`, `ContextRecall` and `ContextRelevance` to measure the retrieval performance:
+We will use `LLMContextPrecisionWithReference`, `LLMContextRecall` and `ContextRelevance` to measure the retrieval performance:
 
-- [ContextPrecision](../../concepts/metrics/available_metrics/context_precision.md): Measures how well a RAG system's retriever ranks relevant chunks at the top of the retrieved context for a given query, calculated as the mean precision@k across all chunks.
-- [ContextRecall](../../concepts/metrics/available_metrics/context_recall.md): Measures the proportion of relevant information successfully retrieved from a knowledge base.
+- [LLMContextPrecisionWithReference](../../concepts/metrics/available_metrics/context_precision.md): Measures how well a RAG system's retriever ranks relevant chunks at the top of the retrieved context for a given query, calculated as the mean precision@k across all chunks.
+- [LLMContextRecall](../../concepts/metrics/available_metrics/context_recall.md): Measures the proportion of relevant information successfully retrieved from a knowledge base.
 - [ContextRelevance](../../concepts/metrics/available_metrics/nvidia_metrics.md#context-relevance): Measures how well the retrieved contexts address the user’s query by evaluating their pertinence through dual LLM judgments.
 
 
 ```python
-from ragas.metrics import ContextPrecision, ContextRecall, ContextRelevance
+from ragas.metrics import LLMContextPrecisionWithReference, LLMContextRecall, ContextRelevance
 from ragas import evaluate
 from langchain_openai import ChatOpenAI
 from ragas.llms import LangchainLLMWrapper
@@ -220,8 +220,8 @@ llm = ChatOpenAI(model="gpt-4o-mini")
 evaluator_llm = LangchainLLMWrapper(llm)
 
 ragas_metrics = [
-    ContextPrecision(llm=evaluator_llm),
-    ContextRecall(llm=evaluator_llm),
+    LLMContextPrecisionWithReference(llm=evaluator_llm),
+    LLMContextRecall(llm=evaluator_llm),
     ContextRelevance(llm=evaluator_llm),
 ]
 

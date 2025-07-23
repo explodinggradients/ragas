@@ -132,13 +132,10 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
-        row = sample.to_dict()
-        return await self._ascore(row, callbacks)
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM is not set"
+        row = sample.to_dict()
 
-        prompt_input = ResponseRelevanceInput(response=row["response"])
+        prompt_input = ResponseRelevanceInput(response=sample.response)
         tasks = [
             self.question_generation.generate(
                 data=prompt_input,
@@ -153,8 +150,8 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
 
 
 class AnswerRelevancy(ResponseRelevancy):
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await super()._ascore(row, callbacks)
+    async def _single_turn_ascore(self, sample: SingleTurnSample, callbacks: Callbacks) -> float:
+        return await super()._single_turn_ascore(sample, callbacks)
 
 
 answer_relevancy = AnswerRelevancy()

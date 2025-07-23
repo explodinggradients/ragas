@@ -37,6 +37,3 @@ class RougeScore(SingleTurnMetric):
         scorer = self.rouge_scorer.RougeScorer([self.rouge_type], use_stemmer=True)
         scores = scorer.score(sample.reference, sample.response)
         return getattr(scores[self.rouge_type], self.mode)
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)

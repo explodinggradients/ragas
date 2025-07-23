@@ -31,9 +31,6 @@ class ExactMatch(SingleTurnMetric):
     ) -> float:
         return float(sample.reference == sample.response)
 
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
-
 
 @dataclass
 class StringPresence(SingleTurnMetric):
@@ -53,9 +50,6 @@ class StringPresence(SingleTurnMetric):
         assert isinstance(reference, str), "Expecting a string"
         assert isinstance(response, str), "Expecting a string"
         return float(reference in response)
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
 
 
 @dataclass
@@ -94,6 +88,3 @@ class NonLLMStringSimilarity(SingleTurnMetric):
         return 1 - self.distance_measure_map[self.distance_measure].normalized_distance(
             reference, response
         )
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)

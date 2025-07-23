@@ -61,16 +61,12 @@ class SemanticSimilarity(MetricWithEmbeddings, SingleTurnMetric):
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
-        row = sample.to_dict()
-        return await self._ascore(row, callbacks)
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert (
             self.embeddings is not None
         ), f"Error: '{self.name}' requires embeddings to be set."
 
-        ground_truth = t.cast(str, row["reference"])
-        answer = t.cast(str, row["response"])
+        ground_truth = t.cast(str, sample.reference)
+        answer = t.cast(str, sample.response)
 
         # Handle embeddings for empty strings
         ground_truth = ground_truth or " "
@@ -78,7 +74,7 @@ class SemanticSimilarity(MetricWithEmbeddings, SingleTurnMetric):
 
         if self.is_cross_encoder and isinstance(self.embeddings, HuggingfaceEmbeddings):
             raise NotImplementedError(
-                "async score [ascore()] not implemented for HuggingFace embeddings"
+                "async single_turn_ascore [_single_turn_ascore()] not implemented for HuggingFace embeddings"
             )
         else:
             embedding_1 = np.array(await self.embeddings.embed_text(ground_truth))
@@ -101,8 +97,8 @@ class SemanticSimilarity(MetricWithEmbeddings, SingleTurnMetric):
 class AnswerSimilarity(SemanticSimilarity):
     name: str = "answer_similarity"
 
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await super()._ascore(row, callbacks)
+    async def _single_turn_ascore(self, sample: SingleTurnSample, callbacks: Callbacks) -> float:
+        return await super()._single_turn_ascore(sample, callbacks)
 
 
 answer_similarity = AnswerSimilarity()

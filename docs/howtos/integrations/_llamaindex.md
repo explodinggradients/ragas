@@ -128,7 +128,7 @@ with a test dataset to test our `QueryEngine` lets now build one and evaluate it
 
 ## Building the `QueryEngine`
 
-To start lets build an `VectorStoreIndex` over the New York Citie's [wikipedia page](https://en.wikipedia.org/wiki/New_York_City) as an example and use ragas to evaluate it. 
+To start lets build an `VectorStoreIndex` over the New York Citie's [wikipedia page](https://en.wikipedia.org/wiki/New_York_City) as an example and use ragas to evaluate it.
 
 Since we already loaded the dataset into `documents` lets use that.
 
@@ -170,13 +170,13 @@ print(response_vector)
 
 ## Evaluating the `QueryEngine`
 
-Now that we have a `QueryEngine` for the `VectorStoreIndex` we can use the llama_index integration Ragas has to evaluate it. 
+Now that we have a `QueryEngine` for the `VectorStoreIndex` we can use the llama_index integration Ragas has to evaluate it.
 
 In order to run an evaluation with Ragas and LlamaIndex you need 3 things
 
 1. LlamaIndex `QueryEngine`: what we will be evaluating
 2. Metrics: Ragas defines a set of metrics that can measure different aspects of the `QueryEngine`. The available metrics and their meaning can be found [here](https://docs.ragas.io/en/latest/concepts/metrics/available_metrics/)
-3. Questions: A list of questions that ragas will test the `QueryEngine` against. 
+3. Questions: A list of questions that ragas will test the `QueryEngine` against.
 
 first lets generate the questions. Ideally you should use that you see in production so that the distribution of question with which we evaluate matches the distribution of questions seen in production. This ensures that the scores reflect the performance seen in production but to start off we'll be using a few example question.
 
@@ -188,8 +188,8 @@ Now lets import the metrics we will be using to evaluate
 from ragas.metrics import (
     Faithfulness,
     AnswerRelevancy,
-    ContextPrecision,
-    ContextRecall,
+    LLMContextPrecisionWithReference,
+    LLMContextRecall,
 )
 
 # init metrics with evaluator LLM
@@ -199,8 +199,8 @@ evaluator_llm = LlamaIndexLLMWrapper(OpenAI(model="gpt-4o"))
 metrics = [
     Faithfulness(llm=evaluator_llm),
     AnswerRelevancy(llm=evaluator_llm),
-    ContextPrecision(llm=evaluator_llm),
-    ContextRecall(llm=evaluator_llm),
+    LLMContextPrecisionWithReference(llm=evaluator_llm),
+    LLMContextRecall(llm=evaluator_llm),
 ]
 ```
 
@@ -357,5 +357,3 @@ result.to_pandas()
   </tbody>
 </table>
 </div>
-
-

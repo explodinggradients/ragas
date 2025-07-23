@@ -128,19 +128,15 @@ class LLMContextRecall(MetricWithLLM, SingleTurnMetric):
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
-        row = sample.to_dict()
-        return await self._ascore(row, callbacks)
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "set LLM before use"
 
         # run classification
         classifications_list: t.List[ContextRecallClassifications] = (
             await self.context_recall_prompt.generate_multiple(
                 data=QCA(
-                    question=row["user_input"],
-                    context="\n".join(row["retrieved_contexts"]),
-                    answer=row["reference"],
+                    question=sample.user_input,
+                    context="\n".join(sample.retrieved_contexts),
+                    answer=sample.reference,
                 ),
                 llm=self.llm,
                 callbacks=callbacks,
@@ -157,22 +153,6 @@ class LLMContextRecall(MetricWithLLM, SingleTurnMetric):
         return self._compute_score(
             [ContextRecallClassification(**clasif) for clasif in ensembled_clasif]
         )
-
-
-@dataclass
-class ContextRecall(LLMContextRecall):
-    name: str = "context_recall"
-
-    @deprecated(since="0.2", removal="0.3", alternative="LLMContextRecall")
-    async def _single_turn_ascore(
-        self, sample: SingleTurnSample, callbacks: Callbacks
-    ) -> float:
-        row = sample.to_dict()
-        return await self._ascore(row, callbacks)
-
-    @deprecated(since="0.2", removal="0.3", alternative="LLMContextRecall")
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await super()._ascore(row, callbacks)
 
 
 @dataclass
@@ -226,9 +206,6 @@ class NonLLMContextRecall(SingleTurnMetric):
             )
         return self._compute_score(scores)
 
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
-
     def _compute_score(self, verdict_list: t.List[float]) -> float:
         response = [1 if score > self.threshold else 0 for score in verdict_list]
         denom = len(response)
@@ -237,4 +214,4 @@ class NonLLMContextRecall(SingleTurnMetric):
         return score
 
 
-context_recall = ContextRecall()
+context_recall = LLMContextRecall()

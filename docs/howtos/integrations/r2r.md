@@ -94,21 +94,21 @@ Meta AI’s LLaMA models stand out due to their open-source nature, which suppor
 
 ## Evaluations
 
-#### **Evaluating the `R2R Client` with Ragas**  
+#### **Evaluating the `R2R Client` with Ragas**
 
-With the `R2R Client` in place, we can use Ragas `r2r` integration for evaluation. This process involves the following key components:  
+With the `R2R Client` in place, we can use Ragas `r2r` integration for evaluation. This process involves the following key components:
 
-- **1. R2R Client and Configurations**  
-The `R2RClient` and `/rag` configurations specifying RAG settings.   
+- **1. R2R Client and Configurations**
+The `R2RClient` and `/rag` configurations specifying RAG settings.
 
-- **2. Evaluation Dataset**  
-You need a Ragas `EvaluationDataset` that includes all necessary inputs required by Ragas metrics. 
+- **2. Evaluation Dataset**
+You need a Ragas `EvaluationDataset` that includes all necessary inputs required by Ragas metrics.
 
-- **3. Ragas Metrics**  
-Ragas provides various evaluation metrics to assess different aspects of the RAG, such as faithfulness, answer relevance, and context recall. You can explore the full list of available metrics in the [Ragas documentation](https://docs.ragas.io/en/latest/concepts/metrics/available_metrics/).  
+- **3. Ragas Metrics**
+Ragas provides various evaluation metrics to assess different aspects of the RAG, such as faithfulness, answer relevance, and context recall. You can explore the full list of available metrics in the [Ragas documentation](https://docs.ragas.io/en/latest/concepts/metrics/available_metrics/).
 
 
-#### Constructing a Ragas EvaluationDataset  
+#### Constructing a Ragas EvaluationDataset
 The [`EvaluationDataset`](../../concepts/components/eval_dataset.md) is a data type in Ragas designed to represent evaluation samples. You can find more details about its structure and usage in the [core concepts section](../../concepts/components/eval_dataset.md).
 
 We will use the `transform_to_ragas_dataset` function from ragas to get the EvaluationDataset for our data.
@@ -162,7 +162,7 @@ To evaluate our RAG endpoint, we will use the following metrics:
 
 
 ```python
-from ragas.metrics import AnswerRelevancy, ContextPrecision, Faithfulness
+from ragas.metrics import AnswerRelevancy, LLMContextPrecisionWithReference, Faithfulness
 from ragas import evaluate
 from langchain_openai import ChatOpenAI
 from ragas.llms import LangchainLLMWrapper
@@ -170,7 +170,7 @@ from ragas.llms import LangchainLLMWrapper
 llm = ChatOpenAI(model="gpt-4o-mini")
 evaluator_llm = LangchainLLMWrapper(llm)
 
-ragas_metrics = [AnswerRelevancy(llm=evaluator_llm ), ContextPrecision(llm=evaluator_llm ), Faithfulness(llm=evaluator_llm )]
+ragas_metrics = [AnswerRelevancy(llm=evaluator_llm ), LLMContextPrecisionWithReference(llm=evaluator_llm ), Faithfulness(llm=evaluator_llm )]
 
 results = evaluate(dataset=ragas_eval_dataset, metrics=ragas_metrics)
 ```

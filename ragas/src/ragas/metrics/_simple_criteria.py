@@ -164,17 +164,13 @@ class SimpleCriteriaScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
-        row = sample.to_dict()
-        return await self._ascore(row, callbacks)
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "set LLM before use"
 
         user_input, response, retrieved_contexts, reference = (
-            row.get("user_input"),
-            row.get("response"),
-            row.get("retrieved_contexts"),
-            row.get("reference"),
+            sample.user_input,
+            sample.response,
+            sample.retrieved_contexts,
+            sample.reference,
         )
 
         prompt_input = SingleTurnSimpleCriteriaInput(

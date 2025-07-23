@@ -89,11 +89,13 @@ class MultiModalRelevance(MetricWithLLM, SingleTurnMetric):
 
     relevance_prompt: ImageTextPrompt = MultiModalRelevancePrompt()
 
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
         prompt_input = RelevanceInput(
-            user_input=row["user_input"],
-            response=row["response"],
-            retrieved_contexts=row["retrieved_contexts"],
+            user_input=sample.user_input,
+            response=sample.response,
+            retrieved_contexts=sample.retrieved_contexts,
         )
         assert self.llm is not None, "LLM is not set"
         prompt_response = await self.relevance_prompt.generate(
@@ -102,12 +104,6 @@ class MultiModalRelevance(MetricWithLLM, SingleTurnMetric):
         if prompt_response is None:
             return np.nan
         return float(prompt_response.relevance)
-
-    async def _single_turn_ascore(
-        self, sample: SingleTurnSample, callbacks: Callbacks
-    ) -> float:
-        row = sample.to_dict()
-        return await self._ascore(row, callbacks)
 
 
 multimodal_relevance = MultiModalRelevance()

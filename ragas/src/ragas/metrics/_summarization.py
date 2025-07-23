@@ -174,12 +174,8 @@ class SummarizationScore(MetricWithLLM, SingleTurnMetric):
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
-        row = sample.to_dict()
-        return await self._ascore(row, callbacks)
-
-    async def _ascore(self, row: Dict, callbacks: Callbacks) -> float:
-        text: str = "\n".join(row["reference_contexts"])
-        summary: str = row["response"]
+        text: str = "\n".join(sample.reference_contexts)
+        summary: str = sample.response
         keyphrases = await self._extract_keyphrases(text, callbacks)
         questions = await self._get_questions(text, keyphrases, callbacks)
         answers = await self._get_answers(questions, summary, callbacks)

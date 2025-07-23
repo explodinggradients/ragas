@@ -45,6 +45,3 @@ class BleuScore(SingleTurnMetric):
         score = self.corpus_bleu(response, reference, **self.kwargs).score / 100
         assert isinstance(score, float), "Expecting a float"
         return score
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)

@@ -2,7 +2,7 @@ While evaluating your LLM application with Ragas metrics, you may find yourself 
 
 It assumes that you are already familiar with the concepts of [Metrics](/concepts/metrics/overview/index.md) and [Prompt Objects](/concepts/components/prompt.md) in Ragas. If not, please review those topics before proceeding.
 
-For the sake of this tutorial, let's build a custom metric that scores the refusal rate in applications. 
+For the sake of this tutorial, let's build a custom metric that scores the refusal rate in applications.
 
 
 ## Formulate your metric
@@ -15,12 +15,12 @@ $$
 
 **Step 2**: Decide how are you going to derive this information from the sample. Here I am going to use LLM to do it, ie to check whether the request was refused or answered. You may use Non LLM based methods too. Since I am using LLM based method, this would become an LLM based metric.
 
-**Step 3**: Decide if your metric should work in Single Turn and or Multi Turn data. 
+**Step 3**: Decide if your metric should work in Single Turn and or Multi Turn data.
 
 
 ## Import required base classes
 
-For refusal rate, I have decided it to be a LLM based metric that should work both in single turn and multi turn data samples. 
+For refusal rate, I have decided it to be a LLM based metric that should work both in single turn and multi turn data samples.
 
 
 ```python
@@ -69,7 +69,7 @@ class RefusalPrompt(PydanticPrompt[RefusalInput, RefusalOutput]):
     ]
 ```
 
-Now let's implement the new metric. Here, since I want this metric to work with both `SingleTurnSample` and `MultiTurnSample` I am implementing scoring methods for both types. 
+Now let's implement the new metric. Here, since I want this metric to work with both `SingleTurnSample` and `MultiTurnSample` I am implementing scoring methods for both types.
 Also since for the sake of simplicity I am implementing a simple method to calculate refusal rate in multi-turn conversations
 
 
@@ -90,9 +90,6 @@ class RefusalRate(MetricWithLLM, MultiTurnMetric, SingleTurnMetric):
         default_factory=lambda: {MetricType.SINGLE_TURN: {"response", "reference"}}
     )
     refusal_prompt: PydanticPrompt = RefusalPrompt()
-
-    async def _ascore(self, row):
-        pass
 
     async def _single_turn_ascore(self, sample, callbacks):
         prompt_input = RefusalInput(
@@ -212,5 +209,3 @@ await scorer.multi_turn_ascore(sample)
 
 
     0
-
-

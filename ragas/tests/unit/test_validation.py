@@ -23,10 +23,10 @@ column_maps = [
 
 def test_validate_required_columns():
     from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
-    from ragas.metrics.base import Metric
+    from ragas.metrics.base import SingleTurnMetric
 
     @dataclass
-    class MockMetric(Metric):
+    class MockMetric(SingleTurnMetric):
         name = "mock_metric"  # type: ignore
         _required_columns: t.Dict[MetricType, t.Set[str]] = field(
             default_factory=lambda: {MetricType.SINGLE_TURN: {"user_input", "response"}}
@@ -35,7 +35,7 @@ def test_validate_required_columns():
         def init(self, run_config):
             pass
 
-        async def _ascore(self, row, callbacks):
+        async def _single_turn_ascore(self, sample, callbacks):
             return 0.0
 
     m = MockMetric()
@@ -62,9 +62,6 @@ def test_valid_data_type():
             pass
 
         async def _single_turn_ascore(self, sample, callbacks):
-            return 0.0
-
-        async def _ascore(self, row, callbacks):
             return 0.0
 
     m = MockMetric()
