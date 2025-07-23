@@ -97,12 +97,18 @@ def generate_personas_from_kg(
         )
 
     summaries = [node.properties.get("summary") for node in nodes]
-    summaries = [summary for summary in summaries if isinstance(summary, str)]
+    delete_idx = set()
+    for i, summary in enumerate(summaries):
+        if not isinstance(summary, str) or len(summary) == 0:
+            delete_idx.add(i)
+    for idx in sorted(delete_idx, reverse=True):
+        del summaries[idx]
     num_personas = min(num_personas, len(summaries))
 
     embeddings = []
-    for node in nodes:
-        embeddings.append(node.properties.get("summary_embedding"))
+    for idx, node in enumerate(nodes):
+        if idx not in delete_idx:
+            embeddings.append(node.properties.get("summary_embedding"))
 
     embeddings = np.array(embeddings)
     cosine_similarities = np.dot(embeddings, embeddings.T)
