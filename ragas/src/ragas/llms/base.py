@@ -211,6 +211,9 @@ class LangchainLLMWrapper(BaseRagasLLM):
                 if self.langchain_llm.model_name not in MODELS_NOT_SUPPORT_TEMP:
                     self.langchain_llm.temperature = temperature  # type: ignore
                     old_temperature = temperature
+            else:
+                self.langchain_llm.temperature = temperature
+                old_temperature = temperature
 
         if is_multiple_completion_supported(self.langchain_llm):
             result = self.langchain_llm.generate_prompt(
@@ -253,6 +256,9 @@ class LangchainLLMWrapper(BaseRagasLLM):
                 if self.langchain_llm.model_name not in MODELS_NOT_SUPPORT_TEMP:
                     self.langchain_llm.temperature = temperature  # type: ignore
                     old_temperature = temperature
+            else:
+                self.langchain_llm.temperature = temperature
+                old_temperature = temperature
 
         # handle n
         if hasattr(self.langchain_llm, "n"):
