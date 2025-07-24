@@ -250,6 +250,25 @@ class KnowledgeGraph:
     def __str__(self) -> str:
         return self.__repr__()
 
+    def get_node_by_id(self, node_id: uuid.UUID | str) -> t.Optional[Node]:
+        """
+        Retrieves a node by its ID.
+
+        Parameters
+        ----------
+        node_id : uuid.UUID
+            The ID of the node to retrieve.
+
+        Returns
+        -------
+        Node or None
+            The node with the specified ID, or None if not found.
+        """
+        if isinstance(node_id, str):
+            node_id = uuid.UUID(node_id)
+
+        return next(filter(lambda n: n.id == node_id, self.nodes), None)
+
     def find_indirect_clusters(
         self,
         relationship_condition: t.Callable[[Relationship], bool] = lambda _: True,
@@ -257,8 +276,7 @@ class KnowledgeGraph:
     ) -> t.List[t.Set[Node]]:
         """
         Finds indirect clusters of nodes in the knowledge graph based on a relationship condition.
-        Here if A -> B -> C -> D, then A, B, C, and D form a cluster. If there's also a path A -> B -> C -> E,
-        it will form a separate cluster.
+        Uses Leiden algorithm for community detection and identifies unique paths within each cluster.
 
         Parameters
         ----------
@@ -276,48 +294,65 @@ class KnowledgeGraph:
         from collections import defaultdict
 
         import networkx as nx
+        from sknetwork.clustering import Leiden
+        from sknetwork.data import from_edge_list
 
         if depth_limit < 2:
             raise ValueError("Depth limit must be at least 2")
 
         # Filter relationships based on the condition
-        relationships = [
-            rel for rel in self.relationships if relationship_condition(rel)
-        ]
+        filtered_relationships = []
         relationship_map = defaultdict(set)
-        for rel in relationships:
-            relationship_map[rel.source.id].add(rel.target.id)
-            if rel.bidirectional:
-                relationship_map[rel.target.id].add(rel.source.id)
+        for rel in self.relationships:
+            if relationship_condition(rel):
+                filtered_relationships.append(rel)
+                relationship_map[rel.source.id].add(rel.target.id)
+                if rel.bidirectional:
+                    relationship_map[rel.target.id].add(rel.source.id)
 
-        # Create a NetworkX graph
-        # We really want a DiGraph, but cliques works using bidirectional edges
-        G = nx.Graph()
-        for node in self.nodes:
-            G.add_node(node.id, node_obj=node)
-
-        for rel in relationships:
-            G.add_edge(rel.source.id, rel.target.id, relationship_obj=rel)
-
-        clusters = []
-
-        # Use clique percolation method with k = 3
-        k = 3
-        cliques = list(nx.find_cliques(G))
-        k_cliques = [clique for clique in cliques if len(clique) >= k]
-
-        if not k_cliques:
+        if not filtered_relationships:
             return []
 
-        # Apply clique percolation method
-        communities = list(nx.algorithms.community.k_clique_communities(G, k))
+        # graph: Dataset
+        graph = from_edge_list(
+            [
+                (str(rel.source.id), str(rel.target.id))
+                for rel in filtered_relationships
+            ],
+            directed=True,
+        )
 
-        for community in communities:
-            subgraph = G.subgraph(community)
+        # Apply Leiden clustering
+        leiden = Leiden(random_state=42)
+        cluster_labels = leiden.fit_predict(graph.adjacency)
+
+        # Group nodes by cluster
+        clusters = defaultdict(set)
+        for label, node_id in zip(cluster_labels, graph.names):
+            clusters[int(label)].add(uuid.UUID(node_id))
+
+        # For each cluster, find all unique paths up to depth_limit
+        cluster_sets: set[frozenset] = set()
+        for cluster_nodes in clusters.values():
+            if len(cluster_nodes) < 2:
+                continue
+
+            # Create subgraph for this cluster using the directed graph
+            # Ideally we would want to use a DiGraph but all_simple_paths requires a Graph
+            subgraph = nx.Graph()
+            for node_id in cluster_nodes:
+                subgraph.add_node(
+                    node_id,
+                    node_obj=self.get_node_by_id(node_id),
+                )
+            for rel in filtered_relationships:
+                if rel.source.id in cluster_nodes and rel.target.id in cluster_nodes:
+                    subgraph.add_edge(
+                        rel.source.id, rel.target.id, relationship_obj=rel
+                    )
 
             # For each cluster, identify all valid subpaths up to depth_limit
-            valid_paths = set()
-            for source, target in itertools.permutations(community, 2):
+            for source, target in itertools.permutations(cluster_nodes, 2):
                 if not nx.has_path(subgraph, source, target):
                     continue
                 try:
@@ -327,29 +362,24 @@ class KnowledgeGraph:
                         if len(path) < 2:
                             continue
 
-                        # filter out paths that are not valid based on our relationships
-                        # (this is a side effect of having to use Graph instead of DiGraph)
-                        if all(
-                            t in relationship_map[s]
-                            for s, t in itertools.pairwise(path)
-                        ):
+                        # # filter out paths that are not valid based on our relationships
+                        # # (this is a side effect of having to use Graph instead of DiGraph)
+                        # if all(
+                        #     t in relationship_map[s]
+                        #     for s, t in itertools.pairwise(path)
+                        # ):
+                        #     path_nodes = {
+                        #         subgraph.nodes[node_id]["node_obj"] for node_id in path
+                        #     }
+                        if len(path) > 1:
                             path_nodes = {
-                                G.nodes[node_id]["node_obj"] for node_id in path
+                                subgraph.nodes[node_id]["node_obj"] for node_id in path
                             }
-                            valid_paths.add(frozenset(path_nodes))
+                            cluster_sets.add(frozenset(path_nodes))
                 except nx.NetworkXNoPath:
                     continue
 
-            # Add unique path clusters
-            for path_cluster in valid_paths:
-                if len(path_cluster) > 1:
-                    clusters.append(set(path_cluster))
-
-        # Remove duplicates by converting clusters to frozensets
-        unique_clusters = [
-            set(cluster) for cluster in set(frozenset(c) for c in clusters)
-        ]
-        return unique_clusters
+        return [set(path_nodes) for path_nodes in cluster_sets]
 
     def remove_node(
         self, node: Node, inplace: bool = True

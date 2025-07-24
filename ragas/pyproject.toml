@@ -27,6 +27,7 @@ all = [
     "rapidfuzz",
     "pandas",
     "networkx",
+    "scikit-network",
     "datacompy",
     "llama_index",
     "r2r",
