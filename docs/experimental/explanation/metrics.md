@@ -1,4 +1,4 @@
-# Metrics for evaluating AI Applications
+# Metrics
 
 ## Why Metrics Matter
 
@@ -65,11 +65,13 @@ from ragas_experimental.metrics import numeric_metric
 @numeric_metric(name="response_accuracy", allowed_values=(0, 1))
 def my_metric(predicted: float, expected: float) -> float:
     return abs(predicted - expected) / max(expected, 1e-5)
+
+my_metric.score(predicted=0.8, expected=1.0)  # Returns a float value
 ```
 
-### 3. Ranked Metrics
+### 3. Ranking Metrics
 
-These evaluate multiple outputs at once and return a ranked list based on a defined criterion. They are useful when the goal is to compare outputs relative to one another.
+These evaluate multiple outputs at once and return a ranked list based on a defined criterion. They are useful when the goal is to compare multiple outputs from the same pipeline relative to one another.
 
 ```python
 from ragas_experimental.metrics import ranked_metric
@@ -78,6 +80,8 @@ def my_metric(responses: list) -> list:
     response_lengths = [len(response) for response in responses]
     sorted_indices = sorted(range(len(response_lengths)), key=lambda i: response_lengths[i])
     return sorted_indices
+
+my_metric.score(responses=["short", "a bit longer", "the longest response"])  # Returns a ranked list of indices
 ```
 
 ## LLM-based vs. Non-LLM-based Metrics
@@ -103,9 +107,13 @@ These leverage LLMs (Large Language Models) to evaluate outcomes, typically usef
 
 Example:
 ```python
-def my_metric(predicted: str, expected: str) -> str:
-    response = llm.generate(f"Evaluate semantic similarity between '{predicted}' and '{expected}'")
-    return "pass" if response > 5 else "fail"
+from ragas_experimental.metrics import DiscreteMetric
+
+my_metric = DiscreteMetric(
+    name="response_quality",
+    prompt="Evaluate the response based on the pass criteria: {pass_criteria}. Does the response meet the criteria? Return 'pass' or 'fail'.\nResponse: {response}",
+    allowed_values=["pass", "fail"]
+)
 ```
 
 When to use:
