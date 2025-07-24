@@ -1,10 +1,10 @@
-## Experimentation for Improving AI Systems
+## Experiments
 
 ### What is an experiment?
 
 An experiment is a deliberate change made to your application to test a hypothesis or idea. For example, in a Retrieval-Augmented Generation (RAG) system, you might replace the retriever model to evaluate how a new embedding model impacts chatbot responses.
 
-#### Principles of Good Experimentation
+#### Principles of a Good Experiment
 
 1. **Define measurable metrics**: Use metrics like accuracy, precision, or recall to quantify the impact of your changes.
 2. **Systematic result storage**: Ensure results are stored in an organized manner for easy comparison and tracking.
