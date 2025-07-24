@@ -7,6 +7,7 @@ from enum import Enum
 from pathlib import Path
 
 from pydantic import BaseModel, Field, field_serializer
+from tqdm.auto import tqdm
 
 
 class UUIDEncoder(json.JSONEncoder):
@@ -333,7 +334,9 @@ class KnowledgeGraph:
 
         # For each cluster, find all unique paths up to depth_limit
         cluster_sets: set[frozenset] = set()
-        for cluster_nodes in clusters.values():
+        for cluster_label, cluster_nodes in tqdm(
+            clusters.items(), desc="Processing clusters"
+        ):
             if len(cluster_nodes) < 2:
                 continue
 
@@ -352,7 +355,10 @@ class KnowledgeGraph:
                     )
 
             # For each cluster, identify all valid subpaths up to depth_limit
-            for source, target in itertools.permutations(cluster_nodes, 2):
+            for source, target in tqdm(
+                itertools.permutations(cluster_nodes, 2),
+                desc=f"Finding paths in cluster {cluster_label}",
+            ):
                 if not nx.has_path(subgraph, source, target):
                     continue
                 try:
