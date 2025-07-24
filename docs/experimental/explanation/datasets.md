@@ -5,7 +5,7 @@ When we evaluate AI systems, we typically work with two main types of data:
 1. **Evaluation Datasets**: These are stored under the `datasets` directory.
 2. **Evaluation Results**: These are stored under the `experiments` directory.
 
-## Evaluation Datasets?
+## Evaluation Datasets
 
 A dataset for evaluations contains:
 
