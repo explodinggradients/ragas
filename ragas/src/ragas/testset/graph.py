@@ -264,52 +264,91 @@ class KnowledgeGraph:
         ----------
         relationship_condition : Callable[[Relationship], bool], optional
             A function that takes a Relationship and returns a boolean, by default lambda _: True
+        depth_limit : int, optional
+            The maximum depth of relationships (number of edges) to consider for clustering, by default 3.
 
         Returns
         -------
         List[Set[Node]]
             A list of sets, where each set contains nodes that form a cluster.
         """
-        clusters = []
-        visited_paths = set()
+        import itertools
+        from collections import defaultdict
 
+        import networkx as nx
+
+        if depth_limit < 2:
+            raise ValueError("Depth limit must be at least 2")
+
+        # Filter relationships based on the condition
         relationships = [
             rel for rel in self.relationships if relationship_condition(rel)
         ]
+        relationship_map = defaultdict(set)
+        for rel in relationships:
+            relationship_map[rel.source.id].add(rel.target.id)
+            if rel.bidirectional:
+                relationship_map[rel.target.id].add(rel.source.id)
 
-        def dfs(node: Node, cluster: t.Set[Node], depth: int, path: t.Tuple[Node, ...]):
-            if depth >= depth_limit or path in visited_paths:
-                return
-            visited_paths.add(path)
-            cluster.add(node)
-
-            for rel in relationships:
-                neighbor = None
-                if rel.source == node and rel.target not in cluster:
-                    neighbor = rel.target
-                elif (
-                    rel.bidirectional
-                    and rel.target == node
-                    and rel.source not in cluster
-                ):
-                    neighbor = rel.source
-
-                if neighbor is not None:
-                    dfs(neighbor, cluster.copy(), depth + 1, path + (neighbor,))
-
-            # Add completed path-based cluster
-            if len(cluster) > 1:
-                clusters.append(cluster)
-
+        # Create a NetworkX graph
+        # We really want a DiGraph, but cliques works using bidirectional edges
+        G = nx.Graph()
         for node in self.nodes:
-            initial_cluster = set()
-            dfs(node, initial_cluster, 0, (node,))
+            G.add_node(node.id, node_obj=node)
+
+        for rel in relationships:
+            G.add_edge(rel.source.id, rel.target.id, relationship_obj=rel)
+
+        clusters = []
+
+        # Use clique percolation method with k = 3
+        k = 3
+        cliques = list(nx.find_cliques(G))
+        k_cliques = [clique for clique in cliques if len(clique) >= k]
+
+        if not k_cliques:
+            return []
+
+        # Apply clique percolation method
+        communities = list(nx.algorithms.community.k_clique_communities(G, k))
+
+        for community in communities:
+            subgraph = G.subgraph(community)
+
+            # For each cluster, identify all valid subpaths up to depth_limit
+            valid_paths = set()
+            for source, target in itertools.permutations(community, 2):
+                if not nx.has_path(subgraph, source, target):
+                    continue
+                try:
+                    for path in nx.all_simple_paths(
+                        subgraph, source, target, cutoff=depth_limit
+                    ):
+                        if len(path) < 2:
+                            continue
+
+                        # filter out paths that are not valid based on our relationships
+                        # (this is a side effect of having to use Graph instead of DiGraph)
+                        if all(
+                            t in relationship_map[s]
+                            for s, t in itertools.pairwise(path)
+                        ):
+                            path_nodes = {
+                                G.nodes[node_id]["node_obj"] for node_id in path
+                            }
+                            valid_paths.add(frozenset(path_nodes))
+                except nx.NetworkXNoPath:
+                    continue
+
+            # Add unique path clusters
+            for path_cluster in valid_paths:
+                if len(path_cluster) > 1:
+                    clusters.append(set(path_cluster))
 
         # Remove duplicates by converting clusters to frozensets
         unique_clusters = [
             set(cluster) for cluster in set(frozenset(c) for c in clusters)
         ]
-
         return unique_clusters
 
     def remove_node(

@@ -26,6 +26,7 @@ all = [
     "rouge_score",
     "rapidfuzz",
     "pandas",
+    "networkx",
     "datacompy",
     "llama_index",
     "r2r",
