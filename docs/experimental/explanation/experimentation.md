@@ -1,10 +1,8 @@
-## Experiments
-
-### What is an experiment?
+## What is an experiment?
 
 An experiment is a deliberate change made to your application to test a hypothesis or idea. For example, in a Retrieval-Augmented Generation (RAG) system, you might replace the retriever model to evaluate how a new embedding model impacts chatbot responses.
 
-#### Principles of a Good Experiment
+### Principles of a Good Experiment
 
 1. **Define measurable metrics**: Use metrics like accuracy, precision, or recall to quantify the impact of your changes.
 2. **Systematic result storage**: Ensure results are stored in an organized manner for easy comparison and tracking.
@@ -18,15 +16,15 @@ graph LR
     D --> A
 ```
 
-### What is the idea of experiments in Ragas?
+## What is the idea of experiments in Ragas?
 
-#### Components of an Experiment
+### Components of an Experiment
 
 1. **Test dataset**: The data used to evaluate the system.
 2. **Application endpoint**: The application, component or model being tested.
 3. **Metrics**: Quantitative measures to assess performance.
 
-#### Execution Process
+### Execution Process
 
 Running an experiment involves:
 
@@ -34,7 +32,7 @@ Running an experiment involves:
 2. Calculating metrics to quantify performance.
 3. Returning and storing the results.
 
-#### Using the `@experiment` Decorator
+## Using the `@experiment` Decorator
 
 The `@experiment` decorator in Ragas simplifies the orchestration, scaling, and storage of experiments. Here's an example:
 
@@ -60,6 +58,6 @@ async def my_experiment(row):
 my_experiment.arun(dataset)
 ```
 
-#### Result Storage
+## Result Storage
 
 Once executed, Ragas processes each row in the dataset, runs it through the function, and stores the results in the `experiments` folder. The storage backend can be configured based on your preferences.
