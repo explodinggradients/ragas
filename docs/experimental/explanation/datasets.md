@@ -1,3 +1,5 @@
+# Datasets and Experiment Results
+
 When we evaluate AI systems, we typically work with two main types of data:
 
 1. **Evaluation Datasets**: These are stored under the `datasets` directory.
@@ -5,7 +7,12 @@ When we evaluate AI systems, we typically work with two main types of data:
 
 ## Evaluation Datasets?
 
-A dataset for evaluations contains a set of inputs and optionally expected outputs or metadata from the system you wish to evaluate. For example, in a Retrieval-Augmented Generation (RAG) system it might include query, Grading notes, and metadata like query complexity.
+A dataset for evaluations contains:
+1. Inputs: a set of inputs that the system will process.
+2. Expected outputs (Optional): the expected outputs or responses from the system for the given inputs.
+3. Metadata (Optional): additional information that can be stored alongside the dataset.
+
+For example, in a Retrieval-Augmented Generation (RAG) system it might include query (input to the system), Grading notes (to grade the output from the system), and metadata like query complexity.
 
 Metadata is particularly useful for slicing and dicing the dataset, allowing you to analyze results across different facets. For instance, you might want to see how your system performs on complex queries versus simple ones, or how it handles different languages.
 

@@ -1,3 +1,5 @@
+# Experiments
+
 ## What is an experiment?
 
 An experiment is a deliberate change made to your application to test a hypothesis or idea. For example, in a Retrieval-Augmented Generation (RAG) system, you might replace the retriever model to evaluate how a new embedding model impacts chatbot responses.
@@ -16,7 +18,7 @@ graph LR
     D --> A
 ```
 
-## What is the idea of experiments in Ragas?
+## Experiments in Ragas
 
 ### Components of an Experiment
 
