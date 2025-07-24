@@ -9,8 +9,7 @@ def test_knowledge_graph_save_with_problematic_chars(tmp_path):
 
     # Create nodes with various Unicode characters including ones that might cause charmap codec issues
     problematic_chars = [
-        chr(i)
-        for i in range(0x0080, 0x00FF)  # Extended ASCII/Latin-1 characters
+        chr(i) for i in range(0x0080, 0x00FF)  # Extended ASCII/Latin-1 characters
     ] + [
         "\u2022",  # bullet
         "\u2192",  # arrow
@@ -248,7 +247,8 @@ class TestFindIndirectClusters:
 
     def test_bidirectional(self):
         """Test that bidirectional relationships are handled correctly.
-        Since relationships are filtered by type, we can assume that all relationships will be bidirectional"""
+        Since relationships are filtered by type, we can assume that all relationships will be bidirectional
+        """
         # Arrange - Use the simple_graph and add a bidirectional relationship
         kg = KnowledgeGraph()
         node_a = Node(properties={"id": "A"})
@@ -330,6 +330,8 @@ class TestFindIndirectClusters:
             {node_f, node_g, node_h},
             {node_e, node_f, node_g, node_h},
         ]
+
+        self.assert_sets_equal(clusters, expected_clusters)
 
     def test_no_valid_paths(self):
         # Arrange
