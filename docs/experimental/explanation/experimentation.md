@@ -41,20 +41,20 @@ The `@experiment` decorator in Ragas simplifies the orchestration, scaling, and 
 ```python
 from ragas_experimental import experiment
 
+# Define your metric and dataset
+my_metric = ...
+dataset = ...
+
 @experiment
 async def my_experiment(row):
     # Process the query through your application
     response = my_app(row.query)
     
     # Calculate the metric
-    metric = my_metrics.score(response, row.ground_truth)
+    metric = my_metric.score(response, row.ground_truth)
     
     # Return results
     return {**row, "response": response, "accuracy": metric.value}
-
-# Define your metric and dataset
-my_metric = ...
-dataset = ...
 
 # Run the experiment
 my_experiment.arun(dataset)
