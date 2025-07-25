@@ -9,7 +9,8 @@ def test_knowledge_graph_save_with_problematic_chars(tmp_path):
 
     # Create nodes with various Unicode characters including ones that might cause charmap codec issues
     problematic_chars = [
-        chr(i) for i in range(0x0080, 0x00FF)  # Extended ASCII/Latin-1 characters
+        chr(i)
+        for i in range(0x0080, 0x00FF)  # Extended ASCII/Latin-1 characters
     ] + [
         "\u2022",  # bullet
         "\u2192",  # arrow
@@ -172,18 +173,7 @@ class TestFindIndirectClusters:
             ),
             (
                 4,
-                [
-                    # depth_limit=4 allows paths up to length 4 (5 nodes)
-                    # but we don't have any paths that long in the simple graph
-                    ("A", "B"),
-                    ("A", "C"),
-                    ("B", "C"),
-                    ("A", "B", "C"),
-                    ("E", "F"),
-                    ("E", "G"),
-                    ("F", "G"),
-                    ("E", "F", "G"),
-                ],
+                [],  # depth_limit=4 > max(cluster_size), so no paths are identified
             ),
         ],
     )
@@ -383,9 +373,6 @@ class TestFindIndirectClusters:
         )
 
         # Assert
-        # Should only find clusters using "link" relationships, excluding "blocked" ones
-        assert len(clusters_connected) != len(clusters_broken)
-
         expected_clusters = [
             {node_a, node_b},
             {node_a, node_c},
@@ -393,6 +380,8 @@ class TestFindIndirectClusters:
             {node_a, node_b, node_c},
         ]
 
+        # Should only find clusters using "link" relationships, excluding "blocked" ones
+        assert len(clusters_connected) != len(clusters_broken)
         self.assert_sets_equal(clusters_broken, expected_clusters)
 
     def test_disconnected_components(self):
@@ -427,17 +416,13 @@ class TestFindIndirectClusters:
         # Assert
         # Should find two separate triangular clusters
         expected_clusters = [
-            # Edges from triangle A-B-C
             {node_a, node_b},
             {node_a, node_c},
             {node_b, node_c},
-            # Triangle A-B-C
             {node_a, node_b, node_c},
-            # Edges from triangle X-Y-Z
             {node_x, node_y},
             {node_x, node_z},
             {node_y, node_z},
-            # Triangle X-Y-Z
             {node_x, node_y, node_z},
         ]
         self.assert_sets_equal(clusters, expected_clusters)

@@ -1,6 +1,7 @@
 import json
 import typing as t
 import uuid
+from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
@@ -291,19 +292,102 @@ class KnowledgeGraph:
         List[Set[Node]]
             A list of sets, where each set contains nodes that form a cluster.
         """
-        import itertools
-        from collections import defaultdict
 
         import networkx as nx
-        from sknetwork.clustering import Leiden
-        from sknetwork.data import from_edge_list
 
+        def get_node_clusters(
+            relationships: list[Relationship],
+        ) -> dict[int, set[uuid.UUID]]:
+            """Identify clusters of nodes using Leiden algorithm."""
+            from sknetwork.clustering import Leiden
+            from sknetwork.data import from_edge_list
+
+            # graph: sknetwork.data.Dataset
+            graph = from_edge_list(
+                [(str(rel.source.id), str(rel.target.id)) for rel in relationships],
+                directed=True,
+            )
+
+            # Apply Leiden clustering
+            leiden = Leiden(random_state=42)
+            cluster_labels = leiden.fit_predict(graph.adjacency)
+
+            # Group nodes by cluster
+            clusters: defaultdict[int, set[uuid.UUID]] = defaultdict(set)
+            for label, node_id in zip(cluster_labels, graph.names):
+                clusters[int(label)].add(uuid.UUID(node_id))
+
+            return dict(clusters)
+
+        def to_nx_digraph(
+            nodes: set[uuid.UUID], relationships: list[Relationship]
+        ) -> nx.DiGraph:
+            """Convert a set of nodes and relationships to a directed graph."""
+            # Create directed subgraph for this cluster
+            graph = nx.DiGraph()
+            for node_id in nodes:
+                graph.add_node(
+                    node_id,
+                    node_obj=self.get_node_by_id(node_id),
+                )
+            for rel in relationships:
+                if rel.source.id in nodes and rel.target.id in nodes:
+                    graph.add_edge(rel.source.id, rel.target.id, relationship_obj=rel)
+            return graph
+
+        def max_simple_paths(n: int, k: int = depth_limit) -> int:
+            """Estimate the number of paths up to depth_limit that would exist in a fully-connected graph of size cluster_nodes."""
+            from math import prod
+
+            if n - k - 1 <= 0:
+                return 0
+
+            return prod(n - i for i in range(k + 1))
+
+        def exhaustive_paths(
+            graph: nx.DiGraph, depth_limit: int
+        ) -> list[list[uuid.UUID]]:
+            """Find all simple paths in the subgraph up to depth_limit."""
+            import itertools
+
+            all_paths: list[list[uuid.UUID]] = []
+            for source, target in itertools.permutations(graph.nodes(), 2):
+                if not nx.has_path(graph, source, target):
+                    continue
+                try:
+                    paths = nx.all_simple_paths(
+                        graph,
+                        source,
+                        target,
+                        cutoff=depth_limit,
+                    )
+                    all_paths.extend(paths)
+                except nx.NetworkXNoPath:
+                    continue
+
+            return all_paths
+
+        def sample_paths_from_graph(
+            graph: nx.DiGraph, depth_limit: int, sample_size: int = 1000
+        ) -> list[list[uuid.UUID]]:
+            """Sample random paths in the graph up to depth_limit."""
+            sampled_paths: list[list[uuid.UUID]] = []
+            for depth in range(2, depth_limit + 1):
+                paths = nx.generate_random_paths(
+                    graph,
+                    sample_size=sample_size,
+                    path_length=depth,
+                )
+                sampled_paths.extend(paths)
+            return sampled_paths
+
+        # depth 2: 3 nodes, 2 edges (A -> B -> C)
         if depth_limit < 2:
             raise ValueError("Depth limit must be at least 2")
 
         # Filter relationships based on the condition
-        filtered_relationships = []
-        relationship_map = defaultdict(set)
+        filtered_relationships: list[Relationship] = []
+        relationship_map: defaultdict[uuid.UUID, set[uuid.UUID]] = defaultdict(set)
         for rel in self.relationships:
             if relationship_condition(rel):
                 filtered_relationships.append(rel)
@@ -314,76 +398,33 @@ class KnowledgeGraph:
         if not filtered_relationships:
             return []
 
-        # graph: Dataset
-        graph = from_edge_list(
-            [
-                (str(rel.source.id), str(rel.target.id))
-                for rel in filtered_relationships
-            ],
-            directed=True,
-        )
+        clusters = get_node_clusters(filtered_relationships)
 
-        # Apply Leiden clustering
-        leiden = Leiden(random_state=42)
-        cluster_labels = leiden.fit_predict(graph.adjacency)
-
-        # Group nodes by cluster
-        clusters = defaultdict(set)
-        for label, node_id in zip(cluster_labels, graph.names):
-            clusters[int(label)].add(uuid.UUID(node_id))
-
-        # For each cluster, find all unique paths up to depth_limit
+        # For each cluster, find valid paths up to depth_limit
         cluster_sets: set[frozenset] = set()
-        for cluster_label, cluster_nodes in tqdm(
+        for _cluster_label, cluster_nodes in tqdm(
             clusters.items(), desc="Processing clusters"
         ):
-            if len(cluster_nodes) < 2:
+            if len(cluster_nodes) < depth_limit:
                 continue
 
-            # Create subgraph for this cluster using the directed graph
-            # Ideally we would want to use a DiGraph but all_simple_paths requires a Graph
-            subgraph = nx.Graph()
-            for node_id in cluster_nodes:
-                subgraph.add_node(
-                    node_id,
-                    node_obj=self.get_node_by_id(node_id),
-                )
-            for rel in filtered_relationships:
-                if rel.source.id in cluster_nodes and rel.target.id in cluster_nodes:
-                    subgraph.add_edge(
-                        rel.source.id, rel.target.id, relationship_obj=rel
-                    )
+            subgraph = to_nx_digraph(
+                nodes=cluster_nodes, relationships=filtered_relationships
+            )
 
-            # For each cluster, identify all valid subpaths up to depth_limit
-            for source, target in tqdm(
-                itertools.permutations(cluster_nodes, 2),
-                desc=f"Finding paths in cluster {cluster_label}",
-            ):
-                if not nx.has_path(subgraph, source, target):
-                    continue
-                try:
-                    for path in nx.all_simple_paths(
-                        subgraph, source, target, cutoff=depth_limit
-                    ):
-                        if len(path) < 2:
-                            continue
+            sampled_paths: list[list[uuid.UUID]] = []
+            # if the expected number of paths is small, use exhaustive search
+            # otherwise sample with random walks
+            if max_simple_paths(n=len(cluster_nodes), k=depth_limit) < 1000:
+                sampled_paths.extend(exhaustive_paths(subgraph, depth_limit))
+            else:
+                sampled_paths.extend(sample_paths_from_graph(subgraph, depth_limit))
 
-                        # # filter out paths that are not valid based on our relationships
-                        # # (this is a side effect of having to use Graph instead of DiGraph)
-                        # if all(
-                        #     t in relationship_map[s]
-                        #     for s, t in itertools.pairwise(path)
-                        # ):
-                        #     path_nodes = {
-                        #         subgraph.nodes[node_id]["node_obj"] for node_id in path
-                        #     }
-                        if len(path) > 1:
-                            path_nodes = {
-                                subgraph.nodes[node_id]["node_obj"] for node_id in path
-                            }
-                            cluster_sets.add(frozenset(path_nodes))
-                except nx.NetworkXNoPath:
-                    continue
+            # convert paths (node IDs) to sets of Node objects
+            # and deduplicate
+            for path in sampled_paths:
+                path_nodes = {subgraph.nodes[node_id]["node_obj"] for node_id in path}
+                cluster_sets.add(frozenset(path_nodes))
 
         return [set(path_nodes) for path_nodes in cluster_sets]
 
