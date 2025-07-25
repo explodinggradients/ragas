@@ -350,6 +350,10 @@ class KnowledgeGraph:
             """Find all simple paths in the subgraph up to depth_limit."""
             import itertools
 
+            # Check if graph has enough nodes for meaningful paths
+            if len(graph) < 2:
+                return []
+
             all_paths: list[list[uuid.UUID]] = []
             for source, target in itertools.permutations(graph.nodes(), 2):
                 if not nx.has_path(graph, source, target):
@@ -371,8 +375,30 @@ class KnowledgeGraph:
             graph: nx.DiGraph, depth_limit: int, sample_size: int = 1000
         ) -> list[list[uuid.UUID]]:
             """Sample random paths in the graph up to depth_limit."""
+            # we're using a DiGraph, so we need to account for directionality
+            # if a node has no out-paths, then it will cause an error in `generate_random_paths`
+
+            # Iteratively remove nodes with no out-paths to handle cascading effects
+            while True:
+                nodes_with_no_outpaths = [
+                    n for n in graph.nodes() if graph.out_degree(n) == 0
+                ]
+                if not nodes_with_no_outpaths:
+                    break
+                graph.remove_nodes_from(nodes_with_no_outpaths)
+
+            # Check if graph is empty after node removal
+            if len(graph) == 0:
+                return []
+
             sampled_paths: list[list[uuid.UUID]] = []
             for depth in range(2, depth_limit + 1):
+                # Additional safety check before generating paths
+                if (
+                    len(graph) < depth + 1
+                ):  # Need at least depth+1 nodes for a path of length depth
+                    continue
+
                 paths = nx.generate_random_paths(
                     graph,
                     sample_size=sample_size,
