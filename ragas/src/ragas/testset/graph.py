@@ -252,7 +252,7 @@ class KnowledgeGraph:
     def __str__(self) -> str:
         return self.__repr__()
 
-    def get_node_by_id(self, node_id: uuid.UUID | str) -> t.Optional[Node]:
+    def get_node_by_id(self, node_id: t.Union[uuid.UUID, str]) -> t.Optional[Node]:
         """
         Retrieves a node by its ID.
 
@@ -302,19 +302,21 @@ class KnowledgeGraph:
             from sknetwork.clustering import Leiden
             from sknetwork.data import from_edge_list
 
+            # NOTE: the upstream sknetwork Dataset has some issues with type hints,
+            # so we use type: ignore to bypass them.
             # graph: sknetwork.data.Dataset
-            graph = from_edge_list(
+            graph = from_edge_list(  # type: ignore
                 [(str(rel.source.id), str(rel.target.id)) for rel in relationships],
                 directed=True,
             )
 
             # Apply Leiden clustering
             leiden = Leiden(random_state=42)
-            cluster_labels = leiden.fit_predict(graph.adjacency)
+            cluster_labels = leiden.fit_predict(graph.adjacency)  # type: ignore
 
             # Group nodes by cluster
             clusters: defaultdict[int, set[uuid.UUID]] = defaultdict(set)
-            for label, node_id in zip(cluster_labels, graph.names):
+            for label, node_id in zip(cluster_labels, graph.names):  # type: ignore
                 clusters[int(label)].add(uuid.UUID(node_id))
 
             return dict(clusters)
