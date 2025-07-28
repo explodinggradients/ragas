@@ -49,7 +49,7 @@ def update_strings(obj: t.Any, old_strings: list[str], new_strings: list[str]) -
         return replace_string(obj)
     elif isinstance(obj, BaseModel):
         new_obj = copy.deepcopy(obj)
-        for field in new_obj.model_fields:
+        for field in new_obj.__class__.model_fields:
             setattr(
                 new_obj,
                 field,
