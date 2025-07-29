@@ -32,19 +32,21 @@ pip install "ragas_experimental[gdrive]"
 
 Choose one of two authentication methods:
 
-#### Option A: OAuth 2.0 (Recommended for Development)
-
-1. In Google Cloud Console, go to "Credentials"
-2. Click "Create Credentials" → "OAuth client ID"
-3. Choose "Desktop application"
-4. Download the JSON file (save as `credentials.json`)
-
-#### Option B: Service Account (Recommended for Production)
+#### Option A: Service Account (Recommended)
 
 1. In Google Cloud Console, go to "Credentials"
 2. Click "Create Credentials" → "Service account"
 3. Create the service account and download the JSON key file
 4. Share your Google Drive folder with the service account email
+
+*This is the preferred method as it works well for both scripts and production environments without requiring user interaction.*
+
+#### Option B: OAuth 2.0 (Alternative for Interactive Use)
+
+1. In Google Cloud Console, go to "Credentials"
+2. Click "Create Credentials" → "OAuth client ID"
+3. Choose "Desktop application"
+4. Download the JSON file (save as `credentials.json`)
 
 ### 3. Google Drive Folder Setup
 
