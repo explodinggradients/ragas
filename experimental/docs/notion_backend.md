@@ -216,10 +216,6 @@ backend = NotionBackend(
 
 ## 🚨 Troubleshooting
 
-### Common Issues
-
-## Troubleshooting
-
 ### "Cannot access Notion database"
 
 - Check integration token starts with `secret_` or `ntn_`
