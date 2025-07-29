@@ -38,11 +38,13 @@ readme = "README.md"
 all = ["pandas"]
 examples = ["openai>=1.0.0"]
 tracing = ["langfuse", "mlflow"]
+notion = ["notion-client>=2.0.0"]
 
 [project.entry-points."ragas.backends"]
 "local/csv" = "ragas_experimental.backends.local_csv:LocalCSVBackend"
 "local/jsonl" = "ragas_experimental.backends.local_jsonl:LocalJSONLBackend"
 "inmemory" = "ragas_experimental.backends.inmemory:InMemoryBackend"
+"notion" = "ragas_experimental.backends.notion:NotionBackend"
 
 [tool.setuptools.packages.find]
 include = ["ragas_experimental*", "ragas_examples*"]

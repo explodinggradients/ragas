@@ -13,6 +13,14 @@ from .registry import (
 from .local_csv import LocalCSVBackend
 from .local_jsonl import LocalJSONLBackend
 
+# Optional backends that require additional dependencies
+try:
+    from .notion import NotionBackend
+    NOTION_AVAILABLE = True
+except ImportError:
+    NotionBackend = None
+    NOTION_AVAILABLE = False
+
 
 __all__ = [
     "BaseBackend",
@@ -24,3 +32,6 @@ __all__ = [
     "print_available_backends",
     "BACKEND_REGISTRY",
 ]
+
+if NOTION_AVAILABLE:
+    __all__.append("NotionBackend")
