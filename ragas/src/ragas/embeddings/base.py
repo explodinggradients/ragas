@@ -235,7 +235,7 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
         self.is_cross_encoder = bool(
             np.intersect1d(
                 list(MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING_NAMES.values()),
-                config.architectures,
+                config.architectures or [],
             )
         )
 
