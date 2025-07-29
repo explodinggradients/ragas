@@ -201,7 +201,14 @@ class TestNotionBackendIntegration:
             properties = kwargs.get("properties", {})
             assert "Data" in properties, "Properties should contain 'Data' field"
             assert "Name" in properties, "Properties should contain 'Name' field"
-            assert properties.get("Name") == "mock_demo", f"Expected Name to be 'mock_demo', got {properties.get('Name')}"
+            
+            # Name is in Notion's title format: {'title': [{'text': {'content': 'value'}}]}
+            name_prop = properties.get("Name")
+            if isinstance(name_prop, dict) and "title" in name_prop:
+                actual_name = name_prop["title"][0]["text"]["content"]
+            else:
+                actual_name = str(name_prop)
+            assert actual_name == "mock_demo", f"Expected Name to be 'mock_demo', got {actual_name}"
             
             print("✅ Mock assertion examples completed successfully")
 
@@ -215,8 +222,9 @@ class TestNotionBackendIntegration:
                     backend="notion",
                     data_model=TestDataModel
                 )
-                pytest.fail("Should have raised ValueError for missing config")
-            except ValueError as e:
+                pytest.fail("Should have raised RuntimeError for missing config")
+            except RuntimeError as e:
+                # The error gets wrapped in RuntimeError by the Dataset class
                 assert "token required" in str(e).lower()
                 print("✅ Proper error handling for missing configuration")
 
