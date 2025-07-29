@@ -8,12 +8,15 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-# Mock notion_client before importing our backend
-with patch.dict('sys.modules', {
-    'notion_client': MagicMock(),
-    'notion_client.errors': MagicMock()
-}):
-    from ragas_experimental.backends.notion import NotionBackend, NOTION_AVAILABLE
+# Check if notion_client is available
+try:
+    import notion_client
+    NOTION_INSTALLED = True
+except ImportError:
+    NOTION_INSTALLED = False
+
+# Import the backend - tests will handle mocking as needed
+from ragas_experimental.backends.notion import NotionBackend
 
 
 class TestRecord(BaseModel):
