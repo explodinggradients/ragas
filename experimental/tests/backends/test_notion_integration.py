@@ -1,4 +1,9 @@
-"""Integration test for Notion backend with Dataset system."""
+"""Integration test for Notion backend with Dataset system.
+
+This test module includes improved mock assertions that verify the specific
+data structure passed to notion_client.pages.create() calls, rather than
+just checking if the method was called.
+"""
 
 import os
 import pytest
@@ -102,11 +107,97 @@ class TestNotionBackendIntegration:
             
             # Test save operation
             dataset.save()
-            assert mock_notion_client.pages.create.called
-            print("✅ Save operation successful")
+            
+            # Verify pages.create was called
+            assert mock_notion_client.pages.create.called, "pages.create should have been called"
+            
+            # Check that pages.create was called with expected data structure
+            call_args = mock_notion_client.pages.create.call_args
+            assert call_args is not None, "pages.create should have been called with arguments"
+            
+            # Verify the call structure
+            args, kwargs = call_args
+            assert "parent" in kwargs, "pages.create should have 'parent' parameter"
+            assert "properties" in kwargs, "pages.create should have 'properties' parameter"
+            
+            # Verify parent structure (should reference a database)
+            parent = kwargs["parent"]
+            assert "database_id" in parent or "type" in parent, "parent should reference a database"
+            
+            # Verify properties contain expected fields for Notion database structure
+            properties = kwargs["properties"]
+            expected_fields = ["Name", "Type", "Item_Name", "Data", "Created_At", "Updated_At"]
+            for field in expected_fields:
+                assert field in properties, f"Expected field '{field}' not found in properties. Available fields: {list(properties.keys())}"
+            
+            # Verify the data was properly serialized and contains our test record
+            assert "Data" in properties, "Data field should be present in properties"
+            # The Data field should contain our test record data (usually JSON-serialized)
+            data_value = properties["Data"]
+            if isinstance(data_value, dict) and "rich_text" in data_value:
+                # Notion rich text format
+                data_content = data_value["rich_text"][0]["text"]["content"] if data_value["rich_text"] else ""
+            else:
+                data_content = str(data_value)
+            
+            # Verify our test data is in the serialized content
+            assert "What is integration testing?" in data_content, f"Test question not found in data: {data_content}"
+            
+            print("✅ Save operation successful with proper data structure verification")
+            
+            # Additional verification: check call count for more specific assertions
+            assert mock_notion_client.pages.create.call_count == 1, f"Expected exactly 1 call to pages.create, got {mock_notion_client.pages.create.call_count}"
             
         except Exception as e:
             pytest.fail(f"Dataset integration test failed: {e}")
+
+    def test_mock_assertion_examples(self, mock_notion_client):
+        """Demonstrate different approaches to specific mock assertions."""
+        # This test shows various ways to make mock assertions more specific
+        # and informative, rather than just checking if a method was called.
+        
+        with patch.dict(os.environ, {"NOTION_TOKEN": "test_token", "NOTION_DATABASE_ID": "test_db"}):
+            dataset = Dataset(
+                name="mock_demo",
+                backend="notion", 
+                data_model=TestDataModel
+            )
+            
+            test_record = TestDataModel(
+                question="Demo question?",
+                answer="Demo answer",
+                score=0.85
+            )
+            dataset.append(test_record)
+            dataset.save()
+            
+            # Approach 1: Basic call verification (original style)
+            assert mock_notion_client.pages.create.called
+            
+            # Approach 2: Call count verification
+            assert mock_notion_client.pages.create.call_count == 1
+            
+            # Approach 3: Argument inspection (recommended approach)
+            call_args = mock_notion_client.pages.create.call_args
+            assert call_args is not None
+            args, kwargs = call_args
+            
+            # Approach 4: Using assert_called_with for exact matching
+            # Note: This would require knowing the exact expected values
+            # mock_notion_client.pages.create.assert_called_with(...)
+            
+            # Approach 5: Using assert_called_once for call count + verification
+            # This ensures the method was called exactly once
+            assert mock_notion_client.pages.create.called
+            assert mock_notion_client.pages.create.call_count == 1
+            
+            # Approach 6: Detailed data structure verification (our improved approach)
+            properties = kwargs.get("properties", {})
+            assert "Data" in properties, "Properties should contain 'Data' field"
+            assert "Name" in properties, "Properties should contain 'Name' field"
+            assert properties.get("Name") == "mock_demo", f"Expected Name to be 'mock_demo', got {properties.get('Name')}"
+            
+            print("✅ Mock assertion examples completed successfully")
 
     def test_backend_error_handling_in_dataset(self):
         """Test error handling when using Notion backend with Dataset."""
