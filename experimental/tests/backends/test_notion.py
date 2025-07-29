@@ -19,7 +19,7 @@ except ImportError:
 from ragas_experimental.backends.notion import NotionBackend
 
 
-class TestRecord(BaseModel):
+class RecordModel(BaseModel):
     """Test data model for testing."""
     question: str
     answer: str
