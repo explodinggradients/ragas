@@ -16,6 +16,7 @@ from .local_jsonl import LocalJSONLBackend
 # Optional backends that require additional dependencies
 try:
     from .notion import NotionBackend
+
     NOTION_AVAILABLE = True
 except ImportError:
     NotionBackend = None

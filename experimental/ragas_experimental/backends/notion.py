@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 try:
     from notion_client import Client as NotionClient
     from notion_client.errors import APIResponseError
+
     NOTION_AVAILABLE = True
 except ImportError:
     NotionClient = None
@@ -33,7 +34,7 @@ class NotionBackend(BaseBackend):
     Database Structure:
         Required Properties:
         - Name (Title): The name of the dataset/experiment
-        - Type (Select): "dataset" or "experiment" 
+        - Type (Select): "dataset" or "experiment"
         - Item_Name (Rich Text): Name/ID of individual items
         - Data (Rich Text): JSON-serialized data for each item
         - Created_At (Date): When the item was created
@@ -79,7 +80,7 @@ class NotionBackend(BaseBackend):
                 "Notion token required. Set NOTION_TOKEN environment variable "
                 "or pass token parameter."
             )
-        
+
         if not self.database_id:
             raise ValueError(
                 "Notion database ID required. Set NOTION_DATABASE_ID environment variable "
@@ -88,7 +89,7 @@ class NotionBackend(BaseBackend):
 
         # Initialize Notion client
         self.client = NotionClient(auth=self.token)
-        
+
         # Validate database access and structure
         self._validate_database()
 
@@ -97,19 +98,17 @@ class NotionBackend(BaseBackend):
         try:
             database = self.client.databases.retrieve(database_id=self.database_id)
         except (APIResponseError, Exception) as e:
-            raise ValueError(
-                f"Cannot access Notion database {self.database_id}: {e}"
-            )
+            raise ValueError(f"Cannot access Notion database {self.database_id}: {e}")
 
         # Check for required properties
         properties = database.get("properties", {})
         required_props = {
             "Name": "title",
-            "Type": "select", 
+            "Type": "select",
             "Item_Name": "rich_text",
             "Data": "rich_text",
             "Created_At": "date",
-            "Updated_At": "date"
+            "Updated_At": "date",
         }
 
         missing_props = []
@@ -131,7 +130,10 @@ class NotionBackend(BaseBackend):
         # Ensure Type property has correct select options
         type_property = properties["Type"]
         if type_property["type"] == "select":
-            options = {opt["name"] for opt in type_property.get("select", {}).get("options", [])}
+            options = {
+                opt["name"]
+                for opt in type_property.get("select", {}).get("options", [])
+            }
             required_options = {"dataset", "experiment"}
             missing_options = required_options - options
             if missing_options:
@@ -140,10 +142,12 @@ class NotionBackend(BaseBackend):
                     f"These will be created automatically when first used."
                 )
 
-    def _convert_to_notion_properties(self, data_dict: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+    def _convert_to_notion_properties(
+        self, data_dict: t.Dict[str, t.Any]
+    ) -> t.Dict[str, t.Any]:
         """Convert Python data to Notion property format."""
         notion_props = {}
-        
+
         for key, value in data_dict.items():
             if key in ["Name", "Type", "Item_Name", "Data", "Created_At", "Updated_At"]:
                 # Handle special properties
@@ -170,18 +174,20 @@ class NotionBackend(BaseBackend):
                     content = content[:1997] + "..."
                     logger.warning(f"Truncated {key} content to fit Notion limits")
                 notion_props[key] = {"rich_text": [{"text": {"content": content}}]}
-                
+
         return notion_props
 
-    def _convert_from_notion_properties(self, page: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+    def _convert_from_notion_properties(
+        self, page: t.Dict[str, t.Any]
+    ) -> t.Dict[str, t.Any]:
         """Convert Notion page properties to Python data."""
         properties = page.get("properties", {})
         result = {}
-        
+
         for prop_name, prop_data in properties.items():
             # Handle both actual Notion API format and test format
             prop_type = prop_data.get("type")
-            
+
             # If no type field, infer from the data structure (for test compatibility)
             if prop_type is None:
                 if "title" in prop_data:
@@ -192,17 +198,19 @@ class NotionBackend(BaseBackend):
                     prop_type = "rich_text"
                 elif "date" in prop_data:
                     prop_type = "date"
-            
+
             if prop_type == "title":
                 title_content = prop_data.get("title", [])
-                result[prop_name] = "".join([t.get("plain_text", "") for t in title_content])
+                result[prop_name] = "".join(
+                    [t.get("plain_text", "") for t in title_content]
+                )
             elif prop_type == "select":
                 select_data = prop_data.get("select")
                 result[prop_name] = select_data.get("name") if select_data else None
             elif prop_type == "rich_text":
                 rich_text_content = prop_data.get("rich_text", [])
                 text = "".join([t.get("plain_text", "") for t in rich_text_content])
-                
+
                 # Try to parse as JSON for Data field, otherwise keep as string
                 if prop_name == "Data" and text:
                     try:
@@ -217,35 +225,23 @@ class NotionBackend(BaseBackend):
             else:
                 # Handle other property types as best effort
                 result[prop_name] = str(prop_data)
-                
+
         return result
 
     def _query_database(
-        self, 
-        data_type: str, 
-        name: t.Optional[str] = None
+        self, data_type: str, name: t.Optional[str] = None
     ) -> t.List[t.Dict[str, t.Any]]:
         """Query the Notion database for specific data type and optionally name."""
         # Convert plural to singular to match what we save (datasets -> dataset)
-        type_value = data_type[:-1] if data_type.endswith('s') else data_type
-        
-        filter_conditions = {
-            "property": "Type",
-            "select": {
-                "equals": type_value
-            }
-        }
-        
+        type_value = data_type[:-1] if data_type.endswith("s") else data_type
+
+        filter_conditions = {"property": "Type", "select": {"equals": type_value}}
+
         if name:
             filter_conditions = {
                 "and": [
                     filter_conditions,
-                    {
-                        "property": "Name", 
-                        "title": {
-                            "equals": name
-                        }
-                    }
+                    {"property": "Name", "title": {"equals": name}},
                 ]
             }
 
@@ -253,7 +249,7 @@ class NotionBackend(BaseBackend):
             response = self.client.databases.query(
                 database_id=self.database_id,
                 filter=filter_conditions,
-                sorts=[{"property": "Created_At", "direction": "ascending"}]
+                sorts=[{"property": "Created_At", "direction": "ascending"}],
             )
             return response.get("results", [])
         except APIResponseError as e:
@@ -263,7 +259,7 @@ class NotionBackend(BaseBackend):
     def _load(self, data_type: str, name: str) -> t.List[t.Dict[str, t.Any]]:
         """Load data from Notion database."""
         pages = self._query_database(data_type, name)
-        
+
         if not pages:
             raise FileNotFoundError(
                 f"No {data_type[:-1]} named '{name}' found in Notion database"
@@ -297,16 +293,13 @@ class NotionBackend(BaseBackend):
         existing_pages = self._query_database(data_type, name)
         for page in existing_pages:
             try:
-                self.client.pages.update(
-                    page_id=page["id"],
-                    archived=True
-                )
+                self.client.pages.update(page_id=page["id"], archived=True)
             except APIResponseError as e:
                 logger.warning(f"Failed to archive existing page: {e}")
 
         # Create new entries
         current_time = datetime.now().isoformat()
-        
+
         for i, item in enumerate(data):
             # Create properties for the new page
             properties = {
@@ -315,15 +308,15 @@ class NotionBackend(BaseBackend):
                 "Item_Name": f"{name}_item_{i}",
                 "Data": json.dumps(item),
                 "Created_At": current_time,
-                "Updated_At": current_time
+                "Updated_At": current_time,
             }
-            
+
             notion_properties = self._convert_to_notion_properties(properties)
-            
+
             try:
                 self.client.pages.create(
                     parent={"database_id": self.database_id},
-                    properties=notion_properties
+                    properties=notion_properties,
                 )
             except APIResponseError as e:
                 logger.error(f"Failed to create page for item {i}: {e}")
@@ -332,14 +325,14 @@ class NotionBackend(BaseBackend):
     def _list(self, data_type: str) -> t.List[str]:
         """List all available datasets or experiments."""
         pages = self._query_database(data_type)
-        
+
         # Extract unique names
         names = set()
         for page in pages:
             converted = self._convert_from_notion_properties(page)
             if "Name" in converted and converted["Name"]:
                 names.add(converted["Name"])
-        
+
         return sorted(list(names))
 
     # Public interface methods (required by BaseBackend)
