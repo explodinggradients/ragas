@@ -322,22 +322,6 @@ class EvaluationRecord(BaseModel):
         return v
 ```
 
-## 🔐 Security
-
-- Keep integration tokens secure (never commit to version control)
-- Use environment variables for configuration
-- Regularly rotate tokens
-- Limit integration permissions to necessary databases
-
-## 🎉 Summary
-
-**Key Benefits:**
-
-- **Local-first development:** Start immediately, migrate when ready
-- **Same API:** Code works with any backend
-- **Team collaboration:** Rich Notion interface for sharing
-- **No vendor lock-in:** Data is portable between backends
-
 **Recommended Flow:**
 
 1. Develop with `backend="local/jsonl"`
