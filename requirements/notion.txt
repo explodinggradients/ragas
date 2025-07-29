@@ -1,2 +1,2 @@
 # Notion backend dependencies for Ragas experimental
-notion-client>=2.0.0
+notion-client>=2.0.0,<3.0.0
