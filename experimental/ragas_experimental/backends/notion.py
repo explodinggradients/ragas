@@ -92,66 +92,6 @@ class NotionBackend(BaseBackend):
         # Validate database access and structure
         self._validate_database()
 
-    @classmethod
-    def from_oauth(
-        cls, 
-        client_id: t.Optional[str] = None,
-        client_secret: t.Optional[str] = None,
-        redirect_uri: t.Optional[str] = None
-    ) -> "NotionBackend":
-        """Create NotionBackend using OAuth flow.
-        
-        This opens a browser for user authorization and automatically
-        sets up the database if needed.
-        
-        Args:
-            client_id: OAuth client ID (optional, uses env var if not provided)
-            client_secret: OAuth client secret (optional, uses env var if not provided) 
-            redirect_uri: OAuth redirect URI (optional, defaults to localhost)
-            
-        Returns:
-            NotionBackend instance ready to use
-            
-        Raises:
-            ImportError: If additional dependencies needed for OAuth
-            ValueError: If OAuth flow fails
-        """
-        try:
-            import webbrowser
-            import urllib.parse
-            from http.server import HTTPServer, BaseHTTPRequestHandler
-            import threading
-            import time
-        except ImportError:
-            raise ImportError(
-                "OAuth flow requires additional dependencies. "
-                "For now, use manual setup with integration tokens."
-            )
-        
-        # Get OAuth credentials
-        client_id = client_id or os.getenv("NOTION_CLIENT_ID")
-        client_secret = client_secret or os.getenv("NOTION_CLIENT_SECRET") 
-        redirect_uri = redirect_uri or "http://localhost:8080/callback"
-        
-        if not client_id:
-            # Fallback to simplified setup for now
-            logger.warning(
-                "OAuth not fully configured. See docs for manual setup with integration tokens."
-            )
-            raise ValueError(
-                "OAuth setup incomplete. Please use manual integration token setup for now.\n"
-                "See documentation for NOTION_TOKEN and NOTION_DATABASE_ID setup."
-            )
-        
-        # TODO: Implement full OAuth flow
-        # For now, this is a placeholder that guides users to manual setup
-        raise NotImplementedError(
-            "Full OAuth flow coming soon! For now, please use:\n"
-            "1. Create Notion integration at developers.notion.com\n"
-            "2. Set NOTION_TOKEN and NOTION_DATABASE_ID environment variables\n"
-            "3. Use NotionBackend() constructor"
-        )
-
     def _validate_database(self) -> None:
         """Validate database access and structure."""
         try:
