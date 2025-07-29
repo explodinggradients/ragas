@@ -108,6 +108,12 @@ class TestNotionBackendIntegration:
             # Test save operation
             dataset.save()
             
+            # ========================================================================
+            # IMPROVED MOCK ASSERTIONS: Check specific data structure passed to API
+            # ========================================================================
+            # Instead of just: assert mock_notion_client.pages.create.called
+            # We now verify the actual data structure passed to pages.create()
+            
             # Verify pages.create was called
             assert mock_notion_client.pages.create.called, "pages.create should have been called"
             
