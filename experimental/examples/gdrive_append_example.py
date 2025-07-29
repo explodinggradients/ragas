@@ -5,7 +5,7 @@ while preserving the existing records.
 """
 
 from pydantic import BaseModel
-from ragas_experimental.dataset import DataTable
+from ragas_experimental.dataset import Dataset
 
 
 # Example data model
@@ -27,7 +27,7 @@ def append_to_existing_dataset():
     
     try:
         # Try to load existing dataset
-        dataset = DataTable.load(
+        dataset = Dataset.load(
             name="evaluation_results",
             backend="gdrive",
             data_model=EvaluationRecord,
@@ -40,7 +40,7 @@ def append_to_existing_dataset():
     except FileNotFoundError:
         # Dataset doesn't exist, create a new one
         print("Dataset doesn't exist, creating new one")
-        dataset = DataTable[EvaluationRecord](
+        dataset = Dataset(
             name="evaluation_results",
             backend="gdrive",
             data_model=EvaluationRecord,
@@ -120,7 +120,7 @@ def create_multiple_datasets():
             )
         ])
     ]:
-        dataset = DataTable[EvaluationRecord](
+        dataset = Dataset(
             name=f"evaluation_{run_name}",
             backend="gdrive",
             data_model=EvaluationRecord,

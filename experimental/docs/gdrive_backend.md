@@ -57,7 +57,7 @@ Choose one of two authentication methods:
 ### Basic Usage
 
 ```python
-from ragas_experimental.dataset import DataTable
+from ragas_experimental.dataset import Dataset
 from pydantic import BaseModel
 
 # Define your data model
@@ -67,9 +67,10 @@ class EvaluationRecord(BaseModel):
     score: float
 
 # Create dataset with Google Drive backend
-dataset = DataTable[EvaluationRecord](
+dataset = Dataset(
     name="my_evaluation",
     backend="gdrive",
+    data_model=EvaluationRecord,
     folder_id="your_google_drive_folder_id",
     credentials_path="path/to/credentials.json"
 )
@@ -102,9 +103,10 @@ export GDRIVE_SERVICE_ACCOUNT_PATH="path/to/service_account.json"
 
 ```python
 # Environment variables will be used automatically
-dataset = DataTable[EvaluationRecord](
+dataset = Dataset(
     name="my_evaluation",
     backend="gdrive",
+    data_model=EvaluationRecord,
     folder_id=os.getenv("GDRIVE_FOLDER_ID")
 )
 ```
@@ -112,9 +114,10 @@ dataset = DataTable[EvaluationRecord](
 #### Using Service Account
 
 ```python
-dataset = DataTable[EvaluationRecord](
+dataset = Dataset(
     name="my_evaluation",
     backend="gdrive",
+    data_model=EvaluationRecord,
     folder_id="your_folder_id",
     service_account_path="path/to/service_account.json"
 )
@@ -123,9 +126,10 @@ dataset = DataTable[EvaluationRecord](
 #### Custom Token Path
 
 ```python
-dataset = DataTable[EvaluationRecord](
+dataset = Dataset(
     name="my_evaluation",
     backend="gdrive",
+    data_model=EvaluationRecord,
     folder_id="your_folder_id",
     credentials_path="path/to/credentials.json",
     token_path="custom_token.json"

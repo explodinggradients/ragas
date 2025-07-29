@@ -25,7 +25,7 @@ For detailed setup instructions, see the documentation.
 import os
 from pydantic import BaseModel
 
-from ragas_experimental.dataset import DataTable
+from ragas_experimental.dataset import Dataset
 
 
 # Example data model
@@ -47,7 +47,7 @@ def example_usage():
     
     # Option A: Set up with environment variables
     # os.environ["GDRIVE_CREDENTIALS_PATH"] = "path/to/credentials.json"
-    # dataset = DataTable[EvaluationRecord](
+    # dataset = Dataset(
     #     name="evaluation_results",
     #     backend="gdrive",
     #     data_model=EvaluationRecord,  # This is required when using Pydantic models
@@ -55,7 +55,7 @@ def example_usage():
     # )
     
     # Option B: Pass credentials directly
-    dataset = DataTable[EvaluationRecord](
+    dataset = Dataset(
         name="evaluation_results",
         backend="gdrive",
         data_model=EvaluationRecord,  # This is required when using Pydantic models
