@@ -140,8 +140,8 @@ notion_dataset = Dataset("my_eval", backend="notion", data_model=EvaluationRecor
 
 # Same operations work with both
 record = EvaluationRecord(question="What is ML?", answer="Machine Learning", score=0.9)
-dataset.append(record)
-dataset.save()
+local_dataset.append(record)  # or notion_dataset.append(record)
+local_dataset.save()          # or notion_dataset.save()
 ```
 
 ### Direct Backend Usage
