@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
+
 from ..embeddings import BaseEmbedding
 from .base import Prompt
 
@@ -18,7 +19,7 @@ class ExampleStore(ABC):
         pass
 
     @abstractmethod
-    def add_example(self, inputs: t.Dict, output: t.Dict) -> None:
+    def add_example(self, input: t.Dict, output: t.Dict) -> None:
         """Add an example to the store."""
         pass
 
@@ -44,17 +45,17 @@ class InMemoryExampleStore(ExampleStore):
         text = "\n".join([f"{k}: {v}" for k, v in data.items()])
         return self.embedding_model.embed_text(text)
 
-    def add_example(self, inputs: t.Dict, output: t.Dict) -> None:
+    def add_example(self, input: t.Dict, output: t.Dict) -> None:
         """Add an example to the store with its embedding."""
-        if not isinstance(inputs, dict):
-            raise TypeError(f"Expected inputs to be dict, got {type(inputs).__name__}")
+        if not isinstance(input, dict):
+            raise TypeError(f"Expected inputs to be dict, got {type(input).__name__}")
         if not isinstance(output, dict):
             raise TypeError(f"Expected output to be dict, got {type(output).__name__}")
 
-        self._examples.append((inputs, output))
+        self._examples.append((input, output))
 
         if self.embedding_model:
-            embedding = self._get_embedding(inputs)
+            embedding = self._get_embedding(input)
             self._embeddings_list.append(embedding)
 
     def get_examples(
@@ -115,13 +116,11 @@ class InMemoryExampleStore(ExampleStore):
 
 
 class DynamicFewShotPrompt(Prompt):
-
     def __init__(
         self, prompt: Prompt, example_store: InMemoryExampleStore, num_examples: int = 3
     ):
-
         self.example_store = example_store
-        super().__init__(prompt.instruction, prompt.examples)
+        super().__init__(prompt.instruction, prompt.examples, prompt.response_model)
         self.num_examples = num_examples
 
         for example in prompt.examples:
@@ -155,13 +154,13 @@ class DynamicFewShotPrompt(Prompt):
         # Combine all parts
         return "\n\n".join(prompt_parts)
 
-    def add_example(self, inputs: t.Dict, output: t.Dict) -> None:
+    def add_example(self, input: t.Dict, output: t.Dict) -> None:
         """
         Add an example to both the prompt and the example store.
 
         Parameters:
         -----------
-        inputs : Dict
+        input : Dict
             Dictionary of input values
         output : Dict
             Dictionary of output values
@@ -169,17 +168,17 @@ class DynamicFewShotPrompt(Prompt):
         Raises:
         -------
         TypeError
-            If inputs or output is not a dictionary
+            If input or output is not a dictionary
         """
-        if (inputs, output) not in self.examples:
-            self.examples.append((inputs, output))
+        if (input, output) not in self.examples:
+            self.examples.append((input, output))
 
         # Add to example store
         if (
             isinstance(self.example_store, ExampleStore)
-            and (inputs, output) not in self.example_store._examples
+            and (input, output) not in self.example_store._examples
         ):
-            self.example_store.add_example(inputs, output)
+            self.example_store.add_example(input, output)
 
     @classmethod
     def from_prompt(
