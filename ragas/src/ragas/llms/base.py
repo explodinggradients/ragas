@@ -134,6 +134,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
         run_config: t.Optional[RunConfig] = None,
         is_finished_parser: t.Optional[t.Callable[[LLMResult], bool]] = None,
         cache: t.Optional[CacheInterface] = None,
+        bypass_temperature: bool = False,
     ):
         super().__init__(cache=cache)
         self.langchain_llm = langchain_llm
@@ -141,6 +142,8 @@ class LangchainLLMWrapper(BaseRagasLLM):
             run_config = RunConfig()
         self.set_run_config(run_config)
         self.is_finished_parser = is_finished_parser
+        # Certain LLMs (e.g., OpenAI o1 series) do not support temperature
+        self.bypass_temperature = bypass_temperature
 
     def is_finished(self, response: LLMResult) -> bool:
         """
@@ -244,7 +247,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
         old_temperature: float | None = None
         if temperature is None:
             temperature = self.get_temperature(n=n)
-        if hasattr(self.langchain_llm, "temperature"):
+        if hasattr(self.langchain_llm, "temperature") and not self.bypass_temperature:
             self.langchain_llm.temperature = temperature  # type: ignore
             old_temperature = temperature
 
@@ -303,9 +306,12 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
         llm: BaseLLM,
         run_config: t.Optional[RunConfig] = None,
         cache: t.Optional[CacheInterface] = None,
+        bypass_temperature: bool = False,
     ):
         super().__init__(cache=cache)
         self.llm = llm
+        # Certain LLMs (e.g., OpenAI o1 series) do not support temperature
+        self.bypass_temperature = bypass_temperature
 
         try:
             self._signature = type(self.llm).__name__.lower()
@@ -370,6 +376,10 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
             temperature = self.get_temperature(n)
 
         kwargs = self.check_args(n, temperature, stop, callbacks)
+
+        if self.bypass_temperature:
+            kwargs.pop("temperature", None)
+
         li_response = await self.llm.acomplete(prompt.to_string(), **kwargs)
 
         return LLMResult(generations=[[Generation(text=li_response.text)]])
