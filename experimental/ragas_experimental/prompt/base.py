@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 __all__ = ["Prompt"]
 
-import re
 import typing as t
+
+if t.TYPE_CHECKING:
+    from pydantic import BaseModel
 
 
 class Prompt:
@@ -9,6 +13,7 @@ class Prompt:
         self,
         instruction: str,
         examples: t.Optional[t.List[t.Tuple[t.Dict, t.Dict]]] = None,
+        response_model: t.Optional[BaseModel] = None,
     ):
         """
         Create a simple prompt object.
@@ -19,37 +24,33 @@ class Prompt:
             The prompt instruction template with placeholders like {response}, {expected_answer}
         examples : Optional[List[Tuple[Dict, Dict]]]
             List of (input_dict, output_dict) pairs for few-shot learning
+        response_model: Optional[BaseModel]
+            The expected response model
         """
         self.instruction = instruction
-        self.examples = []
-
-        # Validate the instruction
-        self._validate_instruction()
+        self.response_model = response_model
 
         # Add examples if provided
+        self.examples = []
         if examples:
             for inputs, output in examples:
                 self.add_example(inputs, output)
-
-    def _validate_instruction(self):
-        """Ensure the instruction contains at least one placeholder."""
-        if not re.findall(r"\{(\w+)\}", self.instruction):
-            raise ValueError(
-                "Instruction must contain at least one placeholder like {response}"
-            )
 
     def format(self, **kwargs) -> str:
         """Format the prompt with the provided variables."""
 
         prompt_parts = []
         prompt_parts.append(self.instruction.format(**kwargs))
-        prompt_parts.append(self._format_examples())
+        if self.examples:
+            prompt_parts.append(self._format_examples())
 
         # Combine all parts
-        return "\n\n".join(prompt_parts)
+        if len(prompt_parts) > 1:
+            return "\n\n".join(prompt_parts)
+        else:
+            return prompt_parts[0]
 
     def _format_examples(self) -> str:
-
         # Add examples in a simple format
         examples = []
         if self.examples:
@@ -64,7 +65,7 @@ class Prompt:
 
         return "\n\n".join(examples) if examples else ""
 
-    def add_example(self, inputs: t.Dict, output: t.Dict) -> None:
+    def add_example(self, input: t.Dict, output: t.Dict) -> None:
         """
         Add an example to the prompt.
 
@@ -80,13 +81,15 @@ class Prompt:
         TypeError
             If inputs or output is not a dictionary
         """
-        if not isinstance(inputs, dict):
-            raise TypeError(f"Expected inputs to be dict, got {type(inputs).__name__}")
+        if not isinstance(input, dict):
+            raise TypeError(f"Expected inputs to be dict, got {type(input).__name__}")
         if not isinstance(output, dict):
             raise TypeError(f"Expected output to be dict, got {type(output).__name__}")
 
-        self.examples.append((inputs, output))
+        self.examples.append((input, output))
 
     def __str__(self) -> str:
         """String representation showing the instruction."""
-        return f"Prompt(instruction='{self.instruction}',\n examples={self.examples})"
+        return f"Prompt(instruction='{self.instruction}', examples={self.examples}, response_model={self.response_model})"
+
+    __repr__ = __str__
