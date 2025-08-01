@@ -2,8 +2,12 @@ from __future__ import annotations
 
 __all__ = ["ExampleStore", "InMemoryExampleStore", "DynamicFewShotPrompt"]
 
+import json
+import gzip
+import warnings
 import typing as t
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 import numpy as np
 
@@ -257,3 +261,172 @@ class DynamicFewShotPrompt(Prompt):
         )
 
     __repr__ = __str__
+
+    def save(self, path: str, include_embeddings: bool = True) -> None:
+        """
+        Save the DynamicFewShotPrompt to a JSON file.
+
+        Parameters:
+        -----------
+        path : str
+            File path to save to. Use .gz extension for compression.
+        include_embeddings : bool, default=True
+            Whether to include embeddings in the saved file. If False,
+            embeddings will be recomputed on load.
+
+        Note:
+        -----
+        If the prompt has a response_model or embedding_model, their schemas
+        will be saved for reference but the models themselves cannot be serialized.
+        You'll need to provide them when loading.
+        """
+        if self.response_model:
+            warnings.warn(
+                "response_model cannot be saved and will be lost. "
+                "You'll need to set it manually after loading using: "
+                "DynamicFewShotPrompt.load(path, response_model=YourModel)"
+            )
+
+        if self.example_store.embedding_model:
+            warnings.warn(
+                "embedding_model cannot be saved and will be lost. "
+                "You'll need to set it manually after loading using: "
+                "DynamicFewShotPrompt.load(path, embedding_model=YourModel)"
+            )
+
+        data = {
+            "format_version": "1.0",
+            "type": "DynamicFewShotPrompt",
+            "instruction": self.instruction,
+            "examples": [
+                {"input": inp, "output": out}
+                for inp, out in self.example_store._examples
+            ],
+            "response_model_info": self._serialize_response_model_info(),
+            "max_similar_examples": self.max_similar_examples,
+            "similarity_threshold": self.similarity_threshold,
+            "embedding_model_info": self._serialize_embedding_model_info(),
+        }
+
+        # Optionally include embeddings
+        if include_embeddings and self.example_store._embeddings_list:
+            data["embeddings"] = self.example_store._embeddings_list
+
+        file_path = Path(path)
+        try:
+            if file_path.suffix == ".gz":
+                with gzip.open(file_path, "wt", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2)
+            else:
+                with open(file_path, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2)
+        except (OSError, IOError) as e:
+            raise ValueError(f"Cannot save DynamicFewShotPrompt to {path}: {e}")
+
+    def _serialize_embedding_model_info(self) -> t.Optional[t.Dict]:
+        """Serialize embedding model information for storage."""
+        if not self.example_store.embedding_model:
+            return None
+
+        return {
+            "class_name": self.example_store.embedding_model.__class__.__name__,
+            "module": self.example_store.embedding_model.__class__.__module__,
+            "note": "You must provide this model when loading",
+        }
+
+    @classmethod
+    def load(
+        cls,
+        path: str,
+        embedding_model: t.Optional[BaseEmbedding] = None,
+        response_model: t.Optional["BaseModel"] = None,
+    ) -> "DynamicFewShotPrompt":
+        """
+        Load a DynamicFewShotPrompt from a JSON file.
+
+        Parameters:
+        -----------
+        path : str
+            File path to load from. Supports .gz compressed files.
+        embedding_model : Optional[BaseEmbedding]
+            Embedding model to use for similarity calculations. Required if the
+            original prompt had an embedding_model.
+        response_model : Optional[BaseModel]
+            Pydantic model to use for response validation. Required if the
+            original prompt had a response_model.
+
+        Returns:
+        --------
+        DynamicFewShotPrompt
+            Loaded prompt instance
+
+        Raises:
+        -------
+        ValueError
+            If file cannot be loaded, is invalid, or missing required models
+        """
+        file_path = Path(path)
+
+        # Load JSON data
+        try:
+            if file_path.suffix == ".gz":
+                with gzip.open(file_path, "rt", encoding="utf-8") as f:
+                    data = json.load(f)
+            else:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError, OSError) as e:
+            raise ValueError(f"Cannot load DynamicFewShotPrompt from {path}: {e}")
+
+        # Validate format
+        if data.get("type") != "DynamicFewShotPrompt":
+            raise ValueError(
+                f"File is not a DynamicFewShotPrompt (found type: {data.get('type', 'unknown')})"
+            )
+
+        # Check if models are required but not provided
+        response_model_info = data.get("response_model_info")
+        if response_model_info and not response_model:
+            raise ValueError(
+                f"This prompt requires a response_model of type '{response_model_info['class_name']}'\\n"
+                f"Usage: DynamicFewShotPrompt.load('{path}', response_model=YourModel)"
+            )
+
+        embedding_model_info = data.get("embedding_model_info")
+        if embedding_model_info and not embedding_model:
+            warnings.warn(
+                f"This prompt was created with an embedding_model of type '{embedding_model_info['class_name']}'. "
+                f"Without it, similarity-based example selection will not work. "
+                f"Consider: DynamicFewShotPrompt.load('{path}', embedding_model=YourModel)"
+            )
+
+        # Extract examples
+        examples = [(ex["input"], ex["output"]) for ex in data.get("examples", [])]
+
+        # Extract DynamicFewShotPrompt-specific config
+        max_similar_examples = data.get("max_similar_examples", 3)
+        similarity_threshold = data.get("similarity_threshold", 0.7)
+
+        # Create prompt instance
+        prompt = cls(
+            instruction=data["instruction"],
+            examples=examples,
+            response_model=response_model,
+            embedding_model=embedding_model,
+            max_similar_examples=max_similar_examples,
+            similarity_threshold=similarity_threshold,
+        )
+
+        # Restore embeddings if available and compatible
+        if (
+            "embeddings" in data
+            and embedding_model
+            and len(data["embeddings"]) == len(examples)
+        ):
+            prompt.example_store._embeddings_list = data["embeddings"]
+
+        # Validate response model if both provided and expected
+        if response_model and response_model_info:
+            prompt._validate_response_model(response_model, response_model_info)
+
+        return prompt
