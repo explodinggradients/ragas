@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 __all__ = ["ExampleStore", "InMemoryExampleStore", "DynamicFewShotPrompt"]
 
 import typing as t
@@ -8,6 +10,9 @@ import numpy as np
 
 from ..embeddings import BaseEmbedding
 from .base import Prompt
+
+if t.TYPE_CHECKING:
+    from pydantic import BaseModel
 
 
 class ExampleStore(ABC):
@@ -118,16 +123,44 @@ class InMemoryExampleStore(ExampleStore):
 class DynamicFewShotPrompt(Prompt):
     def __init__(
         self,
-        prompt: Prompt,
-        example_store: InMemoryExampleStore,
+        instruction: str,
+        examples: t.Optional[t.List[t.Tuple[t.Dict, t.Dict]]] = None,
+        response_model: t.Optional[BaseModel] = None,
+        embedding_model: t.Optional[BaseEmbedding] = None,
         max_similar_examples: int = 3,
+        similarity_threshold: float = 0.7,
     ):
-        self.example_store = example_store
-        super().__init__(prompt.instruction, prompt.examples, prompt.response_model)
-        self.max_similar_examples = max_similar_examples
+        """
+        Create a dynamic few-shot prompt that selects relevant examples based on similarity.
 
-        for example in prompt.examples:
-            self.example_store.add_example(*example)
+        Parameters:
+        -----------
+        instruction : str
+            The prompt instruction template with placeholders like {response}, {expected_answer}
+        examples : Optional[List[Tuple[Dict, Dict]]]
+            List of (input_dict, output_dict) pairs for few-shot learning
+        response_model: Optional[BaseModel]
+            The expected response model
+        embedding_model : Optional[BaseEmbedding]
+            Embedding model for similarity calculations. If None, falls back to recency-based selection.
+        max_similar_examples : int, default=3
+            Maximum number of similar examples to include in the formatted prompt
+        similarity_threshold : float, default=0.7
+            Minimum cosine similarity threshold (0.0-1.0) for including examples.
+            Only examples with similarity >= threshold will be considered.
+        """
+        # Create example store first (needed for add_example override)
+        self.example_store = InMemoryExampleStore(embedding_model=embedding_model)
+        self.max_similar_examples = max_similar_examples
+        self.similarity_threshold = similarity_threshold
+
+        # Call parent constructor with empty examples to avoid calling add_example during init
+        super().__init__(instruction, [], response_model)
+
+        # Add examples to the store manually
+        if examples:
+            for input_dict, output_dict in examples:
+                self.example_store.add_example(input_dict, output_dict)
 
     def format(self, **kwargs) -> str:
         """Format the prompt with dynamically retrieved examples."""
@@ -140,7 +173,7 @@ class DynamicFewShotPrompt(Prompt):
         dynamic_examples = []
         if self.example_store and kwargs:
             dynamic_examples = self.example_store.get_examples(
-                kwargs, self.max_similar_examples
+                kwargs, self.max_similar_examples, self.similarity_threshold
             )
 
         # Add examples in a simple format
@@ -173,25 +206,54 @@ class DynamicFewShotPrompt(Prompt):
         TypeError
             If input or output is not a dictionary
         """
-        if (input, output) not in self.examples:
-            self.examples.append((input, output))
-
         # Add to example store
-        if (
-            isinstance(self.example_store, ExampleStore)
-            and (input, output) not in self.example_store._examples
-        ):
+        if (input, output) not in self.example_store._examples:
             self.example_store.add_example(input, output)
 
     @classmethod
     def from_prompt(
-        cls, prompt: Prompt, embedding_model: BaseEmbedding, num_examples: int = 3
+        cls,
+        prompt: Prompt,
+        embedding_model: BaseEmbedding,
+        max_similar_examples: int = 3,
+        similarity_threshold: float = 0.7,
     ) -> "DynamicFewShotPrompt":
-        """Create a DynamicFewShotPrompt from a Prompt object."""
-        example_store = InMemoryExampleStore(embedding_model=embedding_model)
+        """
+        Create a DynamicFewShotPrompt from a Prompt object.
 
-        few_shot_prompt = cls(
-            prompt=prompt, example_store=example_store, num_examples=num_examples
+        Parameters:
+        -----------
+        prompt : Prompt
+            Base prompt to convert to dynamic few-shot
+        embedding_model : BaseEmbedding
+            Embedding model for similarity calculations
+        max_similar_examples : int, default=3
+            Maximum number of similar examples to retrieve
+        similarity_threshold : float, default=0.7
+            Minimum similarity threshold for including examples (0.0-1.0)
+
+        Returns:
+        --------
+        DynamicFewShotPrompt
+            Configured dynamic few-shot prompt instance
+        """
+        return cls(
+            instruction=prompt.instruction,
+            examples=prompt.examples,
+            response_model=prompt.response_model,
+            embedding_model=embedding_model,
+            max_similar_examples=max_similar_examples,
+            similarity_threshold=similarity_threshold,
         )
 
-        return few_shot_prompt
+    def __str__(self) -> str:
+        """String representation showing the dynamic few-shot prompt configuration."""
+        return (
+            f"DynamicFewShotPrompt("
+            f"instruction='{self.instruction}', "
+            f"max_similar_examples={self.max_similar_examples}, "
+            f"similarity_threshold={self.similarity_threshold}, "
+            f"example_store_size={len(self.example_store)})"
+        )
+
+    __repr__ = __str__
