@@ -117,11 +117,14 @@ class InMemoryExampleStore(ExampleStore):
 
 class DynamicFewShotPrompt(Prompt):
     def __init__(
-        self, prompt: Prompt, example_store: InMemoryExampleStore, num_examples: int = 3
+        self,
+        prompt: Prompt,
+        example_store: InMemoryExampleStore,
+        max_similar_examples: int = 3,
     ):
         self.example_store = example_store
         super().__init__(prompt.instruction, prompt.examples, prompt.response_model)
-        self.num_examples = num_examples
+        self.max_similar_examples = max_similar_examples
 
         for example in prompt.examples:
             self.example_store.add_example(*example)
@@ -137,7 +140,7 @@ class DynamicFewShotPrompt(Prompt):
         dynamic_examples = []
         if self.example_store and kwargs:
             dynamic_examples = self.example_store.get_examples(
-                kwargs, self.num_examples
+                kwargs, self.max_similar_examples
             )
 
         # Add examples in a simple format
