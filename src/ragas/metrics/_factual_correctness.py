@@ -17,6 +17,7 @@ from ragas.metrics.base import (
 )
 from ragas.metrics.utils import fbeta_score
 from ragas.prompt import PydanticPrompt
+import asyncio
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -257,18 +258,23 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
         assert reference is not None, "Reference is not set"
         assert response is not None, "Response is not set"
 
-        response_claims = await self.decompose_claims(response, callbacks)
-        reference_response = await self.verify_claims(
-            premise=reference, hypothesis_list=response_claims, callbacks=callbacks
+        async def get_empty_response():
+            return np.array([], dtype=bool)
+       
+        reference_response_task = self.decompose_and_verify_claims(
+            reference, response, callbacks
         )
 
         if self.mode != "precision":
-            reference_claims = await self.decompose_claims(reference, callbacks)
-            response_reference = await self.verify_claims(
-                premise=response, hypothesis_list=reference_claims, callbacks=callbacks
+            response_reference_task = self.decompose_and_verify_claims(
+                response, reference, callbacks
             )
         else:
-            response_reference = np.array([], dtype=bool)
+            response_reference_task = get_empty_response()
+       
+        reference_response, response_reference = await asyncio.gather(
+            reference_response_task, response_reference_task
+        )
 
         tp = sum(reference_response)
         fp = sum(~reference_response)
@@ -285,6 +291,12 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
             score = fbeta_score(tp, fp, fn, self.beta)
 
         return np.round(score, 2)
+
+    async def decompose_and_verify_claims(self, reference:str, response:str,callbacks:Callbacks) -> NDArray[np.bool_]:
+        claims = await self.decompose_claims(response, callbacks)
+        return await self.verify_claims(
+            premise=reference, hypothesis_list=claims, callbacks=callbacks
+        )
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
