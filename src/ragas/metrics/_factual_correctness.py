@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import typing as t
 from dataclasses import dataclass, field
@@ -17,7 +18,6 @@ from ragas.metrics.base import (
 )
 from ragas.metrics.utils import fbeta_score
 from ragas.prompt import PydanticPrompt
-import asyncio
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
