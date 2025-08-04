@@ -260,7 +260,7 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
 
         async def get_empty_response():
             return np.array([], dtype=bool)
-       
+
         reference_response_task = self.decompose_and_verify_claims(
             reference, response, callbacks
         )
@@ -271,7 +271,7 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
             )
         else:
             response_reference_task = get_empty_response()
-       
+
         reference_response, response_reference = await asyncio.gather(
             reference_response_task, response_reference_task
         )
@@ -292,7 +292,9 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
 
         return np.round(score, 2)
 
-    async def decompose_and_verify_claims(self, reference:str, response:str,callbacks:Callbacks) -> NDArray[np.bool_]:
+    async def decompose_and_verify_claims(
+        self, reference: str, response: str, callbacks: Callbacks
+    ) -> NDArray[np.bool_]:
         claims = await self.decompose_claims(response, callbacks)
         return await self.verify_claims(
             premise=reference, hypothesis_list=claims, callbacks=callbacks
