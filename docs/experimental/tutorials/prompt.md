@@ -11,6 +11,15 @@ flowchart LR
 
 We will start by testing a simple prompt that classifies movie reviews as positive or negative. 
 
+First, make sure you have installed ragas examples and setup your OpenAI API key:
+
+```bash
+pip install ragas_experimental[examples]
+export OPENAI_API_KEY = "your_openai_api_key"
+```
+
+Now test the prompt:
+
 ```bash
 python -m ragas_examples.prompt_evals.prompt
 ```
