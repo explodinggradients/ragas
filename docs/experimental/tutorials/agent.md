@@ -50,7 +50,7 @@ def correctness_metric(prediction: float, actual: float):
     if isinstance(prediction, str) and "ERROR" in prediction:
         return 0.0
     result = 1.0 if abs(prediction - actual) < 1e-5 else 0.0
-    return MetricResult(result=result, reason=f"Prediction: {prediction}, Actual: {actual}")
+    return MetricResult(value=result, reason=f"Prediction: {prediction}, Actual: {actual}")
 ```
 
 Next, we will write the experiment loop that will run our agent on the test dataset and evaluate it using the metric, and store the results in a CSV file.
