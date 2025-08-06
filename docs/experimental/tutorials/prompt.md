@@ -15,7 +15,9 @@ We will start by testing a simple prompt that classifies movie reviews as positi
 python -m ragas_examples.prompt_evals.prompt
 ```
 
-Next, we will write down few sample inputs and expected outputs for our prompt. Then convert them to a a csv file
+This will test the input `"The movie was fantastic and I loved every moment of it!"` and should output `"positive"`.
+
+Next, we will write down few sample inputs and expected outputs for our prompt. Then convert them to a CSV file.
 
 ```python
 import pandas as pd
@@ -33,10 +35,10 @@ Now we need to have a way to measure the performance of our prompt in this task.
 from ragas_experimental.metrics import discrete_metric
 from ragas_experimental.metrics.result import MetricResult
 
-@discrete_metric(name="accuracy", values=["pass", "fail"])
+@discrete_metric(name="accuracy", allowed_values=["pass", "fail"])
 def my_metric(prediction: str, actual: str):
     """Calculate accuracy of the prediction."""
-    return MetricResult(result="pass", reason="") if prediction == actual else MetricResult(result="fail", reason="")
+    return MetricResult(value="pass", reason="") if prediction == actual else MetricResult(value="fail", reason="")
 ```
 
 Next, we will write the experiment loop that will run our prompt on the test dataset and evaluate it using the metric, and store the results in a csv file. 
