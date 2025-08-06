@@ -254,7 +254,7 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          paths: [src]
+          paths: [ragas/src]  # Fixed path to point to correct src directory
           options:
             docstring_style: numpy
             members_order: source
