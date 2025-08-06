@@ -26,7 +26,9 @@ python -m ragas_examples.prompt_evals.prompt
 
 This will test the input `"The movie was fantastic and I loved every moment of it!"` and should output `"positive"`.
 
-Next, we will write down few sample inputs and expected outputs for our prompt. Then convert them to a CSV file.
+> **💡 Quick Start**: If you want to see the complete evaluation in action, you can jump straight to the [end-to-end command](#running-the-example-end-to-end) that runs everything and generates the CSV results automatically.
+
+Next, we will write down few sample inputs and expected outputs for our prompt. Then convert them to a CSV file. 
 
 ```python
 import pandas as pd
@@ -78,16 +80,19 @@ Now whenever you make a change to your prompt, you can run the experiment and se
 ## Running the example end to end
 
 1. Setup your OpenAI API key
-
 ```bash
 export OPENAI_API_KEY = "your_openai_api_key"
 ```
-
 2. Run the evaluation
-
 ```bash
 python -m ragas_examples.prompt_evals.evals
 ```
 
-Voila! You have successfully run your first evaluation using Ragas. You can now inspect the results by opening the `experiments/experiment_name.csv` file. 
+This will:
 
+- Create the test dataset with sample movie reviews
+- Run the sentiment classification prompt on each sample  
+- Evaluate the results using the accuracy metric
+- Export everything to a CSV file with the results
+
+Voila! You have successfully run your first evaluation using Ragas. You can now inspect the results by opening the `experiments/experiment_name.csv` file.
