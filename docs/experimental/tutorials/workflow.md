@@ -75,13 +75,13 @@ Now whenever you make a change to your workflow, you can run the experiment and 
 
 ## Running the example end to end
 1. Setup your OpenAI API key
-
 ```bash
 export OPENAI_API_KEY="your_openai_api_key"
 ```
 
+2. Run the experiment
 ```bash
 python -m ragas_examples.workflow_eval.evals
 ```
 
-Voila! You have successfully run your first evaluation using Ragas. You can now inspect the results by opening the `experiments/experiment_name.csv` file
+Voila! You have successfully run your first evaluation using Ragas. You can now inspect the results by opening the `experiments/experiment_name.csv` file.
