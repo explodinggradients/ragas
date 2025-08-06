@@ -60,7 +60,7 @@ async def run_experiment(row):
 
     experiment_view = {
         **row,
-        "response": response,
+        "response": response.get("answer", ""),
         "score": score.value,
         "log_file": response.get("logs", " "),
     }
