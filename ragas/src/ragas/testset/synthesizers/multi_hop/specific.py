@@ -84,31 +84,31 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
         scenarios = []
 
         for triplet in triplets:
-            if len(scenarios) < n:
-                node_a, node_b = triplet[0], triplet[-1]
-                overlapped_items = []
-                overlapped_items = triplet[1].properties["overlapped_items"]
-                if overlapped_items:
-                    themes = list(dict(overlapped_items).keys())
-                    prompt_input = ThemesPersonasInput(
-                        themes=themes, personas=persona_list
+            if len(scenarios) >= n:
+                break
+            node_a, node_b = triplet[0], triplet[-1]
+            overlapped_items = triplet[1].properties["overlapped_items"]
+            if overlapped_items:
+                themes = list(dict(overlapped_items).keys())
+                prompt_input = ThemesPersonasInput(
+                    themes=themes, personas=persona_list
+                )
+                persona_concepts = (
+                    await self.theme_persona_matching_prompt.generate(
+                        data=prompt_input, llm=self.llm, callbacks=callbacks
                     )
-                    persona_concepts = (
-                        await self.theme_persona_matching_prompt.generate(
-                            data=prompt_input, llm=self.llm, callbacks=callbacks
-                        )
-                    )
-                    overlapped_items = [list(item) for item in overlapped_items]
-                    base_scenarios = self.prepare_combinations(
-                        [node_a, node_b],
-                        overlapped_items,
-                        personas=persona_list,
-                        persona_item_mapping=persona_concepts.mapping,
-                        property_name=self.property_name,
-                    )
-                    base_scenarios = self.sample_diverse_combinations(
-                        base_scenarios, num_sample_per_cluster
-                    )
-                    scenarios.extend(base_scenarios)
+                )
+                overlapped_items = [list(item) for item in overlapped_items]
+                base_scenarios = self.prepare_combinations(
+                    [node_a, node_b],
+                    overlapped_items,
+                    personas=persona_list,
+                    persona_item_mapping=persona_concepts.mapping,
+                    property_name=self.property_name,
+                )
+                base_scenarios = self.sample_diverse_combinations(
+                    base_scenarios, num_sample_per_cluster
+                )
+                scenarios.extend(base_scenarios)
 
         return scenarios
