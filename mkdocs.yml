@@ -80,15 +80,15 @@ nav:
     - Overview: experimental/index.md
     - Tutorials:
         - experimental/tutorials/index.md
-        - Agent: experimental/tutorials/agent.md
         - Prompt: experimental/tutorials/prompt.md
         - RAG: experimental/tutorials/rag.md
         - Workflow: experimental/tutorials/workflow.md
+        - Agent: experimental/tutorials/agent.md
     - Core Concepts:
         - experimental/core_concepts/index.md
+        - Metrics: experimental/core_concepts/metrics.md
         - Datasets: experimental/core_concepts/datasets.md
         - Experimentation: experimental/core_concepts/experimentation.md
-        - Metrics: experimental/core_concepts/metrics.md
   - 🛠️ How-to Guides:
       - howtos/index.md
       - Customizations:
@@ -254,7 +254,7 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          paths: [src]
+          paths: [ragas/src]  # Fixed path to point to correct src directory
           options:
             docstring_style: numpy
             members_order: source

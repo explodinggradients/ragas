@@ -41,7 +41,7 @@ from ragas_experimental.metrics import DiscreteMetric
 my_metric = DiscreteMetric(
     name="correctness",
     prompt = "Check if the response contains points mentioned from the grading notes and return 'pass' or 'fail'.\nResponse: {response} Grading Notes: {grading_notes}",
-    values=["pass", "fail"],
+    allowed_values=["pass", "fail"],
 )
 ```
 
@@ -60,8 +60,8 @@ async def run_experiment(row):
 
     experiment_view = {
         **row,
-        "response": response,
-        "score": score.result,
+        "response": response.get("answer", ""),
+        "score": score.value,
         "log_file": response.get("logs", " "),
     }
     return experiment_view
@@ -72,15 +72,12 @@ Now whenever you make a change to your RAG pipeline, you can run the experiment 
 ## Running the example end to end
 
 1. Setup your OpenAI API key
-
 ```bash
-export OPENAI_API_KEY = "your_openai_api_key"
+export OPENAI_API_KEY="your_openai_api_key"
 ```
-
 2. Run the evaluation
-
 ```bash
-python -m ragas_examples.rag_evals.evals
+python -m ragas_examples.rag_eval.evals
 ```
 
-Voila! You have successfully run your first evaluation using Ragas. You can now inspect the results by opening the `experiments/experiment_name.csv` file
+Voila! You have successfully run your first evaluation using Ragas. You can now inspect the results by opening the `experiments/experiment_name.csv` file.

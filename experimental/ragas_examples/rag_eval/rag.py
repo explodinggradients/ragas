@@ -353,7 +353,12 @@ class ExampleRAG:
                 }
             ))
             
-            return {"result": result, "logs": self.export_traces_to_log(run_id, question, result)}
+            logs_path = self.export_traces_to_log(run_id, question, result)
+            return {
+                "answer": response,
+                "run_id": run_id,
+                "logs": logs_path
+            }
 
         except Exception as e:
             self.traces.append(TraceEvent(
@@ -368,9 +373,11 @@ class ExampleRAG:
                         
             
             # Return error result
+            logs_path = self.export_traces_to_log(run_id, question, None)
             return {
                 'answer': f"Error processing query: {str(e)}",
-                'logs': self.export_traces_to_log(run_id, question, None)
+                'run_id': run_id,
+                'logs': logs_path
             }
     
     def export_traces_to_log(self, run_id: str, query: Optional[str] = None, result: Optional[Dict[str, Any]] = None):
@@ -413,7 +420,13 @@ def default_rag_client(llm_client, logdir: str = "logs") -> ExampleRAG:
 
 if __name__ == "__main__":
     
-    api_key = os.environ["OPENAI_API_KEY"]
+    try:
+        api_key = os.environ["OPENAI_API_KEY"]
+    except KeyError:
+        print("Error: OPENAI_API_KEY environment variable is not set.")
+        print("Please set your OpenAI API key:")
+        print("export OPENAI_API_KEY='your_openai_api_key'")
+        exit(1)
     
     # Initialize RAG system with tracing enabled
     llm = OpenAI(api_key=api_key)
@@ -425,6 +438,7 @@ if __name__ == "__main__":
     
     # Run query with tracing
     query = "What is Ragas"
+    print(f"Query: {query}")
     response = rag_client.query(query, top_k=3)
     
     print("Response:", response['answer'])

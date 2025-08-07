@@ -62,7 +62,8 @@ async def run_experiment(row):
     
 async def main():
     dataset = load_dataset()
-    _ = await run_experiment.arun(dataset)
+    experiment_result = await run_experiment.arun(dataset)
+    print("Experiment_result: ", experiment_result)
     
     
 if __name__ == "__main__":

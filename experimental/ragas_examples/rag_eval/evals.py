@@ -49,7 +49,7 @@ async def run_experiment(row):
 
     experiment_view = {
         **row,
-        "response": response,
+        "response": response.get("answer", ""),
         "score": score.value,
         "log_file": response.get("logs", " "),
     }
@@ -59,7 +59,9 @@ async def run_experiment(row):
 async def main():
     dataset = load_dataset()
     print("dataset loaded successfully", dataset)
-    await run_experiment.arun(dataset)
+    experiment_results = await run_experiment.arun(dataset) 
+    print("Experiment completed successfully!")
+    print("Experiment results:", experiment_results)
 
 if __name__ == "__main__":
     import asyncio
