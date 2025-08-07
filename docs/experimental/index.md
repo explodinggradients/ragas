@@ -15,11 +15,11 @@ The goal of Ragas Experimental is to evolve Ragas into a general-purpose evaluat
 
     [:octicons-arrow-right-24: Tutorials](tutorials/index.md)
 
-- 📚 **Explanation**
+- 📚 **Core Concepts**
 
     A deeper dive into the principles of evaluation and how Ragas Experimental supports evaluation-driven development for AI applications.
 
-    [:octicons-arrow-right-24: Explanation](explanation/index.md)
+    [:octicons-arrow-right-24: Core Concepts](core_concepts/index.md)
 
 </div>
 

@@ -226,6 +226,8 @@ class ConfigurableSupportTriageAgent:
             # Custom extractor
             self.extraction_mode = None
         
+        print(f"📧 Initialized Support Triage Agent with {self.extraction_mode.value if self.extraction_mode else 'custom'} extraction mode")
+        
         self.traces.append(TraceEvent(
             event_type="init",
             component="support_agent",
@@ -244,6 +246,8 @@ class ConfigurableSupportTriageAgent:
         else:
             self.extraction_mode = None
         
+        print(f"🔄 Switched to {self.extraction_mode.value if self.extraction_mode else 'custom'} extraction mode")
+        
         self.traces.append(TraceEvent(
             event_type="extractor_change",
             component="support_agent",
@@ -252,6 +256,8 @@ class ConfigurableSupportTriageAgent:
     
     def classify_email(self, email_content: str) -> str:
         """Classify email into categories using LLM"""
+        print("🔍 Step 1: Classifying email category...")
+        
         prompt = f"""
         Classify the following customer email into exactly one of these categories:
         - Billing
@@ -284,6 +290,7 @@ class ConfigurableSupportTriageAgent:
             )
             
             category = response.choices[0].message.content.strip()
+            print(f"   ➜ Classified as: {category}")
             
             self.traces.append(TraceEvent(
                 event_type="llm_response",
@@ -298,6 +305,7 @@ class ConfigurableSupportTriageAgent:
             return category
             
         except Exception as e:
+            print(f"   ⚠️ Classification failed, using fallback: Bug Report")
             self.traces.append(TraceEvent(
                 event_type="error",
                 component="openai_api",
@@ -307,6 +315,8 @@ class ConfigurableSupportTriageAgent:
     
     def extract_info(self, email_content: str, category: str) -> Dict[str, Optional[str]]:
         """Extract information using configured extractor"""
+        print(f"⚙️  Step 2: Extracting {category} details using {self.extraction_mode.value if self.extraction_mode else 'custom'} method...")
+        
         self.traces.append(TraceEvent(
             event_type="extraction",
             component=type(self.extractor).__name__.lower(),
@@ -320,6 +330,14 @@ class ConfigurableSupportTriageAgent:
         try:
             result = self.extractor.extract(email_content, category)
             
+            # Show extracted fields briefly
+            if result:
+                extracted_fields = [k for k, v in result.items() if v is not None]
+                if extracted_fields:
+                    print(f"   ➜ Extracted: {', '.join(extracted_fields)}")
+                else:
+                    print("   ➜ No specific details extracted")
+            
             self.traces.append(TraceEvent(
                 event_type="extraction_result",
                 component=type(self.extractor).__name__.lower(),
@@ -329,6 +347,7 @@ class ConfigurableSupportTriageAgent:
             return result
             
         except Exception as e:
+            print(f"   ⚠️ Extraction failed: {str(e)}")
             self.traces.append(TraceEvent(
                 event_type="error",
                 component=type(self.extractor).__name__.lower(),
@@ -338,6 +357,7 @@ class ConfigurableSupportTriageAgent:
     
     def generate_response(self, category: str, extracted_info: Dict[str, Any]) -> str:
         """Generate response template based on category"""
+        print("✍️  Step 3: Generating personalized response...")
         
         context = f"Category: {category}\nExtracted info: {json.dumps(extracted_info, indent=2)}"
         
@@ -375,6 +395,7 @@ class ConfigurableSupportTriageAgent:
             )
             
             response_text = response.choices[0].message.content.strip()
+            print("   ➜ Response template generated")
             
             self.traces.append(TraceEvent(
                 event_type="llm_response",
@@ -389,6 +410,7 @@ class ConfigurableSupportTriageAgent:
             return response_text
             
         except Exception as e:
+            print(f"   ⚠️ Response generation failed, using fallback")
             self.traces.append(TraceEvent(
                 event_type="error",
                 component="openai_api",
@@ -423,6 +445,9 @@ class ConfigurableSupportTriageAgent:
         if run_id is None:
             run_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{hash(email_content) % 10000:04d}"
         
+        print(f"\n🚀 Processing email (Run ID: {run_id})")
+        print(f"📄 Email preview: {email_content[:100]}{'...' if len(email_content) > 100 else ''}")
+        
         # Reset traces for each new email
         self.traces = []
         
@@ -449,6 +474,9 @@ class ConfigurableSupportTriageAgent:
                 "extraction_mode": self.extraction_mode.value if self.extraction_mode else "custom"
             }
             
+            print(f"✅ Workflow completed successfully")
+            print(f"📋 Traces saved to: logs/run_{run_id}_*.json")
+            
             self.traces.append(TraceEvent(
                 event_type="workflow_complete",
                 component="support_agent",
@@ -461,6 +489,8 @@ class ConfigurableSupportTriageAgent:
             return result
             
         except Exception as e:
+            print(f"❌ Workflow failed: {str(e)}")
+            
             self.traces.append(TraceEvent(
                 event_type="error",
                 component="support_agent",
@@ -480,8 +510,9 @@ class ConfigurableSupportTriageAgent:
 
 
 def default_workflow_client(extractor_type: Literal["deterministic", "llm"] = "deterministic") -> ConfigurableSupportTriageAgent:
-    
     """Create a default workflow client with specified extractor type"""
+    print(f"🔧 Creating workflow client with {extractor_type} extraction...")
+    
     api_key = os.environ.get("OPENAI_API_KEY")
     
     if extractor_type == "deterministic":
@@ -502,9 +533,9 @@ def main():
     
     # Test emails
     test_emails = [
-    "Hi, I'm getting error code XYZ-123 when using version 2.1.4 of your software. Please help!",
-    "I need to dispute invoice #INV-2024-001 for 299.99 dollars. The charge seems incorrect.",
-]
+        "Hi, I'm getting error code XYZ-123 when using version 2.1.4 of your software. Please help!",
+        "I need to dispute invoice #INV-2024-001 for 299.99 dollars. The charge seems incorrect.",
+    ]
     
     # Example 1: Using deterministic extractor
     print("\n=== Using Deterministic Extractor ===")

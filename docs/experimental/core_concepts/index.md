@@ -1,4 +1,4 @@
-# 📚 Explanation
+# 📚 Core Concepts
 
 1. [Metrics](metrics.md)
 2. [Datasets and Experiment Results](datasets.md)
