@@ -6,6 +6,7 @@ from ragas.embeddings.base import (
     embedding_factory,
 )
 from ragas.embeddings.haystack_wrapper import HaystackEmbeddingsWrapper
+from ragas.embeddings.ollama_wrapper import OllamaEmbeddingsWrapper
 
 __all__ = [
     "BaseRagasEmbeddings",
@@ -14,4 +15,5 @@ __all__ = [
     "LangchainEmbeddingsWrapper",
     "LlamaIndexEmbeddingsWrapper",
     "embedding_factory",
+    "OllamaEmbeddingsWrapper",
 ]
