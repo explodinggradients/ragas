@@ -23,7 +23,7 @@ We will start by testing our simple agent that can solve mathematical expression
 python -m ragas_examples.agent_evals.agent
 ```
 
-Next, we will write down a few sample expressions and expected outputs for our agent. Then convert them to a CSV file.
+Next, we will create a few sample expressions and expected outputs for our agent, then convert them to a CSV file.
 
 ```python
 import pandas as pd
@@ -38,7 +38,7 @@ df = pd.DataFrame(dataset)
 df.to_csv("datasets/test_dataset.csv", index=False)
 ```
 
-To evaluate the performance of our agent, we will define a non llm metric that compares if our agent's output is within a certain tolerance of the expected output and outputs 1/0 based on it.
+To evaluate the performance of our agent, we will define a non-LLM metric that compares if our agent's output is within a certain tolerance of the expected output and returns 1/0 based on the comparison.
 
 ```python
 from ragas_experimental.metrics import numeric_metric
@@ -50,7 +50,7 @@ def correctness_metric(prediction: float, actual: float):
     if isinstance(prediction, str) and "ERROR" in prediction:
         return 0.0
     result = 1.0 if abs(prediction - actual) < 1e-5 else 0.0
-    return MetricResult(result=result, reason=f"Prediction: {prediction}, Actual: {actual}")
+    return MetricResult(value=result, reason=f"Prediction: {prediction}, Actual: {actual}")
 ```
 
 Next, we will write the experiment loop that will run our agent on the test dataset and evaluate it using the metric, and store the results in a CSV file.
@@ -74,7 +74,7 @@ async def run_experiment(row):
         "expected_answer": expected_answer,
         "prediction": prediction.get("result"),
         "log_file": prediction.get("log_file"),
-        "correctness": correctness.result
+        "correctness": correctness.value
     }
 ```
 
@@ -82,15 +82,14 @@ Now whenever you make a change to your agent, you can run the experiment and see
 
 ## Running the example end to end
 
-1. Setup your OpenAI API key
-
+1. Set up your OpenAI API key
 ```bash
 export OPENAI_API_KEY="your_api_key_here"
 ```
-2. Run the evaluation
 
+2. Run the evaluation
 ```bash
 python -m ragas_examples.agent_evals.evals
 ``` 
 
-Viola! You have successfully evaluated an AI agent using Ragas. You can now view the results by opening the `experiments/experiment_name.csv` file.
+Voilà! You have successfully evaluated an AI agent using Ragas. You can now view the results by opening the `experiments/experiment_name.csv` file.

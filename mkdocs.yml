@@ -86,9 +86,9 @@ nav:
         - Agent: experimental/tutorials/agent.md
     - Core Concepts:
         - experimental/core_concepts/index.md
+        - Metrics: experimental/core_concepts/metrics.md
         - Datasets: experimental/core_concepts/datasets.md
         - Experimentation: experimental/core_concepts/experimentation.md
-        - Metrics: experimental/core_concepts/metrics.md
   - 🛠️ How-to Guides:
       - howtos/index.md
       - Customizations:
