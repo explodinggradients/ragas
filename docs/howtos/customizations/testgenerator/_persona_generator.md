@@ -98,35 +98,35 @@ testset.to_pandas().head()
       <td>What the Director do in GitLab and how they wo...</td>
       <td>[09db4f3e-1c10-4863-9024-f869af48d3e0\n\ntitle...</td>
       <td>The Director at GitLab, such as the Director o...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
     <tr>
       <th>1</th>
       <td>Wht is the rol of the VP in GitLab?</td>
       <td>[56c84f1b-3558-4c80-b8a9-348e69a4801b\n\nJob F...</td>
       <td>The VP, or Vice President, at GitLab is respon...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
     <tr>
       <th>2</th>
       <td>What GitLab do for career progression?</td>
       <td>[ead619a5-930f-4e2b-b797-41927a04d2e3\n\nGoals...</td>
       <td>The Job frameworks at GitLab help team members...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
     <tr>
       <th>3</th>
       <td>Wht is the S-grop and how do they work with ot...</td>
       <td>[42babb12-b033-493f-b684-914e2b1b1d0f\n\nPeopl...</td>
       <td>Members of the S-group are expected to demonst...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
     <tr>
       <th>4</th>
       <td>How does Google execute its company vision?</td>
       <td>[c3ed463d-1cdc-4ba4-a6ca-2c4ab12da883\n\nof mo...</td>
       <td>To effectively execute the company vision, man...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
   </tbody>
 </table>

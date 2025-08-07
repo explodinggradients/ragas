@@ -211,70 +211,70 @@ Output
       <td>Wut do I do if my baggage is Delayed, Lost, or...</td>
       <td>[Baggage Policies\n\nThis section provides a d...</td>
       <td>If your baggage is delayed, lost, or damaged, ...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
     <tr>
       <th>1</th>
       <td>Wht asistance is provided by the airline durin...</td>
       <td>[Flight Delays\n\nFlight delays can be caused ...</td>
       <td>Depending on the length of the delay, Ragas Ai...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
     <tr>
       <th>2</th>
       <td>What is Step 1: Check Fare Rules in the contex...</td>
       <td>[Flight Cancellations\n\nFlight cancellations ...</td>
       <td>Step 1: Check Fare Rules involves logging into...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
     <tr>
       <th>3</th>
       <td>How can I access my booking online with Ragas ...</td>
       <td>[Managing Reservations\n\nManaging your reserv...</td>
       <td>To access your booking online with Ragas Airli...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
     <tr>
       <th>4</th>
       <td>What assistance does Ragas Airlines provide fo...</td>
       <td>[Special Assistance\n\nRagas Airlines provides...</td>
       <td>Ragas Airlines provides special assistance ser...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
     <tr>
       <th>5</th>
       <td>What steps should I take if my baggage is dela...</td>
       <td>[Baggage Policies This section provides a deta...</td>
       <td>If your baggage is delayed, lost, or damaged w...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
     <tr>
       <th>6</th>
       <td>How can I resubmit the claim for my baggage is...</td>
       <td>[Potential Issues and Resolutions for Baggage ...</td>
       <td>To resubmit the claim for your baggage issue, ...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
     <tr>
       <th>7</th>
       <td>Wut are the main causes of flight delays and h...</td>
       <td>[Flight Delays Flight delays can be caused by ...</td>
       <td>Flight delays can be caused by weather conditi...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
     <tr>
       <th>8</th>
       <td>How can I request reimbursement for additional...</td>
       <td>[2. Additional Expenses Incurred Due to Delay ...</td>
       <td>To request reimbursement for additional expens...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
     <tr>
       <th>9</th>
       <td>What are passenger-initiated cancelations?</td>
       <td>[Flight Cancellations Flight cancellations can...</td>
       <td>Passenger-initiated cancellations occur when a...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
   </tbody>
 </table>
