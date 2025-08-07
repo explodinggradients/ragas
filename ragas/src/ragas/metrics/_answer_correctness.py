@@ -216,15 +216,11 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
-        row = sample.to_dict()
-        score = await self._ascore(row, callbacks)
-        return score
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM must be set"
+        row = sample.to_dict()
 
         # extract the statements from the answer and the ground truth
-        question = row["user_input"]
+        question = sample.user_input
         statements: t.Dict[str, t.List[str]] = {}
         for item in ["response", "reference"]:
             statements_x = await self._create_simplified_statements(

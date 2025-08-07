@@ -136,16 +136,8 @@ class LLMContextPrecisionWithReference(MetricWithLLM, SingleTurnMetric):
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
-        row = sample.to_dict()
-        return await self._ascore(row, callbacks)
-
-    async def _ascore(
-        self,
-        row: t.Dict,
-        callbacks: Callbacks,
-    ) -> float:
         assert self.llm is not None, "LLM is not set"
-
+        row = sample.to_dict()
         user_input, retrieved_contexts, reference = self._get_row_attributes(row)
         responses = []
         for context in retrieved_contexts:
@@ -209,10 +201,6 @@ class NonLLMContextPrecisionWithReference(SingleTurnMetric):
 
     def init(self, run_config: RunConfig) -> None: ...
 
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        sample = SingleTurnSample(**row)
-        return await self._single_turn_ascore(sample, callbacks)
-
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
@@ -250,37 +238,5 @@ class NonLLMContextPrecisionWithReference(SingleTurnMetric):
         return score
 
 
-@dataclass
-class ContextPrecision(LLMContextPrecisionWithReference):
-    name: str = "context_precision"
-
-    async def _single_turn_ascore(
-        self, sample: SingleTurnSample, callbacks: Callbacks
-    ) -> float:
-        return await super()._single_turn_ascore(sample, callbacks)
-
-    @deprecated(
-        since="0.2", removal="0.3", alternative="LLMContextPrecisionWithReference"
-    )
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await super()._ascore(row, callbacks)
-
-
-@dataclass
-class ContextUtilization(LLMContextPrecisionWithoutReference):
-    name: str = "context_utilization"
-
-    async def _single_turn_ascore(
-        self, sample: SingleTurnSample, callbacks: Callbacks
-    ) -> float:
-        return await super()._single_turn_ascore(sample, callbacks)
-
-    @deprecated(
-        since="0.2", removal="0.3", alternative="LLMContextPrecisionWithoutReference"
-    )
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await super()._ascore(row, callbacks)
-
-
-context_precision = ContextPrecision()
-context_utilization = ContextUtilization()
+context_precision = LLMContextPrecisionWithReference()
+context_utilization = LLMContextPrecisionWithoutReference()

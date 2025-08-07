@@ -132,16 +132,13 @@ class RubricsScore(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
-        return await self._ascore(sample.to_dict(), callbacks)
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         assert self.llm is not None, "LLM is not set"
 
-        user_input = row.get("user_input")
-        reference = row.get("reference")
-        reference_contexts = row.get("reference_contexts")
-        response = row.get("response")
-        retrieved_contexts = row.get("retrieved_contexts")
+        user_input = sample.user_input
+        reference = sample.reference
+        reference_contexts = sample.reference_contexts
+        response = sample.response
+        retrieved_contexts = sample.retrieved_contexts
 
         prompt_input = SingleTurnInputWithoutRubric(
             user_input=user_input,

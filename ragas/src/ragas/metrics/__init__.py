@@ -16,15 +16,13 @@ from ragas.metrics._context_entities_recall import (
     context_entity_recall,
 )
 from ragas.metrics._context_precision import (
-    ContextPrecision,
-    ContextUtilization,
     LLMContextPrecisionWithoutReference,
     LLMContextPrecisionWithReference,
     NonLLMContextPrecisionWithReference,
     context_precision,
+    context_utilization,
 )
 from ragas.metrics._context_recall import (
-    ContextRecall,
     LLMContextRecall,
     NonLLMContextRecall,
     context_recall,
@@ -94,11 +92,9 @@ __all__ = [
     "FaithfulnesswithHHEM",
     "AnswerSimilarity",
     "answer_similarity",
-    "ContextPrecision",
     "context_precision",
-    "ContextUtilization",
+    "context_utilization",
     "SimpleCriteriaScore",
-    "ContextRecall",
     "context_recall",
     "AspectCritic",
     "AnswerRelevancy",
@@ -112,7 +108,6 @@ __all__ = [
     "LLMContextPrecisionWithReference",
     "LLMContextPrecisionWithoutReference",
     "NonLLMContextPrecisionWithReference",
-    "LLMContextPrecisionWithoutReference",
     "LLMContextRecall",
     "NonLLMContextRecall",
     "FactualCorrectness",

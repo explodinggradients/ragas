@@ -150,15 +150,7 @@ class ContextEntityRecall(MetricWithLLM, SingleTurnMetric):
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
-        row = sample.to_dict()
-        return await self._ascore(row, callbacks)
-
-    async def _ascore(
-        self,
-        row: Dict,
-        callbacks: Callbacks,
-    ) -> float:
-        ground_truth, contexts = row["reference"], row["retrieved_contexts"]
+        ground_truth, contexts = sample.reference, sample.retrieved_contexts
         ground_truth = await self.get_entities(ground_truth, callbacks=callbacks)
         contexts = await self.get_entities("\n".join(contexts), callbacks=callbacks)
         return self._compute_score(ground_truth.entities, contexts.entities)

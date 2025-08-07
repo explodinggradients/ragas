@@ -200,6 +200,3 @@ class TopicAdherenceScore(MetricWithLLM, MultiTurnMetric):
             precision = true_positives / (true_positives + false_positives + 1e-10)
             recall = true_positives / (true_positives + false_negatives + 1e-10)
             return 2 * (precision * recall) / (precision + recall + 1e-10)
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await self._multi_turn_ascore(MultiTurnSample(**row), callbacks)

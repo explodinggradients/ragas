@@ -101,6 +101,3 @@ class ToolCallAccuracy(MultiTurnMetric):
             return 0.0
 
         return score * sequence_aligned
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await self._multi_turn_ascore(MultiTurnSample(**row), callbacks)

@@ -135,7 +135,7 @@ The monorepo has the following structure:
 │   ├── pyproject.toml  # ragas-specific build config
 │
 ├── experimental/    # nbdev-based experimental project
-│   ├── nbs/         # Notebooks for nbdev  
+│   ├── nbs/         # Notebooks for nbdev
 │   ├── ragas_experimental/  # Generated code
 │   ├── pyproject.toml  # experimental-specific config
 │   ├── settings.ini    # nbdev config
@@ -154,8 +154,8 @@ The Ragas core library provides metrics, test data generation and evaluation fun
 1. **Metrics** - Various metrics for evaluating LLM applications including:
    - AspectCritic
    - AnswerCorrectness
-   - ContextPrecision
-   - ContextRecall
+   - LLMContextPrecisionWithReference
+   - LLMContextRecall
    - Faithfulness
    - and many more
 

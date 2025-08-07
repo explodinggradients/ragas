@@ -85,22 +85,24 @@ class InstanceRubrics(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
     def __repr__(self) -> str:
         return f"{self.name}(required_columns={self.required_columns}, llm={self.llm})"
 
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
         assert self.llm is not None, "LLM is not set"
 
         user_input, contexts, response, reference, rubrics = (
-            row.get("user_input"),
-            row.get("retrieved_contexts"),
-            row.get("response"),
-            row.get("reference"),
-            row.get("rubrics"),
+            sample.user_input,
+            sample.retrieved_contexts,
+            sample.response,
+            sample.reference,
+            sample.rubrics,
         )
         if contexts is not None:
             contexts = "\n".join(contexts)
             user_input = f"{user_input} answer using context: {contexts}"
 
         if rubrics is None:
-            raise ValueError(f"Rubrics are not set for the sample: {row}")
+            raise ValueError(f"Rubrics are not set for the sample: {sample.to_dict()}")
         prompt_input = SingleTurnInputWithRubric(
             user_input=user_input,
             response=response,
@@ -112,12 +114,6 @@ class InstanceRubrics(MetricWithLLM, SingleTurnMetric, MultiTurnMetric):
             data=prompt_input, llm=self.llm, callbacks=callbacks
         )
         return response.score
-
-    async def _single_turn_ascore(
-        self, sample: SingleTurnSample, callbacks: Callbacks
-    ) -> float:
-        row = sample.to_dict()
-        return await self._ascore(row, callbacks)
 
     async def _multi_turn_ascore(
         self, sample: MultiTurnSample, callbacks: Callbacks
