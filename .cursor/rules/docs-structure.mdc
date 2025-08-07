@@ -32,3 +32,10 @@ Follow these conventions when creating or editing documentation:
    • Custom templates/CSS live in [docs/extra/](mdc:docs/extra/) — avoid editing `material` theme defaults directly.
 
 6. **Do not modify generated or third-party files** in `_static/`, `extra/overrides/`, or `extra/components/` without good reason.
+
+---
+
+# Formatting Guidelines
+
+- When introducing a list with text ending in a colon (e.g., "This will:"), always add a blank line before the first list item. 
+- In a numbered list, do not add any new line between the items.
