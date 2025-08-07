@@ -1,0 +1,34 @@
+---
+globs: docs/**
+---
+# Documentation Structure & Workflow
+
+Follow these conventions when creating or editing documentation:
+
+1. **Docs live in [docs/](mdc:docs/)**
+   • Use Markdown (`.md`) files.  
+   • Images and other assets go in [docs/_static/](mdc:docs/_static/).
+
+2. **Section Folders mirror MkDocs navigation** (see [mkdocs.yml](mdc:mkdocs.yml)):
+   • 🚀 Get Started → [docs/getstarted/](mdc:docs/getstarted/)  
+   • 📚 Core Concepts → [docs/concepts/](mdc:docs/concepts/)  
+   • 🧪 Experimental → [docs/experimental/](mdc:docs/experimental/)  
+   • 🛠️ How-to Guides → [docs/howtos/](mdc:docs/howtos/)  
+   • 📖 References → [docs/references/](mdc:docs/references/)  
+   • Community → [docs/community/](mdc:docs/community/)
+
+   Place new pages in the appropriate folder **and** update `mkdocs.yml` `nav:` so the page appears in navigation.
+
+3. **Notebook-to-Markdown**
+   • Convert notebooks to Markdown with [docs/ipynb_to_md.py](mdc:docs/ipynb_to_md.py).  
+   • Commit the generated `.md`; notebooks themselves should not live in `docs/`.
+
+4. **Local preview / build**
+   • Run `make build-docs` to build HTML, `make serve-docs` to preview locally (defined in [DEVELOPMENT.md](mdc:DEVELOPMENT.md)).
+
+5. **Style & Assets**
+   • Use relative links (`../`) within docs.  
+   • Reference images via `_static/…` paths so they work in both dev and hosted docs.  
+   • Custom templates/CSS live in [docs/extra/](mdc:docs/extra/) — avoid editing `material` theme defaults directly.
+
+6. **Do not modify generated or third-party files** in `_static/`, `extra/overrides/`, or `extra/components/` without good reason.
