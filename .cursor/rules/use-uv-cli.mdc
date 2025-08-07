@@ -1,0 +1,12 @@
+---
+alwaysApply: true
+---
+# Use `uv run` for Python CLI commands
+
+This repository manages its virtual environment and dependencies with **uv**. Therefore, always execute Python or Python-related CLI tools through `uv run`.
+
+Examples:
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run isort .`
+- `uv run pyright`
