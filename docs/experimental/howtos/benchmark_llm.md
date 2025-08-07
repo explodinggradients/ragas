@@ -44,7 +44,7 @@ export OPENAI_API_KEY=your_actual_api_key
 The evaluation compares two models defined in the [config.py](https://github.com/explodinggradients/ragas/tree/main/experimental/ragas_examples/benchmark_llm/config.py):
 
 ```python
-# Model configuration for evaluationing
+# Model configuration for evaluation
 BASELINE_MODEL = "gpt-4.1-mini" # Your current model
 CANDIDATE_MODEL = "o4-mini"     # The new model to evaluate
 ```
