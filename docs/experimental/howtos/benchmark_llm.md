@@ -119,7 +119,7 @@ The dataset loader finds your CSV file in the `datasets/` directory and loads it
 
 ### Metrics function
 
-It is generaly better to use a simple metric. You should use a metric relevant to your use case. More information on metrics can be found in [Metrics - Core Concepts](../core_concepts/metrics.md). The evaluation uses this accuracy metric to score each response:
+It is generally better to use a simple metric. You should use a metric relevant to your use case. More information on metrics can be found in [Metrics - Core Concepts](../core_concepts/metrics.md). The evaluation uses this accuracy metric to score each response:
 
 ```python
 @discrete_metric(name="eligibility_accuracy", allowed_values=["correct", "incorrect"])
