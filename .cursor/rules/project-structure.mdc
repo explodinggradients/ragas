@@ -11,7 +11,7 @@ The repository is a monorepo consisting of two primary projects:
    • Build configuration is in [ragas/pyproject.toml](mdc:ragas/pyproject.toml)
 
 2. [experimental/](mdc:experimental/) – nbdev-based experimental extensions
-   • Editable notebooks are in [experimental/nbs/](mdc:experimental/nbs/)
+   • Generated code is in [experimental/ragas_experimental/](mdc:experimental/ragas_experimental/)
    • Generated code is in [experimental/ragas_experimental/](mdc:experimental/ragas_experimental/)
    • Build configuration is in [experimental/pyproject.toml](mdc:experimental/pyproject.toml)
 
