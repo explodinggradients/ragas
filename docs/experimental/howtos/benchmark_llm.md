@@ -44,7 +44,7 @@ export OPENAI_API_KEY=your_actual_api_key
 The evaluation compares two models defined in the [config.py](https://github.com/explodinggradients/ragas/tree/main/experimental/ragas_examples/benchmark_llm/config.py):
 
 ```python
-# Model configuration for evaluationing
+# Model configuration for evaluation
 BASELINE_MODEL = "gpt-4.1-mini" # Your current model
 CANDIDATE_MODEL = "o4-mini"     # The new model to evaluate
 ```
@@ -119,7 +119,7 @@ The dataset loader finds your CSV file in the `datasets/` directory and loads it
 
 ### Metrics function
 
-It is generaly better to use a simple metric. You should use a metric relevant to your use case. More information on metrics can be found in [Metrics - Core Concepts](../core_concepts/metrics.md). The evaluation uses this accuracy metric to score each response:
+It is generally better to use a simple metric. You should use a metric relevant to your use case. More information on metrics can be found in [Metrics - Core Concepts](../core_concepts/metrics.md). The evaluation uses this accuracy metric to score each response:
 
 ```python
 @discrete_metric(name="eligibility_accuracy", allowed_values=["correct", "incorrect"])
