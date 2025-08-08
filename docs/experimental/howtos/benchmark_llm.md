@@ -95,6 +95,9 @@ To customize the dataset for your use case, create a `datasets/` directory and a
 
 It is better to sample real data from your application to create the dataset. If that is not available, you can generate synthetic data using an LLM. Since our use case is slightly complex, we recommend using a model like o3 which can generate more accurate data. Always make sure to review and verify the data you use. 
 
+!!! note
+    While the example dataset here has roughly 10 cases to keep the guide compact, for a real-world evaluation you should target 50–100 cases. Ensure broad coverage of the different scenarios your agent may face (including edge cases and complex questions). Your accuracy does not need to be 100% initially—use the results for error analysis, iterate on prompts, data, and tools, and keep improving.
+
 ### Load dataset
 
 ```python
