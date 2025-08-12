@@ -114,7 +114,7 @@ class Metric(BaseMetric):
         inputs: t.List[t.Dict[str, t.Any]],
     ) -> t.List[MetricResult]:
         # Add llm to each input and use BaseMetric's batch_score
-        inputs_with_llm = [{**input_dict, 'llm': llm} for input_dict in inputs]
+        inputs_with_llm = [{**input_dict, "llm": llm} for input_dict in inputs]
         return super().batch_score(inputs_with_llm)
 
     async def abatch_score(
@@ -123,7 +123,7 @@ class Metric(BaseMetric):
         inputs: t.List[t.Dict[str, t.Any]],
     ) -> t.List[MetricResult]:
         # Add llm to each input and use BaseMetric's abatch_score
-        inputs_with_llm = [{**input_dict, 'llm': llm} for input_dict in inputs]
+        inputs_with_llm = [{**input_dict, "llm": llm} for input_dict in inputs]
         return await super().abatch_score(inputs_with_llm)
 
     @abstractmethod
