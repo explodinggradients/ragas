@@ -12,8 +12,8 @@ cd ragas
 # 2. Install uv (if not already installed)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 3. Set up development environment
-make setup
+# 3. Install dependencies and setup environment
+make install
 
 # 4. Verify everything works
 make check
@@ -29,7 +29,7 @@ AI agents working with this codebase should use these standardized commands:
 ```bash
 # Essential commands for AI development
 make help           # See all available targets
-make setup          # Complete environment setup
+make install        # Install dependencies and setup environment
 make check          # Quick health check (format + type)
 make test           # Run all tests
 make run-ci         # Full CI pipeline locally
@@ -84,7 +84,7 @@ ragas/
 
 #### Option 1: Using Make (Recommended)
 ```bash
-make setup
+make install
 ```
 
 #### Option 2: Manual Setup
@@ -109,7 +109,6 @@ Run `make help` to see all targets. Here are the essential commands:
 
 ### Setup & Installation
 - `make install` - Install dependencies for both projects
-- `make setup` - Complete development environment setup
 
 ### Code Quality
 - `make format` - Format and lint all code (includes unused import cleanup)
