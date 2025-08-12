@@ -70,6 +70,7 @@ dev = [
     "ruff",
     "vcrpy",
     "pytest-vcr",
+    "pre-commit>=4.3.0",
 ]
 box = [
     "boxsdk[jwt]",

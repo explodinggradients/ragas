@@ -69,6 +69,7 @@ dev = [
     "pytest-xdist[psutil]",
     "pytest-asyncio",
     "nbmake",
+    "pre-commit>=4.3.0",
 ]
 test = []
 [tool.setuptools]

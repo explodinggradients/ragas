@@ -20,12 +20,15 @@ install: ## Install dependencies for both ragas and experimental
 	$(Q)uv pip install -e "./ragas[dev]"
 	@echo "Installing experimental dependencies..."
 	$(Q)uv pip install -e "./experimental[dev]"
+	@echo "Setting up pre-commit hooks for entire monorepo..."
+	$(Q)pre-commit install
+	@echo "Installation complete!"
 
 # =============================================================================
 # CODE QUALITY
 # =============================================================================
 
-.PHONY: help install setup format type check clean test test-e2e benchmarks benchmarks-docker run-ci run-ci-fast run-ci-format-check run-ci-type run-ci-tests build-docs serve-docs process-experimental-notebooks
+.PHONY: help install format type check clean test test-e2e benchmarks benchmarks-docker run-ci run-ci-fast run-ci-format-check run-ci-type run-ci-tests build-docs serve-docs process-experimental-notebooks
 format: ## Format and lint all code in the monorepo
 	@echo "Formatting and linting all code..."
 	@echo "Formatting ragas..."
