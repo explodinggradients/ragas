@@ -53,10 +53,9 @@ class BaseMetric(ABC):
 
 
 @dataclass
-class Metric(ABC):
+class Metric(BaseMetric):
     """Base class for all metrics in the LLM evaluation library."""
 
-    name: str
     prompt: t.Optional[t.Union[str, Prompt]] = None
     _response_model: t.Type[BaseModel] = field(init=False)
 
@@ -114,20 +113,18 @@ class Metric(ABC):
         llm: BaseRagasLLM,
         inputs: t.List[t.Dict[str, t.Any]],
     ) -> t.List[MetricResult]:
-        return [self.score(llm, **input_dict) for input_dict in inputs]
+        # Add llm to each input and use BaseMetric's batch_score
+        inputs_with_llm = [{**input_dict, 'llm': llm} for input_dict in inputs]
+        return super().batch_score(inputs_with_llm)
 
     async def abatch_score(
         self,
         llm: BaseRagasLLM,
         inputs: t.List[t.Dict[str, t.Any]],
     ) -> t.List[MetricResult]:
-        async_tasks = []
-        for input_dict in inputs:
-            # Add reasoning and n to the input parameters
-            async_tasks.append(self.ascore(llm, **input_dict))
-
-        # Run all tasks concurrently and return results
-        return await asyncio.gather(*async_tasks)
+        # Add llm to each input and use BaseMetric's abatch_score
+        inputs_with_llm = [{**input_dict, 'llm': llm} for input_dict in inputs]
+        return await super().abatch_score(inputs_with_llm)
 
     @abstractmethod
     def get_correlation(self, gold_label, predictions) -> float:
