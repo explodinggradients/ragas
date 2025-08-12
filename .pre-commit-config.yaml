@@ -1,0 +1,13 @@
+# Pre-commit configuration for entire ragas monorepo
+# Install with: make install && pre-commit install
+repos:
+  - repo: local
+    hooks:
+      - id: monorepo-ci
+        name: Run complete monorepo CI pipeline
+        entry: make run-ci
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+        verbose: true
