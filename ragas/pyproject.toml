@@ -14,11 +14,17 @@ dependencies = [
     "pydantic>=2",
     "openai>1",
     "diskcache>=5.6.3",
+    # Experimental dependencies
+    "tqdm",
+    "instructor",
+    "gitpython",
+    "typer",
+    "rich",
+    "pillow>=10.4.0",
 ]
 dynamic = ["version", "readme"]
 
 [project.optional-dependencies]
-experimental = ["ragas-experimental"]
 all = [
     "sentence-transformers",
     "transformers",
@@ -28,8 +34,14 @@ all = [
     "pandas",
     "datacompy",
     "llama_index",
-    "r2r",
-    "ragas-experimental"
+    "r2r"
+]
+examples = ["openai>=1.0.0"]
+tracing = ["langfuse", "mlflow"]
+gdrive = [
+    "google-api-python-client>=2.0.0",
+    "google-auth>=2.0.0",
+    "google-auth-oauthlib>=1.0.0"
 ]
 docs = [
     "mkdocs>=1.6.1",
@@ -71,6 +83,15 @@ dev = [
     "pre-commit>=4.3.0",
 ]
 test = []
+[project.entry-points."ragas.backends"]
+"local/csv" = "ragas.experimental.backends.local_csv:LocalCSVBackend"
+"local/jsonl" = "ragas.experimental.backends.local_jsonl:LocalJSONLBackend"
+"inmemory" = "ragas.experimental.backends.inmemory:InMemoryBackend"
+"gdrive" = "ragas.experimental.backends.gdrive_backend:GDriveBackend"
+
+[project.scripts]
+ragas-experimental = "ragas.experimental.cli:app"
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 
@@ -94,6 +115,10 @@ addopts = "-n 0"
 asyncio_default_fixture_loop_scope = "function"
 [pytest]
 testpaths = ["tests"]
+markers = [
+    "experimental_ci: Set of tests that will be run as part of Experimental CI",
+    "e2e: End-to-End tests for Experimental",
+]
 
 [dependency-groups]
 dev = [
