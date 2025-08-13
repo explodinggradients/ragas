@@ -16,7 +16,7 @@ from rich.panel import Panel
 from rich.spinner import Spinner
 from rich.live import Live
 
-# from .project.core import Project  # TODO: Missing project module
+from .project.core import Project
 from .utils import console
 
 

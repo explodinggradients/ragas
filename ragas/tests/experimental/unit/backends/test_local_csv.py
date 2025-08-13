@@ -342,7 +342,8 @@ class TestBaseModelIntegration:
         loaded_data = backend.load_dataset("complex_model_test")
 
         # This will fail because nested structures are corrupted
-        models = [ComplexTestModel(**item) for item in loaded_data]
+        with pytest.raises(ValidationError):
+            [ComplexTestModel(**item) for item in loaded_data]
 
     def test_basemodel_type_coercion(self, backend):
         """Test BaseModel's ability to coerce string types."""
