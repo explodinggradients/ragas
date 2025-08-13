@@ -9,6 +9,7 @@ By the end of this guide, you'll have:
 - Set up a structured evaluation comparing two LLMs
 - Evaluated model performance on a realistic business task
 - Generated detailed results to inform your model selection decision
+- A reusable evaluation loop you can rerun whenever new models drop
 
 ## The evaluation scenario
 
@@ -188,6 +189,9 @@ This will:
 - Save individual experiment results to CSV files
 
 You can then inspect the results by opening the `experiments/` directory to see detailed per-case results for each model.
+
+!!! tip "Re-run when new models drop"
+    Once this evaluation lives alongside your project, it becomes a repeatable check. When a new LLM is released (often weekly nowadays), plug it in as the candidate and rerun the same evaluation to compare against your current baseline.
 
 
 ## Interpret results and make your decision
