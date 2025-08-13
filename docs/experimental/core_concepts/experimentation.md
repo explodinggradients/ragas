@@ -60,6 +60,29 @@ async def my_experiment(row):
 my_experiment.arun(dataset)
 ```
 
+### Using Custom Models
+
+By default, experiments use "gpt-4o-mini" as the model. If you want to pass your own model, you can do so by adding a `model` parameter to your experiment function and passing it to `arun()`:
+
+```python
+@experiment
+async def my_experiment(row, model):
+    # Process the query through your application with the specified model
+    response = my_app(row.query, model)
+    
+    # Calculate the metric
+    metric = my_metric.score(response, row.ground_truth)
+    
+    # Return results
+    return {**row, "response": response, "accuracy": metric.value}
+
+# Run the experiment with a specific model
+my_experiment.arun(dataset, "gpt-4")
+
+# Run without specifying model (defaults to "gpt-4o-mini")
+my_experiment.arun(dataset)
+```
+
 ## Result Storage
 
 Once executed, Ragas processes each row in the dataset, runs it through the function, and stores the results in the `experiments` folder. The storage backend can be configured based on your preferences.

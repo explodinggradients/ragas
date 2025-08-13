@@ -74,7 +74,34 @@ async def run_experiment(row):
     return experiment_view
 ```
 
-Now whenever you make a change to your prompt, you can run the experiment and see how it affects the performance of your prompt. 
+Now whenever you make a change to your prompt, you can run the experiment and see how it affects the performance of your prompt.
+
+### Using Custom Models
+
+If you want to use a different model for your prompt evaluation, you can add a `model` parameter to your experiment function:
+
+```python
+@experiment()
+async def run_experiment(row, model):
+    response = run_prompt(row["text"], model)
+    score = my_metric.score(
+        prediction=response,
+        actual=row["label"]
+    )
+
+    experiment_view = {
+        **row,
+        "response": response,
+        "score": score.result,
+    }
+    return experiment_view
+
+# Run with a specific model
+run_experiment.arun(dataset, "gpt-4")
+
+# Run with default model (gpt-4o-mini)
+run_experiment.arun(dataset)
+``` 
 
 
 ## Running the example end to end

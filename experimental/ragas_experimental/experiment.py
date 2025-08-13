@@ -79,6 +79,7 @@ class ExperimentProtocol(t.Protocol):
     async def arun(
         self,
         dataset: Dataset,
+        model: t.Optional[t.Any] = None,
         name: t.Optional[str] = None,
         backend: t.Optional[t.Union[BaseBackend, str]] = None,
     ) -> "Experiment": ...
@@ -112,6 +113,7 @@ class ExperimentWrapper:
     async def arun(
         self,
         dataset: Dataset,
+        model: t.Optional[t.Any] = None,
         name: t.Optional[str] = None,
         backend: t.Optional[t.Union[BaseBackend, str]] = None,
     ) -> "Experiment":
@@ -138,8 +140,9 @@ class ExperimentWrapper:
 
         # Create tasks for all items
         tasks = []
+        actual_model = model if model is not None else "gpt-4o-mini"
         for item in dataset:
-            tasks.append(self(item))
+            tasks.append(self(item, actual_model))
 
         progress_bar = None
         try:
