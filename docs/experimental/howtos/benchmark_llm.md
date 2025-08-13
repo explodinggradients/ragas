@@ -35,11 +35,14 @@ The evaluation compares two models defined in the [config.py](https://github.com
 
 ```python
 # Model configuration for evaluation
-BASELINE_MODEL = "gpt-4.1-mini" # Your current model
-CANDIDATE_MODEL = "o4-mini"     # The new model to evaluate
+BASELINE_MODEL = "gpt-4.1-nano-2025-04-14" # Your current model
+CANDIDATE_MODEL = "gpt-5-mini-2025-08-07"   # The new model to evaluate
 ```
 
 The baseline model represents your current choice, while the candidate is the new model you're considering. You can modify these in your own implementation.
+
+!!! note
+    When possible, pin and record the exact model snapshot/version (for example, "gpt-4o-2024-08-06" instead of just "gpt-4o"). Providers regularly update alias names, and performance can change between snapshots. You can find available snapshots in the provider's model documentation (see OpenAI's [model catalog](https://platform.openai.com/docs/models) as an example). Including the snapshot in your results makes future comparisons fair and reproducible.
 
 ## Test your prompt setup
 
