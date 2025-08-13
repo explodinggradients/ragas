@@ -190,8 +190,21 @@ This will:
 - Evaluate responses using accuracy metrics
 - Generate detailed comparison results
 - Save individual experiment results to CSV files
+- Save a combined CSV file with the results for both models
 
-You can then inspect the results by opening the `experiments/` directory to see detailed per-case results for each model.
+You can then inspect the results by opening the `experiments/` directory to see detailed per-case results for each model. You can also compare the results with the combined CSV file.
+
+### Analyze results with the combined CSV
+
+Alongside per-model files, the evaluation saves a minimal comparison CSV that’s easy to scan:
+
+- File: `experiments/<run_id>-comparison-minimal-<baseline>-vs-<candidate>.csv`
+- Contains: the input description and expected outcome, each model’s output, and the score with a brief scoring reason for both models.
+
+Practical tips:
+
+- Focus quickly by filtering rows where `baseline_score != candidate_score` to see wins and regressions.
+- Read `*_score_reason` to understand why a case failed.
 
 !!! tip "Re-run when new models drop"
     Once this evaluation lives alongside your project, it becomes a repeatable check. When a new LLM is released (often weekly nowadays), plug it in as the candidate and rerun the same evaluation to compare against your current baseline.
