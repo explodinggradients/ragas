@@ -154,7 +154,7 @@ nav:
       - Synthesizers: references/synthesizers.md
       - Generation: references/generate.md
     - Integrations: references/integrations.md
-  - Community: community/index.md
+  - ❤️ Community: community/index.md
 
 # https://www.mkdocs.org/user-guide/configuration/#validation
 validation:
