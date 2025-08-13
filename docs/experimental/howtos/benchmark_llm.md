@@ -10,17 +10,6 @@ By the end of this guide, you'll have:
 - Evaluated model performance on a realistic business task
 - Generated detailed results to inform your model selection decision
 
-## Prerequisites
-
-1. Install ragas_experimental[examples]
-```bash
-pip install ragas_experimental[examples]
-```
-2. Setup your OpenAI API key
-```bash
-export OPENAI_API_KEY="your_openai_api_key"
-```
-
 ## The evaluation scenario
 
 We'll use eligibility reasoning as our test case: given a customer profile, determine if they qualify for a discount and explain why. This task requires rule-chaining and explanation - skills that differentiate model capabilities.
