@@ -16,7 +16,7 @@ from rich.panel import Panel
 from rich.spinner import Spinner
 from rich.live import Live
 
-from .project.core import Project
+# from .project.core import Project  # TODO: Project module not implemented yet
 from .utils import console
 
 
@@ -399,7 +399,10 @@ def evals(
         # Look for project and experiment in the module
         for attr_name in dir(eval_module):
             attr = getattr(eval_module, attr_name)
-            if isinstance(attr, Project):
+            # TODO: Project class not implemented yet
+            # if isinstance(attr, Project):
+            #     project = attr
+            if hasattr(attr, "get_dataset") and hasattr(attr, "get_experiment"):
                 project = attr
             elif hasattr(attr, "run_async"):
                 experiment_func = attr
@@ -540,15 +543,16 @@ def hello_world(
         evals_content = '''import typing as t
 
 import numpy as np
-from ragas.experimental import BaseModel, Project
-from ragas.experimental.project.backends import LocalCSVProjectBackend
+from ragas.experimental import BaseModel
+# from ragas.experimental.project.backends import LocalCSVProjectBackend  # TODO: Not implemented yet
 from ragas.experimental.metrics.result import MetricResult
 from ragas.experimental.metrics.numeric import numeric_metric
 
-p = Project(
-    project_id="hello_world",
-    project_backend=LocalCSVProjectBackend("."),
-)
+# TODO: Project class not implemented yet  
+# p = Project(
+#     project_id="hello_world", 
+#     project_backend=LocalCSVProjectBackend("."),
+# )
 
 
 @numeric_metric(name="accuracy_score", allowed_values=(0, 1))
@@ -587,7 +591,7 @@ class ExperimentDataRow(TestDataRow):
     accuracy_reason: t.Optional[str] = None
 
 
-@p.experiment(ExperimentDataRow)
+# @p.experiment(ExperimentDataRow)  # TODO: Project not implemented
 async def run_experiment(row: TestDataRow):
     response = mock_app_endpoint(query=row.query)
     accuracy = accuracy_score.score(response=response, expected=row.expected_output)

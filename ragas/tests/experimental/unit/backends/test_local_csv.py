@@ -5,7 +5,7 @@ from datetime import datetime, date
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from ragas.experimental.backends.local_csv import LocalCSVBackend
 

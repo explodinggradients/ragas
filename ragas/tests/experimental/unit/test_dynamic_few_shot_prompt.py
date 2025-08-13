@@ -142,7 +142,8 @@ class TestDynamicFewShotPromptSaveLoad:
         # Verify embeddings were computed during creation
         assert len(original.example_store._embeddings_list) == 2
         assert len(original.example_store._embeddings_list[0]) == 3
-        initial_call_count = mock_embedding.call_count
+        # Track call count for later verification
+        assert mock_embedding.call_count >= 2  # At least 2 calls for 2 examples
 
         json_path = tmp_path / "with_embedding.json"
 
@@ -419,7 +420,9 @@ class TestDynamicFewShotPromptSaveLoad:
         original_formatted = original.format(**test_params)
         loaded_formatted = loaded.format(**test_params)
 
-        # Instructions should be the same
+        # Both formatted results should contain the test parameters
+        assert test_params["param1"] in original_formatted
+        assert test_params["param2"] in original_formatted
         assert test_params["param1"] in loaded_formatted
         assert test_params["param2"] in loaded_formatted
 
