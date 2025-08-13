@@ -4,13 +4,18 @@
 
 Our project thrives on the vibrant energy, diverse skills, and shared passion of our community. It's not just about code; it's about people coming together to create something extraordinary. This space celebrates every contribution, big or small, and features the amazing people who make it all happen.
 
+## **💬 Discord community**
+
+Join our Discord community [here](https://discord.com/invite/5djav8GGNZ) to connect with other developers, share your ideas, and get support.
+
 ## **🌟  Contributors**
+Meet some of our outstanding contributors! 
 
-Meet some of our outstanding members who made significant contributions !
+<a href="https://github.com/explodinggradients/ragas/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=explodinggradients/ragas" />
+</a>
 
-- [Tino Max Thayil](https://github.com/tinomaxthayil)
-- [Da Chen](https://github.com/yuukidach)
-- [Yongtae Hwang](https://github.com/Yongtae723)
+See the full list [here](https://github.com/explodinggradients/ragas/graphs/contributors).
 
 ## **📚 Blog & Insights**
 
