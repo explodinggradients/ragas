@@ -79,9 +79,10 @@ class ExperimentProtocol(t.Protocol):
     async def arun(
         self,
         dataset: Dataset,
-        model: t.Optional[t.Any] = None,
         name: t.Optional[str] = None,
         backend: t.Optional[t.Union[BaseBackend, str]] = None,
+        *args,
+        **kwargs,
     ) -> "Experiment": ...
 
 
@@ -113,11 +114,18 @@ class ExperimentWrapper:
     async def arun(
         self,
         dataset: Dataset,
-        model: t.Optional[t.Any] = None,
         name: t.Optional[str] = None,
         backend: t.Optional[t.Union[BaseBackend, str]] = None,
+        *args,
+        **kwargs,
     ) -> "Experiment":
         """Run the experiment against a dataset."""
+        # Extract model from kwargs if provided
+        runtime_model = kwargs.pop("model", None)
+
+        # Use runtime experiment_model if provided, otherwise fallback to decorator's model
+        experiment_model = runtime_model or self.experiment_model
+
         # Generate name if not provided
         if name is None:
             name = memorable_names.generate_unique_name()
@@ -134,15 +142,14 @@ class ExperimentWrapper:
         # Create experiment
         experiment_view = Experiment(
             name=name,
-            data_model=self.experiment_model,
+            data_model=experiment_model,
             backend=resolved_backend,
         )
 
         # Create tasks for all items
         tasks = []
-        actual_model = model if model is not None else "gpt-4o-mini"
         for item in dataset:
-            tasks.append(self(item, actual_model))
+            tasks.append(self(item, *args, **kwargs))
 
         progress_bar = None
         try:

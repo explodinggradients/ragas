@@ -60,15 +60,15 @@ async def my_experiment(row):
 my_experiment.arun(dataset)
 ```
 
-### Using Custom Models
+### Passing Additional Parameters
 
-By default, experiments use "gpt-4o-mini" as the model. If you want to pass your own model, you can do so by adding a `model` parameter to your experiment function and passing it to `arun()`:
+You can pass additional parameters to your experiment function through `arun()`. This is useful for models, configurations, or any other parameters your experiment needs:
 
 ```python
 @experiment
 async def my_experiment(row, model):
-    # Process the query through your application with the specified model
-    response = my_app(row.query, model)
+    # Process the query with the specified parameters
+    response = my_app(row.query, model=model)
     
     # Calculate the metric
     metric = my_metric.score(response, row.ground_truth)
@@ -76,11 +76,38 @@ async def my_experiment(row, model):
     # Return results
     return {**row, "response": response, "accuracy": metric.value}
 
-# Run the experiment with a specific model
+# Run with specific parameters
 my_experiment.arun(dataset, "gpt-4")
 
-# Run without specifying model (defaults to "gpt-4o-mini")
-my_experiment.arun(dataset)
+# Or use keyword arguments
+my_experiment.arun(dataset, model="gpt-4o")
+```
+
+### Using Data Models
+
+You can specify a data model for your experiment results either at the decorator level or at runtime:
+
+```python
+from pydantic import BaseModel
+
+class ExperimentResult(BaseModel):
+    response: str
+    accuracy: float
+    model_used: str
+
+# Option 1: Set at decorator level
+@experiment(experiment_model=ExperimentResult)
+async def my_experiment(row, model):
+    response = my_app(row.query, model)
+    metric = my_metric.score(response, row.ground_truth)
+    return ExperimentResult(
+        response=response, 
+        accuracy=metric.value, 
+        model_used=model
+    )
+
+# Option 2: Set at runtime (overrides decorator model)
+my_experiment.arun(dataset, "gpt-4", model=ExperimentResult)
 ```
 
 ## Result Storage
