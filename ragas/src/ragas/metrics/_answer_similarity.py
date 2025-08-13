@@ -98,6 +98,7 @@ class SemanticSimilarity(MetricWithEmbeddings, SingleTurnMetric):
         return float(score.item())
 
 
+@dataclass
 class AnswerSimilarity(SemanticSimilarity):
     name: str = "answer_similarity"
 
