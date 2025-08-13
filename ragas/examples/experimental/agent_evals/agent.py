@@ -1,7 +1,7 @@
 import openai
 import json
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from dataclasses import dataclass, asdict
 import os
 from datetime import datetime
@@ -181,7 +181,7 @@ class MathToolsAgent:
         
         return str(result)
     
-    def export_traces_to_log(self, run_id: str, problem: str, final_result: float = None):
+    def export_traces_to_log(self, run_id: str, problem: str, final_result: Optional[float] = None):
         """
         Export traces to a log file with run_id
         
@@ -209,7 +209,7 @@ class MathToolsAgent:
         logging.info(f"Traces exported to: {log_filepath}")
         return log_filepath
     
-    def solve(self, problem: str, max_iterations: int = 10, run_id: str = None) -> Dict[str, Any]:
+    def solve(self, problem: str, max_iterations: int = 10, run_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Solve a math problem using iterative planning with LLM and atomic tools
         
@@ -329,7 +329,7 @@ class MathToolsAgent:
         
         logging.info("Max iterations reached or error occurred")
         # Export traces even if solve failed
-        return {"result": 0, "log_file": self.export_traces_to_log(run_id, problem, None)}
+        return {"result": 0, "log_file": self.export_traces_to_log(run_id, problem, 0.0)}
     
 
 def get_default_agent(model_name: str = "gpt-4o", logdir:str = "logs") -> MathToolsAgent:

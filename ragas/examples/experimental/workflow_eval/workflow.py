@@ -150,7 +150,7 @@ class LLMExtractor(BaseExtractor):
             )
             
             # Parse JSON response
-            result = json.loads(response.choices[0].message.content.strip())
+            result = json.loads(response.choices[0].message.content.strip() if response.choices[0].message.content else "{}")
             return result
             
         except Exception as e:
@@ -289,7 +289,7 @@ class ConfigurableSupportTriageAgent:
                 max_tokens=10
             )
             
-            category = response.choices[0].message.content.strip()
+            category = response.choices[0].message.content.strip() if response.choices[0].message.content else "unknown"
             print(f"   ➜ Classified as: {category}")
             
             self.traces.append(TraceEvent(
@@ -394,7 +394,7 @@ class ConfigurableSupportTriageAgent:
                 max_tokens=300
             )
             
-            response_text = response.choices[0].message.content.strip()
+            response_text = response.choices[0].message.content.strip() if response.choices[0].message.content else ""
             print("   ➜ Response template generated")
             
             self.traces.append(TraceEvent(
@@ -418,7 +418,7 @@ class ConfigurableSupportTriageAgent:
             ))
             return "Thank you for contacting support. We will review your request and get back to you soon."
     
-    def export_traces_to_log(self, run_id: str, email_content: str, result: Dict[str, Any] = None):
+    def export_traces_to_log(self, run_id: str, email_content: str, result: Optional[Dict[str, Any]] = None):
         """Export traces to a log file with run_id"""
         timestamp = datetime.now().isoformat()
         log_filename = f"run_{run_id}_{timestamp.replace(':', '-').replace('.', '-')}.json"
@@ -438,7 +438,7 @@ class ConfigurableSupportTriageAgent:
         
         return log_filepath
     
-    def process_email(self, email_content: str, run_id: str = None) -> Dict[str, Any]:
+    def process_email(self, email_content: str, run_id: Optional[str] = None) -> Dict[str, Any]:
         """Main processing function that handles the entire workflow"""
         
         # Generate run_id if not provided
@@ -498,7 +498,7 @@ class ConfigurableSupportTriageAgent:
             ))
             
             # Export traces even if processing failed
-            self.export_traces_to_log(run_id, email_content, None)
+            self.export_traces_to_log(run_id, email_content, {})
             
             # Return minimal result on error
             return {
@@ -518,10 +518,16 @@ def default_workflow_client(extractor_type: Literal["deterministic", "llm"] = "d
     if extractor_type == "deterministic":
         extractor = DeterministicExtractor()
     elif extractor_type == "llm":
+        if api_key is None:
+            raise ValueError("OPENAI_API_KEY environment variable is required for LLM extractor")
         client = OpenAI(api_key=api_key)
         extractor = LLMExtractor(client)
     else:
         raise ValueError(f"Unsupported extractor type: {extractor_type}")
+    
+    # Use a default API key if none provided and using deterministic extractor
+    if api_key is None:
+        api_key = "dummy"
     
     return ConfigurableSupportTriageAgent(api_key=api_key, extractor=extractor, logdir="logs")
 
@@ -530,6 +536,8 @@ def default_workflow_client(extractor_type: Literal["deterministic", "llm"] = "d
 def main():
     # Initialize the agent with different extractors
     api_key = os.environ.get("OPENAI_API_KEY")
+    if api_key is None:
+        api_key = "dummy"
     
     # Test emails
     test_emails = [

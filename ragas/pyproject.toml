@@ -21,6 +21,7 @@ dependencies = [
     "typer",
     "rich",
     "pillow>=10.4.0",
+    "pyright>=1.1.403",
 ]
 dynamic = ["version", "readme"]
 

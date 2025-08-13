@@ -16,7 +16,7 @@ def run_prompt(prompt: str):
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content":prompt},
         ])
-    response = response.choices[0].message.content.strip()
+    response = response.choices[0].message.content.strip() if response.choices[0].message.content else ""
     return response
 
 

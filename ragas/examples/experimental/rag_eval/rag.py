@@ -302,7 +302,7 @@ class ExampleRAG:
             ))
             return f"Error generating response: {str(e)}"
     
-    def query(self, question: str, top_k: int = 3, run_id: str = None) -> Dict[str, Any]:
+    def query(self, question: str, top_k: int = 3, run_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Complete RAG pipeline: retrieve documents and generate response
         

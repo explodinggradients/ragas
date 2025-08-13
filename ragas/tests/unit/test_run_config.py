@@ -8,16 +8,10 @@ from packaging.version import parse as parse_version
 
 from ragas.run_config import RunConfig
 
-if parse_version(python_version()) < parse_version("3.10"):
-    from typing import Callable, NewType
+from typing import Callable
 
-    RandomComparison = NewType(
-        "RandomComparison", Callable[[Generator, Generator], bool]
-    )
-elif parse_version(python_version()) >= parse_version("3.10"):
-    from typing import Callable, TypeAlias
-
-    RandomComparison: TypeAlias = Callable[[Generator, Generator], bool]
+# Use a simple type alias that works across Python versions
+RandomComparison = Callable[[Generator, Generator], bool]
 
 
 @pytest.fixture(scope="function")

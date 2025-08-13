@@ -104,7 +104,7 @@ def example_usage():
     
     # Access individual records
     for i, record in enumerate(dataset):
-        print(f"Record {i+1}: {record.question} -> {record.answer} (Score: {record.score})")
+        print(f"Record {i+1}: {record['question'] if isinstance(record, dict) else record.question} -> {record['answer'] if isinstance(record, dict) else record.answer} (Score: {record['score'] if isinstance(record, dict) else record.score})")
     
     # List all datasets in the backend
     available_datasets = dataset.backend.list_datasets()
