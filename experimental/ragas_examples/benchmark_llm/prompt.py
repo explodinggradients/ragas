@@ -29,6 +29,7 @@ def run_prompt(prompt: str, model: str = "gpt-4o"):
     """Run the eligibility assessment prompt with the specified model."""
     response = client.chat.completions.create(
         model=model,
+        response_format={"type": "json_object"},
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": prompt},
