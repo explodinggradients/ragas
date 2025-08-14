@@ -13,7 +13,7 @@ By the end of this guide, you'll have:
 
 ## The evaluation scenario
 
-We'll use eligibility reasoning as our test case: given a customer profile, determine if they qualify for a discount and explain why. This task requires rule-chaining and explanation - skills that differentiate model capabilities.
+We'll use discount calculation as our test case: given a customer profile, calculate the appropriate discount percentage and explain the reasoning. This task requires rule application and reasoning - skills that differentiate model capabilities.
 
 *Note: You can adapt this approach to any use case that matters for your application.*
 
@@ -73,7 +73,7 @@ This will test a sample customer profile with both models to ensure:
 - Models are accessible  
 - JSON output format is correct
 
-You should see structured JSON responses from both models showing eligibility decisions and discount calculations.
+You should see structured JSON responses from both models showing discount calculations and reasoning.
 
 ## Examine the evaluation dataset
 
@@ -86,17 +86,16 @@ The evaluation uses a pre-built dataset with test cases that includes:
 Each case specifies:
 
 - `customer_profile`: The input data
-- `expected_eligible`: Whether discount applies (True/False)
 - `expected_discount`: Expected discount percentage
 - `description`: Case complexity indicator
 
 Example dataset structure:
 
 ```csv
-customer_profile,expected_eligible,expected_discount,description
-"Customer: Age 67, Income $45k, Premium 3yrs",true,25,"Senior + Premium member"
-"Customer: Age 25, Income $25k, Student",true,15,"Student discount case"
-"Customer: Age 30, Income $50k, New member",true,5,"New customer case"
+customer_profile,expected_discount,description
+"Customer: Age 67, Income $45k, Premium 3yrs",25,"Senior + Premium member"
+"Customer: Age 25, Income $25k, Student",15,"Student discount case"
+"Customer: Age 30, Income $50k, New member",5,"New customer case"
 ```
 
 To customize the dataset for your use case, create a `datasets/` directory and add your own CSV file. Refer to [Datasets - Core Concepts](../core_concepts/datasets.md) for more information.
@@ -116,7 +115,7 @@ def load_dataset():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     
     dataset = Dataset.load(
-        name="eligibility_benchmark",
+        name="discount_benchmark",
         backend="local/csv",
         root_dir=current_dir
     )
@@ -130,9 +129,9 @@ The dataset loader finds your CSV file in the `datasets/` directory and loads it
 It is generally better to use a simple metric. You should use a metric relevant to your use case. More information on metrics can be found in [Metrics - Core Concepts](../core_concepts/metrics.md). The evaluation uses this accuracy metric to score each response:
 
 ```python
-@discrete_metric(name="eligibility_accuracy", allowed_values=["correct", "incorrect"])
-def eligibility_accuracy(prediction: str, expected_eligible, expected_discount):
-    """Check if the eligibility and discount prediction is correct."""
+@discrete_metric(name="discount_accuracy", allowed_values=["correct", "incorrect"])
+def discount_accuracy(prediction: str, expected_discount):
+    """Check if the discount prediction is correct."""
     import json
     try:
         parsed = json.loads(prediction)
@@ -140,23 +139,21 @@ def eligibility_accuracy(prediction: str, expected_eligible, expected_discount):
         return MetricResult(value="incorrect", reason="Invalid JSON output")
 
     # Convert expected values to correct types (CSV loads as strings)
-    expected_eligible_bool = str(expected_eligible).lower() == 'true'
     expected_discount_int = int(expected_discount)
 
-    eligible_correct = parsed.get('eligible') == expected_eligible_bool
     try:
         discount_correct = int(parsed.get('discount_percentage')) == expected_discount_int
     except Exception:
         discount_correct = False
 
-    if eligible_correct and discount_correct:
+    if discount_correct:
         return MetricResult(
             value="correct",
-            reason=f"Correctly identified eligible={expected_eligible_bool}, discount={expected_discount_int}%"
+            reason=f"Correctly calculated discount={expected_discount_int}%"
         )
     return MetricResult(
         value="incorrect",
-        reason=f"Expected eligible={expected_eligible_bool}, discount={expected_discount_int}%"
+        reason=f"Expected discount={expected_discount_int}%; Got discount={parsed.get('discount_percentage')}%"
     )
 ```
 
@@ -181,9 +178,8 @@ async def benchmark_experiment(row):
         predicted_discount = None
 
     # Score the response
-    score = eligibility_accuracy.score(
+    score = discount_accuracy.score(
         prediction=response,
-        expected_eligible=row["expected_eligible"],
         expected_discount=row["expected_discount"]
     )
 
@@ -191,7 +187,7 @@ async def benchmark_experiment(row):
         **row,
         "model": model_name,
         "response": response,
-        "predicted_eligible": predicted_eligible,
+
         "predicted_discount": predicted_discount,
         "score": score.value,
         "score_reason": score.reason
@@ -227,7 +223,7 @@ You can then inspect the results by opening the `experiments/` directory to see 
 Alongside per-model files, the evaluation saves a minimal comparison CSV that’s easy to scan:
 
 - File: `experiments/<run_id>-comparison-minimal-<baseline>-vs-<candidate>.csv`
-- Contains: the input description and expected outcome, each model’s output, and the score with a brief scoring reason for both models.
+- Contains: the input description and expected discount, each model's output, and the score with a brief scoring reason for both models.
 
 Practical tips:
 
@@ -285,7 +281,7 @@ To evaluate models for your specific application, you can use the [GitHub code](
 
 1. **Replace the prompt**: Modify the system prompt in `prompt.py` for your task
 2. **Update the dataset**: Create test cases relevant to your domain 
-3. **Adjust the metric**: Replace the `eligibility_accuracy` function with your own scoring logic
+3. **Adjust the metric**: Replace the `discount_accuracy` function with your own scoring logic
 4. **Update the experiment function**: Modify the experiment to call your custom metric
 5. **Configure models**: Update the model names in `config.py`
 
