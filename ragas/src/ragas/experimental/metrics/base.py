@@ -242,7 +242,7 @@ class Metric(BaseMetric):
         """
 
         test_dataset.reload()
-        gold_scores = [
+        gold_scores_raw = [
             test_dataset.get_row_value(row, self.name) for row in test_dataset
         ]
         pred_scores = []
@@ -258,10 +258,14 @@ class Metric(BaseMetric):
             score = self.score(llm=llm, **values)
             pred_scores.append(score.value)
 
+        # Convert to strings for correlation calculation, filtering out None values
+        gold_scores = [str(score) for score in gold_scores_raw if score is not None]
+        pred_scores_str = [str(score) for score in pred_scores if score is not None]
+        
         df = test_dataset.to_pandas()
         df[f"{self.name}_pred"] = pred_scores
-        correlation = self.get_correlation(gold_scores, pred_scores)
-        agreement_rate = sum(x == y for x, y in zip(gold_scores, pred_scores)) / len(
+        correlation = self.get_correlation(gold_scores, pred_scores_str)
+        agreement_rate = sum(x == y for x, y in zip(gold_scores, pred_scores_str)) / len(
             gold_scores
         )
         return {

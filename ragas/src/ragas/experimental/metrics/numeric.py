@@ -20,7 +20,7 @@ class NumericMetric(Metric):
         self._response_model = create_model("response_model", value=(float, ...))
 
     def get_correlation(
-        self, gold_labels: t.List[float], predictions: t.List[float]
+        self, gold_labels: t.List[str], predictions: t.List[str]
     ) -> float:
         """
         Calculate the correlation between gold labels and predictions.
@@ -33,7 +33,10 @@ class NumericMetric(Metric):
                 "scipy is required for correlation calculation. "
                 "Please install it with `pip install scipy`."
             )
-        result = pearsonr(gold_labels, predictions)
+        # Convert strings to floats for correlation calculation
+        gold_floats = [float(x) for x in gold_labels]
+        pred_floats = [float(x) for x in predictions]
+        result = pearsonr(gold_floats, pred_floats)
         # pearsonr returns (correlation, p-value) tuple
         correlation = t.cast(float, result[0])
         return correlation
