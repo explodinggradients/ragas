@@ -40,6 +40,21 @@ CANDIDATE_MODEL = "gpt-5-mini-2025-08-07"   # The new model to evaluate
 ```
 
 The baseline model represents your current choice, while the candidate is the new model you're considering. You can modify these in your own implementation.
+### Enforce JSON output
+
+To make evaluation robust and simplify parsing, enable JSON mode in the prompt call so models return a strict JSON object:
+
+```python
+response = client.chat.completions.create(
+    model=model,
+    response_format={"type": "json_object"},
+    messages=[
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": prompt},
+    ],
+)
+```
+
 
 !!! note
     When possible, pin and record the exact model snapshot/version (for example, "gpt-4o-2024-08-06" instead of just "gpt-4o"). Providers regularly update alias names, and performance can change between snapshots. You can find available snapshots in the provider's model documentation (see OpenAI's [model catalog](https://platform.openai.com/docs/models) as an example). Including the snapshot in your results makes future comparisons fair and reproducible.
@@ -118,25 +133,31 @@ It is generally better to use a simple metric. You should use a metric relevant 
 @discrete_metric(name="eligibility_accuracy", allowed_values=["correct", "incorrect"])
 def eligibility_accuracy(prediction: str, expected_eligible, expected_discount):
     """Check if the eligibility and discount prediction is correct."""
-    parsed = parse_eligibility_response(prediction)
-    
+    import json
+    try:
+        parsed = json.loads(prediction)
+    except Exception:
+        return MetricResult(value="incorrect", reason="Invalid JSON output")
+
     # Convert expected values to correct types (CSV loads as strings)
     expected_eligible_bool = str(expected_eligible).lower() == 'true'
     expected_discount_int = int(expected_discount)
-    
-    eligible_correct = parsed['eligible'] == expected_eligible_bool
-    discount_correct = parsed['discount'] == expected_discount_int
-    
+
+    eligible_correct = parsed.get('eligible') == expected_eligible_bool
+    try:
+        discount_correct = int(parsed.get('discount_percentage')) == expected_discount_int
+    except Exception:
+        discount_correct = False
+
     if eligible_correct and discount_correct:
         return MetricResult(
-            value="correct", 
+            value="correct",
             reason=f"Correctly identified eligible={expected_eligible_bool}, discount={expected_discount_int}%"
         )
-    else:
-        return MetricResult(
-            value="incorrect",
-            reason=f"Expected eligible={expected_eligible_bool}, discount={expected_discount_int}%; Got eligible={parsed['eligible']}, discount={parsed['discount']}%"
-        )
+    return MetricResult(
+        value="incorrect",
+        reason=f"Expected eligible={expected_eligible_bool}, discount={expected_discount_int}%"
+    )
 ```
 
 ### Experiment structure
@@ -148,23 +169,30 @@ Each model evaluation follows this experiment pattern:
 async def benchmark_experiment(row):
     # Get model response
     response = run_prompt(row["customer_profile"], model=model_name)
-    
-    # Parse response
-    parsed = parse_eligibility_response(response)
-    
+
+    # Parse response (strict JSON)
+    import json
+    try:
+        parsed = json.loads(response)
+        predicted_eligible = parsed.get('eligible')
+        predicted_discount = parsed.get('discount_percentage')
+    except Exception:
+        predicted_eligible = None
+        predicted_discount = None
+
     # Score the response
     score = eligibility_accuracy.score(
         prediction=response,
         expected_eligible=row["expected_eligible"],
         expected_discount=row["expected_discount"]
     )
-    
+
     return {
         **row,
         "model": model_name,
         "response": response,
-        "predicted_eligible": parsed['eligible'],
-        "predicted_discount": parsed['discount'],
+        "predicted_eligible": predicted_eligible,
+        "predicted_discount": predicted_discount,
         "score": score.value,
         "score_reason": score.reason
     }
