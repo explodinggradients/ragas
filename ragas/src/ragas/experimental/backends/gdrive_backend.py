@@ -8,25 +8,25 @@ import typing as t
 from pydantic import BaseModel
 
 try:
-    from google.auth.transport.requests import Request  # type: ignore
-    from google.oauth2.credentials import Credentials as UserCredentials  # type: ignore
-    from google.oauth2.service_account import Credentials  # type: ignore
-    from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
-    from googleapiclient.discovery import build  # type: ignore
-    from googleapiclient.errors import HttpError  # type: ignore
+    from google.auth.transport.requests import Request  
+    from google.oauth2.credentials import Credentials as UserCredentials  
+    from google.oauth2.service_account import Credentials  
+    from google_auth_oauthlib.flow import InstalledAppFlow  
+    from googleapiclient.discovery import build  
+    from googleapiclient.errors import HttpError  
 
     GDRIVE_AVAILABLE = True
 except ImportError:
     GDRIVE_AVAILABLE = False
 
     # Define stub classes for type checking when imports fail
-    Request = type("Request", (), {})  # type: ignore
-    UserCredentials = type("UserCredentials", (), {})  # type: ignore
-    Credentials = type("Credentials", (), {})  # type: ignore
-    InstalledAppFlow = type("InstalledAppFlow", (), {})  # type: ignore
-    HttpError = type("HttpError", (Exception,), {})  # type: ignore
+    Request = type("Request", (), {})  
+    UserCredentials = type("UserCredentials", (), {})  
+    Credentials = type("Credentials", (), {})  
+    InstalledAppFlow = type("InstalledAppFlow", (), {})  
+    HttpError = type("HttpError", (Exception,), {})  
 
-    def build(*args, **kwargs):  # type: ignore
+    def build(*args, **kwargs):  
         raise ImportError("Google API client not available")
 
 
