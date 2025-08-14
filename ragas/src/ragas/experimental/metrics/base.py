@@ -135,7 +135,7 @@ class Metric(BaseMetric):
         return await super().abatch_score(inputs)
 
     @abstractmethod
-    def get_correlation(self, gold_label, predictions) -> float:
+    def get_correlation(self, gold_labels: t.List[str], predictions: t.List[str]) -> float:
         """
         Calculate the correlation between gold scores and predicted scores.
         This is a placeholder method and should be implemented based on the specific metric.
