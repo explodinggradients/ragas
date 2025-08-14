@@ -46,7 +46,11 @@ if __name__ == "__main__":
     - Premium Member: Yes, for 3 years
     - Account Age: 3 years
     """
-    
+    print(f"=== System Prompt ===")
+    print(SYSTEM_PROMPT)
+    print(f"\n=== Customer Profile ===")
+    print(customer_profile)
+    print(f"\n=== Running Prompts ===")
     print(f"=== Baseline Model ({BASELINE_MODEL}) ===")
     print(run_prompt(customer_profile, model=BASELINE_MODEL))
     
