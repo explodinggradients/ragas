@@ -8,6 +8,7 @@ from .registry import (
     print_available_backends,
     register_backend,
 )
+from .inmemory import InMemoryBackend
 
 # concrete backends
 from .local_csv import LocalCSVBackend
@@ -32,6 +33,7 @@ __all__ = [
     "register_backend",
     "print_available_backends",
     "BACKEND_REGISTRY",
+    "InMemoryBackend",
 ]
 
 if GDRIVE_AVAILABLE:
