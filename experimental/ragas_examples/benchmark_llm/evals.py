@@ -10,51 +10,35 @@ from .prompt import run_prompt
 from .config import BASELINE_MODEL, CANDIDATE_MODEL
 
 
-def parse_eligibility_response(response: str):
-    """Parse the JSON model response to extract eligibility, discount, and reason."""
-    try:
-        # Try to extract JSON from response (in case there's extra text)
-        start_idx = response.find('{')
-        end_idx = response.rfind('}') + 1
-        
-        if start_idx != -1 and end_idx != 0:
-            json_str = response[start_idx:end_idx]
-            parsed = json.loads(json_str)
-            
-            return {
-                'eligible': parsed.get('eligible'),
-                'discount': parsed.get('discount_percentage'),
-                'reason': parsed.get('reason', ''),
-                'applied_rules': parsed.get('applied_rules', [])
-            }
-        else:
-            # Fallback if no JSON found
-            return {
-                'eligible': None,
-                'discount': None,
-                'reason': response,
-                'applied_rules': []
-            }
-    except (json.JSONDecodeError, Exception):
-        return {
-            'eligible': None,
-            'discount': None,
-            'reason': response,
-            'applied_rules': []
-        }
-
-
 @discrete_metric(name="eligibility_accuracy", allowed_values=["correct", "incorrect"])
 def eligibility_accuracy(prediction: str, expected_eligible, expected_discount):
     """Check if the eligibility and discount prediction is correct."""
-    parsed = parse_eligibility_response(prediction)
+    try:
+        parsed_json = json.loads(prediction)
+    except Exception as e:
+        return MetricResult(
+            value="incorrect",
+            reason=f"Invalid JSON output: {e.__class__.__name__}"
+        )
+    # Extract and coerce fields from JSON
+    raw_eligible = parsed_json.get("eligible")
+    if isinstance(raw_eligible, str):
+        eligible_pred = raw_eligible.strip().lower() == "true"
+    else:
+        eligible_pred = bool(raw_eligible) if raw_eligible is not None else None
+
+    raw_discount = parsed_json.get("discount_percentage")
+    try:
+        discount_pred = int(raw_discount) if raw_discount is not None else None
+    except (TypeError, ValueError):
+        discount_pred = None
     
     # Convert expected values to correct types (CSV loads as strings)
     expected_eligible_bool = str(expected_eligible).lower() == 'true'
     expected_discount_int = int(expected_discount)
     
-    eligible_correct = parsed['eligible'] == expected_eligible_bool
-    discount_correct = parsed['discount'] == expected_discount_int
+    eligible_correct = eligible_pred == expected_eligible_bool
+    discount_correct = discount_pred == expected_discount_int
     
     if eligible_correct and discount_correct:
         return MetricResult(
@@ -64,7 +48,7 @@ def eligibility_accuracy(prediction: str, expected_eligible, expected_discount):
     else:
         return MetricResult(
             value="incorrect",
-            reason=f"Expected eligible={expected_eligible_bool}, discount={expected_discount_int}%; Got eligible={parsed['eligible']}, discount={parsed['discount']}%"
+            reason=f"Expected eligible={expected_eligible_bool}, discount={expected_discount_int}%; Got eligible={eligible_pred}, discount={discount_pred}%"
         )
 
 
@@ -76,8 +60,18 @@ def create_benchmark_experiment(model_name: str):
         # Get model response
         response = run_prompt(row["customer_profile"], model=model_name)
         
-        # Parse response
-        parsed = parse_eligibility_response(response)
+        # Parse response (strict JSON mode expected)
+        try:
+            parsed_json = json.loads(response)
+            predicted_eligible = parsed_json.get('eligible')
+            predicted_discount = parsed_json.get('discount_percentage')
+            reasoning = parsed_json.get('reason', '')
+            applied_rules = parsed_json.get('applied_rules', [])
+        except Exception:
+            predicted_eligible = None
+            predicted_discount = None
+            reasoning = response
+            applied_rules = []
         
         # Score the response
         score = eligibility_accuracy.score(
@@ -90,10 +84,10 @@ def create_benchmark_experiment(model_name: str):
             **row,
             "model": model_name,
             "response": response,
-            "predicted_eligible": parsed['eligible'],
-            "predicted_discount": parsed['discount'],
-            "reasoning": parsed['reason'],
-            "applied_rules": parsed['applied_rules'],
+            "predicted_eligible": predicted_eligible,
+            "predicted_discount": predicted_discount,
+            "reasoning": reasoning,
+            "applied_rules": applied_rules,
             "score": score.value,
             "score_reason": score.reason
         }
