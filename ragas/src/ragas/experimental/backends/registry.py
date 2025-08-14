@@ -112,7 +112,16 @@ class BackendRegistry:
     def _discover_backends(self) -> None:
         """Discover backends from setuptools entry points."""
         try:
-            entry_points = metadata.entry_points().select(group="ragas.backends")
+            entry_points_result = metadata.entry_points()
+
+            # Python 3.10+ has .select() method, Python 3.9 returns a dict
+            if hasattr(entry_points_result, 'select'):
+                # Python 3.10+
+                entry_points = entry_points_result.select(group="ragas.backends")
+            else:
+                # Python 3.9 compatibility
+                entry_points = entry_points_result.get("ragas.backends", [])
+
             for entry_point in entry_points:
                 try:
                     self[entry_point.name] = entry_point.load()
