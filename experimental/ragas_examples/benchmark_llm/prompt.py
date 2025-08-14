@@ -6,9 +6,9 @@ client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
 SYSTEM_PROMPT = """
-You are an eligibility assessment assistant. I will provide a customer profile and you must determine if they are eligible for a discount and explain your reasoning.
+You are a discount calculation assistant. I will provide a customer profile and you must calculate their discount percentage and explain your reasoning.
 
-Rules for discount eligibility:
+Discount rules:
 - Age 65+ OR student status: 15% discount
 - Annual income < $30,000: 20% discount  
 - Premium member for 2+ years: 10% discount
@@ -18,7 +18,6 @@ Rules can stack up to a maximum of 35% discount.
 
 Respond in JSON format only:
 {
-  "eligible": true/false,
   "discount_percentage": number,
   "reason": "clear explanation of which rules apply and calculations",
   "applied_rules": ["list", "of", "applied", "rule", "names"]
@@ -26,7 +25,7 @@ Respond in JSON format only:
 """
 
 def run_prompt(prompt: str, model: str = "gpt-4o"):
-    """Run the eligibility assessment prompt with the specified model."""
+    """Run the discount calculation prompt with the specified model."""
     response = client.chat.completions.create(
         model=model,
         response_format={"type": "json_object"},
