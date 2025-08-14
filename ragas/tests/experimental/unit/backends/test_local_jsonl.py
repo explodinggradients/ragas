@@ -41,8 +41,8 @@ def temp_dir():
         yield tmp_dir
 
 
-@pytest.fixture
-def jsonl_backend(temp_dir):
+@pytest.fixture(name="backend")
+def jsonl_backend_fixture(temp_dir):
     """Create a LocalJSONLBackend instance with temp directory."""
     return LocalJSONLBackend(temp_dir)
 
@@ -106,7 +106,7 @@ class TestBasicFunctionality:
         backend = LocalJSONLBackend(temp_dir)
         assert backend.root_dir == Path(temp_dir)
 
-    def test_get_data_dir(self, jsonl_backend):
+    def test_get_data_dir(self, backend):
         """Test data directory path generation."""
         datasets_dir = backend._get_data_dir("datasets")
         experiments_dir = backend._get_data_dir("experiments")
@@ -114,7 +114,7 @@ class TestBasicFunctionality:
         assert datasets_dir.name == "datasets"
         assert experiments_dir.name == "experiments"
 
-    def test_get_file_path(self, jsonl_backend):
+    def test_get_file_path(self, backend):
         """Test file path generation."""
         dataset_path = backend._get_file_path("datasets", "test_dataset")
         experiment_path = backend._get_file_path("experiments", "test_experiment")
@@ -122,10 +122,10 @@ class TestBasicFunctionality:
         assert dataset_path.name == "test_dataset.jsonl"
         assert experiment_path.name == "test_experiment.jsonl"
 
-    def test_save_and_load_simple_data(self, jsonl_backend, simple_data):
+    def test_save_and_load_simple_data(self, backend, simple_data):
         """Test basic save and load cycle with simple data."""
         # Save dataset
-        jsonl_backend.save_dataset("test_simple", simple_data)
+        backend.save_dataset("test_simple", simple_data)
 
         # Load dataset
         loaded_data = backend.load_dataset("test_simple")
@@ -137,7 +137,7 @@ class TestBasicFunctionality:
         assert loaded_data[0]["score"] == 85.5  # Should be float, not string
         assert loaded_data[0]["is_active"] is True  # Should be bool, not string
 
-    def test_directory_creation(self, jsonl_backend, simple_data):
+    def test_directory_creation(self, backend, simple_data):
         """Test automatic directory creation."""
         # Directories shouldn't exist initially
         datasets_dir = backend._get_data_dir("datasets")
@@ -146,23 +146,23 @@ class TestBasicFunctionality:
         assert not experiments_dir.exists()
 
         # Save data should create directories
-        jsonl_backend.save_dataset("test", simple_data)
-        jsonl_backend.save_experiment("test", simple_data)
+        backend.save_dataset("test", simple_data)
+        backend.save_experiment("test", simple_data)
 
         # Directories should now exist
         assert datasets_dir.exists()
         assert experiments_dir.exists()
 
-    def test_list_datasets_and_experiments(self, jsonl_backend, simple_data):
+    def test_list_datasets_and_experiments(self, backend, simple_data):
         """Test listing datasets and experiments."""
         # Initially empty
         assert backend.list_datasets() == []
         assert backend.list_experiments() == []
 
         # Save some data
-        jsonl_backend.save_dataset("dataset1", simple_data)
-        jsonl_backend.save_dataset("dataset2", simple_data)
-        jsonl_backend.save_experiment("experiment1", simple_data)
+        backend.save_dataset("dataset1", simple_data)
+        backend.save_dataset("dataset2", simple_data)
+        backend.save_experiment("experiment1", simple_data)
 
         # Check listings
         datasets = backend.list_datasets()
@@ -171,9 +171,9 @@ class TestBasicFunctionality:
         assert sorted(datasets) == ["dataset1", "dataset2"]
         assert experiments == ["experiment1"]
 
-    def test_save_empty_data(self, jsonl_backend):
+    def test_save_empty_data(self, backend):
         """Test saving empty datasets."""
-        jsonl_backend.save_dataset("empty_dataset", [])
+        backend.save_dataset("empty_dataset", [])
 
         # Should create empty file
         file_path = backend._get_file_path("datasets", "empty_dataset")
@@ -188,7 +188,7 @@ class TestBasicFunctionality:
 class TestDataTypeEdgeCases:
     """Test complex data types that JSONL should handle properly."""
 
-    def test_nested_dictionaries(self, jsonl_backend):
+    def test_nested_dictionaries(self, backend):
         """Test nested dictionary serialization - JSONL should handle this."""
         data = [
             {
@@ -198,7 +198,7 @@ class TestDataTypeEdgeCases:
             }
         ]
 
-        jsonl_backend.save_dataset("nested_test", data)
+        backend.save_dataset("nested_test", data)
         loaded_data = backend.load_dataset("nested_test")
 
         # JSONL should preserve nested dictionaries exactly
@@ -208,7 +208,7 @@ class TestDataTypeEdgeCases:
         }
         assert loaded_data[0]["config"]["settings"]["temperature"] == 0.7
 
-    def test_lists_of_objects(self, jsonl_backend):
+    def test_lists_of_objects(self, backend):
         """Test lists of objects serialization - JSONL should handle this."""
         data = [
             {
@@ -220,7 +220,7 @@ class TestDataTypeEdgeCases:
             }
         ]
 
-        jsonl_backend.save_dataset("list_test", data)
+        backend.save_dataset("list_test", data)
         loaded_data = backend.load_dataset("list_test")
 
         # JSONL should preserve lists of objects
@@ -229,7 +229,7 @@ class TestDataTypeEdgeCases:
         assert loaded_data[0]["results"][1]["metric"] == "precision"
         assert loaded_data[0]["results"][1]["value"] == 0.8
 
-    def test_mixed_types(self, jsonl_backend):
+    def test_mixed_types(self, backend):
         """Test mixed data types - JSONL should preserve all types."""
         data = [
             {
@@ -241,7 +241,7 @@ class TestDataTypeEdgeCases:
             }
         ]
 
-        jsonl_backend.save_dataset("mixed_test", data)
+        backend.save_dataset("mixed_test", data)
         loaded_data = backend.load_dataset("mixed_test")
 
         # JSONL should preserve all data types
@@ -251,7 +251,7 @@ class TestDataTypeEdgeCases:
         assert loaded_data[0]["bool_field"] is True  # Should be bool
         assert loaded_data[0]["null_field"] is None  # Should be None
 
-    def test_datetime_objects(self, jsonl_backend):
+    def test_datetime_objects(self, backend):
         """Test datetime serialization - JSONL should handle this with ISO format."""
         data = [
             {
@@ -261,7 +261,7 @@ class TestDataTypeEdgeCases:
             }
         ]
 
-        jsonl_backend.save_dataset("datetime_test", data)
+        backend.save_dataset("datetime_test", data)
         loaded_data = backend.load_dataset("datetime_test")
 
         # JSONL should either preserve datetime objects or convert to ISO strings
@@ -281,7 +281,7 @@ class TestDataTypeEdgeCases:
             # If datetime object, should be exact match
             assert loaded_dt == original_dt
 
-    def test_complex_nested_structure(self, jsonl_backend):
+    def test_complex_nested_structure(self, backend):
         """Test deeply nested structures - JSONL should handle this perfectly."""
         data = [
             {
@@ -296,7 +296,7 @@ class TestDataTypeEdgeCases:
             }
         ]
 
-        jsonl_backend.save_dataset("complex_test", data)
+        backend.save_dataset("complex_test", data)
         loaded_data = backend.load_dataset("complex_test")
 
         # JSONL should preserve complex nested structures exactly
@@ -311,10 +311,10 @@ class TestDataTypeEdgeCases:
 class TestBaseModelIntegration:
     """Test BaseModel validation and conversion."""
 
-    def test_simple_basemodel_save_load(self, jsonl_backend, simple_data):
+    def test_simple_basemodel_save_load(self, backend, simple_data):
         """Test BaseModel with simple data types."""
         # Save raw data
-        jsonl_backend.save_dataset("simple_model_test", simple_data, SimpleTestModel)
+        backend.save_dataset("simple_model_test", simple_data, SimpleTestModel)
 
         # Load and validate with BaseModel
         loaded_data = backend.load_dataset("simple_model_test")
@@ -327,10 +327,10 @@ class TestBaseModelIntegration:
         assert models[0].score == 85.5
         assert models[0].is_active is True
 
-    def test_complex_basemodel_roundtrip(self, jsonl_backend, complex_data):
+    def test_complex_basemodel_roundtrip(self, backend, complex_data):
         """Test BaseModel with complex data - JSONL should handle this."""
         # Save raw data
-        jsonl_backend.save_dataset("complex_model_test", complex_data, ComplexTestModel)
+        backend.save_dataset("complex_model_test", complex_data, ComplexTestModel)
 
         # Load and try to validate
         loaded_data = backend.load_dataset("complex_model_test")
@@ -343,12 +343,12 @@ class TestBaseModelIntegration:
         assert models[0].tags == ["evaluation", "metrics"]
         assert models[0].config is not None and models[0].config["model"] == "gpt-4"
 
-    def test_basemodel_type_coercion(self, jsonl_backend):
+    def test_basemodel_type_coercion(self, backend):
         """Test BaseModel's ability to coerce string types."""
         # Data that should be coercible from strings
         data = [{"name": "Alice", "age": "30", "score": "85.5", "is_active": "true"}]
 
-        jsonl_backend.save_dataset("coercion_test", data)
+        backend.save_dataset("coercion_test", data)
         loaded_data = backend.load_dataset("coercion_test")
 
         # JSONL + Pydantic should handle type coercion perfectly
@@ -363,15 +363,15 @@ class TestBaseModelIntegration:
 class TestErrorHandling:
     """Test error scenarios and edge cases."""
 
-    def test_load_nonexistent_file(self, jsonl_backend):
+    def test_load_nonexistent_file(self, backend):
         """Test loading non-existent files."""
         with pytest.raises(FileNotFoundError):
-            jsonl_backend.load_dataset("nonexistent")
+            backend.load_dataset("nonexistent")
 
         with pytest.raises(FileNotFoundError):
-            jsonl_backend.load_experiment("nonexistent")
+            backend.load_experiment("nonexistent")
 
-    def test_unicode_and_special_characters(self, jsonl_backend):
+    def test_unicode_and_special_characters(self, backend):
         """Test handling of unicode and special characters."""
         data = [
             {
@@ -382,7 +382,7 @@ class TestErrorHandling:
             }
         ]
 
-        jsonl_backend.save_dataset("unicode_test", data)
+        backend.save_dataset("unicode_test", data)
         loaded_data = backend.load_dataset("unicode_test")
 
         # Unicode should be preserved perfectly in JSONL
@@ -390,7 +390,7 @@ class TestErrorHandling:
         assert loaded_data[0]["chinese"] == "你好世界"
         assert "🚀" in loaded_data[0]["description"]
 
-    def test_json_special_characters(self, jsonl_backend):
+    def test_json_special_characters(self, backend):
         """Test handling of JSON special characters."""
         data = [
             {
@@ -401,7 +401,7 @@ class TestErrorHandling:
             }
         ]
 
-        jsonl_backend.save_dataset("special_chars_test", data)
+        backend.save_dataset("special_chars_test", data)
         loaded_data = backend.load_dataset("special_chars_test")
 
         # JSONL should handle JSON special characters properly
@@ -410,7 +410,7 @@ class TestErrorHandling:
         assert loaded_data[0]["newlines"] == "Line 1\nLine 2\nLine 3"
         assert loaded_data[0]["tabs"] == "Column1\tColumn2\tColumn3"
 
-    def test_empty_and_null_values(self, jsonl_backend):
+    def test_empty_and_null_values(self, backend):
         """Test handling of empty and null values."""
         data = [
             {
@@ -422,7 +422,7 @@ class TestErrorHandling:
             }
         ]
 
-        jsonl_backend.save_dataset("empty_test", data)
+        backend.save_dataset("empty_test", data)
         loaded_data = backend.load_dataset("empty_test")
 
         # JSONL should handle null values properly
@@ -432,7 +432,7 @@ class TestErrorHandling:
         assert loaded_data[0]["zero"] == 0
         assert loaded_data[0]["false"] is False
 
-    def test_large_text_fields(self, jsonl_backend):
+    def test_large_text_fields(self, backend):
         """Test handling of large text fields."""
         large_text = "A" * 10000  # 10KB of text
         data = [
@@ -443,14 +443,14 @@ class TestErrorHandling:
             }
         ]
 
-        jsonl_backend.save_dataset("large_text_test", data)
+        backend.save_dataset("large_text_test", data)
         loaded_data = backend.load_dataset("large_text_test")
 
         # Large text should be preserved perfectly
         assert len(loaded_data[0]["large_field"]) == 10000
         assert loaded_data[0]["large_field"] == large_text
 
-    def test_malformed_jsonl_handling(self, jsonl_backend, temp_dir):
+    def test_malformed_jsonl_handling(self, backend, temp_dir):
         """Test behavior with malformed JSONL files."""
         # Create a malformed JSONL file manually
         malformed_jsonl = Path(temp_dir) / "datasets" / "malformed.jsonl"

@@ -49,8 +49,8 @@ class TestGDriveBackendAvailability:
 class TestGDriveBackendInitialization:
     """Test GDriveBackend initialization and authentication setup."""
 
-    @patch("ragas_experimental.backends.gdrive_backend.build")
-    @patch("ragas_experimental.backends.gdrive_backend.Credentials")
+    @patch("ragas.experimental.backends.gdrive_backend.build")
+    @patch("ragas.experimental.backends.gdrive_backend.Credentials")
     @patch("os.path.exists")
     def test_service_account_auth_success(
         self, mock_exists, mock_credentials, mock_build
@@ -87,7 +87,7 @@ class TestGDriveBackendInitialization:
 
         mock_credentials.from_service_account_file.assert_called_once()
 
-    @patch("ragas_experimental.backends.gdrive_backend.build")
+    @patch("ragas.experimental.backends.gdrive_backend.build")
     @patch("os.path.exists")
     def test_auth_failure_no_credentials(self, mock_exists, mock_build):
         """Test authentication failure when no credentials are provided."""
@@ -96,8 +96,8 @@ class TestGDriveBackendInitialization:
         with pytest.raises(ValueError, match="No valid authentication method found"):
             GDriveBackend(folder_id="test_folder")
 
-    @patch("ragas_experimental.backends.gdrive_backend.build")
-    @patch("ragas_experimental.backends.gdrive_backend.Credentials")
+    @patch("ragas.experimental.backends.gdrive_backend.build")
+    @patch("ragas.experimental.backends.gdrive_backend.Credentials")
     @patch("os.path.exists")
     def test_invalid_folder_id(self, mock_exists, mock_credentials, mock_build):
         """Test behavior with invalid folder ID."""
@@ -130,8 +130,8 @@ class TestGDriveBackendOperations:
 
     def _create_mock_backend(self):
         """Helper to create a mocked GDriveBackend instance."""
-        with patch("ragas_experimental.backends.gdrive_backend.build"):
-            with patch("ragas_experimental.backends.gdrive_backend.Credentials"):
+        with patch("ragas.experimental.backends.gdrive_backend.build"):
+            with patch("ragas.experimental.backends.gdrive_backend.Credentials"):
                 with patch("os.path.exists", return_value=True):
                     backend = GDriveBackend(
                         folder_id="test_folder", service_account_path="/fake/path.json"
@@ -372,7 +372,7 @@ class TestGDriveBackendIntegration:
         """Test error handling when Google Drive dependencies are missing."""
         # This test simulates the case where dependencies are not installed
         with patch(
-            "ragas_experimental.backends.gdrive_backend.GDRIVE_AVAILABLE", False
+            "ragas.experimental.backends.gdrive_backend.GDRIVE_AVAILABLE", False
         ):
             # Should raise ImportError when trying to create backend
             with pytest.raises(
