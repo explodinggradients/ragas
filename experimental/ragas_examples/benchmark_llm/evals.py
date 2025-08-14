@@ -10,9 +10,9 @@ from .prompt import run_prompt
 from .config import BASELINE_MODEL, CANDIDATE_MODEL
 
 
-@discrete_metric(name="eligibility_accuracy", allowed_values=["correct", "incorrect"])
-def eligibility_accuracy(prediction: str, expected_eligible, expected_discount):
-    """Check if the eligibility and discount prediction is correct."""
+@discrete_metric(name="discount_accuracy", allowed_values=["correct", "incorrect"])
+def discount_accuracy(prediction: str, expected_discount):
+    """Check if the discount prediction is correct."""
     try:
         parsed_json = json.loads(prediction)
     except Exception as e:
@@ -20,13 +20,8 @@ def eligibility_accuracy(prediction: str, expected_eligible, expected_discount):
             value="incorrect",
             reason=f"Invalid JSON output: {e.__class__.__name__}"
         )
-    # Extract and coerce fields from JSON
-    raw_eligible = parsed_json.get("eligible")
-    if isinstance(raw_eligible, str):
-        eligible_pred = raw_eligible.strip().lower() == "true"
-    else:
-        eligible_pred = bool(raw_eligible) if raw_eligible is not None else None
-
+    
+    # Extract discount from JSON
     raw_discount = parsed_json.get("discount_percentage")
     try:
         discount_pred = int(raw_discount) if raw_discount is not None else None
@@ -34,21 +29,17 @@ def eligibility_accuracy(prediction: str, expected_eligible, expected_discount):
         discount_pred = None
     
     # Convert expected values to correct types (CSV loads as strings)
-    expected_eligible_bool = str(expected_eligible).lower() == 'true'
     expected_discount_int = int(expected_discount)
     
-    eligible_correct = eligible_pred == expected_eligible_bool
-    discount_correct = discount_pred == expected_discount_int
-    
-    if eligible_correct and discount_correct:
+    if discount_pred == expected_discount_int:
         return MetricResult(
             value="correct", 
-            reason=f"Correctly identified eligible={expected_eligible_bool}, discount={expected_discount_int}%"
+            reason=f"Correctly calculated discount={expected_discount_int}%"
         )
     else:
         return MetricResult(
             value="incorrect",
-            reason=f"Expected eligible={expected_eligible_bool}, discount={expected_discount_int}%; Got eligible={eligible_pred}, discount={discount_pred}%"
+            reason=f"Expected discount={expected_discount_int}%; Got discount={discount_pred}%"
         )
 
 
@@ -63,20 +54,17 @@ def create_benchmark_experiment(model_name: str):
         # Parse response (strict JSON mode expected)
         try:
             parsed_json = json.loads(response)
-            predicted_eligible = parsed_json.get('eligible')
             predicted_discount = parsed_json.get('discount_percentage')
             reasoning = parsed_json.get('reason', '')
             applied_rules = parsed_json.get('applied_rules', [])
         except Exception:
-            predicted_eligible = None
             predicted_discount = None
             reasoning = response
             applied_rules = []
         
         # Score the response
-        score = eligibility_accuracy.score(
+        score = discount_accuracy.score(
             prediction=response,
-            expected_eligible=row["expected_eligible"],
             expected_discount=row["expected_discount"]
         )
         
@@ -84,7 +72,6 @@ def create_benchmark_experiment(model_name: str):
             **row,
             "model": model_name,
             "response": response,
-            "predicted_eligible": predicted_eligible,
             "predicted_discount": predicted_discount,
             "reasoning": reasoning,
             "applied_rules": applied_rules,
@@ -101,7 +88,7 @@ def load_dataset():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     
     dataset = Dataset.load(
-        name="eligibility_benchmark",
+        name="discount_benchmark",
         backend="local/csv",
         root_dir=current_dir
     )
@@ -148,7 +135,6 @@ def write_combined_results_csv(
             [
                 "row_index",
                 "description",
-                "expected_eligible",
                 "expected_discount",
                 "response",
                 "score",
@@ -183,7 +169,6 @@ def write_combined_results_csv(
         [
             "row_index",
             "description",
-            "expected_eligible",
             "expected_discount",
             "baseline_model",
             "candidate_model",
