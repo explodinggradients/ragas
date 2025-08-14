@@ -16,6 +16,7 @@ When writing or editing documentation, categorise each page as **one** of the fo
 • Form: concise series of **step-by-step instructions** focused on the user’s project.  
 • Write from the **user’s perspective**, not the tool’s operations.  
 • Link to reference and explanation pages for background; keep prose minimal.
+• Add any code run outputs as expandable click blocks. Readers should be able to understand the guide without running the code.
 
 ## 3. Reference  📑  (`docs/references/`)
 • Purpose: provide **neutral, complete, accurate description** of APIs, commands, options – “What is…?”  
