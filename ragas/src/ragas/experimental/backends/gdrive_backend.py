@@ -8,16 +8,27 @@ import typing as t
 from pydantic import BaseModel
 
 try:
-    from google.auth.transport.requests import Request
-    from google.oauth2.credentials import Credentials as UserCredentials
-    from google.oauth2.service_account import Credentials
-    from google_auth_oauthlib.flow import InstalledAppFlow
-    from googleapiclient.discovery import build
-    from googleapiclient.errors import HttpError
+    from google.auth.transport.requests import Request  # type: ignore
+    from google.oauth2.credentials import Credentials as UserCredentials  # type: ignore
+    from google.oauth2.service_account import Credentials  # type: ignore
+    from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
+    from googleapiclient.discovery import build  # type: ignore
+    from googleapiclient.errors import HttpError  # type: ignore
 
     GDRIVE_AVAILABLE = True
 except ImportError:
     GDRIVE_AVAILABLE = False
+
+    # Define stub classes for type checking when imports fail
+    Request = type("Request", (), {})  # type: ignore
+    UserCredentials = type("UserCredentials", (), {})  # type: ignore
+    Credentials = type("Credentials", (), {})  # type: ignore
+    InstalledAppFlow = type("InstalledAppFlow", (), {})  # type: ignore
+    HttpError = type("HttpError", (Exception,), {})  # type: ignore
+
+    def build(*args, **kwargs):  # type: ignore
+        raise ImportError("Google API client not available")
+
 
 from .base import BaseBackend
 
@@ -104,7 +115,7 @@ class GDriveBackend(BaseBackend):
 
         # Try service account authentication first
         if self.service_account_path and os.path.exists(self.service_account_path):
-            creds = Credentials.from_service_account_file(
+            creds = Credentials.from_service_account_file(  # type: ignore
                 self.service_account_path, scopes=self.SCOPES
             )
             logger.debug("Using service account authentication")
@@ -112,7 +123,7 @@ class GDriveBackend(BaseBackend):
         elif self.credentials_path and os.path.exists(self.credentials_path):
             # Load existing token if available
             if os.path.exists(self.token_path):
-                creds = UserCredentials.from_authorized_user_file(
+                creds = UserCredentials.from_authorized_user_file(  # type: ignore
                     self.token_path, self.SCOPES
                 )
 
@@ -121,7 +132,7 @@ class GDriveBackend(BaseBackend):
                 if creds and creds.expired and creds.refresh_token:
                     creds.refresh(Request())
                 else:
-                    flow = InstalledAppFlow.from_client_secrets_file(
+                    flow = InstalledAppFlow.from_client_secrets_file(  # type: ignore
                         self.credentials_path, self.SCOPES
                     )
                     creds = flow.run_local_server(port=0)
@@ -150,7 +161,7 @@ class GDriveBackend(BaseBackend):
             )
             logger.debug(f"Found main folder: {folder_metadata.get('name')}")
         except HttpError as e:
-            if e.resp.status == 404:
+            if e.resp.status == 404:  # type: ignore
                 raise ValueError(
                     f"Folder with ID {self.folder_id} not found or not accessible"
                 )
@@ -259,12 +270,12 @@ class GDriveBackend(BaseBackend):
                 return []
 
             # First row contains headers
-            headers = values[0]
-            data_rows = values[1:]
+            headers: t.List[str] = values[0]
+            data_rows: t.List[t.List[str]] = values[1:]
 
             # Convert to list of dictionaries
-            data = []
-            for row in data_rows:
+            data: t.List[t.Dict[str, t.Any]] = []
+            for row in t.cast(t.List[t.List[str]], data_rows):
                 # Pad row with empty strings if shorter than headers
                 padded_row = row + [""] * (len(headers) - len(row))
 
@@ -272,7 +283,7 @@ class GDriveBackend(BaseBackend):
                 if all(cell.strip() == "" for cell in padded_row):
                     continue
 
-                row_dict = dict(zip(headers, padded_row))
+                row_dict: t.Dict[str, t.Any] = dict(zip(headers, padded_row))
 
                 # Try to convert numeric strings back to numbers
                 for key, value in row_dict.items():
@@ -293,7 +304,7 @@ class GDriveBackend(BaseBackend):
 
         except HttpError as e:
             logger.error(
-                f"Error loading data from spreadsheet {name}: HTTP {e.resp.status} - {e}"
+                f"Error loading data from spreadsheet {name}: HTTP {e.resp.status} - {e}"  # type: ignore
             )
             raise
         except Exception as e:
@@ -356,7 +367,7 @@ class GDriveBackend(BaseBackend):
 
         except HttpError as e:
             logger.error(
-                f"Error saving data to spreadsheet {name}: HTTP {e.resp.status} - {e}"
+                f"Error saving data to spreadsheet {name}: HTTP {e.resp.status} - {e}"  # type: ignore
             )
             raise
         except Exception as e:
@@ -369,11 +380,11 @@ class GDriveBackend(BaseBackend):
 
         query = f"'{folder_id}' in parents and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false"
         results = self.drive_service.files().list(q=query).execute()
-        files = results.get("files", [])
+        files: t.List[t.Dict[str, t.Any]] = results.get("files", [])
 
         # Extract names (remove .gsheet extension)
-        names = []
-        for file in files:
+        names: t.List[str] = []
+        for file in t.cast(t.List[t.Dict[str, t.Any]], files):
             name = file["name"]
             if name.endswith(".gsheet"):
                 names.append(name[:-7])  # Remove .gsheet

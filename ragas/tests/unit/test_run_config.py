@@ -1,10 +1,8 @@
 import importlib
 import sys
-from platform import python_version
 
 import pytest
 from numpy.random import Generator, default_rng
-from packaging.version import parse as parse_version
 
 from ragas.run_config import RunConfig
 

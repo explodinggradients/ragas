@@ -24,7 +24,7 @@ class RankingMetric(Metric):
         )
 
     def get_correlation(
-        self, gold_labels: t.List[str], predictions: t.List[str]
+        self, gold_label: t.List[str], predictions: t.List[str]
     ) -> float:
         """
         Calculate the correlation between gold labels and predictions.
@@ -39,8 +39,8 @@ class RankingMetric(Metric):
             )
 
         kappa_scores = []
-        for gold_label, prediction in zip(gold_labels, predictions):
-            kappa = cohen_kappa_score(gold_label, prediction, weights="quadratic")
+        for gold_item, prediction in zip(gold_label, predictions):
+            kappa = cohen_kappa_score(gold_item, prediction, weights="quadratic")
             kappa_scores.append(kappa)
 
         return sum(kappa_scores) / len(kappa_scores) if kappa_scores else 0.0

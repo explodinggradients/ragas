@@ -68,6 +68,8 @@ class Metric(BaseMetric):
             fstr = self.prompt.instruction
         else:
             fstr = self.prompt
+        if fstr is None:
+            return []
         vars = [
             field_name
             for _, field_name, _, _ in string.Formatter().parse(fstr)
@@ -75,7 +77,8 @@ class Metric(BaseMetric):
         ]
         return vars
 
-    def score(self, llm: BaseRagasLLM, **kwargs) -> MetricResult:
+    def score(self, **kwargs) -> MetricResult:
+        llm = kwargs.pop("llm")  # Extract llm from kwargs for compatibility
         traces = {}
         traces["input"] = kwargs
 
@@ -90,7 +93,8 @@ class Metric(BaseMetric):
         result.traces = traces
         return result
 
-    async def ascore(self, llm: BaseRagasLLM, **kwargs) -> MetricResult:
+    async def ascore(self, **kwargs) -> MetricResult:
+        llm = kwargs.pop("llm")  # Extract llm from kwargs for compatibility
         traces = {}
 
         # get prompt
@@ -109,22 +113,26 @@ class Metric(BaseMetric):
         return result
 
     def batch_score(
-        self,
-        llm: BaseRagasLLM,
-        inputs: t.List[t.Dict[str, t.Any]],
+        self, inputs: t.List[t.Dict[str, t.Any]], **kwargs
     ) -> t.List[MetricResult]:
-        # Add llm to each input and use BaseMetric's batch_score
-        inputs_with_llm = [{**input_dict, "llm": llm} for input_dict in inputs]
-        return super().batch_score(inputs_with_llm)
+        # Override base method to maintain compatibility
+        llm = kwargs.get("llm") or inputs[0].get("llm") if inputs else None
+        if llm:
+            # Add llm to each input
+            inputs_with_llm = [{**input_dict, "llm": llm} for input_dict in inputs]
+            return super().batch_score(inputs_with_llm)
+        return super().batch_score(inputs)
 
     async def abatch_score(
-        self,
-        llm: BaseRagasLLM,
-        inputs: t.List[t.Dict[str, t.Any]],
+        self, inputs: t.List[t.Dict[str, t.Any]], **kwargs
     ) -> t.List[MetricResult]:
-        # Add llm to each input and use BaseMetric's abatch_score
-        inputs_with_llm = [{**input_dict, "llm": llm} for input_dict in inputs]
-        return await super().abatch_score(inputs_with_llm)
+        # Override base method to maintain compatibility
+        llm = kwargs.get("llm") or inputs[0].get("llm") if inputs else None
+        if llm:
+            # Add llm to each input
+            inputs_with_llm = [{**input_dict, "llm": llm} for input_dict in inputs]
+            return await super().abatch_score(inputs_with_llm)
+        return await super().abatch_score(inputs)
 
     @abstractmethod
     def get_correlation(self, gold_label, predictions) -> float:
@@ -156,8 +164,8 @@ class Metric(BaseMetric):
             test_size=test_size, random_state=random_state
         )
 
-        self.align(train_dataset, embedding_model, **kwargs)
-        return self.validate_alignment(llm, test_dataset)
+        self.align(train_dataset, embedding_model, **kwargs)  # type: ignore
+        return self.validate_alignment(llm, test_dataset)  # type: ignore
 
     def align(
         self,
@@ -179,8 +187,21 @@ class Metric(BaseMetric):
         self.prompt = (
             self.prompt if isinstance(self.prompt, Prompt) else Prompt(self.prompt)
         )
+        # Extract specific parameters for from_prompt method
+        max_similar_examples_val = kwargs.get("max_similar_examples", 3)
+        similarity_threshold_val = kwargs.get("similarity_threshold", 0.7)
+        max_similar_examples = (
+            int(max_similar_examples_val)
+            if isinstance(max_similar_examples_val, (int, str))
+            else 3
+        )
+        similarity_threshold = (
+            float(similarity_threshold_val)
+            if isinstance(similarity_threshold_val, (int, float, str))
+            else 0.7
+        )
         self.prompt = DynamicFewShotPrompt.from_prompt(
-            self.prompt, embedding_model, **kwargs
+            self.prompt, embedding_model, max_similar_examples, similarity_threshold
         )
         train_dataset.reload()
         total_items = len(train_dataset)

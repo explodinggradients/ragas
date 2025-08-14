@@ -267,7 +267,7 @@ async def run_experiments(
     dataset_name: str,
     input_data_class: type,
     baseline_name: Optional[str] = None,
-    metrics: str = None,
+    metrics: Optional[str] = None,
     name: Optional[str] = None,
 ):
     """Run experiments using ragas dataset system."""
@@ -291,7 +291,9 @@ async def run_experiments(
         raise typer.Exit(1)
 
     # Parse metrics from provided list
-    metric_fields = [metric.strip() for metric in metrics.split(",")]
+    metric_fields = [
+        metric.strip() for metric in (metrics or "").split(",") if metric.strip()
+    ]
 
     # Extract metrics from current experiment
     current_metrics_data = extract_metrics_from_experiment(
@@ -457,7 +459,7 @@ def evals(
 
 @app.command()
 def hello_world(
-    directory: Optional[str] = typer.Argument(
+    directory: str = typer.Argument(
         ".", help="Directory to run the hello world example in"
     ),
 ):
@@ -466,7 +468,8 @@ def hello_world(
     import time
 
     if not os.path.exists(directory):
-        raise typer.Exit(f"Directory {directory} does not exist.")
+        console.print(f"Directory {directory} does not exist.", style="red")
+        raise typer.Exit(1)
 
     with Live(
         Spinner("dots", text="Creating hello world example...", style="green"),

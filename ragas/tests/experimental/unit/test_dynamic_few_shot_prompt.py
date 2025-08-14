@@ -1,9 +1,11 @@
 import json
 import gzip
 import warnings
+import typing as t
 import pytest
 from pydantic import BaseModel
 
+from ragas.experimental.embeddings.base import BaseEmbedding
 from ragas.experimental.prompt.dynamic_few_shot import DynamicFewShotPrompt
 
 
@@ -18,14 +20,14 @@ class MockResponseModel(BaseModel):
     }
 
 
-class MockEmbeddingModel:
+class MockEmbeddingModel(BaseEmbedding):
     """Mock embedding model for testing embedding functionality."""
 
     def __init__(self, dimension: int = 384):
         self.dimension = dimension
         self._call_count = 0
 
-    def embed_text(self, text: str):
+    def embed_text(self, text: str, **kwargs: t.Any) -> list[float]:
         """Return deterministic embeddings based on text length and content."""
         self._call_count += 1
         # Create deterministic embedding based on text hash
@@ -38,6 +40,10 @@ class MockEmbeddingModel:
             value = ((text_hash + i) % 200000 - 100000) / 100000.0
             embedding.append(value)
         return embedding
+
+    async def aembed_text(self, text: str, **kwargs) -> list[float]:
+        """Async version of embed_text."""
+        return self.embed_text(text)
 
     @property
     def call_count(self):

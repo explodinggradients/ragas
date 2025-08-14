@@ -6,7 +6,7 @@ import typing as t
 from concurrent.futures import ThreadPoolExecutor
 
 
-def run_async_in_current_loop(coro):
+def run_async_in_current_loop(coro: t.Awaitable[t.Any]) -> t.Any:
     """Run an async coroutine in the current event loop if possible.
 
     This handles Jupyter environments correctly by using a separate thread
@@ -28,7 +28,7 @@ def run_async_in_current_loop(coro):
         if loop.is_running():
             # If the loop is already running (like in Jupyter notebooks),
             # we run the coroutine in a separate thread with its own event loop
-            result_container = {"result": None, "exception": None}
+            result_container: t.Dict[str, t.Any] = {"result": None, "exception": None}
 
             def run_in_thread():
                 # Create a new event loop for this thread
@@ -160,7 +160,7 @@ def validate_texts(texts: t.Union[str, t.List[str]]) -> t.List[str]:
     return texts
 
 
-def safe_import(module_name: str, package_name: str = None) -> t.Any:
+def safe_import(module_name: str, package_name: t.Optional[str] = None) -> t.Any:
     """Safely import a module with helpful error message.
 
     Args:

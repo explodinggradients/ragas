@@ -21,7 +21,7 @@ class CustomMetric(Metric):
         self._response_model = MetricResponseModel
 
     def get_correlation(
-        self, gold_labels: t.List[str], predictions: t.List[str]
+        self, gold_label: t.List[str], predictions: t.List[str]
     ) -> float:
         return 0.0  # Placeholder for correlation logic
 

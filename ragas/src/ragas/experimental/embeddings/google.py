@@ -40,7 +40,7 @@ class GoogleEmbeddings(BaseEmbedding):
     def _embed_text_vertex(self, text: str, **kwargs: t.Any) -> t.List[float]:
         """Embed text using Vertex AI."""
         try:
-            from vertexai.language_models import TextEmbeddingModel
+            from vertexai.language_models import TextEmbeddingModel  # type: ignore
         except ImportError:
             raise ImportError(
                 "Vertex AI support requires google-cloud-aiplatform. "
@@ -83,7 +83,7 @@ class GoogleEmbeddings(BaseEmbedding):
     ) -> t.List[t.List[float]]:
         """Embed multiple texts using Vertex AI batch processing."""
         try:
-            from vertexai.language_models import TextEmbeddingModel
+            from vertexai.language_models import TextEmbeddingModel  # type: ignore
         except ImportError:
             raise ImportError(
                 "Vertex AI support requires google-cloud-aiplatform. "

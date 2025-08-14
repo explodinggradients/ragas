@@ -1,6 +1,10 @@
 from dataclasses import asdict
 
-from sphinxawesome_theme import ThemeOptions
+try:
+    from sphinxawesome_theme import ThemeOptions  # type: ignore
+except ImportError:
+    # Define stub for type checking when import fails
+    ThemeOptions = type("ThemeOptions", (), {})  # type: ignore
 
 from ragas import __version__
 

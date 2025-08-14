@@ -23,7 +23,9 @@ def test_human_message_conversion():
 
 def test_human_message_invalid_content():
     """Test HumanMessage with invalid content type raises TypeError"""
-    messages: List[Union[HumanMessage, SystemMessage, AIMessage, ToolMessage]] = [HumanMessage(content=["invalid", "content"])]
+    messages: List[Union[HumanMessage, SystemMessage, AIMessage, ToolMessage]] = [
+        HumanMessage(content=["invalid", "content"])
+    ]
 
     with pytest.raises(TypeError) as exc_info:
         convert_to_ragas_messages(messages)
@@ -32,7 +34,9 @@ def test_human_message_invalid_content():
 
 def test_ai_message_conversion():
     """Test conversion of AIMessage with valid string content"""
-    messages: List[Union[HumanMessage, SystemMessage, AIMessage, ToolMessage]] = [AIMessage(content="I'm doing well, thanks!")]
+    messages: List[Union[HumanMessage, SystemMessage, AIMessage, ToolMessage]] = [
+        AIMessage(content="I'm doing well, thanks!")
+    ]
     result = convert_to_ragas_messages(messages)
 
     assert len(result) == 1
@@ -125,7 +129,9 @@ def test_invalid_tool_calls_json():
     """Test handling of invalid JSON in tool calls"""
     tool_calls = [{"function": {"name": "search", "arguments": "invalid json"}}]
 
-    messages: List[Union[HumanMessage, SystemMessage, AIMessage, ToolMessage]] = [AIMessage(content="Test", additional_kwargs={"tool_calls": tool_calls})]
+    messages: List[Union[HumanMessage, SystemMessage, AIMessage, ToolMessage]] = [
+        AIMessage(content="Test", additional_kwargs={"tool_calls": tool_calls})
+    ]
 
     with pytest.raises(json.JSONDecodeError):
         convert_to_ragas_messages(messages)

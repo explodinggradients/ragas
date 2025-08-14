@@ -338,8 +338,8 @@ class DynamicFewShotPrompt(Prompt):
     def load(
         cls,
         path: str,
-        embedding_model: t.Optional[BaseEmbedding] = None,
         response_model: t.Optional["BaseModel"] = None,
+        embedding_model: t.Optional[BaseEmbedding] = None,
     ) -> "DynamicFewShotPrompt":
         """
         Load a DynamicFewShotPrompt from a JSON file.

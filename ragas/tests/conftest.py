@@ -10,7 +10,7 @@ from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.llms.base import BaseRagasLLM
 
 if t.TYPE_CHECKING:
-    from ragas.llms.prompt import PromptValue
+    from langchain_core.prompt_values import PromptValue
 
 
 def pytest_configure(config):

@@ -1,6 +1,6 @@
 # Get version from setuptools_scm-generated file
 try:
-    from ._version import version as __version__
+    from ._version import version as __version__  # type: ignore
 except ImportError:
     # Fallback for installed package
     from importlib.metadata import PackageNotFoundError

@@ -5,14 +5,43 @@ __all__ = ["MLflowTrace", "sync_trace"]
 import os
 import typing as t
 
-from mlflow import get_last_active_trace
-from mlflow.entities.span import Span
-from mlflow.entities.trace import Trace
+if t.TYPE_CHECKING:
+    from mlflow.entities.span import Span
+    from mlflow.entities.trace import Trace
+    from mlflow import get_last_active_trace_id, get_trace
+else:
+    try:
+        from mlflow import get_last_active_trace_id, get_trace  # type: ignore
+        from mlflow.entities.span import Span  # type: ignore
+        from mlflow.entities.trace import Trace  # type: ignore
+
+        MLFLOW_AVAILABLE = True
+    except ImportError:
+        MLFLOW_AVAILABLE = False
+
+        # Define stub classes for type checking when imports fail
+        class Span:  # type: ignore
+            name: str = ""
+
+        class Trace:  # type: ignore
+            def __init__(self):  # type: ignore
+                self.info = type(
+                    "TraceInfo", (), {"request_id": "", "experiment_id": ""}
+                )()
+
+            def search_spans(self, name: str) -> t.List["Span"]:  # type: ignore
+                return []
+
+        def get_last_active_trace_id() -> t.Optional[str]:  # type: ignore
+            return None
+
+        def get_trace(trace_id: str) -> t.Optional["Trace"]:  # type: ignore
+            return None
 
 
 class MLflowTrace:
 
-    def __init__(self, trace: Trace):
+    def __init__(self, trace: "Trace"):
         self.trace = trace
 
     def get_url(self) -> str:
@@ -34,15 +63,19 @@ class MLflowTrace:
 
         return trace_url
 
-    def get_filter(self, span_name) -> t.List[Span]:
+    def get_filter(self, span_name: str) -> t.List["Span"]:
 
         return self.trace.search_spans(name=span_name)
 
 
-async def sync_trace():
+async def sync_trace() -> MLflowTrace:
 
-    trace = get_last_active_trace()
-    if trace is None:
+    trace_id = get_last_active_trace_id()
+    if trace_id is None:
         raise ValueError("No active trace found.")
+
+    trace = get_trace(trace_id)
+    if trace is None:
+        raise ValueError("Trace not found.")
 
     return MLflowTrace(trace)

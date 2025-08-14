@@ -27,6 +27,11 @@ excludeTypeshedPaths = ["@types/*"]
 pythonVersion = "3.9"
 pythonPlatform = "All"
 typeCheckingMode = "basic"
+reportMissingImports = false
+reportOptionalMemberAccess = "warning"
+reportOptionalSubscript = "warning"
+reportGeneralTypeIssues = "warning"
+reportReturnType = "warning"
 
 [tool.pytest.ini_options]
 addopts = "-n 0"

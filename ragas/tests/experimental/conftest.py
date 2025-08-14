@@ -57,12 +57,18 @@ class MockEmbedding(BaseEmbedding):
         return np.random.rand(768).tolist()
 
     def embed_document(
-        self, text: str, metadata: t.Dict[str, t.Any] = None, **kwargs: t.Any
+        self,
+        text: str,
+        metadata: t.Optional[t.Dict[str, t.Any]] = None,
+        **kwargs: t.Any,
     ) -> t.List[float]:
         return self.embed_text(text, **kwargs)
 
     async def aembed_document(
-        self, text: str, metadata: t.Dict[str, t.Any] = None, **kwargs: t.Any
+        self,
+        text: str,
+        metadata: t.Optional[t.Dict[str, t.Any]] = None,
+        **kwargs: t.Any,
     ) -> t.List[float]:
         return await self.aembed_text(text, **kwargs)
 

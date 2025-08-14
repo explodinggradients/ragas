@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 from pydantic import BaseModel
 
 try:
-    from googleapiclient.errors import HttpError
+    from googleapiclient.errors import HttpError  # type: ignore
 
     GOOGLE_API_AVAILABLE = True
 except ImportError:

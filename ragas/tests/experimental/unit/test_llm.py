@@ -75,9 +75,9 @@ def test_llm_factory_initialization(mock_sync_client, monkeypatch):
 
     llm = llm_factory("openai/gpt-4", client=mock_sync_client)
 
-    assert llm.model == "gpt-4"
-    assert llm.client is not None
-    assert not llm.is_async
+    assert llm.model == "gpt-4"  # type: ignore
+    assert llm.client is not None  # type: ignore
+    assert not llm.is_async  # type: ignore
 
 
 def test_llm_factory_async_detection(mock_async_client, monkeypatch):
@@ -91,7 +91,7 @@ def test_llm_factory_async_detection(mock_async_client, monkeypatch):
 
     llm = llm_factory("openai/gpt-4", client=mock_async_client)
 
-    assert llm.is_async
+    assert llm.is_async  # type: ignore
 
 
 def test_llm_factory_with_model_args(mock_sync_client, monkeypatch):
@@ -104,8 +104,8 @@ def test_llm_factory_with_model_args(mock_sync_client, monkeypatch):
 
     llm = llm_factory("openai/gpt-4", client=mock_sync_client, temperature=0.7)
 
-    assert llm.model == "gpt-4"
-    assert llm.model_args.get("temperature") == 0.7
+    assert llm.model == "gpt-4"  # type: ignore
+    assert llm.model_args.get("temperature") == 0.7  # type: ignore
 
 
 def test_unsupported_provider():
@@ -185,7 +185,7 @@ def test_provider_support():
         # This should not raise an error
         try:
             llm = llm_factory(f"{provider}/test-model", client=mock_client)
-            assert llm.model == "test-model"
+            assert llm.model == "test-model"  # type: ignore
         except Exception as e:
             pytest.fail(f"Provider {provider} should be supported but got error: {e}")
 
@@ -202,7 +202,7 @@ def test_llm_model_args_storage(mock_sync_client, monkeypatch):
 
     llm = llm_factory("openai/gpt-4", client=mock_sync_client, **model_args)
 
-    assert llm.model_args == model_args
+    assert llm.model_args == model_args  # type: ignore
 
 
 def test_llm_factory_separate_parameters(mock_sync_client, monkeypatch):
@@ -215,8 +215,8 @@ def test_llm_factory_separate_parameters(mock_sync_client, monkeypatch):
 
     llm = llm_factory("openai", "gpt-4", client=mock_sync_client)
 
-    assert llm.model == "gpt-4"
-    assert llm.client is not None
+    assert llm.model == "gpt-4"  # type: ignore
+    assert llm.client is not None  # type: ignore
 
 
 def test_llm_factory_missing_model():

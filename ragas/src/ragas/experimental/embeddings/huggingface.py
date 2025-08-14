@@ -77,8 +77,8 @@ class HuggingFaceEmbeddings(BaseEmbedding):
         response = self.client.feature_extraction(text, **kwargs)
         # HuggingFace API returns nested list for single text
         if isinstance(response[0], list):
-            return response[0]
-        return response
+            return list(response[0])
+        return list(response)
 
     def _embed_text_local(self, text: str, **kwargs: t.Any) -> t.List[float]:
         """Embed text using local sentence-transformers model."""
@@ -119,12 +119,14 @@ class HuggingFaceEmbeddings(BaseEmbedding):
 
         for batch in batches:
             # HuggingFace API can handle batch processing
-            response = self.client.feature_extraction(batch, **kwargs)
-            # Response format varies, normalize to list of lists
-            if isinstance(response[0][0], list):
-                embeddings.extend(response)
-            else:
-                embeddings.extend([emb for emb in response])
+            batch_embeddings = []
+            for text in batch:
+                response = self.client.feature_extraction(text, **kwargs)
+                if isinstance(response[0], list):
+                    batch_embeddings.append(list(response[0]))
+                else:
+                    batch_embeddings.append(list(response))
+            embeddings.extend(batch_embeddings)
 
         return embeddings
 
