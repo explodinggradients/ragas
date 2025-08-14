@@ -115,7 +115,7 @@ class BackendRegistry:
             entry_points_result = metadata.entry_points()
 
             # Python 3.10+ has .select() method, Python 3.9 returns a dict
-            if hasattr(entry_points_result, 'select'):
+            if hasattr(entry_points_result, "select"):
                 # Python 3.10+
                 entry_points = entry_points_result.select(group="ragas.backends")
             else:
