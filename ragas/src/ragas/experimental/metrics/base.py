@@ -135,7 +135,9 @@ class Metric(BaseMetric):
         return await super().abatch_score(inputs)
 
     @abstractmethod
-    def get_correlation(self, gold_labels: t.List[str], predictions: t.List[str]) -> float:
+    def get_correlation(
+        self, gold_labels: t.List[str], predictions: t.List[str]
+    ) -> float:
         """
         Calculate the correlation between gold scores and predicted scores.
         This is a placeholder method and should be implemented based on the specific metric.
@@ -261,13 +263,13 @@ class Metric(BaseMetric):
         # Convert to strings for correlation calculation, filtering out None values
         gold_scores = [str(score) for score in gold_scores_raw if score is not None]
         pred_scores_str = [str(score) for score in pred_scores if score is not None]
-        
+
         df = test_dataset.to_pandas()
         df[f"{self.name}_pred"] = pred_scores
         correlation = self.get_correlation(gold_scores, pred_scores_str)
-        agreement_rate = sum(x == y for x, y in zip(gold_scores, pred_scores_str)) / len(
-            gold_scores
-        )
+        agreement_rate = sum(
+            x == y for x, y in zip(gold_scores, pred_scores_str)
+        ) / len(gold_scores)
         return {
             "correlation": correlation,
             "agreement_rate": agreement_rate,
