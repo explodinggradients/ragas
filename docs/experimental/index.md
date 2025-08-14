@@ -21,6 +21,12 @@ The goal of Ragas Experimental is to evolve Ragas into a general-purpose evaluat
 
     [:octicons-arrow-right-24: Core Concepts](core_concepts/index.md)
 
+- 🛠️ **How-to Guides**
+
+    Step-by-step guides for specific tasks and goals using Ragas experimental features.
+
+    [:octicons-arrow-right-24: How-to Guides](howtos/index.md)
+
 </div>
 
 
