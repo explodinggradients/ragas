@@ -55,7 +55,7 @@ def my_metric(prediction: str, actual: str):
 Next, we will write the experiment loop that will run our prompt on the test dataset and evaluate it using the metric, and store the results in a csv file. 
 
 ```python
-from ragas_experimental import experiment
+from ragas import experiment
 
 @experiment()
 async def run_experiment(row):
