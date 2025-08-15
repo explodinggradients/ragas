@@ -111,7 +111,7 @@ jobs:
       - name: Install dependencies
         run: |
           # Use UV with system installation for CI (simpler and more reliable)
-          cd ragas && uv pip install --system -e "." --group dev --cache-dir ~/.cache/uv
+          uv pip install --system -e "./ragas" --group dev --cache-dir ~/.cache/uv
 
       - name: Run unit tests
         run: |
@@ -120,7 +120,7 @@ jobs:
             # Use pytest-xdist to improve test run-time on Linux/macOS
             OPTS=(--dist loadfile -n auto)
           fi
-          
+
           # Run different test suites based on test type
           if [ "${{ matrix.test-type }}" = "full" ]; then
             # Full test suite with notebook tests
@@ -173,7 +173,7 @@ jobs:
       - name: Install dependencies
         run: |
           # Use UV with system installation for CI (simpler and more reliable)
-          cd ragas && uv pip install --system -e "." --group dev --cache-dir ~/.cache/uv
+          uv pip install --system -e "./ragas" --group dev --cache-dir ~/.cache/uv
 
       - name: Format check (dry run)
         run: |
