@@ -3,6 +3,9 @@ from ragas.dataset_schema import EvaluationDataset, MultiTurnSample, SingleTurnS
 from ragas.evaluation import evaluate
 from ragas.run_config import RunConfig
 
+# Backend imports
+from ragas import backends
+
 try:
     from ._version import version as __version__
 except ImportError:
@@ -19,6 +22,7 @@ __all__ = [
     "cacher",
     "CacheInterface",
     "DiskCacheBackend",
+    "backends",
 ]
 
 
