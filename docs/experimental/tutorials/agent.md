@@ -56,7 +56,7 @@ def correctness_metric(prediction: float, actual: float):
 Next, we will write the experiment loop that will run our agent on the test dataset and evaluate it using the metric, and store the results in a CSV file.
 
 ```python
-from ragas_experimental import experiment
+from ragas import experiment
 
 @experiment()
 async def run_experiment(row):
