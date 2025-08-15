@@ -30,7 +30,6 @@ def test_amnesty_e2e():
     result = evaluate(
         EvaluationDataset.from_hf_dataset(t.cast("Dataset", amnesty_qa))[:1],
         metrics=[answer_relevancy, faithfulness, context_recall, context_precision],
-        in_ci=True,
         show_progress=False,
     )
     assert result is not None

@@ -32,9 +32,9 @@ type: ## Type check ragas code
 check: format type ## Quick health check (format + type, no tests)
 	@echo "Ragas code quality check complete!"
 
-test: ## Run ragas unit tests
-	@echo "Running ragas unit tests..."
-	$(Q)uv run pytest --nbmake tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
+test: ## Run ragas unit tests (including experimental)
+	@echo "Running ragas unit tests (including experimental)..."
+	$(Q)uv run pytest --nbmake tests/unit tests/experimental $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 
 run-ci: ## Run complete CI pipeline for ragas
 	@echo "Running ragas CI pipeline..."
@@ -44,5 +44,5 @@ run-ci: ## Run complete CI pipeline for ragas
 	@echo "Type check..."
 	$(Q)$(MAKE) type
 	@echo "Unit tests..."
-	$(Q)__RAGAS_DEBUG_TRACKING=true RAGAS_DO_NOT_TRACK=true pytest --nbmake tests/unit --dist loadfile -n auto
+	$(Q)__RAGAS_DEBUG_TRACKING=true RAGAS_DO_NOT_TRACK=true pytest --nbmake tests/unit tests/experimental --dist loadfile -n auto
 	@echo "Ragas CI pipeline complete!"

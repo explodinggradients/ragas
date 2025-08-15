@@ -250,7 +250,9 @@ def test_in_memory_example_store():
     class FakeOutputModel(BaseModel):
         text: str
 
-    store = InMemoryExampleStore()
+    from tests.conftest import EchoEmbedding
+
+    store = InMemoryExampleStore(embeddings=EchoEmbedding())
     store.add_example(
         FakeInputModel(text="hello", embedding=[1, 2, 3]),
         FakeOutputModel(text="hello"),

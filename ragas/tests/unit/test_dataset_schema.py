@@ -37,7 +37,6 @@ def create_sample_annotation(metric_output):
                     "user_input": "",
                 },
                 prompt_output={"reason": "", "verdict": 1},
-                is_accepted=True,
                 edited_output=None,
             )
         },
