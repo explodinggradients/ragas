@@ -174,3 +174,6 @@ experimental/ragas_experimental/_version.py
 uv.lock
 .cache/
 .claude
+examples/*/logs/*run*json
+examples/*/datasets/*csv
+examples/*/experiments/*csv
