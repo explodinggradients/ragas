@@ -5,6 +5,7 @@ __all__ = ["Experiment", "experiment", "version_experiment"]
 import typing as t
 
 import asyncio
+import inspect
 from pathlib import Path
 
 import git
@@ -100,9 +101,34 @@ class ExperimentWrapper:
         self.experiment_model = experiment_model
         self.default_backend = default_backend
         self.name_prefix = name_prefix
+        # Store function signature for validation
+        self.signature = inspect.signature(func)
         # Preserve function metadata
         self.__name__ = getattr(func, "__name__", "experiment_function")
         self.__doc__ = getattr(func, "__doc__", None)
+
+    def _validate_function_parameters(self, *args, **kwargs) -> None:
+        """Validate that the function can be called with the provided arguments."""
+        try:
+            # Try to bind the arguments to the function signature
+            self.signature.bind(*args, **kwargs)
+        except TypeError as e:
+            func_name = getattr(self.func, "__name__", "experiment_function")
+
+            param_info = []
+            for name, param in self.signature.parameters.items():
+                if param.default == inspect.Parameter.empty:
+                    param_info.append(f"{name} (required)")
+                else:
+                    param_info.append(f"{name} (optional)")
+
+            expected_params = ", ".join(param_info)
+
+            raise ValueError(
+                f"Parameter validation failed for experiment function '{func_name}()'. "
+                f"Expected parameters: [{expected_params}]. "
+                f"Original error: {str(e)}"
+            ) from e
 
     async def __call__(self, *args, **kwargs) -> t.Any:
         """Call the original function."""
@@ -120,6 +146,12 @@ class ExperimentWrapper:
         **kwargs,
     ) -> "Experiment":
         """Run the experiment against a dataset."""
+        # Validate function parameters before any setup
+        # Use the first dataset item as a representative sample for validation
+        if len(dataset) > 0:
+            sample_item = next(iter(dataset))
+            self._validate_function_parameters(sample_item, *args, **kwargs)
+
         # Generate name if not provided
         if name is None:
             name = memorable_names.generate_unique_name()
