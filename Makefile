@@ -53,6 +53,10 @@ benchmarks-docker: ## Run benchmarks in docker
 	docker buildx build --build-arg OPENAI_API_KEY=$(OPENAI_API_KEY) -t ragas-benchmark -f $(GIT_ROOT)/ragas/tests/benchmarks/Dockerfile .
 	docker inspect ragas-benchmark:latest | jq ".[0].Size" | numfmt --to=si
 
+benchmarks-test: ## Run benchmarks for ragas unit tests
+	@echo "Running ragas unit tests with timing benchmarks..."
+	$(Q)cd ragas && uv run pytest --nbmake tests/unit tests/experimental --durations=0 -v $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
+
 # =============================================================================
 # CI/BUILD
 # =============================================================================
