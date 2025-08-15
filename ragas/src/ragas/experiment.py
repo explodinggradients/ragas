@@ -13,8 +13,8 @@ from tqdm import tqdm
 from pydantic import BaseModel
 
 from ragas.backends.base import BaseBackend
-from .dataset import Dataset, DataTable
-from .utils import memorable_names, find_git_root
+from ragas.experimental.dataset import Dataset, DataTable
+from ragas.utils import memorable_names, find_git_root
 
 
 class Experiment(DataTable):
