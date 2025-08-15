@@ -39,7 +39,7 @@ Running an experiment involves:
 The `@experiment` decorator in Ragas simplifies the orchestration, scaling, and storage of experiments. Here's an example:
 
 ```python
-from ragas_experimental import experiment
+from ragas import experiment
 
 # Define your metric and dataset
 my_metric = ...
@@ -115,7 +115,8 @@ Here's a complete example showing how to pass different LLM models to your exper
 
 ```python
 from pydantic import BaseModel
-from ragas.experimental import experiment, Dataset
+from ragas.experimental import Dataset
+from ragas import experiment
 
 class ExperimentResult(BaseModel):
     query: str
