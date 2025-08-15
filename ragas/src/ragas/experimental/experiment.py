@@ -119,8 +119,6 @@ class ExperimentWrapper:
             for name, param in self.signature.parameters.items():
                 if param.default == inspect.Parameter.empty:
                     param_info.append(f"{name} (required)")
-                else:
-                    param_info.append(f"{name} (optional)")
 
             expected_params = ", ".join(param_info)
 
