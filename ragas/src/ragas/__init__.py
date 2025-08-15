@@ -23,6 +23,9 @@ __all__ = [
     "CacheInterface",
     "DiskCacheBackend",
     "backends",
+    "Experiment",
+    "experiment",
+    "version_experiment",
 ]
 
 
