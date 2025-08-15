@@ -6,9 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Ragas is an evaluation toolkit for Large Language Model (LLM) applications. It provides objective metrics for evaluating LLM applications, test data generation capabilities, and integrations with popular LLM frameworks.
 
-The repository is structured as a monorepo containing:
-1. **Ragas Core Library** - The main evaluation toolkit (in `/ragas` directory)
-2. **Ragas Experimental** - An nbdev-based project for Ragas extensions (in `/experimental` directory)
+The repository contains:
+1. **Ragas Library** - The main evaluation toolkit including experimental features (in `/ragas` directory)
+   - Core evaluation metrics and test generation 
+   - Experimental features available at `ragas.experimental`
 
 ## Development Environment Setup
 
@@ -19,33 +20,30 @@ The repository is structured as a monorepo containing:
 python -m venv venv
 source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
 
-# For ragas core
+# For ragas (includes experimental features)
 pip install -U setuptools  # Required on newer Python versions
-pip install -e ".[dev]"
-
-# For experimental project
-pip install -e "./experimental[dev]"
+pip install -e "./ragas[dev]"
 ```
 
 ## Common Commands
 
-### Monorepo-Wide Commands (from root directory)
+### Commands (from root directory)
 
 ```bash
 # Setup and installation
-make install        # Install dependencies for both projects
+make install        # Install dependencies for ragas
 
-# Code quality (runs on both ragas/ and experimental/)
+# Code quality
 make format         # Format and lint all code
 make type           # Type check all code
 make check          # Quick health check (format + type, no tests)
 
 # Testing
-make test           # Run all unit tests
+make test           # Run all unit tests (including experimental)
 make test-e2e       # Run end-to-end tests
 
 # CI/Build
-make run-ci         # Run complete CI pipeline for both projects
+make run-ci         # Run complete CI pipeline
 make clean          # Clean all generated files
 
 # Documentation
@@ -59,30 +57,22 @@ make benchmarks-docker # Run benchmarks in Docker
 
 ### Project-Specific Commands
 
-Each project directory (`ragas/` and `experimental/`) has its own Makefile with core development commands:
+The ragas directory has its own Makefile for focused development:
 
 ```bash
-# Ragas core development (from ragas/ directory)
+# Ragas development (from ragas/ directory)
 cd ragas
 make format         # Format ragas code only
 make type           # Type check ragas code only
 make check          # Quick format + type check
-make test           # Run ragas tests only
-make run-ci         # Run ragas CI pipeline only
-
-# Experimental development (from experimental/ directory)
-cd experimental
-make format         # Format experimental code only
-make type           # Type check experimental code only
-make check          # Quick format + type check
-make test           # Run experimental tests only
-make run-ci         # Run experimental CI pipeline only
+make test           # Run all tests (core + experimental)
+make run-ci         # Run ragas CI pipeline
 ```
 
 ### Testing
 
 ```bash
-# Run all tests in the monorepo (from root)
+# Run all tests (from root)
 make test
 
 # Run specific test (using pytest -k flag)
@@ -91,13 +81,12 @@ make test k="test_name"
 # Run end-to-end tests
 make test-e2e
 
-# Run tests for specific projects
-cd ragas && make test           # Run ragas tests only
-cd experimental && make test    # Run experimental tests only
+# Run tests from ragas directory
+cd ragas && make test           # Run all ragas tests (core + experimental)
 
 # Direct pytest commands for more control
 cd ragas && uv run pytest tests/unit -k "test_name"
-cd experimental && uv run pytest -v
+cd ragas && uv run pytest tests/experimental -v
 ```
 
 ### Documentation
@@ -125,26 +114,24 @@ make benchmarks-docker
 
 ## Project Architecture
 
-The monorepo has the following structure:
+The repository has the following structure:
 
 ```
 /
 ├── ragas/           # Main ragas project
-│   ├── src/         # Original source code
-│   ├── tests/       # Original tests
-│   ├── pyproject.toml  # ragas-specific build config
+│   ├── src/ragas/   # Source code including experimental features
+│   │   ├── experimental/  # Experimental features
+│   ├── tests/       # All tests (core + experimental)
+│   │   ├── experimental/  # Experimental tests
+│   ├── examples/    # Example code
+│   │   ├── experimental/  # Experimental examples
+│   ├── pyproject.toml  # Unified build config
 │
-├── experimental/    # nbdev-based experimental project
-│   ├── nbs/         # Notebooks for nbdev  
-│   ├── ragas_experimental/  # Generated code
-│   ├── pyproject.toml  # experimental-specific config
-│   ├── settings.ini    # nbdev config
-│
-├── docs/            # Combined documentation
-├── scripts/         # Shared build/CI scripts
+├── docs/            # Documentation
+├── scripts/         # Build/CI scripts
 ├── workspace.toml   # Root project config (for dev tools)
-├── Makefile         # Combined build commands
-└── README.md        # Monorepo overview
+├── Makefile         # Build commands
+└── README.md        # Repository overview
 ```
 
 ### Ragas Core Components
@@ -165,12 +152,18 @@ The Ragas core library provides metrics, test data generation and evaluation fun
 
 ### Experimental Components
 
-The experimental package (`ragas_experimental`) is for developing new features and extensions using nbdev:
+The experimental features are now integrated into the main ragas package:
 
-1. When working on the experimental project, make changes in the notebook files in `experimental/nbs/`
-2. Run `nbdev_export` to generate Python code in `experimental/ragas_experimental/`
-3. Run tests with `pytest` in the experimental directory
-4. Generate docs with `nbdev_docs`
+1. **Experimental features** are available at `ragas.experimental`
+2. **Dataset and Experiment management** - Enhanced data handling for experiments
+3. **Advanced metrics** - Extended metric capabilities  
+4. **Backend support** - Multiple storage backends (CSV, JSONL, Google Drive, in-memory)
+
+To use experimental features:
+```python
+from ragas.experimental import Dataset, experiment
+from ragas.experimental.backends import get_registry
+```
 
 ## Debugging Logs
 

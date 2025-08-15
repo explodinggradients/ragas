@@ -9,11 +9,11 @@ from ragas.metrics import (
     answer_similarity,
     context_precision,
     context_recall,
-    context_relevancy,
-    context_utilization,
     faithfulness,
+    ContextUtilization,
 )
-from ragas.metrics.critique import harmfulness
+
+# from ragas.metrics.critique import harmfulness  # Import unavailable
 
 # data
 ds = load_dataset("explodinggradients/amnesty_qa", "english_v2")
@@ -26,10 +26,8 @@ metrics = [
     context_recall,
     answer_relevancy,
     answer_correctness,
-    harmfulness,
-    context_relevancy,
     context_precision,
-    context_utilization,
+    ContextUtilization(),
     answer_similarity,
 ]
 
@@ -43,6 +41,5 @@ if __name__ == "__main__":
     _ = evaluate(
         eval_dataset,
         metrics=metrics,
-        is_async=True,
     )
     print(f"Time taken [Asyncio]: {time.time() - start:.2f}s")
