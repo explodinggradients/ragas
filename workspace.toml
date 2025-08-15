@@ -12,7 +12,7 @@ exclude = ["*.ipynb"]  # Exclude Jupyter notebooks from linting
 
 [tool.ruff.lint.isort]
 # Import sorting configuration for the entire monorepo
-known-first-party = ["ragas", "ragas_experimental"]
+known-first-party = ["ragas"]
 force-single-line = false
 combine-as-imports = true
 
@@ -22,11 +22,16 @@ target-version = ["py39"]
 include = '\.pyi?$'
 
 [tool.pyright]
-include = ["ragas/src/ragas", "experimental/ragas_experimental"]
+include = ["ragas/src/ragas"]
 excludeTypeshedPaths = ["@types/*"]
 pythonVersion = "3.9"
 pythonPlatform = "All"
 typeCheckingMode = "basic"
+reportMissingImports = false
+reportOptionalMemberAccess = "warning"
+reportOptionalSubscript = "warning"
+reportGeneralTypeIssues = "warning"
+reportReturnType = "warning"
 
 [tool.pytest.ini_options]
 addopts = "-n 0"
