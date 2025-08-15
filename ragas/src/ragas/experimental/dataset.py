@@ -12,8 +12,8 @@ from pydantic import BaseModel
 if t.TYPE_CHECKING:
     from pandas import DataFrame as PandasDataFrame
 
-from .backends import BaseBackend, get_registry
-from .backends.inmemory import InMemoryBackend
+from ragas.backends import BaseBackend, get_registry
+from ragas.backends.inmemory import InMemoryBackend
 
 # For backwards compatibility, use typing_extensions for older Python versions
 try:
