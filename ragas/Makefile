@@ -34,6 +34,10 @@ check: format type ## Quick health check (format + type, no tests)
 
 test: ## Run ragas unit tests (including experimental)
 	@echo "Running ragas unit tests (including experimental)..."
+	$(Q)uv run pytest tests/unit tests/experimental $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
+
+test-all: ## Run ragas unit tests with notebook
+	@echo "Running ragas unit tests..."
 	$(Q)uv run pytest --nbmake tests/unit tests/experimental $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 
 run-ci: ## Run complete CI pipeline for ragas

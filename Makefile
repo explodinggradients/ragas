@@ -99,8 +99,12 @@ clean: ## Clean all generated files
 # =============================================================================
 
 test: ## Run all unit tests
-	@echo "Running all unit tests (including experimental)..."
+	@echo "Running all unit tests..."
 	$(Q)$(MAKE) -C ragas test $(shell if [ -n "$(k)" ]; then echo "k=$(k)"; fi)
+
+test-all: ## Run all unit tests (including notebooks)
+	@echo "Running all unit tests (including notebooks)..."
+	$(Q)$(MAKE) -C ragas test-all $(shell if [ -n "$(k)" ]; then echo "k=$(k)"; fi)
 
 test-e2e: ## Run all end-to-end tests
 	@echo "Running all end-to-end tests..."
