@@ -2,35 +2,36 @@
 name = "ragas"
 requires-python = ">=3.9"
 dependencies = [
+    # Core dependencies
     "numpy",
     "datasets",
     "tiktoken",
+    "pydantic>=2.0.0",
+    "nest-asyncio",
+    "appdirs",
+    "diskcache>=5.6.3",
+    
+    # LangChain ecosystem
     "langchain",
     "langchain-core",
     "langchain-community",
     "langchain_openai",
-    "nest-asyncio",
-    "appdirs",
-    "pydantic>=2",
-    "openai>1",
-    "diskcache>=5.6.3",
-    # Experimental dependencies
+    
+    # LLM providers
+    "openai>=1.0.0",
+    
+    # CLI and experimental features
     "tqdm",
     "instructor",
     "gitpython",
     "typer",
     "rich",
     "pillow>=10.4.0",
-    "pyright>=1.1.403",
-    "google-api-python-client>=2.178.0",
-    "google-auth>=2.40.3",
-    "google-auth-oauthlib>=1.2.2",
-    "langfuse>=3.2.4",
-    "mlflow>=3.1.4",
 ]
 dynamic = ["version", "readme"]
 
 [project.optional-dependencies]
+# Core optional features
 all = [
     "sentence-transformers",
     "transformers",
@@ -39,60 +40,21 @@ all = [
     "rapidfuzz",
     "pandas",
     "datacompy",
+    "sacrebleu",
     "llama_index",
     "r2r"
 ]
+
+# Specific integrations
 examples = ["openai>=1.0.0"]
-tracing = ["langfuse", "mlflow"]
+tracing = ["langfuse>=3.2.4", "mlflow>=3.1.4"]
 gdrive = [
-    "google-api-python-client>=2.0.0",
-    "google-auth>=2.0.0",
-    "google-auth-oauthlib>=1.0.0"
-]
-docs = [
-    "mkdocs>=1.6.1",
-    "mkdocs-material",
-    "mkdocs-material[imaging]",
-    "mkdocstrings[python]",
-    "mkdocs-glightbox",
-    "mkdocs-autorefs",
-    "mkdocs-gen-files",
-    "mkdocs-literate-nav",
-    "mkdocs-section-index",
-    "mkdocs-git-committers-plugin-2",
-    "mkdocs-git-revision-date-localized-plugin",
-]
-dev = [
-    "rich",
-    "ruff",
-    "black[jupyter]",
-    "pyright",
-    "llama_index",
-    "notebook",
-    "sphinx-autobuild",
-    "sentence-transformers",
-    "transformers",
-    "fastembed",
-    "graphene",
-    "rouge_score",
-    "nltk",
-    "rapidfuzz",
-    "pandas",
-    "datacompy",
-    "haystack-ai",
-    "sacrebleu",
-    "r2r",
-    "pytest",
-    "pytest-xdist[psutil]",
-    "pytest-asyncio",
-    "nbmake",
-    "pre-commit>=4.3.0",
     "google-api-python-client>=2.178.0",
     "google-auth>=2.40.3",
-    "google-auth-oauthlib>=1.2.2",
-    "langfuse>=3.2.4",
-    "mlflow>=3.1.4",
+    "google-auth-oauthlib>=1.2.2"
 ]
+ai-frameworks = ["haystack-ai"]
+
 test = []
 [project.entry-points."ragas.backends"]
 "local/csv" = "ragas.experimental.backends.local_csv:LocalCSVBackend"
@@ -133,6 +95,30 @@ markers = [
 
 [dependency-groups]
 dev = [
+    "ruff",
+    "black[jupyter]",
+    "pyright>=1.1.403",
+    "pre-commit>=4.3.0",
+    "pytest",
+    "pytest-xdist[psutil]",
+    "pytest-asyncio",
+    "nbmake",
+    "notebook",
     "arize-phoenix>=6.1.0",
     "openinference-instrumentation-langchain>=0.1.29",
+    "ragas[all,tracing,gdrive,ai-frameworks]",
+]
+
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material",
+    "mkdocs-material[imaging]",
+    "mkdocstrings[python]",
+    "mkdocs-glightbox",
+    "mkdocs-autorefs",
+    "mkdocs-gen-files",
+    "mkdocs-literate-nav",
+    "mkdocs-section-index",
+    "mkdocs-git-committers-plugin-2",
+    "mkdocs-git-revision-date-localized-plugin",
 ]
