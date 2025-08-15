@@ -50,7 +50,7 @@ def mock_git_repo(temp_dir):
     mock_repo.index.commit = MagicMock()
     mock_repo.create_head = MagicMock()
 
-    with patch("ragas.experiment.git.Repo", return_value=mock_repo):
+    with patch("git.Repo", return_value=mock_repo):
         yield mock_repo, temp_dir
 
 
@@ -115,7 +115,7 @@ class TestVersionExperiment:
         # Mock that repo is clean
         mock_repo.is_dirty.return_value = False
 
-        with patch("ragas.experiment.find_git_root", return_value=temp_dir):
+        with patch("ragas.utils.find_git_root", return_value=temp_dir):
             commit_hash = version_experiment("test_experiment")
 
         assert commit_hash == "abc123def456"
@@ -136,7 +136,7 @@ class TestVersionExperiment:
         mock_commit.hexsha = "new123commit456"
         mock_repo.index.commit.return_value = mock_commit
 
-        with patch("ragas.experiment.find_git_root", return_value=temp_dir):
+        with patch("ragas.utils.find_git_root", return_value=temp_dir):
             commit_hash = version_experiment("test_experiment")
 
         assert commit_hash == "new123commit456"
@@ -152,7 +152,7 @@ class TestVersionExperiment:
         mock_commit.hexsha = "custom123commit456"
         mock_repo.index.commit.return_value = mock_commit
 
-        with patch("ragas.experiment.find_git_root", return_value=temp_dir):
+        with patch("ragas.utils.find_git_root", return_value=temp_dir):
             version_experiment(
                 "test_experiment", commit_message="Custom experiment message"
             )
@@ -168,7 +168,7 @@ class TestVersionExperiment:
         mock_commit.hexsha = "staged123commit456"
         mock_repo.index.commit.return_value = mock_commit
 
-        with patch("ragas.experiment.find_git_root", return_value=temp_dir):
+        with patch("ragas.utils.find_git_root", return_value=temp_dir):
             version_experiment("test_experiment", stage_all=True)
 
         mock_repo.git.add.assert_called_with(".")
@@ -177,7 +177,7 @@ class TestVersionExperiment:
         """Test version_experiment with create_branch=False."""
         mock_repo, temp_dir = mock_git_repo
 
-        with patch("ragas.experiment.find_git_root", return_value=temp_dir):
+        with patch("ragas.utils.find_git_root", return_value=temp_dir):
             version_experiment("test_experiment", create_branch=False)
 
         mock_repo.create_head.assert_not_called()
@@ -231,7 +231,7 @@ class TestExperimentDecorator:
 
         # Mock memorable_names to return predictable name
         with patch(
-            "ragas.experiment.memorable_names.generate_unique_name",
+            "ragas.utils.memorable_names.generate_unique_name",
             return_value="test_experiment_name",
         ):
             experiment_result = await test_experiment.arun(sample_dataset)
@@ -260,7 +260,7 @@ class TestExperimentDecorator:
             )
 
         with patch(
-            "ragas.experiment.memorable_names.generate_unique_name",
+            "ragas.utils.memorable_names.generate_unique_name",
             return_value="random_name",
         ):
             experiment_result = await prefixed_experiment.arun(sample_dataset)
@@ -328,7 +328,7 @@ class TestExperimentDecorator:
 
         # Should continue processing other items even if some fail
         with patch(
-            "ragas.experiment.memorable_names.generate_unique_name",
+            "ragas.utils.memorable_names.generate_unique_name",
             return_value="error_test",
         ):
             experiment_result = await failing_experiment.arun(sample_dataset)
@@ -345,7 +345,7 @@ class TestExperimentDecorator:
             return {"question": row.question, "answer": row.answer, "processed": True}
 
         with patch(
-            "ragas.experiment.memorable_names.generate_unique_name",
+            "ragas.utils.memorable_names.generate_unique_name",
             return_value="untyped_test",
         ):
             experiment_result = await untyped_experiment.arun(sample_dataset)
