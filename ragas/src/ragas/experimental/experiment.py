@@ -120,12 +120,6 @@ class ExperimentWrapper:
         **kwargs,
     ) -> "Experiment":
         """Run the experiment against a dataset."""
-        # Extract model from kwargs if provided
-        runtime_model = kwargs.pop("model", None)
-
-        # Use runtime experiment_model if provided, otherwise fallback to decorator's model
-        experiment_model = runtime_model or self.experiment_model
-
         # Generate name if not provided
         if name is None:
             name = memorable_names.generate_unique_name()
@@ -142,7 +136,7 @@ class ExperimentWrapper:
         # Create experiment
         experiment_view = Experiment(
             name=name,
-            data_model=experiment_model,
+            data_model=self.experiment_model,
             backend=resolved_backend,
         )
 

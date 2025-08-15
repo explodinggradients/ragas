@@ -120,7 +120,11 @@ class BackendRegistry:
                 entry_points = entry_points_result.select(group="ragas.backends")
             else:
                 # Python 3.9 compatibility
-                entry_points = entry_points_result.get("ragas.backends", [])
+                entry_points = (
+                    entry_points_result.get("ragas.backends", [])
+                    if isinstance(entry_points_result, dict)
+                    else []
+                )
 
             for entry_point in entry_points:
                 try:

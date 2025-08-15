@@ -85,7 +85,7 @@ my_experiment.arun(dataset, model="gpt-4o")
 
 ### Using Data Models
 
-You can specify a data model for your experiment results either at the decorator level or at runtime:
+You can specify a data model for your experiment results at the decorator level:
 
 ```python
 from pydantic import BaseModel
@@ -95,7 +95,6 @@ class ExperimentResult(BaseModel):
     accuracy: float
     model_used: str
 
-# Option 1: Set at decorator level
 @experiment(experiment_model=ExperimentResult)
 async def my_experiment(row, model):
     response = my_app(row.query, model)
@@ -106,8 +105,62 @@ async def my_experiment(row, model):
         model_used=model
     )
 
-# Option 2: Set at runtime (overrides decorator model)
-my_experiment.arun(dataset, "gpt-4", model=ExperimentResult)
+# Run experiment with specific model
+my_experiment.arun(dataset, model="gpt-4o")
+```
+
+### Complete Example: LLM Parameter Passing
+
+Here's a complete example showing how to pass different LLM models to your experiment function:
+
+```python
+from pydantic import BaseModel
+from ragas.experimental import experiment, Dataset
+
+class ExperimentResult(BaseModel):
+    query: str
+    response: str
+    accuracy: float
+    model_used: str
+    latency_ms: float
+
+@experiment(experiment_model=ExperimentResult)
+async def llm_experiment(row, llm_model, temperature=0.7):
+    """Experiment function that accepts LLM model and other parameters."""
+    import time
+    start_time = time.time()
+    
+    # Use the passed LLM model
+    response = await my_llm_app(
+        query=row.query, 
+        model=llm_model,
+        temperature=temperature
+    )
+    
+    # Calculate metrics
+    metric = my_metric.score(response, row.ground_truth)
+    end_time = time.time()
+    
+    return ExperimentResult(
+        query=row.query,
+        response=response,
+        accuracy=metric.value,
+        model_used=llm_model,
+        latency_ms=(end_time - start_time) * 1000
+    )
+
+# Run experiments with different models
+gpt4_results = await llm_experiment.arun(
+    dataset, 
+    llm_model="gpt-4o",
+    temperature=0.1
+)
+
+claude_results = await llm_experiment.arun(
+    dataset,
+    llm_model="claude-4-sonnet",
+    temperature=0.7
+)
 ```
 
 ## Result Storage
