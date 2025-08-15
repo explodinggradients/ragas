@@ -81,6 +81,8 @@ class ExperimentProtocol(t.Protocol):
         dataset: Dataset,
         name: t.Optional[str] = None,
         backend: t.Optional[t.Union[BaseBackend, str]] = None,
+        *args,
+        **kwargs,
     ) -> "Experiment": ...
 
 
@@ -114,6 +116,8 @@ class ExperimentWrapper:
         dataset: Dataset,
         name: t.Optional[str] = None,
         backend: t.Optional[t.Union[BaseBackend, str]] = None,
+        *args,
+        **kwargs,
     ) -> "Experiment":
         """Run the experiment against a dataset."""
         # Generate name if not provided
@@ -139,7 +143,7 @@ class ExperimentWrapper:
         # Create tasks for all items
         tasks = []
         for item in dataset:
-            tasks.append(self(item))
+            tasks.append(self(item, *args, **kwargs))
 
         progress_bar = None
         try:
