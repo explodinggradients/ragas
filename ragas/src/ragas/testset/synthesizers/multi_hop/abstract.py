@@ -43,7 +43,6 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
 
     def get_node_clusters(self, knowledge_graph: KnowledgeGraph) -> t.List[t.Set[Node]]:
-
         node_clusters = knowledge_graph.find_indirect_clusters(
             relationship_condition=lambda rel: (
                 True if rel.get_property("summary_similarity") else False

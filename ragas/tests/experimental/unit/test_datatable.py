@@ -78,9 +78,9 @@ class TestDataTableInheritance:
 
         # This should be a Dataset instance, not just DataTable
         assert isinstance(result, Dataset), f"Expected Dataset, got {type(result)}"
-        assert not isinstance(result, DataTable) or isinstance(
-            result, Dataset
-        ), "Dataset.load() should return Dataset, not DataTable"
+        assert not isinstance(result, DataTable) or isinstance(result, Dataset), (
+            "Dataset.load() should return Dataset, not DataTable"
+        )
 
     def test_dataset_load_with_model_returns_dataset(
         self, mock_backend, simple_test_data
@@ -119,9 +119,9 @@ class TestDataTableInheritance:
         result = Experiment.load("test_experiment", mock_backend)
 
         # This should be an Experiment instance, not just DataTable
-        assert isinstance(
-            result, Experiment
-        ), f"Expected Experiment, got {type(result)}"
+        assert isinstance(result, Experiment), (
+            f"Expected Experiment, got {type(result)}"
+        )
 
     def test_experiment_load_with_model_returns_experiment(
         self, mock_backend, simple_test_data
@@ -134,9 +134,9 @@ class TestDataTableInheritance:
         result = Experiment.load("test_experiment", mock_backend, SimpleTestModel)
 
         # This should be an Experiment instance
-        assert isinstance(
-            result, Experiment
-        ), f"Expected Experiment, got {type(result)}"
+        assert isinstance(result, Experiment), (
+            f"Expected Experiment, got {type(result)}"
+        )
         assert result.data_model == SimpleTestModel
 
     def test_experiment_validate_with_returns_experiment(
@@ -150,9 +150,9 @@ class TestDataTableInheritance:
         result = experiment.validate_with(SimpleTestModel)
 
         # This should be an Experiment instance, not just DataTable
-        assert isinstance(
-            result, Experiment
-        ), f"Expected Experiment, got {type(result)}"
+        assert isinstance(result, Experiment), (
+            f"Expected Experiment, got {type(result)}"
+        )
         assert result.data_model == SimpleTestModel
 
 

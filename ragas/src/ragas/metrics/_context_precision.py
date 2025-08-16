@@ -39,9 +39,7 @@ class Verification(BaseModel):
 
 class ContextPrecisionPrompt(PydanticPrompt[QAC, Verification]):
     name: str = "context_precision"
-    instruction: str = (
-        'Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "1" if useful and "0" if not with json output.'
-    )
+    instruction: str = 'Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "1" if useful and "0" if not with json output.'
     input_model = QAC
     output_model = Verification
     examples = [
@@ -149,16 +147,16 @@ class LLMContextPrecisionWithReference(MetricWithLLM, SingleTurnMetric):
         user_input, retrieved_contexts, reference = self._get_row_attributes(row)
         responses = []
         for context in retrieved_contexts:
-            verdicts: t.List[Verification] = (
-                await self.context_precision_prompt.generate_multiple(
-                    data=QAC(
-                        question=user_input,
-                        context=context,
-                        answer=reference,
-                    ),
-                    llm=self.llm,
-                    callbacks=callbacks,
-                )
+            verdicts: t.List[
+                Verification
+            ] = await self.context_precision_prompt.generate_multiple(
+                data=QAC(
+                    question=user_input,
+                    context=context,
+                    answer=reference,
+                ),
+                llm=self.llm,
+                callbacks=callbacks,
             )
 
             responses.append([result.model_dump() for result in verdicts])

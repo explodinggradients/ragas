@@ -117,7 +117,9 @@ class HaystackEmbeddingsWrapper(BaseRagasEmbeddings):
         except ImportError:
             return f"{self.__class__.__name__}(embeddings=Unknown(...))"
 
-        if isinstance(self.embedder, (OpenAITextEmbedder, SentenceTransformersTextEmbedder)):  # type: ignore
+        if isinstance(
+            self.embedder, (OpenAITextEmbedder, SentenceTransformersTextEmbedder)
+        ):  # type: ignore
             model_info = self.embedder.model
         elif isinstance(self.embedder, AzureOpenAITextEmbedder):  # type: ignore
             model_info = self.embedder.azure_deployment

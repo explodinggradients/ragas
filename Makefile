@@ -69,7 +69,7 @@ run-ci: ## Run complete CI pipeline (mirrors GitHub CI exactly)
 run-ci-format-check: ## Run format check in dry-run mode (like GitHub CI)
 	@echo "Running format check (dry-run, like GitHub CI)..."
 	@echo "Checking ragas formatting..."
-	$(Q)black --check --config ragas/pyproject.toml ragas/src ragas/tests docs
+	$(Q)uv run ruff format --check ragas/src ragas/tests docs
 	$(Q)ruff check ragas/src docs ragas/tests
 
 run-ci-type: ## Run type checking (matches GitHub CI)
@@ -83,7 +83,7 @@ run-ci-tests: ## Run all tests with CI options
 run-ci-fast: ## Fast CI check for quick local validation (2-3 minutes)
 	@echo "Running fast CI check for quick feedback..."
 	@echo "Format check..."
-	$(Q)black --check --config ragas/pyproject.toml ragas/src ragas/tests docs
+	$(Q)uv run ruff format --check ragas/src ragas/tests docs
 	$(Q)ruff check ragas/src docs ragas/tests
 	@echo "Core unit tests (no nbmake for speed)..."
 	$(Q)cd ragas && pytest tests/unit tests/experimental --dist loadfile -n auto -x

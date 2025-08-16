@@ -46,7 +46,6 @@ def convert_to_ragas_messages(
         return message.content
 
     def _extract_metadata(message) -> dict:
-
         return {k: v for k, v in message.__dict__.items() if k != "content"}
 
     if metadata:

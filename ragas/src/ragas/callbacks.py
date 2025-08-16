@@ -135,7 +135,6 @@ def parse_run_traces(
     traces: t.Dict[str, ChainRun],
     parent_run_id: t.Optional[str] = None,
 ) -> t.List[t.Dict[str, t.Any]]:
-
     root_traces = [
         chain_trace
         for chain_trace in traces.values()

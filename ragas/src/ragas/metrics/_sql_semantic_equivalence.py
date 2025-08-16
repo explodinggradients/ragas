@@ -84,9 +84,9 @@ class LLMSQLEquivalence(MetricWithLLM, SingleTurnMetric):
         assert self.llm is not None, "LLM is not initialized"
         assert isinstance(sample.reference, str), "Sample reference must be a string"
         assert isinstance(sample.response, str), "Sample response must be a string"
-        assert isinstance(
-            sample.reference_contexts, list
-        ), "Sample reference_contexts must be a List"
+        assert isinstance(sample.reference_contexts, list), (
+            "Sample reference_contexts must be a List"
+        )
 
         database_schema = "\n".join(sample.reference_contexts)
         input_data = EquivalenceInput(
