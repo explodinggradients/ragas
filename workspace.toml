@@ -1,6 +1,6 @@
 [workspace]
 # This file configures the workspace-wide tools and settings for the Ragas monorepo
-# All code quality tools (ruff, black, pyright) inherit from these centralized settings
+# All code quality tools (ruff, pyright) inherit from these centralized settings
 # Individual projects only override when absolutely necessary for package-specific needs
 
 [tool.ruff]
