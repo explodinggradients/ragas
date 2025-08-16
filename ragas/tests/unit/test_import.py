@@ -33,7 +33,7 @@ def test_missing_haystack_llmwrapper(monkeypatch):
         base_url="http://localhost:8001",
         llm_id=19,
         x_openapi_token="test_token",
-        x_generative_ai_client="test_client"
+        x_generative_ai_client="test_client",
     )
     assert fabrix_wrapper.base_url == "http://localhost:8001"
     assert fabrix_wrapper.llm_id == 19
@@ -138,14 +138,14 @@ def test_fabrix_and_bge_wrappers_import():
         base_url="http://localhost:8001",
         llm_id=19,
         x_openapi_token="test_token",
-        x_generative_ai_client="test_client"
+        x_generative_ai_client="test_client",
     )
-    
+
     assert fabrix_wrapper.base_url == "http://localhost:8001"
     assert fabrix_wrapper.llm_id == 19
     assert fabrix_wrapper.x_openapi_token == "test_token"
     assert fabrix_wrapper.x_generative_ai_client == "test_client"
-    
+
     # Test BGEEmbeddingsWrapper import and instantiation
     bge_wrapper = BGEEmbeddingsWrapper(model_name="BAAI/bge-base-en")
     assert bge_wrapper.model_name == "BAAI/bge-base-en"
@@ -189,12 +189,15 @@ def test_missing_sentence_transformers(monkeypatch):
     langchain_mocked_embedding = MagicMock(spec=OpenAIEmbeddings)
     langchain_mocked_embedding.model = "text-embedding-ada-002"
 
-    langchain_wrapper = LangchainEmbeddingsWrapper(embeddings=langchain_mocked_embedding)
+    langchain_wrapper = LangchainEmbeddingsWrapper(
+        embeddings=langchain_mocked_embedding
+    )
     assert langchain_wrapper.embeddings.model == "text-embedding-ada-002"  # type: ignore
 
     # Test: Importing BGEEmbeddingsWrapper fails
     with pytest.raises(ImportError, match="sentence-transformers"):
         from ragas.embeddings import BGEEmbeddingsWrapper
+
         BGEEmbeddingsWrapper(model_name="BAAI/bge-base-en")
 
 
@@ -223,9 +226,10 @@ def test_missing_requests(monkeypatch):
     # Test: Importing FabrixLLMWrapper fails
     with pytest.raises(ImportError, match="requests"):
         from ragas.llms import FabrixLLMWrapper
+
         FabrixLLMWrapper(
             base_url="http://localhost:8001",
             llm_id=19,
             x_openapi_token="test_token",
-            x_generative_ai_client="test_client"
+            x_generative_ai_client="test_client",
         )
