@@ -181,8 +181,8 @@ jobs:
           # Note: We use direct commands here instead of the standalone Makefiles
           # to have precise control over CI-specific options like --check for dry-run
           echo "Checking ragas formatting..."
-          ruff format --check ragas/src ragas/tests docs
-          ruff check ragas/src docs ragas/tests
+          ruff format --check ragas/src ragas/tests docs --exclude ragas/src/ragas/_version.py
+          ruff check ragas/src docs ragas/tests --exclude ragas/src/ragas/_version.py
 
       - name: Type check
         run: make type
