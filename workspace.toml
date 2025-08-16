@@ -16,10 +16,14 @@ known-first-party = ["ragas"]
 force-single-line = false
 combine-as-imports = true
 
-[tool.black]
+[tool.ruff.format]
 line-length = 88
-target-version = ["py39"]
-include = '\.pyi?$'
+target-version = "py39"
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+docstring-code-format = false
+preview = false
 
 [tool.pyright]
 include = ["ragas/src/ragas"]
