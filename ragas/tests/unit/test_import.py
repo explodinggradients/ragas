@@ -19,8 +19,7 @@ def test_missing_haystack_llmwrapper(monkeypatch):
 
     # Test: Non-Haystack wrappers still work fine
     from langchain_openai.llms import OpenAI
-
-    from ragas.llms import LangchainLLMWrapper
+    from ragas.llms import FabrixLLMWrapper, LangchainLLMWrapper
 
     langchain_mocked_llm = MagicMock(spec=OpenAI)
     langchain_mocked_llm.model_name = "gpt-3.5-turbo-instruct"
@@ -28,6 +27,18 @@ def test_missing_haystack_llmwrapper(monkeypatch):
     langchain_wrapper = LangchainLLMWrapper(langchain_llm=langchain_mocked_llm)
 
     assert langchain_wrapper.langchain_llm.model_name == "gpt-3.5-turbo-instruct"  # type: ignore
+
+    # Test: FabrixLLMWrapper works fine
+    fabrix_wrapper = FabrixLLMWrapper(
+        base_url="http://localhost:8001",
+        llm_id=19,
+        x_openapi_token="test_token",
+        x_generative_ai_client="test_client"
+    )
+    assert fabrix_wrapper.base_url == "http://localhost:8001"
+    assert fabrix_wrapper.llm_id == 19
+    assert fabrix_wrapper.x_openapi_token == "test_token"
+    assert fabrix_wrapper.x_generative_ai_client == "test_client"
 
     # Test: Importing HaystackLLMWrapper fails
     with pytest.raises(ImportError, match="Haystack is not installed"):
@@ -56,8 +67,11 @@ def test_wrappers_with_missing_haystack(monkeypatch):
     # Test: Non-Haystack wrappers still work fine
     from langchain_openai.embeddings import OpenAIEmbeddings
     from llama_index.core.base.embeddings.base import BaseEmbedding
-
-    from ragas.embeddings import LangchainEmbeddingsWrapper, LlamaIndexEmbeddingsWrapper
+    from ragas.embeddings import (
+        BGEEmbeddingsWrapper,
+        LangchainEmbeddingsWrapper,
+        LlamaIndexEmbeddingsWrapper,
+    )
 
     langchain_mocked_embedding = MagicMock(spec=OpenAIEmbeddings)
     langchain_mocked_embedding.model = "text-embedding-ada-002"
@@ -72,6 +86,10 @@ def test_wrappers_with_missing_haystack(monkeypatch):
 
     assert langchain_wrapper.embeddings.model == "text-embedding-ada-002"  # type: ignore
     assert llama_index_wrapper.embeddings is llama_index_mocked_embedding
+
+    # Test: BGEEmbeddingsWrapper works fine
+    bge_wrapper = BGEEmbeddingsWrapper(model_name="BAAI/bge-base-en")
+    assert bge_wrapper.model_name == "BAAI/bge-base-en"
 
     # Test: Importing HaystackEmbeddingsWrapper fails
     with pytest.raises(ImportError, match="Haystack is not installed"):
@@ -110,6 +128,29 @@ def test_import_module():
         assert hasattr(ragas.metrics._aspect_critic, metric)
 
 
+def test_fabrix_and_bge_wrappers_import():
+    """Test that FabrixLLMWrapper and BGEEmbeddingsWrapper can be imported and instantiated."""
+    from ragas.embeddings import BGEEmbeddingsWrapper
+    from ragas.llms import FabrixLLMWrapper
+
+    # Test FabrixLLMWrapper import and instantiation
+    fabrix_wrapper = FabrixLLMWrapper(
+        base_url="http://localhost:8001",
+        llm_id=19,
+        x_openapi_token="test_token",
+        x_generative_ai_client="test_client"
+    )
+    
+    assert fabrix_wrapper.base_url == "http://localhost:8001"
+    assert fabrix_wrapper.llm_id == 19
+    assert fabrix_wrapper.x_openapi_token == "test_token"
+    assert fabrix_wrapper.x_generative_ai_client == "test_client"
+    
+    # Test BGEEmbeddingsWrapper import and instantiation
+    bge_wrapper = BGEEmbeddingsWrapper(model_name="BAAI/bge-base-en")
+    assert bge_wrapper.model_name == "BAAI/bge-base-en"
+
+
 def test_import_in_debug_mode():
     """
     if `RAGAS_DEBUG` is set to `True`, the module should be imported with
@@ -127,3 +168,64 @@ def test_import_in_debug_mode():
 
     del os.environ["RAGAS_DEBUG"]
     get_debug_mode.cache_clear()
+
+
+def test_missing_sentence_transformers(monkeypatch):
+    """Test that BGEEmbeddingsWrapper fails gracefully when sentence-transformers is not installed."""
+    real_import = builtins.__import__
+
+    def mocked_import(name, *args, **kwargs):
+        if name.startswith("sentence_transformers"):
+            raise ImportError("No module named 'sentence_transformers'")
+        return real_import(name, *args, **kwargs)
+
+    # Replace the built-in import function with our mock
+    monkeypatch.setattr(builtins, "__import__", mocked_import)
+
+    # Test: Other embeddings wrappers still work fine
+    from langchain_openai.embeddings import OpenAIEmbeddings
+    from ragas.embeddings import LangchainEmbeddingsWrapper
+
+    langchain_mocked_embedding = MagicMock(spec=OpenAIEmbeddings)
+    langchain_mocked_embedding.model = "text-embedding-ada-002"
+
+    langchain_wrapper = LangchainEmbeddingsWrapper(embeddings=langchain_mocked_embedding)
+    assert langchain_wrapper.embeddings.model == "text-embedding-ada-002"  # type: ignore
+
+    # Test: Importing BGEEmbeddingsWrapper fails
+    with pytest.raises(ImportError, match="sentence-transformers"):
+        from ragas.embeddings import BGEEmbeddingsWrapper
+        BGEEmbeddingsWrapper(model_name="BAAI/bge-base-en")
+
+
+def test_missing_requests(monkeypatch):
+    """Test that FabrixLLMWrapper fails gracefully when requests is not installed."""
+    real_import = builtins.__import__
+
+    def mocked_import(name, *args, **kwargs):
+        if name.startswith("requests"):
+            raise ImportError("No module named 'requests'")
+        return real_import(name, *args, **kwargs)
+
+    # Replace the built-in import function with our mock
+    monkeypatch.setattr(builtins, "__import__", mocked_import)
+
+    # Test: Other LLM wrappers still work fine
+    from langchain_openai.llms import OpenAI
+    from ragas.llms import LangchainLLMWrapper
+
+    langchain_mocked_llm = MagicMock(spec=OpenAI)
+    langchain_mocked_llm.model_name = "gpt-3.5-turbo-instruct"
+
+    langchain_wrapper = LangchainLLMWrapper(langchain_llm=langchain_mocked_llm)
+    assert langchain_wrapper.langchain_llm.model_name == "gpt-3.5-turbo-instruct"  # type: ignore
+
+    # Test: Importing FabrixLLMWrapper fails
+    with pytest.raises(ImportError, match="requests"):
+        from ragas.llms import FabrixLLMWrapper
+        FabrixLLMWrapper(
+            base_url="http://localhost:8001",
+            llm_id=19,
+            x_openapi_token="test_token",
+            x_generative_ai_client="test_client"
+        )
