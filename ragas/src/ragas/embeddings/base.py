@@ -14,7 +14,7 @@ from pydantic_core import CoreSchema, core_schema
 
 from ragas.cache import CacheInterface, cacher
 from ragas.run_config import RunConfig, add_async_retry, add_retry
-from .utils import run_async_in_current_loop, validate_texts
+from ragas.embeddings.utils import run_async_in_current_loop, validate_texts
 
 if t.TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import BaseEmbedding
