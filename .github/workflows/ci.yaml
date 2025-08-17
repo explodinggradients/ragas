@@ -118,7 +118,7 @@ jobs:
             # Use pytest-xdist to improve test run-time on Linux/macOS
             OPTS=(--dist loadfile -n auto)
           fi
-          
+
           # Run different test suites based on test type
           if [ "${{ matrix.test-type }}" = "full" ]; then
             # Full test suite with notebook tests

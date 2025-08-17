@@ -1,4 +1,5 @@
-from ragas.experimental import Dataset, experiment
+from ragas.experimental import Dataset
+from ragas import experiment
 from ragas.experimental.metrics.result import MetricResult
 from ragas.experimental.metrics.discrete import discrete_metric
 
