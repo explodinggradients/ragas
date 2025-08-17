@@ -17,7 +17,7 @@ Registry (dict-like) → Backend (implements BaseBackend) → Storage
 
 **1. Implement BaseBackend:**
 ```python
-from ragas.experimental.backends.base import BaseBackend
+from ragas.backends.base import BaseBackend
 
 class MyBackend(BaseBackend):
     def __init__(self, connection_string: str):
@@ -43,7 +43,7 @@ class MyBackend(BaseBackend):
 
 **3. Use:**
 ```python
-from ragas.experimental.backends import get_registry
+from ragas.backends import get_registry
 registry = get_registry()
 backend = registry["my_backend"](connection_string="...")
 ```
@@ -69,7 +69,7 @@ def list_experiments() -> List[str]
 
 **Dict-like interface:**
 ```python
-from ragas.experimental.backends import get_registry
+from ragas.backends import get_registry
 
 registry = get_registry()
 print(registry)  # {'local/csv': <class 'LocalCSVBackend'>, ...}
@@ -182,7 +182,7 @@ my-backend-plugin/
 **Install & use:**
 ```bash
 pip install my-backend-plugin
-python -c "from ragas.experimental.backends import get_registry; print(get_registry())"
+python -c "from ragas.backends import get_registry; print(get_registry())"
 ```
 
 ## Registry Internals
@@ -195,7 +195,7 @@ python -c "from ragas.experimental.backends import get_registry; print(get_regis
 
 **Debugging:**
 ```python
-from ragas.experimental.backends import get_registry
+from ragas.backends import get_registry
 registry = get_registry()
 
 # Check what's available
