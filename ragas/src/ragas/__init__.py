@@ -12,6 +12,9 @@ from ragas.simulation import (
     default_stopping_criteria,
 )
 
+# Backend imports
+from ragas import backends
+
 try:
     from ._version import version as __version__
 except ImportError:
@@ -28,13 +31,6 @@ __all__ = [
     "cacher",
     "CacheInterface",
     "DiskCacheBackend",
-    "Message",
-    "ConversationHistory",
-    "UserSimulator",
-    "UserSimulatorResponse",
-    "validate_agent_function",
-    "validate_stopping_criteria",
-    "default_stopping_criteria",
 ]
 
 
