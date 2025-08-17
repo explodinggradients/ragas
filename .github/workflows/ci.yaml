@@ -34,7 +34,6 @@ jobs:
               - .github/workflows/ci.yaml
               - codecov.yml
               - pyproject.toml
-              - requirements/test.txt
               - Makefile
             ragas:
               - *related
@@ -43,7 +42,6 @@ jobs:
               - "ragas/examples/**"
             docs:
               - *related
-              - requirements/docs-requirements.txt
               - "docs/**"
 
   unit_tests:
@@ -102,7 +100,7 @@ jobs:
           path: |
             ${{ steps.cache-dir.outputs.dir }}
             ~/.cache/uv
-          key: deps-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('ragas/pyproject.toml', 'requirements/*.txt') }}
+          key: deps-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('ragas/pyproject.toml') }}
           restore-keys: |
             deps-${{ runner.os }}-py${{ matrix.python-version }}-
             deps-${{ runner.os }}-py3.11-
@@ -164,7 +162,7 @@ jobs:
           path: |
             ${{ steps.cache-dir.outputs.dir }}
             ~/.cache/uv
-          key: deps-ubuntu-py3.11-codestyle-${{ hashFiles('ragas/pyproject.toml', 'requirements/*.txt') }}
+          key: deps-ubuntu-py3.11-codestyle-${{ hashFiles('ragas/pyproject.toml') }}
           restore-keys: |
             deps-ubuntu-py3.11-codestyle-
             deps-ubuntu-py3.11-
