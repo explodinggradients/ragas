@@ -1,5 +1,5 @@
 import json
-from typing import Any, List, Union, cast
+from typing import List, Union, cast
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
@@ -113,7 +113,7 @@ def test_unsupported_message_type():
 
     messages = cast(
         List[Union[HumanMessage, SystemMessage, AIMessage, ToolMessage]],
-        [CustomMessage()]
+        [CustomMessage()],
     )
 
     with pytest.raises(ValueError) as exc_info:
