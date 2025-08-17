@@ -2,6 +2,15 @@ from ragas.cache import CacheInterface, DiskCacheBackend, cacher
 from ragas.dataset_schema import EvaluationDataset, MultiTurnSample, SingleTurnSample
 from ragas.evaluation import evaluate
 from ragas.run_config import RunConfig
+from ragas.simulation import (
+    Message,
+    ConversationHistory,
+    UserSimulator,
+    UserSimulatorResponse,
+    validate_agent_function,
+    validate_stopping_criteria,
+    default_stopping_criteria,
+)
 
 # Backend imports
 from ragas import backends
