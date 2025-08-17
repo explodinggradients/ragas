@@ -16,6 +16,11 @@ from ragas.simulation import (
     validate_stopping_criteria,
 )
 
+# Backend imports
+from ragas import backends
+
+# Backend imports
+
 try:
     from ._version import version as __version__
 except ImportError:
