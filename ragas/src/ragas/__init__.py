@@ -6,6 +6,15 @@ from ragas.dataset_schema import EvaluationDataset, MultiTurnSample, SingleTurnS
 from ragas.evaluation import evaluate
 from ragas.experiment import Experiment, experiment, version_experiment
 from ragas.run_config import RunConfig
+from ragas.simulation import (
+    ConversationHistory,
+    Message,
+    UserSimulator,
+    UserSimulatorResponse,
+    default_stopping_criteria,
+    validate_agent_function,
+    validate_stopping_criteria,
+)
 
 try:
     from ._version import version as __version__
@@ -27,6 +36,13 @@ __all__ = [
     "Experiment",
     "experiment",
     "version_experiment",
+    "ConversationHistory",
+    "Message",
+    "UserSimulator",
+    "UserSimulatorResponse",
+    "default_stopping_criteria",
+    "validate_agent_function",
+    "validate_stopping_criteria",
 ]
 
 
