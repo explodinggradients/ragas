@@ -57,10 +57,10 @@ ai-frameworks = ["haystack-ai"]
 
 test = []
 [project.entry-points."ragas.backends"]
-"local/csv" = "ragas.experimental.backends.local_csv:LocalCSVBackend"
-"local/jsonl" = "ragas.experimental.backends.local_jsonl:LocalJSONLBackend"
-"inmemory" = "ragas.experimental.backends.inmemory:InMemoryBackend"
-"gdrive" = "ragas.experimental.backends.gdrive_backend:GDriveBackend"
+"local/csv" = "ragas.backends.local_csv:LocalCSVBackend"
+"local/jsonl" = "ragas.backends.local_jsonl:LocalJSONLBackend"
+"inmemory" = "ragas.backends.inmemory:InMemoryBackend"
+"gdrive" = "ragas.backends.gdrive_backend:GDriveBackend"
 
 [project.scripts]
 ragas-experimental = "ragas.experimental.cli:app"
