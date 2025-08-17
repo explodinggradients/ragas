@@ -16,8 +16,8 @@ from rich.panel import Panel
 from rich.spinner import Spinner
 from rich.live import Live
 
-# from .project.core import Project  # TODO: Project module not implemented yet
-from .utils import console
+# from ragas.experimental.project.core import Project  # TODO: Project module not implemented yet
+from ragas.utils import console
 
 
 app = typer.Typer(help="Ragas CLI for running LLM evaluations")
