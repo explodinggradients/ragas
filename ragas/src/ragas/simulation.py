@@ -7,7 +7,6 @@ for evaluating conversational AI systems.
 
 import inspect
 import json
-import re
 import typing as t
 
 from pydantic import BaseModel, Field
@@ -139,8 +138,6 @@ class UserSimulatorResponse(BaseModel):
     )
 
 
-
-
 class UserSimulator:
     """
     Simulates realistic user interactions for conversational AI evaluation.
@@ -179,7 +176,9 @@ class UserSimulator:
             self.prompt = prompt
             # Ensure conversation_history placeholder exists
             if "{conversation_history}" not in self.prompt.instruction:
-                self.prompt.instruction += "\n\nConversation History:\n{conversation_history}"
+                self.prompt.instruction += (
+                    "\n\nConversation History:\n{conversation_history}"
+                )
         self.llm = llm
         self.agent_function = agent_function
         self.stopping_criteria = stopping_criteria or self._default_stopping_criteria
@@ -234,14 +233,18 @@ class UserSimulator:
 
         # Generate the formatted prompt
         formatted_prompt = self.prompt.format(**prompt_vars)
-        
+
         # Add instructions for JSON format
-        json_prompt = formatted_prompt + "\n\nRespond in JSON format with 'content' (your response) and 'should_continue' (true/false)."
+        json_prompt = (
+            formatted_prompt
+            + "\n\nRespond in JSON format with 'content' (your response) and 'should_continue' (true/false)."
+        )
 
         # Generate response using LLM synchronously
         from langchain_core.prompt_values import StringPromptValue
+
         prompt_value = StringPromptValue(text=json_prompt)
-        
+
         # Use synchronous generate_text method
         llm_result = self.llm.generate_text(prompt_value, n=1)
         response_text = llm_result.generations[0][0].text.strip()
@@ -251,7 +254,7 @@ class UserSimulator:
             parsed_response = json.loads(response_text)
             return UserSimulatorResponse(
                 content=parsed_response.get("content", response_text),
-                should_continue=parsed_response.get("should_continue", True)
+                should_continue=parsed_response.get("should_continue", True),
             )
         except (json.JSONDecodeError, KeyError):
             # Fallback to treating the entire response as content
