@@ -2,11 +2,11 @@
 
 import typing as t
 
-from .base import BaseEmbedding
+from .base import RagasBaseEmbedding
 from .utils import run_sync_in_async, validate_texts
 
 
-class GoogleEmbeddings(BaseEmbedding):
+class GoogleEmbeddings(RagasBaseEmbedding):
     """Google embeddings using Vertex AI or Google AI (Gemini).
 
     Supports both Vertex AI and Google AI (Gemini) embedding models.
