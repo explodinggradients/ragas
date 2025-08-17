@@ -8,7 +8,6 @@ from ragas.run_config import RunConfig
 from ragas import backends
 
 # Backend imports
-from ragas import backends
 
 try:
     from ._version import version as __version__
