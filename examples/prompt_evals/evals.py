@@ -3,7 +3,7 @@ from ragas import experiment
 from ragas.experimental.metrics.result import MetricResult
 from ragas.experimental.metrics.discrete import discrete_metric
 
-from .prompt import run_prompt
+from prompt import run_prompt
 
 
 @discrete_metric(name="accuracy", allowed_values=["pass", "fail"])
