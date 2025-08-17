@@ -440,11 +440,11 @@ class TestUserSimulator:
         prompt = Prompt("Generate a response based on: {conversation_history}")
         mock_llm = Mock()
 
-        # Mock LLM to return a simple response
-        mock_response = UserSimulatorResponse(
-            content="User response", should_continue=False
-        )
-        mock_llm.generate.return_value = mock_response
+        # Mock LLM to return proper LLMResult structure
+        from langchain_core.outputs import Generation, LLMResult
+        mock_generation = Generation(text='{"content": "User response", "should_continue": false}')
+        mock_llm_result = LLMResult(generations=[[mock_generation]])
+        mock_llm.generate_text.return_value = mock_llm_result
 
         def mock_agent(query, history):
             return "Agent response"
