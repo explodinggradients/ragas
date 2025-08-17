@@ -17,7 +17,6 @@ from ragas.simulation import (
 )
 
 # Backend imports
-from ragas import backends
 
 # Backend imports
 
