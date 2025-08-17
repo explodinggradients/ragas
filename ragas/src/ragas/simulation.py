@@ -6,13 +6,25 @@ for evaluating conversational AI systems.
 """
 
 import inspect
+import json
 import re
 import typing as t
 
 from pydantic import BaseModel, Field
 
 from .llms.base import BaseRagasLLM
-from .prompt.base import Prompt
+
+
+class Prompt:
+    """Simple prompt class for formatting instructions with placeholders."""
+
+    def __init__(self, instruction: str):
+        """Initialize prompt with instruction template."""
+        self.instruction = instruction
+
+    def format(self, **kwargs) -> str:
+        """Format the prompt instruction with provided variables."""
+        return self.instruction.format(**kwargs)
 
 
 class Message(BaseModel):
@@ -127,6 +139,8 @@ class UserSimulatorResponse(BaseModel):
     )
 
 
+
+
 class UserSimulator:
     """
     Simulates realistic user interactions for conversational AI evaluation.
@@ -137,7 +151,7 @@ class UserSimulator:
 
     def __init__(
         self,
-        prompt: Prompt,
+        prompt: t.Union[Prompt, str],
         llm: BaseRagasLLM,
         agent_function: t.Callable,
         stopping_criteria: t.Optional[t.Callable[[ConversationHistory], bool]] = None,
@@ -148,20 +162,24 @@ class UserSimulator:
         Initialize the UserSimulator.
 
         Args:
-            prompt: The prompt template for generating user responses
+            prompt: The prompt template for generating user responses (Prompt or string)
             llm: The language model to use for generating responses
             agent_function: The agent function to interact with during simulation
             stopping_criteria: Optional function to determine when to stop the conversation
             max_turns: Maximum number of conversation turns (default: 10)
             **kwargs: Additional parameters for customization
         """
-        # Check if conversation_history is already in the prompt, if not add it
-        placeholders = re.findall(r"\{(\w+)\}", prompt.instruction)
-        if "conversation_history" not in placeholders:
-            # Add conversation_history to the prompt instruction
-            prompt.instruction += "\n\nConversation History:\n{conversation_history}"
-
-        self.prompt = prompt
+        # Handle both string prompts and Prompt objects
+        if isinstance(prompt, str):
+            # Create a Prompt object from string
+            if "{conversation_history}" not in prompt:
+                prompt += "\n\nConversation History:\n{conversation_history}"
+            self.prompt = Prompt(prompt)
+        else:
+            self.prompt = prompt
+            # Ensure conversation_history placeholder exists
+            if "{conversation_history}" not in self.prompt.instruction:
+                self.prompt.instruction += "\n\nConversation History:\n{conversation_history}"
         self.llm = llm
         self.agent_function = agent_function
         self.stopping_criteria = stopping_criteria or self._default_stopping_criteria
@@ -214,13 +232,30 @@ class UserSimulator:
             ),
         }
 
-        # Generate the prompt
+        # Generate the formatted prompt
         formatted_prompt = self.prompt.format(**prompt_vars)
+        
+        # Add instructions for JSON format
+        json_prompt = formatted_prompt + "\n\nRespond in JSON format with 'content' (your response) and 'should_continue' (true/false)."
 
-        # Generate response using LLM
-        response = self.llm.generate(formatted_prompt, UserSimulatorResponse)
+        # Generate response using LLM synchronously
+        from langchain_core.prompt_values import StringPromptValue
+        prompt_value = StringPromptValue(text=json_prompt)
+        
+        # Use synchronous generate_text method
+        llm_result = self.llm.generate_text(prompt_value, n=1)
+        response_text = llm_result.generations[0][0].text.strip()
 
-        return response
+        # Try to parse as JSON, fallback to simple text response
+        try:
+            parsed_response = json.loads(response_text)
+            return UserSimulatorResponse(
+                content=parsed_response.get("content", response_text),
+                should_continue=parsed_response.get("should_continue", True)
+            )
+        except (json.JSONDecodeError, KeyError):
+            # Fallback to treating the entire response as content
+            return UserSimulatorResponse(content=response_text, should_continue=True)
 
     def _format_conversation_for_prompt(
         self, conversation_history: ConversationHistory
