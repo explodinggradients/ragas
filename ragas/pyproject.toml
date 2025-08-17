@@ -96,7 +96,6 @@ markers = [
 [dependency-groups]
 dev = [
     "ruff",
-    "black[jupyter]",
     "pyright>=1.1.403",
     "pre-commit>=4.3.0",
     "pytest",

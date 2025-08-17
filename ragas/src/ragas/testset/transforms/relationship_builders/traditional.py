@@ -78,13 +78,11 @@ class OverlapScoreBuilder(RelationshipBuilder):
         }
 
     def _overlap_score(self, overlaps: t.List[bool]) -> float:
-
         return sum(overlaps) / len(overlaps) if len(overlaps) > 0 else 0.0
 
     def _get_noisy_items(
         self, nodes: t.List[Node], property_name: str, percent_cut_off: float = 0.05
     ) -> t.List[str]:
-
         all_items = []
         for node in nodes:
             items = node.get_property(property_name)
