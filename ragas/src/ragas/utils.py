@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 import tiktoken
 from datasets import Dataset
+from rich.console import Console
 
 if t.TYPE_CHECKING:
     from ragas.metrics.base import Metric
@@ -307,6 +308,9 @@ class _ContextualFormatter(logging.Formatter):
 
 
 base_logger = set_logging_level()
+
+# Rich console instance for CLI and other formatting needs
+console = Console()
 
 
 class MemorableNames:
