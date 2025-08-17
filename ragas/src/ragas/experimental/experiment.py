@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 from pydantic import BaseModel
 
-from .backends.base import BaseBackend
+from ragas.backends.base import BaseBackend
 from .dataset import Dataset, DataTable
 from .utils import memorable_names, find_git_root
 

@@ -162,7 +162,7 @@ The experimental features are now integrated into the main ragas package:
 To use experimental features:
 ```python
 from ragas.experimental import Dataset, experiment
-from ragas.experimental.backends import get_registry
+from ragas.backends import get_registry
 ```
 
 ## Debugging Logs
