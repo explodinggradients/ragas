@@ -442,7 +442,10 @@ class TestUserSimulator:
 
         # Mock LLM to return proper LLMResult structure
         from langchain_core.outputs import Generation, LLMResult
-        mock_generation = Generation(text='{"content": "User response", "should_continue": false}')
+
+        mock_generation = Generation(
+            text='{"content": "User response", "should_continue": false}'
+        )
         mock_llm_result = LLMResult(generations=[[mock_generation]])
         mock_llm.generate_text.return_value = mock_llm_result
 
@@ -473,7 +476,10 @@ class TestUserSimulator:
 
         # Mock LLM to return proper LLMResult structure
         from langchain_core.outputs import Generation, LLMResult
-        mock_generation = Generation(text='{"content": "User response", "should_continue": false}')
+
+        mock_generation = Generation(
+            text='{"content": "User response", "should_continue": false}'
+        )
         mock_llm_result = LLMResult(generations=[[mock_generation]])
         mock_llm.generate_text.return_value = mock_llm_result
 
@@ -549,7 +555,10 @@ class TestUserSimulator:
 
         # Mock LLM to return proper LLMResult structure
         from langchain_core.outputs import Generation, LLMResult
-        mock_generation = Generation(text='{"content": "User response", "should_continue": false}')
+
+        mock_generation = Generation(
+            text='{"content": "User response", "should_continue": false}'
+        )
         mock_llm_result = LLMResult(generations=[[mock_generation]])
         mock_llm.generate_text.return_value = mock_llm_result
 
