@@ -49,7 +49,6 @@ class EchoLLM(BaseRagasLLM):
 
 
 class EchoEmbedding(BaseRagasEmbeddings):
-
     async def aembed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
         return [np.random.rand(768).tolist() for _ in texts]
 

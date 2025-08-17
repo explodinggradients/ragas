@@ -22,7 +22,8 @@ class Loss(ABC):
         Define how Pydantic generates a schema for BaseRagasEmbeddings.
         """
         return core_schema.no_info_after_validator_function(
-            cls, core_schema.is_instance_schema(cls)  # The validator function
+            cls,
+            core_schema.is_instance_schema(cls),  # The validator function
         )
 
 
@@ -34,7 +35,6 @@ class MSELoss(Loss):
     reduction: t.Literal["mean", "sum"] = "mean"
 
     def __call__(self, predicted: t.List[float], actual: t.List[float]) -> float:
-
         errors = [(p - a) ** 2 for p, a in zip(predicted, actual)]
         if self.reduction == "mean":
             return sum(errors) / len(errors)

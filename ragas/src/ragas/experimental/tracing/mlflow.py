@@ -40,12 +40,10 @@ else:
 
 
 class MLflowTrace:
-
     def __init__(self, trace: "Trace"):
         self.trace = trace
 
     def get_url(self) -> str:
-
         server_url = os.getenv("MLFLOW_HOST")
         if not server_url:
             raise ValueError("MLFLOW_HOST environment variable is not set.")
@@ -64,12 +62,10 @@ class MLflowTrace:
         return trace_url
 
     def get_filter(self, span_name: str) -> t.List["Span"]:
-
         return self.trace.search_spans(name=span_name)
 
 
 async def sync_trace() -> MLflowTrace:
-
     trace_id = get_last_active_trace_id()
     if trace_id is None:
         raise ValueError("No active trace found.")

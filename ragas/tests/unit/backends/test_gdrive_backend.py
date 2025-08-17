@@ -188,9 +188,7 @@ class TestGDriveBackendOperations:
                 ["Item 2", "20", "Second item"],
             ]
         }
-        backend.sheets_service.spreadsheets().values().get.return_value.execute.return_value = (
-            mock_data
-        )
+        backend.sheets_service.spreadsheets().values().get.return_value.execute.return_value = mock_data
 
         result = backend.load_dataset("test_dataset")
 
@@ -228,12 +226,8 @@ class TestGDriveBackendOperations:
         }
 
         # Mock sheets operations
-        backend.sheets_service.spreadsheets().values().clear.return_value.execute.return_value = (
-            {}
-        )
-        backend.sheets_service.spreadsheets().values().update.return_value.execute.return_value = (
-            {}
-        )
+        backend.sheets_service.spreadsheets().values().clear.return_value.execute.return_value = {}
+        backend.sheets_service.spreadsheets().values().update.return_value.execute.return_value = {}
 
         test_data = [
             {"name": "Test Item", "value": 42, "description": "Test description"}
@@ -253,9 +247,7 @@ class TestGDriveBackendOperations:
         backend.drive_service.files().list.return_value.execute.return_value = {
             "files": [{"id": "test_spreadsheet"}]
         }
-        backend.sheets_service.spreadsheets().values().clear.return_value.execute.return_value = (
-            {}
-        )
+        backend.sheets_service.spreadsheets().values().clear.return_value.execute.return_value = {}
 
         # Should clear the spreadsheet
         backend.save_dataset("empty_dataset", [])
@@ -315,9 +307,7 @@ class TestGDriveBackendOperations:
         backend.sheets_service.spreadsheets().values().update.return_value.execute = (
             mock_update
         )
-        backend.sheets_service.spreadsheets().values().clear.return_value.execute.return_value = (
-            {}
-        )
+        backend.sheets_service.spreadsheets().values().clear.return_value.execute.return_value = {}
 
         test_data = [
             {
