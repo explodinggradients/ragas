@@ -22,6 +22,7 @@ __all__ = [
     "cacher",
     "CacheInterface",
     "DiskCacheBackend",
+    "backends",
 ]
 
 
