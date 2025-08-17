@@ -17,15 +17,17 @@ dependencies = [
     "langchain-community",
     "langchain_openai",
     
+    # CLI dependencies
+    "typer",
+    "rich",
+    
     # LLM providers
     "openai>=1.0.0",
     
-    # CLI and experimental features
+    # Experimental features
     "tqdm",
     "instructor",
     "gitpython",
-    "typer",
-    "rich",
     "pillow>=10.4.0",
 ]
 dynamic = ["version", "readme"]
@@ -63,7 +65,7 @@ test = []
 "gdrive" = "ragas.backends.gdrive_backend:GDriveBackend"
 
 [project.scripts]
-ragas-experimental = "ragas.experimental.cli:app"
+ragas = "ragas.cli:app"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
