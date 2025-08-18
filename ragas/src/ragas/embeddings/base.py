@@ -127,6 +127,42 @@ class BaseRagasEmbedding(ABC):
         """
         return run_async_in_current_loop(coro)
 
+    @classmethod
+    def _from_factory(
+        cls,
+        model: t.Optional[str] = None,
+        client: t.Optional[t.Any] = None,
+        **kwargs: t.Any,
+    ) -> "BaseRagasEmbedding":
+        """Create an embedding instance from factory parameters with validation.
+
+        This base implementation handles common validation patterns. Individual
+        providers can override this for custom initialization logic.
+        """
+        # Validate client requirement
+        if getattr(cls, "REQUIRES_CLIENT", False) and not client:
+            provider_name = getattr(cls, "PROVIDER_NAME", cls.__name__)
+            raise ValueError(f"{provider_name} provider requires a client instance")
+
+        # Validate model requirement
+        if getattr(cls, "REQUIRES_MODEL", False) and not model:
+            provider_name = getattr(cls, "PROVIDER_NAME", cls.__name__)
+            raise ValueError(f"{provider_name} provider requires a model name")
+
+        # Use default model if available and not provided
+        if not model:
+            model = getattr(cls, "DEFAULT_MODEL", None)
+
+        # Construct instance - let providers handle their own parameters
+        # Build constructor arguments based on provider requirements
+        init_kwargs = kwargs.copy()
+        if model is not None:
+            init_kwargs["model"] = model
+        if getattr(cls, "REQUIRES_CLIENT", False) and client is not None:
+            init_kwargs["client"] = client
+
+        return cls(**init_kwargs)
+
 
 class BaseRagasEmbeddings(Embeddings, ABC):
     """
@@ -533,25 +569,44 @@ def _is_legacy_embedding_call(
     provider: str, model: t.Optional[str], client: t.Optional[t.Any], interface: str
 ) -> bool:
     """Detect if this is a legacy embedding factory call for backward compatibility."""
-    if interface == "legacy":
-        return True
-    if interface == "modern":
-        return False
-    # Auto-detection logic
-    # Legacy if: no client provided AND provider looks like a model name OR provider is "openai" with no client
-    if client is not None:
-        return False
-    if _looks_like_model_name(provider):
-        return True
-    if provider == "openai" and client is None:
-        return True
-    return False
+    # Explicit interface choice takes precedence
+    if interface in ("legacy", "modern"):
+        return interface == "legacy"
+
+    # Auto-detection: legacy if no client AND (looks like model name OR is openai)
+    return client is None and (_looks_like_model_name(provider) or provider == "openai")
+
+
+# Model name patterns for backward compatibility detection
+_LEGACY_MODEL_PATTERNS = {"text-embedding", "ada", "davinci", "gpt", "curie", "babbage"}
 
 
 def _looks_like_model_name(name: str) -> bool:
     """Check if a string looks like an OpenAI model name rather than a provider name."""
-    model_indicators = ["text-embedding", "ada", "davinci", "gpt"]
-    return any(indicator in name.lower() for indicator in model_indicators)
+    return any(pattern in name.lower() for pattern in _LEGACY_MODEL_PATTERNS)
+
+
+def _get_provider_registry() -> t.Dict[str, t.Type[BaseRagasEmbedding]]:
+    """Auto-discover available provider classes and build a registry.
+
+    Returns:
+        Dictionary mapping provider names to their classes.
+    """
+    from .openai_provider import OpenAIEmbeddings
+    from .google_provider import GoogleEmbeddings
+    from .litellm_provider import LiteLLMEmbeddings
+    from .huggingface_provider import HuggingFaceEmbeddings
+
+    providers = [
+        OpenAIEmbeddings,
+        GoogleEmbeddings,
+        LiteLLMEmbeddings,
+        HuggingFaceEmbeddings,
+    ]
+
+    return {
+        cls.PROVIDER_NAME: cls for cls in providers if hasattr(cls, "PROVIDER_NAME")
+    }
 
 
 def _create_modern_embedding(
@@ -564,43 +619,18 @@ def _create_modern_embedding(
         provider = provider_name
         model = model_name
 
-    provider_lower = provider.lower()
+    # Get provider registry and find the class
+    registry = _get_provider_registry()
+    provider_cls = registry.get(provider.lower())
 
-    if provider_lower == "openai":
-        if not client:
-            raise ValueError("OpenAI provider requires a client instance")
-        from .openai_provider import OpenAIEmbeddings
-
-        return OpenAIEmbeddings(client=client, model=model or "text-embedding-3-small")
-
-    elif provider_lower == "google":
-        if not client:
-            raise ValueError("Google provider requires a client instance")
-        from .google_provider import GoogleEmbeddings
-
-        return GoogleEmbeddings(
-            client=client, model=model or "text-embedding-004", **kwargs
-        )
-
-    elif provider_lower == "litellm":
-        if not model:
-            raise ValueError("LiteLLM provider requires a model name")
-        from .litellm_provider import LiteLLMEmbeddings
-
-        return LiteLLMEmbeddings(model=model, **kwargs)
-
-    elif provider_lower == "huggingface":
-        if not model:
-            raise ValueError("HuggingFace provider requires a model name")
-        from .huggingface_provider import HuggingFaceEmbeddings
-
-        return HuggingFaceEmbeddings(model=model, **kwargs)
-
-    else:
+    if not provider_cls:
+        available = ", ".join(registry.keys())
         raise ValueError(
-            f"Unsupported provider: {provider}. "
-            f"Supported providers: openai, google, litellm, huggingface"
+            f"Unsupported provider: {provider}. Supported providers: {available}"
         )
+
+    # Let the provider class validate and construct itself
+    return provider_cls._from_factory(model=model, client=client, **kwargs)
 
 
 def modern_embedding_factory(

@@ -14,6 +14,10 @@ class GoogleEmbeddings(BaseRagasEmbedding):
     For Google AI, requires google-generativeai package.
     """
 
+    PROVIDER_NAME = "google"
+    REQUIRES_CLIENT = True
+    DEFAULT_MODEL = "text-embedding-004"
+
     def __init__(
         self,
         client: t.Any,

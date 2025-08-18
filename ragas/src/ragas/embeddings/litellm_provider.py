@@ -13,6 +13,9 @@ class LiteLLMEmbeddings(BaseRagasEmbedding):
     Provides intelligent batching and provider-specific optimizations.
     """
 
+    PROVIDER_NAME = "litellm"
+    REQUIRES_MODEL = True
+
     def __init__(
         self,
         model: str,

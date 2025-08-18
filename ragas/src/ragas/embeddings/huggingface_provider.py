@@ -13,6 +13,9 @@ class HuggingFaceEmbeddings(BaseRagasEmbedding):
     hosted models. Provides efficient batch processing and caching.
     """
 
+    PROVIDER_NAME = "huggingface"
+    REQUIRES_MODEL = True
+
     def __init__(
         self,
         model: str,

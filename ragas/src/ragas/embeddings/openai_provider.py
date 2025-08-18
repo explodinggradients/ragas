@@ -11,6 +11,10 @@ class OpenAIEmbeddings(BaseRagasEmbedding):
     Provides optimized batch processing for better performance.
     """
 
+    PROVIDER_NAME = "openai"
+    REQUIRES_CLIENT = True
+    DEFAULT_MODEL = "text-embedding-3-small"
+
     def __init__(self, client: t.Any, model: str = "text-embedding-3-small"):
         self.client = client
         self.model = model
