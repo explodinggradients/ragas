@@ -2,19 +2,17 @@
 
 __all__ = ["Experiment", "experiment", "version_experiment"]
 
-import typing as t
-
 import asyncio
+import typing as t
 from pathlib import Path
 
 import git
+from pydantic import BaseModel
 from tqdm import tqdm
 
-from pydantic import BaseModel
-
-from .backends.base import BaseBackend
-from .dataset import Dataset, DataTable
-from .utils import memorable_names, find_git_root
+from ragas.backends.base import BaseBackend
+from ragas.experimental.dataset import Dataset, DataTable
+from ragas.utils import find_git_root, memorable_names
 
 
 class Experiment(DataTable):

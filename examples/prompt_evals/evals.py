@@ -1,8 +1,9 @@
-from ragas.experimental import Dataset, experiment
+from ragas.experimental import Dataset
+from ragas import experiment
 from ragas.experimental.metrics.result import MetricResult
 from ragas.experimental.metrics.discrete import discrete_metric
 
-from .prompt import run_prompt
+from prompt import run_prompt
 
 
 @discrete_metric(name="accuracy", allowed_values=["pass", "fail"])
@@ -17,7 +18,6 @@ def my_metric(prediction: str, actual: str):
 
 @experiment()
 async def run_experiment(row):
-
     response = run_prompt(row["text"])
     score = my_metric.score(prediction=response, actual=row["label"])
 
@@ -71,7 +71,6 @@ async def main():
 
 
 if __name__ == "__main__":
-
     import asyncio
 
     asyncio.run(main())

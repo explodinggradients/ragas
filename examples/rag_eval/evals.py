@@ -1,9 +1,10 @@
-from ragas.experimental import Dataset, experiment
+from ragas.experimental import Dataset
+from ragas import experiment
 from ragas.experimental.metrics import DiscreteMetric
 from openai import OpenAI
 from ragas.experimental.llms import llm_factory
 import os
-from .rag import default_rag_client
+from rag import default_rag_client
 
 openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 rag_client = default_rag_client(llm_client=openai_client)
@@ -11,7 +12,6 @@ llm = llm_factory("openai", "gpt-4o", openai_client)
 
 
 def load_dataset():
-
     dataset = Dataset(
         name="test_dataset",
         backend="local/csv",

@@ -7,8 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Ragas is an evaluation toolkit for Large Language Model (LLM) applications. It provides objective metrics for evaluating LLM applications, test data generation capabilities, and integrations with popular LLM frameworks.
 
 The repository contains:
+
 1. **Ragas Library** - The main evaluation toolkit including experimental features (in `/ragas` directory)
-   - Core evaluation metrics and test generation 
+   - Core evaluation metrics and test generation
    - Experimental features available at `ragas.experimental`
 
 ## Development Environment Setup
@@ -139,6 +140,7 @@ The repository has the following structure:
 The Ragas core library provides metrics, test data generation and evaluation functionality for LLM applications:
 
 1. **Metrics** - Various metrics for evaluating LLM applications including:
+
    - AspectCritic
    - AnswerCorrectness
    - ContextPrecision
@@ -156,13 +158,15 @@ The experimental features are now integrated into the main ragas package:
 
 1. **Experimental features** are available at `ragas.experimental`
 2. **Dataset and Experiment management** - Enhanced data handling for experiments
-3. **Advanced metrics** - Extended metric capabilities  
+3. **Advanced metrics** - Extended metric capabilities
 4. **Backend support** - Multiple storage backends (CSV, JSONL, Google Drive, in-memory)
 
 To use experimental features:
+
 ```python
-from ragas.experimental import Dataset, experiment
-from ragas.experimental.backends import get_registry
+from ragas.experimental import Dataset
+from ragas import experiment
+from ragas.backends import get_registry
 ```
 
 ## Debugging Logs
@@ -190,5 +194,5 @@ analytics_logger.addHandler(console_handler)
 
 ## Memories
 
-- whenever you create such docs put in in /_experiments because that is gitignored and you can use it as a scratchpad or tmp directory for storing these
+- whenever you create such docs put in in /\_experiments because that is gitignored and you can use it as a scratchpad or tmp directory for storing these
 - always use uv to run python and python related commandline tools like isort, ruff, pyright ect. This is because we are using uv to manage the .venv and dependencies.

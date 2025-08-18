@@ -19,7 +19,7 @@ except ImportError:
             super().__init__()
 
 
-from ragas.experimental.backends.gdrive_backend import GDriveBackend, GDRIVE_AVAILABLE
+from ragas.backends.gdrive_backend import GDriveBackend, GDRIVE_AVAILABLE
 
 
 class SampleModel(BaseModel):
@@ -49,8 +49,8 @@ class TestGDriveBackendAvailability:
 class TestGDriveBackendInitialization:
     """Test GDriveBackend initialization and authentication setup."""
 
-    @patch("ragas.experimental.backends.gdrive_backend.build")
-    @patch("ragas.experimental.backends.gdrive_backend.Credentials")
+    @patch("ragas.backends.gdrive_backend.build")
+    @patch("ragas.backends.gdrive_backend.Credentials")
     @patch("os.path.exists")
     def test_service_account_auth_success(
         self, mock_exists, mock_credentials, mock_build
@@ -87,7 +87,7 @@ class TestGDriveBackendInitialization:
 
         mock_credentials.from_service_account_file.assert_called_once()
 
-    @patch("ragas.experimental.backends.gdrive_backend.build")
+    @patch("ragas.backends.gdrive_backend.build")
     @patch("os.path.exists")
     def test_auth_failure_no_credentials(self, mock_exists, mock_build):
         """Test authentication failure when no credentials are provided."""
@@ -96,8 +96,8 @@ class TestGDriveBackendInitialization:
         with pytest.raises(ValueError, match="No valid authentication method found"):
             GDriveBackend(folder_id="test_folder")
 
-    @patch("ragas.experimental.backends.gdrive_backend.build")
-    @patch("ragas.experimental.backends.gdrive_backend.Credentials")
+    @patch("ragas.backends.gdrive_backend.build")
+    @patch("ragas.backends.gdrive_backend.Credentials")
     @patch("os.path.exists")
     def test_invalid_folder_id(self, mock_exists, mock_credentials, mock_build):
         """Test behavior with invalid folder ID."""
@@ -130,8 +130,8 @@ class TestGDriveBackendOperations:
 
     def _create_mock_backend(self):
         """Helper to create a mocked GDriveBackend instance."""
-        with patch("ragas.experimental.backends.gdrive_backend.build"):
-            with patch("ragas.experimental.backends.gdrive_backend.Credentials"):
+        with patch("ragas.backends.gdrive_backend.build"):
+            with patch("ragas.backends.gdrive_backend.Credentials"):
                 with patch("os.path.exists", return_value=True):
                     backend = GDriveBackend(
                         folder_id="test_folder", service_account_path="/fake/path.json"
@@ -188,9 +188,7 @@ class TestGDriveBackendOperations:
                 ["Item 2", "20", "Second item"],
             ]
         }
-        backend.sheets_service.spreadsheets().values().get.return_value.execute.return_value = (
-            mock_data
-        )
+        backend.sheets_service.spreadsheets().values().get.return_value.execute.return_value = mock_data
 
         result = backend.load_dataset("test_dataset")
 
@@ -228,12 +226,8 @@ class TestGDriveBackendOperations:
         }
 
         # Mock sheets operations
-        backend.sheets_service.spreadsheets().values().clear.return_value.execute.return_value = (
-            {}
-        )
-        backend.sheets_service.spreadsheets().values().update.return_value.execute.return_value = (
-            {}
-        )
+        backend.sheets_service.spreadsheets().values().clear.return_value.execute.return_value = {}
+        backend.sheets_service.spreadsheets().values().update.return_value.execute.return_value = {}
 
         test_data = [
             {"name": "Test Item", "value": 42, "description": "Test description"}
@@ -253,9 +247,7 @@ class TestGDriveBackendOperations:
         backend.drive_service.files().list.return_value.execute.return_value = {
             "files": [{"id": "test_spreadsheet"}]
         }
-        backend.sheets_service.spreadsheets().values().clear.return_value.execute.return_value = (
-            {}
-        )
+        backend.sheets_service.spreadsheets().values().clear.return_value.execute.return_value = {}
 
         # Should clear the spreadsheet
         backend.save_dataset("empty_dataset", [])
@@ -315,9 +307,7 @@ class TestGDriveBackendOperations:
         backend.sheets_service.spreadsheets().values().update.return_value.execute = (
             mock_update
         )
-        backend.sheets_service.spreadsheets().values().clear.return_value.execute.return_value = (
-            {}
-        )
+        backend.sheets_service.spreadsheets().values().clear.return_value.execute.return_value = {}
 
         test_data = [
             {
@@ -350,7 +340,7 @@ class TestGDriveBackendIntegration:
 
     def test_backend_implements_basebackend(self):
         """Test that GDriveBackend properly implements BaseBackend interface."""
-        from ragas.experimental.backends.base import BaseBackend
+        from ragas.backends.base import BaseBackend
 
         assert issubclass(GDriveBackend, BaseBackend)
 
@@ -371,9 +361,7 @@ class TestGDriveBackendIntegration:
     def test_error_without_dependencies(self):
         """Test error handling when Google Drive dependencies are missing."""
         # This test simulates the case where dependencies are not installed
-        with patch(
-            "ragas.experimental.backends.gdrive_backend.GDRIVE_AVAILABLE", False
-        ):
+        with patch("ragas.backends.gdrive_backend.GDRIVE_AVAILABLE", False):
             # Should raise ImportError when trying to create backend
             with pytest.raises(
                 ImportError,

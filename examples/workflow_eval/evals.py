@@ -1,9 +1,10 @@
 import os
 from openai import OpenAI
-from ragas.experimental import Dataset, experiment
+from ragas.experimental import Dataset
+from ragas import experiment
 from ragas.experimental.metrics import DiscreteMetric
 from ragas.experimental.llms import llm_factory
-from .workflow import default_workflow_client
+from workflow import default_workflow_client
 
 
 workflow_client = default_workflow_client()
@@ -11,7 +12,6 @@ llm = llm_factory("openai", "gpt-4o", OpenAI(api_key=os.environ.get("OPENAI_API_
 
 
 def load_dataset():
-
     dataset_dict = [
         {
             "email": "Hi, I'm getting error code XYZ-123 when using version 2.1.4 of your software. Please help!",

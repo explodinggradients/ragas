@@ -8,8 +8,8 @@ import pytest
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 
-from ragas.experimental.backends.inmemory import InMemoryBackend
-from ragas.experimental.backends import get_registry
+from ragas.backends.inmemory import InMemoryBackend
+from ragas.backends import get_registry
 from ragas.experimental.dataset import Dataset
 
 
@@ -524,7 +524,7 @@ class TestInMemoryBackendIntegration:
         Then: The returned train and test datasets should use inmemory backend
         """
         # Create Dataset with any backend (let's use a different backend)
-        from ragas.experimental.backends.local_csv import LocalCSVBackend
+        from ragas.backends.local_csv import LocalCSVBackend
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -564,7 +564,7 @@ class TestInMemoryBackendIntegration:
         Then: Original backend is preserved and data integrity is maintained
         """
         # Test with CSV backend - preserves original backend
-        from ragas.experimental.backends.local_csv import LocalCSVBackend
+        from ragas.backends.local_csv import LocalCSVBackend
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp_dir:
