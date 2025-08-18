@@ -20,6 +20,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!webview-poc/ragas-webview/src/lib/
 lib64/
 parts/
 sdist/
