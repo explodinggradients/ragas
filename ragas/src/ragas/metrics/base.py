@@ -435,7 +435,9 @@ class MetricWithEmbeddings(Metric):
             raise ValueError(
                 f"Metric '{self.name}' has no valid embeddings provided (self.embeddings is None). Please initantiate a the metric with an embeddings to run."  # noqa
             )
-        self.embeddings.set_run_config(run_config)
+        # Only legacy BaseRagasEmbeddings has set_run_config method
+        if hasattr(self.embeddings, "set_run_config"):
+            self.embeddings.set_run_config(run_config)  # type: ignore[attr-defined]
 
 
 class SingleTurnMetric(Metric):

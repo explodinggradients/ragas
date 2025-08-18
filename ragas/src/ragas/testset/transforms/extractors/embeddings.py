@@ -44,8 +44,8 @@ class EmbeddingExtractor(Extractor):
         # Handle both modern (BaseRagasEmbedding) and legacy (BaseRagasEmbeddings) interfaces
         if hasattr(self.embedding_model, "aembed_text"):
             # Modern interface (BaseRagasEmbedding)
-            embedding = await self.embedding_model.aembed_text(text)
+            embedding = await self.embedding_model.aembed_text(text)  # type: ignore[attr-defined]
         else:
             # Legacy interface (BaseRagasEmbeddings)
-            embedding = await self.embedding_model.embed_text(text)
+            embedding = await self.embedding_model.embed_text(text)  # type: ignore[misc]
         return self.property_name, embedding
