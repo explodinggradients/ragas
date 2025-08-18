@@ -13,28 +13,28 @@ def test_debug_base_module():
     """Debug what's available in base module."""
     import ragas.embeddings.base as base_module
 
-    # Check if RagasBaseEmbedding is in the module
-    has_class = hasattr(base_module, "RagasBaseEmbedding")
-    print(f"base_module has RagasBaseEmbedding: {has_class}")
+    # Check if BaseRagasEmbedding is in the module
+    has_class = hasattr(base_module, "BaseRagasEmbedding")
+    print(f"base_module has BaseRagasEmbedding: {has_class}")
 
     if has_class:
-        cls = getattr(base_module, "RagasBaseEmbedding")
-        print(f"RagasBaseEmbedding type: {type(cls)}")
+        cls = getattr(base_module, "BaseRagasEmbedding")
+        print(f"BaseRagasEmbedding type: {type(cls)}")
         assert cls is not None
     else:
         # List what is available
         attrs = [attr for attr in dir(base_module) if not attr.startswith("_")]
         print(f"Available attributes: {attrs}")
-        raise AssertionError("RagasBaseEmbedding not found in base module")
+        raise AssertionError("BaseRagasEmbedding not found in base module")
 
 
 def test_direct_import_from_base():
     """Test direct import from base module."""
     try:
-        from ragas.embeddings.base import RagasBaseEmbedding
+        from ragas.embeddings.base import BaseRagasEmbedding
 
-        print(f"Successfully imported RagasBaseEmbedding: {RagasBaseEmbedding}")
-        assert RagasBaseEmbedding is not None
+        print(f"Successfully imported BaseRagasEmbedding: {BaseRagasEmbedding}")
+        assert BaseRagasEmbedding is not None
     except ImportError as e:
         print(f"Import error: {e}")
         # Try to import the whole module first
@@ -42,8 +42,8 @@ def test_direct_import_from_base():
 
         print(f"Module imported successfully: {ragas.embeddings.base}")
         # Now try to get the class
-        if hasattr(ragas.embeddings.base, "RagasBaseEmbedding"):
-            cls = getattr(ragas.embeddings.base, "RagasBaseEmbedding")
+        if hasattr(ragas.embeddings.base, "BaseRagasEmbedding"):
+            cls = getattr(ragas.embeddings.base, "BaseRagasEmbedding")
             print(f"Found class via getattr: {cls}")
         else:
             print("Class not found via getattr either")
@@ -67,3 +67,12 @@ def test_main_module_import():
         ]
         print(f"Ragas/Base related attributes in main module: {attrs}")
         raise
+
+
+def test_backward_compatibility_alias():
+    """Test that RagasBaseEmbedding works as an alias to BaseRagasEmbedding."""
+    from ragas.embeddings import BaseRagasEmbedding, RagasBaseEmbedding
+
+    # They should be the same class
+    assert RagasBaseEmbedding is BaseRagasEmbedding
+    print("Backward compatibility confirmed: RagasBaseEmbedding is BaseRagasEmbedding")

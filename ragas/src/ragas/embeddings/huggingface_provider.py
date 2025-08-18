@@ -2,11 +2,11 @@
 
 import typing as t
 
-from .base import RagasBaseEmbedding
+from .base import BaseRagasEmbedding
 from .utils import validate_texts, batch_texts, run_sync_in_async
 
 
-class HuggingFaceEmbeddings(RagasBaseEmbedding):
+class HuggingFaceEmbeddings(BaseRagasEmbedding):
     """HuggingFace embeddings supporting both local and API-based models.
 
     Supports sentence-transformers for local models and HuggingFace API for

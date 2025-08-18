@@ -24,7 +24,7 @@ if t.TYPE_CHECKING:
 DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
 
 
-class RagasBaseEmbedding(ABC):
+class BaseRagasEmbedding(ABC):
     """Modern abstract base class for Ragas embedding implementations.
 
     This class provides a consistent interface for embedding text using various
@@ -463,12 +463,12 @@ def embedding_factory(
     model: str = "text-embedding-ada-002",
     run_config: t.Optional[RunConfig] = None,
     interface: str = "legacy",
-) -> t.Union[BaseRagasEmbeddings, RagasBaseEmbedding]:
+) -> t.Union[BaseRagasEmbeddings, BaseRagasEmbedding]:
     """
     Create and return an embeddings instance. Supports both legacy and modern interfaces.
 
     This factory function can create either legacy BaseRagasEmbeddings (default) or
-    modern RagasBaseEmbedding instances for backward compatibility and new features.
+    modern BaseRagasEmbedding instances for backward compatibility and new features.
 
     Parameters
     ----------
@@ -477,12 +477,12 @@ def embedding_factory(
     run_config : RunConfig, optional
         Configuration for the run, by default None.
     interface : str, optional
-        Interface type: "legacy" for BaseRagasEmbeddings, "modern" for RagasBaseEmbedding,
+        Interface type: "legacy" for BaseRagasEmbeddings, "modern" for BaseRagasEmbedding,
         by default "legacy".
 
     Returns
     -------
-    BaseRagasEmbeddings or RagasBaseEmbedding
+    BaseRagasEmbeddings or BaseRagasEmbedding
         An instance of the requested embedding interface.
     """
     if interface == "modern":
@@ -506,7 +506,7 @@ def modern_embedding_factory(
     model: t.Optional[str] = None,
     client: t.Optional[t.Any] = None,
     **kwargs: t.Any,
-) -> RagasBaseEmbedding:
+) -> BaseRagasEmbedding:
     """
     Factory function to create a modern embedding instance based on the provider.
 
@@ -518,7 +518,7 @@ def modern_embedding_factory(
         **kwargs: Additional arguments for the provider.
 
     Returns:
-        RagasBaseEmbedding: An instance of the specified embedding provider.
+        BaseRagasEmbedding: An instance of the specified embedding provider.
 
     Examples:
         # OpenAI with client

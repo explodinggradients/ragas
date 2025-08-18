@@ -5,7 +5,7 @@ import typing as t
 import pytest
 from pydantic import BaseModel
 
-from ragas.embeddings.base import RagasBaseEmbedding as BaseEmbedding
+from ragas.embeddings.base import BaseRagasEmbedding as BaseEmbedding
 from ragas.experimental.prompt.dynamic_few_shot import DynamicFewShotPrompt
 
 

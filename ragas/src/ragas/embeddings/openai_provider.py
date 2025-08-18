@@ -1,10 +1,10 @@
 import typing as t
 
-from .base import RagasBaseEmbedding
+from .base import BaseRagasEmbedding
 from .utils import validate_texts
 
 
-class OpenAIEmbeddings(RagasBaseEmbedding):
+class OpenAIEmbeddings(BaseRagasEmbedding):
     """OpenAI embeddings implementation with batch optimization.
 
     Supports both sync and async OpenAI clients with automatic detection.

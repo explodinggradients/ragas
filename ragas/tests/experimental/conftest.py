@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from pydantic import BaseModel
 
-from ragas.embeddings.base import RagasBaseEmbedding as BaseEmbedding
+from ragas.embeddings.base import BaseRagasEmbedding as BaseEmbedding
 
 
 def pytest_configure(config):
