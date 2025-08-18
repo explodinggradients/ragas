@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional
 from openai import OpenAI
 import json
 import os
@@ -456,7 +456,6 @@ def default_rag_client(llm_client, logdir: str = "logs") -> ExampleRAG:
 
 
 if __name__ == "__main__":
-
     try:
         api_key = os.environ["OPENAI_API_KEY"]
     except KeyError:

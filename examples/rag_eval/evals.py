@@ -12,7 +12,6 @@ llm = llm_factory("openai", "gpt-4o", openai_client)
 
 
 def load_dataset():
-
     dataset = Dataset(
         name="test_dataset",
         backend="local/csv",

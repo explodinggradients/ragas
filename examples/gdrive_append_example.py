@@ -53,7 +53,7 @@ def append_to_existing_dataset():
     print("Existing records:")
     for i, record in enumerate(dataset):
         print(
-            f"  {i+1}. {record['question'] if isinstance(record, dict) else record.question}"
+            f"  {i + 1}. {record['question'] if isinstance(record, dict) else record.question}"
         )
 
     # Add new records
@@ -88,7 +88,7 @@ def append_to_existing_dataset():
     print("\nAll records in dataset:")
     for i, record in enumerate(dataset):
         print(
-            f"  {i+1}. {record['question'] if isinstance(record, dict) else record.question} -> {record['answer'] if isinstance(record, dict) else record.answer}"
+            f"  {i + 1}. {record['question'] if isinstance(record, dict) else record.question} -> {record['answer'] if isinstance(record, dict) else record.answer}"
         )
 
     return dataset
