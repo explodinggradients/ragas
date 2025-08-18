@@ -9,7 +9,7 @@ from ragas.embeddings.base import (
 from ragas.embeddings.haystack_wrapper import HaystackEmbeddingsWrapper
 
 # Modern embeddings - new interface
-from ragas.embeddings.base import BaseRagasEmbedding, modern_embedding_factory
+from ragas.embeddings.base import BaseRagasEmbedding
 from ragas.embeddings.openai_provider import OpenAIEmbeddings
 from ragas.embeddings.google_provider import GoogleEmbeddings
 from ragas.embeddings.litellm_provider import LiteLLMEmbeddings
@@ -30,7 +30,6 @@ __all__ = [
     "BaseRagasEmbedding",
     # Backward compatibility alias
     "RagasBaseEmbedding",
-    "modern_embedding_factory",
     "OpenAIEmbeddings",
     "GoogleEmbeddings",
     "LiteLLMEmbeddings",

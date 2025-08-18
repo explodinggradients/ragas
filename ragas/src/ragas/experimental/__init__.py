@@ -13,6 +13,6 @@ except ImportError:
 
 from .dataset import Dataset
 from .llms import llm_factory
-from ragas.embeddings import modern_embedding_factory as embedding_factory
+from ragas.embeddings import embedding_factory
 
 __all__ = ["Dataset", "llm_factory", "embedding_factory"]
