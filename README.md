@@ -1,6 +1,6 @@
 <h1 align="center">
   <img style="vertical-align:middle" height="200"
-  src="./docs/_static/imgs/logo.png">
+  src="https://raw.githubusercontent.com/explodinggradients/ragas/main/docs/_static/imgs/logo.png">
 </h1>
 <p align="center">
   <i>Supercharge Your LLM Application Evaluations 🚀</i>
