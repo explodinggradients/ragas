@@ -117,7 +117,7 @@ class BackendRegistry:
             # Python 3.10+ has .select() method, Python 3.9 returns a dict
             if hasattr(entry_points_result, "select"):
                 # Python 3.10+
-                entry_points = entry_points_result.select(group="ragas.backends")
+                entry_points = entry_points_result.select(group="ragas.backends")  # type: ignore[attr-defined]
             else:
                 # Python 3.9 compatibility
                 entry_points = (
