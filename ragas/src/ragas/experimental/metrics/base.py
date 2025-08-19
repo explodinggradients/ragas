@@ -11,9 +11,8 @@ from abc import ABC, abstractmethod
 from pydantic import BaseModel
 from rich.progress import Progress
 
-from ..embeddings.base import BaseEmbedding
-from ..prompt.base import Prompt
-from ..prompt.dynamic_few_shot import DynamicFewShotPrompt
+from ragas.embeddings.base import BaseRagasEmbeddings
+from ragas.prompt import Prompt, DynamicFewShotPrompt
 from .result import MetricResult
 from ..llms import BaseRagasLLM
 
@@ -147,7 +146,7 @@ class Metric(BaseMetric):
     def align_and_validate(
         self,
         dataset: "Dataset",
-        embedding_model: BaseEmbedding,
+        embedding_model: BaseRagasEmbeddings,
         llm: BaseRagasLLM,
         test_size: float = 0.2,
         random_state: int = 42,
@@ -172,7 +171,7 @@ class Metric(BaseMetric):
     def align(
         self,
         train_dataset: "Dataset",
-        embedding_model: BaseEmbedding,
+        embedding_model: BaseRagasEmbeddings,
         **kwargs: t.Dict[str, t.Any],
     ):
         """

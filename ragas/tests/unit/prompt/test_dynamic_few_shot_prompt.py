@@ -28,8 +28,8 @@ class MockEmbeddingModel(BaseEmbedding):
         self.dimension = dimension
         self._call_count = 0
 
-    def embed_text(self, text: str, **kwargs: t.Any) -> list[float]:
-        """Return deterministic embeddings based on text length and content."""
+    def _generate_embedding(self, text: str) -> list[float]:
+        """Generate deterministic embeddings based on text length and content."""
         self._call_count += 1
         # Create deterministic embedding based on text hash
         import hashlib
@@ -42,25 +42,21 @@ class MockEmbeddingModel(BaseEmbedding):
             embedding.append(value)
         return embedding
 
-    async def aembed_text(self, text: str, **kwargs) -> list[float]:
-        """Async version of embed_text."""
-        return self.embed_text(text)
-
     def embed_query(self, text: str) -> t.List[float]:
         """Embed a query text."""
-        return self.embed_text(text)
+        return self._generate_embedding(text)
 
     async def aembed_query(self, text: str) -> t.List[float]:
         """Async embed a query text."""
-        return self.embed_text(text)
+        return self._generate_embedding(text)
 
     def embed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
         """Embed a list of documents."""
-        return [self.embed_text(text) for text in texts]
+        return [self._generate_embedding(text) for text in texts]
 
     async def aembed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
         """Async embed a list of documents."""
-        return [self.embed_text(text) for text in texts]
+        return [self._generate_embedding(text) for text in texts]
 
     @property
     def call_count(self):

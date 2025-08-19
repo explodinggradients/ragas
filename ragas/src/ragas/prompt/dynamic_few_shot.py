@@ -52,7 +52,7 @@ class SimpleInMemoryExampleStore(SimpleExampleStore):
 
         # Serialize the dictionary to text
         text = "\n".join([f"{k}: {v}" for k, v in data.items()])
-        return self.embedding_model.embed_text(text)
+        return self.embedding_model.embed_query(text)
 
     def add_example(self, input: t.Dict, output: t.Dict) -> None:
         """Add an example to the store with its embedding."""
