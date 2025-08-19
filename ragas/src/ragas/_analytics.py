@@ -1,18 +1,18 @@
 from __future__ import annotations
 
 import atexit
-import json
+import hashlib
 import logging
 import os
+import platform
+import socket
 import time
 import typing as t
-import uuid
 from functools import lru_cache, wraps
 from threading import Lock, Thread
 from typing import List
 
 import requests
-from appdirs import user_data_dir
 from pydantic import BaseModel, Field
 
 from ragas._version import __version__
@@ -70,17 +70,54 @@ def silent(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
 
 @lru_cache(maxsize=1)
 @silent
+def _get_device_fingerprint() -> str:
+    """Generate a unique device fingerprint without creating files."""
+    fingerprint_components = []
+
+    # Get MAC address of the first network interface
+    try:
+        import uuid as uuid_module
+
+        mac = uuid_module.getnode()
+        fingerprint_components.append(str(mac))
+    except Exception:
+        fingerprint_components.append("unknown_mac")
+
+    # Get hostname
+    try:
+        hostname = socket.gethostname()
+        fingerprint_components.append(hostname)
+    except Exception:
+        fingerprint_components.append("unknown_host")
+
+    # Get platform information
+    try:
+        platform_info = f"{platform.system()}-{platform.machine()}"
+        fingerprint_components.append(platform_info)
+    except Exception:
+        fingerprint_components.append("unknown_platform")
+
+    # Get user home directory (more stable than username)
+    try:
+        home_dir = os.path.expanduser("~")
+        fingerprint_components.append(home_dir)
+    except Exception:
+        fingerprint_components.append("unknown_home")
+
+    # Create a deterministic hash from all components
+    fingerprint_string = "|".join(fingerprint_components)
+    fingerprint_hash = hashlib.sha256(fingerprint_string.encode()).hexdigest()
+
+    return fingerprint_hash
+
+
+@lru_cache(maxsize=1)
+@silent
 def get_userid() -> str:
-    user_id_path = user_data_dir(appname=USER_DATA_DIR_NAME)
-    uuid_filepath = os.path.join(user_id_path, "uuid.json")
-    if os.path.exists(uuid_filepath):
-        user_id = json.load(open(uuid_filepath))["userid"]
-    else:
-        user_id = "a-" + uuid.uuid4().hex
-        os.makedirs(user_id_path)
-        with open(uuid_filepath, "w") as f:
-            json.dump({"userid": user_id}, f)
-    return user_id
+    """Generate a unique user ID based on device fingerprint."""
+    device_fingerprint = _get_device_fingerprint()
+    # Take first 32 characters to match the original UUID format
+    return "a-" + device_fingerprint[:32]
 
 
 # Analytics Events

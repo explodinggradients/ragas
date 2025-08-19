@@ -60,63 +60,26 @@ def test_evaluation_event():
     assert isinstance(payload.get("metrics"), list)
 
 
-def setup_user_id_filepath(tmp_path, monkeypatch):
-    # setup
-    def user_data_dir_patch(appname, roaming=True) -> str:
-        return str(tmp_path / appname)
+def test_device_fingerprint_consistency():
+    """Test that device fingerprint is consistent across multiple calls."""
+    from ragas._analytics import _get_device_fingerprint, get_userid
 
-    import ragas._analytics
-    from ragas._analytics import USER_DATA_DIR_NAME
-
-    monkeypatch.setattr(ragas._analytics, "user_data_dir", user_data_dir_patch)
-    userid_filepath = tmp_path / USER_DATA_DIR_NAME / "uuid.json"
-
-    return userid_filepath
-
-
-def test_write_to_file(tmp_path, monkeypatch):
-    userid_filepath = setup_user_id_filepath(tmp_path, monkeypatch)
-
-    # check if file created if not existing
-    assert not userid_filepath.exists()
-    import json
-
-    from ragas._analytics import get_userid
-
-    # clear LRU cache since its created in setup for the above test
+    # Clear LRU cache to ensure fresh calls
+    _get_device_fingerprint.cache_clear()
     get_userid.cache_clear()
 
-    userid = get_userid()
-    assert userid_filepath.exists()
-    with open(userid_filepath, "r") as f:
-        assert userid == json.load(f)["userid"]
+    # Test device fingerprint consistency
+    fp1 = _get_device_fingerprint()
+    fp2 = _get_device_fingerprint()
+    assert fp1 == fp2
+    assert len(fp1) == 64  # SHA256 hash should be 64 chars
 
-    assert not (tmp_path / "uuid.json").exists()
-
-    # del file and check if LRU cache is working
-    userid_filepath.unlink()
-    assert not userid_filepath.exists()
-    userid_cached = get_userid()
-    assert userid == userid_cached
-
-
-def test_load_userid_from_json_file(tmp_path, monkeypatch):
-    userid_filepath = setup_user_id_filepath(tmp_path, monkeypatch)
-    assert not userid_filepath.exists()
-
-    # create uuid.json file
-    userid_filepath.parent.mkdir(parents=True, exist_ok=True)
-    with open(userid_filepath, "w") as f:
-        import json
-
-        json.dump({"userid": "test-userid"}, f)
-
-    from ragas._analytics import get_userid
-
-    # clear LRU cache since its created in setup for the above test
-    get_userid.cache_clear()
-
-    assert get_userid() == "test-userid"
+    # Test user ID consistency
+    uid1 = get_userid()
+    uid2 = get_userid()
+    assert uid1 == uid2
+    assert uid1.startswith("a-")
+    assert len(uid1) == 34  # "a-" + 32 chars
 
 
 def test_testset_generation_tracking(monkeypatch):
