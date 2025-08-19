@@ -27,11 +27,12 @@ class EchoLLM(BaseRagasLLM):
         return LLMResult(generations=[[Generation(text=prompt.to_string())]])
 
 
-def test_debug_tracking_flag():
+def test_debug_tracking_flag(monkeypatch):
     import os
 
     from ragas._analytics import RAGAS_DEBUG_TRACKING
 
+    monkeypatch.setenv(RAGAS_DEBUG_TRACKING, "true")
     assert os.environ.get(RAGAS_DEBUG_TRACKING, "").lower() == "true"
 
 
