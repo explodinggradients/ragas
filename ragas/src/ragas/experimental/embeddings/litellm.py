@@ -3,7 +3,7 @@
 import typing as t
 
 from .base import BaseEmbedding
-from .utils import validate_texts, batch_texts, get_optimal_batch_size, safe_import
+from .utils import batch_texts, get_optimal_batch_size, safe_import, validate_texts
 
 
 class LiteLLMEmbeddings(BaseEmbedding):

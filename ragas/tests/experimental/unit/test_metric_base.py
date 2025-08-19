@@ -1,10 +1,11 @@
 import typing as t
 from dataclasses import dataclass
+
 import pytest
 from pydantic import BaseModel
 
-from ragas.experimental.metrics.base import Metric
 from ragas.experimental.metrics import MetricResult
+from ragas.experimental.metrics.base import Metric
 
 
 class MetricResponseModel(BaseModel):

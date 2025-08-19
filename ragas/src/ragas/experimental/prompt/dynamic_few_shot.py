@@ -2,15 +2,14 @@ from __future__ import annotations
 
 __all__ = ["ExampleStore", "InMemoryExampleStore", "DynamicFewShotPrompt"]
 
-import json
 import gzip
-import warnings
+import json
 import typing as t
+import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
 
 import numpy as np
-
 
 from ..embeddings import BaseEmbedding
 from .base import Prompt
