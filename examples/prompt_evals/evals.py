@@ -18,7 +18,6 @@ def my_metric(prediction: str, actual: str):
 
 @experiment()
 async def run_experiment(row):
-
     response = run_prompt(row["text"])
     score = my_metric.score(prediction=response, actual=row["label"])
 
@@ -72,7 +71,6 @@ async def main():
 
 
 if __name__ == "__main__":
-
     import asyncio
 
     asyncio.run(main())

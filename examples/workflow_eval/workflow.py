@@ -178,7 +178,7 @@ class LLMExtractor(BaseExtractor):
             )
             return result
 
-        except Exception as e:
+        except Exception:
             return {}
 
     def _get_bug_extraction_prompt(self, email_content: str) -> str:
@@ -362,7 +362,7 @@ class ConfigurableSupportTriageAgent:
             return category
 
         except Exception as e:
-            print(f"   ⚠️ Classification failed, using fallback: Bug Report")
+            print("   ⚠️ Classification failed, using fallback: Bug Report")
             self.traces.append(
                 TraceEvent(
                     event_type="error",
@@ -491,7 +491,7 @@ class ConfigurableSupportTriageAgent:
             return response_text
 
         except Exception as e:
-            print(f"   ⚠️ Response generation failed, using fallback")
+            print("   ⚠️ Response generation failed, using fallback")
             self.traces.append(
                 TraceEvent(
                     event_type="error",
@@ -571,7 +571,7 @@ class ConfigurableSupportTriageAgent:
                 ),
             }
 
-            print(f"✅ Workflow completed successfully")
+            print("✅ Workflow completed successfully")
             print(f"📋 Traces saved to: logs/run_{run_id}_*.json")
 
             self.traces.append(

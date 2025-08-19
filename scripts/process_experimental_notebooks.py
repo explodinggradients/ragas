@@ -7,9 +7,7 @@ This script should be executed from the project root directory.
 import os
 import sys
 import subprocess
-import shutil
 from pathlib import Path
-import glob
 
 # Path configurations
 RAGAS_ROOT = Path(__file__).parent.parent

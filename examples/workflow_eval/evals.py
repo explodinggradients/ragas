@@ -12,7 +12,6 @@ llm = llm_factory("openai", "gpt-4o", OpenAI(api_key=os.environ.get("OPENAI_API_
 
 
 def load_dataset():
-
     dataset_dict = [
         {
             "email": "Hi, I'm getting error code XYZ-123 when using version 2.1.4 of your software. Please help!",
