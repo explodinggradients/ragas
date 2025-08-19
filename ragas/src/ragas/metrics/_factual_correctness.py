@@ -235,7 +235,7 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
 
     async def verify_claims(
         self, premise: str, hypothesis_list: t.List[str], callbacks: Callbacks
-    ) -> NDArray[np.bool_]:
+    ) -> NDArray[np.bool]:
         assert self.llm is not None, "LLM must be set"
         prompt_input = NLIStatementInput(context=premise, statements=hypothesis_list)
         response = await self.nli_prompt.generate(
