@@ -5,8 +5,8 @@ import typing as t
 import pytest
 from pydantic import BaseModel
 
-from ragas.experimental.embeddings.base import BaseEmbedding
-from ragas.experimental.prompt.dynamic_few_shot import DynamicFewShotPrompt
+from ragas.embeddings.base import BaseRagasEmbeddings as BaseEmbedding
+from ragas.prompt import DynamicFewShotPrompt
 
 
 class MockResponseModel(BaseModel):
@@ -24,6 +24,7 @@ class MockEmbeddingModel(BaseEmbedding):
     """Mock embedding model for testing embedding functionality."""
 
     def __init__(self, dimension: int = 384):
+        super().__init__()
         self.dimension = dimension
         self._call_count = 0
 
@@ -44,6 +45,22 @@ class MockEmbeddingModel(BaseEmbedding):
     async def aembed_text(self, text: str, **kwargs) -> list[float]:
         """Async version of embed_text."""
         return self.embed_text(text)
+
+    def embed_query(self, text: str) -> t.List[float]:
+        """Embed a query text."""
+        return self.embed_text(text)
+
+    async def aembed_query(self, text: str) -> t.List[float]:
+        """Async embed a query text."""
+        return self.embed_text(text)
+
+    def embed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
+        """Embed a list of documents."""
+        return [self.embed_text(text) for text in texts]
+
+    async def aembed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
+        """Async embed a list of documents."""
+        return [self.embed_text(text) for text in texts]
 
     @property
     def call_count(self):

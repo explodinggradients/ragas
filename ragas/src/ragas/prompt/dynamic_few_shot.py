@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ["ExampleStore", "InMemoryExampleStore", "DynamicFewShotPrompt"]
+__all__ = ["SimpleExampleStore", "SimpleInMemoryExampleStore", "DynamicFewShotPrompt"]
 
 import json
 import gzip
@@ -12,14 +12,14 @@ from pathlib import Path
 import numpy as np
 
 
-from ..embeddings import BaseEmbedding
-from .base import Prompt
+from ragas.embeddings.base import BaseRagasEmbeddings as BaseEmbedding
+from .simple_prompt import Prompt
 
 if t.TYPE_CHECKING:
     from pydantic import BaseModel
 
 
-class ExampleStore(ABC):
+class SimpleExampleStore(ABC):
     @abstractmethod
     def get_examples(
         self, data: t.Dict, top_k: int = 5
@@ -33,7 +33,7 @@ class ExampleStore(ABC):
         pass
 
 
-class InMemoryExampleStore(ExampleStore):
+class SimpleInMemoryExampleStore(SimpleExampleStore):
     def __init__(self, embedding_model=None):
         """
         Initialize an in-memory example store with optional embedding model.
@@ -154,7 +154,7 @@ class DynamicFewShotPrompt(Prompt):
             Only examples with similarity >= threshold will be considered.
         """
         # Create example store first (needed for add_example override)
-        self.example_store = InMemoryExampleStore(embedding_model=embedding_model)
+        self.example_store = SimpleInMemoryExampleStore(embedding_model=embedding_model)
         self.max_similar_examples = max_similar_examples
         self.similarity_threshold = similarity_threshold
 
