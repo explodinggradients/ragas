@@ -48,3 +48,4 @@ jobs:
       with:
         password: ${{ secrets[matrix.package.token] }}
         packages-dir: ${{ matrix.package.directory }}/dist/
+        attestations: false
