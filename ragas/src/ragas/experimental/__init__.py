@@ -12,7 +12,6 @@ except ImportError:
         __version__ = "unknown"
 
 from .dataset import Dataset
-from .llms import llm_factory
 from .embeddings import embedding_factory
 
-__all__ = ["Dataset", "llm_factory", "embedding_factory"]
+__all__ = ["Dataset", "embedding_factory"]
