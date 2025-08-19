@@ -25,7 +25,7 @@ format: ## Format and lint ragas code
 type: ## Type check ragas code
 	@echo "Type checking ragas code..."
 	@echo "(pyright) Typechecking ragas..."
-	$(Q)PYRIGHT_PYTHON_FORCE_VERSION=latest pyright src/ragas --config pyproject.toml
+	$(Q)PYRIGHT_PYTHON_FORCE_VERSION=latest pyright src/ragas 
 
 check: format type ## Quick health check (format + type, no tests)
 	@echo "Ragas code quality check complete!"
