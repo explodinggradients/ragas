@@ -57,18 +57,15 @@ class TestLangfuseIntegration:
 
     def test_langfuse_trace_initialization(self):
         """Test LangfuseTrace initialization with mock trace."""
-        from ragas.integrations.tracing.langfuse import (
-            LangfuseTrace,
-            TraceWithFullDetails,
-        )
+        from ragas.integrations.tracing.langfuse import LangfuseTrace
 
-        mock_trace = TraceWithFullDetails(
-            id="test-trace-id",
-            timestamp=datetime.now(),
-            htmlPath="test-path",
-            latency=100,
-            totalCost=0.01,
-        )
+        # Use MagicMock instead of trying to instantiate the real class
+        mock_trace = MagicMock()
+        mock_trace.id = "test-trace-id"
+        mock_trace.timestamp = datetime.now()
+        mock_trace.htmlPath = "test-path"
+        mock_trace.latency = 100
+        mock_trace.totalCost = 0.01
 
         langfuse_trace = LangfuseTrace(mock_trace)
         assert langfuse_trace.trace == mock_trace
@@ -170,17 +167,19 @@ class TestMLflowIntegration:
 
     def test_mlflow_trace_initialization(self):
         """Test MLflowTrace initialization with mock trace."""
-        from ragas.integrations.tracing.mlflow import MLflowTrace, Trace
+        from ragas.integrations.tracing.mlflow import MLflowTrace
 
-        mock_trace = Trace()
+        # Use MagicMock instead of trying to instantiate the real class
+        mock_trace = MagicMock()
         mlflow_trace = MLflowTrace(mock_trace)
         assert mlflow_trace.trace == mock_trace
 
     def test_mlflow_trace_get_url_with_env(self):
         """Test MLflowTrace URL generation with MLFLOW_HOST set."""
-        from ragas.integrations.tracing.mlflow import MLflowTrace, Trace
+        from ragas.integrations.tracing.mlflow import MLflowTrace
 
-        mock_trace = Trace()
+        # Use MagicMock for the trace object
+        mock_trace = MagicMock()
         mock_trace.info = MagicMock()
         mock_trace.info.request_id = "test-request-id"
         mock_trace.info.experiment_id = "test-experiment-id"
@@ -195,9 +194,10 @@ class TestMLflowIntegration:
 
     def test_mlflow_trace_get_url_no_env(self):
         """Test MLflowTrace URL generation without MLFLOW_HOST."""
-        from ragas.integrations.tracing.mlflow import MLflowTrace, Trace
+        from ragas.integrations.tracing.mlflow import MLflowTrace
 
-        mock_trace = Trace()
+        # Use MagicMock for the trace object
+        mock_trace = MagicMock()
         mlflow_trace = MLflowTrace(mock_trace)
 
         with patch.dict(os.environ, {}, clear=True):
@@ -208,12 +208,13 @@ class TestMLflowIntegration:
 
     def test_mlflow_trace_filter(self):
         """Test MLflowTrace span filtering."""
-        from ragas.integrations.tracing.mlflow import MLflowTrace, Span, Trace
+        from ragas.integrations.tracing.mlflow import MLflowTrace
 
-        mock_span = Span()
+        # Use MagicMock for both span and trace objects
+        mock_span = MagicMock()
         mock_span.name = "test-span"
 
-        mock_trace = Trace()
+        mock_trace = MagicMock()
         mock_trace.search_spans = MagicMock(return_value=[mock_span])
 
         mlflow_trace = MLflowTrace(mock_trace)
