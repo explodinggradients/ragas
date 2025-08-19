@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Ragas is an evaluation toolkit for Large Language Model (LLM) applications. It provides objective metrics for evaluating LLM applications, test data generation capabilities, and integrations with popular LLM frameworks.
+Ragas is an evaluation toolkit for Large Language Model (LLM) applications. It provides objective metrics for evaluating LLM applications, test data generation capabilities (deprecated), and integrations with popular LLM frameworks.
 
 The repository contains:
 
 1. **Ragas Library** - The main evaluation toolkit including experimental features (in `/ragas` directory)
-   - Core evaluation metrics and test generation
+   - Core evaluation metrics and test generation (deprecated)
    - Experimental features available at `ragas.experimental`
 
 ## Development Environment Setup
@@ -148,7 +148,7 @@ The Ragas core library provides metrics, test data generation and evaluation fun
    - Faithfulness
    - and many more
 
-2. **Test Data Generation** - Automatic creation of test datasets for LLM applications
+2. **Test Data Generation (DEPRECATED)** - Automatic creation of test datasets for LLM applications. This functionality is deprecated and will be removed in a future version.
 
 3. **Integrations** - Integrations with popular LLM frameworks like LangChain, LlamaIndex, and observability tools
 

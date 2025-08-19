@@ -44,7 +44,7 @@ benchmarks: ## Run all benchmarks locally
 	@echo "Running all benchmarks..."
 	@echo "Running evaluation benchmarks..."
 	$(Q)cd $(GIT_ROOT)/ragas/tests/benchmarks && uv run python benchmark_eval.py
-	@echo "Running testset generation benchmarks..."
+	@echo "Running testset generation benchmarks (DEPRECATED)..."
 	$(Q)cd $(GIT_ROOT)/ragas/tests/benchmarks && uv run python benchmark_testsetgen.py
 
 benchmarks-docker: ## Run benchmarks in docker
@@ -69,8 +69,8 @@ run-ci: ## Run complete CI pipeline (mirrors GitHub CI exactly)
 run-ci-format-check: ## Run format check in dry-run mode (like GitHub CI)
 	@echo "Running format check (dry-run, like GitHub CI)..."
 	@echo "Checking ragas formatting..."
-	$(Q)uv run ruff format --check ragas/src ragas/tests docs
-	$(Q)ruff check ragas/src docs ragas/tests
+	$(Q)cd ragas && uv run ruff format --check src tests docs
+	$(Q)cd ragas && uv run ruff check src docs tests
 
 run-ci-type: ## Run type checking (matches GitHub CI)
 	@echo "Running type checking (matches GitHub CI)..."

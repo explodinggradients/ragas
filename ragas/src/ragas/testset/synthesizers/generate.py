@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import random
 import typing as t
+import warnings
 from dataclasses import dataclass, field
 
 from langchain_core.callbacks import BaseCallbackManager
@@ -51,6 +52,11 @@ class TestsetGenerator:
     """
     Generates an evaluation dataset based on given scenarios and parameters.
 
+    .. deprecated::
+        TestsetGenerator is deprecated and will be removed in a future version.
+        Testset generation functionality will no longer be supported.
+        Please consider using alternative tools for synthetic test data generation.
+
     Attributes
     ----------
     llm : BaseRagasLLM
@@ -64,6 +70,15 @@ class TestsetGenerator:
     knowledge_graph: KnowledgeGraph = field(default_factory=KnowledgeGraph)
     persona_list: t.Optional[t.List[Persona]] = None
 
+    def __post_init__(self):
+        warnings.warn(
+            "TestsetGenerator is deprecated and will be removed in a future version. "
+            "Testset generation functionality will no longer be supported. "
+            "Please consider using alternative tools for synthetic test data generation.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
     @classmethod
     def from_langchain(
         cls,
@@ -74,6 +89,14 @@ class TestsetGenerator:
         """
         Creates a `TestsetGenerator` from a Langchain LLMs.
         """
+        warnings.warn(
+            "TestsetGenerator.from_langchain() is deprecated and will be removed in a future version. "
+            "Testset generation functionality will no longer be supported. "
+            "Please consider using alternative tools for synthetic test data generation.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         knowledge_graph = knowledge_graph or KnowledgeGraph()
         return cls(
             LangchainLLMWrapper(llm),
@@ -91,6 +114,14 @@ class TestsetGenerator:
         """
         Creates a `TestsetGenerator` from a LlamaIndex LLM and embedding model.
         """
+        warnings.warn(
+            "TestsetGenerator.from_llama_index() is deprecated and will be removed in a future version. "
+            "Testset generation functionality will no longer be supported. "
+            "Please consider using alternative tools for synthetic test data generation.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         knowledge_graph = knowledge_graph or KnowledgeGraph()
         return cls(
             LlamaIndexLLMWrapper(llm),
@@ -147,6 +178,13 @@ class TestsetGenerator:
         ValueError
             If no LLM or embedding model is provided either during initialization or as arguments
         """
+        warnings.warn(
+            "TestsetGenerator.generate_with_langchain_docs() is deprecated and will be removed in a future version. "
+            "Testset generation functionality will no longer be supported. "
+            "Please consider using alternative tools for synthetic test data generation.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
         # force the user to provide an llm and embedding client to prevent use of default LLMs
         if not self.llm and not transforms_llm:
@@ -210,6 +248,13 @@ class TestsetGenerator:
         """
         Generates an evaluation dataset based on given scenarios and parameters.
         """
+        warnings.warn(
+            "TestsetGenerator.generate_with_llamaindex_docs() is deprecated and will be removed in a future version. "
+            "Testset generation functionality will no longer be supported. "
+            "Please consider using alternative tools for synthetic test data generation.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
         run_config = run_config or RunConfig()
 
@@ -324,6 +369,14 @@ class TestsetGenerator:
         4. Generate samples for each scenario.
         5. Compile the results into an EvaluationDataset.
         """
+        warnings.warn(
+            "TestsetGenerator.generate() is deprecated and will be removed in a future version. "
+            "Testset generation functionality will no longer be supported. "
+            "Please consider using alternative tools for synthetic test data generation.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         if run_config is not None:
             self.llm.set_run_config(run_config)
 
