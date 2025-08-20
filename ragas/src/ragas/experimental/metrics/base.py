@@ -15,7 +15,7 @@ from ragas.embeddings.base import BaseRagasEmbedding as BaseEmbedding
 from ..prompt.base import Prompt
 from ..prompt.dynamic_few_shot import DynamicFewShotPrompt
 from .result import MetricResult
-from ..llms import BaseRagasLLM
+from ...llms import InstructorBaseRagasLLM as BaseRagasLLM
 
 if t.TYPE_CHECKING:
     from ..dataset import Dataset

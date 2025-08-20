@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import Mock
 from pydantic import BaseModel
 
-from ragas.experimental.llms.base import llm_factory
+from ragas.llms.base import instructor_llm_factory as llm_factory
 
 
 class LLMResponseModel(BaseModel):
