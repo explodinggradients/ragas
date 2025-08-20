@@ -13,26 +13,42 @@ help: ## Show all Makefile targets
 # SETUP & INSTALLATION
 # =============================================================================
 
+setup-venv: ## Set up uv virtual environment
+	@echo "Setting up uv virtual environment..."
+	$(Q)cd ragas && VIRTUAL_ENV= uv venv
+	@echo "Virtual environment created at ragas/.venv"
+	@echo "To activate: source ragas/.venv/bin/activate"
+
 install: ## Install dependencies for ragas
 	@echo "Installing dependencies..."
-	@echo "Installing ragas dependencies (including experimental)..."
-	$(Q)uv pip install -e "./ragas[dev]"
+	@if [ ! -d "ragas/.venv" ]; then \
+		echo "Virtual environment not found, creating one..."; \
+		$(MAKE) setup-venv; \
+	fi
+	@echo "Installing ragas dependencies..."
+	$(Q)cd ragas && VIRTUAL_ENV= uv sync --group dev
 	@echo "Setting up pre-commit hooks..."
-	$(Q)pre-commit install
+	$(Q)cd ragas && uv run --active pre-commit install
 	@echo "Installation complete!"
 
 # =============================================================================
 # CODE QUALITY
 # =============================================================================
 
-.PHONY: help install format type check clean test test-e2e benchmarks benchmarks-docker run-ci run-ci-fast run-ci-format-check run-ci-type run-ci-tests build-docs serve-docs process-experimental-notebooks
+.PHONY: help setup-venv install format type check clean test test-e2e benchmarks benchmarks-docker run-ci run-ci-fast run-ci-format-check run-ci-type run-ci-tests build-docs serve-docs process-experimental-notebooks
 format: ## Format and lint all code
 	@echo "Formatting and linting all code..."
-	$(Q)$(MAKE) -C ragas format
+	@echo "(ruff format) Formatting ragas..."
+	$(Q)cd ragas && uv run --active ruff format src tests ../docs
+	@echo "(ruff) Auto-fixing ragas (includes import sorting and unused imports)..."
+	$(Q)cd ragas && uv run --active ruff check src tests ../docs --fix-only
+	@echo "(ruff) Final linting check for ragas..."
+	$(Q)cd ragas && uv run --active ruff check src tests ../docs
 
 type: ## Type check all code
 	@echo "Type checking all code..."
-	$(Q)$(MAKE) -C ragas type
+	@echo "(pyright) Typechecking ragas..."
+	$(Q)cd ragas && PYRIGHT_PYTHON_FORCE_VERSION=latest uv run --active pyright src
 
 check: format type ## Quick health check (format + type, no tests)
 	@echo "Code quality check complete!"
@@ -55,7 +71,7 @@ benchmarks-docker: ## Run benchmarks in docker
 
 benchmarks-test: ## Run benchmarks for ragas unit tests
 	@echo "Running ragas unit tests with timing benchmarks..."
-	$(Q)cd ragas && uv run pytest --nbmake tests/unit tests/experimental --durations=0 -v $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
+	$(Q)cd ragas && uv run --active pytest --nbmake tests/unit tests/experimental --durations=0 -v $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 
 # =============================================================================
 # CI/BUILD
@@ -63,14 +79,20 @@ benchmarks-test: ## Run benchmarks for ragas unit tests
 
 run-ci: ## Run complete CI pipeline (mirrors GitHub CI exactly)
 	@echo "Running complete CI pipeline..."
-	$(Q)$(MAKE) -C ragas run-ci
+	@echo "Format check..."
+	$(Q)cd ragas && uv run --active ruff format --check src tests ../docs
+	$(Q)cd ragas && uv run --active ruff check src tests ../docs
+	@echo "Type check..."
+	$(Q)$(MAKE) type
+	@echo "Unit tests..."
+	$(Q)cd ragas && __RAGAS_DEBUG_TRACKING=true RAGAS_DO_NOT_TRACK=true uv run --active pytest --nbmake tests/unit tests/experimental --dist loadfile -n auto
 	@echo "All CI checks passed!"
 
 run-ci-format-check: ## Run format check in dry-run mode (like GitHub CI)
 	@echo "Running format check (dry-run, like GitHub CI)..."
 	@echo "Checking ragas formatting..."
-	$(Q)uv run ruff format --check --config ragas/pyproject.toml ragas/src ragas/tests docs
-	$(Q)uv run ruff check --config ragas/pyproject.toml ragas/src docs ragas/tests
+	$(Q)cd ragas && uv run --active ruff format --check src tests ../docs
+	$(Q)cd ragas && uv run --active ruff check src ../docs tests
 
 run-ci-type: ## Run type checking (matches GitHub CI)
 	@echo "Running type checking (matches GitHub CI)..."
@@ -83,16 +105,17 @@ run-ci-tests: ## Run all tests with CI options
 run-ci-fast: ## Fast CI check for quick local validation (2-3 minutes)
 	@echo "Running fast CI check for quick feedback..."
 	@echo "Format check..."
-	$(Q)uv run ruff format --check ragas/src ragas/tests docs
-	$(Q)ruff check ragas/src docs ragas/tests
+	$(Q)cd ragas && uv run --active ruff format --check src tests ../docs
+	$(Q)cd ragas && uv run --active ruff check src ../docs tests
 	@echo "Core unit tests (no nbmake for speed)..."
-	$(Q)cd ragas && pytest tests/unit tests/experimental --dist loadfile -n auto -x
+	$(Q)cd ragas && uv run --active pytest tests/unit tests/experimental --dist loadfile -n auto -x
 	@echo "Fast CI check completed!"
 
 clean: ## Clean all generated files
 	@echo "Cleaning all generated files..."
-	$(Q)cd $(GIT_ROOT)/docs && $(MAKE) clean
 	$(Q)find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
+	$(Q)rm -rf site/ docs/site/ .mypy_cache .pytest_cache
+	@echo "Cleanup complete!"
 
 # =============================================================================
 # TESTING
@@ -100,15 +123,15 @@ clean: ## Clean all generated files
 
 test: ## Run all unit tests
 	@echo "Running all unit tests..."
-	$(Q)$(MAKE) -C ragas test $(shell if [ -n "$(k)" ]; then echo "k=$(k)"; fi)
+	$(Q)cd ragas && uv run --active pytest tests/unit tests/experimental $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 
 test-all: ## Run all unit tests (including notebooks)
 	@echo "Running all unit tests (including notebooks)..."
-	$(Q)$(MAKE) -C ragas test-all $(shell if [ -n "$(k)" ]; then echo "k=$(k)"; fi)
+	$(Q)cd ragas && uv run --active pytest --nbmake tests/unit tests/experimental $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 
 test-e2e: ## Run all end-to-end tests
 	@echo "Running all end-to-end tests..."
-	$(Q)cd ragas && uv run pytest --nbmake tests/e2e -s
+	$(Q)cd ragas && uv run --active pytest --nbmake tests/e2e -s
 
 # =============================================================================
 # DOCUMENTATION
