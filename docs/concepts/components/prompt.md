@@ -22,7 +22,7 @@ In Ragas, a prompt object is composed of the following key components:
 Here's an example of a prompt object that defines a prompt for a text generation task:
 
 ```python
-from ragas.experimental.prompt import PydanticPrompt
+from ragas.prompt import PydanticPrompt
 from pydantic import BaseModel, Field
 
 class MyInput(BaseModel):

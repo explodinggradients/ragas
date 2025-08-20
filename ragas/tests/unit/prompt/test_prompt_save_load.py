@@ -5,7 +5,7 @@ import warnings
 import pytest
 from pydantic import BaseModel
 
-from ragas.experimental.prompt.base import Prompt
+from ragas.prompt import Prompt
 
 
 class MockResponseModel(BaseModel):
