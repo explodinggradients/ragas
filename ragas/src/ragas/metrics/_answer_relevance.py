@@ -98,9 +98,9 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         assert self.embeddings is not None, (
             f"Error: '{self.name}' requires embeddings to be set."
         )
-        question_vec = np.asarray(self.embeddings.embed_query(question)).reshape(1, -1)
+        question_vec = np.asarray(self.embeddings.embed_query(question)).reshape(1, -1)  # type: ignore[attr-defined]
         gen_question_vec = np.asarray(
-            self.embeddings.embed_documents(generated_questions)
+            self.embeddings.embed_documents(generated_questions)  # type: ignore[attr-defined]
         ).reshape(len(generated_questions), -1)
         norm = np.linalg.norm(gen_question_vec, axis=1) * np.linalg.norm(
             question_vec, axis=1
