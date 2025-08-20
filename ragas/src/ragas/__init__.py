@@ -1,5 +1,6 @@
 from ragas import backends
 from ragas.cache import CacheInterface, DiskCacheBackend, cacher
+from ragas.dataset import Dataset, DataTable
 from ragas.dataset_schema import EvaluationDataset, MultiTurnSample, SingleTurnSample
 from ragas.evaluation import evaluate
 from ragas.experiment import Experiment, experiment, version_experiment
@@ -18,6 +19,8 @@ __all__ = [
     "SingleTurnSample",
     "MultiTurnSample",
     "EvaluationDataset",
+    "DataTable",
+    "Dataset",
     "cacher",
     "CacheInterface",
     "DiskCacheBackend",

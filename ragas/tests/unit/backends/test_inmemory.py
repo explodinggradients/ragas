@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from ragas.backends import get_registry
 from ragas.backends.inmemory import InMemoryBackend
-from ragas.experimental.dataset import Dataset
+from ragas.dataset import Dataset
 
 
 # Test BaseModel classes

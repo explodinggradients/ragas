@@ -24,7 +24,7 @@ For detailed setup instructions, see the documentation.
 
 from pydantic import BaseModel
 
-from ragas.experimental.dataset import Dataset
+from ragas.dataset import Dataset
 
 
 # Example data model

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from ragas import Experiment
 from ragas.backends.local_csv import LocalCSVBackend
-from ragas.experimental.dataset import Dataset, DataTable
+from ragas.dataset import Dataset, DataTable
 
 
 # Test BaseModel classes

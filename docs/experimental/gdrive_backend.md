@@ -59,7 +59,7 @@ Choose one of two authentication methods:
 ### Basic Usage
 
 ```python
-from ragas.experimental.dataset import Dataset
+from ragas.dataset import Dataset
 from pydantic import BaseModel
 
 # Define your data model

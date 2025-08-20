@@ -16,10 +16,13 @@ from ragas.backends import BaseBackend, get_registry
 from ragas.backends.inmemory import InMemoryBackend
 
 # For backwards compatibility, use typing_extensions for older Python versions
-try:
-    from typing import Self
-except ImportError:
+if t.TYPE_CHECKING:
     from typing_extensions import Self
+else:
+    try:
+        from typing import Self
+    except ImportError:
+        from typing_extensions import Self
 
 T = t.TypeVar("T", bound=BaseModel)
 DataTableType = t.TypeVar("DataTableType", bound="DataTable")
@@ -177,22 +180,23 @@ class DataTable(t.Generic[T]):
             dataset = Dataset.load("my_data", backend)
         """
         # Resolve backend if string
-        backend = cls._resolve_backend(backend, **kwargs)
+        resolved_backend = cls._resolve_backend(backend, **kwargs)
 
         # Backend always returns dicts
         # Use the correct backend method based on the class type
-        if hasattr(cls, "DATATABLE_TYPE") and cls.DATATABLE_TYPE == "Experiment":
-            dict_data = backend.load_experiment(name)
+        datatable_type = getattr(cls, "DATATABLE_TYPE", None)
+        if datatable_type == "Experiment":
+            dict_data = resolved_backend.load_experiment(name)
         else:
-            dict_data = backend.load_dataset(name)
+            dict_data = resolved_backend.load_dataset(name)
 
         if data_model:
             # Validated mode - convert dicts to Pydantic models
             validated_data = [data_model(**d) for d in dict_data]
-            return cls(name, backend, data_model, validated_data)
+            return cls(name, resolved_backend, data_model, validated_data)
         else:
             # Unvalidated mode - keep as dicts but wrapped in Dataset API
-            return cls(name, backend, None, dict_data)
+            return cls(name, resolved_backend, None, dict_data)
 
     @classmethod
     def from_pandas(
@@ -237,15 +241,15 @@ class DataTable(t.Generic[T]):
         dict_data = dataframe.to_dict(orient="records")
 
         # Resolve backend if string
-        backend = cls._resolve_backend(backend, **kwargs)
+        resolved_backend = cls._resolve_backend(backend, **kwargs)
 
         if data_model:
             # Validated mode - convert dicts to Pydantic models
             validated_data = [data_model(**d) for d in dict_data]
-            return cls(name, backend, data_model, validated_data)
+            return cls(name, resolved_backend, data_model, validated_data)
         else:
             # Unvalidated mode - keep as dicts but wrapped in DataTable API
-            return cls(name, backend, None, dict_data)
+            return cls(name, resolved_backend, None, dict_data)
 
     def save(self) -> None:
         """Save dataset - converts to dicts if needed"""
