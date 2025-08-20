@@ -8,27 +8,27 @@
 
 <p align="center">
     <a href="https://github.com/explodinggradients/ragas/releases">
-        <img alt="GitHub release" src="https://img.shields.io/github/release/explodinggradients/ragas.svg">
+        <img alt="Latest release" src="https://img.shields.io/github/release/explodinggradients/ragas.svg">
     </a>
     <a href="https://www.python.org/">
-            <img alt="Build" src="https://img.shields.io/badge/Made%20with-Python-1f425f.svg?color=purple">
+        <img alt="Made with Python" src="https://img.shields.io/badge/Made%20with-Python-1f425f.svg?color=purple">
     </a>
     <a href="https://github.com/explodinggradients/ragas/blob/master/LICENSE">
-        <img alt="License" src="https://img.shields.io/github/license/explodinggradients/ragas.svg?color=green">
+        <img alt="License Apache-2.0" src="https://img.shields.io/github/license/explodinggradients/ragas.svg?color=green">
     </a>
     <a href="https://pypi.org/project/ragas/">
-        <img alt="Open In Colab" src="https://img.shields.io/pypi/dm/ragas">
+        <img alt="Ragas Downloads per month" src="https://static.pepy.tech/badge/ragas/month">
     </a>
     <a href="https://discord.gg/5djav8GGNZ">
-        <img alt="discord-invite" src="https://img.shields.io/discord/1119637219561451644">
+        <img alt="Join Ragas community on Discord" src="https://img.shields.io/discord/1119637219561451644">
     </a>
     <a target="_blank" href="https://deepwiki.com/explodinggradients/ragas">
-    <img 
-      src="https://devin.ai/assets/deepwiki-badge.png" 
-      alt="Ask DeepWiki.com" 
-      height="20" 
-    />
-  </a>
+      <img 
+        src="https://devin.ai/assets/deepwiki-badge.png" 
+        alt="Ask DeepWiki.com" 
+        height="20" 
+      />
+    </a>
 </p>
 
 <h4 align="center">
