@@ -6,7 +6,7 @@ import pytest
 from pydantic import BaseModel
 
 from ragas.embeddings.base import BaseRagasEmbedding as BaseEmbedding
-from ragas.experimental.prompt.dynamic_few_shot import DynamicFewShotPrompt
+from ragas.prompt.dynamic_few_shot import DynamicFewShotPrompt
 
 
 class MockResponseModel(BaseModel):
@@ -41,6 +41,14 @@ class MockEmbeddingModel(BaseEmbedding):
             value = ((text_hash + i) % 200000 - 100000) / 100000.0
             embedding.append(value)
         return embedding
+
+    def embed_text(self, text: str, **kwargs: t.Any) -> t.List[float]:
+        """Embed a single text."""
+        return self._generate_embedding(text)
+
+    async def aembed_text(self, text: str, **kwargs: t.Any) -> t.List[float]:
+        """Asynchronously embed a single text."""
+        return self._generate_embedding(text)
 
     def embed_query(self, text: str) -> t.List[float]:
         """Embed a query text."""

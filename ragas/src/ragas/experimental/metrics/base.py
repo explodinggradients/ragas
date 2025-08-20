@@ -12,9 +12,10 @@ from pydantic import BaseModel
 from rich.progress import Progress
 
 from ...embeddings import BaseRagasEmbeddings
+from ...embeddings.base import BaseRagasEmbedding
 from ...llms import InstructorBaseRagasLLM as BaseRagasLLM
-from ..prompt.base import Prompt
-from ..prompt.dynamic_few_shot import DynamicFewShotPrompt
+from ...prompt.simple_prompt import Prompt
+from ...prompt.dynamic_few_shot import DynamicFewShotPrompt
 from .result import MetricResult
 
 if t.TYPE_CHECKING:
@@ -147,7 +148,7 @@ class Metric(BaseMetric):
     def align_and_validate(
         self,
         dataset: "Dataset",
-        embedding_model: BaseRagasEmbeddings,
+        embedding_model: t.Union[BaseRagasEmbeddings, BaseRagasEmbedding],
         llm: BaseRagasLLM,
         test_size: float = 0.2,
         random_state: int = 42,
@@ -172,7 +173,7 @@ class Metric(BaseMetric):
     def align(
         self,
         train_dataset: "Dataset",
-        embedding_model: BaseRagasEmbeddings,
+        embedding_model: t.Union[BaseRagasEmbeddings, BaseRagasEmbedding],
         **kwargs: t.Dict[str, t.Any],
     ):
         """
@@ -203,7 +204,7 @@ class Metric(BaseMetric):
             else 0.7
         )
         self.prompt = DynamicFewShotPrompt.from_prompt(
-            self.prompt, embedding_model, max_similar_examples, similarity_threshold
+            self.prompt, embedding_model, max_similar_examples, similarity_threshold  # type: ignore
         )
         train_dataset.reload()
         total_items = len(train_dataset)

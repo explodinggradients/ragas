@@ -13,7 +13,7 @@ import numpy as np
 
 
 from ragas.embeddings.base import BaseRagasEmbedding as BaseEmbedding
-from .base import Prompt
+from .simple_prompt import Prompt
 
 if t.TYPE_CHECKING:
     from pydantic import BaseModel
