@@ -13,7 +13,9 @@ cd ragas
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 3. Install dependencies and setup environment
-make install
+make install         # Full setup with ML stack
+# OR
+make install-minimal # Lightweight setup for basic development
 
 # 4. Verify everything works
 make check
@@ -29,7 +31,8 @@ AI agents working with this codebase should use these standardized commands:
 ```bash
 # Essential commands for AI development
 make help           # See all available targets
-make install        # Install dependencies and setup environment
+make install        # Full development setup (recommended for most tasks)
+make install-minimal# Minimal setup for basic code quality tasks
 make check          # Quick health check (format + type)
 make test           # Run all tests
 make run-ci         # Full CI pipeline locally
@@ -82,19 +85,28 @@ ragas/
 
 ### Setup Process
 
-#### Option 1: Using Make (Recommended)
+#### Option 1: Full Development Setup (Recommended)
+Includes all dependencies for ML stack, experimental features, and notebooks:
 ```bash
 make install
 ```
 
-#### Option 2: Manual Setup
+#### Option 2: Minimal Development Setup
+Lightweight setup for basic development tasks (code quality, testing):
+```bash
+make install-minimal
+```
+
+#### Option 3: Manual Setup
 ```bash
 # Install uv if not available
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install both projects
+# Minimal setup
 uv pip install -e "./ragas[dev]"
-uv pip install -e "./experimental[dev]"
+
+# Full setup
+uv sync --group dev-full --package ragas
 ```
 
 ### Verification
@@ -108,7 +120,8 @@ make test   # Runs all tests
 Run `make help` to see all targets. Here are the essential commands:
 
 ### Setup & Installation
-- `make install` - Install dependencies for both projects
+- `make install` - Install full development dependencies (including ML stack)
+- `make install-minimal` - Install minimal development dependencies
 
 ### Code Quality
 - `make format` - Format and lint all code (includes unused import cleanup)
@@ -323,8 +336,23 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ```bash
 # Clean install
 make clean
-make install
+make install        # Full setup
+# OR
+make install-minimal # Minimal setup if you don't need ML stack
 ```
+
+#### Choosing Installation Type
+**Use minimal installation when:**
+- Working on core code changes
+- Running format, lint, type checks
+- Basic unit testing
+- Limited disk space or slow internet
+
+**Use full installation when:**
+- Working with experimental features
+- ML model development or testing
+- Running benchmarks
+- Working with notebooks or tracing
 
 ### Getting Help
 - **Documentation**: Check `CLAUDE.md` for AI assistant guidance

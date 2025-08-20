@@ -14,16 +14,47 @@ The repository contains:
 
 ## Development Environment Setup
 
-### Installation
+### Installation Options
+
+Choose the appropriate installation based on your development needs:
+
+#### Minimal Development Setup
+Recommended for:
+- Code formatting, linting, and type checking
+- Running unit tests
+- Basic development tasks
+- Contributing to core functionality
 
 ```bash
 # Create a virtual environment
 python -m venv venv
 source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
 
-# For ragas (includes experimental features)
+# Install minimal development dependencies
 pip install -U setuptools  # Required on newer Python versions
 pip install -e "./ragas[dev]"
+# Or use make command
+make install-minimal
+```
+
+#### Full Development Setup
+Required for:
+- Working with experimental features
+- ML model development and testing
+- Notebook development
+- Tracing and observability features
+- Complete testing including benchmarks
+
+```bash
+# Create a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+
+# Install full development dependencies
+pip install -U setuptools
+uv sync --group dev-full --package ragas
+# Or use make command
+make install
 ```
 
 ## Common Commands
@@ -32,7 +63,8 @@ pip install -e "./ragas[dev]"
 
 ```bash
 # Setup and installation
-make install        # Install dependencies for ragas
+make install         # Install full development dependencies (including ML stack)
+make install-minimal # Install minimal development dependencies
 
 # Code quality
 make format         # Format and lint all code

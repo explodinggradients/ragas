@@ -65,6 +65,17 @@ gdrive = [
 ]
 ai-frameworks = ["haystack-ai"]
 
+# Development dependencies
+dev = [  # Minimal dev requirements
+    "ruff",
+    "pyright>=1.1.403",
+    "pre-commit>=4.3.0",
+    "pytest",
+    "pytest-xdist[psutil]",
+    "pytest-asyncio",
+    "nbmake",
+]
+
 test = []
 [project.entry-points."ragas.backends"]
 "local/csv" = "ragas.backends.local_csv:LocalCSVBackend"
@@ -104,18 +115,11 @@ markers = [
 ]
 
 [dependency-groups]
-dev = [
-    "ruff",
-    "pyright>=1.1.403",
-    "pre-commit>=4.3.0",
-    "pytest",
-    "pytest-xdist[psutil]",
-    "pytest-asyncio",
-    "nbmake",
+dev-full = [  # Everything including ML stack
+    "ragas[dev,all,tracing,gdrive,ai-frameworks]",
     "notebook",
     "arize-phoenix>=6.1.0",
     "openinference-instrumentation-langchain>=0.1.29",
-    "ragas[all,tracing,gdrive,ai-frameworks]",
     "build>=1.3.0",
 ]
 docs = [

@@ -13,13 +13,21 @@ help: ## Show all Makefile targets
 # SETUP & INSTALLATION
 # =============================================================================
 
-install: ## Install dependencies for ragas
-	@echo "Installing dependencies..."
-	@echo "Installing ragas dependencies (including experimental)..."
+install: ## Install full development dependencies for ragas
+	@echo "Installing full development dependencies..."
+	@echo "Installing ragas with all development dependencies (including ML stack)..."
+	$(Q)uv sync --group dev-full --package ragas
+	@echo "Setting up pre-commit hooks..."
+	$(Q)pre-commit install
+	@echo "Full installation complete!"
+
+install-minimal: ## Install minimal development dependencies for ragas
+	@echo "Installing minimal development dependencies..."
+	@echo "Installing ragas with minimal dev dependencies..."
 	$(Q)uv pip install -e "./ragas[dev]"
 	@echo "Setting up pre-commit hooks..."
 	$(Q)pre-commit install
-	@echo "Installation complete!"
+	@echo "Minimal installation complete!"
 
 # =============================================================================
 # CODE QUALITY
