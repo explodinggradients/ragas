@@ -76,7 +76,7 @@ test = []
 ragas = "ragas.cli:app"
 
 [tool.setuptools]
-package-dir = {"" = "ragas/src"}
+package-dir = {"" = "src"}
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/markdown"}
@@ -104,8 +104,8 @@ docstring-code-format = false
 preview = false
 
 [tool.pyright]
-include = ["ragas/src/ragas"]
-exclude = ["ragas/src/ragas/experimental", "ragas/src/ragas/_analytics.py", "ragas/src/ragas/testset", "ragas/src/ragas/optimizers", "ragas/src/ragas/metrics"]
+include = ["src/ragas"]
+exclude = ["src/ragas/experimental", "src/ragas/_analytics.py", "src/ragas/testset", "src/ragas/optimizers", "src/ragas/metrics"]
 excludeTypeshedPaths = ["@types/*"]
 pythonVersion = "3.9"
 pythonPlatform = "All"
@@ -122,12 +122,12 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 # Path to version file relative to this pyproject.toml
-version_file = "ragas/src/ragas/_version.py"
+version_file = "src/ragas/_version.py"
 
 [tool.pytest.ini_options]
 addopts = "-n 0"
 asyncio_default_fixture_loop_scope = "function"
-testpaths = ["ragas/tests"]
+testpaths = ["tests"]
 markers = [
     "experimental_ci: Set of tests that will be run as part of Experimental CI",
     "e2e: End-to-End tests for Experimental",
