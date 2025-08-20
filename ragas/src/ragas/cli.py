@@ -5,20 +5,20 @@ Ragas CLI for running experiments from command line.
 import asyncio
 import importlib.util
 import sys
-from pathlib import Path
-import typer
-from typing import Optional, Any, Dict
 import traceback
 from collections import Counter
-from rich.table import Table
-from rich.text import Text
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+import typer
+from rich.live import Live
 from rich.panel import Panel
 from rich.spinner import Spinner
-from rich.live import Live
+from rich.table import Table
+from rich.text import Text
 
 # from ragas.experimental.project.core import Project  # TODO: Project module not implemented yet
 from ragas.utils import console
-
 
 app = typer.Typer(help="Ragas CLI for running LLM evaluations")
 
@@ -463,9 +463,10 @@ def hello_world(
         ".", help="Directory to run the hello world example in"
     ),
 ):
-    import pandas as pd
     import os
     import time
+
+    import pandas as pd
 
     if not os.path.exists(directory):
         console.print(f"Directory {directory} does not exist.", style="red")

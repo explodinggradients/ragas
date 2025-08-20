@@ -2,17 +2,17 @@ from __future__ import annotations
 
 __all__ = ["SimpleExampleStore", "SimpleInMemoryExampleStore", "DynamicFewShotPrompt"]
 
-import json
 import gzip
-import warnings
+import json
 import typing as t
+import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
 
 import numpy as np
 
-
 from ragas.embeddings.base import BaseRagasEmbedding as BaseEmbedding
+
 from .simple_prompt import Prompt
 
 if t.TYPE_CHECKING:

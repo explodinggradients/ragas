@@ -1,12 +1,11 @@
 import importlib
 import sys
+from typing import Callable
 
 import pytest
 from numpy.random import Generator, default_rng
 
 from ragas.run_config import RunConfig
-
-from typing import Callable
 
 # Use a simple type alias that works across Python versions
 RandomComparison = Callable[[Generator, Generator], bool]

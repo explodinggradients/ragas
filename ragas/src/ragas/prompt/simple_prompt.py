@@ -2,10 +2,10 @@ from __future__ import annotations
 
 __all__ = ["Prompt"]
 
-import json
 import gzip
-import warnings
+import json
 import typing as t
+import warnings
 from pathlib import Path
 
 if t.TYPE_CHECKING:

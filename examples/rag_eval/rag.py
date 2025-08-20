@@ -1,10 +1,10 @@
-from typing import List, Dict, Any, Optional
-from openai import OpenAI
 import json
 import os
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from dataclasses import dataclass, asdict
+from typing import Any, Dict, List, Optional
 
+from openai import OpenAI
 
 DOCUMENTS = [
     "Ragas are melodic frameworks in Indian classical music.",

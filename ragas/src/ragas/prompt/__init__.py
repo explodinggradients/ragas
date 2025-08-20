@@ -1,4 +1,9 @@
 from .base import BasePrompt, BoolIO, StringIO, StringPrompt
+from .dynamic_few_shot import (
+    DynamicFewShotPrompt,
+    SimpleExampleStore,
+    SimpleInMemoryExampleStore,
+)
 from .few_shot_pydantic_prompt import (
     ExampleStore,
     FewShotPydanticPrompt,
@@ -8,11 +13,6 @@ from .mixin import PromptMixin
 from .multi_modal_prompt import ImageTextPrompt, ImageTextPromptValue
 from .pydantic_prompt import InputModel, OutputModel, PydanticPrompt
 from .simple_prompt import Prompt
-from .dynamic_few_shot import (
-    DynamicFewShotPrompt,
-    SimpleExampleStore,
-    SimpleInMemoryExampleStore,
-)
 
 __all__ = [
     "BasePrompt",

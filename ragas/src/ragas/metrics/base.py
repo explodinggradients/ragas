@@ -24,7 +24,7 @@ if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
     from ragas.config import DemonstrationConfig, InstructionConfig
-    from ragas.embeddings import BaseRagasEmbeddings, BaseRagasEmbedding
+    from ragas.embeddings import BaseRagasEmbedding, BaseRagasEmbeddings
     from ragas.llms import BaseRagasLLM
 
 logger = logging.getLogger(__name__)

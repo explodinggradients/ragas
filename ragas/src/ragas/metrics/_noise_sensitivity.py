@@ -109,9 +109,9 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
         noise_sensitivity_in_irrelevant = np.mean(irrelevant_faithful & incorrect)
 
         if self.mode == "irrelevant":
-            return noise_sensitivity_in_irrelevant
+            return float(noise_sensitivity_in_irrelevant)
 
-        return noise_sensitivity_in_relevant
+        return float(noise_sensitivity_in_relevant)
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks

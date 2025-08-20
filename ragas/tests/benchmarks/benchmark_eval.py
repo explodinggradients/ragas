@@ -4,13 +4,13 @@ from datasets import DatasetDict, load_dataset
 
 from ragas import evaluate
 from ragas.metrics import (
+    ContextUtilization,
     answer_correctness,
     answer_relevancy,
     answer_similarity,
     context_precision,
     context_recall,
     faithfulness,
-    ContextUtilization,
 )
 
 # from ragas.metrics.critique import harmfulness  # Import unavailable

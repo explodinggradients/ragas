@@ -2,7 +2,7 @@
 
 import json
 import typing as t
-from datetime import datetime, date
+from datetime import date, datetime
 from pathlib import Path
 
 from pydantic import BaseModel

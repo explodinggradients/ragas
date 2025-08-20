@@ -1,7 +1,8 @@
 """Tests for Google Drive backend implementation."""
 
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 from pydantic import BaseModel
 
 try:
@@ -19,7 +20,7 @@ except ImportError:
             super().__init__()
 
 
-from ragas.backends.gdrive_backend import GDriveBackend, GDRIVE_AVAILABLE
+from ragas.backends.gdrive_backend import GDRIVE_AVAILABLE, GDriveBackend
 
 
 class SampleModel(BaseModel):

@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import Mock
+
+import pytest
 from pydantic import BaseModel
 
 from ragas.llms.base import instructor_llm_factory as llm_factory

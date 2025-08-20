@@ -39,7 +39,13 @@ Example:
 
 # Type stubs for pyright - these won't execute but provide type information
 if False:
-    from .langfuse import observe, logger, LangfuseTrace, sync_trace, add_query_param  # noqa: F401
+    from .langfuse import (  # noqa: F401
+        LangfuseTrace,
+        add_query_param,
+        logger,
+        observe,
+        sync_trace,
+    )
     from .mlflow import MLflowTrace  # noqa: F401
 
 
@@ -47,11 +53,11 @@ if False:
 def __getattr__(name: str):
     if name in ["observe", "logger", "LangfuseTrace", "sync_trace", "add_query_param"]:
         from .langfuse import (
-            observe,
-            logger,
             LangfuseTrace,
-            sync_trace,
             add_query_param,
+            logger,
+            observe,
+            sync_trace,
         )
 
         if name == "observe":

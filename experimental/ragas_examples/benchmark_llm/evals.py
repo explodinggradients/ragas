@@ -1,17 +1,17 @@
-import json
+import argparse
 import asyncio
+import datetime
+import json
 import os
 import sys
-import argparse
-import datetime
 from typing import List, Optional
 
 import pandas as pd
 from ragas_experimental import Dataset, experiment
-from ragas_experimental.metrics.result import MetricResult
 from ragas_experimental.metrics.discrete import discrete_metric
+from ragas_experimental.metrics.result import MetricResult
 
-from .prompt import run_prompt, DEFAULT_MODEL
+from .prompt import DEFAULT_MODEL, run_prompt
 
 
 @discrete_metric(name="discount_accuracy", allowed_values=["correct", "incorrect"])
@@ -20,40 +20,41 @@ def discount_accuracy(prediction: str, expected_discount):
     parsed_json = json.loads(prediction)
     predicted_discount = parsed_json.get("discount_percentage")
     expected_discount_int = int(expected_discount)
-    
+
     if predicted_discount == expected_discount_int:
         return MetricResult(
-            value="correct", 
-            reason=f"Correctly calculated discount={expected_discount_int}%"
+            value="correct",
+            reason=f"Correctly calculated discount={expected_discount_int}%",
         )
     else:
         return MetricResult(
             value="incorrect",
-            reason=f"Expected discount={expected_discount_int}%; Got discount={predicted_discount}%"
+            reason=f"Expected discount={expected_discount_int}%; Got discount={predicted_discount}%",
         )
 
 
 def create_benchmark_experiment(model_name: str, experiment_name: str):
     """Factory function to create experiment functions for different models."""
-    
+
     @experiment()
     async def benchmark_experiment(row):
         # Get model response (run blocking call in thread to keep async runner responsive)
-        response = await asyncio.to_thread(run_prompt, row["customer_profile"], model=model_name)
-        
+        response = await asyncio.to_thread(
+            run_prompt, row["customer_profile"], model=model_name
+        )
+
         # Parse response (strict JSON mode expected)
         try:
             parsed_json = json.loads(response)
-            predicted_discount = parsed_json.get('discount_percentage')
+            predicted_discount = parsed_json.get("discount_percentage")
         except Exception:
             predicted_discount = None
-        
+
         # Score the response
         score = discount_accuracy.score(
-            prediction=response,
-            expected_discount=row["expected_discount"]
+            prediction=response, expected_discount=row["expected_discount"]
         )
-        
+
         return {
             **row,
             "model": model_name,
@@ -61,9 +62,9 @@ def create_benchmark_experiment(model_name: str, experiment_name: str):
             "response": response,
             "predicted_discount": predicted_discount,
             "score": score.value,
-            "score_reason": score.reason
+            "score_reason": score.reason,
         }
-    
+
     return benchmark_experiment
 
 
@@ -71,16 +72,16 @@ def load_dataset():
     """Load the dataset from CSV file."""
     # Get the directory where this file is located
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    
+
     dataset = Dataset.load(
-        name="discount_benchmark",
-        backend="local/csv",
-        root_dir=current_dir
+        name="discount_benchmark", backend="local/csv", root_dir=current_dir
     )
     return dataset
 
 
-def compare_inputs_to_output(inputs: List[str], output_path: Optional[str] = None) -> str:
+def compare_inputs_to_output(
+    inputs: List[str], output_path: Optional[str] = None
+) -> str:
     """Compare multiple experiment CSVs and write a combined CSV.
 
     - Requires 'id' column in all inputs; uses it as the alignment key
@@ -106,7 +107,9 @@ def compare_inputs_to_output(inputs: List[str], output_path: Optional[str] = Non
 
     # Require 'id' in all inputs
     if not all("id" in df.columns for df in dataframes):
-        raise ValueError("All input CSVs must contain an 'id' column to align rows. Re-run experiments after adding 'id' to your dataset.")
+        raise ValueError(
+            "All input CSVs must contain an 'id' column to align rows. Re-run experiments after adding 'id' to your dataset."
+        )
 
     # Validate duplicates and matching sets of IDs
     key_sets = []
@@ -114,7 +117,9 @@ def compare_inputs_to_output(inputs: List[str], output_path: Optional[str] = Non
         keys = df["id"].astype(str)
         if keys.duplicated().any():
             dupes = keys[keys.duplicated()].head(3).tolist()
-            raise ValueError(f"Input {inputs[idx]} contains duplicate id values. Examples: {dupes}")
+            raise ValueError(
+                f"Input {inputs[idx]} contains duplicate id values. Examples: {dupes}"
+            )
         key_sets.append(set(keys.tolist()))
 
     base_keys = key_sets[0]
@@ -124,8 +129,8 @@ def compare_inputs_to_output(inputs: List[str], output_path: Optional[str] = Non
             missing_in_base = list(ks - base_keys)[:5]
             raise ValueError(
                 "Inputs do not contain the same set of IDs.\n"
-                f"- Missing in file {i+1}: {missing_in_other}\n"
-                f"- Extra in file {i+1}: {missing_in_base}"
+                f"- Missing in file {i + 1}: {missing_in_other}\n"
+                f"- Extra in file {i + 1}: {missing_in_base}"
             )
 
     # Validate canonical columns exist in base
@@ -149,7 +154,7 @@ def compare_inputs_to_output(inputs: List[str], output_path: Optional[str] = Non
                 )
         combined[f"{exp_name}_response"] = base_ids_str.map(df["response"])
         combined[f"{exp_name}_score"] = base_ids_str.map(df["score"])
-        combined[f"{exp_name}_score_reason"] = base_ids_str.map(df["score_reason"]) 
+        combined[f"{exp_name}_score_reason"] = base_ids_str.map(df["score_reason"])
 
     # Determine output path
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -199,7 +204,9 @@ async def run_command(model: str, name: Optional[str]) -> None:
     experiments_dir = os.path.join(current_dir, "experiments")
     os.makedirs(experiments_dir, exist_ok=True)
 
-    benchmark_experiment = create_benchmark_experiment(model_name=model, experiment_name=exp_name)
+    benchmark_experiment = create_benchmark_experiment(
+        model_name=model, experiment_name=exp_name
+    )
     print(f"Running model evaluation ({model})...")
     results = await benchmark_experiment.arun(dataset, name=f"{run_id}-{exp_name}")
     print(f"✅ {exp_name}: {len(results)} cases evaluated")
@@ -221,13 +228,29 @@ def build_parser() -> argparse.ArgumentParser:
 
     # run subcommand
     run_parser = subparsers.add_parser("run", help="Run a single experiment")
-    run_parser.add_argument("--model", type=str, default=DEFAULT_MODEL, help="Model name to evaluate")
-    run_parser.add_argument("--name", type=str, default=None, help="Experiment name (defaults to model name)")
+    run_parser.add_argument(
+        "--model", type=str, default=DEFAULT_MODEL, help="Model name to evaluate"
+    )
+    run_parser.add_argument(
+        "--name",
+        type=str,
+        default=None,
+        help="Experiment name (defaults to model name)",
+    )
 
     # compare subcommand
-    cmp_parser = subparsers.add_parser("compare", help="Combine multiple experiment CSVs")
-    cmp_parser.add_argument("--inputs", nargs="+", required=True, help="Input CSV files to compare")
-    cmp_parser.add_argument("--output", type=str, default=None, help="Output CSV path (defaults to experiments/<timestamp>-comparison.csv)")
+    cmp_parser = subparsers.add_parser(
+        "compare", help="Combine multiple experiment CSVs"
+    )
+    cmp_parser.add_argument(
+        "--inputs", nargs="+", required=True, help="Input CSV files to compare"
+    )
+    cmp_parser.add_argument(
+        "--output",
+        type=str,
+        default=None,
+        help="Output CSV path (defaults to experiments/<timestamp>-comparison.csv)",
+    )
 
     return parser
 
@@ -238,6 +261,7 @@ if __name__ == "__main__":
 
     if args.command == "run":
         import asyncio
+
         asyncio.run(run_command(model=args.model, name=args.name))
         sys.exit(0)
     elif args.command == "compare":

@@ -282,7 +282,7 @@ class TestTracingIntegrationInitModule:
 
     def test_lazy_import_langfuse_functions(self):
         """Test lazy imports for Langfuse functions."""
-        from ragas.integrations.tracing import observe, sync_trace, LangfuseTrace
+        from ragas.integrations.tracing import LangfuseTrace, observe, sync_trace
 
         assert callable(observe)
         assert callable(sync_trace)
@@ -326,6 +326,7 @@ class TestTracingWithCallbackSystem:
     def test_callback_manager_compatibility(self):
         """Test compatibility with LangChain callback manager."""
         from langchain_core.callbacks import CallbackManager
+
         from ragas.callbacks import RagasTracer
         from ragas.integrations.tracing.langfuse import observe
 

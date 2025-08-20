@@ -83,7 +83,7 @@ test = []
 ragas = "ragas.cli:app"
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = {"" = "ragas/src"}
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/markdown"}
