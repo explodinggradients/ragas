@@ -5,8 +5,8 @@ import typing as t
 import pytest
 from pydantic import BaseModel
 
-from ragas.embeddings.base import BaseRagasEmbeddings as BaseEmbedding
-from ragas.prompt import DynamicFewShotPrompt
+from ragas.embeddings.base import BaseRagasEmbedding as BaseEmbedding
+from ragas.experimental.prompt.dynamic_few_shot import DynamicFewShotPrompt
 
 
 class MockResponseModel(BaseModel):

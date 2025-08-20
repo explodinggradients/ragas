@@ -12,8 +12,8 @@ from pathlib import Path
 import numpy as np
 
 
-from ragas.embeddings.base import BaseRagasEmbeddings as BaseEmbedding
-from .simple_prompt import Prompt
+from ragas.embeddings.base import BaseRagasEmbedding as BaseEmbedding
+from .base import Prompt
 
 if t.TYPE_CHECKING:
     from pydantic import BaseModel

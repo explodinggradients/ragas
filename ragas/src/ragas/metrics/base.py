@@ -24,7 +24,7 @@ if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
     from ragas.config import DemonstrationConfig, InstructionConfig
-    from ragas.embeddings import BaseRagasEmbeddings
+    from ragas.embeddings import BaseRagasEmbeddings, BaseRagasEmbedding
     from ragas.llms import BaseRagasLLM
 
 logger = logging.getLogger(__name__)
@@ -428,14 +428,16 @@ class MetricWithLLM(Metric, PromptMixin):
 
 @dataclass
 class MetricWithEmbeddings(Metric):
-    embeddings: t.Optional[BaseRagasEmbeddings] = None
+    embeddings: t.Optional[t.Union[BaseRagasEmbeddings, BaseRagasEmbedding]] = None
 
     def init(self, run_config: RunConfig):
         if self.embeddings is None:
             raise ValueError(
                 f"Metric '{self.name}' has no valid embeddings provided (self.embeddings is None). Please initantiate a the metric with an embeddings to run."  # noqa
             )
-        self.embeddings.set_run_config(run_config)
+        # Only legacy BaseRagasEmbeddings has set_run_config method
+        if hasattr(self.embeddings, "set_run_config"):
+            self.embeddings.set_run_config(run_config)  # type: ignore[attr-defined]
 
 
 class SingleTurnMetric(Metric):
