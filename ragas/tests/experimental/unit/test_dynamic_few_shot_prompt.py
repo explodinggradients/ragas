@@ -6,7 +6,7 @@ import warnings
 import pytest
 from pydantic import BaseModel
 
-from ragas.experimental.embeddings.base import BaseEmbedding
+from ragas.embeddings.base import BaseRagasEmbedding as BaseEmbedding
 from ragas.experimental.prompt.dynamic_few_shot import DynamicFewShotPrompt
 
 

@@ -2,17 +2,21 @@
 
 import typing as t
 
-from .base import BaseEmbedding
+from .base import BaseRagasEmbedding
 from .utils import run_sync_in_async, validate_texts
 
 
-class GoogleEmbeddings(BaseEmbedding):
+class GoogleEmbeddings(BaseRagasEmbedding):
     """Google embeddings using Vertex AI or Google AI (Gemini).
 
     Supports both Vertex AI and Google AI (Gemini) embedding models.
     For Vertex AI, requires google-cloud-aiplatform package.
     For Google AI, requires google-generativeai package.
     """
+
+    PROVIDER_NAME = "google"
+    REQUIRES_CLIENT = True
+    DEFAULT_MODEL = "text-embedding-004"
 
     def __init__(
         self,
