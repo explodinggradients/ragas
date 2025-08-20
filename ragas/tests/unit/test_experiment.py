@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from ragas.backends.inmemory import InMemoryBackend
 from ragas.experiment import Experiment, experiment, version_experiment
-from ragas.experimental.dataset import Dataset
+from ragas.dataset import Dataset
 from ragas.utils import find_git_root, memorable_names
 
 
