@@ -13,4 +13,4 @@ Available example modules:
 - workflow_eval: Workflow evaluation examples
 """
 
-__version__ = "0.1.0"
+from ._version import __version__
