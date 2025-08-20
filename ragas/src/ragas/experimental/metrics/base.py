@@ -19,7 +19,7 @@ from ...prompt.simple_prompt import Prompt
 from .result import MetricResult
 
 if t.TYPE_CHECKING:
-    from ..dataset import Dataset
+    from ragas.dataset import Dataset
 
 
 @dataclass
