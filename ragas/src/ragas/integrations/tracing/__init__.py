@@ -37,27 +37,27 @@ Example:
     ```
 """
 
-__all__ = [
-    # Langfuse exports
-    "observe",
-    "logger",
-    "LangfuseTrace",
-    "sync_trace",
-    "add_query_param",
-    # MLflow exports
-    "MLflowTrace",
-]
+# Type stubs for pyright - these won't execute but provide type information
+if False:
+    from .langfuse import (  # noqa: F401
+        LangfuseTrace,
+        add_query_param,
+        logger,
+        observe,
+        sync_trace,
+    )
+    from .mlflow import MLflowTrace  # noqa: F401
 
 
 # Lazy imports to handle optional dependencies gracefully
 def __getattr__(name: str):
     if name in ["observe", "logger", "LangfuseTrace", "sync_trace", "add_query_param"]:
         from .langfuse import (
-            observe,
-            logger,
             LangfuseTrace,
-            sync_trace,
             add_query_param,
+            logger,
+            observe,
+            sync_trace,
         )
 
         if name == "observe":

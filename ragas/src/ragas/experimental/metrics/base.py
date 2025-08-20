@@ -3,19 +3,20 @@
 __all__ = ["Metric"]
 
 import asyncio
-from dataclasses import dataclass, field
-import typing as t
 import string
+import typing as t
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 
 from pydantic import BaseModel
 from rich.progress import Progress
 
-from ragas.embeddings.base import BaseRagasEmbedding as BaseEmbedding
-from ..prompt.base import Prompt
-from ..prompt.dynamic_few_shot import DynamicFewShotPrompt
-from .result import MetricResult
+from ...embeddings import BaseRagasEmbeddings
+from ...embeddings.base import BaseRagasEmbedding
 from ...llms import InstructorBaseRagasLLM as BaseRagasLLM
+from ...prompt.dynamic_few_shot import DynamicFewShotPrompt
+from ...prompt.simple_prompt import Prompt
+from .result import MetricResult
 
 if t.TYPE_CHECKING:
     from ..dataset import Dataset
@@ -147,7 +148,7 @@ class Metric(BaseMetric):
     def align_and_validate(
         self,
         dataset: "Dataset",
-        embedding_model: BaseEmbedding,
+        embedding_model: t.Union[BaseRagasEmbeddings, BaseRagasEmbedding],
         llm: BaseRagasLLM,
         test_size: float = 0.2,
         random_state: int = 42,
@@ -172,7 +173,7 @@ class Metric(BaseMetric):
     def align(
         self,
         train_dataset: "Dataset",
-        embedding_model: BaseEmbedding,
+        embedding_model: t.Union[BaseRagasEmbeddings, BaseRagasEmbedding],
         **kwargs: t.Dict[str, t.Any],
     ):
         """
@@ -202,8 +203,30 @@ class Metric(BaseMetric):
             if isinstance(similarity_threshold_val, (int, float, str))
             else 0.7
         )
+        # Convert BaseRagasEmbeddings to BaseRagasEmbedding if needed
+        if isinstance(embedding_model, BaseRagasEmbeddings):
+            # For legacy BaseRagasEmbeddings, we need to wrap it
+            # Create a wrapper that implements BaseRagasEmbedding interface
+            class EmbeddingWrapper(BaseRagasEmbedding):
+                def __init__(self, legacy_embedding):
+                    self.legacy_embedding = legacy_embedding
+
+                def embed_text(self, text: str, **kwargs) -> t.List[float]:
+                    return self.legacy_embedding.embed_query(text)
+
+                async def aembed_text(self, text: str, **kwargs) -> t.List[float]:
+                    return await self.legacy_embedding.aembed_query(text)
+
+            actual_embedding_model = EmbeddingWrapper(embedding_model)
+        else:
+            # Already BaseRagasEmbedding
+            actual_embedding_model = embedding_model
+
         self.prompt = DynamicFewShotPrompt.from_prompt(
-            self.prompt, embedding_model, max_similar_examples, similarity_threshold
+            self.prompt,
+            actual_embedding_model,
+            max_similar_examples,
+            similarity_threshold,
         )
         train_dataset.reload()
         total_items = len(train_dataset)

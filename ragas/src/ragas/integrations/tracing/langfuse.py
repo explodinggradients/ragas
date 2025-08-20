@@ -9,12 +9,12 @@ from datetime import datetime
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 if t.TYPE_CHECKING:
-    from langfuse.api import Observation, TraceWithFullDetails
     from langfuse import Langfuse, observe
+    from langfuse.api import Observation, TraceWithFullDetails
 else:
     try:
-        from langfuse.api import Observation, TraceWithFullDetails  # type: ignore
         from langfuse import Langfuse, observe  # type: ignore
+        from langfuse.api import Observation, TraceWithFullDetails  # type: ignore
 
         LANGFUSE_AVAILABLE = True
     except ImportError:
@@ -134,7 +134,7 @@ async def sync_trace(
     raise ValueError(f"Trace {trace_id} not found after {max_retries} attempts")
 
 
-def add_query_param(url, param_name, param_value):
+def add_query_param(url: str, param_name: str, param_value: str) -> str:
     """Add a query parameter to a URL."""
     # Parse the URL
     url_parts = list(urlparse(url))
