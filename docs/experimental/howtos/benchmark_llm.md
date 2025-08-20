@@ -1,6 +1,6 @@
 # How to Evaluate a New LLM For Your Use Case
 
-When a new LLM is released, you might want to determine if it outperforms your current model for your specific use case. This guide shows you how to run an accuracy comparison between two models using Ragas experimental framework.
+When a new LLM is released, you might want to determine if it outperforms your current model for your specific use case. This guide shows you how to run an accuracy comparison between two models using Ragas framework.
 
 ## What you'll accomplish
 
@@ -17,8 +17,6 @@ We'll use discount calculation as our test case: given a customer profile, calcu
 
 *Note: You can adapt this approach to any use case that matters for your application.*
 
-> **💡 Quick Start**: If you want to see the complete evaluation in action, you can jump straight to the [end-to-end command](#running-the-evaluation-end-to-end) that runs everything and generates comparison results automatically.
-> 
 > **📁 Full Code**: The complete source code for this example is available on [Github](https://github.com/explodinggradients/ragas/tree/main/experimental/ragas_examples/benchmark_llm)
 
 ## Set up your environment and API access
@@ -29,61 +27,19 @@ First, ensure you have your API credentials configured:
 export OPENAI_API_KEY=your_actual_api_key
 ```
 
-## Run experiments
+## Test your setup
 
-Run one experiment per model using the CLI. We’ll use these example models:
-
-- Baseline: "gpt-4.1-nano-2025-04-14"
-- Candidate: "gpt-5-nano-2025-08-07"
-
-```bash
-# Baseline
-python -m ragas_examples.benchmark_llm.evals run --model "gpt-4.1-nano-2025-04-14"
-
-# Candidate
-python -m ragas_examples.benchmark_llm.evals run --model "gpt-5-nano-2025-08-07"
-```
-
-Each command saves a CSV under `experiments/` with per-row results, including:
-
-- id (recommended), model, experiment_name, response, predicted_discount, score, score_reason
-
-### Enforce JSON output
-
-To make evaluation robust and simplify parsing, enable JSON mode in the prompt call so models return a strict JSON object:
-
-```python
-response = client.chat.completions.create(
-    model=model,
-    response_format={"type": "json_object"},
-    messages=[
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": prompt},
-    ],
-)
-```
-
-
-!!! note
-    When possible, pin and record the exact model snapshot/version (for example, "gpt-4o-2024-08-06" instead of just "gpt-4o"). Providers regularly update alias names, and performance can change between snapshots. You can find available snapshots in the provider's model documentation (see OpenAI's [model catalog](https://platform.openai.com/docs/models) as an example). Including the snapshot in your results makes future comparisons fair and reproducible.
-
-## Test your prompt setup
-
-Before running the full evaluation, verify your setup works:
+Verify your setup works:
 
 ```bash
 python -m ragas_examples.benchmark_llm.prompt
 ```
 
-This will test a sample customer profile with both models to ensure:
+This will test a sample customer profile to ensure your setup works. 
 
-- API keys are working
-- Models are accessible  
-- JSON output format is correct
+You should see structured JSON responses showing discount calculations and reasoning.
 
-You should see structured JSON responses from both models showing discount calculations and reasoning.
-
-??? example "Example output from both models"
+??? example "Example output"
     ```bash
     $ python -m ragas_examples.benchmark_llm.prompt
     ```
@@ -120,25 +76,17 @@ You should see structured JSON responses from both models showing discount calcu
         - Account Age: 3 years
         
 
-    === Running Prompts ===
-    === Baseline Model (gpt-4.1-nano-2025-04-14) ===
+    === Running Prompt with default model gpt-4.1-nano-2025-04-14 ===
     {
     "discount_percentage": 25,
     "reason": "Sarah qualifies for a 15% discount due to age (67). She also gets a 10% discount for being a premium member for over 2 years. The total stacking of 15% and 10% discounts results in 25%. No other discounts apply based on income or account age.",
     "applied_rules": ["Age 65+", "Premium member for 2+ years"]
     }
-
-    === Candidate Model (gpt-5-nano-2025-08-07) ===
-    {
-    "discount_percentage": 25,
-    "reason": "Customer is 67 years old, which qualifies for a 15% age-based discount. They have been a premium member for 3 years, qualifying for a 10% discount. The income-based discount does not apply since income is $45,000 (> $30k). They are not a new customer (account age is 3 years). Therefore, total discount = 15% + 10% = 25%, which is within the 35% maximum.",
-    "applied_rules": ["Age 65+ discount", "Premium member for 2+ years"]
-    }
     ```
 
 ## Examine the evaluation dataset
 
-The evaluation uses a pre-built dataset with test cases that includes:
+For this evaluation we've built a synthetic dataset with test cases that includes:
 
 - Simple cases with clear outcomes
 - Edge cases at rule boundaries  
@@ -150,18 +98,17 @@ Each case specifies:
 - `expected_discount`: Expected discount percentage
 - `description`: Case complexity indicator
 
-Example dataset structure (recommended with `id` column for easy comparison):
+Example dataset structure (add an `id` column for easy comparison):
 
-```csv
-id,customer_profile,expected_discount,description
-1,"Customer: Age 67, Income $45k, Premium 3yrs",25,"Senior + Premium member"
-2,"Customer: Age 25, Income $25k, Student",15,"Student discount case"
-3,"Customer: Age 30, Income $50k, New member",5,"New customer case"
-```
+| ID | Customer Profile | Expected Discount | Description |
+|----|------------------|-------------------|-------------|
+| 1 | Martha is a 70-year-old retiree who enjoys gardening. She has never enrolled in any academic course recently, has an annual pension of 50,000 dollars, signed up for our service nine years ago and never upgraded to premium. | 15 | Senior only |
+| 2 | Arjun, aged 19, is a full-time computer-science undergraduate. His part-time job brings in about 45,000 dollars per year. He opened his account a year ago and has no premium membership. | 15 | Student only |
+| 3 | Cynthia, a 40-year-old freelance artist, earns roughly 25,000 dollars a year. She is not studying anywhere, subscribed to our basic plan five years back and never upgraded to premium. | 20 | Low income only |
 
 To customize the dataset for your use case, create a `datasets/` directory and add your own CSV file. Refer to [Datasets - Core Concepts](../core_concepts/datasets.md) for more information.
 
-It is better to sample real data from your application to create the dataset. If that is not available, you can generate synthetic data using an LLM. Since our use case is slightly complex, we recommend using a model like o3 which can generate more accurate data. Always make sure to review and verify the data you use. 
+It is better to sample real data from your application to create the dataset. If that is not available, you can generate synthetic data using an LLM. Since our use case is slightly complex, we recommend using a model like gpt-5-high which can generate more accurate data. Always make sure to manually review and verify the data you use. 
 
 !!! note
     While the example dataset here has roughly 10 cases to keep the guide compact, you can start small with 20-30 samples for a real-world evaluation, but make sure you slowly iterate to improve it to the 50-100 samples range to get more trustable results from evaluation. Ensure broad coverage of the different scenarios your agent may face (including edge cases and complex questions). Your accuracy does not need to be 100% initially—use the results for error analysis, iterate on prompts, data, and tools, and keep improving.
@@ -194,28 +141,21 @@ It is generally better to use a simple metric. You should use a metric relevant 
 def discount_accuracy(prediction: str, expected_discount):
     """Check if the discount prediction is correct."""
     import json
-    try:
-        parsed = json.loads(prediction)
-    except Exception:
-        return MetricResult(value="incorrect", reason="Invalid JSON output")
-
-    # Convert expected values to correct types (CSV loads as strings)
+    
+    parsed_json = json.loads(prediction)
+    predicted_discount = parsed_json.get("discount_percentage")
     expected_discount_int = int(expected_discount)
-
-    try:
-        discount_correct = int(parsed.get('discount_percentage')) == expected_discount_int
-    except Exception:
-        discount_correct = False
-
-    if discount_correct:
+    
+    if predicted_discount == expected_discount_int:
         return MetricResult(
-            value="correct",
+            value="correct", 
             reason=f"Correctly calculated discount={expected_discount_int}%"
         )
-    return MetricResult(
-        value="incorrect",
-        reason=f"Expected discount={expected_discount_int}%; Got discount={parsed.get('discount_percentage')}%"
-    )
+    else:
+        return MetricResult(
+            value="incorrect",
+            reason=f"Expected discount={expected_discount_int}%; Got discount={predicted_discount}%"
+        )
 ```
 
 ### Experiment structure
@@ -225,49 +165,87 @@ Each model evaluation follows this experiment pattern:
 ```python
 @experiment()
 async def benchmark_experiment(row):
-    # Get model response
-    response = run_prompt(row["customer_profile"], model=model_name)
-
-    # Parse response (strict JSON)
-    import json
+    # Get model response (run in thread to keep async runner responsive)
+    response = await asyncio.to_thread(run_prompt, row["customer_profile"], model=model_name)
+    
+    # Parse response (strict JSON mode expected)
     try:
-        parsed = json.loads(response)
-        predicted_eligible = parsed.get('eligible')
-        predicted_discount = parsed.get('discount_percentage')
+        parsed_json = json.loads(response)
+        predicted_discount = parsed_json.get('discount_percentage')
     except Exception:
-        predicted_eligible = None
         predicted_discount = None
-
+    
     # Score the response
     score = discount_accuracy.score(
         prediction=response,
         expected_discount=row["expected_discount"]
     )
-
+    
     return {
         **row,
         "model": model_name,
+        "experiment_name": experiment_name,
         "response": response,
-
         "predicted_discount": predicted_discount,
         "score": score.value,
         "score_reason": score.reason
     }
+
+return benchmark_experiment
 ```
+
+## Run experiments
+
+We've setup the main evals code such that you can run it with different models using CLI. We’ll use these example models:
+
+- Baseline: "gpt-4.1-nano-2025-04-14"
+- Candidate: "gpt-5-nano-2025-08-07"
+
+```bash
+# Baseline
+python -m ragas_examples.benchmark_llm.evals run --model "gpt-4.1-nano-2025-04-14"
+
+# Candidate
+python -m ragas_examples.benchmark_llm.evals run --model "gpt-5-nano-2025-08-07"
+```
+
+Each command saves a CSV under `experiments/` with per-row results, including:
+
+- id, model, experiment_name, response, predicted_discount, score, score_reason
+
+??? example "Sample experiment output (only showing few columns for readability)"
+    | ID | Description | Expected | Predicted | Score | Score Reason |
+    |----|-------------|----------|-----------|-------|--------------|
+    | 1 | Senior only | 15 | 15 | correct | Correctly calculated discount=15% |
+    | 2 | Student only | 15 | 5 | incorrect | Expected discount=15%; Got discount=5% |
+    | 3 | Low income only | 20 | 20 | correct | Correctly calculated discount=20% |
+    | 4 | Senior, low income, new customer (capped) | 35 | 35 | correct | Correctly calculated discount=35% |
+    | 6 | Premium 2+ yrs only | 10 | 15 | incorrect | Expected discount=10%; Got discount=15% |
+
+
+!!! note
+    When possible, pin and record the exact model snapshot/version (for example, "gpt-4o-2024-08-06" instead of just "gpt-4o"). Providers regularly update alias names, and performance can change between snapshots. You can find available snapshots in the provider's model documentation (see OpenAI's [model catalog](https://platform.openai.com/docs/models) as an example). Including the snapshot in your results makes future comparisons fair and reproducible.
+
 
 ## Compare results
 
-Combine the latest two CSVs into a single, sortable file. The output is sorted by `id` and contains canonical fields plus per-experiment columns.
+After running experiments with different models, you'll want to see how they performed side-by-side. We've setup a simple compare command that takes your experiment results and puts them in one file so you can easily see which model did better on each test case. You can open this in your CSV viewer (Excel/Google Sheets/Numbers) to review.
 
 ```bash
 python -m ragas_examples.benchmark_llm.evals compare \
-  --inputs 'experiments/20250820-145315-gpt-4.1-nano-2025-04-14.csv' 'experiments/20250820-145327-gpt-5-nano-2025-08-07.csv'
+  --inputs 'experiments/exp1.csv' 'experiments/exp2.csv'
 ```
 
-Output columns (sorted by `id`):
+This command will:
 
-- id, customer_profile, description, expected_discount
-- <experiment_name>_response, <experiment_name>_score, <experiment_name>_score_reason for each input CSV
+- Read both experiment files
+- Print the accuracy for each model
+- Create a new comparison file with results side-by-side
+
+The comparison file shows:
+
+- The test case details (customer profile, expected discount)
+- For each model: its response, whether it was correct, and why
 
 ??? example "Example evaluation output"
     ```bash
@@ -283,28 +261,16 @@ Output columns (sorted by `id`):
 
 ### Analyze results with the combined CSV
 
-Alongside per-model files, the evaluation saves a comparison CSV that’s easy to scan:
-
-- File: `experiments/<timestamp>-comparison.csv` (or your chosen --output path)
-- Contains: id + canonical fields, and for each experiment: response, score, and score_reason.
-
-Practical tips:
-
-- Focus quickly by filtering rows where one experiment outperforms another, e.g., `gpt-4.1-nano-2025-04-14_score != gpt-5-nano-2025-08-07_score`.
-- To understand why a case failed, check each experiment’s `<experiment_name>_score_reason` or the `...reason=""...` snippet in the response column.
-
 In this example run:
 
-- Filtering for `gpt-4.1-nano-2025-04-14_score != gpt-5-nano-2025-08-07_score` surfaces these cases: "Senior and new customer", "Student and new customer", "Student only", "Premium 2+ yrs only".
-- The `*_score_reason` fields show typical failure modes: under-discounting (missed stacking like 15% + 5%) and partial application of eligible rules (e.g., premium tenure amount).
+- Filtering for cases where one model outperforms the other surfaces these cases: "Senior and new customer", "Student and new customer", "Student only", "Premium 2+ yrs only".
+- The reason field in each model's response shows why it gave the output it did. 
 
-??? example "Sample rows from comparison CSV"
+??? example "Sample rows from comparison CSV (showing limited columns for readability)"
     | id | customer_profile | description | expected_discount | gpt-4.1-nano-2025-04-14_score | gpt-5-nano-2025-08-07_score | gpt-4.1-nano-2025-04-14_score_reason | gpt-5-nano-2025-08-07_score_reason | gpt-4.1-nano-2025-04-14_response | gpt-5-nano-2025-08-07_response |
     |---:|---|---|---:|---|---|---|---|---|---|
-    | 2 | Arjun, aged 19, is a full-time computer-science undergraduate. His part-time job brings in about 45,000 dollars per year. He opened his account a year ago and has no premium membership. | Student only | 15 | incorrect | correct | Expected discount=15%; Got discount=0% | Correctly calculated discount=15% | ...reason="Arjun is 19... only one rule applies"... | ...reason="student status (15%)"... |
-    | 6 | Leonardo is 64, turning 65 next month. His salary is exactly 30,000 dollars. He has maintained a premium subscription for two years and seven months and has been with us for five years. | Premium 2+ yrs only | 10 | incorrect | correct | Expected discount=10%; Got discount=25% | Correctly calculated discount=10% | ...reason="premium 2+ years noted"... | ...reason="premium 2+ years: 10%"... |
-    | 7 | Patricia celebrated her 65th birthday last week. She earns 55,000 dollars annually, bought premium last year so her premium tenure is one year and six months, and she created her account five months ago. | Senior and new customer | 20 | incorrect | correct | Expected discount=20%; Got discount=15% | Correctly calculated discount=20% | ...reason="age 65+ only"... | ...reason="65+ 15% + new 5%"... |
-    | 9 | Maya, aged 22, is pursuing engineering, joined our service only eight weeks ago, makes around 35,000 dollars per annum, and holds no premium subscription. | Student and new customer | 20 | incorrect | correct | Expected discount=20%; Got discount=5% | Correctly calculated discount=20% | ...reason="new customer (5%)"... | ...reason="student 15% + new 5%"... |
+    | 2 | Arjun, aged 19, is a full-time computer-science undergraduate. His part-time job brings in about 45,000 dollars per year. He opened his account a year ago and has no premium membership. | Student only | 15 | incorrect | correct | Expected discount=15%; Got discount=0% | Correctly calculated discount=15% | ...reason="Arjun is 19 years old, so he does not qualify for age-based or senior discounts. His annual income of $45,000 exceeds the $30,000 threshold, so no income-based discount applies. He opened his account a year ago, which is more than 6 months, so he is not a new customer. He has no premium membership and no other applicable discounts."... | ...reason="Eligible for 15% discount due to student status (Arjun is 19 and an undergraduate)."... |
+    | 6 | Leonardo is 64, turning 65 next month. His salary is exactly 30,000 dollars. He has maintained a premium subscription for two years and seven months and has been with us for five years. | Premium 2+ yrs only | 10 | incorrect | correct | Expected discount=10%; Got discount=25% | Correctly calculated discount=10% | ...reason="Leonardo is about to turn 65, so he qualifies for the age discount of 15%. Premium 2+ years noted"... | ...reason="Leonardo is 64, turning 65 next month. premium 2+ years: 10%"... |
 
 !!! tip "Re-run when new models drop"
     Once this evaluation lives alongside your project, it becomes a repeatable check. When a new LLM is released (often weekly nowadays), plug it in as the candidate and rerun the same evaluation to compare against your current baseline.
@@ -312,75 +278,28 @@ In this example run:
 
 ## Interpret results and make your decision
 
-### Analyze the accuracy metrics
+### What to look at
+- **Baseline accuracy** vs **Candidate accuracy** and the **difference**.
+  - Example from this run: baseline 50% (5/10), candidate 90% (9/10), difference +40%.
 
-The evaluation provides three key numbers:
+### How to read the rows
+- Skim rows where the two models disagree.
+- Use each row’s score_reason to see why it was marked correct/incorrect.
+- Look for patterns (e.g., missed rule stacking, boundary cases like “almost 65”, exact income thresholds).
 
-- **Baseline accuracy**: How well your current model performs
-- **Candidate accuracy**: How well the new model performs  
-- **Performance difference**: The gap between them
+### Beyond accuracy
+- Check **cost** and **latency**. Higher accuracy may not be worth it if it’s too slow or too expensive for your use case.
 
-Example from this run:
+### Decide
+- Switch if the new model is clearly more accurate on your important cases and fits your cost/latency needs.
+- Stay if gains are small, failures hit critical cases, or cost/latency are not acceptable.
 
-- **Baseline accuracy**: 50% (5/10)
-- **Candidate accuracy**: 90% (9/10)
-- **Performance difference**: +40%
-
-### Review detailed case results
-
-Examine the detailed case-by-case breakdown to understand:
-
-- Which types of problems each model struggles with
-- Whether failures occur on simple or complex cases
-- Consistency of performance across different scenarios
-
-From the example run (expected → gpt-4.1-nano-2025-04-14 vs gpt-5-nano-2025-08-07):
-
-- **Senior and new customer (20%)**: baseline 15% (under-discounted; missed 15%+5% stack), candidate 20%.
-- **Student and new customer (20%)**: baseline 5% (under-discounted; missed stacking), candidate 20%.
-- **Student only (15%)**: baseline 5% (under-discounted), candidate 15%.
-- **Premium 2+ yrs only (10%)**: baseline 5% (missed premium rule amount), candidate 10%.
-
-Both models handled capped stacking correctly (e.g., student + low income + premium → capped at 35%).
-
-
-
-### Consider additional factors
-
-While accuracy is crucial, also evaluate:
-
-- **Cost**: Token pricing differences between models
-- **Latency**: Response time requirements for your application
-
-Runtime note from this run:
-
-- Approximate per-case times: gpt-4.1-nano-2025-04-14 ≈ 1.78 s/it, gpt-5-nano-2025-08-07 ≈ 8.39 s/it. Decide whether higher accuracy offsets slower responses for your use case.
-
-*In production systems, these factors often influence the final decision as much as raw accuracy.*
-
-### Make your selection decision
-
-Choose the new model if:
-
-- It significantly outperforms the baseline
-- The performance gain justifies any cost/latency tradeoffs
-- It handles your most critical use cases reliably
-
-Stick with your current model if:
-
-- Performance differences are minimal
-- The candidate model fails on cases critical to your business
-- Cost or latency constraints favor the current model
+In this example:
+- We would switch to "gpt-5-nano-2025-08-07". It improves accuracy from 50% to 90% (+40%) and fixes the key failure modes (missed rule stacking, boundary conditions). If its latency/cost fits your constraints, it’s the better default.
 
 ## Adapting to your use case
 
-To evaluate models for your specific application, you can use the [GitHub code](https://github.com/explodinggradients/ragas/tree/main/experimental/ragas_examples/benchmark_llm) as a template:
+To evaluate models for your specific application, you can use the [GitHub code](https://github.com/explodinggradients/ragas/tree/main/experimental/ragas_examples/benchmark_llm) as a template and adapt it to your use case.
 
-1. **Replace the prompt**: Modify the system prompt in `prompt.py` for your task
-2. **Update the dataset**: Create test cases relevant to your domain 
-3. **Adjust the metric**: Replace the `discount_accuracy` function with your own scoring logic
-4. **Update the experiment function**: Modify the experiment to call your custom metric
-5. **Configure models**: Use the CLI flags `--model` and `--name` when running the experiments
-
-The Ragas experimental framework handles the orchestration, parallel execution, and result aggregation automatically for you, helping you evaluate and focus on your use case!
+The Ragas framework handles the orchestration, parallel execution, and result aggregation automatically for you, helping you evaluate and focus on your use case!
 
