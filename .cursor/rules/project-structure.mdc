@@ -3,18 +3,18 @@ alwaysApply: true
 ---
 # Monorepo Project Structure
 
-The repository is a monorepo consisting of two primary projects:
+The repository is a monorepo consisting of two primary components:
 
-1. [ragas/](mdc:ragas/) – Core evaluation toolkit
-   • Source code lives in [ragas/src/](mdc:ragas/src/)
-   • Tests live in [ragas/tests/](mdc:ragas/tests/)
-   • Build configuration is in [ragas/pyproject.toml](mdc:ragas/pyproject.toml)
+1. [ragas/](ragas/) – Core evaluation toolkit
+   • Source code lives in [ragas/src/](ragas/src/)
+   • Tests live in [ragas/tests/](ragas/tests/)
+   • Build configuration is in [ragas/pyproject.toml](ragas/pyproject.toml)
 
-2. [experimental/](mdc:experimental/) – nbdev-based experimental extensions
-   • Generated code is in [experimental/ragas_experimental/](mdc:experimental/ragas_experimental/)
-   • Generated code is in [experimental/ragas_experimental/](mdc:experimental/ragas_experimental/)
-   • Build configuration is in [experimental/pyproject.toml](mdc:experimental/pyproject.toml)
+2. [examples/](examples/) – Root-level examples
+   • Contains practical examples: agent_evals, prompt_evals, rag_eval, workflow_eval, benchmark_llm
+   • Uses absolute imports and is designed for contributors
+   • Install with: `uv pip install --system -e ".[examples]"`
 
-Shared documentation for both projects is located under [docs/](mdc:docs/).
+Shared documentation for all projects is located under [docs/](docs/).
 
-Root-level [Makefile](mdc:Makefile) provides combined commands, while each project directory also contains its own Makefile for project-specific tasks.
+Root-level [Makefile](Makefile) provides combined commands, while each project directory also contains its own Makefile for project-specific tasks.
