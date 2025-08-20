@@ -1,7 +1,19 @@
+# Get version from setuptools_scm-generated file
 try:
-    from ragas_experimental import *  # noqa: F403, F401  # type: ignore
+    from ._version import version as __version__  # type: ignore
 except ImportError:
-    raise ImportError(
-        "ragas_experimental is required for experimental features. "
-        "Install with: pip install ragas_experimental"
-    )
+    # Fallback for installed package
+    from importlib.metadata import PackageNotFoundError
+    from importlib.metadata import version as pkg_version
+
+    try:
+        __version__ = pkg_version("ragas")
+    except PackageNotFoundError:
+        __version__ = "unknown"
+
+from ragas.embeddings import embedding_factory
+from ragas.llms import llm_factory
+
+from .dataset import Dataset
+
+__all__ = ["Dataset", "embedding_factory", "llm_factory"]

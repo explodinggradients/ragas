@@ -88,7 +88,6 @@ class HaystackLLMWrapper(BaseRagasLLM):
         stop: t.Optional[t.List[str]] = None,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
-
         component_output: t.Dict[str, t.Any] = self.generator.run(prompt.to_string())
         replies = component_output.get("llm", {}).get("replies", [])
         output_text = replies[0] if replies else ""

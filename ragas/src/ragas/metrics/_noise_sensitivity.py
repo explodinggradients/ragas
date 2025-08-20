@@ -50,7 +50,6 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
     max_retries: int = 1
 
     def __post_init__(self):
-
         if self.mode not in {"relevant", "irrelevant"}:
             raise ValueError(
                 f"Invalid argument passed for 'mode': {self.mode}. Must be 'relevant' or 'irrelevant'."
