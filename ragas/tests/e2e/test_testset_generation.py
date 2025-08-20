@@ -16,7 +16,8 @@ def test_testset_generation_e2e():
     generator_embeddings = embedding_factory()
 
     generator = TestsetGenerator(
-        llm=generator_llm, embedding_model=generator_embeddings
+        llm=generator_llm,
+        embedding_model=generator_embeddings,  # type: ignore
     )
     dataset = generator.generate_with_langchain_docs(docs, testset_size=3)
     assert dataset is not None
