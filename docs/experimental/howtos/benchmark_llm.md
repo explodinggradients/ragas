@@ -29,17 +29,25 @@ First, ensure you have your API credentials configured:
 export OPENAI_API_KEY=your_actual_api_key
 ```
 
-## Configure the models to compare
+## Run experiments
 
-The evaluation compares two models defined in the [config.py](https://github.com/explodinggradients/ragas/tree/main/experimental/ragas_examples/benchmark_llm/config.py):
+Run one experiment per model using the CLI. We’ll use these example models:
 
-```python
-# Model configuration for evaluation
-BASELINE_MODEL = "gpt-4.1-nano-2025-04-14" # Your current model
-CANDIDATE_MODEL = "gpt-5-nano-2025-08-07"   # The new model to evaluate
+- Baseline: "gpt-4.1-nano-2025-04-14"
+- Candidate: "gpt-5-nano-2025-08-07"
+
+```bash
+# Baseline
+python -m ragas_examples.benchmark_llm.evals run --model "gpt-4.1-nano-2025-04-14"
+
+# Candidate
+python -m ragas_examples.benchmark_llm.evals run --model "gpt-5-nano-2025-08-07"
 ```
 
-The baseline model represents your current choice, while the candidate is the new model you're considering. You can modify these in your own implementation.
+Each command saves a CSV under `experiments/` with per-row results, including:
+
+- id (recommended), model, experiment_name, response, predicted_discount, score, score_reason
+
 ### Enforce JSON output
 
 To make evaluation robust and simplify parsing, enable JSON mode in the prompt call so models return a strict JSON object:
@@ -142,13 +150,13 @@ Each case specifies:
 - `expected_discount`: Expected discount percentage
 - `description`: Case complexity indicator
 
-Example dataset structure:
+Example dataset structure (recommended with `id` column for easy comparison):
 
 ```csv
-customer_profile,expected_discount,description
-"Customer: Age 67, Income $45k, Premium 3yrs",25,"Senior + Premium member"
-"Customer: Age 25, Income $25k, Student",15,"Student discount case"
-"Customer: Age 30, Income $50k, New member",5,"New customer case"
+id,customer_profile,expected_discount,description
+1,"Customer: Age 67, Income $45k, Premium 3yrs",25,"Senior + Premium member"
+2,"Customer: Age 25, Income $25k, Student",15,"Student discount case"
+3,"Customer: Age 30, Income $50k, New member",5,"New customer case"
 ```
 
 To customize the dataset for your use case, create a `datasets/` directory and add your own CSV file. Refer to [Datasets - Core Concepts](../core_concepts/datasets.md) for more information.
@@ -247,109 +255,56 @@ async def benchmark_experiment(row):
     }
 ```
 
-## Running the evaluation end-to-end
+## Compare results
 
-To run the complete evaluation with default settings:
+Combine the latest two CSVs into a single, sortable file. The output is sorted by `id` and contains canonical fields plus per-experiment columns.
 
-1. Setup your OpenAI API key
 ```bash
-export OPENAI_API_KEY="your_openai_api_key"
-```
-2. Run the evaluation
-```bash
-python -m ragas_examples.benchmark_llm.evals
+python -m ragas_examples.benchmark_llm.evals compare \
+  --inputs 'experiments/20250820-145315-gpt-4.1-nano-2025-04-14.csv' 'experiments/20250820-145327-gpt-5-nano-2025-08-07.csv'
 ```
 
-This will:
+Output columns (sorted by `id`):
 
-- Load the dataset
-- Run both baseline and candidate models on each test case
-- Evaluate responses using accuracy metrics
-- Generate detailed comparison results
-- Save individual experiment results to CSV files
-- Save a combined CSV file with the results for both models
-
-You can then inspect the results by opening the `experiments/` directory to see detailed per-case results for each model. You can also compare the results with the combined CSV file.
+- id, customer_profile, description, expected_discount
+- <experiment_name>_response, <experiment_name>_score, <experiment_name>_score_reason for each input CSV
 
 ??? example "Example evaluation output"
     ```bash
-    $ python -m ragas_examples.benchmark_llm.evals
+    $ python -m ragas_examples.benchmark_llm.evals compare \
+      --inputs 'experiments/20250820-145315-gpt-4.1-nano-2025-04-14.csv' 'experiments/20250820-145327-gpt-5-nano-2025-08-07.csv'
     ```
     
     ```
-    Loading dataset...
-    Dataset loaded with 10 samples
-    Running baseline model evaluation (gpt-4.1-nano-2025-04-14)...
-    Running experiment: 100%|███████████████████████████████████████| 10/10 [00:17<00:00,  1.78s/it]
-    ✅ gpt-4.1-nano-2025-04-14: 10 cases evaluated
-    Results saved to: experiments/20250814-185627-gpt-4.1-nano-2025-04-14.csv
-
-    Running candidate model evaluation (gpt-5-nano-2025-08-07)...
-    Running experiment: 100%|███████████████████████████████████████| 10/10 [01:23<00:00,  8.39s/it]
-    ✅ gpt-5-nano-2025-08-07: 10 cases evaluated
-    Results saved to: experiments/20250814-185627-gpt-5-nano-2025-08-07.csv
-
-    ==================================================
-    BENCHMARK RESULTS
-    ==================================================
     gpt-4.1-nano-2025-04-14 Accuracy: 50.00%
     gpt-5-nano-2025-08-07 Accuracy: 90.00%
-    Performance Difference: +40.00%
-    ✅ gpt-5-nano-2025-08-07 outperforms gpt-4.1-nano-2025-04-14!
-
-    Detailed Results:
-
-    gpt-4.1-nano-2025-04-14 Results:
-    ✅ Case 1: Low income only - correct
-    ❌ Case 2: No rules apply - incorrect
-    ✅ Case 3: Senior, low income, premium 3 yrs (capped) - correct
-    ❌ Case 4: Senior and new customer - incorrect
-    ✅ Case 5: Student, low income, premium 3 yrs (capped) - correct
-    ✅ Case 6: Senior, low income, new customer (capped) - correct
-    ✅ Case 7: Senior only - correct
-    ❌ Case 8: Student and new customer - incorrect
-    ❌ Case 9: Student only - incorrect
-    ❌ Case 10: Premium 2+ yrs only - incorrect
-
-    gpt-5-nano-2025-08-07 Results:
-    ✅ Case 1: Low income only - correct
-    ❌ Case 2: No rules apply - incorrect
-    ✅ Case 3: Senior, low income, premium 3 yrs (capped) - correct
-    ✅ Case 4: Senior and new customer - correct
-    ✅ Case 5: Student, low income, premium 3 yrs (capped) - correct
-    ✅ Case 6: Senior, low income, new customer (capped) - correct
-    ✅ Case 7: Senior only - correct
-    ✅ Case 8: Student and new customer - correct
-    ✅ Case 9: Student only - correct
-    ✅ Case 10: Premium 2+ yrs only - correct
-
-    Combined comparison saved to: experiments/20250814-185627-comparison-minimal-gpt-4.1-nano-2025-04-14-vs-gpt-5-nano-2025-08-07.csv
+    Combined comparison saved to: experiments/20250820-150548-comparison.csv
     ```
 
 ### Analyze results with the combined CSV
 
-Alongside per-model files, the evaluation saves a minimal comparison CSV that’s easy to scan:
+Alongside per-model files, the evaluation saves a comparison CSV that’s easy to scan:
 
-- File: `experiments/<run_id>-comparison-minimal-<baseline>-vs-<candidate>.csv`
-- Contains: the input description and expected discount, each model's output, and the score with a brief scoring reason for both models.
+- File: `experiments/<timestamp>-comparison.csv` (or your chosen --output path)
+- Contains: id + canonical fields, and for each experiment: response, score, and score_reason.
 
 Practical tips:
 
-- Focus quickly by filtering rows where `baseline_score != candidate_score` to see wins and regressions.
-- To understand why a case failed, read the model output `reason` field inside `baseline_response` and `candidate_response`.
+- Focus quickly by filtering rows where one experiment outperforms another, e.g., `gpt-4.1-nano-2025-04-14_score != gpt-5-nano-2025-08-07_score`.
+- To understand why a case failed, check each experiment’s `<experiment_name>_score_reason` or the `...reason=""...` snippet in the response column.
 
 In this example run:
 
-- Filtering for `baseline_score != candidate_score` surfaces these cases: "Senior and new customer", "Student and new customer", "Student only", "Premium 2+ yrs only".
-- The `baseline_score_reason` fields show typical failure modes: under-discounting (missed stacking like 15% + 5%) and partial application of eligible rules (e.g., premium tenure amount).
+- Filtering for `gpt-4.1-nano-2025-04-14_score != gpt-5-nano-2025-08-07_score` surfaces these cases: "Senior and new customer", "Student and new customer", "Student only", "Premium 2+ yrs only".
+- The `*_score_reason` fields show typical failure modes: under-discounting (missed stacking like 15% + 5%) and partial application of eligible rules (e.g., premium tenure amount).
 
 ??? example "Sample rows from comparison CSV"
-    | description | expected_discount | baseline_score | candidate_score | baseline_response | candidate_response |
-    |---|---:|---|---|---|---|
-    | Senior and new customer | 20 | incorrect | correct | Reason: 15% for 65+; missed new-customer 5% → total 15% | Reason: 65+ 15% + new-customer 5% = 20% |
-    | Student and new customer | 20 | incorrect | correct | Reason: 5% (new customer); missed student 15% | Reason: student 15% + new customer 5% = 20% |
-    | Student only | 15 | incorrect | correct | Reason: 5% (treated as new customer); incorrectly denied student 15% | Reason: student qualifies for 15%; only this rule applies |
-    | Premium 2+ yrs only | 10 | incorrect | correct | Reason: premium 2+ years noted but returned 5% | Reason: premium 2+ years → 10%; only this rule applies |
+    | id | customer_profile | description | expected_discount | gpt-4.1-nano-2025-04-14_score | gpt-5-nano-2025-08-07_score | gpt-4.1-nano-2025-04-14_score_reason | gpt-5-nano-2025-08-07_score_reason | gpt-4.1-nano-2025-04-14_response | gpt-5-nano-2025-08-07_response |
+    |---:|---|---|---:|---|---|---|---|---|---|
+    | 2 | Arjun, aged 19, is a full-time computer-science undergraduate. His part-time job brings in about 45,000 dollars per year. He opened his account a year ago and has no premium membership. | Student only | 15 | incorrect | correct | Expected discount=15%; Got discount=0% | Correctly calculated discount=15% | ...reason="Arjun is 19... only one rule applies"... | ...reason="student status (15%)"... |
+    | 6 | Leonardo is 64, turning 65 next month. His salary is exactly 30,000 dollars. He has maintained a premium subscription for two years and seven months and has been with us for five years. | Premium 2+ yrs only | 10 | incorrect | correct | Expected discount=10%; Got discount=25% | Correctly calculated discount=10% | ...reason="premium 2+ years noted"... | ...reason="premium 2+ years: 10%"... |
+    | 7 | Patricia celebrated her 65th birthday last week. She earns 55,000 dollars annually, bought premium last year so her premium tenure is one year and six months, and she created her account five months ago. | Senior and new customer | 20 | incorrect | correct | Expected discount=20%; Got discount=15% | Correctly calculated discount=20% | ...reason="age 65+ only"... | ...reason="65+ 15% + new 5%"... |
+    | 9 | Maya, aged 22, is pursuing engineering, joined our service only eight weeks ago, makes around 35,000 dollars per annum, and holds no premium subscription. | Student and new customer | 20 | incorrect | correct | Expected discount=20%; Got discount=5% | Correctly calculated discount=20% | ...reason="new customer (5%)"... | ...reason="student 15% + new 5%"... |
 
 !!! tip "Re-run when new models drop"
     Once this evaluation lives alongside your project, it becomes a repeatable check. When a new LLM is released (often weekly nowadays), plug it in as the candidate and rerun the same evaluation to compare against your current baseline.
@@ -379,7 +334,7 @@ Examine the detailed case-by-case breakdown to understand:
 - Whether failures occur on simple or complex cases
 - Consistency of performance across different scenarios
 
-From the example run (expected → baseline vs candidate):
+From the example run (expected → gpt-4.1-nano-2025-04-14 vs gpt-5-nano-2025-08-07):
 
 - **Senior and new customer (20%)**: baseline 15% (under-discounted; missed 15%+5% stack), candidate 20%.
 - **Student and new customer (20%)**: baseline 5% (under-discounted; missed stacking), candidate 20%.
@@ -399,19 +354,19 @@ While accuracy is crucial, also evaluate:
 
 Runtime note from this run:
 
-- Approximate per-case times: baseline ≈ 1.78 s/it, candidate ≈ 8.39 s/it. Decide whether higher accuracy offsets slower responses for your use case.
+- Approximate per-case times: gpt-4.1-nano-2025-04-14 ≈ 1.78 s/it, gpt-5-nano-2025-08-07 ≈ 8.39 s/it. Decide whether higher accuracy offsets slower responses for your use case.
 
 *In production systems, these factors often influence the final decision as much as raw accuracy.*
 
 ### Make your selection decision
 
-Choose the candidate model if:
+Choose the new model if:
 
 - It significantly outperforms the baseline
 - The performance gain justifies any cost/latency tradeoffs
 - It handles your most critical use cases reliably
 
-Stick with your baseline if:
+Stick with your current model if:
 
 - Performance differences are minimal
 - The candidate model fails on cases critical to your business
@@ -425,7 +380,7 @@ To evaluate models for your specific application, you can use the [GitHub code](
 2. **Update the dataset**: Create test cases relevant to your domain 
 3. **Adjust the metric**: Replace the `discount_accuracy` function with your own scoring logic
 4. **Update the experiment function**: Modify the experiment to call your custom metric
-5. **Configure models**: Update the model names in `config.py`
+5. **Configure models**: Use the CLI flags `--model` and `--name` when running the experiments
 
 The Ragas experimental framework handles the orchestration, parallel execution, and result aggregation automatically for you, helping you evaluate and focus on your use case!
 
