@@ -1,24 +1,47 @@
 [project]
 name = "ragas"
+description = "Evaluation framework for RAG and LLM applications"
 requires-python = ">=3.9"
+license = {file = "LICENSE"}
 dependencies = [
+    # Core dependencies
     "numpy",
     "datasets",
     "tiktoken",
+    "pydantic>=2.0.0",
+    "nest-asyncio",
+    "appdirs",
+    "diskcache>=5.6.3",
+    
+    # LangChain ecosystem
     "langchain",
     "langchain-core",
     "langchain-community",
     "langchain_openai",
-    "nest-asyncio",
-    "appdirs",
-    "pydantic>=2",
-    "openai>1",
-    "diskcache>=5.6.3",
+    
+    # CLI dependencies
+    "typer",
+    "rich",
+    
+    # LLM providers
+    "openai>=1.0.0",
+    
+    # Experimental features
+    "tqdm",
+    "instructor",
+    "gitpython",
+    "pillow>=10.4.0",
 ]
 dynamic = ["version", "readme"]
 
+[project.urls]
+Homepage = "https://github.com/explodinggradients/ragas"
+Documentation = "https://docs.ragas.io"
+Code = "https://github.com/explodinggradients/ragas"
+Issues = "https://github.com/explodinggradients/ragas/issues"
+
 [project.optional-dependencies]
-experimental = ["ragas-experimental"]
+# Core optional features
 all = [
     "sentence-transformers",
     "transformers",
@@ -27,49 +50,31 @@ all = [
     "rapidfuzz",
     "pandas",
     "datacompy",
-    "llama_index",
-    "r2r",
-    "ragas-experimental"
-]
-docs = [
-    "mkdocs>=1.6.1",
-    "mkdocs-material",
-    "mkdocs-material[imaging]",
-    "mkdocstrings[python]",
-    "mkdocs-glightbox",
-    "mkdocs-autorefs",
-    "mkdocs-gen-files",
-    "mkdocs-literate-nav",
-    "mkdocs-section-index",
-    "mkdocs-git-committers-plugin-2",
-    "mkdocs-git-revision-date-localized-plugin",
-]
-dev = [
-    "rich",
-    "ruff",
-    "black[jupyter]",
-    "pyright",
-    "llama_index",
-    "notebook",
-    "sphinx-autobuild",
-    "sentence-transformers",
-    "transformers",
-    "fastembed",
-    "graphene",
-    "rouge_score",
-    "nltk",
-    "rapidfuzz",
-    "pandas",
-    "datacompy",
-    "haystack-ai",
     "sacrebleu",
-    "r2r",
-    "pytest",
-    "pytest-xdist[psutil]",
-    "pytest-asyncio",
-    "nbmake",
+    "llama_index",
+    "r2r"
 ]
+
+# Specific integrations
+examples = ["openai>=1.0.0"]
+tracing = ["langfuse>=3.2.4", "mlflow>=3.1.4"]
+gdrive = [
+    "google-api-python-client>=2.178.0",
+    "google-auth>=2.40.3",
+    "google-auth-oauthlib>=1.2.2"
+]
+ai-frameworks = ["haystack-ai"]
+
 test = []
+[project.entry-points."ragas.backends"]
+"local/csv" = "ragas.backends.local_csv:LocalCSVBackend"
+"local/jsonl" = "ragas.backends.local_jsonl:LocalJSONLBackend"
+"inmemory" = "ragas.backends.inmemory:InMemoryBackend"
+"gdrive" = "ragas.backends.gdrive_backend:GDriveBackend"
+
+[project.scripts]
+ragas = "ragas.cli:app"
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 
@@ -93,9 +98,36 @@ addopts = "-n 0"
 asyncio_default_fixture_loop_scope = "function"
 [pytest]
 testpaths = ["tests"]
+markers = [
+    "experimental_ci: Set of tests that will be run as part of Experimental CI",
+    "e2e: End-to-End tests for Experimental",
+]
 
 [dependency-groups]
 dev = [
+    "ruff",
+    "pyright>=1.1.403",
+    "pre-commit>=4.3.0",
+    "pytest",
+    "pytest-xdist[psutil]",
+    "pytest-asyncio",
+    "nbmake",
+    "notebook",
     "arize-phoenix>=6.1.0",
     "openinference-instrumentation-langchain>=0.1.29",
+    "ragas[all,tracing,gdrive,ai-frameworks]",
+    "build>=1.3.0",
+]
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material",
+    "mkdocs-material[imaging]",
+    "mkdocstrings[python]",
+    "mkdocs-glightbox",
+    "mkdocs-autorefs",
+    "mkdocs-gen-files",
+    "mkdocs-literate-nav",
+    "mkdocs-section-index",
+    "mkdocs-git-committers-plugin-2",
+    "mkdocs-git-revision-date-localized-plugin",
 ]

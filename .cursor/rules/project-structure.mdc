@@ -1,0 +1,20 @@
+---
+alwaysApply: true
+---
+# Monorepo Project Structure
+
+The repository is a monorepo consisting of two primary projects:
+
+1. [ragas/](mdc:ragas/) – Core evaluation toolkit
+   • Source code lives in [ragas/src/](mdc:ragas/src/)
+   • Tests live in [ragas/tests/](mdc:ragas/tests/)
+   • Build configuration is in [ragas/pyproject.toml](mdc:ragas/pyproject.toml)
+
+2. [experimental/](mdc:experimental/) – nbdev-based experimental extensions
+   • Generated code is in [experimental/ragas_experimental/](mdc:experimental/ragas_experimental/)
+   • Generated code is in [experimental/ragas_experimental/](mdc:experimental/ragas_experimental/)
+   • Build configuration is in [experimental/pyproject.toml](mdc:experimental/pyproject.toml)
+
+Shared documentation for both projects is located under [docs/](mdc:docs/).
+
+Root-level [Makefile](mdc:Makefile) provides combined commands, while each project directory also contains its own Makefile for project-specific tasks.

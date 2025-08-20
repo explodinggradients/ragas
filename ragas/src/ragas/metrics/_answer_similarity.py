@@ -65,9 +65,9 @@ class SemanticSimilarity(MetricWithEmbeddings, SingleTurnMetric):
         return await self._ascore(row, callbacks)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        assert (
-            self.embeddings is not None
-        ), f"Error: '{self.name}' requires embeddings to be set."
+        assert self.embeddings is not None, (
+            f"Error: '{self.name}' requires embeddings to be set."
+        )
 
         ground_truth = t.cast(str, row["reference"])
         answer = t.cast(str, row["response"])
@@ -81,8 +81,15 @@ class SemanticSimilarity(MetricWithEmbeddings, SingleTurnMetric):
                 "async score [ascore()] not implemented for HuggingFace embeddings"
             )
         else:
-            embedding_1 = np.array(await self.embeddings.embed_text(ground_truth))
-            embedding_2 = np.array(await self.embeddings.embed_text(answer))
+            # Handle both modern (BaseRagasEmbedding) and legacy (BaseRagasEmbeddings) interfaces
+            if hasattr(self.embeddings, "aembed_text"):
+                # Modern interface (BaseRagasEmbedding)
+                embedding_1 = np.array(await self.embeddings.aembed_text(ground_truth))  # type: ignore[attr-defined]
+                embedding_2 = np.array(await self.embeddings.aembed_text(answer))  # type: ignore[attr-defined]
+            else:
+                # Legacy interface (BaseRagasEmbeddings)
+                embedding_1 = np.array(await self.embeddings.embed_text(ground_truth))  # type: ignore[misc]
+                embedding_2 = np.array(await self.embeddings.embed_text(answer))  # type: ignore[misc]
             # Normalization factors of the above embeddings
             norms_1 = np.linalg.norm(embedding_1, keepdims=True)
             norms_2 = np.linalg.norm(embedding_2, keepdims=True)
@@ -98,6 +105,7 @@ class SemanticSimilarity(MetricWithEmbeddings, SingleTurnMetric):
         return float(score.item())
 
 
+@dataclass
 class AnswerSimilarity(SemanticSimilarity):
     name: str = "answer_similarity"
 

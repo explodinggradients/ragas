@@ -49,7 +49,6 @@ class MultiHopScenario(BaseScenario):
 
 @dataclass
 class MultiHopQuerySynthesizer(BaseSynthesizer[Scenario]):
-
     generate_query_reference_prompt: PydanticPrompt = QueryAnswerGenerationPrompt()
 
     def prepare_combinations(
@@ -60,7 +59,6 @@ class MultiHopQuerySynthesizer(BaseSynthesizer[Scenario]):
         persona_item_mapping: t.Dict[str, t.List[str]],
         property_name: str,
     ) -> t.List[t.Dict[str, t.Any]]:
-
         persona_list = PersonaList(personas=personas)
         possible_combinations = []
         for combination in combinations:
@@ -94,7 +92,6 @@ class MultiHopQuerySynthesizer(BaseSynthesizer[Scenario]):
     def sample_diverse_combinations(
         self, data: t.List[t.Dict[str, t.Any]], num_samples: int
     ) -> t.List[MultiHopScenario]:
-
         if num_samples < 1:
             raise ValueError("number of samples to generate should be greater than 0")
 
@@ -148,7 +145,6 @@ class MultiHopQuerySynthesizer(BaseSynthesizer[Scenario]):
         return [self.convert_to_scenario(sample) for sample in selected_samples]
 
     def convert_to_scenario(self, data: t.Dict[str, t.Any]) -> MultiHopScenario:
-
         return MultiHopScenario(
             nodes=data["nodes"],
             combinations=data["combination"],
@@ -167,8 +163,8 @@ class MultiHopQuerySynthesizer(BaseSynthesizer[Scenario]):
             persona=scenario.persona,
             themes=scenario.combinations,
             context=reference_context,
-            query_length=scenario.length.name,
-            query_style=scenario.style.name,
+            query_length=scenario.length.value,
+            query_style=scenario.style.value,
         )
         response = await self.generate_query_reference_prompt.generate(
             data=prompt_input, llm=self.llm, callbacks=callbacks
@@ -180,10 +176,11 @@ class MultiHopQuerySynthesizer(BaseSynthesizer[Scenario]):
         )
 
     def make_contexts(self, scenario: MultiHopScenario) -> t.List[str]:
-
         contexts = []
         for i, node in enumerate(scenario.nodes):
-            context = f"<{i+1}-hop>" + "\n\n" + node.properties.get("page_content", "")
+            context = (
+                f"<{i + 1}-hop>" + "\n\n" + node.properties.get("page_content", "")
+            )
             contexts.append(context)
 
         return contexts

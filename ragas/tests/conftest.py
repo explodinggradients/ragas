@@ -10,7 +10,7 @@ from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.llms.base import BaseRagasLLM
 
 if t.TYPE_CHECKING:
-    from ragas.llms.prompt import PromptValue
+    from langchain_core.prompt_values import PromptValue
 
 
 def pytest_configure(config):
@@ -49,7 +49,6 @@ class EchoLLM(BaseRagasLLM):
 
 
 class EchoEmbedding(BaseRagasEmbeddings):
-
     async def aembed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
         return [np.random.rand(768).tolist() for _ in texts]
 
