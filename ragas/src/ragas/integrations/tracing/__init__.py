@@ -37,22 +37,10 @@ Example:
     ```
 """
 
-# Dummy imports to satisfy type checker - these will be overridden by __getattr__
-observe = None
-logger = None
-LangfuseTrace = None
-sync_trace = None
-add_query_param = None
-MLflowTrace = None
-
-__all__ = [
-    "observe",
-    "logger",
-    "LangfuseTrace",
-    "sync_trace",
-    "add_query_param",
-    "MLflowTrace",
-]
+# Type stubs for pyright - these won't execute but provide type information
+if False:
+    from .langfuse import observe, logger, LangfuseTrace, sync_trace, add_query_param
+    from .mlflow import MLflowTrace
 
 
 # Lazy imports to handle optional dependencies gracefully
