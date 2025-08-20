@@ -163,7 +163,7 @@ class Testset(RagasDataset[TestsetSample]):
     @classmethod
     def from_annotated(cls, path: str) -> Testset:
         """
-        Loads a testset from an annotated JSON file from app.ragas.io.
+        Loads a testset from an annotated JSON file.
         """
         import json
 

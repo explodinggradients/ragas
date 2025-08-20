@@ -16,7 +16,7 @@ from ragas.utils import base_logger
 
 # endpoint for uploading results
 RAGAS_API_URL = "https://api.ragas.io"
-RAGAS_APP_URL = "https://app.ragas.io"
+RAGAS_APP_URL =  "" # "https://app.ragas.io"
 RAGAS_API_SOURCE = "ragas_py"
 
 
