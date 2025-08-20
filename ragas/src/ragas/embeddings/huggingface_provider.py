@@ -3,7 +3,7 @@
 import typing as t
 
 from .base import BaseRagasEmbedding
-from .utils import validate_texts, batch_texts, run_sync_in_async
+from .utils import batch_texts, run_sync_in_async, validate_texts
 
 
 class HuggingFaceEmbeddings(BaseRagasEmbedding):

@@ -5,8 +5,8 @@ This script should be executed from the project root directory.
 """
 
 import os
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 # Path configurations

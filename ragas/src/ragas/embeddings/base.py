@@ -13,8 +13,8 @@ from pydantic.dataclasses import dataclass
 from pydantic_core import CoreSchema, core_schema
 
 from ragas.cache import CacheInterface, cacher
-from ragas.run_config import RunConfig, add_async_retry, add_retry
 from ragas.embeddings.utils import run_async_in_current_loop, validate_texts
+from ragas.run_config import RunConfig, add_async_retry, add_retry
 
 if t.TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import BaseEmbedding
@@ -592,10 +592,10 @@ def _get_provider_registry() -> t.Dict[str, t.Type[BaseRagasEmbedding]]:
     Returns:
         Dictionary mapping provider names to their classes.
     """
-    from .openai_provider import OpenAIEmbeddings
     from .google_provider import GoogleEmbeddings
-    from .litellm_provider import LiteLLMEmbeddings
     from .huggingface_provider import HuggingFaceEmbeddings
+    from .litellm_provider import LiteLLMEmbeddings
+    from .openai_provider import OpenAIEmbeddings
 
     providers = [
         OpenAIEmbeddings,

@@ -18,8 +18,8 @@ from ragas.dataset_schema import (
     SingleTurnSample,
 )
 from ragas.embeddings.base import (
-    BaseRagasEmbeddings,
     BaseRagasEmbedding,
+    BaseRagasEmbeddings,
     LangchainEmbeddingsWrapper,
     embedding_factory,
 )
