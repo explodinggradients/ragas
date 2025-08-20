@@ -179,3 +179,9 @@ uv.lock
 experimental/ragas_examples/benchmark_llm/experiments/*.csv
 examples/*/logs/*run*json
 examples/*/experiments/*csv
+
+# Ragas examples package build artifacts
+examples/dist/
+examples/build/
+examples/*.egg-info/
+examples/ragas_examples/_version.py
