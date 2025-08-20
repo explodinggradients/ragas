@@ -113,8 +113,9 @@ run-ci-fast: ## Fast CI check for quick local validation (2-3 minutes)
 
 clean: ## Clean all generated files
 	@echo "Cleaning all generated files..."
-	$(Q)cd $(GIT_ROOT)/docs && $(MAKE) clean
 	$(Q)find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
+	$(Q)rm -rf site/ docs/site/ .mypy_cache .pytest_cache
+	@echo "Cleanup complete!"
 
 # =============================================================================
 # TESTING
