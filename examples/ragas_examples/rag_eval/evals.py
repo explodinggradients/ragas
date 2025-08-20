@@ -1,7 +1,7 @@
 import os
 
 from openai import OpenAI
-from rag import default_rag_client
+from .rag import default_rag_client
 
 from ragas import experiment
 from ragas import Dataset
