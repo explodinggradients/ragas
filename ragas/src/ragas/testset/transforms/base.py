@@ -197,7 +197,6 @@ class LLMBasedExtractor(Extractor, PromptMixin):
     tokenizer: Encoding = DEFAULT_TOKENIZER
 
     def split_text_by_token_limit(self, text, max_token_limit):
-
         # Tokenize the entire input string
         tokens = self.tokenizer.encode(text)
 
@@ -346,9 +345,7 @@ class RelationshipBuilder(BaseGraphTransformation):
 
 @dataclass
 class NodeFilter(BaseGraphTransformation):
-
     async def transform(self, kg: KnowledgeGraph) -> KnowledgeGraph:
-
         filtered = self.filter(kg)
 
         for node in filtered.nodes:

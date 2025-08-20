@@ -232,7 +232,7 @@ cd ragas && uv run pytest tests/unit -k "test_name"
 ### Code Quality Pipeline
 The `make format` command runs:
 1. **isort**: Import sorting
-2. **black**: Code formatting
+2. **ruff format**: Code formatting
 3. **ruff --fix-only**: Auto-fix issues (including unused imports)
 4. **ruff check**: Final linting validation
 

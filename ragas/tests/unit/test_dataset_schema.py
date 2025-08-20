@@ -37,7 +37,6 @@ def create_sample_annotation(metric_output):
                     "user_input": "",
                 },
                 prompt_output={"reason": "", "verdict": 1},
-                is_accepted=True,
                 edited_output=None,
             )
         },
@@ -47,7 +46,6 @@ def create_sample_annotation(metric_output):
 
 
 def test_loader_sample():
-
     annotated_samples = [create_sample_annotation(1) for _ in range(10)] + [
         create_sample_annotation(0) for _ in range(10)
     ]
@@ -61,7 +59,6 @@ def test_loader_sample():
 
 
 def test_loader_batch():
-
     annotated_samples = [create_sample_annotation(1) for _ in range(10)] + [
         create_sample_annotation(0) for _ in range(10)
     ]

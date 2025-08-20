@@ -7,7 +7,6 @@ import warnings
 from ragas.dataset_schema import EvaluationDataset
 
 if t.TYPE_CHECKING:
-
     pass
 
 

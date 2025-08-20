@@ -55,7 +55,7 @@ def my_metric(prediction: str, actual: str):
 Next, we will write the experiment loop that will run our prompt on the test dataset and evaluate it using the metric, and store the results in a csv file. 
 
 ```python
-from ragas_experimental import experiment
+from ragas import experiment
 
 @experiment()
 async def run_experiment(row):
@@ -74,7 +74,34 @@ async def run_experiment(row):
     return experiment_view
 ```
 
-Now whenever you make a change to your prompt, you can run the experiment and see how it affects the performance of your prompt. 
+Now whenever you make a change to your prompt, you can run the experiment and see how it affects the performance of your prompt.
+
+### Passing Additional Parameters
+
+You can pass additional parameters like models or configurations to your experiment function:
+
+```python
+@experiment()
+async def run_experiment(row, model):
+    response = run_prompt(row["text"], model=model)
+    score = my_metric.score(
+        prediction=response,
+        actual=row["label"]
+    )
+
+    experiment_view = {
+        **row,
+        "response": response,
+        "score": score.result,
+    }
+    return experiment_view
+
+# Run with specific parameters
+run_experiment.arun(dataset, "gpt-4")
+
+# Or use keyword arguments
+run_experiment.arun(dataset, model="gpt-4o")
+``` 
 
 
 ## Running the example end to end
