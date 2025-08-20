@@ -203,8 +203,30 @@ class Metric(BaseMetric):
             if isinstance(similarity_threshold_val, (int, float, str))
             else 0.7
         )
+        # Convert BaseRagasEmbeddings to BaseRagasEmbedding if needed
+        if isinstance(embedding_model, BaseRagasEmbeddings):
+            # For legacy BaseRagasEmbeddings, we need to wrap it
+            # Create a wrapper that implements BaseRagasEmbedding interface
+            class EmbeddingWrapper(BaseRagasEmbedding):
+                def __init__(self, legacy_embedding):
+                    self.legacy_embedding = legacy_embedding
+
+                def embed_text(self, text: str, **kwargs) -> t.List[float]:
+                    return self.legacy_embedding.embed_query(text)
+
+                async def aembed_text(self, text: str, **kwargs) -> t.List[float]:
+                    return await self.legacy_embedding.aembed_query(text)
+
+            actual_embedding_model = EmbeddingWrapper(embedding_model)
+        else:
+            # Already BaseRagasEmbedding
+            actual_embedding_model = embedding_model
+
         self.prompt = DynamicFewShotPrompt.from_prompt(
-            self.prompt, embedding_model, max_similar_examples, similarity_threshold  # type: ignore
+            self.prompt,
+            actual_embedding_model,
+            max_similar_examples,
+            similarity_threshold,
         )
         train_dataset.reload()
         total_items = len(train_dataset)

@@ -37,14 +37,20 @@ Example:
     ```
 """
 
+# Dummy imports to satisfy type checker - these will be overridden by __getattr__
+observe = None
+logger = None
+LangfuseTrace = None
+sync_trace = None
+add_query_param = None
+MLflowTrace = None
+
 __all__ = [
-    # Langfuse exports
     "observe",
     "logger",
     "LangfuseTrace",
     "sync_trace",
     "add_query_param",
-    # MLflow exports
     "MLflowTrace",
 ]
 
