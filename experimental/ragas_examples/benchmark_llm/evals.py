@@ -1,13 +1,17 @@
 import json
+import asyncio
 import os
+import sys
+import argparse
 import datetime
+from typing import List, Optional
+
 import pandas as pd
 from ragas_experimental import Dataset, experiment
 from ragas_experimental.metrics.result import MetricResult
 from ragas_experimental.metrics.discrete import discrete_metric
 
-from .prompt import run_prompt
-from .config import BASELINE_MODEL, CANDIDATE_MODEL
+from .prompt import run_prompt, DEFAULT_MODEL
 
 
 @discrete_metric(name="discount_accuracy", allowed_values=["correct", "incorrect"])
@@ -31,6 +35,13 @@ def discount_accuracy(prediction: str, expected_discount):
     # Convert expected values to correct types (CSV loads as strings)
     expected_discount_int = int(expected_discount)
     
+    # Simple bounds check per prompt rules
+    if discount_pred is not None and not (0 <= discount_pred <= 35):
+        return MetricResult(
+            value="incorrect",
+            reason=f"Predicted discount out of bounds: {discount_pred}"
+        )
+
     if discount_pred == expected_discount_int:
         return MetricResult(
             value="correct", 
@@ -43,24 +54,20 @@ def discount_accuracy(prediction: str, expected_discount):
         )
 
 
-def create_benchmark_experiment(model_name: str):
+def create_benchmark_experiment(model_name: str, experiment_name: str):
     """Factory function to create experiment functions for different models."""
     
     @experiment()
     async def benchmark_experiment(row):
-        # Get model response
-        response = run_prompt(row["customer_profile"], model=model_name)
+        # Get model response (run blocking call in thread to keep async runner responsive)
+        response = await asyncio.to_thread(run_prompt, row["customer_profile"], model=model_name)
         
         # Parse response (strict JSON mode expected)
         try:
             parsed_json = json.loads(response)
             predicted_discount = parsed_json.get('discount_percentage')
-            reasoning = parsed_json.get('reason', '')
-            applied_rules = parsed_json.get('applied_rules', [])
         except Exception:
             predicted_discount = None
-            reasoning = response
-            applied_rules = []
         
         # Score the response
         score = discount_accuracy.score(
@@ -71,10 +78,9 @@ def create_benchmark_experiment(model_name: str):
         return {
             **row,
             "model": model_name,
+            "experiment_name": experiment_name,
             "response": response,
             "predicted_discount": predicted_discount,
-            "reasoning": reasoning,
-            "applied_rules": applied_rules,
             "score": score.value,
             "score_reason": score.reason
         }
@@ -95,178 +101,169 @@ def load_dataset():
     return dataset
 
 
-def write_combined_results_csv(
-    baseline_results,
-    candidate_results,
-    output_directory: str,
-    run_id: str,
-    baseline_model_name: str,
-    candidate_model_name: str,
-):
-    """Write a minimal merged CSV (inputs, outputs, scores) by row index using pandas.
+def compare_inputs_to_output(inputs: List[str], output_path: Optional[str] = None) -> str:
+    """Compare multiple experiment CSVs and write a combined CSV.
 
-    Columns:
-    - row_index
-    - description (input summary)
-    - baseline_model, candidate_model
-    - baseline_response, candidate_response
-    - baseline_score, candidate_score
+    - Requires 'id' column in all inputs; uses it as the alignment key
+    - Builds output with id + canonical columns + per-experiment response/score/reason columns
+    - Returns the full output path
     """
-    os.makedirs(output_directory, exist_ok=True)
+    if not inputs or len(inputs) < 2:
+        raise ValueError("At least two input CSV files are required for comparison")
 
-    combined_filename = f"{run_id}-comparison-minimal-{baseline_model_name}-vs-{candidate_model_name}.csv"
-    combined_path = os.path.join(output_directory, combined_filename)
+    # Load all inputs
+    dataframes = []
+    experiment_names = []
+    for path in inputs:
+        df = pd.read_csv(path)
+        if "experiment_name" not in df.columns:
+            raise ValueError(f"Missing 'experiment_name' column in {path}")
+        exp_name = str(df["experiment_name"].iloc[0])
+        experiment_names.append(exp_name)
+        dataframes.append(df)
 
-    # Convert to DataFrames and add row_index
-    baseline_df = (
-        pd.DataFrame(list(baseline_results))
-        .reset_index()
-        .rename(columns={"index": "row_index"})
-    )
-    candidate_df = (
-        pd.DataFrame(list(candidate_results))
-        .reset_index()
-        .rename(columns={"index": "row_index"})
-    )
+    canonical_cols = ["customer_profile", "description", "expected_discount"]
+    base_df = dataframes[0]
 
-    # Select minimal columns and rename with prefixes
-    baseline_min = (
-        baseline_df[
-            [
-                "row_index",
-                "description",
-                "expected_discount",
-                "response",
-                "score",
-                "score_reason",
-            ]
-        ]
-        .rename(
-            columns={
-                "response": "baseline_response",
-                "score": "baseline_score",
-                "score_reason": "baseline_score_reason",
-            }
-        )
-    )
-    candidate_min = (
-        candidate_df[["row_index", "response", "score", "score_reason"]]
-        .rename(
-            columns={
-                "response": "candidate_response",
-                "score": "candidate_score",
-                "score_reason": "candidate_score_reason",
-            }
-        )
-    )
+    # Require 'id' in all inputs
+    if not all("id" in df.columns for df in dataframes):
+        raise ValueError("All input CSVs must contain an 'id' column to align rows. Re-run experiments after adding 'id' to your dataset.")
 
-    combined = pd.merge(baseline_min, candidate_min, on="row_index", how="inner")
-    combined.insert(2, "baseline_model", baseline_model_name)
-    combined.insert(3, "candidate_model", candidate_model_name)
+    # Validate duplicates and matching sets of IDs
+    key_sets = []
+    for idx, df in enumerate(dataframes):
+        keys = df["id"].astype(str)
+        if keys.duplicated().any():
+            dupes = keys[keys.duplicated()].head(3).tolist()
+            raise ValueError(f"Input {inputs[idx]} contains duplicate id values. Examples: {dupes}")
+        key_sets.append(set(keys.tolist()))
 
-    # Reorder columns for readability
-    combined = combined[
-        [
-            "row_index",
-            "description",
-            "expected_discount",
-            "baseline_model",
-            "candidate_model",
-            "baseline_response",
-            "candidate_response",
-            "baseline_score",
-            "baseline_score_reason",
-            "candidate_score",
-            "candidate_score_reason",
-        ]
-    ]
+    base_keys = key_sets[0]
+    for i, ks in enumerate(key_sets[1:], start=1):
+        if ks != base_keys:
+            missing_in_other = list(base_keys - ks)[:5]
+            missing_in_base = list(ks - base_keys)[:5]
+            raise ValueError(
+                "Inputs do not contain the same set of IDs.\n"
+                f"- Missing in file {i+1}: {missing_in_other}\n"
+                f"- Extra in file {i+1}: {missing_in_base}"
+            )
 
-    combined.to_csv(combined_path, index=False)
+    # Validate canonical columns exist in base
+    missing = [c for c in canonical_cols if c not in base_df.columns]
+    if missing:
+        raise ValueError(f"First CSV missing required columns: {missing}")
 
-    return combined_filename
+    # Build combined on base order using 'id' as alignment key
+    base_ids_str = base_df["id"].astype(str)
+    combined = base_df[["id"] + canonical_cols].copy()
 
+    # Append per-experiment outputs by aligned ID
+    for df, exp_name in zip(dataframes, experiment_names):
+        df = df.copy()
+        df["id"] = df["id"].astype(str)
+        df = df.set_index("id")
+        for col in ["response", "score", "score_reason"]:
+            if col not in df.columns:
+                raise ValueError(
+                    f"Column '{col}' not found in one input. Please provide per-row '{col}'."
+                )
+        combined[f"{exp_name}_response"] = base_ids_str.map(df["response"])
+        combined[f"{exp_name}_score"] = base_ids_str.map(df["score"])
+        combined[f"{exp_name}_score_reason"] = base_ids_str.map(df["score_reason"]) 
 
-async def main():
-    """Run the full benchmark comparing baseline vs candidate model."""
-    # Check API key first
-    if "OPENAI_API_KEY" not in os.environ:
-        print("❌ Error: OpenAI API key not found!")
-        print("Please set your API key: export OPENAI_API_KEY=your_actual_key")
-        return
-    
-    print("Loading dataset...")
-    dataset = load_dataset()
-    print(f"Dataset loaded with {len(dataset)} samples")
-    
-    # Prepare run id and output directory
-    run_id = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    # Determine output path
     current_dir = os.path.dirname(os.path.abspath(__file__))
     experiments_dir = os.path.join(current_dir, "experiments")
     os.makedirs(experiments_dir, exist_ok=True)
 
-    # Create experiment functions for each model
-    baseline_experiment = create_benchmark_experiment(BASELINE_MODEL)
-    candidate_experiment = create_benchmark_experiment(CANDIDATE_MODEL)
-    
-    print(f"Running baseline model evaluation ({BASELINE_MODEL})...")
-    baseline_results = await baseline_experiment.arun(dataset, name=f"{run_id}-{BASELINE_MODEL}")
-    print(f"✅ {BASELINE_MODEL}: {len(baseline_results)} cases evaluated")
-    print(f"   Results saved to: experiments/{baseline_results.name}.csv")
-    
-    print(f"\nRunning candidate model evaluation ({CANDIDATE_MODEL})...")
-    candidate_results = await candidate_experiment.arun(dataset, name=f"{run_id}-{CANDIDATE_MODEL}")
-    print(f"✅ {CANDIDATE_MODEL}: {len(candidate_results)} cases evaluated")
-    print(f"   Results saved to: experiments/{candidate_results.name}.csv")
-
-    # Check if we have results
-    if len(baseline_results) == 0 or len(candidate_results) == 0:
-        print("❌ No results returned. Please check:")
-        print("1. OpenAI API key is set: export OPENAI_API_KEY=your_key")
-        print("2. Dataset loaded correctly")
-        print("3. Network connectivity")
-        return
-    
-    # Calculate accuracy scores
-    baseline_accuracy = sum(1 for r in baseline_results if r["score"] == "correct") / len(baseline_results)
-    candidate_accuracy = sum(1 for r in candidate_results if r["score"] == "correct") / len(candidate_results)
-    
-    print("\n" + "="*50)
-    print("BENCHMARK RESULTS")
-    print("="*50)
-    print(f"{BASELINE_MODEL} Accuracy: {baseline_accuracy:.2%}")
-    print(f"{CANDIDATE_MODEL} Accuracy: {candidate_accuracy:.2%}")
-    print(f"Performance Difference: {candidate_accuracy - baseline_accuracy:+.2%}")
-    
-    if candidate_accuracy > baseline_accuracy:
-        print(f"✅ {CANDIDATE_MODEL} outperforms {BASELINE_MODEL}!")
-    elif candidate_accuracy == baseline_accuracy:
-        print("🤝 Models perform equally well")
+    if output_path is None or output_path.strip() == "":
+        run_id = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        output_path = os.path.join(experiments_dir, f"{run_id}-comparison.csv")
     else:
-        print(f"❌ {BASELINE_MODEL} outperforms {CANDIDATE_MODEL}")
-    
-    print("\nDetailed Results:")
-    print(f"\n{BASELINE_MODEL} Results:")
-    for i, result in enumerate(baseline_results):
-        status = "✅" if result["score"] == "correct" else "❌"
-        print(f"{status} Case {i+1}: {result['description']} - {result['score']}")
-    
-    print(f"\n{CANDIDATE_MODEL} Results:")
-    for i, result in enumerate(candidate_results):
-        status = "✅" if result["score"] == "correct" else "❌"
-        print(f"{status} Case {i+1}: {result['description']} - {result['score']}")
+        # If relative path, place under experiments dir
+        if not os.path.isabs(output_path):
+            output_path = os.path.join(experiments_dir, output_path)
 
-    # Write combined comparison CSV
-    combined_filename = write_combined_results_csv(
-        baseline_results=baseline_results,
-        candidate_results=candidate_results,
-        output_directory=experiments_dir,
-        run_id=run_id,
-        baseline_model_name=BASELINE_MODEL,
-        candidate_model_name=CANDIDATE_MODEL,
-    )
-    print(f"\nCombined comparison saved to: experiments/{combined_filename}")
+    # Sort by id for user-friendly reading
+    if "id" in combined.columns:
+        combined = combined.sort_values(by="id").reset_index(drop=True)
+    combined.to_csv(output_path, index=False)
+
+    # Print per-experiment accuracy summary
+    for df, exp_name in zip(dataframes, experiment_names):
+        try:
+            acc = (df["score"] == "correct").mean()
+            print(f"{exp_name} Accuracy: {acc:.2%}")
+        except Exception:
+            pass
+
+    return output_path
+
+
+async def run_command(model: str, name: Optional[str]) -> None:
+    """Run a single experiment using the provided model and name."""
+    if "OPENAI_API_KEY" not in os.environ:
+        print("❌ Error: OpenAI API key not found!")
+        print("Please set your API key: export OPENAI_API_KEY=your_actual_key")
+        return
+
+    print("Loading dataset...")
+    dataset = load_dataset()
+    print(f"Dataset loaded with {len(dataset)} samples")
+
+    run_id = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    exp_name = name or model
+
+    # Ensure output directory exists (experiment framework saves under experiments/)
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    experiments_dir = os.path.join(current_dir, "experiments")
+    os.makedirs(experiments_dir, exist_ok=True)
+
+    benchmark_experiment = create_benchmark_experiment(model_name=model, experiment_name=exp_name)
+    print(f"Running model evaluation ({model})...")
+    results = await benchmark_experiment.arun(dataset, name=f"{run_id}-{exp_name}")
+    print(f"✅ {exp_name}: {len(results)} cases evaluated")
+    print(f"Results saved to: {os.path.join(experiments_dir, results.name)}.csv")
+
+    # Accuracy summary
+    accuracy = sum(1 for r in results if r["score"] == "correct") / max(1, len(results))
+    print(f"{exp_name} Accuracy: {accuracy:.2%}")
+
+
+def compare_command(inputs: List[str], output: Optional[str]) -> None:
+    output_path = compare_inputs_to_output(inputs, output)
+    print(f"Combined comparison saved to: {output_path}")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Benchmark LLM evaluation CLI")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # run subcommand
+    run_parser = subparsers.add_parser("run", help="Run a single experiment")
+    run_parser.add_argument("--model", type=str, default=DEFAULT_MODEL, help="Model name to evaluate")
+    run_parser.add_argument("--name", type=str, default=None, help="Experiment name (defaults to model name)")
+
+    # compare subcommand
+    cmp_parser = subparsers.add_parser("compare", help="Combine multiple experiment CSVs")
+    cmp_parser.add_argument("--inputs", nargs="+", required=True, help="Input CSV files to compare")
+    cmp_parser.add_argument("--output", type=str, default=None, help="Output CSV path (defaults to experiments/<timestamp>-comparison.csv)")
+
+    return parser
 
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    parser = build_parser()
+    args = parser.parse_args()
+
+    if args.command == "run":
+        import asyncio
+        asyncio.run(run_command(model=args.model, name=args.name))
+        sys.exit(0)
+    elif args.command == "compare":
+        compare_command(inputs=args.inputs, output=args.output)
+        sys.exit(0)
+    else:
+        parser.print_help()
+        sys.exit(2)
