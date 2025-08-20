@@ -87,10 +87,12 @@ class Metric(ABC):
     @property
     def required_columns(self) -> t.Dict[str, t.Set[str]]:
         required_columns = {}
-        # ignore any value that contains ":optional"
+        # ignore any value that contains marker suffixes like ":optional" or ":ignored"
         for k, v in self._required_columns.items():
             required_columns[k.name] = {
-                column for column in v if not column.endswith(":optional")
+                column
+                for column in v
+                if not column.endswith(":optional") and not column.endswith(":ignored")
             }
         return required_columns
 
@@ -114,8 +116,11 @@ class Metric(ABC):
             required_columns = {}
             for k, v in self._required_columns.items():
                 # if any column ends with ":optional", add it to the required columns after removing the suffix
+                # if any column ends with ":ignored", do not include it
                 required_columns[k.name] = set()
                 for column in v:
+                    if column.endswith(":ignored"):
+                        continue
                     if column.endswith(":optional"):
                         required_columns[k.name].add(column[: -len(":optional")])
                     else:
