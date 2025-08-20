@@ -69,8 +69,8 @@ run-ci: ## Run complete CI pipeline (mirrors GitHub CI exactly)
 run-ci-format-check: ## Run format check in dry-run mode (like GitHub CI)
 	@echo "Running format check (dry-run, like GitHub CI)..."
 	@echo "Checking ragas formatting..."
-	$(Q)uv run ruff format --check ragas/src ragas/tests docs
-	$(Q)ruff check ragas/src docs ragas/tests
+	$(Q)uv run ruff format --check --config ragas/pyproject.toml ragas/src ragas/tests docs
+	$(Q)uv run ruff check --config ragas/pyproject.toml ragas/src docs ragas/tests
 
 run-ci-type: ## Run type checking (matches GitHub CI)
 	@echo "Running type checking (matches GitHub CI)..."
