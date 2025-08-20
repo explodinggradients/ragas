@@ -2,16 +2,19 @@
 
 import typing as t
 
-from .base import BaseEmbedding
+from .base import BaseRagasEmbedding
 from .utils import validate_texts, batch_texts, get_optimal_batch_size, safe_import
 
 
-class LiteLLMEmbeddings(BaseEmbedding):
+class LiteLLMEmbeddings(BaseRagasEmbedding):
     """Universal embedding interface using LiteLLM.
 
     Supports 100+ models across OpenAI, Azure, Google, Cohere, Anthropic, and more.
     Provides intelligent batching and provider-specific optimizations.
     """
+
+    PROVIDER_NAME = "litellm"
+    REQUIRES_MODEL = True
 
     def __init__(
         self,

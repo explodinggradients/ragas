@@ -2,16 +2,19 @@
 
 import typing as t
 
-from .base import BaseEmbedding
+from .base import BaseRagasEmbedding
 from .utils import validate_texts, batch_texts, run_sync_in_async
 
 
-class HuggingFaceEmbeddings(BaseEmbedding):
+class HuggingFaceEmbeddings(BaseRagasEmbedding):
     """HuggingFace embeddings supporting both local and API-based models.
 
     Supports sentence-transformers for local models and HuggingFace API for
     hosted models. Provides efficient batch processing and caching.
     """
+
+    PROVIDER_NAME = "huggingface"
+    REQUIRES_MODEL = True
 
     def __init__(
         self,
