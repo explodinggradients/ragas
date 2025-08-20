@@ -134,7 +134,7 @@ async def sync_trace(
     raise ValueError(f"Trace {trace_id} not found after {max_retries} attempts")
 
 
-def add_query_param(url, param_name, param_value):
+def add_query_param(url: str, param_name: str, param_value: str) -> str:
     """Add a query parameter to a URL."""
     # Parse the URL
     url_parts = list(urlparse(url))
