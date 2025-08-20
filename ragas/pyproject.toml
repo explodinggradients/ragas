@@ -6,7 +6,7 @@ license = {file = "LICENSE"}
 dependencies = [
     # Core dependencies
     "numpy",
-    "datasets",
+    "datasets>=4.0.0",
     "tiktoken",
     "pydantic>=2.0.0",
     "nest-asyncio",
