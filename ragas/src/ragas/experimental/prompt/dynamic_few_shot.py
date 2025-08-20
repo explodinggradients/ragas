@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 
 
-from ..embeddings import BaseEmbedding
+from ragas.embeddings.base import BaseRagasEmbedding as BaseEmbedding
 from .base import Prompt
 
 if t.TYPE_CHECKING:
