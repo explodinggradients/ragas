@@ -3,19 +3,19 @@
 __all__ = ["Metric"]
 
 import asyncio
-from dataclasses import dataclass, field
-import typing as t
 import string
+import typing as t
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 
 from pydantic import BaseModel
 from rich.progress import Progress
 
+from ...embeddings import BaseRagasEmbeddings
+from ...llms import InstructorBaseRagasLLM as BaseRagasLLM
 from ..prompt.base import Prompt
 from ..prompt.dynamic_few_shot import DynamicFewShotPrompt
 from .result import MetricResult
-from ..llms import BaseRagasLLM
-from ...embeddings import BaseRagasEmbeddings
 
 if t.TYPE_CHECKING:
     from ..dataset import Dataset

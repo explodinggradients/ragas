@@ -2,13 +2,13 @@ from ragas.experimental import Dataset
 from ragas import experiment
 from ragas.experimental.metrics import DiscreteMetric
 from openai import OpenAI
-from ragas.experimental.llms import llm_factory
+from ragas.llms import instructor_llm_factory
 import os
 from rag import default_rag_client
 
 openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 rag_client = default_rag_client(llm_client=openai_client)
-llm = llm_factory("openai", "gpt-4o", openai_client)
+llm = instructor_llm_factory("openai", model="gpt-4o", client=openai_client)
 
 
 def load_dataset():
