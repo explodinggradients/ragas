@@ -1,8 +1,19 @@
 from openai import OpenAI
 import os
-from .config import BASELINE_MODEL, CANDIDATE_MODEL
 
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+DEFAULT_MODEL = "gpt-4.1-nano-2025-04-14"
+
+def get_client() -> OpenAI:
+    """Lazily create an OpenAI client, requiring the API key only when used.
+
+    This avoids raising errors during module import (e.g., when running --help).
+    """
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "OPENAI_API_KEY is not set. Please export it before running prompts."
+        )
+    return OpenAI(api_key=api_key)
 
 
 SYSTEM_PROMPT = """
@@ -24,8 +35,9 @@ Respond in JSON format only:
 }
 """
 
-def run_prompt(prompt: str, model: str = "gpt-4o"):
+def run_prompt(prompt: str, model: str = DEFAULT_MODEL):
     """Run the discount calculation prompt with the specified model."""
+    client = get_client()
     response = client.chat.completions.create(
         model=model,
         response_format={"type": "json_object"},
@@ -50,9 +62,5 @@ if __name__ == "__main__":
     print(SYSTEM_PROMPT)
     print(f"\n=== Customer Profile ===")
     print(customer_profile)
-    print(f"\n=== Running Prompts ===")
-    print(f"=== Baseline Model ({BASELINE_MODEL}) ===")
-    print(run_prompt(customer_profile, model=BASELINE_MODEL))
-    
-    print(f"\n=== Candidate Model ({CANDIDATE_MODEL}) ===")
-    print(run_prompt(customer_profile, model=CANDIDATE_MODEL))
+    print(f"\n=== Running Prompt with default model {DEFAULT_MODEL} ===")
+    print(run_prompt(customer_profile, model=DEFAULT_MODEL))
