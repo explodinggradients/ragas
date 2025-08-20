@@ -19,6 +19,7 @@ from ragas.dataset_schema import (
 )
 from ragas.embeddings.base import (
     BaseRagasEmbeddings,
+    BaseRagasEmbedding,
     LangchainEmbeddingsWrapper,
     embedding_factory,
 )
@@ -58,7 +59,9 @@ def evaluate(
     dataset: t.Union[Dataset, EvaluationDataset],
     metrics: t.Optional[t.Sequence[Metric]] = None,
     llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
-    embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
+    embeddings: t.Optional[
+        BaseRagasEmbeddings | BaseRagasEmbedding | LangchainEmbeddings
+    ] = None,
     experiment_name: t.Optional[str] = None,
     callbacks: Callbacks = None,
     run_config: t.Optional[RunConfig] = None,

@@ -1,15 +1,19 @@
 import typing as t
 
-from .base import BaseEmbedding
+from .base import BaseRagasEmbedding
 from .utils import validate_texts
 
 
-class OpenAIEmbeddings(BaseEmbedding):
+class OpenAIEmbeddings(BaseRagasEmbedding):
     """OpenAI embeddings implementation with batch optimization.
 
     Supports both sync and async OpenAI clients with automatic detection.
     Provides optimized batch processing for better performance.
     """
+
+    PROVIDER_NAME = "openai"
+    REQUIRES_CLIENT = True
+    DEFAULT_MODEL = "text-embedding-3-small"
 
     def __init__(self, client: t.Any, model: str = "text-embedding-3-small"):
         self.client = client

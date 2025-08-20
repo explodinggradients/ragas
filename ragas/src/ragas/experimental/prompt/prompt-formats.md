@@ -192,8 +192,8 @@ Both prompt types use JSON format with optional gzip compression (.json.gz) for 
   "max_similar_examples": 3,
   "similarity_threshold": 0.7,
   "embedding_model_info": {
-    "class_name": "OpenAIEmbedding",
-    "module": "ragas.experimental.embeddings.openai",
+    "class_name": "OpenAIEmbeddings",
+    "module": "ragas.embeddings.openai_provider",
     "note": "You must provide this model when loading"
   },
   "embeddings": [
