@@ -76,12 +76,45 @@ test = []
 ragas = "ragas.cli:app"
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = {"" = "ragas/src"}
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/markdown"}
 
-# Ruff configuration is inherited from workspace.toml at the monorepo root
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+exclude = ["*.ipynb", "*/_version.py"]  # Exclude Jupyter notebooks and auto-generated version files from linting
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]  # Line length handled by formatter
+
+[tool.ruff.lint.isort]
+# Import sorting configuration
+known-first-party = ["ragas"]
+force-single-line = false
+combine-as-imports = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+docstring-code-format = false
+preview = false
+
+[tool.pyright]
+include = ["ragas/src/ragas"]
+exclude = ["ragas/src/ragas/experimental", "ragas/src/ragas/_analytics.py", "ragas/src/ragas/testset", "ragas/src/ragas/optimizers", "ragas/src/ragas/metrics"]
+excludeTypeshedPaths = ["@types/*"]
+pythonVersion = "3.9"
+pythonPlatform = "All"
+typeCheckingMode = "basic"
+reportMissingImports = false
+reportOptionalMemberAccess = "warning"
+reportOptionalSubscript = "warning"
+reportGeneralTypeIssues = "warning"
+reportReturnType = "warning"
 
 [build-system]
 requires = ["setuptools>=64", "setuptools_scm>=8"]
@@ -89,15 +122,12 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 # Path to version file relative to this pyproject.toml
-version_file = "src/ragas/_version.py"
-# Point to the repository root (one level up)
-root = ".."
+version_file = "ragas/src/ragas/_version.py"
 
 [tool.pytest.ini_options]
 addopts = "-n 0"
 asyncio_default_fixture_loop_scope = "function"
-[pytest]
-testpaths = ["tests"]
+testpaths = ["ragas/tests"]
 markers = [
     "experimental_ci: Set of tests that will be run as part of Experimental CI",
     "e2e: End-to-End tests for Experimental",

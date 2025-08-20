@@ -6,9 +6,9 @@ import typing as t
 import pytest
 from pydantic import BaseModel
 
-from ragas.backends.local_csv import LocalCSVBackend
-from ragas.dataset import DataTable, Dataset
 from ragas import Experiment
+from ragas.backends.local_csv import LocalCSVBackend
+from ragas.dataset import Dataset, DataTable
 
 
 # Test BaseModel classes

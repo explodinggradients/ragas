@@ -14,8 +14,8 @@ from rich.progress import Progress
 from ...embeddings import BaseRagasEmbeddings
 from ...embeddings.base import BaseRagasEmbedding
 from ...llms import InstructorBaseRagasLLM as BaseRagasLLM
-from ...prompt.simple_prompt import Prompt
 from ...prompt.dynamic_few_shot import DynamicFewShotPrompt
+from ...prompt.simple_prompt import Prompt
 from .result import MetricResult
 
 if t.TYPE_CHECKING:

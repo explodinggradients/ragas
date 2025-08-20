@@ -1,6 +1,7 @@
-import json
 import gzip
+import json
 import warnings
+
 import pytest
 from pydantic import BaseModel
 
