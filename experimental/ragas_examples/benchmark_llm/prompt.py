@@ -1,7 +1,9 @@
-from openai import OpenAI
 import os
 
+from openai import OpenAI
+
 DEFAULT_MODEL = "gpt-4.1-nano-2025-04-14"
+
 
 def get_client() -> OpenAI:
     """Lazily create an OpenAI client, requiring the API key only when used.
@@ -35,6 +37,7 @@ Respond in JSON format only:
 }
 """
 
+
 def run_prompt(prompt: str, model: str = DEFAULT_MODEL):
     """Run the discount calculation prompt with the specified model."""
     client = get_client()
@@ -44,9 +47,11 @@ def run_prompt(prompt: str, model: str = DEFAULT_MODEL):
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": prompt},
-        ])
+        ],
+    )
     response = response.choices[0].message.content.strip()
     return response
+
 
 if __name__ == "__main__":
     customer_profile = """
@@ -58,9 +63,9 @@ if __name__ == "__main__":
     - Premium Member: Yes, for 3 years
     - Account Age: 3 years
     """
-    print(f"=== System Prompt ===")
+    print("=== System Prompt ===")
     print(SYSTEM_PROMPT)
-    print(f"\n=== Customer Profile ===")
+    print("\n=== Customer Profile ===")
     print(customer_profile)
     print(f"\n=== Running Prompt with default model {DEFAULT_MODEL} ===")
     print(run_prompt(customer_profile, model=DEFAULT_MODEL))

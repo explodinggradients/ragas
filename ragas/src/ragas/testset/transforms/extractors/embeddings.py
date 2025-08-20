@@ -1,7 +1,7 @@
 import typing as t
 from dataclasses import dataclass, field
 
-from ragas.embeddings import BaseRagasEmbeddings, BaseRagasEmbedding, embedding_factory
+from ragas.embeddings import BaseRagasEmbedding, BaseRagasEmbeddings, embedding_factory
 from ragas.testset.graph import Node
 from ragas.testset.transforms.base import Extractor
 

@@ -1,7 +1,8 @@
-import json
 import gzip
-import warnings
+import json
 import typing as t
+import warnings
+
 import pytest
 from pydantic import BaseModel
 

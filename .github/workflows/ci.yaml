@@ -109,7 +109,7 @@ jobs:
       - name: Install dependencies
         run: |
           # Use UV with system installation for CI (simpler and more reliable)
-          cd ragas && uv pip install --system -e "." --group dev --cache-dir ~/.cache/uv
+          uv pip install --system -e "." --group dev --cache-dir ~/.cache/uv
 
       - name: Run unit tests
         run: |
@@ -171,7 +171,7 @@ jobs:
       - name: Install dependencies
         run: |
           # Use UV with system installation for CI (simpler and more reliable)
-          cd ragas && uv pip install --system -e "." --group dev --cache-dir ~/.cache/uv
+          uv pip install --system -e "." --group dev --cache-dir ~/.cache/uv
 
       - name: Format check (dry run)
         run: |
@@ -179,8 +179,8 @@ jobs:
           # Note: We use direct commands here instead of the standalone Makefiles
           # to have precise control over CI-specific options like --check for dry-run
           echo "Checking ragas formatting..."
-          ruff format --check ragas/src ragas/tests docs --exclude ragas/src/ragas/_version.py
-          ruff check ragas/src docs ragas/tests --exclude ragas/src/ragas/_version.py
+          ruff format --check ragas/src ragas/tests docs --exclude ragas/src/ragas/_version.py --config pyproject.toml
+          ruff check ragas/src docs ragas/tests --exclude ragas/src/ragas/_version.py --config pyproject.toml
 
       - name: Type check
         run: make type

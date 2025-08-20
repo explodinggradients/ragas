@@ -1,6 +1,7 @@
 """Tests for the Ragas CLI module."""
 
 from typer.testing import CliRunner
+
 from ragas.cli import app
 
 
