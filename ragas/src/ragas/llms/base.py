@@ -33,7 +33,7 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # TypeVar for Instructor LLM response models
-InstructorTypeVar = t.TypeVar("T", bound=BaseModel)
+InstructorTypeVar = t.TypeVar("T", bound=BaseModel)  # type: ignore
 
 MULTIPLE_COMPLETION_SUPPORTED = [
     OpenAI,
