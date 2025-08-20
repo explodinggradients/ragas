@@ -17,32 +17,11 @@ from .prompt import run_prompt, DEFAULT_MODEL
 @discrete_metric(name="discount_accuracy", allowed_values=["correct", "incorrect"])
 def discount_accuracy(prediction: str, expected_discount):
     """Check if the discount prediction is correct."""
-    try:
-        parsed_json = json.loads(prediction)
-    except Exception as e:
-        return MetricResult(
-            value="incorrect",
-            reason=f"Invalid JSON output: {e.__class__.__name__}"
-        )
-    
-    # Extract discount from JSON
-    raw_discount = parsed_json.get("discount_percentage")
-    try:
-        discount_pred = int(raw_discount) if raw_discount is not None else None
-    except (TypeError, ValueError):
-        discount_pred = None
-    
-    # Convert expected values to correct types (CSV loads as strings)
+    parsed_json = json.loads(prediction)
+    predicted_discount = parsed_json.get("discount_percentage")
     expected_discount_int = int(expected_discount)
     
-    # Simple bounds check per prompt rules
-    if discount_pred is not None and not (0 <= discount_pred <= 35):
-        return MetricResult(
-            value="incorrect",
-            reason=f"Predicted discount out of bounds: {discount_pred}"
-        )
-
-    if discount_pred == expected_discount_int:
+    if predicted_discount == expected_discount_int:
         return MetricResult(
             value="correct", 
             reason=f"Correctly calculated discount={expected_discount_int}%"
@@ -50,7 +29,7 @@ def discount_accuracy(prediction: str, expected_discount):
     else:
         return MetricResult(
             value="incorrect",
-            reason=f"Expected discount={expected_discount_int}%; Got discount={discount_pred}%"
+            reason=f"Expected discount={expected_discount_int}%; Got discount={predicted_discount}%"
         )
 
 
