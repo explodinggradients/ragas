@@ -11,7 +11,9 @@ except ImportError:
     except PackageNotFoundError:
         __version__ = "unknown"
 
+from ragas.embeddings import embedding_factory
+
 from .dataset import Dataset
-from .embeddings import embedding_factory
+from .llms import llm_factory
 
 __all__ = ["Dataset", "embedding_factory"]
