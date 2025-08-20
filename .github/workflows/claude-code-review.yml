@@ -42,7 +42,25 @@ jobs:
 
           # Direct prompt for automated review (no @claude mention needed)
           direct_prompt: |
-            Please review this pull request and provide feedback on:
+            Please analyze this pull request and provide:
+
+            ## Change Type Classification
+            First, identify the primary type of change based on the files modified and changes made:
+            - **🐛 Bug Fix**: Fixes existing functionality
+            - **✨ New Feature**: Adds new functionality
+            - **📚 Documentation**: Updates or adds documentation (README, docs/, comments)
+            - **🔧 Refactor**: Code restructuring without changing functionality
+            - **🧪 Tests**: Adds or modifies tests
+            - **🏗️ Build/CI**: Changes to build process, CI/CD, dependencies
+            - **🎨 Style**: Code formatting, linting fixes
+            - **⚡ Performance**: Improves performance
+            - **🔒 Security**: Security-related improvements
+            - **🗑️ Cleanup**: Removes deprecated code, unused files
+            - **🔀 Merge**: Merge commits or branch management
+            - **📦 Dependencies**: Updates dependencies or package versions
+
+            ## Code Review
+            Then provide feedback on:
             - Code quality and best practices
             - Potential bugs or issues
             - Performance considerations
