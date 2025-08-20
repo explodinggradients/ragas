@@ -33,7 +33,7 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # TypeVar for Instructor LLM response models
-T = t.TypeVar("T", bound=BaseModel)
+InstructorTypeVar = t.TypeVar("T", bound=BaseModel)
 
 MULTIPLE_COMPLETION_SUPPORTED = [
     OpenAI,
@@ -434,14 +434,14 @@ class InstructorBaseRagasLLM(ABC):
     """Base class for LLMs using the Instructor library pattern."""
 
     @abstractmethod
-    def generate(self, prompt: str, response_model: t.Type[T]) -> T:
+    def generate(self, prompt: str, response_model: t.Type[InstructorTypeVar]) -> InstructorTypeVar:
         """Generate a response using the configured LLM.
 
         For async clients, this will run the async method in the appropriate event loop.
         """
 
     @abstractmethod
-    async def agenerate(self, prompt: str, response_model: t.Type[T]) -> T:
+    async def agenerate(self, prompt: str, response_model: t.Type[InstructorTypeVar]) -> InstructorTypeVar:
         """Asynchronously generate a response using the configured LLM."""
 
 
@@ -523,7 +523,7 @@ class InstructorLLM(InstructorBaseRagasLLM):
                 loop.close()
                 asyncio.set_event_loop(None)
 
-    def generate(self, prompt: str, response_model: t.Type[T]) -> T:
+    def generate(self, prompt: str, response_model: t.Type[InstructorTypeVar]) -> InstructorTypeVar:
         """Generate a response using the configured LLM.
 
         For async clients, this will run the async method in the appropriate event loop.
@@ -544,7 +544,7 @@ class InstructorLLM(InstructorBaseRagasLLM):
                 **self.model_args,
             )
 
-    async def agenerate(self, prompt: str, response_model: t.Type[T]) -> T:
+    async def agenerate(self, prompt: str, response_model: t.Type[InstructorTypeVar]) -> InstructorTypeVar:
         """Asynchronously generate a response using the configured LLM."""
         messages = [{"role": "user", "content": prompt}]
 

@@ -2,9 +2,9 @@ from ragas.llms.base import (
     BaseRagasLLM,
     InstructorBaseRagasLLM,
     InstructorLLM,
+    InstructorTypeVar,
     LangchainLLMWrapper,
     LlamaIndexLLMWrapper,
-    T,
     instructor_llm_factory,
     llm_factory,
 )
@@ -17,7 +17,7 @@ __all__ = [
     "InstructorLLM",
     "LangchainLLMWrapper",
     "LlamaIndexLLMWrapper",
-    "T",
+    "InstructorTypeVar",
     "instructor_llm_factory",
     "llm_factory",
 ]
