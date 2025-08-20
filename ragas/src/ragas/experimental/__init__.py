@@ -12,8 +12,8 @@ except ImportError:
         __version__ = "unknown"
 
 from ragas.embeddings import embedding_factory
+from ragas.llms import llm_factory
 
 from .dataset import Dataset
-from .llms import llm_factory
 
-__all__ = ["Dataset", "embedding_factory"]
+__all__ = ["Dataset", "embedding_factory", "llm_factory"]
