@@ -1,8 +1,7 @@
 import numpy as np
-from numpy.typing import NDArray
 
 
-def hamming_distance(vectors: NDArray) -> NDArray:
+def hamming_distance(vectors: np.ndarray) -> np.ndarray:
     """
     Calculate the Hamming distance between pairs of vectors in a list of lists.
 
