@@ -77,18 +77,31 @@ def silent(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
 
 
 @lru_cache(maxsize=1)
-@silent
 def get_userid() -> str:
-    user_id_path = user_data_dir(appname=USER_DATA_DIR_NAME)
-    uuid_filepath = os.path.join(user_id_path, "uuid.json")
-    if os.path.exists(uuid_filepath):
-        user_id = json.load(open(uuid_filepath))["userid"]
-    else:
-        user_id = "a-" + uuid.uuid4().hex
-        os.makedirs(user_id_path)
-        with open(uuid_filepath, "w") as f:
-            json.dump({"userid": user_id}, f)
-    return user_id
+    try:
+        user_id_path = user_data_dir(appname=USER_DATA_DIR_NAME)
+        uuid_filepath = os.path.join(user_id_path, "uuid.json")
+        if os.path.exists(uuid_filepath):
+            user_id = json.load(open(uuid_filepath))["userid"]
+        else:
+            user_id = "a-" + uuid.uuid4().hex
+            os.makedirs(user_id_path)
+            with open(uuid_filepath, "w") as f:
+                json.dump({"userid": user_id}, f)
+        return user_id
+    except Exception as err:
+        # If any error occurs, generate a fallback user ID and log the error
+        if _usage_event_debugging():
+            if get_debug_mode():
+                logger.error(
+                    "Error getting user ID: %s", err, stack_info=True, stacklevel=3
+                )
+            else:
+                logger.info("Error getting user ID: %s", err)
+        else:
+            logger.debug("Error getting user ID: %s", err)
+        # Return a fallback user ID instead of None
+        return "anonymous-" + uuid.uuid4().hex
 
 
 # Analytics Events
