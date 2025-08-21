@@ -160,9 +160,6 @@ Each project directory (`ragas/` and `experimental/`) now has its own standalone
 
 #### Ragas Core Development
 ```bash
-# Navigate to the ragas directory for project-specific work
-cd ragas
-
 # Use the local Makefile for development
 make help           # See available commands
 make format         # Format ragas code only
@@ -215,12 +212,12 @@ make run-ci         # Run full CI for both projects
 make test
 
 # Specific test categories
-cd ragas && uv run pytest tests/unit
-cd ragas && uv run pytest tests/e2e  
+uv run pytest tests/unit
+uv run pytest tests/e2e  
 cd experimental && uv run pytest
 
 # With coverage or specific options
-cd ragas && uv run pytest tests/unit -k "test_name"
+uv run pytest tests/unit -k "test_name"
 ```
 
 ### Test Organization
@@ -284,7 +281,7 @@ make install
 #### Test Failures
 ```bash
 # Run specific failing test
-cd ragas && uv run pytest tests/unit/test_specific.py -v
+uv run pytest tests/unit/test_specific.py -v
 
 # Check test dependencies
 cd experimental && uv run pytest --collect-only
@@ -375,7 +372,7 @@ make format  # After making changes
 make test    # Verify functionality
 
 # For project-specific work
-cd ragas && make help           # See ragas-specific commands
+make help                       # See available commands
 cd experimental && make help    # See experimental-specific commands
 
 # For investigation

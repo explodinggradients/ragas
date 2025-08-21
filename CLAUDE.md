@@ -69,8 +69,8 @@ make test k="test_name"
 make test-e2e
 
 # Direct pytest commands for more control
-cd ragas && uv run pytest tests/unit -k "test_name"
-cd ragas && uv run pytest tests/experimental -v
+uv run pytest tests/unit -k "test_name"
+uv run pytest tests/experimental -v
 ```
 
 ### Documentation
