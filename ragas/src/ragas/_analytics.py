@@ -22,6 +22,8 @@ T = t.TypeVar("T")
 
 if t.TYPE_CHECKING:
     from typing_extensions import ParamSpec
+
+    AsyncFunc = t.Callable[..., t.Coroutine[t.Any, t.Any, t.Any]]
 else:
     try:
         from typing import ParamSpec
@@ -29,12 +31,7 @@ else:
         from typing_extensions import ParamSpec  # type: ignore
 
 P = ParamSpec("P")
-
-if t.TYPE_CHECKING:
-    AsyncFunc = t.Callable[..., t.Coroutine[t.Any, t.Any, t.Any]]
-
 logger = logging.getLogger(__name__)
-
 
 USAGE_TRACKING_URL = "https://t.explodinggradients.com"
 USAGE_REQUESTS_TIMEOUT_SEC = 1
