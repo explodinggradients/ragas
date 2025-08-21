@@ -18,10 +18,10 @@ from pydantic import BaseModel, Field
 from ragas._version import __version__
 from ragas.utils import get_debug_mode
 
+T = t.TypeVar("T")
+
 if t.TYPE_CHECKING:
-    P = t.ParamSpec("P")
-    T = t.TypeVar("T")
-    AsyncFunc = t.Callable[P, t.Coroutine[t.Any, t.Any, t.Any]]
+    AsyncFunc = t.Callable[..., t.Coroutine[t.Any, t.Any, t.Any]]
 
 logger = logging.getLogger(__name__)
 
@@ -47,10 +47,10 @@ def _usage_event_debugging() -> bool:
     return os.environ.get(RAGAS_DEBUG_TRACKING, str(False)).lower() == "true"
 
 
-def silent(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
+def silent(func: t.Callable[..., T]) -> t.Callable[..., T]:  # pragma: no cover
     # Silent errors when tracking
     @wraps(func)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> t.Any:
+    def wrapper(*args: t.Any, **kwargs: t.Any) -> T:
         try:
             return func(*args, **kwargs)
         except Exception as err:  # pylint: disable=broad-except
@@ -64,6 +64,7 @@ def silent(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
                     logger.info("Tracking Error: %s", err)
             else:
                 logger.debug("Tracking Error: %s", err)
+            return None  # type: ignore
 
     return wrapper
 
@@ -216,13 +217,15 @@ class IsCompleteEvent(BaseEvent):
 
 
 @silent
-def track_was_completed(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
+def track_was_completed(
+    func: t.Callable[..., T],
+) -> t.Callable[..., T]:  # pragma: no cover
     """
     Track if the function was completed. This helps us understand failure cases and improve the user experience. Disable tracking by setting the environment variable RAGAS_DO_NOT_TRACK to True as usual.
     """
 
     @wraps(func)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> t.Any:
+    def wrapper(*args: t.Any, **kwargs: t.Any) -> T:
         track(IsCompleteEvent(event_type=func.__name__, is_completed=False))
         result = func(*args, **kwargs)
         track(IsCompleteEvent(event_type=func.__name__, is_completed=True))
