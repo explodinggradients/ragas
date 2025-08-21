@@ -18,13 +18,20 @@ from pydantic import BaseModel, Field
 from ragas._version import __version__
 from ragas.utils import get_debug_mode
 
+T = t.TypeVar("T")
+
 if t.TYPE_CHECKING:
-    P = t.ParamSpec("P")
-    T = t.TypeVar("T")
-    AsyncFunc = t.Callable[P, t.Coroutine[t.Any, t.Any, t.Any]]
+    from typing_extensions import ParamSpec
 
+    AsyncFunc = t.Callable[..., t.Coroutine[t.Any, t.Any, t.Any]]
+else:
+    try:
+        from typing import ParamSpec
+    except ImportError:
+        from typing_extensions import ParamSpec  # type: ignore
+
+P = ParamSpec("P")
 logger = logging.getLogger(__name__)
-
 
 USAGE_TRACKING_URL = "https://t.explodinggradients.com"
 USAGE_REQUESTS_TIMEOUT_SEC = 1
@@ -50,7 +57,7 @@ def _usage_event_debugging() -> bool:
 def silent(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
     # Silent errors when tracking
     @wraps(func)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> t.Any:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         try:
             return func(*args, **kwargs)
         except Exception as err:  # pylint: disable=broad-except
@@ -64,23 +71,37 @@ def silent(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
                     logger.info("Tracking Error: %s", err)
             else:
                 logger.debug("Tracking Error: %s", err)
+            return None  # type: ignore
 
     return wrapper
 
 
 @lru_cache(maxsize=1)
-@silent
 def get_userid() -> str:
-    user_id_path = user_data_dir(appname=USER_DATA_DIR_NAME)
-    uuid_filepath = os.path.join(user_id_path, "uuid.json")
-    if os.path.exists(uuid_filepath):
-        user_id = json.load(open(uuid_filepath))["userid"]
-    else:
-        user_id = "a-" + uuid.uuid4().hex
-        os.makedirs(user_id_path)
-        with open(uuid_filepath, "w") as f:
-            json.dump({"userid": user_id}, f)
-    return user_id
+    try:
+        user_id_path = user_data_dir(appname=USER_DATA_DIR_NAME)
+        uuid_filepath = os.path.join(user_id_path, "uuid.json")
+        if os.path.exists(uuid_filepath):
+            user_id = json.load(open(uuid_filepath))["userid"]
+        else:
+            user_id = "a-" + uuid.uuid4().hex
+            os.makedirs(user_id_path)
+            with open(uuid_filepath, "w") as f:
+                json.dump({"userid": user_id}, f)
+        return user_id
+    except Exception as err:
+        # If any error occurs, generate a fallback user ID and log the error
+        if _usage_event_debugging():
+            if get_debug_mode():
+                logger.error(
+                    "Error getting user ID: %s", err, stack_info=True, stacklevel=3
+                )
+            else:
+                logger.info("Error getting user ID: %s", err)
+        else:
+            logger.debug("Error getting user ID: %s", err)
+        # Return a fallback user ID instead of None
+        return "anonymous-" + uuid.uuid4().hex
 
 
 # Analytics Events
@@ -216,13 +237,15 @@ class IsCompleteEvent(BaseEvent):
 
 
 @silent
-def track_was_completed(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
+def track_was_completed(
+    func: t.Callable[P, T],
+) -> t.Callable[P, T]:  # pragma: no cover
     """
     Track if the function was completed. This helps us understand failure cases and improve the user experience. Disable tracking by setting the environment variable RAGAS_DO_NOT_TRACK to True as usual.
     """
 
     @wraps(func)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> t.Any:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         track(IsCompleteEvent(event_type=func.__name__, is_completed=False))
         result = func(*args, **kwargs)
         track(IsCompleteEvent(event_type=func.__name__, is_completed=True))

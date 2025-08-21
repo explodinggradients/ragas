@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 import numpy as np
-from numpy.typing import NDArray
 from pydantic import BaseModel, Field
 
 from ragas.metrics._faithfulness import NLIStatementInput, NLIStatementPrompt
@@ -235,7 +234,7 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
 
     async def verify_claims(
         self, premise: str, hypothesis_list: t.List[str], callbacks: Callbacks
-    ) -> NDArray:
+    ) -> np.ndarray:
         assert self.llm is not None, "LLM must be set"
         prompt_input = NLIStatementInput(context=premise, statements=hypothesis_list)
         response = await self.nli_prompt.generate(
