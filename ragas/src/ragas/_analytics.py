@@ -21,6 +21,16 @@ from ragas.utils import get_debug_mode
 T = t.TypeVar("T")
 
 if t.TYPE_CHECKING:
+    from typing_extensions import ParamSpec
+else:
+    try:
+        from typing import ParamSpec
+    except ImportError:
+        from typing_extensions import ParamSpec  # type: ignore
+
+P = ParamSpec("P")
+
+if t.TYPE_CHECKING:
     AsyncFunc = t.Callable[..., t.Coroutine[t.Any, t.Any, t.Any]]
 
 logger = logging.getLogger(__name__)
@@ -47,10 +57,10 @@ def _usage_event_debugging() -> bool:
     return os.environ.get(RAGAS_DEBUG_TRACKING, str(False)).lower() == "true"
 
 
-def silent(func: t.Callable[..., T]) -> t.Callable[..., T]:  # pragma: no cover
+def silent(func: t.Callable[P, T]) -> t.Callable[P, T]:  # pragma: no cover
     # Silent errors when tracking
     @wraps(func)
-    def wrapper(*args: t.Any, **kwargs: t.Any) -> T:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         try:
             return func(*args, **kwargs)
         except Exception as err:  # pylint: disable=broad-except
@@ -218,14 +228,14 @@ class IsCompleteEvent(BaseEvent):
 
 @silent
 def track_was_completed(
-    func: t.Callable[..., T],
-) -> t.Callable[..., T]:  # pragma: no cover
+    func: t.Callable[P, T],
+) -> t.Callable[P, T]:  # pragma: no cover
     """
     Track if the function was completed. This helps us understand failure cases and improve the user experience. Disable tracking by setting the environment variable RAGAS_DO_NOT_TRACK to True as usual.
     """
 
     @wraps(func)
-    def wrapper(*args: t.Any, **kwargs: t.Any) -> T:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         track(IsCompleteEvent(event_type=func.__name__, is_completed=False))
         result = func(*args, **kwargs)
         track(IsCompleteEvent(event_type=func.__name__, is_completed=True))
