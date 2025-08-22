@@ -21,6 +21,12 @@ The goal of Ragas Experimental is to evolve Ragas into a general-purpose evaluat
 
     [:octicons-arrow-right-24: Core Concepts](core_concepts/index.md)
 
+- 🛠️ **How-to Guides**
+
+    Step-by-step guides for specific tasks and goals using Ragas experimental features.
+
+    [:octicons-arrow-right-24: How-to Guides](howtos/index.md)
+
 </div>
 
 
@@ -39,7 +45,8 @@ pip install ragas-experimental && pip install "ragas-experimental[local]"
 
 ```python
 import numpy as np
-from ragas_experimental import experiment, Dataset
+from ragas_experimental import Dataset
+from ragas import experiment
 from ragas_experimental.metrics import MetricResult, discrete_metric  
 
 # Define a custom metric for accuracy

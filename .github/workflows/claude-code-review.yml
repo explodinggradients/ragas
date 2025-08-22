@@ -1,0 +1,91 @@
+name: Claude Code Review
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  claude-review:
+    if: |
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/claude-review')
+    
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4.1)
+          # model: "claude-opus-4-1-20250805"
+
+          # Customize the trigger phrase to use /claude-review
+          trigger_phrase: "/claude-review"
+
+          # Custom instructions for the review
+          custom_instructions: |
+            When triggered with /claude-review, please analyze this pull request and provide:
+
+            ## Change Type Classification
+            First, identify the primary type of change based on the files modified and changes made:
+            - **🐛 Bug Fix**: Fixes existing functionality
+            - **✨ New Feature**: Adds new functionality
+            - **📚 Documentation**: Updates or adds documentation (README, docs/, comments)
+            - **🔧 Refactor**: Code restructuring without changing functionality
+            - **🧪 Tests**: Adds or modifies tests
+            - **🏗️ Build/CI**: Changes to build process, CI/CD, dependencies
+            - **🎨 Style**: Code formatting, linting fixes
+            - **⚡ Performance**: Improves performance
+            - **🔒 Security**: Security-related improvements
+            - **🗑️ Cleanup**: Removes deprecated code, unused files
+            - **🔀 Merge**: Merge commits or branch management
+            - **📦 Dependencies**: Updates dependencies or package versions
+
+            ## Code Review
+            Then provide feedback on:
+            - Code quality and best practices
+            - Potential bugs or issues
+            - Performance considerations
+            - Security concerns
+            - Test coverage
+            
+            Be constructive and helpful in your feedback.
+
+          # Optional: Use sticky comments to make Claude reuse the same comment on subsequent pushes to the same PR
+          # use_sticky_comment: true
+          
+          # Optional: Customize review based on file types
+          # direct_prompt: |
+          #   Review this PR focusing on:
+          #   - For TypeScript files: Type safety and proper interface usage
+          #   - For API endpoints: Security, input validation, and error handling
+          #   - For React components: Performance, accessibility, and best practices
+          #   - For tests: Coverage, edge cases, and test quality
+          
+          # Optional: Different prompts for different authors
+          # direct_prompt: |
+          #   ${{ github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR' && 
+          #   'Welcome! Please review this PR from a first-time contributor. Be encouraging and provide detailed explanations for any suggestions.' ||
+          #   'Please provide a thorough code review focusing on our coding standards and best practices.' }}
+          
+          # Optional: Add specific tools for running tests or linting
+          # allowed_tools: "Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck)"
+          
+          # Optional: Skip review for certain conditions
+          # if: |
+          #   !contains(github.event.pull_request.title, '[skip-review]') &&
+          #   !contains(github.event.pull_request.title, '[WIP]')
+

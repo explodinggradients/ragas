@@ -34,16 +34,14 @@ jobs:
               - .github/workflows/ci.yaml
               - codecov.yml
               - pyproject.toml
-              - requirements/test.txt
               - Makefile
             ragas:
               - *related
-              - "ragas/src/ragas/**"
-              - "ragas/tests/**"
-              - "ragas/examples/**"
+              - "src/ragas/**"
+              - "tests/**"
+              - "examples/**"
             docs:
               - *related
-              - requirements/docs-requirements.txt
               - "docs/**"
 
   unit_tests:
@@ -102,7 +100,7 @@ jobs:
           path: |
             ${{ steps.cache-dir.outputs.dir }}
             ~/.cache/uv
-          key: deps-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('ragas/pyproject.toml', 'requirements/*.txt') }}
+          key: deps-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             deps-${{ runner.os }}-py${{ matrix.python-version }}-
             deps-${{ runner.os }}-py3.11-
@@ -111,7 +109,7 @@ jobs:
       - name: Install dependencies
         run: |
           # Use UV with system installation for CI (simpler and more reliable)
-          uv pip install --system -e "./ragas[dev]" --cache-dir ~/.cache/uv
+          uv pip install --system -e "." --group dev --cache-dir ~/.cache/uv
 
       - name: Run unit tests
         run: |
@@ -120,14 +118,14 @@ jobs:
             # Use pytest-xdist to improve test run-time on Linux/macOS
             OPTS=(--dist loadfile -n auto)
           fi
-          
+
           # Run different test suites based on test type
           if [ "${{ matrix.test-type }}" = "full" ]; then
             # Full test suite with notebook tests
-            cd ragas && pytest --nbmake tests/unit tests/experimental "${OPTS[@]}"
+            pytest --nbmake tests/unit tests/experimental "${OPTS[@]}"
           else
             # Essential tests only (faster for cross-platform validation)
-            cd ragas && pytest tests/unit tests/experimental -k "not slow" "${OPTS[@]}"
+            pytest tests/unit tests/experimental -k "not slow" "${OPTS[@]}"
           fi
         env:
           __RAGAS_DEBUG_TRACKING: true
@@ -164,7 +162,7 @@ jobs:
           path: |
             ${{ steps.cache-dir.outputs.dir }}
             ~/.cache/uv
-          key: deps-ubuntu-py3.11-codestyle-${{ hashFiles('ragas/pyproject.toml', 'requirements/*.txt') }}
+          key: deps-ubuntu-py3.11-codestyle-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             deps-ubuntu-py3.11-codestyle-
             deps-ubuntu-py3.11-
@@ -173,7 +171,7 @@ jobs:
       - name: Install dependencies
         run: |
           # Use UV with system installation for CI (simpler and more reliable)
-          uv pip install --system -e "./ragas[dev]" --cache-dir ~/.cache/uv
+          uv pip install --system -e "." --group dev --cache-dir ~/.cache/uv
 
       - name: Format check (dry run)
         run: |
@@ -181,8 +179,8 @@ jobs:
           # Note: We use direct commands here instead of the standalone Makefiles
           # to have precise control over CI-specific options like --check for dry-run
           echo "Checking ragas formatting..."
-          black --check --config ragas/pyproject.toml ragas/src ragas/tests docs
-          ruff check ragas/src docs ragas/tests
+          ruff format --check src tests docs --exclude src/ragas/_version.py --config pyproject.toml
+          ruff check src docs tests --exclude src/ragas/_version.py --config pyproject.toml
 
       - name: Type check
         run: make type
