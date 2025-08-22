@@ -12,7 +12,7 @@ from ragas import experiment
 from ragas.experimental.metrics.result import MetricResult
 from ragas.experimental.metrics.discrete import discrete_metric
 
-from prompt import run_prompt, DEFAULT_MODEL
+from .prompt import run_prompt, DEFAULT_MODEL
 
 
 @discrete_metric(name="discount_accuracy", allowed_values=["correct", "incorrect"])
