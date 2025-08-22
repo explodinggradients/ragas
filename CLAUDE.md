@@ -56,20 +56,6 @@ make benchmarks     # Run performance benchmarks
 make benchmarks-docker # Run benchmarks in Docker
 ```
 
-### Project-Specific Commands
-
-The ragas directory has its own Makefile for focused development:
-
-```bash
-# Ragas development (from ragas/ directory)
-cd ragas
-make format         # Format ragas code only
-make type           # Type check ragas code only
-make check          # Quick format + type check
-make test           # Run all tests (core + experimental)
-make run-ci         # Run ragas CI pipeline
-```
-
 ### Testing
 
 ```bash
@@ -82,12 +68,9 @@ make test k="test_name"
 # Run end-to-end tests
 make test-e2e
 
-# Run tests from ragas directory
-cd ragas && make test           # Run all ragas tests (core + experimental)
-
 # Direct pytest commands for more control
-cd ragas && uv run pytest tests/unit -k "test_name"
-cd ragas && uv run pytest tests/experimental -v
+uv run pytest tests/unit -k "test_name"
+uv run pytest tests/experimental -v
 ```
 
 ### Documentation

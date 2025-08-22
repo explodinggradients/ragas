@@ -4,7 +4,7 @@ GIT_ROOT ?= $(shell git rev-parse --show-toplevel)
 Q := $(if $(V),,@)
 
 # Common paths
-RAGAS_PATHS := ragas/src ragas/tests docs
+RAGAS_PATHS := src tests docs
 
 help: ## Show all Makefile targets
 	$(Q)grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[33m%-30s\033[0m %s\n", $$1, $$2}'
@@ -13,26 +13,42 @@ help: ## Show all Makefile targets
 # SETUP & INSTALLATION
 # =============================================================================
 
+setup-venv: ## Set up uv virtual environment
+	@echo "Setting up uv virtual environment..."
+	$(Q)VIRTUAL_ENV= uv venv
+	@echo "Virtual environment created at .venv"
+	@echo "To activate: source .venv/bin/activate"
+
 install: ## Install dependencies for ragas
 	@echo "Installing dependencies..."
-	@echo "Installing ragas dependencies (including experimental)..."
-	$(Q)uv pip install -e "./ragas[dev]"
+	@if [ ! -d ".venv" ]; then \
+		echo "Virtual environment not found, creating one..."; \
+		$(MAKE) setup-venv; \
+	fi
+	@echo "Installing ragas dependencies..."
+	$(Q)VIRTUAL_ENV= uv sync --group dev
 	@echo "Setting up pre-commit hooks..."
-	$(Q)pre-commit install
+	$(Q)uv run --active pre-commit install
 	@echo "Installation complete!"
 
 # =============================================================================
 # CODE QUALITY
 # =============================================================================
 
-.PHONY: help install format type check clean test test-e2e benchmarks benchmarks-docker run-ci run-ci-fast run-ci-format-check run-ci-type run-ci-tests build-docs serve-docs process-experimental-notebooks
+.PHONY: help setup-venv install format type check clean test test-e2e benchmarks benchmarks-docker run-ci run-ci-fast run-ci-format-check run-ci-type run-ci-tests build-docs serve-docs process-experimental-notebooks
 format: ## Format and lint all code
 	@echo "Formatting and linting all code..."
-	$(Q)$(MAKE) -C ragas format
+	@echo "(ruff format) Formatting ragas..."
+	$(Q)uv run --active ruff format src tests docs --config pyproject.toml
+	@echo "(ruff) Auto-fixing ragas (includes import sorting and unused imports)..."
+	$(Q)uv run --active ruff check src tests docs --fix-only --config pyproject.toml
+	@echo "(ruff) Final linting check for ragas..."
+	$(Q)uv run --active ruff check src tests docs --config pyproject.toml
 
 type: ## Type check all code
 	@echo "Type checking all code..."
-	$(Q)$(MAKE) -C ragas type
+	@echo "(pyright) Typechecking ragas..."
+	$(Q)PYRIGHT_PYTHON_FORCE_VERSION=latest uv run --active pyright -p pyproject.toml src
 
 check: format type ## Quick health check (format + type, no tests)
 	@echo "Code quality check complete!"
@@ -43,19 +59,19 @@ check: format type ## Quick health check (format + type, no tests)
 benchmarks: ## Run all benchmarks locally
 	@echo "Running all benchmarks..."
 	@echo "Running evaluation benchmarks..."
-	$(Q)cd $(GIT_ROOT)/ragas/tests/benchmarks && uv run python benchmark_eval.py
+	$(Q)cd $(GIT_ROOT)/tests/benchmarks && uv run python benchmark_eval.py
 	@echo "Running testset generation benchmarks (DEPRECATED)..."
-	$(Q)cd $(GIT_ROOT)/ragas/tests/benchmarks && uv run python benchmark_testsetgen.py
+	$(Q)cd $(GIT_ROOT)/tests/benchmarks && uv run python benchmark_testsetgen.py
 
 benchmarks-docker: ## Run benchmarks in docker
 	@echo "Running benchmarks in docker..."
 	$(Q)cd $(GIT_ROOT) || exit 1
-	docker buildx build --build-arg OPENAI_API_KEY=$(OPENAI_API_KEY) -t ragas-benchmark -f $(GIT_ROOT)/ragas/tests/benchmarks/Dockerfile .
+	docker buildx build --build-arg OPENAI_API_KEY=$(OPENAI_API_KEY) -t ragas-benchmark -f $(GIT_ROOT)/tests/benchmarks/Dockerfile .
 	docker inspect ragas-benchmark:latest | jq ".[0].Size" | numfmt --to=si
 
 benchmarks-test: ## Run benchmarks for ragas unit tests
 	@echo "Running ragas unit tests with timing benchmarks..."
-	$(Q)cd ragas && uv run pytest --nbmake tests/unit tests/experimental --durations=0 -v $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
+	$(Q)uv run --active pytest --nbmake tests/unit tests/experimental --durations=0 -v $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 
 # =============================================================================
 # CI/BUILD
@@ -63,14 +79,20 @@ benchmarks-test: ## Run benchmarks for ragas unit tests
 
 run-ci: ## Run complete CI pipeline (mirrors GitHub CI exactly)
 	@echo "Running complete CI pipeline..."
-	$(Q)$(MAKE) -C ragas run-ci
+	@echo "Format check..."
+	$(Q)uv run --active ruff format --check src tests docs --config pyproject.toml
+	$(Q)uv run --active ruff check src tests docs --config pyproject.toml
+	@echo "Type check..."
+	$(Q)$(MAKE) type
+	@echo "Unit tests..."
+	$(Q)__RAGAS_DEBUG_TRACKING=true RAGAS_DO_NOT_TRACK=true uv run --active pytest --nbmake tests/unit tests/experimental --dist loadfile -n auto
 	@echo "All CI checks passed!"
 
 run-ci-format-check: ## Run format check in dry-run mode (like GitHub CI)
 	@echo "Running format check (dry-run, like GitHub CI)..."
 	@echo "Checking ragas formatting..."
-	$(Q)uv run ruff format --check --config ragas/pyproject.toml ragas/src ragas/tests docs
-	$(Q)uv run ruff check --config ragas/pyproject.toml ragas/src docs ragas/tests
+	$(Q)uv run --active ruff format --check src tests docs --config pyproject.toml
+	$(Q)uv run --active ruff check src docs tests --config pyproject.toml
 
 run-ci-type: ## Run type checking (matches GitHub CI)
 	@echo "Running type checking (matches GitHub CI)..."
@@ -78,21 +100,28 @@ run-ci-type: ## Run type checking (matches GitHub CI)
 
 run-ci-tests: ## Run all tests with CI options
 	@echo "Running all tests with CI options..."
-	$(Q)cd ragas && __RAGAS_DEBUG_TRACKING=true RAGAS_DO_NOT_TRACK=true pytest --nbmake tests/unit tests/experimental --dist loadfile -n auto
+	$(Q)__RAGAS_DEBUG_TRACKING=true RAGAS_DO_NOT_TRACK=true pytest --nbmake tests/unit tests/experimental --dist loadfile -n auto
 
 run-ci-fast: ## Fast CI check for quick local validation (2-3 minutes)
 	@echo "Running fast CI check for quick feedback..."
 	@echo "Format check..."
-	$(Q)uv run ruff format --check ragas/src ragas/tests docs
-	$(Q)ruff check ragas/src docs ragas/tests
+	$(Q)uv run --active ruff format --check src tests docs --config pyproject.toml
+	$(Q)uv run --active ruff check src docs tests --config pyproject.toml
 	@echo "Core unit tests (no nbmake for speed)..."
-	$(Q)cd ragas && pytest tests/unit tests/experimental --dist loadfile -n auto -x
+	$(Q)uv run --active pytest tests/unit tests/experimental --dist loadfile -n auto -x
 	@echo "Fast CI check completed!"
 
 clean: ## Clean all generated files
 	@echo "Cleaning all generated files..."
-	$(Q)cd $(GIT_ROOT)/docs && $(MAKE) clean
 	$(Q)find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
+	$(Q)rm -rf site/ docs/site/ .mypy_cache .pytest_cache .ruff_cache
+	$(Q)rm -rf dist/ build/ *.egg-info/ src/*.egg-info/ experimental/*.egg-info/
+	$(Q)rm -rf .coverage htmlcov/ .tox/ .venv/ experimental/.venv/
+	$(Q)find . -name '*.log' -delete
+	$(Q)find . -name '.DS_Store' -delete
+	$(Q)find . -name 'temp*' -type d -exec rm -rf {} + 2>/dev/null || true
+	$(Q)find . -name '.tmp*' -type d -exec rm -rf {} + 2>/dev/null || true
+	@echo "Cleanup complete!"
 
 # =============================================================================
 # TESTING
@@ -100,15 +129,15 @@ clean: ## Clean all generated files
 
 test: ## Run all unit tests
 	@echo "Running all unit tests..."
-	$(Q)$(MAKE) -C ragas test $(shell if [ -n "$(k)" ]; then echo "k=$(k)"; fi)
+	$(Q)uv run --active pytest tests/unit tests/experimental $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 
 test-all: ## Run all unit tests (including notebooks)
 	@echo "Running all unit tests (including notebooks)..."
-	$(Q)$(MAKE) -C ragas test-all $(shell if [ -n "$(k)" ]; then echo "k=$(k)"; fi)
+	$(Q)uv run --active pytest --nbmake tests/unit tests/experimental $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 
 test-e2e: ## Run all end-to-end tests
 	@echo "Running all end-to-end tests..."
-	$(Q)cd ragas && uv run pytest --nbmake tests/e2e -s
+	$(Q)uv run --active pytest --nbmake tests/e2e -s
 
 # =============================================================================
 # DOCUMENTATION
