@@ -1,6 +1,6 @@
-## Synthetic test generation from non-english corpus
+## Synthetic test generation from multi-lingual and cross-lingual corpus
 
-In this notebook, you'll learn how to adapt synthetic test data generation to non-english corpus settings. For the sake of this tutorial, I am generating queries in Spanish from Spanish wikipedia articles. 
+In this notebook, you'll learn how to adapt synthetic test data generation to multi-lingual (non english) and cross-lingual settings. For the sake of this tutorial, I am generating queries in Spanish from Spanish wikipedia articles. 
 
 ### Download and Load corpus
 
@@ -19,8 +19,7 @@ In this notebook, you'll learn how to adapt synthetic test data generation to no
 
 
 ```python
-from langchain_community.document_loaders import DirectoryLoader, TextLoader
-
+from langchain_community.document_loaders import DirectoryLoader
 
 path = "Sample_non_english_corpus/"
 loader = DirectoryLoader(path, glob="**/*.txt")
@@ -43,14 +42,14 @@ len(docs)
 
 
 
-### Initialize required models
+### Intialize required models
 
 
 ```python
-from ragas.llms import LangchainLLMWrapper
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+
 from ragas.embeddings import LangchainEmbeddingsWrapper
-from langchain_openai import ChatOpenAI
-from langchain_openai import OpenAIEmbeddings
+from ragas.llms import LangchainLLMWrapper
 
 generator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o-mini"))
 generator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
@@ -83,7 +82,7 @@ from ragas.testset.transforms.splitters import HeadlineSplitter
 transforms = [HeadlineSplitter(), NERExtractor()]
 ```
 
-### Initialize test generator
+### Intialize test generator
 
 
 ```python

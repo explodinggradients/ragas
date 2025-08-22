@@ -46,6 +46,7 @@ Set your OpenAI API key if it is not already set as an environment variable.
 ```python
 import os
 from getpass import getpass
+
 import openai
 
 if not (openai_api_key := os.getenv("OPENAI_API_KEY")):
@@ -78,20 +79,27 @@ An ideal test dataset should contain data points of high quality and diverse nat
 
 
 ```python
-from ragas.testset import TestsetGenerator
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+
+from ragas.testset.evolutions import multi_context, reasoning, simple
+from ragas.testset.generator import TestsetGenerator
 
 TEST_SIZE = 25
 
 # generator with openai models
-generator_llm = ChatOpenAI(model="gpt-4o-mini")
-critic_llm = ChatOpenAI(model="gpt-4o")
+generator_llm = ChatOpenAI(model="gpt-3.5-turbo-16k")
+critic_llm = ChatOpenAI(model="gpt-4")
 embeddings = OpenAIEmbeddings()
 
 generator = TestsetGenerator.from_langchain(generator_llm, critic_llm, embeddings)
 
+# set question type distribution
+distribution = {simple: 0.5, reasoning: 0.25, multi_context: 0.25}
+
 # generate testset
-testset = generator.generate_with_llamaindex_docs(documents, test_size=TEST_SIZE)
+testset = generator.generate_with_llamaindex_docs(
+    documents, test_size=TEST_SIZE, distributions=distribution
+)
 test_df = testset.to_pandas()
 test_df.head()
 ```
@@ -117,8 +125,8 @@ Build your query engine.
 
 
 ```python
-from llama_index.core import VectorStoreIndex, ServiceContext
-from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index import ServiceContext, VectorStoreIndex
+from llama_index.embeddings import OpenAIEmbedding
 
 
 def build_query_engine(documents):
@@ -138,7 +146,7 @@ If you check Phoenix, you should see embedding spans from when your corpus data 
 
 
 ```python
-from phoenix.trace.dsl import SpanQuery
+from phoenix.trace.dsl.helpers import SpanQuery
 
 client = px.Client()
 corpus_df = px.Client().query_spans(
@@ -167,9 +175,9 @@ To use Ragas, we first form an evaluation dataset comprised of a question, gener
 
 
 ```python
+import pandas as pd
 from datasets import Dataset
 from tqdm.auto import tqdm
-import pandas as pd
 
 
 def generate_response(query_engine, question):
@@ -234,7 +242,7 @@ Ragas uses LangChain to evaluate your LLM application data. Let's instrument Lan
 
 
 ```python
-from openinference.instrumentation.langchain import LangChainInstrumentor
+from phoenix.trace.langchain import LangChainInstrumentor
 
 LangChainInstrumentor().instrument()
 ```
@@ -245,10 +253,10 @@ Evaluate your LLM traces and view the evaluation scores in dataframe format.
 ```python
 from ragas import evaluate
 from ragas.metrics import (
-    faithfulness,
     answer_correctness,
-    context_recall,
     context_precision,
+    context_recall,
+    faithfulness,
 )
 
 evaluation_result = evaluate(

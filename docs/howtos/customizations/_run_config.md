@@ -1,11 +1,11 @@
-# Customize timeouts and rate limits
+# RunConfig
 
-The `RunConfig` allows you to pass in the run parameters to functions like `evaluate()` and `TestsetGenerator.generate()`. Depending on your LLM providers rate limits, SLAs and traffic, controlling these parameters can improve the speed and reliability and set failure tolerance of Ragas runs.
+The `RunConfig` allows you to pass in the run parameters to functions like `evaluate()` and `TestsetGenerator.generate()`. Depending on your LLM providers rate limits, SLAs and traffic, controlling these parameters can improve the speed and reliablility of Ragas runs.
 
 How to configure the `RunConfig` in
 
 - [Evaluate](#evaluate)
-- [TestsetGenerator][ragas.testset.generator.TestsetGenerator]
+- [TestsetGenerator]()
 
 ## Rate Limits
 
@@ -24,10 +24,10 @@ my_run_config = RunConfig(max_workers=64, timeout=60)
 
 
 ```python
-from ragas import EvaluationDataset, SingleTurnSample
-from ragas.metrics import Faithfulness
 from datasets import load_dataset
-from ragas import evaluate
+
+from ragas import EvaluationDataset, SingleTurnSample, evaluate
+from ragas.metrics import Faithfulness
 
 dataset = load_dataset("explodinggradients/amnesty_qa", "english_v3")
 
