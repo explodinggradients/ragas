@@ -100,16 +100,15 @@ make benchmarks-docker
 
 The repository has the following structure:
 
-```
-/
-├── ragas/           # Main ragas project
-│   ├── src/ragas/   # Source code including experimental features
+```sh
+/                          # Main ragas project
+├── src/ragas/             # Source code including experimental features
 │   │   ├── experimental/  # Experimental features
-│   ├── tests/       # All tests (core + experimental)
+│   ├── tests/             # All tests (core + experimental)
 │   │   ├── experimental/  # Experimental tests
-│   ├── examples/    # Example code
+│   ├── examples/          # Example code
 │   │   ├── experimental/  # Experimental examples
-│   ├── pyproject.toml  # Unified build config
+│   ├── pyproject.toml     # Unified build config
 │
 ├── docs/            # Documentation
 ├── scripts/         # Build/CI scripts

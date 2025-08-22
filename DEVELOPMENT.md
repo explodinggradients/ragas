@@ -50,14 +50,13 @@ make clean          # Clean generated files
 
 This repository is organized as a monorepo containing two main projects:
 
-```
-ragas/
-├── ragas/                          # Core evaluation library
-│   ├── src/ragas/                 # Main source code
+```sh
+/                                  # Core evaluation library
+├── src/ragas/                     # Main source code
 │   ├── tests/                     # Tests (unit, e2e, benchmarks)
 │   └── pyproject.toml             # Dependencies and configuration
 │
-├── experimental/                   # Experimental extensions
+├── experimental/                  # Experimental extensions
 │   ├── ragas_experimental/        # Generated Python code
 │   ├── tests/                     # Pytest-based tests
 │   └── pyproject.toml             # Dependencies and configuration
@@ -154,10 +153,6 @@ make run-ci          # Run full CI pipeline
 # Ensure all checks pass before creating PR
 ```
 
-### Working with Specific Projects
-
-Each project directory (`ragas/` and `experimental/`) now has its own standalone Makefile with core development commands. You can work directly within each project directory using these local Makefiles.
-
 #### Ragas Core Development
 ```bash
 # Use the local Makefile for development
@@ -187,16 +182,16 @@ make check          # Quick format + type check
 make run-ci         # Run full experimental CI pipeline
 
 # Or use direct commands
-uv run pytest                   # Run experimental tests
+uv run pytest       # Run experimental tests
 ```
 
 #### Monorepo-Wide Development
 ```bash
-# From the root directory, commands operate on both projects
-make format         # Format code in both ragas/ and experimental/
-make type           # Type check both projects
-make test           # Run all tests in both projects
-make run-ci         # Run full CI for both projects
+# From the root directory, commands operate
+make format         # Format code
+make type           # Type check
+make test           # Run all tests
+make run-ci         # Run full CI
 ```
 
 ## Testing Strategy
@@ -221,7 +216,7 @@ uv run pytest tests/unit -k "test_name"
 ```
 
 ### Test Organization
-- **Ragas Core**: `ragas/tests/` (unit, e2e, benchmarks)
+- **Ragas Core**: `tests/` (unit, e2e, benchmarks)
 - **Experimental**: `experimental/tests/` (unit, e2e)
 
 ## Code Quality & CI/CD
@@ -264,7 +259,7 @@ make run-ci  # Runs: format + type + test
 - **Features**: Advanced evaluation tools and UI components
 
 ### Adding Dependencies
-- **Ragas Core**: Add to `ragas/pyproject.toml`
+- **Ragas Core**: Add to `pyproject.toml`
 - **Experimental**: Add to `experimental/pyproject.toml`
 - **Always**: Test with `make install` and `make test`
 
