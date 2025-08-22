@@ -1,3 +1,3 @@
 #!/bin/bash
 
-source ragas/.venv/bin/activate && mkdocs serve --dirtyreload
+source .venv/bin/activate && mkdocs serve --dirtyreload

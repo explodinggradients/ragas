@@ -48,30 +48,26 @@ make clean          # Clean generated files
 
 ## Monorepo Architecture
 
-This repository is organized as a monorepo containing two main projects:
+This repository is organized as a single project with integrated experimental features:
 
-```
-ragas/
-├── ragas/                          # Core evaluation library
-│   ├── src/ragas/                 # Main source code
-│   ├── tests/                     # Tests (unit, e2e, benchmarks)
-│   └── pyproject.toml             # Dependencies and configuration
-│
-├── experimental/                   # Experimental extensions
-│   ├── ragas_experimental/        # Generated Python code
-│   ├── tests/                     # Pytest-based tests
-│   └── pyproject.toml             # Dependencies and configuration
-│
-├── docs/                          # Combined documentation
-├── .github/workflows/             # CI/CD pipeline
-├── Makefile                       # Unified build commands
-└── CLAUDE.md                      # AI assistant instructions
+```sh
+/                              # Main ragas project
+├── src/ragas/                 # Main source code
+│   └── experimental/          # Experimental features
+├── tests/                     # Tests (unit, e2e, benchmarks)
+│   └── experimental/          # Experimental tests
+├── examples/                  # Example code
+├── pyproject.toml             # Dependencies and configuration
+├── docs/                      # Documentation
+├── .github/workflows/         # CI/CD pipeline
+├── Makefile                   # Build commands
+└── CLAUDE.md                  # AI assistant instructions
 ```
 
-### Project Relationships
-- **Ragas Core**: The main evaluation toolkit for LLM applications
-- **Ragas Experimental**: Extensions for advanced features and UI components
-- **Shared Infrastructure**: Unified CI/CD, documentation, and build system
+### Project Components
+- **Ragas Core**: The main evaluation toolkit for LLM applications (in `src/ragas/`)
+- **Ragas Experimental**: Advanced features integrated at `src/ragas/experimental/`
+- **Infrastructure**: Single CI/CD, documentation, and build system
 
 ## Development Environment Setup
 
@@ -92,9 +88,8 @@ make install
 # Install uv if not available
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install both projects
-uv pip install -e "./ragas[dev]"
-uv pip install -e "./experimental[dev]"
+# Install the project
+uv sync --group dev
 ```
 
 ### Verification
@@ -154,49 +149,20 @@ make run-ci          # Run full CI pipeline
 # Ensure all checks pass before creating PR
 ```
 
-### Working with Specific Projects
-
-Each project directory (`ragas/` and `experimental/`) now has its own standalone Makefile with core development commands. You can work directly within each project directory using these local Makefiles.
-
-#### Ragas Core Development
+#### Development Workflow
 ```bash
-# Use the local Makefile for development
+# Use the Makefile for all development
 make help           # See available commands
-make format         # Format ragas code only
-make type           # Type check ragas code only
-make test           # Run ragas tests only
+make format         # Format all code (core + experimental)
+make type           # Type check all code
+make test           # Run all tests (core + experimental)
 make check          # Quick format + type check
-make run-ci         # Run full ragas CI pipeline
+make run-ci         # Run full CI pipeline
 
 # Or use direct commands for specific tasks
-uv run pytest tests/unit          # Run specific tests
-uv run pyright src               # Type check specific code
-```
-
-#### Experimental Development
-```bash
-# Navigate to experimental directory
-cd experimental  
-
-# Use the local Makefile for development
-make help           # See available commands
-make format         # Format experimental code only
-make type           # Type check experimental code only
-make test           # Run experimental tests only
-make check          # Quick format + type check
-make run-ci         # Run full experimental CI pipeline
-
-# Or use direct commands
-uv run pytest                   # Run experimental tests
-```
-
-#### Monorepo-Wide Development
-```bash
-# From the root directory, commands operate on both projects
-make format         # Format code in both ragas/ and experimental/
-make type           # Type check both projects
-make test           # Run all tests in both projects
-make run-ci         # Run full CI for both projects
+uv run pytest tests/unit          # Run core unit tests
+uv run pytest tests/experimental  # Run experimental tests
+uv run pyright src               # Type check source code
 ```
 
 ## Testing Strategy
@@ -221,7 +187,7 @@ uv run pytest tests/unit -k "test_name"
 ```
 
 ### Test Organization
-- **Ragas Core**: `ragas/tests/` (unit, e2e, benchmarks)
+- **Ragas Core**: `tests/` (unit, e2e, benchmarks)
 - **Experimental**: `experimental/tests/` (unit, e2e)
 
 ## Code Quality & CI/CD
@@ -250,22 +216,17 @@ Our GitHub Actions CI runs:
 make run-ci  # Runs: format + type + test
 ```
 
-## Project-Specific Guidelines
+## Project Guidelines
 
-### Ragas Core
+### Ragas Project
 - **Language**: Python with type hints
 - **Testing**: pytest with nbmake for notebook tests
 - **Style**: Google-style docstrings
-- **Architecture**: Modular metrics and evaluation framework
-
-### Experimental
-- **Dependencies**: Defined in `pyproject.toml`
-- **Testing**: Pure pytest (no nbdev)
-- **Features**: Advanced evaluation tools and UI components
+- **Architecture**: Modular metrics and evaluation framework with experimental features
+- **Dependencies**: All defined in `pyproject.toml`
 
 ### Adding Dependencies
-- **Ragas Core**: Add to `ragas/pyproject.toml`
-- **Experimental**: Add to `experimental/pyproject.toml`
+- **All features**: Add to `pyproject.toml`
 - **Always**: Test with `make install` and `make test`
 
 ## Troubleshooting
@@ -283,8 +244,8 @@ make install
 # Run specific failing test
 uv run pytest tests/unit/test_specific.py -v
 
-# Check test dependencies
-cd experimental && uv run pytest --collect-only
+# Check experimental test dependencies
+uv run pytest tests/experimental --collect-only
 ```
 
 #### Formatting Issues
@@ -373,7 +334,6 @@ make test    # Verify functionality
 
 # For project-specific work
 make help                       # See available commands
-cd experimental && make help    # See experimental-specific commands
 
 # For investigation
 uv run pytest --collect-only  # See available tests

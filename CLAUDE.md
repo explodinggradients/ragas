@@ -23,7 +23,7 @@ source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
 
 # For ragas (includes experimental features)
 pip install -U setuptools  # Required on newer Python versions
-pip install -e "./ragas[dev]"
+pip install -e ".[dev]"
 ```
 
 ## Common Commands
@@ -100,22 +100,18 @@ make benchmarks-docker
 
 The repository has the following structure:
 
-```
-/
-├── ragas/           # Main ragas project
-│   ├── src/ragas/   # Source code including experimental features
-│   │   ├── experimental/  # Experimental features
-│   ├── tests/       # All tests (core + experimental)
-│   │   ├── experimental/  # Experimental tests
-│   ├── examples/    # Example code
-│   │   ├── experimental/  # Experimental examples
-│   ├── pyproject.toml  # Unified build config
-│
-├── docs/            # Documentation
-├── scripts/         # Build/CI scripts
-├── workspace.toml   # Root project config (for dev tools)
-├── Makefile         # Build commands
-└── README.md        # Repository overview
+```sh
+/                          # Main ragas project
+├── src/ragas/             # Source code including experimental features
+│   └── experimental/      # Experimental features
+├── tests/                 # All tests (core + experimental)
+│   └── experimental/      # Experimental tests
+├── examples/              # Example code
+├── pyproject.toml         # Build config
+├── docs/                  # Documentation
+├── scripts/               # Build/CI scripts
+├── Makefile               # Build commands
+└── README.md              # Repository overview
 ```
 
 ### Ragas Core Components
