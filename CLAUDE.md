@@ -103,18 +103,17 @@ The repository has the following structure:
 ```sh
 /                          # Main ragas project
 ├── src/ragas/             # Source code including experimental features
-│   │   ├── experimental/  # Experimental features
-│   ├── tests/             # All tests (core + experimental)
-│   │   ├── experimental/  # Experimental tests
-│   ├── examples/          # Example code
-│   │   ├── experimental/  # Experimental examples
-│   ├── pyproject.toml     # Unified build config
-│
-├── docs/            # Documentation
-├── scripts/         # Build/CI scripts
-├── workspace.toml   # Root project config (for dev tools)
-├── Makefile         # Build commands
-└── README.md        # Repository overview
+│      └── experimental/   # Experimental features
+├── tests/                 # All tests (core + experimental)
+│   └── experimental/      # Experimental tests
+├── examples/              # Example code
+│   └── experimental/      # Experimental examples
+├── pyproject.toml         # Unified build config
+├── docs/                  # Documentation
+├── scripts/               # Build/CI scripts
+├── workspace.toml         # Root project config (for dev tools)
+├── Makefile               # Build commands
+└── README.md              # Repository overview
 ```
 
 ### Ragas Core Components

@@ -51,20 +51,15 @@ make clean          # Clean generated files
 This repository is organized as a monorepo containing two main projects:
 
 ```sh
-/                                  # Core evaluation library
-├── src/ragas/                     # Main source code
-│   ├── tests/                     # Tests (unit, e2e, benchmarks)
-│   └── pyproject.toml             # Dependencies and configuration
-│
-├── experimental/                  # Experimental extensions
-│   ├── ragas_experimental/        # Generated Python code
-│   ├── tests/                     # Pytest-based tests
-│   └── pyproject.toml             # Dependencies and configuration
-│
-├── docs/                          # Combined documentation
-├── .github/workflows/             # CI/CD pipeline
-├── Makefile                       # Unified build commands
-└── CLAUDE.md                      # AI assistant instructions
+/                              # Core evaluation library
+├── src/ragas/                 # Main source code
+│   └── experimental/          # Experimental extensions
+├── tests/                     # Tests (unit, e2e, benchmarks)
+├── pyproject.toml             # Dependencies and configuration
+├── docs/                      # Combined documentation
+├── .github/workflows/         # CI/CD pipeline
+├── Makefile                   # Unified build commands
+└── CLAUDE.md                  # AI assistant instructions
 ```
 
 ### Project Relationships
