@@ -12,7 +12,12 @@ cd ragas
 # 2. Install uv (if not already installed)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 3. Install dependencies and setup environment
+# 3. Choose your installation type:
+
+# RECOMMENDED: Minimal dev setup (83 packages - fast)  
+make install-minimal
+
+# FULL: Complete dev environment (309+ packages - comprehensive)
 make install
 
 # 4. Verify everything works
@@ -29,7 +34,8 @@ AI agents working with this codebase should use these standardized commands:
 ```bash
 # Essential commands for AI development
 make help           # See all available targets
-make install        # Install dependencies and setup environment
+make install-minimal # Minimal dev setup (fast - 83 packages) 
+make install        # Full environment (modern uv sync - 309+ packages)
 make check          # Quick health check (format + type)
 make test           # Run all tests
 make run-ci         # Full CI pipeline locally
@@ -80,6 +86,10 @@ This repository is organized as a single project with integrated experimental fe
 
 #### Option 1: Using Make (Recommended)
 ```bash
+# Recommended: Minimal dev setup (83 packages)  
+make install-minimal
+
+# Full: Complete environment (309+ packages)
 make install
 ```
 
@@ -88,9 +98,31 @@ make install
 # Install uv if not available
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install the project
+# Minimal dev: Core + essential dev tools
+uv pip install -e ".[dev]"
+
+# Full dev: Everything (uses modern uv sync)
 uv sync --group dev
 ```
+
+#### Which Option to Choose?
+
+**Use `make install-minimal` (83 packages) if you're:**
+- Contributing to ragas development
+- Need testing and linting tools
+- Want fast CI/CD builds
+- Working on code quality, docs, or basic features
+
+**Use `make install` (309+ packages) if you're:**
+- Working on ML features requiring the full stack
+- Need observability tools (Phoenix, MLflow)
+- Developing with notebooks and advanced integrations
+- Want the complete development environment
+
+#### Installation Methods Explained
+
+- **`install-minimal`**: Uses `uv pip install` for selective dev dependencies  
+- **`install`**: Uses `uv sync` for complete modern dependency management
 
 ### Verification
 ```bash
@@ -103,7 +135,8 @@ make test   # Runs all tests
 Run `make help` to see all targets. Here are the essential commands:
 
 ### Setup & Installation
-- `make install` - Install dependencies for both projects
+- `make install-minimal` - Install minimal dev setup (83 packages - recommended)
+- `make install` - Install full environment with uv sync (309+ packages - complete)
 
 ### Code Quality
 - `make format` - Format and lint all code (includes unused import cleanup)

@@ -19,23 +19,36 @@ setup-venv: ## Set up uv virtual environment
 	@echo "Virtual environment created at .venv"
 	@echo "To activate: source .venv/bin/activate"
 
-install: ## Install dependencies for ragas
-	@echo "Installing dependencies..."
+install-minimal: ## Install minimal dev dependencies (fast setup - 83 packages)
+	@echo "Installing minimal development dependencies (fast setup)..."
 	@if [ ! -d ".venv" ]; then \
 		echo "Virtual environment not found, creating one..."; \
 		$(MAKE) setup-venv; \
 	fi
-	@echo "Installing ragas dependencies..."
+	@echo "Installing core ragas + essential dev tools..."
+	$(Q)uv pip install -e ".[dev]"
+	@echo "Setting up pre-commit hooks..."
+	$(Q)uv run pre-commit install
+	@echo "Minimal installation complete! (83 packages)"
+	@echo "Note: For full features including ML packages, use 'make install'"
+
+install: ## Install full dependencies with uv sync (backward compatible - modern approach)
+	@echo "Installing full development dependencies with uv sync..."
+	@if [ ! -d ".venv" ]; then \
+		echo "Virtual environment not found, creating one..."; \
+		$(MAKE) setup-venv; \
+	fi
+	@echo "Installing ragas with full dev environment..."
 	$(Q)VIRTUAL_ENV= uv sync --group dev
 	@echo "Setting up pre-commit hooks..."
-	$(Q)uv run --active pre-commit install
-	@echo "Installation complete!"
+	$(Q)uv run pre-commit install
+	@echo "Full installation complete! (Modern uv sync approach)"
 
 # =============================================================================
 # CODE QUALITY
 # =============================================================================
 
-.PHONY: help setup-venv install format type check clean test test-e2e benchmarks benchmarks-docker run-ci run-ci-fast run-ci-format-check run-ci-type run-ci-tests build-docs serve-docs process-experimental-notebooks
+.PHONY: help setup-venv install-minimal install format type check clean test test-e2e benchmarks benchmarks-docker run-ci run-ci-fast run-ci-format-check run-ci-type run-ci-tests build-docs serve-docs process-experimental-notebooks
 format: ## Format and lint all code
 	@echo "Formatting and linting all code..."
 	@echo "(ruff format) Formatting ragas..."

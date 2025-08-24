@@ -108,8 +108,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Use UV with system installation for CI (simpler and more reliable)
-          uv pip install --system -e "." --group dev --cache-dir ~/.cache/uv
+          # Use minimal install for fast CI runs (83 packages vs 309)
+          # This uses make install-minimal for consistency with local development
+          make install-minimal
 
       - name: Run unit tests
         run: |
@@ -170,8 +171,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Use UV with system installation for CI (simpler and more reliable)
-          uv pip install --system -e "." --group dev --cache-dir ~/.cache/uv
+          # Use minimal install for fast CI runs (83 packages vs 309)
+          # This uses make install-minimal for consistency with local development
+          make install-minimal
 
       - name: Format check (dry run)
         run: |
