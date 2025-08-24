@@ -35,6 +35,7 @@ Create an LLM and Embedding model with the cacher, here I'm using the `ChatOpenA
 
 ```python
 from langchain_openai import ChatOpenAI
+
 from ragas.llms import LangchainLLMWrapper
 
 cached_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"), cache=cacher)
@@ -44,6 +45,7 @@ cached_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"), cache=cacher)
 ```python
 # if you want to see the cache in action, set the logging level to debug
 import logging
+
 from ragas.utils import set_logging_level
 
 set_logging_level("ragas.cache", logging.DEBUG)
@@ -53,11 +55,10 @@ Now let's run a simple evaluation.
 
 
 ```python
-from ragas import evaluate
-from ragas import EvaluationDataset
-
-from ragas.metrics import FactualCorrectness, AspectCritic
 from datasets import load_dataset
+
+from ragas import EvaluationDataset, evaluate
+from ragas.metrics import AspectCritic, FactualCorrectness
 
 # Define Answer Correctness with AspectCritic
 answer_correctness = AspectCritic(

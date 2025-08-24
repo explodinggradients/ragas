@@ -87,8 +87,8 @@ Have a look at the [documentation](https://docs.ragas.io/en/latest/concepts/metr
 
 ```python
 # import metrics
-from ragas.metrics import faithfulness, answer_relevancy, context_precision
-from ragas.metrics.critique import SUPPORTED_ASPECTS, harmfulness
+from ragas.metrics import answer_relevancy, context_precision, faithfulness
+from ragas.metrics.critique import harmfulness
 
 # metrics you chose
 metrics = [faithfulness, answer_relevancy, context_precision, harmfulness]
@@ -98,8 +98,8 @@ Next, initialize the metrics using the LLMs and Embeddings of your choice. In th
 
 
 ```python
+from ragas.metrics.base import MetricWithEmbeddings, MetricWithLLM
 from ragas.run_config import RunConfig
-from ragas.metrics.base import MetricWithLLM, MetricWithEmbeddings
 
 
 # util function to init Ragas Metrics
@@ -118,9 +118,10 @@ def init_ragas_metrics(metrics, llm, embedding):
 from langchain_openai.chat_models import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
 
+from ragas.embeddings import LangchainEmbeddingsWrapper
+
 # wrappers
 from ragas.llms import LangchainLLMWrapper
-from ragas.embeddings import LangchainEmbeddingsWrapper
 
 llm = ChatOpenAI()
 emb = OpenAIEmbeddings()
@@ -258,8 +259,9 @@ nest_asyncio.apply()
 
 
 ```python
-from langfuse.decorators import observe, langfuse_context
 from asyncio import run
+
+from langfuse.decorators import langfuse_context, observe
 
 
 @observe()

@@ -29,8 +29,18 @@ def run_command(cmd, cwd=None):
 
 def process_notebooks():
     """Process notebooks with nbdev_proc_nbs"""
+    # Check if there are any notebooks to process
+    notebook_files = list(EXPERIMENTAL_DIR.glob("**/*.ipynb"))
+    if not notebook_files:
+        print("No notebooks found in experimental directory, skipping nbdev processing...")
+        return
+    
     print("Processing notebooks with nbdev...")
-    run_command(["nbdev_proc_nbs"], cwd=EXPERIMENTAL_DIR)
+    try:
+        run_command(["nbdev_proc_nbs"], cwd=EXPERIMENTAL_DIR)
+    except FileNotFoundError:
+        print("Warning: nbdev_proc_nbs not found. Install nbdev to process notebooks.")
+        return
 
     if not PROC_DIR.exists():
         print(
@@ -43,6 +53,16 @@ def process_notebooks():
 
 def render_with_quarto():
     """Render processed notebooks to markdown using Quarto"""
+    # Check if there are notebooks to render
+    if not PROC_DIR.exists():
+        print("No processed notebooks directory found, skipping Quarto rendering...")
+        return
+    
+    notebook_files = list(PROC_DIR.glob("**/*.ipynb"))
+    if not notebook_files:
+        print("No notebooks found for rendering, skipping Quarto rendering...")
+        return
+    
     print("Rendering notebooks to markdown with Quarto...")
 
     # Ensure the output directory exists
@@ -62,6 +82,9 @@ def render_with_quarto():
             ],
             cwd=PROC_DIR,
         )
+    except FileNotFoundError:
+        print("Warning: quarto not found. Install Quarto CLI to render notebooks.")
+        return
     except Exception as e:
         print(f"Error rendering notebooks with Quarto: {e}")
         sys.exit(1)
@@ -73,7 +96,7 @@ def main():
     """Main function to process notebooks and render to markdown"""
     # Ensure we're in the project root
     if (
-        not (RAGAS_ROOT / "ragas").exists()
+        not (RAGAS_ROOT / "src" / "ragas").exists()
         or not (RAGAS_ROOT / "experimental").exists()
     ):
         print("Error: This script must be run from the ragas project root directory.")

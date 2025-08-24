@@ -32,16 +32,17 @@ Here's a sample notebook you can follow: https://github.com/athina-ai/athina-eva
 
 ```python
 import os
+
+import pandas as pd
 from athina.evals import (
     RagasAnswerCorrectness,
     RagasAnswerRelevancy,
     RagasContextRelevancy,
     RagasFaithfulness,
 )
-from athina.loaders import RagasLoader
 from athina.keys import AthinaApiKey, OpenAiApiKey
+from athina.loaders import RagasLoader
 from athina.runner.run import EvalRunner
-import pandas as pd
 
 # Set your API keys
 OpenAiApiKey.set_key(os.getenv("OPENAI_API_KEY"))

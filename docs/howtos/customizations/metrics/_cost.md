@@ -19,29 +19,18 @@ os.environ["OPENAI_API_KEY"] = "your-api-key"
 
 
 ```python
-from langchain_openai.chat_models import ChatOpenAI
 from langchain_core.prompt_values import StringPromptValue
+from langchain_openai.chat_models import ChatOpenAI
+
+# lets import a parser for OpenAI
+from ragas.cost import get_token_usage_for_openai
 
 gpt4o = ChatOpenAI(model="gpt-4o")
 p = StringPromptValue(text="hai there")
 llm_result = gpt4o.generate_prompt([p])
 
-# lets import a parser for OpenAI
-from ragas.cost import get_token_usage_for_openai
-
 get_token_usage_for_openai(llm_result)
 ```
-
-    /opt/homebrew/Caskroom/miniforge/base/envs/ragas/lib/python3.9/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
-      from .autonotebook import tqdm as notebook_tqdm
-
-
-
-
-
-    TokenUsage(input_tokens=9, output_tokens=9, model='')
-
-
 
 You can define your own or import parsers if they are defined. If you would like to suggest parser for LLM providers or contribute your own ones please check out this [issue](https://github.com/explodinggradients/ragas/issues/1151) 🙂.
 
@@ -50,6 +39,7 @@ You can use it for evaluations as so. Using example from [get started](get-start
 
 ```python
 from datasets import load_dataset
+
 from ragas import EvaluationDataset
 from ragas.metrics._aspect_critic import AspectCriticWithReference
 

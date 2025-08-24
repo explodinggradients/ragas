@@ -134,10 +134,11 @@ To implement this in LangGraph, we define a state class that maintains a list of
 
 
 ```python
-from langgraph.graph import END
-from langchain_core.messages import AnyMessage
-from langgraph.graph.message import add_messages
 from typing import Annotated
+
+from langchain_core.messages import AnyMessage
+from langgraph.graph import END
+from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
 
 
@@ -202,8 +203,8 @@ The graph structure is the backbone of the agentic workflow, consisting of inter
 
 
 ```python
-from langgraph.graph import START, StateGraph
 from IPython.display import Image, display
+from langgraph.graph import START, StateGraph
 
 # Define a new graph for the agent
 builder = StateGraph(GraphState)
@@ -317,11 +318,10 @@ First, let us actually run our Agent with a couple of queries, and make sure we 
 
 
 ```python
-from ragas.metrics import ToolCallAccuracy
+import ragas.messages as r
 from ragas.dataset_schema import MultiTurnSample
 from ragas.integrations.langgraph import convert_to_ragas_messages
-import ragas.messages as r
-
+from ragas.metrics import ToolCallAccuracy
 
 ragas_trace = convert_to_ragas_messages(
     messages=result["messages"]
@@ -394,9 +394,8 @@ ragas_trace
 
 ```python
 from ragas.dataset_schema import MultiTurnSample
-from ragas.metrics import AgentGoalAccuracyWithReference
 from ragas.llms import LangchainLLMWrapper
-
+from ragas.metrics import AgentGoalAccuracyWithReference
 
 sample = MultiTurnSample(
     user_input=ragas_trace,

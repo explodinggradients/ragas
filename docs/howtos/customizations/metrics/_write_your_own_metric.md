@@ -8,6 +8,7 @@ before we start, lets load the dataset and define the llm
 ```python
 # dataset
 from datasets import load_dataset
+
 from ragas import EvaluationDataset
 
 amnesty_qa = load_dataset("explodinggradients/amnesty_qa", "english_v3")
@@ -61,10 +62,12 @@ hallucinations_binary = AspectCritic(
 
 await hallucinations_binary.single_turn_ascore(eval_dataset[0])
 ```
-Output
-```
-0
-```
+
+
+
+
+    0
+
 
 
 ## Domain Specific Metrics or Rubric based Metrics
@@ -96,10 +99,12 @@ hallucinations_rubric = RubricsScore(
 
 await hallucinations_rubric.single_turn_ascore(eval_dataset[0])
 ```
-Output
-```
-3
-```
+
+
+
+
+    3
+
 
 
 ## Custom Metrics
@@ -126,16 +131,16 @@ $$
 
 ```python
 # we are going to create a dataclass that subclasses `MetricWithLLM` and `SingleTurnMetric`
-from dataclasses import dataclass, field
-
-# import the base classes
-from ragas.metrics.base import MetricWithLLM, SingleTurnMetric, MetricType
-from ragas.metrics import Faithfulness
-
 # import types
 import typing as t
+from dataclasses import dataclass, field
+
 from ragas.callbacks import Callbacks
 from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics import Faithfulness
+
+# import the base classes
+from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric
 
 
 @dataclass
@@ -169,10 +174,11 @@ hallucinations_metric = HallucinationsMetric(llm=evaluator_llm)
 await hallucinations_metric.single_turn_ascore(eval_dataset[0])
 ```
 
-Output
-```
-0.5
-```
+
+
+
+    0.5
+
 
 
 Now let's evaluate the entire dataset with the metrics we have created.
@@ -189,11 +195,14 @@ results = evaluate(
 
 
 ```python
+results
+```
 
-Output
-```
-{'hallucinations_metric': 0.5932, 'hallucinations_rubric': 3.1500, 'hallucinations_binary': 0.1000}
-```
+
+
+
+    {'hallucinations_metric': 0.5932, 'hallucinations_rubric': 3.1500, 'hallucinations_binary': 0.1000}
+
 
 
 
@@ -202,7 +211,8 @@ results_df = results.to_pandas()
 results_df.head()
 ```
 
-Output
+
+
 
 <div>
 <style scoped>

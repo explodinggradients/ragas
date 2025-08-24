@@ -26,9 +26,9 @@ Once langsmith is setup, just run the evaluations as your normally would
 
 ```python
 from datasets import load_dataset
-from ragas.metrics import context_precision, answer_relevancy, faithfulness
-from ragas import evaluate
 
+from ragas import evaluate
+from ragas.metrics import answer_relevancy, context_precision, faithfulness
 
 fiqa_eval = load_dataset("explodinggradients/fiqa", "ragas_eval")
 

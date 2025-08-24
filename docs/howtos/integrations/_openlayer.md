@@ -25,8 +25,9 @@ os.environ["OPENAI_API_KEY"] = "YOUR_OPENAI_API_KEY_HERE"
 
 ```python
 from llama_index import SimpleDirectoryReader
+
+from ragas.testset.evolutions import multi_context, reasoning, simple
 from ragas.testset.generator import TestsetGenerator
-from ragas.testset.evolutions import simple, reasoning, multi_context
 
 # load documents
 dir_path = "./prompt-engineering-papers"
@@ -52,9 +53,8 @@ test_df.head()
 
 ```python
 import nest_asyncio
-from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext
+from llama_index import ServiceContext, SimpleDirectoryReader, VectorStoreIndex
 from llama_index.embeddings import OpenAIEmbedding
-
 
 nest_asyncio.apply()
 
@@ -120,6 +120,7 @@ ragas_df = ragas_dataset.to_pandas()
 
 
 ```python
+import openlayer
 from openlayer.tasks import TaskType
 
 client = openlayer.OpenlayerClient("YOUR_OPENLAYER_API_KEY_HERE")

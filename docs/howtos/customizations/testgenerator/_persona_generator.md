@@ -44,9 +44,9 @@ And then you can use these persona's in the testset generation process by passin
 
 
 ```python
+from ragas.llms import llm_factory
 from ragas.testset import TestsetGenerator
 from ragas.testset.graph import KnowledgeGraph
-from ragas.llms import llm_factory
 
 # Load the knowledge graph
 kg = KnowledgeGraph.load("../../../../experiments/gitlab_kg.json")
@@ -141,9 +141,9 @@ If you want to automatically generate persona's from a knowledge graph, you can 
 
 
 ```python
-from ragas.testset.persona import generate_personas_from_kg
-from ragas.testset.graph import KnowledgeGraph
 from ragas.llms import llm_factory
+from ragas.testset.graph import KnowledgeGraph
+from ragas.testset.persona import generate_personas_from_kg
 
 kg = KnowledgeGraph.load("../../../../experiments/gitlab_kg.json")
 llm = llm_factory("gpt-4o-mini")

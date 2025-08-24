@@ -3,7 +3,7 @@
 In this tutorial you will get to learn how to create custom multi-hop queries from your documents. This is a very powerful feature that allows you to create queries that are not possible with the standard query types. This also helps you to create queries that are more specific to your use case.
 
 ### Load sample documents
-I am using documents from [sample of gitlab handbook](https://huggingface.co/datasets/explodinggradients/Sample_Docs_Markdown). You can download it by running the below command.
+I am using documents from [gitlab handbook](https://huggingface.co/datasets/explodinggradients/Sample_Docs_Markdown). You can download it by running the below command.
 
 
 ```python
@@ -12,7 +12,7 @@ I am using documents from [sample of gitlab handbook](https://huggingface.co/dat
 
 
 ```python
-from langchain_community.document_loaders import DirectoryLoader, TextLoader
+from langchain_community.document_loaders import DirectoryLoader
 
 path = "Sample_Docs_Markdown/"
 loader = DirectoryLoader(path, glob="**/*.md")
@@ -25,9 +25,7 @@ Create a base knowledge graph with the documents
 
 
 ```python
-from ragas.testset.graph import KnowledgeGraph
-from ragas.testset.graph import Node, NodeType
-
+from ragas.testset.graph import KnowledgeGraph, Node, NodeType
 
 kg = KnowledgeGraph()
 for doc in docs:
@@ -42,13 +40,17 @@ for doc in docs:
     )
 ```
 
+    /opt/homebrew/Caskroom/miniforge/base/envs/ragas/lib/python3.9/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+      from .autonotebook import tqdm as notebook_tqdm
+
+
 ### Set up the LLM and Embedding Model
-You may use any of [your choice](./../../customizations/customize_models.md), here I am using models from open-ai.
+You may use any of [your choice](/docs/howtos/customizations/customize_models.md), here I am using models from open-ai.
 
 
 ```python
-from ragas.llms.base import llm_factory
 from ragas.embeddings.base import embedding_factory
+from ragas.llms.base import llm_factory
 
 llm = llm_factory()
 embedding = embedding_factory()
@@ -66,14 +68,13 @@ Here we are using 2 extractors and 2 relationship builders.
 
 
 ```python
-from ragas.testset.transforms import Parallel, apply_transforms
 from ragas.testset.transforms import (
     HeadlinesExtractor,
     HeadlineSplitter,
     KeyphrasesExtractor,
     OverlapScoreBuilder,
+    apply_transforms,
 )
-
 
 headline_extractor = HeadlinesExtractor(llm=llm)
 headline_splitter = HeadlineSplitter(min_tokens=300, max_tokens=1000)
@@ -86,7 +87,10 @@ relation_builder = OverlapScoreBuilder(
     threshold=0.01,
     distance_threshold=0.9,
 )
+```
 
+
+```python
 transforms = [
     headline_extractor,
     headline_splitter,
@@ -96,20 +100,19 @@ transforms = [
 
 apply_transforms(kg, transforms=transforms)
 ```
-Output
-```
-Applying KeyphrasesExtractor:   6%|██████▏                                                                                                         | 2/36 [00:01<00:17,  1.94it/s]Property 'keyphrases' already exists in node 'a2f389'. Skipping!
-Applying KeyphrasesExtractor:  17%|██████████████████▋                                                                                             | 6/36 [00:01<00:04,  6.37it/s]Property 'keyphrases' already exists in node '3068c0'. Skipping!
-Applying KeyphrasesExtractor:  53%|██████████████████████████████████████████████████████████▌                                                    | 19/36 [00:02<00:01,  8.88it/s]Property 'keyphrases' already exists in node '854bf7'. Skipping!
-Applying KeyphrasesExtractor:  78%|██████████████████████████████████████████████████████████████████████████████████████▎                        | 28/36 [00:03<00:00,  9.73it/s]Property 'keyphrases' already exists in node '2eeb07'. Skipping!
-Property 'keyphrases' already exists in node 'd68f83'. Skipping!
-Applying KeyphrasesExtractor:  83%|████████████████████████████████████████████████████████████████████████████████████████████▌                  | 30/36 [00:03<00:00,  9.35it/s]Property 'keyphrases' already exists in node '8fdbea'. Skipping!
-Applying KeyphrasesExtractor:  89%|██████████████████████████████████████████████████████████████████████████████████████████████████▋            | 32/36 [00:04<00:00,  7.76it/s]Property 'keyphrases' already exists in node 'ef6ae0'. Skipping!
-```                                                                                                                                                                           
+
+    Applying KeyphrasesExtractor:   6%|██████▏                                                                                                         | 2/36 [00:01<00:17,  1.94it/s]Property 'keyphrases' already exists in node 'a2f389'. Skipping!
+    Applying KeyphrasesExtractor:  17%|██████████████████▋                                                                                             | 6/36 [00:01<00:04,  6.37it/s]Property 'keyphrases' already exists in node '3068c0'. Skipping!
+    Applying KeyphrasesExtractor:  53%|██████████████████████████████████████████████████████████▌                                                    | 19/36 [00:02<00:01,  8.88it/s]Property 'keyphrases' already exists in node '854bf7'. Skipping!
+    Applying KeyphrasesExtractor:  78%|██████████████████████████████████████████████████████████████████████████████████████▎                        | 28/36 [00:03<00:00,  9.73it/s]Property 'keyphrases' already exists in node '2eeb07'. Skipping!
+    Property 'keyphrases' already exists in node 'd68f83'. Skipping!
+    Applying KeyphrasesExtractor:  83%|████████████████████████████████████████████████████████████████████████████████████████████▌                  | 30/36 [00:03<00:00,  9.35it/s]Property 'keyphrases' already exists in node '8fdbea'. Skipping!
+    Applying KeyphrasesExtractor:  89%|██████████████████████████████████████████████████████████████████████████████████████████████████▋            | 32/36 [00:04<00:00,  7.76it/s]Property 'keyphrases' already exists in node 'ef6ae0'. Skipping!
+                                                                                                                                                                                      
 
 ### Configure personas
 
-You can also do this automatically by using the [automatic persona generator](./_persona_generator.md)
+You can also do this automatically by using the [automatic persona generator](/docs/howtos/customizations/testgenerator/_persona_generator.md)
 
 
 ```python
@@ -140,8 +143,9 @@ Inherit from `MultiHopQuerySynthesizer` and modify the function that generates s
 
 
 ```python
-from dataclasses import dataclass
 import typing as t
+from dataclasses import dataclass
+
 from ragas.testset.synthesizers.multi_hop.base import (
     MultiHopQuerySynthesizer,
     MultiHopScenario,
@@ -154,7 +158,6 @@ from ragas.testset.synthesizers.prompts import (
 
 @dataclass
 class MyMultiHopQuery(MultiHopQuerySynthesizer):
-
     theme_persona_matching_prompt = ThemesPersonasMatchingPrompt()
 
     async def _generate_scenarios(
@@ -164,7 +167,6 @@ class MyMultiHopQuery(MultiHopQuerySynthesizer):
         persona_list,
         callbacks,
     ) -> t.List[MultiHopScenario]:
-
         # query and get (node_a, rel, node_b) to create multi-hop queries
         results = kg.find_two_nodes_single_rel(
             relationship_condition=lambda rel: (
@@ -180,7 +182,6 @@ class MyMultiHopQuery(MultiHopQuerySynthesizer):
                 node_a, node_b = triplet[0], triplet[-1]
                 overlapped_keywords = triplet[1].properties["overlapped_items"]
                 if overlapped_keywords:
-
                     # match the keyword with a persona for query creation
                     themes = list(dict(overlapped_keywords).keys())
                     prompt_input = ThemesPersonasInput(
@@ -211,22 +212,36 @@ class MyMultiHopQuery(MultiHopQuerySynthesizer):
                     scenarios.extend(base_scenarios)
 
         return scenarios
+```
 
+
+```python
 query = MyMultiHopQuery(llm=llm)
 scenarios = await query.generate_scenarios(
     n=10, knowledge_graph=kg, persona_list=persona_list
 )
+```
 
+
+```python
 scenarios[4]
 ```
-Output
-```
-MultiHopScenario(
-nodes=2
-combinations=['Diversity Inclusion & Belonging', 'Diversity, Inclusion & Belonging Goals']
-style=Web search like queries
-length=short
-persona=name='Hiring manager at gitlab' role_description='A hiring manager at gitlab trying to underestand hiring policies in gitlab')
+
+
+
+
+    MultiHopScenario(
+    nodes=2
+    combinations=['Diversity Inclusion & Belonging', 'Diversity, Inclusion & Belonging Goals']
+    style=Web search like queries
+    length=short
+    persona=name='Hiring manager at gitlab' role_description='A hiring manager at gitlab trying to underestand hiring policies in gitlab')
+
+
+
+
+```python
+
 ```
 
 ### Run the multi-hop query
@@ -234,13 +249,18 @@ persona=name='Hiring manager at gitlab' role_description='A hiring manager at gi
 
 ```python
 result = await query.generate_sample(scenario=scenarios[-1])
+```
+
+
+```python
 result.user_input
 ```
 
-Output
-```
-'How does GitLab ensure that its DIB roundtables are effective in promoting diversity and inclusion?'
-```
+
+
+
+    'How does GitLab ensure that its DIB roundtables are effective in promoting diversity and inclusion?'
+
 
 
 Yay! You have created a multi-hop query. Now you can create any such queries by creating and exploring relationships between documents.
