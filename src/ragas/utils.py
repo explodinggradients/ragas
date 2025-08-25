@@ -5,7 +5,9 @@ import logging
 import os
 import random
 import re
+import string
 import typing as t
+import uuid
 import warnings
 from datetime import datetime
 from functools import lru_cache
@@ -554,9 +556,6 @@ def find_git_root(start_path: t.Union[str, Path, None] = None) -> Path:
 
 def create_nano_id(size=12):
     """Generate a short unique identifier."""
-    import string
-    import uuid
-
     # Define characters to use (alphanumeric)
     alphabet = string.ascii_letters + string.digits
 

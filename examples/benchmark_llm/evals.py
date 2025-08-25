@@ -7,12 +7,12 @@ import sys
 from typing import List, Optional
 
 import pandas as pd
-from ragas.experimental import Dataset
-from ragas import experiment
-from ragas.experimental.metrics.result import MetricResult
-from ragas.experimental.metrics.discrete import discrete_metric
+from prompt import DEFAULT_MODEL, run_prompt
 
-from prompt import run_prompt, DEFAULT_MODEL
+from ragas import experiment
+from ragas.experimental import Dataset
+from ragas.experimental.metrics.discrete import discrete_metric
+from ragas.experimental.metrics.result import MetricResult
 
 
 @discrete_metric(name="discount_accuracy", allowed_values=["correct", "incorrect"])

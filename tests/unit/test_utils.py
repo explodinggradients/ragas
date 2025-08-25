@@ -176,8 +176,8 @@ class TestAsyncToSync:
 
         sync_return_dict = async_to_sync(async_return_dict)
         result = sync_return_dict()
-        assert isinstance(result, dict)
-        assert result == {"key": "value", "number": 42}
+        expected = {"key": "value", "number": 42}
+        assert isinstance(result, dict) and result == expected
 
 
 class TestGetTestDirectory:
