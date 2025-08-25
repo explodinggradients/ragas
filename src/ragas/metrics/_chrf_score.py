@@ -48,4 +48,4 @@ class ChrfScore(SingleTurnMetric):
         return score
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)b
+        return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
