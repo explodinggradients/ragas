@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 import typing as t
 from dataclasses import dataclass, field
@@ -141,10 +140,7 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         prompt_input = ResponseRelevanceInput(response=row["response"])
 
         responses = await self.question_generation.generate_multiple(
-            data=prompt_input,
-            llm=self.llm,
-            callbacks=callbacks,
-            n=self.strictness
+            data=prompt_input, llm=self.llm, callbacks=callbacks, n=self.strictness
         )
 
         return self._calculate_score(responses, row)
