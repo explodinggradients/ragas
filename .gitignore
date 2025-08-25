@@ -179,3 +179,4 @@ uv.lock
 experimental/ragas_examples/benchmark_llm/experiments/*.csv
 examples/*/logs/*run*json
 examples/*/experiments/*csv
+**/test_dataset.csv

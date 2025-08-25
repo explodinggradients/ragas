@@ -549,8 +549,8 @@ def hello_world(
 import numpy as np
 from ragas.experimental import BaseModel
 # from ragas.experimental.project.backends import LocalCSVProjectBackend  # TODO: Not implemented yet
-from ragas.experimental.metrics.result import MetricResult
-from ragas.experimental.metrics.numeric import numeric_metric
+from ragas.metrics.result import MetricResult
+from ragas.metrics.numeric import numeric_metric
 
 # TODO: Project class not implemented yet  
 # p = Project(

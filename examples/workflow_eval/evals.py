@@ -5,8 +5,8 @@ from workflow import default_workflow_client
 
 from ragas import experiment
 from ragas.experimental import Dataset
-from ragas.experimental.metrics import DiscreteMetric
 from ragas.llms import instructor_llm_factory
+from ragas.metrics import DiscreteMetric
 
 openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 workflow_client = default_workflow_client()
