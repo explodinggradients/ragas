@@ -11,6 +11,7 @@ from ragas.metrics._answer_similarity import (
 )
 from ragas.metrics._aspect_critic import AspectCritic
 from ragas.metrics._bleu_score import BleuScore
+from ragas.metrics._chrf_score import ChrfScore
 from ragas.metrics._context_entities_recall import (
     ContextEntityRecall,
     context_entity_recall,
@@ -121,6 +122,7 @@ __all__ = [
     "ExactMatch",
     "StringPresence",
     "BleuScore",
+    "ChrfScore",
     "RougeScore",
     "DataCompyScore",
     "LLMSQLEquivalence",
