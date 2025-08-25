@@ -143,6 +143,7 @@ dev = [
     "pytest-asyncio",
     "nbmake",
     "notebook",
+    "unstructured[md]",
     "arize-phoenix>=6.1.0",
     "openinference-instrumentation-langchain>=0.1.29",
     "ragas[all,tracing,gdrive,ai-frameworks]",

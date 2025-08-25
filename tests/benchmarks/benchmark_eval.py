@@ -1,7 +1,5 @@
 import time
 
-from datasets import DatasetDict, load_dataset
-
 from ragas import evaluate
 from ragas.metrics import (
     ContextUtilization,
@@ -13,12 +11,12 @@ from ragas.metrics import (
     faithfulness,
 )
 
+from ..e2e.test_dataset_utils import load_amnesty_dataset_safe
+
 # from ragas.metrics.critique import harmfulness  # Import unavailable
 
-# data
-ds = load_dataset("explodinggradients/amnesty_qa", "english_v2")
-assert isinstance(ds, DatasetDict)
-eval_dataset = ds["eval"]
+# data - using safe dataset loading
+eval_dataset = load_amnesty_dataset_safe("english_v2")
 
 # metrics
 metrics = [
