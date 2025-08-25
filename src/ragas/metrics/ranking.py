@@ -7,8 +7,8 @@ from dataclasses import dataclass
 
 from pydantic import Field, create_model
 
-from .llm_based import LLMMetric
 from .decorator import create_metric_decorator
+from .llm_based import LLMMetric
 
 
 @dataclass

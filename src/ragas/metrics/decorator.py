@@ -8,6 +8,7 @@ import typing as t
 from dataclasses import dataclass
 
 from ragas.llms import InstructorBaseRagasLLM as BaseRagasLLM
+
 from .result import MetricResult
 
 

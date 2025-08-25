@@ -93,7 +93,7 @@ __all__ = [
     "LLMMetric",
     "MetricResult",
     "DiscreteMetric",
-    "NumericMetric", 
+    "NumericMetric",
     "RankingMetric",
     "discrete_metric",
     "numeric_metric",
@@ -149,7 +149,7 @@ __all__ = [
     "LLMSQLEquivalence",
     "MultiModalFaithfulness",
     "multimodal_faithness",
-    "MultiModalRelevance", 
+    "MultiModalRelevance",
     "multimodal_relevance",
 ]
 

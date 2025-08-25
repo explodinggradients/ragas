@@ -16,6 +16,7 @@ from ragas.embeddings.base import BaseRagasEmbedding
 from ragas.llms import InstructorBaseRagasLLM as BaseRagasLLM
 from ragas.prompt.dynamic_few_shot import DynamicFewShotPrompt
 from ragas.prompt.simple_prompt import Prompt
+
 from .result import MetricResult
 
 if t.TYPE_CHECKING:
@@ -25,6 +26,7 @@ if t.TYPE_CHECKING:
 @dataclass
 class BaseLLMMetric(ABC):
     """Base class for simple LLM-based metrics that return MetricResult objects."""
+
     name: str
 
     @abstractmethod
