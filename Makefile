@@ -19,17 +19,17 @@ setup-venv: ## Set up uv virtual environment
 	@echo "Virtual environment created at .venv"
 	@echo "To activate: source .venv/bin/activate"
 
-install-minimal: ## Install minimal dev dependencies (fast setup - 83 packages)
+install-minimal: ## Install minimal dev dependencies (fast setup - 49 packages)
 	@echo "Installing minimal development dependencies (fast setup)..."
 	@if [ ! -d ".venv" ]; then \
 		echo "Virtual environment not found, creating one..."; \
 		$(MAKE) setup-venv; \
 	fi
 	@echo "Installing core ragas + essential dev tools..."
-	$(Q)uv pip install -e ".[dev]"
+	$(Q)uv pip install -e ".[dev-minimal]"
 	@echo "Setting up pre-commit hooks..."
 	$(Q)uv run pre-commit install
-	@echo "Minimal installation complete! (83 packages)"
+	@echo "Minimal installation complete! (49 packages)"
 	@echo "Note: For full features including ML packages, use 'make install'"
 
 install: ## Install full dependencies with uv sync (backward compatible - modern approach)
