@@ -74,13 +74,13 @@ def default_transforms(
     def filter_chunks(node):
         return node.type == NodeType.CHUNK
 
-    bin_ranges = [(0, 100), (101, 500), (501, 100000)]
+    bin_ranges = [(0, 100), (101, 500), (501, float("inf"))]
     result = count_doc_length_bins(documents, bin_ranges)
     result = {k: v / len(documents) for k, v in result.items()}
 
     transforms = []
 
-    if result["501-100000"] >= 0.25:
+    if result["501-inf"] >= 0.25:
         headline_extractor = HeadlinesExtractor(
             llm=llm, filter_nodes=lambda node: filter_doc_with_num_tokens(node)
         )
