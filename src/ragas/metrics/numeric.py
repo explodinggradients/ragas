@@ -7,12 +7,12 @@ from dataclasses import dataclass
 
 from pydantic import create_model
 
-from . import Metric
+from .llm_based import LLMMetric
 from .decorator import create_metric_decorator
 
 
 @dataclass
-class NumericMetric(Metric):
+class NumericMetric(LLMMetric):
     allowed_values: t.Union[t.Tuple[float, float], range] = (0.0, 1.0)
 
     def __post_init__(self):

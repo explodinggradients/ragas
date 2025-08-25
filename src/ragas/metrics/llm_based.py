@@ -1,6 +1,6 @@
-"""base class for all type of metrics in ragas"""
+"""LLM-based metrics for ragas - moved from experimental"""
 
-__all__ = ["Metric"]
+__all__ = ["LLMMetric", "BaseLLMMetric"]
 
 import asyncio
 import string
@@ -11,11 +11,11 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel
 from rich.progress import Progress
 
-from ...embeddings import BaseRagasEmbeddings
-from ...embeddings.base import BaseRagasEmbedding
-from ...llms import InstructorBaseRagasLLM as BaseRagasLLM
-from ...prompt.dynamic_few_shot import DynamicFewShotPrompt
-from ...prompt.simple_prompt import Prompt
+from ragas.embeddings import BaseRagasEmbeddings
+from ragas.embeddings.base import BaseRagasEmbedding
+from ragas.llms import InstructorBaseRagasLLM as BaseRagasLLM
+from ragas.prompt.dynamic_few_shot import DynamicFewShotPrompt
+from ragas.prompt.simple_prompt import Prompt
 from .result import MetricResult
 
 if t.TYPE_CHECKING:
@@ -23,7 +23,8 @@ if t.TYPE_CHECKING:
 
 
 @dataclass
-class BaseMetric(ABC):
+class BaseLLMMetric(ABC):
+    """Base class for simple LLM-based metrics that return MetricResult objects."""
     name: str
 
     @abstractmethod
@@ -54,8 +55,8 @@ class BaseMetric(ABC):
 
 
 @dataclass
-class Metric(BaseMetric):
-    """Base class for all metrics in the LLM evaluation library."""
+class LLMMetric(BaseLLMMetric):
+    """LLM-based metric that uses prompts to generate structured responses."""
 
     prompt: t.Optional[t.Union[str, Prompt]] = None
     _response_model: t.Type[BaseModel] = field(init=False)
