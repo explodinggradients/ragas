@@ -5,7 +5,7 @@ from rag import default_rag_client
 
 from ragas import experiment
 from ragas.experimental import Dataset
-from ragas.experimental.metrics import DiscreteMetric
+from ragas.metrics import DiscreteMetric
 from ragas.llms import instructor_llm_factory
 
 openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))

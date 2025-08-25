@@ -9,8 +9,8 @@ from typing import List, Optional
 import pandas as pd
 from ragas.experimental import Dataset
 from ragas import experiment
-from ragas.experimental.metrics.result import MetricResult
-from ragas.experimental.metrics.discrete import discrete_metric
+from ragas.metrics.result import MetricResult
+from ragas.metrics.discrete import discrete_metric
 
 from prompt import run_prompt, DEFAULT_MODEL
 
