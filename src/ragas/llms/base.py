@@ -212,7 +212,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
         old_temperature: float | None = None
         if temperature is None:
             temperature = self.get_temperature(n=n)
-        if hasattr(self.langchain_llm, "temperature"):
+        if hasattr(self.langchain_llm, "temperature") and temperature is not None:
             self.langchain_llm.temperature = temperature  # type: ignore
             old_temperature = temperature
 
@@ -252,7 +252,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
         old_temperature: float | None = None
         if temperature is None:
             temperature = self.get_temperature(n=n)
-        if hasattr(self.langchain_llm, "temperature"):
+        if hasattr(self.langchain_llm, "temperature") and temperature is not None:
             self.langchain_llm.temperature = temperature  # type: ignore
             old_temperature = temperature
 
