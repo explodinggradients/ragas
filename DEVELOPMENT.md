@@ -14,7 +14,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 3. Choose your installation type:
 
-# RECOMMENDED: Minimal dev setup (49 packages - fast)  
+# RECOMMENDED: Minimal dev setup (79 packages - fast)  
 make install-minimal
 
 # FULL: Complete dev environment (383 packages - comprehensive)
@@ -34,7 +34,7 @@ AI agents working with this codebase should use these standardized commands:
 ```bash
 # Essential commands for AI development
 make help           # See all available targets
-make install-minimal # Minimal dev setup (fast - 49 packages) 
+make install-minimal # Minimal dev setup (fast - 79 packages) 
 make install        # Full environment (modern uv sync - 383 packages)
 make check          # Quick health check (format + type)
 make test           # Run all tests
@@ -86,7 +86,7 @@ This repository is organized as a single project with integrated experimental fe
 
 #### Option 1: Using Make (Recommended)
 ```bash
-# Recommended: Minimal dev setup (49 packages)  
+# Recommended: Minimal dev setup (79 packages)  
 make install-minimal
 
 # Full: Complete environment (383 packages)
@@ -107,7 +107,7 @@ uv sync --group dev
 
 #### Which Option to Choose?
 
-**Use `make install-minimal` (49 packages) if you're:**
+**Use `make install-minimal` (79 packages) if you're:**
 - Contributing to ragas development
 - Need testing and linting tools
 - Want fast CI/CD builds
@@ -121,7 +121,7 @@ uv sync --group dev
 
 #### Installation Methods Explained
 
-- **`install-minimal`**: Uses `uv pip install -e ".[dev-minimal]"` for selective minimal dev dependencies (49 packages)
+- **`install-minimal`**: Uses `uv pip install -e ".[dev-minimal]"` for selective minimal dev dependencies (79 packages)
 - **`install`**: Uses `uv sync --group dev` for complete modern dependency management (383 packages)
 
 ### Verification
@@ -135,7 +135,7 @@ make test   # Runs all tests
 Run `make help` to see all targets. Here are the essential commands:
 
 ### Setup & Installation
-- `make install-minimal` - Install minimal dev setup (49 packages - recommended)
+- `make install-minimal` - Install minimal dev setup (79 packages - recommended)
 - `make install` - Install full environment with uv sync (383 packages - complete)
 
 ### Code Quality

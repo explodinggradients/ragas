@@ -19,7 +19,7 @@ The repository contains:
 Choose the appropriate installation based on your needs:
 
 ```bash
-# RECOMMENDED: Minimal dev setup (49 packages - fast)
+# RECOMMENDED: Minimal dev setup (79 packages - fast)
 make install-minimal
 
 # FULL: Complete dev environment (383 packages - comprehensive)  
@@ -49,7 +49,7 @@ uv sync --group dev
 
 ```bash
 # Setup and installation  
-make install-minimal # Minimal dev setup (49 packages - recommended)
+make install-minimal # Minimal dev setup (79 packages - recommended)
 make install        # Full dev environment (383 packages - complete)
 
 # Code quality
@@ -194,6 +194,6 @@ analytics_logger.addHandler(console_handler)
 - whenever you create such docs put in in /\_experiments because that is gitignored and you can use it as a scratchpad or tmp directory for storing these
 - always use uv to run python and python related commandline tools like isort, ruff, pyright etc. This is because we are using uv to manage the .venv and dependencies.
 - The project uses two distinct dependency management approaches:
-  - **Minimal setup**: `[project.optional-dependencies].dev-minimal` for fast development (49 packages)
+  - **Minimal setup**: `[project.optional-dependencies].dev-minimal` for fast development (79 packages)
   - **Full setup**: `[dependency-groups].dev` for comprehensive development (383 packages)
 - Use `make install-minimal` for most development tasks, `make install` for full ML stack work

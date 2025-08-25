@@ -108,7 +108,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Use minimal install for fast CI runs (49 packages vs 383)
+          # Use minimal install for fast CI runs (79 packages vs 383)
           # This uses make install-minimal for consistency with local development
           make install-minimal
 
@@ -171,7 +171,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Use minimal install for fast CI runs (49 packages vs 383)
+          # Use minimal install for fast CI runs (79 packages vs 383)
           # This uses make install-minimal for consistency with local development
           make install-minimal
 
