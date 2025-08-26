@@ -7,7 +7,8 @@ import inspect
 import typing as t
 from dataclasses import dataclass
 
-from ...llms import InstructorBaseRagasLLM as BaseRagasLLM
+from ragas.llms import InstructorBaseRagasLLM as BaseRagasLLM
+
 from .result import MetricResult
 
 

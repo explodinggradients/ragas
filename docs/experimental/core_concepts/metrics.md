@@ -47,7 +47,7 @@ These return a single value from a predefined list of categorical classes. There
 
 Example:
 ```python
-from ragas_experimental.metrics import discrete_metric
+from ragas.metrics import discrete_metric
 
 @discrete_metric(name="response_quality", allowed_values=["pass", "fail"])
 def my_metric(predicted: str, expected: str) -> str:
@@ -60,7 +60,7 @@ def my_metric(predicted: str, expected: str) -> str:
 These return an integer or float value within a specified range. Numeric metrics support aggregation functions such as mean, sum, or mode, making them useful for statistical analysis.
     
 ```python
-from ragas_experimental.metrics import numeric_metric
+from ragas.metrics import numeric_metric
 
 @numeric_metric(name="response_accuracy", allowed_values=(0, 1))
 def my_metric(predicted: float, expected: float) -> float:
@@ -74,7 +74,7 @@ my_metric.score(predicted=0.8, expected=1.0)  # Returns a float value
 These evaluate multiple outputs at once and return a ranked list based on a defined criterion. They are useful when the goal is to compare multiple outputs from the same pipeline relative to one another.
 
 ```python
-from ragas_experimental.metrics import ranked_metric
+from ragas.metrics import ranked_metric
 @ranked_metric(name="response_ranking", allowed_values=[0,1])
 def my_metric(responses: list) -> list:
     response_lengths = [len(response) for response in responses]
@@ -107,7 +107,7 @@ These leverage LLMs (Large Language Models) to evaluate outcomes, typically usef
 
 Example:
 ```python
-from ragas_experimental.metrics import DiscreteMetric
+from ragas.metrics import DiscreteMetric
 
 my_metric = DiscreteMetric(
     name="response_quality",

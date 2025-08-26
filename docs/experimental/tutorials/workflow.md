@@ -37,7 +37,7 @@ pd.DataFrame(dataset_dict).to_csv("datasets/test_dataset.csv", index=False)
 To evaluate the performance of our workflow, we will define a llm based metric that compares the output of our workflow with the pass criteria and outputs pass/fail based on it.
 
 ```python
-from ragas_experimental.metrics import DiscreteMetric
+from ragas.metrics import DiscreteMetric
 
 my_metric = DiscreteMetric(
     name="response_quality",

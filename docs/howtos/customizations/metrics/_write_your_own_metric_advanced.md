@@ -87,7 +87,7 @@ import typing as t
 class RefusalRate(MetricWithLLM, MultiTurnMetric, SingleTurnMetric):
     name: str = "refusal_rate"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
-        default_factory=lambda: {MetricType.SINGLE_TURN: {"response", "reference"}}
+        default_factory=lambda: {MetricType.SINGLE_TURN: {"response", "user_input"}}
     )
     refusal_prompt: PydanticPrompt = RefusalPrompt()
 
