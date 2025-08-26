@@ -69,6 +69,7 @@ class CosineSimilarityBuilder(RelationshipBuilder):
         similar_pairs = await self._find_similar_embedding_pairs(
             np.array(embeddings), self.threshold, self.block_size
         )
+
         return [
             Relationship(
                 source=kg.nodes[i],

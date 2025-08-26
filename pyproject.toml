@@ -141,7 +141,7 @@ dev = [
     # Core dev tools (shared with minimal)
     "ruff",
     "pyright>=1.1.403",
-    "pre-commit>=4.3.0",
+    "pre-commit>=4.3.0", 
     "pytest",
     "pytest-xdist[psutil]",
     "pytest-asyncio",
