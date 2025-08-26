@@ -9,7 +9,8 @@ def test_knowledge_graph_save_with_problematic_chars(tmp_path):
 
     # Create nodes with various Unicode characters including ones that might cause charmap codec issues
     problematic_chars = [
-        chr(i) for i in range(0x0080, 0x00FF)  # Extended ASCII/Latin-1 characters
+        chr(i)
+        for i in range(0x0080, 0x00FF)  # Extended ASCII/Latin-1 characters
     ] + [
         "\u2022",  # bullet
         "\u2192",  # arrow
