@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import typing as t
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 import numpy as np
@@ -27,27 +28,19 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
-    """
-    Synthesizes overlap based queries by choosing specific chunks and generating a
-    keyphrase from them and then generating queries based on that.
-
-    Attributes
-    ----------
-    generate_query_prompt : PydanticPrompt
-        The prompt used for generating the query.
-    """
+    """Synthesize multi-hop queries based on a chunk cluster defined by entity overlap."""
 
     name: str = "multi_hop_specific_query_synthesizer"
-    relation_type: str = "entities_overlap"
     property_name: str = "entities"
+    relation_type: str = "entities_overlap"
+    relation_overlap_property: str = "overlapped_items"
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
     generate_query_reference_prompt: PydanticPrompt = QueryAnswerGenerationPrompt()
 
     def get_node_clusters(self, knowledge_graph: KnowledgeGraph) -> t.List[t.Tuple]:
+        """Identify clusters of nodes based on the specified relationship condition."""
         node_clusters = knowledge_graph.find_two_nodes_single_rel(
-            relationship_condition=lambda rel: (
-                True if rel.type == self.relation_type else False
-            )
+            relationship_condition=lambda rel: rel.type == self.relation_type
         )
         logger.info("found %d clusters", len(node_clusters))
         return node_clusters
@@ -60,7 +53,8 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
         callbacks: Callbacks,
     ) -> t.List[MultiHopScenario]:
         """
-        Generates a list of scenarios on type MultiHopSpecificQuerySynthesizer
+        Generate a list of scenarios of type MultiHopScenario.
+
         Steps to generate scenarios:
         1. Filter the knowledge graph to find cluster of nodes or defined relation type. Here entities_overlap
         2. Calculate the number of samples that should be created per cluster to get n samples in total
@@ -86,9 +80,18 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
             if len(scenarios) < n:
                 node_a, node_b = triplet[0], triplet[-1]
                 overlapped_items = []
-                overlapped_items = triplet[1].properties["overlapped_items"]
+                overlapped_items = triplet[1].properties[self.relation_overlap_property]
                 if overlapped_items:
-                    themes = list(dict(overlapped_items).keys())
+                    if not all(
+                        isinstance(item, (str, Iterable)) for item in overlapped_items
+                    ):
+                        logger.debug("Overlapped items are not strings or iterables.")
+                        continue
+                    themes = (
+                        list(overlapped_items.keys())
+                        if isinstance(overlapped_items, dict)
+                        else overlapped_items
+                    )
                     prompt_input = ThemesPersonasInput(
                         themes=themes, personas=persona_list
                     )
@@ -97,10 +100,13 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
                             data=prompt_input, llm=self.llm, callbacks=callbacks
                         )
                     )
-                    overlapped_items = [list(item) for item in overlapped_items]
+                    combinations = [
+                        [item] if isinstance(item, str) else list(item)
+                        for item in themes
+                    ]
                     base_scenarios = self.prepare_combinations(
                         [node_a, node_b],
-                        overlapped_items,
+                        combinations,
                         personas=persona_list,
                         persona_item_mapping=persona_concepts.mapping,
                         property_name=self.property_name,

@@ -136,7 +136,7 @@ def test_testset_generation_tracking(monkeypatch):
     )
 
     assert testset_event_payload.model_dump()["evolution_names"] == [
-        "single_hop_specifc_query_synthesizer",
+        "single_hop_specific_query_synthesizer",
         "multi_hop_abstract_query_synthesizer",
         "multi_hop_specific_query_synthesizer",
     ]
