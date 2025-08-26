@@ -16,6 +16,5 @@ If you're planning to contribute and make modifications to the code, ensure that
 
 ```bash
 git clone https://github.com/explodinggradients/ragas.git 
-cd ragas 
 pip install -e .
 ```
