@@ -91,6 +91,7 @@ nav:
         - Experimentation: experimental/core_concepts/experimentation.md
     - How-to Guides:
         - experimental/howtos/index.md
+        - Improve a Prompt: experimental/howtos/iterate_prompt.md
         - Evaluate a New LLM: experimental/howtos/benchmark_llm.md
   - 🛠️ How-to Guides:
       - howtos/index.md
