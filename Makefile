@@ -159,9 +159,9 @@ test-e2e: ## Run all end-to-end tests
 build-docs: ## Build all documentation
 	@echo "Building all documentation..."
 	@echo "Converting ipynb notebooks to md files..."
-	$(Q)python $(GIT_ROOT)/docs/ipynb_to_md.py
+	$(Q)MKDOCS_CI=true uv run python $(GIT_ROOT)/docs/ipynb_to_md.py
 	@echo "Building ragas documentation..."
-	$(Q)mkdocs build
+	$(Q)uv run --group docs mkdocs build
 
 serve-docs: ## Build and serve documentation locally
-	$(Q)mkdocs serve --dirtyreload
+	$(Q)uv run --group docs mkdocs serve --dirtyreload
