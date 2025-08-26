@@ -32,7 +32,7 @@ id,text,labels,priority
 
 To customize the dataset for your use case, create a `datasets/` directory and add your own CSV file. You can also connect to different backends. Refer to [Datasets - Core Concepts](../core_concepts/datasets.md) for more information.
 
-It is better to sample real data from your application to create the dataset. If that is not available, you can generate synthetic data using an LLM. We recommend using a reasoning model like gpt-5-high which can generate more accurate and complex data. Always make sure to manually review and verify the data you use. 
+It is better to sample real data from your application to create the dataset. If that is not available, you can generate synthetic data using an LLM. We recommend using a reasoning model like gpt-5 high-reasoning which can generate more accurate and complex data. Always make sure to manually review and verify the data you use. 
 
 ## Evaluate your prompt on a dataset
 
@@ -214,7 +214,7 @@ The model consistently assigns P0 (highest priority) to billing-related issues t
 
 ### Improve the prompt
 
-Based on our error analysis, we'll create `promptv2_fewshot.txt` with targeted improvements. You can use an LLM to generate the prompt or you can manually edit the prompt. In this case, we passed the errors we understood and orgiianl prompt to an LLM to generate new prompt along with few-shot examples.
+Based on our error analysis, we'll create `promptv2_fewshot.txt` with targeted improvements. You can use an LLM to generate the prompt or edit it manually. In this case, we passed the error patterns and the original prompt to an LLM to generate a revised prompt with few-shot examples.
 
 #### Key additions in promptv2_fewshot:
 
