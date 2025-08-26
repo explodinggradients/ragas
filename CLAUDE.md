@@ -88,7 +88,7 @@ make test-e2e
 
 # Direct pytest commands for more control
 uv run pytest tests/unit -k "test_name"
-uv run pytest tests/experimental -v
+uv run pytest tests/unit -v
 ```
 
 ### Documentation
@@ -161,7 +161,7 @@ The experimental features are now integrated into the main ragas package:
 To use experimental features:
 
 ```python
-from ragas.experimental import Dataset
+from ragas import Dataset
 from ragas import experiment
 from ragas.backends import get_registry
 ```

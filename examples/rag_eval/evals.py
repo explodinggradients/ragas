@@ -4,7 +4,7 @@ from openai import OpenAI
 from rag import default_rag_client
 
 from ragas import experiment
-from ragas.experimental import Dataset
+from ragas import Dataset
 from ragas.llms import instructor_llm_factory
 from ragas.metrics import DiscreteMetric
 

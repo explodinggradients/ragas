@@ -1,7 +1,7 @@
 from prompt import run_prompt
 
 from ragas import experiment
-from ragas.experimental import Dataset
+from ragas import Dataset
 from ragas.metrics.discrete import discrete_metric
 from ragas.metrics.result import MetricResult
 
