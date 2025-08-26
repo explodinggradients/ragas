@@ -4,8 +4,8 @@ from dataclasses import dataclass
 import pytest
 from pydantic import BaseModel
 
-from ragas.experimental.metrics import MetricResult
-from ragas.experimental.metrics.base import Metric
+from ragas.metrics import MetricResult
+from ragas.metrics.llm_based import LLMMetric
 
 
 class MetricResponseModel(BaseModel):
@@ -14,7 +14,7 @@ class MetricResponseModel(BaseModel):
 
 
 @dataclass
-class CustomMetric(Metric):
+class CustomMetric(LLMMetric):
     """Custom metric implementation for testing."""
 
     def __post_init__(self):

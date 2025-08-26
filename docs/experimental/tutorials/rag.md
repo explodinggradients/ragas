@@ -37,7 +37,7 @@ pd.DataFrame(samples).to_csv("datasets/test_dataset.csv", index=False)
 To evaluate the performance of our RAG system, we will define a llm based metric that compares the output of our RAG system with the grading notes and outputs pass/fail based on it.
 
 ```python
-from ragas_experimental.metrics import DiscreteMetric
+from ragas.metrics import DiscreteMetric
 my_metric = DiscreteMetric(
     name="correctness",
     prompt = "Check if the response contains points mentioned from the grading notes and return 'pass' or 'fail'.\nResponse: {response} Grading Notes: {grading_notes}",

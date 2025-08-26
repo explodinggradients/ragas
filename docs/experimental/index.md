@@ -47,7 +47,7 @@ pip install ragas-experimental && pip install "ragas-experimental[local]"
 import numpy as np
 from ragas_experimental import Dataset
 from ragas import experiment
-from ragas_experimental.metrics import MetricResult, discrete_metric  
+from ragas.metrics import MetricResult, discrete_metric  
 
 # Define a custom metric for accuracy
 @discrete_metric(name="accuracy_score", allowed_values=["pass", "fail"])
