@@ -1,6 +1,6 @@
 # How to Evaluate Your Prompt and Improve It
 
-In this guide, we cover how to evaluate and iteratively improve a prompt using Ragas.
+In this guide, you'll learn how to evaluate and iteratively improve a prompt using Ragas.
 
 ## What you'll accomplish
 - Evaluate your prompt on a dataset
@@ -41,8 +41,9 @@ It is better to sample real data from your application to create the dataset. If
 First, we'll run the prompt on one case to test if everything works. 
 
 ```bash
+cd examples/iterate_prompt
 export OPENAI_API_KEY=your_openai_api_key
-uv run run_prompt.py 
+uv run run_prompt.py
 ```
 
 This will run the prompt on sample case and print the results.
@@ -265,7 +266,7 @@ Reasoning: Malfunction exists but workaround available (mobile app works); singl
 
 ### Evaluate new prompt
 
-After creating `promptv2_fewshot.txt` with our improvements, run the experiment with the new prompt:
+After creating `promptv2_fewshot.txt` with the improvements, run the experiment with the new prompt:
 
 ```bash
 uv run evals.py run --prompt_file promptv2_fewshot.txt
@@ -314,7 +315,7 @@ Here, we can see that promptv2_fewshot has improved the accuracy of both labels 
 
 Stop iterating when improvements plateau or accuracy meets business requirements.
 
-!!! tip "If you hit a ceiling on improving accuract with just the prompt improvements, you can try experiments with better models." 
+!!! tip "If you hit a ceiling on improving accuracy with just the prompt improvements, you can try experiments with better models." 
 
 ## Apply this loop to your use case
 - Create dataset, metrics, experiment for your use case
