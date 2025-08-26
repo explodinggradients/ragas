@@ -7,13 +7,17 @@ This comprehensive guide covers development workflows for the Ragas monorepo, de
 ```bash
 # 1. Clone and enter the repository
 git clone https://github.com/explodinggradients/ragas.git
-cd ragas
 
 # 2. Install uv (if not already installed)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 3. Set up development environment
-make setup
+# 3. Choose your installation type:
+
+# RECOMMENDED: Minimal dev setup (79 packages - fast)  
+make install-minimal
+
+# FULL: Complete dev environment (383 packages - comprehensive)
+make install
 
 # 4. Verify everything works
 make check
@@ -29,7 +33,8 @@ AI agents working with this codebase should use these standardized commands:
 ```bash
 # Essential commands for AI development
 make help           # See all available targets
-make setup          # Complete environment setup
+make install-minimal # Minimal dev setup (fast - 79 packages) 
+make install        # Full environment (modern uv sync - 383 packages)
 make check          # Quick health check (format + type)
 make test           # Run all tests
 make run-ci         # Full CI pipeline locally
@@ -48,30 +53,26 @@ make clean          # Clean generated files
 
 ## Monorepo Architecture
 
-This repository is organized as a monorepo containing two main projects:
+This repository is organized as a single project with integrated experimental features:
 
-```
-ragas/
-├── ragas/                          # Core evaluation library
-│   ├── src/ragas/                 # Main source code
-│   ├── tests/                     # Tests (unit, e2e, benchmarks)
-│   └── pyproject.toml             # Dependencies and configuration
-│
-├── experimental/                   # Experimental extensions
-│   ├── ragas_experimental/        # Generated Python code
-│   ├── tests/                     # Pytest-based tests
-│   └── pyproject.toml             # Dependencies and configuration
-│
-├── docs/                          # Combined documentation
-├── .github/workflows/             # CI/CD pipeline
-├── Makefile                       # Unified build commands
-└── CLAUDE.md                      # AI assistant instructions
+```sh
+/                              # Main ragas project
+├── src/ragas/                 # Main source code
+│   └── experimental/          # Experimental features
+├── tests/                     # Tests (unit, e2e, benchmarks)
+│   └── experimental/          # Experimental tests
+├── examples/                  # Example code
+├── pyproject.toml             # Dependencies and configuration
+├── docs/                      # Documentation
+├── .github/workflows/         # CI/CD pipeline
+├── Makefile                   # Build commands
+└── CLAUDE.md                  # AI assistant instructions
 ```
 
-### Project Relationships
-- **Ragas Core**: The main evaluation toolkit for LLM applications
-- **Ragas Experimental**: Extensions for advanced features and UI components
-- **Shared Infrastructure**: Unified CI/CD, documentation, and build system
+### Project Components
+- **Ragas Core**: The main evaluation toolkit for LLM applications (in `src/ragas/`)
+- **Ragas Experimental**: Advanced features integrated at `src/ragas/experimental/`
+- **Infrastructure**: Single CI/CD, documentation, and build system
 
 ## Development Environment Setup
 
@@ -84,7 +85,11 @@ ragas/
 
 #### Option 1: Using Make (Recommended)
 ```bash
-make setup
+# Recommended: Minimal dev setup (79 packages)  
+make install-minimal
+
+# Full: Complete environment (383 packages)
+make install
 ```
 
 #### Option 2: Manual Setup
@@ -92,10 +97,31 @@ make setup
 # Install uv if not available
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install both projects
-uv pip install -e "./ragas[dev]"
-uv pip install -e "./experimental[dev]"
+# Minimal dev: Core + essential dev tools
+uv pip install -e ".[dev-minimal]"
+
+# Full dev: Everything (uses modern uv sync)
+uv sync --group dev
 ```
+
+#### Which Option to Choose?
+
+**Use `make install-minimal` (79 packages) if you're:**
+- Contributing to ragas development
+- Need testing and linting tools
+- Want fast CI/CD builds
+- Working on code quality, docs, or basic features
+
+**Use `make install` (383 packages) if you're:**
+- Working on ML features requiring the full stack
+- Need observability tools (Phoenix, MLflow)
+- Developing with notebooks and advanced integrations
+- Want the complete development environment
+
+#### Installation Methods Explained
+
+- **`install-minimal`**: Uses `uv pip install -e ".[dev-minimal]"` for selective minimal dev dependencies (79 packages)
+- **`install`**: Uses `uv sync --group dev` for complete modern dependency management (383 packages)
 
 ### Verification
 ```bash
@@ -108,8 +134,8 @@ make test   # Runs all tests
 Run `make help` to see all targets. Here are the essential commands:
 
 ### Setup & Installation
-- `make install` - Install dependencies for both projects
-- `make setup` - Complete development environment setup
+- `make install-minimal` - Install minimal dev setup (79 packages - recommended)
+- `make install` - Install full environment with uv sync (383 packages - complete)
 
 ### Code Quality
 - `make format` - Format and lint all code (includes unused import cleanup)
@@ -155,52 +181,20 @@ make run-ci          # Run full CI pipeline
 # Ensure all checks pass before creating PR
 ```
 
-### Working with Specific Projects
-
-Each project directory (`ragas/` and `experimental/`) now has its own standalone Makefile with core development commands. You can work directly within each project directory using these local Makefiles.
-
-#### Ragas Core Development
+#### Development Workflow
 ```bash
-# Navigate to the ragas directory for project-specific work
-cd ragas
-
-# Use the local Makefile for development
+# Use the Makefile for all development
 make help           # See available commands
-make format         # Format ragas code only
-make type           # Type check ragas code only
-make test           # Run ragas tests only
+make format         # Format all code (core + experimental)
+make type           # Type check all code
+make test           # Run all tests (core + experimental)
 make check          # Quick format + type check
-make run-ci         # Run full ragas CI pipeline
+make run-ci         # Run full CI pipeline
 
 # Or use direct commands for specific tasks
-uv run pytest tests/unit          # Run specific tests
-uv run pyright src               # Type check specific code
-```
-
-#### Experimental Development
-```bash
-# Navigate to experimental directory
-cd experimental  
-
-# Use the local Makefile for development
-make help           # See available commands
-make format         # Format experimental code only
-make type           # Type check experimental code only
-make test           # Run experimental tests only
-make check          # Quick format + type check
-make run-ci         # Run full experimental CI pipeline
-
-# Or use direct commands
-uv run pytest                   # Run experimental tests
-```
-
-#### Monorepo-Wide Development
-```bash
-# From the root directory, commands operate on both projects
-make format         # Format code in both ragas/ and experimental/
-make type           # Type check both projects
-make test           # Run all tests in both projects
-make run-ci         # Run full CI for both projects
+uv run pytest tests/unit          # Run core unit tests
+uv run pytest tests/unit  # Run unit tests
+uv run pyright src               # Type check source code
 ```
 
 ## Testing Strategy
@@ -216,16 +210,16 @@ make run-ci         # Run full CI for both projects
 make test
 
 # Specific test categories
-cd ragas && uv run pytest tests/unit
-cd ragas && uv run pytest tests/e2e  
+uv run pytest tests/unit
+uv run pytest tests/e2e  
 cd experimental && uv run pytest
 
 # With coverage or specific options
-cd ragas && uv run pytest tests/unit -k "test_name"
+uv run pytest tests/unit -k "test_name"
 ```
 
 ### Test Organization
-- **Ragas Core**: `ragas/tests/` (unit, e2e, benchmarks)
+- **Ragas Core**: `tests/` (unit, e2e, benchmarks)
 - **Experimental**: `experimental/tests/` (unit, e2e)
 
 ## Code Quality & CI/CD
@@ -233,7 +227,7 @@ cd ragas && uv run pytest tests/unit -k "test_name"
 ### Code Quality Pipeline
 The `make format` command runs:
 1. **isort**: Import sorting
-2. **black**: Code formatting
+2. **ruff format**: Code formatting
 3. **ruff --fix-only**: Auto-fix issues (including unused imports)
 4. **ruff check**: Final linting validation
 
@@ -254,22 +248,17 @@ Our GitHub Actions CI runs:
 make run-ci  # Runs: format + type + test
 ```
 
-## Project-Specific Guidelines
+## Project Guidelines
 
-### Ragas Core
+### Ragas Project
 - **Language**: Python with type hints
 - **Testing**: pytest with nbmake for notebook tests
 - **Style**: Google-style docstrings
-- **Architecture**: Modular metrics and evaluation framework
-
-### Experimental
-- **Dependencies**: Defined in `pyproject.toml`
-- **Testing**: Pure pytest (no nbdev)
-- **Features**: Advanced evaluation tools and UI components
+- **Architecture**: Modular metrics and evaluation framework with experimental features
+- **Dependencies**: All defined in `pyproject.toml`
 
 ### Adding Dependencies
-- **Ragas Core**: Add to `ragas/pyproject.toml`
-- **Experimental**: Add to `experimental/pyproject.toml`
+- **All features**: Add to `pyproject.toml`
 - **Always**: Test with `make install` and `make test`
 
 ## Troubleshooting
@@ -285,10 +274,10 @@ make install
 #### Test Failures
 ```bash
 # Run specific failing test
-cd ragas && uv run pytest tests/unit/test_specific.py -v
+uv run pytest tests/unit/test_specific.py -v
 
-# Check test dependencies
-cd experimental && uv run pytest --collect-only
+# Check experimental test dependencies
+uv run pytest tests/unit --collect-only
 ```
 
 #### Formatting Issues
@@ -376,8 +365,7 @@ make format  # After making changes
 make test    # Verify functionality
 
 # For project-specific work
-cd ragas && make help           # See ragas-specific commands
-cd experimental && make help    # See experimental-specific commands
+make help                       # See available commands
 
 # For investigation
 uv run pytest --collect-only  # See available tests

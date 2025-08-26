@@ -37,18 +37,19 @@ pd.DataFrame(dataset_dict).to_csv("datasets/test_dataset.csv", index=False)
 To evaluate the performance of our workflow, we will define a llm based metric that compares the output of our workflow with the pass criteria and outputs pass/fail based on it.
 
 ```python
-from ragas_experimental.metrics import DiscreteMetric
+from ragas.metrics import DiscreteMetric
 
 my_metric = DiscreteMetric(
     name="response_quality",
     prompt="Evaluate the response based on the pass criteria: {pass_criteria}. Does the response meet the criteria? Return 'pass' or 'fail'.\nResponse: {response}",
-    values=["pass", "fail"],
+    allowed_values=["pass", "fail"],
 )
 ```
 
 Next, we will write the evaluation experiment loop that will run our workflow on the test dataset and evaluate it using the metric, and store the results in a CSV file.
 
 ```python
+from ragas import experiment
 
 @experiment()
 async def run_experiment(row):
@@ -65,7 +66,7 @@ async def run_experiment(row):
     experiment_view = {
         **row,
         "response": response.get("response_template", " "),
-        "score": score.result,
+        "score": score.value,
         "score_reason": score.reason,
     }
     return experiment_view
@@ -75,13 +76,13 @@ Now whenever you make a change to your workflow, you can run the experiment and 
 
 ## Running the example end to end
 1. Setup your OpenAI API key
-
 ```bash
 export OPENAI_API_KEY="your_openai_api_key"
 ```
 
+2. Run the experiment
 ```bash
-python -m ragas_examples.workflow_evals.evals
+python -m ragas_examples.workflow_eval.evals
 ```
 
-Voila! You have successfully run your first evaluation using Ragas. You can now inspect the results by opening the `experiments/experiment_name.csv` file
+Voila! You have successfully run your first evaluation using Ragas. You can now inspect the results by opening the `experiments/experiment_name.csv` file.

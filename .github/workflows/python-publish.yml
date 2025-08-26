@@ -23,11 +23,8 @@ jobs:
       matrix:
         package:
           - name: ragas
-            directory: ragas
+            directory: .
             token: PYPI_API_TOKEN
-          - name: ragas_experimental
-            directory: experimental
-            token: PYPI_API_TOKEN_EXPERIMENTAL
     steps:
     - uses: actions/checkout@v3
       with:
@@ -51,3 +48,4 @@ jobs:
       with:
         password: ${{ secrets[matrix.package.token] }}
         packages-dir: ${{ matrix.package.directory }}/dist/
+        attestations: false

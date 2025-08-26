@@ -1,0 +1,171 @@
+[project]
+name = "ragas"
+description = "Evaluation framework for RAG and LLM applications"
+requires-python = ">=3.9"
+license = {file = "LICENSE"}
+dependencies = [
+    # Core dependencies
+    "numpy",
+    "datasets>=4.0.0",
+    "tiktoken",
+    "pydantic>=2.0.0",
+    "nest-asyncio",
+    "appdirs",
+    "diskcache>=5.6.3",
+    "typer",
+    "rich",
+    "openai>=1.0.0",
+    "tqdm",
+    "instructor",
+    "gitpython",
+    "pillow>=10.4.0",
+    "networkx",
+    "scikit-network",
+
+    # LangChain ecosystem
+    "langchain",
+    "langchain-core",
+    "langchain-community",
+    "langchain_openai",
+]
+dynamic = ["version", "readme"]
+
+[project.urls]
+Homepage = "https://github.com/explodinggradients/ragas"
+Documentation = "https://docs.ragas.io"
+Code = "https://github.com/explodinggradients/ragas"
+Issues = "https://github.com/explodinggradients/ragas/issues"
+
+[project.optional-dependencies]
+# Core optional features
+all = [
+    "sentence-transformers",
+    "transformers",
+    "nltk",
+    "rouge_score",
+    "rapidfuzz",
+    "pandas",
+    "datacompy",
+    "sacrebleu",
+    "llama_index",
+    "r2r"
+]
+
+# Specific integrations
+examples = ["openai>=1.0.0"]
+tracing = ["langfuse>=3.2.4", "mlflow>=3.1.4"]
+gdrive = [
+    "google-api-python-client>=2.178.0",
+    "google-auth>=2.40.3",
+    "google-auth-oauthlib>=1.2.2"
+]
+ai-frameworks = ["haystack-ai"]
+
+# Minimal dev dependencies for fast development setup (used by make install-minimal)
+dev-minimal = [
+    "ruff",
+    "pyright>=1.1.403",
+    "pre-commit>=4.3.0",
+    "pytest",
+    "pytest-xdist[psutil]",
+    "pytest-asyncio",
+    "nbmake",
+    "build>=1.3.0",
+]
+
+test = []
+[project.entry-points."ragas.backends"]
+"local/csv" = "ragas.backends.local_csv:LocalCSVBackend"
+"local/jsonl" = "ragas.backends.local_jsonl:LocalJSONLBackend"
+"inmemory" = "ragas.backends.inmemory:InMemoryBackend"
+"gdrive" = "ragas.backends.gdrive_backend:GDriveBackend"
+
+[project.scripts]
+ragas = "ragas.cli:app"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.md"], content-type = "text/markdown"}
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+exclude = ["*.ipynb", "*/_version.py"]  # Exclude Jupyter notebooks and auto-generated version files from linting
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]  # Line length handled by formatter
+
+[tool.ruff.lint.isort]
+# Import sorting configuration
+known-first-party = ["ragas"]
+force-single-line = false
+combine-as-imports = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+docstring-code-format = false
+preview = false
+
+[tool.pyright]
+include = ["src/ragas"]
+excludeTypeshedPaths = ["@types/*"]
+pythonVersion = "3.9"
+pythonPlatform = "All"
+typeCheckingMode = "basic"
+reportMissingImports = false
+reportOptionalMemberAccess = "warning"
+reportOptionalSubscript = "warning"
+reportGeneralTypeIssues = "warning"
+reportReturnType = "warning"
+
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+# Path to version file relative to this pyproject.toml
+version_file = "src/ragas/_version.py"
+
+[tool.pytest.ini_options]
+addopts = "-n 0"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+
+[dependency-groups]
+# Full dev dependencies with all features (used by make install)
+dev = [
+    # Core dev tools (shared with minimal)
+    "ruff",
+    "pyright>=1.1.403",
+    "pre-commit>=4.3.0",
+    "pytest",
+    "pytest-xdist[psutil]",
+    "pytest-asyncio",
+    "build>=1.3.0",
+    # Additional tools for full dev
+    "nbmake",
+    "notebook",
+    "unstructured[md]",
+    "arize-phoenix>=6.1.0",
+    "openinference-instrumentation-langchain>=0.1.29",
+    # Include all optional features
+    "ragas[all,tracing,gdrive,ai-frameworks]",
+]
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material",
+    "mkdocs-material[imaging]",
+    "mkdocstrings[python]",
+    "mkdocs-glightbox",
+    "mkdocs-autorefs",
+    "mkdocs-gen-files",
+    "mkdocs-literate-nav",
+    "mkdocs-section-index",
+    "mkdocs-git-committers-plugin-2",
+    "mkdocs-git-revision-date-localized-plugin",
+]
