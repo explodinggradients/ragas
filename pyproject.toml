@@ -12,25 +12,19 @@ dependencies = [
     "nest-asyncio",
     "appdirs",
     "diskcache>=5.6.3",
-    
+    "typer",
+    "rich",
+    "openai>=1.0.0",
+    "tqdm",
+    "instructor",
+    "gitpython",
+    "pillow>=10.4.0",
+
     # LangChain ecosystem
     "langchain",
     "langchain-core",
     "langchain-community",
     "langchain_openai",
-    
-    # CLI dependencies
-    "typer",
-    "rich",
-    
-    # LLM providers
-    "openai>=1.0.0",
-    
-    # Experimental features
-    "tqdm",
-    "instructor",
-    "gitpython",
-    "pillow>=10.4.0",
 ]
 dynamic = ["version", "readme"]
 
@@ -117,7 +111,6 @@ preview = false
 
 [tool.pyright]
 include = ["src/ragas"]
-exclude = ["src/ragas/experimental"]
 excludeTypeshedPaths = ["@types/*"]
 pythonVersion = "3.9"
 pythonPlatform = "All"
@@ -140,10 +133,6 @@ version_file = "src/ragas/_version.py"
 addopts = "-n 0"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
-markers = [
-    "experimental_ci: Set of tests that will be run as part of Experimental CI",
-    "e2e: End-to-End tests for Experimental",
-]
 
 [dependency-groups]
 # Full dev dependencies with all features (used by make install)

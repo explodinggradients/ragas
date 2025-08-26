@@ -547,7 +547,7 @@ def hello_world(
         evals_content = '''import typing as t
 
 import numpy as np
-from ragas.experimental import BaseModel
+from pydantic import BaseModel
 # from ragas.experimental.project.backends import LocalCSVProjectBackend  # TODO: Not implemented yet
 from ragas.metrics.result import MetricResult
 from ragas.metrics.numeric import numeric_metric
