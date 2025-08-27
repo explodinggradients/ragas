@@ -64,6 +64,27 @@ python -m ragas_examples.prompt_evals.evals
 python -m ragas_examples.workflow_eval.evals
 ```
 
+## Release process
+
+- The examples package is versioned independently using Git tags with prefix `examples-v` (e.g., `examples-v0.1.0`).
+- Publishing is handled by the GitHub Actions workflow `publish-examples.yml`, which builds from `examples/` and publishes to PyPI when such a tag is pushed.
+
+### Release Commands
+
+To create and push a new release:
+
+```bash
+# Create and push a new tag (replace X.Y.Z with actual version)
+git tag examples-vX.Y.Z
+git push origin examples-vX.Y.Z
+
+# Example:
+git tag examples-v0.1.0
+git push origin examples-v0.1.0
+```
+
+## Local Development & Testing
+
 
 ## Local Development & Testing
 
