@@ -3,11 +3,10 @@
 In this guide, you'll learn how to evaluate and iteratively improve a prompt using Ragas.
 
 ## What you'll accomplish
-- Evaluate your prompt on a dataset
-- Analyze errors
-- Improve prompt based on the experiment
-- Evaluate the new prompt
-- Choose the final prompt based on results
+- Iterate and improve a prompt based on error analysis of evals
+- Establish clear decision criterias to choose between prompts
+- Build a reusable evaluation pipeline for your dataset
+- Learn how to leverage Ragas to build your evaluation pipeline
 
 !!! note "Full code"
     - The dataset and scripts live under `examples/iterate_prompt/` in the repo
@@ -24,11 +23,11 @@ In this case, we are considering a customer support ticket classification task.
 
 We've created a synthetic dataset for our use case. Each row has `id, text, labels, priority`. Example rows from the dataset:
 
-```csv
-id,text,labels,priority
-1,"…duplicate charge…","Billing;RefundCancel",P1
-2,"…SSO bounces to /login…","Account;ProductIssue",P0
-```
+| id | text                                                                                                                | labels                 | priority |
+|----|---------------------------------------------------------------------------------------------------------------------|------------------------|----------|
+| 1  | Upgraded to Plus… bank shows two charges the same day; want the duplicate reversed.                                | Billing;RefundCancel   | P1       |
+| 2  | SSO via Okta succeeds then bounces back to /login; colleagues can sign in; state mismatch; blocked from boards.    | Account;ProductIssue   | P0       |
+| 3  | Need to export a board to PDF with comments and page numbers for audit; deadline next week.                         | HowTo                  | P2       |
 
 To customize the dataset for your use case, create a `datasets/` directory and add your own CSV file. You can also connect to different backends. Refer to [Datasets - Core Concepts](../core_concepts/datasets.md) for more information.
 
@@ -39,6 +38,28 @@ It is better to sample real data from your application to create the dataset. If
 ### Prompt runner
 
 First, we'll run the prompt on one case to test if everything works. 
+
+??? example "See full prompt v1 here"
+    ```text
+    You categorize a short customer support ticket into (a) one or more labels and (b) a single priority.
+    
+    Allowed labels (multi-label):
+    - Billing: charges, taxes (GST/VAT), invoices, plans, credits.
+    - Account: login/SSO, password reset, identity/email/account merges.
+    - ProductIssue: malfunction (crash, error code, won't load, data loss, loops, outages).
+    - HowTo: usage questions ("where/how do I…", "where to find…").
+    - Feature: new capability or improvement request.
+    - RefundCancel: cancel/terminate and/or refund requests.
+    - AbuseSpam: insults/profanity/spam (not mild frustration).
+    
+    Priority (exactly one):
+    - P0 (High): blocked from core action or money/data at risk.
+    - P1 (Normal): degraded/needs timely help, not fully blocked.
+    - P2 (Low): minor/info/how-to/feature.
+    
+    Return exactly in JSON:
+    {"labels":[<labels>], "priority":"P0"|"P1"|"P2"}
+    ```
 
 ```bash
 cd examples/iterate_prompt
@@ -62,7 +83,10 @@ This will run the prompt on sample case and print the results.
 
 ### Metrics for scoring
 
-It is generally better to use a simpler metric instead of a complex one. You should use a metric relevant to your use case. More information on metrics can be found in [Metrics - Core Concepts](../core_concepts/metrics.md). Here we are looking at labels_exact_match and priority_accuracy. We want to keep it separate so that we can analyze errors for each metric separately and improve them.
+It is generally better to use a simpler metric instead of a complex one. You should use a metric relevant to your use case. More information on metrics can be found in [Metrics - Core Concepts](../core_concepts/metrics.md). Here we use two discrete metrics: `labels_exact_match` and `priority_accuracy`. Keeping them separate helps analyze and fix different failure modes.
+
+- `priority_accuracy`: Checks whether the predicted priority matches the expected priority; important for correct urgency triage.
+- `labels_exact_match`: Checks whether the set of predicted labels exactly matches the expected labels; important to avoid over/under-tagging and helps us measure the accuracy of our system in labeling the cases.
 
 ```python
 # examples/iterate_prompt/evals.py
@@ -98,7 +122,7 @@ def priority_accuracy(prediction: str, expected_priority: str):
 
 The experiment function is used to run the prompt on a dataset. More information on  Experiment can be found in [Experimentation - Core Concepts](../core_concepts/experimentation.md).
 
-Notice that we are passing prompt_file as a parameter so that we can run experiments with different prompts. You can also pass other parameters to the experiment function like model, temperature, etc. and experiment with different configurations. It is recommended to change only 1 parameter at a time while doing experimentation.
+Notice that we are passing `prompt_file` as a parameter so that we can run experiments with different prompts. You can also pass other parameters to the experiment function like model, temperature, etc. and experiment with different configurations. It is recommended to change only 1 parameter at a time while doing experimentation.
 
 ```python
 # examples/iterate_prompt/evals.py
