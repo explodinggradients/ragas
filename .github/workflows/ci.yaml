@@ -123,10 +123,10 @@ jobs:
           # Run different test suites based on test type
           if [ "${{ matrix.test-type }}" = "full" ]; then
             # Full test suite with notebook tests
-            uv run pytest --nbmake tests/unit tests/experimental "${OPTS[@]}"
+            uv run pytest --nbmake tests/unit "${OPTS[@]}"
           else
             # Essential tests only (faster for cross-platform validation)
-            uv run pytest tests/unit tests/experimental -k "not slow" "${OPTS[@]}"
+            uv run pytest tests/unit -k "not slow" "${OPTS[@]}"
           fi
         env:
           __RAGAS_DEBUG_TRACKING: true

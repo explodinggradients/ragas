@@ -43,10 +43,10 @@ def test_generate_cache_key():
 def test_generate_cache_key_bound_method():
     """Test that cache keys stay the same, when caching bound methods of different objects."""
 
-    class Clazz():
+    class Clazz:
         def __init__(self, irrelevant):
             self.irrelevant = irrelevant
-            
+
         def sample_func(self, a, b):
             return a + b
 
@@ -55,7 +55,9 @@ def test_generate_cache_key_bound_method():
 
     key1 = _generate_cache_key(object.sample_func, (1, 2), {})
     key2 = _generate_cache_key(object2.sample_func, (1, 2), {})
-    assert key1 == key2, "Cache keys should match even if the originating objects the methods are bound to are not the same, as long as the arguments match"
+    assert key1 == key2, (
+        "Cache keys should match even if the originating objects the methods are bound to are not the same, as long as the arguments match"
+    )
 
 
 def test_no_cache_backend():

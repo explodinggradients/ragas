@@ -7,7 +7,6 @@ This comprehensive guide covers development workflows for the Ragas monorepo, de
 ```bash
 # 1. Clone and enter the repository
 git clone https://github.com/explodinggradients/ragas.git
-cd ragas
 
 # 2. Install uv (if not already installed)
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -194,7 +193,7 @@ make run-ci         # Run full CI pipeline
 
 # Or use direct commands for specific tasks
 uv run pytest tests/unit          # Run core unit tests
-uv run pytest tests/experimental  # Run experimental tests
+uv run pytest tests/unit  # Run unit tests
 uv run pyright src               # Type check source code
 ```
 
@@ -278,7 +277,7 @@ make install
 uv run pytest tests/unit/test_specific.py -v
 
 # Check experimental test dependencies
-uv run pytest tests/experimental --collect-only
+uv run pytest tests/unit --collect-only
 ```
 
 #### Formatting Issues

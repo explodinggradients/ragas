@@ -10,9 +10,10 @@ import pandas as pd
 from prompt import DEFAULT_MODEL, run_prompt
 
 from ragas import experiment
-from ragas.experimental import Dataset
-from ragas.experimental.metrics.discrete import discrete_metric
-from ragas.experimental.metrics.result import MetricResult
+
+from ragas.dataset import Dataset
+from ragas.metrics.discrete import discrete_metric
+from ragas.metrics.result import MetricResult
 
 
 @discrete_metric(name="discount_accuracy", allowed_values=["correct", "incorrect"])
