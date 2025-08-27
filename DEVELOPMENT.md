@@ -74,6 +74,13 @@ This repository is organized as a single project with integrated experimental fe
 - **Ragas Experimental**: Advanced features integrated at `src/ragas/experimental/`
 - **Infrastructure**: Single CI/CD, documentation, and build system
 
+### Examples Package (ragas-examples)
+- Lives under `examples/` as an installable package `ragas-examples`
+- Published independently to PyPI via GitHub Actions workflow `publish-examples.yml`
+- Versioning via Git tags with prefix `examples-v` (e.g., `examples-v0.1.0`)
+- Local development: `uv pip install -e . -e ./examples`
+- Run examples: `python -m ragas_examples.benchmark_llm.prompt`
+
 ## Development Environment Setup
 
 ### Prerequisites
