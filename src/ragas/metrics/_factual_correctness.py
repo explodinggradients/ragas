@@ -24,7 +24,7 @@ if t.TYPE_CHECKING:
 
     from ragas.dataset_schema import SingleTurnSample
 
-
+T = t.TypeVar('T')
 logger = logging.getLogger(__name__)
 
 
@@ -249,6 +249,10 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
             claim_verifications = np.array([], dtype=bool)
         return claim_verifications
 
+    @staticmethod
+    async def _get_passthrough_value(value: T) -> T:
+        return value
+
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
@@ -257,9 +261,6 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
         assert self.llm is not None, "LLM must be set"
         assert reference is not None, "Reference is not set"
         assert response is not None, "Response is not set"
-
-        async def get_empty_response():
-            return np.array([], dtype=bool)
 
         reference_response_task = self.decompose_and_verify_claims(
             reference, response, callbacks
@@ -270,7 +271,9 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
                 response, reference, callbacks
             )
         else:
-            response_reference_task = get_empty_response()
+            response_reference_task = self._get_passthrough_value(
+                value=np.array([], dtype=bool)
+            )
 
         reference_response, response_reference = await asyncio.gather(
             reference_response_task, response_reference_task
