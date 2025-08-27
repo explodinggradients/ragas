@@ -12,6 +12,7 @@ from io import BytesIO
 from urllib.parse import urlparse
 
 import requests
+from langchain_core.language_models import BaseLanguageModel
 from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.prompt_values import PromptValue
 from PIL import Image
@@ -19,7 +20,11 @@ from pydantic import BaseModel
 
 from ragas.callbacks import ChainType, new_group
 from ragas.exceptions import RagasOutputParserException
-from ragas.prompt.pydantic_prompt import PydanticPrompt, RagasOutputParser
+from ragas.prompt.pydantic_prompt import (
+    PydanticPrompt,
+    RagasOutputParser,
+    is_langchain_llm,
+)
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -101,7 +106,7 @@ class ImageTextPrompt(PydanticPrompt, t.Generic[InputModel, OutputModel]):
 
     async def generate_multiple(
         self,
-        llm: t.Union[BaseRagasLLM, t.Any],
+        llm: t.Union[BaseRagasLLM, BaseLanguageModel],
         data: InputModel,
         n: int = 1,
         temperature: t.Optional[float] = None,
@@ -150,16 +155,18 @@ class ImageTextPrompt(PydanticPrompt, t.Generic[InputModel, OutputModel]):
         # Handle both LangChain LLMs and Ragas LLMs
         # LangChain LLMs have agenerate() for async, generate() for sync
         # Ragas LLMs have generate() as async method
-        if hasattr(llm, "agenerate") and not hasattr(llm, "run_config"):
-            resp = await llm.agenerate(  # type: ignore
+        if is_langchain_llm(llm):
+            # This is a LangChain LLM - use agenerate_prompt()
+            langchain_llm = t.cast(BaseLanguageModel, llm)
+            resp = await langchain_llm.agenerate_prompt(
                 [prompt_value],
-                n=n,
-                temperature=temperature,
                 stop=stop,
                 callbacks=prompt_cb,
             )
         else:
-            resp = await llm.generate(
+            # This is a Ragas LLM - use generate()
+            ragas_llm = t.cast(BaseRagasLLM, llm)
+            resp = await ragas_llm.generate(
                 prompt_value,
                 n=n,
                 temperature=temperature,
@@ -172,13 +179,19 @@ class ImageTextPrompt(PydanticPrompt, t.Generic[InputModel, OutputModel]):
         for i in range(n):
             output_string = resp.generations[0][i].text
             try:
-                answer = await parser.parse_output_string(
-                    output_string=output_string,
-                    prompt_value=prompt_value,  # type: ignore
-                    llm=llm,
-                    callbacks=prompt_cb,
-                    retries_left=retries_left,
-                )
+                # For the parser, we need a BaseRagasLLM, so if it's a LangChain LLM, we need to handle this
+                if is_langchain_llm(llm):
+                    # Skip parsing retry for LangChain LLMs since parser expects BaseRagasLLM
+                    answer = self.output_model.model_validate_json(output_string)
+                else:
+                    ragas_llm = t.cast(BaseRagasLLM, llm)
+                    answer = await parser.parse_output_string(
+                        output_string=output_string,
+                        prompt_value=prompt_value,  # type: ignore
+                        llm=ragas_llm,
+                        callbacks=prompt_cb,
+                        retries_left=retries_left,
+                    )
                 processed_output = self.process_output(answer, data)  # type: ignore
                 output_models.append(processed_output)
             except RagasOutputParserException as e:
