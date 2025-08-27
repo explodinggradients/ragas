@@ -101,7 +101,7 @@ class ImageTextPrompt(PydanticPrompt, t.Generic[InputModel, OutputModel]):
 
     async def generate_multiple(
         self,
-        llm: BaseRagasLLM,
+        llm: t.Union[BaseRagasLLM, t.Any],
         data: InputModel,
         n: int = 1,
         temperature: t.Optional[float] = None,
@@ -146,13 +146,26 @@ class ImageTextPrompt(PydanticPrompt, t.Generic[InputModel, OutputModel]):
             metadata={"type": ChainType.RAGAS_PROMPT},
         )
         prompt_value = self.to_prompt_value(processed_data)
-        resp = await llm.generate(
-            prompt_value,
-            n=n,
-            temperature=temperature,
-            stop=stop,
-            callbacks=prompt_cb,
-        )
+
+        # Handle both LangChain LLMs and Ragas LLMs
+        # LangChain LLMs have agenerate() for async, generate() for sync
+        # Ragas LLMs have generate() as async method
+        if hasattr(llm, "agenerate") and not hasattr(llm, "run_config"):
+            resp = await llm.agenerate(  # type: ignore
+                [prompt_value],
+                n=n,
+                temperature=temperature,
+                stop=stop,
+                callbacks=prompt_cb,
+            )
+        else:
+            resp = await llm.generate(
+                prompt_value,
+                n=n,
+                temperature=temperature,
+                stop=stop,
+                callbacks=prompt_cb,
+            )
 
         output_models = []
         parser = RagasOutputParser(pydantic_object=self.output_model)  # type: ignore
