@@ -21,7 +21,6 @@ jobs:
     outputs:
       related: ${{ steps.filter.outputs.related }}
       ragas: ${{ steps.filter.outputs.ragas }}
-      ragas_experimental: ${{ steps.filter.outputs.ragas_experimental }}
       docs: ${{ steps.filter.outputs.docs }}
     steps:
       - uses: actions/checkout@v4
@@ -35,20 +34,14 @@ jobs:
               - .github/workflows/ci.yaml
               - codecov.yml
               - pyproject.toml
-              - requirements/test.txt
               - Makefile
             ragas:
               - *related
-              - "ragas/src/ragas/**"
-              - "ragas/tests/**"
-            ragas_experimental:
-              - *related
-              - "experimental/ragas_experimental/**"
-              - "experimental/tests/**"
-              - "experimental/pyproject.toml"
+              - "src/ragas/**"
+              - "tests/**"
+              - "examples/**"
             docs:
               - *related
-              - requirements/docs-requirements.txt
               - "docs/**"
 
   unit_tests:
@@ -65,6 +58,9 @@ jobs:
             test-type: "full"
           - os: ubuntu-latest
             python-version: "3.12"
+            test-type: "full"
+          - os: ubuntu-latest
+            python-version: "3.13"
             test-type: "full"
           # Cross-platform validation (essential tests only)
           - os: macos-latest
@@ -104,7 +100,7 @@ jobs:
           path: |
             ${{ steps.cache-dir.outputs.dir }}
             ~/.cache/uv
-          key: deps-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('ragas/pyproject.toml', 'requirements/*.txt') }}
+          key: deps-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             deps-${{ runner.os }}-py${{ matrix.python-version }}-
             deps-${{ runner.os }}-py3.11-
@@ -112,8 +108,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Use UV with system installation for CI (simpler and more reliable)
-          uv pip install --system -e "./ragas[dev]" --cache-dir ~/.cache/uv
+          # Use minimal install for fast CI runs (79 packages vs 383)
+          # This uses make install-minimal for consistency with local development
+          make install-minimal
 
       - name: Run unit tests
         run: |
@@ -122,81 +119,15 @@ jobs:
             # Use pytest-xdist to improve test run-time on Linux/macOS
             OPTS=(--dist loadfile -n auto)
           fi
-          
+
           # Run different test suites based on test type
           if [ "${{ matrix.test-type }}" = "full" ]; then
             # Full test suite with notebook tests
-            cd ragas && pytest --nbmake tests/unit "${OPTS[@]}"
+            uv run pytest --nbmake tests/unit "${OPTS[@]}"
           else
             # Essential tests only (faster for cross-platform validation)
-            cd ragas && pytest tests/unit -k "not slow" "${OPTS[@]}"
+            uv run pytest tests/unit -k "not slow" "${OPTS[@]}"
           fi
-        env:
-          __RAGAS_DEBUG_TRACKING: true
-          RAGAS_DO_NOT_TRACK: true
-
-  experimental_tests:
-    needs:
-      - diff
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Focus on stable Python versions for experimental features
-          - os: ubuntu-latest
-            python-version: "3.11"
-            test-type: "full"
-          - os: ubuntu-latest
-            python-version: "3.12"
-            test-type: "full"
-
-    if: ${{ (github.event_name == 'pull_request' && needs.diff.outputs.ragas_experimental == 'true') || github.event_name == 'push' }}
-    name: python${{ matrix.python-version }}_experimental_tests (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # fetch all tags and branches
-
-      - name: Setup python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          architecture: x64
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-
-      - name: Get pip cache dir
-        id: cache-dir
-        run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
-
-      - name: Cache dependencies (UV cache)
-        uses: actions/cache@v4
-        id: cache-deps
-        with:
-          path: |
-            ${{ steps.cache-dir.outputs.dir }}
-            ~/.cache/uv
-          key: deps-${{ runner.os }}-py${{ matrix.python-version }}-exp-${{ hashFiles('ragas/pyproject.toml', 'experimental/pyproject.toml') }}
-          restore-keys: |
-            deps-${{ runner.os }}-py${{ matrix.python-version }}-exp-
-            deps-${{ runner.os }}-py${{ matrix.python-version }}-
-            deps-${{ runner.os }}-py3.11-
-            deps-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: |
-          # Use UV with system installation for CI (simpler and more reliable)
-          uv pip install --system -e "./ragas[dev]" --cache-dir ~/.cache/uv
-          uv pip install --system -e "./experimental[dev]" --cache-dir ~/.cache/uv
-
-      - name: Run experimental tests
-        run: |
-          cd experimental && pytest -v --tb=short
         env:
           __RAGAS_DEBUG_TRACKING: true
           RAGAS_DO_NOT_TRACK: true
@@ -206,7 +137,7 @@ jobs:
     needs:
       - diff
 
-    if: ${{ (github.event_name == 'pull_request' && (needs.diff.outputs.ragas == 'true' || needs.diff.outputs.ragas_experimental == 'true')) || github.event_name == 'push' }}
+    if: ${{ (github.event_name == 'pull_request' && needs.diff.outputs.ragas == 'true') || github.event_name == 'push' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -232,7 +163,7 @@ jobs:
           path: |
             ${{ steps.cache-dir.outputs.dir }}
             ~/.cache/uv
-          key: deps-ubuntu-py3.11-codestyle-${{ hashFiles('ragas/pyproject.toml', 'experimental/pyproject.toml', 'requirements/*.txt') }}
+          key: deps-ubuntu-py3.11-codestyle-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             deps-ubuntu-py3.11-codestyle-
             deps-ubuntu-py3.11-
@@ -240,9 +171,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Use UV with system installation for CI (simpler and more reliable)
-          uv pip install --system -e "./ragas[dev]" --cache-dir ~/.cache/uv
-          uv pip install --system -e "./experimental[dev]" --cache-dir ~/.cache/uv
+          # Use minimal install for fast CI runs (79 packages vs 383)
+          # This uses make install-minimal for consistency with local development
+          make install-minimal
 
       - name: Format check (dry run)
         run: |
@@ -250,10 +181,8 @@ jobs:
           # Note: We use direct commands here instead of the standalone Makefiles
           # to have precise control over CI-specific options like --check for dry-run
           echo "Checking ragas formatting..."
-          black --check --config ragas/pyproject.toml ragas/src ragas/tests docs
-          ruff check ragas/src docs ragas/tests
-          echo "Checking experimental formatting..."
-          cd experimental && black --check ragas_experimental && ruff check ragas_experimental
+          uv run ruff format --check src tests docs --exclude src/ragas/_version.py --config pyproject.toml
+          uv run ruff check src docs tests --exclude src/ragas/_version.py --config pyproject.toml
 
       - name: Type check
         run: make type
