@@ -24,7 +24,7 @@ if t.TYPE_CHECKING:
 
     from ragas.dataset_schema import SingleTurnSample
 
-T = t.TypeVar('T')
+T = t.TypeVar("T")
 logger = logging.getLogger(__name__)
 
 
@@ -297,7 +297,7 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
 
     async def decompose_and_verify_claims(
         self, reference: str, response: str, callbacks: Callbacks
-    ) -> NDArray[np.bool_]:
+    ) -> np.ndarray:
         claims = await self.decompose_claims(response, callbacks)
         return await self.verify_claims(
             premise=reference, hypothesis_list=claims, callbacks=callbacks
