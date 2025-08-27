@@ -4,14 +4,14 @@ description = "Official examples for the ragas project"
 requires-python = ">=3.9"
 license = {file = "LICENSE"}
 dependencies = [
-    "ragas>=0.3.2",  # ensure ragas is present
+    "ragas",  # workspace dependency - version managed by workspace
     "openai>=1.0.0",  # required for LLM calls in examples
     "pandas",  # required for benchmark_llm examples
 ]
 dynamic = ["version", "readme"]
 
 [project.optional-dependencies]
-gdrive = ["ragas[gdrive]>=0.3.2"]
+gdrive = ["ragas[gdrive]"]
 
 [project.urls]
 Homepage = "https://github.com/explodinggradients/ragas"
@@ -39,4 +39,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 version_file = "ragas_examples/_version.py"
 root = ".."
-tag_regex = "^examples-v(?P<version>\\d+\\.\\d+\\.\\d+)$"
+# Sync with main package version tags (v1.2.3)
+tag_regex = "^v(?P<version>\\d+\\.\\d+\\.\\d+)$"
+
+# Workspace member configuration  
+[tool.uv.sources]
+ragas = { workspace = true }

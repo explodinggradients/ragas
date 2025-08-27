@@ -43,6 +43,27 @@ uv sync --group dev
 - **Full setup**: Uses `uv sync` with dependency groups for comprehensive environment management
 - **No naming conflicts**: `dev-minimal` vs `dev` clearly distinguish the two approaches
 
+### Workspace Structure
+
+The project uses a UV workspace configuration for managing multiple packages:
+
+```bash
+# Install with examples (workspace dependency)
+uv sync --extra examples
+
+# Install examples separately
+uv sync --package ragas-examples
+
+# Build specific workspace package
+uv build --package ragas-examples
+```
+
+**Workspace Members:**
+- `ragas` (main package) - Located in `src/ragas/`
+- `ragas-examples` (examples package) - Located in `examples/`
+
+The workspace ensures consistent dependency versions across packages and enables editable installs of workspace members.
+
 ## Common Commands
 
 ### Commands (from root directory)
