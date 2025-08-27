@@ -10,6 +10,9 @@ dependencies = [
 ]
 dynamic = ["version", "readme"]
 
+[project.optional-dependencies]
+gdrive = ["ragas[gdrive]>=0.3.2"]
+
 [project.urls]
 Homepage = "https://github.com/explodinggradients/ragas"
 Documentation = "https://docs.ragas.io"
@@ -36,3 +39,4 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 version_file = "ragas_examples/_version.py"
 root = ".."
+tag_regex = "^examples-v(?P<version>\\d+\\.\\d+\\.\\d+)$"
