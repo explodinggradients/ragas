@@ -19,6 +19,7 @@ dependencies = [
     "instructor",
     "gitpython",
     "pillow>=10.4.0",
+    "scipy",
 
     # LangChain ecosystem
     "langchain",

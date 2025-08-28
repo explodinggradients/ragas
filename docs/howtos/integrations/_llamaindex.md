@@ -88,21 +88,21 @@ df.head()
       <td>Cud yu pleese explane the role of New York Cit...</td>
       <td>[New York, often called New York City or NYC, ...</td>
       <td>New York City serves as the geographical and d...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
     <tr>
       <th>1</th>
       <td>So like, what was New York City called before ...</td>
       <td>[History == === Early history === In the pre-C...</td>
       <td>Before it was called New York, the area was kn...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
     <tr>
       <th>2</th>
       <td>what happen in new york with slavery and how i...</td>
       <td>[and rechristened it "New Orange" after Willia...</td>
       <td>In the early 18th century, New York became a c...</td>
-      <td>single_hop_specifc_query_synthesizer</td>
+      <td>single_hop_specific_query_synthesizer</td>
     </tr>
     <tr>
       <th>3</th>
