@@ -11,7 +11,7 @@ In this guide, you will evaluate a **text summarization pipeline**. The goal is 
 
 ### Evaluating using a Non-LLM Metric
 
-Here is a simple example that uses `BleuScore` score to score summary
+Here is a simple example that uses `BleuScore` to score a summary:
 
 ```python
 from ragas import SingleTurnSample
@@ -40,9 +40,9 @@ Here we used:
 
 As you may observe, this approach has two key limitations:
 
-- **Time-Consuming Preparation:** Evaluating the application requires preparing the expected output (`reference`) for each input, which can be both time-consuming and challenging.
+- **Time-consuming preparation:** Evaluating the application requires preparing the expected output (`reference`) for each input, which can be both time-consuming and challenging.
 
-- **Inaccurate Scoring:** Even though the `response` and `reference` are similar, the output score was low. This is a known limitation of non-LLM metrics like `BleuScore`. 
+- **Inaccurate scoring:** Even though the `response` and `reference` are similar, the output score was low. This is a known limitation of non-LLM metrics like `BleuScore`. 
 
 
 !!! info
@@ -51,7 +51,7 @@ As you may observe, this approach has two key limitations:
 To address these issues, let's try an LLM-based metric.
 
 
-### Evaluating using a LLM based Metric
+### Evaluating using a LLM-based Metric
 
 
 **Choose your LLM**
@@ -61,9 +61,7 @@ choose_evaluator_llm.md
 
 **Evaluation**
 
-
 Here we will use [AspectCritic](../concepts/metrics/available_metrics/aspect_critic.md), which is an LLM based metric that outputs pass/fail given the evaluation criteria.
-
 
 ```python
 from ragas import SingleTurnSample
@@ -88,7 +86,7 @@ Output
 Success! Here 1 means pass and 0 means fail
 
 !!! info
-    There are many other types of metrics that are available in ragas (with and without `reference`), and you may also create your own metrics if none of those fits your case. To explore this more checkout [more on metrics](../concepts/metrics/index.md). 
+    There are many other types of metrics that are available in `ragas` (with and without `reference`), and you may also create your own metrics if none of those fits your case. To explore this more checkout [more on metrics](../concepts/metrics/index.md). 
 
 ### Evaluating on a Dataset
 
