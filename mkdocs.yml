@@ -3,7 +3,7 @@ site_url: !ENV READTHEDOCS_CANONICAL_URL
 repo_name: explodinggradients/ragas
 repo_url: https://github.com/explodinggradients/ragas
 watch:
-  - ragas/src
+  - src
 
 # Navigation
 nav:
@@ -80,15 +80,19 @@ nav:
     - Overview: experimental/index.md
     - Tutorials:
         - experimental/tutorials/index.md
-        - Agent: experimental/tutorials/agent.md
         - Prompt: experimental/tutorials/prompt.md
         - RAG: experimental/tutorials/rag.md
         - Workflow: experimental/tutorials/workflow.md
+        - Agent: experimental/tutorials/agent.md
     - Core Concepts:
         - experimental/core_concepts/index.md
+        - Metrics: experimental/core_concepts/metrics.md
         - Datasets: experimental/core_concepts/datasets.md
         - Experimentation: experimental/core_concepts/experimentation.md
-        - Metrics: experimental/core_concepts/metrics.md
+    - How-to Guides:
+        - experimental/howtos/index.md
+        - Improve a Prompt: experimental/howtos/iterate_prompt.md
+        - Evaluate a New LLM: experimental/howtos/benchmark_llm.md
   - 🛠️ How-to Guides:
       - howtos/index.md
       - Customizations:
@@ -154,7 +158,7 @@ nav:
       - Synthesizers: references/synthesizers.md
       - Generation: references/generate.md
     - Integrations: references/integrations.md
-  - Community: community/index.md
+  - ❤️ Community: community/index.md
 
 # https://www.mkdocs.org/user-guide/configuration/#validation
 validation:

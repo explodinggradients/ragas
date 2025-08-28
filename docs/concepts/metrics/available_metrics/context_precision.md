@@ -17,7 +17,7 @@ The following metrics uses LLM to identify if a retrieved context is relevant or
 
 ### Context Precision without reference
 
-`LLMContextPrecisionWithoutReference` metric can be used when you have both retrieved contexts and also reference contexts associated with a `user_input`. To estimate if a retrieved contexts is relevant or not this method uses the LLM to compare each of the retrieved context or chunk present in `retrieved_contexts` with `response`.
+`LLMContextPrecisionWithoutReference` metric can be used when you have both retrieved contexts and also reference answer associated with a `user_input`. To estimate if a retrieved contexts is relevant or not this method uses the LLM to compare each of the retrieved context or chunk present in `retrieved_contexts` with `response`.
 
 #### Example
     
@@ -43,7 +43,7 @@ Output
 
 ### Context Precision with reference
 
-`LLMContextPrecisionWithReference` metric is can be used when you have both retrieved contexts and also reference answer associated with a `user_input`. To estimate if a retrieved contexts is relevant or not this method uses the LLM to compare each of the retrieved context or chunk present in `retrieved_contexts` with `reference`. 
+`LLMContextPrecisionWithReference` metric is can be used when you have both retrieved contexts and also reference context associated with a `user_input`. To estimate if a retrieved contexts is relevant or not this method uses the LLM to compare each of the retrieved context or chunk present in `retrieved_contexts` with `reference`. 
 
 #### Example
     
@@ -72,7 +72,7 @@ This metric uses traditional methods to determine whether a retrieved context is
 
 ### Context Precision with reference contexts
 
-The `NonLLMContextPrecisionWithReference` metric is designed for scenarios where both retrieved contexts and reference contexts are available for a `user_input`. To determine if a retrieved context is relevant, this method compares each retrieved context or chunk in `retrieved_context`s with every context in `reference_contexts` using a non-LLM-based similarity measure.
+The `NonLLMContextPrecisionWithReference` metric is designed for scenarios where both retrieved contexts and reference contexts are available for a `user_input`. To determine if a retrieved context is relevant, this method compares each retrieved context or chunk in `retrieved_contexts` with every context in `reference_contexts` using a non-LLM-based similarity measure.
 
 #### Example
     
