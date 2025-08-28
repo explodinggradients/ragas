@@ -133,7 +133,7 @@ version_file = "src/ragas/_version.py"
 
 # UV Workspace Configuration
 [tool.uv.workspace]
-members = ["examples"]
+members = [".", "examples"]
 
 # Workspace dependency sources
 [tool.uv.sources]
