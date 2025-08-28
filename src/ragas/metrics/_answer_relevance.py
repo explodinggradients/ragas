@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 import typing as t
 from dataclasses import dataclass, field
@@ -95,12 +94,12 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     strictness: int = 3
 
     def calculate_similarity(self, question: str, generated_questions: list[str]):
-        assert (
-            self.embeddings is not None
-        ), f"Error: '{self.name}' requires embeddings to be set."
-        question_vec = np.asarray(self.embeddings.embed_query(question)).reshape(1, -1)
+        assert self.embeddings is not None, (
+            f"Error: '{self.name}' requires embeddings to be set."
+        )
+        question_vec = np.asarray(self.embeddings.embed_query(question)).reshape(1, -1)  # type: ignore[attr-defined]
         gen_question_vec = np.asarray(
-            self.embeddings.embed_documents(generated_questions)
+            self.embeddings.embed_documents(generated_questions)  # type: ignore[attr-defined]
         ).reshape(len(generated_questions), -1)
         norm = np.linalg.norm(gen_question_vec, axis=1) * np.linalg.norm(
             question_vec, axis=1
@@ -139,15 +138,10 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         assert self.llm is not None, "LLM is not set"
 
         prompt_input = ResponseRelevanceInput(response=row["response"])
-        tasks = [
-            self.question_generation.generate(
-                data=prompt_input,
-                llm=self.llm,
-                callbacks=callbacks,
-            )
-            for _ in range(self.strictness)
-        ]
-        responses = await asyncio.gather(*tasks)
+
+        responses = await self.question_generation.generate_multiple(
+            data=prompt_input, llm=self.llm, callbacks=callbacks, n=self.strictness
+        )
 
         return self._calculate_score(responses, row)
 

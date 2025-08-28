@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class SingleHopScenario(BaseScenario):
     """
-    Scenario for multi-hop queries.
+    Scenario for single-hop queries.
 
     Attributes
     ----------
@@ -44,7 +44,6 @@ class SingleHopSpecificQuerySynthesizer(SingleHopQuerySynthesizer):
     property_name: str = "entities"
 
     def get_node_clusters(self, knowledge_graph: KnowledgeGraph) -> t.List[Node]:
-
         node_type_dict = defaultdict(int)
         for node in knowledge_graph.nodes:
             if (

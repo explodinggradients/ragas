@@ -27,7 +27,7 @@ def test_missing_haystack_llmwrapper(monkeypatch):
 
     langchain_wrapper = LangchainLLMWrapper(langchain_llm=langchain_mocked_llm)
 
-    assert langchain_wrapper.langchain_llm.model_name == "gpt-3.5-turbo-instruct"
+    assert langchain_wrapper.langchain_llm.model_name == "gpt-3.5-turbo-instruct"  # type: ignore
 
     # Test: Importing HaystackLLMWrapper fails
     with pytest.raises(ImportError, match="Haystack is not installed"):
@@ -70,7 +70,7 @@ def test_wrappers_with_missing_haystack(monkeypatch):
         embeddings=llama_index_mocked_embedding
     )
 
-    assert langchain_wrapper.embeddings.model == "text-embedding-ada-002"
+    assert langchain_wrapper.embeddings.model == "text-embedding-ada-002"  # type: ignore
     assert llama_index_wrapper.embeddings is llama_index_mocked_embedding
 
     # Test: Importing HaystackEmbeddingsWrapper fails

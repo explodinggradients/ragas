@@ -165,13 +165,20 @@ cython_debug/
 .idea/
 
 # Ragas specific
-experiments/
+_experiments/
 **/fil-result/
 src/ragas/_version.py
+experimental/ragas_experimental/_version.py
 .vscode
 .envrc
 uv.lock
 .cache/
-experimental/_proc
-experimental/site
-experimental/ragas_experimental/_version.py
+.claude
+node_modules
+
+# Ragas examples
+experimental/ragas_examples/benchmark_llm/experiments/*.csv
+examples/*/logs/*run*json
+examples/*/experiments/*csv
+examples/ragas_examples/_version.py
+**/test_dataset.csv

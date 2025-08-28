@@ -9,7 +9,7 @@ from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 from tqdm.auto import tqdm
 
-from ragas._analytics import track_was_completed
+from ragas._analytics import track_was_completed  # type: ignore
 from ragas.callbacks import ChainType, RagasTracer, new_group
 from ragas.dataset_schema import (
     EvaluationDataset,
@@ -18,6 +18,7 @@ from ragas.dataset_schema import (
     SingleTurnSample,
 )
 from ragas.embeddings.base import (
+    BaseRagasEmbedding,
     BaseRagasEmbeddings,
     LangchainEmbeddingsWrapper,
     embedding_factory,
@@ -53,12 +54,14 @@ if t.TYPE_CHECKING:
 RAGAS_EVALUATION_CHAIN_NAME = "ragas evaluation"
 
 
-@track_was_completed
+@track_was_completed  # type: ignore
 def evaluate(
     dataset: t.Union[Dataset, EvaluationDataset],
     metrics: t.Optional[t.Sequence[Metric]] = None,
     llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
-    embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
+    embeddings: t.Optional[
+        BaseRagasEmbeddings | BaseRagasEmbedding | LangchainEmbeddings
+    ] = None,
     experiment_name: t.Optional[str] = None,
     callbacks: Callbacks = None,
     run_config: t.Optional[RunConfig] = None,

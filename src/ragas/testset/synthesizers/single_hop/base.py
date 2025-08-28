@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 class SingleHopScenario(BaseScenario):
     """
-    Scenario for multi-hop queries.
+    Scenario for single-hop queries.
 
     Attributes
     ----------
@@ -45,7 +45,6 @@ class SingleHopScenario(BaseScenario):
 
 @dataclass
 class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
-
     generate_query_reference_prompt: PydanticPrompt = QueryAnswerGenerationPrompt()
 
     def prepare_combinations(
@@ -55,7 +54,6 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
         personas: t.List[Persona],
         persona_concepts: t.Dict[str, t.List[str]],
     ) -> t.List[t.Dict[str, t.Any]]:
-
         sample = {"terms": terms, "node": node}
         valid_personas = []
         persona_list = PersonaList(personas=personas)
@@ -71,7 +69,6 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
         return [sample]
 
     def sample_combinations(self, data: t.List[t.Dict[str, t.Any]], num_samples):
-
         selected_samples = []
         node_term_set = set()
 
@@ -109,7 +106,6 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
         return [self.convert_to_scenario(sample) for sample in selected_samples]
 
     def convert_to_scenario(self, data: t.Dict[str, t.Any]) -> SingleHopScenario:
-
         return SingleHopScenario(
             term=data["term"],
             nodes=[data["node"]],
@@ -128,8 +124,8 @@ class SingleHopQuerySynthesizer(BaseSynthesizer[Scenario]):
             persona=scenario.persona,
             term=scenario.term,
             context=reference_context,
-            query_length=scenario.length.name,
-            query_style=scenario.style.name,
+            query_length=scenario.length.value,
+            query_style=scenario.style.value,
         )
         response = await self.generate_query_reference_prompt.generate(
             data=prompt_input, llm=self.llm, callbacks=callbacks

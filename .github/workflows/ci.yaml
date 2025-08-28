@@ -31,19 +31,17 @@ jobs:
           token: ${{ github.token }}
           filters: |
             related: &related
-              - .github/workflows/ci.yml
+              - .github/workflows/ci.yaml
               - codecov.yml
               - pyproject.toml
-              - requirements/test.txt
+              - Makefile
             ragas:
               - *related
               - "src/ragas/**"
               - "tests/**"
-            ragas_experimental:
-              - "src/experimental/**"
+              - "examples/**"
             docs:
               - *related
-              - requirements/docs-requirements.txt
               - "docs/**"
 
   unit_tests:
@@ -53,11 +51,27 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        include:
+          # Critical path: Latest + oldest Python on Ubuntu (full test suite)
+          - os: ubuntu-latest
+            python-version: "3.9"
+            test-type: "full"
+          - os: ubuntu-latest
+            python-version: "3.12"
+            test-type: "full"
+          - os: ubuntu-latest
+            python-version: "3.13"
+            test-type: "full"
+          # Cross-platform validation (essential tests only)
+          - os: macos-latest
+            python-version: "3.11"
+            test-type: "essential"
+          - os: windows-latest
+            python-version: "3.10"
+            test-type: "essential"
 
     if: ${{ (github.event_name == 'pull_request' && needs.diff.outputs.ragas == 'true') || github.event_name == 'push' }}
-    name: python${{ matrix.python-version }}_unit_tests (${{ matrix.os }})
+    name: python${{ matrix.python-version }}_unit_tests (${{ matrix.os }}, ${{ matrix.test-type }})
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -71,38 +85,54 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.os == 'macos-latest' && 'arm64' || 'x64' }}
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Get pip cache dir
         id: cache-dir
         run: |
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
-      - name: Cache pip dependencies
-        uses: actions/cache@v3
-        id: cache-pip
+      - name: Cache dependencies (UV cache)
+        uses: actions/cache@v4
+        id: cache-deps
         with:
-          path: ${{ steps.cache-dir.outputs.dir }}
-          key: ${{ runner.os }}-tests-${{ hashFiles('requirements/test.txt') }}
+          path: |
+            ${{ steps.cache-dir.outputs.dir }}
+            ~/.cache/uv
+          key: deps-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            deps-${{ runner.os }}-py${{ matrix.python-version }}-
+            deps-${{ runner.os }}-py3.11-
+            deps-${{ runner.os }}-
 
       - name: Install dependencies
         run: |
-          pip install "."
-          pip install -r requirements/test.txt
-
+          # Use minimal install for fast CI runs (79 packages vs 383)
+          # This uses make install-minimal for consistency with local development
+          make install-minimal
 
       - name: Run unit tests
         run: |
-          # OPTS=(--cov-config pyproject.toml --cov=src/bentoml --cov-append)
+          # Configure test options based on OS and test type
           if [ "${{ matrix.os }}" != 'windows-latest' ]; then
-            # we will use pytest-xdist to improve tests run-time.
+            # Use pytest-xdist to improve test run-time on Linux/macOS
             OPTS=(--dist loadfile -n auto)
           fi
-          # Now run the unit tests
-          pytest --nbmake tests/unit "${OPTS[@]}"
+
+          # Run different test suites based on test type
+          if [ "${{ matrix.test-type }}" = "full" ]; then
+            # Full test suite with notebook tests
+            uv run pytest --nbmake tests/unit "${OPTS[@]}"
+          else
+            # Essential tests only (faster for cross-platform validation)
+            uv run pytest tests/unit -k "not slow" "${OPTS[@]}"
+          fi
         env:
           __RAGAS_DEBUG_TRACKING: true
           RAGAS_DO_NOT_TRACK: true
 
-  codestyle_check:
+  code_quality_check:
     runs-on: ubuntu-latest
     needs:
       - diff
@@ -113,38 +143,46 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.10.6"
+          python-version: "3.11"
           architecture: x64
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
 
       - name: Get pip cache dir
         id: cache-dir
         run: |
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
-      - name: Fetch origin
-        run: git fetch origin "$GITHUB_BASE_REF"
-
-      - name: Setup node
-        uses: actions/setup-node@v3
+      - name: Cache dependencies (UV cache)
+        uses: actions/cache@v4
+        id: cache-deps
         with:
-          node-version: "17"
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v3
-        id: cache-pip
-        with:
-          path: ${{ steps.cache-dir.outputs.dir }}
-          key: codestyle-${{ hashFiles('requirements/dev.txt') }}
+          path: |
+            ${{ steps.cache-dir.outputs.dir }}
+            ~/.cache/uv
+          key: deps-ubuntu-py3.11-codestyle-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            deps-ubuntu-py3.11-codestyle-
+            deps-ubuntu-py3.11-
+            deps-ubuntu-
 
       - name: Install dependencies
         run: |
-          pip install .
-          pip install -r requirements/dev.txt
+          # Use minimal install for fast CI runs (79 packages vs 383)
+          # This uses make install-minimal for consistency with local development
+          make install-minimal
 
-      - name: Lint check
-        run: make lint
+      - name: Format check (dry run)
+        run: |
+          # Check if code is properly formatted (without making changes)
+          # Note: We use direct commands here instead of the standalone Makefiles
+          # to have precise control over CI-specific options like --check for dry-run
+          echo "Checking ragas formatting..."
+          uv run ruff format --check src tests docs --exclude src/ragas/_version.py --config pyproject.toml
+          uv run ruff check src docs tests --exclude src/ragas/_version.py --config pyproject.toml
+
       - name: Type check
-        if: ${{ github.event_name == 'pull_request' }}
         run: make type

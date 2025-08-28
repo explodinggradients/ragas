@@ -269,7 +269,7 @@ class ContextRelevance(MetricWithLLM, SingleTurnMetric):
 
             for retry in range(self.retry):
                 formatted_prompt = StringPromptValue(
-                    text=self.template_relevance1.format(
+                    text=self.template_relevance2.format(
                         query=sample.user_input,
                         context="\n".join(sample.retrieved_contexts)[:7000],
                     )

@@ -61,9 +61,7 @@ choose_evaluator_llm.md
 
 **Evaluation**
 
-
-Here we will use [AspectCritic](../concepts/metrics/available_metrics/aspect_critic.md), which is an LLM-based metric that outputs pass/fail given the evaluation criteria.
-
+Here we will use [AspectCritic](../concepts/metrics/available_metrics/aspect_critic.md), which is an LLM based metric that outputs pass/fail given the evaluation criteria.
 
 ```python
 from ragas import SingleTurnSample
@@ -148,8 +146,8 @@ Output
 {'summary_accuracy': 0.84}
 ```
 
-This score shows that out of all the samples in our test data, only 84% of summaries passes the given evaluation criteria. Now, **it
-s important to see why is this the case**.
+This score shows that out of all the samples in our test data, only 84% of summaries passes the given evaluation criteria. Now, **It's
+important to see why is this the case**.
 
 Export the sample level scores to pandas dataframe
 

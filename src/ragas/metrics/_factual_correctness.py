@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import typing as t
 from dataclasses import dataclass, field
 from enum import Enum
 
 import numpy as np
-from numpy.typing import NDArray
 from pydantic import BaseModel, Field
 
 from ragas.metrics._faithfulness import NLIStatementInput, NLIStatementPrompt
@@ -24,7 +24,7 @@ if t.TYPE_CHECKING:
 
     from ragas.dataset_schema import SingleTurnSample
 
-
+T = t.TypeVar("T")
 logger = logging.getLogger(__name__)
 
 
@@ -235,7 +235,7 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
 
     async def verify_claims(
         self, premise: str, hypothesis_list: t.List[str], callbacks: Callbacks
-    ) -> NDArray[np.bool_]:
+    ) -> np.ndarray:
         assert self.llm is not None, "LLM must be set"
         prompt_input = NLIStatementInput(context=premise, statements=hypothesis_list)
         response = await self.nli_prompt.generate(
@@ -249,6 +249,10 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
             claim_verifications = np.array([], dtype=bool)
         return claim_verifications
 
+    @staticmethod
+    async def _get_passthrough_value(value: T) -> T:
+        return value
+
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
@@ -258,18 +262,22 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
         assert reference is not None, "Reference is not set"
         assert response is not None, "Response is not set"
 
-        response_claims = await self.decompose_claims(response, callbacks)
-        reference_response = await self.verify_claims(
-            premise=reference, hypothesis_list=response_claims, callbacks=callbacks
+        reference_response_task = self.decompose_and_verify_claims(
+            reference, response, callbacks
         )
 
         if self.mode != "precision":
-            reference_claims = await self.decompose_claims(reference, callbacks)
-            response_reference = await self.verify_claims(
-                premise=response, hypothesis_list=reference_claims, callbacks=callbacks
+            response_reference_task = self.decompose_and_verify_claims(
+                response, reference, callbacks
             )
         else:
-            response_reference = np.array([], dtype=bool)
+            response_reference_task = self._get_passthrough_value(
+                value=np.array([], dtype=bool)
+            )
+
+        reference_response, response_reference = await asyncio.gather(
+            reference_response_task, response_reference_task
+        )
 
         tp = sum(reference_response)
         fp = sum(~reference_response)
@@ -286,6 +294,14 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
             score = fbeta_score(tp, fp, fn, self.beta)
 
         return np.round(score, 2)
+
+    async def decompose_and_verify_claims(
+        self, reference: str, response: str, callbacks: Callbacks
+    ) -> np.ndarray:
+        claims = await self.decompose_claims(response, callbacks)
+        return await self.verify_claims(
+            premise=reference, hypothesis_list=claims, callbacks=callbacks
+        )
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)

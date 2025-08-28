@@ -44,7 +44,6 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
     generate_query_reference_prompt: PydanticPrompt = QueryAnswerGenerationPrompt()
 
     def get_node_clusters(self, knowledge_graph: KnowledgeGraph) -> t.List[t.Tuple]:
-
         node_clusters = knowledge_graph.find_two_nodes_single_rel(
             relationship_condition=lambda rel: (
                 True if rel.type == self.relation_type else False
