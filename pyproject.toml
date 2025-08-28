@@ -49,8 +49,7 @@ all = [
     "r2r"
 ]
 
-# Specific integrations
-examples = ["openai>=1.0.0"]
+# Specific integrations  
 tracing = ["langfuse>=3.2.4", "mlflow>=3.1.4"]
 gdrive = [
     "google-api-python-client>=2.178.0",
@@ -128,6 +127,14 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 # Path to version file relative to this pyproject.toml
 version_file = "src/ragas/_version.py"
+
+# UV Workspace Configuration
+[tool.uv.workspace]
+members = [".", "examples"]
+
+# Workspace dependency sources
+[tool.uv.sources]
+ragas-examples = { workspace = true }
 
 [tool.pytest.ini_options]
 addopts = "-n 0"

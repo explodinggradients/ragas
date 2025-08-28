@@ -1,7 +1,7 @@
 import os
 
 from openai import OpenAI
-from workflow import default_workflow_client
+from .workflow import default_workflow_client
 
 from ragas import experiment
 from ragas import Dataset

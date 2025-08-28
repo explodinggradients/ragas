@@ -10,10 +10,12 @@ The repository is a monorepo consisting of two primary components:
    • Tests live in [tests/](tests/)
    • Build configuration is in [pyproject.toml](pyproject.toml)
 
-2. [examples/](examples/) – Root-level examples
-   • Contains practical examples: agent_evals, prompt_evals, rag_eval, workflow_eval, benchmark_llm
-   • Uses absolute imports and is designed for contributors
-   • Install with: `uv pip install --system -e ".[examples]"`
+2. [examples/](examples/) – Installable examples package
+   • Package: ragas_examples/ containing agent_evals, prompt_evals, rag_eval, workflow_eval, benchmark_llm
+   • Build configuration in [examples/pyproject.toml](examples/pyproject.toml)
+   • Shipped as `ragas-examples` package on PyPI via `ragas[examples]` extra
+   • Local development: `uv pip install -e . -e ./examples`
+   • Usage: `python -m ragas_examples.benchmark_llm.prompt`
 
 Shared documentation for all projects is located under [docs/](docs/).
 

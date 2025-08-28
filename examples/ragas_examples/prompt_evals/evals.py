@@ -1,4 +1,4 @@
-from prompt import run_prompt
+from .prompt import run_prompt
 
 from ragas import experiment
 from ragas import Dataset

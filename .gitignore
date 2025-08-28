@@ -182,3 +182,9 @@ examples/*/logs/*run*json
 examples/*/experiments/*csv
 examples/ragas_examples/_version.py
 **/test_dataset.csv
+
+# Ragas examples package build artifacts
+examples/dist/
+examples/build/
+examples/*.egg-info/
+examples/ragas_examples/_version.py
