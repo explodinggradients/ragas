@@ -31,21 +31,19 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
-    """
-    Synthesizes abstract multi-hop queries from given knowledge graph.
-
-    Attributes
-    ----------
-    """
+    """Synthesize abstract multi-hop queries from given knowledge graph."""
 
     name: str = "multi_hop_abstract_query_synthesizer"
+    relation_property: str = "summary_similarity"
+    abstract_property_name: str = "themes"
     concept_combination_prompt: PydanticPrompt = ConceptCombinationPrompt()
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
 
     def get_node_clusters(self, knowledge_graph: KnowledgeGraph) -> t.List[t.Set[Node]]:
+        """Identify clusters of nodes based on the specified relationship condition."""
         node_clusters = knowledge_graph.find_indirect_clusters(
-            relationship_condition=lambda rel: (
-                True if rel.get_property("summary_similarity") else False
+            relationship_condition=lambda rel: bool(
+                rel.get_property(self.relation_property)
             ),
             depth_limit=3,
         )
@@ -60,7 +58,8 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
         callbacks: Callbacks,
     ) -> t.List[MultiHopScenario]:
         """
-        Generates a list of scenarios on type MultiHopAbstractQuerySynthesizer
+        Generate a list of scenarios of type MultiHopScenario.
+
         Steps to generate scenarios:
         1. Find indirect clusters of nodes based on relationship condition
         2. Calculate the number of samples that should be created per cluster to get n samples in total
@@ -92,7 +91,9 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
                     nodes.append(node)
 
             base_scenarios = []
-            node_themes = [node.properties.get("themes", []) for node in nodes]
+            node_themes = [
+                node.properties.get(self.abstract_property_name, []) for node in nodes
+            ]
             prompt_input = ConceptsList(
                 lists_of_concepts=node_themes, max_combinations=num_sample_per_cluster
             )
@@ -116,7 +117,7 @@ class MultiHopAbstractQuerySynthesizer(MultiHopQuerySynthesizer):
                 concept_combination.combinations,
                 personas=persona_list,
                 persona_item_mapping=persona_concepts.mapping,
-                property_name="themes",
+                property_name=self.abstract_property_name,
             )
             base_scenarios = self.sample_diverse_combinations(
                 base_scenarios, num_sample_per_cluster
