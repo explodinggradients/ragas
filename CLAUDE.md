@@ -48,8 +48,8 @@ uv sync --group dev
 The project uses a UV workspace configuration for managing multiple packages:
 
 ```bash
-# Install with examples (workspace dependency)
-uv sync --extra examples
+# Install
+uv sync
 
 # Install examples separately
 uv sync --package ragas-examples
