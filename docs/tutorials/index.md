@@ -5,7 +5,7 @@
 1. Install ragas_examples
 
 ```bash
-pip install ragas_experimental[examples]
+pip install ragas[examples]
 ```
 2. Setup your OpenAI API key
 

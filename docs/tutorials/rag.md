@@ -28,7 +28,7 @@ import pandas as pd
 
 samples = [
     {"query": "What is Ragas 0.3?", "grading_notes": "- Ragas 0.3 is a library for evaluating LLM applications."},
-    {"query": "How to install Ragas?", "grading_notes": "- install from source  - install from pip using ragas_experimental"},
+    {"query": "How to install Ragas?", "grading_notes": "- install from source  - install from pip using ragas[examples]"},
     {"query": "What are the main features of Ragas?", "grading_notes": "organised around - experiments - datasets - metrics."}
 ]
 pd.DataFrame(samples).to_csv("datasets/test_dataset.csv", index=False)
@@ -50,7 +50,7 @@ Next, we will write the experiment loop that will run our RAG system on the test
 ```python
 @experiment()
 async def run_experiment(row):
-    response = rag_client.query(row["question"])
+    response = rag_client.query(row["query"])
     
     score = my_metric.score(
         llm=llm,
