@@ -106,7 +106,7 @@ Example dataset structure (add an `id` column for easy comparison):
 | 2 | Arjun, aged 19, is a full-time computer-science undergraduate. His part-time job brings in about 45,000 dollars per year. He opened his account a year ago and has no premium membership. | 15 | Student only |
 | 3 | Cynthia, a 40-year-old freelance artist, earns roughly 25,000 dollars a year. She is not studying anywhere, subscribed to our basic plan five years back and never upgraded to premium. | 20 | Low income only |
 
-To customize the dataset for your use case, create a `datasets/` directory and add your own CSV file. Refer to [Datasets - Core Concepts](../core_concepts/datasets.md) for more information.
+To customize the dataset for your use case, create a `datasets/` directory and add your own CSV file. Refer to [Core Concepts - Evaluation Dataset](../../concepts/components/eval_dataset.md) for more information.
 
 It is better to sample real data from your application to create the dataset. If that is not available, you can generate synthetic data using an LLM. Since our use case is slightly complex, we recommend using a model like gpt-5-high which can generate more accurate data. Always make sure to manually review and verify the data you use. 
 
@@ -134,7 +134,7 @@ The dataset loader finds your CSV file in the `datasets/` directory and loads it
 
 ### Metrics function
 
-It is generally better to use a simple metric. You should use a metric relevant to your use case. More information on metrics can be found in [Metrics - Core Concepts](../core_concepts/metrics.md). The evaluation uses this accuracy metric to score each response:
+It is generally better to use a simple metric. You should use a metric relevant to your use case. More information on metrics can be found in [Core Concepts - Metrics](../../concepts/metrics/index.md). The evaluation uses this accuracy metric to score each response:
 
 ```python
 @discrete_metric(name="discount_accuracy", allowed_values=["correct", "incorrect"])
@@ -196,7 +196,7 @@ return benchmark_experiment
 
 ## Run experiments
 
-We've setup the main evals code such that you can run it with different models using CLI. We’ll use these example models:
+We've setup the main evals code such that you can run it with different models using CLI. We'll use these example models:
 
 - Baseline: "gpt-4.1-nano-2025-04-14"
 - Candidate: "gpt-5-nano-2025-08-07"
@@ -284,18 +284,18 @@ In this example run:
 
 ### How to read the rows
 - Skim rows where the two models disagree.
-- Use each row’s score_reason to see why it was marked correct/incorrect.
-- Look for patterns (e.g., missed rule stacking, boundary cases like “almost 65”, exact income thresholds).
+- Use each row's score_reason to see why it was marked correct/incorrect.
+- Look for patterns (e.g., missed rule stacking, boundary cases like "almost 65", exact income thresholds).
 
 ### Beyond accuracy
-- Check **cost** and **latency**. Higher accuracy may not be worth it if it’s too slow or too expensive for your use case.
+- Check **cost** and **latency**. Higher accuracy may not be worth it if it's too slow or too expensive for your use case.
 
 ### Decide
 - Switch if the new model is clearly more accurate on your important cases and fits your cost/latency needs.
 - Stay if gains are small, failures hit critical cases, or cost/latency are not acceptable.
 
 In this example:
-- We would switch to "gpt-5-nano-2025-08-07". It improves accuracy from 50% to 90% (+40%) and fixes the key failure modes (missed rule stacking, boundary conditions). If its latency/cost fits your constraints, it’s the better default.
+- We would switch to "gpt-5-nano-2025-08-07". It improves accuracy from 50% to 90% (+40%) and fixes the key failure modes (missed rule stacking, boundary conditions). If its latency/cost fits your constraints, it's the better default.
 
 ## Adapting to your use case
 

@@ -91,8 +91,6 @@ nav:
         - Experimentation: experimental/core_concepts/experimentation.md
     - How-to Guides:
         - experimental/howtos/index.md
-        - Improve a Prompt: experimental/howtos/iterate_prompt.md
-        - Evaluate a New LLM: experimental/howtos/benchmark_llm.md
   - 🛠️ How-to Guides:
       - howtos/index.md
       - Customizations:
@@ -101,6 +99,7 @@ nav:
               - Customise models: howtos/customizations/customize_models.md
               - Run Config: howtos/customizations/_run_config.md
               - Caching: howtos/customizations/_caching.md
+              - Iterate and Improve Prompts: howtos/customizations/iterate_prompt.md
           - Metrics:
               - Modify Prompts: howtos/customizations/metrics/_modifying-prompts-metrics.md
               - Adapt Metrics to Languages: howtos/customizations/metrics/_metrics_language_adaptation.md
@@ -122,6 +121,7 @@ nav:
             - Single-hop Query Testset: howtos/applications/singlehop_testset_gen.md
           - Benchmarking:
             - Benchmarking Gemini models: howtos/applications/gemini_benchmarking.md
+            - Evaluate a New LLM: howtos/applications/benchmark_llm.md
       - Integrations:
           - howtos/integrations/index.md
           - Arize: howtos/integrations/_arize.md

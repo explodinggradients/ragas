@@ -29,7 +29,7 @@ We've created a synthetic dataset for our use case. Each row has `id, text, labe
 | 2  | SSO via Okta succeeds then bounces back to /login; colleagues can sign in; state mismatch; blocked from boards.    | Account;ProductIssue   | P0       |
 | 3  | Need to export a board to PDF with comments and page numbers for audit; deadline next week.                         | HowTo                  | P2       |
 
-To customize the dataset for your use case, create a `datasets/` directory and add your own CSV file. You can also connect to different backends. Refer to [Datasets - Core Concepts](../core_concepts/datasets.md) for more information.
+To customize the dataset for your use case, create a `datasets/` directory and add your own CSV file. You can also connect to different backends. Refer to [Core Concepts - Evaluation Dataset](../../concepts/components/eval_dataset.md) for more information.
 
 It is better to sample real data from your application to create the dataset. If that is not available, you can generate synthetic data using an LLM. We recommend using a reasoning model like gpt-5 high-reasoning which can generate more accurate and complex data. Always make sure to manually review and verify the data you use. 
 
@@ -83,7 +83,7 @@ This will run the prompt on sample case and print the results.
 
 ### Metrics for scoring
 
-It is generally better to use a simpler metric instead of a complex one. You should use a metric relevant to your use case. More information on metrics can be found in [Metrics - Core Concepts](../core_concepts/metrics.md). Here we use two discrete metrics: `labels_exact_match` and `priority_accuracy`. Keeping them separate helps analyze and fix different failure modes.
+It is generally better to use a simpler metric instead of a complex one. You should use a metric relevant to your use case. More information on metrics can be found in [Core Concepts - Metrics](../../concepts/metrics/index.md). Here we use two discrete metrics: `labels_exact_match` and `priority_accuracy`. Keeping them separate helps analyze and fix different failure modes.
 
 - `priority_accuracy`: Checks whether the predicted priority matches the expected priority; important for correct urgency triage.
 - `labels_exact_match`: Checks whether the set of predicted labels exactly matches the expected labels; important to avoid over/under-tagging and helps us measure the accuracy of our system in labeling the cases.
@@ -91,8 +91,8 @@ It is generally better to use a simpler metric instead of a complex one. You sho
 ```python
 # examples/iterate_prompt/evals.py
 import json
-from ragas.experimental.metrics.discrete import discrete_metric
-from ragas.experimental.metrics.result import MetricResult
+from ragas.metrics.discrete import discrete_metric
+from ragas.metrics.result import MetricResult
 
 @discrete_metric(name="labels_exact_match", allowed_values=["correct", "incorrect"])
 def labels_exact_match(prediction: str, expected_labels: str):
@@ -120,7 +120,7 @@ def priority_accuracy(prediction: str, expected_priority: str):
 
 ### The experiment function
 
-The experiment function is used to run the prompt on a dataset. More information on  Experiment can be found in [Experimentation - Core Concepts](../core_concepts/experimentation.md).
+The experiment function is used to run the prompt on a dataset. More information on experimentation can be found in [Core Concepts - Experimentation](../../experimental/core_concepts/experimentation.md).
 
 Notice that we are passing `prompt_file` as a parameter so that we can run experiments with different prompts. You can also pass other parameters to the experiment function like model, temperature, etc. and experiment with different configurations. It is recommended to change only 1 parameter at a time while doing experimentation.
 
@@ -156,7 +156,7 @@ async def support_triage_experiment(row, prompt_file: str, experiment_name: str)
 
 ### Dataset loader (CSV)
 
-The dataset loader is used to load the dataset into a Ragas dataset object. More information on Dataset can be found in [Datasets - Core Concepts](../core_concepts/datasets.md).
+The dataset loader is used to load the dataset into a Ragas dataset object. More information on datasets can be found in [Core Concepts - Evaluation Dataset](../../concepts/components/eval_dataset.md).
 
 ```python
 # examples/iterate_prompt/evals.py
