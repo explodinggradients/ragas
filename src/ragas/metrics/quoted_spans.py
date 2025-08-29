@@ -13,7 +13,6 @@ matched and total quoted spans.  It performs light normalization by collapsing
 whitespace and lower‑casing strings.  You can adjust the minimum length of a
 quoted span and choose to disable case folding if desired.
 """
-
 from __future__ import annotations
 
 import re
@@ -21,7 +20,7 @@ from typing import Dict, Sequence
 
 # Regular expression to extract both straight and curly quoted spans.  Matches
 # pairs of quotes and captures the inner text.
-_QUOTE_RE = re.compile(r"[\"“”‘’`´](.*?)[\"“”‘’`´]")
+_QUOTE_RE = re.compile(r"[\"""''`´](.*?)[\"""''`´]")
 
 
 def _normalize(text: str) -> str:
