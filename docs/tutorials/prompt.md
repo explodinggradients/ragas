@@ -14,7 +14,7 @@ We will start by testing a simple prompt that classifies movie reviews as positi
 First, make sure you have installed ragas examples and setup your OpenAI API key:
 
 ```bash
-pip install ragas_experimental[examples]
+pip install ragas[examples]
 export OPENAI_API_KEY = "your_openai_api_key"
 ```
 
@@ -69,7 +69,7 @@ async def run_experiment(row):
     experiment_view = {
         **row,
         "response":response,
-        "score":score.result,
+        "score":score.value,
     }
     return experiment_view
 ```
@@ -92,7 +92,7 @@ async def run_experiment(row, model):
     experiment_view = {
         **row,
         "response": response,
-        "score": score.result,
+        "score": score.value,
     }
     return experiment_view
 
