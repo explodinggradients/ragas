@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+import warnings
 from dataclasses import dataclass, field
 from datetime import datetime
 from uuid import uuid4
@@ -22,6 +23,10 @@ from ragas.sdk import get_app_url, upload_packet
 class TestsetSample(BaseSample):
     """
     Represents a sample in a test set.
+
+    .. deprecated::
+        TestsetSample is deprecated and will be removed in a future version.
+        Testset generation functionality will no longer be supported.
 
     Attributes
     ----------
@@ -50,6 +55,10 @@ class Testset(RagasDataset[TestsetSample]):
     """
     Represents a test set containing multiple test samples.
 
+    .. deprecated::
+        Testset is deprecated and will be removed in a future version.
+        Testset generation functionality will no longer be supported.
+
     Attributes
     ----------
     samples : List[TestsetSample]
@@ -59,6 +68,15 @@ class Testset(RagasDataset[TestsetSample]):
     samples: t.List[TestsetSample]
     run_id: str = field(default_factory=lambda: str(uuid4()), repr=False, compare=False)
     cost_cb: t.Optional[CostCallbackHandler] = field(default=None, repr=False)
+
+    def __post_init__(self):
+        warnings.warn(
+            "Testset is deprecated and will be removed in a future version. "
+            "Testset generation functionality will no longer be supported. "
+            "Please consider using alternative tools for synthetic test data generation.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
     def to_evaluation_dataset(self) -> EvaluationDataset:
         """
