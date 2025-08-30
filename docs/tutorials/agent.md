@@ -60,18 +60,18 @@ from ragas import experiment
 
 @experiment()
 async def run_experiment(row):
-    question = row["question"]
-    expected_answer = row["answer"]
+    expression = row["expression"]
+    expected_result = row["expected"]
 
     # Get the model's prediction
-    prediction = math_agent.solve(question)
+    prediction = math_agent.solve(expression)
 
     # Calculate the correctness metric
-    correctness = correctness_metric.score(prediction=prediction.get("result"), actual=expected_answer)
+    correctness = correctness_metric.score(prediction=prediction.get("result"), actual=expected_result)
 
     return {
-        "question": question,
-        "expected_answer": expected_answer,
+        "expression": expression,
+        "expected_result": expected_result,
         "prediction": prediction.get("result"),
         "log_file": prediction.get("log_file"),
         "correctness": correctness.value
