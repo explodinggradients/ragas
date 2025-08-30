@@ -56,7 +56,7 @@ Ragas is a library that provides tools to supercharge the evaluation of Large La
 
 <div class="toggle-list"><span class="arrow">→</span> How can I make evaluation results more explainable?</div>
 <div style="display: none;">
-    The best way is to trace and log your evaluation, then inspect the results using LLM traces. You can follow a detailed example of this process <a href="/howtos/customizations/metrics/tracing/">here</a>.
+    The best way is to trace and log your evaluation, then inspect the results using LLM traces. You can follow a detailed example of this process <a href="https://docs.ragas.io/en/stable/howtos/customizations/metrics/tracing/">here</a>.
 </div>
 
 <script>
