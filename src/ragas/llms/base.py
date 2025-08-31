@@ -647,8 +647,8 @@ def instructor_llm_factory(
         # Cohere
         llm = instructor_llm_factory("cohere", "command-r-plus", client=cohere_client)
 
-        # Gemini
-        llm = instructor_llm_factory("gemini", "gemini-pro", client=gemini_client)
+        # Google
+        llm = instructor_llm_factory(provider="google", model="gemini-2.0-flash", client=google_client)
 
         # LiteLLM (supports 100+ models)
         llm = instructor_llm_factory("litellm", "gpt-4", client=litellm_client)
@@ -681,14 +681,14 @@ def instructor_llm_factory(
             return instructor.from_anthropic(client)
         elif provider_lower == "cohere":
             return instructor.from_cohere(client)
-        elif provider_lower == "gemini":
-            return instructor.from_gemini(client)
+        elif provider_lower == "google":
+            return instructor.from_genai(client)
         elif provider_lower == "litellm":
             return instructor.from_litellm(client)
         else:
             raise ValueError(
                 f"Unsupported provider: {provider}. "
-                f"Supported providers: openai, anthropic, cohere, gemini, litellm"
+                f"Supported providers: openai, anthropic, cohere, google, litellm"
             )
 
     instructor_patched_client = _initialize_client(provider=provider, client=client)

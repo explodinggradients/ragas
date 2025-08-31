@@ -172,7 +172,7 @@ def test_sync_client_agenerate_error(mock_sync_client, monkeypatch):
 
 def test_provider_support():
     """Test that all expected providers are supported."""
-    supported_providers = ["openai", "anthropic", "cohere", "gemini", "litellm"]
+    supported_providers = ["openai", "anthropic", "cohere", "google", "litellm"]
 
     for provider in supported_providers:
         mock_client = Mock()
