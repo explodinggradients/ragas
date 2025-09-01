@@ -6,31 +6,25 @@ license = {file = "LICENSE"}
 dependencies = [
     # Core dependencies
     "numpy",
-    "datasets",
+    "datasets>=4.0.0",
     "tiktoken",
     "pydantic>=2.0.0",
     "nest-asyncio",
     "appdirs",
     "diskcache>=5.6.3",
-    
+    "typer",
+    "rich",
+    "openai>=1.0.0",
+    "tqdm",
+    "instructor",
+    "gitpython",
+    "pillow>=10.4.0",
+
     # LangChain ecosystem
     "langchain",
     "langchain-core",
     "langchain-community",
     "langchain_openai",
-    
-    # CLI dependencies
-    "typer",
-    "rich",
-    
-    # LLM providers
-    "openai>=1.0.0",
-    
-    # Experimental features
-    "tqdm",
-    "instructor",
-    "gitpython",
-    "pillow>=10.4.0",
 ]
 dynamic = ["version", "readme"]
 
@@ -55,8 +49,7 @@ all = [
     "r2r"
 ]
 
-# Specific integrations
-examples = ["openai>=1.0.0"]
+# Specific integrations  
 tracing = ["langfuse>=3.2.4", "mlflow>=3.1.4"]
 gdrive = [
     "google-api-python-client>=2.178.0",
@@ -64,6 +57,18 @@ gdrive = [
     "google-auth-oauthlib>=1.2.2"
 ]
 ai-frameworks = ["haystack-ai"]
+
+# Minimal dev dependencies for fast development setup (used by make install-minimal)
+dev-minimal = [
+    "ruff",
+    "pyright>=1.1.403",
+    "pre-commit>=4.3.0",
+    "pytest",
+    "pytest-xdist[psutil]",
+    "pytest-asyncio",
+    "nbmake",
+    "build>=1.3.0",
+]
 
 test = []
 [project.entry-points."ragas.backends"]
@@ -76,7 +81,7 @@ test = []
 ragas = "ragas.cli:app"
 
 [tool.setuptools]
-package-dir = {"" = "ragas/src"}
+package-dir = {"" = "src"}
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/markdown"}
@@ -104,8 +109,7 @@ docstring-code-format = false
 preview = false
 
 [tool.pyright]
-include = ["ragas/src/ragas"]
-exclude = ["ragas/src/ragas/experimental", "ragas/src/ragas/_analytics.py", "ragas/src/ragas/testset", "ragas/src/ragas/optimizers", "ragas/src/ragas/metrics"]
+include = ["src/ragas"]
 excludeTypeshedPaths = ["@types/*"]
 pythonVersion = "3.9"
 pythonPlatform = "All"
@@ -122,31 +126,40 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 # Path to version file relative to this pyproject.toml
-version_file = "ragas/src/ragas/_version.py"
+version_file = "src/ragas/_version.py"
+
+# UV Workspace Configuration
+[tool.uv.workspace]
+members = [".", "examples"]
+
+# Workspace dependency sources
+[tool.uv.sources]
+ragas-examples = { workspace = true }
 
 [tool.pytest.ini_options]
 addopts = "-n 0"
 asyncio_default_fixture_loop_scope = "function"
-testpaths = ["ragas/tests"]
-markers = [
-    "experimental_ci: Set of tests that will be run as part of Experimental CI",
-    "e2e: End-to-End tests for Experimental",
-]
+testpaths = ["tests"]
 
 [dependency-groups]
+# Full dev dependencies with all features (used by make install)
 dev = [
+    # Core dev tools (shared with minimal)
     "ruff",
     "pyright>=1.1.403",
-    "pre-commit>=4.3.0",
+    "pre-commit>=4.3.0", 
     "pytest",
     "pytest-xdist[psutil]",
     "pytest-asyncio",
+    "build>=1.3.0",
+    # Additional tools for full dev
     "nbmake",
     "notebook",
+    "unstructured[md]",
     "arize-phoenix>=6.1.0",
     "openinference-instrumentation-langchain>=0.1.29",
+    # Include all optional features
     "ragas[all,tracing,gdrive,ai-frameworks]",
-    "build>=1.3.0",
 ]
 docs = [
     "mkdocs>=1.6.1",

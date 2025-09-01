@@ -59,7 +59,7 @@ Don't have a test dataset ready? We also do production-aligned test set generati
 
 ## :shield: Installation
 
-Pypi: 
+Pypi:
 
 ```bash
 pip install ragas
@@ -94,19 +94,15 @@ Find the complete [Quickstart Guide](https://docs.ragas.io/en/latest/getstarted/
 
 ## Want help in improving your AI application using evals?
 
-In the past 2 years, we have seen and helped improve many AI applications using evals. 
+In the past 2 years, we have seen and helped improve many AI applications using evals.
 
-We are compressing this knowledge into a product to replace vibe checks with eval loops so that you can focus on building great AI applications. 
+We are compressing this knowledge into a product to replace vibe checks with eval loops so that you can focus on building great AI applications.
 
 If you want help with improving and scaling up your AI application using evals.
 
-
 🔗 Book a [slot](https://bit.ly/3EBYq4J) or drop us a line: [founders@explodinggradients.com](mailto:founders@explodinggradients.com).
 
-
 ![](/docs/_static/ragas_app.gif)
-
-
 
 ## 🫂 Community
 
@@ -136,17 +132,19 @@ We welcome contributions from the community! Whether it's bug fixes, feature add
 5. Open a Pull Request
 
 ## 🔍 Open Analytics
+
 At Ragas, we believe in transparency. We collect minimal, anonymized usage data to improve our product and guide our development efforts.
 
 ✅ No personal or company-identifying information
 
-✅ Open-source data collection [code](./ragas/src/ragas/_analytics.py)
+✅ Open-source data collection [code](./src/ragas/_analytics.py)
 
 ✅ Publicly available aggregated [data](https://github.com/explodinggradients/ragas/issues/49)
 
 To opt-out, set the `RAGAS_DO_NOT_TRACK` environment variable to `true`.
 
 ### Cite Us
+
 ```
 @misc{ragas2024,
   author       = {ExplodingGradients},

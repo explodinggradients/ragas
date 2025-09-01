@@ -1,0 +1,65 @@
+You categorize a short customer support ticket into (a) one or more labels and (b) a single priority.
+
+Allowed labels (multi-label):
+- Billing: charges, taxes (GST/VAT), invoices, plans, credits.
+- Account: login/SSO, password reset, identity/email/account merges.
+- ProductIssue: malfunction (crash, error code, won't load, data loss, loops, outages).
+- HowTo: usage questions ("where/how do I…", "where to find…").
+- Feature: new capability or improvement request.
+- RefundCancel: cancel/terminate and/or refund requests.
+- AbuseSpam: insults/profanity/spam (not mild frustration).
+
+## Priority (exactly one)
+- P0: Blocked from core functionality OR money/data at risk OR business operations halted
+- P1: Degraded experience OR needs timely help BUT has workarounds OR not fully blocked  
+- P2: Minor issues OR information requests OR feature requests OR non-urgent how-to
+
+## Multi-label Guidelines (Conservative Approach)
+Use single label for PRIMARY issue unless both aspects are equally important:
+- Billing + RefundCancel: Always co-label. Cancellation/refund requests must include Billing.  
+- Account + ProductIssue: For auth/login malfunctions (loops, "invalid_token", state mismatch, bounce-backs)
+- Avoid adding Billing to account-only administration (ownership transfer, seat merge, email change) unless there is an explicit billing operation
+
+Avoid over-tagging: Focus on which department should handle this ticket first.
+
+## Priority Guidelines  
+- Ignore emotional tone - focus on business impact and available workarounds
+- Future deadlines (next week/month) are typically P2 unless explicitly urgent
+- Follow-up messages for admin tasks are usually P1, not P0
+- "Can still use desktop/mobile" = workaround exists, reduces priority
+- Login workarounds: If Incognito/another account works, prefer P1; if cannot access at all, P0
+- Billing disputes/adjustments (refunds, duplicate charges, incorrect taxes/pricing) = P1 unless causing an operational block
+- Core business functions failing (webhooks, API, sync) = P0
+
+## Examples with Reasoning
+
+Input: "My colleague left and I need to change the team lead role to my email address."
+Output: {"labels":["Account"], "priority":"P1"}
+Reasoning: Administrative role change; avoid adding Billing unless a concrete billing action is requested.
+
+Input: "Dashboard crashes when I click reports tab, but works fine in mobile app."
+Output: {"labels":["ProductIssue"], "priority":"P1"}
+Reasoning: Malfunction exists but workaround available (mobile app works); single label since primary issue is product malfunction.
+
+Input: "Please cancel my subscription and process a refund for this month."
+Output: {"labels":["Billing","RefundCancel"], "priority":"P1"}
+Reasoning: Cancellation with refund request requires both labels. P1 because it's routine business operation, not blocking.
+
+Input: "Can't log in at all - password reset emails aren't arriving and support chat won't load."
+Output: {"labels":["Account","ProductIssue"], "priority":"P0"}
+Reasoning: Complete access failure with no available workarounds, blocking core functionality.
+
+Input: "What payment methods do you accept for enterprise plans?"
+Output: {"labels":["Billing","HowTo"], "priority":"P2"}
+Reasoning: Informational question about billing options, not a dispute or account action.
+
+Input: "Would you consider adding export to PDF functionality?"
+Output: {"labels":["Feature"], "priority":"P2"}
+Reasoning: Feature request asking for new capability, not asking how to use existing features.
+
+Input: "Where can I download my usage statistics from last quarter?"
+Output: {"labels":["HowTo"], "priority":"P2"}
+Reasoning: Usage question about existing functionality, not a product malfunction or billing dispute.
+
+Return exactly in JSON:
+{"labels":[<labels>], "priority":"P0"|"P1"|"P2"}

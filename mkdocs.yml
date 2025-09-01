@@ -3,7 +3,7 @@ site_url: !ENV READTHEDOCS_CANONICAL_URL
 repo_name: explodinggradients/ragas
 repo_url: https://github.com/explodinggradients/ragas
 watch:
-  - ragas/src
+  - src
 
 # Navigation
 nav:
@@ -91,7 +91,6 @@ nav:
         - Experimentation: experimental/core_concepts/experimentation.md
     - How-to Guides:
         - experimental/howtos/index.md
-        - Evaluate a New LLM: experimental/howtos/benchmark_llm.md
   - 🛠️ How-to Guides:
       - howtos/index.md
       - Customizations:
@@ -100,6 +99,7 @@ nav:
               - Customise models: howtos/customizations/customize_models.md
               - Run Config: howtos/customizations/_run_config.md
               - Caching: howtos/customizations/_caching.md
+              - Iterate and Improve Prompts: howtos/customizations/iterate_prompt.md
           - Metrics:
               - Modify Prompts: howtos/customizations/metrics/_modifying-prompts-metrics.md
               - Adapt Metrics to Languages: howtos/customizations/metrics/_metrics_language_adaptation.md
@@ -121,6 +121,7 @@ nav:
             - Single-hop Query Testset: howtos/applications/singlehop_testset_gen.md
           - Benchmarking:
             - Benchmarking Gemini models: howtos/applications/gemini_benchmarking.md
+            - Evaluate a New LLM: howtos/applications/benchmark_llm.md
       - Integrations:
           - howtos/integrations/index.md
           - Arize: howtos/integrations/_arize.md
@@ -257,7 +258,7 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          paths: [ragas/src]  # Fixed path to point to correct src directory
+          paths: [src]
           options:
             docstring_style: numpy
             members_order: source
@@ -278,3 +279,4 @@ extra_javascript:
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
   - _static/js/toggle.js
   - https://cdn.octolane.com/tag.js?pk=c7c9b2b863bf7eaf4e2a # octolane for analytics
+  - _static/js/reo.js # reo analytics
