@@ -19,7 +19,6 @@ dependencies = [
     "instructor",
     "gitpython",
     "pillow>=10.4.0",
-    "scipy",
 
     # LangChain ecosystem
     "langchain",
@@ -71,7 +70,11 @@ dev-minimal = [
     "build>=1.3.0",
 ]
 
-test = []
+# Test only dependencies
+test = [
+    "scipy",
+]
+
 [project.entry-points."ragas.backends"]
 "local/csv" = "ragas.backends.local_csv:LocalCSVBackend"
 "local/jsonl" = "ragas.backends.local_jsonl:LocalJSONLBackend"
