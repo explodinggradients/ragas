@@ -1,4 +1,3 @@
-import asyncio
 import copy
 import math
 import random
@@ -257,7 +256,7 @@ def test__find_similar_embedding_pairs_jaccard(n_test_sets, max_len, threshold):
         nodes=[Node(type=NodeType.DOCUMENT, properties={"entities": s}) for s in sets]
     )
     builder = JaccardSimilarityBuilder(property_name="entities", threshold=threshold)
-    result = list(asyncio.run(builder._find_similar_embedding_pairs(kg)))
+    result = builder._find_similar_embedding_pairs(kg)
 
     assert len(result) == len(expected)
     for i, j, similarity_float in result:

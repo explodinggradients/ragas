@@ -20,9 +20,9 @@ class CosineSimilarityBuilder(RelationshipBuilder):
         j_norm = j / np.linalg.norm(j, axis=1, keepdims=True)
         return np.dot(i_norm, j_norm.T)
 
-    async def _find_similar_embedding_pairs(
+    def _find_similar_embedding_pairs(
         self, embeddings: np.ndarray, threshold: float, block_size: int = 1024
-    ) -> t.Set[t.Tuple[int, int, float]]:
+    ) -> t.List[t.Tuple[int, int, float]]:
         """Sharded computation of cosine similarity to find similar pairs."""
 
         def process_block(i: int, j: int) -> t.Set[t.Tuple[int, int, float]]:
@@ -45,7 +45,7 @@ class CosineSimilarityBuilder(RelationshipBuilder):
             for j in range(i, n_embeddings, block_size):
                 triplets.update(process_block(i, j))
 
-        return triplets
+        return list(triplets)
 
     def _validate_embedding_shapes(self, embeddings: t.List[t.Any]):
         if not embeddings:
@@ -66,7 +66,7 @@ class CosineSimilarityBuilder(RelationshipBuilder):
                 raise ValueError(f"Node {node.id} has no {self.property_name}")
             embeddings.append(embedding)
         self._validate_embedding_shapes(embeddings)
-        similar_pairs = await self._find_similar_embedding_pairs(
+        similar_pairs = self._find_similar_embedding_pairs(
             np.array(embeddings), self.threshold, self.block_size
         )
         return [
@@ -95,7 +95,7 @@ class CosineSimilarityBuilder(RelationshipBuilder):
         self._validate_embedding_shapes(embeddings)
 
         async def find_and_add_relationships():
-            similar_pairs = await self._find_similar_embedding_pairs(
+            similar_pairs = self._find_similar_embedding_pairs(
                 np.array(embeddings), self.threshold, self.block_size
             )
             for i, j, similarity_float in similar_pairs:
@@ -140,7 +140,7 @@ class SummaryCosineSimilarityBuilder(CosineSimilarityBuilder):
         ]
         if not embeddings:
             raise ValueError(f"No nodes have a valid {self.property_name}")
-        similar_pairs = await self._find_similar_embedding_pairs(
+        similar_pairs = self._find_similar_embedding_pairs(
             np.array(embeddings), self.threshold, self.block_size
         )
         return [

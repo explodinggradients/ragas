@@ -20,9 +20,9 @@ class JaccardSimilarityBuilder(RelationshipBuilder):
         union = len(set1.union(set2))
         return intersection / union if union > 0 else 0.0
 
-    async def _find_similar_embedding_pairs(
+    def _find_similar_embedding_pairs(
         self, kg: KnowledgeGraph
-    ) -> t.Set[t.Tuple[int, int, float]]:
+    ) -> t.List[t.Tuple[int, int, float]]:
         """
         Finds all node index pairs with Jaccard similarity above the threshold.
         Returns a set of (i, j, similarity) tuples.
@@ -42,10 +42,10 @@ class JaccardSimilarityBuilder(RelationshipBuilder):
             similarity = self._jaccard_similarity(set(items1), set(items2))
             if similarity >= self.threshold:
                 similar_pairs.add((i, j, similarity))
-        return similar_pairs
+        return list(similar_pairs)
 
     async def transform(self, kg: KnowledgeGraph) -> t.List[Relationship]:
-        similar_pairs = await self._find_similar_embedding_pairs(kg)
+        similar_pairs = self._find_similar_embedding_pairs(kg)
         return [
             Relationship(
                 source=kg.nodes[i],
@@ -63,7 +63,7 @@ class JaccardSimilarityBuilder(RelationshipBuilder):
         """
 
         async def find_and_add_relationships():
-            similar_pairs = await self._find_similar_embedding_pairs(kg)
+            similar_pairs = self._find_similar_embedding_pairs(kg)
             for i, j, similarity_float in similar_pairs:
                 rel = Relationship(
                     source=kg.nodes[i],
