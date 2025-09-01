@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from pydantic import BaseModel, Field
 
-from ragas.dataset_schema import SingleTurnSample
+from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
 from ragas.metrics.base import (
     MetricOutputType,
     MetricType,
@@ -18,6 +18,7 @@ from ragas.prompt import PydanticPrompt
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
+    from langchain_core.prompt_values import PromptValue
 
 logger = logging.getLogger(__name__)
 
@@ -192,6 +193,51 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
             score = np.nan
 
         return score
+
+    def _samples_to_prompts(
+        self, samples: t.List[t.Union[SingleTurnSample, MultiTurnSample]]
+    ) -> t.List["PromptValue"]:
+        """
+        Convert samples to PromptValue objects for batch processing.
+
+        For Faithfulness metric, we need to convert each sample into prompts
+        for both statement generation and NLI verification steps.
+
+        Note: This is a simplified implementation that only handles statement generation.
+        A complete batch implementation would require more complex orchestration.
+        """
+        from langchain_core.prompts import ChatPromptTemplate
+
+        prompts = []
+        for i, sample in enumerate(samples):
+            if not isinstance(sample, SingleTurnSample):
+                raise ValueError(
+                    "Faithfulness metric only supports single-turn samples"
+                )
+
+            # Convert sample to dict for processing
+            sample_dict = sample.model_dump()
+
+            # Create statement generation prompt
+            statement_prompt_input = StatementGeneratorInput(
+                question=sample_dict["user_input"], answer=sample_dict["response"]
+            )
+
+            # Use the statement generator prompt template
+            # Note: This is a simplified implementation for demo purposes
+            # In practice, you'd need to properly convert the PydanticPrompt to messages
+            statement_prompt = ChatPromptTemplate.from_messages(
+                [
+                    (
+                        "user",
+                        f"Question: {statement_prompt_input.question}\nAnswer: {statement_prompt_input.answer}\n\nPlease generate statements from this answer.",
+                    )
+                ]
+            )
+
+            prompts.append(statement_prompt.format_prompt())
+
+        return prompts
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks

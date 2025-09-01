@@ -30,6 +30,8 @@ if t.TYPE_CHECKING:
     from langchain_core.prompt_values import PromptValue
     from llama_index.core.base.llms.base import BaseLLM
 
+    from ragas.llms.batch_api import BatchJob, BatchRequest, OpenAIBatchAPI
+
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +61,7 @@ class BaseRagasLLM(ABC):
     run_config: RunConfig = field(default_factory=RunConfig, repr=False)
     multiple_completion_supported: bool = field(default=False, repr=False)
     cache: t.Optional[CacheInterface] = field(default=None, repr=False)
+    batch_api_support: bool = field(default=False, repr=False)
 
     def __post_init__(self):
         # If a cache_backend is provided, wrap the implementation methods at construction time.
@@ -127,6 +130,32 @@ class BaseRagasLLM(ABC):
             raise LLMDidNotFinishException()
         return result
 
+    def supports_batch_api(self) -> bool:
+        """Check if this LLM supports batch API operations."""
+        return self.batch_api_support
+
+    def create_batch_job(
+        self,
+        prompts: t.List[PromptValue],
+        n: int = 1,
+        temperature: t.Optional[float] = None,
+        stop: t.Optional[t.List[str]] = None,
+        metadata: t.Optional[t.Dict[str, str]] = None,
+    ) -> "BatchJob":
+        """Create a batch job for multiple prompts (sync version)."""
+        raise NotImplementedError("Batch API not implemented for this LLM")
+
+    async def acreate_batch_job(
+        self,
+        prompts: t.List[PromptValue],
+        n: int = 1,
+        temperature: t.Optional[float] = None,
+        stop: t.Optional[t.List[str]] = None,
+        metadata: t.Optional[t.Dict[str, str]] = None,
+    ) -> "BatchJob":
+        """Create a batch job for multiple prompts (async version)."""
+        raise NotImplementedError("Batch API not implemented for this LLM")
+
 
 class LangchainLLMWrapper(BaseRagasLLM):
     """
@@ -152,6 +181,12 @@ class LangchainLLMWrapper(BaseRagasLLM):
         self.is_finished_parser = is_finished_parser
         # Certain LLMs (e.g., OpenAI o1 series) do not support temperature
         self.bypass_temperature = bypass_temperature
+
+        # Check if batch API is supported (OpenAI models only for now)
+        self.batch_api_support = isinstance(
+            langchain_llm, (ChatOpenAI, AzureChatOpenAI)
+        )
+        self._batch_api: t.Optional["OpenAIBatchAPI"] = None
 
     def is_finished(self, response: LLMResult) -> bool:
         """
@@ -323,6 +358,121 @@ class LangchainLLMWrapper(BaseRagasLLM):
                 )
             self.langchain_llm.request_timeout = run_config.timeout
             self.run_config.exception_types = RateLimitError
+
+    def _get_batch_api(self) -> "OpenAIBatchAPI":
+        """Get or create OpenAI Batch API instance."""
+        if not self.supports_batch_api():
+            raise ValueError("Batch API not supported for this LLM")
+
+        if self._batch_api is None:
+            # Get OpenAI client from the LangChain model
+            openai_client = None
+            if isinstance(self.langchain_llm, ChatOpenAI):
+                openai_client = self.langchain_llm.client
+            elif isinstance(self.langchain_llm, AzureChatOpenAI):
+                openai_client = self.langchain_llm.client
+
+            if openai_client is None:
+                raise ValueError("Could not extract OpenAI client from LangChain model")
+
+            from ragas.llms.batch_api import create_batch_api
+
+            self._batch_api = create_batch_api(openai_client)
+
+        return self._batch_api
+
+    def create_batch_job(
+        self,
+        prompts: t.List[PromptValue],
+        n: int = 1,
+        temperature: t.Optional[float] = None,
+        stop: t.Optional[t.List[str]] = None,
+        metadata: t.Optional[t.Dict[str, str]] = None,
+    ) -> "BatchJob":
+        """Create a batch job for multiple prompts (sync version)."""
+        if not self.supports_batch_api():
+            raise ValueError("Batch API not supported for this LLM")
+
+        batch_api = self._get_batch_api()
+
+        # Convert PromptValue to batch requests
+        batch_requests = self._create_batch_requests_from_prompts(
+            prompts, n, temperature, stop
+        )
+
+        return batch_api.create_batch(requests=batch_requests, metadata=metadata)
+
+    async def acreate_batch_job(
+        self,
+        prompts: t.List[PromptValue],
+        n: int = 1,
+        temperature: t.Optional[float] = None,
+        stop: t.Optional[t.List[str]] = None,
+        metadata: t.Optional[t.Dict[str, str]] = None,
+    ) -> "BatchJob":
+        """Create a batch job for multiple prompts (async version)."""
+        if not self.supports_batch_api():
+            raise ValueError("Batch API not supported for this LLM")
+
+        batch_api = self._get_batch_api()
+
+        # Convert PromptValue to batch requests
+        batch_requests = self._create_batch_requests_from_prompts(
+            prompts, n, temperature, stop
+        )
+
+        return await batch_api.acreate_batch(requests=batch_requests, metadata=metadata)
+
+    def _create_batch_requests_from_prompts(
+        self,
+        prompts: t.List[PromptValue],
+        n: int = 1,
+        temperature: t.Optional[float] = None,
+        stop: t.Optional[t.List[str]] = None,
+    ) -> t.List["BatchRequest"]:
+        """Convert PromptValue objects to batch requests."""
+        from ragas.llms.batch_api import BatchEndpoint, BatchRequest
+
+        if temperature is None:
+            temperature = self.get_temperature(n)
+
+        # Get model name
+        model_name = getattr(self.langchain_llm, "model_name", "gpt-3.5-turbo")
+
+        requests = []
+        for i, prompt in enumerate(prompts):
+            # Convert PromptValue to messages format
+            if hasattr(prompt, "to_messages"):
+                messages = [
+                    {"role": msg.type, "content": msg.content}
+                    for msg in prompt.to_messages()
+                ]
+            else:
+                # Fallback for string prompts
+                messages = [{"role": "user", "content": str(prompt)}]
+
+            body = {
+                "model": model_name,
+                "messages": messages,
+                "n": n,
+                "temperature": temperature,
+            }
+
+            if stop is not None:
+                body["stop"] = stop
+
+            # Remove unsupported parameters for certain models
+            if self.bypass_temperature:
+                body.pop("temperature", None)
+
+            request = BatchRequest(
+                custom_id=f"ragas-batch-{i}",
+                url=BatchEndpoint.CHAT_COMPLETIONS.value,
+                body=body,
+            )
+            requests.append(request)
+
+        return requests
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(langchain_llm={self.langchain_llm.__class__.__name__}(...))"

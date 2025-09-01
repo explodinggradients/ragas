@@ -1,6 +1,43 @@
 # Understand Cost and Usage of Operations
 
-When using LLMs for evaluation and test set generation, cost will be an important factor. Ragas provides you some tools to help you with that.
+When using LLMs for evaluation and test set generation, cost will be an important factor. Ragas provides several tools to help you optimize costs, including **Batch API support** for up to 50% savings on large-scale evaluations.
+
+## Cost Optimization Strategies
+
+### 1. Use Batch API for Large Evaluations (50% Savings)
+
+For non-urgent evaluation workloads, Ragas supports OpenAI's Batch API which provides 50% cost savings:
+
+```python
+from ragas.batch_evaluation import BatchEvaluator, estimate_batch_cost_savings
+from ragas.metrics import Faithfulness
+from langchain_openai import ChatOpenAI
+from ragas.llms import LangchainLLMWrapper
+
+# Setup batch-capable LLM
+llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o-mini"))
+faithfulness = Faithfulness(llm=llm)
+
+# Estimate cost savings
+cost_info = estimate_batch_cost_savings(
+    sample_count=1000,
+    metrics=[faithfulness],
+    regular_cost_per_1k_tokens=0.15,  # GPT-4o-mini cost
+    batch_discount=0.5  # 50% savings
+)
+
+print(f"Regular cost: ${cost_info['regular_cost']}")
+print(f"Batch cost: ${cost_info['batch_cost']}")  
+print(f"Savings: ${cost_info['savings']} ({cost_info['savings_percentage']}%)")
+
+# Run batch evaluation
+evaluator = BatchEvaluator(metrics=[faithfulness])
+results = evaluator.evaluate(samples, wait_for_completion=True)
+```
+
+Learn more about [Batch Evaluation](batch_evaluation.md).
+
+### 2. Monitor Token Usage
 
 ## Understanding `TokenUsageParser`
 

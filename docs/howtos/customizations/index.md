@@ -14,6 +14,7 @@ How to customize various aspects of Ragas to suit your needs.
 - [Adapt metrics to target language](./metrics/_metrics_language_adaptation.md)
 - [Trace evaluations with Observability tools](metrics/tracing.md)
 - [Train and align metric](./metrics/train_your_own_metric.md)
+- [Batch evaluation for cost optimization](./metrics/batch_evaluation.md) 🆕
 
 
 ## Testset Generation

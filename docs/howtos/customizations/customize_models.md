@@ -9,6 +9,9 @@ Ragas may use a LLM and or Embedding for evaluation and synthetic data generatio
 
 - If you are using Langchain, you can pass the Langchain LLM and Embeddings directly and Ragas will wrap it with `LangchainLLMWrapper` or `LangchainEmbeddingsWrapper` as needed.
 
+!!! tip "Batch API Support"
+    OpenAI models (ChatOpenAI, AzureChatOpenAI) automatically support [Batch Evaluation](../metrics/batch_evaluation.md) for up to 50% cost savings on large-scale evaluations. The `LangchainLLMWrapper` automatically detects batch support and enables cost-optimized evaluation workflows.
+
 ## Examples
 
 - [Azure OpenAI](#azure-openai)
