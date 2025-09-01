@@ -262,9 +262,9 @@ def test__find_similar_embedding_pairs_jaccard(n_test_sets, max_len, threshold):
     assert len(result) == len(expected)
     for i, j, similarity_float in result:
         assert i < j, "Pairs should be ordered (i < j)"
-        assert (
-            similarity_float >= threshold
-        ), f"Similarity {similarity_float} should be >= {threshold}"
+        assert similarity_float >= threshold, (
+            f"Similarity {similarity_float} should be >= {threshold}"
+        )
         for x, y, expected_similarity in expected:
             if i == x and j == y:
                 assert similarity_float == pytest.approx(expected_similarity)
@@ -277,9 +277,9 @@ class TestJaccardSimilarityBuilder:
         builder = JaccardSimilarityBuilder(property_name="entities", threshold=0.1)
         relationships = await builder.transform(copy.deepcopy(simple_kg))
         for r in relationships:
-            assert (
-                r.source.id != r.target.id
-            ), "Self-relationships should not be created"
+            assert r.source.id != r.target.id, (
+                "Self-relationships should not be created"
+            )
 
     @pytest.mark.asyncio
     async def test_no_duplicate_relationships(self, simple_kg):
@@ -307,9 +307,9 @@ class TestJaccardSimilarityBuilder:
         kg = KnowledgeGraph(nodes=[node1, node2])
         builder = JaccardSimilarityBuilder(property_name="entities", threshold=0.1)
         relationships = await builder.transform(kg)
-        assert (
-            len(relationships) == 0
-        ), "No relationships should be created below threshold"
+        assert len(relationships) == 0, (
+            "No relationships should be created below threshold"
+        )
 
     @pytest.mark.asyncio
     async def test_all_above_threshold(self):
@@ -379,9 +379,9 @@ class TestJaccardSimilarityBuilder:
         # Should mutate kg in-place
         apply_transforms(kg, builder, run_config=RunConfig(max_workers=2))
         # Check that relationships were added
-        assert any(
-            r.type == "jaccard_similarity" for r in kg.relationships
-        ), "No jaccard_similarity relationships found after apply_transforms"
+        assert any(r.type == "jaccard_similarity" for r in kg.relationships), (
+            "No jaccard_similarity relationships found after apply_transforms"
+        )
         # Check that expected relationship exists
         assert any(
             str(r.source.id) == "f353e5c2-e432-4d1e-84a8-d750c93d4edf"
