@@ -201,10 +201,10 @@ def test__find_similar_embedding_pairs(n_test_embeddings, threshold, block_size)
     )
     expected = cosine_similarity_pair(embeddings, threshold)
 
-    builder = CosineSimilarityBuilder(property_name="embedding", threshold=threshold)
-    result = builder._find_similar_embedding_pairs(
-        embeddings, threshold=threshold, block_size=block_size
+    builder = CosineSimilarityBuilder(
+        property_name="embedding", threshold=threshold, block_size=block_size
     )
+    result = builder._find_similar_embedding_pairs(embeddings, threshold=threshold)
 
     assert len(result) == len(expected)
 

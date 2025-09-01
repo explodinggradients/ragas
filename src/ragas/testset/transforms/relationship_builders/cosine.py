@@ -21,13 +21,13 @@ class CosineSimilarityBuilder(RelationshipBuilder):
         return np.dot(i_norm, j_norm.T)
 
     def _find_similar_embedding_pairs(
-        self, embeddings: np.ndarray, threshold: float, block_size: int = 1024
+        self, embeddings: np.ndarray, threshold: float
     ) -> t.List[t.Tuple[int, int, float]]:
         """Sharded computation of cosine similarity to find similar pairs."""
 
         def process_block(i: int, j: int) -> t.Set[t.Tuple[int, int, float]]:
-            end_i = min(i + block_size, n_embeddings)
-            end_j = min(j + block_size, n_embeddings)
+            end_i = min(i + self.block_size, n_embeddings)
+            end_j = min(j + self.block_size, n_embeddings)
             block = self._block_cosine_similarity(
                 embeddings[i:end_i, :], embeddings[j:end_j, :]
             )
@@ -41,8 +41,8 @@ class CosineSimilarityBuilder(RelationshipBuilder):
         n_embeddings, _dimension = embeddings.shape
         triplets = set()
 
-        for i in range(0, n_embeddings, block_size):
-            for j in range(i, n_embeddings, block_size):
+        for i in range(0, n_embeddings, self.block_size):
+            for j in range(i, n_embeddings, self.block_size):
                 triplets.update(process_block(i, j))
 
         return list(triplets)
@@ -67,7 +67,7 @@ class CosineSimilarityBuilder(RelationshipBuilder):
             embeddings.append(embedding)
         self._validate_embedding_shapes(embeddings)
         similar_pairs = self._find_similar_embedding_pairs(
-            np.array(embeddings), self.threshold, self.block_size
+            np.array(embeddings), self.threshold
         )
         return [
             Relationship(
@@ -96,7 +96,7 @@ class CosineSimilarityBuilder(RelationshipBuilder):
 
         async def find_and_add_relationships():
             similar_pairs = self._find_similar_embedding_pairs(
-                np.array(embeddings), self.threshold, self.block_size
+                np.array(embeddings), self.threshold
             )
             for i, j, similarity_float in similar_pairs:
                 rel = Relationship(
@@ -141,7 +141,7 @@ class SummaryCosineSimilarityBuilder(CosineSimilarityBuilder):
         if not embeddings:
             raise ValueError(f"No nodes have a valid {self.property_name}")
         similar_pairs = self._find_similar_embedding_pairs(
-            np.array(embeddings), self.threshold, self.block_size
+            np.array(embeddings), self.threshold
         )
         return [
             Relationship(
