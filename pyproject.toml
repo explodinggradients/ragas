@@ -49,7 +49,7 @@ all = [
     "r2r"
 ]
 
-# Specific integrations  
+# Specific integrations
 tracing = ["langfuse>=3.2.4", "mlflow>=3.1.4"]
 gdrive = [
     "google-api-python-client>=2.178.0",
@@ -70,7 +70,11 @@ dev-minimal = [
     "build>=1.3.0",
 ]
 
-test = []
+# Test only dependencies
+test = [
+    "scipy",
+]
+
 [project.entry-points."ragas.backends"]
 "local/csv" = "ragas.backends.local_csv:LocalCSVBackend"
 "local/jsonl" = "ragas.backends.local_jsonl:LocalJSONLBackend"
@@ -147,7 +151,7 @@ dev = [
     # Core dev tools (shared with minimal)
     "ruff",
     "pyright>=1.1.403",
-    "pre-commit>=4.3.0", 
+    "pre-commit>=4.3.0",
     "pytest",
     "pytest-xdist[psutil]",
     "pytest-asyncio",
