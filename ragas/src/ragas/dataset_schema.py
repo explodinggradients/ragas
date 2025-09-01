@@ -9,24 +9,11 @@ from dataclasses import dataclass, field
 from uuid import UUID
 
 import numpy as np
-import requests
-from datasets import Dataset as HFDataset
 from pydantic import BaseModel, field_validator
 
-from ragas._version import __version__
-from ragas.callbacks import ChainRunEncoder, parse_run_traces
+from ragas.callbacks import parse_run_traces
 from ragas.cost import CostCallbackHandler
-from ragas.exceptions import UploadException
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
-from ragas.sdk import (
-    RAGAS_API_SOURCE,
-    build_evaluation_app_url,
-    check_api_response,
-    get_api_url,
-    get_app_token,
-    get_app_url,
-    upload_packet,
-)
 from ragas.utils import safe_nanmean
 
 if t.TYPE_CHECKING:
@@ -537,48 +524,6 @@ class EvaluationResult:
             cost_per_input_token, cost_per_output_token, per_model_costs
         )
 
-    def upload(
-        self,
-        verbose: bool = True,
-    ) -> str:
-        from datetime import datetime, timezone
-
-        timestamp = datetime.now(timezone.utc).isoformat()
-        root_trace = [
-            trace for trace in self.ragas_traces.values() if trace.parent_run_id is None
-        ][0]
-        packet = json.dumps(
-            {
-                "run_id": str(root_trace.run_id),
-                "created_at": timestamp,
-                "evaluation_run": [t.model_dump() for t in self.ragas_traces.values()],
-            },
-            cls=ChainRunEncoder,
-        )
-        response = upload_packet(
-            path="/alignment/evaluation",
-            data_json_string=packet,
-        )
-
-        # check status codes
-        app_url = get_app_url()
-        evaluation_app_url = build_evaluation_app_url(app_url, root_trace.run_id)
-        if response.status_code == 409:
-            # this evalution already exists
-            if verbose:
-                print(f"Evaluation run already exists. View at {evaluation_app_url}")
-            return evaluation_app_url
-        elif response.status_code != 200:
-            # any other error
-            raise UploadException(
-                status_code=response.status_code,
-                message=f"Failed to upload results: {response.text}",
-            )
-
-        if verbose:
-            print(f"Evaluation results uploaded! View at {evaluation_app_url}")
-        return evaluation_app_url
-
 
 class PromptAnnotation(BaseModel):
     prompt_input: t.Dict[str, t.Any]
@@ -640,63 +585,6 @@ class MetricAnnotation(BaseModel):
     def from_json(cls, path: str, metric_name: t.Optional[str]) -> "MetricAnnotation":
         """Load annotations from a JSON file"""
         dataset = json.load(open(path))
-        return cls._process_dataset(dataset, metric_name)
-
-    @classmethod
-    def from_app(
-        cls,
-        run_id: str,
-        metric_name: t.Optional[str] = None,
-    ) -> "MetricAnnotation":
-        """
-        Fetch annotations from a URL using either evaluation result or run_id
-
-        Parameters
-        ----------
-        run_id : str
-            Direct run ID to fetch annotations
-        metric_name : str, optional
-            Name of the specific metric to filter
-
-        Returns
-        -------
-        MetricAnnotation
-            Annotation data from the API
-
-        Raises
-        ------
-        ValueError
-            If run_id is not provided
-        """
-        if run_id is None:
-            raise ValueError("run_id must be provided")
-
-        endpoint = f"/api/v1/alignment/evaluation/annotation/{run_id}"
-
-        app_token = get_app_token()
-        base_url = get_api_url()
-        app_url = get_app_url()
-
-        response = requests.get(
-            f"{base_url}{endpoint}",
-            headers={
-                "Content-Type": "application/json",
-                "x-app-token": app_token,
-                "x-source": RAGAS_API_SOURCE,
-                "x-app-version": __version__,
-            },
-        )
-
-        check_api_response(response)
-        dataset = response.json()["data"]
-
-        if not dataset:
-            evaluation_url = build_evaluation_app_url(app_url, run_id)
-            raise ValueError(
-                f"No annotations found. Please annotate the Evaluation first then run this method. "
-                f"\nNote: you can annotate the evaluations using the Ragas app by going to {evaluation_url}"
-            )
-
         return cls._process_dataset(dataset, metric_name)
 
     def __len__(self):
