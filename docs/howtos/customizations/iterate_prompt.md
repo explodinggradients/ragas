@@ -120,7 +120,7 @@ def priority_accuracy(prediction: str, expected_priority: str):
 
 ### The experiment function
 
-The experiment function is used to run the prompt on a dataset. More information on experimentation can be found in [Core Concepts - Experimentation](../../experimental/core_concepts/experimentation.md).
+The experiment function is used to run the prompt on a dataset. More information on experimentation can be found in [Core Concepts - Experimentation](../../concepts/experimentation.md).
 
 Notice that we are passing `prompt_file` as a parameter so that we can run experiments with different prompts. You can also pass other parameters to the experiment function like model, temperature, etc. and experiment with different configurations. It is recommended to change only 1 parameter at a time while doing experimentation.
 

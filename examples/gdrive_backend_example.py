@@ -7,7 +7,7 @@ This example shows how to:
 
 Prerequisites:
 1. Install Google Drive dependencies:
-   pip install "ragas_experimental[gdrive]"
+   pip install "ragas[gdrive]"
 
 2. Set up Google Drive API credentials:
    - Go to Google Cloud Console
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         print(f"Error: {e}")
         print("\nMake sure to:")
         print(
-            "1. Install required dependencies: pip install 'ragas_experimental[gdrive]'"
+            "1. Install required dependencies: pip install 'ragas[gdrive]'"
         )
         print("2. Set up Google Drive API credentials")
         print("3. Update the folder_id and credential paths in this example")

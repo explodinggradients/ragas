@@ -15,7 +15,7 @@ The Google Drive backend allows you to store Ragas datasets and experiments in G
 
 ```bash
 # Install with Google Drive dependencies
-pip install "ragas_experimental[gdrive]"
+pip install "ragas[gdrive]"
 ```
 
 ## Setup
@@ -72,131 +72,177 @@ class EvaluationRecord(BaseModel):
 dataset = Dataset(
     name="my_evaluation",
     backend="gdrive",
-    data_model=EvaluationRecord,
-    folder_id="your_google_drive_folder_id",
-    credentials_path="path/to/credentials.json"
+    config={
+        "folder_id": "your_google_drive_folder_id",
+        "service_account_file": "path/to/service-account.json"
+    }
 )
 
 # Add data
 record = EvaluationRecord(
-    question="What is AI?",
-    answer="Artificial Intelligence",
-    score=0.95
+    question="What is the capital of France?",
+    answer="Paris",
+    score=1.0
 )
-dataset.append(record)
+dataset.append(record.model_dump())
 
-# Save to Google Drive
-dataset.save()
-
-# Load from Google Drive
-dataset.load()
+# The data is now stored in Google Sheets within your Drive folder
 ```
 
-### Authentication Options
-
-#### Using Environment Variables
-
-```bash
-export GDRIVE_FOLDER_ID="your_folder_id"
-export GDRIVE_CREDENTIALS_PATH="path/to/credentials.json"
-# OR for service account:
-export GDRIVE_SERVICE_ACCOUNT_PATH="path/to/service_account.json"
-```
+### Service Account Authentication
 
 ```python
-# Environment variables will be used automatically
 dataset = Dataset(
-    name="my_evaluation",
+    name="my_evaluation", 
     backend="gdrive",
-    data_model=EvaluationRecord,
-    folder_id=os.getenv("GDRIVE_FOLDER_ID")
+    config={
+        "folder_id": "1ABC123def456GHI789jkl",
+        "service_account_file": "/path/to/service-account.json"
+    }
 )
 ```
 
-#### Using Service Account
+### OAuth Authentication
 
 ```python
 dataset = Dataset(
     name="my_evaluation",
-    backend="gdrive",
-    data_model=EvaluationRecord,
-    folder_id="your_folder_id",
-    service_account_path="path/to/service_account.json"
+    backend="gdrive", 
+    config={
+        "folder_id": "1ABC123def456GHI789jkl",
+        "credentials_file": "/path/to/credentials.json"
+    }
 )
 ```
 
-#### Custom Token Path
+### Loading Existing Data
 
 ```python
-dataset = Dataset(
+# Load an existing dataset
+dataset = Dataset.load(
     name="my_evaluation",
     backend="gdrive",
-    data_model=EvaluationRecord,
-    folder_id="your_folder_id",
-    credentials_path="path/to/credentials.json",
-    token_path="custom_token.json"
+    config={
+        "folder_id": "1ABC123def456GHI789jkl",
+        "service_account_file": "/path/to/service-account.json"
+    }
 )
+
+# Access the data
+for record in dataset:
+    print(f"Question: {record['question']}")
+    print(f"Answer: {record['answer']}")
+    print(f"Score: {record['score']}")
 ```
 
-## File Structure
+### Working with Experiments
 
-The backend creates the following structure in your Google Drive folder:
+```python
+# After running experiments, results are stored automatically
+from ragas import experiment
 
-```text
+@experiment()
+async def my_evaluation_experiment(row):
+    # Your evaluation logic here
+    response = await my_ai_system(row["question"])
+    
+    return {
+        **row,
+        "response": response,
+        "experiment_name": "baseline_v1"
+    }
+
+# Run experiment - results will be saved to Google Drive
+results = await my_evaluation_experiment.arun(dataset)
+```
+
+## Configuration Options
+
+### Required Configuration
+
+- `folder_id`: The Google Drive folder ID where data will be stored
+- Authentication (one of):
+  - `service_account_file`: Path to service account JSON file
+  - `credentials_file`: Path to OAuth credentials JSON file
+
+### Optional Configuration
+
+```python
+config = {
+    "folder_id": "your_folder_id",
+    "service_account_file": "service-account.json",
+    
+    # Optional settings
+    "credentials_file": None,  # Alternative to service_account_file
+    "token_file": "token.json",  # For OAuth token storage
+    "scopes": [  # Google API scopes (defaults shown)
+        "https://www.googleapis.com/auth/drive.file",
+        "https://www.googleapis.com/auth/spreadsheets"
+    ]
+}
+```
+
+## File Organization
+
+The backend automatically organizes your data in Google Drive:
+
+```
 Your Google Drive Folder/
 ├── datasets/
-│   ├── dataset1.gsheet
-│   ├── dataset2.gsheet
-│   └── ...
+│   ├── my_evaluation.csv (as Google Sheets)
+│   └── another_dataset.csv
 └── experiments/
-    ├── experiment1.gsheet
-    ├── experiment2.gsheet
-    └── ...
+    ├── 20231201-143022-baseline_v1.csv
+    ├── 20231201-144515-improved_model.csv
+    └── comparison_results.csv
 ```
 
-Each dataset/experiment is stored as a separate Google Sheet with:
+## Advanced Usage
 
-- Column headers matching your data model fields
-- Automatic type conversion for basic types (int, float, string)
-- JSON serialization for complex objects
+### Appending vs Overwriting
 
-## Environment Variables
+```python
+# Append to existing data (default)
+dataset.append(new_record)
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `GDRIVE_FOLDER_ID` | Google Drive folder ID | `1abc123...` |
-| `GDRIVE_CREDENTIALS_PATH` | Path to OAuth credentials JSON | `./credentials.json` |
-| `GDRIVE_SERVICE_ACCOUNT_PATH` | Path to service account JSON | `./service_account.json` |
-| `GDRIVE_TOKEN_PATH` | Path to store OAuth token | `./token.json` |
+# Overwrite all data
+dataset.clear()
+dataset.append(new_record)
+```
 
-## Best Practices
+### Custom Sheet Names
 
-### Security
+```python
+# Datasets are saved as: {name}.csv
+# Experiments are saved as: {timestamp}-{experiment_name}.csv
 
-- Never commit credential files to version control
-- Use environment variables for sensitive information
-- Regularly rotate service account keys
-- Use OAuth for development, service accounts for production
+dataset = Dataset(
+    name="custom_name",  # Creates "custom_name.csv" in Google Sheets
+    backend="gdrive",
+    config=config
+)
+```
 
-### Performance
+### Batch Operations
 
-- Google Sheets API has rate limits - avoid frequent saves with large datasets
-- Consider batching operations when possible
-- Use appropriate folder organization for large numbers of datasets
+```python
+# Add multiple records at once
+records = [
+    {"question": "Q1", "answer": "A1", "score": 0.9},
+    {"question": "Q2", "answer": "A2", "score": 0.8},
+    {"question": "Q3", "answer": "A3", "score": 0.95}
+]
 
-### Collaboration
-
-- Share folders with appropriate permissions (view/edit)
-- Use descriptive dataset names
-- Document your data models clearly
+for record in records:
+    dataset.append(record)
+```
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **"Folder not found" error**
+1. **Folder access errors**
    - Verify the folder ID is correct
-   - Ensure the folder is shared with your service account (if using one)
    - Check that the folder exists and is accessible
 
 2. **Authentication errors**
@@ -211,7 +257,7 @@ Each dataset/experiment is stored as a separate Google Sheet with:
    - Check Google Drive sharing settings
 
 4. **Import errors**
-   - Install dependencies: `pip install "ragas_experimental[gdrive]"`
+   - Install dependencies: `pip install "ragas[gdrive]"`
    - Verify all required packages are installed
 
 ### Getting Help

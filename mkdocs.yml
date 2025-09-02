@@ -76,6 +76,8 @@ nav:
               - concepts/test_data_generation/agents.md
       - Feedback Intelligence:
           - concepts/feedback/index.md
+      - Datasets: concepts/datasets.md
+      - Experimentation: concepts/experimentation.md
   - 🧪 Experimental:
     - Overview: experimental/index.md
     - Tutorials:
@@ -84,11 +86,7 @@ nav:
         - RAG: experimental/tutorials/rag.md
         - Workflow: experimental/tutorials/workflow.md
         - Agent: experimental/tutorials/agent.md
-    - Core Concepts:
-        - experimental/core_concepts/index.md
-        - Metrics: experimental/core_concepts/metrics.md
-        - Datasets: experimental/core_concepts/datasets.md
-        - Experimentation: experimental/core_concepts/experimentation.md
+
     - How-to Guides:
         - experimental/howtos/index.md
   - 🛠️ How-to Guides:
