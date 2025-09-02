@@ -4,16 +4,18 @@ from openai import OpenAI
 
 client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
+
 def load_prompt(prompt_file: str) -> str:
     """Load prompt from a text file"""
     with open(prompt_file, "r") as f:
         return f.read().strip()
 
+
 def run_prompt(ticket_text: str, prompt_file: str = "promptv1.txt"):
     """Run the prompt against a customer support ticket"""
     system_prompt = load_prompt(prompt_file)
     user_message = f'Ticket: "{ticket_text}"'
-    
+
     response = client.chat.completions.create(
         model="gpt-5-mini-2025-08-07",
         response_format={"type": "json_object"},

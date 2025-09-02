@@ -15,11 +15,13 @@
 
     ```python
     from ragas.llms import LangchainLLMWrapper
-    from ragas.embeddings import LangchainEmbeddingsWrapper
     from langchain_openai import ChatOpenAI
-    from langchain_openai import OpenAIEmbeddings
+    from ragas.embeddings import OpenAIEmbeddings
+    import openai
+    
     evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
-    evaluator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
+    openai_client = openai.OpenAI()
+    evaluator_embeddings = OpenAIEmbeddings(client=openai_client)
     ```
 
 
