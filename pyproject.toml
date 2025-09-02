@@ -146,6 +146,10 @@ ragas-examples = { workspace = true }
 addopts = "-n 0"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+python_classes = ["Test*"]
+filterwarnings = [
+    "ignore:cannot collect test class 'TestsetGenerator':pytest.PytestCollectionWarning"
+]
 
 [dependency-groups]
 # Full dev dependencies with all features (used by make install)
