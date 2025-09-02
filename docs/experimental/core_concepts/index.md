@@ -1,5 +1,3 @@
 # 📚 Core Concepts
 
-1. [Metrics](metrics.md)
-2. [Datasets and Experiment Results](datasets.md)
-3. [Experiments](experimentation.md)
+*Note: The core concepts from this section have been moved to the main [Core Concepts](../../concepts/index.md) section.*

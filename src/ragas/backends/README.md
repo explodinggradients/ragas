@@ -97,6 +97,12 @@ if "my_backend" in registry:
 - **Storage:** `{root_dir}/datasets/{name}.jsonl`, `{root_dir}/experiments/{name}.jsonl`
 - **Features:** Handles complex nested data, preserves types
 
+**GDriveBackend** (`gdrive_backend.py`, see `gdrive_backend.md`):
+- **Pattern:** Cloud storage with Google Sheets format
+- **Init:** `GDriveBackend(folder_id, service_account_file)`
+- **Storage:** Google Drive folder with sheets for datasets/experiments
+- **Features:** Collaborative editing, cloud sync, multiple auth methods
+
 ## Implementation Patterns
 
 **Common backend structure:**
