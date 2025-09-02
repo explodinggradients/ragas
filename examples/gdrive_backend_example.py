@@ -124,9 +124,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error: {e}")
         print("\nMake sure to:")
-        print(
-            "1. Install required dependencies: pip install 'ragas[gdrive]'"
-        )
+        print("1. Install required dependencies: pip install 'ragas[gdrive]'")
         print("2. Set up Google Drive API credentials")
         print("3. Update the folder_id and credential paths in this example")
         print("4. Ensure the Google Drive folder is accessible to your credentials")

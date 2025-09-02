@@ -34,10 +34,12 @@ for content in content_list:
 
 
 ```python
-from langchain_openai.embeddings import OpenAIEmbeddings
+from ragas.embeddings import OpenAIEmbeddings
 from langchain_core.vectorstores import InMemoryVectorStore
+import openai
 
-embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+openai_client = openai.OpenAI()
+embeddings = OpenAIEmbeddings(client=openai_client, model="text-embedding-3-small")
 vector_store = InMemoryVectorStore(embeddings)
 
 _ = vector_store.add_documents(langchain_documents)

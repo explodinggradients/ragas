@@ -16,11 +16,13 @@
 
     ```python
     from ragas.llms import LangchainLLMWrapper
-    from ragas.embeddings import LangchainEmbeddingsWrapper
     from langchain_openai import ChatOpenAI
-    from langchain_openai import OpenAIEmbeddings
+    from ragas.embeddings import OpenAIEmbeddings
+    import openai
+    
     generator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
-    generator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
+    openai_client = openai.OpenAI()
+    generator_embeddings = OpenAIEmbeddings(client=openai_client)
     ```
 
 

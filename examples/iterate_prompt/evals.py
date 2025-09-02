@@ -9,7 +9,7 @@ from typing import List, Optional
 import pandas as pd
 from run_prompt import run_prompt
 
-from ragas import experiment, Dataset
+from ragas import Dataset, experiment
 from ragas.experimental.metrics.discrete import discrete_metric
 from ragas.experimental.metrics.result import MetricResult
 
@@ -20,11 +20,11 @@ def labels_exact_match(prediction: str, expected_labels: str):
     try:
         parsed_json = json.loads(prediction)
         predicted_labels = parsed_json.get("labels", [])
-        
+
         # Convert to sets for comparison (handle order independence)
         predicted_set = set(predicted_labels)
         expected_set = set(expected_labels.split(";")) if expected_labels else set()
-        
+
         if predicted_set == expected_set:
             return MetricResult(
                 value="correct",
@@ -32,7 +32,7 @@ def labels_exact_match(prediction: str, expected_labels: str):
             )
         else:
             return MetricResult(
-                value="incorrect", 
+                value="incorrect",
                 reason=f"Expected labels: {sorted(list(expected_set))}; Got labels: {sorted(list(predicted_set))}",
             )
     except (json.JSONDecodeError, KeyError, TypeError) as e:
@@ -48,7 +48,7 @@ def priority_accuracy(prediction: str, expected_priority: str):
     try:
         parsed_json = json.loads(prediction)
         predicted_priority = parsed_json.get("priority")
-        
+
         if predicted_priority == expected_priority:
             return MetricResult(
                 value="correct",
@@ -70,16 +70,14 @@ def priority_accuracy(prediction: str, expected_priority: str):
 async def support_triage_experiment(row, prompt_file: str, experiment_name: str):
     """Experiment function for support triage evaluation."""
     # Get model response
-    response = await asyncio.to_thread(
-        run_prompt, row["text"], prompt_file=prompt_file
-    )
+    response = await asyncio.to_thread(run_prompt, row["text"], prompt_file=prompt_file)
 
     # Parse response to extract predicted values
     try:
         parsed_json = json.loads(response)
         predicted_labels = parsed_json.get("labels", [])
         predicted_priority = parsed_json.get("priority")
-        
+
         # Convert predicted labels back to semicolon-separated string for consistency
         predicted_labels_str = ";".join(predicted_labels) if predicted_labels else ""
     except Exception:
@@ -113,30 +111,32 @@ def load_dataset():
     # Get the directory where this file is located
     current_dir = os.path.dirname(os.path.abspath(__file__))
     dataset_path = os.path.join(current_dir, "datasets", "support_triage.csv")
-    
+
     if not os.path.exists(dataset_path):
         raise FileNotFoundError(f"Dataset not found at: {dataset_path}")
-    
+
     # Read CSV and create Dataset
     df = pd.read_csv(dataset_path)
-    
+
     # Validate required columns
     required_cols = ["id", "text", "labels", "priority"]
     missing_cols = [col for col in required_cols if col not in df.columns]
     if missing_cols:
         raise ValueError(f"Missing required columns in dataset: {missing_cols}")
-    
+
     # Create Ragas Dataset
     dataset = Dataset(name="support_triage", backend="local/csv", root_dir=".")
-    
+
     for _, row in df.iterrows():
-        dataset.append({
-            "id": str(row["id"]),
-            "text": row["text"],
-            "labels": row["labels"],
-            "priority": row["priority"],
-        })
-    
+        dataset.append(
+            {
+                "id": str(row["id"]),
+                "text": row["text"],
+                "labels": row["labels"],
+                "priority": row["priority"],
+            }
+        )
+
     return dataset
 
 
@@ -270,17 +270,21 @@ async def run_command(prompt_file: str, name: Optional[str]) -> None:
 
     print(f"Running evaluation with prompt file: {prompt_file}")
     results = await support_triage_experiment.arun(
-        dataset, 
+        dataset,
         name=f"{run_id}-{exp_name}",
         prompt_file=prompt_file,
-        experiment_name=exp_name
+        experiment_name=exp_name,
     )
     print(f"✅ {exp_name}: {len(results)} cases evaluated")
     print(f"Results saved to: {os.path.join(experiments_dir, results.name)}.csv")
 
     # Accuracy summary
-    labels_accuracy = sum(1 for r in results if r["labels_score"] == "correct") / max(1, len(results))
-    priority_accuracy = sum(1 for r in results if r["priority_score"] == "correct") / max(1, len(results))
+    labels_accuracy = sum(1 for r in results if r["labels_score"] == "correct") / max(
+        1, len(results)
+    )
+    priority_accuracy = sum(
+        1 for r in results if r["priority_score"] == "correct"
+    ) / max(1, len(results))
     print(f"{exp_name} Labels Accuracy: {labels_accuracy:.2%}")
     print(f"{exp_name} Priority Accuracy: {priority_accuracy:.2%}")
 
