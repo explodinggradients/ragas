@@ -134,9 +134,7 @@ class BatchEvaluator:
                         responses=responses,
                     )
 
-                    # Process responses to extract scores if possible
-                    # This is a simplified implementation - actual score extraction
-                    # would depend on the specific metric and response format
+                    # Process responses to extract scores
                     try:
                         result.scores = self._extract_scores(metric, responses)
                     except Exception as e:
@@ -243,15 +241,159 @@ class BatchEvaluator:
         """
         Extract scores from batch responses.
 
-        This is a placeholder implementation. In practice, this would need
-        to parse the specific response format for each metric and extract
-        the numerical scores.
+        This method parses the batch responses and attempts to extract numerical scores
+        based on the metric's output format. It handles common patterns like JSON
+        responses with verdict fields or direct numerical outputs.
         """
-        logger.warning(
-            f"Score extraction not implemented for metric: {metric.name}. "
-            "Batch responses contain raw LLM outputs that need manual processing."
-        )
-        return [None] * len(responses)
+        scores = []
+
+        for response in responses:
+            score = None
+
+            if response.error is not None:
+                logger.error(
+                    f"Error in batch response {response.custom_id}: {response.error}"
+                )
+                scores.append(None)
+                continue
+
+            if response.response is None:
+                logger.warning(f"No response content for {response.custom_id}")
+                scores.append(None)
+                continue
+
+            try:
+                # Extract content from OpenAI response format
+                content = self._extract_content_from_response(response.response)
+                if content is None:
+                    scores.append(None)
+                    continue
+
+                # Parse as structured output first (JSON)
+                score = self._parse_structured_score(content, metric.name)
+
+                # Parse raw text for score patterns
+                if score is None:
+                    score = self._parse_text_score(content)
+
+                scores.append(score)
+
+            except Exception as e:
+                logger.error(
+                    f"Failed to extract score from response {response.custom_id}: {e}"
+                )
+                scores.append(None)
+
+        return scores
+
+    def _extract_content_from_response(
+        self, response: t.Dict[str, t.Any]
+    ) -> t.Optional[str]:
+        """Extract text content from OpenAI API response format."""
+        try:
+            # Standard OpenAI chat completion response format
+            choices = response.get("choices", [])
+            if choices and len(choices) > 0:
+                message = choices[0].get("message", {})
+                return message.get("content", "")
+            return None
+        except Exception as e:
+            logger.error(f"Failed to extract content from response: {e}")
+            return None
+
+    def _parse_structured_score(
+        self, content: str, metric_name: str
+    ) -> t.Optional[float]:
+        """Parse structured JSON output to extract score."""
+        try:
+            import json
+            import re
+
+            # Clean the content to extract JSON
+            content = content.strip()
+
+            # Look for JSON blocks
+            json_match = re.search(r"```json\s*(\{.*?\})\s*```", content, re.DOTALL)
+            if json_match:
+                content = json_match.group(1)
+            elif content.startswith("{") and content.endswith("}"):
+                pass  # Already clean JSON
+            else:
+                # Look for JSON object in text
+                json_match = re.search(r"\{[^{}]*\}", content)
+                if json_match:
+                    content = json_match.group(0)
+                else:
+                    return None
+
+            parsed = json.loads(content)
+
+            # Common patterns for different metrics
+            score_patterns = [
+                "score",
+                "verdict",
+                "faithfulness_score",
+                "relevance_score",
+                "correctness_score",
+                "precision",
+                "recall",
+                "f1_score",
+            ]
+
+            for pattern in score_patterns:
+                if pattern in parsed:
+                    value = parsed[pattern]
+                    if isinstance(value, (int, float)):
+                        return float(value)
+                    elif isinstance(value, str) and value.replace(".", "").isdigit():
+                        return float(value)
+
+            # For faithfulness-like metrics, calculate score from statements
+            if "statements" in parsed and isinstance(parsed["statements"], list):
+                statements = parsed["statements"]
+                if statements:
+                    verdicts = []
+                    for stmt in statements:
+                        if isinstance(stmt, dict) and "verdict" in stmt:
+                            verdict = stmt["verdict"]
+                            if isinstance(verdict, (int, float)):
+                                verdicts.append(verdict)
+
+                    if verdicts:
+                        return sum(verdicts) / len(verdicts)
+
+            return None
+
+        except json.JSONDecodeError:
+            return None
+        except Exception as e:
+            logger.debug(f"Error parsing structured score: {e}")
+            return None
+
+    def _parse_text_score(self, content: str) -> t.Optional[float]:
+        """Parse raw text content to find numerical scores."""
+        import re
+
+        # Look for common score patterns
+        patterns = [
+            r"score[:\s]*([0-9]*\.?[0-9]+)",
+            r"verdict[:\s]*([0-9]*\.?[0-9]+)",
+            r"rating[:\s]*([0-9]*\.?[0-9]+)",
+            r"([0-9]*\.?[0-9]+)(?:\s*/\s*[0-9]+)?",  # Simple number or fraction
+        ]
+
+        for pattern in patterns:
+            matches = re.findall(pattern, content.lower())
+            if matches:
+                try:
+                    score = float(matches[0])
+                    # Validate score is in reasonable range (0-1 or 0-10)
+                    if 0 <= score <= 1 or 0 <= score <= 10:
+                        return score
+                except (ValueError, IndexError):
+                    continue
+
+        return None
 
 
 def create_batch_evaluator(

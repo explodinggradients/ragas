@@ -69,15 +69,12 @@ from ragas.cost import get_token_usage_for_openai
 get_token_usage_for_openai(llm_result)
 ```
 
-    /opt/homebrew/Caskroom/miniforge/base/envs/ragas/lib/python3.9/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
-      from .autonotebook import tqdm as notebook_tqdm
+```py
+/opt/homebrew/Caskroom/miniforge/base/envs/ragas/lib/python3.9/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+    from .autonotebook import tqdm as notebook_tqdm
 
-
-
-
-
-    TokenUsage(input_tokens=9, output_tokens=9, model='')
-
+TokenUsage(input_tokens=9, output_tokens=9, model='')
+```
 
 
 You can define your own or import parsers if they are defined. If you would like to suggest parser for LLM providers or contribute your own ones please check out this [issue](https://github.com/explodinggradients/ragas/issues/1151) 🙂.
@@ -101,9 +98,9 @@ metric = AspectCriticWithReference(
 )
 ```
 
-    Repo card metadata block was not found. Setting CardData to empty.
-
-
+```py
+Repo card metadata block was not found. Setting CardData to empty.
+```
 
 ```python
 from ragas import evaluate
@@ -117,38 +114,27 @@ results = evaluate(
 )
 ```
 
-    Evaluating: 100%|██████████| 5/5 [00:01<00:00,  2.81it/s]
-
-
+```py
+Evaluating: 100%|██████████| 5/5 [00:01<00:00,  2.81it/s]
+```
 
 ```python
 results.total_tokens()
 ```
 
-
-
-
-    TokenUsage(input_tokens=5463, output_tokens=355, model='')
-
+```py
+TokenUsage(input_tokens=5463, output_tokens=355, model='')
+```
 
 
 You can compute the cost for each run by passing in the cost per token to `Result.total_cost()` function.
 
 In this case GPT-4o costs $5 for 1M input tokens and $15 for 1M output tokens.
 
-
 ```python
 results.total_cost(cost_per_input_token=5 / 1e6, cost_per_output_token=15 / 1e6)
 ```
 
-
-
-
-    0.03264
-
-
-
-
-```python
-
+```py
+0.03264
 ```
