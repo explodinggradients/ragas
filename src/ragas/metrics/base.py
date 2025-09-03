@@ -344,8 +344,7 @@ class MetricWithLLM(Metric, PromptMixin):
 
     def train(
         self,
-        path: t.Optional[str] = None,
-        run_id: t.Optional[str] = None,
+        path: str,
         demonstration_config: t.Optional[DemonstrationConfig] = None,
         instruction_config: t.Optional[InstructionConfig] = None,
         callbacks: t.Optional[Callbacks] = None,
@@ -355,14 +354,12 @@ class MetricWithLLM(Metric, PromptMixin):
         raise_exceptions: bool = True,
     ) -> None:
         """
-        Train the metric using local JSON data or annotations from Ragas platform
+        Train the metric using local JSON data
 
         Parameters
         ----------
-        path : str, optional
+        path : str
             Path to local JSON training data file
-        run_id : str, optional
-            Direct run ID to fetch annotations
         demonstration_config : DemonstrationConfig, optional
             Configuration for demonstration optimization
         instruction_config : InstructionConfig, optional
@@ -381,30 +378,20 @@ class MetricWithLLM(Metric, PromptMixin):
         Raises
         ------
         ValueError
-            If invalid combination of path, and run_id is provided
+            If path is not provided or not a JSON file
         """
         # Validate input parameters
-        provided_inputs = sum(x is not None for x in [path, run_id])
-        if provided_inputs == 0:
-            raise ValueError("One of path or run_id must be provided")
-        if provided_inputs > 1:
-            raise ValueError("Only one of path or run_id should be provided")
+        if not path:
+            raise ValueError("Path to training data file must be provided")
+
+        if not path.endswith(".json"):
+            raise ValueError("Train data must be in json format")
 
         run_config = run_config or RunConfig()
         callbacks = callbacks or []
 
-        # Load the dataset based on input type
-        if path is not None:
-            if not path.endswith(".json"):
-                raise ValueError("Train data must be in json format")
-            dataset = MetricAnnotation.from_json(path, metric_name=self.name)
-        elif run_id is not None:
-            dataset = MetricAnnotation.from_app(
-                run_id=run_id,
-                metric_name=self.name,
-            )
-        else:
-            raise ValueError("One of path or run_id must be provided")
+        # Load the dataset from JSON file
+        dataset = MetricAnnotation.from_json(path, metric_name=self.name)
 
         # only optimize the instruction if instruction_config is provided
         if instruction_config is not None:
