@@ -80,8 +80,7 @@ class BaseRagasLLM(ABC):
         temperature: float = 0.01,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
-    ) -> LLMResult:
-        ...
+    ) -> LLMResult: ...
 
     @abstractmethod
     async def agenerate_text(
@@ -91,7 +90,11 @@ class BaseRagasLLM(ABC):
         temperature: t.Optional[float] = 0.01,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
-    ) -> LLMResult:
+    ) -> LLMResult: ...
+
+    @abstractmethod
+    def is_finished(self, response: LLMResult) -> bool:
+        """Check if the LLM response is finished/complete."""
         ...
 
     async def generate(
@@ -335,7 +338,7 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
     ) -> dict[str, t.Any]:
         if n != 1:
             logger.warning("n values greater than 1 not support for LlamaIndex LLMs")
-        if temperature != 1e-8:
+        if temperature != 0.01:
             logger.info("temperature kwarg passed to LlamaIndex LLM")
         if stop is not None:
             logger.info("stop kwarg passed to LlamaIndex LLM")
@@ -359,7 +362,7 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: float = 1e-8,
+        temperature: float = 0.01,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ) -> LLMResult:
