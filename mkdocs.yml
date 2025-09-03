@@ -97,7 +97,8 @@ nav:
               - Customise models: howtos/customizations/customize_models.md
               - Run Config: howtos/customizations/_run_config.md
               - Caching: howtos/customizations/_caching.md
-              - Iterate and Improve Prompts: howtos/customizations/iterate_prompt.md
+              - Cancelling Tasks: howtos/customizations/cancellation.md
+              - Iterate Prompts: howtos/customizations/iterate_prompt.md
           - Metrics:
               - Modify Prompts: howtos/customizations/metrics/_modifying-prompts-metrics.md
               - Adapt Metrics to Languages: howtos/customizations/metrics/_metrics_language_adaptation.md

@@ -589,8 +589,10 @@ class GeneticOptimizer(Optimizer):
             raise_exceptions=raise_exceptions,
             _run_id=run_id,
             _pbar=parent_pbar,
+            return_executor=False,
         )
-        return results
+        # Type assertion since return_executor=False guarantees EvaluationResult
+        return t.cast(EvaluationResult, results)
 
     def evaluate_fitness(
         self,

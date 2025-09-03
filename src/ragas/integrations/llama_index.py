@@ -100,9 +100,11 @@ def evaluate(
         show_progress=show_progress,
         run_config=run_config or RunConfig(),
         token_usage_parser=token_usage_parser,
+        return_executor=False,
     )
 
-    return results
+    # Type assertion since return_executor=False guarantees EvaluationResult
+    return t.cast(EvaluationResult, results)
 
 
 def convert_to_ragas_messages(events: t.List[Event]) -> t.List[Message]:
