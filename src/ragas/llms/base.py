@@ -70,39 +70,35 @@ class BaseRagasLLM(ABC):
 
     def get_temperature(self, n: int) -> float:
         """Return the temperature to use for completion based on n."""
-        return 0.3 if n > 1 else 1e-8
-
-    def is_finished(self, response: LLMResult) -> bool:
-        logger.warning(
-            f"is_finished not implemented for {self.__class__.__name__}. Will default to True."
-        )
-        return True
+        return 0.3 if n > 1 else 0.01
 
     @abstractmethod
     def generate_text(
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: float = 1e-8,
+        temperature: float = 0.01,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
-    ) -> LLMResult: ...
+    ) -> LLMResult:
+        ...
 
     @abstractmethod
     async def agenerate_text(
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: t.Optional[float] = None,
+        temperature: t.Optional[float] = 0.01,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
-    ) -> LLMResult: ...
+    ) -> LLMResult:
+        ...
 
     async def generate(
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: t.Optional[float] = None,
+        temperature: t.Optional[float] = 0.01,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ) -> LLMResult:
@@ -207,7 +203,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: t.Optional[float] = None,
+        temperature: t.Optional[float] = 0.01,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ) -> LLMResult:
