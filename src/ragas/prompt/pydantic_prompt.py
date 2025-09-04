@@ -23,10 +23,10 @@ from .utils import extract_json, get_all_strings, update_strings
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
-    from ragas.llms.base import BaseRagasLLM
+from ragas.llms.base import BaseRagasLLM
 
 
-def is_langchain_llm(llm: t.Union["BaseRagasLLM", BaseLanguageModel]) -> bool:
+def is_langchain_llm(llm: t.Union[BaseRagasLLM, BaseLanguageModel]) -> bool:
     """
     Detect if an LLM is a LangChain LLM or a Ragas LLM.
 

@@ -17,6 +17,7 @@ from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.prompt_values import PromptValue
 from PIL import Image
 from pydantic import BaseModel
+from typing_extensions import TypedDict
 
 from ragas.callbacks import ChainType, new_group
 from ragas.exceptions import RagasOutputParserException
@@ -29,11 +30,25 @@ from ragas.prompt.pydantic_prompt import (
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
-    from ragas.llms.base import BaseRagasLLM
+from ragas.llms.base import BaseRagasLLM
 
 # type variables for input and output models
 InputModel = t.TypeVar("InputModel", bound=BaseModel)
 OutputModel = t.TypeVar("OutputModel", bound=BaseModel)
+
+
+# Specific typed dictionaries for message content
+class TextContent(TypedDict):
+    type: t.Literal["text"]
+    text: str
+
+
+class ImageUrlContent(TypedDict):
+    type: t.Literal["image_url"]
+    image_url: dict[str, str]
+
+
+MessageContent = t.Union[TextContent, ImageUrlContent]
 
 logger = logging.getLogger(__name__)
 
@@ -230,7 +245,7 @@ class ImageTextPromptValue(PromptValue):
             # Return empty list or handle as appropriate if all items failed processing
             return []
 
-    def _securely_process_item(self, item: str) -> t.Optional[t.Dict[str, t.Any]]:
+    def _securely_process_item(self, item: str) -> t.Optional[MessageContent]:
         """
         Securely determines if an item is text, a valid image data URI,
         or a fetchable image URL according to policy. Returns the appropriate
@@ -284,11 +299,11 @@ class ImageTextPromptValue(PromptValue):
         _, ext = os.path.splitext(path_part)
         return ext.lower() in COMMON_IMAGE_EXTENSIONS
 
-    def _get_text_payload(self, text: str) -> dict:
+    def _get_text_payload(self, text: str) -> TextContent:
         """Returns the standard payload for text content."""
         return {"type": "text", "text": text}
 
-    def _get_image_payload(self, mime_type: str, encoded_image: str) -> dict:
+    def _get_image_payload(self, mime_type: str, encoded_image: str) -> ImageUrlContent:
         """Returns the standard payload for image content."""
         # Ensure mime_type is safe and starts with "image/"
         if not mime_type or not mime_type.lower().startswith("image/"):
