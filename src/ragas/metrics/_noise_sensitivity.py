@@ -84,15 +84,10 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
         statements = statements.statements
         return statements
 
-    def _compute_score(self, answers: t.Dict) -> float:
-        # relevant retrievals
-        relevant_retrieved = np.max(
-            answers["retrieved2ground_truth"], axis=0, keepdims=True
-        )
-        relevant_faithful = np.max(
-            relevant_retrieved & answers["retrieved2answer"], axis=1
-        )
+def _compute_score(self, answers: t.Dict) -> float:
+    incorrect = ~answers["ground_truth2answer"]
 
+    if self.mode == "irrelevant":
         # irrelevant retrievals
         irrelevant_retrieved = ~np.max(
             answers["retrieved2ground_truth"], axis=0, keepdims=True
@@ -102,16 +97,26 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
         )
 
         # to keep them exclusive
+        relevant_retrieved = np.max(
+            answers["retrieved2ground_truth"], axis=0, keepdims=True
+        )
+        relevant_faithful = np.max(
+            relevant_retrieved & answers["retrieved2answer"], axis=1
+        )
         irrelevant_faithful &= ~relevant_faithful
 
-        incorrect = ~answers["ground_truth2answer"]
-        noise_sensitivity_in_relevant = np.mean(relevant_faithful & incorrect)
-        noise_sensitivity_in_irrelevant = np.mean(irrelevant_faithful & incorrect)
+        return np.mean(irrelevant_faithful & incorrect)
 
-        if self.mode == "irrelevant":
-            return float(noise_sensitivity_in_irrelevant)
+    else:  # mode == "relevant"
+        # relevant retrievals
+        relevant_retrieved = np.max(
+            answers["retrieved2ground_truth"], axis=0, keepdims=True
+        )
+        relevant_faithful = np.max(
+            relevant_retrieved & answers["retrieved2answer"], axis=1
+        )
 
-        return float(noise_sensitivity_in_relevant)
+        return np.mean(relevant_faithful & incorrect)
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
