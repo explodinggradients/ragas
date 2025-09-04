@@ -287,3 +287,4 @@ extra_javascript:
   - _static/js/toggle.js
   - https://cdn.octolane.com/tag.js?pk=c7c9b2b863bf7eaf4e2a # octolane for analytics
   - _static/js/reo.js # reo analytics
+  - _static/js/commonroom.js # commonroom analytics
