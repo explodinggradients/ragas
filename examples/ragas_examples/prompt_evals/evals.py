@@ -1,9 +1,8 @@
-from prompt import run_prompt
-
-from ragas import experiment
-from ragas import Dataset
+from ragas import Dataset, experiment
 from ragas.metrics.discrete import discrete_metric
 from ragas.metrics.result import MetricResult
+
+from .prompt import run_prompt
 
 
 @discrete_metric(name="accuracy", allowed_values=["pass", "fail"])

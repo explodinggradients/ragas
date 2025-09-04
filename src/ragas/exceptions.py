@@ -41,16 +41,6 @@ class LLMDidNotFinishException(RagasException):
         super().__init__(msg)
 
 
-class UploadException(RagasException):
-    """
-    Exception raised when the app fails to upload the results.
-    """
-
-    def __init__(self, status_code: int, message: str):
-        self.status_code = status_code
-        super().__init__(message)
-
-
 # Exceptions migrated from experimental module
 class RagasError(Exception):
     """Base class for all Ragas-related exceptions."""

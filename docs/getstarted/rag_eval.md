@@ -9,9 +9,12 @@ We will use `langchain_openai` to set the LLM and embedding model for building o
 
 ```python
 from langchain_openai import ChatOpenAI
-from langchain_openai import OpenAIEmbeddings
+from ragas.embeddings import OpenAIEmbeddings
+import openai
+
 llm = ChatOpenAI(model="gpt-4o")
-embeddings = OpenAIEmbeddings()
+openai_client = openai.OpenAI()
+embeddings = OpenAIEmbeddings(client=openai_client)
 ```
 
 ### Build a Simple RAG System
@@ -30,8 +33,10 @@ To build a simple RAG system, we need to define the following components:
 
     class RAG:
         def __init__(self, model="gpt-4o"):
+            import openai
             self.llm = ChatOpenAI(model=model)
-            self.embeddings = OpenAIEmbeddings()
+            openai_client = openai.OpenAI()
+            self.embeddings = OpenAIEmbeddings(client=openai_client)
             self.doc_embeddings = None
             self.docs = None
 

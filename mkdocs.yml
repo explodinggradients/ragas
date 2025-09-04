@@ -76,6 +76,8 @@ nav:
               - concepts/test_data_generation/agents.md
       - Feedback Intelligence:
           - concepts/feedback/index.md
+      - Datasets: concepts/datasets.md
+      - Experimentation: concepts/experimentation.md
   - 🧪 Experimental:
     - Overview: experimental/index.md
     - Tutorials:
@@ -84,14 +86,9 @@ nav:
         - RAG: experimental/tutorials/rag.md
         - Workflow: experimental/tutorials/workflow.md
         - Agent: experimental/tutorials/agent.md
-    - Core Concepts:
-        - experimental/core_concepts/index.md
-        - Metrics: experimental/core_concepts/metrics.md
-        - Datasets: experimental/core_concepts/datasets.md
-        - Experimentation: experimental/core_concepts/experimentation.md
+
     - How-to Guides:
         - experimental/howtos/index.md
-        - Evaluate a New LLM: experimental/howtos/benchmark_llm.md
   - 🛠️ How-to Guides:
       - howtos/index.md
       - Customizations:
@@ -100,6 +97,8 @@ nav:
               - Customise models: howtos/customizations/customize_models.md
               - Run Config: howtos/customizations/_run_config.md
               - Caching: howtos/customizations/_caching.md
+              - Cancelling Tasks: howtos/customizations/cancellation.md
+              - Iterate Prompts: howtos/customizations/iterate_prompt.md
           - Metrics:
               - Modify Prompts: howtos/customizations/metrics/_modifying-prompts-metrics.md
               - Adapt Metrics to Languages: howtos/customizations/metrics/_metrics_language_adaptation.md
@@ -121,6 +120,7 @@ nav:
             - Single-hop Query Testset: howtos/applications/singlehop_testset_gen.md
           - Benchmarking:
             - Benchmarking Gemini models: howtos/applications/gemini_benchmarking.md
+            - Evaluate a New LLM: howtos/applications/benchmark_llm.md
       - Integrations:
           - howtos/integrations/index.md
           - Arize: howtos/integrations/_arize.md
@@ -278,3 +278,4 @@ extra_javascript:
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
   - _static/js/toggle.js
   - https://cdn.octolane.com/tag.js?pk=c7c9b2b863bf7eaf4e2a # octolane for analytics
+  - _static/js/reo.js # reo analytics

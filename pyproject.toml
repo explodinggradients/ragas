@@ -50,7 +50,6 @@ all = [
 ]
 
 # Specific integrations
-examples = ["openai>=1.0.0"]
 tracing = ["langfuse>=3.2.4", "mlflow>=3.1.4"]
 gdrive = [
     "google-api-python-client>=2.178.0",
@@ -71,7 +70,11 @@ dev-minimal = [
     "build>=1.3.0",
 ]
 
-test = []
+# Test only dependencies
+test = [
+    "scipy",
+]
+
 [project.entry-points."ragas.backends"]
 "local/csv" = "ragas.backends.local_csv:LocalCSVBackend"
 "local/jsonl" = "ragas.backends.local_jsonl:LocalJSONLBackend"
@@ -129,6 +132,14 @@ build-backend = "setuptools.build_meta"
 # Path to version file relative to this pyproject.toml
 version_file = "src/ragas/_version.py"
 
+# UV Workspace Configuration
+[tool.uv.workspace]
+members = [".", "examples"]
+
+# Workspace dependency sources
+[tool.uv.sources]
+ragas-examples = { workspace = true }
+
 [tool.pytest.ini_options]
 addopts = "-n 0"
 asyncio_default_fixture_loop_scope = "function"
@@ -140,7 +151,7 @@ dev = [
     # Core dev tools (shared with minimal)
     "ruff",
     "pyright>=1.1.403",
-    "pre-commit>=4.3.0", 
+    "pre-commit>=4.3.0",
     "pytest",
     "pytest-xdist[psutil]",
     "pytest-asyncio",

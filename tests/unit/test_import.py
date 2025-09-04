@@ -36,6 +36,12 @@ def test_missing_haystack_llmwrapper(monkeypatch):
         HaystackLLMWrapper(haystack_generator=None)
 
 
+@pytest.mark.filterwarnings(
+    "ignore:LangchainEmbeddingsWrapper is deprecated:DeprecationWarning"
+)
+@pytest.mark.filterwarnings(
+    "ignore:LlamaIndexEmbeddingsWrapper is deprecated:DeprecationWarning"
+)
 def test_wrappers_with_missing_haystack(monkeypatch):
     """Simulate missing 'haystack' and verify that:
     - Non-Haystack wrappers import and instantiate without error.

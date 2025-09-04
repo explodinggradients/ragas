@@ -31,7 +31,9 @@ For this tutorial notebook, I am using papers from Semantic Scholar that is rela
 from llama_index.core import download_loader
 from ragas.testset.evolutions import simple, reasoning, multi_context
 from ragas.testset.generator import TestsetGenerator
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
+from ragas.embeddings import OpenAIEmbeddings
+import openai
 
 SemanticScholarReader = download_loader("SemanticScholarReader")
 loader = SemanticScholarReader()
@@ -41,7 +43,8 @@ documents = loader.load_data(query=query_space, limit=100)
 # generator with openai models
 generator_llm = ChatOpenAI(model="gpt-4o-mini")
 critic_llm = ChatOpenAI(model="gpt-4o")
-embeddings = OpenAIEmbeddings()
+openai_client = openai.OpenAI()
+embeddings = OpenAIEmbeddings(client=openai_client)
 
 generator = TestsetGenerator.from_langchain(
     generator_llm,
@@ -83,7 +86,9 @@ Here I am using llama-index to build a basic RAG pipeline with my documents. The
 
 import nest_asyncio
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, ServiceContext
-from langchain.embeddings import HuggingFaceEmbeddings, OpenAIEmbeddings
+from langchain.embeddings import HuggingFaceEmbeddings
+from ragas.embeddings import OpenAIEmbeddings
+import openai
 import pandas as pd
 
 nest_asyncio.apply()
