@@ -72,7 +72,8 @@ def evaluate(
     batch_size: t.Optional[int] = None,
     _run_id: t.Optional[UUID] = None,
     _pbar: t.Optional[tqdm] = None,
-) -> EvaluationResult:
+    return_executor: bool = False,
+) -> t.Union[EvaluationResult, Executor]:
     """
     Perform the evaluation on the dataset with different metrics
 
@@ -112,12 +113,16 @@ def evaluate(
         Whether to show the progress bar during evaluation. If set to False, the progress bar will be disabled. The default is True.
     batch_size : int, optional
         How large the batches should be. If set to None (default), no batching is done.
+    return_executor : bool, optional
+        If True, returns the Executor instance instead of running evaluation.
+        The returned executor can be used to cancel execution by calling executor.cancel().
+        To get results, call executor.results(). Default is False.
 
     Returns
     -------
-    EvaluationResult
-        EvaluationResult object containing the scores of each metric.
-        You can use this do analysis later.
+    EvaluationResult or Executor
+        If return_executor is False, returns EvaluationResult object containing the scores of each metric.
+        If return_executor is True, returns the Executor instance for cancellable execution.
 
     Raises
     ------
@@ -290,6 +295,10 @@ def evaluate(
             ]
         else:
             raise ValueError(f"Unsupported sample type {sample_type}")
+
+    # Return executor for cancellable execution if requested
+    if return_executor:
+        return executor
 
     scores: t.List[t.Dict[str, t.Any]] = []
     try:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 import typing as t
 from dataclasses import dataclass, field
 
@@ -74,6 +75,8 @@ class Executor:
         Configuration for the run
     _nest_asyncio_applied : bool
         Whether nest_asyncio has been applied
+    _cancel_event : threading.Event
+        Event to signal cancellation
     """
 
     desc: str = "Evaluating"
@@ -85,6 +88,15 @@ class Executor:
     run_config: t.Optional[RunConfig] = field(default=None, repr=False)
     _nest_asyncio_applied: bool = field(default=False, repr=False)
     pbar: t.Optional[tqdm] = None
+    _cancel_event: threading.Event = field(default_factory=threading.Event, repr=False)
+
+    def cancel(self) -> None:
+        """Cancel the execution of all jobs."""
+        self._cancel_event.set()
+
+    def is_cancelled(self) -> bool:
+        """Check if the execution has been cancelled."""
+        return self._cancel_event.is_set()
 
     def wrap_callable_with_index(
         self, callable: t.Callable, counter: int
@@ -169,6 +181,10 @@ class Executor:
             ) as batch_pbar,
         ):
             for i, batch in enumerate(batches, 1):
+                # Check for cancellation before processing each batch
+                if self._cancel_event.is_set():
+                    break
+
                 batch_pbar.reset(total=len(batch))
                 batch_pbar.set_description(f"Batch {i}/{n_batches}")
 
@@ -176,21 +192,69 @@ class Executor:
                 coroutines = [
                     afunc(*args, **kwargs) for afunc, args, kwargs, _ in batch
                 ]
-                for future in await as_completed(coroutines, max_workers):
-                    result = await future
-                    results.append(result)
-                    overall_pbar.update(1)
-                    batch_pbar.update(1)
+
+                # Create tasks for this batch
+                if max_workers == -1:
+                    batch_tasks = [asyncio.create_task(coro) for coro in coroutines]
+                else:
+                    semaphore = asyncio.Semaphore(max_workers)
+
+                    async def sema_coro(coro):
+                        async with semaphore:
+                            return await coro
+
+                    batch_tasks = [
+                        asyncio.create_task(sema_coro(coro)) for coro in coroutines
+                    ]
+
+                for future in asyncio.as_completed(batch_tasks):
+                    # Check for cancellation before processing each result in batch
+                    if self._cancel_event.is_set():
+                        for task in batch_tasks:
+                            if not task.done():
+                                task.cancel()
+                        break
+
+                    try:
+                        result = await future
+                        results.append(result)
+                        overall_pbar.update(1)
+                        batch_pbar.update(1)
+                    except asyncio.CancelledError:
+                        continue
 
         return results
 
     async def _process_coroutines(self, jobs, pbar, results, max_workers):
         """Helper function to process coroutines and update the progress bar."""
         coroutines = [afunc(*args, **kwargs) for afunc, args, kwargs, _ in jobs]
-        for future in await as_completed(coroutines, max_workers):
-            result = await future
-            results.append(result)
-            pbar.update(1)
+
+        # Create tasks to track them
+        if max_workers == -1:
+            tasks = [asyncio.create_task(coro) for coro in coroutines]
+        else:
+            semaphore = asyncio.Semaphore(max_workers)
+
+            async def sema_coro(coro):
+                async with semaphore:
+                    return await coro
+
+            tasks = [asyncio.create_task(sema_coro(coro)) for coro in coroutines]
+
+        # Process tasks as they complete
+        for future in asyncio.as_completed(tasks):
+            if self._cancel_event.is_set():
+                for task in tasks:
+                    if not task.done():
+                        task.cancel()
+                break
+
+            try:
+                result = await future
+                results.append(result)
+                pbar.update(1)
+            except asyncio.CancelledError:
+                continue
 
     def results(self) -> t.List[t.Any]:
         """

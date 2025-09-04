@@ -1,4 +1,5 @@
 site_name: Ragas
+site_description: Evaluation framework for your Retrieval Augmented Generation (RAG) pipelines
 site_url: !ENV READTHEDOCS_CANONICAL_URL
 repo_name: explodinggradients/ragas
 repo_url: https://github.com/explodinggradients/ragas
@@ -97,7 +98,8 @@ nav:
               - Customise models: howtos/customizations/customize_models.md
               - Run Config: howtos/customizations/_run_config.md
               - Caching: howtos/customizations/_caching.md
-              - Iterate and Improve Prompts: howtos/customizations/iterate_prompt.md
+              - Cancelling Tasks: howtos/customizations/cancellation.md
+              - Iterate Prompts: howtos/customizations/iterate_prompt.md
           - Metrics:
               - Modify Prompts: howtos/customizations/metrics/_modifying-prompts-metrics.md
               - Adapt Metrics to Languages: howtos/customizations/metrics/_metrics_language_adaptation.md
@@ -244,6 +246,13 @@ extra:
   analytics:
     provider: google
     property: !ENV GOOGLE_ANALYTICS_KEY
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/explodinggradients/ragas
+    - icon: fontawesome/brands/x-twitter
+      link: https://x.com/ragas_io
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/5qGUJ6mh7C
 plugins:
   - search
   - git-revision-date-localized:
