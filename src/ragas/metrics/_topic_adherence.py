@@ -173,16 +173,57 @@ class TopicAdherenceScore(MetricWithLLM, MultiTurnMetric):
             )
             topic_answered_verdict.append(response.refused_to_answer)
         topic_answered_verdict = np.array(
-            [not answer for answer in topic_answered_verdict]
+            [not answer for answer in topic_answered_verdict], dtype=bool
         )
 
         prompt_input = TopicClassificationInput(
             reference_topics=sample.reference_topics, topics=topics
         )
-        topic_classifications = await self.topic_classification_prompt.generate(
-            data=prompt_input, llm=self.llm, callbacks=callbacks
+        topic_classifications_response = (
+            await self.topic_classification_prompt.generate(
+                data=prompt_input, llm=self.llm, callbacks=callbacks
+            )
         )
-        topic_classifications = np.array(topic_classifications.classifications)
+
+        # Ensure safe conversion to boolean array to avoid TypeError in bitwise operations
+        def safe_bool_conversion(classifications):
+            """Safely convert classifications to boolean array regardless of input type"""
+            classifications_array = np.array(classifications)
+
+            if classifications_array.dtype == bool:
+                return classifications_array
+            elif classifications_array.dtype in [
+                int,
+                np.int64,
+                np.int32,
+                np.int16,
+                np.int8,
+            ]:
+                return classifications_array.astype(bool)
+            elif classifications_array.dtype.kind in [
+                "U",
+                "S",
+                "O",
+            ]:  # Unicode, byte string, or object
+                # String/object arrays
+                bool_list = []
+                for item in classifications_array:
+                    if isinstance(item, bool):
+                        bool_list.append(item)
+                    elif isinstance(item, (int, np.integer)):
+                        bool_list.append(bool(item))
+                    elif isinstance(item, str):
+                        # String representations of booleans
+                        bool_list.append(item.lower() in ["true", "1", "yes"])
+                    else:
+                        bool_list.append(bool(item))
+                return np.array(bool_list, dtype=bool)
+            else:
+                return classifications_array.astype(bool)
+
+        topic_classifications = safe_bool_conversion(
+            topic_classifications_response.classifications
+        )
 
         true_positives = sum(topic_answered_verdict & topic_classifications)
         false_positives = sum(topic_answered_verdict & ~topic_classifications)
