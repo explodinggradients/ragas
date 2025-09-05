@@ -36,7 +36,7 @@ def is_langchain_llm(llm: t.Union[BaseRagasLLM, BaseLanguageModel]) -> bool:
     Returns:
         True if it's a LangChain LLM, False if it's a Ragas LLM
 
-    .. deprecated:: 0.2.0
+    .. deprecated::
         Direct usage of LangChain LLMs is deprecated. Use Ragas LLM interfaces instead:
         from ragas.llms.base import llm_factory; llm = llm_factory("gpt-4o-mini")
         or from ragas.llms.base import instructor_llm_factory; llm = instructor_llm_factory("openai", client=openai_client)

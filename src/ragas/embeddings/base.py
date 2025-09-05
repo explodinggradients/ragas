@@ -246,7 +246,7 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
     """
     Wrapper for any embeddings from langchain.
 
-    .. deprecated:: 0.3.0
+    .. deprecated::
         LangchainEmbeddingsWrapper is deprecated and will be removed in a future version.
         Use the modern embedding providers directly with embedding_factory() instead:
 
@@ -463,7 +463,7 @@ class LlamaIndexEmbeddingsWrapper(BaseRagasEmbeddings):
     """
     Wrapper for any embeddings from llama-index.
 
-    .. deprecated:: 0.3.0
+    .. deprecated::
         LlamaIndexEmbeddingsWrapper is deprecated and will be removed in a future version.
         Use the modern embedding providers directly with embedding_factory() instead:
 
