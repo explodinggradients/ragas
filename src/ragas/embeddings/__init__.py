@@ -3,7 +3,6 @@
 from ragas.embeddings.base import (
     BaseRagasEmbedding,
     BaseRagasEmbeddings,
-    DeprecationHelper,
     HuggingfaceEmbeddings,
     LangchainEmbeddingsWrapper as _LangchainEmbeddingsWrapper,
     LlamaIndexEmbeddingsWrapper as _LlamaIndexEmbeddingsWrapper,
@@ -17,6 +16,7 @@ from ragas.embeddings.openai_provider import OpenAIEmbeddings
 
 # Utilities
 from ragas.embeddings.utils import batch_texts, get_optimal_batch_size, validate_texts
+from ragas.utils import DeprecationHelper
 
 # Create deprecation wrappers for legacy classes
 LangchainEmbeddingsWrapper = DeprecationHelper(

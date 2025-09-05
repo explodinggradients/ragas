@@ -133,6 +133,12 @@ class LangchainLLMWrapper(BaseRagasLLM):
     interface. it implements 2 functions:
     - generate_text: for generating text from a given PromptValue
     - agenerate_text: for generating text from a given PromptValue asynchronously
+
+    .. deprecated:: 0.2.0
+        LangchainLLMWrapper is deprecated and will be removed in a future version.
+        Use the modern LLM providers instead:
+        from ragas.llms.base import llm_factory; llm = llm_factory("gpt-4o-mini")
+        or from ragas.llms.base import instructor_llm_factory; llm = instructor_llm_factory("openai", client=openai_client)
     """
 
     def __init__(
@@ -306,6 +312,12 @@ class LangchainLLMWrapper(BaseRagasLLM):
 class LlamaIndexLLMWrapper(BaseRagasLLM):
     """
     A Adaptor for LlamaIndex LLMs
+
+    .. deprecated:: 0.2.0
+        LlamaIndexLLMWrapper is deprecated and will be removed in a future version.
+        Use the modern LLM providers instead:
+        from ragas.llms.base import llm_factory; llm = llm_factory("gpt-4o-mini")
+        or from ragas.llms.base import instructor_llm_factory; llm = instructor_llm_factory("openai", client=openai_client)
     """
 
     def __init__(
