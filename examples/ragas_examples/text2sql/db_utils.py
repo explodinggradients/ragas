@@ -85,7 +85,7 @@ class SQLiteDB:
         Args:
             sql: SQL SELECT query string
             replace_current_date: Whether to replace current_date/now with fixed date (default: True)
-            case_insensitive: Whether to make string case-insensitive (default: False)
+            case_insensitive: Whether to make string case-insensitive (default: True)
             
         Returns:
             Tuple of (success: bool, result: DataFrame | error_message: str)
