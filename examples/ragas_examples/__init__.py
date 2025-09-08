@@ -10,6 +10,7 @@ Available example modules:
 - benchmark_llm: LLM benchmarking and comparison examples
 - prompt_evals: Prompt evaluation examples
 - rag_eval: RAG system evaluation examples
+- text2sql: Text-to-SQL agent evaluation examples
 - workflow_eval: Workflow evaluation examples
 """
 
