@@ -190,27 +190,23 @@ class SQLiteDB:
     
     def get_schema_info(self) -> Tuple[bool, Union[pd.DataFrame, str]]:
         """
-        Get database schema information.
+        Get database schema information as DDL statements.
+        
+        This provides the most comprehensive and agent-friendly schema information,
+        showing the actual CREATE TABLE/VIEW statements that define the database structure.
         
         Returns:
             Tuple of (success: bool, result: DataFrame | error_message: str)
-            DataFrame contains: table_name, column_name, data_type, not_null, default_value, primary_key
+            DataFrame contains: name, type, sql (DDL statements)
         """
         schema_query = """
-        SELECT 
-            m.name as table_name,
-            p.name as column_name,
-            p.type as data_type,
-            p."notnull" as not_null,
-            p.dflt_value as default_value,
-            p.pk as primary_key
-        FROM sqlite_master m
-        LEFT OUTER JOIN pragma_table_info(m.name) p ON m.name <> p.name
-        WHERE m.type = 'table'
-        AND m.name NOT LIKE 'sqlite_%'
-        ORDER BY m.name, p.cid
+        SELECT name, type, sql
+        FROM sqlite_master
+        WHERE type IN ('table', 'view')
+          AND name NOT LIKE 'sqlite_%'
+        ORDER BY type, name
         """
-        return self.execute_query(schema_query)
+        return self.execute_query(schema_query, replace_current_date=False, case_insensitive=False)
     
     def get_table_names(self) -> Tuple[bool, Union[list, str]]:
         """
@@ -297,16 +293,17 @@ def execute_sql(sql: str, db_path: Optional[str] = None, replace_current_date: b
 
 def get_database_schema(db_path: Optional[str] = None) -> Tuple[bool, Union[pd.DataFrame, str]]:
     """
-    Get database schema information with automatic connection management.
+    Get database schema information as DDL statements with automatic connection management.
     
     Args:
         db_path: Optional database path (uses BookSQL default if None)
         
     Returns:
         Tuple of (success: bool, result: DataFrame | error_message: str)
+        DataFrame contains: name, type, sql (DDL statements)
     """
-    db = SQLiteDB(db_path)
-    return db.get_schema_info()
+    with SQLiteDB(db_path) as db:
+        return db.get_schema_info()
 
 
 def normalize_sql_query(sql: str, replace_current_date: bool = True, case_insensitive: bool = True) -> str:
