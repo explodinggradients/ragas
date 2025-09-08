@@ -18,12 +18,12 @@ This tutorial notebook provides a step-by-step guide on how to compare and choos
 
 
 !!! tip
-    Ragas can also work with your dataset. Refer to [data preparation](./data_preparation.md) to see how you can use your dataset with ragas. 
+    Ragas can also work with your dataset. Refer to [data preparation](../customizations/testgenerator/index.md) to see how you can use your dataset with ragas. 
 
 Ragas offers a unique test generation paradigm that enables the creation of evaluation datasets specifically tailored to your retrieval and generation tasks. Unlike traditional QA generators, Ragas can generate a wide variety of challenging test cases from your document corpus.
 
 !!! tip
-    Refer to [testset generation](../../concepts/testset_generation.md) to know more on how it works.
+    Refer to [testset generation](../../getstarted/rag_testset_generation.md) to know more on how it works.
 
 For this tutorial notebook, I am using papers from Semantic Scholar that is related to large language models to build RAG.
 
@@ -31,7 +31,9 @@ For this tutorial notebook, I am using papers from Semantic Scholar that is rela
 from llama_index.core import download_loader
 from ragas.testset.evolutions import simple, reasoning, multi_context
 from ragas.testset.generator import TestsetGenerator
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
+from ragas.embeddings import OpenAIEmbeddings
+import openai
 
 SemanticScholarReader = download_loader("SemanticScholarReader")
 loader = SemanticScholarReader()
@@ -41,7 +43,8 @@ documents = loader.load_data(query=query_space, limit=100)
 # generator with openai models
 generator_llm = ChatOpenAI(model="gpt-4o-mini")
 critic_llm = ChatOpenAI(model="gpt-4o")
-embeddings = OpenAIEmbeddings()
+openai_client = openai.OpenAI()
+embeddings = OpenAIEmbeddings(client=openai_client)
 
 generator = TestsetGenerator.from_langchain(
     generator_llm,
@@ -83,7 +86,9 @@ Here I am using llama-index to build a basic RAG pipeline with my documents. The
 
 import nest_asyncio
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, ServiceContext
-from langchain.embeddings import HuggingFaceEmbeddings, OpenAIEmbeddings
+from langchain.embeddings import HuggingFaceEmbeddings
+from ragas.embeddings import OpenAIEmbeddings
+import openai
 import pandas as pd
 
 nest_asyncio.apply()

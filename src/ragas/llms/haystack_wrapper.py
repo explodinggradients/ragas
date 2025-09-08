@@ -84,7 +84,7 @@ class HaystackLLMWrapper(BaseRagasLLM):
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: float = 1e-8,
+        temperature: float = 0.01,
         stop: t.Optional[t.List[str]] = None,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:

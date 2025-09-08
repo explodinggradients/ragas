@@ -19,23 +19,36 @@ setup-venv: ## Set up uv virtual environment
 	@echo "Virtual environment created at .venv"
 	@echo "To activate: source .venv/bin/activate"
 
-install: ## Install dependencies for ragas
-	@echo "Installing dependencies..."
+install-minimal: ## Install minimal dev dependencies (fast setup - 79 packages)
+	@echo "Installing minimal development dependencies (fast setup)..."
 	@if [ ! -d ".venv" ]; then \
 		echo "Virtual environment not found, creating one..."; \
 		$(MAKE) setup-venv; \
 	fi
-	@echo "Installing ragas dependencies..."
+	@echo "Installing core ragas + essential dev tools..."
+	$(Q)uv pip install -e ".[dev-minimal]"
+	@echo "Setting up pre-commit hooks..."
+	$(Q)uv run pre-commit install
+	@echo "Minimal installation complete! (79 packages)"
+	@echo "Note: For full features including ML packages, use 'make install'"
+
+install: ## Install full dependencies with uv sync (backward compatible - modern approach)
+	@echo "Installing full development dependencies with uv sync..."
+	@if [ ! -d ".venv" ]; then \
+		echo "Virtual environment not found, creating one..."; \
+		$(MAKE) setup-venv; \
+	fi
+	@echo "Installing ragas with full dev environment..."
 	$(Q)VIRTUAL_ENV= uv sync --group dev
 	@echo "Setting up pre-commit hooks..."
-	$(Q)uv run --active pre-commit install
-	@echo "Installation complete!"
+	$(Q)uv run pre-commit install
+	@echo "Full installation complete! (Modern uv sync approach)"
 
 # =============================================================================
 # CODE QUALITY
 # =============================================================================
 
-.PHONY: help setup-venv install format type check clean test test-e2e benchmarks benchmarks-docker run-ci run-ci-fast run-ci-format-check run-ci-type run-ci-tests build-docs serve-docs process-experimental-notebooks
+.PHONY: help setup-venv install-minimal install format type check clean test test-e2e benchmarks benchmarks-docker run-ci run-ci-fast run-ci-format-check run-ci-type run-ci-tests build-docs serve-docs
 format: ## Format and lint all code
 	@echo "Formatting and linting all code..."
 	@echo "(ruff format) Formatting ragas..."
@@ -71,7 +84,7 @@ benchmarks-docker: ## Run benchmarks in docker
 
 benchmarks-test: ## Run benchmarks for ragas unit tests
 	@echo "Running ragas unit tests with timing benchmarks..."
-	$(Q)uv run --active pytest --nbmake tests/unit tests/experimental --durations=0 -v $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
+	$(Q)uv run --active pytest --nbmake tests/unit --durations=0 -v $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 
 # =============================================================================
 # CI/BUILD
@@ -85,7 +98,7 @@ run-ci: ## Run complete CI pipeline (mirrors GitHub CI exactly)
 	@echo "Type check..."
 	$(Q)$(MAKE) type
 	@echo "Unit tests..."
-	$(Q)__RAGAS_DEBUG_TRACKING=true RAGAS_DO_NOT_TRACK=true uv run --active pytest --nbmake tests/unit tests/experimental --dist loadfile -n auto
+	$(Q)__RAGAS_DEBUG_TRACKING=true RAGAS_DO_NOT_TRACK=true uv run --active pytest --nbmake tests/unit --dist loadfile -n auto
 	@echo "All CI checks passed!"
 
 run-ci-format-check: ## Run format check in dry-run mode (like GitHub CI)
@@ -100,7 +113,7 @@ run-ci-type: ## Run type checking (matches GitHub CI)
 
 run-ci-tests: ## Run all tests with CI options
 	@echo "Running all tests with CI options..."
-	$(Q)__RAGAS_DEBUG_TRACKING=true RAGAS_DO_NOT_TRACK=true pytest --nbmake tests/unit tests/experimental --dist loadfile -n auto
+	$(Q)__RAGAS_DEBUG_TRACKING=true RAGAS_DO_NOT_TRACK=true pytest --nbmake tests/unit --dist loadfile -n auto
 
 run-ci-fast: ## Fast CI check for quick local validation (2-3 minutes)
 	@echo "Running fast CI check for quick feedback..."
@@ -108,15 +121,15 @@ run-ci-fast: ## Fast CI check for quick local validation (2-3 minutes)
 	$(Q)uv run --active ruff format --check src tests docs --config pyproject.toml
 	$(Q)uv run --active ruff check src docs tests --config pyproject.toml
 	@echo "Core unit tests (no nbmake for speed)..."
-	$(Q)uv run --active pytest tests/unit tests/experimental --dist loadfile -n auto -x
+	$(Q)uv run --active pytest tests/unit --dist loadfile -n auto -x
 	@echo "Fast CI check completed!"
 
 clean: ## Clean all generated files
 	@echo "Cleaning all generated files..."
 	$(Q)find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 	$(Q)rm -rf site/ docs/site/ .mypy_cache .pytest_cache .ruff_cache
-	$(Q)rm -rf dist/ build/ *.egg-info/ src/*.egg-info/ experimental/*.egg-info/
-	$(Q)rm -rf .coverage htmlcov/ .tox/ .venv/ experimental/.venv/
+	$(Q)rm -rf dist/ build/ *.egg-info/ src/*.egg-info/
+	$(Q)rm -rf .coverage htmlcov/ .tox/ .venv/
 	$(Q)find . -name '*.log' -delete
 	$(Q)find . -name '.DS_Store' -delete
 	$(Q)find . -name 'temp*' -type d -exec rm -rf {} + 2>/dev/null || true
@@ -129,11 +142,11 @@ clean: ## Clean all generated files
 
 test: ## Run all unit tests
 	@echo "Running all unit tests..."
-	$(Q)uv run --active pytest tests/unit tests/experimental $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
+	$(Q)uv run --active pytest tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 
 test-all: ## Run all unit tests (including notebooks)
 	@echo "Running all unit tests (including notebooks)..."
-	$(Q)uv run --active pytest --nbmake tests/unit tests/experimental $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
+	$(Q)uv run --active pytest --nbmake tests/unit $(shell if [ -n "$(k)" ]; then echo "-k $(k)"; fi)
 
 test-e2e: ## Run all end-to-end tests
 	@echo "Running all end-to-end tests..."
@@ -143,16 +156,12 @@ test-e2e: ## Run all end-to-end tests
 # DOCUMENTATION
 # =============================================================================
 
-process-experimental-notebooks: ## Process experimental notebooks to markdown for MkDocs
-	@echo "Processing experimental notebooks..."
-	$(Q)python $(GIT_ROOT)/scripts/process_experimental_notebooks.py
-
-build-docs: process-experimental-notebooks ## Build all documentation
+build-docs: ## Build all documentation
 	@echo "Building all documentation..."
 	@echo "Converting ipynb notebooks to md files..."
-	$(Q)python $(GIT_ROOT)/docs/ipynb_to_md.py
+	$(Q)MKDOCS_CI=true uv run python $(GIT_ROOT)/docs/ipynb_to_md.py
 	@echo "Building ragas documentation..."
-	$(Q)mkdocs build
+	$(Q)uv run --group docs mkdocs build
 
 serve-docs: ## Build and serve documentation locally
-	$(Q)mkdocs serve --dirtyreload
+	$(Q)uv run --group docs mkdocs serve --dirtyreload

@@ -18,7 +18,7 @@ class FakeTestLLM(BaseRagasLLM):
         self,
         prompt: PromptValue,
         n=1,
-        temperature: float = 1e-8,
+        temperature: float = 0.01,
         stop=None,
         callbacks=[],
     ):
@@ -29,9 +29,12 @@ class FakeTestLLM(BaseRagasLLM):
         self,
         prompt: PromptValue,
         n=1,
-        temperature: t.Optional[float] = 1e-8,
+        temperature: t.Optional[float] = 0.01,
         stop=None,
         callbacks=[],
     ):
-        temp_val = temperature if temperature is not None else 1e-8
+        temp_val = temperature if temperature is not None else 0.01
         return self.generate_text(prompt, n, temp_val, stop, callbacks)
+
+    def is_finished(self, response: LLMResult) -> bool:
+        return True

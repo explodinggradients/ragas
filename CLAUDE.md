@@ -16,23 +16,62 @@ The repository contains:
 
 ### Installation
 
+Choose the appropriate installation based on your needs:
+
 ```bash
+# RECOMMENDED: Minimal dev setup (79 packages - fast)
+make install-minimal
+
+# FULL: Complete dev environment (383 packages - comprehensive)  
+make install
+
+# OR manual installation:
 # Create a virtual environment
 python -m venv venv
 source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
 
-# For ragas (includes experimental features)
-pip install -U setuptools  # Required on newer Python versions
-pip install -e ".[dev]"
+# Minimal dev setup (uses [project.optional-dependencies].dev-minimal)
+uv pip install -e ".[dev-minimal]"
+
+# Full dev setup (uses [dependency-groups].dev)
+uv sync --group dev
 ```
+
+### Installation Methods Explained
+
+- **Minimal setup**: Uses `uv pip install` with optional dependencies for selective installation
+- **Full setup**: Uses `uv sync` with dependency groups for comprehensive environment management
+- **No naming conflicts**: `dev-minimal` vs `dev` clearly distinguish the two approaches
+
+### Workspace Structure
+
+The project uses a UV workspace configuration for managing multiple packages:
+
+```bash
+# Install
+uv sync
+
+# Install examples separately
+uv sync --package ragas-examples
+
+# Build specific workspace package
+uv build --package ragas-examples
+```
+
+**Workspace Members:**
+- `ragas` (main package) - Located in `src/ragas/`
+- `ragas-examples` (examples package) - Located in `examples/`
+
+The workspace ensures consistent dependency versions across packages and enables editable installs of workspace members.
 
 ## Common Commands
 
 ### Commands (from root directory)
 
 ```bash
-# Setup and installation
-make install        # Install dependencies for ragas
+# Setup and installation  
+make install-minimal # Minimal dev setup (79 packages - recommended)
+make install        # Full dev environment (383 packages - complete)
 
 # Code quality
 make format         # Format and lint all code
@@ -70,7 +109,7 @@ make test-e2e
 
 # Direct pytest commands for more control
 uv run pytest tests/unit -k "test_name"
-uv run pytest tests/experimental -v
+uv run pytest tests/unit -v
 ```
 
 ### Documentation
@@ -143,7 +182,7 @@ The experimental features are now integrated into the main ragas package:
 To use experimental features:
 
 ```python
-from ragas.experimental import Dataset
+from ragas import Dataset
 from ragas import experiment
 from ragas.backends import get_registry
 ```
@@ -174,4 +213,8 @@ analytics_logger.addHandler(console_handler)
 ## Memories
 
 - whenever you create such docs put in in /\_experiments because that is gitignored and you can use it as a scratchpad or tmp directory for storing these
-- always use uv to run python and python related commandline tools like isort, ruff, pyright ect. This is because we are using uv to manage the .venv and dependencies.
+- always use uv to run python and python related commandline tools like isort, ruff, pyright etc. This is because we are using uv to manage the .venv and dependencies.
+- The project uses two distinct dependency management approaches:
+  - **Minimal setup**: `[project.optional-dependencies].dev-minimal` for fast development (79 packages)
+  - **Full setup**: `[dependency-groups].dev` for comprehensive development (383 packages)
+- Use `make install-minimal` for most development tasks, `make install` for full ML stack work

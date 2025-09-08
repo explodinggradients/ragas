@@ -29,6 +29,9 @@ class EchoLLM(BaseRagasLLM):
     ) -> LLMResult:
         return LLMResult(generations=[[Generation(text=prompt.to_string())]])
 
+    def is_finished(self, response: LLMResult) -> bool:
+        return True
+
 
 @pytest.mark.asyncio
 async def test_string_prompt():

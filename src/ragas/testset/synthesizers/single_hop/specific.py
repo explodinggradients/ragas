@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class SingleHopScenario(BaseScenario):
     """
-    Scenario for multi-hop queries.
+    Scenario for single-hop queries.
 
     Attributes
     ----------
@@ -39,7 +39,7 @@ class SingleHopScenario(BaseScenario):
 
 @dataclass
 class SingleHopSpecificQuerySynthesizer(SingleHopQuerySynthesizer):
-    name: str = "single_hop_specifc_query_synthesizer"
+    name: str = "single_hop_specific_query_synthesizer"
     theme_persona_matching_prompt: PydanticPrompt = ThemesPersonasMatchingPrompt()
     property_name: str = "entities"
 

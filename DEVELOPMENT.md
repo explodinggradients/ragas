@@ -7,12 +7,16 @@ This comprehensive guide covers development workflows for the Ragas monorepo, de
 ```bash
 # 1. Clone and enter the repository
 git clone https://github.com/explodinggradients/ragas.git
-cd ragas
 
 # 2. Install uv (if not already installed)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 3. Install dependencies and setup environment
+# 3. Choose your installation type:
+
+# RECOMMENDED: Minimal dev setup (79 packages - fast)  
+make install-minimal
+
+# FULL: Complete dev environment (383 packages - comprehensive)
 make install
 
 # 4. Verify everything works
@@ -29,7 +33,8 @@ AI agents working with this codebase should use these standardized commands:
 ```bash
 # Essential commands for AI development
 make help           # See all available targets
-make install        # Install dependencies and setup environment
+make install-minimal # Minimal dev setup (fast - 79 packages) 
+make install        # Full environment (modern uv sync - 383 packages)
 make check          # Quick health check (format + type)
 make test           # Run all tests
 make run-ci         # Full CI pipeline locally
@@ -69,6 +74,13 @@ This repository is organized as a single project with integrated experimental fe
 - **Ragas Experimental**: Advanced features integrated at `src/ragas/experimental/`
 - **Infrastructure**: Single CI/CD, documentation, and build system
 
+### Examples Package (ragas-examples)
+- Lives under `examples/` as an installable package `ragas-examples`
+- Published independently to PyPI via GitHub Actions workflow `publish-examples.yml`
+- Versioning via Git tags with prefix `examples-v` (e.g., `examples-v0.1.0`)
+- Local development: `uv pip install -e . -e ./examples`
+- Run examples: `python -m ragas_examples.benchmark_llm.prompt`
+
 ## Development Environment Setup
 
 ### Prerequisites
@@ -80,6 +92,10 @@ This repository is organized as a single project with integrated experimental fe
 
 #### Option 1: Using Make (Recommended)
 ```bash
+# Recommended: Minimal dev setup (79 packages)  
+make install-minimal
+
+# Full: Complete environment (383 packages)
 make install
 ```
 
@@ -88,9 +104,31 @@ make install
 # Install uv if not available
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install the project
+# Minimal dev: Core + essential dev tools
+uv pip install -e ".[dev-minimal]"
+
+# Full dev: Everything (uses modern uv sync)
 uv sync --group dev
 ```
+
+#### Which Option to Choose?
+
+**Use `make install-minimal` (79 packages) if you're:**
+- Contributing to ragas development
+- Need testing and linting tools
+- Want fast CI/CD builds
+- Working on code quality, docs, or basic features
+
+**Use `make install` (383 packages) if you're:**
+- Working on ML features requiring the full stack
+- Need observability tools (Phoenix, MLflow)
+- Developing with notebooks and advanced integrations
+- Want the complete development environment
+
+#### Installation Methods Explained
+
+- **`install-minimal`**: Uses `uv pip install -e ".[dev-minimal]"` for selective minimal dev dependencies (79 packages)
+- **`install`**: Uses `uv sync --group dev` for complete modern dependency management (383 packages)
 
 ### Verification
 ```bash
@@ -103,7 +141,8 @@ make test   # Runs all tests
 Run `make help` to see all targets. Here are the essential commands:
 
 ### Setup & Installation
-- `make install` - Install dependencies for both projects
+- `make install-minimal` - Install minimal dev setup (79 packages - recommended)
+- `make install` - Install full environment with uv sync (383 packages - complete)
 
 ### Code Quality
 - `make format` - Format and lint all code (includes unused import cleanup)
@@ -161,7 +200,7 @@ make run-ci         # Run full CI pipeline
 
 # Or use direct commands for specific tasks
 uv run pytest tests/unit          # Run core unit tests
-uv run pytest tests/experimental  # Run experimental tests
+uv run pytest tests/unit  # Run unit tests
 uv run pyright src               # Type check source code
 ```
 
@@ -245,7 +284,7 @@ make install
 uv run pytest tests/unit/test_specific.py -v
 
 # Check experimental test dependencies
-uv run pytest tests/experimental --collect-only
+uv run pytest tests/unit --collect-only
 ```
 
 #### Formatting Issues
