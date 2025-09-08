@@ -36,7 +36,11 @@ def apply_nest_asyncio():
 
 
 def as_completed(
-    coroutines: t.Sequence[t.Coroutine], max_workers: int = -1
+    coroutines: t.Sequence[t.Coroutine],
+    max_workers: int = -1,
+    *,
+    cancel_check: t.Optional[t.Callable[[], bool]] = None,
+    cancel_pending: bool = True,
 ) -> t.Iterator[asyncio.Future]:
     """
     Wrap coroutines with a semaphore if max_workers is specified.
@@ -54,7 +58,22 @@ def as_completed(
 
         tasks = [asyncio.create_task(sema_coro(coro)) for coro in coroutines]
 
-    return asyncio.as_completed(tasks)
+    ac_iter = asyncio.as_completed(tasks)
+
+    if cancel_check is None:
+        return ac_iter
+
+    def _iter_with_cancel():
+        for future in ac_iter:
+            if cancel_check():
+                if cancel_pending:
+                    for t in tasks:
+                        if not t.done():
+                            t.cancel()
+                break
+            yield future
+
+    return _iter_with_cancel()
 
 
 async def process_futures(
@@ -118,6 +137,8 @@ def run_async_tasks(
     show_progress: bool = True,
     progress_bar_desc: str = "Running async tasks",
     max_workers: int = -1,
+    *,
+    cancel_check: t.Optional[t.Callable[[], bool]] = None,
 ) -> t.List[t.Any]:
     """
     Execute async tasks with optional batching and progress tracking.
@@ -140,7 +161,7 @@ def run_async_tasks(
         if not batch_size:
             with pbm.create_single_bar(total_tasks) as pbar:
                 async for result in process_futures(
-                    as_completed(tasks, max_workers), pbar
+                    as_completed(tasks, max_workers, cancel_check=cancel_check), pbar
                 ):
                     results.append(result)
         else:
@@ -152,11 +173,14 @@ def run_async_tasks(
             with overall_pbar, batch_pbar:
                 for i, batch in enumerate(batches, 1):
                     pbm.update_batch_bar(batch_pbar, i, n_batches, len(batch))
+                    processed = 0
                     async for result in process_futures(
-                        as_completed(batch, max_workers), batch_pbar
+                        as_completed(batch, max_workers, cancel_check=cancel_check),
+                        batch_pbar,
                     ):
                         results.append(result)
-                    overall_pbar.update(len(batch))
+                        processed += 1
+                    overall_pbar.update(processed)
 
         return results
 
