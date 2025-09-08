@@ -12,6 +12,11 @@ dynamic = ["version", "readme"]
 
 [project.optional-dependencies]
 gdrive = ["ragas[gdrive]"]
+text2sql = [
+    "huggingface_hub>=0.16.0",
+    "datacompy>=0.8.0", 
+    "python-dotenv>=1.0.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/explodinggradients/ragas"
@@ -27,7 +32,11 @@ where = ["."]
 include = ["ragas_examples*"]
 
 [tool.setuptools.package-data]
-ragas_examples = ["**/*.csv"]
+ragas_examples = [
+    "**/*.csv", 
+    "text2sql/datasets/*.csv",
+    "text2sql/prompt*.txt"
+]
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/markdown"}
