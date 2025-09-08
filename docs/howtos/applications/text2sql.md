@@ -360,6 +360,8 @@ The agent includes built-in observability and logging to help you debug issues e
 
 For text-to-SQL systems, we need metrics that evaluate both the technical correctness of generated SQL and the accuracy of results. We'll use two complementary metrics that provide clear insights into different types of failures.
 
+For more details on Ragas concepts, see [experimentation](/concepts/experimentation), [metrics overview](/concepts/metrics/overview), and [datasets](/concepts/datasets).
+
 ### SQL validity and execution accuracy metrics
 
 **SQL Validity Metric**: Tests whether the generated SQL can be parsed and executed without syntax errors. This catches basic SQL generation issues like invalid syntax, wrong column names, or malformed queries.
@@ -375,7 +377,7 @@ This classification is crucial because it separates real model failures from dat
 
 ### Setting up metric functions
 
-Create your evaluation metrics using Ragas discrete metrics. These metrics will be called asynchronously during evaluation to enable parallel processing:
+Create your evaluation metrics using [Ragas discrete metrics](/concepts/metrics/overview). These metrics will be called asynchronously during evaluation to enable parallel processing:
 
 ```python
 # File: examples/ragas_examples/text2sql/evals.py
@@ -467,7 +469,7 @@ The metrics use datacompy for precise DataFrame comparison and classify errors t
 
 ### The experiment function
 
-The experiment function orchestrates the complete evaluation pipeline - running the text-to-SQL agent and computing metrics for each query:
+The [experiment function](/concepts/experimentation) orchestrates the complete evaluation pipeline - running the text-to-SQL agent and computing metrics for each query:
 
 ```python
 # File: examples/ragas_examples/text2sql/evals.py
@@ -523,7 +525,7 @@ The async implementation enables parallel query evaluation with real-time progre
 
 ### Dataset loader
 
-Load your evaluation dataset into a Ragas Dataset object for experiment execution:
+Load your evaluation dataset into a [Ragas Dataset](/concepts/datasets) object for experiment execution:
 
 ```python
 # File: examples/ragas_examples/text2sql/evals.py
@@ -944,8 +946,8 @@ uv run python -m ragas_examples.text2sql.evals run \
 
 | Prompt | SQL Validity | Execution Accuracy | Results CSV |
 |---|---|---|---|
-| v1 (`prompt.txt`) | 98.99% | 2.02% | `examples/ragas_examples/text2sql/experiments/20250905-151023-gpt-5-mini-promptv1.csv` |
-| v2 (`prompt_v2.txt`) | 100.00% | 60.61% | `examples/ragas_examples/text2sql/experiments/20250905-150957-gpt-5-mini-promptv2.csv` |
+| v1 (`prompt.txt`) | 98.99% | 2.02% | `experiments/20250905-151023-gpt-5-mini-promptv1.csv` |
+| v2 (`prompt_v2.txt`) | 100.00% | 60.61% | `experiments/20250905-150957-gpt-5-mini-promptv2.csv` |
 
 These improvements came from generic, schema-grounded guardrails (not case-specific examples), so they should generalize without overfitting.
 
@@ -963,9 +965,9 @@ After running all prompt versions, we can compare the final results.
 
 | Prompt | SQL Validity | Execution Accuracy | Results CSV |
 |---|---|---|---|
-| v1 (`prompt.txt`) | 98.99% | 2.02% | `...-promptv1.csv` |
-| v2 (`prompt_v2.txt`) | 100.00% | 60.61% | `...-promptv2.csv` |
-| v3 (`prompt_v3.txt`) | 98.99% | 70.71% | `...gpt-5-mini-promptv3.csv` |
+| v1 (`prompt.txt`) | 98.99% | 2.02% | `experiments/...-promptv1.csv` |
+| v2 (`prompt_v2.txt`) | 100.00% | 60.61% | `experiments/...-promptv2.csv` |
+| v3 (`prompt_v3.txt`) | 98.99% | 70.71% | `experiments/...-promptv3.csv` |
 
 **Progress Analysis:**
 - **v1 → v2**: Massive 58 percentage point jump from 2.02% to 60.61% through basic deduplication and business logic guidelines
