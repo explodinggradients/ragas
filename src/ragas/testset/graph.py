@@ -299,24 +299,24 @@ class KnowledgeGraph:
             relationships: list[Relationship],
         ) -> dict[int, set[uuid.UUID]]:
             """Identify clusters of nodes using Leiden algorithm."""
+            import numpy as np
             from sknetwork.clustering import Leiden
-            from sknetwork.data import from_edge_list
+            from sknetwork.data import Dataset as SKDataset, from_edge_list
 
             # NOTE: the upstream sknetwork Dataset has some issues with type hints,
             # so we use type: ignore to bypass them.
-            # graph: sknetwork.data.Dataset
-            graph = from_edge_list(  # type: ignore
+            graph: SKDataset = from_edge_list(  # type: ignore
                 [(str(rel.source.id), str(rel.target.id)) for rel in relationships],
                 directed=True,
             )
 
             # Apply Leiden clustering
             leiden = Leiden(random_state=42)
-            cluster_labels = leiden.fit_predict(graph.adjacency)  # type: ignore
+            cluster_labels: np.ndarray = leiden.fit_predict(graph.adjacency)
 
             # Group nodes by cluster
             clusters: defaultdict[int, set[uuid.UUID]] = defaultdict(set)
-            for label, node_id in zip(cluster_labels, graph.names):  # type: ignore
+            for label, node_id in zip(cluster_labels, graph.names):
                 clusters[int(label)].add(uuid.UUID(node_id))
 
             return dict(clusters)
