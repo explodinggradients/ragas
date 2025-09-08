@@ -74,25 +74,33 @@ Respond with JSON containing:
 
 async def process_batch(client: AsyncOpenAI, batch_data: List[tuple]) -> List[tuple]:
     """Process a batch of rows concurrently."""
+    # Create tasks for true concurrent execution
     tasks = []
     for idx, row_dict in batch_data:
         print(f"  Starting analysis for row {idx} (ID: {row_dict.get('id', 'unknown')})")
-        task = get_error_analysis(client, row_dict)
+        task = asyncio.create_task(get_error_analysis(client, row_dict))
         tasks.append((idx, task))
     
-    print(f"  Waiting for {len(tasks)} API calls to complete...")
+    print(f"  Waiting for {len(tasks)} API calls to complete concurrently...")
     results = []
-    for idx, task in tasks:
-        try:
-            result = await task
-            print(f"  ✓ Completed row {idx}: {result.get('error_codes', ['OTHER'])}")
-            results.append((idx, result))
-        except Exception as e:
-            print(f"  ✗ Error processing row {idx}: {e}")
+    
+    # Use asyncio.gather for true concurrent execution
+    task_results = await asyncio.gather(
+        *[task for _, task in tasks], 
+        return_exceptions=True
+    )
+    
+    for (idx, _), result in zip(tasks, task_results):
+        if isinstance(result, Exception):
+            print(f"  ✗ Error processing row {idx}: {result}")
             results.append((idx, {
                 "error_codes": ["OTHER"], 
-                "error_analysis": f"Error during analysis: {str(e)}"
+                "error_analysis": f"Error during analysis: {str(result)}"
             }))
+        else:
+            error_codes = result.get('error_codes', ['OTHER']) if isinstance(result, dict) else ['OTHER']
+            print(f"  ✓ Completed row {idx}: {error_codes}")
+            results.append((idx, result))
     
     return results
 
