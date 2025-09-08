@@ -1,5 +1,7 @@
 # Context Precision
-Context Precision is a metric that measures the proportion of relevant chunks in the `retrieved_contexts`. It is calculated as the mean of the precision@k for each chunk in the context. Precision@k is the ratio of the number of relevant chunks at rank k to the total number of chunks at rank k.
+Context Precision is a metric that evaluates the retriever’s ability to rank relevant chunks higher than irrelevant ones for a given query in the retrieved context. Specifically, it assesses the degree to which relevant chunks in the retrieved context are placed at the top of the ranking.
+
+It is calculated as the mean of the precision@k for each chunk in the context. Precision@k is the ratio of the number of relevant chunks at rank k to the total number of chunks at rank k.
 
 $$
 \text{Context Precision@K} = \frac{\sum_{k=1}^{K} \left( \text{Precision@k} \times v_k \right)}{\text{Total number of relevant items in the top } K \text{ results}}
@@ -39,6 +41,50 @@ await context_precision.single_turn_ascore(sample)
 Output
 ```
 0.9999999999
+```
+
+Note that even if an irrelevant chunk is present at the second position in the array, context precision remains the same.  
+
+```python
+from ragas import SingleTurnSample
+from ragas.metrics import LLMContextPrecisionWithoutReference
+
+context_precision = LLMContextPrecisionWithoutReference(llm=evaluator_llm)
+
+sample = SingleTurnSample(
+    user_input="Where is the Eiffel Tower located?",
+    response="The Eiffel Tower is located in Paris.",
+    retrieved_contexts=["The Eiffel Tower is located in Paris.", "The Brandenburg Gate is located in Berlin."], 
+)
+
+
+await context_precision.single_turn_ascore(sample)
+```
+Output
+```
+0.9999999999
+```
+
+However, if this irrelevant chunk is placed at the first position, context precision reduces. 
+
+```python
+from ragas import SingleTurnSample
+from ragas.metrics import LLMContextPrecisionWithoutReference
+
+context_precision = LLMContextPrecisionWithoutReference(llm=evaluator_llm)
+
+sample = SingleTurnSample(
+    user_input="Where is the Eiffel Tower located?",
+    response="The Eiffel Tower is located in Paris.",
+    retrieved_contexts=["The Brandenburg Gate is located in Berlin.", "The Eiffel Tower is located in Paris." ], 
+)
+
+
+await context_precision.single_turn_ascore(sample)
+```
+Output
+```
+0.49999999995
 ```
 
 ### Context Precision with reference
