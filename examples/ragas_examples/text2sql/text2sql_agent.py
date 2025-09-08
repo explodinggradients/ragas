@@ -206,9 +206,21 @@ class Text2SQLAgent:
         if run_id is None:
             run_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{hash(natural_query) % 10000:04d}"
         
-        # Reset traces for new query
-        if not any(trace.event_type == "init" for trace in self.traces):
-            self.traces = []
+        # Reset traces for new query - start fresh for each generation
+        self.traces = []
+        
+        # Add init trace for this run
+        self.traces.append(
+            TraceEvent(
+                event_type="init",
+                component="text2sql_agent",
+                data={
+                    "run_id": run_id,
+                    "model_name": self.model_name,
+                    "natural_query": natural_query
+                }
+            )
+        )
         
         logging.info(f"Generating SQL for query: {natural_query} (Run ID: {run_id})")
         
@@ -250,6 +262,9 @@ class Text2SQLAgent:
                         time.sleep(sleep_seconds)
                     else:
                         raise
+            
+            if response is None:
+                raise Exception("Failed to get response from OpenAI API after retries")
             
             # Extract generated SQL
             generated_sql = response.choices[0].message.content.strip()
@@ -369,8 +384,8 @@ class Text2SQLAgent:
         
         for line in lines:
             line = line.strip()
-            # Stop at lines that start with explanation markers
-            if line.lower().startswith(('this query', 'explanation:', 'note:', '--', 'the query')):
+            # Stop at lines that start with explanation markers (but not SQL comments)
+            if line.lower().startswith(('this query', 'explanation:', 'note:', 'the query')):
                 break
             if line:  # Skip empty lines
                 sql_lines.append(line)
@@ -495,14 +510,19 @@ if __name__ == "__main__":
                 if success:
                     print("✅ SQL execution successful!")
                     print("\n📊 Query Results:")
-                    if hasattr(db_result, 'to_string'):
-                        # It's a pandas DataFrame
-                        if len(db_result) == 0:
-                            print("No rows returned.")
+                    try:
+                        import pandas as pd
+                        if isinstance(db_result, pd.DataFrame):
+                            # It's a pandas DataFrame
+                            if len(db_result) == 0:
+                                print("No rows returned.")
+                            else:
+                                print(db_result.to_string(index=False))
+                                print(f"\nRows returned: {len(db_result)}")
                         else:
-                            print(db_result.to_string(index=False))
-                            print(f"\nRows returned: {len(db_result)}")
-                    else:
+                            print(str(db_result))
+                    except ImportError:
+                        # pandas not available, just print as string
                         print(str(db_result))
                 else:
                     print(f"❌ SQL execution failed: {db_result}")
