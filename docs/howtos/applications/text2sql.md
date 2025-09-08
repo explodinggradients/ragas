@@ -23,50 +23,32 @@ uv pip install "ragas-examples[text2sql]"
 !!! note "Full code"
     You can view the full code for the agent and evaluation pipeline [here](https://github.com/explodinggradients/ragas/tree/main/examples/ragas_examples/text2sql).
 
-### Configuration
-
-Set your API key:
-```bash
-export OPENAI_API_KEY=your-openai-api-key-here
-```
-
-For BookSQL dataset access (optional):
-```bash
-export HF_TOKEN=your-huggingface-token
-```
-
-### Verify your setup
-
-Test that everything is working correctly:
-
-```bash
-# Test the text-to-SQL agent
-python -m ragas_examples.text2sql.text2sql_agent --test
-```
-
-<details>
-<summary>🔧 Expected test output</summary>
-
-```
-🧪 Running test with query: How much open credit does customer Andrew Bennett?
-============================================================
-Natural Query: How much open credit does customer Andrew Bennett?
-Generated SQL: SELECT SUM(Open_balance) AS open_credit FROM master_txn_table WHERE Customers = 'Andrew Bennett';
-Generation Time: 8608.11ms
-
-============================================================
-🔍 Executing SQL query against database...
-❌ Error executing SQL: Failed to connect to database: Database file not found: BookSQL-files/BookSQL/accounting.sqlite
-
-📝 Log exported to: text2sql_logs/run_test_20250908_142250_2025-09-08T14-22-50-469658.json
-```
-
-The SQL generation is working correctly, but execution fails because the database isn't set up yet. This is expected behavior - we'll set up the database in the next section.
-
-</details>
-
-
 ## Prepare your dataset
+
+### Ready-to-use sample dataset
+
+**We've already prepared a balanced sample dataset for you!** The `booksql_sample.csv` file is included in the text2sql module with 99 examples (33 each of easy, medium, and hard queries) from the BookSQL dataset. You can start evaluating immediately without any download or preparation steps. Or you can follow the next section to create a dataset for your use case. If you are using the sample evals dataset we've provided, you can skip to [Set up your baseline text-to-SQL system](#set-up-your-baseline-text-to-sql-system) section. 
+
+**Examine the sample dataset:**
+
+```bash
+# View the first few rows to understand the structure
+head -5 datasets/booksql_sample.csv
+```
+
+| Query                                                        | SQL                                                                                                                                                                                                                                    | Levels | split |
+|--------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|-------|
+| What is the balance due from Richard Aguirre?                | select sum(open_balance) from ( select distinct transaction_id, open_balance from master_txn_table where customers = "Richard Aguirre" )                                                                                               | medium | train |
+| What is the balance due from Sarah Oconnor?                  | select sum(open_balance) from ( select distinct transaction_id, open_balance from master_txn_table where customers = "Sarah Oconnor" )                                                                                                 | medium | train |
+| What is my average invoice from Jeffrey Moore?               | select avg(amount) from (select distinct transaction_id, amount from master_txn_table where customers = "Jeffrey Moore" and transaction_type = 'invoice')                                                                              | hard   | train |
+| How much open credit does customer Andrew Bennett?           | select sum(open_balance) from ( select distinct transaction_id, open_balance from master_txn_table where customers = "Andrew Bennett" )                                                                                                | easy   | train |
+
+The CSV contains four columns:
+
+- **Query**: Natural language question
+- **SQL**: Ground truth SQL query
+- **Levels**: Difficulty level (easy/medium/hard)
+- **split**: Dataset split (all "train" for this sample)
 
 ### Create a dataset for your use case
 
@@ -89,7 +71,8 @@ The text2sql module includes a convenient CLI tool to download the dataset:
 
 ```bash
 # Download the dataset to ./BookSQL-files folder
-python -m ragas_examples.text2sql.data_utils --download-data
+export HF_TOKEN=your-huggingface-token
+uv run python -m ragas_examples.text2sql.data_utils --download-data
 ```
 
 **Note:** BookSQL is a gated dataset. If you encounter authentication errors:
@@ -150,7 +133,7 @@ We've created a script to create a balanced evaluation subset. You can customize
 
 ```bash
 # Create a CSV with custom number of samples per difficulty level
-python -m ragas_examples.text2sql.data_utils --create-sample --samples 33 --validate --require-data
+uv run python -m ragas_examples.text2sql.data_utils --create-sample --samples 33 --validate --require-data
 ```
 
 The `--validate` flag will validate the SQL queries before including them in the sample. The `--require-data` flag will only include queries that return actual data. We did this after realising that some of the queries in the BookSQL dataset don't return data making them not ideal for evaluation.
@@ -180,27 +163,6 @@ The `--validate` flag will validate the SQL queries before including them in the
 </details>
 
 This creates `datasets/booksql_sample.csv` with 99 total examples balanced across difficulty levels. The sampling process includes automatic deduplication to ensure no duplicate Query+SQL combinations are included in your evaluation dataset. 
-
-**Examine your sample dataset:**
-
-```bash
-# View the first few rows to understand the structure
-head -5 datasets/booksql_sample.csv
-```
-
-
-| Query                                                        | SQL                                                                                                                                                                                                                                    | Levels | split |
-|--------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|-------|
-| What is the balance due from Richard Aguirre?                | select sum(open_balance) from ( select distinct transaction_id, open_balance from master_txn_table where customers = "Richard Aguirre" )                                                                                               | medium | train |
-| What is the balance due from Sarah Oconnor?                  | select sum(open_balance) from ( select distinct transaction_id, open_balance from master_txn_table where customers = "Sarah Oconnor" )                                                                                                 | medium | train |
-| What is my average invoice from Jeffrey Moore?               | select avg(amount) from (select distinct transaction_id, amount from master_txn_table where customers = "Jeffrey Moore" and transaction_type = 'invoice')                                                                              | hard   | train |
-| How much open credit does customer Andrew Bennett?           | select sum(open_balance) from ( select distinct transaction_id, open_balance from master_txn_table where customers = "Andrew Bennett" )                                                                                                | easy   | train |
-
-The CSV contains four columns:
-- **Query**: Natural language question
-- **SQL**: Ground truth SQL query
-- **Levels**: Difficulty level (easy/medium/hard)
-- **split**: Dataset split (all "train" for this sample)
 
 
 ## Set up your baseline text-to-SQL system
@@ -266,7 +228,7 @@ The agent provides OpenAI integration with comprehensive tracing and error handl
 
 ```bash
 # Single query test
-export OPENAI_API_KEY="your-api-key-here"
+export OPENAI_API_KEY=your-openai-api-key-here
 
 uv run python -m ragas_examples.text2sql.text2sql_agent --test
 ```
@@ -621,7 +583,7 @@ Dataset loaded with 10 samples (limited to 10 for testing)
 Running text-to-SQL evaluation with model: gpt-5-mini
 Running experiment: 100%|███████████████████████████████████████████████| 10/10 [00:16<00:00,  1.68s/it]
 ✅ text2sql_gpt_5_mini: 10 cases evaluated
-Results saved to: /path/to/experiments/20250829-121726-text2sql_gpt_5_mini.csv
+Results saved to: experiments/20250829-121726-text2sql_gpt_5_mini.csv
 text2sql_gpt_5_mini SQL Validity: 100.00%
 text2sql_gpt_5_mini Execution Accuracy: 20.00% (excluding 0 dataset errors)
 ```
@@ -683,6 +645,29 @@ The baseline gives you a concrete starting point and identifies the main areas n
 ## Analyze errors and failure patterns
 
 After running evaluations, you can analyze the failure patterns to understand where your Text2SQL agent is making mistakes. We provide an automated error analysis tool that uses LLMs to categorize errors, but **manual review is essential** to ensure you're improving in the right direction.
+
+### Sample evaluation results
+
+Here are some sample rows from our baseline evaluation results to give you a complete picture of what the evaluation data looks like:
+
+| Query | Expected SQL | Predicted SQL | Level | SQL Validity | Execution Accuracy |
+|-------|--------------|---------------|-------|--------------|-------------------|
+| What is the balance due from Richard Aguirre? | `select sum(open_balance) from ( select distinct transaction_id, open_balance from master_txn_table where customers = "Richard Aguirre" )` | `SELECT customer_name, customer_full_name, Balance FROM customers WHERE customer_name = 'Richard Aguirre' OR customer_full_name = 'Richard Aguirre';` | medium | correct | incorrect |
+| How much open credit does customer Natalie Myers? | `select sum(open_balance) from ( select distinct transaction_id, open_balance from master_txn_table where customers = "Natalie Myers" )` | `SELECT Balance FROM customers WHERE customer_name = 'Natalie Myers' OR customer_full_name = 'Natalie Myers';` | easy | correct | incorrect |
+| What is my average invoice from Ashley Thompson? | `select avg(amount) from (select distinct transaction_id, amount from master_txn_table where customers = "Ashley Thompson" and transaction_type = 'invoice')` | `SELECT AVG(Amount) FROM master_txn_table WHERE Customers = 'Ashley Thompson' AND Transaction_TYPE = 'Invoice';` | hard | correct | incorrect |
+| Show number of transactions with Carol Smith | `select count(distinct transaction_id) from master_txn_table where customers = 'Carol Smith' or vendor = 'Carol Smith'` | `SELECT COUNT(*) AS num_transactions FROM master_txn_table WHERE Customers = 'Carol Smith';` | medium | correct | incorrect |
+
+**Key observations from these examples:**
+
+- **SQL Validity: 100%** - All generated queries are syntactically correct and executable
+- **Execution Accuracy: 0%** - None of the queries return the same results as expected
+- **Common failure patterns:**
+  - Using wrong tables (`customers` vs `master_txn_table`)
+  - Missing deduplication (`count(distinct transaction_id)` vs `COUNT(*)`)
+  - Incomplete filtering logic (missing `OR vendor = 'Name'` conditions)
+  - Wrong column names (`Balance` vs `open_balance`)
+
+This shows that while the agent generates valid SQL, it needs significant improvement in understanding the business logic and database schema relationships.
 
 ### Error Analysis Tool
 
@@ -782,7 +767,28 @@ uv run python -m ragas_examples.text2sql.analyze_errors --input experiments/<you
 - Error code summary (e.g., `AGGR_DISTINCT_MISSING`, `WRONG_FILTER_COLUMN`, `WRONG_SOURCE_TABLE_OR_COLUMN`, `OUTPUT_COLUMN_ALIAS_MISMATCH`)
 - 3–5 representative rows per high-frequency code
 
-3. Decide what to change in the prompt using generic rules, not per-row fixes. Avoid adding case-specific examples; prefer schema-grounded guardrails so that you are not overfitting to the data.
+### Sample error analysis results (Prompt v2)
+
+Here are some sample rows from the prompt v2 annotated results showing the types of errors that remain after the first round of improvements:
+
+| Query | Expected SQL | Predicted SQL | Error Analysis | Error Codes |
+|-------|--------------|---------------|----------------|-------------|
+| How much we received from Fuel? | `select sum(credit) from master_txn_table as T1 join chart_of_accounts as T2 on T1.account = T2.account_name where account_type in ('Income', 'Other Income') and instr(account,"Fuel")` | `SELECT SUM(Amount) FROM (SELECT DISTINCT Transaction_ID, Amount FROM master_txn_table WHERE Customers = 'Fuel');` | The prediction summed Amount from master_txn_table instead of credit and omitted the join to chart_of_accounts, using Customers='Fuel' rather than filtering account names containing 'Fuel' and restricting to Income/Other Income. | `["WRONG_SOURCE_TABLE_OR_COLUMN", "WRONG_FILTER_COLUMN", "NULL_OR_EMPTY_RESULT"]` |
+| What was the most recent invoice for Roberta Shaw? | `select transaction_id from master_txn_table where transaction_type = 'invoice' and customers = "Roberta Shaw" order by transaction_date desc limit 1` | `SELECT Transaction_ID, Transaction_DATE, Amount, Open_balance, CreatedDATE, CreatedUSER, Account, Customers, Product_Service FROM master_txn_table WHERE Transaction_TYPE = 'invoice' AND Customers = 'Roberta Shaw' ORDER BY Transaction_DATE DESC LIMIT 1;` | The prediction selected nine columns instead of only Transaction_ID as expected, causing a column/schema mismatch despite returning the same row. | `["OUTPUT_COLUMN_ALIAS_MISMATCH"]` |
+| What is my average invoice from Jeremy Strong? | `select avg(amount) from (select distinct transaction_id, amount from master_txn_table where customers = "Jeremy Strong" and transaction_type = 'invoice')` | `SELECT AVG(Amount) FROM (SELECT DISTINCT Transaction_ID, Amount FROM master_txn_table WHERE Transaction_TYPE = 'invoice' AND Vendor = 'Jeremy Strong') AS t;` | The query filters on Vendor = 'Jeremy Strong' instead of the correct customers column, so it likely matched no rows. This leads to AVG(amount) returning NULL. | `["WRONG_FILTER_COLUMN", "NULL_OR_EMPTY_RESULT"]` |
+
+**Key observations from prompt v2 results:**
+
+- **Significant improvement**: Execution accuracy jumped from 2% to 60% with basic deduplication and business logic guidelines
+- **Remaining error patterns:**
+  - **Missing OR conditions**: Queries about transactions "with" someone should check both `customers` and `vendor` columns
+  - **Wrong column selection**: Using `Amount` instead of `credit` for financial queries
+  - **Output schema mismatches**: Selecting too many columns or wrong column names
+  - **Missing joins**: Not joining with `chart_of_accounts` for account-type filtering
+
+These patterns inform the next iteration of prompt improvements, focusing on complete filtering logic and proper financial query handling.
+
+1. Decide what to change in the prompt using generic rules, not per-row fixes. Avoid adding case-specific examples; prefer schema-grounded guardrails so that you are not overfitting to the data.
 
 Repeat this loop iteratively:
 - Run → Annotate → Review → Decide generic guardrails → Update `prompt_vX.txt` → Re-run → Compare → Repeat.
@@ -794,7 +800,10 @@ Repeat this loop iteratively:
 
 ### From error codes to prompt improvements
 
-The error codes we created in our validation function directly inform our prompt improvements. Our analysis script categorizes failures into specific patterns, allowing us to address root causes systematically:
+The error codes we created in our validation function directly inform our prompt improvements. Our analysis script categorizes failures into specific patterns, allowing us to address root causes systematically.
+
+<details>
+<summary>📋 Error taxonomy and prompt guardrails mapping</summary>
 
 ```python
 # Error taxonomy → Root cause analysis → Prompt guardrails
@@ -824,17 +833,15 @@ The error codes we created in our validation function directly inform our prompt
 → "Do not add extra transforms unless explicitly asked"
 ```
 
+</details>
+
 This taxonomy-driven approach ensures our prompt improvements target actual failure modes with specific, actionable guardrails rather than generic advice.
 
 ### Create and use a new prompt version
 
-We keep the baseline prompt intact and create a new version for iteration:
+We keep the baseline prompt intact and create a new version for iteration.
 
-```bash
-cp prompt.txt prompt_v2.txt
-```
-
-Edit `prompt_v2.txt` to include concise, reusable guardrails. Keep them generic enough to apply broadly while grounded in the provided schema:
+Create `prompt_v2.txt` to include concise, reusable guardrails. Keep them generic enough to apply broadly while grounded in the provided schema:
 
 ```text
 - Use exact table and column names from the schema; do not invent fields
@@ -872,10 +879,6 @@ Even with the major improvements in `prompt_v2.txt`, the 60% accuracy still leav
 4.  **Incomplete Filtering**: It often misses `OR` conditions (e.g., checking both `Customers` and `Vendor` for a transaction "with" someone) or filters on the wrong column entirely.
 
 Based on this deeper analysis, create `prompt_v3.txt` with even more specific, schema-grounded guidelines to address these recurring issues:
-
-```bash
-cp prompt_v2.txt prompt_v3.txt
-```
 
 Key additions to `prompt_v3.txt`:
 
@@ -987,23 +990,15 @@ uv run python -m ragas_examples.text2sql.evals run \
 <summary>📋 Output (prompt v1)</summary>
 
 ```text
-Please note that you are missing the optional dependency: fugue. If you need to
-use this functionality it must be installed.
-Please note that you are missing the optional dependency: snowflake. If you need to use this functionality it must be installed.
-Please note that you are missing the optional dependency: spark. If you need to use this functionality it must be installed.
-/Users/sanjeed/work/ragas-main/ragas/examples/ragas_examples/text2sql/evals.py:17: UserWarning: Python 3.12 and above currently is not supported by Spark and Ray. Please note that some functionality will not work and currently is not supported.
-  import datacompy
 Loading dataset...
 Dataset loaded with 99 samples (full dataset)
 Running text-to-SQL evaluation with model: gpt-5-mini
 Using prompt file: prompt.txt
 Running experiment: 100%|██████████████████████| 99/99 [01:06<00:00,  1.49it/s]
 ✅ gpt-5-mini-promptv1: 99 cases evaluated
-Results saved to: /Users/sanjeed/work/ragas-main/ragas/examples/ragas_examples/text2sql/experiments/20250905-151023-gpt-5-mini-promptv1.csv
+Results saved to: experiments/20250905-151023-gpt-5-mini-promptv1.csv
 gpt-5-mini-promptv1 SQL Validity: 98.99%
 gpt-5-mini-promptv1 Execution Accuracy: 2.02% (excluding 0 dataset errors)
-/Users/sanjeed/.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/multiprocessing/resource_tracker.py:255: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
-  warnings.warn('resource_tracker: There appear to be %d ')
 ```
 
 </details>
@@ -1021,23 +1016,15 @@ uv run python -m ragas_examples.text2sql.evals run \
 <summary>📋 Output (prompt v2)</summary>
 
 ```text
-warning: `VIRTUAL_ENV=.venv` does not match the project environment path `/Users/sanjeed/work/ragas-main/ragas/.venv` and will be ignored; use `--active` to target the active environment instead
-Please note that you are missing the optional dependency: fugue. If you need to use this functionality it must be installed.
-Please note that you are missing the optional dependency: snowflake. If you need to use this functionality it must be installed.
-Please note that you are missing the optional dependency: spark. If you need to use this functionality it must be installed.
-/Users/sanjeed/work/ragas-main/ragas/examples/ragas_examples/text2sql/evals.py:17: UserWarning: Python 3.12 and above currently is not supported by Spark and Ray. Please note that some functionality will not work and currently is not supported.
-  import datacompy
 Loading dataset...
 Dataset loaded with 99 samples (full dataset)
 Running text-to-SQL evaluation with model: gpt-5-mini
 Using prompt file: prompt_v2.txt
 Running experiment: 100%|██████████████████████| 99/99 [01:00<00:00,  1.63it/s]
 ✅ gpt-5-mini-promptv2: 99 cases evaluated
-Results saved to: /Users/sanjeed/work/ragas-main/ragas/examples/ragas_examples/text2sql/experiments/20250905-150957-gpt-5-mini-promptv2.csv
+Results saved to: experiments/20250905-150957-gpt-5-mini-promptv2.csv
 gpt-5-mini-promptv2 SQL Validity: 100.00%
 gpt-5-mini-promptv2 Execution Accuracy: 60.61% (excluding 0 dataset errors)
-/Users/sanjeed/.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/lib/python3.12/multiprocessing/resource_tracker.py:255: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
-  warnings.warn('resource_tracker: There appear to be %d ')
 ```
 
 </details>
@@ -1079,6 +1066,7 @@ For systematic prompt optimization, consider frameworks like [DSPy](https://gith
 This guide showed you how to build a systematic evaluation process for text-to-SQL agents. While our improvements from 2% to 70% accuracy demonstrate the approach works, **70% is still far from production-ready** for most use cases.
 
 **What you learned:**
+
 - How to set up proper evaluation metrics (SQL validity + execution accuracy)
 - A repeatable process: evaluate → analyze errors → improve system → repeat
 - How to categorize failure patterns and create targeted improvements
@@ -1087,6 +1075,7 @@ This guide showed you how to build a systematic evaluation process for text-to-S
 **The real value isn't the final accuracy—it's having a reliable way to measure and improve your system.** Without systematic evaluation, you're optimizing blind.
 
 **Your next steps:**
+
 1. **Apply this process to your own database and dataset**
 2. **Expect to iterate many times**
 3. **Consider model upgrades or advanced techniques** when prompts plateau
