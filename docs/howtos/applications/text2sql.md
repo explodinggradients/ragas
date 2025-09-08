@@ -244,11 +244,9 @@ uv run python -m ragas_examples.text2sql.db_utils --tables
 
 ### Create your Text-to-SQL agent
 
-Now that we have database utilities set up, let's create a Text-to-SQL agent that converts natural language queries to SQL. Our agent will include comprehensive tracing and logging for evaluation purposes.
+Now that we have database utilities set up, let's create a Text-to-SQL agent that converts natural language queries to SQL. 
 
 **Create the agent:**
-
-The `text2sql_agent.py` module provides a complete OpenAI-powered agent with extensive logging capabilities designed for Ragas evaluation workflows.
 
 ```python
 # File: examples/ragas_examples/text2sql/text2sql_agent.py
@@ -262,14 +260,7 @@ print(f"Generated SQL: {result.generated_sql}")
 print(f"Generation time: {result.generation_time_ms:.2f}ms")
 ```
 
-**Key agent features:**
-
-- **OpenAI Integration**: Uses GPT-4 for high-quality SQL generation
-- **Schema-Aware**: Loads database schema from configurable prompt file  
-- **Comprehensive Tracing**: Logs every step for evaluation and debugging
-- **Batch Processing**: Handle multiple queries efficiently
-- **Error Handling**: Graceful error recovery with detailed logging
-- **Export Capabilities**: JSON logs compatible with Ragas evaluation
+The agent provides OpenAI integration with comprehensive tracing and error handling, making it ideal for systematic evaluation workflows.
 
 **Test the agent:**
 
@@ -313,25 +304,16 @@ Rows returned: 1
 
 The `--test` flag runs an end-to-end demonstration that generates SQL from a natural language query, executes it against the BookSQL database, and displays the results. This shows the complete pipeline from natural language to actual database output.
 
-**Custom query example:**
-
-```bash
-# Run with custom query
-uv run python -m ragas_examples.text2sql.text2sql_agent --query "How many invoices have we sent to Nathan Pineda?"
-```
-
-This generates SQL for your specific query and exports trace logs for evaluation.
-
 ### Create your prompt
 
 Creating an effective prompt is crucial for text-to-SQL performance. Our approach focuses on providing complete database context in a concise, direct format that gives the language model everything it needs to generate accurate SQL queries.
 
 **Step 1: Extract the database schema**
 
-First, use the database utilities to get the complete schema information:
+First, use the database utilities to get the complete schema information as DDL statements:
 
 ```bash
-# Get complete schema with column details
+# Get complete schema as DDL statements
 uv run python -m ragas_examples.text2sql.db_utils --schema
 ```
 
@@ -340,20 +322,28 @@ uv run python -m ragas_examples.text2sql.db_utils --schema
 
 ```
 === Database Schema ===
-       table_name          column_name data_type  not_null default_value  primary_key
-chart_of_accounts                   id   INTEGER         0          None            1
-chart_of_accounts           businessID   INTEGER         1          None            2
-chart_of_accounts         Account_name      TEXT         1          None            3
-chart_of_accounts         Account_type      TEXT         1          None            0
-        customers                   id   INTEGER         0          None            1
-        customers           businessID   INTEGER         1          None            2
-        customers        customer_name      TEXT         1          None            3
-... (continues for all 7 tables and 62 total columns)
+             name  type                                     sql
+chart_of_accounts table CREATE TABLE chart_of_accounts(
+                         id INTEGER ,
+                         businessID INTEGER NOT NULL,
+                         Account_name TEXT NOT NULL,
+                         Account_type TEXT NOT NULL,
+                         PRIMARY KEY(id,businessID,Account_name)
+                         )
+        customers table CREATE TABLE customers(
+                         id INTEGER ,
+                         businessID INTEGER NOT NULL,
+                         customer_name TEXT NOT NULL,
+                         customer_full_name TEXT ,
+                         ... (continues for all columns)
+                         PRIMARY KEY(id,businessID,Customer_name)
+                         )
+... (continues for all 7 tables with complete DDL)
 ```
 
 </details>
 
-This gives you the complete table structure that needs to be included in your prompt.
+This gives you the complete DDL statements showing table structure, data types, constraints, and relationships that can be included in your prompt.
 
 **Step 2: Gather business context**
 
@@ -369,26 +359,7 @@ This provides essential context about:
 - The business domain (accounting/financial data)
 - How tables relate to each other
 
-**Step 3: Design prompt structure**
-
-Based on our requirements for a concise, direct prompt, we structure it as:
-
-1. **Role definition**: Clear task description
-2. **Database context**: Business domain explanation  
-3. **Table purposes**: What each table contains
-4. **Complete schema**: All tables with exact column details
-5. **Simple instruction**: Convert query to SQL, return SQL only
-
-**Step 4: Create the prompt file**
-
-Create `prompt.txt` with the extracted information:
-
-```bash
-# Create the prompt file
-touch prompt.txt
-```
-
-**Step 5: Write the prompt content**
+**Step 3: Write the prompt content**
 
 Our prompt follows this template structure:
 
@@ -407,156 +378,21 @@ TABLES AND THEIR PURPOSE:
 - payment_method: Payment methods used by businesses
 - employees: Employee details including name, ID, hire date
 
-DATABASE SCHEMA:
+DATABASE SCHEMA (DDL):
 
-[Complete schema with all tables and columns]
+[Complete DDL statements for all tables]
 
 INSTRUCTIONS:
 Convert the user's natural language query into a valid SQL SELECT query. Return only the SQL query, no explanations or formatting.
 ```
 
-**Key design decisions:**
+The prompt includes complete DDL schema context with table relationships, business domain explanation to guide SQL generation effectively.
 
-- **Schema inclusion**: We include the complete schema directly in the prompt rather than having the agent fetch it dynamically, ensuring consistent context
-- **Business context**: We provide clear explanation of the accounting domain so the agent understands relationships between entities
-- **Table purposes**: Each table gets a brief description of its role in the business model
-- **Query patterns**: Include common business logic patterns (learned from initial failures)
-- **Concise instruction**: Simple, direct instruction to convert natural language to SQL with no extra formatting
-- **No examples**: We keep it simple without few-shot examples to start with a baseline approach
+Use `--prompt custom_prompt.txt` to test with different prompt versions.
 
-**Why Query Patterns Are Essential:**
+You can follow a similar process to create prompt for your own data.
 
-Our initial prompt failed because schema alone isn't enough. When we tested the agent with "How much open credit does customer Andrew Bennett?", it generated:
-
-```sql
-SELECT Open_balance FROM customers WHERE customer_name = 'Andrew Bennett';
-```
-
-This failed with "no such column: Open_balance" because:
-- The agent logically assumed customer info lives in the `customers` table
-- But customer credit is actually calculated from transaction records in `master_txn_table`
-- The `customers` table has `Balance` (not `Open_balance`) 
-
-**The fix:** Add common query patterns to guide business logic:
-```text
-COMMON QUERY PATTERNS:
-- Customer open credit: SELECT SUM(Open_balance) FROM master_txn_table WHERE Customers = "customer_name"  
-- Customer transactions: SELECT * FROM master_txn_table WHERE Customers = "customer_name"
-- Account balances: SELECT SUM(Credit - Debit) FROM master_txn_table WHERE Account = "account_name"
-```
-
-After adding these patterns, the same query correctly generated:
-```sql
-SELECT SUM(Open_balance) FROM master_txn_table WHERE Customers = "Andrew Bennett"
-```
-
-This demonstrates why text-to-SQL evaluation is inherently iterative - you discover domain-specific requirements through failure analysis and prompt refinement.
-
-**Test your prompt:**
-
-```bash
-# Test the prompt with a sample query
-uv run python -m ragas_examples.text2sql.text2sql_agent --test
-```
-
-<details>
-<summary>📋 Expected test output</summary>
-
-```
-🧪 Running test with query: How much open credit does customer Andrew Bennett?
-============================================================
-Natural Query: How much open credit does customer Andrew Bennett?
-Generated SQL: select sum(open_balance) from (
-select distinct transaction_id, open_balance
-from master_txn_table
-where customers = "Andrew Bennett"
-)
-Generation Time: 2318.54ms
-============================================================
-🔍 Executing SQL query against database...
-✅ SQL execution successful!
-```
-
-</details>
-
-This confirms that your prompt successfully guides the agent to generate valid, executable SQL queries.
-
-**Prompt customization:**
-
-```bash
-# Use custom prompt file
-uv run python -m ragas_examples.text2sql.text2sql_agent --prompt custom_prompt.txt --query "Your query here"
-
-# Or specify in code
-agent = Text2SQLAgent(
-    client=openai.OpenAI(),
-    prompt_file="custom_prompt.txt"
-)
-```
-
-The prompt creation process is designed to be systematic and repeatable for any database schema.
-
-### Agent tracing and evaluation
-
-The agent includes comprehensive tracing that captures every step of the SQL generation process. This is essential for evaluation and debugging.
-
-**Trace events captured:**
-
-1. **Initialization**: Agent startup and configuration
-2. **Schema Loading**: Prompt file loading and validation
-3. **LLM Calls**: Complete OpenAI API interactions
-4. **SQL Generation**: Query cleaning and processing
-5. **Errors**: Detailed error information with context
-
-**Example trace export:**
-
-```python
-# Generate SQL with full tracing
-agent = get_default_agent()
-result = agent.generate_sql("How many invoices have we sent to John Doe?")
-
-# Export traces
-log_file = agent.export_traces_to_log("eval_run_001", "How many invoices...", result)
-print(f"Traces saved to: {log_file}")
-```
-
-**Trace log format:**
-
-```json
-{
-  "run_id": "eval_run_001",
-  "timestamp": "2024-01-20T10:30:45.123456",
-  "model_name": "gpt-4o", 
-  "natural_query": "How many invoices have we sent to John Doe?",
-  "generated_sql": "select count(distinct transaction_id) from master_txn_table where customers = \"John Doe\" and transaction_type = 'invoice'",
-  "generation_time_ms": 1234.56,
-  "traces": [
-    {
-      "event_type": "llm_call",
-      "component": "openai_api",
-      "data": {
-        "model": "gpt-4o",
-        "temperature": 0.0,
-        "natural_query": "How many invoices have we sent to John Doe?"
-      }
-    },
-    {
-      "event_type": "llm_response", 
-      "component": "openai_api",
-      "data": {
-        "generated_sql": "select count(distinct transaction_id)...",
-        "usage": {
-          "prompt_tokens": 892,
-          "completion_tokens": 45,
-          "total_tokens": 937
-        }
-      }
-    }
-  ]
-}
-```
-
-These trace logs provide complete visibility into the agent's behavior and are designed to integrate seamlessly with Ragas evaluation pipelines.
+The agent includes built-in observability and logging to help you debug issues easily during development and evaluation.
 
 ## Define evaluation metrics
 
@@ -586,19 +422,18 @@ from ragas.metrics.result import MetricResult
 from ragas_examples.text2sql.db_utils import execute_sql
 
 @discrete_metric(name="sql_validity", allowed_values=["correct", "incorrect"])
-def sql_validity(predicted_sql: str):
-    """Check if the generated SQL is syntactically valid by attempting execution."""
+def sql_validity(predicted_success: bool, predicted_result):
+    """Check if the generated SQL is syntactically valid based on execution results."""
     try:
-        success, result = execute_sql(predicted_sql)
-        if success:
+        if predicted_success:
             return MetricResult(
                 value="correct",
                 reason="SQL executed successfully without syntax errors"
             )
         else:
             return MetricResult(
-                value="incorrect", 
-                reason=f"SQL execution failed: {result}"
+                value="incorrect",
+                reason=f"SQL execution failed: {predicted_result}"
             )
     except Exception as e:
         return MetricResult(
@@ -607,10 +442,10 @@ def sql_validity(predicted_sql: str):
         )
 
 @discrete_metric(name="execution_accuracy", allowed_values=["correct", "incorrect", "dataset_error"])
-def execution_accuracy(predicted_sql: str, expected_sql: str):
+def execution_accuracy(expected_sql: str, predicted_success: bool, predicted_result):
     """Compare execution results of predicted vs expected SQL using datacompy."""
     try:
-        # Execute expected SQL first
+        # Execute expected SQL
         expected_success, expected_result = execute_sql(expected_sql)
         if not expected_success:
             return MetricResult(
@@ -618,8 +453,7 @@ def execution_accuracy(predicted_sql: str, expected_sql: str):
                 reason=f"Expected SQL failed to execute: {expected_result}"
             )
         
-        # Execute predicted SQL
-        predicted_success, predicted_result = execute_sql(predicted_sql)
+        # If predicted SQL fails, it's incorrect
         if not predicted_success:
             return MetricResult(
                 value="incorrect",
@@ -641,7 +475,7 @@ def execution_accuracy(predicted_sql: str, expected_sql: str):
             # Use datacompy to compare DataFrames with index-based comparison
             comparison = datacompy.Compare(
                 expected_result.reset_index(drop=True), 
-                predicted_result.loc[:, expected_result.columns].copy().reset_index(drop=True),
+                predicted_result.reset_index(drop=True),
                 on_index=True,  # Compare row-by-row by index position
                 abs_tol=1e-10,  # Very small tolerance for floating point comparison
                 rel_tol=1e-10,
@@ -667,12 +501,7 @@ def execution_accuracy(predicted_sql: str, expected_sql: str):
         )
 ```
 
-**Key implementation details:**
-
-- **datacompy integration**: Uses `on_index=True` for row-by-row comparison, perfect for SQL result validation
-- **Column handling**: Automatically reorders predicted columns to match expected column order
-- **Error classification**: Distinguishes between model errors (`incorrect`) and dataset issues (`dataset_error`)
-- **Async-ready**: Metrics work seamlessly with `asyncio.to_thread` for parallel evaluation
+The metrics use datacompy for precise DataFrame comparison and classify errors to distinguish model failures from dataset issues.
 
 ### The experiment function
 
@@ -683,6 +512,7 @@ The experiment function orchestrates the complete evaluation pipeline - running 
 import asyncio
 from ragas import experiment
 from ragas_examples.text2sql.text2sql_agent import get_default_agent
+from ragas_examples.text2sql.db_utils import execute_sql
 
 @experiment()
 async def text2sql_experiment(row, model: str, prompt_file: Optional[str], experiment_name: str):
@@ -697,12 +527,20 @@ async def text2sql_experiment(row, model: str, prompt_file: Optional[str], exper
     # Generate SQL from natural language query (async to enable parallelism)
     result = await asyncio.to_thread(agent.generate_sql, row["Query"])
     
-    # Score the response using our metrics (async to enable parallelism)  
-    validity_score = await asyncio.to_thread(sql_validity.score, predicted_sql=result.generated_sql)
+    # Execute predicted SQL once to share results between metrics
+    predicted_success, predicted_result = await asyncio.to_thread(execute_sql, result.generated_sql)
+    
+    # Score the response using our metrics with shared execution results
+    validity_score = await asyncio.to_thread(
+        sql_validity.score, 
+        predicted_success=predicted_success, 
+        predicted_result=predicted_result
+    )
     accuracy_score = await asyncio.to_thread(
         execution_accuracy.score,
-        predicted_sql=result.generated_sql,
-        expected_sql=row["SQL"]
+        expected_sql=row["SQL"],
+        predicted_success=predicted_success,
+        predicted_result=predicted_result
     )
 
     return {
@@ -719,10 +557,7 @@ async def text2sql_experiment(row, model: str, prompt_file: Optional[str], exper
     }
 ```
 
-**Async implementation benefits:**
-- **Parallel execution**: Multiple queries evaluated simultaneously 
-- **`asyncio.to_thread`**: Wraps synchronous functions (agent, metrics) for async compatibility
-- **Progress tracking**: Real-time progress bar shows evaluation speed
+The async implementation enables parallel query evaluation with real-time progress tracking.
 
 ### Dataset loader
 
@@ -799,7 +634,7 @@ After validating your setup with limited samples, run the complete evaluation:
 
 ```bash
 # Full dataset evaluation (all samples)  
-uv run python -m ragas_examples.text2sql.evals run --model gpt-5-mini --limit
+uv run python -m ragas_examples.text2sql.evals run --model gpt-5-mini
 ```
 
 **CLI options:**
@@ -835,7 +670,6 @@ From our BookSQL evaluation with 10 samples:
 
 **Common patterns observed:**
 - **Column name mismatches**: Expected `sum(open_balance)` vs Generated `SUM(Open_balance)` or `balance_due`
-- **Table selection**: Agent chose simplified queries vs expected complex subqueries
 - **Business logic differences**: Different but valid approaches to the same question
 
 **Next steps for improvement:**
@@ -848,7 +682,7 @@ The baseline gives you a concrete starting point and identifies the main areas n
 
 ## Analyze errors and failure patterns
 
-After running evaluations, you can analyze the failure patterns to understand where your Text2SQL agent is making mistakes. We provide an automated error analysis tool that uses AI to categorize errors, but **manual review is essential** to ensure you're improving in the right direction.
+After running evaluations, you can analyze the failure patterns to understand where your Text2SQL agent is making mistakes. We provide an automated error analysis tool that uses LLMs to categorize errors, but **manual review is essential** to ensure you're improving in the right direction.
 
 ### Error Analysis Tool
 
@@ -861,27 +695,13 @@ uv run python -m ragas_examples.text2sql.analyze_errors --input experiments/your
 This will:
 
 1. Process all rows where `execution_accuracy` is "incorrect"
-2. Use OpenAI's GPT model to analyze each failure
+2. Use OpenAI's GPT 5 model to analyze each failure
 3. Add two new columns: `error_analysis` (explanation) and `error_codes` (categorized errors)
 4. Create an annotated CSV file with suffix `_annotated.csv`
 5. Display a summary of error patterns
 
-### Error Categories
-
-The tool categorizes errors into these types:
-
-| Error Code | Description |
-|------------|-------------|
-| `AGGR_DISTINCT_MISSING` | Used COUNT/SUM without DISTINCT or deduplication |
-| `WRONG_FILTER_COLUMN` | Filtered on the wrong column |
-| `WRONG_SOURCE_TABLE_OR_COLUMN` | Selected metric from the wrong table/column |
-| `EXTRA_TRANSFORMATION_OR_CONDITION` | Added ABS(), extra filters that change results |
-| `OUTPUT_COLUMN_ALIAS_MISMATCH` | Output column names don't match |
-| `NULL_OR_EMPTY_RESULT` | Result is None/empty due to wrong filters or source |
-| `GENERIC_VALUE_MISMATCH` | Aggregation computed but numeric value differs |
-| `OTHER` | Fallback for unclassified errors |
-
-### Example Output
+<details>
+<summary>Example Output</summary>
 
 ```bash
 Found 8 rows with incorrect execution accuracy
@@ -918,9 +738,11 @@ EXTRA_TRANSFORMATION_OR_CONDITION     1
 ==================================================
 ```
 
+</details>
+
 ### ⚠️ Critical: Manual Review Required
 
-**The AI analysis is only a starting point.** You must manually review the categorized errors because:
+**The AI analysis is only a helper tool.** You must manually review the categorized errors because:
 
 - AI can misinterpret complex SQL logic differences
 - Some errors might be incorrectly categorized
@@ -933,19 +755,7 @@ EXTRA_TRANSFORMATION_OR_CONDITION     1
 - Making your agent worse by optimizing for incorrect patterns
 - Missing the real root causes of failures
 
-### Using the Error Analysis Tool in Your Workflow
-
-The `analyze_errors.py` script is available as a standalone tool you can use throughout your development cycle:
-
-```bash
-# Analyze any evaluation results CSV
-uv run python -m ragas_examples.text2sql.analyze_errors --input path/to/your/results.csv
-
-# The tool will create an annotated version with error categorizations
-# Always manually review the categorizations before making changes
-```
-
-**Remember**: Use this tool as a starting point for understanding failure patterns, but always validate the AI's categorizations through manual inspection before implementing fixes.
+If you feel like the AI is not doing a good job, you can manually review the errors and annoate them manually. Then you can just use an LLM to categorize them if required.
 
 ### Review Process
 
@@ -972,7 +782,7 @@ uv run python -m ragas_examples.text2sql.analyze_errors --input experiments/<you
 - Error code summary (e.g., `AGGR_DISTINCT_MISSING`, `WRONG_FILTER_COLUMN`, `WRONG_SOURCE_TABLE_OR_COLUMN`, `OUTPUT_COLUMN_ALIAS_MISMATCH`)
 - 3–5 representative rows per high-frequency code
 
-3. Decide what to change in the prompt using generic rules, not per-row fixes. Avoid adding case-specific examples; prefer schema-grounded guardrails you can reuse across runs and databases.
+3. Decide what to change in the prompt using generic rules, not per-row fixes. Avoid adding case-specific examples; prefer schema-grounded guardrails so that you are not overfitting to the data.
 
 Repeat this loop iteratively:
 - Run → Annotate → Review → Decide generic guardrails → Update `prompt_vX.txt` → Re-run → Compare → Repeat.
@@ -982,7 +792,39 @@ Repeat this loop iteratively:
 
 ## Improve your system  
 
-Use the findings from the analysis loop to strengthen your prompt with domain-generic, schema-grounded guidance—without overfitting to any single failure case.
+### From error codes to prompt improvements
+
+The error codes we created in our validation function directly inform our prompt improvements. Our analysis script categorizes failures into specific patterns, allowing us to address root causes systematically:
+
+```python
+# Error taxonomy → Root cause analysis → Prompt guardrails
+
+# Aggregation issues (most common)
+"AGGR_DISTINCT_MISSING" 
+→ Model uses COUNT/SUM without deduplication
+→ "Use count(distinct Transaction_ID) for counts and deduplicated subqueries for aggregates"
+
+# Schema navigation errors  
+"WRONG_FILTER_COLUMN" 
+→ Model confuses customer vs vendor filtering logic
+→ "Map parties correctly: Customer-focused → filter on Customers, Vendor-focused → filter on Vendor"
+
+"WRONG_SOURCE_TABLE_OR_COLUMN"
+→ Model invents fields or uses wrong tables
+→ "Use exact table and column names from schema; prefer transactional facts from master_txn_table"
+
+# Output format issues
+"OUTPUT_COLUMN_ALIAS_MISMATCH"
+→ Model adds unnecessary aliases that break result comparison
+→ "Keep single SELECT; avoid aliases for final column names"
+
+# Over-engineering
+"EXTRA_TRANSFORMATION_OR_CONDITION" 
+→ Model adds ABS(), extra filters that change intended results
+→ "Do not add extra transforms unless explicitly asked"
+```
+
+This taxonomy-driven approach ensures our prompt improvements target actual failure modes with specific, actionable guardrails rather than generic advice.
 
 ### Create and use a new prompt version
 
@@ -994,6 +836,7 @@ cp prompt.txt prompt_v2.txt
 
 Edit `prompt_v2.txt` to include concise, reusable guardrails. Keep them generic enough to apply broadly while grounded in the provided schema:
 
+```text
 - Use exact table and column names from the schema; do not invent fields
 - Prefer transactional facts from `master_txn_table`; use entity tables for static attributes
 - Map parties correctly in filters:
@@ -1006,6 +849,7 @@ Edit `prompt_v2.txt` to include concise, reusable guardrails. Keep them generic 
 - For open credit/balance due per customer, aggregate `Open_balance` from `master_txn_table` filtered by `Customers` with deduplication
 - Do not add extra transforms or filters (e.g., `abs()`, `< 0`) unless explicitly asked
 - Keep a single `SELECT`; avoid aliases for final column names
+```
 
 We save this improved prompt as `prompt_v2.txt`.
 
@@ -1013,10 +857,10 @@ We save this improved prompt as `prompt_v2.txt`.
 
 ```bash
 export OPENAI_API_KEY="your-api-key-here"
-uv run python -m ragas_examples.text2sql.evals run --model gpt-5-mini --prompt_file prompt_v2.txt --limit 10
+uv run python -m ragas_examples.text2sql.evals run --model gpt-5-mini --prompt_file prompt_v2.txt --name "gpt-5-mini-promptv2"
 ```
 
-Review the new results CSV in `experiments/`. If accuracy improves, proceed to a larger run (remove `--limit`), then repeat the analyze → decide → improve loop. Keep guardrails generic and schema-grounded to avoid overfitting to specific rows.
+Review the new results CSV in `experiments/` and continue the loop again.
 
 ### Continue iterating: Create prompt v3
 
@@ -1086,18 +930,14 @@ uv run python -m ragas_examples.text2sql.evals run \
 
 - Each iteration should target **3-5 high-frequency error patterns** from the latest results
 - Keep new rules **generic and schema-grounded** to avoid overfitting
-- **Test with small samples first** (--limit 10) before full evaluation
 - **Stop when accuracy plateaus** across 2-3 consecutive iterations
 - **Document your changes** with a brief changelog per prompt version
-
-This methodical approach can often push text-to-SQL accuracy well into the 80-90% range for well-scoped domains.
 
 ## Compare results
 
 ### Prompt v1 vs v2 (full dataset)
 
-- After a quick 10-item smoke test, we observed higher execution accuracy with the improved prompt.
-- We then ran the full dataset with both prompts:
+- We ran the full dataset with both prompts:
 
 | Prompt | SQL Validity | Execution Accuracy | Results CSV |
 |---|---|---|---|
@@ -1106,33 +946,11 @@ This methodical approach can often push text-to-SQL accuracy well into the 80-90
 
 These improvements came from generic, schema-grounded guardrails (not case-specific examples), so they should generalize without overfitting.
 
-#### Decision criteria to pick a prompt
-
-When comparing prompts (or models), choose the winner using this order:
-
-1. Highest execution accuracy (primary)
-2. Highest SQL validity (tiebreaker 1)
-3. Fewest dataset errors (should be ~0) 
-4. Lower average per-row latency and overall runtime (tiebreaker 2)
-5. Stability across difficulty levels (no regressions on hard cases)
-
-Keep a brief changelog for each prompt version (e.g., `prompt_v3.txt`, `prompt_v4.txt`) noting what guardrails changed.
-
-#### Side-by-side CSV comparison
-
-```bash
-uv run python -m ragas_examples.text2sql.evals compare \
-  --inputs experiments/<run1>.csv experiments/<run2>.csv \
-  --output comparison.csv
-```
-
-This prints per-run metrics and writes a combined CSV with aligned rows for easy inspection.
-
 ### When to use an agentic retry loop
 
 For older or weaker models, SQL validity may be low. In that case, add an agentic retry loop that:
-- Returns DB error messages to the agent
-- Asks the agent to correct the query and retry within a small budget
+- Returns SQL error messages to the agent
+- Asks the agent to correct the query and retry
 
 Since validity is already high in our runs, we are not enabling this flow here.
 
@@ -1144,7 +962,7 @@ After running all prompt versions, we can compare the final results.
 |---|---|---|---|
 | v1 (`prompt.txt`) | 98.99% | 2.02% | `...-promptv1.csv` |
 | v2 (`prompt_v2.txt`) | 100.00% | 60.61% | `...-promptv2.csv` |
-| v3 (`prompt_v3.txt`) | 98.99% | 70.71% | `20250905-164051-gpt-5-mini-promptv3.csv` |
+| v3 (`prompt_v3.txt`) | 98.99% | 70.71% | `...gpt-5-mini-promptv3.csv` |
 
 **Progress Analysis:**
 - **v1 → v2**: Massive 58 percentage point jump from 2.02% to 60.61% through basic deduplication and business logic guidelines
@@ -1229,71 +1047,11 @@ gpt-5-mini-promptv2 Execution Accuracy: 60.61% (excluding 0 dataset errors)
 Follow this checklist to adapt the workflow to your own database and dataset:
 
 1. Prepare your database connection
-
-```python
-# examples/ragas_examples/text2sql/db_utils.py
-# Use default BookSQL, or point to your DB path when initializing where applicable
-from ragas_examples.text2sql.db_utils import SQLiteDB
-db = SQLiteDB("/path/to/your/database.sqlite")
-```
-
 2. Extract your schema and build a prompt
-
-```bash
-uv run python -m ragas_examples.text2sql.db_utils --schema
-# Copy the printed schema into your prompt file along with business context
-cp prompt.txt prompt_v2.txt
-```
-
-3. Provide an evaluation dataset (CSV) with columns: `Query`, `SQL`, `Levels`, `split`
-
-- If you already have this format, place it under `datasets/` and update `load_dataset()` if the filename differs.
-- If not, create a CSV matching that schema or adapt the loader to your columns.
-
-4. Run evaluation with your prompt and iterate
-
-```bash
-uv run python -m ragas_examples.text2sql.evals run --model gpt-5-mini --prompt_file prompt_v2.txt --limit 10
-uv run python -m ragas_examples.text2sql.analyze_errors --input experiments/<your_results>.csv
-```
-
-5. Improve generically, not per-row
-
-- Add or refine guardrails in `prompt_v2.txt` based on high-frequency, validated errors.
-- Avoid case-specific examples; keep rules reusable and grounded in your schema.
-
-6. Scale up and compare
-
-```bash
-uv run python -m ragas_examples.text2sql.evals run --model gpt-5-mini --prompt_file prompt_v2.txt
-```
-
-Use `compare` mode in `evals.py` (or your own spreadsheet) to compare runs side-by-side.
-
-### Troubleshooting: Run stalls or hangs
-
-If the evaluation seems to freeze near the end or a few rows take a very long time, enable timeouts and verbose logs to identify the slow stage:
-
-```bash
-uv run python -m ragas_examples.text2sql.evals run \
-  --model gpt-5-mini \
-  --verbose \
-  --timeout-gen 60 \
-  --timeout-sql 90 \
-  --max-rows-compare 10000
-```
-
-- **What the flags do**:
-  - **--timeout-gen**: max seconds for the LLM to generate SQL per row.
-  - **--timeout-sql**: max seconds for SQL execution/validation and comparison per row.
-  - **--max-rows-compare**: skip expensive `datacompy` comparisons when results are very large.
-  - **--verbose**: prints per-row timings (gen/validity/accuracy) and lengths to spot outliers.
-
-To debug a single problematic row quickly, run only that row by index:
-
-```bash
-uv run python -m ragas_examples.text2sql.evals run --model gpt-5-mini --row 97 --verbose
-```
+3. Provide an evaluation dataset (CSV) 
+4. Run evaluation with your prompt 
+5. Analyze errors and improve your system (prompt/model/agent/etc.)
+6. Repeat
 
 ### When Prompt Improvements Plateau
 
@@ -1305,37 +1063,33 @@ Sometimes the base model capability is the bottleneck. Try:
 
 ```bash
 # Test with more capable models
-uv run python -m ragas_examples.text2sql.evals run --model gpt-4o --prompt_file prompt_v4.txt
-uv run python -m ragas_examples.text2sql.evals run --model claude-3-5-sonnet --prompt_file prompt_v4.txt
+uv run python -m ragas_examples.text2sql.evals run --model gpt-5 --prompt_file prompt_v4.txt
 ```
 
-Better models often understand complex business logic and database relationships more accurately, leading to significant accuracy improvements even with the same prompt.
+Better models often understand complex business logic and database relationships more accurately, leading to significant accuracy improvements even with the same prompt. 
 
 #### 2. Advanced Prompt Optimization
 
-For systematic prompt optimization, consider frameworks like [DSPy](https://github.com/stanfordnlp/dspy) that can automatically optimize prompts through:
-
-- Few-shot example selection
-- Chain-of-thought optimization  
-- Multi-step reasoning patterns
-- Automatic prompt tuning based on your evaluation metrics
+For systematic prompt optimization, consider frameworks like [DSPy](https://github.com/stanfordnlp/dspy) that can automatically optimize prompts. The best part about having good evals setup is being able to utilize tools like these. 
 
 **Note**: We'll cover DSPy integration and advanced optimization techniques in a separate guide.
 
-#### 3. Hybrid Approaches
-
-Combine multiple techniques:
-- Better base model + optimized prompts
-- Agentic retry loops with error feedback
-- Multi-step reasoning (generate → validate → refine)
-- Ensemble approaches with multiple models
-
 ## Conclusion
 
-You can evolve text-to-SQL quality through a repeatable loop: analyze failures, introduce generic, schema-grounded guardrails, and re-evaluate. In our runs, moving from `prompt.txt` to `prompt_v2.txt` improved full-dataset execution accuracy from ~2% to ~60% while maintaining high SQL validity.
+This guide showed you how to build a systematic evaluation process for text-to-SQL agents. While our improvements from 2% to 70% accuracy demonstrate the approach works, **70% is still far from production-ready** for most use cases.
 
-Adopt the same approach for your database by swapping in your schema and dataset, keeping guardrails concise and broadly applicable. If you encounter low SQL validity with older models, consider an agentic retry loop that uses DB error messages to guide automatic corrections; otherwise, stick to prompt-centric iteration.
+**What you learned:**
+- How to set up proper evaluation metrics (SQL validity + execution accuracy)
+- A repeatable process: evaluate → analyze errors → improve system → repeat
+- How to categorize failure patterns and create targeted improvements
+- The importance of manual error review over automated analysis
 
-When prompt improvements plateau, upgrading to more capable models or using advanced optimization frameworks like DSPy can unlock further gains. The `analyze_errors.py` tool helps identify patterns throughout this process, but always manually validate its categorizations before making changes.
+**The real value isn't the final accuracy—it's having a reliable way to measure and improve your system.** Without systematic evaluation, you're optimizing blind.
 
-Ragas makes this easy by handling datasets, metrics, and experiments end-to-end—parallel execution, clear per-row diagnostics, and side-by-side comparisons—so you can focus on improving your prompts and systems rather than building evaluation plumbing.
+**Your next steps:**
+1. **Apply this process to your own database and dataset**
+2. **Expect to iterate many times**
+3. **Consider model upgrades or advanced techniques** when prompts plateau
+4. **Set realistic accuracy thresholds** for your specific use case
+
+Text-to-SQL is a challenging problem. This evaluation framework gives you the foundation to tackle it systematically, and Ragas handles the orchestration, parallel execution, and result aggregation automatically—so you can focus on improving your system rather than building evaluation infrastructure.
