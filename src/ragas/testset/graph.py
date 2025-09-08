@@ -277,8 +277,15 @@ class KnowledgeGraph:
         depth_limit: int = 3,
     ) -> t.List[t.Set[Node]]:
         """
-        Finds indirect clusters of nodes in the knowledge graph based on a relationship condition.
+        Finds "indirect clusters" of nodes in the knowledge graph based on a relationship condition.
         Uses Leiden algorithm for community detection and identifies unique paths within each cluster.
+
+        NOTE: "indirect clusters" as used in the method name are
+        "groups of nodes that are not directly connected
+        but share a common relationship through other nodes",
+        while the Leiden algorithm is a "clustering" algorithm that defines
+        neighborhoods of nodes based on their connections --
+        these definitions of "cluster" are NOT equivalent.
 
         Parameters
         ----------
