@@ -282,124 +282,6 @@ def load_dataset(limit: Optional[int] = None, only_row: Optional[int] = None):
     return dataset
 
 
-def compare_inputs_to_output(
-    inputs: List[str], output_path: Optional[str] = None
-) -> str:
-    """Compare multiple experiment CSVs and write a combined CSV.
-
-    - Requires 'id' column in all inputs; uses it as the alignment key
-    - Builds output with id + canonical columns + per-experiment response/score columns
-    - Returns the full output path
-    """
-    if not inputs or len(inputs) < 2:
-        raise ValueError("At least two input CSV files are required for comparison")
-
-    # Load all inputs
-    dataframes = []
-    experiment_names = []
-    for path in inputs:
-        df = pd.read_csv(path)
-        if "experiment_name" not in df.columns:
-            raise ValueError(f"Missing 'experiment_name' column in {path}")
-        exp_name = str(df["experiment_name"].iloc[0])
-        experiment_names.append(exp_name)
-        dataframes.append(df)
-
-    canonical_cols = ["query", "expected_sql", "level"]
-    base_df = dataframes[0]
-
-    # Require 'id' in all inputs
-    if not all("id" in df.columns for df in dataframes):
-        raise ValueError(
-            "All input CSVs must contain an 'id' column to align rows. Re-run experiments after adding 'id' to your dataset."
-        )
-
-    # Validate duplicates and matching sets of IDs
-    key_sets = []
-    for idx, df in enumerate(dataframes):
-        keys = df["id"].astype(str)
-        if keys.duplicated().any():
-            dupes = keys[keys.duplicated()].head(3).tolist()
-            raise ValueError(
-                f"Input {inputs[idx]} contains duplicate id values. Examples: {dupes}"
-            )
-        key_sets.append(set(keys.tolist()))
-
-    base_keys = key_sets[0]
-    for i, ks in enumerate(key_sets[1:], start=1):
-        if ks != base_keys:
-            missing_in_other = list(base_keys - ks)[:5]
-            missing_in_base = list(ks - base_keys)[:5]
-            raise ValueError(
-                "Inputs do not contain the same set of IDs.\n"
-                f"- Missing in file {i + 1}: {missing_in_other}\n"
-                f"- Extra in file {i + 1}: {missing_in_base}"
-            )
-
-    # Validate canonical columns exist in base
-    missing = [c for c in canonical_cols if c not in base_df.columns]
-    if missing:
-        raise ValueError(f"First CSV missing required columns: {missing}")
-
-    # Build combined on base order using 'id' as alignment key
-    base_ids_str = base_df["id"].astype(str)
-    combined = base_df[["id"] + canonical_cols].copy()
-
-    # Append per-experiment outputs by aligned ID
-    for df, exp_name in zip(dataframes, experiment_names):
-        df = df.copy()
-        df["id"] = df["id"].astype(str)
-        df = df.set_index("id")
-        for col in ["predicted_sql", "sql_validity", "execution_accuracy"]:
-            if col not in df.columns:
-                raise ValueError(
-                    f"Column '{col}' not found in one input. Please provide per-row '{col}'."
-                )
-        combined[f"{exp_name}_predicted_sql"] = base_ids_str.map(df["predicted_sql"])
-        combined[f"{exp_name}_sql_validity"] = base_ids_str.map(df["sql_validity"])
-        combined[f"{exp_name}_execution_accuracy"] = base_ids_str.map(df["execution_accuracy"])
-
-    # Determine output path
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    experiments_dir = os.path.join(current_dir, "experiments")
-    os.makedirs(experiments_dir, exist_ok=True)
-
-    if output_path is None or output_path.strip() == "":
-        run_id = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        output_path = os.path.join(experiments_dir, f"{run_id}-comparison.csv")
-    else:
-        # If relative path, place under experiments dir
-        if not os.path.isabs(output_path):
-            output_path = os.path.join(experiments_dir, output_path)
-
-    # Sort by id for user-friendly reading
-    if "id" in combined.columns:
-        combined = combined.sort_values(by="id").reset_index(drop=True)
-    combined.to_csv(output_path, index=False)
-
-    # Print per-experiment accuracy summary
-    for df, exp_name in zip(dataframes, experiment_names):
-        try:
-            # SQL Validity accuracy
-            validity_acc = (df["sql_validity"] == "correct").mean()
-            
-            # Execution accuracy (excluding dataset errors)
-            execution_df = df[df["execution_accuracy"] != "dataset_error"]
-            if len(execution_df) > 0:
-                execution_acc = (execution_df["execution_accuracy"] == "correct").mean()
-            else:
-                execution_acc = 0.0
-                
-            # Dataset errors count
-            dataset_errors = (df["execution_accuracy"] == "dataset_error").sum()
-            
-            print(f"{exp_name} SQL Validity: {validity_acc:.2%}")
-            print(f"{exp_name} Execution Accuracy: {execution_acc:.2%} (excluding {dataset_errors} dataset errors)")
-            
-        except Exception:
-            pass
-
-    return output_path
 
 
 async def run_command(
@@ -473,9 +355,6 @@ async def run_command(
     print(f"{exp_name} Execution Accuracy: {execution_accuracy:.2%} (excluding {dataset_errors} dataset errors)")
 
 
-def compare_command(inputs: List[str], output: Optional[str]) -> None:
-    output_path = compare_inputs_to_output(inputs, output)
-    print(f"Combined comparison saved to: {output_path}")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -512,16 +391,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--row", type=int, default=None, help="Run only a single dataset row by index (0-based)"
     )
 
-    # compare subcommand
-    cmp_parser = subparsers.add_parser(
-        "compare", help="Combine multiple experiment CSVs"
-    )
-    cmp_parser.add_argument(
-        "--inputs", nargs="+", required=True, help="Input CSV files to compare"
-    )
-    cmp_parser.add_argument(
-        "--output", "-o", type=str, default=None, help="Output CSV path (defaults to experiments/<timestamp>-comparison.csv)"
-    )
 
     return parser
 
@@ -551,14 +420,6 @@ if __name__ == "__main__":
         except Exception:
             pass
         # Force shutdown to avoid lingering non-daemon threads in test CLI context
-        os._exit(0)
-    elif args.command == "compare":
-        compare_command(inputs=args.inputs, output=args.output)
-        try:
-            sys.stdout.flush()
-            sys.stderr.flush()
-        except Exception:
-            pass
         os._exit(0)
     else:
         parser.print_help()
