@@ -28,13 +28,10 @@ MAX_ROWS_COMPARE = 10000
 
 
 @discrete_metric(name="sql_validity", allowed_values=["correct", "incorrect"])
-def sql_validity(predicted_sql: str):
-    """Check if the generated SQL is syntactically valid by attempting execution."""
+def sql_validity(predicted_success: bool, predicted_result):
+    """Check if the generated SQL is syntactically valid based on execution results."""
     try:
-        # Try to execute the SQL to check validity
-        success, result = execute_sql(predicted_sql)
-        
-        if success:
+        if predicted_success:
             return MetricResult(
                 value="correct",
                 reason="SQL executed successfully without syntax errors"
@@ -42,7 +39,7 @@ def sql_validity(predicted_sql: str):
         else:
             return MetricResult(
                 value="incorrect",
-                reason=f"SQL execution failed: {result}"
+                reason=f"SQL execution failed: {predicted_result}"
             )
     except Exception as e:
         return MetricResult(
@@ -52,7 +49,7 @@ def sql_validity(predicted_sql: str):
 
 
 @discrete_metric(name="execution_accuracy", allowed_values=["correct", "incorrect", "dataset_error"])
-def execution_accuracy(predicted_sql: str, expected_sql: str):
+def execution_accuracy(expected_sql: str, predicted_success: bool, predicted_result):
     """Compare execution results of predicted vs expected SQL using datacompy."""
     try:
         # Execute expected SQL
@@ -64,9 +61,6 @@ def execution_accuracy(predicted_sql: str, expected_sql: str):
                 value="dataset_error",
                 reason=f"Expected SQL failed to execute: {expected_result}"
             )
-        
-        # Execute predicted SQL
-        predicted_success, predicted_result = execute_sql(predicted_sql)
         
         # If predicted SQL fails, it's incorrect
         if not predicted_success:
@@ -188,11 +182,22 @@ async def text2sql_experiment(
         result = _Res("-- ERROR: generation timed out")
     gen_dur = time.perf_counter() - gen_start
 
-    # Score the response using our metrics with timeouts
+    # Execute predicted SQL once to share results between metrics
+    sql_exec_start = time.perf_counter()
+    try:
+        predicted_success, predicted_result = await asyncio.wait_for(
+            asyncio.to_thread(execute_sql, result.generated_sql),
+            timeout=timeout_sql,
+        )
+    except asyncio.TimeoutError:
+        predicted_success, predicted_result = False, "SQL execution timed out"
+    sql_exec_dur = time.perf_counter() - sql_exec_start
+
+    # Score the response using our metrics with shared execution results
     val_start = time.perf_counter()
     try:
         validity_score = await asyncio.wait_for(
-            asyncio.to_thread(sql_validity.score, predicted_sql=result.generated_sql),
+            asyncio.to_thread(sql_validity.score, predicted_success=predicted_success, predicted_result=predicted_result),
             timeout=timeout_sql,
         )
     except asyncio.TimeoutError:
@@ -204,8 +209,9 @@ async def text2sql_experiment(
         accuracy_score = await asyncio.wait_for(
             asyncio.to_thread(
                 execution_accuracy.score,
-                predicted_sql=result.generated_sql,
                 expected_sql=row["SQL"],
+                predicted_success=predicted_success,
+                predicted_result=predicted_result,
             ),
             timeout=timeout_sql,
         )
@@ -216,7 +222,7 @@ async def text2sql_experiment(
 
     if verbose:
         print(
-            f"[row={row_id}] gen={gen_dur:.2f}s val={val_dur:.2f}s acc={acc_dur:.2f}s "
+            f"[row={row_id}] gen={gen_dur:.2f}s sql_exec={sql_exec_dur:.2f}s val={val_dur:.2f}s acc={acc_dur:.2f}s "
             f"query_len={len(row['Query'])} sql_len={len(result.generated_sql)}"
         )
 
