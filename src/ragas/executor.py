@@ -169,6 +169,9 @@ class Executor:
                         coroutines, max_workers, cancel_check=self.is_cancelled
                     )
                 ):
+                    # If jobs are configured to raise exceptions, propagate immediately
+                    if isinstance(result, Exception) and self.raise_exceptions:
+                        raise result
                     results.append(result)
                     batch_pbar.update(1)
                 # Update overall progress bar for all futures in this batch
@@ -179,10 +182,11 @@ class Executor:
         coroutines = [afunc(*args, **kwargs) for afunc, args, kwargs, _ in jobs]
 
         async for result in process_futures(
-            as_completed(
-                coroutines, max_workers, cancel_check=self.is_cancelled
-            )
+            as_completed(coroutines, max_workers, cancel_check=self.is_cancelled)
         ):
+            # If jobs are configured to raise exceptions, propagate immediately
+            if isinstance(result, Exception) and self.raise_exceptions:
+                raise result
             results.append(result)
             pbar.update(1)
 
