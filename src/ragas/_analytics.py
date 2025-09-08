@@ -236,6 +236,33 @@ class IsCompleteEvent(BaseEvent):
     is_completed: bool = True  # True if the event was completed, False otherwise
 
 
+class LLMUsageEvent(BaseEvent):
+    provider: str  # "openai", "anthropic", "langchain", etc.
+    model: t.Optional[str] = None  # Model name (if available)
+    llm_type: str  # "instructor", "langchain_wrapper", "factory"
+    num_requests: int = 1  # Number of API calls
+    is_async: bool = False  # Sync vs async usage
+    event_type: str = "llm_usage"
+
+
+class EmbeddingUsageEvent(BaseEvent):
+    provider: str  # "openai", "google", "huggingface", etc.
+    model: t.Optional[str] = None  # Model name (if available)
+    embedding_type: str  # "modern", "legacy", "factory"
+    num_requests: int = 1  # Number of embed calls
+    is_async: bool = False  # Sync vs async usage
+    event_type: str = "embedding_usage"
+
+
+class PromptUsageEvent(BaseEvent):
+    prompt_type: str  # "pydantic", "few_shot", "simple", "dynamic"
+    has_examples: bool = False  # Whether prompt has few-shot examples
+    num_examples: int = 0  # Number of examples (if applicable)
+    has_response_model: bool = False  # Whether it has a structured response model
+    language: str = "english"  # Prompt language
+    event_type: str = "prompt_usage"
+
+
 @silent
 def track_was_completed(
     func: t.Callable[P, T],
