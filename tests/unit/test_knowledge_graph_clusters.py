@@ -409,21 +409,11 @@ def test_find_indirect_clusters_with_document_and_children():
     assert_clusters_equal(
         clusters,
         [
-            {nodes[0], nodes[1]},
-            {nodes[0], nodes[2]},
-            {nodes[0], nodes[3]},
-            {nodes[0], nodes[4]},
-            {nodes[1], nodes[2]},
-            {nodes[2], nodes[3]},
             {nodes[3], nodes[4]},
+            {nodes[0], nodes[1]},
+            {nodes[1], nodes[2]},
             {nodes[0], nodes[1], nodes[2]},
-            {nodes[0], nodes[2], nodes[3]},
-            {nodes[0], nodes[3], nodes[4]},
-            {nodes[1], nodes[2], nodes[3]},
-            {nodes[2], nodes[3], nodes[4]},
-            {nodes[0], nodes[1], nodes[2], nodes[3]},
-            {nodes[0], nodes[2], nodes[3], nodes[4]},
-            {nodes[1], nodes[2], nodes[3], nodes[4]},
+            {nodes[0], nodes[2]},
         ],
     )
 
@@ -462,11 +452,7 @@ def test_find_indirect_clusters_with_similarity_relationships():
         clusters,
         [
             {nodes[0], nodes[1]},
-            {nodes[1], nodes[2]},
             {nodes[2], nodes[3]},
-            {nodes[0], nodes[1], nodes[2]},
-            {nodes[1], nodes[2], nodes[3]},
-            {nodes[0], nodes[1], nodes[2], nodes[3]},
         ],
     )
 
@@ -542,11 +528,8 @@ def test_find_indirect_clusters_with_overlap_relationships():
     assert_clusters_equal(
         clusters,
         [
-            {nodes[0], nodes[1]},
-            {nodes[1], nodes[2]},
             {nodes[2], nodes[3]},
-            {nodes[0], nodes[1], nodes[2]},
-            {nodes[1], nodes[2], nodes[3]},
+            {nodes[0], nodes[1]},
         ],
     )
 
@@ -660,11 +643,8 @@ def test_find_indirect_clusters_with_condition():
     assert_clusters_equal(
         clusters,
         [
-            {nodes[1], nodes[2]},
-            {nodes[2], nodes[3]},
             {nodes[3], nodes[4]},
-            {nodes[1], nodes[2], nodes[3]},
-            {nodes[2], nodes[3], nodes[4]},
+            {nodes[1], nodes[2]},
         ],
     )
 
@@ -713,16 +693,8 @@ def test_find_indirect_clusters_with_cyclic_similarity_relationships():
     assert_clusters_equal(
         clusters,
         [
-            {nodes[0], nodes[1]},
-            {nodes[1], nodes[2]},
             {nodes[2], nodes[3]},
-            {nodes[2], nodes[0]},
-            {nodes[0], nodes[1], nodes[2]},
-            {nodes[0], nodes[2], nodes[3]},
-            {nodes[1], nodes[2], nodes[0]},
-            {nodes[2], nodes[0], nodes[1]},
-            {nodes[1], nodes[2], nodes[3]},
-            {nodes[0], nodes[1], nodes[2], nodes[3]},
+            {nodes[0], nodes[1]},
         ],
     )
 
@@ -764,25 +736,23 @@ def test_find_indirect_clusters_with_web_graph():
     """Test find_indirect_clusters with a spider web graph where all nodes connect to all other nodes."""
     nodes, relationships = create_web_of_similarities(node_count=4)
 
-    # Convert nodes list to dictionary for easier assertion
-    node_dict = {f"{i}": nodes[i] for i in range(len(nodes))}
-
     kg: KnowledgeGraph = build_knowledge_graph(nodes, relationships)
     clusters: list[set[Node]] = kg.find_indirect_clusters(depth_limit=3)
 
     assert_clusters_equal(
         clusters,
         [
-            {node_dict["0"], node_dict["1"]},
-            {node_dict["0"], node_dict["2"]},
-            {node_dict["0"], node_dict["3"]},
-            {node_dict["1"], node_dict["2"]},
-            {node_dict["1"], node_dict["3"]},
-            {node_dict["2"], node_dict["3"]},
-            {node_dict["0"], node_dict["1"], node_dict["2"]},
-            {node_dict["0"], node_dict["1"], node_dict["3"]},
-            {node_dict["0"], node_dict["2"], node_dict["3"]},
-            {node_dict["1"], node_dict["2"], node_dict["3"]},
+            {nodes[0], nodes[1], nodes[2]},
+            {nodes[0], nodes[3]},
+            {nodes[1], nodes[2]},
+            {nodes[0], nodes[1], nodes[2], nodes[3]},
+            {nodes[0], nodes[2], nodes[3]},
+            {nodes[1], nodes[2], nodes[3]},
+            {nodes[0], nodes[1], nodes[3]},
+            {nodes[0], nodes[1]},
+            {nodes[0], nodes[2]},
+            {nodes[1], nodes[3]},
+            {nodes[2], nodes[3]},
         ],
     )
 

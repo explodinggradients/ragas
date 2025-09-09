@@ -313,19 +313,21 @@ class KnowledgeGraph:
 
             # NOTE: the upstream sknetwork Dataset has some issues with type hints,
             # so we use type: ignore to bypass them.
+            # Use hex representation to ensure proper UUID strings for clustering
             graph: SKDataset = from_edge_list(  # type: ignore
-                [(str(rel.source.id), str(rel.target.id)) for rel in relationships],
+                [(rel.source.id.hex, rel.target.id.hex) for rel in relationships],
                 directed=True,
             )
 
             # Apply Leiden clustering
             leiden = Leiden(random_state=42)
-            cluster_labels: np.ndarray = leiden.fit_predict(graph.adjacency)
+            cluster_labels: np.ndarray = leiden.fit_predict(graph["adjacency"])
 
             # Group nodes by cluster
             clusters: defaultdict[int, set[uuid.UUID]] = defaultdict(set)
-            for label, node_id in zip(cluster_labels, graph.names):
-                clusters[int(label)].add(uuid.UUID(node_id))
+            for label, node_id_hex in zip(cluster_labels, graph["names"]):
+                # node_id_hex is the hex string representation of the UUID
+                clusters[int(label)].add(uuid.UUID(hex=node_id_hex))
 
             return dict(clusters)
 
@@ -441,7 +443,8 @@ class KnowledgeGraph:
         for _cluster_label, cluster_nodes in tqdm(
             clusters.items(), desc="Processing clusters"
         ):
-            if len(cluster_nodes) < depth_limit:
+            # Skip clusters that are too small to form any meaningful paths (need at least 2 nodes)
+            if len(cluster_nodes) < 2:
                 continue
 
             subgraph = to_nx_digraph(
