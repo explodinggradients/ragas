@@ -17,6 +17,7 @@ import numpy as np
 import tiktoken
 from datasets import Dataset
 from rich.console import Console
+from tqdm.auto import tqdm
 
 if t.TYPE_CHECKING:
     from ragas.metrics.base import Metric
@@ -242,6 +243,51 @@ def batched(iterable: t.Iterable, n: int) -> t.Iterator[t.Tuple]:
     iterator = iter(iterable)
     while batch := tuple(itertools.islice(iterator, n)):
         yield batch
+
+
+class ProgressBarManager:
+    """Manages progress bars for batch and non-batch execution."""
+
+    def __init__(self, desc: str, show_progress: bool):
+        self.desc = desc
+        self.show_progress = show_progress
+
+    def create_single_bar(self, total: int) -> tqdm:
+        """Create a single progress bar for non-batch execution."""
+        return tqdm(
+            total=total,
+            desc=self.desc,
+            disable=not self.show_progress,
+        )
+
+    def create_nested_bars(self, total_jobs: int, batch_size: int):
+        """Create nested progress bars for batch execution."""
+        n_batches = (total_jobs + batch_size - 1) // batch_size
+
+        overall_pbar = tqdm(
+            total=total_jobs,
+            desc=self.desc,
+            disable=not self.show_progress,
+            position=0,
+            leave=True,
+        )
+
+        batch_pbar = tqdm(
+            total=min(batch_size, total_jobs),
+            desc=f"Batch 1/{n_batches}",
+            disable=not self.show_progress,
+            position=1,
+            leave=False,
+        )
+
+        return overall_pbar, batch_pbar, n_batches
+
+    def update_batch_bar(
+        self, batch_pbar: tqdm, batch_num: int, n_batches: int, batch_size: int
+    ):
+        """Update batch progress bar for new batch."""
+        batch_pbar.reset(total=batch_size)
+        batch_pbar.set_description(f"Batch {batch_num}/{n_batches}")
 
 
 _LOGGER_DATE_TIME = "%Y-%m-%d %H:%M:%S"
