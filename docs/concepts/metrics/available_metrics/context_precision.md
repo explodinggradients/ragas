@@ -19,7 +19,7 @@ The following metrics uses LLM to identify if a retrieved context is relevant or
 
 ### Context Precision without reference
 
-`LLMContextPrecisionWithoutReference` metric can be used when you have both retrieved contexts and also reference answer associated with a `user_input`. To estimate if a retrieved contexts is relevant or not this method uses the LLM to compare each of the retrieved context or chunk present in `retrieved_contexts` with `response`.
+`LLMContextPrecisionWithoutReference` metric can be used without the availability of a reference answer, by using the retrieved contexts. To estimate if the retrieved contexts are relevant, this method uses the LLM to compare each chunk in `retrieved_contexts` with the `response`.
 
 #### Example
     
@@ -89,7 +89,7 @@ Output
 
 ### Context Precision with reference
 
-`LLMContextPrecisionWithReference` metric is can be used when you have both retrieved contexts and also reference context associated with a `user_input`. To estimate if a retrieved contexts is relevant or not this method uses the LLM to compare each of the retrieved context or chunk present in `retrieved_contexts` with `reference`. 
+`LLMContextPrecisionWithReference` metric is can be used when you have both retrieved contexts and also a reference context associated with a `user_input`. To estimate if the retrieved contexts are relevant, this method uses the LLM to compare each chunk in `retrieved_contexts` with the `reference`.
 
 #### Example
     
@@ -114,11 +114,13 @@ Output
 
 ## Non LLM Based Context Precision
 
-This metric uses traditional methods to determine whether a retrieved context is relevant. It relies on non-LLM-based metrics as a distance measure to evaluate the relevance of retrieved contexts.
+This metric uses non-LLM-based methods (such as [Levenshtein distance measure](https://en.wikipedia.org/wiki/Levenshtein_distance)) to determine whether a retrieved context is relevant.
 
 ### Context Precision with reference contexts
 
 The `NonLLMContextPrecisionWithReference` metric is designed for scenarios where both retrieved contexts and reference contexts are available for a `user_input`. To determine if a retrieved context is relevant, this method compares each retrieved context or chunk in `retrieved_contexts` with every context in `reference_contexts` using a non-LLM-based similarity measure.
+
+Note that this metric would need the rapidfuzz package to be installed: `pip install rapidfuzz`. 
 
 #### Example
     
