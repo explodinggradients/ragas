@@ -166,7 +166,8 @@ cython_debug/
 
 # Cursor
 .cursorignore
-.cursor/
+.cursor/*
+!.cursor/rules/
 
 # Ragas specific
 _experiments/
@@ -178,7 +179,8 @@ examples/ragas_examples/_version.py
 .envrc
 uv.lock
 .cache/
-.claude
+.claude/*
+!.claude/commands/
 node_modules
 
 # Ragas examples
