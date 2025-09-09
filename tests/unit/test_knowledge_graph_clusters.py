@@ -843,7 +843,18 @@ def test_performance_find_n_indirect_clusters_max_density():
     # Check if time complexity is reasonable
     for i in range(1, len(results)):
         size_ratio = results[i]["size"] / results[i - 1]["size"]
-        time_ratio = results[i]["time"] / results[i - 1]["time"]
+        prev_time = results[i - 1]["time"]
+        curr_time = results[i]["time"]
+
+        # Skip performance check if previous time is too small to measure accurately
+        if prev_time < 1e-6:  # Less than 1 microsecond
+            print(
+                f"Skipping performance check for size {results[i]['size']} vs {results[i - 1]['size']}: "
+                f"previous time too small ({prev_time:.9f}s)"
+            )
+            continue
+
+        time_ratio = curr_time / prev_time
         # Goal is better than cubic since relationships grow exponentially with n and graph_size for a worst-case "web" graph.
         scaled_size_ratio = size_ratio**3
         print(
@@ -920,7 +931,18 @@ def test_performance_find_n_indirect_clusters_large_web_constant_n(
     # Check if time complexity is reasonable
     for i in range(1, len(results)):
         size_ratio = results[i]["size"] / results[i - 1]["size"]
-        time_ratio = results[i]["time"] / results[i - 1]["time"]
+        prev_time = results[i - 1]["time"]
+        curr_time = results[i]["time"]
+
+        # Skip performance check if previous time is too small to measure accurately
+        if prev_time < 1e-6:  # Less than 1 microsecond
+            print(
+                f"Skipping performance check for size {results[i]['size']} vs {results[i - 1]['size']}: "
+                f"previous time too small ({prev_time:.9f}s)"
+            )
+            continue
+
+        time_ratio = curr_time / prev_time
 
         scaled_size_ratio = size_ratio**2.5
         print(
@@ -994,7 +1016,18 @@ def test_performance_find_n_indirect_clusters_independent_chains():
 
     for i in range(1, len(results)):
         size_ratio = results[i]["size"] / results[i - 1]["size"]
-        time_ratio = results[i]["time"] / results[i - 1]["time"]
+        prev_time = results[i - 1]["time"]
+        curr_time = results[i]["time"]
+
+        # Skip performance check if previous time is too small to measure accurately
+        if prev_time < 1e-6:  # Less than 1 microsecond
+            print(
+                f"Skipping performance check for size {results[i]['size']} vs {results[i - 1]['size']}: "
+                f"previous time too small ({prev_time:.9f}s)"
+            )
+            continue
+
+        time_ratio = curr_time / prev_time
         # Goal is to be ~quadratic or better.
         scaled_size_ratio = size_ratio**2
         print(
