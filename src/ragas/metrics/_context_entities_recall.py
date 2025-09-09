@@ -28,9 +28,7 @@ class EntitiesList(BaseModel):
 
 class ExtractEntitiesPrompt(PydanticPrompt[StringIO, EntitiesList]):
     name: str = "text_entity_extraction"
-    instruction: str = (
-        "Given a text, extract unique entities without repetition. Ensure you consider different forms or mentions of the same entity as a single entity."
-    )
+    instruction: str = "Given a text, extract unique entities without repetition. Ensure you consider different forms or mentions of the same entity as a single entity."
     input_model = StringIO
     output_model = EntitiesList
     examples = [

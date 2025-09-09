@@ -1,5 +1,39 @@
 {% extends "base.html" %}
 
+{% block extrahead %}
+  {{ super() }}
+  <!-- Scarf Analytics -->
+  <img style="display: none;" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f4040c26-97ff-4975-bcbb-8db47063d472" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  {% if page and page.canonical_url %}<meta property="og:url" content="{{ page.canonical_url }}">{% endif %}
+  <meta property="og:title" content="{% if page and page.title %}{{ page.title }} - {{ config.site_name }}{% else %}{{ config.site_name }}{% endif %}">
+  <meta property="og:description" content="{% if page and page.meta and page.meta.description %}{{ page.meta.description }}{% else %}{{ config.site_description }}{% endif %}">
+  <meta property="og:image" content="{% if config.site_url %}{{ config.site_url }}{% endif %}{% if page and page.meta and page.meta.og_image %}{{ page.meta.og_image }}{% else %}_static/imgs/ragas-logo.png{% endif %}">
+  <meta property="og:image:alt" content="Ragas - Evaluation framework for RAG pipelines">
+  <meta property="og:site_name" content="{{ config.site_name }}">
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  {% if page and page.canonical_url %}<meta property="twitter:url" content="{{ page.canonical_url }}">{% endif %}
+  <meta property="twitter:title" content="{% if page and page.title %}{{ page.title }} - {{ config.site_name }}{% else %}{{ config.site_name }}{% endif %}">
+  <meta property="twitter:description" content="{% if page and page.meta and page.meta.description %}{{ page.meta.description }}{% else %}{{ config.site_description }}{% endif %}">
+  <meta property="twitter:image" content="{% if config.site_url %}{{ config.site_url }}{% endif %}{% if page and page.meta and page.meta.og_image %}{{ page.meta.og_image }}{% else %}_static/imgs/ragas-logo.png{% endif %}">
+  <meta property="twitter:site" content="@ragas_io">
+  <meta property="twitter:creator" content="@ragas_io">
+  
+  <!-- Additional SEO meta tags -->
+  <meta name="description" content="{% if page and page.meta and page.meta.description %}{{ page.meta.description }}{% else %}{{ config.site_description }}{% endif %}">
+  <meta name="keywords" content="{% if page and page.meta and page.meta.keywords %}{{ page.meta.keywords }}{% else %}RAG evaluation, LLM evaluation, retrieval augmented generation, AI evaluation, machine learning metrics{% endif %}">
+  <meta name="author" content="Exploding Gradients">
+  
+  <!-- Canonical URL -->
+  {% if page and page.canonical_url %}
+  <link rel="canonical" href="{{ page.canonical_url }}">
+  {% endif %}
+{% endblock %}
+
 {% block announce %}
 <!-- Add announcement here, including arbitrary HTML -->
 <div class="announce">

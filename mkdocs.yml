@@ -1,4 +1,5 @@
 site_name: Ragas
+site_description: Evaluation framework for your Retrieval Augmented Generation (RAG) pipelines
 site_url: !ENV READTHEDOCS_CANONICAL_URL
 repo_name: explodinggradients/ragas
 repo_url: https://github.com/explodinggradients/ragas
@@ -36,9 +37,9 @@ nav:
                   - Response Relevancy: concepts/metrics/available_metrics/answer_relevance.md
                   - Faithfulness: concepts/metrics/available_metrics/faithfulness.md
               - Nvidia Metrics:
-                  - Answer Accuracy: concepts/metrics/available_metrics/nvidia_metrics.md#answer-accuracy
-                  - Context Relevance: concepts/metrics/available_metrics/nvidia_metrics.md#context-relevance
-                  - Response Groundedness: concepts/metrics/available_metrics/nvidia_metrics.md#response-groundedness
+                  - Answer Accuracy: concepts/metrics/available_metrics/nvidia_metrics/#answer-accuracy
+                  - Context Relevance: concepts/metrics/available_metrics/nvidia_metrics/#context-relevance
+                  - Response Groundedness: concepts/metrics/available_metrics/nvidia_metrics/#response-groundedness
               - Agents or Tool Use Cases:
                     - concepts/metrics/available_metrics/agents.md
                     - Topic Adherence: concepts/metrics/available_metrics/agents/#topic-adherence
@@ -76,6 +77,19 @@ nav:
               - concepts/test_data_generation/agents.md
       - Feedback Intelligence:
           - concepts/feedback/index.md
+      - Datasets: concepts/datasets.md
+      - Experimentation: concepts/experimentation.md
+  - 🧪 Experimental:
+    - Overview: experimental/index.md
+    - Tutorials:
+        - experimental/tutorials/index.md
+        - Prompt: experimental/tutorials/prompt.md
+        - RAG: experimental/tutorials/rag.md
+        - Workflow: experimental/tutorials/workflow.md
+        - Agent: experimental/tutorials/agent.md
+
+    - How-to Guides:
+        - experimental/howtos/index.md
   - 🛠️ How-to Guides:
       - howtos/index.md
       - Customizations:
@@ -84,12 +98,13 @@ nav:
               - Customise models: howtos/customizations/customize_models.md
               - Run Config: howtos/customizations/_run_config.md
               - Caching: howtos/customizations/_caching.md
+              - Cancelling Tasks: howtos/customizations/cancellation.md
+              - Iterate Prompts: howtos/customizations/iterate_prompt.md
           - Metrics:
               - Modify Prompts: howtos/customizations/metrics/_modifying-prompts-metrics.md
               - Adapt Metrics to Languages: howtos/customizations/metrics/_metrics_language_adaptation.md
               - Write your own Metrics: howtos/customizations/metrics/_write_your_own_metric.md
               - Write your own Metrics - (advanced): howtos/customizations/metrics/_write_your_own_metric_advanced.md
-              - Train and Align Metrics: howtos/customizations/metrics/train_your_own_metric.md
           - Testset Generation:
               - Non-English Testset Generation: howtos/customizations/testgenerator/_language_adaptation.md
               - Persona Generation: howtos/customizations/testgenerator/_persona_generator.md
@@ -100,24 +115,30 @@ nav:
           - howtos/applications/index.md
           - Metrics:
             - Cost Analysis: howtos/applications/_cost.md
-            - Debug LLM Based Metrics: howtos/applications/_metrics_llm_calls.md
             - Evaluating Multi-turn Conversations: howtos/applications/evaluating_multi_turn_conversations.md
             - Evaluations with Vertex AI models: howtos/applications/vertexai_x_ragas.md
           - Testset Generation:
             - Single-hop Query Testset: howtos/applications/singlehop_testset_gen.md
+          - Benchmarking:
+            - Benchmarking Gemini models: howtos/applications/gemini_benchmarking.md
+            - Evaluate a New LLM: howtos/applications/benchmark_llm.md
       - Integrations:
           - howtos/integrations/index.md
           - Arize: howtos/integrations/_arize.md
+          - Amazon Bedrock: howtos/integrations/amazon_bedrock.md
           - Haystack: howtos/integrations/haystack.md
+          - Griptape: howtos/integrations/griptape.md
           - LangChain: howtos/integrations/langchain.md
           - LangGraph: howtos/integrations/_langgraph_agent_evaluation.md
           - LangSmith: howtos/integrations/langsmith.md
-          - LlamaIndex: howtos/integrations/_llamaindex.md
+          - LlamaIndex RAG: howtos/integrations/_llamaindex.md
+          - LlamaIndex Agents: howtos/integrations/llamaindex_agents.md
+          - LlamaStack: howtos/integrations/llama_stack.md
           - R2R: howtos/integrations/r2r.md
           - Swarm: howtos/integrations/swarm_agent_evaluation.md
       - Migrations:
           - From v0.1 to v0.2: howtos/migrations/migrate_from_v01_to_v02.md
-  - 📖 References: 
+  - 📖 References:
     - references/index.md
     - Core:
       - Prompt: references/prompt.md
@@ -126,11 +147,11 @@ nav:
       - RunConfig: references/run_config.md
       - Executor: references/executor.md
       - Cache: references/cache.md
-    - Evaluation: 
+    - Evaluation:
       - Schemas: references/evaluation_schema.md
       - Metrics: references/metrics.md
       - evaluate(): references/evaluate.md
-    - Testset Generation: 
+    - Testset Generation:
       - Schemas: references/testset_schema.md
       - Graph: references/graph.md
       - Transforms: references/transforms.md
@@ -170,22 +191,21 @@ theme:
     - search.suggest
     - search.highlight
   palette:
-    # Palette toggle for automatic mode
     - media: "(prefers-color-scheme)"
       toggle:
         icon: material/brightness-auto
         name: Switch to light mode
-
-    # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
-      scheme: ragas_light
+      scheme: default
+      primary: "#bd8526"
+      accent: "#bd8526"
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-
-    # Palette toggle for dark mode
     - media: "(prefers-color-scheme: dark)"
-      scheme: ragas_dark
+      scheme: slate
+      primary: "#bd8526"
+      accent: "#bd8526"
       toggle:
         icon: material/brightness-4
         name: Switch to system preference
@@ -217,7 +237,7 @@ markdown_extensions:
 
 # Extra CSS
 extra_css:
-  - extra/style.css
+  - extra/ragas-modern.css
 
 # Plugins
 extra:
@@ -226,6 +246,13 @@ extra:
   analytics:
     provider: google
     property: !ENV GOOGLE_ANALYTICS_KEY
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/explodinggradients/ragas
+    - icon: fontawesome/brands/x-twitter
+      link: https://x.com/ragas_io
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/5qGUJ6mh7C
 plugins:
   - search
   - git-revision-date-localized:
@@ -259,3 +286,5 @@ extra_javascript:
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
   - _static/js/toggle.js
   - https://cdn.octolane.com/tag.js?pk=c7c9b2b863bf7eaf4e2a # octolane for analytics
+  - _static/js/reo.js # reo analytics
+  - _static/js/commonroom.js # commonroom analytics

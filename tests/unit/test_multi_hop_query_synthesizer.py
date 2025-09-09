@@ -121,7 +121,7 @@ async def test_generate_scenarios(fake_llm):
 
         # Assert we got the expected number of scenarios
         # Must be a range to compensate for num_sample_per_cluster rounding
-        assert (
-            n <= len(scenarios) <= n + 2
-        ), f"Expected {n} or {n+1} scenarios, got {len(scenarios)}"
+        assert n <= len(scenarios) <= n + 2, (
+            f"Expected {n} or {n + 1} scenarios, got {len(scenarios)}"
+        )
         _assert_scenario_properties(scenarios, personas)

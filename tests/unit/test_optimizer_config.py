@@ -1,5 +1,4 @@
 def test_load_config(fake_llm, fake_embedding):
-
     from ragas.config import DemonstrationConfig, InstructionConfig
 
     inst_config = InstructionConfig(llm=fake_llm)

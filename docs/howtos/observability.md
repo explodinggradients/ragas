@@ -81,14 +81,17 @@ An ideal test dataset should contain data points of high quality and diverse nat
 
 ```python
 from ragas.testset import TestsetGenerator
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
+from ragas.embeddings import OpenAIEmbeddings
+import openai
 
 TEST_SIZE = 25
 
 # generator with openai models
 generator_llm = ChatOpenAI(model="gpt-4o-mini")
 critic_llm = ChatOpenAI(model="gpt-4o")
-embeddings = OpenAIEmbeddings()
+openai_client = openai.OpenAI()
+embeddings = OpenAIEmbeddings(client=openai_client)
 
 generator = TestsetGenerator.from_langchain(generator_llm, critic_llm, embeddings)
 

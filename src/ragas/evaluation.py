@@ -9,7 +9,7 @@ from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 from tqdm.auto import tqdm
 
-from ragas._analytics import track_was_completed
+from ragas._analytics import track_was_completed  # type: ignore
 from ragas.callbacks import ChainType, RagasTracer, new_group
 from ragas.dataset_schema import (
     EvaluationDataset,
@@ -18,6 +18,7 @@ from ragas.dataset_schema import (
     SingleTurnSample,
 )
 from ragas.embeddings.base import (
+    BaseRagasEmbedding,
     BaseRagasEmbeddings,
     LangchainEmbeddingsWrapper,
     embedding_factory,
@@ -53,12 +54,14 @@ if t.TYPE_CHECKING:
 RAGAS_EVALUATION_CHAIN_NAME = "ragas evaluation"
 
 
-@track_was_completed
+@track_was_completed  # type: ignore
 def evaluate(
     dataset: t.Union[Dataset, EvaluationDataset],
     metrics: t.Optional[t.Sequence[Metric]] = None,
     llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
-    embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
+    embeddings: t.Optional[
+        BaseRagasEmbeddings | BaseRagasEmbedding | LangchainEmbeddings
+    ] = None,
     experiment_name: t.Optional[str] = None,
     callbacks: Callbacks = None,
     run_config: t.Optional[RunConfig] = None,
@@ -69,57 +72,57 @@ def evaluate(
     batch_size: t.Optional[int] = None,
     _run_id: t.Optional[UUID] = None,
     _pbar: t.Optional[tqdm] = None,
-) -> EvaluationResult:
+    return_executor: bool = False,
+) -> t.Union[EvaluationResult, Executor]:
     """
-    Run the evaluation on the dataset with different metrics
+    Perform the evaluation on the dataset with different metrics
 
     Parameters
     ----------
     dataset : Dataset, EvaluationDataset
-        The dataset in the format of ragas which the metrics will use to score the RAG
-        pipeline with
-    metrics : list[Metric] , optional
-        List of metrics to use for evaluation. If not provided then ragas will run the
-        evaluation on the best set of metrics to give a complete view.
-    llm: BaseRagasLLM, optional
-        The language model to use for the metrics. If not provided then ragas will use
-        the default language model for metrics which require an LLM. This can we overridden by the llm specified in
-        the metric level with `metric.llm`.
-    embeddings: BaseRagasEmbeddings, optional
-        The embeddings to use for the metrics. If not provided then ragas will use
-        the default embeddings for metrics which require embeddings. This can we overridden by the embeddings specified in
-        the metric level with `metric.embeddings`.
-    experiment_name: str, optional
-        The name of the experiment to track. This is used to track the evaluation in the tracing tools.
-    callbacks: Callbacks, optional
-        Lifecycle Langchain Callbacks to run during evaluation. Check the
-        [langchain documentation](https://python.langchain.com/docs/modules/callbacks/)
-        for more information.
-    run_config: RunConfig, optional
-        Configuration for runtime settings like timeout and retries. If not provided,
-        default values are used.
-    token_usage_parser: TokenUsageParser, optional
-        Parser to get the token usage from the LLM result. If not provided then the
-        the cost and total tokens will not be calculated. Default is None.
-    raise_exceptions: False
-        Whether to raise exceptions or not. If set to True then the evaluation will
-        raise an exception if any of the metrics fail. If set to False then the
-        evaluation will return `np.nan` for the row that failed. Default is False.
+        The dataset used by the metrics to evaluate the RAG pipeline.
+    metrics : list[Metric], optional
+        List of metrics to use for evaluation. If not provided, ragas will run
+        the evaluation on the best set of metrics to give a complete view.
+    llm : BaseRagasLLM, optional
+        The language model (LLM) to use to generate the score for calculating the metrics.
+        If not provided, ragas will use the default
+        language model for metrics that require an LLM. This can be overridden by the LLM
+        specified in the metric level with `metric.llm`.
+    embeddings : BaseRagasEmbeddings, optional
+        The embeddings model to use for the metrics.
+        If not provided, ragas will use the default embeddings for metrics that require embeddings.
+        This can be overridden by the embeddings specified in the metric level with `metric.embeddings`.
+    experiment_name : str, optional
+        The name of the experiment to track. This is used to track the evaluation in the tracing tool.
+    callbacks : Callbacks, optional
+        Lifecycle Langchain Callbacks to run during evaluation.
+        Check the [Langchain documentation](https://python.langchain.com/docs/modules/callbacks/) for more information.
+    run_config : RunConfig, optional
+        Configuration for runtime settings like timeout and retries. If not provided, default values are used.
+    token_usage_parser : TokenUsageParser, optional
+        Parser to get the token usage from the LLM result.
+        If not provided, the cost and total token count will not be calculated. Default is None.
+    raise_exceptions : False
+        Whether to raise exceptions or not. If set to True, the evaluation will raise an exception
+        if any of the metrics fail. If set to False, the evaluation will return `np.nan` for the row that failed. Default is False.
     column_map : dict[str, str], optional
-        The column names of the dataset to use for evaluation. If the column names of
-        the dataset are different from the default ones then you can provide the
-        mapping as a dictionary here. Example: If the dataset column name is contexts_v1,
-        column_map can be given as {"contexts":"contexts_v1"}
-    show_progress: bool, optional
-        Whether to show the progress bar during evaluation. If set to False, the progress bar will be disabled. Default is True.
-    batch_size: int, optional
-        How large should batches be.  If set to None (default), no batching is done.
+        The column names of the dataset to use for evaluation. If the column names of the dataset are different from the default ones,
+        it is possible to provide the mapping as a dictionary here. Example: If the dataset column name is `contexts_v1`, it is possible to pass column_map as `{"contexts": "contexts_v1"}`.
+    show_progress : bool, optional
+        Whether to show the progress bar during evaluation. If set to False, the progress bar will be disabled. The default is True.
+    batch_size : int, optional
+        How large the batches should be. If set to None (default), no batching is done.
+    return_executor : bool, optional
+        If True, returns the Executor instance instead of running evaluation.
+        The returned executor can be used to cancel execution by calling executor.cancel().
+        To get results, call executor.results(). Default is False.
 
     Returns
     -------
-    EvaluationResult
-        EvaluationResult object containing the scores of each metric.
-        You can use this do analysis later.
+    EvaluationResult or Executor
+        If return_executor is False, returns EvaluationResult object containing the scores of each metric.
+        If return_executor is True, returns the Executor instance for cancellable execution.
 
     Raises
     ------
@@ -292,6 +295,10 @@ def evaluate(
             ]
         else:
             raise ValueError(f"Unsupported sample type {sample_type}")
+
+    # Return executor for cancellable execution if requested
+    if return_executor:
+        return executor
 
     scores: t.List[t.Dict[str, t.Any]] = []
     try:

@@ -48,14 +48,14 @@ class EvaluatorChain(Chain, RunEvaluator):
             t.cast(MetricWithLLM, self.metric).llm = LangchainLLMWrapper(llm)
         if isinstance(self.metric, MetricWithEmbeddings):
             embeddings = get_or_init(kwargs, "embeddings", OpenAIEmbeddings)
-            t.cast(MetricWithEmbeddings, self.metric).embeddings = (
-                LangchainEmbeddingsWrapper(embeddings)
-            )
+            t.cast(
+                MetricWithEmbeddings, self.metric
+            ).embeddings = LangchainEmbeddingsWrapper(embeddings)
         self.metric.init(run_config)
 
-        assert isinstance(
-            self.metric, SingleTurnMetric
-        ), "Metric must be SingleTurnMetric"
+        assert isinstance(self.metric, SingleTurnMetric), (
+            "Metric must be SingleTurnMetric"
+        )
 
     @property
     def input_keys(self) -> list[str]:
@@ -87,9 +87,9 @@ class EvaluatorChain(Chain, RunEvaluator):
         _run_manager = run_manager or CallbackManagerForChainRun.get_noop_manager()
         callbacks = _run_manager.get_child()
 
-        assert isinstance(
-            self.metric, SingleTurnMetric
-        ), "Metric must be SingleTurnMetric"
+        assert isinstance(self.metric, SingleTurnMetric), (
+            "Metric must be SingleTurnMetric"
+        )
         score = self.metric.single_turn_score(
             inputs,
             callbacks=callbacks,
@@ -119,9 +119,9 @@ class EvaluatorChain(Chain, RunEvaluator):
         _run_manager = run_manager or AsyncCallbackManagerForChainRun.get_noop_manager()
         # TODO: currently AsyncCallbacks are not supported in ragas
         _run_manager.get_child()
-        assert isinstance(
-            self.metric, SingleTurnMetric
-        ), "Metric must be SingleTurnMetric"
+        assert isinstance(self.metric, SingleTurnMetric), (
+            "Metric must be SingleTurnMetric"
+        )
         score = await self.metric.single_turn_ascore(
             inputs,
             callbacks=[],
@@ -160,9 +160,9 @@ class EvaluatorChain(Chain, RunEvaluator):
                 "Expected 'question' and 'ground_truth' in example."
                 f"Got: {[k for k in example.inputs.keys()]}"
             )
-        assert (
-            run.outputs is not None
-        ), "the current run has no outputs. The chain should output 'answer' and 'contexts' keys."
+        assert run.outputs is not None, (
+            "the current run has no outputs. The chain should output 'answer' and 'contexts' keys."
+        )
         output_keys = get_required_columns_v1(self.metric)
         output_keys = [
             key for key in output_keys if key not in ["question", "ground_truth"]
@@ -174,12 +174,15 @@ class EvaluatorChain(Chain, RunEvaluator):
                 f"Got: {[k for k in run.outputs.keys()]}"
             )
 
+    @t.no_type_check
     def evaluate_run(
         self, run: Run, example: t.Optional[Example] = None
     ) -> EvaluationResult:
         """
         Evaluate a langsmith run
         """
+        # Moved away from this implementation in LangChain evaluations;
+        # we can safely ignore type checking for this legacy function.
         self._validate_langsmith_eval(run, example)
 
         # this is just to suppress the type checker error

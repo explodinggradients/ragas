@@ -1,3 +1,4 @@
+import itertools
 import typing as t
 from collections import Counter
 from dataclasses import dataclass
@@ -19,38 +20,61 @@ class JaccardSimilarityBuilder(RelationshipBuilder):
         union = len(set1.union(set2))
         return intersection / union if union > 0 else 0.0
 
+    def _find_similar_embedding_pairs(
+        self, kg: KnowledgeGraph
+    ) -> t.List[t.Tuple[int, int, float]]:
+        """
+        Finds all node index pairs with Jaccard similarity above the threshold.
+        Returns a set of (i, j, similarity) tuples.
+        """
+
+        similar_pairs = set()
+        for (i, node1), (j, node2) in itertools.combinations(enumerate(kg.nodes), 2):
+            items1 = node1.get_property(self.property_name)
+            items2 = node2.get_property(self.property_name)
+            if items1 is None or items2 is None:
+                raise ValueError(
+                    f"Node {node1.id} or {node2.id} has no {self.property_name}"
+                )
+            if self.key_name is not None:
+                items1 = items1.get(self.key_name, [])
+                items2 = items2.get(self.key_name, [])
+            similarity = self._jaccard_similarity(set(items1), set(items2))
+            if similarity >= self.threshold:
+                similar_pairs.add((i, j, similarity))
+        return list(similar_pairs)
+
     async def transform(self, kg: KnowledgeGraph) -> t.List[Relationship]:
-        if self.property_name is None:
-            self.property_name
-
-        similar_pairs = []
-        for i, node1 in enumerate(kg.nodes):
-            for j, node2 in enumerate(kg.nodes):
-                if i >= j:
-                    continue
-                items1 = node1.get_property(self.property_name)
-                items2 = node2.get_property(self.property_name)
-                if items1 is None or items2 is None:
-                    raise ValueError(
-                        f"Node {node1.id} or {node2.id} has no {self.property_name}"
-                    )
-                if self.key_name is not None:
-                    items1 = items1.get(self.key_name, [])
-                    items2 = items2.get(self.key_name, [])
-                similarity = self._jaccard_similarity(set(items1), set(items2))
-                if similarity >= self.threshold:
-                    similar_pairs.append((i, j, similarity))
-
+        similar_pairs = self._find_similar_embedding_pairs(kg)
         return [
             Relationship(
                 source=kg.nodes[i],
                 target=kg.nodes[j],
-                type="jaccard_similarity",
+                type=self.new_property_name,
                 properties={self.new_property_name: similarity_float},
                 bidirectional=True,
             )
             for i, j, similarity_float in similar_pairs
         ]
+
+    def generate_execution_plan(self, kg: KnowledgeGraph) -> t.List[t.Coroutine]:
+        """
+        Generates a coroutine task for finding similar pairs, which can be scheduled/executed by an Executor.
+        """
+
+        async def find_and_add_relationships():
+            similar_pairs = self._find_similar_embedding_pairs(kg)
+            for i, j, similarity_float in similar_pairs:
+                rel = Relationship(
+                    source=kg.nodes[i],
+                    target=kg.nodes[j],
+                    type=self.new_property_name,
+                    properties={self.new_property_name: similarity_float},
+                    bidirectional=True,
+                )
+                kg.relationships.append(rel)
+
+        return [find_and_add_relationships()]
 
 
 @dataclass
@@ -65,6 +89,7 @@ class OverlapScoreBuilder(RelationshipBuilder):
     def __post_init__(self):
         try:
             from rapidfuzz import distance
+
         except ImportError:
             raise ImportError(
                 "rapidfuzz is required for string distance. Please install it using `pip install rapidfuzz`"
@@ -78,13 +103,11 @@ class OverlapScoreBuilder(RelationshipBuilder):
         }
 
     def _overlap_score(self, overlaps: t.List[bool]) -> float:
-
         return sum(overlaps) / len(overlaps) if len(overlaps) > 0 else 0.0
 
     def _get_noisy_items(
         self, nodes: t.List[Node], property_name: str, percent_cut_off: float = 0.05
     ) -> t.List[str]:
-
         all_items = []
         for node in nodes:
             items = node.get_property(property_name)

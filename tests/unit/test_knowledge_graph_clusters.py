@@ -370,9 +370,9 @@ def assert_clusters_equal(
         frozenset(cluster) for cluster in expected_clusters
     }
 
-    assert (
-        actual_clusters_set == expected_clusters_set
-    ), f"Expected clusters: {expected_clusters_set}\nActual clusters: {actual_clusters_set}"
+    assert actual_clusters_set == expected_clusters_set, (
+        f"Expected clusters: {expected_clusters_set}\nActual clusters: {actual_clusters_set}"
+    )
 
 
 def assert_n_clusters_with_varying_params(
@@ -862,9 +862,9 @@ def test_performance_find_n_indirect_clusters_max_density():
             f"Size ratio: {size_ratio:.2f}, Time ratio: {time_ratio:.2f}, Scaled ratio: {scaled_size_ratio:.2f}"
         )
 
-        assert (
-            time_ratio < scaled_size_ratio
-        ), f"Time complexity growing faster than expected: size {results[i]['size']} vs {results[i-1]['size']}, time ratio {time_ratio:.2f} vs {scaled_size_ratio:.2f}"
+        assert time_ratio < scaled_size_ratio, (
+            f"Time complexity growing faster than expected: size {results[i]['size']} vs {results[i - 1]['size']}, time ratio {time_ratio:.2f} vs {scaled_size_ratio:.2f}"
+        )
 
 
 @pytest.fixture
@@ -913,9 +913,9 @@ def test_performance_find_n_indirect_clusters_large_web_constant_n(
         )
 
         # Make sure we got clusters (may be less than n if graph doesn't support that many)
-        assert (
-            len(clusters) <= constant_n
-        ), f"Expected at most {constant_n} clusters, got {len(clusters)}"
+        assert len(clusters) <= constant_n, (
+            f"Expected at most {constant_n} clusters, got {len(clusters)}"
+        )
 
     print("\nPerformance test results (constant n=10):")
     print("----------------------------------")
@@ -939,9 +939,9 @@ def test_performance_find_n_indirect_clusters_large_web_constant_n(
             f"Size ratio: {size_ratio:.2f}, (Scaled: {scaled_size_ratio:.2f}), Time ratio: {time_ratio:.2f}"
         )
 
-        assert (
-            time_ratio < scaled_size_ratio
-        ), f"Time complexity growing faster than expected: size {results[i]['size']} vs {results[i - 1]['size']}, time ratio {time_ratio:.2f} vs {scaled_size_ratio:.2f}"
+        assert time_ratio < scaled_size_ratio, (
+            f"Time complexity growing faster than expected: size {results[i]['size']} vs {results[i - 1]['size']}, time ratio {time_ratio:.2f} vs {scaled_size_ratio:.2f}"
+        )
 
 
 def test_performance_find_n_indirect_clusters_independent_chains():
@@ -990,9 +990,9 @@ def test_performance_find_n_indirect_clusters_independent_chains():
         )
 
         # Make sure we got the expected number of clusters (one per chain)
-        assert (
-            len(clusters) == num_chains
-        ), f"Expected {num_chains} clusters, got {len(clusters)}"
+        assert len(clusters) == num_chains, (
+            f"Expected {num_chains} clusters, got {len(clusters)}"
+        )
 
     print("\nPerformance test results (independent chains):")
     print("------------------------")
@@ -1013,6 +1013,6 @@ def test_performance_find_n_indirect_clusters_independent_chains():
             f"Size ratio: {size_ratio:.2f} (scaled: {scaled_size_ratio:.2f}), Time ratio: {time_ratio:.2f}"
         )
 
-        assert (
-            time_ratio < scaled_size_ratio
-        ), f"Time complexity growing faster than expected: size {results[i]['size']} vs {results[i-1]['size']}, time ratio {time_ratio:.2f} vs {scaled_size_ratio:.2f}"
+        assert time_ratio < scaled_size_ratio, (
+            f"Time complexity growing faster than expected: size {results[i]['size']} vs {results[i - 1]['size']}, time ratio {time_ratio:.2f} vs {scaled_size_ratio:.2f}"
+        )
