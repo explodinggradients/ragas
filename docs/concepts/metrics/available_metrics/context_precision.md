@@ -13,14 +13,6 @@ $$
 
 Where $K$ is the total number of chunks in `retrieved_contexts` and $v_k \in \{0, 1\}$ is the relevance indicator at rank $k$.
 
-## LLM Based Context Precision
-
-The following metrics uses LLM to identify if a retrieved context is relevant or not.
-
-### Context Precision without reference
-
-`LLMContextPrecisionWithoutReference` metric can be used without the availability of a reference answer, by using the retrieved contexts. To estimate if the retrieved contexts are relevant, this method uses the LLM to compare each chunk in `retrieved_contexts` with the `response`.
-
 #### Example
     
 ```python
@@ -87,9 +79,38 @@ Output
 0.49999999995
 ```
 
+## LLM Based Context Precision
+
+The following metrics uses LLM to identify if a retrieved context is relevant or not.
+
+### Context Precision without reference
+
+The `LLMContextPrecisionWithoutReference` metric can be used without the availability of a reference answer. To estimate if the retrieved contexts are relevant, this method uses the LLM to compare each chunk in `retrieved_contexts` with the `response`.
+
+#### Example
+    
+```python
+from ragas import SingleTurnSample
+from ragas.metrics import LLMContextPrecisionWithoutReference
+
+context_precision = LLMContextPrecisionWithoutReference(llm=evaluator_llm)
+
+sample = SingleTurnSample(
+    user_input="Where is the Eiffel Tower located?",
+    response="The Eiffel Tower is located in Paris.",
+    retrieved_contexts=["The Eiffel Tower is located in Paris."], 
+)
+
+
+await context_precision.single_turn_ascore(sample)
+```
+Output
+```
+0.9999999999
+```
 ### Context Precision with reference
 
-`LLMContextPrecisionWithReference` metric is can be used when you have both retrieved contexts and also a reference context associated with a `user_input`. To estimate if the retrieved contexts are relevant, this method uses the LLM to compare each chunk in `retrieved_contexts` with the `reference`.
+The `LLMContextPrecisionWithReference` metric can be used when you have both retrieved contexts and also a reference response associated with a `user_input`. To estimate if the retrieved contexts are relevant, this method uses the LLM to compare each chunk in `retrieved_contexts` with the `reference`.
 
 #### Example
     
