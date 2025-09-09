@@ -1,3 +1,4 @@
+import hashlib
 import json
 import random
 import typing as t
@@ -588,13 +589,10 @@ class KnowledgeGraph:
         # Shuffle nodes for random starting points
         # Use adjacency list since that has filtered out isolated nodes
         # Sort by node ID for consistent ordering while maintaining algorithm effectiveness
-        start_nodes: list[Node] = sorted(adjacency_list.keys(), key=lambda n: n.id.hex)
+        start_nodes = sorted(adjacency_list.keys(), key=lambda n: n.id.hex)
         # Use a hash-based seed for reproducible but varied shuffling based on the nodes themselves
-        import hashlib
-
-        node_hash = hashlib.md5(
-            "".join(n.id.hex for n in start_nodes).encode()
-        ).hexdigest()
+        node_ids_str = "".join(n.id.hex for n in start_nodes)
+        node_hash = hashlib.sha256(node_ids_str.encode("utf-8")).hexdigest()
         rng = random.Random(int(node_hash[:8], 16))  # Use first 8 hex chars as seed
         rng.shuffle(start_nodes)
         samples: list[Node] = start_nodes[:sample_size]
