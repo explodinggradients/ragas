@@ -575,19 +575,40 @@ This shows that while the agent generates valid SQL, it needs significant improv
 
 ### Error Analysis
 
-The error analysis script automatically categorizes failures in your evaluation results:
+To analyze your failures systematically, you can use this prompt to categorize errors manually:
 
-```bash
-uv run python -m ragas_examples.text2sql.analyze_errors --input experiments/your_results.csv
+<details>
+<summary>📋 Error Analysis Prompt</summary>
+
+```text
+You are analyzing why a Text2SQL prediction failed. Given the following information, identify the error codes and provide a brief analysis.
+
+Available error codes:
+- AGGR_DISTINCT_MISSING: Used COUNT/SUM without DISTINCT or deduplication
+- WRONG_FILTER_COLUMN: Filtered on the wrong column 
+- WRONG_SOURCE_TABLE_OR_COLUMN: Selected metric from the wrong table/column
+- EXTRA_TRANSFORMATION_OR_CONDITION: Added ABS(), extra filters that change results
+- OUTPUT_COLUMN_ALIAS_MISMATCH: Output column names don't match
+- NULL_OR_EMPTY_RESULT: Result is None/empty due to wrong filters or source
+- GENERIC_VALUE_MISMATCH: Aggregation computed but numeric value differs for unclear reasons
+- OTHER: Fallback
+
+Query: [YOUR_QUERY]
+Expected SQL: [EXPECTED_SQL]
+Predicted SQL: [PREDICTED_SQL]
+Execution Accuracy: [ACCURACY_RESULT]
+Accuracy Reason: [ACCURACY_REASON]
+
+Respond with:
+- error_codes: array of applicable error codes (1 or more)
+- error_analysis: brief 1-3 sentence explanation of what went wrong
 ```
 
-This will:
+Copy this prompt and use it with your preferred LLM to analyze individual failures from your results CSV.
 
-1. Process all rows where `execution_accuracy` is "incorrect"
-2. Use OpenAI's GPT 5 model to analyze each failure
-3. Add two new columns: `error_analysis` (explanation) and `error_codes` (categorized errors)
-4. Create an annotated CSV file with suffix `_annotated.csv`
-5. Display a summary of error patterns
+</details>
+
+**Automated option:** For convenience, there's also an `analyze_errors.py` script that can automatically categorize errors using OpenAI's API. `uv run python -m ragas_examples.text2sql.analyze_errors --input experiments/your_results.csv`
 
 <details>
 <summary>Example Output</summary>
@@ -828,7 +849,7 @@ uv run python -m ragas_examples.text2sql.evals run \
 
 **The 70% accuracy achieved with `prompt_v3.txt` demonstrates the power of systematic iteration.** You can continue this process to push accuracy even higher:
 
-1. **Analyze the remaining 30% of failures** using `analyze_errors.py` on your v3 results
+1. **Analyze the remaining 30% of failures** using the error analysis prompt on your v3 results
 2. **Identify new patterns** in the remaining incorrect queries  
 3. **Create additional prompt versions** with targeted guidelines
 4. **Re-evaluate and compare** to track incremental progress

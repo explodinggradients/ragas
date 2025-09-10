@@ -4,7 +4,7 @@ import datetime
 import os
 import sys
 import time
-from typing import List, Optional
+from typing import Optional
 
 import dotenv
 import pandas as pd
@@ -27,38 +27,19 @@ dotenv.load_dotenv("../../../.env")
 MAX_ROWS_COMPARE = 10000
 
 
-@discrete_metric(name="sql_validity", allowed_values=["correct", "incorrect"])
-def sql_validity(predicted_success: bool, predicted_result):
-    """Check if the generated SQL is syntactically valid based on execution results."""
-    try:
-        if predicted_success:
-            return MetricResult(
-                value="correct",
-                reason="SQL executed successfully without syntax errors"
-            )
-        else:
-            return MetricResult(
-                value="incorrect",
-                reason=f"SQL execution failed: {predicted_result}"
-            )
-    except Exception as e:
-        return MetricResult(
-            value="incorrect",
-            reason=f"SQL validation failed with exception: {str(e)}"
-        )
 
 
-@discrete_metric(name="execution_accuracy", allowed_values=["correct", "incorrect", "dataset_error"])
+@discrete_metric(name="execution_accuracy", allowed_values=["correct", "incorrect"])
 def execution_accuracy(expected_sql: str, predicted_success: bool, predicted_result):
     """Compare execution results of predicted vs expected SQL using datacompy."""
     try:
         # Execute expected SQL
         expected_success, expected_result = execute_sql(expected_sql)
         
-        # If expected SQL fails, this is a dataset error
+        # If expected SQL fails, it's incorrect
         if not expected_success:
             return MetricResult(
-                value="dataset_error",
+                value="incorrect",
                 reason=f"Expected SQL failed to execute: {expected_result}"
             )
         
@@ -129,9 +110,9 @@ def execution_accuracy(expected_sql: str, predicted_success: bool, predicted_res
                     )
                     
             except Exception as comparison_error:
-                # If datacompy fails, report it as an evaluation error
+                # If datacompy fails, report it as incorrect
                 return MetricResult(
-                    value="dataset_error",
+                    value="incorrect",
                     reason=f"DataFrame comparison failed with datacompy: {str(comparison_error)}"
                 )
         else:
@@ -142,7 +123,7 @@ def execution_accuracy(expected_sql: str, predicted_success: bool, predicted_res
             
     except Exception as e:
         return MetricResult(
-            value="dataset_error",
+            value="incorrect",
             reason=f"Execution accuracy evaluation failed: {str(e)}"
         )
 
@@ -193,17 +174,7 @@ async def text2sql_experiment(
         predicted_success, predicted_result = False, "SQL execution timed out"
     sql_exec_dur = time.perf_counter() - sql_exec_start
 
-    # Score the response using our metrics with shared execution results
-    val_start = time.perf_counter()
-    try:
-        validity_score = await asyncio.wait_for(
-            asyncio.to_thread(sql_validity.score, predicted_success=predicted_success, predicted_result=predicted_result),
-            timeout=timeout_sql,
-        )
-    except asyncio.TimeoutError:
-        validity_score = MetricResult(value="incorrect", reason="SQL validity timed out")
-    val_dur = time.perf_counter() - val_start
-
+    # Score the response using execution accuracy
     acc_start = time.perf_counter()
     try:
         accuracy_score = await asyncio.wait_for(
@@ -216,13 +187,12 @@ async def text2sql_experiment(
             timeout=timeout_sql,
         )
     except asyncio.TimeoutError:
-        # Treat as dataset issue to avoid penalizing model when DB stalls
-        accuracy_score = MetricResult(value="dataset_error", reason="Execution accuracy timed out")
+        accuracy_score = MetricResult(value="incorrect", reason="Execution accuracy timed out")
     acc_dur = time.perf_counter() - acc_start
 
     if verbose:
         print(
-            f"[row={row_id}] gen={gen_dur:.2f}s sql_exec={sql_exec_dur:.2f}s val={val_dur:.2f}s acc={acc_dur:.2f}s "
+            f"[row={row_id}] gen={gen_dur:.2f}s sql_exec={sql_exec_dur:.2f}s acc={acc_dur:.2f}s "
             f"query_len={len(row['Query'])} sql_len={len(result.generated_sql)}"
         )
 
@@ -233,9 +203,7 @@ async def text2sql_experiment(
         "predicted_sql": result.generated_sql,
         "level": row["Levels"],
         "experiment_name": experiment_name,
-        "sql_validity": validity_score.value,
         "execution_accuracy": accuracy_score.value,
-        "validity_reason": validity_score.reason,
         "accuracy_reason": accuracy_score.reason,
     }
 
@@ -342,17 +310,10 @@ async def run_command(
     print(f"✅ {exp_name}: {len(results)} cases evaluated")
     print(f"Results saved to: {os.path.join(experiments_dir, results.name)}.csv")
 
-    # Accuracy summary
-    validity_accuracy = sum(1 for r in results if r["sql_validity"] == "correct") / max(1, len(results))
+    # Execution accuracy summary
+    execution_accuracy = sum(1 for r in results if r["execution_accuracy"] == "correct") / max(1, len(results))
     
-    # Execution accuracy (excluding dataset errors)
-    execution_results = [r for r in results if r["execution_accuracy"] != "dataset_error"]
-    execution_accuracy = sum(1 for r in execution_results if r["execution_accuracy"] == "correct") / max(1, len(execution_results))
-    
-    dataset_errors = sum(1 for r in results if r["execution_accuracy"] == "dataset_error")
-    
-    print(f"{exp_name} SQL Validity: {validity_accuracy:.2%}")
-    print(f"{exp_name} Execution Accuracy: {execution_accuracy:.2%} (excluding {dataset_errors} dataset errors)")
+    print(f"{exp_name} Execution Accuracy: {execution_accuracy:.2%}")
 
 
 
