@@ -189,5 +189,4 @@ examples/dist/
 examples/build/
 examples/*.egg-info/
 examples/ragas_examples/_version.py
-examples/ragas_examples/text2sql/BookSQL-files/*
 examples/ragas_examples/text2sql/experiments/*
