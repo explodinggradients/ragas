@@ -20,6 +20,17 @@ We've created a simple module you can install and run so that you can focus on u
 uv pip install "ragas-examples[text2sql]"
 ```
 
+### Download BookSQL (required)
+
+Before running the agent or database utilities, download the gated BookSQL dataset from Hugging Face:
+
+```bash
+huggingface-cli login
+uv run python -m ragas_examples.text2sql.data_utils --download-data
+```
+
+If you see authentication errors, visit the dataset page and accept terms first: [BookSQL on Hugging Face](https://huggingface.co/datasets/Exploration-Lab/BookSQL)
+
 !!! note "Full code"
     You can view the full code for the agent and evaluation pipeline [here](https://github.com/explodinggradients/ragas/tree/main/examples/ragas_examples/text2sql).
 
@@ -59,95 +70,118 @@ To create your own evaluation dataset:
 3. **Ground-truth SQL**: Write correct SELECT queries for each question
 4. **Coverage**: Include simple to complex queries with difficulty ratings 
 
-### Download and examine the dataset
+??? info "📋 Optional: How we prepared the sample dataset"
 
-For this guide, we'll use the [BookSQL dataset](https://huggingface.co/datasets/Exploration-Lab/BookSQL). Skip this section if you have your own dataset.
+    ### Download and examine the dataset
 
-**Download the dataset:**
+    For this guide, we'll use the [BookSQL dataset](https://huggingface.co/datasets/Exploration-Lab/BookSQL). Skip this section if you have your own dataset.
 
-```bash
-export HF_TOKEN=your-huggingface-token
-uv run python -m ragas_examples.text2sql.data_utils --download-data
-```
+    **Download the dataset:**
 
-**Note:** BookSQL is gated. Visit [the dataset page](https://huggingface.co/datasets/Exploration-Lab/BookSQL), accept terms, and run `huggingface-cli login` if you encounter authentication errors.
+    ```bash
+    export HF_TOKEN=your-huggingface-token
+    uv run python -m ragas_examples.text2sql.data_utils --download-data
+    ```
 
-**Examine the dataset structure:**
+    **Note:** BookSQL is gated. Visit [the dataset page](https://huggingface.co/datasets/Exploration-Lab/BookSQL), accept terms, and run `huggingface-cli login` if you encounter authentication errors.
 
-```bash
-# Check the database schema
-sqlite3 BookSQL-files/BookSQL/accounting.sqlite ".schema" | head -20
-```
+    **Examine the dataset structure:**
 
-<details>
-<summary>📋 Expected schema output</summary>
+    ```bash
+    # Check the database schema
+    sqlite3 BookSQL-files/BookSQL/accounting.sqlite ".schema" | head -20
+    ```
 
-```sql
-CREATE TABLE master_txn_table(
-                    id INTEGER ,
-                    businessID INTEGER NOT NULL ,
-                    Transaction_ID INTEGER NOT NULL,
-                    Transaction_DATE DATE NOT NULL,
-                    Transaction_TYPE TEXT NOT NULL,
-                    Amount DOUBLE NOT NULL,
-                    CreatedDATE DATE NOT NULL,
-                    CreatedUSER TEXT NOT NULL,
-                    Account TEXT NOT NULL,
-                    AR_paid TEXT,
-                    AP_paid TEXT,
-                    Due_DATE DATE,
-                    Open_balance DOUBLE,
-                    Customers TEXT,
-                    Vendor TEXT,
-                    Product_Service TEXT,
-                    Quantity INTEGER,
-                    Rate DOUBLE,
-                    Credit DOUBLE,
-```
-</details>
+    **Expected schema output:**
 
-The dataset contains:
+    ```sql
+    CREATE TABLE master_txn_table(
+                        id INTEGER ,
+                        businessID INTEGER NOT NULL ,
+                        Transaction_ID INTEGER NOT NULL,
+                        Transaction_DATE DATE NOT NULL,
+                        Transaction_TYPE TEXT NOT NULL,
+                        Amount DOUBLE NOT NULL,
+                        CreatedDATE DATE NOT NULL,
+                        CreatedUSER TEXT NOT NULL,
+                        Account TEXT NOT NULL,
+                        AR_paid TEXT,
+                        AP_paid TEXT,
+                        Due_DATE DATE,
+                        Open_balance DOUBLE,
+                        Customers TEXT,
+                        Vendor TEXT,
+                        Product_Service TEXT,
+                        Quantity INTEGER,
+                        Rate DOUBLE,
+                        Credit DOUBLE,
+    ```
 
-- **Database**: SQLite file with accounting data (invoices, clients, etc.)
-- **Questions**: Natural language queries in English
-- **SQL**: Corresponding SQL queries
-- **Difficulty levels**: Easy, Medium, Hard categories
+    The dataset contains:
 
-### Create your evaluation subset
+    - **Database**: SQLite file with accounting data (invoices, clients, etc.)
+    - **Questions**: Natural language queries in English
+    - **SQL**: Corresponding SQL queries
+    - **Difficulty levels**: Easy, Medium, Hard categories
 
-Create a balanced evaluation subset:
+    ### Create your evaluation subset
 
-```bash
-uv run python -m ragas_examples.text2sql.data_utils --create-sample --samples 33 --validate --require-data
-```
+    Create a balanced evaluation subset:
 
-This creates a balanced CSV with validated queries that return actual data.
+    ```bash
+    uv run python -m ragas_examples.text2sql.data_utils --create-sample --samples 33 --validate --require-data
+    ```
 
-<details>
-<summary>📋 Expected output</summary>
+    This creates a balanced CSV with validated queries that return actual data.
 
-```
-📖 Loading data from BookSQL-files/BookSQL/train.json...
-📊 Loaded 70828 total records
-🚂 Found 70828 train records
-🔍 Removed 35189 duplicate records (same Query + SQL)
-📊 35639 unique records remaining
-📈 Difficulty distribution (after deduplication):
-   • medium: 20576 records
-   • hard: 11901 records
-   • easy: 3162 records
-✅ Added 33 validated 'easy' records
-✅ Added 33 validated 'medium' records
-✅ Added 33 validated 'hard' records
-💾 Saved 99 records to datasets/booksql_sample.csv
-📋 Final distribution:
-   • medium: 33 records
-   • hard: 33 records
-   • easy: 33 records
-```
-</details>
+    **Expected output:**
 
-This creates `datasets/booksql_sample.csv` with 99 balanced examples across difficulty levels. 
+    ```
+    📖 Loading data from BookSQL-files/BookSQL/train.json...
+    📊 Loaded 70828 total records
+    🚂 Found 70828 train records
+    🔍 Removed 35189 duplicate records (same Query + SQL)
+    📊 35639 unique records remaining
+    📈 Difficulty distribution (after deduplication):
+       • medium: 20576 records
+       • hard: 11901 records
+       • easy: 3162 records
+    ✅ Added 33 validated 'easy' records
+    ✅ Added 33 validated 'medium' records
+    ✅ Added 33 validated 'hard' records
+    💾 Saved 99 records to datasets/booksql_sample.csv
+    📋 Final distribution:
+       • medium: 33 records
+       • hard: 33 records
+       • easy: 33 records
+    ```
+
+    This creates `datasets/booksql_sample.csv` with 99 balanced examples across difficulty levels. 
+
+
+BookSQL is released under CC BY-NC-SA (non‑commercial only). See details and citation below.
+
+??? "📋 Licensing & citation details"
+
+    !!! warning "License and usage"
+        The BookSQL dataset is released under the [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) license. You may use it for non‑commercial research only. Commercial usage is not allowed.
+
+    - **Dataset**: [`Exploration-Lab/BookSQL` on Hugging Face](https://huggingface.co/datasets/Exploration-Lab/BookSQL) · [GitHub repository](https://github.com/Exploration-Lab/BookSQL)
+    - **Paper**: ACL Anthology — [BookSQL: A Large Scale Text-to-SQL Dataset for Accounting Domain](https://aclanthology.org/2024.naacl-long.28/)
+
+    If you use BookSQL in your research, please cite the paper:
+
+    ```bibtex
+    @inproceedings{kumar-etal-2024-booksql,
+        title = {BookSQL: A Large Scale Text-to-SQL Dataset for Accounting Domain},
+        author = {Kumar, Rahul and Raja, Amar and Harsola, Shrutendra and Subrahmaniam, Vignesh and Modi, Ashutosh},
+        booktitle = {Proceedings of the 2024 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies (Volume 1: Long Papers)},
+        month = {June},
+        year = {2024},
+        address = {Mexico City, Mexico},
+        publisher = {Association for Computational Linguistics},
+    }
+    ```
 
 
 ## Set up your baseline text-to-SQL system
@@ -171,20 +205,18 @@ with SQLiteDB() as db:
 uv run python -m ragas_examples.text2sql.db_utils --tables
 ```
 
-<details>
-<summary>📋 Expected output</summary>
+??? "📋 Expected output"
 
-```
-=== Database Tables ===
-  chart_of_accounts
-  customers
-  employees
-  master_txn_table
-  payment_method
-  products
-  vendors
-```
-</details>
+    ```
+    === Database Tables ===
+      chart_of_accounts
+      customers
+      employees
+      master_txn_table
+      payment_method
+      products
+      vendors
+    ```
 
 ### Create your Text-to-SQL agent
 
@@ -207,36 +239,34 @@ export OPENAI_API_KEY=your-openai-api-key-here
 uv run python -m ragas_examples.text2sql.text2sql_agent --test
 ```
 
-<details>
-<summary>📋 Expected output</summary>
+??? "📋 Expected output"
 
-```
-🧪 Running test with query: How much open credit does customer Andrew Bennett?
-============================================================
-2025-08-29 01:08:04,703 - INFO - Generating SQL for query: How much open credit does customer Andrew Bennett? (Run ID: 20250829_010804_3971)
-2025-08-29 01:08:07,014 - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-2025-08-29 01:08:07,022 - INFO - Successfully generated SQL (135 chars)
-Natural Query: How much open credit does customer Andrew Bennett?
-Generated SQL: select sum(open_balance) from (
-select distinct transaction_id, open_balance
-from master_txn_table
-where customers = "Andrew Bennett"
-)
-Generation Time: 2318.54ms
+    ```
+    🧪 Running test with query: How much open credit does customer Andrew Bennett?
+    ============================================================
+    2025-08-29 01:08:04,703 - INFO - Generating SQL for query: How much open credit does customer Andrew Bennett? (Run ID: 20250829_010804_3971)
+    2025-08-29 01:08:07,014 - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+    2025-08-29 01:08:07,022 - INFO - Successfully generated SQL (135 chars)
+    Natural Query: How much open credit does customer Andrew Bennett?
+    Generated SQL: select sum(open_balance) from (
+    select distinct transaction_id, open_balance
+    from master_txn_table
+    where customers = "Andrew Bennett"
+    )
+    Generation Time: 2318.54ms
 
-============================================================
-🔍 Executing SQL query against database...
-✅ SQL execution successful!
+    ============================================================
+    🔍 Executing SQL query against database...
+    ✅ SQL execution successful!
 
-📊 Query Results:
-sum(open_balance)
-             None
+    📊 Query Results:
+    sum(open_balance)
+                 None
 
-Rows returned: 1
+    Rows returned: 1
 
-📝 Log exported to: text2sql_logs/run_test_20250829_010807_2025-08-29T01-08-07-307323.json
-```
-</details>
+    📝 Log exported to: text2sql_logs/run_test_20250829_010807_2025-08-29T01-08-07-307323.json
+    ```
 
 The `--test` flag runs an end-to-end demonstration that generates SQL from a natural language query, executes it against the BookSQL database, and displays the results. This shows the complete pipeline from natural language to actual database output.
 
@@ -248,31 +278,28 @@ The `--test` flag runs an end-to-end demonstration that generates SQL from a nat
 uv run python -m ragas_examples.text2sql.db_utils --schema
 ```
 
-<details>
-<summary>📋 Expected schema output</summary>
+??? "📋 Expected schema output"
 
-```
-=== Database Schema ===
-             name  type                                     sql
-chart_of_accounts table CREATE TABLE chart_of_accounts(
-                         id INTEGER ,
-                         businessID INTEGER NOT NULL,
-                         Account_name TEXT NOT NULL,
-                         Account_type TEXT NOT NULL,
-                         PRIMARY KEY(id,businessID,Account_name)
-                         )
-        customers table CREATE TABLE customers(
-                         id INTEGER ,
-                         businessID INTEGER NOT NULL,
-                         customer_name TEXT NOT NULL,
-                         customer_full_name TEXT ,
-                         ... (continues for all columns)
-                         PRIMARY KEY(id,businessID,Customer_name)
-                         )
-... (continues for all 7 tables with complete DDL)
-```
-
-</details>
+    ```
+    === Database Schema ===
+                 name  type                                     sql
+    chart_of_accounts table CREATE TABLE chart_of_accounts(
+                             id INTEGER ,
+                             businessID INTEGER NOT NULL,
+                             Account_name TEXT NOT NULL,
+                             Account_type TEXT NOT NULL,
+                             PRIMARY KEY(id,businessID,Account_name)
+                             )
+            customers table CREATE TABLE customers(
+                             id INTEGER ,
+                             businessID INTEGER NOT NULL,
+                             customer_name TEXT NOT NULL,
+                             customer_full_name TEXT ,
+                             ... (continues for all columns)
+                             PRIMARY KEY(id,businessID,Customer_name)
+                             )
+    ... (continues for all 7 tables with complete DDL)
+    ```
 
 **Write the prompt content:**
 
@@ -285,6 +312,7 @@ DATABASE CONTEXT:
 This is an accounting database (accounting.sqlite) containing business transaction and entity data.
 
 TABLES AND THEIR PURPOSE:
+
 - master_txn_table: Main transaction records for all business transactions
 - chart_of_accounts: Account names and their types for all businesses  
 - products_service: Products/services and their types used by businesses
@@ -310,6 +338,7 @@ For text-to-SQL systems, we need metrics that evaluate the accuracy of results. 
 **Execution Accuracy Metric**: Compares the actual results between expected and predicted SQL queries using datacompy. This validates that both queries return the same data, which is the ultimate test of correctness.
 
 The evaluation system classifies results as:
+
 - `"correct"`: Query succeeds and matches expected results  
 - `"incorrect"`: Query doesn't succeed or succeeds but returns wrong results
 
@@ -488,20 +517,17 @@ uv run python -m ragas_examples.text2sql.evals run --model gpt-5-mini
 uv run python -m ragas_examples.text2sql.evals run --model gpt-5-mini --limit 10
 ```
 
-<details>
-<summary>📋 Expected output (with --limit 10)</summary>
+??? "📋 Expected output (with --limit 10)"
 
-```
-Loading dataset...
-Dataset loaded with 10 samples (limited to 10 for testing)
-Running text-to-SQL evaluation with model: gpt-5-mini
-Running experiment: 100%|███████████████████████████████████████████████| 10/10 [00:16<00:00,  1.68s/it]
-✅ text2sql_gpt_5_mini: 10 cases evaluated
-Results saved to: experiments/20250829-121726-text2sql_gpt_5_mini.csv
-text2sql_gpt_5_mini Execution Accuracy: 20.00%
-```
-
-</details>
+    ```
+    Loading dataset...
+    Dataset loaded with 10 samples (limited to 10 for testing)
+    Running text-to-SQL evaluation with model: gpt-5-mini
+    Running experiment: 100%|███████████████████████████████████████████████| 10/10 [00:16<00:00,  1.68s/it]
+    ✅ text2sql_gpt_5_mini: 10 cases evaluated
+    Results saved to: experiments/20250829-121726-text2sql_gpt_5_mini.csv
+    text2sql_gpt_5_mini Execution Accuracy: 20.00%
+    ```
 
 **Run full evaluation once basics work:**
 
@@ -532,14 +558,13 @@ The evaluation generates comprehensive CSV results for analysis. Each row contai
 - `execution_accuracy`: correct/incorrect (result comparison)
 
 **Debugging Information:**
-- `validity_reason`: Why SQL succeeded/failed
 - `accuracy_reason`: Detailed comparison results
 
 **Example baseline results:**
 
 From our BookSQL evaluation with 10 samples:
+
 - **Execution Accuracy: 20%** - Only 2 out of 10 queries returned the same results as expected
-- **Dataset Errors: 0%** - No issues with ground truth queries
 
 **Common patterns observed:**
 - **Column name mismatches**: Expected `sum(open_balance)` vs Generated `SUM(Open_balance)` or `balance_due`
@@ -549,14 +574,14 @@ The baseline provides a concrete starting point with 20% execution accuracy, sho
 
 ## Analyze errors and failure patterns
 
-After running evaluations, you can analyze the failure patterns to understand where your Text2SQL agent is making mistakes. We provide an automated error analysis tool that uses LLMs to categorize errors, but **manual review is essential** to ensure you're improving in the right direction.
+After running evaluations, you can analyze the failure patterns to understand where your Text2SQL agent is making mistakes.
 
 ### Sample evaluation results
 
 Here are some sample rows from our baseline evaluation results to give you a complete picture of what the evaluation data looks like:
 
 | Query | Expected SQL | Predicted SQL | Level | Execution Accuracy |
-|-------|--------------|---------------|-------|--------------|-------------------|
+|-------|--------------|---------------|-------|-------------------|
 | What is the balance due from Richard Aguirre? | `select sum(open_balance) from ( select distinct transaction_id, open_balance from master_txn_table where customers = "Richard Aguirre" )` | `SELECT customer_name, customer_full_name, Balance FROM customers WHERE customer_name = 'Richard Aguirre' OR customer_full_name = 'Richard Aguirre';` | medium | incorrect |
 | How much open credit does customer Natalie Myers? | `select sum(open_balance) from ( select distinct transaction_id, open_balance from master_txn_table where customers = "Natalie Myers" )` | `SELECT Balance FROM customers WHERE customer_name = 'Natalie Myers' OR customer_full_name = 'Natalie Myers';` | easy | incorrect |
 | What is my average invoice from Ashley Thompson? | `select avg(amount) from (select distinct transaction_id, amount from master_txn_table where customers = "Ashley Thompson" and transaction_type = 'invoice')` | `SELECT AVG(Amount) FROM master_txn_table WHERE Customers = 'Ashley Thompson' AND Transaction_TYPE = 'Invoice';` | hard | incorrect |
@@ -564,8 +589,11 @@ Here are some sample rows from our baseline evaluation results to give you a com
 
 **Key observations from these examples:**
 
-- **Execution Accuracy: 0%** - None of the queries return the same results as expected
-- **Common failure patterns:**
+**Execution Accuracy: 0%** - None of the queries return the same results as expected
+
+
+**Common failure patterns:**
+
   - Using wrong tables (`customers` vs `master_txn_table`)
   - Missing deduplication (`count(distinct transaction_id)` vs `COUNT(*)`)
   - Incomplete filtering logic (missing `OR vendor = 'Name'` conditions)
@@ -575,97 +603,37 @@ This shows that while the agent generates valid SQL, it needs significant improv
 
 ### Error Analysis
 
-To analyze your failures systematically, you can use this prompt to categorize errors manually:
+To analyze your failures systematically, manually review and annotate each row in your results CSV, categorizing the types of errors you observe. You can use AI to help you categorize with this prompt:
 
-<details>
-<summary>📋 Error Analysis Prompt</summary>
+??? "📋 Error Analysis Prompt"
 
-```text
-You are analyzing why a Text2SQL prediction failed. Given the following information, identify the error codes and provide a brief analysis.
+    ```text
+    You are analyzing why a Text2SQL prediction failed. Given the following information, identify the error codes and provide a brief analysis.
 
-Available error codes:
-- AGGR_DISTINCT_MISSING: Used COUNT/SUM without DISTINCT or deduplication
-- WRONG_FILTER_COLUMN: Filtered on the wrong column 
-- WRONG_SOURCE_TABLE_OR_COLUMN: Selected metric from the wrong table/column
-- EXTRA_TRANSFORMATION_OR_CONDITION: Added ABS(), extra filters that change results
-- OUTPUT_COLUMN_ALIAS_MISMATCH: Output column names don't match
-- NULL_OR_EMPTY_RESULT: Result is None/empty due to wrong filters or source
-- GENERIC_VALUE_MISMATCH: Aggregation computed but numeric value differs for unclear reasons
-- OTHER: Fallback
+    Available error codes:
+    - AGGR_DISTINCT_MISSING: Used COUNT/SUM without DISTINCT or deduplication
+    - WRONG_FILTER_COLUMN: Filtered on the wrong column 
+    - WRONG_SOURCE_TABLE_OR_COLUMN: Selected metric from the wrong table/column
+    - EXTRA_TRANSFORMATION_OR_CONDITION: Added ABS(), extra filters that change results
+    - OUTPUT_COLUMN_ALIAS_MISMATCH: Output column names don't match
+    - NULL_OR_EMPTY_RESULT: Result is None/empty due to wrong filters or source
+    - GENERIC_VALUE_MISMATCH: Aggregation computed but numeric value differs for unclear reasons
+    - OTHER: Fallback
 
-Query: [YOUR_QUERY]
-Expected SQL: [EXPECTED_SQL]
-Predicted SQL: [PREDICTED_SQL]
-Execution Accuracy: [ACCURACY_RESULT]
-Accuracy Reason: [ACCURACY_REASON]
+    Query: [YOUR_QUERY]
+    Expected SQL: [EXPECTED_SQL]
+    Predicted SQL: [PREDICTED_SQL]
+    Execution Accuracy: [ACCURACY_RESULT]
+    Accuracy Reason: [ACCURACY_REASON]
 
-Respond with:
-- error_codes: array of applicable error codes (1 or more)
-- error_analysis: brief 1-3 sentence explanation of what went wrong
-```
+    Respond with:
+    - error_codes: array of applicable error codes (1 or more)
+    - error_analysis: brief 1-3 sentence explanation of what went wrong
+    ```
 
-Copy this prompt and use it with your preferred LLM to analyze individual failures from your results CSV.
+    Copy this prompt and use it with your preferred LLM to analyze individual failures from your results CSV.
 
-</details>
-
-**Automated option:** For convenience, there's also an `analyze_errors.py` script that can automatically categorize errors using OpenAI's API. `uv run python -m ragas_examples.text2sql.analyze_errors --input experiments/your_results.csv`
-
-<details>
-<summary>Example Output</summary>
-
-```bash
-Found 8 rows with incorrect execution accuracy
-Processing batch 1/1 (8 rows)
-  Starting analysis for row 0 (ID: row_1707)
-  Starting analysis for row 2 (ID: row_3117)
-  Starting analysis for row 3 (ID: row_9270)
-  Starting analysis for row 4 (ID: row_6287)
-  Starting analysis for row 6 (ID: row_9582)
-  Starting analysis for row 7 (ID: row_7176)
-  Starting analysis for row 8 (ID: row_3222)
-  Starting analysis for row 9 (ID: row_5534)
-  Waiting for 8 API calls to complete...
-  ✓ Completed row 0: ['AGGR_DISTINCT_MISSING', 'OUTPUT_COLUMN_ALIAS_MISMATCH']
-  ✓ Completed row 2: ['AGGR_DISTINCT_MISSING', 'OUTPUT_COLUMN_ALIAS_MISMATCH']
-  ✓ Completed row 3: ['WRONG_SOURCE_TABLE_OR_COLUMN', 'WRONG_FILTER_COLUMN', 'OUTPUT_COLUMN_ALIAS_MISMATCH']
-  ✓ Completed row 4: ['WRONG_SOURCE_TABLE_OR_COLUMN', 'WRONG_FILTER_COLUMN']
-  ✓ Completed row 6: ['AGGR_DISTINCT_MISSING', 'WRONG_FILTER_COLUMN', 'NULL_OR_EMPTY_RESULT']
-  ✓ Completed row 7: ['WRONG_SOURCE_TABLE_OR_COLUMN', 'WRONG_FILTER_COLUMN', 'OUTPUT_COLUMN_ALIAS_MISMATCH']
-  ✓ Completed row 8: ['AGGR_DISTINCT_MISSING']
-  ✓ Completed row 9: ['AGGR_DISTINCT_MISSING', 'EXTRA_TRANSFORMATION_OR_CONDITION', 'OUTPUT_COLUMN_ALIAS_MISMATCH', 'NULL_OR_EMPTY_RESULT']
-Batch 1 completed successfully!
-Analysis complete. Output written to: experiments/20250904-154438-text2sql_gpt_5_mini_annotated.csv
-
-==================================================
-ERROR CODE SUMMARY
-==================================================
-AGGR_DISTINCT_MISSING                 5
-OUTPUT_COLUMN_ALIAS_MISMATCH          5
-WRONG_FILTER_COLUMN                   4
-WRONG_SOURCE_TABLE_OR_COLUMN          3
-NULL_OR_EMPTY_RESULT                  2
-EXTRA_TRANSFORMATION_OR_CONDITION     1
-==================================================
-```
-
-</details>
-
-### ⚠️ Critical: Manual Review Required
-
-**The AI analysis is only a helper tool.** You must manually review the categorized errors because:
-
-- AI can misinterpret complex SQL logic differences
-- Some errors might be incorrectly categorized
-- The "correct" SQL might actually be wrong for your use case
-- Context about your specific database schema matters
-
-**Without manual review, you risk:**
-
-- Fixing the wrong problems
-- Making your agent worse by optimizing for incorrect patterns
-- Missing the real root causes of failures
-
-If you feel like the AI is not doing a good job, you can manually review the errors and annoate them manually. Then you can just use an LLM to categorize them if required.
+For convenience, we made it a script that you can use to automatically categorize errors using OpenAI's GPT 5 model: `uv run python -m ragas_examples.text2sql.analyze_errors --input experiments/your_results.csv`
 
 ### Review Process
 
@@ -689,6 +657,7 @@ uv run python -m ragas_examples.text2sql.analyze_errors --input experiments/<you
 ```
 
 2. Open the generated `<your_results>_annotated.csv` and review:
+
 - Error code summary (e.g., `AGGR_DISTINCT_MISSING`, `WRONG_FILTER_COLUMN`, `WRONG_SOURCE_TABLE_OR_COLUMN`, `OUTPUT_COLUMN_ALIAS_MISMATCH`)
 - 3–5 representative rows per high-frequency code
 
@@ -716,6 +685,7 @@ These patterns inform the next iteration of prompt improvements, focusing on com
 1. Decide what to change in the prompt using generic rules, not per-row fixes. Avoid adding case-specific examples; prefer schema-grounded guardrails so that you are not overfitting to the data.
 
 Repeat this loop iteratively:
+
 - Run → Annotate → Review → Decide generic guardrails → Update `prompt_vX.txt` → Re-run → Compare → Repeat.
 - Keep guardrails concise and schema-grounded so improvements generalize without overfitting.
  - Version your prompts (`prompt_v2.txt`, `prompt_v3.txt`, `prompt_v4.txt`) and maintain a brief changelog per version.
@@ -727,38 +697,35 @@ Repeat this loop iteratively:
 
 The error codes we created in our validation function directly inform our prompt improvements. Our analysis script categorizes failures into specific patterns, allowing us to address root causes systematically.
 
-<details>
-<summary>📋 Error taxonomy and prompt guardrails mapping</summary>
+??? "📋 Error taxonomy and prompt guardrails mapping"
 
-```python
-# Error taxonomy → Root cause analysis → Prompt guardrails
+    ```python
+    # Error taxonomy → Root cause analysis → Prompt guardrails
 
-# Aggregation issues (most common)
-"AGGR_DISTINCT_MISSING" 
-→ Model uses COUNT/SUM without deduplication
-→ "Use count(distinct Transaction_ID) for counts and deduplicated subqueries for aggregates"
+    # Aggregation issues (most common)
+    "AGGR_DISTINCT_MISSING" 
+    → Model uses COUNT/SUM without deduplication
+    → "Use count(distinct Transaction_ID) for counts and deduplicated subqueries for aggregates"
 
-# Schema navigation errors  
-"WRONG_FILTER_COLUMN" 
-→ Model confuses customer vs vendor filtering logic
-→ "Map parties correctly: Customer-focused → filter on Customers, Vendor-focused → filter on Vendor"
+    # Schema navigation errors  
+    "WRONG_FILTER_COLUMN" 
+    → Model confuses customer vs vendor filtering logic
+    → "Map parties correctly: Customer-focused → filter on Customers, Vendor-focused → filter on Vendor"
 
-"WRONG_SOURCE_TABLE_OR_COLUMN"
-→ Model invents fields or uses wrong tables
-→ "Use exact table and column names from schema; prefer transactional facts from master_txn_table"
+    "WRONG_SOURCE_TABLE_OR_COLUMN"
+    → Model invents fields or uses wrong tables
+    → "Use exact table and column names from schema; prefer transactional facts from master_txn_table"
 
-# Output format issues
-"OUTPUT_COLUMN_ALIAS_MISMATCH"
-→ Model adds unnecessary aliases that break result comparison
-→ "Keep single SELECT; avoid aliases for final column names"
+    # Output format issues
+    "OUTPUT_COLUMN_ALIAS_MISMATCH"
+    → Model adds unnecessary aliases that break result comparison
+    → "Keep single SELECT; avoid aliases for final column names"
 
-# Over-engineering
-"EXTRA_TRANSFORMATION_OR_CONDITION" 
-→ Model adds ABS(), extra filters that change intended results
-→ "Do not add extra transforms unless explicitly asked"
-```
-
-</details>
+    # Over-engineering
+    "EXTRA_TRANSFORMATION_OR_CONDITION" 
+    → Model adds ABS(), extra filters that change intended results
+    → "Do not add extra transforms unless explicitly asked"
+    ```
 
 This taxonomy-driven approach ensures our prompt improvements target actual failure modes with specific, actionable guardrails rather than generic advice.
 
@@ -904,21 +871,18 @@ uv run python -m ragas_examples.text2sql.evals run \
   --name "gpt-5-mini-promptv1"
 ```
 
-<details>
-<summary>📋 Output (prompt v1)</summary>
+??? "📋 Output (prompt v1)"
 
-```text
-Loading dataset...
-Dataset loaded with 99 samples (full dataset)
-Running text-to-SQL evaluation with model: gpt-5-mini
-Using prompt file: prompt.txt
-Running experiment: 100%|██████████████████████| 99/99 [01:06<00:00,  1.49it/s]
-✅ gpt-5-mini-promptv1: 99 cases evaluated
-Results saved to: experiments/20250905-151023-gpt-5-mini-promptv1.csv
-gpt-5-mini-promptv1 Execution Accuracy: 2.02%
-```
-
-</details>
+    ```text
+    Loading dataset...
+    Dataset loaded with 99 samples (full dataset)
+    Running text-to-SQL evaluation with model: gpt-5-mini
+    Using prompt file: prompt.txt
+    Running experiment: 100%|██████████████████████| 99/99 [01:06<00:00,  1.49it/s]
+    ✅ gpt-5-mini-promptv1: 99 cases evaluated
+    Results saved to: experiments/20250905-151023-gpt-5-mini-promptv1.csv
+    gpt-5-mini-promptv1 Execution Accuracy: 2.02%
+    ```
 
 Run on full dataset with prompt v2:
 
@@ -929,21 +893,18 @@ uv run python -m ragas_examples.text2sql.evals run \
   --name "gpt-5-mini-promptv2"
 ```
 
-<details>
-<summary>📋 Output (prompt v2)</summary>
+??? "📋 Output (prompt v2)"
 
-```text
-Loading dataset...
-Dataset loaded with 99 samples (full dataset)
-Running text-to-SQL evaluation with model: gpt-5-mini
-Using prompt file: prompt_v2.txt
-Running experiment: 100%|██████████████████████| 99/99 [01:00<00:00,  1.63it/s]
-✅ gpt-5-mini-promptv2: 99 cases evaluated
-Results saved to: experiments/20250905-150957-gpt-5-mini-promptv2.csv
-gpt-5-mini-promptv2 Execution Accuracy: 60.61%
-```
-
-</details>
+    ```text
+    Loading dataset...
+    Dataset loaded with 99 samples (full dataset)
+    Running text-to-SQL evaluation with model: gpt-5-mini
+    Using prompt file: prompt_v2.txt
+    Running experiment: 100%|██████████████████████| 99/99 [01:00<00:00,  1.63it/s]
+    ✅ gpt-5-mini-promptv2: 99 cases evaluated
+    Results saved to: experiments/20250905-150957-gpt-5-mini-promptv2.csv
+    gpt-5-mini-promptv2 Execution Accuracy: 60.61%
+    ```
 
 
 ## Conclusion
