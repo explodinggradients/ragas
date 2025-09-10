@@ -1,6 +1,6 @@
 # 🚀 Get Started
 
-Welcome to the Ragas tutorials! If you're new to Ragas, the Get Started guides will walk you through the fundamentals of working with Ragas. These tutorials assume basic knowledge of Python and building LLM application pipelines. 
+Welcome to Ragas! If you're new to Ragas, the Get Started guides will walk you through the fundamentals of working with Ragas. These tutorials assume basic knowledge of Python and building LLM application pipelines. 
 
 Before you proceed further, ensure that you have [Ragas installed](./install.md)!
 
