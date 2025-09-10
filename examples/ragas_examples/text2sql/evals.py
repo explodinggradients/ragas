@@ -343,7 +343,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--timeout-gen", type=int, default=60, help="Timeout (seconds) for LLM generation"
     )
     run_parser.add_argument(
-        "--timeout-sql", type=int, default=90, help="Timeout (seconds) for SQL validity/accuracy stages"
+        "--timeout-sql", type=int, default=90, help="Timeout (seconds) for SQL execution and accuracy evaluation"
     )
     run_parser.add_argument(
         "--max-rows-compare", type=int, default=10000, help="Maximum rows allowed for datacompy comparison"
