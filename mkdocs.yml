@@ -15,6 +15,7 @@ nav:
       - Evaluate your first LLM App: getstarted/evals.md
       - Evaluate a simple RAG: getstarted/rag_eval.md
       - Generate Synthetic Testset for RAG: getstarted/rag_testset_generation.md
+      - Run your first experiment: getstarted/experiments_quickstart.md
   - 📚 Core Concepts:
       - concepts/index.md
       - Components:
@@ -79,17 +80,7 @@ nav:
           - concepts/feedback/index.md
       - Datasets: concepts/datasets.md
       - Experimentation: concepts/experimentation.md
-  - 🧪 Experimental:
-    - Overview: experimental/index.md
-    - Tutorials:
-        - experimental/tutorials/index.md
-        - Prompt: experimental/tutorials/prompt.md
-        - RAG: experimental/tutorials/rag.md
-        - Workflow: experimental/tutorials/workflow.md
-        - Agent: experimental/tutorials/agent.md
-
-    - How-to Guides:
-        - experimental/howtos/index.md
+  
   - 🛠️ How-to Guides:
       - howtos/index.md
       - Customizations:
