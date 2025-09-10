@@ -149,17 +149,6 @@ return {
 }
 ```
 
-### 4. Comparative Analysis
-
-Use the built-in comparison tools to analyze results:
-
-```python
-# Compare two experiments
-comparison_results = compare_experiments(
-    ["experiments/exp1.csv", "experiments/exp2.csv"]
-)
-```
-
 ## Advanced Experiment Patterns
 
 ### A/B Testing
