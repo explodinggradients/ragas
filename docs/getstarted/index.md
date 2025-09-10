@@ -14,3 +14,4 @@ Let's get started!
 - [Evaluate your first AI app](./evals.md)
 - [Run ragas metrics for evaluating RAG](rag_eval.md)
 - [Generate test data for evaluating RAG](rag_testset_generation.md)
+- [Run your first experiment](experiments_quickstart.md)
