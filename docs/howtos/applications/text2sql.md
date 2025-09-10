@@ -2,25 +2,33 @@
 
 In this guide, you'll learn how to systematically evaluate and improve a text-to-SQL system using Ragas.
 
-## What you'll accomplish
+What you'll accomplish:
+
 - Set up a baseline text-to-SQL system for evaluation
-- Create evaluation metrics for SQL generation quality
+- Learn how to create evaluation metrics 
 - Build a reusable evaluation pipeline for your SQL agent  
 - Implement improvements based on error analysis
 
 ## Setup your environment
 
-Before evaluating your text-to-SQL agent, you need to set up the development environment with the required dependencies.
-
-### Installation
-
-We've created a simple module you can install and run so that you can focus on understanding the evaluation process instead of the setup.
+We've created a simple module you can install and run so that you can focus on understanding the evaluation process instead of creating the application.
 
 ```bash
 uv pip install "ragas-examples[text2sql]"
 ```
 
-### Download BookSQL (required)
+## Quick agent test
+
+Test the text-to-SQL agent to see it convert natural language to SQL:
+
+```bash
+export OPENAI_API_KEY="your-api-key-here"
+uv run python -m ragas_examples.text2sql.text2sql_agent --test
+```
+
+This generates SQL from the natural language query. Now let's build a systematic evaluation process.
+
+### Download BookSQL 
 
 Before running the agent or database utilities, download the gated BookSQL dataset from Hugging Face:
 
@@ -36,15 +44,15 @@ If you see authentication errors, visit the dataset page and accept terms first:
 
 ## Prepare your dataset
 
-### Ready-to-use sample dataset
-
 We've prepared a balanced sample dataset with 99 examples (33 each of easy, medium, and hard queries) from the BookSQL dataset. You can start evaluating immediately or create your own dataset following the next section. 
 
-**Examine the sample dataset:**
+**Download and examine the sample dataset:**
 
 ```bash
+# Download the sample CSV from GitHub
+curl -o booksql_sample.csv https://raw.githubusercontent.com/explodinggradients/ragas/main/examples/ragas_examples/text2sql/datasets/booksql_sample.csv
 # View the first few rows to understand the structure
-head -5 datasets/booksql_sample.csv
+head -5 booksql_sample.csv
 ```
 
 | Query                                                        | SQL                                                                                                                                                                                                                                    | Levels | split |
@@ -54,25 +62,9 @@ head -5 datasets/booksql_sample.csv
 | What is my average invoice from Jeffrey Moore?               | select avg(amount) from (select distinct transaction_id, amount from master_txn_table where customers = "Jeffrey Moore" and transaction_type = 'invoice')                                                                              | hard   | train |
 | How much open credit does customer Andrew Bennett?           | select sum(open_balance) from ( select distinct transaction_id, open_balance from master_txn_table where customers = "Andrew Bennett" )                                                                                                | easy   | train |
 
-The CSV contains four columns:
-
-- **Query**: Natural language question
-- **SQL**: Ground truth SQL query
-- **Levels**: Difficulty level (easy/medium/hard)
-- **split**: Dataset split (all "train" for this sample)
-
-### Create a dataset for your use case
-
-To create your own evaluation dataset:
-
-1. **Schema inventory**: List tables, columns, keys, and relationships
-2. **Question sourcing**: Collect real user questions or generate with LLMs
-3. **Ground-truth SQL**: Write correct SELECT queries for each question
-4. **Coverage**: Include simple to complex queries with difficulty ratings 
-
 ??? info "📋 Optional: How we prepared the sample dataset"
 
-    ### Download and examine the dataset
+    Download and examine the dataset
 
     For this guide, we'll use the [BookSQL dataset](https://huggingface.co/datasets/Exploration-Lab/BookSQL). Skip this section if you have your own dataset.
 
@@ -123,8 +115,6 @@ To create your own evaluation dataset:
     - **Questions**: Natural language queries in English
     - **SQL**: Corresponding SQL queries
     - **Difficulty levels**: Easy, Medium, Hard categories
-
-    ### Create your evaluation subset
 
     Create a balanced evaluation subset:
 
@@ -183,92 +173,9 @@ BookSQL is released under CC BY-NC-SA (non‑commercial only). See details and c
     }
     ```
 
+For advice on how to create your own evaluation dataset, refer [Datasets - Core Concepts](/concepts/datasets/).
 
-## Set up your baseline text-to-SQL system
-
-### Database utilities
-
-The `db_utils.py` module provides a simple database interface:
-
-```python
-from ragas_examples.text2sql.db_utils import SQLiteDB
-
-with SQLiteDB() as db:
-    success, result = db.execute_query("SELECT COUNT(*) FROM master_txn_table")
-    if success:
-        print(f"Query returned: {len(result)} rows")
-```
-
-**Test the database connection:**
-
-```bash
-uv run python -m ragas_examples.text2sql.db_utils --tables
-```
-
-??? "📋 Expected output"
-
-    ```
-    === Database Tables ===
-      chart_of_accounts
-      customers
-      employees
-      master_txn_table
-      payment_method
-      products
-      vendors
-    ```
-
-### Create your Text-to-SQL agent
-
-```python
-from ragas_examples.text2sql.text2sql_agent import get_default_agent
-
-agent = get_default_agent()
-result = agent.generate_sql("How much open credit does customer John Smith have?")
-
-print(f"Generated SQL: {result.generated_sql}")
-print(f"Generation time: {result.generation_time_ms:.2f}ms")
-```
-
-**Test the agent:**
-
-```bash
-# Single query test
-export OPENAI_API_KEY=your-openai-api-key-here
-
-uv run python -m ragas_examples.text2sql.text2sql_agent --test
-```
-
-??? "📋 Expected output"
-
-    ```
-    🧪 Running test with query: How much open credit does customer Andrew Bennett?
-    ============================================================
-    2025-08-29 01:08:04,703 - INFO - Generating SQL for query: How much open credit does customer Andrew Bennett? (Run ID: 20250829_010804_3971)
-    2025-08-29 01:08:07,014 - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-    2025-08-29 01:08:07,022 - INFO - Successfully generated SQL (135 chars)
-    Natural Query: How much open credit does customer Andrew Bennett?
-    Generated SQL: select sum(open_balance) from (
-    select distinct transaction_id, open_balance
-    from master_txn_table
-    where customers = "Andrew Bennett"
-    )
-    Generation Time: 2318.54ms
-
-    ============================================================
-    🔍 Executing SQL query against database...
-    ✅ SQL execution successful!
-
-    📊 Query Results:
-    sum(open_balance)
-                 None
-
-    Rows returned: 1
-
-    📝 Log exported to: text2sql_logs/run_test_20250829_010807_2025-08-29T01-08-07-307323.json
-    ```
-
-The `--test` flag runs an end-to-end demonstration that generates SQL from a natural language query, executes it against the BookSQL database, and displays the results. This shows the complete pipeline from natural language to actual database output.
+## Set up your text-to-SQL system
 
 ### Create your prompt
 
@@ -329,13 +236,11 @@ INSTRUCTIONS:
 Convert the user's natural language query into a valid SQL SELECT query. Return only the SQL query, no explanations or formatting.
 ```
 
-Use `--prompt custom_prompt.txt` to test with different prompt versions.
-
 ## Define evaluation metrics
 
 For text-to-SQL systems, we need metrics that evaluate the accuracy of results. We'll use execution accuracy as our primary metric to validate that generated SQL returns the correct data.
 
-**Execution Accuracy Metric**: Compares the actual results between expected and predicted SQL queries using datacompy. This validates that both queries return the same data, which is the ultimate test of correctness.
+**Execution Accuracy Metric**: Compares the actual results between expected and predicted SQL queries using [datacompy](https://github.com/capitalone/datacompy). This validates that both queries return the same data, which is the ultimate test of correctness.
 
 The evaluation system classifies results as:
 
@@ -412,8 +317,6 @@ def execution_accuracy(expected_sql: str, predicted_success: bool, predicted_res
             reason=f"Execution accuracy evaluation failed: {str(e)}"
         )
 ```
-
-The execution accuracy metric uses datacompy for precise DataFrame comparison and classifies errors to distinguish model failures from dataset issues. 
 
 ### The experiment function
 
@@ -538,7 +441,21 @@ After validating your setup with limited samples, run the complete evaluation:
 uv run python -m ragas_examples.text2sql.evals run --model gpt-5-mini
 ```
 
+??? "📋 Output (prompt v1)"
+
+    ```text
+    Loading dataset...
+    Dataset loaded with 99 samples (full dataset)
+    Running text-to-SQL evaluation with model: gpt-5-mini
+    Using prompt file: prompt.txt
+    Running experiment: 100%|██████████████████████| 99/99 [01:06<00:00,  1.49it/s]
+    ✅ gpt-5-mini-promptv1: 99 cases evaluated
+    Results saved to: experiments/20250905-151023-gpt-5-mini-promptv1.csv
+    gpt-5-mini-promptv1 Execution Accuracy: 2.02%
+    ```
+
 **CLI options:**
+
 - `--model`: OpenAI model to use (default: gpt-5-mini)
 - `--prompt_file`: Custom prompt file (default: prompt.txt)
 - `--limit`: Number of samples (default: all samples, specify a number to limit)
@@ -548,37 +465,16 @@ uv run python -m ragas_examples.text2sql.evals run --model gpt-5-mini
 
 The evaluation generates comprehensive CSV results for analysis. Each row contains:
 
-**Core Data:**
 - `query`: Natural language input
 - `expected_sql`: Ground truth SQL  
 - `predicted_sql`: Generated SQL
 - `level`: Difficulty (easy/medium/hard)
-
-**Metrics:**
 - `execution_accuracy`: correct/incorrect (result comparison)
-
-**Debugging Information:**
 - `accuracy_reason`: Detailed comparison results
-
-**Example baseline results:**
-
-From our BookSQL evaluation with 10 samples:
-
-- **Execution Accuracy: 20%** - Only 2 out of 10 queries returned the same results as expected
-
-**Common patterns observed:**
-- **Column name mismatches**: Expected `sum(open_balance)` vs Generated `SUM(Open_balance)` or `balance_due`
-- **Business logic differences**: Different but valid approaches to the same question
-
-The baseline provides a concrete starting point with 20% execution accuracy, showing clear opportunities for improvement in result matching.
 
 ## Analyze errors and failure patterns
 
-After running evaluations, you can analyze the failure patterns to understand where your Text2SQL agent is making mistakes.
-
-### Sample evaluation results
-
-Here are some sample rows from our baseline evaluation results to give you a complete picture of what the evaluation data looks like:
+After running evaluations, you can analyze the failure patterns to understand where your Text2SQL agent is making mistakes. Here are some sample rows from our baseline evaluation results to give you a complete picture of what the evaluation data looks like:
 
 | Query | Expected SQL | Predicted SQL | Level | Execution Accuracy |
 |-------|--------------|---------------|-------|-------------------|
@@ -590,7 +486,6 @@ Here are some sample rows from our baseline evaluation results to give you a com
 **Key observations from these examples:**
 
 **Execution Accuracy: 0%** - None of the queries return the same results as expected
-
 
 **Common failure patterns:**
 
@@ -605,7 +500,7 @@ This shows that while the agent generates valid SQL, it needs significant improv
 
 To analyze your failures systematically, manually review and annotate each row in your results CSV, categorizing the types of errors you observe. You can use AI to help you categorize with this prompt:
 
-??? "📋 Error Analysis Prompt"
+??? "📋 Error Analysis Categorization Prompt"
 
     ```text
     You are analyzing why a Text2SQL prediction failed. Given the following information, identify the error codes and provide a brief analysis.
@@ -633,7 +528,7 @@ To analyze your failures systematically, manually review and annotate each row i
 
     Copy this prompt and use it with your preferred LLM to analyze individual failures from your results CSV.
 
-For convenience, we made it a script that you can use to automatically categorize errors using OpenAI's GPT 5 model: `uv run python -m ragas_examples.text2sql.analyze_errors --input experiments/your_results.csv`
+For convenience, we made it a script that you can use to automatically categorize errors using GPT 5: `uv run python -m ragas_examples.text2sql.analyze_errors --input experiments/your_results.csv`
 
 ### Review Process
 
@@ -646,24 +541,9 @@ For convenience, we made it a script that you can use to automatically categoriz
 
 Only after manual validation should you use these insights to improve your prompts, few-shot examples, or agent architecture.
 
-### Apply the analysis to your latest run
+### Sample error analysis results
 
-Follow this concise loop each time you iterate:
-
-1. Annotate the most recent results file to get categorized errors:
-
-```bash
-uv run python -m ragas_examples.text2sql.analyze_errors --input experiments/<your_results>.csv
-```
-
-2. Open the generated `<your_results>_annotated.csv` and review:
-
-- Error code summary (e.g., `AGGR_DISTINCT_MISSING`, `WRONG_FILTER_COLUMN`, `WRONG_SOURCE_TABLE_OR_COLUMN`, `OUTPUT_COLUMN_ALIAS_MISMATCH`)
-- 3–5 representative rows per high-frequency code
-
-### Sample error analysis results (Prompt v2)
-
-Here are some sample rows from the prompt v2 annotated results showing the types of errors that remain after the first round of improvements:
+Here are some sample rows from the annotated results showing the types of errors that remain after the first round of improvements:
 
 | Query | Expected SQL | Predicted SQL | Error Analysis | Error Codes |
 |-------|--------------|---------------|----------------|-------------|
@@ -671,10 +551,9 @@ Here are some sample rows from the prompt v2 annotated results showing the types
 | What was the most recent invoice for Roberta Shaw? | `select transaction_id from master_txn_table where transaction_type = 'invoice' and customers = "Roberta Shaw" order by transaction_date desc limit 1` | `SELECT Transaction_ID, Transaction_DATE, Amount, Open_balance, CreatedDATE, CreatedUSER, Account, Customers, Product_Service FROM master_txn_table WHERE Transaction_TYPE = 'invoice' AND Customers = 'Roberta Shaw' ORDER BY Transaction_DATE DESC LIMIT 1;` | The prediction selected nine columns instead of only Transaction_ID as expected, causing a column/schema mismatch despite returning the same row. | `["OUTPUT_COLUMN_ALIAS_MISMATCH"]` |
 | What is my average invoice from Jeremy Strong? | `select avg(amount) from (select distinct transaction_id, amount from master_txn_table where customers = "Jeremy Strong" and transaction_type = 'invoice')` | `SELECT AVG(Amount) FROM (SELECT DISTINCT Transaction_ID, Amount FROM master_txn_table WHERE Transaction_TYPE = 'invoice' AND Vendor = 'Jeremy Strong') AS t;` | The query filters on Vendor = 'Jeremy Strong' instead of the correct customers column, so it likely matched no rows. This leads to AVG(amount) returning NULL. | `["WRONG_FILTER_COLUMN", "NULL_OR_EMPTY_RESULT"]` |
 
-**Key observations from prompt v2 results:**
+**Key observations from results:**
 
-- **Significant improvement**: Execution accuracy jumped from 2% to 60% with basic deduplication and business logic guidelines
-- **Remaining error patterns:**
+- **Error patterns:**
   - **Missing OR conditions**: Queries about transactions "with" someone should check both `customers` and `vendor` columns
   - **Wrong column selection**: Using `Amount` instead of `credit` for financial queries
   - **Output schema mismatches**: Selecting too many columns or wrong column names
@@ -682,7 +561,7 @@ Here are some sample rows from the prompt v2 annotated results showing the types
 
 These patterns inform the next iteration of prompt improvements, focusing on complete filtering logic and proper financial query handling.
 
-1. Decide what to change in the prompt using generic rules, not per-row fixes. Avoid adding case-specific examples; prefer schema-grounded guardrails so that you are not overfitting to the data.
+Decide what to change in the prompt using generic rules, not per-row fixes. Avoid adding case-specific examples; prefer schema-grounded guardrails so that you are not overfitting to the data.
 
 Repeat this loop iteratively:
 
@@ -693,47 +572,11 @@ Repeat this loop iteratively:
 
 ## Improve your system  
 
-### From error codes to prompt improvements
-
-The error codes we created in our validation function directly inform our prompt improvements. Our analysis script categorizes failures into specific patterns, allowing us to address root causes systematically.
-
-??? "📋 Error taxonomy and prompt guardrails mapping"
-
-    ```python
-    # Error taxonomy → Root cause analysis → Prompt guardrails
-
-    # Aggregation issues (most common)
-    "AGGR_DISTINCT_MISSING" 
-    → Model uses COUNT/SUM without deduplication
-    → "Use count(distinct Transaction_ID) for counts and deduplicated subqueries for aggregates"
-
-    # Schema navigation errors  
-    "WRONG_FILTER_COLUMN" 
-    → Model confuses customer vs vendor filtering logic
-    → "Map parties correctly: Customer-focused → filter on Customers, Vendor-focused → filter on Vendor"
-
-    "WRONG_SOURCE_TABLE_OR_COLUMN"
-    → Model invents fields or uses wrong tables
-    → "Use exact table and column names from schema; prefer transactional facts from master_txn_table"
-
-    # Output format issues
-    "OUTPUT_COLUMN_ALIAS_MISMATCH"
-    → Model adds unnecessary aliases that break result comparison
-    → "Keep single SELECT; avoid aliases for final column names"
-
-    # Over-engineering
-    "EXTRA_TRANSFORMATION_OR_CONDITION" 
-    → Model adds ABS(), extra filters that change intended results
-    → "Do not add extra transforms unless explicitly asked"
-    ```
-
-This taxonomy-driven approach ensures our prompt improvements target actual failure modes with specific, actionable guardrails rather than generic advice.
-
 ### Create and use a new prompt version
 
 We keep the baseline prompt intact and create a new version for iteration.
 
-Create `prompt_v2.txt` to include concise, reusable guardrails. Keep them generic enough to apply broadly while grounded in the provided schema:
+Create `prompt_v2.txt` to include concise, reusable guardrails. Keep them generic enough to apply broadly while grounded in the provided schema. Example of a section we added to `prompt_v1.txt` to create `prompt_v2.txt`:
 
 ```text
 - Use exact table and column names from the schema; do not invent fields
@@ -758,6 +601,21 @@ We save this improved prompt as `prompt_v2.txt`.
 export OPENAI_API_KEY="your-api-key-here"
 uv run python -m ragas_examples.text2sql.evals run --model gpt-5-mini --prompt_file prompt_v2.txt --name "gpt-5-mini-promptv2"
 ```
+
+??? "📋 Output (prompt v2)"
+
+    ```text
+    Loading dataset...
+    Dataset loaded with 99 samples (full dataset)
+    Running text-to-SQL evaluation with model: gpt-5-mini
+    Using prompt file: prompt_v2.txt
+    Running experiment: 100%|██████████████████████| 99/99 [01:00<00:00,  1.63it/s]
+    ✅ gpt-5-mini-promptv2: 99 cases evaluated
+    Results saved to: experiments/20250905-150957-gpt-5-mini-promptv2.csv
+    gpt-5-mini-promptv2 Execution Accuracy: 60.61%
+    ```
+
+We see an improvement from 2.02% to 60.61% in execution accuracy with `prompt_v2`.
 
 Review the new results CSV in `experiments/` and continue the loop again.
 
@@ -812,37 +670,20 @@ uv run python -m ragas_examples.text2sql.evals run \
   --name "gpt-5-mini-promptv3"
 ```
 
+We see an improvement from 60.61% to 70.71% in execution accuracy with `prompt_v3`.
+
 ### Key principles for continued iteration
 
-**The 70% accuracy achieved with `prompt_v3.txt` demonstrates the power of systematic iteration.** You can continue this process to push accuracy even higher:
-
-1. **Analyze the remaining 30% of failures** using the error analysis prompt on your v3 results
-2. **Identify new patterns** in the remaining incorrect queries  
-3. **Create additional prompt versions** with targeted guidelines
-4. **Re-evaluate and compare** to track incremental progress
+The 70% accuracy achieved with `prompt_v3.txt` demonstrates the power of systematic iteration. You can continue this process to push accuracy even higher.
 
 **Key principles for continued iteration:**
 
 - Each iteration should target **3-5 high-frequency error patterns** from the latest results
 - Keep new rules **generic and schema-grounded** to avoid overfitting
 - **Stop when accuracy plateaus** across 2-3 consecutive iterations
-- **Document your changes** with a brief changelog per prompt version
+- If you hit a plateau with prompt improvements, you can try experimenting with better models or return any sql error back to the LLM to fix it making an actual agentic flow. 
 
 ## Compare results
-
-### Prompt v1 vs v2 (full dataset)
-
-- We ran the full dataset with both prompts:
-
-| Prompt | Execution Accuracy | Results CSV |
-|---|---|---|
-| v1 (`prompt.txt`) | 2.02% | `experiments/20250905-151023-gpt-5-mini-promptv1.csv` |
-| v2 (`prompt_v2.txt`) | 60.61% | `experiments/20250905-150957-gpt-5-mini-promptv2.csv` |
-
-These improvements came from generic, schema-grounded guardrails (not case-specific examples), so they should generalize without overfitting.
-
-
-### Final Results Comparison
 
 After running all prompt versions, we can compare the final results.
 
@@ -857,65 +698,13 @@ After running all prompt versions, we can compare the final results.
 - **v2 → v3**: Additional 10 percentage point improvement from 60.61% to 70.71% through enhanced financial query guidelines, better filtering logic, and column selection rules
 - The improvements target specific failure patterns identified through error analysis: financial concepts, unnecessary transformations, and incomplete filtering
 
-These improvements came from generic, schema-grounded guardrails (not case-specific examples), so they should generalize without overfitting.
-
-
-### Reproducible commands and outputs
-
-Run on full dataset with prompt v1:
-
-```bash
-uv run python -m ragas_examples.text2sql.evals run \
-  --model gpt-5-mini \
-  --prompt_file prompt.txt \
-  --name "gpt-5-mini-promptv1"
-```
-
-??? "📋 Output (prompt v1)"
-
-    ```text
-    Loading dataset...
-    Dataset loaded with 99 samples (full dataset)
-    Running text-to-SQL evaluation with model: gpt-5-mini
-    Using prompt file: prompt.txt
-    Running experiment: 100%|██████████████████████| 99/99 [01:06<00:00,  1.49it/s]
-    ✅ gpt-5-mini-promptv1: 99 cases evaluated
-    Results saved to: experiments/20250905-151023-gpt-5-mini-promptv1.csv
-    gpt-5-mini-promptv1 Execution Accuracy: 2.02%
-    ```
-
-Run on full dataset with prompt v2:
-
-```bash
-uv run python -m ragas_examples.text2sql.evals run \
-  --model gpt-5-mini \
-  --prompt_file prompt_v2.txt \
-  --name "gpt-5-mini-promptv2"
-```
-
-??? "📋 Output (prompt v2)"
-
-    ```text
-    Loading dataset...
-    Dataset loaded with 99 samples (full dataset)
-    Running text-to-SQL evaluation with model: gpt-5-mini
-    Using prompt file: prompt_v2.txt
-    Running experiment: 100%|██████████████████████| 99/99 [01:00<00:00,  1.63it/s]
-    ✅ gpt-5-mini-promptv2: 99 cases evaluated
-    Results saved to: experiments/20250905-150957-gpt-5-mini-promptv2.csv
-    gpt-5-mini-promptv2 Execution Accuracy: 60.61%
-    ```
-
-
 ## Conclusion
 
-This guide showed you how to build a systematic evaluation process for text-to-SQL agents using execution accuracy as the primary metric.
+This guide showed you how to build a systematic evaluation process for text-to-SQL systems. 
 
 **Key takeaways:**
 
 - Set up execution accuracy metrics to compare actual query results
-- Follow the iterative process: evaluate → analyze → improve → repeat  
-- Use manual error analysis to identify patterns and improve prompts
-- Version your prompts and track improvements systematically
+- Follow the iterative process: evaluate → analyze errors → improve → repeat  
 
 The evaluation framework gives you a reliable way to measure and improve your system, with Ragas handling the orchestration and result aggregation automatically.
