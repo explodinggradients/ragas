@@ -499,39 +499,6 @@ if __name__ == "__main__":
         print(f"Generated SQL: {result.generated_sql}")
         print(f"Generation Time: {result.generation_time_ms:.2f}ms")
         
-        # Execute the SQL if db_utils is available
-        if execute_sql:
-            print("\n" + "=" * 60)
-            print("🔍 Executing SQL query against database...")
-            
-            try:
-                success, db_result = execute_sql(result.generated_sql)
-                
-                if success:
-                    print("✅ SQL execution successful!")
-                    print("\n📊 Query Results:")
-                    try:
-                        import pandas as pd
-                        if isinstance(db_result, pd.DataFrame):
-                            # It's a pandas DataFrame
-                            if len(db_result) == 0:
-                                print("No rows returned.")
-                            else:
-                                print(db_result.to_string(index=False))
-                                print(f"\nRows returned: {len(db_result)}")
-                        else:
-                            print(str(db_result))
-                    except ImportError:
-                        # pandas not available, just print as string
-                        print(str(db_result))
-                else:
-                    print(f"❌ SQL execution failed: {db_result}")
-                    
-            except Exception as e:
-                print(f"❌ Error executing SQL: {e}")
-        else:
-            print("\n⚠️  db_utils not available - skipping SQL execution")
-        
         # Export log
         run_id = f"test_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         log_file = agent.export_traces_to_log(run_id, test_query, result)
