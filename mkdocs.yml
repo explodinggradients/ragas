@@ -15,7 +15,12 @@ nav:
       - Evaluate your first LLM App: getstarted/evals.md
       - Evaluate a simple RAG: getstarted/rag_eval.md
       - Generate Synthetic Testset for RAG: getstarted/rag_testset_generation.md
-      - Run your first experiment: getstarted/experiments_quickstart.md
+      - Experiments:
+          - Run your first experiment: getstarted/experiments_quickstart.md
+          - Evaluate a prompt: tutorials/prompt.md
+          - Evaluate a simple RAG system: tutorials/rag.md
+          - Evaluate an AI Workflow: tutorials/workflow.md
+          - Evaluate an AI Agent: tutorials/agent.md
   - 📚 Core Concepts:
       - concepts/index.md
       - Components:
