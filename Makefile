@@ -73,7 +73,7 @@ benchmarks: ## Run all benchmarks locally
 	@echo "Running all benchmarks..."
 	@echo "Running evaluation benchmarks..."
 	$(Q)cd $(GIT_ROOT)/tests/benchmarks && uv run python benchmark_eval.py
-	@echo "Running testset generation benchmarks..."
+	@echo "Running testset generation benchmarks (DEPRECATED)..."
 	$(Q)cd $(GIT_ROOT)/tests/benchmarks && uv run python benchmark_testsetgen.py
 
 benchmarks-docker: ## Run benchmarks in docker
