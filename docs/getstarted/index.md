@@ -1,6 +1,6 @@
 # 🚀 Get Started
 
-Welcome to the Ragas tutorials! If you're new to Ragas, the Get Started guides will walk you through the fundamentals of working with Ragas. These tutorials assume basic knowledge of Python and building LLM application pipelines. 
+Welcome to Ragas! If you're new to Ragas, the Get Started guides will walk you through the fundamentals of working with Ragas. These tutorials assume basic knowledge of Python and building LLM application pipelines. 
 
 Before you proceed further, ensure that you have [Ragas installed](./install.md)!
 
@@ -14,3 +14,4 @@ Let's get started!
 - [Evaluate your first AI app](./evals.md)
 - [Run ragas metrics for evaluating RAG](rag_eval.md)
 - [Generate test data for evaluating RAG](rag_testset_generation.md)
+- [Run your first experiment](experiments_quickstart.md)

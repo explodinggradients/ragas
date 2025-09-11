@@ -10,8 +10,7 @@ import pandas as pd
 from run_prompt import run_prompt
 
 from ragas import Dataset, experiment
-from ragas.experimental.metrics.discrete import discrete_metric
-from ragas.experimental.metrics.result import MetricResult
+from ragas.metrics import MetricResult, discrete_metric
 
 
 @discrete_metric(name="labels_exact_match", allowed_values=["correct", "incorrect"])

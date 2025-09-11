@@ -1,53 +1,31 @@
-# Ragas Experimental
+# Run your first experiment
 
-A framework for applying Evaluation-Driven Development (EDD) to AI applications.
+This tutorial walks you through running your first experiment with Ragas using the `@experiment` decorator and a local CSV backend.
 
-The goal of Ragas Experimental is to evolve Ragas into a general-purpose evaluation framework for AI applications. It helps teams design, run, and reason about evaluations across any AI workflow. Beyond tooling, it provides a mental model for thinking about evaluations not just as a diagnostic tool, but as the backbone of iterative improvement.
+## Prerequisites
 
-# ✨ Introduction
-
-
-<div class="grid cards" markdown>
-
-- 🚀 **Tutorials**
-
-    Step-by-step guides to help you get started with Ragas Experimental. Learn how to evaluate AI applications like RAGs and agents with practical examples.
-
-    [:octicons-arrow-right-24: Tutorials](tutorials/index.md)
-
-- 📚 **Core Concepts**
-
-    A deeper dive into the principles of evaluation and how Ragas Experimental supports evaluation-driven development for AI applications.
-
-    [:octicons-arrow-right-24: Core Concepts](core_concepts/index.md)
-
-- 🛠️ **How-to Guides**
-
-    Step-by-step guides for specific tasks and goals using Ragas experimental features.
-
-    [:octicons-arrow-right-24: How-to Guides](howtos/index.md)
-
-</div>
-
+- Python 3.9+
+- Ragas installed (see [Installation](./install.md))
 
 ## Hello World 👋
 
-![](hello_world.gif)
+![](/_static/imgs/experiments_quickstart/hello_world.gif)
 
-1\. Install Ragas Experimental with local backend
+### 1. Install (if you haven’t already)
 
 ```bash
-pip install ragas-experimental && pip install "ragas-experimental[local]"
+pip install ragas
 ```
 
-2\. Copy this snippet to a file named `hello_world.py` and run `python hello_world.py` 
+### 2. Create `hello_world.py`
 
+Copy this into a new file and save as `hello_world.py`:
 
 ```python
 import numpy as np
-from ragas_experimental import Dataset
-from ragas import experiment
-from ragas.metrics import MetricResult, discrete_metric  
+from ragas import Dataset, experiment
+from ragas.metrics import MetricResult, discrete_metric
+
 
 # Define a custom metric for accuracy
 @discrete_metric(name="accuracy_score", allowed_values=["pass", "fail"])
@@ -55,9 +33,11 @@ def accuracy_score(response: str, expected: str):
     result = "pass" if expected.lower().strip() == response.lower().strip() else "fail"
     return MetricResult(value=result, reason=f"Match: {result == 'pass'}")
 
+
 # Mock application endpoint that simulates an AI application response
 def mock_app_endpoint(**kwargs) -> str:
     return np.random.choice(["Paris", "4", "Blue Whale", "Einstein", "Python"])
+
 
 # Create an experiment that uses the mock application endpoint and the accuracy metric
 @experiment()
@@ -66,9 +46,10 @@ async def run_experiment(row):
     accuracy = accuracy_score.score(response=response, expected=row.get("expected_output"))
     return {**row, "response": response, "accuracy": accuracy.value}
 
+
 if __name__ == "__main__":
     import asyncio
-    
+
     # Create dataset inline
     dataset = Dataset(name="test_dataset", backend="local/csv", root_dir=".")
     test_data = [
@@ -78,22 +59,22 @@ if __name__ == "__main__":
         {"query": "Who developed the theory of relativity?", "expected_output": "Einstein"},
         {"query": "What programming language is named after a snake?", "expected_output": "Python"},
     ]
-    
+
     for sample in test_data:
         dataset.append(sample)
     dataset.save()
-    
+
     # Run experiment
-    results = asyncio.run(run_experiment.arun(dataset, name="first_experiment"))
+    _ = asyncio.run(run_experiment.arun(dataset, name="first_experiment"))
 ```
 
-3\. Check your current directory structure to see the created dataset and experiment results.
+### 3. Inspect the generated files
 
 ```bash
 tree .
 ```
 
-Output:
+You should see:
 
 ```
 ├── datasets
@@ -102,12 +83,18 @@ Output:
     └── first_experiment.csv
 ```
 
-4\. View the results of your first experiment
+### 4. View the results of your first experiment
 
 ```bash
 open experiments/first_experiment.csv
 ```
 
-Output:
+Output preview:
 
-![](output_first_experiment.png)
+![](/_static/imgs/experiments_quickstart/output_first_experiment.png)
+
+## Next steps
+
+- Learn the concepts behind experiments in [Experiments (Concepts)](../concepts/experimentation.md)
+- Explore evaluation metrics in [Metrics](../concepts/metrics/index.md)
+

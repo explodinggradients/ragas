@@ -303,7 +303,7 @@ class MathToolsAgent:
                 )
 
                 message = response.choices[0].message
-                messages.append(message.dict())
+                messages.append(message.model_dump())
 
                 self.traces.append(
                     TraceEvent(

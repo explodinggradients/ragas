@@ -7,7 +7,6 @@ import sys
 from typing import List, Optional
 
 import pandas as pd
-from prompt import DEFAULT_MODEL, run_prompt
 
 from ragas import experiment
 from ragas.dataset import Dataset
