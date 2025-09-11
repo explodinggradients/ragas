@@ -13,6 +13,7 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompt_values import StringPromptValue as PromptValue
 from pydantic import BaseModel
 
+from ragas._analytics import PromptUsageEvent, track
 from ragas._version import __version__
 from ragas.callbacks import ChainType, new_group
 from ragas.exceptions import RagasOutputParserException
@@ -258,6 +259,18 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
                 raise e
 
         prompt_rm.on_chain_end({"output": output_models})
+
+        # Track prompt usage
+        track(
+            PromptUsageEvent(
+                prompt_type="pydantic",
+                has_examples=len(self.examples) > 0,
+                num_examples=len(self.examples),
+                has_response_model=True,  # PydanticPrompt always has response model
+                language=self.language,
+            )
+        )
+
         return output_models
 
     def process_input(self, input: InputModel) -> InputModel:

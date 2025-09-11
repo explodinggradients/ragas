@@ -8,6 +8,8 @@ import typing as t
 import warnings
 from pathlib import Path
 
+from ragas._analytics import PromptUsageEvent, track
+
 if t.TYPE_CHECKING:
     from pydantic import BaseModel
 
@@ -102,10 +104,20 @@ class Prompt:
             prompt_parts.append(self._format_examples())
 
         # Combine all parts
-        if len(prompt_parts) > 1:
-            return "\n\n".join(prompt_parts)
-        else:
-            return prompt_parts[0]
+        result = "\n\n".join(prompt_parts) if len(prompt_parts) > 1 else prompt_parts[0]
+
+        # Track prompt usage
+        track(
+            PromptUsageEvent(
+                prompt_type="simple",
+                has_examples=len(self.examples) > 0 if self.examples else False,
+                num_examples=len(self.examples) if self.examples else 0,
+                has_response_model=self.response_model is not None,
+                language="english",  # Simple prompt doesn't have language detection
+            )
+        )
+
+        return result
 
     def _format_examples(self) -> str:
         # Add examples in a simple format
