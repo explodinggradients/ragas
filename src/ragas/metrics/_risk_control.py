@@ -85,13 +85,13 @@ class _RiskControlCalculator:
         return self._scores
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Risk(SingleTurnMetric):
     """
     Measures the probability that an answer provided by the system is a "risky"
     one (i.e., it should have been discarded). A lower Risk score is better.
-    """    
-    calculator: _RiskControlCalculator = field(repr=False)
+    """
+    calculator: _RiskControlCalculator
     name: str = "risk"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(default_factory=dict)
 
@@ -102,13 +102,13 @@ class Risk(SingleTurnMetric):
         return self.calculator.get_scores()["risk"]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Carefulness(SingleTurnMetric):
     """
     Measures the system's ability to correctly identify and discard unanswerable
     questions. It is effectively the recall for the "unanswerable" class.
     """
-    calculator: _RiskControlCalculator = field(repr=False)
+    calculator: _RiskControlCalculator
     name: str = "carefulness"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(default_factory=dict)
     
@@ -119,13 +119,13 @@ class Carefulness(SingleTurnMetric):
         return self.calculator.get_scores()["carefulness"]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Alignment(SingleTurnMetric):
     """
     Measures the overall accuracy of the model's decision-making process
     (both its decisions to keep and to discard).
     """
-    calculator: _RiskControlCalculator = field(repr=False)
+    calculator: _RiskControlCalculator
     name: str = "alignment"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(default_factory=dict)
 
@@ -136,13 +136,13 @@ class Alignment(SingleTurnMetric):
         return self.calculator.get_scores()["alignment"]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Coverage(SingleTurnMetric):
     """
     Measures the proportion of questions that the system attempts to answer.
     It quantifies the system's "helpfulness" or "utility."
     """
-    calculator: _RiskControlCalculator = field(repr=False)
+    calculator: _RiskControlCalculator
     name: str = "coverage"
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(default_factory=dict)
 
@@ -151,6 +151,7 @@ class Coverage(SingleTurnMetric):
 
     async def _single_turn_ascore(self, sample: SingleTurnSample, callbacks: Callbacks) -> float:
         return self.calculator.get_scores()["coverage"]
+
 
 
 def risk_control_suite(dataset: Dataset) -> list[Metric]:
