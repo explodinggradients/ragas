@@ -1,5 +1,5 @@
 site_name: Ragas
-site_description: Evaluation framework for your Retrieval Augmented Generation (RAG) pipelines
+site_description: Evaluation framework for your AI Application
 site_url: !ENV READTHEDOCS_CANONICAL_URL
 repo_name: explodinggradients/ragas
 repo_url: https://github.com/explodinggradients/ragas
