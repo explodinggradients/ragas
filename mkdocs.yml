@@ -1,5 +1,5 @@
 site_name: Ragas
-site_description: Evaluation framework for your Retrieval Augmented Generation (RAG) pipelines
+site_description: Evaluation framework for your AI Application
 site_url: !ENV READTHEDOCS_CANONICAL_URL
 repo_name: explodinggradients/ragas
 repo_url: https://github.com/explodinggradients/ragas
@@ -248,14 +248,8 @@ extra:
   analytics:
     provider: google
     property: !ENV GOOGLE_ANALYTICS_KEY
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/explodinggradients/ragas
-    - icon: fontawesome/brands/x-twitter
-      link: https://x.com/ragas_io
-    - icon: fontawesome/brands/discord
-      link: https://discord.gg/5qGUJ6mh7C
 plugins:
+  - social
   - search
   - git-revision-date-localized:
       enabled: !ENV [MKDOCS_CI, false]
