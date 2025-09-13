@@ -125,3 +125,29 @@ Output
 ```
 1.0
 ```
+
+# CHRF Score
+
+The `ChrfScore` metric evaluates the similarity between a `response` and a `reference` using **character n-gram F-score**. Unlike BLEU, which emphasizes precision, CHRF accounts for both **precision and recall**, making it more suitable for:
+
+- Morphologically rich languages
+- Responses with paraphrasing or flexible wording
+
+CHRF scores range from 0 to 1, where 1 indicates a perfect match between the generated response and the reference. This is a non-LLM-based metric, relying entirely on deterministic comparisons.
+
+```python
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics import ChrfScore
+
+sample = SingleTurnSample(
+    response="The Eiffel Tower is located in India.",
+    reference="The Eiffel Tower is located in Paris."
+)
+
+scorer = ChrfScore()
+await scorer.single_turn_ascore(sample)
+```
+Output
+```
+0.8048
+```
