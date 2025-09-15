@@ -121,14 +121,7 @@ output[0]
 Returns a tuple of the type of the extractor and the extracted information.
 
 ```bash
-('entities',
- {'ORG': [],
-  'LOC': [],
-  'PER': ['Einstein'],
-  'MISC': ['theory of relativity',
-   'space',
-   'time',
-   "observer's frame of reference"]})
+('entities', ['Einstein', 'theory of relativity', 'space', 'time', "observer's frame of reference"])
 ```
 
 Let's add the extracted information to the node.
@@ -140,14 +133,8 @@ sample_nodes[0].properties
 
 Output:
 ```bash
-{'page_content': "Einstein's theory of relativity revolutionized our understanding of space and time. It introduced the concept that time is not absolute but can change depending on the observer's frame of reference.",
- 'entities': {'ORG': [],
-  'LOC': [],
-  'PER': ['Einstein'],
-  'MISC': ['theory of relativity',
-   'space',
-   'time',
-   "observer's frame of reference"]}}
+{'page_content': "Einstein's theory of relativity revolutionized our understanding of space and time. It introduced the concept that time is not absolute but can change depending on the observer's frame of reference.", 
+'entities': ['Einstein', 'theory of relativity', 'space', 'time', 'observer']}
 ```
 
 ```mermaid
