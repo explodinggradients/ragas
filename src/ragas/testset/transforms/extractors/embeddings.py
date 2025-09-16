@@ -41,11 +41,18 @@ class EmbeddingExtractor(Extractor):
             raise ValueError(
                 f"node.property('{self.embed_property_name}') must be a string, found '{type(text)}'"
             )
+        
         # Handle both modern (BaseRagasEmbedding) and legacy (BaseRagasEmbeddings) interfaces
-        if hasattr(self.embedding_model, "aembed_text"):
+        if hasattr(self.embedding_model, 'aembed_text'):
             # Modern interface (BaseRagasEmbedding)
-            embedding = await self.embedding_model.aembed_text(text)  # type: ignore[attr-defined]
+            # Check if the client supports async operations
+            if hasattr(self.embedding_model, 'is_async') and self.embedding_model.is_async:
+                embedding = await self.embedding_model.aembed_text(text)  # type: ignore[attr-defined]
+            else:
+                # For sync clients, use the sync method
+                embedding = self.embedding_model.embed_text(text)  # type: ignore[attr-defined]
         else:
             # Legacy interface (BaseRagasEmbeddings)
             embedding = await self.embedding_model.embed_text(text)  # type: ignore[misc]
+
         return self.property_name, embedding
