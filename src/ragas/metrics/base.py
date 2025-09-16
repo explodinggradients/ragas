@@ -12,9 +12,9 @@ from pydantic import ValidationError
 from tqdm import tqdm
 
 from ragas._analytics import EvaluationEvent, _analytics_batcher
+from ragas.async_utils import apply_nest_asyncio, run
 from ragas.callbacks import ChainType, new_group
 from ragas.dataset_schema import MetricAnnotation, MultiTurnSample, SingleTurnSample
-from ragas.executor import is_event_loop_running
 from ragas.losses import BinaryMetricLoss, MSELoss
 from ragas.prompt import FewShotPydanticPrompt, PromptMixin
 from ragas.run_config import RunConfig
@@ -143,26 +143,22 @@ class Metric(ABC):
             callbacks=callbacks,
             metadata={"type": ChainType.METRIC},
         )
-        try:
-            if is_event_loop_running():
-                try:
-                    import nest_asyncio
 
-                    nest_asyncio.apply()
-                except ImportError:
-                    raise ImportError(
-                        "It seems like your running this in a jupyter-like environment. Please install nest_asyncio with `pip install nest_asyncio` to make it work."
-                    )
-            loop = asyncio.get_event_loop()
-            score = loop.run_until_complete(self._ascore(row=row, callbacks=group_cm))
-        except Exception as e:
-            if not group_cm.ended:
-                rm.on_chain_error(e)
-            raise e
-        else:
-            if not group_cm.ended:
-                rm.on_chain_end({"output": score})
-        return score
+        async def _async_wrapper():
+            try:
+                result = await self._ascore(row=row, callbacks=group_cm)
+            except Exception as e:
+                if not group_cm.ended:
+                    rm.on_chain_error(e)
+                raise e
+            else:
+                if not group_cm.ended:
+                    rm.on_chain_end({"output": result})
+                return result
+
+        # Apply nest_asyncio logic to ensure compatibility in notebook/Jupyter environments.
+        apply_nest_asyncio()
+        return run(_async_wrapper)
 
     @deprecated("0.2", removal="0.3", alternative="single_turn_ascore")
     async def ascore(
@@ -466,27 +462,23 @@ class SingleTurnMetric(Metric):
             callbacks=callbacks,
             metadata={"type": ChainType.METRIC},
         )
-        try:
-            if is_event_loop_running():
-                try:
-                    import nest_asyncio
 
-                    nest_asyncio.apply()
-                except ImportError:
-                    raise ImportError(
-                        "It seems like your running this in a jupyter-like environment. Please install nest_asyncio with `pip install nest_asyncio` to make it work."
-                    )
-            loop = asyncio.get_event_loop()
-            score = loop.run_until_complete(
-                self._single_turn_ascore(sample=sample, callbacks=group_cm)
-            )
-        except Exception as e:
-            if not group_cm.ended:
-                rm.on_chain_error(e)
-            raise e
-        else:
-            if not group_cm.ended:
-                rm.on_chain_end({"output": score})
+        async def _async_wrapper():
+            try:
+                result = await self._single_turn_ascore(
+                    sample=sample, callbacks=group_cm
+                )
+            except Exception as e:
+                if not group_cm.ended:
+                    rm.on_chain_error(e)
+                raise e
+            else:
+                if not group_cm.ended:
+                    rm.on_chain_end({"output": result})
+                return result
+
+        apply_nest_asyncio()
+        score = run(_async_wrapper)
 
         # track the evaluation event
         _analytics_batcher.add_evaluation(
@@ -594,27 +586,23 @@ class MultiTurnMetric(Metric):
             callbacks=callbacks,
             metadata={"type": ChainType.METRIC},
         )
-        try:
-            if is_event_loop_running():
-                try:
-                    import nest_asyncio
 
-                    nest_asyncio.apply()
-                except ImportError:
-                    raise ImportError(
-                        "It seems like your running this in a jupyter-like environment. Please install nest_asyncio with `pip install nest_asyncio` to make it work."
-                    )
-            loop = asyncio.get_event_loop()
-            score = loop.run_until_complete(
-                self._multi_turn_ascore(sample=sample, callbacks=group_cm)
-            )
-        except Exception as e:
-            if not group_cm.ended:
-                rm.on_chain_error(e)
-            raise e
-        else:
-            if not group_cm.ended:
-                rm.on_chain_end({"output": score})
+        async def _async_wrapper():
+            try:
+                result = await self._multi_turn_ascore(
+                    sample=sample, callbacks=group_cm
+                )
+            except Exception as e:
+                if not group_cm.ended:
+                    rm.on_chain_error(e)
+                raise e
+            else:
+                if not group_cm.ended:
+                    rm.on_chain_end({"output": result})
+                return result
+
+        apply_nest_asyncio()
+        score = run(_async_wrapper)
 
         # track the evaluation event
         _analytics_batcher.add_evaluation(
