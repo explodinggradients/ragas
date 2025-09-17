@@ -10,6 +10,7 @@ from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 from tqdm.auto import tqdm
 
 from ragas._analytics import track_was_completed  # type: ignore
+from ragas.async_utils import run_sync_from_async
 from ragas.callbacks import ChainType, RagasTracer, new_group
 from ragas.dataset_schema import (
     EvaluationDataset,
@@ -54,7 +55,198 @@ if t.TYPE_CHECKING:
 RAGAS_EVALUATION_CHAIN_NAME = "ragas evaluation"
 
 
-@track_was_completed  # type: ignore
+def _prepare_evaluation_inputs(
+    dataset: t.Union[Dataset, EvaluationDataset],
+    metrics: t.Optional[t.Sequence[Metric]],
+    llm: t.Optional[BaseRagasLLM | LangchainLLM],
+    embeddings: t.Optional[
+        BaseRagasEmbeddings | BaseRagasEmbedding | LangchainEmbeddings
+    ],
+    column_map: t.Optional[t.Dict[str, str]],
+    run_config: RunConfig,
+) -> t.Tuple[
+    EvaluationDataset,
+    t.Sequence[Metric],
+    t.Optional[BaseRagasLLM],
+    t.Optional[t.Union[BaseRagasEmbeddings, BaseRagasEmbedding]],
+]:
+    """Prepare and validate inputs for evaluation."""
+    if dataset is None:
+        raise ValueError("Provide dataset!")
+
+    # default metrics
+    if metrics is None:
+        from ragas.metrics import (
+            answer_relevancy,
+            context_precision,
+            context_recall,
+            faithfulness,
+        )
+
+        metrics = [answer_relevancy, context_precision, faithfulness, context_recall]
+
+    if isinstance(dataset, Dataset):
+        # remap column names from the dataset
+        dataset = remap_column_names(dataset, column_map or {})
+        dataset = convert_v1_to_v2_dataset(dataset)
+        # validation
+        dataset = EvaluationDataset.from_list(dataset.to_list())
+
+    if isinstance(dataset, EvaluationDataset):
+        validate_required_columns(dataset, metrics)
+        validate_supported_metrics(dataset, metrics)
+
+    # set the llm and embeddings
+    if isinstance(llm, LangchainLLM):
+        llm = LangchainLLMWrapper(llm, run_config=run_config)
+    if isinstance(embeddings, LangchainEmbeddings):
+        embeddings = LangchainEmbeddingsWrapper(embeddings)
+
+    return dataset, metrics, llm, embeddings
+
+
+def _initialize_metrics(
+    metrics: t.Sequence[Metric],
+    llm: t.Optional[BaseRagasLLM],
+    embeddings: t.Optional[t.Union[BaseRagasEmbeddings, BaseRagasEmbedding]],
+    run_config: RunConfig,
+) -> t.Tuple[t.List[str], t.List[int], t.List[int], int]:
+    """Initialize metrics and return tracking information."""
+    binary_metrics = []
+    llm_changed: t.List[int] = []
+    embeddings_changed: t.List[int] = []
+    answer_correctness_is_set = -1
+
+    # loop through the metrics and perform initializations
+    for i, metric in enumerate(metrics):
+        # set llm and embeddings if not set
+        if isinstance(metric, AspectCritic):
+            binary_metrics.append(metric.name)
+        if isinstance(metric, MetricWithLLM) and metric.llm is None:
+            if llm is None:
+                llm = llm_factory()
+            metric.llm = llm
+            llm_changed.append(i)
+        if isinstance(metric, MetricWithEmbeddings) and metric.embeddings is None:
+            if embeddings is None:
+                embeddings = embedding_factory()
+            metric.embeddings = embeddings
+            embeddings_changed.append(i)
+        if isinstance(metric, AnswerCorrectness):
+            if metric.answer_similarity is None:
+                answer_correctness_is_set = i
+
+        # init all the models
+        metric.init(run_config)
+
+    return binary_metrics, llm_changed, embeddings_changed, answer_correctness_is_set
+
+
+def _setup_callbacks(
+    callbacks: t.Optional[t.Any],
+    token_usage_parser: t.Optional[t.Any],
+) -> t.Tuple[t.Any, t.Dict[str, BaseCallbackHandler]]:
+    """Setup callbacks for evaluation tracing."""
+    callbacks = callbacks or []
+    ragas_callbacks: t.Dict[str, BaseCallbackHandler] = {}
+
+    # Ragas Tracer which traces the run
+    tracer = RagasTracer()
+    ragas_callbacks["tracer"] = tracer
+
+    # check if cost needs to be calculated
+    if token_usage_parser is not None:
+        from ragas.cost import CostCallbackHandler
+
+        cost_cb = CostCallbackHandler(token_usage_parser=token_usage_parser)
+        ragas_callbacks["cost_cb"] = cost_cb
+
+    # append all the ragas_callbacks to the callbacks
+    for cb in ragas_callbacks.values():
+        if isinstance(callbacks, BaseCallbackManager):
+            callbacks.add_handler(cb)
+        else:
+            callbacks.append(cb)
+
+    return callbacks, ragas_callbacks
+
+
+def _submit_evaluation_tasks(
+    executor: Executor,
+    dataset: EvaluationDataset,
+    metrics: t.Sequence[Metric],
+    callbacks: t.List[t.Any],
+    experiment_name: t.Optional[str],
+    run_config: RunConfig,
+) -> t.Tuple[t.List[t.Tuple[t.Any, t.Any]], t.Any, t.Any]:
+    """Submit evaluation tasks to executor and return row managers."""
+    row_run_managers = []
+    evaluation_rm, evaluation_group_cm = new_group(
+        name=experiment_name or RAGAS_EVALUATION_CHAIN_NAME,
+        inputs={},
+        callbacks=callbacks,
+        metadata={"type": ChainType.EVALUATION},
+    )
+
+    sample_type = dataset.get_sample_type()
+    for i, sample in enumerate(dataset):
+        row = t.cast(t.Dict[str, t.Any], sample.model_dump())
+        row_rm, row_group_cm = new_group(
+            name=f"row {i}",
+            inputs=row,
+            callbacks=evaluation_group_cm,
+            metadata={"type": ChainType.ROW, "row_index": i},
+        )
+        row_run_managers.append((row_rm, row_group_cm))
+
+        if sample_type == SingleTurnSample:
+            _ = [
+                executor.submit(
+                    metric.single_turn_ascore,
+                    sample,
+                    row_group_cm,
+                    name=f"{metric.name}-{i}",
+                    timeout=run_config.timeout,
+                )
+                for metric in metrics
+                if isinstance(metric, SingleTurnMetric)
+            ]
+        elif sample_type == MultiTurnSample:
+            _ = [
+                executor.submit(
+                    metric.multi_turn_ascore,
+                    sample,
+                    row_group_cm,
+                    name=f"{metric.name}-{i}",
+                    timeout=run_config.timeout,
+                )
+                for metric in metrics
+                if isinstance(metric, MultiTurnMetric)
+            ]
+        else:
+            raise ValueError(f"Unsupported sample type {sample_type}")
+
+    return row_run_managers, evaluation_rm, evaluation_group_cm
+
+
+def _cleanup_metrics(
+    metrics: t.Sequence[Metric],
+    llm_changed: t.List[int],
+    embeddings_changed: t.List[int],
+    answer_correctness_is_set: int,
+) -> None:
+    """Reset llm and embeddings if they were changed during initialization."""
+    for i in llm_changed:
+        t.cast(MetricWithLLM, metrics[i]).llm = None
+    for i in embeddings_changed:
+        t.cast(MetricWithEmbeddings, metrics[i]).embeddings = None
+    if answer_correctness_is_set != -1:
+        t.cast(
+            AnswerCorrectness, metrics[answer_correctness_is_set]
+        ).answer_similarity = None
+
+
+@track_was_completed
 def evaluate(
     dataset: t.Union[Dataset, EvaluationDataset],
     metrics: t.Optional[t.Sequence[Metric]] = None,
@@ -149,8 +341,167 @@ def evaluate(
     'answer_relevancy': 0.874}
     ```
     """
-    column_map = column_map or {}
-    callbacks = callbacks or []
+    # For return_executor mode, we use a simplified implementation that returns the executor
+    # before running evaluation, allowing users to control execution timing
+    if return_executor:
+        run_config = run_config or RunConfig()
+
+        if helicone_config.is_enabled:
+            import uuid
+
+            helicone_config.session_name = "ragas-evaluation"
+            helicone_config.session_id = str(uuid.uuid4())
+
+        # Prepare inputs using helper function
+        dataset, metrics, llm, embeddings = _prepare_evaluation_inputs(
+            dataset, metrics, llm, embeddings, column_map, run_config
+        )
+
+        # Initialize metrics using helper function
+        binary_metrics, llm_changed, embeddings_changed, answer_correctness_is_set = (
+            _initialize_metrics(metrics, llm, embeddings, run_config)
+        )
+
+        # Setup callbacks using helper function
+        callbacks, ragas_callbacks = _setup_callbacks(callbacks, token_usage_parser)
+
+        # Create executor
+        executor = Executor(
+            desc="Evaluating",
+            keep_progress_bar=True,
+            raise_exceptions=raise_exceptions,
+            run_config=run_config,
+            show_progress=show_progress,
+            batch_size=batch_size,
+            pbar=_pbar,
+        )
+
+        # Submit tasks using helper function
+        row_run_managers, evaluation_rm, evaluation_group_cm = _submit_evaluation_tasks(
+            executor, dataset, metrics, callbacks, experiment_name, run_config
+        )
+
+        return executor
+
+    # Main implementation: delegate to aevaluate with smart async handling
+    async def _async_evaluate():
+        return await aevaluate(
+            dataset=dataset,
+            metrics=metrics,
+            llm=llm,
+            embeddings=embeddings,
+            experiment_name=experiment_name,
+            callbacks=callbacks,
+            run_config=run_config,
+            token_usage_parser=token_usage_parser,
+            raise_exceptions=raise_exceptions,
+            column_map=column_map,
+            show_progress=show_progress,
+            batch_size=batch_size,
+            _run_id=_run_id,
+            _pbar=_pbar,
+        )
+
+    return run_sync_from_async(_async_evaluate)
+
+
+@track_was_completed  # type: ignore
+async def aevaluate(
+    dataset: t.Union[Dataset, EvaluationDataset],
+    metrics: t.Optional[t.Sequence[Metric]] = None,
+    llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
+    embeddings: t.Optional[
+        BaseRagasEmbeddings | BaseRagasEmbedding | LangchainEmbeddings
+    ] = None,
+    experiment_name: t.Optional[str] = None,
+    callbacks: Callbacks = None,
+    run_config: t.Optional[RunConfig] = None,
+    token_usage_parser: t.Optional[TokenUsageParser] = None,
+    raise_exceptions: bool = False,
+    column_map: t.Optional[t.Dict[str, str]] = None,
+    show_progress: bool = True,
+    batch_size: t.Optional[int] = None,
+    _run_id: t.Optional[UUID] = None,
+    _pbar: t.Optional[tqdm] = None,
+) -> EvaluationResult:
+    """
+    Perform the evaluation on the dataset with different metrics asynchronously.
+
+    This is the async version of evaluate() that works properly in async contexts
+    without requiring nest_asyncio. Use this function when you're already in an
+    async context (like FastAPI servers, async web apps, etc.).
+
+    Parameters
+    ----------
+    dataset : Dataset, EvaluationDataset
+        The dataset used by the metrics to evaluate the RAG pipeline.
+    metrics : list[Metric], optional
+        List of metrics to use for evaluation. If not provided, ragas will run
+        the evaluation on the best set of metrics to give a complete view.
+    llm : BaseRagasLLM, optional
+        The language model (LLM) to use to generate the score for calculating the metrics.
+        If not provided, ragas will use the default
+        language model for metrics that require an LLM. This can be overridden by the LLM
+        specified in the metric level with `metric.llm`.
+    embeddings : BaseRagasEmbeddings, optional
+        The embeddings model to use for the metrics.
+        If not provided, ragas will use the default embeddings for metrics that require embeddings.
+        This can be overridden by the embeddings specified in the metric level with `metric.embeddings`.
+    experiment_name : str, optional
+        The name of the experiment to track. This is used to track the evaluation in the tracing tool.
+    callbacks : Callbacks, optional
+        Lifecycle Langchain Callbacks to run during evaluation.
+        Check the [Langchain documentation](https://python.langchain.com/docs/modules/callbacks/) for more information.
+    run_config : RunConfig, optional
+        Configuration for runtime settings like timeout and retries. If not provided, default values are used.
+    token_usage_parser : TokenUsageParser, optional
+        Parser to get the token usage from the LLM result.
+        If not provided, the cost and total token count will not be calculated. Default is None.
+    raise_exceptions : False
+        Whether to raise exceptions or not. If set to True, the evaluation will raise an exception
+        if any of the metrics fail. If set to False, the evaluation will return `np.nan` for the row that failed. Default is False.
+    column_map : dict[str, str], optional
+        The column names of the dataset to use for evaluation. If the column names of the dataset are different from the default ones,
+        it is possible to provide the mapping as a dictionary here. Example: If the dataset column name is `contexts_v1`, it is possible to pass column_map as `{"contexts": "contexts_v1"}`.
+    show_progress : bool, optional
+        Whether to show the progress bar during evaluation. If set to False, the progress bar will be disabled. The default is True.
+    batch_size : int, optional
+        How large the batches should be. If set to None (default), no batching is done.
+
+    Returns
+    -------
+    EvaluationResult
+        EvaluationResult object containing the scores of each metric.
+
+    Raises
+    ------
+    ValueError
+        if validation fails because the columns required for the metrics are missing or
+        if the columns are of the wrong format.
+
+    Examples
+    --------
+    the basic usage in an async context is as follows:
+    ```
+    import asyncio
+    from ragas import aevaluate
+
+    async def main():
+        >>> dataset
+        Dataset({
+            features: ['question', 'ground_truth', 'answer', 'contexts'],
+            num_rows: 30
+        })
+
+        >>> result = await aevaluate(dataset)
+        >>> print(result)
+        {'context_precision': 0.817,
+        'faithfulness': 0.892,
+        'answer_relevancy': 0.874}
+
+    asyncio.run(main())
+    ```
+    """
     run_config = run_config or RunConfig()
 
     if helicone_config.is_enabled:
@@ -159,65 +510,20 @@ def evaluate(
         helicone_config.session_name = "ragas-evaluation"
         helicone_config.session_id = str(uuid.uuid4())
 
-    if dataset is None:
-        raise ValueError("Provide dataset!")
+    # Prepare inputs using helper function
+    dataset, metrics, llm, embeddings = _prepare_evaluation_inputs(
+        dataset, metrics, llm, embeddings, column_map, run_config
+    )
 
-    # default metrics
-    if metrics is None:
-        from ragas.metrics import (
-            answer_relevancy,
-            context_precision,
-            context_recall,
-            faithfulness,
-        )
+    # Initialize metrics using helper function
+    binary_metrics, llm_changed, embeddings_changed, answer_correctness_is_set = (
+        _initialize_metrics(metrics, llm, embeddings, run_config)
+    )
 
-        metrics = [answer_relevancy, context_precision, faithfulness, context_recall]
+    # Setup callbacks using helper function
+    callbacks, ragas_callbacks = _setup_callbacks(callbacks, token_usage_parser)
 
-    if isinstance(dataset, Dataset):
-        # remap column names from the dataset
-        dataset = remap_column_names(dataset, column_map)
-        dataset = convert_v1_to_v2_dataset(dataset)
-        # validation
-        dataset = EvaluationDataset.from_list(dataset.to_list())
-
-    if isinstance(dataset, EvaluationDataset):
-        validate_required_columns(dataset, metrics)
-        validate_supported_metrics(dataset, metrics)
-
-    # set the llm and embeddings
-    if isinstance(llm, LangchainLLM):
-        llm = LangchainLLMWrapper(llm, run_config=run_config)
-    if isinstance(embeddings, LangchainEmbeddings):
-        embeddings = LangchainEmbeddingsWrapper(embeddings)
-
-    # init llms and embeddings
-    binary_metrics = []
-    llm_changed: t.List[int] = []
-    embeddings_changed: t.List[int] = []
-    answer_correctness_is_set = -1
-
-    # loop through the metrics and perform initializations
-    for i, metric in enumerate(metrics):
-        # set llm and embeddings if not set
-        if isinstance(metric, AspectCritic):
-            binary_metrics.append(metric.name)
-        if isinstance(metric, MetricWithLLM) and metric.llm is None:
-            if llm is None:
-                llm = llm_factory()
-            metric.llm = llm
-            llm_changed.append(i)
-        if isinstance(metric, MetricWithEmbeddings) and metric.embeddings is None:
-            if embeddings is None:
-                embeddings = embedding_factory()
-            metric.embeddings = embeddings
-            embeddings_changed.append(i)
-        if isinstance(metric, AnswerCorrectness):
-            if metric.answer_similarity is None:
-                answer_correctness_is_set = i
-
-        # init all the models
-        metric.init(run_config)
-
+    # Create executor
     executor = Executor(
         desc="Evaluating",
         keep_progress_bar=True,
@@ -228,86 +534,19 @@ def evaluate(
         pbar=_pbar,
     )
 
-    # Ragas Callbacks
-    # init the callbacks we need for various tasks
-    ragas_callbacks: t.Dict[str, BaseCallbackHandler] = {}
-
-    # Ragas Tracer which traces the run
-    tracer = RagasTracer()
-    ragas_callbacks["tracer"] = tracer
-
-    # check if cost needs to be calculated
-    if token_usage_parser is not None:
-        from ragas.cost import CostCallbackHandler
-
-        cost_cb = CostCallbackHandler(token_usage_parser=token_usage_parser)
-        ragas_callbacks["cost_cb"] = cost_cb
-
-    # append all the ragas_callbacks to the callbacks
-    for cb in ragas_callbacks.values():
-        if isinstance(callbacks, BaseCallbackManager):
-            callbacks.add_handler(cb)
-        else:
-            callbacks.append(cb)
-
-    # new evaluation chain
-    row_run_managers = []
-    evaluation_rm, evaluation_group_cm = new_group(
-        name=experiment_name or RAGAS_EVALUATION_CHAIN_NAME,
-        inputs={},
-        callbacks=callbacks,
-        metadata={"type": ChainType.EVALUATION},
+    # Submit tasks using helper function
+    row_run_managers, evaluation_rm, evaluation_group_cm = _submit_evaluation_tasks(
+        executor, dataset, metrics, callbacks, experiment_name, run_config
     )
-
-    sample_type = dataset.get_sample_type()
-    for i, sample in enumerate(dataset):
-        row = t.cast(t.Dict[str, t.Any], sample.model_dump())
-        row_rm, row_group_cm = new_group(
-            name=f"row {i}",
-            inputs=row,
-            callbacks=evaluation_group_cm,
-            metadata={"type": ChainType.ROW, "row_index": i},
-        )
-        row_run_managers.append((row_rm, row_group_cm))
-        if sample_type == SingleTurnSample:
-            _ = [
-                executor.submit(
-                    metric.single_turn_ascore,
-                    sample,
-                    row_group_cm,
-                    name=f"{metric.name}-{i}",
-                    timeout=run_config.timeout,
-                )
-                for metric in metrics
-                if isinstance(metric, SingleTurnMetric)
-            ]
-        elif sample_type == MultiTurnSample:
-            _ = [
-                executor.submit(
-                    metric.multi_turn_ascore,
-                    sample,
-                    row_group_cm,
-                    name=f"{metric.name}-{i}",
-                    timeout=run_config.timeout,
-                )
-                for metric in metrics
-                if isinstance(metric, MultiTurnMetric)
-            ]
-        else:
-            raise ValueError(f"Unsupported sample type {sample_type}")
-
-    # Return executor for cancellable execution if requested
-    if return_executor:
-        return executor
 
     scores: t.List[t.Dict[str, t.Any]] = []
     try:
-        # get the results
-        results = executor.results()
+        # Execute evaluation asynchronously
+        results = await executor.aresults()
         if results == []:
             raise ExceptionInRunner()
 
-        # convert results to dataset_like
+        # Convert results to dataset-like format
         for i, _ in enumerate(dataset):
             s = {}
             for j, m in enumerate(metrics):
@@ -317,21 +556,19 @@ def evaluate(
                     key = m.name
                 s[key] = results[len(metrics) * i + j]
             scores.append(s)
-            # close the row chain
+            # Close the row chain
             row_rm, row_group_cm = row_run_managers[i]
             if not row_group_cm.ended:
                 row_rm.on_chain_end(s)
 
-    # run evaluation task
     except Exception as e:
-        if not evaluation_group_cm.ended:
+        if hasattr(evaluation_group_cm, "ended") and not evaluation_group_cm.ended:
             evaluation_rm.on_chain_error(e)
-
         raise e
     else:
-        # evalution run was successful
-        # now lets process the results
+        # Evaluation run was successful - process results
         cost_cb = ragas_callbacks["cost_cb"] if "cost_cb" in ragas_callbacks else None
+        tracer = t.cast(RagasTracer, ragas_callbacks["tracer"])
         result = EvaluationResult(
             scores=scores,
             dataset=dataset,
@@ -343,20 +580,15 @@ def evaluate(
             ragas_traces=tracer.traces,
             run_id=_run_id,
         )
-        if not evaluation_group_cm.ended:
+        if hasattr(evaluation_group_cm, "ended") and not evaluation_group_cm.ended:
             evaluation_rm.on_chain_end({"scores": result.scores})
     finally:
-        # reset llms and embeddings if changed
-        for i in llm_changed:
-            t.cast(MetricWithLLM, metrics[i]).llm = None
-        for i in embeddings_changed:
-            t.cast(MetricWithEmbeddings, metrics[i]).embeddings = None
-        if answer_correctness_is_set != -1:
-            t.cast(
-                AnswerCorrectness, metrics[answer_correctness_is_set]
-            ).answer_similarity = None
+        # Clean up metric state using helper function
+        _cleanup_metrics(
+            metrics, llm_changed, embeddings_changed, answer_correctness_is_set
+        )
 
-        # flush the analytics batcher
+        # Flush the analytics batcher
         from ragas._analytics import _analytics_batcher
 
         _analytics_batcher.flush()

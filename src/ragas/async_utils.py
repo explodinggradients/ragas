@@ -116,6 +116,51 @@ def run(
     return asyncio.run(coro)
 
 
+def run_sync_from_async(
+    async_func: t.Union[
+        t.Callable[[], t.Coroutine[t.Any, t.Any, t.Any]],
+        t.Coroutine[t.Any, t.Any, t.Any],
+    ],
+) -> t.Any:
+    """
+    Run an async function from sync context, intelligently handling event loops.
+
+    This function:
+    - Uses asyncio.run() if no event loop is running (normal Python scripts)
+    - Only applies nest_asyncio in Jupyter-like environments where it's safe
+    - Raises clear error for server contexts where nest_asyncio shouldn't be used
+    """
+    coro = async_func() if callable(async_func) else async_func
+
+    if not is_event_loop_running():
+        # No event loop running - safe to use asyncio.run()
+        return asyncio.run(coro)
+
+    # Event loop is running - we need to be careful
+    # Try to detect if we're in a Jupyter-like environment
+    try:
+        # Check if we're in IPython/Jupyter
+        from IPython import get_ipython
+
+        if get_ipython() is not None:
+            # We're in a Jupyter notebook - nest_asyncio is acceptable
+            apply_nest_asyncio()
+            return asyncio.run(coro)
+    except ImportError:
+        pass
+
+    # We're in an async context (like FastAPI server) - don't use nest_asyncio
+    raise RuntimeError(
+        "Cannot run sync evaluate() from within an async context (like FastAPI servers). "
+        "Use 'aevaluate()' instead for proper async support:\n\n"
+        "  # Instead of:\n"
+        "  result = evaluate(dataset, metrics)\n\n"
+        "  # Use:\n"
+        "  result = await aevaluate(dataset, metrics)\n\n"
+        "This prevents event loop conflicts and provides better async performance."
+    )
+
+
 def run_async_tasks(
     tasks: t.Sequence[t.Coroutine],
     batch_size: t.Optional[int] = None,
