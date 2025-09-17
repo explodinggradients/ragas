@@ -163,9 +163,9 @@ def evaluate(
         raise ValueError("Provide dataset!")
 
     # Check metrics are correct type
-    if not isinstance(metrics, None | list):
+    if not isinstance(metrics, (type(None), list)):
         raise TypeError(
-            "Metrics should be provded in a list, e.g: metrics=[BleuScore()]"
+            "Metrics should be provided in a list, e.g: metrics=[BleuScore()]"
         )
 
     if isinstance(metrics, list) and any(not isinstance(m, Metric) for m in metrics):
