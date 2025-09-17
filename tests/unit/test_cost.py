@@ -137,15 +137,23 @@ def test_parse_llm_results():
 
     # anthropic
     token_usage = get_token_usage_for_anthropic(anthropic_llm_result)
-    assert token_usage == TokenUsage(input_tokens=9, output_tokens=12, model="claude-3-opus-20240229")
+    assert token_usage == TokenUsage(
+        input_tokens=9, output_tokens=12, model="claude-3-opus-20240229"
+    )
 
     # Bedrock LLaMa
     token_usage = get_token_usage_for_bedrock(bedrock_llama_result)
-    assert token_usage == TokenUsage(input_tokens=10, output_tokens=10, model="us.meta.llama3-1-70b-instruct-v1:0")
+    assert token_usage == TokenUsage(
+        input_tokens=10, output_tokens=10, model="us.meta.llama3-1-70b-instruct-v1:0"
+    )
 
     # Bedrock Claude
     token_usage = get_token_usage_for_bedrock(bedrock_claude_result)
-    assert token_usage == TokenUsage(input_tokens=10, output_tokens=10, model="us.anthropic.claude-3-5-sonnet-20240620-v1:0")
+    assert token_usage == TokenUsage(
+        input_tokens=10,
+        output_tokens=10,
+        model="us.anthropic.claude-3-5-sonnet-20240620-v1:0",
+    )
 
 
 def test_cost_callback_handler():
@@ -153,7 +161,9 @@ def test_cost_callback_handler():
     cost_cb.on_llm_end(openai_llm_result)
 
     # cost
-    assert cost_cb.total_tokens() == TokenUsage(input_tokens=10, output_tokens=10, model="gpt-4o")
+    assert cost_cb.total_tokens() == TokenUsage(
+        input_tokens=10, output_tokens=10, model="gpt-4o"
+    )
 
     assert cost_cb.total_cost(0.1) == 2.0
     assert (
