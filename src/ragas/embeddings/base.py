@@ -12,6 +12,7 @@ from langchain_openai.embeddings import OpenAIEmbeddings
 from pydantic.dataclasses import dataclass
 from pydantic_core import CoreSchema, core_schema
 
+from ragas._analytics import EmbeddingUsageEvent, track
 from ragas.cache import CacheInterface, cacher
 from ragas.embeddings.utils import run_async_in_current_loop, validate_texts
 from ragas.run_config import RunConfig, add_async_retry, add_retry
@@ -310,25 +311,73 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
         """
         Embed a single query text.
         """
-        return self.embeddings.embed_query(text)
+        result = self.embeddings.embed_query(text)
+
+        # Track usage
+        track(
+            EmbeddingUsageEvent(
+                provider="langchain",
+                model=getattr(self.embeddings, "model", None),
+                embedding_type="legacy",
+                num_requests=1,
+                is_async=False,
+            )
+        )
+        return result
 
     def embed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
         """
         Embed multiple documents.
         """
-        return self.embeddings.embed_documents(texts)
+        result = self.embeddings.embed_documents(texts)
+
+        # Track usage
+        track(
+            EmbeddingUsageEvent(
+                provider="langchain",
+                model=getattr(self.embeddings, "model", None),
+                embedding_type="legacy",
+                num_requests=len(texts),
+                is_async=False,
+            )
+        )
+        return result
 
     async def aembed_query(self, text: str) -> t.List[float]:
         """
         Asynchronously embed a single query text.
         """
-        return await self.embeddings.aembed_query(text)
+        result = await self.embeddings.aembed_query(text)
+
+        # Track usage
+        track(
+            EmbeddingUsageEvent(
+                provider="langchain",
+                model=getattr(self.embeddings, "model", None),
+                embedding_type="legacy",
+                num_requests=1,
+                is_async=True,
+            )
+        )
+        return result
 
     async def aembed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
         """
         Asynchronously embed multiple documents.
         """
-        return await self.embeddings.aembed_documents(texts)
+        result = await self.embeddings.aembed_documents(texts)
+
+        # Track usage
+        track(
+            EmbeddingUsageEvent(
+                provider="langchain",
+                model=getattr(self.embeddings, "model", None),
+                embedding_type="legacy",
+                num_requests=len(texts),
+                is_async=True,
+            )
+        )
+        return result
 
     def set_run_config(self, run_config: RunConfig):
         """
@@ -638,10 +687,34 @@ def embedding_factory(
             openai_embeddings.request_timeout = run_config.timeout
         else:
             run_config = RunConfig()
-        return LangchainEmbeddingsWrapper(openai_embeddings, run_config=run_config)
+        result = LangchainEmbeddingsWrapper(openai_embeddings, run_config=run_config)
+
+        # Track factory usage (legacy)
+        track(
+            EmbeddingUsageEvent(
+                provider="openai",
+                model=model_name,
+                embedding_type="factory_legacy",
+                num_requests=1,
+                is_async=False,
+            )
+        )
+        return result
 
     # Modern interface
-    return _create_modern_embedding(provider, model, client, **kwargs)
+    result = _create_modern_embedding(provider, model, client, **kwargs)
+
+    # Track factory usage (modern)
+    track(
+        EmbeddingUsageEvent(
+            provider=provider,
+            model=model,
+            embedding_type="factory_modern",
+            num_requests=1,
+            is_async=False,
+        )
+    )
+    return result
 
 
 def _is_legacy_embedding_call(
