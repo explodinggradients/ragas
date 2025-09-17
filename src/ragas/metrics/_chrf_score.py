@@ -14,7 +14,6 @@ class ChrfScore(SingleTurnMetric):
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
     )
-    language: str = "english"
     kwargs: t.Dict[str, t.Any] = field(default_factory=dict)
 
     def __post_init__(self):
@@ -36,12 +35,9 @@ class ChrfScore(SingleTurnMetric):
         assert isinstance(reference, str), "ChrfScore expects a valid reference string"
         assert isinstance(response, str), "ChrfScore expects a valid response string"
 
-        reference_sentences = reference.split(". ")
-        response_sentences = response.split(". ")
-
         # corpus_chrf expects a list of strings and a list of list of strings
-        references = [[ref] for ref in reference_sentences]
-        hypotheses = response_sentences
+        references = [[reference]]
+        hypotheses = [response]
 
         score = self.corpus_chrf(hypotheses, references, **self.kwargs).score / 100
         assert isinstance(score, float), "Expecting a float"
