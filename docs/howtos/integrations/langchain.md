@@ -34,10 +34,12 @@ for content in content_list:
 
 
 ```python
-from langchain_openai.embeddings import OpenAIEmbeddings
+from ragas.embeddings import OpenAIEmbeddings
 from langchain_core.vectorstores import InMemoryVectorStore
+import openai
 
-embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+openai_client = openai.OpenAI()
+embeddings = OpenAIEmbeddings(client=openai_client, model="text-embedding-3-small")
 vector_store = InMemoryVectorStore(embeddings)
 
 _ = vector_store.add_documents(langchain_documents)
@@ -169,5 +171,3 @@ Output
 ```
 {'context_recall': 1.0000, 'faithfulness': 0.9000, 'factual_correctness': 0.9260}
 ```
-
-Check out [app.ragas.io](http://app.ragas.io) for a more detailed analysis, including interactive visualizations and metrics. You'll need to create an account and generate a [Ragas API key](https://app.ragas.io/dashboard/settings/app-tokens) to upload and explore your results.

@@ -9,7 +9,7 @@ from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 from tqdm.auto import tqdm
 
-from ragas._analytics import track_was_completed
+from ragas._analytics import track_was_completed  # type: ignore
 from ragas.callbacks import ChainType, RagasTracer, new_group
 from ragas.dataset_schema import (
     EvaluationDataset,
@@ -18,6 +18,7 @@ from ragas.dataset_schema import (
     SingleTurnSample,
 )
 from ragas.embeddings.base import (
+    BaseRagasEmbedding,
     BaseRagasEmbeddings,
     LangchainEmbeddingsWrapper,
     embedding_factory,
@@ -53,12 +54,14 @@ if t.TYPE_CHECKING:
 RAGAS_EVALUATION_CHAIN_NAME = "ragas evaluation"
 
 
-@track_was_completed
+@track_was_completed  # type: ignore
 def evaluate(
     dataset: t.Union[Dataset, EvaluationDataset],
     metrics: t.Optional[t.Sequence[Metric]] = None,
     llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
-    embeddings: t.Optional[BaseRagasEmbeddings | LangchainEmbeddings] = None,
+    embeddings: t.Optional[
+        BaseRagasEmbeddings | BaseRagasEmbedding | LangchainEmbeddings
+    ] = None,
     experiment_name: t.Optional[str] = None,
     callbacks: Callbacks = None,
     run_config: t.Optional[RunConfig] = None,
@@ -69,7 +72,8 @@ def evaluate(
     batch_size: t.Optional[int] = None,
     _run_id: t.Optional[UUID] = None,
     _pbar: t.Optional[tqdm] = None,
-) -> EvaluationResult:
+    return_executor: bool = False,
+) -> t.Union[EvaluationResult, Executor]:
     """
     Perform the evaluation on the dataset with different metrics
 
@@ -109,12 +113,16 @@ def evaluate(
         Whether to show the progress bar during evaluation. If set to False, the progress bar will be disabled. The default is True.
     batch_size : int, optional
         How large the batches should be. If set to None (default), no batching is done.
+    return_executor : bool, optional
+        If True, returns the Executor instance instead of running evaluation.
+        The returned executor can be used to cancel execution by calling executor.cancel().
+        To get results, call executor.results(). Default is False.
 
     Returns
     -------
-    EvaluationResult
-        EvaluationResult object containing the scores of each metric.
-        You can use this do analysis later.
+    EvaluationResult or Executor
+        If return_executor is False, returns EvaluationResult object containing the scores of each metric.
+        If return_executor is True, returns the Executor instance for cancellable execution.
 
     Raises
     ------
@@ -287,6 +295,10 @@ def evaluate(
             ]
         else:
             raise ValueError(f"Unsupported sample type {sample_type}")
+
+    # Return executor for cancellable execution if requested
+    if return_executor:
+        return executor
 
     scores: t.List[t.Dict[str, t.Any]] = []
     try:

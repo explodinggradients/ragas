@@ -12,9 +12,9 @@ from pydantic import ValidationError
 from tqdm import tqdm
 
 from ragas._analytics import EvaluationEvent, _analytics_batcher
+from ragas.async_utils import apply_nest_asyncio, run
 from ragas.callbacks import ChainType, new_group
 from ragas.dataset_schema import MetricAnnotation, MultiTurnSample, SingleTurnSample
-from ragas.executor import is_event_loop_running
 from ragas.losses import BinaryMetricLoss, MSELoss
 from ragas.prompt import FewShotPydanticPrompt, PromptMixin
 from ragas.run_config import RunConfig
@@ -24,7 +24,7 @@ if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
     from ragas.config import DemonstrationConfig, InstructionConfig
-    from ragas.embeddings import BaseRagasEmbeddings
+    from ragas.embeddings import BaseRagasEmbedding, BaseRagasEmbeddings
     from ragas.llms import BaseRagasLLM
 
 logger = logging.getLogger(__name__)
@@ -143,26 +143,22 @@ class Metric(ABC):
             callbacks=callbacks,
             metadata={"type": ChainType.METRIC},
         )
-        try:
-            if is_event_loop_running():
-                try:
-                    import nest_asyncio
 
-                    nest_asyncio.apply()
-                except ImportError:
-                    raise ImportError(
-                        "It seems like your running this in a jupyter-like environment. Please install nest_asyncio with `pip install nest_asyncio` to make it work."
-                    )
-            loop = asyncio.get_event_loop()
-            score = loop.run_until_complete(self._ascore(row=row, callbacks=group_cm))
-        except Exception as e:
-            if not group_cm.ended:
-                rm.on_chain_error(e)
-            raise e
-        else:
-            if not group_cm.ended:
-                rm.on_chain_end({"output": score})
-        return score
+        async def _async_wrapper():
+            try:
+                result = await self._ascore(row=row, callbacks=group_cm)
+            except Exception as e:
+                if not group_cm.ended:
+                    rm.on_chain_error(e)
+                raise e
+            else:
+                if not group_cm.ended:
+                    rm.on_chain_end({"output": result})
+                return result
+
+        # Apply nest_asyncio logic to ensure compatibility in notebook/Jupyter environments.
+        apply_nest_asyncio()
+        return run(_async_wrapper)
 
     @deprecated("0.2", removal="0.3", alternative="single_turn_ascore")
     async def ascore(
@@ -344,8 +340,7 @@ class MetricWithLLM(Metric, PromptMixin):
 
     def train(
         self,
-        path: t.Optional[str] = None,
-        run_id: t.Optional[str] = None,
+        path: str,
         demonstration_config: t.Optional[DemonstrationConfig] = None,
         instruction_config: t.Optional[InstructionConfig] = None,
         callbacks: t.Optional[Callbacks] = None,
@@ -355,14 +350,12 @@ class MetricWithLLM(Metric, PromptMixin):
         raise_exceptions: bool = True,
     ) -> None:
         """
-        Train the metric using local JSON data or annotations from Ragas platform
+        Train the metric using local JSON data
 
         Parameters
         ----------
-        path : str, optional
+        path : str
             Path to local JSON training data file
-        run_id : str, optional
-            Direct run ID to fetch annotations
         demonstration_config : DemonstrationConfig, optional
             Configuration for demonstration optimization
         instruction_config : InstructionConfig, optional
@@ -381,30 +374,20 @@ class MetricWithLLM(Metric, PromptMixin):
         Raises
         ------
         ValueError
-            If invalid combination of path, and run_id is provided
+            If path is not provided or not a JSON file
         """
         # Validate input parameters
-        provided_inputs = sum(x is not None for x in [path, run_id])
-        if provided_inputs == 0:
-            raise ValueError("One of path or run_id must be provided")
-        if provided_inputs > 1:
-            raise ValueError("Only one of path or run_id should be provided")
+        if not path:
+            raise ValueError("Path to training data file must be provided")
+
+        if not path.endswith(".json"):
+            raise ValueError("Train data must be in json format")
 
         run_config = run_config or RunConfig()
         callbacks = callbacks or []
 
-        # Load the dataset based on input type
-        if path is not None:
-            if not path.endswith(".json"):
-                raise ValueError("Train data must be in json format")
-            dataset = MetricAnnotation.from_json(path, metric_name=self.name)
-        elif run_id is not None:
-            dataset = MetricAnnotation.from_app(
-                run_id=run_id,
-                metric_name=self.name,
-            )
-        else:
-            raise ValueError("One of path or run_id must be provided")
+        # Load the dataset from JSON file
+        dataset = MetricAnnotation.from_json(path, metric_name=self.name)
 
         # only optimize the instruction if instruction_config is provided
         if instruction_config is not None:
@@ -428,14 +411,16 @@ class MetricWithLLM(Metric, PromptMixin):
 
 @dataclass
 class MetricWithEmbeddings(Metric):
-    embeddings: t.Optional[BaseRagasEmbeddings] = None
+    embeddings: t.Optional[t.Union[BaseRagasEmbeddings, BaseRagasEmbedding]] = None
 
     def init(self, run_config: RunConfig):
         if self.embeddings is None:
             raise ValueError(
                 f"Metric '{self.name}' has no valid embeddings provided (self.embeddings is None). Please initantiate a the metric with an embeddings to run."  # noqa
             )
-        self.embeddings.set_run_config(run_config)
+        # Only legacy BaseRagasEmbeddings has set_run_config method
+        if hasattr(self.embeddings, "set_run_config"):
+            self.embeddings.set_run_config(run_config)  # type: ignore[attr-defined]
 
 
 class SingleTurnMetric(Metric):
@@ -477,27 +462,23 @@ class SingleTurnMetric(Metric):
             callbacks=callbacks,
             metadata={"type": ChainType.METRIC},
         )
-        try:
-            if is_event_loop_running():
-                try:
-                    import nest_asyncio
 
-                    nest_asyncio.apply()
-                except ImportError:
-                    raise ImportError(
-                        "It seems like your running this in a jupyter-like environment. Please install nest_asyncio with `pip install nest_asyncio` to make it work."
-                    )
-            loop = asyncio.get_event_loop()
-            score = loop.run_until_complete(
-                self._single_turn_ascore(sample=sample, callbacks=group_cm)
-            )
-        except Exception as e:
-            if not group_cm.ended:
-                rm.on_chain_error(e)
-            raise e
-        else:
-            if not group_cm.ended:
-                rm.on_chain_end({"output": score})
+        async def _async_wrapper():
+            try:
+                result = await self._single_turn_ascore(
+                    sample=sample, callbacks=group_cm
+                )
+            except Exception as e:
+                if not group_cm.ended:
+                    rm.on_chain_error(e)
+                raise e
+            else:
+                if not group_cm.ended:
+                    rm.on_chain_end({"output": result})
+                return result
+
+        apply_nest_asyncio()
+        score = run(_async_wrapper)
 
         # track the evaluation event
         _analytics_batcher.add_evaluation(
@@ -605,27 +586,23 @@ class MultiTurnMetric(Metric):
             callbacks=callbacks,
             metadata={"type": ChainType.METRIC},
         )
-        try:
-            if is_event_loop_running():
-                try:
-                    import nest_asyncio
 
-                    nest_asyncio.apply()
-                except ImportError:
-                    raise ImportError(
-                        "It seems like your running this in a jupyter-like environment. Please install nest_asyncio with `pip install nest_asyncio` to make it work."
-                    )
-            loop = asyncio.get_event_loop()
-            score = loop.run_until_complete(
-                self._multi_turn_ascore(sample=sample, callbacks=group_cm)
-            )
-        except Exception as e:
-            if not group_cm.ended:
-                rm.on_chain_error(e)
-            raise e
-        else:
-            if not group_cm.ended:
-                rm.on_chain_end({"output": score})
+        async def _async_wrapper():
+            try:
+                result = await self._multi_turn_ascore(
+                    sample=sample, callbacks=group_cm
+                )
+            except Exception as e:
+                if not group_cm.ended:
+                    rm.on_chain_error(e)
+                raise e
+            else:
+                if not group_cm.ended:
+                    rm.on_chain_end({"output": result})
+                return result
+
+        apply_nest_asyncio()
+        score = run(_async_wrapper)
 
         # track the evaluation event
         _analytics_batcher.add_evaluation(

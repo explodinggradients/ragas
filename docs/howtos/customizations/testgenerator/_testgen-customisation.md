@@ -48,10 +48,12 @@ You may use any of [your choice](./../../customizations/customize_models.md), he
 
 ```python
 from ragas.llms.base import llm_factory
-from ragas.embeddings.base import embedding_factory
+from ragas.embeddings import OpenAIEmbeddings
+import openai
 
 llm = llm_factory()
-embedding = embedding_factory()
+openai_client = openai.OpenAI()
+embedding = OpenAIEmbeddings(client=openai_client)
 ```
 
 ### Setup Extractors and Relationship builders

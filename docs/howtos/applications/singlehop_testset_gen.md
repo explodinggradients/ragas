@@ -27,7 +27,7 @@ Run the command below to download the dummy Ragas Airline dataset and load the d
 ```python
 from langchain_community.document_loaders import DirectoryLoader
 
-path = "Ragas_Airline"
+path = "ragas-airline-dataset"
 loader = DirectoryLoader(path, glob="**/*.md")
 docs = loader.load()
 ```
@@ -37,12 +37,14 @@ docs = loader.load()
 
 ```python
 from ragas.llms import LangchainLLMWrapper
-from ragas.embeddings import LangchainEmbeddingsWrapper
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from ragas.embeddings import OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
+import openai
 
 
 generator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o-mini"))
-generator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings(model="text-embedding-3-small"))
+openai_client = openai.OpenAI()
+generator_embeddings = OpenAIEmbeddings(client=openai_client, model="text-embedding-3-small")
 ```
 
 ## Create Knowledge Graph

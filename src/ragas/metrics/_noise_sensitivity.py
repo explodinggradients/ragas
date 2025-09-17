@@ -50,7 +50,6 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
     max_retries: int = 1
 
     def __post_init__(self):
-
         if self.mode not in {"relevant", "irrelevant"}:
             raise ValueError(
                 f"Invalid argument passed for 'mode': {self.mode}. Must be 'relevant' or 'irrelevant'."
@@ -110,9 +109,9 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
         noise_sensitivity_in_irrelevant = np.mean(irrelevant_faithful & incorrect)
 
         if self.mode == "irrelevant":
-            return noise_sensitivity_in_irrelevant
+            return float(noise_sensitivity_in_irrelevant)
 
-        return noise_sensitivity_in_relevant
+        return float(noise_sensitivity_in_relevant)
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
@@ -125,6 +124,26 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
         returns the NLI score for each (q, c, a) pair
         """
         assert self.llm is not None, "LLM is not set"
+
+        if "reference" not in row or not row["reference"]:
+            raise ValueError(
+                "reference is missing in the test sample. Please add reference to the test sample."
+            )
+
+        if "user_input" not in row or not row["user_input"]:
+            raise ValueError(
+                "user_input is missing in the test sample. Please add user_input to the test sample."
+            )
+
+        if "response" not in row or not row["response"]:
+            raise ValueError(
+                "response is missing in the test sample. Please add response to the test sample."
+            )
+
+        if "retrieved_contexts" not in row or not row["retrieved_contexts"]:
+            raise ValueError(
+                "retrieved_contexts is missing in the test sample. Please add retrieved_contexts to the test sample."
+            )
 
         gt_statements = await self._decompose_answer_into_statements(
             row["reference"], row["user_input"], callbacks

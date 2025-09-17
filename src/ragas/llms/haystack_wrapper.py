@@ -38,12 +38,14 @@ class HaystackLLMWrapper(BaseRagasLLM):
         # Lazy Import of required Haystack components
         try:
             from haystack import AsyncPipeline
-            from haystack.components.generators import (
-                AzureOpenAIGenerator,
+            from haystack.components.generators.azure import AzureOpenAIGenerator
+            from haystack.components.generators.hugging_face_api import (
                 HuggingFaceAPIGenerator,
-                HuggingFaceLocalGenerator,
-                OpenAIGenerator,
             )
+            from haystack.components.generators.hugging_face_local import (
+                HuggingFaceLocalGenerator,
+            )
+            from haystack.components.generators.openai import OpenAIGenerator
         except ImportError as exc:
             raise ImportError(
                 "Haystack is not installed. Please install it using `pip install haystack-ai`."
@@ -82,11 +84,10 @@ class HaystackLLMWrapper(BaseRagasLLM):
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: float = 1e-8,
+        temperature: float = 0.01,
         stop: t.Optional[t.List[str]] = None,
         callbacks: t.Optional[Callbacks] = None,
     ) -> LLMResult:
-
         component_output: t.Dict[str, t.Any] = self.generator.run(prompt.to_string())
         replies = component_output.get("llm", {}).get("replies", [])
         output_text = replies[0] if replies else ""
@@ -116,12 +117,14 @@ class HaystackLLMWrapper(BaseRagasLLM):
 
     def __repr__(self) -> str:
         try:
-            from haystack.components.generators import (
-                AzureOpenAIGenerator,
+            from haystack.components.generators.azure import AzureOpenAIGenerator
+            from haystack.components.generators.hugging_face_api import (
                 HuggingFaceAPIGenerator,
-                HuggingFaceLocalGenerator,
-                OpenAIGenerator,
             )
+            from haystack.components.generators.hugging_face_local import (
+                HuggingFaceLocalGenerator,
+            )
+            from haystack.components.generators.openai import OpenAIGenerator
         except ImportError:
             return f"{self.__class__.__name__}(llm=Unknown(...))"
 

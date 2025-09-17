@@ -15,8 +15,6 @@ from ragas.dataset_schema import (
     RagasDataset,
     SingleTurnSample,
 )
-from ragas.exceptions import UploadException
-from ragas.sdk import get_app_url, upload_packet
 
 
 class TestsetSample(BaseSample):
@@ -136,34 +134,10 @@ class Testset(RagasDataset[TestsetSample]):
             cost_per_output_token=cost_per_output_token,
         )
 
-    def upload(self, verbose: bool = True) -> str:
-        packet = TestsetPacket(samples_original=self.samples, run_id=self.run_id)
-        response = upload_packet(
-            path="/alignment/testset",
-            data_json_string=packet.model_dump_json(),
-        )
-        app_url = get_app_url()
-
-        testset_endpoint = f"{app_url}/dashboard/alignment/testset/{self.run_id}"
-        if response.status_code == 409:
-            # this testset already exists
-            if verbose:
-                print(f"Testset already exists. View at {testset_endpoint}")
-            return testset_endpoint
-        elif response.status_code != 200:
-            # any other error
-            raise UploadException(
-                status_code=response.status_code,
-                message=f"Failed to upload results: {response.text}",
-            )
-        if verbose:
-            print(f"Testset uploaded! View at {testset_endpoint}")
-        return testset_endpoint
-
     @classmethod
     def from_annotated(cls, path: str) -> Testset:
         """
-        Loads a testset from an annotated JSON file from app.ragas.io.
+        Loads a testset from an annotated JSON file.
         """
         import json
 

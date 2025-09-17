@@ -1,4 +1,5 @@
 ## Synthetic test generation from non-english corpus
+## Synthetic test generation from non-english corpus
 
 In this notebook, you'll learn how to adapt synthetic test data generation to non-english corpus settings. For the sake of this tutorial, I am generating queries in Spanish from Spanish wikipedia articles. 
 
@@ -48,12 +49,13 @@ len(docs)
 
 ```python
 from ragas.llms import LangchainLLMWrapper
-from ragas.embeddings import LangchainEmbeddingsWrapper
+from ragas.embeddings import OpenAIEmbeddings
 from langchain_openai import ChatOpenAI
-from langchain_openai import OpenAIEmbeddings
+import openai
 
 generator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o-mini"))
-generator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
+openai_client = openai.OpenAI()
+generator_embeddings = OpenAIEmbeddings(client=openai_client)
 ```
 
     /opt/homebrew/Caskroom/miniforge/base/envs/ragas/lib/python3.9/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
