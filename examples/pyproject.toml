@@ -2,7 +2,20 @@
 name = "ragas-examples"
 description = "Official examples for the ragas project"
 requires-python = ">=3.9"
-license = {file = "LICENSE"}
+license = {text = "Apache-2.0"}
+authors = [{name = "Ragas Team"}]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = [
     "ragas",  # workspace dependency - version managed by workspace
     "openai>=1.0.0",  # required for LLM calls in examples
