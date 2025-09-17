@@ -61,8 +61,7 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 version_file = "ragas_examples/_version.py"
 root = ".."
-# Sync with main package version tags (v1.2.3)
-tag_regex = "^v(?P<version>\\d+\\.\\d+\\.\\d+)$"
+# Sync with main package version tags - uses default pattern
 
 # Workspace member configuration  
 [tool.uv.sources]
