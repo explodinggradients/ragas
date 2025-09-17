@@ -32,6 +32,14 @@ class ChrfScore(SingleTurnMetric):
         self, sample: SingleTurnSample, callbacks: Callbacks
     ) -> float:
         reference, response = sample.reference, sample.response
+
+        if reference is None or response is None:
+            return 0.0
+        if not isinstance(reference, str) or not isinstance(response, str):
+            return 0.0
+        if not reference.strip() or not response.strip():
+            return 0.0
+            
         assert isinstance(reference, str), "ChrfScore expects a valid reference string"
         assert isinstance(response, str), "ChrfScore expects a valid response string"
 
