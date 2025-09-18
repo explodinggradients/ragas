@@ -45,10 +45,9 @@ class EmbeddingExtractor(Extractor):
         # Handle both modern (BaseRagasEmbedding) and legacy (BaseRagasEmbeddings) interfaces
         if hasattr(self.embedding_model, "aembed_text"):
             # Modern interface (BaseRagasEmbedding)
-            # Check if the client supports async operations
-            if (
-                hasattr(self.embedding_model, "is_async")
-                and self.embedding_model.is_async
+            # Check if the client supports async operations by checking if is_async exists and is True
+            if hasattr(self.embedding_model, "is_async") and getattr(
+                self.embedding_model, "is_async", False
             ):
                 embedding = await self.embedding_model.aembed_text(text)  # type: ignore[attr-defined]
             else:
