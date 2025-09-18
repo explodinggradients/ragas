@@ -52,6 +52,13 @@ from ragas.metrics._nv_metrics import (
     ContextRelevance,
     ResponseGroundedness,
 )
+from ragas.metrics._risk_control import (
+    Alignment,
+    Carefulness,
+    Coverage,
+    Risk,
+    risk_control_suite,
+)
 from ragas.metrics._rouge_score import RougeScore
 from ragas.metrics._simple_criteria import SimpleCriteriaScore
 from ragas.metrics._sql_semantic_equivalence import LLMSQLEquivalence
@@ -151,6 +158,11 @@ __all__ = [
     "multimodal_faithness",
     "MultiModalRelevance",
     "multimodal_relevance",
+    "Risk",
+    "Carefulness",
+    "Alignment",
+    "Coverage",
+    "risk_control_suite",
 ]
 
 # Backward compatibility aliases for experimental imports
