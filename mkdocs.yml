@@ -1,5 +1,5 @@
 site_name: Ragas
-site_description: Evaluation framework for your Retrieval Augmented Generation (RAG) pipelines
+site_description: Evaluation framework for your AI Application
 site_url: !ENV READTHEDOCS_CANONICAL_URL
 repo_name: explodinggradients/ragas
 repo_url: https://github.com/explodinggradients/ragas
@@ -15,6 +15,12 @@ nav:
       - Evaluate your first LLM App: getstarted/evals.md
       - Evaluate a simple RAG: getstarted/rag_eval.md
       - Generate Synthetic Testset for RAG: getstarted/rag_testset_generation.md
+      - Experiments:
+          - Run your first experiment: getstarted/experiments_quickstart.md
+          - Evaluate a prompt: tutorials/prompt.md
+          - Evaluate a simple RAG system: tutorials/rag.md
+          - Evaluate an AI Workflow: tutorials/workflow.md
+          - Evaluate an AI Agent: tutorials/agent.md
   - 📚 Core Concepts:
       - concepts/index.md
       - Components:
@@ -79,17 +85,7 @@ nav:
           - concepts/feedback/index.md
       - Datasets: concepts/datasets.md
       - Experimentation: concepts/experimentation.md
-  - 🧪 Experimental:
-    - Overview: experimental/index.md
-    - Tutorials:
-        - experimental/tutorials/index.md
-        - Prompt: experimental/tutorials/prompt.md
-        - RAG: experimental/tutorials/rag.md
-        - Workflow: experimental/tutorials/workflow.md
-        - Agent: experimental/tutorials/agent.md
-
-    - How-to Guides:
-        - experimental/howtos/index.md
+  
   - 🛠️ How-to Guides:
       - howtos/index.md
       - Customizations:
@@ -105,6 +101,8 @@ nav:
               - Adapt Metrics to Languages: howtos/customizations/metrics/_metrics_language_adaptation.md
               - Write your own Metrics: howtos/customizations/metrics/_write_your_own_metric.md
               - Write your own Metrics - (advanced): howtos/customizations/metrics/_write_your_own_metric_advanced.md
+              - Train and Align Metrics: howtos/customizations/metrics/train_your_own_metric.md
+              - Systematic Approach for Prompt Optimization: howtos/applications/prompt_optimization.md
           - Testset Generation:
               - Non-English Testset Generation: howtos/customizations/testgenerator/_language_adaptation.md
               - Persona Generation: howtos/customizations/testgenerator/_persona_generator.md
@@ -122,6 +120,8 @@ nav:
           - Benchmarking:
             - Benchmarking Gemini models: howtos/applications/gemini_benchmarking.md
             - Evaluate a New LLM: howtos/applications/benchmark_llm.md
+          - Agent Evaluation:
+            - Evaluate a Text-to-SQL Agent: howtos/applications/text2sql.md
       - Integrations:
           - howtos/integrations/index.md
           - Arize: howtos/integrations/_arize.md
@@ -246,14 +246,8 @@ extra:
   analytics:
     provider: google
     property: !ENV GOOGLE_ANALYTICS_KEY
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/explodinggradients/ragas
-    - icon: fontawesome/brands/x-twitter
-      link: https://x.com/ragas_io
-    - icon: fontawesome/brands/discord
-      link: https://discord.gg/5qGUJ6mh7C
 plugins:
+  - social
   - search
   - git-revision-date-localized:
       enabled: !ENV [MKDOCS_CI, false]
@@ -288,3 +282,4 @@ extra_javascript:
   - https://cdn.octolane.com/tag.js?pk=c7c9b2b863bf7eaf4e2a # octolane for analytics
   - _static/js/reo.js # reo analytics
   - _static/js/commonroom.js # commonroom analytics
+  - _static/js/rb2b.js # rb2b analytics

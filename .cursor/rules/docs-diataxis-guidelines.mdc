@@ -41,9 +41,11 @@ When writing or editing documentation, categorise each page as **one** of the fo
 Choose → Assess → Decide → Do. Focus on small, atomic upgrades rather than grand rewrites.
 
 ### Writing Style
-• Use second-person (“you”) and active voice.
+• Use second-person ("you") and active voice.
 • Ensure code blocks are **copy-pasteable** and include necessary context (imports, environment).
 • Prefer short sentences; use Markdown admonitions (`!!! note`, `!!! warning`) sparingly for important side-information.
+• Use `??? "Click to expand"` collapsible admonitions to contain outputs, long prompts, verbose logs, or any content that would clutter the main article flow. This keeps the primary content scannable while preserving detailed information for readers who need it.
+• **Always add a blank line after text ending with a colon before starting a list.** This ensures proper Markdown rendering in MkDocs. Without the blank line, list items may render as continuation text instead of a proper bulleted/numbered list.
 
 ### Cross-linking Between Modes
 • End tutorials with pointers to relevant how-to guides for further exploration.

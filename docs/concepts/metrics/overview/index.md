@@ -66,7 +66,7 @@ Each LLM based metrics also will have prompts associated with it written using [
 
 &nbsp;&nbsp;&nbsp;&nbsp; **Non-LLM-based metrics**: These metrics do not use LLM underneath to do the evaluation. These metrics are deterministic and can be used to evaluate the performance of the AI application without using LLM. These metrics rely on traditional methods to evaluate the performance of the AI application, such as string similarity, BLEU score, etc. Due to the same, these metrics are known to have a lower correlation with human evaluation.
 
-All LLM based metrics in ragas are inherited from `Metric` class. 
+All Non-LLM-based metrics in ragas are inherited from `Metric` class. 
 
 **Metrics can be broadly classified into two categories based on the type of data they evaluate**:
 

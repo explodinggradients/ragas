@@ -36,7 +36,7 @@ graph LR
 
 ## Creating Experiments with Ragas
 
-Ragas provides an `@experiment` decorator to streamline the experiment creation process:
+Ragas provides an `@experiment` decorator to streamline the experiment creation process. If you prefer a hands-on intro first, see [Run your first experiment](../getstarted/experiments_quickstart.md).
 
 ### Basic Experiment Structure
 
@@ -147,17 +147,6 @@ return {
     "total_tokens": response.usage.total_tokens,
     "response_time_ms": response_time
 }
-```
-
-### 4. Comparative Analysis
-
-Use the built-in comparison tools to analyze results:
-
-```python
-# Compare two experiments
-comparison_results = compare_experiments(
-    ["experiments/exp1.csv", "experiments/exp2.csv"]
-)
 ```
 
 ## Advanced Experiment Patterns
