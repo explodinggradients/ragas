@@ -1,10 +1,11 @@
-from tqdm import tqdm
-from langchain.docstore.document import Document
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.retrievers import BM25Retriever
 from functools import lru_cache
 from threading import Lock
 from typing import Any, Dict, Iterable, cast
+
+from langchain.docstore.document import Document
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.retrievers import BM25Retriever
+from tqdm import tqdm
 
 import datasets
 
