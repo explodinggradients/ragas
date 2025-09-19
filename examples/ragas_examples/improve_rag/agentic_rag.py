@@ -5,6 +5,7 @@ until it gets the right context to answer the user's question.
 """
 
 import asyncio
+import logging
 
 import mlflow
 from agents import Agent, Runner, function_tool
@@ -14,62 +15,101 @@ from .data_utils import get_bm25_retriever
 
 load_dotenv(".env")
 
-# Enable auto tracing for OpenAI Agents SDK
-try:
-    mlflow.set_tracking_uri("http://127.0.0.1:5000")
-    mlflow.set_experiment("AgenticRAG")
-    mlflow.openai.autolog()
-    print("MLflow tracing is enabled.")
-except Exception:
-    # Tracing is optional; continue without failing if integration is unavailable
-    print("MLflow tracing is not available.")
-    pass
+# Setup logger
+logger = logging.getLogger(__name__)
 
 
-@function_tool
-def bm25_retrieve(query: str) -> str:
+class AgenticRAG:
     """
-    Retrieve relevant documents using BM25 retriever.
+    Agentic RAG system that uses an AI agent with BM25 retrieval capabilities.
     
-    Args:
-        query: Search query to find relevant documents
+    The agent can strategically call the retriever multiple times with different
+    queries to gather comprehensive context before answering questions.
+    """
     
-    Returns:
-        String containing the retrieved documents with their content and metadata
-    """
-    try:
-        # Get the BM25 retriever
-        retriever = get_bm25_retriever()
-        retrieved_docs = retriever.invoke(query)
+    def __init__(self, enable_mlflow: bool = True):
+        """
+        Initialize the Agentic RAG system.
         
-        if not retrieved_docs:
-            return "No relevant documents found for this query."
+        Args:
+            enable_mlflow: Whether to enable MLflow tracing
+        """
+        self.retriever = None
+        self.agent = None
+        self.mlflow_enabled = False
         
-        # Format the documents for the agent
-        result_parts = []
-        for i, doc in enumerate(retrieved_docs, 1):
-            doc_info = f"Document {i}:\nContent: {doc.page_content}"
-            if hasattr(doc, 'metadata') and doc.metadata:
-                source = doc.metadata.get('source', 'Unknown')
-                doc_info += f"\nSource: {source}"
-            result_parts.append(doc_info)
+        if enable_mlflow:
+            self._setup_mlflow()
         
-        return "\n\n".join(result_parts)
-        
-    except Exception as e:
-        return f"Error retrieving documents: {str(e)}"
-
-
-def create_agentic_rag_agent() -> Agent:
-    """
-    Create an agentic RAG agent with BM25 retrieval tool.
+        self._setup_agent()
     
-    Returns:
-        Agent instance configured for RAG tasks
-    """
-    agent = Agent(
-        name="Agentic RAG Assistant",
-        instructions="""You are a helpful RAG assistant that can search through documents to answer questions.
+    def _setup_mlflow(self):
+        """Setup MLflow tracing for the agents."""
+        try:
+            mlflow.set_tracking_uri("http://127.0.0.1:5000")
+            mlflow.set_experiment("AgenticRAG")
+            mlflow.openai.autolog()
+            self.mlflow_enabled = True
+            logger.info("MLflow tracing is enabled.")
+        except Exception:
+            # Tracing is optional; continue without failing if integration is unavailable
+            logger.warning("MLflow tracing is not available.")
+            self.mlflow_enabled = False
+    
+    def _bm25_retrieve_tool(self, query: str) -> str:
+        """
+        Internal method to create the BM25 retrieval tool for the agent.
+        
+        Args:
+            query: Search query to find relevant documents
+        
+        Returns:
+            String containing the retrieved documents with their content and metadata
+        """
+        try:
+            # Get the BM25 retriever lazily
+            if self.retriever is None:
+                self.retriever = get_bm25_retriever()
+            
+            retrieved_docs = self.retriever.invoke(query)
+            
+            if not retrieved_docs:
+                return "No relevant documents found for this query."
+            
+            # Format the documents for the agent
+            result_parts = []
+            for i, doc in enumerate(retrieved_docs, 1):
+                doc_info = f"Document {i}:\nContent: {doc.page_content}"
+                if hasattr(doc, 'metadata') and doc.metadata:
+                    source = doc.metadata.get('source', 'Unknown')
+                    doc_info += f"\nSource: {source}"
+                result_parts.append(doc_info)
+            
+            return "\n\n".join(result_parts)
+            
+        except Exception as e:
+            return f"Error retrieving documents: {str(e)}"
+    
+    def _setup_agent(self):
+        """Setup the agentic RAG agent with retrieval capabilities."""
+        
+        # Create the function tool from the instance method
+        @function_tool
+        def bm25_retrieve(query: str) -> str:
+            """
+            Retrieve relevant documents using BM25 retriever.
+            
+            Args:
+                query: Search query to find relevant documents
+            
+            Returns:
+                String containing the retrieved documents with their content and metadata
+            """
+            return self._bm25_retrieve_tool(query)
+        
+        self.agent = Agent(
+            name="Agentic RAG Assistant",
+            instructions="""You are a helpful RAG assistant that can search through documents to answer questions.
 
 You have access to a BM25 document retriever tool. Use this tool strategically:
 
@@ -93,24 +133,24 @@ ANSWERING:
 - Always cite the documents you use in your answer
 
 Remember: BM25 works best with specific keywords, not full questions or verbose phrases!""",
-        tools=[bm25_retrieve],
-    )
-    return agent
-
-
-async def query_agentic_rag(question: str) -> str:
-    """
-    Query the agentic RAG system with a question.
+            tools=[bm25_retrieve],
+        )
     
-    Args:
-        question: User's question
+    async def query(self, question: str) -> str:
+        """
+        Query the agentic RAG system with a question.
         
-    Returns:
-        Agent's response based on retrieved documents
-    """
-    agent = create_agentic_rag_agent()
-    result = await Runner.run(agent, input=question)
-    return result.final_output
+        Args:
+            question: User's question
+            
+        Returns:
+            Agent's response based on retrieved documents
+        """
+        if self.agent is None:
+            raise RuntimeError("Agent not initialized. Call _setup_agent() first.")
+        
+        result = await Runner.run(self.agent, input=question)
+        return result.final_output
 
 
 async def main():
@@ -120,14 +160,16 @@ async def main():
     # question = "What is the default repository type created by the `create_repo` function on Hugging Face Hub?"
     question = "What is the purpose of the `gradio.Blocks` API?"
     
-    print(f"Question: {question}")
-    print("\n" + "="*50)
+    logger.info(f"Question: {question}")
+    logger.info("\n" + "="*50)
     
     try:
-        answer = await query_agentic_rag(question)
-        print(f"Answer: {answer}")
+        # Use the new class-based approach
+        rag_system = AgenticRAG(enable_mlflow=True)
+        answer = await rag_system.query(question)
+        logger.info(f"Answer: {answer}")
     except Exception as e:
-        print(f"Error: {str(e)}")
+        logger.error(f"Error: {str(e)}")
 
 
 if __name__ == "__main__":
