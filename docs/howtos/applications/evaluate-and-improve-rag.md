@@ -17,14 +17,9 @@ Install the dependencies:
 uv pip install "ragas-examples[improverag]"
 ```
 
-We've added tracing using MLflow to the RAG app. So you can see the traces in the MLflow UI.
-
 Run the RAG app:
 
 ```bash
-# Start mlflow server
-uv run mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000 
-# Run the RAG app
 export OPENAI_API_KEY="<your_key>"
 uv run python -m ragas_examples.improve_rag.simple_rag
 ```
@@ -61,9 +56,6 @@ uv run python -m ragas_examples.improve_rag.simple_rag
     - How well does your model perform?...
     Source: transformers
     ```
-You can view the traces on the MLflow UI at [http://127.0.0.1:5000](http://127.0.0.1:5000).
-
-![MLflow UI](../../_static/imgs/howto_improve_rag_mlflow.png)
 
 ## Create evaluation dataset
 
@@ -230,6 +222,9 @@ uv run python -m ragas_examples.improve_rag.evals --test
 The `--test` flag runs evaluation on only the first 3 samples for quick testing. For full evaluation, run without the flag:
 
 ```bash
+# Start MLflow server for tracing (optional, in a separate terminal)
+uv run mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000
+
 # Full evaluation (will take longer)
 uv run python -m ragas_examples.improve_rag.evals
 ```
@@ -273,7 +268,13 @@ The evaluation results are saved to the `experiments/` directory with detailed i
 
 ## Analyze errors and failure modes
 
-After running the evaluation, examine the results CSV file in the `experiments/` directory to identify patterns in failed cases. To view full details, you can go through the traces in MLflow for failed cases. 
+After running the evaluation, examine the results CSV file in the `experiments/` directory to identify patterns in failed cases. 
+
+### Using observability tools for deeper analysis
+
+For detailed trace analysis, you can use MLflow (as shown in this example) or your preferred observability tool.mView traces at [http://127.0.0.1:5000](http://127.0.0.1:5000) to see step-by-step execution, timing, and intermediate results for failed cases
+
+The traces help you understand exactly where failures occur - whether in retrieval, generation, or evaluation steps. 
 
 ### Analysis of actual failure patterns from our evaluation:
 
@@ -326,8 +327,6 @@ The key difference with the agentic approach is that the AI agent can:
 - Call the BM25 retrieval tool multiple times with different search queries
 - Iteratively refine its search strategy based on retrieved results  
 - Decide when it has enough context to provide a comprehensive answer
-
-Both implementations are instrumented with MLflow tracing, so you can view traces in the MLflow UI.
 
 ## Run experiment again and compare results
 
