@@ -3,14 +3,20 @@ Simple RAG implementation using BM25 retriever for document retrieval.
 This is used in the evaluate and improve RAG guide.
 """
 
+import logging
 import os
-from typing import List, Dict, Any, Optional
-from openai import OpenAI
+from typing import Any, Dict, List, Optional
+
+import mlflow
+from dotenv import load_dotenv
+from mlflow.entities import SpanType
+from openai import AsyncOpenAI
+
 from .data_utils import get_bm25_retriever
 
-from dotenv import load_dotenv
-import mlflow
-from mlflow.entities import SpanType
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 load_dotenv(".env")
 
@@ -88,7 +94,7 @@ Answer:"""
         
         return result_docs
 
-    def generate_response(self, query: str, top_k: int = 4) -> str:
+    async def generate_response(self, query: str, top_k: int = 4) -> str:
         """
         Generate response to query using retrieved documents
 
@@ -116,7 +122,7 @@ Answer:"""
         prompt = self.system_prompt.format(query=query, context=context)
 
         try:
-            response = self.openai_client.chat.completions.create(
+            response = await self.openai_client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "user", "content": prompt}
@@ -129,7 +135,7 @@ Answer:"""
             return f"Error generating response: {str(e)}"
 
     @mlflow.trace(span_type=SpanType.AGENT)
-    def query(self, question: str, top_k: int = 4) -> Dict[str, Any]:
+    async def query(self, question: str, top_k: int = 4) -> Dict[str, Any]:
         """
         Complete RAG pipeline: retrieve documents and generate response
 
@@ -142,7 +148,7 @@ Answer:"""
         """
         try:
             retrieved_docs = self.retrieve_documents(question, top_k)
-            response = self.generate_response(question, top_k)
+            response = await self.generate_response(question, top_k)
 
             return {
                 "answer": response,
@@ -158,16 +164,10 @@ Answer:"""
             }
 
 
-def create_rag_client(model: str = "gpt-5-mini") -> SimpleRAG:
-    """
-    Create a RAG client with OpenAI LLM.
 
-    Args:
-        model: OpenAI model to use
 
-    Returns:
-        SimpleRAG instance
-    """
+async def main():
+    """Example usage of the Simple RAG system."""
     try:
         api_key = os.environ["OPENAI_API_KEY"]
     except KeyError:
@@ -176,25 +176,25 @@ def create_rag_client(model: str = "gpt-5-mini") -> SimpleRAG:
             "Please set your OpenAI API key: export OPENAI_API_KEY='your_key'"
         )
 
-    openai_client = OpenAI(api_key=api_key)
-    return SimpleRAG(openai_client=openai_client, model=model)
-
-
-if __name__ == "__main__":
-    # Example usage
-    rag_client = create_rag_client()
+    openai_client = AsyncOpenAI(api_key=api_key)
+    rag_client = SimpleRAG(openai_client=openai_client, model="gpt-5-mini")
 
     # Test query
     query = "What architecture is the `tokenizers-linux-x64-musl` binary designed for?"
-    print(f"Query: {query}")
+    logger.info(f"Query: {query}")
     
-    response = rag_client.query(query, top_k=3)
+    response = await rag_client.query(query, top_k=3)
     
-    print(f"\nAnswer: {response['answer']}")
-    print(f"\nRetrieved {response['num_retrieved']} documents:")
+    logger.info(f"Answer: {response['answer']}")
+    logger.info(f"Retrieved {response['num_retrieved']} documents:")
     
     for i, doc in enumerate(response['retrieved_documents'], 1):
-        print(f"\nDocument {i}:")
-        print(f"Content: {doc['content'][:200]}...")
+        logger.info(f"Document {i}:")
+        logger.info(f"Content: {doc['content'][:200]}...")
         if doc['metadata']:
-            print(f"Source: {doc['metadata'].get('source', 'Unknown')}")
+            logger.info(f"Source: {doc['metadata'].get('source', 'Unknown')}")
+
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
