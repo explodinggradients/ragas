@@ -1,4 +1,6 @@
-Review the PR and create PR description in this format:
+Review the PR and create PR description in this format. Just output the PR description in a text block. 
+
+PR Description:
 
 ## Issue Link / Problem Description
 <!-- Link to related issue or describe the problem this PR solves -->

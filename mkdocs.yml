@@ -122,6 +122,8 @@ nav:
             - Evaluate a New LLM: howtos/applications/benchmark_llm.md
           - Agent Evaluation:
             - Evaluate a Text-to-SQL Agent: howtos/applications/text2sql.md
+          - RAG Evaluation:
+            - Evaluate and Improve a RAG App: howtos/applications/evaluate-and-improve-rag.md
       - Integrations:
           - howtos/integrations/index.md
           - Arize: howtos/integrations/_arize.md

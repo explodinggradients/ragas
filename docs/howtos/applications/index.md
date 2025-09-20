@@ -19,6 +19,10 @@ usecases to solve problems you might encounter when you're building.
 ## Benchmarking
 - [Benchmarking Gemini models](gemini_benchmarking.md)
 
+## RAG Evaluation
+
+- [Evaluate and Improve a RAG System](evaluate-and-improve-rag.md)
+
 ## Agent Evaluation
 
 - [Evaluate a Text-to-SQL Agent](text2sql.md)

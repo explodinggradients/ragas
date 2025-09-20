@@ -3,4 +3,6 @@ alwaysApply: false
 ---
 We are writing a how to guide for Ragas docs and Ragas users.
 
-So after any coding step we complete, or after any succesful runs, always update the guide with what was done. 
+So after any coding step we complete, or after any succesful runs, always update the guide with what was done. Make sure the content is concise and to the point. 
+
+Current guide: docs/howtos/applications/evaluate-and-improve-rag.md
