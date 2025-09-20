@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from mlflow.entities import SpanType
 from openai import AsyncOpenAI
 
-from .data_utils import get_bm25_retriever
+from .retriever import get_bm25_retriever
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
