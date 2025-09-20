@@ -13,7 +13,6 @@ from typing import Any, Dict
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
-import datasets
 from ragas import Dataset, experiment
 from ragas.llms import instructor_llm_factory
 from ragas.metrics import DiscreteMetric
@@ -31,63 +30,44 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def download_and_save_dataset() -> Path:
-    """
-    Download the HuggingFace doc Q&A dataset and save locally.
-    
-    Returns:
-        Path to the saved dataset CSV file
-    """
-    # Create datasets directory relative to current working directory
-    datasets_dir = Path("datasets")
-    datasets_dir.mkdir(exist_ok=True)
-    
-    dataset_path = datasets_dir / "hf_doc_qa_eval.csv"
+    """Download the HuggingFace doc Q&A dataset from GitHub."""
+    dataset_path = Path("datasets/hf_doc_qa_eval.csv")
+    dataset_path.parent.mkdir(exist_ok=True)
     
     if dataset_path.exists():
         logger.info(f"Dataset already exists at {dataset_path}")
         return dataset_path
     
-    logger.info("Downloading HuggingFace doc Q&A evaluation dataset...")
-    hf_dataset = datasets.load_dataset("m-ric/huggingface_doc_qa_eval", split="train")
+    logger.info("Downloading HuggingFace doc Q&A evaluation dataset from GitHub...")
+    github_url = "https://raw.githubusercontent.com/explodinggradients/ragas/main/examples/ragas_examples/improve_rag/datasets/hf_doc_qa_eval.csv"
     
-    # Convert to pandas and save as CSV
-    df = hf_dataset.to_pandas()
-    df.to_csv(dataset_path, index=False)
+    import urllib.request
     
-    logger.info(f"Dataset saved to {dataset_path} with {len(df)} samples")
+    try:
+        urllib.request.urlretrieve(github_url, dataset_path)
+        logger.info(f"Dataset downloaded to {dataset_path}")
+        
+        import pandas as pd
+        df = pd.read_csv(dataset_path)
+        logger.info(f"Dataset loaded with {len(df)} samples")
+        
+    except Exception as e:
+        logger.error(f"Failed to download dataset: {e}")
+        raise
+    
     return dataset_path
 
 
 def create_ragas_dataset(dataset_path: Path) -> Dataset:
-    """
-    Create a Ragas Dataset from the downloaded CSV file.
+    """Create a Ragas Dataset from the downloaded CSV file."""
+    dataset = Dataset(name="hf_doc_qa_eval", backend="local/csv", root_dir=".")
     
-    Args:
-        dataset_path: Path to the CSV file
-        
-    Returns:
-        Ragas Dataset instance
-    """
-    dataset = Dataset(
-        name="hf_doc_qa_eval",
-        backend="local/csv",
-        root_dir=".",  # Use current directory to avoid nested datasets folder
-    )
-    
-    # Load the CSV data
     import pandas as pd
     df = pd.read_csv(dataset_path)
     
-    # Add rows to the dataset
     for _, row in df.iterrows():
-        dataset_row = {
-            "question": row["question"],
-            "context": row["context"],
-            "expected_answer": row["expected_answer"],
-        }
-        dataset.append(dataset_row)
+        dataset.append({"question": row["question"], "expected_answer": row["expected_answer"]})
     
-    # Save the dataset
     dataset.save()
     logger.info(f"Created Ragas dataset with {len(df)} samples")
     return dataset
@@ -161,7 +141,6 @@ async def evaluate_rag(row: Dict[str, Any], agentic_rag: bool = False) -> Dict[s
         question=question,
         expected_answer=row["expected_answer"],
         response=model_response,
-        context=row["context"],
         llm=llm
     )
     
@@ -209,7 +188,7 @@ async def main(test_mode: bool = False, agentic_rag: bool = False):
         
         # Step 2.5: Initialize BM25 retriever upfront to avoid hanging during evaluation
         logger.info("\n2.5. Initializing BM25 retriever (this may take a moment)...")
-        from .data_utils import get_bm25_retriever
+        from .retriever import get_bm25_retriever
         _ = get_bm25_retriever()  # This will cache the retriever
         logger.info("BM25 retriever initialized successfully!")
         
