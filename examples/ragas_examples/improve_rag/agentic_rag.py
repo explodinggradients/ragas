@@ -11,7 +11,7 @@ import mlflow
 from agents import Agent, Runner, function_tool
 from dotenv import load_dotenv
 
-from .data_utils import get_bm25_retriever
+from .retriever import get_bm25_retriever
 
 load_dotenv(".env")
 
