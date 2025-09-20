@@ -10,6 +10,7 @@ We will use `langchain_openai` to set the LLM and embedding model for building o
 ```python
 from langchain_openai import ChatOpenAI
 from ragas.embeddings import OpenAIEmbeddings
+`ragas.embeddings.OpenAIEmbeddings` exposes `embed_text` (single) and `embed_texts` (batch), not `embed_query`/`embed_documents` like some LangChain wrappers. The example below uses `embed_texts` for documents and `embed_text` for the query. Please refer to [OpenAI embeddings implementation] (https://docs.ragas.io/en/stable/references/embeddings/\#ragas.embeddings.OpenAIEmbeddings)
 import openai
 
 llm = ChatOpenAI(model="gpt-4o")
@@ -43,14 +44,14 @@ To build a simple RAG system, we need to define the following components:
         def load_documents(self, documents):
             """Load documents and compute their embeddings."""
             self.docs = documents
-            self.doc_embeddings = self.embeddings.embed_documents(documents)
+            self.doc_embeddings = self.embeddings.embed_texts(documents)
 
         def get_most_relevant_docs(self, query):
             """Find the most relevant document for a given query."""
             if not self.docs or not self.doc_embeddings:
                 raise ValueError("Documents and their embeddings are not loaded.")
             
-            query_embedding = self.embeddings.embed_query(query)
+            query_embedding = self.embeddings.embed_text(query)
             similarities = [
                 np.dot(query_embedding, doc_emb)
                 / (np.linalg.norm(query_embedding) * np.linalg.norm(doc_emb))
