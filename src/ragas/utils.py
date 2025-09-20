@@ -626,16 +626,16 @@ def async_to_sync(async_func):
     @functools.wraps(async_func)
     def sync_wrapper(*args, **kwargs):
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                import concurrent.futures
+            # Check if we're already in an event loop
+            asyncio.get_running_loop()
+            # If we get here, we're in a running loop
+            import concurrent.futures
 
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(asyncio.run, async_func(*args, **kwargs))
-                    return future.result()
-            else:
-                return loop.run_until_complete(async_func(*args, **kwargs))
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, async_func(*args, **kwargs))
+                return future.result()
         except RuntimeError:
+            # No event loop running, safe to use asyncio.run
             return asyncio.run(async_func(*args, **kwargs))
 
     return sync_wrapper

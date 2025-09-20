@@ -2,7 +2,7 @@ from ragas import backends
 from ragas.cache import CacheInterface, DiskCacheBackend, cacher
 from ragas.dataset import Dataset, DataTable
 from ragas.dataset_schema import EvaluationDataset, MultiTurnSample, SingleTurnSample
-from ragas.evaluation import evaluate
+from ragas.evaluation import aevaluate, evaluate
 from ragas.experiment import Experiment, experiment, version_experiment
 from ragas.run_config import RunConfig
 
@@ -14,6 +14,7 @@ except ImportError:
 
 __all__ = [
     "evaluate",
+    "aevaluate",
     "RunConfig",
     "__version__",
     "SingleTurnSample",

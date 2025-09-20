@@ -117,6 +117,7 @@ async def test_async_caching_with_cache_backend(cache_backend):
     assert call_count["count"] == 1, "Should have come from cache"
 
 
+@pytest.mark.filterwarnings("ignore:.*coroutine.*was never awaited:RuntimeWarning")
 def test_caching_with_different_args(cache_backend):
     """Test that different arguments produce different cache entries."""
     call_count = {"count": 0}

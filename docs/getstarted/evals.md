@@ -141,6 +141,20 @@ results = evaluate(eval_dataset, metrics=[metric])
 results
 ```
 
+!!! tip "Async Usage"
+    For production async applications, use `aevaluate()` to avoid event loop conflicts:
+    ```python
+    from ragas import aevaluate
+
+    # In an async function
+    results = await aevaluate(eval_dataset, metrics=[metric])
+    ```
+
+    Or disable nest_asyncio in sync code:
+    ```python
+    results = evaluate(eval_dataset, metrics=[metric], allow_nest_asyncio=False)
+    ```
+
 Output
 ```
 {'summary_accuracy': 0.84}

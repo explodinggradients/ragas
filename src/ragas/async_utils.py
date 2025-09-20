@@ -103,13 +103,22 @@ def run(
         t.Callable[[], t.Coroutine[t.Any, t.Any, t.Any]],
         t.Coroutine[t.Any, t.Any, t.Any],
     ],
+    allow_nest_asyncio: bool = True,
 ) -> t.Any:
     """
     Run an async function in the current event loop or a new one if not running.
+
+    Parameters
+    ----------
+    async_func : Callable or Coroutine
+        The async function or coroutine to run
+    allow_nest_asyncio : bool, optional
+        Whether to apply nest_asyncio for Jupyter compatibility. Default is True.
+        Set to False in production environments to avoid event loop patching.
     """
-    # Ensure nest_asyncio is applied if we're in a running loop
-    # This is common in environments like Jupyter notebooks
-    apply_nest_asyncio()
+    # Only apply nest_asyncio if explicitly allowed
+    if allow_nest_asyncio:
+        apply_nest_asyncio()
 
     # Create the coroutine if it's a callable, otherwise use directly
     coro = async_func() if callable(async_func) else async_func
