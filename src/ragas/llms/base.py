@@ -216,7 +216,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
         if temperature is None:
             temperature = self.get_temperature(n=n)
         if hasattr(self.langchain_llm, "temperature"):
-            old_temperature = self.langchain_llm.temperature
+            old_temperature = self.langchain_llm.temperature  # type: ignore
             self.langchain_llm.temperature = temperature  # type: ignore
 
         if is_multiple_completion_supported(self.langchain_llm):
@@ -268,7 +268,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
         if temperature is None:
             temperature = self.get_temperature(n=n)
         if hasattr(self.langchain_llm, "temperature") and not self.bypass_temperature:
-            old_temperature = self.langchain_llm.temperature
+            old_temperature = self.langchain_llm.temperature # type: ignore
             self.langchain_llm.temperature = temperature  # type: ignore
 
         # handle n
