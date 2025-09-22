@@ -151,6 +151,7 @@ nav:
       - Schemas: references/evaluation_schema.md
       - Metrics: references/metrics.md
       - evaluate(): references/evaluate.md
+      - aevaluate(): references/aevaluate.md
     - Testset Generation:
       - Schemas: references/testset_schema.md
       - Graph: references/graph.md
