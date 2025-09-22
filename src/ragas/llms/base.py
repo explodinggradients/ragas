@@ -216,8 +216,8 @@ class LangchainLLMWrapper(BaseRagasLLM):
         if temperature is None:
             temperature = self.get_temperature(n=n)
         if hasattr(self.langchain_llm, "temperature"):
+            old_temperature = self.langchain_llm.temperature  # type: ignore
             self.langchain_llm.temperature = temperature  # type: ignore
-            old_temperature = temperature
 
         if is_multiple_completion_supported(self.langchain_llm):
             result = self.langchain_llm.generate_prompt(
@@ -259,7 +259,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: t.Optional[float] = None,
+        temperature: t.Optional[float] = 0.01,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ) -> LLMResult:
@@ -268,8 +268,8 @@ class LangchainLLMWrapper(BaseRagasLLM):
         if temperature is None:
             temperature = self.get_temperature(n=n)
         if hasattr(self.langchain_llm, "temperature") and not self.bypass_temperature:
+            old_temperature = self.langchain_llm.temperature  # type: ignore
             self.langchain_llm.temperature = temperature  # type: ignore
-            old_temperature = temperature
 
         # handle n
         if hasattr(self.langchain_llm, "n"):
@@ -400,7 +400,7 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: t.Optional[float] = None,
+        temperature: t.Optional[float] = 0.01,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ) -> LLMResult:
