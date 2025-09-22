@@ -455,4 +455,4 @@ def evaluate(
         # Default behavior: use nest_asyncio for backward compatibility (Jupyter notebooks)
         from ragas.async_utils import run
 
-        return run(_async_wrapper)
+        return run(_async_wrapper())
