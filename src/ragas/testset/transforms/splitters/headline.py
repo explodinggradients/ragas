@@ -1,13 +1,9 @@
 import typing as t
 from dataclasses import dataclass
-import tiktoken
 
 from ragas.testset.graph import Node, NodeType, Relationship
 from ragas.testset.transforms.base import Splitter
 from ragas.utils import num_tokens_from_string
-
-
-DEFAULT_TOKENIZER = tiktoken.get_encoding("o200k_base")
 
 
 @dataclass
@@ -20,27 +16,38 @@ class HeadlineSplitter(Splitter):
         current_chunk = ""
 
         for chunk in chunks:
-            chunk_tokens = DEFAULT_TOKENIZER.encode(chunk)
+            chunk_token_count = num_tokens_from_string(chunk)
 
             # Split chunks that are over max_tokens
-            while len(chunk_tokens) > self.max_tokens:
-                adjusted_chunks.append(DEFAULT_TOKENIZER.decode(chunk_tokens[:self.max_tokens]))
-                chunk_tokens = chunk_tokens[self.max_tokens:]
+            while chunk_token_count > self.max_tokens:
+                # For chunks over max_tokens, we need to split by words since we can't
+                # easily split tokens without losing token boundary information
+                words = chunk.split()
+                # Estimate split point based on token ratio
+                split_ratio = self.max_tokens / chunk_token_count
+                split_point = max(1, int(len(words) * split_ratio))
 
-            chunk_str = DEFAULT_TOKENIZER.decode(chunk_tokens)
-            if len(chunk_tokens) < self.min_tokens:
+                chunk_part = " ".join(words[:split_point])
+                adjusted_chunks.append(chunk_part)
+
+                # Continue with remaining part
+                chunk = " ".join(words[split_point:])
+                chunk_token_count = num_tokens_from_string(chunk)
+
+            # Handle chunks that are under min_tokens
+            if chunk_token_count < self.min_tokens:
                 if current_chunk:
-                    current_chunk += " " + chunk_str
-                    if num_tokens_from_string(current_chunk, encoding_name=DEFAULT_TOKENIZER.name) >= self.min_tokens:
+                    current_chunk += " " + chunk
+                    if num_tokens_from_string(current_chunk) >= self.min_tokens:
                         adjusted_chunks.append(current_chunk)
                         current_chunk = ""
                 else:
-                    current_chunk = chunk_str
+                    current_chunk = chunk
             else:
                 if current_chunk:
                     adjusted_chunks.append(current_chunk)
                     current_chunk = ""
-                adjusted_chunks.append(chunk_str)
+                adjusted_chunks.append(chunk)
 
         # Append any remaining chunk
         if current_chunk:
@@ -57,7 +64,7 @@ class HeadlineSplitter(Splitter):
         if headlines is None:
             raise ValueError("'headlines' property not found in this node")
 
-        if num_tokens_from_string(text, encoding_name=DEFAULT_TOKENIZER.name) < self.min_tokens:
+        if num_tokens_from_string(text) < self.min_tokens:
             return [node], []
         # create the chunks for the different sections
         indices = [0]
