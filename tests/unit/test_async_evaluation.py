@@ -140,40 +140,48 @@ class TestNestAsyncioNotAppliedInAevaluate:
     @pytest.mark.asyncio
     async def test_aevaluate_no_nest_asyncio_applied(self):
         """Test that aevaluate doesn't call apply_nest_asyncio."""
-        # Mock all the dependencies to avoid actual API calls
-        with patch("ragas.evaluation.EvaluationDataset"):
-            with patch("ragas.evaluation.validate_required_columns"):
-                with patch("ragas.evaluation.validate_supported_metrics"):
-                    with patch("ragas.evaluation.Executor") as mock_executor_class:
-                        with patch("ragas.evaluation.new_group"):
-                            with patch(
-                                "ragas.async_utils.apply_nest_asyncio"
-                            ) as mock_apply:
-                                # Mock executor
-                                mock_executor = MagicMock()
-                                mock_executor.aresults = AsyncMock(return_value=[0.8])
-                                mock_executor_class.return_value = mock_executor
+        with warnings.catch_warnings():
+            # Suppress RuntimeWarning about unawaited coroutines in tests
+            warnings.filterwarnings(
+                "ignore",
+                category=RuntimeWarning,
+                message=".*coroutine.*was never awaited",
+            )
 
-                                # Mock dataset
-                                mock_dataset_instance = MagicMock()
-                                mock_dataset_instance.get_sample_type.return_value = (
-                                    MagicMock()
-                                )
-                                mock_dataset_instance.__iter__ = lambda x: iter([])
-
-                                from ragas import aevaluate
-
-                                try:
-                                    await aevaluate(
-                                        dataset=mock_dataset_instance,
-                                        metrics=[],
-                                        show_progress=False,
+            # Mock all the dependencies to avoid actual API calls
+            with patch("ragas.evaluation.EvaluationDataset"):
+                with patch("ragas.evaluation.validate_required_columns"):
+                    with patch("ragas.evaluation.validate_supported_metrics"):
+                        with patch("ragas.evaluation.Executor") as mock_executor_class:
+                            with patch("ragas.evaluation.new_group"):
+                                with patch(
+                                    "ragas.async_utils.apply_nest_asyncio"
+                                ) as mock_apply:
+                                    # Mock executor
+                                    mock_executor = MagicMock()
+                                    mock_executor.aresults = AsyncMock(
+                                        return_value=[0.8]
                                     )
-                                except Exception:
-                                    pass
+                                    mock_executor_class.return_value = mock_executor
 
-        # aevaluate should never call apply_nest_asyncio
-        mock_apply.assert_not_called()
+                                    # Mock dataset
+                                    mock_dataset_instance = MagicMock()
+                                    mock_dataset_instance.get_sample_type.return_value = MagicMock()
+                                    mock_dataset_instance.__iter__ = lambda x: iter([])
+
+                                    from ragas import aevaluate
+
+                                    try:
+                                        await aevaluate(
+                                            dataset=mock_dataset_instance,
+                                            metrics=[],
+                                            show_progress=False,
+                                        )
+                                    except Exception:
+                                        pass
+
+            # aevaluate should never call apply_nest_asyncio
+            mock_apply.assert_not_called()
 
 
 class TestAsyncIntegration:
