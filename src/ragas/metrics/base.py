@@ -101,9 +101,10 @@ class Metric(ABC):
         rc = {}
         for metric_type, columns in required_columns.items():
             for column in columns:
-                if column not in VALID_COLUMNS:
+                base_column = column.split(":")[0]
+                if base_column not in VALID_COLUMNS:
                     raise ValueError(
-                        f"Invalid column '{column}'. Must be one of {VALID_COLUMNS}"
+                        f"Invalid column '{column}'. Base column '{base_column}' must be one of {VALID_COLUMNS}"
                     )
             rc[metric_type] = columns
         self._required_columns = rc
