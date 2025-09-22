@@ -14,7 +14,6 @@ class BleuScore(SingleTurnMetric):
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {MetricType.SINGLE_TURN: {"reference", "response"}}
     )
-    language: str = "english"
     kwargs: t.Dict[str, t.Any] = field(default_factory=dict)
 
     def __post_init__(self):
