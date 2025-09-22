@@ -18,7 +18,7 @@ embeddings = OpenAIEmbeddings(client=openai_client)
 ```
 
 !!! note "OpenAI Embeddings API"
-    `ragas.embeddings.OpenAIEmbeddings` exposes `embed_text` (single) and `embed_texts` (batch), not `embed_query`/`embed_documents` like some LangChain wrappers. The example below uses `embed_texts` for documents and `embed_text` for the query. Please refer to [OpenAI embeddings implementation] (https://docs.ragas.io/en/stable/references/embeddings/\#ragas.embeddings.OpenAIEmbeddings)
+    `ragas.embeddings.OpenAIEmbeddings` exposes `embed_text` (single) and `embed_texts` (batch), not `embed_query`/`embed_documents` like some LangChain wrappers. The example below uses `embed_texts` for documents and `embed_text` for the query. Please refer to [OpenAI embeddings implementation](https://docs.ragas.io/en/stable/references/embeddings/\#ragas.embeddings.OpenAIEmbeddings)
 
 ### Build a Simple RAG System
 
