@@ -172,16 +172,22 @@ def test_sync_client_agenerate_error(mock_sync_client, monkeypatch):
 
 def test_provider_support():
     """Test that all expected providers are supported."""
-    supported_providers = ["openai", "anthropic", "cohere", "gemini", "litellm"]
+    supported_providers = {
+        "openai": "from_openai",
+        "anthropic": "from_anthropic",
+        "cohere": "from_cohere",
+        "google": "from_genai",
+        "litellm": "from_litellm",
+    }
 
-    for provider in supported_providers:
+    for provider, func_name in supported_providers.items():
         mock_client = Mock()
 
         # Mock the appropriate instructor function
         import instructor
 
         mock_instructor_func = Mock(return_value=MockInstructor(mock_client))
-        setattr(instructor, f"from_{provider}", mock_instructor_func)
+        setattr(instructor, func_name, mock_instructor_func)
 
         # This should not raise an error
         try:
