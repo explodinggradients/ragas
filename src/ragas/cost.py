@@ -149,9 +149,13 @@ def get_token_usage_for_azure_ai(
     if llm_output is None:
         logger.info("No llm_output found in the LLMResult")
         return TokenUsage(input_tokens=0, output_tokens=0)
-    output_tokens = get_from_dict(llm_output, "token_usage.input_tokens", 0)
-    input_tokens = get_from_dict(llm_output, "token_usage.output_tokens", 0)
-    return TokenUsage(input_tokens=input_tokens, output_tokens=output_tokens)
+    input_tokens = get_from_dict(llm_output, "token_usage.input_tokens", 0)
+    output_tokens = get_from_dict(llm_output, "token_usage.output_tokens", 0)
+    model = get_from_dict(llm_output, "model_name", "")
+
+    return TokenUsage(
+        input_tokens=input_tokens, output_tokens=output_tokens, model=model
+    )
 
 
 class CostCallbackHandler(BaseCallbackHandler):

@@ -170,7 +170,50 @@ def test_parse_llm_results():
 
     # Azure AI
     token_usage = get_token_usage_for_azure_ai(azure_ai_result)
-    assert token_usage == TokenUsage(input_tokens=10, output_tokens=10)
+    assert token_usage == TokenUsage(
+        input_tokens=10, output_tokens=10, model="mistral-small-2503"
+    )
+
+
+def test_azure_ai_edge_cases():
+    # Test with None llm_output
+    empty_result = LLMResult(
+        generations=[[ChatGeneration(message=AIMessage(content="Hello, world!"))]],
+        llm_output=None,
+    )
+    token_usage = get_token_usage_for_azure_ai(empty_result)
+    assert token_usage == TokenUsage(input_tokens=0, output_tokens=0)
+
+    # Test with empty llm_output
+    empty_llm_output_result = LLMResult(
+        generations=[[ChatGeneration(message=AIMessage(content="Hello, world!"))]],
+        llm_output={},
+    )
+    token_usage = get_token_usage_for_azure_ai(empty_llm_output_result)
+    assert token_usage == TokenUsage(input_tokens=0, output_tokens=0)
+
+    # Test with missing token_usage field
+    no_token_usage_result = LLMResult(
+        generations=[[ChatGeneration(message=AIMessage(content="Hello, world!"))]],
+        llm_output={"model_name": "mistral-small-2503"},
+    )
+    token_usage = get_token_usage_for_azure_ai(no_token_usage_result)
+    assert token_usage == TokenUsage(
+        input_tokens=0, output_tokens=0, model="mistral-small-2503"
+    )
+
+    # Test with partial token_usage field
+    partial_token_usage_result = LLMResult(
+        generations=[[ChatGeneration(message=AIMessage(content="Hello, world!"))]],
+        llm_output={
+            "token_usage": {"input_tokens": 15},  # missing output_tokens
+            "model_name": "mistral-small-2503",
+        },
+    )
+    token_usage = get_token_usage_for_azure_ai(partial_token_usage_result)
+    assert token_usage == TokenUsage(
+        input_tokens=15, output_tokens=0, model="mistral-small-2503"
+    )
 
 
 def test_cost_callback_handler():
