@@ -39,7 +39,9 @@ class MetricResult:
         self.traces = traces
 
     def __repr__(self):
-        return f'MetricResult(value={self._value}, reason="{self.reason}")'
+        if self.reason:
+            return f"MetricResult(value={self._value}, reason={self.reason!r})"
+        return f"MetricResult(value={self._value})"
 
     __str__ = __repr__
 
