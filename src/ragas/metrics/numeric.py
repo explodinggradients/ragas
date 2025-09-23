@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from pydantic import create_model
 
-from .decorator import create_metric_decorator
+from .decorator import NumericMetricProtocol, create_metric_decorator
 from .llm_based import LLMMetric
 
 
@@ -42,4 +42,25 @@ class NumericMetric(LLMMetric):
         return correlation
 
 
-numeric_metric = create_metric_decorator(NumericMetric)
+def numeric_metric(
+    *,
+    name: t.Optional[str] = None,
+    allowed_values: t.Optional[t.Union[t.Tuple[float, float], range]] = None,
+    **metric_params,
+) -> t.Callable[[t.Callable[..., t.Any]], NumericMetricProtocol]:
+    """
+    Decorator for creating numeric metrics.
+
+    Args:
+        name: Optional name for the metric (defaults to function name)
+        allowed_values: Tuple specifying (min, max) range or range object for valid values
+        **metric_params: Additional parameters for the metric
+
+    Returns:
+        A decorator that transforms a function into a NumericMetric instance
+    """
+    if allowed_values is None:
+        allowed_values = (0.0, 1.0)
+
+    decorator_factory = create_metric_decorator(NumericMetric)
+    return decorator_factory(name=name, allowed_values=allowed_values, **metric_params)

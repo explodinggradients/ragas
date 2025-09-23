@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 
 from pydantic import create_model
 
-from .decorator import create_metric_decorator
+from .decorator import DiscreteMetricProtocol, create_metric_decorator
 from .llm_based import LLMMetric
 
 
@@ -39,4 +39,25 @@ class DiscreteMetric(LLMMetric):
         return cohen_kappa_score(gold_labels, predictions)
 
 
-discrete_metric = create_metric_decorator(DiscreteMetric)
+def discrete_metric(
+    *,
+    name: t.Optional[str] = None,
+    allowed_values: t.Optional[t.List[str]] = None,
+    **metric_params,
+) -> t.Callable[[t.Callable[..., t.Any]], DiscreteMetricProtocol]:
+    """
+    Decorator for creating discrete metrics.
+
+    Args:
+        name: Optional name for the metric (defaults to function name)
+        allowed_values: List of allowed string values for the metric
+        **metric_params: Additional parameters for the metric
+
+    Returns:
+        A decorator that transforms a function into a DiscreteMetric instance
+    """
+    if allowed_values is None:
+        allowed_values = ["pass", "fail"]
+
+    decorator_factory = create_metric_decorator(DiscreteMetric)
+    return decorator_factory(name=name, allowed_values=allowed_values, **metric_params)

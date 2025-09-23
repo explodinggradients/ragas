@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from pydantic import Field, create_model
 
-from .decorator import create_metric_decorator
+from .decorator import RankingMetricProtocol, create_metric_decorator
 from .llm_based import LLMMetric
 
 
@@ -46,4 +46,25 @@ class RankingMetric(LLMMetric):
         return sum(kappa_scores) / len(kappa_scores) if kappa_scores else 0.0
 
 
-ranking_metric = create_metric_decorator(RankingMetric)
+def ranking_metric(
+    *,
+    name: t.Optional[str] = None,
+    allowed_values: t.Optional[int] = None,
+    **metric_params,
+) -> t.Callable[[t.Callable[..., t.Any]], RankingMetricProtocol]:
+    """
+    Decorator for creating ranking metrics.
+
+    Args:
+        name: Optional name for the metric (defaults to function name)
+        allowed_values: Expected length of the returned ranking list
+        **metric_params: Additional parameters for the metric
+
+    Returns:
+        A decorator that transforms a function into a RankingMetric instance
+    """
+    if allowed_values is None:
+        allowed_values = 2
+
+    decorator_factory = create_metric_decorator(RankingMetric)
+    return decorator_factory(name=name, allowed_values=allowed_values, **metric_params)
