@@ -11,8 +11,6 @@ from typing import get_args, get_origin, get_type_hints
 
 from pydantic import ValidationError, create_model
 
-from ragas.llms import InstructorBaseRagasLLM as BaseRagasLLM
-
 from .result import MetricResult
 
 
@@ -35,8 +33,6 @@ def create_metric_decorator(metric_class):
         Creates a decorator that wraps a function into a metric instance.
 
         Args:
-            llm: The language model instance to use
-            prompt: The prompt template
             name: Optional name for the metric (defaults to function name)
             **metric_params: Additional parameters specific to the metric type
                 (values for DiscreteMetrics, range for NumericMetrics, etc.)
@@ -49,12 +45,7 @@ def create_metric_decorator(metric_class):
             # Get metric name and check if function is async
             metric_name = name or func.__name__
             is_async = inspect.iscoroutinefunction(func)
-
-            # Check function signature to determine if it expects llm/prompt
             sig = inspect.signature(func)
-            param_names = list(sig.parameters.keys())
-            expects_llm = "llm" in param_names
-            expects_prompt = "prompt" in param_names
 
             # TODO: Move to dataclass type implementation
             @dataclass
@@ -98,9 +89,7 @@ def create_metric_decorator(metric_class):
 
                 def _create_positional_error(self, args: tuple, kwargs: dict) -> str:
                     """Create error message for positional arguments."""
-                    func_param_names = [
-                        p for p in sig.parameters.keys() if p not in ["llm", "prompt"]
-                    ]
+                    func_param_names = list(sig.parameters.keys())
 
                     msg = f"\n❌ {self.name}.score() requires keyword arguments, not positional.\n\n"
                     msg += (
@@ -120,57 +109,6 @@ def create_metric_decorator(metric_class):
 
                     return msg
 
-                def _create_missing_args_error(self, missing: list) -> str:
-                    """Create error message for missing required arguments."""
-                    msg = f"\n❌ Missing required arguments for {self.name}:\n\n"
-
-                    try:
-                        type_hints = get_type_hints(func)
-                    except (NameError, AttributeError):
-                        type_hints = {}
-
-                    msg += "   Required:\n"
-                    for name in missing:
-                        param = sig.parameters[name]
-                        type_hint = type_hints.get(name, param.annotation)
-                        type_str = (
-                            getattr(type_hint, "__name__", "Any")
-                            if type_hint != inspect.Parameter.empty
-                            else "Any"
-                        )
-                        msg += f"     - {name}: {type_str}\n"
-
-                    msg += f"\n   Example: {self.name}.score("
-                    examples = []
-                    for name in missing:
-                        param = sig.parameters[name]
-                        type_hint = type_hints.get(name, param.annotation)
-                        if type_hint is str or (
-                            hasattr(type_hint, "__name__")
-                            and type_hint.__name__ == "str"
-                        ):
-                            examples.append(f'{name}="example"')
-                        elif type_hint is float or (
-                            hasattr(type_hint, "__name__")
-                            and type_hint.__name__ == "float"
-                        ):
-                            examples.append(f"{name}=0.5")
-                        elif type_hint is int or (
-                            hasattr(type_hint, "__name__")
-                            and type_hint.__name__ == "int"
-                        ):
-                            examples.append(f"{name}=1")
-                        elif (
-                            hasattr(type_hint, "__name__")
-                            and "list" in type_hint.__name__.lower()
-                        ):
-                            examples.append(f'{name}=["item1", "item2"]')
-                        else:
-                            examples.append(f"{name}=...")
-
-                    msg += ", ".join(examples) + ")"
-                    return msg
-
                 def _create_pydantic_model(self):
                     """Create a Pydantic model dynamically from the function signature."""
                     try:
@@ -181,10 +119,6 @@ def create_metric_decorator(metric_class):
                     field_definitions = {}
 
                     for name, param in sig.parameters.items():
-                        # Skip llm and prompt as they're handled separately
-                        if name in ["llm", "prompt"]:
-                            continue
-
                         # Get type hint, default to str if no hint available
                         type_hint = type_hints.get(name, param.annotation)
                         if type_hint == inspect.Parameter.empty:
@@ -224,26 +158,13 @@ def create_metric_decorator(metric_class):
 
                     return msg
 
-                def _is_optional_type(self, type_hint):
-                    """Check if a type hint represents an optional type (Union[X, None])."""
-                    if type_hint == inspect.Parameter.empty:
-                        return False
-
-                    origin = get_origin(type_hint)
-                    if origin is t.Union:
-                        args = get_args(type_hint)
-                        # Check if one of the union args is NoneType
-                        return type(None) in args
-
-                    return False
-
                 def _validate_inputs(self, args: tuple, kwargs: dict):
                     """Validate all inputs using Pydantic with helpful error messages."""
-                    # 1. Check for positional arguments (keep original helpful error)
+                    # Check for positional arguments (keep custom helpful error)
                     if args:
                         raise TypeError(self._create_positional_error(args, kwargs))
 
-                    # 2. Create dynamic Pydantic model from function signature
+                    # Create dynamic Pydantic model from function signature
                     try:
                         pydantic_model = self._create_pydantic_model()
                     except Exception as e:
@@ -253,7 +174,7 @@ def create_metric_decorator(metric_class):
                         )
                         return
 
-                    # 3. Warn about unknown arguments (but continue processing)
+                    # Warn about unknown arguments (but continue processing)
                     valid_params = set(pydantic_model.model_fields.keys())
                     unknown = set(kwargs.keys()) - valid_params
 
@@ -264,25 +185,25 @@ def create_metric_decorator(metric_class):
                             UserWarning,
                         )
 
-                    # 4. Validate using Pydantic (only for valid parameters)
+                    # Validate using Pydantic (only for valid parameters)
                     valid_kwargs = {
                         k: v for k, v in kwargs.items() if k in valid_params
                     }
 
                     try:
-                        # This will validate types and handle required/optional fields
+                        # Pydantic handles missing required fields and type validation
                         validated_data = pydantic_model(**valid_kwargs)
                         # Store the validated data for use in execution
                         self._validated_data = validated_data.model_dump()
                     except ValidationError as e:
                         raise TypeError(self._format_pydantic_errors(e))
 
-                def score(self, *args, llm: t.Optional[BaseRagasLLM] = None, **kwargs):
+                def score(self, *args, **kwargs):
                     """Synchronous scoring method that wraps ascore()."""
 
                     # Use asyncio.run to execute the async method
                     async def _async_wrapper():
-                        return await self.ascore(*args, llm=llm, **kwargs)
+                        return await self.ascore(*args, **kwargs)
 
                     # Check if we're already in an event loop
                     try:
@@ -296,9 +217,7 @@ def create_metric_decorator(metric_class):
                         # No running event loop, safe to use asyncio.run
                         return asyncio.run(_async_wrapper())
 
-                async def ascore(
-                    self, *args, llm: t.Optional[BaseRagasLLM] = None, **kwargs
-                ):
+                async def ascore(self, *args, **kwargs):
                     """Asynchronous scoring method."""
                     # Validate inputs before execution
                     self._validate_inputs(args, kwargs)
@@ -306,21 +225,14 @@ def create_metric_decorator(metric_class):
                     try:
                         # Use validated data from Pydantic if available
                         func_kwargs = getattr(self, "_validated_data", {})
-                        func_args = []
-
-                        # Add llm and prompt if the function expects them
-                        if expects_llm:
-                            func_args.append(llm)
-                        if expects_prompt:
-                            func_args.append(self.prompt)
 
                         # Execute the function based on its type
                         if is_async:
                             # For async functions, await the result
-                            result = await func(*func_args, **func_kwargs)
+                            result = await func(**func_kwargs)
                         else:
                             # For sync functions, run directly
-                            result = func(*func_args, **func_kwargs)
+                            result = func(**func_kwargs)
 
                         # Ensure result is a MetricResult
                         if not isinstance(result, MetricResult):
