@@ -277,15 +277,34 @@ def create_metric_decorator(metric_class):
                     except ValidationError as e:
                         raise TypeError(self._format_pydantic_errors(e))
 
-                def _run_sync_in_async(self, func, *args, **kwargs):
-                    """Run a synchronous function in an async context."""
-                    # For sync functions, just run them normally
-                    return func(*args, **kwargs)
+                def score(self, *args, llm: t.Optional[BaseRagasLLM] = None, **kwargs):
+                    """Synchronous scoring method that wraps ascore()."""
 
-                def _execute_metric(self, llm, is_async_execution, **kwargs):
-                    """Execute the metric function with proper async handling."""
+                    # Use asyncio.run to execute the async method
+                    async def _async_wrapper():
+                        return await self.ascore(*args, llm=llm, **kwargs)
+
+                    # Check if we're already in an event loop
                     try:
-                        # Use validated data from Pydantic if available, otherwise use kwargs
+                        # If we're in a running event loop, we need nest_asyncio for compatibility
+                        _ = asyncio.get_running_loop()
+                        # Import nest_asyncio style runner from ragas
+                        from ragas.async_utils import run
+
+                        return run(_async_wrapper())
+                    except RuntimeError:
+                        # No running event loop, safe to use asyncio.run
+                        return asyncio.run(_async_wrapper())
+
+                async def ascore(
+                    self, *args, llm: t.Optional[BaseRagasLLM] = None, **kwargs
+                ):
+                    """Asynchronous scoring method."""
+                    # Validate inputs before execution
+                    self._validate_inputs(args, kwargs)
+
+                    try:
+                        # Use validated data from Pydantic if available
                         func_kwargs = getattr(self, "_validated_data", {})
                         func_args = []
 
@@ -295,23 +314,12 @@ def create_metric_decorator(metric_class):
                         if expects_prompt:
                             func_args.append(self.prompt)
 
+                        # Execute the function based on its type
                         if is_async:
-                            # Async function implementation
-                            if is_async_execution:
-                                # In async context, await the function directly
-                                result = func(*func_args, **func_kwargs)
-                            else:
-                                # In sync context, run the async function in an event loop
-                                try:
-                                    loop = asyncio.get_event_loop()
-                                except RuntimeError:
-                                    loop = asyncio.new_event_loop()
-                                    asyncio.set_event_loop(loop)
-                                result = loop.run_until_complete(
-                                    func(*func_args, **func_kwargs)
-                                )
+                            # For async functions, await the result
+                            result = await func(*func_args, **func_kwargs)
                         else:
-                            # Sync function implementation
+                            # For sync functions, run directly
                             result = func(*func_args, **func_kwargs)
 
                         # Ensure result is a MetricResult
@@ -331,48 +339,6 @@ def create_metric_decorator(metric_class):
                         error_msg = f"Error executing metric {self.name}: {str(e)}"
                         return MetricResult(value=None, reason=error_msg)
 
-                def score(self, *args, llm: t.Optional[BaseRagasLLM] = None, **kwargs):
-                    """Synchronous scoring method."""
-                    # Validate inputs before execution
-                    self._validate_inputs(args, kwargs)
-                    return self._execute_metric(llm, is_async_execution=False, **kwargs)
-
-                async def ascore(
-                    self, *args, llm: t.Optional[BaseRagasLLM] = None, **kwargs
-                ):
-                    """Asynchronous scoring method."""
-                    # Validate inputs before execution
-                    self._validate_inputs(args, kwargs)
-                    # Prepare function arguments based on what the function expects
-                    func_kwargs = kwargs.copy()
-                    func_args = []
-
-                    if expects_llm:
-                        func_args.append(llm)
-                    if expects_prompt:
-                        func_args.append(self.prompt)
-
-                    if is_async:
-                        # For async functions, await the result
-                        result = await func(*func_args, **func_kwargs)
-                    else:
-                        # For sync functions, run normally
-                        result = self._run_sync_in_async(
-                            func, *func_args, **func_kwargs
-                        )
-
-                    # Ensure result is a MetricResult
-                    if not isinstance(result, MetricResult):
-                        # Wrap plain values in MetricResult
-                        result = MetricResult(value=result, reason=None)
-
-                    # Validate the result based on metric type
-                    validation_error = self._validate_result_value(result.value)
-                    if validation_error:
-                        return MetricResult(value=None, reason=validation_error)
-
-                    return result
-
                 def __call__(self, *args, **kwargs):
                     """Make the metric instance directly callable using the original function."""
                     if self._func is None:
@@ -381,23 +347,9 @@ def create_metric_decorator(metric_class):
                         )
 
                     if is_async:
-                        # For async functions, we need to handle the execution context
-                        try:
-                            # If we're already in an async context, return the coroutine
-                            loop = asyncio.get_running_loop()
-                            # We're in an async context, return the coroutine for awaiting
-                            return self._func(*args, **kwargs)
-                        except RuntimeError:
-                            # No running loop, execute in new event loop
-                            loop = asyncio.new_event_loop()
-                            asyncio.set_event_loop(loop)
-                            try:
-                                return loop.run_until_complete(
-                                    self._func(*args, **kwargs)
-                                )
-                            finally:
-                                loop.close()
-                                asyncio.set_event_loop(None)
+                        # For async functions, always return the coroutine
+                        # Let the caller handle async context appropriately
+                        return self._func(*args, **kwargs)
                     else:
                         # For sync functions, just call directly
                         return self._func(*args, **kwargs)
