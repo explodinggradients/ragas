@@ -1,6 +1,7 @@
 import pytest
-from ragas.messages import ToolCall, AIMessage, HumanMessage
+
 from ragas import MultiTurnSample
+from ragas.messages import AIMessage, HumanMessage, ToolCall
 from ragas.metrics import ToolCallF1
 
 metric = ToolCallF1()

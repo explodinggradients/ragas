@@ -3,9 +3,9 @@ from __future__ import annotations
 import typing as t
 from dataclasses import dataclass, field
 
-from ragas.metrics.base import MultiTurnMetric, MetricType
 from ragas.dataset_schema import MultiTurnSample
 from ragas.messages import AIMessage
+from ragas.metrics.base import MetricType, MultiTurnMetric
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks.base import Callbacks
