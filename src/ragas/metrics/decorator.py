@@ -128,9 +128,8 @@ def create_metric_decorator(metric_class):
 
                         # Ensure result is a MetricResult
                         if not isinstance(result, MetricResult):
-                            raise ValueError(
-                                f"Custom metric function must return MetricResult, got {type(result)}"
-                            )
+                            # Wrap plain values in MetricResult
+                            result = MetricResult(value=result, reason=None)
 
                         # Validate the result based on metric type
                         validation_error = self._validate_result_value(result.value)
@@ -149,7 +148,6 @@ def create_metric_decorator(metric_class):
                     return self._execute_metric(llm, is_async_execution=False, **kwargs)
 
                 async def ascore(self, llm: t.Optional[BaseRagasLLM] = None, **kwargs):
-                    """Asynchronous scoring method."""
                     # Prepare function arguments based on what the function expects
                     func_kwargs = kwargs.copy()
                     func_args = []
@@ -170,9 +168,8 @@ def create_metric_decorator(metric_class):
 
                     # Ensure result is a MetricResult
                     if not isinstance(result, MetricResult):
-                        raise ValueError(
-                            f"Custom metric function must return MetricResult, got {type(result)}"
-                        )
+                        # Wrap plain values in MetricResult
+                        result = MetricResult(value=result, reason=None)
 
                     # Validate the result based on metric type
                     validation_error = self._validate_result_value(result.value)

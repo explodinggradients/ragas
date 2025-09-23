@@ -39,17 +39,15 @@ class MetricResult:
         self.traces = traces
 
     def __repr__(self):
-        return repr(self._value)
+        return f'MetricResult(value={self._value}, reason="{self.reason}")'
+
+    __str__ = __repr__
 
     # Access to underlying result
     @property
     def value(self):
         """Get the raw result value."""
         return self._value
-
-    # String conversion - works for all types
-    def __str__(self):
-        return str(self._value)
 
     # Container-like behaviors for list results (RankingMetric)
     def __getitem__(self, key):
