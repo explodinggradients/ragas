@@ -650,3 +650,149 @@ class TestErrorHandling:
             simple_str="ok", simple_int=1
         )  # optional_str not provided
         assert result.value == "pass"
+
+
+class TestCustomTypeValidation:
+    """Tests for validation with custom types like InstructorLLM."""
+
+    def test_custom_type_validation_should_work(self):
+        """Test that metrics can accept custom class types without warnings."""
+
+        # Create a mock custom class similar to InstructorLLM
+        class MockInstructorLLM:
+            def __init__(self, name="mock"):
+                self.name = name
+
+            def generate(self, prompt: str, response_model) -> str:
+                return "pass"
+
+        @discrete_metric(name="custom_type_metric", allowed_values=["pass", "fail"])
+        def my_metric(input_text: str, llm: MockInstructorLLM) -> str:
+            return llm.generate(f"Process: {input_text}", str)
+
+        # This should work without warnings or errors
+        mock_llm = MockInstructorLLM()
+
+        # Capture warnings to ensure no validation warnings
+        import warnings
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            result = my_metric.score(input_text="test", llm=mock_llm)
+
+            # Should not have any warnings about "Could not create validation model"
+            validation_warnings = [
+                warning
+                for warning in w
+                if "Could not create validation model" in str(warning.message)
+            ]
+            assert len(validation_warnings) == 0, (
+                f"Got validation warnings: {[str(w.message) for w in validation_warnings]}"
+            )
+
+        assert isinstance(result, MetricResult)
+        assert result.value == "pass"
+
+    def test_custom_type_validation_wrong_type_should_fail(self):
+        """Test that wrong custom types are still caught."""
+
+        class MockInstructorLLM:
+            def generate(self, prompt: str, response_model) -> str:
+                return "pass"
+
+        class WrongType:
+            pass
+
+        @discrete_metric(name="custom_type_metric", allowed_values=["pass", "fail"])
+        def my_metric(input_text: str, llm: MockInstructorLLM) -> str:
+            return llm.generate(f"Process: {input_text}", str)
+
+        wrong_obj = WrongType()
+
+        # Should fail with type validation error
+        with pytest.raises(TypeError) as exc_info:
+            my_metric.score(input_text="test", llm=wrong_obj)
+
+        error_msg = str(exc_info.value)
+        assert "llm:" in error_msg  # Should show validation error for llm field
+
+    def test_mixed_standard_and_custom_types(self):
+        """Test validation with both standard Python types and custom types."""
+
+        class MockLLM:
+            def process(self, text: str) -> str:
+                return "processed"
+
+        @discrete_metric(name="mixed_type_metric", allowed_values=["pass", "fail"])
+        def my_metric(
+            text: str, count: int, llm: MockLLM, optional_flag: bool = False
+        ) -> str:
+            result = llm.process(text)
+            return "pass" if count > 0 and result else "fail"
+
+        mock_llm = MockLLM()
+
+        # Should work with valid types
+        result = my_metric.score(
+            text="hello", count=5, llm=mock_llm, optional_flag=True
+        )
+        assert result.value == "pass"
+
+        # Should fail with wrong standard type
+        with pytest.raises(TypeError):
+            my_metric.score(
+                text="hello", count="not_int", llm=mock_llm
+            )  # count should be int
+
+        # Should fail with wrong custom type
+        with pytest.raises(TypeError):
+            my_metric.score(
+                text="hello", count=5, llm="not_llm"
+            )  # llm should be MockLLM
+
+    def test_instructor_llm_like_usage(self):
+        """Test the actual use case that was failing - InstructorLLM-like usage."""
+
+        # Mock the InstructorLLM interface
+        class MockInstructorLLM:
+            def generate(self, prompt: str, response_model):
+                if "accurate" in prompt:
+                    return "pass"
+                return "fail"
+
+        @discrete_metric(name="summary_accuracy", allowed_values=["pass", "fail"])
+        def summary_accuracy(
+            user_input: str, response: str, llm: MockInstructorLLM
+        ) -> str:
+            prompt = f"Is the following summary accurate for the user's query: {user_input}? {response}"
+            return llm.generate(prompt, response_model=str)
+
+        # Test data similar to the failing case
+        test_data = {
+            "user_input": "summarise given text\nThe company reported an 8% rise in Q3 2024...",
+            "response": "The company experienced an 8% increase in Q3 2024, largely due to effective marketing...",
+        }
+
+        mock_llm = MockInstructorLLM()
+
+        # This should work without warnings
+        import warnings
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            result = summary_accuracy.score(
+                user_input=test_data["user_input"],
+                response=test_data["response"],
+                llm=mock_llm,
+            )
+
+            # Should not have validation model warnings
+            validation_warnings = [
+                warning
+                for warning in w
+                if "Could not create validation model" in str(warning.message)
+            ]
+            assert len(validation_warnings) == 0
+
+        assert isinstance(result, MetricResult)
+        assert result.value in ["pass", "fail"]

@@ -9,7 +9,7 @@ import warnings
 from dataclasses import dataclass, field
 from typing import get_args, get_origin, get_type_hints
 
-from pydantic import ValidationError, create_model
+from pydantic import ConfigDict, ValidationError, create_model
 
 from .result import MetricResult
 
@@ -139,9 +139,13 @@ def create_metric_decorator(metric_class):
 
                         field_definitions[name] = (type_hint, default)
 
-                    # Create the dynamic model
+                    # Create the dynamic model with arbitrary types allowed
                     model_name = f"{self.name}_ValidationModel"
-                    return create_model(model_name, **field_definitions)
+                    return create_model(
+                        model_name,
+                        __config__=ConfigDict(arbitrary_types_allowed=True),
+                        **field_definitions,
+                    )
 
                 def _format_pydantic_errors(
                     self, validation_error: ValidationError
