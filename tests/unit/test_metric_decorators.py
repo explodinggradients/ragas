@@ -315,10 +315,9 @@ class TestErrorHandling:
             my_metric.score(predicted="test")
 
         error_msg = str(exc_info.value)
-        assert "Missing required arguments" in error_msg
-        assert "expected" in error_msg
-        assert "context" in error_msg
-        assert "Example:" in error_msg
+        assert "Type validation errors" in error_msg
+        assert "expected: Field required" in error_msg
+        assert "context: Field required" in error_msg
 
     def test_missing_required_arguments_with_optional_arguments_error(self):
         """Test that Optional[T] parameters are treated as optional, not required."""
@@ -335,10 +334,9 @@ class TestErrorHandling:
             )  # missing 'expected' but 'context' is optional
 
         error_msg = str(exc_info.value)
-        assert "Missing required arguments" in error_msg
-        assert "expected" in error_msg
+        assert "Type validation errors" in error_msg
+        assert "expected: Field required" in error_msg
         assert "context" not in error_msg  # context should not be listed as required
-        assert "Example:" in error_msg
 
     def test_optional_type_annotation_without_default(self):
         """Test that t.Optional[T] without default value is still treated as optional."""
@@ -381,8 +379,8 @@ class TestErrorHandling:
             my_metric.score(required1="test")  # missing required2
 
         error_msg = str(exc_info.value)
-        assert "Missing required arguments" in error_msg
-        assert "required2" in error_msg
+        assert "Type validation errors" in error_msg
+        assert "required2: Field required" in error_msg
         assert "optional_typed" not in error_msg  # Should not be required
         assert "with_default" not in error_msg  # Should not be required
         assert "optional_with_default" not in error_msg  # Should not be required
@@ -400,21 +398,6 @@ class TestErrorHandling:
             optional_with_default="also optional",
         )
         assert result.value == "pass"
-
-    def test_type_validation_error(self):
-        """Test type validation with helpful error messages."""
-
-        @numeric_metric(name="score", allowed_values=(0, 1))
-        def my_metric(predicted: float, expected: int) -> float:
-            return float(predicted - expected)
-
-        with pytest.raises(TypeError) as exc_info:
-            my_metric.score(predicted="not_a_float", expected="not_an_int")
-
-        error_msg = str(exc_info.value)
-        assert "Type mismatch" in error_msg
-        assert "predicted: expected float" in error_msg
-        assert "expected: expected int" in error_msg
 
     def test_unknown_arguments_warning(self):
         """Test that unknown arguments generate warnings."""
@@ -468,11 +451,11 @@ class TestErrorHandling:
             await my_metric.ascore("test")
 
         # Test missing args error in async
-        with pytest.raises(TypeError, match="Missing required arguments"):
+        with pytest.raises(TypeError, match="Type validation errors"):
             await my_metric.ascore()
 
-    def test_helpful_examples_in_errors(self):
-        """Test that error messages include helpful examples based on type hints."""
+    def test_pydantic_validation_error_format(self):
+        """Test that Pydantic validation errors are properly formatted."""
 
         @numeric_metric(name="complex_metric", allowed_values=(0, 10))
         def my_metric(score: int, weight: float, tags: list) -> float:
@@ -482,10 +465,11 @@ class TestErrorHandling:
             my_metric.score()  # Missing all args
 
         error_msg = str(exc_info.value)
-        # Should have examples based on type hints
-        assert "score=1" in error_msg  # int example
-        assert "weight=0.5" in error_msg  # float example
-        assert 'tags=["item1", "item2"]' in error_msg  # list example
+        # Should show Pydantic validation errors
+        assert "Type validation errors for complex_metric" in error_msg
+        assert "score: Field required" in error_msg
+        assert "weight: Field required" in error_msg
+        assert "tags: Field required" in error_msg
 
     def test_no_type_hints_still_works(self):
         """Test that metrics work even without type hints."""
@@ -502,8 +486,8 @@ class TestErrorHandling:
         with pytest.raises(TypeError, match="requires keyword arguments"):
             my_metric.score("hello", 0.8)
 
-    def test_type_validation_shows_full_type_for_generics(self):
-        """Test that type error messages show full types for both simple and generic types."""
+    def test_comprehensive_type_validation(self):
+        """Test comprehensive type validation with Pydantic for all complex types."""
 
         @discrete_metric(name="complex_types", allowed_values=["pass", "fail"])
         def my_metric(
@@ -515,39 +499,36 @@ class TestErrorHandling:
         ) -> str:
             return "pass"
 
-        # Test 1: Simple types should show correctly (baseline)
+        # Test 1: Simple types validation
         with pytest.raises(TypeError) as exc_info:
-            my_metric.score(
-                simple_str=123, simple_int="not_int"
-            )  # Wrong types for simple params
+            my_metric.score(simple_str=123, simple_int="not_int")
 
         error_msg = str(exc_info.value)
-        assert "simple_str: expected str, got int" in error_msg
-        assert "simple_int: expected int, got str" in error_msg
+        assert "simple_str: Input should be a valid string" in error_msg
+        assert "simple_int: Input should be a valid integer" in error_msg
 
-        # Test 2: Optional types should show "Optional[T]", not just "Optional"
+        # Test 2: List type validation
         with pytest.raises(TypeError) as exc_info:
-            my_metric.score(
-                simple_str="ok", simple_int=1, optional_str=[1, 2, 3]
-            )  # list instead of Optional[str]
+            my_metric.score(simple_str="ok", simple_int=1, list_of_strings="not_a_list")
 
         error_msg = str(exc_info.value)
-        assert "optional_str: expected Optional[str], got list" in error_msg
-        assert (
-            "optional_str: expected Optional, got list" not in error_msg
-        )  # This should NOT appear
+        assert "list_of_strings: Input should be a valid list" in error_msg
 
-        # Test 3: Union types should show "Union[T1, T2]", not just "Union"
+        # Test 3: Union type validation - should accept both str and int
+        result1 = my_metric.score(simple_str="ok", simple_int=1, union_type="string")
+        result2 = my_metric.score(simple_str="ok", simple_int=1, union_type=42)
+        assert result1.value == "pass"
+        assert result2.value == "pass"
+
+        # Test 4: Union type validation - should reject other types
         with pytest.raises(TypeError) as exc_info:
-            my_metric.score(
-                simple_str="ok", simple_int=1, union_type=[1, 2, 3]
-            )  # list instead of Union[str, int]
+            my_metric.score(simple_str="ok", simple_int=1, union_type=[1, 2, 3])
 
         error_msg = str(exc_info.value)
-        assert "union_type: expected Union[str, int], got list" in error_msg
-        assert (
-            "union_type: expected Union, got list" not in error_msg
-        )  # This should NOT appear
+        assert "union_type:" in error_msg  # Should show union validation error
 
-        # Note: List[str] validation is not currently implemented in _check_type method
-        # So we skip that test for now - the focus is on fixing the error message formatting
+        # Test 5: Optional types work correctly
+        result = my_metric.score(
+            simple_str="ok", simple_int=1
+        )  # optional_str not provided
+        assert result.value == "pass"

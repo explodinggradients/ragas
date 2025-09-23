@@ -9,6 +9,8 @@ import warnings
 from dataclasses import dataclass
 from typing import get_args, get_origin, get_type_hints
 
+from pydantic import ValidationError, create_model
+
 from ragas.llms import InstructorBaseRagasLLM as BaseRagasLLM
 
 from .result import MetricResult
@@ -92,25 +94,6 @@ def create_metric_decorator(metric_class):
 
                     return None  # No validation error
 
-                def _check_type(self, value, expected_type):
-                    """Check if value matches expected type, handling Union, Optional, etc."""
-                    if expected_type == inspect.Parameter.empty:
-                        return True  # No type hint, assume valid
-
-                    # Handle Optional (Union[X, None])
-                    origin = get_origin(expected_type)
-                    if origin is t.Union:
-                        args = get_args(expected_type)
-                        # For Union types (including Optional), check if value matches any of the types
-                        return any(isinstance(value, arg) for arg in args)
-
-                    # Handle basic types
-                    if isinstance(expected_type, type):
-                        return isinstance(value, expected_type)
-
-                    # For complex types, do basic check
-                    return True
-
                 def _create_positional_error(self, args: tuple, kwargs: dict) -> str:
                     """Create error message for positional arguments."""
                     func_param_names = [
@@ -148,7 +131,11 @@ def create_metric_decorator(metric_class):
                     for name in missing:
                         param = sig.parameters[name]
                         type_hint = type_hints.get(name, param.annotation)
-                        type_str = self._format_type_name(type_hint)
+                        type_str = (
+                            getattr(type_hint, "__name__", "Any")
+                            if type_hint != inspect.Parameter.empty
+                            else "Any"
+                        )
                         msg += f"     - {name}: {type_str}\n"
 
                     msg += f"\n   Example: {self.name}.score("
@@ -182,31 +169,58 @@ def create_metric_decorator(metric_class):
                     msg += ", ".join(examples) + ")"
                     return msg
 
-                def _create_type_error(self, type_errors: list) -> str:
-                    """Create error message for type validation errors."""
-                    msg = f"\n❌ Type mismatch in {self.name}:\n\n"
-                    for error in type_errors:
-                        msg += f"   {error}\n"
+                def _create_pydantic_model(self):
+                    """Create a Pydantic model dynamically from the function signature."""
+                    try:
+                        type_hints = get_type_hints(func)
+                    except (NameError, AttributeError):
+                        type_hints = {}
+
+                    field_definitions = {}
+
+                    for name, param in sig.parameters.items():
+                        # Skip llm and prompt as they're handled separately
+                        if name in ["llm", "prompt"]:
+                            continue
+
+                        # Get type hint, default to str if no hint available
+                        type_hint = type_hints.get(name, param.annotation)
+                        if type_hint == inspect.Parameter.empty:
+                            type_hint = str
+
+                        # Get default value
+                        if param.default != inspect.Parameter.empty:
+                            default = param.default
+                        else:
+                            # Check if it's an optional type
+                            origin = get_origin(type_hint)
+                            if origin is t.Union and type(None) in get_args(type_hint):
+                                # Optional type, default to None
+                                default = None
+                            else:
+                                # Required field
+                                default = ...
+
+                        field_definitions[name] = (type_hint, default)
+
+                    # Create the dynamic model
+                    model_name = f"{self.name}_ValidationModel"
+                    return create_model(model_name, **field_definitions)
+
+                def _format_pydantic_errors(
+                    self, validation_error: ValidationError
+                ) -> str:
+                    """Format Pydantic validation errors into user-friendly messages."""
+                    msg = f"\n❌ Type validation errors for {self.name}:\n\n"
+
+                    for error in validation_error.errors():
+                        field = error["loc"][0]
+                        error_msg = error["msg"]
+                        input_value = error.get("input", "N/A")
+
+                        msg += f"   - {field}: {error_msg} (got: {repr(input_value)})\n"
+
                     return msg
-
-                def _format_type_name(self, type_hint):
-                    """Format type name properly for both simple and generic types."""
-                    if type_hint == inspect.Parameter.empty:
-                        return "Any"
-
-                    # For generic types (like Optional[str], List[int], Union[str, int]),
-                    # we want to show the full representation, not just the base class name
-                    if hasattr(type_hint, "__origin__") or hasattr(
-                        type_hint, "__args__"
-                    ):
-                        # This is a generic type, use string representation
-                        type_str = str(type_hint)
-                        # Clean up the representation for readability
-                        type_str = type_str.replace("typing.", "")
-                        return type_str
-
-                    # For simple types (int, str, float, etc.), use __name__ if available
-                    return getattr(type_hint, "__name__", str(type_hint))
 
                 def _is_optional_type(self, type_hint):
                     """Check if a type hint represents an optional type (Union[X, None])."""
@@ -222,13 +236,23 @@ def create_metric_decorator(metric_class):
                     return False
 
                 def _validate_inputs(self, args: tuple, kwargs: dict):
-                    """Validate all inputs and provide helpful error messages."""
-                    # 1. Check for positional arguments
+                    """Validate all inputs using Pydantic with helpful error messages."""
+                    # 1. Check for positional arguments (keep original helpful error)
                     if args:
                         raise TypeError(self._create_positional_error(args, kwargs))
 
-                    # 2. Warn about unknown arguments first (but continue processing)
-                    valid_params = set(sig.parameters.keys())
+                    # 2. Create dynamic Pydantic model from function signature
+                    try:
+                        pydantic_model = self._create_pydantic_model()
+                    except Exception as e:
+                        # Fallback if model creation fails
+                        warnings.warn(
+                            f"Could not create validation model: {e}", UserWarning
+                        )
+                        return
+
+                    # 3. Warn about unknown arguments (but continue processing)
+                    valid_params = set(pydantic_model.model_fields.keys())
                     unknown = set(kwargs.keys()) - valid_params
 
                     if unknown:
@@ -238,62 +262,18 @@ def create_metric_decorator(metric_class):
                             UserWarning,
                         )
 
-                    # 3. Check for required arguments (only check valid parameters)
-                    # A parameter is required if:
-                    # - It has no default value AND
-                    # - It's not 'llm' or 'prompt' AND
-                    # - It's not an Optional type (Union[X, None])
+                    # 4. Validate using Pydantic (only for valid parameters)
+                    valid_kwargs = {
+                        k: v for k, v in kwargs.items() if k in valid_params
+                    }
+
                     try:
-                        type_hints = get_type_hints(func)
-                    except (NameError, AttributeError):
-                        type_hints = {}
-
-                    required_params = []
-                    for name, p in sig.parameters.items():
-                        if name in ["llm", "prompt"]:
-                            continue
-
-                        has_default = p.default != inspect.Parameter.empty
-                        is_optional_type = self._is_optional_type(
-                            type_hints.get(name, p.annotation)
-                        )
-
-                        if not has_default and not is_optional_type:
-                            required_params.append(name)
-
-                    # Only check for missing required arguments among valid parameters
-                    provided_valid_params = set(kwargs.keys()) - unknown
-                    missing = [
-                        name
-                        for name in required_params
-                        if name not in provided_valid_params
-                    ]
-                    if missing:
-                        raise TypeError(self._create_missing_args_error(missing))
-
-                    # 4. Type validation (only for valid parameters)
-                    try:
-                        type_hints = get_type_hints(func)
-                        type_errors = []
-
-                        for name, value in kwargs.items():
-                            if name in unknown:
-                                continue  # Skip unknown parameters
-                            if name in type_hints and name in sig.parameters:
-                                expected_type = type_hints[name]
-                                if not self._check_type(value, expected_type):
-                                    actual_type = type(value).__name__
-                                    expected_str = self._format_type_name(expected_type)
-                                    type_errors.append(
-                                        f"- {name}: expected {expected_str}, got {actual_type} ({repr(value)})"
-                                    )
-
-                        if type_errors:
-                            raise TypeError(self._create_type_error(type_errors))
-
-                    except (NameError, AttributeError):
-                        # Skip type validation if we can't get type hints
-                        pass
+                        # This will validate types and handle required/optional fields
+                        validated_data = pydantic_model(**valid_kwargs)
+                        # Store the validated data for use in execution
+                        self._validated_data = validated_data.model_dump()
+                    except ValidationError as e:
+                        raise TypeError(self._format_pydantic_errors(e))
 
                 def _run_sync_in_async(self, func, *args, **kwargs):
                     """Run a synchronous function in an async context."""
@@ -303,40 +283,15 @@ def create_metric_decorator(metric_class):
                 def _execute_metric(self, llm, is_async_execution, **kwargs):
                     """Execute the metric function with proper async handling."""
                     try:
-                        # Prepare function arguments based on what the function expects
-                        func_kwargs = kwargs.copy()
+                        # Use validated data from Pydantic if available, otherwise use kwargs
+                        func_kwargs = getattr(self, "_validated_data", {})
                         func_args = []
 
+                        # Add llm and prompt if the function expects them
                         if expects_llm:
                             func_args.append(llm)
                         if expects_prompt:
                             func_args.append(self.prompt)
-
-                        # Handle Optional parameters that weren't provided
-                        try:
-                            type_hints = get_type_hints(func)
-                        except (NameError, AttributeError):
-                            type_hints = {}
-
-                        for name, param in sig.parameters.items():
-                            if name in ["llm", "prompt"]:
-                                continue
-
-                            # If parameter is not provided but is Optional, provide None
-                            if (
-                                name not in func_kwargs
-                                and param.default == inspect.Parameter.empty
-                                and self._is_optional_type(
-                                    type_hints.get(name, param.annotation)
-                                )
-                            ):
-                                func_kwargs[name] = None
-
-                        # Remove unknown arguments from func_kwargs before passing to function
-                        valid_params = set(sig.parameters.keys())
-                        func_kwargs = {
-                            k: v for k, v in func_kwargs.items() if k in valid_params
-                        }
 
                         if is_async:
                             # Async function implementation
