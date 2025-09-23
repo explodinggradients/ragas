@@ -1,6 +1,12 @@
 """decorator factory for creating custom metrics"""
 
-__all__ = ["create_metric_decorator"]
+__all__ = [
+    "create_metric_decorator",
+    "BaseMetricProtocol",
+    "DiscreteMetricProtocol",
+    "NumericMetricProtocol",
+    "RankingMetricProtocol",
+]
 
 import asyncio
 import inspect
@@ -11,7 +17,65 @@ from typing import get_args, get_origin, get_type_hints
 
 from pydantic import ConfigDict, ValidationError, create_model
 
+if t.TYPE_CHECKING:
+    from typing_extensions import Protocol
+else:
+    try:
+        from typing_extensions import Protocol
+    except ImportError:
+        from typing import Protocol
+
 from .result import MetricResult
+
+# Type variables for generic typing
+F = t.TypeVar("F", bound=t.Callable[..., t.Any])
+
+
+# Protocol classes for type hints
+class BaseMetricProtocol(Protocol):
+    """Protocol defining the base metric interface."""
+
+    name: str
+
+    def score(self, **kwargs) -> MetricResult:
+        """Synchronous scoring method."""
+        ...
+
+    async def ascore(self, **kwargs) -> MetricResult:
+        """Asynchronous scoring method."""
+        ...
+
+    def batch_score(self, inputs: t.List[t.Dict[str, t.Any]]) -> t.List[MetricResult]:
+        """Batch scoring method."""
+        ...
+
+    async def abatch_score(
+        self, inputs: t.List[t.Dict[str, t.Any]]
+    ) -> t.List[MetricResult]:
+        """Asynchronous batch scoring method."""
+        ...
+
+    def __call__(self, *args, **kwargs):
+        """Make the metric directly callable like the original function."""
+        ...
+
+
+class DiscreteMetricProtocol(BaseMetricProtocol, Protocol):
+    """Protocol for discrete metrics with allowed values."""
+
+    allowed_values: t.List[str]
+
+
+class NumericMetricProtocol(BaseMetricProtocol, Protocol):
+    """Protocol for numeric metrics with value ranges."""
+
+    allowed_values: t.Tuple[float, float]
+
+
+class RankingMetricProtocol(BaseMetricProtocol, Protocol):
+    """Protocol for ranking metrics with list outputs."""
+
+    allowed_values: int  # Expected list length
 
 
 def create_metric_decorator(metric_class):

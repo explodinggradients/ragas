@@ -796,3 +796,89 @@ class TestCustomTypeValidation:
 
         assert isinstance(result, MetricResult)
         assert result.value in ["pass", "fail"]
+
+
+class TestIDESupport:
+    """Tests for IDE type support and Protocol compliance."""
+
+    def test_discrete_metric_has_proper_methods(self):
+        """Test that discrete metrics have all expected methods for IDE support."""
+
+        @discrete_metric(name="ide_test", allowed_values=["pass", "fail"])
+        def my_metric(text: str) -> str:
+            return "pass"
+
+        # Should have all protocol methods
+        assert hasattr(my_metric, "score")
+        assert hasattr(my_metric, "ascore")
+        assert hasattr(my_metric, "batch_score")
+        assert hasattr(my_metric, "abatch_score")
+        assert hasattr(my_metric, "__call__")
+        assert hasattr(my_metric, "name")
+        assert hasattr(my_metric, "allowed_values")
+
+        # Test that methods work
+        result = my_metric.score(text="test")
+        assert isinstance(result, MetricResult)
+        assert result.value == "pass"
+
+    def test_numeric_metric_has_proper_methods(self):
+        """Test that numeric metrics have all expected methods for IDE support."""
+
+        @numeric_metric(name="ide_numeric_test", allowed_values=(0.0, 1.0))
+        def my_metric(value: float) -> float:
+            return min(max(value, 0.0), 1.0)
+
+        # Should have all protocol methods
+        assert hasattr(my_metric, "score")
+        assert hasattr(my_metric, "ascore")
+        assert hasattr(my_metric, "batch_score")
+        assert hasattr(my_metric, "abatch_score")
+        assert hasattr(my_metric, "__call__")
+        assert hasattr(my_metric, "name")
+        assert hasattr(my_metric, "allowed_values")
+
+        # Test that methods work
+        result = my_metric.score(value=0.5)
+        assert isinstance(result, MetricResult)
+        assert result.value == 0.5
+
+    def test_ranking_metric_has_proper_methods(self):
+        """Test that ranking metrics have all expected methods for IDE support."""
+
+        @ranking_metric(name="ide_ranking_test", allowed_values=2)
+        def my_metric(items: list) -> list:
+            return [1, 0]  # Simple reverse ranking
+
+        # Should have all protocol methods
+        assert hasattr(my_metric, "score")
+        assert hasattr(my_metric, "ascore")
+        assert hasattr(my_metric, "batch_score")
+        assert hasattr(my_metric, "abatch_score")
+        assert hasattr(my_metric, "__call__")
+        assert hasattr(my_metric, "name")
+        assert hasattr(my_metric, "allowed_values")
+
+        # Test that methods work
+        result = my_metric.score(items=["a", "b"])
+        assert isinstance(result, MetricResult)
+        assert result.value == [1, 0]
+
+    def test_protocol_attributes_accessible(self):
+        """Test that protocol attributes are properly accessible."""
+
+        @discrete_metric(name="protocol_test", allowed_values=["yes", "no"])
+        def test_metric(input_val: str) -> str:
+            return "yes" if input_val else "no"
+
+        # Protocol attributes should be accessible
+        assert test_metric.name == "protocol_test"
+        assert test_metric.allowed_values == ["yes", "no"]
+
+        # Should work in both direct call and score method
+        direct_result = test_metric("hello")
+        assert direct_result == "yes"
+
+        score_result = test_metric.score(input_val="hello")
+        assert isinstance(score_result, MetricResult)
+        assert score_result.value == "yes"
