@@ -218,6 +218,124 @@ class TestRankingMetric:
         assert result.reason is None
 
 
+class TestDirectCallable:
+    """Test that decorated metrics are directly callable using the original function."""
+
+    def test_discrete_metric_direct_call_with_plain_return(self):
+        """Test that decorated discrete metric can be called directly."""
+
+        @discrete_metric(name="response_quality", allowed_values=["pass", "fail"])
+        def my_metric(predicted: str, expected: str) -> str:
+            return "pass" if predicted.lower() == expected.lower() else "fail"
+
+        # Direct call should work and return the raw function result
+        result = my_metric("test", "test")
+        assert result == "pass"  # Should return plain string, not MetricResult
+
+        result = my_metric("hello", "world")
+        assert result == "fail"
+
+    def test_discrete_metric_direct_call_with_metric_result_return(self):
+        """Test direct call when function returns MetricResult."""
+
+        @discrete_metric(name="response_quality", allowed_values=["pass", "fail"])
+        def my_metric(predicted: str, expected: str) -> MetricResult:
+            value = "pass" if predicted.lower() == expected.lower() else "fail"
+            reason = f"Compared '{predicted}' with '{expected}'"
+            return MetricResult(value=value, reason=reason)
+
+        # Direct call should return MetricResult as the original function does
+        result = my_metric("test", "test")
+        assert isinstance(result, MetricResult)
+        assert result.value == "pass"
+        assert result.reason == "Compared 'test' with 'test'"
+
+    def test_numeric_metric_direct_call(self):
+        """Test that decorated numeric metric can be called directly."""
+
+        @numeric_metric(name="response_accuracy", allowed_values=(0, 1))
+        def my_metric(predicted: float, expected: float) -> float:
+            return abs(predicted - expected) / max(expected, 1e-5)
+
+        # Direct call should work and return the raw function result
+        result = my_metric(0.8, 1.0)
+        assert isinstance(result, float)
+        assert abs(result - 0.2) < 1e-10
+
+    def test_ranking_metric_direct_call(self):
+        """Test that decorated ranking metric can be called directly."""
+
+        @ranking_metric(name="response_ranking", allowed_values=3)
+        def my_metric(responses: list) -> list:
+            response_lengths = [len(response) for response in responses]
+            sorted_indices = sorted(
+                range(len(response_lengths)), key=lambda i: response_lengths[i]
+            )
+            return sorted_indices
+
+        # Direct call should work and return the raw function result
+        result = my_metric(["short", "a bit longer", "the longest response"])
+        assert isinstance(result, list)
+        assert result == [0, 1, 2]
+
+    @pytest.mark.asyncio
+    async def test_async_discrete_metric_direct_call(self):
+        """Test that decorated async metric can be called directly."""
+
+        @discrete_metric(name="response_quality", allowed_values=["pass", "fail"])
+        async def my_metric(predicted: str, expected: str) -> str:
+            return "pass" if predicted.lower() == expected.lower() else "fail"
+
+        # Direct call should work and return a coroutine that can be awaited
+        result = await my_metric("test", "test")
+        assert result == "pass"
+
+    def test_direct_call_vs_score_method(self):
+        """Test that direct call returns raw result while score method returns MetricResult."""
+
+        @discrete_metric(name="response_quality", allowed_values=["pass", "fail"])
+        def my_metric(predicted: str, expected: str) -> str:
+            return "pass" if predicted.lower() == expected.lower() else "fail"
+
+        # Direct call returns raw result
+        direct_result = my_metric("test", "test")
+        assert direct_result == "pass"
+        assert not isinstance(direct_result, MetricResult)
+
+        # Score method returns MetricResult
+        score_result = my_metric.score(predicted="test", expected="test")
+        assert isinstance(score_result, MetricResult)
+        assert score_result.value == "pass"
+
+    def test_direct_call_with_positional_args(self):
+        """Test that direct call allows positional arguments like the original function."""
+
+        @discrete_metric(name="response_quality", allowed_values=["pass", "fail"])
+        def my_metric(predicted: str, expected: str) -> str:
+            return "pass" if predicted.lower() == expected.lower() else "fail"
+
+        # Direct call should allow positional arguments
+        result = my_metric("test", "test")
+        assert result == "pass"
+
+    def test_direct_call_handles_function_errors(self):
+        """Test that direct call propagates function errors normally."""
+
+        @discrete_metric(name="error_metric", allowed_values=["pass", "fail"])
+        def error_metric(should_error: bool) -> str:
+            if should_error:
+                raise ValueError("Test error from original function")
+            return "pass"
+
+        # Direct call should propagate the error normally
+        with pytest.raises(ValueError, match="Test error from original function"):
+            error_metric(True)
+
+        # Should work normally when no error
+        result = error_metric(False)
+        assert result == "pass"
+
+
 class TestEdgeCases:
     """Test edge cases and error conditions."""
 

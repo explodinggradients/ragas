@@ -6,7 +6,7 @@ import asyncio
 import inspect
 import typing as t
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import get_args, get_origin, get_type_hints
 
 from pydantic import ValidationError, create_model
@@ -59,6 +59,8 @@ def create_metric_decorator(metric_class):
             # TODO: Move to dataclass type implementation
             @dataclass
             class CustomMetric(metric_class):
+                _func: t.Any = field(default=None, init=False)
+
                 def _validate_result_value(self, result_value):
                     """Validate result value based on metric type constraints."""
                     # Discrete metric validation
@@ -371,8 +373,40 @@ def create_metric_decorator(metric_class):
 
                     return result
 
+                def __call__(self, *args, **kwargs):
+                    """Make the metric instance directly callable using the original function."""
+                    if self._func is None:
+                        raise RuntimeError(
+                            "Original function not set on metric instance"
+                        )
+
+                    if is_async:
+                        # For async functions, we need to handle the execution context
+                        try:
+                            # If we're already in an async context, return the coroutine
+                            loop = asyncio.get_running_loop()
+                            # We're in an async context, return the coroutine for awaiting
+                            return self._func(*args, **kwargs)
+                        except RuntimeError:
+                            # No running loop, execute in new event loop
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                            try:
+                                return loop.run_until_complete(
+                                    self._func(*args, **kwargs)
+                                )
+                            finally:
+                                loop.close()
+                                asyncio.set_event_loop(None)
+                    else:
+                        # For sync functions, just call directly
+                        return self._func(*args, **kwargs)
+
             # Create the metric instance with all parameters
             metric_instance = CustomMetric(name=metric_name, **metric_params)
+
+            # Store the original function for direct calling
+            metric_instance._func = func
 
             # Preserve metadata
             metric_instance.__name__ = metric_name
