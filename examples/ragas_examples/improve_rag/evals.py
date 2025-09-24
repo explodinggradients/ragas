@@ -12,7 +12,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-import mlflow
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 

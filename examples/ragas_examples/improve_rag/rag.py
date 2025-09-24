@@ -8,14 +8,16 @@ Usage:
     result = await rag.query("What is...?")            # returns: {answer, retrieved_documents, num_retrieved}
 """
 
-from typing import Any, Dict, Optional
-from openai import AsyncOpenAI
-import datasets
-import mlflow
 import logging
+from typing import Any, Dict, Optional
+
+import mlflow
 from langchain.docstore.document import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.retrievers import BM25Retriever as LangchainBM25Retriever
+from openai import AsyncOpenAI
+
+import datasets
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -193,9 +195,11 @@ class RAG:
 
 # Demo
 async def main():
-    import os, pathlib
-    from openai import AsyncOpenAI
+    import os
+    import pathlib
+
     from dotenv import load_dotenv
+    from openai import AsyncOpenAI
     
     # Load .env from root
     root_dir = pathlib.Path(__file__).parent.parent.parent.parent
