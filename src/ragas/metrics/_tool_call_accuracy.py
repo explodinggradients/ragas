@@ -5,7 +5,7 @@ import warnings
 from dataclasses import dataclass, field
 
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
-from ragas.messages import AIMessage
+from ragas.messages import AIMessage, ToolCall
 from ragas.metrics._string import ExactMatch
 from ragas.metrics.base import MetricType, MultiTurnMetric, SingleTurnMetric
 
@@ -19,12 +19,16 @@ class ToolCallAccuracy(MultiTurnMetric):
     Tool Call Accuracy metric measures how accurately an LLM agent makes tool calls
     compared to reference tool calls.
 
+    The metric supports two evaluation modes:
+    1. Strict order (default): Tool calls must match exactly in sequence
+    2. Flexible order: Tool calls can be in any order (parallel evaluation)
+
     The metric evaluates two aspects:
-    1. Sequence alignment: Whether predicted and reference tool calls match exactly in order
+    1. Sequence alignment: Whether predicted and reference tool calls match in the required order
     2. Argument accuracy: How well tool call arguments match between predicted and reference
 
     Score calculation:
-    - If sequences don't align exactly: score = 0
+    - If sequences don't align: score = 0
     - If sequences align: score = (average argument accuracy) * sequence_alignment_factor
     - Length mismatches result in warnings and proportional penalty
 
@@ -34,9 +38,14 @@ class ToolCallAccuracy(MultiTurnMetric):
     - Missing arguments: contributes 0 to the argument score for that tool call
 
     The final score is always between 0.0 and 1.0.
+
+    Args:
+        strict_order: If True (default), tool calls must match exactly in sequence.
+                     If False, tool calls can be in any order (parallel evaluation).
     """
 
     name: str = "tool_call_accuracy"
+    strict_order: bool = True
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.MULTI_TURN: {
@@ -73,10 +82,30 @@ class ToolCallAccuracy(MultiTurnMetric):
 
         return score / len(refs.keys())
 
+    @staticmethod
+    def _sorted_key_for_tool_call(tc: ToolCall) -> t.Tuple[str, ...]:
+        """
+        Generate a consistent sorting key for tool calls.
+
+        This ensures tool calls with the same content are compared correctly
+        regardless of argument order in the original call.
+        """
+        key_list = [tc.name]
+        args = tc.args
+        args_name = sorted(args)
+        for name in args_name:
+            key_list.append(name)
+            key_list.append(str(args[name]))
+        return tuple(key_list)
+
     def is_sequence_aligned(
         self, pred_sequence: t.List[str], ref_sequence: t.List[str]
     ) -> bool:
-        return pred_sequence == ref_sequence
+        if self.strict_order:
+            return pred_sequence == ref_sequence
+        else:
+            # For non-strict mode, sort both sequences before comparison
+            return sorted(pred_sequence) == sorted(ref_sequence)
 
     async def _multi_turn_ascore(
         self, sample: MultiTurnSample, callbacks: Callbacks
@@ -104,6 +133,15 @@ class ToolCallAccuracy(MultiTurnMetric):
             warnings.warn("Reference tool calls are empty but predictions exist")
             return 0.0
 
+        # Sort tool calls if not using strict order
+        if not self.strict_order:
+            pred_tool_calls = sorted(
+                pred_tool_calls, key=self._sorted_key_for_tool_call
+            )
+            reference_tool_calls = sorted(
+                reference_tool_calls, key=self._sorted_key_for_tool_call
+            )
+
         # Check for length mismatch and warn user
         if len(pred_tool_calls) != len(reference_tool_calls):
             warnings.warn(
@@ -120,12 +158,11 @@ class ToolCallAccuracy(MultiTurnMetric):
             self.is_sequence_aligned(tool_call_pred_sequence, tool_call_ref_sequence)
         )
 
-        # Calculate score based on paired tool calls
+        # Calculate score based on paired tool calls (without nested loop)
         score = 0.0
-        compared_count = 0
+        compared_count = min(len(pred_tool_calls), len(reference_tool_calls))
 
         for ref_tool_call, pred_tool_call in zip(reference_tool_calls, pred_tool_calls):
-            compared_count += 1
             if ref_tool_call.name == pred_tool_call.name:
                 arg_score = await self._get_arg_score(
                     pred_tool_call.args, ref_tool_call.args, callbacks

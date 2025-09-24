@@ -288,3 +288,84 @@ class TestToolCallAccuracy:
         required = tool_call_accuracy._required_columns[MetricType.MULTI_TURN]
         assert "user_input" in required
         assert "reference_tool_calls" in required
+
+    def test_strict_order_parameter_default(self):
+        """Test that strict_order defaults to True for backward compatibility."""
+        metric = ToolCallAccuracy()
+        assert metric.strict_order is True
+
+    def test_strict_order_parameter_explicit(self):
+        """Test explicit strict_order parameter setting."""
+        strict_metric = ToolCallAccuracy(strict_order=True)
+        flexible_metric = ToolCallAccuracy(strict_order=False)
+
+        assert strict_metric.strict_order is True
+        assert flexible_metric.strict_order is False
+
+    def test_is_sequence_aligned_flexible_mode(self):
+        """Test sequence alignment with flexible ordering."""
+        flexible_metric = ToolCallAccuracy(strict_order=False)
+
+        pred_seq = ["func2", "func1", "func3"]
+        ref_seq = ["func1", "func2", "func3"]
+
+        # Flexible mode should return True for same elements in different order
+        assert flexible_metric.is_sequence_aligned(pred_seq, ref_seq) is True
+
+        # Strict mode should return False for different order
+        strict_metric = ToolCallAccuracy(strict_order=True)
+        assert strict_metric.is_sequence_aligned(pred_seq, ref_seq) is False
+
+    def test_flexible_order_sorting_behavior(self):
+        """Test that flexible mode sorts tool calls before evaluation."""
+
+        # Test that tool calls get sorted when not in strict order mode
+        reference_calls = [
+            ToolCall(name="WeatherForecast", args={"location": "Paris"}),
+            ToolCall(name="UVIndex", args={"location": "Paris"}),
+        ]
+
+        predicted_calls = [
+            ToolCall(name="UVIndex", args={"location": "Paris"}),
+            ToolCall(name="WeatherForecast", args={"location": "Paris"}),
+        ]
+
+        # Test sequence alignment logic directly
+        strict_metric = ToolCallAccuracy(strict_order=True)
+        flexible_metric = ToolCallAccuracy(strict_order=False)
+
+        # Sequence names for comparison
+        pred_seq = [
+            call.name for call in predicted_calls
+        ]  # ["UVIndex", "WeatherForecast"]
+        ref_seq = [
+            call.name for call in reference_calls
+        ]  # ["WeatherForecast", "UVIndex"]
+
+        # Strict should fail on order
+        strict_aligned = strict_metric.is_sequence_aligned(pred_seq, ref_seq)
+        assert strict_aligned is False
+
+        # Flexible should pass (sorts both before comparing)
+        flexible_aligned = flexible_metric.is_sequence_aligned(pred_seq, ref_seq)
+        assert flexible_aligned is True
+
+    def test_sorted_key_for_tool_call(self):
+        """Test the sorting key generation for tool calls."""
+        tool_call_1 = ToolCall(
+            name="WeatherForecast", args={"location": "Paris", "units": "metric"}
+        )
+        tool_call_2 = ToolCall(
+            name="WeatherForecast", args={"units": "metric", "location": "Paris"}
+        )
+
+        key_1 = ToolCallAccuracy._sorted_key_for_tool_call(tool_call_1)
+        key_2 = ToolCallAccuracy._sorted_key_for_tool_call(tool_call_2)
+
+        # Same content with different arg order should produce same key
+        assert key_1 == key_2
+
+        # Different tool call should produce different key
+        different_call = ToolCall(name="UVIndex", args={"location": "Paris"})
+        key_3 = ToolCallAccuracy._sorted_key_for_tool_call(different_call)
+        assert key_1 != key_3
