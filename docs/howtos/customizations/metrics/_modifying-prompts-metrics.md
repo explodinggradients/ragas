@@ -1,12 +1,12 @@
 # Modifying prompts in metrics
 
-Every metrics in ragas that uses LLM also uses one or more prompts to come up with intermediate results that is used for formulating scores. Prompts can be treated like hyperparameters when using LLM based metrics. An optimised prompt that suits your domain and use-case can increase the accuracy of your LLM based metrics by 10-20%. An optimal prompt is also depended on the LLM one is using, so as users you might want to tune prompts that powers each metric. 
+Every metrics in ragas that uses LLM also uses one or more prompts to come up with intermediate results that is used for formulating scores. Prompts can be treated like hyperparameters when using LLM based metrics. An optimised prompt that suits your domain and use-case can increase the accuracy of your LLM based metrics by 10-20%. An optimal prompt is also depended on the LLM one is using, so as users you might want to tune prompts that powers each metric.
 
-Each prompt in Ragas is written using [Prompt Object][ragas.prompts.PydanticPrompt]lease make sure you have an understanding of it before going further.
+Each prompt in Ragas is written using [Prompt Object][ragas.prompts.PydanticPrompt] At least make sure you have an understanding of it before going further.
 
 ### Understand the prompts of your Metric
 
-Since Ragas treats prompts like hyperparameters in metrics, we have a unified interface of `get_prompts` to access prompts used underneath any metrics. 
+Since Ragas treats prompts like hyperparameters in metrics, we have a unified interface of `get_prompts` to access prompts used underneath any metrics.
 
 
 ```python
@@ -33,7 +33,7 @@ Your task is to judge the faithfulness of a series of statements based on a give
 ```
 
 ### Modifying instruction in default prompt
-It is highly likely that one might want to modify the prompt to suit ones needs. Ragas provides `set_prompts` methods to allow you to do so. Let's change the one of the prompts used in `FactualCorrectness` metrics
+It is highly likely that one might want to modify the prompt to suit one's needs. Ragas provides `set_prompts` methods to allow you to do so. Let's change the one of the prompts used in `FactualCorrectness` metrics
 
 
 ```python

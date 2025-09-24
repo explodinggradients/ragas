@@ -52,7 +52,7 @@ Example:
 
 **Metrics can be classified into two categories based on the mechanism used underneath the hood**:
 
-&nbsp;&nbsp;&nbsp;&nbsp; **LLM-based metrics**: These metrics use LLM underneath to do the evaluation. There might be one or more LLM calls that are performed to arrive at the score or result. These metrics can be somewhat non deterministic as the LLM might not always return the same result for the same input. On the other hand, these metrics has shown to be more accurate and closer to human evaluation.
+&nbsp;&nbsp;&nbsp;&nbsp; **LLM-based metrics**: These metrics use LLM underneath to do the evaluation. There might be one or more LLM calls that are performed to arrive at the score or result. These metrics can be somewhat non-deterministic as the LLM might not always return the same result for the same input. On the other hand, these metrics has shown to be more accurate and closer to human evaluation.
 
 All LLM based metrics in ragas are inherited from `MetricWithLLM` class. These metrics expects a LLM object to be set before scoring.
 
@@ -66,7 +66,7 @@ Each LLM based metrics also will have prompts associated with it written using [
 
 &nbsp;&nbsp;&nbsp;&nbsp; **Non-LLM-based metrics**: These metrics do not use LLM underneath to do the evaluation. These metrics are deterministic and can be used to evaluate the performance of the AI application without using LLM. These metrics rely on traditional methods to evaluate the performance of the AI application, such as string similarity, BLEU score, etc. Due to the same, these metrics are known to have a lower correlation with human evaluation.
 
-All Non-LLM-based metrics in ragas are inherited from `Metric` class. 
+All Non-LLM-based metrics in ragas are inherited from `Metric` class.
 
 **Metrics can be broadly classified into two categories based on the type of data they evaluate**:
 
@@ -109,7 +109,7 @@ def my_metric(predicted: str, expected: str) -> str:
 #### 2. Numeric Metrics
 
 These return an integer or float value within a specified range. Numeric metrics support aggregation functions such as mean, sum, or mode, making them useful for statistical analysis.
-    
+
 ```python
 from ragas.metrics import numeric_metric
 
@@ -139,19 +139,19 @@ my_metric.score(responses=["short", "a bit longer", "the longest response"])  # 
 
 Designing effective metrics for AI applications requires following to a set of core principles to ensure their reliability, interpretability, and relevance. Here are five key principles we follow in ragas when designing metrics:
 
-**1. Single-Aspect Focus**  
+**1. Single-Aspect Focus**
 A single metric should target only one specific aspect of the AI application's performance. This ensures that the metric is both interpretable and actionable, providing clear insights into what is being measured.
 
-**2. Intuitive and Interpretable**  
+**2. Intuitive and Interpretable**
 Metrics should be designed to be easy to understand and interpret. Clear and intuitive metrics make it simpler to communicate results and draw meaningful conclusions.
 
-**3. Effective Prompt Flows**  
+**3. Effective Prompt Flows**
 When developing metrics using large language models (LLMs), use intelligent prompt flows that align closely with human evaluation. Decomposing complex tasks into smaller sub-tasks with specific prompts can improve the accuracy and relevance of the metric.
 
-**4. Robustness**  
+**4. Robustness**
 Ensure that LLM-based metrics include sufficient few-shot examples that reflect the desired outcomes. This enhances the robustness of the metric by providing context and guidance for the LLM to follow.
 
-**5.Consistent Scoring Ranges**  
+**5.Consistent Scoring Ranges**
 It is crucial to normalize metric score values or ensure they fall within a specific range, such as 0 to 1. This facilitates comparison between different metrics and helps maintain consistency and interpretability across the evaluation framework.
 
 These principles serve as a foundation for creating metrics that are not only effective but also practical and meaningful in evaluating AI applications.

@@ -1,6 +1,6 @@
 # Adapting metrics to target language
 
-While using ragas to evaluate LLM application workflows, you may have applications to be evaluated that are in languages other than english. In this case, it is best to adapt your LLM powered evaluation metrics to the target language. One obivous way to do this is to manually change the instruction and demonstration, but this can be time consuming. Ragas here offers automatic language adaptation where you can automatically adapt any metrics to target language by using LLM itself. This notebook demonstrates this with simple example
+While using ragas to evaluate LLM application workflows, you may have applications to be evaluated that are in languages other than English. In this case, it is best to adapt your LLM powered evaluation metrics to the target language. One obvious way to do this is to manually change the instruction and demonstration, but this can be time-consuming. Ragas here offers automatic language adaptation where you can automatically adapt any metrics to target language by using LLM itself. This notebook demonstrates this with simple example
 
 For the sake of this example, let's choose and metric and inspect the default prompts
 
@@ -26,7 +26,7 @@ scorer.get_prompts()
 
 
 
-As you can see, the instruction and demonstration are both in english. Setting up LLM to be used for this conversion
+As you can see, the instruction and demonstration are both in English. Setting up LLM to be used for this conversion
 
 
 ```python
@@ -36,7 +36,7 @@ llm = llm_factory()
 ```
 
 Now let's adapt it to 'hindi' as the target language using `adapt` method.
-Language adaptation in Ragas works by translating few shot examples given along with the prompts to the target language. Instructions remains in english. 
+Language adaptation in Ragas works by translating few shot examples given along with the prompts to the target language. Instructions remains in English.
 
 
 ```python

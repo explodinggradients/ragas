@@ -1,7 +1,7 @@
 # Create custom single-hop queries from your documents
 
 ### Load sample documents
-I am using documents from [sample of gitlab handbook](https://huggingface.co/datasets/explodinggradients/Sample_Docs_Markdown). You can download it by running the below command.
+I am using documents from [sample of GitLab handbook](https://huggingface.co/datasets/explodinggradients/Sample_Docs_Markdown). You can download it by running the below command.
 
 ```
 ! git clone https://huggingface.co/datasets/explodinggradients/Sample_Docs_Markdown
@@ -57,7 +57,7 @@ embedding = OpenAIEmbeddings(client=openai_client)
 
 
 Here we are using 2 extractors and 2 relationship builders.
-- Headline extrator: Extracts headlines from the documents
+- Headline extractor: Extracts headlines from the documents
 - Keyphrase extractor: Extracts keyphrases from the documents
 - Headline splitter: Splits the document into nodes based on headlines
 
@@ -96,7 +96,7 @@ Applying KeyphrasesExtractor:  72%|▋| 26/36 [00:04<00:00, 1Property 'keyphrase
 Applying KeyphrasesExtractor:  81%|▊| 29/36 [00:04<00:00,  Property 'keyphrases' already exists in node 'c230df'. Skipping!
 Applying KeyphrasesExtractor:  89%|▉| 32/36 [00:04<00:00, 1Property 'keyphrases' already exists in node '4f2765'. Skipping!
 Property 'keyphrases' already exists in node '4a4777'. Skipping!
-```                                                               
+```
 
 ### Configure personas
 
@@ -117,16 +117,16 @@ persona2 = Persona(
 persona_list = [person1, persona2]
 ```
 
-## 
+##
 
 ## SingleHop Query
 
-Inherit from `SingleHopQuerySynthesizer` and modify the function that generates scenarios for query creation. 
+Inherit from `SingleHopQuerySynthesizer` and modify the function that generates scenarios for query creation.
 
 **Steps**:
 - find qualified set of nodes for the query creation. Here I am selecting all nodes with keyphrases extracted.
 - For each qualified set
-    - Match the keyphrase with one or more persona. 
+    - Match the keyphrase with one or more persona.
     - Create all possible combinations of (Node, Persona, Query Style, Query Length)
     - Samples the required number of queries from the combinations
 
@@ -204,18 +204,18 @@ result = await query.generate_sample(scenario=scenarios[-1])
 ```
 
 ### Modify prompt to customize the query style
-Here I am replacing the default prompt with an instruction to generate only Yes/No questions. This is an optional step. 
+Here I am replacing the default prompt with an instruction to generate only Yes/No questions. This is an optional step.
 
 
 ```python
-instruction = """Generate a Yes/No query and answer based on the specified conditions (persona, term, style, length) 
-and the provided context. Ensure the answer is entirely faithful to the context, using only the information 
+instruction = """Generate a Yes/No query and answer based on the specified conditions (persona, term, style, length)
+and the provided context. Ensure the answer is entirely faithful to the context, using only the information
 directly from the provided context.
 
 ### Instructions:
-1. **Generate a Yes/No Query**: Based on the context, persona, term, style, and length, create a question 
+1. **Generate a Yes/No Query**: Based on the context, persona, term, style, and length, create a question
 that aligns with the persona's perspective, incorporates the term, and can be answered with 'Yes' or 'No'.
-2. **Generate an Answer**: Using only the content from the provided context, provide a 'Yes' or 'No' answer 
+2. **Generate an Answer**: Using only the content from the provided context, provide a 'Yes' or 'No' answer
 to the query. Do not add any information not included in or inferable from the context."""
 ```
 

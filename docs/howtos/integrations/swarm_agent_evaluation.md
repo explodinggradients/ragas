@@ -10,21 +10,21 @@ Install Ragas with pip and set up Swarm locally:
 
 ## Building the Customer Support Agent using Swarm
 
-In this tutorial, we will create an intelligent customer support agent using [swarm](https://github.com/openai/swarm) and evaluate its performance using [ragas](https://docs.ragas.io/en/stable/) metrics. The agent will focus on two key tasks: 
+In this tutorial, we will create an intelligent customer support agent using [swarm](https://github.com/openai/swarm) and evaluate its performance using [ragas](https://docs.ragas.io/en/stable/) metrics. The agent will focus on two key tasks:
 - Managing product returns
 - Providing order tracking information.
 
 For product returns, the agent will collect details from the customer about their order ID and the reason for the return. It will then determine whether the return meets predefined eligibility criteria. If the return is eligible, the agent will guide the customer through the necessary steps to complete the process. If the return is not eligible, the agent will explain the reasons clearly.
 
-For order tracking, the agent will retrieve the current status of the customer’s order and provide a friendly and detailed update. 
+For order tracking, the agent will retrieve the current status of the customer’s order and provide a friendly and detailed update.
 
 Throughout the interaction, the agent will adhere strictly to the outlined process, maintaining a professional and empathetic tone at all times. Before concluding the conversation, the agent will confirm that the customer’s concerns have been fully addressed, ensuring a satisfactory resolution.
 
 ### Setting Up the Agents
 
-To build the customer support agent, we will use a modular design with three specialized agents, each responsible for a specific part of the customer service workflow.  
+To build the customer support agent, we will use a modular design with three specialized agents, each responsible for a specific part of the customer service workflow.
 
-Each agent will follow a set of instructions, called routines, to handle customer requests. A routine is essentially a step-by-step guide written in natural language that helps the agent complete tasks like processing a return or tracking an order. These routines ensure that the agent follows a clear and consistent process for every task.  
+Each agent will follow a set of instructions, called routines, to handle customer requests. A routine is essentially a step-by-step guide written in natural language that helps the agent complete tasks like processing a return or tracking an order. These routines ensure that the agent follows a clear and consistent process for every task.
 
 If you want to learn more about routines and how they shape agent behavior, check out the detailed explanations and examples in the routine section of this website: [OpenAI Cookbook - Orchestrating Agents with Routines](https://cookbook.openai.com/examples/orchestrating_agents#routines).
 
@@ -62,30 +62,30 @@ tracker_agent = Agent(name="Tracker Agent", instructions=TRACKER_AGENT_INSTRUCTI
 
 #### Return Agent
 
-The Return Agent is responsible for handling product return requests. The Return Agent follows a structured routine to ensure the process is handled smoothly, using specific tools (`valid_to_return`, `initiate_return`, and `case_resolved`) at key steps.  
+The Return Agent is responsible for handling product return requests. The Return Agent follows a structured routine to ensure the process is handled smoothly, using specific tools (`valid_to_return`, `initiate_return`, and `case_resolved`) at key steps.
 
-The routine works as follows:  
+The routine works as follows:
 
-1. **Ask for Order ID**:  
-   The agent collects the customer’s order ID to proceed.  
+1. **Ask for Order ID**:
+   The agent collects the customer’s order ID to proceed.
 
-2. **Ask for Return Reason**:  
-   The agent asks the customer for the reason for the return. It then checks whether the reason matches a predefined list of acceptable return reasons.  
+2. **Ask for Return Reason**:
+   The agent asks the customer for the reason for the return. It then checks whether the reason matches a predefined list of acceptable return reasons.
 
-3. **Evaluate the Reason**:  
-   - If the reason is valid, the agent moves on to check eligibility.  
-   - If the reason is invalid, the agent responds empathetically and explains the return policy to the customer.  
+3. **Evaluate the Reason**:
+   - If the reason is valid, the agent moves on to check eligibility.
+   - If the reason is invalid, the agent responds empathetically and explains the return policy to the customer.
 
-4. **Validate Eligibility**:  
-   The agent uses the `valid_to_return` tool to check if the product qualifies for a return based on the policy. Depending on the outcome, the agent provides a clear response to the customer.  
+4. **Validate Eligibility**:
+   The agent uses the `valid_to_return` tool to check if the product qualifies for a return based on the policy. Depending on the outcome, the agent provides a clear response to the customer.
 
-5. **Initiate the Return**:  
-   If the product is eligible, the agent uses the `initiate_return` tool to start the return process and shares the next steps with the customer.  
+5. **Initiate the Return**:
+   If the product is eligible, the agent uses the `initiate_return` tool to start the return process and shares the next steps with the customer.
 
-6. **Close the Case**:  
-   Before ending the conversation, the agent ensures the customer has no further questions. If everything is resolved, the agent uses the `case_resolved` tool to close the case.  
+6. **Close the Case**:
+   Before ending the conversation, the agent ensures the customer has no further questions. If everything is resolved, the agent uses the `case_resolved` tool to close the case.
 
-Using the above logic, we will now create a structured workflow for the product return routine. You can learn more about routines and their implementation in the [OpenAI Cookbook](https://cookbook.openai.com/examples/orchestrating_agents#routines).  
+Using the above logic, we will now create a structured workflow for the product return routine. You can learn more about routines and their implementation in the [OpenAI Cookbook](https://cookbook.openai.com/examples/orchestrating_agents#routines).
 
 
 ```python
@@ -105,19 +105,19 @@ You have the chat history, customer and order context available to you.
 Here is the policy:"""
 
 
-PRODUCT_RETURN_POLICY = f"""1. Use the order ID provided by customer if not ask for it.  
-2. Ask the customer for the reason they want to return the product.  
-3. Check if the reason matches any of the following conditions:  
-   - "You received the wrong shipment."  
-   - "You received a damaged product."  
-   - "You received an expired product."  
-   3a) If the reason matches any of these conditions, proceed to the step.  
-   3b) If the reason does not match, politely inform the customer that the product is not eligible for return as per the policy.  
-4. Call the `valid_to_return` function to validate the product's return eligibility based on the conditions:  
-   4a) If the product is eligible for return: proceed to the next step.  
-   4b) If the product is not eligible for return: politely inform the customer about the policy and why the return cannot be processed.  
-5. Call the `initiate_return` function.  
-6. If the customer has no further questions, call the `case_resolved` function to close the interaction.  
+PRODUCT_RETURN_POLICY = f"""1. Use the order ID provided by customer if not ask for it.
+2. Ask the customer for the reason they want to return the product.
+3. Check if the reason matches any of the following conditions:
+   - "You received the wrong shipment."
+   - "You received a damaged product."
+   - "You received an expired product."
+   3a) If the reason matches any of these conditions, proceed to the step.
+   3b) If the reason does not match, politely inform the customer that the product is not eligible for return as per the policy.
+4. Call the `valid_to_return` function to validate the product's return eligibility based on the conditions:
+   4a) If the product is eligible for return: proceed to the next step.
+   4b) If the product is not eligible for return: politely inform the customer about the policy and why the return cannot be processed.
+5. Call the `initiate_return` function.
+6. If the customer has no further questions, call the `case_resolved` function to close the interaction.
 """
 
 
@@ -129,7 +129,7 @@ return_agent = Agent(
 
 ### Handoff Functions
 
-To allow the agent to transfer tasks smoothly to another specialized agent, we use handoff functions. These functions return an Agent object, such as `triage_agent`, `return_agent`, or `tracker_agent`, to specify which agent should handle the next steps.  
+To allow the agent to transfer tasks smoothly to another specialized agent, we use handoff functions. These functions return an Agent object, such as `triage_agent`, `return_agent`, or `tracker_agent`, to specify which agent should handle the next steps.
 
 For a detailed explanation of handoffs and their implementation, visit the [OpenAI Cookbook - Orchestrating Agents with Routines](https://cookbook.openai.com/examples/orchestrating_agents#handoff-functions).
 
@@ -182,7 +182,7 @@ def initiate_return():
     return status
 ```
 
-### Adding tools to the Agnets
+### Adding tools to the Agents
 
 
 ```py
@@ -191,7 +191,7 @@ tracker_agent.functions = [transfer_to_triage_agent, track_order, case_resolved]
 return_agent.functions = [transfer_to_triage_agent, valid_to_return, initiate_return, case_resolved]
 ```
 
-We need to capture the messages exchanged during the [demo loop](https://github.com/openai/swarm/blob/main/swarm/repl/repl.py#L60) to evaluate the interactions between the user and the agents. This can be done by modifying the `run_demo_loop` function in the Swarm codebase. Specifically, you’ll need to update the function to return the list of messages once the while loop ends. 
+We need to capture the messages exchanged during the [demo loop](https://github.com/openai/swarm/blob/main/swarm/repl/repl.py#L60) to evaluate the interactions between the user and the agents. This can be done by modifying the `run_demo_loop` function in the Swarm codebase. Specifically, you’ll need to update the function to return the list of messages once the while loop ends.
 
 Alternatively, you can redefine the function with this modification directly in your project.
 
@@ -294,13 +294,13 @@ AIMessage(content="You're welcome! 🎈 Your case is all wrapped up, and I'm thr
 
 ## Evaluating the Agent's Performance
 
-In this tutorial, we will evaluate the Agent using the following metrics:  
+In this tutorial, we will evaluate the Agent using the following metrics:
 
-1. **[Tool Call Accuracy](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/agents/#tool-call-accuracy)**: This metric measures how accurately the Agent identifies and uses the correct tools to complete a task.  
+1. **[Tool Call Accuracy](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/agents/#tool-call-accuracy)**: This metric measures how accurately the Agent identifies and uses the correct tools to complete a task.
 
-2. **[Agent Goal Accuracy](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/agents/#agent-goal-accuracy)**: This binary metric evaluates whether the Agent successfully identifies and achieves the user’s goals. A score of 1 means the goal was achieved, while 0 means it was not.  
+2. **[Agent Goal Accuracy](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/agents/#agent-goal-accuracy)**: This binary metric evaluates whether the Agent successfully identifies and achieves the user’s goals. A score of 1 means the goal was achieved, while 0 means it was not.
 
-To begin, we will run the Agent with a few sample queries and ensure we have the ground truth labels for these queries. This will allow us to accurately evaluate the Agent’s performance.  
+To begin, we will run the Agent with a few sample queries and ensure we have the ground truth labels for these queries. This will allow us to accurately evaluate the Agent’s performance.
 
 ### Tool Call Accuracy
 
@@ -440,7 +440,7 @@ Output
 ```
 
 
-**Agent Goal Accuracy: 0.0**  
+**Agent Goal Accuracy: 0.0**
 
 The **AgentGoalAccuracyWithReference** metric compares the agent's final response to the expected goal. In this case, while the agent’s response follows company policy, it does not fulfill the user’s return request. Since the return request couldn’t be completed due to policy constraints, the reference goal ("successfully resolved the user's request") is not met. As a result, the score is 0.0.
 

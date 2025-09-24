@@ -1,7 +1,6 @@
-## Synthetic test generation from non-english corpus
-## Synthetic test generation from non-english corpus
+## Synthetic test generation from non-English corpus
 
-In this notebook, you'll learn how to adapt synthetic test data generation to non-english corpus settings. For the sake of this tutorial, I am generating queries in Spanish from Spanish wikipedia articles. 
+In this notebook, you'll learn how to adapt synthetic test data generation to non-English corpus settings. For the sake of this tutorial, I am generating queries in Spanish from Spanish Wikipedia articles.
 
 ### Download and Load corpus
 
@@ -63,7 +62,7 @@ generator_embeddings = OpenAIEmbeddings(client=openai_client)
 
 
 ### Setup Persona and transforms
-you may automatically create personas using this [notebook](./_persona_generator.md). For the sake of simplicity, I am using a pre-defined person, two basic tranforms and simple specic query distribution.
+you may automatically create personas using this [notebook](./_persona_generator.md). For the sake of simplicity, I am using a pre-defined person, two basic transforms and simple query distribution.
 
 
 ```python
@@ -98,7 +97,7 @@ generator = TestsetGenerator(
 
 ### Load and Adapt Queries
 
-Here we load the required query types and adapt them to the target language. 
+Here we load the required query types and adapt them to the target language.
 
 
 ```python
@@ -133,7 +132,7 @@ dataset = generator.generate_with_langchain_docs(
     unable to apply transformation: 'headlines' property not found in this node
     unable to apply transformation: 'headlines' property not found in this node
     unable to apply transformation: 'headlines' property not found in this node
-    Generating Scenarios: 100%|██████████| 1/1 [00:07<00:00,  7.75s/it] 
+    Generating Scenarios: 100%|██████████| 1/1 [00:07<00:00,  7.75s/it]
     Generating Samples: 100%|██████████| 5/5 [00:03<00:00,  1.65it/s]
 
 

@@ -9,10 +9,10 @@ Each guide in this section provides a focused solution to real-world problems th
     ---
 
     How to customize various aspects of Ragas to suit your needs.
-    
+
     Customize features such as [Metrics](customizations/index.md#metrics) and [Testset Generation](customizations/index.md#testset-generation).
 
--   :material-cube-outline:{ .lg .middle }  [__Applications__](applications/index.md)
+-   :material-cube-outline:{ .lg .middle } [__Applications__](applications/index.md)
 
     ---
 
@@ -26,6 +26,6 @@ Each guide in this section provides a focused solution to real-world problems th
 
     How to integrate Ragas with other frameworks and observability tools.
 
-    Use Ragas with frameworks like [Langchain](integrations/langchain.md), [LlamaIndex](integrations/_llamaindex.md), and [observability tools](./observability.md).
+    Use Ragas with frameworks like [LangChain](integrations/langchain.md), [LlamaIndex](integrations/_llamaindex.md), and [observability tools](./observability.md).
 
 </div>

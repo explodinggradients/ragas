@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-Building a baseline for a RAG pipeline is not usually difficult, but enhancing it to make it suitable for production and ensuring the quality of your responses is almost always hard. Choosing the right tools and parameters for RAG can itself be challenging when there is an abundance of options available. This tutorial shares a robust workflow for making the right choices while building your RAG and ensuring its quality. 
+Building a baseline for a RAG pipeline is not usually difficult, but enhancing it to make it suitable for production and ensuring the quality of your responses is almost always hard. Choosing the right tools and parameters for RAG can itself be challenging when there is an abundance of options available. This tutorial shares a robust workflow for making the right choices while building your RAG and ensuring its quality.
 
 This article covers how to evaluate, visualize and analyze your RAG using a combination of open-source libraries.  We will be using:
 
@@ -34,7 +34,7 @@ Install and import Python dependencies.
 ```python
 import pandas as pd
 
-# Display the complete contents of dataframe cells.
+# Display the complete contents of DataFrame cells.
 pd.set_option("display.max_colwidth", None)
 ```
 
@@ -56,7 +56,7 @@ os.environ["OPENAI_API_KEY"] = openai_api_key
 
 ## 4. Generate Your Synthetic Test Dataset
 
-Curating a golden test dataset for evaluation can be a long, tedious, and expensive process that is not pragmatic — especially when starting out or when data sources keep changing. This can be solved by synthetically generating high quality data points, which then can be verified by developers. This can reduce the time and effort in curating test data by 90%. 
+Curating a golden test dataset for evaluation can be a long, tedious, and expensive process that is not pragmatic — especially when starting out or when data sources keep changing. This can be solved by synthetically generating high quality data points, which then can be verified by developers. This can reduce the time and effort in curating test data by 90%.
 
 Run the cell below to download a dataset of prompt engineering papers in PDF format from arXiv and read these documents using LlamaIndex.
 
@@ -100,7 +100,7 @@ You are free to change the question type distribution according to your needs. S
 
 ## 5. Build Your RAG Application With LlamaIndex
 
-LlamaIndex is an easy to use and flexible framework for building RAG applications. For the sake of simplicity, we use the default LLM (gpt-3.5-turbo) and embedding models (openai-ada-2).
+LlamaIndex is an easy-to-use and flexible framework for building RAG applications. For the sake of simplicity, we use the default LLM (gpt-3.5-turbo) and embedding models (openai-ada-2).
 
 Launch Phoenix in the background and instrument your LlamaIndex application so that your OpenInference spans and traces are sent to and collected by Phoenix. [OpenInference](https://github.com/Arize-ai/openinference/tree/main/spec) is an open standard built atop OpenTelemetry that captures and stores LLM application executions. It is designed to be a category of telemetry data that is used to understand the execution of LLMs and the surrounding application context, such as retrieval from vector stores and the usage of external tools such as search engines or APIs.
 
@@ -134,7 +134,7 @@ def build_query_engine(documents):
 query_engine = build_query_engine(documents)
 ```
 
-If you check Phoenix, you should see embedding spans from when your corpus data was indexed. Export and save those embeddings into a dataframe for visualization later in the notebook.
+If you check Phoenix, you should see embedding spans from when your corpus data was indexed. Export and save those embeddings into a DataFrame for visualization later in the notebook.
 
 
 ```python
@@ -208,7 +208,7 @@ print(session.url)
 
 ![LlamaIndex application traces inside of Phoenix](https://storage.googleapis.com/arize-phoenix-assets/assets/docs/notebooks/ragas/ragas_trace_slide_over.gif)
 
-We save out a couple of dataframes, one containing embedding data that we'll visualize later, and another containing our exported traces and spans that we plan to evaluate using Ragas.
+We save out a couple of DataFrames, one containing embedding data that we'll visualize later, and another containing our exported traces and spans that we plan to evaluate using Ragas.
 
 
 ```python
@@ -230,7 +230,7 @@ spans_dataframe = get_qa_with_reference(client)
 spans_dataframe.head()
 ```
 
-Ragas uses LangChain to evaluate your LLM application data. Let's instrument LangChain with OpenInference so we can see what's going on under the hood when we evaluate our LLM application.
+Ragas uses LangChain to evaluate your LLM application data. Let's instrument LangChain with OpenInference, so we can see what's going on under the hood when we evaluate our LLM application.
 
 
 ```python
@@ -239,7 +239,7 @@ from openinference.instrumentation.langchain import LangChainInstrumentor
 LangChainInstrumentor().instrument()
 ```
 
-Evaluate your LLM traces and view the evaluation scores in dataframe format.
+Evaluate your LLM traces and view the evaluation scores in DataFrame format.
 
 
 ```python
@@ -258,7 +258,7 @@ evaluation_result = evaluate(
 eval_scores_df = pd.DataFrame(evaluation_result.scores)
 ```
 
-Submit your evaluations to Phoenix so they are visible as annotations on your spans.
+Submit your evaluations to Phoenix, so they are visible as annotations on your spans.
 
 
 ```python
@@ -347,8 +347,8 @@ Once you launch Phoenix, you can visualize your data with the metric of your cho
 
 Congrats! You built and evaluated a LlamaIndex query engine using Ragas and Phoenix. Let's recap what we learned:
 
-- With Ragas, you bootstraped a test dataset and computed metrics such as faithfulness and answer correctness to evaluate your LlamaIndex query engine.
-- With OpenInference, you instrumented your query engine so you could observe the inner workings of both LlamaIndex and Ragas.
+- With Ragas, you bootstrapped a test dataset and computed metrics such as faithfulness and answer correctness to evaluate your LlamaIndex query engine.
+- With OpenInference, you instrumented your query engine, so you could observe the inner workings of both LlamaIndex and Ragas.
 - With Phoenix, you collected your spans and traces, imported your evaluations for easy inspection, and visualized your embedded queries and retrieved documents to identify pockets of poor performance.
 
 This notebook is just an introduction to the capabilities of Ragas and Phoenix. To learn more, see the [Ragas](https://docs.ragas.io/en/stable/) and [Phoenix docs](https://docs.arize.com/phoenix/).
