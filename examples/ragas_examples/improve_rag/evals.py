@@ -1,6 +1,8 @@
 """
-Evaluation script for SimpleRAG using HuggingFace documentation Q&A dataset.
-This evaluates the SimpleRAG system against a ground truth dataset.
+Evaluation script for unified RAG system using HuggingFace documentation Q&A dataset.
+This evaluates both naive and agentic RAG modes against a ground truth dataset.
+
+The script creates a BM25Retriever and uses it with the RAG system for evaluation.
 """
 
 import asyncio
@@ -8,8 +10,9 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
+import mlflow
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
@@ -17,7 +20,7 @@ from ragas import Dataset, experiment
 from ragas.llms import instructor_llm_factory
 from ragas.metrics import DiscreteMetric
 
-from .simple_rag import SimpleRAG
+from .rag import RAG, BM25Retriever
 
 # Load environment variables
 load_dotenv(".env")
@@ -28,6 +31,10 @@ logging.basicConfig(
     format='%(asctime)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Suppress HTTP request logs from OpenAI/httpx
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("openai._base_client").setLevel(logging.WARNING)
 
 def download_and_save_dataset() -> Path:
     """Download the HuggingFace doc Q&A dataset from GitHub."""
@@ -46,10 +53,6 @@ def download_and_save_dataset() -> Path:
     try:
         urllib.request.urlretrieve(github_url, dataset_path)
         logger.info(f"Dataset downloaded to {dataset_path}")
-        
-        import pandas as pd
-        df = pd.read_csv(dataset_path)
-        logger.info(f"Dataset loaded with {len(df)} samples")
         
     except Exception as e:
         logger.error(f"Failed to download dataset: {e}")
@@ -84,9 +87,10 @@ def get_openai_client():
         )
     return AsyncOpenAI(api_key=api_key)
 
-openai_client = get_openai_client()
-rag_client = SimpleRAG(openai_client=openai_client, model="gpt-5-mini")
-llm = instructor_llm_factory("openai", model="gpt-5-mini", client=openai_client)
+def get_llm_client():
+    """Get LLM client for metrics evaluation."""
+    openai_client = get_openai_client()
+    return instructor_llm_factory("openai", model="gpt-5-mini", client=openai_client)
 
 
 # Define correctness metric
@@ -111,30 +115,23 @@ Evaluation:""",
 
 
 @experiment()
-async def evaluate_rag(row: Dict[str, Any], agentic_rag: bool = False) -> Dict[str, Any]:
+async def evaluate_rag(row: Dict[str, Any], rag: RAG, llm) -> Dict[str, Any]:
     """
     Run RAG evaluation on a single row.
     
     Args:
         row: Dictionary containing question, context, and expected_answer
-        agentic_rag: If True, use agentic RAG; otherwise use simple RAG
+        rag: Pre-initialized RAG instance
+        llm: Pre-initialized LLM client for evaluation
         
     Returns:
         Dictionary with evaluation results
     """
     question = row["question"]
     
-    if agentic_rag:
-        # Use class-based agentic RAG
-        from .agentic_rag import AgenticRAG
-        agentic_rag_system = AgenticRAG(enable_mlflow=True)
-        model_response = await agentic_rag_system.query(question)
-        # For agentic RAG, we don't have retrieved_documents in the same format
-        rag_response = {"answer": model_response, "retrieved_documents": []}
-    else:
-        # Use simple RAG - now it's async
-        rag_response = await rag_client.query(question, top_k=4)
-        model_response = rag_response.get("answer", "")
+    # Query the RAG system
+    rag_response = await rag.query(question, top_k=4)
+    model_response = rag_response.get("answer", "")
     
     # Evaluate correctness asynchronously
     score = await correctness_metric.ascore(
@@ -150,6 +147,7 @@ async def evaluate_rag(row: Dict[str, Any], agentic_rag: bool = False) -> Dict[s
         "model_response": model_response,
         "correctness_score": score.value,
         "correctness_reason": score.reason,
+        "mlflow_trace_id": rag_response.get("mlflow_trace_id", "N/A"),
         "retrieved_documents": [
             doc.get("content", "")[:200] + "..." if len(doc.get("content", "")) > 200 else doc.get("content", "")
             for doc in rag_response.get("retrieved_documents", [])
@@ -159,106 +157,76 @@ async def evaluate_rag(row: Dict[str, Any], agentic_rag: bool = False) -> Dict[s
     return result
 
 
-async def main(test_mode: bool = False, agentic_rag: bool = False):
+async def run_experiment(mode: str = "naive", model: str = "gpt-5-mini", name: Optional[str] = None):
     """
-    Main function to run the complete evaluation pipeline.
+    Simple function to run RAG evaluation experiment.
     
     Args:
-        test_mode: If True, run on only a small subset for testing
-        agentic_rag: If True, use agentic RAG; otherwise use simple RAG
+        mode: RAG mode - "naive" or "agentic"
+        model: OpenAI model to use
+        name: Optional experiment name. If None, auto-generated with timestamp
+        
+    Returns:
+        List of experiment results
     """
-    try:
-        # Set up experiment name with timestamp and mode
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        mode_label = "agenticrag" if agentic_rag else "simplerag"
-        exp_name = f"{timestamp}_{mode_label}"
+    # Download and prepare dataset
+    dataset_path = download_and_save_dataset()
+    dataset = create_ragas_dataset(dataset_path)
+    
+    # Initialize RAG and LLM clients
+    logger.info("Initializing RAG system...")
+    openai_client = get_openai_client()
+    retriever = BM25Retriever()
+    rag = RAG(llm_client=openai_client, retriever=retriever, model=model, mode=mode)
+    llm = get_llm_client()
+    logger.info("RAG system initialized!")
+    
+    # Generate experiment name if not provided
+    if name is None:
+        mode_label = "agenticrag" if mode == "agentic" else "naiverag"
+        name = f"{datetime.now().strftime('%Y%m%d-%H%M%S')}_{mode_label}"
+    
+    # Run evaluation experiment
+    experiment_results = await evaluate_rag.arun(
+        dataset, 
+        name=name,
+        rag=rag,
+        llm=llm
+    )
+    
+    # Print basic results
+    if experiment_results:
+        pass_count = sum(1 for result in experiment_results if result.get("correctness_score") == "pass")
+        total_count = len(experiment_results)
+        pass_rate = (pass_count / total_count) * 100 if total_count > 0 else 0
         
-        # MLflow is already configured in the individual RAG files
-        
-        mode_name = "Agentic RAG" if agentic_rag else "Simple RAG"
-        logger.info(f"=== {mode_name} Evaluation Pipeline ===")
-        
-        # Step 1: Download and prepare dataset
-        logger.info("\n1. Downloading dataset...")
-        dataset_path = download_and_save_dataset()
-        
-        # Step 2: Create Ragas dataset
-        logger.info("\n2. Creating Ragas dataset...")
-        dataset = create_ragas_dataset(dataset_path)
-        
-        # Step 2.5: Initialize BM25 retriever upfront to avoid hanging during evaluation
-        logger.info("\n2.5. Initializing BM25 retriever (this may take a moment)...")
-        from .retriever import get_bm25_retriever
-        _ = get_bm25_retriever()  # This will cache the retriever
-        logger.info("BM25 retriever initialized successfully!")
-        
-        # Step 3: Prepare dataset for evaluation
-        eval_dataset = dataset
-        if test_mode:
-            logger.warning("\n⚠️  Running in TEST MODE - evaluating only first 3 samples")
-            # Create a smaller dataset for testing
-            test_samples = []
-            for i, sample in enumerate(dataset):
-                if i >= 3:  # Only take first 3 samples
-                    break
-                test_samples.append(sample)
-            
-            # Create new test dataset
-            eval_dataset = Dataset(
-                name="hf_doc_qa_eval_test",
-                backend="local/csv", 
-                root_dir="."  # Use current directory to avoid nested datasets folder
-            )
-            for sample in test_samples:
-                eval_dataset.append(sample)
-            eval_dataset.save()
-        
-        # Step 4: Run evaluation experiment
-        logger.info(f"\n3. Running {mode_name} evaluation on {len(eval_dataset)} samples...")
-        logger.info("This may take several minutes depending on the dataset size...")
-        
-        experiment_results = await evaluate_rag.arun(
-            eval_dataset, 
-            name=exp_name,
-            agentic_rag=agentic_rag
-        )
-        
-        # Step 4: Print summary
-        logger.info("\n=== Evaluation Results ===")
-        
-        if experiment_results and len(experiment_results) > 0:
-            # Calculate pass rate
-            pass_count = sum(1 for result in experiment_results if result.get("correctness_score") == "pass")
-            total_count = len(experiment_results)
-            pass_rate = (pass_count / total_count) * 100 if total_count > 0 else 0
-            
-            logger.info(f"Total samples evaluated: {total_count}")
-            logger.info(f"Passed: {pass_count}")
-            logger.info(f"Failed: {total_count - pass_count}")
-            logger.info(f"Pass rate: {pass_rate:.1f}%")
-        else:
-            logger.warning("No results generated. Please check for errors.")
-        
-        logger.info("\nEvaluation completed successfully!")
-        
-    except Exception as e:
-        logger.error(f"Error during evaluation: {str(e)}")
-        raise
+        logger.info(f"Results: {pass_count}/{total_count} passed ({pass_rate:.1f}%)")
+    
+    return experiment_results
+
+
+async def main(agentic_rag: bool = False):
+    """
+    Main function to run the evaluation pipeline.
+    
+    Args:
+        agentic_rag: If True, use agentic RAG; otherwise use naive RAG
+    """
+    mode = "agentic" if agentic_rag else "naive"
+    return await run_experiment(mode=mode, model="gpt-5-mini")
 
 
 if __name__ == "__main__":
     import sys
     
-    # Check for flags
-    test_mode = "--test" in sys.argv or "-t" in sys.argv
-    agentic_rag = "--agentic-rag" in sys.argv
+    # Simple command line argument parsing
+    agentic_mode = "--agentic" in sys.argv
     
-    if test_mode:
-        logger.info("🧪 Running in TEST MODE (first 3 samples only)")
-    
-    if agentic_rag:
-        logger.info("🤖 Running with AGENTIC RAG")
+    if agentic_mode:
+        logger.info("Running in AGENTIC mode")
     else:
-        logger.info("📚 Running with SIMPLE RAG")
+        logger.info("Running in NAIVE mode")
     
-    asyncio.run(main(test_mode=test_mode, agentic_rag=agentic_rag))
+    asyncio.run(main(agentic_rag=agentic_mode))
+
+
