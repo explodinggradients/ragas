@@ -30,105 +30,77 @@ uv pip install "ragas-examples[improverag]"
 
 Then run the RAG app:
 
-```bash
-export OPENAI_API_KEY="<your_key>"
-uv run python -m ragas_examples.improve_rag.simple_rag
+```python
+import os
+import asyncio
+from openai import AsyncOpenAI
+from ragas_examples.improve_rag.rag import RAG, BM25Retriever
+
+# Set up OpenAI client
+os.environ["OPENAI_API_KEY"] = "<your_key>"
+openai_client = AsyncOpenAI()
+
+# Create retriever and RAG system
+retriever = BM25Retriever()
+rag = RAG(openai_client, retriever)
+
+# Query the system
+question = "What architecture is the `tokenizers-linux-x64-musl` binary designed for?"
+result = await rag.query(question)
+print(f"Answer: {result['answer']}")
 ```
 ??? note "Output"
-    ```bash
-    uv run python -m ragas_examples.improve_rag.simple_rag
-    ```
-    ```bash
-
-    Query: What architecture is the `tokenizers-linux-x64-musl` binary designed for?
-    Loading dataset for BM25 retriever...
-    Splitting documents for BM25 retriever...
-    100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2647/2647 [00:01<00:00, 1555.56it/s]
-    Creating BM25 retriever...
-
-    Answer: It’s built for the x86_64 architecture (specifically the x86_64-unknown-linux-musl target — 64-bit Linux with musl libc).
-
-    Retrieved 3 documents:
-
-    Document 1:
-    Content: `tokenizers-linux-x64-musl`
-
-    This is the **x86_64-unknown-linux-musl** binary for `tokenizers`...
-    Source: tokenizers
-
-    Document 2:
-    Content: ## What are embeddings for?...
-    Source: blog
-
-    Document 3:
-    Content: - What kind of model is it?
-    - What is your model useful for?
-    - What data was your model trained on?
-    - How well does your model perform?...
-    Source: transformers
+    ```python
+    Answer: It's built for the x86_64 architecture (specifically the x86_64-unknown-linux-musl target — 64-bit Linux with musl libc).
     ```
 
 ??? example "Understanding the RAG implementation"
-    The command above runs a `SimpleRAG` app that demonstrates the core RAG pattern. Here's how it works:
+    The code above uses a simple `RAG` class that demonstrates the core RAG pattern. Here's how it works:
 
     ```python
-    # examples/ragas_examples/improve_rag/simple_rag.py
-    from typing import Any, Dict, List
-    from .retriever import get_bm25_retriever
+    # examples/ragas_examples/improve_rag/rag.py
+    from typing import Any, Dict, Optional
+    from openai import AsyncOpenAI
 
-    class SimpleRAG:
-        def __init__(self, openai_client, model="gpt-5-mini"):
-            self.openai_client = openai_client
+    class RAG:
+        """Simple RAG system for document retrieval and answer generation."""
+
+        def __init__(self, llm_client: AsyncOpenAI, retriever: BM25Retriever, system_prompt=None, model="gpt-4o-mini", default_k=3):
+            self.llm_client = llm_client
+            self.retriever = retriever
             self.model = model
-            # System prompt that tells the LLM how to use retrieved documents
-            self.system_prompt = """Answer the following question based on the provided documents. 
-            If the documents don't contain enough information to answer the question, say so clearly.
-            Be concise in your response.
+            self.default_k = default_k
+            self.system_prompt = system_prompt or "Answer only based on documents. Be concise.\n\nQuestion: {query}\nDocuments:\n{context}\nAnswer:"
 
-            Question: {query}
+        async def query(self, question: str, top_k: Optional[int] = None) -> Dict[str, Any]:
+            """Query the RAG system."""
+            if top_k is None:
+                top_k = self.default_k
+                
+            return await self._naive_query(question, top_k)
 
-            Documents:
-            {context}
-
-            Answer:"""
-
-        def retrieve_documents(self, query: str, top_k: int = 4) -> List[Dict[str, Any]]:
-            """Retrieve top-k most relevant documents for the query"""
-            retriever = get_bm25_retriever()
-            retriever.k = top_k
-            retrieved_docs = retriever.invoke(query)
+        async def _naive_query(self, question: str, top_k: int) -> Dict[str, Any]:
+            """Handle naive RAG: retrieve once, then generate."""
+            # 1. Retrieve documents using BM25
+            docs = self.retriever.retrieve(question, top_k)
             
-            result_docs = []
-            for i, doc in enumerate(retrieved_docs[:top_k]):
-                result_docs.append({
-                    "content": doc.page_content,
-                    "metadata": doc.metadata,
-                    "document_id": i
-                })
-            return result_docs
-
-        async def query(self, question: str, top_k: int = 4) -> Dict[str, Any]:
-            """Complete RAG pipeline: retrieve documents and generate response"""
-            # 1. Retrieve relevant documents using BM25
-            retrieved_docs = self.retrieve_documents(question, top_k)
+            if not docs:
+                return {"answer": "No relevant documents found.", "retrieved_documents": [], "num_retrieved": 0}
             
-            # 2. Build context from retrieved documents  
-            context_parts = []
-            for i, doc in enumerate(retrieved_docs, 1):
-                context_parts.append(f"Document {i}:\n{doc['content']}")
-            context = "\n\n".join(context_parts)
+            # 2. Build context from retrieved documents
+            context = "\n\n".join([f"Document {i}:\n{doc.page_content}" for i, doc in enumerate(docs, 1)])
+            prompt = self.system_prompt.format(query=question, context=context)
             
             # 3. Generate response using OpenAI with retrieved context
-            prompt = self.system_prompt.format(query=question, context=context)
-            response = await self.openai_client.chat.completions.create(
+            response = await self.llm_client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}]
             )
             
             return {
                 "answer": response.choices[0].message.content.strip(),
-                "retrieved_documents": retrieved_docs,
-                "num_retrieved": len(retrieved_docs)
+                "retrieved_documents": [{"content": doc.page_content, "metadata": doc.metadata, "document_id": i} for i, doc in enumerate(docs)],
+                "num_retrieved": len(docs)
             }
     ```
 
@@ -151,6 +123,7 @@ The evaluation script downloads the dataset from [here](https://raw.githubuserco
 ```python
 # examples/ragas_examples/improve_rag/evals.py
 import urllib.request
+from pathlib import Path
 from ragas import Dataset
 import pandas as pd
 
@@ -227,23 +200,25 @@ from typing import Dict, Any
 from ragas import experiment
 
 @experiment()
-async def evaluate_rag(row: Dict[str, Any]) -> Dict[str, Any]:
+async def evaluate_rag(row: Dict[str, Any], rag: RAG, llm) -> Dict[str, Any]:
     """
     Run RAG evaluation on a single row.
     
     Args:
         row: Dictionary containing question and expected_answer
+        rag: Pre-initialized RAG instance
+        llm: Pre-initialized LLM client for evaluation
         
     Returns:
         Dictionary with evaluation results
     """
     question = row["question"]
     
-    # Get RAG response using async call
-    rag_response = await rag_client.query(question, top_k=4)
+    # Query the RAG system
+    rag_response = await rag.query(question, top_k=4)
     model_response = rag_response.get("answer", "")
     
-    # Evaluate correctness using async metric scoring
+    # Evaluate correctness asynchronously
     score = await correctness_metric.ascore(
         question=question,
         expected_answer=row["expected_answer"],
@@ -257,6 +232,7 @@ async def evaluate_rag(row: Dict[str, Any]) -> Dict[str, Any]:
         "model_response": model_response,
         "correctness_score": score.value,
         "correctness_reason": score.reason,
+        "mlflow_trace_id": rag_response.get("mlflow_trace_id", "N/A"),  # MLflow trace ID for debugging (explained later)
         "retrieved_documents": [
             doc.get("content", "")[:200] + "..." if len(doc.get("content", "")) > 200 else doc.get("content", "")
             for doc in rag_response.get("retrieved_documents", [])
@@ -272,60 +248,90 @@ With our dataset, metrics, and experiment function ready, we can now evaluate ou
 
 Now let's run the complete evaluation pipeline to get baseline performance metrics for our RAG system:
 
-```bash
-# Run the evaluation on 3 samples to test setup
-uv run python -m ragas_examples.improve_rag.evals --test
+```python
+# Import required components
+import asyncio
+from datetime import datetime
+from ragas_examples.improve_rag.evals import (
+    evaluate_rag,
+    download_and_save_dataset, 
+    create_ragas_dataset,
+    get_openai_client,
+    get_llm_client
+)
+from ragas_examples.improve_rag.rag import RAG, BM25Retriever
+
+async def run_evaluation():
+    # Download and prepare dataset
+    dataset_path = download_and_save_dataset()
+    dataset = create_ragas_dataset(dataset_path)
+    
+    # Initialize RAG components
+    openai_client = get_openai_client()
+    retriever = BM25Retriever()
+    rag = RAG(llm_client=openai_client, retriever=retriever, model="gpt-5-mini", mode="naive")
+    llm = get_llm_client()
+    
+    # Run evaluation experiment
+    exp_name = f"{datetime.now().strftime('%Y%m%d-%H%M%S')}_naiverag"
+    results = await evaluate_rag.arun(
+        dataset, 
+        name=exp_name,
+        rag=rag,
+        llm=llm
+    )
+    
+    # Print results
+    if results:
+        pass_count = sum(1 for result in results if result.get("correctness_score") == "pass")
+        total_count = len(results)
+        pass_rate = (pass_count / total_count) * 100 if total_count > 0 else 0
+        print(f"Results: {pass_count}/{total_count} passed ({pass_rate:.1f}%)")
+    
+    return results
+
+# Run the evaluation
+results = await run_evaluation()
+print(results)
 ```
 
 This downloads the dataset, initializes the BM25 retriever, runs the evaluation experiment on each sample, and saves detailed results to the `experiments/` directory as CSV files for analysis.
 
-!!! tip "Using observability tools for better analysis"
-    For detailed trace analysis, you can use MLflow (as shown in this example) or your preferred observability tool. You can view traces via mlflow UI at [http://127.0.0.1:5000](http://127.0.0.1:5000) to see step-by-step execution, timing, and intermediate results for failed cases
 
-    The traces help you understand exactly where failures occur - whether in retrieval, generation, or evaluation steps. 
+??? note "Output"
+    ```python
+    Results: 43/66 passed (65.2%)
+    Evaluation completed successfully!
 
-![MLflow tracing interface showing RAG evaluation traces](../../_static/imgs/howto_improve_rag_mlflow.png)
+    Detailed results:
+    Experiment(name=20250924-212541_naiverag,  len=66)
+    ```
+
+With a 65.2% pass rate, we now have a baseline. The detailed results CSV in `experiments/` now contains all the data we need for error analysis and systematic improvement.
+
+### Using observability tools for better analysis
+
+For detailed trace analysis, you can use MLflow (as shown in this example) or your preferred observability tool. You can view traces via mlflow UI at [http://127.0.0.1:5000](http://127.0.0.1:5000) to see step-by-step execution, timing, and intermediate results for failed cases
+
+The traces help you understand exactly where failures occur - whether in retrieval, generation, or evaluation steps. 
 
 ```bash
 # Start MLflow server for tracing (optional, in a separate terminal)
 uv run mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000
-
-# Full evaluation (will take longer)
-uv run python -m ragas_examples.improve_rag.evals
 ```
 
-??? note "Full evaluation output"
-    ```bash
-    uv run python -m ragas_examples.improve_rag.evals
-    === SimpleRAG Evaluation Pipeline ===
+```python
+# Configure MLflow for automatic logging
+import mlflow
 
-    1. Downloading dataset...
-    Dataset already exists at datasets/hf_doc_qa_eval.csv
+# Set tracking URI (optional, defaults to local)
+mlflow.set_tracking_uri("sqlite:///mlflow.db")
 
-    2. Creating Ragas dataset...
-    Created Ragas dataset with 65 samples
+# Enable autologging for experiment tracking
+mlflow.autolog()
+```
 
-    2.5. Initializing BM25 retriever (this may take a moment)...
-    Loading dataset for BM25 retriever...
-    Splitting documents for BM25 retriever...
-    100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2647/2647 [00:00<00:00, 6365.97it/s]
-    Creating BM25 retriever...
-    BM25 retriever initialized successfully!
-
-    3. Running evaluation on 65 samples...
-    This may take several minutes depending on the dataset size...
-    Running experiment: 100%|████████████████████████████████████████████████████████████████████████████████████████████████| 65/65 [01:17<00:00,  1.19s/it]
-
-    === Evaluation Results ===
-    Total samples evaluated: 65
-    Passed: 54
-    Failed: 11
-    Pass rate: 83.1%
-
-    Evaluation completed successfully!
-    ```
-
-With an 83.1% pass rate, we have a good baseline. The detailed results CSV in `experiments/` now contains all the data we need for error analysis and systematic improvement.
+![MLflow tracing interface showing RAG evaluation traces](../../_static/imgs/howto_improve_rag_mlflow.png)
 
 ## Analyze errors and failure modes
 
@@ -366,104 +372,124 @@ flowchart LR
 
 Run the Agentic RAG app for a sample query:
 
-```bash
-uv run python -m ragas_examples.improve_rag.agentic_rag
+```python
+# Switch to agentic mode
+rag_agentic = RAG(openai_client, retriever, mode="agentic")
+
+question = "What architecture is the `tokenizers-linux-x64-musl` binary designed for?"
+result = await rag_agentic.query(question)
+print(f"Answer: {result['answer']}")
 ```
 
 ??? note "Output"
-    ```bash
-    uv run python -m ragas_examples.improve_rag.agentic_rag
-
-    Question: What architecture is the `tokenizers-linux-x64-musl` binary designed for?
-
-    ==================================================
-    Loading dataset for BM25 retriever...
-    Splitting documents for BM25 retriever...
-    100%|██████████| 2647/2647 [00:00<00:00, 9152.51it/s]
-    Creating BM25 retriever...
-    Answer: The tokenizers-linux-x64-musl binary is designed for the x86_64 (64-bit Intel/AMD) architecture on Linux systems using the musl libc, which is common in lightweight distributions like Alpine Linux. (Source: tokenizers)
+    ```python
+    Answer: It targets x86_64 — i.e. the x86_64-unknown-linux-musl target triple.
     ```
 
-??? example "Understanding the AgenticRAG implementation"
-    The AgenticRAG system uses the OpenAI Agents SDK to create an AI agent with a BM25 retrieval tool:
+??? example "Understanding the Agentic RAG implementation"
+    The Agentic RAG mode uses the OpenAI Agents SDK to create an AI agent with a BM25 retrieval tool:
 
     ```python
-    # Key components from examples/ragas_examples/improve_rag/agentic_rag.py
+    # Key components from the RAG class when mode="agentic"
     from agents import Agent, Runner, function_tool
 
-    @function_tool
-    def bm25_retrieve(query: str) -> str:
-        """Retrieve relevant documents using BM25 retriever."""
-        return self._bm25_retrieve_tool(query)
-    
-    self.agent = Agent(
-        name="Agentic RAG Assistant",
-        instructions="""Search documents using multiple keyword queries. 
-        Try 2-3 different search terms before answering.""", # Actual prompt is more detailed
-        tools=[bm25_retrieve],
-    )
+    def _setup_agent(self):
+        """Setup agent for agentic mode."""
+        @function_tool
+        def retrieve(query: str) -> str:
+            """Search documents using BM25 retriever for a given query."""
+            docs = self.retriever.retrieve(query, self.default_k)
+            if not docs:
+                return "No documents found."
+            return "\n\n".join([f"Doc {i}: {doc.page_content}" for i, doc in enumerate(docs, 1)])
 
-    async def query(self, question: str) -> str:
-        result = await Runner.run(self.agent, input=question)
-        return result.final_output
+        self._agent = Agent(
+            name="RAG Assistant",
+            model=self.model,
+            instructions="Use short keywords to search. Try 2-3 different searches. Only answer based on documents. Be concise.",
+            tools=[retrieve]
+        )
+
+    async def _agentic_query(self, question: str, top_k: int) -> Dict[str, Any]:
+        """Handle agentic mode: agent controls retrieval strategy."""
+        result = await Runner.run(self._agent, input=question)
+        print(result.answer)
     ```
 
-    Unlike SimpleRAG's single retrieval call, the agent autonomously decides when and how to search - trying multiple keyword combinations until it finds sufficient context.
+    Unlike naive mode's single retrieval call, the agent autonomously decides when and how to search - trying multiple keyword combinations until it finds sufficient context.
 
 ## Run experiment again and compare results
 
 Now let's evaluate the agentic RAG approach:
 
-```bash
-# Test mode with agentic RAG to test setup
-uv run python -m ragas_examples.improve_rag.evals --agentic-rag --test
+```python
+# Import required components
+import asyncio
+from datetime import datetime
+from dotenv import load_dotenv
 
-# Full evaluation with agentic RAG
-uv run python -m ragas_examples.improve_rag.evals --agentic-rag
+# Load environment variables
+load_dotenv()
+
+from ragas_examples.improve_rag.evals import (
+    evaluate_rag,
+    download_and_save_dataset, 
+    create_ragas_dataset,
+    get_openai_client,
+    get_llm_client
+)
+from ragas_examples.improve_rag.rag import RAG, BM25Retriever
+
+async def run_agentic_evaluation():
+    # Download and prepare dataset
+    dataset_path = download_and_save_dataset()
+    dataset = create_ragas_dataset(dataset_path)
+    
+    # Initialize RAG components with agentic mode
+    openai_client = get_openai_client()
+    retriever = BM25Retriever()
+    rag = RAG(llm_client=openai_client, retriever=retriever, model="gpt-5-mini", mode="agentic")
+    llm = get_llm_client()
+    
+    # Run evaluation experiment
+    exp_name = f"{datetime.now().strftime('%Y%m%d-%H%M%S')}_agenticrag"
+    results = await evaluate_rag.arun(
+        dataset, 
+        name=exp_name,
+        rag=rag,
+        llm=llm
+    )
+    
+    # Print results
+    if results:
+        pass_count = sum(1 for result in results if result.get("correctness_score") == "pass")
+        total_count = len(results)
+        pass_rate = (pass_count / total_count) * 100 if total_count > 0 else 0
+        print(f"Results: {pass_count}/{total_count} passed ({pass_rate:.1f}%)")
+    
+    return results
+
+# Run the agentic evaluation
+results = await run_agentic_evaluation()
+print("\nDetailed results:")
+print(results)
 ```
 
 ??? note "Agentic RAG evaluation output"
-    ```bash
-    uv run python -m ragas_examples.improve_rag.evals --agentic-rag
-    🤖 Running with AGENTIC RAG
-    === Agentic RAG Evaluation Pipeline ===
-
-    1. Downloading dataset...
-    Dataset already exists at datasets/hf_doc_qa_eval.csv
-
-    2. Creating Ragas dataset...
-    Created Ragas dataset with 65 samples
-
-    2.5. Initializing BM25 retriever (this may take a moment)...
-    Loading dataset for BM25 retriever...
-    Splitting documents for BM25 retriever...
-    100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2647/2647 [00:00<00:00, 9151.95it/s]
-    Creating BM25 retriever...
-    BM25 retriever initialized successfully!
-
-    3. Running Agentic RAG evaluation on 65 samples...
-    This may take several minutes depending on the dataset size...
-    Running experiment: 100%|████████████████████████████████████████████████████████████████████████████████████████████████| 65/65 [00:49<00:00,  1.30it/s]
-
-    === Evaluation Results ===
-    Total samples evaluated: 65
-    Passed: 61
-    Failed: 4
-    Pass rate: 93.8%
-
-    Evaluation completed successfully!
+    ```python
+    Results: 58/66 passed (87.9%)
     ```
 
-Great, we got a 93.8% pass rate with the agentic RAG approach!
+Excellent! We achieved a significant improvement from 65.2% (naive) to 87.9% (agentic) - that's a 22.7 percentage point improvement with the agentic RAG approach!
 
 ### Performance Comparison
 
-The agentic RAG approach shows great improvement over the simple RAG baseline:
+The agentic RAG approach shows great improvement over the naive RAG baseline:
 
 | Approach | Correctness | Improvement |
 |----------|-----------|-------------|
-| **Simple RAG** | 83.1% | - |
-| **Agentic RAG** | **93.8%** | **+10.7%** |
+| **Naive RAG** | 65.2% | - |
+| **Agentic RAG** | **87.9%** | **+22.7%** |
 
 
 ## Apply this loop to your RAG system
@@ -472,7 +498,7 @@ Follow this systematic approach to improve any RAG system:
 
 1. **Create evaluation dataset**: Use real queries from your system or generate synthetic data with LLMs. 
 
-2. **Define metrics**: Choose simple metrics aligned with your use case (correctness, relevance, completeness). Keep it focused.
+2. **Define metrics**: Choose simple metrics aligned with your use case. Keep it focused.
 
 3. **Run baseline evaluation**: Measure current performance and analyze error patterns to identify systematic failures.
 
