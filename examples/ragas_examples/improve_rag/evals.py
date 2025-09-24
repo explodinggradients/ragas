@@ -93,6 +93,27 @@ def get_llm_client():
     return instructor_llm_factory("openai", model="gpt-5-mini", client=openai_client)
 
 
+def construct_mlflow_trace_url(trace_id: str, mlflow_host: str = "http://127.0.0.1:5000") -> str:
+    """
+    Construct MLflow trace URL for easy access to trace details.
+    
+    Args:
+        trace_id: The MLflow trace ID
+        mlflow_host: MLflow server host (default: http://127.0.0.1:5000)
+        
+    Returns:
+        Full MLflow trace URL
+    """
+    base_url = f"{mlflow_host}/#/experiments/0"
+    query_params = (
+        "searchFilter=&orderByKey=attributes.start_time&orderByAsc=false&"
+        "startTime=ALL&lifecycleFilter=Active&modelVersionFilter=All+Runs&"
+        "datasetsFilter=W10%3D&compareRunsMode=TRACES&"
+        f"selectedEvaluationId={trace_id}"
+    )
+    return f"{base_url}?{query_params}"
+
+
 # Define correctness metric
 correctness_metric = DiscreteMetric(
     name="correctness",
@@ -141,13 +162,18 @@ async def evaluate_rag(row: Dict[str, Any], rag: RAG, llm) -> Dict[str, Any]:
         llm=llm
     )
     
+    # Get trace ID and construct trace URL
+    trace_id = rag_response.get("mlflow_trace_id", "N/A")
+    trace_url = construct_mlflow_trace_url(trace_id) if trace_id != "N/A" else "N/A"
+    
     # Return evaluation results
     result = {
         **row,
         "model_response": model_response,
         "correctness_score": score.value,
         "correctness_reason": score.reason,
-        "mlflow_trace_id": rag_response.get("mlflow_trace_id", "N/A"),
+        "mlflow_trace_id": trace_id,
+        "mlflow_trace_url": trace_url,
         "retrieved_documents": [
             doc.get("content", "")[:200] + "..." if len(doc.get("content", "")) > 200 else doc.get("content", "")
             for doc in rag_response.get("retrieved_documents", [])

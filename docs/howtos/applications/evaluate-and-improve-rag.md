@@ -311,7 +311,7 @@ With a 65.2% pass rate, we now have a baseline. The detailed results CSV in `exp
 
 ### Using observability tools for better analysis
 
-For detailed trace analysis, you can use MLflow (as shown in this example) or your preferred observability tool. The experiment results CSV includes `mlflow_trace_id` for each evaluation by capturing it in the RAG response:
+For detailed trace analysis, you can use MLflow (as shown in this example) or your preferred observability tool. The experiment results CSV includes both `mlflow_trace_id` and `mlflow_trace_url` for each evaluation:
 
 ```python
 # In rag.py - capture trace ID after LLM call
@@ -322,11 +322,15 @@ return {
     # ... other fields
 }
 
-# In evals.py - include in experiment results  
+# In evals.py - include both trace ID and clickable URL
+trace_id = rag_response.get("mlflow_trace_id", "N/A")
+trace_url = construct_mlflow_trace_url(trace_id) if trace_id != "N/A" else "N/A"
+
 result = {
     **row,
     "model_response": model_response,
-    "mlflow_trace_id": rag_response.get("mlflow_trace_id", "N/A"),
+    "mlflow_trace_id": trace_id,
+    "mlflow_trace_url": trace_url,
     # ... other evaluation fields
 }
 ```
@@ -334,7 +338,10 @@ result = {
 This allows you to:
 
 1. **Analyze results in CSV**: View responses, metric scores and reasons
-2. **Deep-dive with traces**: Use the trace ID to view detailed execution in MLflow UI at [http://127.0.0.1:5000](http://127.0.0.1:5000)
+2. **Deep-dive with traces**: Use the trace ID/trace url to view detailed execution in MLflow UI at [http://127.0.0.1:5000](http://127.0.0.1:5000)
+
+!!! tip "Pro Tip: Add Direct Trace URLs to your evaluation results"
+    In this example, we've added `mlflow_trace_url` - a direct clickable link to each trace in MLflow UI. No need to manually copy trace IDs or navigate through the interface. Just click the URL and jump straight to the detailed execution trace for debugging!
 
 The traces help you understand exactly where failures occur - whether in retrieval, generation, or evaluation steps. 
 
@@ -358,7 +365,7 @@ mlflow.autolog()
 
 ## Analyze errors and failure modes
 
-After running the evaluation, examine the results CSV file in the `experiments/` directory to identify patterns in failed cases. Each row includes the `mlflow_trace_id` - copy this ID to view detailed execution traces in the MLflow UI. Annotate each failure case to understand patterns so that we can improve our app. 
+After running the evaluation, examine the results CSV file in the `experiments/` directory to identify patterns in failed cases. Each row includes the `mlflow_trace_id`/`mlflow_trace_url` - to view detailed execution traces in the MLflow UI. Annotate each failure case to understand patterns so that we can improve our app. 
 
 ### Analysis of actual failure patterns from our evaluation:
 
