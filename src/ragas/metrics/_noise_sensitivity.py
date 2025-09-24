@@ -84,31 +84,10 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
         statements = statements.statements
         return statements
 
-def _compute_score(self, answers: t.Dict) -> float:
-    incorrect = ~answers["ground_truth2answer"]
+    def _compute_score(self, answers: t.Dict) -> float:
+        incorrect = ~answers["ground_truth2answer"]
 
-    if self.mode == "irrelevant":
-        # irrelevant retrievals
-        irrelevant_retrieved = ~np.max(
-            answers["retrieved2ground_truth"], axis=0, keepdims=True
-        )
-        irrelevant_faithful = np.max(
-            irrelevant_retrieved & answers["retrieved2answer"], axis=1
-        )
-
-        # to keep them exclusive
-        relevant_retrieved = np.max(
-            answers["retrieved2ground_truth"], axis=0, keepdims=True
-        )
-        relevant_faithful = np.max(
-            relevant_retrieved & answers["retrieved2answer"], axis=1
-        )
-        irrelevant_faithful &= ~relevant_faithful
-
-        return np.mean(irrelevant_faithful & incorrect)
-
-    else:  # mode == "relevant"
-        # relevant retrievals
+        # Compute relevant retrievals (needed for both modes)
         relevant_retrieved = np.max(
             answers["retrieved2ground_truth"], axis=0, keepdims=True
         )
@@ -116,7 +95,20 @@ def _compute_score(self, answers: t.Dict) -> float:
             relevant_retrieved & answers["retrieved2answer"], axis=1
         )
 
-        return np.mean(relevant_faithful & incorrect)
+        if self.mode == "irrelevant":
+            # Compute irrelevant retrievals
+            irrelevant_retrieved = ~relevant_retrieved
+            irrelevant_faithful = np.max(
+                irrelevant_retrieved & answers["retrieved2answer"], axis=1
+            )
+
+            # Keep them exclusive (irrelevant should not include relevant)
+            irrelevant_faithful &= ~relevant_faithful
+
+            return float(np.mean(irrelevant_faithful & incorrect))
+
+        else:  # mode == "relevant"
+            return float(np.mean(relevant_faithful & incorrect))
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
