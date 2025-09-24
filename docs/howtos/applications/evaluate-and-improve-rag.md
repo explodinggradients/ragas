@@ -311,7 +311,30 @@ With a 65.2% pass rate, we now have a baseline. The detailed results CSV in `exp
 
 ### Using observability tools for better analysis
 
-For detailed trace analysis, you can use MLflow (as shown in this example) or your preferred observability tool. You can view traces via mlflow UI at [http://127.0.0.1:5000](http://127.0.0.1:5000) to see step-by-step execution, timing, and intermediate results for failed cases
+For detailed trace analysis, you can use MLflow (as shown in this example) or your preferred observability tool. The experiment results CSV includes `mlflow_trace_id` for each evaluation by capturing it in the RAG response:
+
+```python
+# In rag.py - capture trace ID after LLM call
+trace_id = mlflow.get_last_active_trace_id()
+return {
+    "answer": response.choices[0].message.content.strip(),
+    "mlflow_trace_id": trace_id,
+    # ... other fields
+}
+
+# In evals.py - include in experiment results  
+result = {
+    **row,
+    "model_response": model_response,
+    "mlflow_trace_id": rag_response.get("mlflow_trace_id", "N/A"),
+    # ... other evaluation fields
+}
+```
+
+This allows you to:
+
+1. **Analyze results in CSV**: View responses, metric scores and reasons
+2. **Deep-dive with traces**: Use the trace ID to view detailed execution in MLflow UI at [http://127.0.0.1:5000](http://127.0.0.1:5000)
 
 The traces help you understand exactly where failures occur - whether in retrieval, generation, or evaluation steps. 
 
@@ -335,7 +358,7 @@ mlflow.autolog()
 
 ## Analyze errors and failure modes
 
-After running the evaluation, examine the results CSV file in the `experiments/` directory to identify patterns in failed cases. You can also view the traces in the MLflow UI to see the exact steps that failed. Annotate each failure case to understand patterns so that we can improve our app. 
+After running the evaluation, examine the results CSV file in the `experiments/` directory to identify patterns in failed cases. Each row includes the `mlflow_trace_id` - copy this ID to view detailed execution traces in the MLflow UI. Annotate each failure case to understand patterns so that we can improve our app. 
 
 ### Analysis of actual failure patterns from our evaluation:
 
