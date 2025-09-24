@@ -240,9 +240,9 @@ class IDBasedContextRecall(SingleTurnMetric):
     """
     Calculates context recall by directly comparing retrieved context IDs with reference context IDs.
     The score represents what proportion of the reference IDs were successfully retrieved.
-    
+
     This metric works with both string and integer IDs.
-    
+
     Attributes
     ----------
     name : str
@@ -275,15 +275,19 @@ class IDBasedContextRecall(SingleTurnMetric):
         reference_ids_set = set(str(id) for id in reference_context_ids)
 
         # Calculate how many reference IDs appear in retrieved IDs
-        hits = sum(1 for ref_id in reference_ids_set if str(ref_id) in retrieved_ids_set)
-        
+        hits = sum(
+            1 for ref_id in reference_ids_set if str(ref_id) in retrieved_ids_set
+        )
+
         # Calculate recall score
         total_refs = len(reference_ids_set)
         score = hits / total_refs if total_refs > 0 else np.nan
 
         if np.isnan(score):
-            logger.warning("No reference context IDs provided, cannot calculate recall.")
-            
+            logger.warning(
+                "No reference context IDs provided, cannot calculate recall."
+            )
+
         return score
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:

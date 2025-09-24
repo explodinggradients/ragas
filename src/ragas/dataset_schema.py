@@ -66,7 +66,7 @@ class SingleTurnSample(BaseSample):
     retrieved_context_ids : Optional[List[Union[str, int]]]
         List of IDs for retrieved contexts.
     reference_context_ids : Optional[List[Union[str, int]]]
-        List of IDs for reference contexts.    
+        List of IDs for reference contexts.
     response : Optional[str]
         The generated response for the query.
     multi_responses : Optional[List[str]]

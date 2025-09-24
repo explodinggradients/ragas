@@ -253,9 +253,9 @@ class IDBasedContextPrecision(SingleTurnMetric):
     """
     Calculates context precision by directly comparing retrieved context IDs with reference context IDs.
     The score represents what proportion of the retrieved context IDs are actually relevant (present in reference).
-    
+
     This metric works with both string and integer IDs.
-    
+
     Attributes
     ----------
     name : str
@@ -286,16 +286,20 @@ class IDBasedContextPrecision(SingleTurnMetric):
         # Convert all IDs to strings to ensure consistent comparison
         retrieved_ids_set = set(str(id) for id in retrieved_context_ids)
         reference_ids_set = set(str(id) for id in reference_context_ids)
-        
+
         # Calculate precision score
         total_retrieved = len(retrieved_ids_set)
         if total_retrieved == 0:
-            logger.warning("No retrieved context IDs provided, cannot calculate precision.")
+            logger.warning(
+                "No retrieved context IDs provided, cannot calculate precision."
+            )
             return np.nan
-            
+
         # Count how many retrieved IDs match reference IDs
-        hits = sum(1 for ret_id in retrieved_ids_set if str(ret_id) in reference_ids_set)
-        
+        hits = sum(
+            1 for ret_id in retrieved_ids_set if str(ret_id) in reference_ids_set
+        )
+
         # For precision, we calculate: relevant retrieved / total retrieved
         score = hits / total_retrieved
         return score

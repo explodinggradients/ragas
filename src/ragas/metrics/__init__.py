@@ -19,17 +19,17 @@ from ragas.metrics._context_entities_recall import (
 from ragas.metrics._context_precision import (
     ContextPrecision,
     ContextUtilization,
+    IDBasedContextPrecision,
     LLMContextPrecisionWithoutReference,
     LLMContextPrecisionWithReference,
     NonLLMContextPrecisionWithReference,
-    IDBasedContextPrecision,
     context_precision,
 )
 from ragas.metrics._context_recall import (
     ContextRecall,
+    IDBasedContextRecall,
     LLMContextRecall,
     NonLLMContextRecall,
-    IDBasedContextRecall,
     context_recall,
 )
 from ragas.metrics._datacompy_score import DataCompyScore
