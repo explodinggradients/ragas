@@ -1,6 +1,6 @@
 <h1 align="center">
   <img style="vertical-align:middle" height="200"
-  src="./docs/_static/imgs/logo.png">
+  src="https://raw.githubusercontent.com/explodinggradients/ragas/main/docs/_static/imgs/logo.png">
 </h1>
 <p align="center">
   <i>Supercharge Your LLM Application Evaluations 🚀</i>
@@ -8,19 +8,26 @@
 
 <p align="center">
     <a href="https://github.com/explodinggradients/ragas/releases">
-        <img alt="GitHub release" src="https://img.shields.io/github/release/explodinggradients/ragas.svg">
+        <img alt="Latest release" src="https://img.shields.io/github/release/explodinggradients/ragas.svg">
     </a>
     <a href="https://www.python.org/">
-            <img alt="Build" src="https://img.shields.io/badge/Made%20with-Python-1f425f.svg?color=purple">
+        <img alt="Made with Python" src="https://img.shields.io/badge/Made%20with-Python-1f425f.svg?color=purple">
     </a>
     <a href="https://github.com/explodinggradients/ragas/blob/master/LICENSE">
-        <img alt="License" src="https://img.shields.io/github/license/explodinggradients/ragas.svg?color=green">
+        <img alt="License Apache-2.0" src="https://img.shields.io/github/license/explodinggradients/ragas.svg?color=green">
     </a>
     <a href="https://pypi.org/project/ragas/">
-        <img alt="Open In Colab" src="https://img.shields.io/pypi/dm/ragas">
+        <img alt="Ragas Downloads per month" src="https://static.pepy.tech/badge/ragas/month">
     </a>
     <a href="https://discord.gg/5djav8GGNZ">
-        <img alt="discord-invite" src="https://img.shields.io/discord/1119637219561451644">
+        <img alt="Join Ragas community on Discord" src="https://img.shields.io/discord/1119637219561451644">
+    </a>
+    <a target="_blank" href="https://deepwiki.com/explodinggradients/ragas">
+      <img 
+        src="https://devin.ai/assets/deepwiki-badge.png" 
+        alt="Ask DeepWiki.com" 
+        height="20" 
+      />
     </a>
 </p>
 
@@ -52,7 +59,7 @@ Don't have a test dataset ready? We also do production-aligned test set generati
 
 ## :shield: Installation
 
-Pypi: 
+Pypi:
 
 ```bash
 pip install ragas
@@ -85,15 +92,11 @@ await metric.single_turn_ascore(SingleTurnSample(**test_data))
 
 Find the complete [Quickstart Guide](https://docs.ragas.io/en/latest/getstarted/evals)
 
-### Analyze your Evaluation
+## Want help in improving your AI application using evals?
 
-Sign up for [app.ragas.io](https://app.ragas.io) to review, share and analyze your evaluations</a>
+In the past 2 years, we have seen and helped improve many AI applications using evals. If you want help with improving and scaling up your AI application using evals.
 
-<p align="left">
-    <img src="docs/getstarted/ragas_get_started_evals.gif" height="300">
-</p>
-
-See [how to use it](https://docs.ragas.io/en/latest/getstarted/evals/#analyzing-results)
+🔗 Book a [slot](https://bit.ly/3EBYq4J) or drop us a line: [founders@explodinggradients.com](mailto:founders@explodinggradients.com).
 
 ## 🫂 Community
 
@@ -123,6 +126,7 @@ We welcome contributions from the community! Whether it's bug fixes, feature add
 5. Open a Pull Request
 
 ## 🔍 Open Analytics
+
 At Ragas, we believe in transparency. We collect minimal, anonymized usage data to improve our product and guide our development efforts.
 
 ✅ No personal or company-identifying information
@@ -132,3 +136,14 @@ At Ragas, we believe in transparency. We collect minimal, anonymized usage data 
 ✅ Publicly available aggregated [data](https://github.com/explodinggradients/ragas/issues/49)
 
 To opt-out, set the `RAGAS_DO_NOT_TRACK` environment variable to `true`.
+
+### Cite Us
+
+```
+@misc{ragas2024,
+  author       = {ExplodingGradients},
+  title        = {Ragas: Supercharge Your LLM Application Evaluations},
+  year         = {2024},
+  howpublished = {\url{https://github.com/explodinggradients/ragas}},
+}
+```

@@ -26,12 +26,16 @@ class EchoLLM(BaseRagasLLM):
     ) -> LLMResult:
         return LLMResult(generations=[[Generation(text=prompt.to_string())]])
 
+    def is_finished(self, response: LLMResult) -> bool:
+        return True
 
-def test_debug_tracking_flag():
+
+def test_debug_tracking_flag(monkeypatch):
     import os
 
     from ragas._analytics import RAGAS_DEBUG_TRACKING
 
+    monkeypatch.setenv(RAGAS_DEBUG_TRACKING, "true")
     assert os.environ.get(RAGAS_DEBUG_TRACKING, "").lower() == "true"
 
 
@@ -135,7 +139,7 @@ def test_testset_generation_tracking(monkeypatch):
     )
 
     assert testset_event_payload.model_dump()["evolution_names"] == [
-        "single_hop_specifc_query_synthesizer",
+        "single_hop_specific_query_synthesizer",
         "multi_hop_abstract_query_synthesizer",
         "multi_hop_specific_query_synthesizer",
     ]

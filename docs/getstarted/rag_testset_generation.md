@@ -58,21 +58,8 @@ dataset.to_pandas()
 Output
 ![testset](./testset_output.png)
 
-You can also use other tools like [app.ragas.io](https://app.ragas.io/) or any other similar tools available for you in the [Integrations](./../howtos/integrations/index.md) section.
-
-In order to use the [app.ragas.io](https://app.ragas.io/) dashboard, you need to have an account on [app.ragas.io](https://app.ragas.io/). If you don't have one, you can sign up for one [here](https://app.ragas.io/login). You will also need to have a [Ragas APP token](https://app.ragas.io/settings/api-keys).
-
-Once you have the API key, you can use the `upload()` method to export the results to the dashboard.
-
-```python
-import os
-os.environ["RAGAS_APP_TOKEN"] = "your_app_token"
-dataset.upload()
-```
-
-Now you can view the results in the dashboard by following the link in the output of the `upload()` method.
-
-![Visualization with Ragas Dashboard](./testset_output_dashboard.png)
+!!! note
+Generating synthetic test data can be confusing and hard, but if you need we are happy to help you with it. We have built pipelines to generate test data for various use cases. If you need help with it, please talk to us by booking a [slot](https://bit.ly/3EBYq4J) or drop us a line: [founders@explodinggradients.com](mailto:founders@explodinggradients.com).
 
 ## A Deeper Look
 

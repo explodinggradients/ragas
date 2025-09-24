@@ -1,5 +1,11 @@
 {% extends "base.html" %}
 
+{% block extrahead %}
+  {{ super() }}
+  <!-- Scarf Analytics -->
+  <img style="display: none;" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f4040c26-97ff-4975-bcbb-8db47063d472" />
+{% endblock %}
+
 {% block announce %}
 <!-- Add announcement here, including arbitrary HTML -->
 <div class="announce">

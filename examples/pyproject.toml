@@ -1,0 +1,68 @@
+[project]
+name = "ragas-examples"
+description = "Official examples for the ragas project"
+requires-python = ">=3.9"
+license = {text = "Apache-2.0"}
+authors = [{name = "Ragas Team"}]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "ragas",  # workspace dependency - version managed by workspace
+    "openai>=1.0.0",  # required for LLM calls in examples
+    "pandas",  # required for benchmark_llm examples
+]
+dynamic = ["version", "readme"]
+
+[project.optional-dependencies]
+gdrive = ["ragas[gdrive]"]
+text2sql = [
+    "huggingface_hub>=0.16.0",
+    "datacompy>=0.8.0", 
+    "python-dotenv>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/explodinggradients/ragas"
+Documentation = "https://docs.ragas.io"
+Code = "https://github.com/explodinggradients/ragas"
+Issues = "https://github.com/explodinggradients/ragas/issues"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ragas_examples*"]
+
+[tool.setuptools.package-data]
+ragas_examples = [
+    "**/*.csv", 
+    "text2sql/datasets/*.csv",
+    "text2sql/prompt*.txt"
+]
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.md"], content-type = "text/markdown"}
+
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+version_file = "ragas_examples/_version.py"
+root = ".."
+# Sync with main package version tags - uses default pattern
+
+# Workspace member configuration  
+[tool.uv.sources]
+ragas = { workspace = true }

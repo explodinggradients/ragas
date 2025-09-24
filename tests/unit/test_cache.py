@@ -40,6 +40,26 @@ def test_generate_cache_key():
     assert key1 != key3, "Cache keys should differ if kwargs differ"
 
 
+def test_generate_cache_key_bound_method():
+    """Test that cache keys stay the same, when caching bound methods of different objects."""
+
+    class Clazz:
+        def __init__(self, irrelevant):
+            self.irrelevant = irrelevant
+
+        def sample_func(self, a, b):
+            return a + b
+
+    object = Clazz(irrelevant=1)
+    object2 = Clazz(irrelevant=2)
+
+    key1 = _generate_cache_key(object.sample_func, (1, 2), {})
+    key2 = _generate_cache_key(object2.sample_func, (1, 2), {})
+    assert key1 == key2, (
+        "Cache keys should match even if the originating objects the methods are bound to are not the same, as long as the arguments match"
+    )
+
+
 def test_no_cache_backend():
     """Test that if no cache backend is provided, results are not cached."""
     call_count = {"count": 0}
@@ -97,6 +117,7 @@ async def test_async_caching_with_cache_backend(cache_backend):
     assert call_count["count"] == 1, "Should have come from cache"
 
 
+@pytest.mark.filterwarnings("ignore:.*coroutine.*was never awaited:RuntimeWarning")
 def test_caching_with_different_args(cache_backend):
     """Test that different arguments produce different cache entries."""
     call_count = {"count": 0}

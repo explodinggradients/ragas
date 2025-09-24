@@ -10,6 +10,7 @@ usecases to solve problems you might encounter when you're building.
 - [Evaluating Multi-turn Conversations](evaluating_multi_turn_conversations.md)
 - [Estimate cost of evaluation](_cost.md)
 - [Evaluations with Vertex AI models](vertexai_x_ragas.md)
+- [Systematic Approach for Prompt Optimization](prompt_optimization)
 
 ## Testset Generation:
 
@@ -17,3 +18,7 @@ usecases to solve problems you might encounter when you're building.
 
 ## Benchmarking
 - [Benchmarking Gemini models](gemini_benchmarking.md)
+
+## Agent Evaluation
+
+- [Evaluate a Text-to-SQL Agent](text2sql.md)

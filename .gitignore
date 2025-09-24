@@ -164,11 +164,35 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 
+# Cursor
+.cursorignore
+.cursor/*
+!.cursor/rules/
+
 # Ragas specific
-experiments/
+_experiments/
 **/fil-result/
 src/ragas/_version.py
+experimental/ragas_experimental/_version.py
+examples/ragas_examples/_version.py
 .vscode
 .envrc
 uv.lock
 .cache/
+.claude/*
+!.claude/commands/
+node_modules
+
+# Ragas examples
+experimental/ragas_examples/benchmark_llm/experiments/*.csv
+examples/*/logs/*run*json
+examples/*/experiments/*csv
+examples/ragas_examples/_version.py
+**/test_dataset.csv
+
+# Ragas examples package build artifacts
+examples/dist/
+examples/build/
+examples/*.egg-info/
+examples/ragas_examples/_version.py
+examples/ragas_examples/text2sql/experiments/*

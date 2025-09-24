@@ -9,10 +9,16 @@ We will use `langchain_openai` to set the LLM and embedding model for building o
 
 ```python
 from langchain_openai import ChatOpenAI
-from langchain_openai import OpenAIEmbeddings
+from ragas.embeddings import OpenAIEmbeddings
+import openai
+
 llm = ChatOpenAI(model="gpt-4o")
-embeddings = OpenAIEmbeddings()
+openai_client = openai.OpenAI()
+embeddings = OpenAIEmbeddings(client=openai_client)
 ```
+
+!!! note "OpenAI Embeddings API"
+    `ragas.embeddings.OpenAIEmbeddings` exposes `embed_text` (single) and `embed_texts` (batch), not `embed_query`/`embed_documents` like some LangChain wrappers. The example below uses `embed_texts` for documents and `embed_text` for the query. Please refer to [OpenAI embeddings implementation](https://docs.ragas.io/en/stable/references/embeddings/\#ragas.embeddings.OpenAIEmbeddings)
 
 ### Build a Simple RAG System
 
@@ -30,22 +36,24 @@ To build a simple RAG system, we need to define the following components:
 
     class RAG:
         def __init__(self, model="gpt-4o"):
+            import openai
             self.llm = ChatOpenAI(model=model)
-            self.embeddings = OpenAIEmbeddings()
+            openai_client = openai.OpenAI()
+            self.embeddings = OpenAIEmbeddings(client=openai_client)
             self.doc_embeddings = None
             self.docs = None
 
         def load_documents(self, documents):
             """Load documents and compute their embeddings."""
             self.docs = documents
-            self.doc_embeddings = self.embeddings.embed_documents(documents)
+            self.doc_embeddings = self.embeddings.embed_texts(documents)
 
         def get_most_relevant_docs(self, query):
             """Find the most relevant document for a given query."""
             if not self.docs or not self.doc_embeddings:
                 raise ValueError("Documents and their embeddings are not loaded.")
             
-            query_embedding = self.embeddings.embed_query(query)
+            query_embedding = self.embeddings.embed_text(query)
             similarities = [
                 np.dot(query_embedding, doc_emb)
                 / (np.linalg.norm(query_embedding) * np.linalg.norm(doc_emb))
@@ -176,26 +184,19 @@ Output
 {'context_recall': 1.0000, 'faithfulness': 0.8571, 'factual_correctness': 0.7280}
 ```
 
-## Analyze Results
+### Want help in improving your AI application using evals?
 
-Once you have evaluated, you may want to view, analyse and share results. This is important to interpret the results and understand the performance of your RAG system. For this you may sign up and setup [app.ragas.io]() easily. If not, you may use any alternative tools available to you. 
+In the past 2 years, we have seen and helped improve many AI applications using evals. 
 
-In order to use the [app.ragas.io](http://app.ragas.io) dashboard, you need to have an account on [app.ragas.io](https://app.ragas.io/). If you don't have one, you can sign up for one [here](https://app.ragas.io/login). You will also need to generate a [Ragas APP token](https://app.ragas.io/dashboard/settings/app-tokens).
+We are compressing this knowledge into a product to replace vibe checks with eval loops so that you can focus on building great AI applications.
 
-Once you have the API key, you can use the `upload()` method to export the results to the dashboard.
+If you want help with improving and scaling up your AI application using evals.
 
-```python
-import os
-os.environ["RAGAS_APP_TOKEN"] = "your_app_token"
-```
 
-Now you can view the results in the dashboard by following the link in the output of the `upload()` method.
+🔗 Book a [slot](https://bit.ly/3EBYq4J) or drop us a line: [founders@explodinggradients.com](mailto:founders@explodinggradients.com).
 
-```python
-result.upload()
-```
+![](../_static/ragas_app.gif)
 
-![](rag_eval.gif)
 
 ## Up Next
 

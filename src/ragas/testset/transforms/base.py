@@ -68,20 +68,30 @@ class BaseGraphTransformation(ABC):
         KnowledgeGraph
             The filtered knowledge graph.
         """
-
+        logger.debug("Filtering KnowledgeGraph with %s", self.filter_nodes.__name__)
+        filtered_nodes = [node for node in kg.nodes if self.filter_nodes(node)]
+        node_ids = {node.id for node in filtered_nodes}
+        filtered_relationships = [
+            rel
+            for rel in kg.relationships
+            if (rel.source.id in node_ids) and (rel.target.id in node_ids)
+        ]
+        logger.debug(
+            "Filter reduced KnowledgeGraph by %d/%d nodes and %d/%d relationships",
+            len(kg.nodes) - len(filtered_nodes),
+            len(kg.nodes),
+            len(kg.relationships) - len(filtered_relationships),
+            len(kg.relationships),
+        )
         return KnowledgeGraph(
-            nodes=[node for node in kg.nodes if self.filter_nodes(node)],
-            relationships=[
-                rel
-                for rel in kg.relationships
-                if rel.source in kg.nodes and rel.target in kg.nodes
-            ],
+            nodes=filtered_nodes,
+            relationships=filtered_relationships,
         )
 
     @abstractmethod
-    def generate_execution_plan(self, kg: KnowledgeGraph) -> t.List[t.Coroutine]:
+    def generate_execution_plan(self, kg: KnowledgeGraph) -> t.Sequence[t.Coroutine]:
         """
-        Generates a list of coroutines to be executed in sequence by the Executor. This
+        Generates a sequence of coroutines to be executed in sequence by the Executor. This
         coroutine will, upon execution, write the transformation into the KnowledgeGraph.
 
         Parameters
@@ -91,8 +101,8 @@ class BaseGraphTransformation(ABC):
 
         Returns
         -------
-        t.List[t.Coroutine]
-            A list of coroutines to be executed in parallel.
+        t.Sequence[t.Coroutine]
+            A sequence of coroutines to be executed in parallel.
         """
         pass
 
@@ -159,9 +169,9 @@ class Extractor(BaseGraphTransformation):
         """
         pass
 
-    def generate_execution_plan(self, kg: KnowledgeGraph) -> t.List[t.Coroutine]:
+    def generate_execution_plan(self, kg: KnowledgeGraph) -> t.Sequence[t.Coroutine]:
         """
-        Generates a list of coroutines to be executed in parallel by the Executor.
+        Generates a sequence of coroutines to be executed in parallel by the Executor.
 
         Parameters
         ----------
@@ -170,8 +180,8 @@ class Extractor(BaseGraphTransformation):
 
         Returns
         -------
-        t.List[t.Coroutine]
-            A list of coroutines to be executed in parallel.
+        t.Sequence[t.Coroutine]
+            A sequence of coroutines to be executed in parallel.
         """
 
         async def apply_extract(node: Node):
@@ -186,7 +196,13 @@ class Extractor(BaseGraphTransformation):
                 )
 
         filtered = self.filter(kg)
-        return [apply_extract(node) for node in filtered.nodes]
+        plan = [apply_extract(node) for node in filtered.nodes]
+        logger.debug(
+            "Created %d coroutines for %s",
+            len(plan),
+            self.__class__.__name__,
+        )
+        return plan
 
 
 @dataclass
@@ -197,9 +213,10 @@ class LLMBasedExtractor(Extractor, PromptMixin):
     tokenizer: Encoding = DEFAULT_TOKENIZER
 
     def split_text_by_token_limit(self, text, max_token_limit):
-
         # Tokenize the entire input string
-        tokens = self.tokenizer.encode(text)
+        # to prevent error case when document has special tokens like `<endoftext>`
+        # set empty tuple in disallowed_special to allow all special tokens
+        tokens = self.tokenizer.encode(text, disallowed_special=())
 
         # Split tokens into chunks of max_token_limit or less
         chunks = []
@@ -268,9 +285,9 @@ class Splitter(BaseGraphTransformation):
         """
         pass
 
-    def generate_execution_plan(self, kg: KnowledgeGraph) -> t.List[t.Coroutine]:
+    def generate_execution_plan(self, kg: KnowledgeGraph) -> t.Sequence[t.Coroutine]:
         """
-        Generates a list of coroutines to be executed in parallel by the Executor.
+        Generates a sequence of coroutines to be executed in parallel by the Executor.
 
         Parameters
         ----------
@@ -279,8 +296,8 @@ class Splitter(BaseGraphTransformation):
 
         Returns
         -------
-        t.List[t.Coroutine]
-            A list of coroutines to be executed in parallel.
+        t.Sequence[t.Coroutine]
+            A sequence of coroutines to be executed in parallel.
         """
 
         async def apply_split(node: Node):
@@ -289,7 +306,13 @@ class Splitter(BaseGraphTransformation):
             kg.relationships.extend(relationships)
 
         filtered = self.filter(kg)
-        return [apply_split(node) for node in filtered.nodes]
+        plan = [apply_split(node) for node in filtered.nodes]
+        logger.debug(
+            "Created %d coroutines for %s",
+            len(plan),
+            self.__class__.__name__,
+        )
+        return plan
 
 
 class RelationshipBuilder(BaseGraphTransformation):
@@ -319,9 +342,9 @@ class RelationshipBuilder(BaseGraphTransformation):
         """
         pass
 
-    def generate_execution_plan(self, kg: KnowledgeGraph) -> t.List[t.Coroutine]:
+    def generate_execution_plan(self, kg: KnowledgeGraph) -> t.Sequence[t.Coroutine]:
         """
-        Generates a list of coroutines to be executed in parallel by the Executor.
+        Generates a sequence of coroutines to be executed in parallel by the Executor.
 
         Parameters
         ----------
@@ -330,8 +353,8 @@ class RelationshipBuilder(BaseGraphTransformation):
 
         Returns
         -------
-        t.List[t.Coroutine]
-            A list of coroutines to be executed in parallel.
+        t.Sequence[t.Coroutine]
+            A sequence of coroutines to be executed in parallel.
         """
 
         async def apply_build_relationships(
@@ -341,14 +364,18 @@ class RelationshipBuilder(BaseGraphTransformation):
             original_kg.relationships.extend(relationships)
 
         filtered_kg = self.filter(kg)
-        return [apply_build_relationships(filtered_kg=filtered_kg, original_kg=kg)]
+        plan = [apply_build_relationships(filtered_kg=filtered_kg, original_kg=kg)]
+        logger.debug(
+            "Created %d coroutines for %s",
+            len(plan),
+            self.__class__.__name__,
+        )
+        return plan
 
 
 @dataclass
 class NodeFilter(BaseGraphTransformation):
-
     async def transform(self, kg: KnowledgeGraph) -> KnowledgeGraph:
-
         filtered = self.filter(kg)
 
         for node in filtered.nodes:
@@ -378,9 +405,9 @@ class NodeFilter(BaseGraphTransformation):
         """
         pass
 
-    def generate_execution_plan(self, kg: KnowledgeGraph) -> t.List[t.Coroutine]:
+    def generate_execution_plan(self, kg: KnowledgeGraph) -> t.Sequence[t.Coroutine]:
         """
-        Generates a list of coroutines to be executed
+        Generates a sequence of coroutines to be executed
         """
 
         async def apply_filter(node: Node):
@@ -388,7 +415,13 @@ class NodeFilter(BaseGraphTransformation):
                 kg.remove_node(node)
 
         filtered = self.filter(kg)
-        return [apply_filter(node) for node in filtered.nodes]
+        plan = [apply_filter(node) for node in filtered.nodes]
+        logger.debug(
+            "Created %d coroutines for %s",
+            len(plan),
+            self.__class__.__name__,
+        )
+        return plan
 
 
 @dataclass

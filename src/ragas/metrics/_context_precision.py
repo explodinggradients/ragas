@@ -39,9 +39,7 @@ class Verification(BaseModel):
 
 class ContextPrecisionPrompt(PydanticPrompt[QAC, Verification]):
     name: str = "context_precision"
-    instruction: str = (
-        'Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "1" if useful and "0" if not with json output.'
-    )
+    instruction: str = 'Given question, answer and context verify if the context was useful in arriving at the given answer. Give verdict as "1" if useful and "0" if not with json output.'
     input_model = QAC
     output_model = Verification
     examples = [
@@ -149,16 +147,16 @@ class LLMContextPrecisionWithReference(MetricWithLLM, SingleTurnMetric):
         user_input, retrieved_contexts, reference = self._get_row_attributes(row)
         responses = []
         for context in retrieved_contexts:
-            verdicts: t.List[Verification] = (
-                await self.context_precision_prompt.generate_multiple(
-                    data=QAC(
-                        question=user_input,
-                        context=context,
-                        answer=reference,
-                    ),
-                    llm=self.llm,
-                    callbacks=callbacks,
-                )
+            verdicts: t.List[
+                Verification
+            ] = await self.context_precision_prompt.generate_multiple(
+                data=QAC(
+                    question=user_input,
+                    context=context,
+                    answer=reference,
+                ),
+                llm=self.llm,
+                callbacks=callbacks,
             )
 
             responses.append([result.model_dump() for result in verdicts])
@@ -248,6 +246,66 @@ class NonLLMContextPrecisionWithReference(SingleTurnMetric):
         )
         score = numerator / denominator
         return score
+
+
+@dataclass
+class IDBasedContextPrecision(SingleTurnMetric):
+    """
+    Calculates context precision by directly comparing retrieved context IDs with reference context IDs.
+    The score represents what proportion of the retrieved context IDs are actually relevant (present in reference).
+
+    This metric works with both string and integer IDs.
+
+    Attributes
+    ----------
+    name : str
+        Name of the metric
+    """
+
+    name: str = "id_based_context_precision"
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {
+                "retrieved_context_ids",
+                "reference_context_ids",
+            }
+        }
+    )
+    output_type: MetricOutputType = MetricOutputType.CONTINUOUS
+
+    def init(self, run_config: RunConfig) -> None: ...
+
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        retrieved_context_ids = sample.retrieved_context_ids
+        reference_context_ids = sample.reference_context_ids
+        assert retrieved_context_ids is not None, "retrieved_context_ids is empty"
+        assert reference_context_ids is not None, "reference_context_ids is empty"
+
+        # Convert all IDs to strings to ensure consistent comparison
+        retrieved_ids_set = set(str(id) for id in retrieved_context_ids)
+        reference_ids_set = set(str(id) for id in reference_context_ids)
+
+        # Calculate precision score
+        total_retrieved = len(retrieved_ids_set)
+        if total_retrieved == 0:
+            logger.warning(
+                "No retrieved context IDs provided, cannot calculate precision."
+            )
+            return np.nan
+
+        # Count how many retrieved IDs match reference IDs
+        hits = sum(
+            1 for ret_id in retrieved_ids_set if str(ret_id) in reference_ids_set
+        )
+
+        # For precision, we calculate: relevant retrieved / total retrieved
+        score = hits / total_retrieved
+        return score
+
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
 
 
 @dataclass

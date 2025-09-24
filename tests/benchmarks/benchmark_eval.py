@@ -1,24 +1,22 @@
 import time
 
-from datasets import DatasetDict, load_dataset
-
 from ragas import evaluate
 from ragas.metrics import (
+    ContextUtilization,
     answer_correctness,
     answer_relevancy,
     answer_similarity,
     context_precision,
     context_recall,
-    context_relevancy,
-    context_utilization,
     faithfulness,
 )
-from ragas.metrics.critique import harmfulness
 
-# data
-ds = load_dataset("explodinggradients/amnesty_qa", "english_v2")
-assert isinstance(ds, DatasetDict)
-eval_dataset = ds["eval"]
+from ..e2e.test_dataset_utils import load_amnesty_dataset_safe
+
+# from ragas.metrics.critique import harmfulness  # Import unavailable
+
+# data - using safe dataset loading
+eval_dataset = load_amnesty_dataset_safe("english_v2")
 
 # metrics
 metrics = [
@@ -26,10 +24,8 @@ metrics = [
     context_recall,
     answer_relevancy,
     answer_correctness,
-    harmfulness,
-    context_relevancy,
     context_precision,
-    context_utilization,
+    ContextUtilization(),
     answer_similarity,
 ]
 
@@ -43,6 +39,5 @@ if __name__ == "__main__":
     _ = evaluate(
         eval_dataset,
         metrics=metrics,
-        is_async=True,
     )
     print(f"Time taken [Asyncio]: {time.time() - start:.2f}s")

@@ -6,6 +6,7 @@ How to customize various aspects of Ragas to suit your needs.
 
 - [Customize models](customize_models.md)
 - [Customize timeouts, retries and others](./_run_config.md)
+- [Cancelling long-running tasks](cancellation.md)
 
 ## Metrics
 - [Modify prompts in metrics](./metrics/_modifying-prompts-metrics.md)

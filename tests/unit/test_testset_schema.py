@@ -6,8 +6,8 @@ from ragas.dataset_schema import (
     MultiTurnSample,
     SingleTurnSample,
 )
-from ragas.testset.synthesizers.testset_schema import Testset as RagasTestset
 from ragas.testset.synthesizers.testset_schema import (
+    Testset as RagasTestset,
     TestsetSample as RagasTestsetSample,
 )
 

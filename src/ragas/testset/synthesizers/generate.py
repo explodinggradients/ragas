@@ -110,7 +110,8 @@ class TestsetGenerator:
         callbacks: t.Optional[Callbacks] = None,
         with_debugging_logs=False,
         raise_exceptions: bool = True,
-    ) -> Testset:
+        return_executor: bool = False,
+    ) -> t.Union[Testset, Executor]:
         """
         Generates an evaluation dataset based on given Langchain documents and parameters.
 
@@ -136,11 +137,16 @@ class TestsetGenerator:
             Whether to include debug logs, by default False
         raise_exceptions : bool, optional
             Whether to raise exceptions during generation, by default True
+        return_executor : bool, optional
+            If True, returns the Executor instance instead of running generation.
+            The returned executor can be used to cancel execution by calling executor.cancel().
+            To get results, call executor.results(). Default is False.
 
         Returns
         -------
-        Testset
-            The generated evaluation dataset
+        Testset or Executor
+            If return_executor is False, returns the generated evaluation dataset.
+            If return_executor is True, returns the Executor instance for cancellable execution.
 
         Raises
         ------
@@ -192,6 +198,7 @@ class TestsetGenerator:
             callbacks=callbacks,
             with_debugging_logs=with_debugging_logs,
             raise_exceptions=raise_exceptions,
+            return_executor=return_executor,
         )
 
     def generate_with_llamaindex_docs(
@@ -269,6 +276,7 @@ class TestsetGenerator:
             callbacks=callbacks,
             with_debugging_logs=with_debugging_logs,
             raise_exceptions=raise_exceptions,
+            return_executor=False,  # Default value for llamaindex_docs method
         )
 
     def generate(
@@ -282,7 +290,8 @@ class TestsetGenerator:
         token_usage_parser: t.Optional[TokenUsageParser] = None,
         with_debugging_logs=False,
         raise_exceptions: bool = True,
-    ) -> Testset:
+        return_executor: bool = False,
+    ) -> t.Union[Testset, Executor]:
         """
         Generate an evaluation dataset based on given scenarios and parameters.
 
@@ -309,11 +318,16 @@ class TestsetGenerator:
             If True, enable debug logging for various components.
         raise_exceptions : bool, default True
             If True, raise exceptions during the generation process.
+        return_executor : bool, default False
+            If True, returns the Executor instance instead of running generation.
+            The returned executor can be used to cancel execution by calling executor.cancel().
+            To get results, call executor.results().
 
         Returns
         -------
-        Testset
-            A dataset containing the generated TestsetSamples.
+        Testset or Executor
+            If return_executor is False, returns a dataset containing the generated TestsetSamples.
+            If return_executor is True, returns the Executor instance for cancellable execution.
 
         Notes
         -----
@@ -443,6 +457,10 @@ class TestsetGenerator:
                         "synthesizer_name": synthesizer.name,
                     }
                 )
+
+        # Return executor for cancellable execution if requested
+        if return_executor:
+            return exec
 
         try:
             eval_samples = exec.results()

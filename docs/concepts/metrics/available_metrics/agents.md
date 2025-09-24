@@ -24,36 +24,84 @@ $$
 ### Example
 
 ```python
+import asyncio
+
 from ragas.dataset_schema import  SingleTurnSample, MultiTurnSample, EvaluationDataset
 from ragas.messages import HumanMessage,AIMessage,ToolMessage,ToolCall
 from ragas.metrics import TopicAdherenceScore
+from ragas.llms import LangchainLLMWrapper
+from langchain_openai import ChatOpenAI
 
 
-sample_input_4 = [
-HumanMessage(content="Can you provide me with details about Einstein's theory of relativity?"),
-AIMessage(content="Sure, let me retrieve the relevant information for you.", tool_calls=[
-    ToolCall(name="document_search", args={"query": "Einstein's theory of relativity"})
-]),
-ToolMessage(content="Found relevant documents: 1. Relativity: The Special and the General Theory, 2. General Theory of Relativity by A. Einstein."),
-AIMessage(content="I found some documents on Einstein's theory of relativity. Which one would you like to know more about: 'Relativity: The Special and the General Theory' or 'General Theory of Relativity by A. Einstein'?"),
-HumanMessage(content="Tell me about the 'General Theory of Relativity'."),
-AIMessage(content="Got it! Let me fetch more details from 'General Theory of Relativity by A. Einstein'.", tool_calls=[
-    ToolCall(name="document_retrieve", args={"document": "General Theory of Relativity by A. Einstein"})
-]),
-ToolMessage(content="The document discusses how gravity affects the fabric of spacetime, describing the relationship between mass and spacetime curvature."),
-AIMessage(content="The 'General Theory of Relativity' explains how gravity affects the fabric of spacetime and the relationship between mass and spacetime curvature. Would you like more details or a specific explanation?"),
-HumanMessage(content="No, that's perfect. By the way, do you know any good recipes for a chocolate cake?"),
-AIMessage(content="Sure! Let me find a simple and delicious recipe for a chocolate cake.", tool_calls=[
-    ToolCall(name="recipe_search", args={"query": "chocolate cake recipe"})
-]),
-ToolMessage(content="Here’s a popular recipe for a chocolate cake: Ingredients include flour, sugar, cocoa powder, eggs, milk, and butter. Instructions: Mix dry ingredients, add wet ingredients, and bake at 350°F for 30-35 minutes."),
-AIMessage(content="I found a great recipe for chocolate cake! Would you like the full details, or is that summary enough?")
-]
+evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
 
 
-sample = MultiTurnSample(user_input=sample_input_4, reference_topics=["science"])
-scorer = TopicAdherenceScore(llm = evaluator_llm, mode="precision")
-await scorer.multi_turn_ascore(sample)
+async def evaluate_topic_adherence():
+
+    sample_input_4 = [
+        HumanMessage(
+            content="Can you provide me with details about Einstein's theory of relativity?"
+        ),
+        AIMessage(
+            content="Sure, let me retrieve the relevant information for you.",
+            tool_calls=[
+                ToolCall(
+                    name="document_search",
+                    args={"query": "Einstein's theory of relativity"},
+                )
+            ],
+        ),
+        ToolMessage(
+            content="Found relevant documents: 1. Relativity: The Special and the General Theory, 2. General Theory of Relativity by A. Einstein."
+        ),
+        AIMessage(
+            content="I found some documents on Einstein's theory of relativity. Which one would you like to know more about: 'Relativity: The Special and the General Theory' or 'General Theory of Relativity by A. Einstein'?"
+        ),
+        HumanMessage(content="Tell me about the 'General Theory of Relativity'."),
+        AIMessage(
+            content="Got it! Let me fetch more details from 'General Theory of Relativity by A. Einstein'.",
+            tool_calls=[
+                ToolCall(
+                    name="document_retrieve",
+                    args={"document": "General Theory of Relativity by A. Einstein"},
+                )
+            ],
+        ),
+        ToolMessage(
+            content="The document discusses how gravity affects the fabric of spacetime, describing the relationship between mass and spacetime curvature."
+        ),
+        AIMessage(
+            content="The 'General Theory of Relativity' explains how gravity affects the fabric of spacetime and the relationship between mass and spacetime curvature. Would you like more details or a specific explanation?"
+        ),
+        HumanMessage(
+            content="No, that's perfect. By the way, do you know any good recipes for a chocolate cake?"
+        ),
+        AIMessage(
+            content="Sure! Let me find a simple and delicious recipe for a chocolate cake.",
+            tool_calls=[
+                ToolCall(name="recipe_search", args={"query": "chocolate cake recipe"})
+            ],
+        ),
+        ToolMessage(
+            content="Here’s a popular recipe for a chocolate cake: Ingredients include flour, sugar, cocoa powder, eggs, milk, and butter. Instructions: Mix dry ingredients, add wet ingredients, and bake at 350°F for 30-35 minutes."
+        ),
+        AIMessage(
+            content="I found a great recipe for chocolate cake! Would you like the full details, or is that summary enough?"
+        ),
+    ]
+
+    sample = MultiTurnSample(user_input=sample_input_4, reference_topics=["science"])
+    scorer = TopicAdherenceScore(llm=evaluator_llm, mode="precision")
+    score = await scorer.multi_turn_ascore(sample)
+    print(score)
+
+
+if __name__ == "__main__":
+
+    asyncio.run(evaluate_topic_adherence())
+
+
+
 ```
 Output
 ```
@@ -78,33 +126,52 @@ Output
 `ToolCallAccuracy` is a metric that can be used to evaluate the performance of the LLM in identifying and calling the required tools to complete a given task. This metric needs `user_input` and `reference_tool_calls` to evaluate the performance of the LLM in identifying and calling the required tools to complete a given task. The metric is computed by comparing the `reference_tool_calls` with the Tool calls made by the AI. The values range between 0 and 1, with higher values indicating better performance.
 
 ```python
+
+import asyncio
+
+from ragas.dataset_schema import MultiTurnSample
+from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 from ragas.metrics import ToolCallAccuracy
-from ragas.dataset_schema import  MultiTurnSample
-from ragas.messages import HumanMessage,AIMessage,ToolMessage,ToolCall
 
-sample = [
-    HumanMessage(content="What's the weather like in New York right now?"),
-    AIMessage(content="The current temperature in New York is 75°F and it's partly cloudy.", tool_calls=[
-        ToolCall(name="weather_check", args={"location": "New York"})
-    ]),
-    HumanMessage(content="Can you translate that to Celsius?"),
-    AIMessage(content="Let me convert that to Celsius for you.", tool_calls=[
-        ToolCall(name="temperature_conversion", args={"temperature_fahrenheit": 75})
-    ]),
-    ToolMessage(content="75°F is approximately 23.9°C."),
-    AIMessage(content="75°F is approximately 23.9°C.")
-]
 
-sample = MultiTurnSample(
-    user_input=sample,
-    reference_tool_calls=[
-        ToolCall(name="weather_check", args={"location": "New York"}),
-        ToolCall(name="temperature_conversion", args={"temperature_fahrenheit": 75})
+async def evaluate_tool_call_accuracy():
+    sample = [
+        HumanMessage(content="What's the weather like in New York right now?"),
+        AIMessage(
+            content="The current temperature in New York is 75°F and it's partly cloudy.",
+            tool_calls=[ToolCall(name="weather_check", args={"location": "New York"})],
+        ),
+        HumanMessage(content="Can you translate that to Celsius?"),
+        AIMessage(
+            content="Let me convert that to Celsius for you.",
+            tool_calls=[
+                ToolCall(
+                    name="temperature_conversion", args={"temperature_fahrenheit": 75}
+                )
+            ],
+        ),
+        ToolMessage(content="75°F is approximately 23.9°C."),
+        AIMessage(content="75°F is approximately 23.9°C."),
     ]
-)
 
-scorer = ToolCallAccuracy()
-await scorer.multi_turn_ascore(sample)
+    sample = MultiTurnSample(
+        user_input=sample,
+        reference_tool_calls=[
+            ToolCall(name="weather_check", args={"location": "New York"}),
+            ToolCall(
+                name="temperature_conversion", args={"temperature_fahrenheit": 75}
+            ),
+        ],
+    )
+
+    scorer = ToolCallAccuracy()
+    score = await scorer.multi_turn_ascore(sample)
+    print(score)
+
+
+if __name__ == "__main__":
+    asyncio.run(evaluate_tool_call_accuracy())
+
 ```
 Output
 ```
@@ -122,6 +189,107 @@ from ragas.metrics._tool_call_accuracy import ToolCallAccuracy
 metric = ToolCallAccuracy()
 metric.arg_comparison_metric = NonLLMStringSimilarity()
 ```
+## Tool Call F1
+
+`ToolCallF1` is a metric that return F1-score based on precision and recall of tool calls made by an agent, comparing them to a set of expected calls (`reference_tool_calls`). While `ToolCallAccuracy` provides a binary score based on exact order and content match, `ToolCallF1` complements it by offering a softer evaluation useful for onboarding and iteration. It helps quantify how close the agent was to the expected behavior even if it over- or under-calls.
+
+### Formula
+
+ToolCallF1 is based on classic IR metrics.  It uses unordered matching: the order in which the tools are called does not impact the result, only the presence and correctness of tool names and parameters are considered.
+
+$$
+\text{Precision} = \frac{\text{tool calls that match both name and parameters}}{\text{tool calls that match both name and parameters} + \text{extra tool calls that were not expected}}
+$$
+
+$$
+\text{Recall} = \frac{\text{tool calls that match both name and parameters}}{\text{tool calls that match both name and parameters} + \text{expected tool calls that were not made}}
+$$
+
+$$
+\text{F1} = \frac{2 \cdot \text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}
+$$
+
+### How is it different from Topic Adherence?
+
+While both `ToolCallF1` and `TopicAdherenceScore` uses precision, recall, and F1-score, they evaluate different aspects:
+
+| Metric                | Evaluates                               | Based on                     |
+| --------------------- | --------------------------------------- | ---------------------------- |
+| `ToolCallF1`          | Correctness of tool executions          | Structured tool call objects |
+| `TopicAdherenceScore` | Whether the conversation stays on-topic | Comparison of domain topics  |
+
+Use `ToolCallF1` when you want to track whether the agent correctly **executed tools**. Use `TopicAdherenceScore` when evaluating whether the **content or intention** stays within allowed topics.
+
+### Example: Matching Expected Tool Calls
+
+```python
+from ragas.metrics import ToolCallF1
+from ragas.dataset_schema import MultiTurnSample
+from ragas.messages import HumanMessage, AIMessage, ToolMessage, ToolCall
+
+sample = [
+    HumanMessage(content="What's the weather like in Paris today?"),
+    AIMessage(content="Let me check that for you.", tool_calls=[
+        ToolCall(name="weather_check", args={"location": "Paris"})
+    ]),
+    HumanMessage(content="And the UV index?"),
+    AIMessage(content="Sure, here's the UV index for Paris.", tool_calls=[
+        ToolCall(name="uv_index_lookup", args={"location": "Paris"})
+    ])
+]
+
+sample = MultiTurnSample(
+    user_input=sample,
+    reference_tool_calls=[
+        ToolCall(name="weather_check", args={"location": "Paris"}),
+        ToolCall(name="uv_index_lookup", args={"location": "Paris"})
+    ]
+)
+
+scorer = ToolCallF1()
+await scorer.multi_turn_ascore(sample)
+```
+
+Output
+
+```
+1.0
+```
+
+### Example: Extra Tool Called
+
+```python
+sample = [
+    HumanMessage(content="What's the weather like in Paris today?"),
+    AIMessage(content="Let me check that for you.", tool_calls=[
+        ToolCall(name="weather_check", args={"location": "Paris"})
+    ]),
+    HumanMessage(content="And the UV index?"),
+    AIMessage(content="Sure, here's the UV index for Paris.", tool_calls=[
+        ToolCall(name="uv_index_lookup", args={"location": "Paris"}),
+        ToolCall(name="air_quality", args={"location": "Paris"})  # extra call
+    ])
+]
+
+sample = MultiTurnSample(
+    user_input=sample,
+    reference_tool_calls=[
+        ToolCall(name="uv_index_lookup", args={"location": "Paris"}),
+        ToolCall(name="weather_check", args={"location": "Paris"})
+    ]
+)
+
+await scorer.multi_turn_ascore(sample)
+```
+
+Output
+
+```
+0.67
+```
+
+In this case, the agent calls both correct tools but adds an extra `air_quality` call. The F1-score reflects partial correctness instead of failing the example completely.
+
 
 ## Agent Goal accuracy
 
@@ -134,31 +302,64 @@ Calculating `AgentGoalAccuracyWithReference` with reference needs `user_input` a
 
 
 ```python
-from ragas.dataset_schema import  MultiTurnSample
-from ragas.messages import HumanMessage,AIMessage,ToolMessage,ToolCall
+import asyncio
+
+from langchain_openai import ChatOpenAI
+from ragas.dataset_schema import MultiTurnSample
+from ragas.llms import LangchainLLMWrapper
+from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 from ragas.metrics import AgentGoalAccuracyWithReference
 
+evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
 
-sample = MultiTurnSample(user_input=[
-    HumanMessage(content="Hey, book a table at the nearest best Chinese restaurant for 8:00pm"),
-    AIMessage(content="Sure, let me find the best options for you.", tool_calls=[
-        ToolCall(name="restaurant_search", args={"cuisine": "Chinese", "time": "8:00pm"})
-    ]),
-    ToolMessage(content="Found a few options: 1. Golden Dragon, 2. Jade Palace"),
-    AIMessage(content="I found some great options: Golden Dragon and Jade Palace. Which one would you prefer?"),
-    HumanMessage(content="Let's go with Golden Dragon."),
-    AIMessage(content="Great choice! I'll book a table for 8:00pm at Golden Dragon.", tool_calls=[
-        ToolCall(name="restaurant_book", args={"name": "Golden Dragon", "time": "8:00pm"})
-    ]),
-    ToolMessage(content="Table booked at Golden Dragon for 8:00pm."),
-    AIMessage(content="Your table at Golden Dragon is booked for 8:00pm. Enjoy your meal!"),
-    HumanMessage(content="thanks"),
-],
-    reference="Table booked at one of the chinese restaurants at 8 pm")
 
-scorer = AgentGoalAccuracyWithReference(llm = evaluator_llm)
-await scorer.multi_turn_ascore(sample)
+async def evaluate_agent_goal_accuracy_with_reference():
+    sample = MultiTurnSample(
+        user_input=[
+            HumanMessage(
+                content="Hey, book a table at the nearest best Chinese restaurant for 8:00pm"
+            ),
+            AIMessage(
+                content="Sure, let me find the best options for you.",
+                tool_calls=[
+                    ToolCall(
+                        name="restaurant_search",
+                        args={"cuisine": "Chinese", "time": "8:00pm"},
+                    )
+                ],
+            ),
+            ToolMessage(
+                content="Found a few options: 1. Golden Dragon, 2. Jade Palace"
+            ),
+            AIMessage(
+                content="I found some great options: Golden Dragon and Jade Palace. Which one would you prefer?"
+            ),
+            HumanMessage(content="Let's go with Golden Dragon."),
+            AIMessage(
+                content="Great choice! I'll book a table for 8:00pm at Golden Dragon.",
+                tool_calls=[
+                    ToolCall(
+                        name="restaurant_book",
+                        args={"name": "Golden Dragon", "time": "8:00pm"},
+                    )
+                ],
+            ),
+            ToolMessage(content="Table booked at Golden Dragon for 8:00pm."),
+            AIMessage(
+                content="Your table at Golden Dragon is booked for 8:00pm. Enjoy your meal!"
+            ),
+            HumanMessage(content="thanks"),
+        ],
+        reference="Table booked at one of the chinese restaurants at 8 pm",
+    )
 
+    scorer = AgentGoalAccuracyWithReference(llm=evaluator_llm)
+    score = await scorer.multi_turn_ascore(sample)
+    print(score)
+
+
+if __name__ == "__main__":
+    asyncio.run(evaluate_agent_goal_accuracy_with_reference())
 ```
 Output
 ```
@@ -173,29 +374,64 @@ Output
 ### Example
 
 ```python
-from ragas.dataset_schema import  MultiTurnSample
-from ragas.messages import HumanMessage,AIMessage,ToolMessage,ToolCall
+
+import asyncio
+
+from langchain_openai import ChatOpenAI
+from ragas.dataset_schema import MultiTurnSample
+from ragas.llms import LangchainLLMWrapper
+from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 from ragas.metrics import AgentGoalAccuracyWithoutReference
 
+evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
 
-sample = MultiTurnSample(user_input=[
-    HumanMessage(content="Hey, book a table at the nearest best Chinese restaurant for 8:00pm"),
-    AIMessage(content="Sure, let me find the best options for you.", tool_calls=[
-        ToolCall(name="restaurant_search", args={"cuisine": "Chinese", "time": "8:00pm"})
-    ]),
-    ToolMessage(content="Found a few options: 1. Golden Dragon, 2. Jade Palace"),
-    AIMessage(content="I found some great options: Golden Dragon and Jade Palace. Which one would you prefer?"),
-    HumanMessage(content="Let's go with Golden Dragon."),
-    AIMessage(content="Great choice! I'll book a table for 8:00pm at Golden Dragon.", tool_calls=[
-        ToolCall(name="restaurant_book", args={"name": "Golden Dragon", "time": "8:00pm"})
-    ]),
-    ToolMessage(content="Table booked at Golden Dragon for 8:00pm."),
-    AIMessage(content="Your table at Golden Dragon is booked for 8:00pm. Enjoy your meal!"),
-    HumanMessage(content="thanks"),
-])
 
-scorer = AgentGoalAccuracyWithoutReference(llm = evaluator_llm)
-await scorer.multi_turn_ascore(sample)
+async def evaluate_agent_goal_accuracy_without_reference():
+
+    sample = MultiTurnSample(
+        user_input=[
+            HumanMessage(
+                content="Hey, book a table at the nearest best Chinese restaurant for 8:00pm"
+            ),
+            AIMessage(
+                content="Sure, let me find the best options for you.",
+                tool_calls=[
+                    ToolCall(
+                        name="restaurant_search",
+                        args={"cuisine": "Chinese", "time": "8:00pm"},
+                    )
+                ],
+            ),
+            ToolMessage(
+                content="Found a few options: 1. Golden Dragon, 2. Jade Palace"
+            ),
+            AIMessage(
+                content="I found some great options: Golden Dragon and Jade Palace. Which one would you prefer?"
+            ),
+            HumanMessage(content="Let's go with Golden Dragon."),
+            AIMessage(
+                content="Great choice! I'll book a table for 8:00pm at Golden Dragon.",
+                tool_calls=[
+                    ToolCall(
+                        name="restaurant_book",
+                        args={"name": "Golden Dragon", "time": "8:00pm"},
+                    )
+                ],
+            ),
+            ToolMessage(content="Table booked at Golden Dragon for 8:00pm."),
+            AIMessage(
+                content="Your table at Golden Dragon is booked for 8:00pm. Enjoy your meal!"
+            ),
+            HumanMessage(content="thanks"),
+        ]
+    )
+
+    scorer = AgentGoalAccuracyWithoutReference(llm=evaluator_llm)
+    score = await scorer.multi_turn_ascore(sample)
+    print(score)
+
+if __name__ == "__main__":
+    asyncio.run(evaluate_agent_goal_accuracy_without_reference())
 
 ```
 Output

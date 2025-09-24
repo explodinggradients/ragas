@@ -6,6 +6,7 @@ from ragas.cost import (
     CostCallbackHandler,
     TokenUsage,
     get_token_usage_for_anthropic,
+    get_token_usage_for_azure_ai,
     get_token_usage_for_bedrock,
     get_token_usage_for_openai,
 )
@@ -129,23 +130,90 @@ bedrock_claude_result = LLMResult(
     llm_output={},
 )
 
+azure_ai_result = LLMResult(
+    generations=[[ChatGeneration(message=AIMessage(content="Hello, world!"))]],
+    llm_output={
+        "token_usage": {
+            "input_tokens": 10,
+            "output_tokens": 10,
+            "total_tokens": 20,
+        },
+        "model_name": "mistral-small-2503",
+    },
+)
+
 
 def test_parse_llm_results():
     # openai
     token_usage = get_token_usage_for_openai(openai_llm_result)
-    assert token_usage == TokenUsage(input_tokens=10, output_tokens=10)
+    assert token_usage == TokenUsage(input_tokens=10, output_tokens=10, model="gpt-4o")
 
     # anthropic
     token_usage = get_token_usage_for_anthropic(anthropic_llm_result)
-    assert token_usage == TokenUsage(input_tokens=9, output_tokens=12)
+    assert token_usage == TokenUsage(
+        input_tokens=9, output_tokens=12, model="claude-3-opus-20240229"
+    )
 
     # Bedrock LLaMa
     token_usage = get_token_usage_for_bedrock(bedrock_llama_result)
-    assert token_usage == TokenUsage(input_tokens=10, output_tokens=10)
+    assert token_usage == TokenUsage(
+        input_tokens=10, output_tokens=10, model="us.meta.llama3-1-70b-instruct-v1:0"
+    )
 
     # Bedrock Claude
     token_usage = get_token_usage_for_bedrock(bedrock_claude_result)
-    assert token_usage == TokenUsage(input_tokens=10, output_tokens=10)
+    assert token_usage == TokenUsage(
+        input_tokens=10,
+        output_tokens=10,
+        model="us.anthropic.claude-3-5-sonnet-20240620-v1:0",
+    )
+
+    # Azure AI
+    token_usage = get_token_usage_for_azure_ai(azure_ai_result)
+    assert token_usage == TokenUsage(
+        input_tokens=10, output_tokens=10, model="mistral-small-2503"
+    )
+
+
+def test_azure_ai_edge_cases():
+    # Test with None llm_output
+    empty_result = LLMResult(
+        generations=[[ChatGeneration(message=AIMessage(content="Hello, world!"))]],
+        llm_output=None,
+    )
+    token_usage = get_token_usage_for_azure_ai(empty_result)
+    assert token_usage == TokenUsage(input_tokens=0, output_tokens=0)
+
+    # Test with empty llm_output
+    empty_llm_output_result = LLMResult(
+        generations=[[ChatGeneration(message=AIMessage(content="Hello, world!"))]],
+        llm_output={},
+    )
+    token_usage = get_token_usage_for_azure_ai(empty_llm_output_result)
+    assert token_usage == TokenUsage(input_tokens=0, output_tokens=0)
+
+    # Test with missing token_usage field
+    no_token_usage_result = LLMResult(
+        generations=[[ChatGeneration(message=AIMessage(content="Hello, world!"))]],
+        llm_output={"model_name": "mistral-small-2503"},
+    )
+    token_usage = get_token_usage_for_azure_ai(no_token_usage_result)
+    assert token_usage == TokenUsage(
+        input_tokens=0, output_tokens=0, model="mistral-small-2503"
+    )
+
+    # Test with partial token_usage field
+    partial_token_usage_result = LLMResult(
+        generations=[[ChatGeneration(message=AIMessage(content="Hello, world!"))]],
+        llm_output={
+            "token_usage": {"input_tokens": 15},  # missing output_tokens
+            "model_name": "mistral-small-2503",
+        },
+    )
+    token_usage = get_token_usage_for_azure_ai(partial_token_usage_result)
+    assert token_usage == TokenUsage(
+        input_tokens=15, output_tokens=0, model="mistral-small-2503"
+    )
 
 
 def test_cost_callback_handler():
@@ -153,7 +221,9 @@ def test_cost_callback_handler():
     cost_cb.on_llm_end(openai_llm_result)
 
     # cost
-    assert cost_cb.total_tokens() == TokenUsage(input_tokens=10, output_tokens=10)
+    assert cost_cb.total_tokens() == TokenUsage(
+        input_tokens=10, output_tokens=10, model="gpt-4o"
+    )
 
     assert cost_cb.total_cost(0.1) == 2.0
     assert (

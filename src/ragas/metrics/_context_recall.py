@@ -47,9 +47,7 @@ class ContextRecallClassificationPrompt(
     PydanticPrompt[QCA, ContextRecallClassifications]
 ):
     name: str = "context_recall_classification"
-    instruction: str = (
-        "Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not. Use only 'Yes' (1) or 'No' (0) as a binary classification. Output json with reason."
-    )
+    instruction: str = "Given a context, and an answer, analyze each sentence in the answer and classify if the sentence can be attributed to the given context or not. Use only 'Yes' (1) or 'No' (0) as a binary classification. Output json with reason."
     input_model = QCA
     output_model = ContextRecallClassifications
     examples = [
@@ -57,7 +55,7 @@ class ContextRecallClassificationPrompt(
             QCA(
                 question="What can you tell me about albert Albert Einstein?",
                 context="Albert Einstein (14 March 1879 - 18 April 1955) was a German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time. Best known for developing the theory of relativity, he also made important contributions to quantum mechanics, and was thus a central figure in the revolutionary reshaping of the scientific understanding of nature that modern physics accomplished in the first decades of the twentieth century. His mass-energy equivalence formula E = mc2, which arises from relativity theory, has been called 'the world's most famous equation'. He received the 1921 Nobel Prize in Physics 'for his services to theoretical physics, and especially for his discovery of the law of the photoelectric effect', a pivotal step in the development of quantum theory. His work is also known for its influence on the philosophy of science. In a 1999 poll of 130 leading physicists worldwide by the British journal Physics World, Einstein was ranked the greatest physicist of all time. His intellectual achievements and originality have made Einstein synonymous with genius.",
-                answer="Albert Einstein born in 14 March 1879 was  German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time. He received the 1921 Nobel Prize in Physics for his services to theoretical physics. He published 4 papers in 1905.  Einstein moved to Switzerland in 1895",
+                answer="Albert Einstein, born on 14 March 1879, was a German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time. He received the 1921 Nobel Prize in Physics for his services to theoretical physics. He published 4 papers in 1905. Einstein moved to Switzerland in 1895.",
             ),
             ContextRecallClassifications(
                 classifications=[
@@ -135,16 +133,16 @@ class LLMContextRecall(MetricWithLLM, SingleTurnMetric):
         assert self.llm is not None, "set LLM before use"
 
         # run classification
-        classifications_list: t.List[ContextRecallClassifications] = (
-            await self.context_recall_prompt.generate_multiple(
-                data=QCA(
-                    question=row["user_input"],
-                    context="\n".join(row["retrieved_contexts"]),
-                    answer=row["reference"],
-                ),
-                llm=self.llm,
-                callbacks=callbacks,
-            )
+        classifications_list: t.List[
+            ContextRecallClassifications
+        ] = await self.context_recall_prompt.generate_multiple(
+            data=QCA(
+                question=row["user_input"],
+                context="\n".join(row["retrieved_contexts"]),
+                answer=row["reference"],
+            ),
+            llm=self.llm,
+            callbacks=callbacks,
         )
         classification_dicts = []
         for classification in classifications_list:
@@ -235,6 +233,65 @@ class NonLLMContextRecall(SingleTurnMetric):
         numerator = sum(response)
         score = numerator / denom if denom > 0 else np.nan
         return score
+
+
+@dataclass
+class IDBasedContextRecall(SingleTurnMetric):
+    """
+    Calculates context recall by directly comparing retrieved context IDs with reference context IDs.
+    The score represents what proportion of the reference IDs were successfully retrieved.
+
+    This metric works with both string and integer IDs.
+
+    Attributes
+    ----------
+    name : str
+        Name of the metric
+    """
+
+    name: str = "id_based_context_recall"
+    _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+        default_factory=lambda: {
+            MetricType.SINGLE_TURN: {
+                "retrieved_context_ids",
+                "reference_context_ids",
+            }
+        }
+    )
+    output_type: MetricOutputType = MetricOutputType.CONTINUOUS
+
+    def init(self, run_config: RunConfig) -> None: ...
+
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks: Callbacks
+    ) -> float:
+        retrieved_context_ids = sample.retrieved_context_ids
+        reference_context_ids = sample.reference_context_ids
+        assert retrieved_context_ids is not None, "retrieved_context_ids is empty"
+        assert reference_context_ids is not None, "reference_context_ids is empty"
+
+        # Convert all IDs to strings to ensure consistent comparison
+        retrieved_ids_set = set(str(id) for id in retrieved_context_ids)
+        reference_ids_set = set(str(id) for id in reference_context_ids)
+
+        # Calculate how many reference IDs appear in retrieved IDs
+        hits = sum(
+            1 for ref_id in reference_ids_set if str(ref_id) in retrieved_ids_set
+        )
+
+        # Calculate recall score
+        total_refs = len(reference_ids_set)
+        score = hits / total_refs if total_refs > 0 else np.nan
+
+        if np.isnan(score):
+            logger.warning(
+                "No reference context IDs provided, cannot calculate recall."
+            )
+
+        return score
+
+    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+        return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
 
 
 context_recall = ContextRecall()

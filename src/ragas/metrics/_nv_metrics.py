@@ -21,17 +21,17 @@ class AnswerAccuracy(MetricWithLLM, SingleTurnMetric):
     This metric averages two distinct judge prompts to evaluate.
 
     Top10, Zero-shoot LLM-as-a-Judge Leaderboard:
-    1)- mistralai/mixtral-8x22b-instruct-v0.1
-    2)- mistralai/mixtral-8x7b-instruct-v0.1
-    3)- meta/llama-3.1-70b-instruct
-    4)- meta/llama-3.3-70b-instruct
-    5)- meta/llama-3.1-405b-instruct
-    6)- mistralai/mistral-nemo-12b-instruct
-    7)- nvidia/llama-3.1-nemotron-70b-instruct
-    8)- meta/llama-3.1-8b-instruct
-    9)- google/gemma-2-2b-it
-    10)- nvidia/nemotron-mini-4b-instruct
-    The top1 LB model have high correlation with human judges (~0.90).
+    1)- nvidia/Llama-3_3-Nemotron-Super-49B-v1
+    2)- mistralai/mixtral-8x22b-instruct-v0.1
+    3)- mistralai/mixtral-8x7b-instruct-v0.1
+    4)- meta/llama-3.1-70b-instruct
+    5)- meta/llama-3.3-70b-instruct
+    6)- meta/llama-3.1-405b-instruct
+    7)- mistralai/mistral-nemo-12b-instruct
+    8)- nvidia/llama-3.1-nemotron-70b-instruct
+    9)- meta/llama-3.1-8b-instruct
+    10)- google/gemma-2-2b-it
+    The top1 LB model have high correlation with human judges (~0.92).
 
     Attributes
     ----------
@@ -252,7 +252,7 @@ class ContextRelevance(MetricWithLLM, SingleTurnMetric):
                 formatted_prompt = StringPromptValue(
                     text=self.template_relevance1.format(
                         query=sample.user_input,
-                        context="\n".join(sample.retrieved_contexts)[:7000],
+                        context="\n".join(sample.retrieved_contexts),
                     )
                 )
                 req = self.llm.agenerate_text(
@@ -269,9 +269,9 @@ class ContextRelevance(MetricWithLLM, SingleTurnMetric):
 
             for retry in range(self.retry):
                 formatted_prompt = StringPromptValue(
-                    text=self.template_relevance1.format(
+                    text=self.template_relevance2.format(
                         query=sample.user_input,
-                        context="\n".join(sample.retrieved_contexts)[:7000],
+                        context="\n".join(sample.retrieved_contexts),
                     )
                 )
                 req = self.llm.agenerate_text(
@@ -385,7 +385,7 @@ class ResponseGroundedness(MetricWithLLM, SingleTurnMetric):
             for retry in range(self.retry):
                 formatted_prompt = StringPromptValue(
                     text=self.template_groundedness1.format(
-                        context="\n".join(sample.retrieved_contexts)[:7000],
+                        context="\n".join(sample.retrieved_contexts),
                         response=sample.response,
                     )
                 )
@@ -404,7 +404,7 @@ class ResponseGroundedness(MetricWithLLM, SingleTurnMetric):
             for retry in range(self.retry):
                 formatted_prompt = StringPromptValue(
                     text=self.template_groundedness2.format(
-                        context="\n".join(sample.retrieved_contexts)[:7000],
+                        context="\n".join(sample.retrieved_contexts),
                         response=sample.response,
                     )
                 )
