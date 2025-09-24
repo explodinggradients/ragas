@@ -19,6 +19,7 @@ from ragas.metrics._context_entities_recall import (
 from ragas.metrics._context_precision import (
     ContextPrecision,
     ContextUtilization,
+    IDBasedContextPrecision,
     LLMContextPrecisionWithoutReference,
     LLMContextPrecisionWithReference,
     NonLLMContextPrecisionWithReference,
@@ -26,6 +27,7 @@ from ragas.metrics._context_precision import (
 )
 from ragas.metrics._context_recall import (
     ContextRecall,
+    IDBasedContextRecall,
     LLMContextRecall,
     NonLLMContextRecall,
     context_recall,
@@ -130,8 +132,10 @@ __all__ = [
     "LLMContextPrecisionWithoutReference",
     "NonLLMContextPrecisionWithReference",
     "LLMContextPrecisionWithoutReference",
+    "IDBasedContextPrecision",
     "LLMContextRecall",
     "NonLLMContextRecall",
+    "IDBasedContextRecall",
     "FactualCorrectness",
     "InstanceRubrics",
     "NonLLMStringSimilarity",
