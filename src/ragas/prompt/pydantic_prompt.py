@@ -36,8 +36,27 @@ def is_langchain_llm(llm: t.Union[BaseRagasLLM, BaseLanguageModel]) -> bool:
 
     Returns:
         True if it's a LangChain LLM, False if it's a Ragas LLM
+
+    .. deprecated::
+        Direct usage of LangChain LLMs is deprecated. Use Ragas LLM interfaces instead:
+        from ragas.llms.base import llm_factory; llm = llm_factory("gpt-4o-mini")
+        or from ragas.llms.base import instructor_llm_factory; llm = instructor_llm_factory("openai", client=openai_client)
     """
-    return hasattr(llm, "agenerate") and not hasattr(llm, "run_config")
+    result = hasattr(llm, "agenerate") and not hasattr(llm, "run_config")
+
+    if result:
+        import warnings
+
+        warnings.warn(
+            "Direct usage of LangChain LLMs with Ragas prompts is deprecated and will be removed in a future version. "
+            "Use Ragas LLM interfaces instead: "
+            "from ragas.llms.base import llm_factory; llm = llm_factory('gpt-4o-mini') "
+            "or from ragas.llms.base import instructor_llm_factory; llm = instructor_llm_factory('openai', client=openai_client)",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+
+    return result
 
 
 logger = logging.getLogger(__name__)

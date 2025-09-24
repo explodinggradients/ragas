@@ -97,6 +97,25 @@ def get_metric_language(metric: "Metric") -> str:
     return languags[0] if len(languags) > 0 else ""
 
 
+class DeprecationHelper:
+    """Helper class to handle deprecation warnings for exported classes."""
+
+    def __init__(self, new_target: t.Type, deprecation_message: str):
+        self.new_target = new_target
+        self.deprecation_message = deprecation_message
+
+    def _warn(self):
+        warnings.warn(self.deprecation_message, DeprecationWarning, stacklevel=3)
+
+    def __call__(self, *args, **kwargs):
+        self._warn()
+        return self.new_target(*args, **kwargs)
+
+    def __getattr__(self, attr):
+        self._warn()
+        return getattr(self.new_target, attr)
+
+
 def deprecated(
     since: str,
     *,

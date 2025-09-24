@@ -25,31 +25,6 @@ if t.TYPE_CHECKING:
 DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
 
 
-class DeprecationHelper:
-    """Helper class to handle deprecation warnings for exported classes.
-
-    This class allows deprecated classes to be imported and used while emitting
-    appropriate warnings, including support for class method access.
-    """
-
-    def __init__(self, new_target: t.Type, deprecation_message: str):
-        self.new_target = new_target
-        self.deprecation_message = deprecation_message
-
-    def _warn(self):
-        import warnings
-
-        warnings.warn(self.deprecation_message, DeprecationWarning, stacklevel=3)
-
-    def __call__(self, *args, **kwargs):
-        self._warn()
-        return self.new_target(*args, **kwargs)
-
-    def __getattr__(self, attr):
-        self._warn()
-        return getattr(self.new_target, attr)
-
-
 class BaseRagasEmbedding(ABC):
     """Modern abstract base class for Ragas embedding implementations.
 
@@ -272,7 +247,7 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
     """
     Wrapper for any embeddings from langchain.
 
-    .. deprecated:: 0.3.0
+    .. deprecated::
         LangchainEmbeddingsWrapper is deprecated and will be removed in a future version.
         Use the modern embedding providers directly with embedding_factory() instead:
 
@@ -538,7 +513,7 @@ class LlamaIndexEmbeddingsWrapper(BaseRagasEmbeddings):
     """
     Wrapper for any embeddings from llama-index.
 
-    .. deprecated:: 0.3.0
+    .. deprecated::
         LlamaIndexEmbeddingsWrapper is deprecated and will be removed in a future version.
         Use the modern embedding providers directly with embedding_factory() instead:
 
