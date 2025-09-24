@@ -23,4 +23,4 @@ happy to look into it 🙂
 Tools that help you trace the LLM calls can be integrated with Ragas to get the traces of the evaluator LLMs.
 
 -  [Arize Phoenix](./_arize.md) - Arize is a platform for observability and debugging of LLMs, more information can be found [here](https://phoenix.arize.com/).
-- [Langsmith](./langsmith.md) - Langsmith is a platform for observability and debugging of LLMs from Langchain, more information can be found [here](https://www.langchain.com/langsmith).
+- [LangSmith](./langsmith.md) - LangSmith is a platform for observability and debugging of LLMs from LangChain, more information can be found [here](https://www.langchain.com/langsmith).

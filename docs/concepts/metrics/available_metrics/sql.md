@@ -1,14 +1,14 @@
-# SQL 
+# SQL
 
 
 ## Execution based metrics
-In these metrics the resulting SQL is compared after executing the SQL query on the database and then comparing the `response` with the expected results. 
+In these metrics the resulting SQL is compared after executing the SQL query on the database and then comparing the `response` with the expected results.
 
 ### DataCompy Score
 
-`DataCompyScore` metric uses DataCompy, a python library that compares two pandas DataFrames. It provides a simple interface to compare two DataFrames and provides a detailed report of the differences. In this metric the `response` is executed on the database and the resulting data is compared with the expected data, ie `reference`. To enable comparison both `response` and `reference` should be in the form of a Comma-Separated Values as shown in the example.
+`DataCompyScore` metric uses DataCompy, a python library that compares two pandas DataFrames. It provides a simple interface to compare two DataFrames and provides a detailed report of the differences. In this metric the `response` is executed on the database and the resulting data is compared with the expected data, i.e. `reference`. To enable comparison both `response` and `reference` should be in the form of a Comma-Separated Values as shown in the example.
 
-Dataframes can be compared across rows or columns. This can be configured using `mode` parameter. 
+DataFrames can be compared across rows or columns. This can be configured using `mode` parameter.
 
 If mode is `row` then the comparison is done row-wise. If mode is `column` then the comparison is done column-wise.
 

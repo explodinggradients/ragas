@@ -1,13 +1,13 @@
 ## Customize Models
 
-Ragas may use a LLM and or Embedding for evaluation and synthetic data generation. Both of these models can be customised according to you availabiity. 
+Ragas may use a LLM and or Embedding for evaluation and synthetic data generation. Both of these models can be customised according to you availability.
 
 !!! note
-    Ragas supports all the [LLMs](https://python.langchain.com/docs/integrations/chat/) and [Embeddings](https://python.langchain.com/docs/integrations/text_embedding/) available in langchain
+    Ragas supports all the [LLMs](https://python.langchain.com/docs/integrations/chat/) and [Embeddings](https://python.langchain.com/docs/integrations/text_embedding/) available in LangChain
 
-- `BaseRagasLLM` and `BaseRagasEmbeddings` are the base classes Ragas uses internally for LLMs and Embeddings. Any custom LLM or Embeddings should be a subclass of these base classes.  
+- `BaseRagasLLM` and `BaseRagasEmbeddings` are the base classes Ragas uses internally for LLMs and Embeddings. Any custom LLM or Embeddings should be a subclass of these base classes.
 
-- If you are using Langchain, you can pass the Langchain LLM and Embeddings directly and Ragas will wrap it with `LangchainLLMWrapper` or `LangchainEmbeddingsWrapper` as needed.
+- If you are using LangChain, you can pass the LangChain LLM and Embeddings directly and Ragas will wrap it with `LangchainLLMWrapper` or `LangchainEmbeddingsWrapper` as needed.
 
 !!! tip "Batch API Support"
     OpenAI models (ChatOpenAI, AzureChatOpenAI) automatically support [Batch Evaluation](../metrics/batch_evaluation.md) for up to 50% cost savings on large-scale evaluations. The `LangchainLLMWrapper` automatically detects batch support and enables cost-optimized evaluation workflows.
@@ -60,7 +60,7 @@ azure_embeddings = AzureOpenAIEmbeddings(
 azure_llm = LangchainLLMWrapper(azure_llm)
 azure_embeddings = LangchainEmbeddingsWrapper(azure_embeddings)
 ```
-Yay! Now are you ready to use ragas with Azure OpenAI endpoints
+Yay! Now you are ready to use ragas with Azure OpenAI endpoints
 
 ### Google Vertex
 
@@ -84,7 +84,7 @@ config = {
 # authenticate to GCP
 creds, _ = google.auth.default(quota_project_id=config["project_id"])
 
-# create Langchain LLM and Embeddings
+# create LangChain LLM and Embeddings
 vertextai_llm = ChatVertexAI(
     credentials=creds,
     model_name=config["chat_model_id"],
@@ -98,7 +98,7 @@ def gemini_is_finished_parser(response: LLMResult) -> bool:
     is_finished_list = []
     for g in response.flatten():
         resp = g.generations[0][0]
-        
+
         # Check generation_info first
         if resp.generation_info is not None:
             finish_reason = resp.generation_info.get("finish_reason")
@@ -107,7 +107,7 @@ def gemini_is_finished_parser(response: LLMResult) -> bool:
                     finish_reason in ["STOP", "MAX_TOKENS"]
                 )
                 continue
-                
+
         # Check response_metadata as fallback
         if isinstance(resp, ChatGeneration) and resp.message is not None:
             metadata = resp.message.response_metadata
@@ -117,20 +117,20 @@ def gemini_is_finished_parser(response: LLMResult) -> bool:
                 )
             elif metadata.get("stop_reason"):
                 is_finished_list.append(
-                    metadata["stop_reason"] in ["STOP", "MAX_TOKENS"] 
+                    metadata["stop_reason"] in ["STOP", "MAX_TOKENS"]
                 )
-        
+
         # If no finish reason found, default to True
         if not is_finished_list:
             is_finished_list.append(True)
-            
+
     return all(is_finished_list)
 
 
 vertextai_llm = LangchainLLMWrapper(vertextai_llm, is_finished_parser=gemini_is_finished_parser)
 vertextai_embeddings = LangchainEmbeddingsWrapper(vertextai_embeddings)
 ```
-Yay! Now are you ready to use ragas with Google VertexAI endpoints
+Yay! Now you are ready to use ragas with Google VertexAI endpoints
 
 ### AWS Bedrock
 
@@ -170,4 +170,4 @@ bedrock_embeddings = BedrockEmbeddings(
 bedrock_llm = LangchainLLMWrapper(bedrock_llm)
 bedrock_embeddings = LangchainEmbeddingsWrapper(bedrock_embeddings)
 ```
-Yay! Now are you ready to use ragas with AWS Bedrock endpoints
+Yay! Now you are ready to use ragas with AWS Bedrock endpoints

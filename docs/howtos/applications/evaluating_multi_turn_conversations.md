@@ -2,26 +2,26 @@
 
 This tutorial is inspired by Hamel’s notes on evaluating multi-turn conversations for LLM-based applications. The goal is to create a simple and actionable evaluation framework using Ragas metrics that clearly defines what makes a conversation successful. By the end of this tutorial, you will be able to perform multi-turn evaluations based on insights gathered from the error analysis of your AI application.
 
-### Ragas Metrics  
+### Ragas Metrics
 
-Ragas offers **AspectCritic**, a powerful evaluation metric for assessing multi-turn conversations with binary outcomes. It helps determine whether a conversation meets predefined success criteria.  
+Ragas offers **AspectCritic**, a powerful evaluation metric for assessing multi-turn conversations with binary outcomes. It helps determine whether a conversation meets predefined success criteria.
 
-**[AspectCritic](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/general_purpose/#aspect-critic)**  
+**[AspectCritic](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/general_purpose/#aspect-critic)**
 AspectCritic evaluates responses based on predefined aspects written in free-form natural language. It returns a binary output indicating whether the response aligns with the defined aspect.
 
 This metric aligns with Hamel's [suggestion](https://hamel.dev/notes/llm/officehours/evalmultiturn.html#focus-on-binary-decisions) to focus on binary decisions, which eliminate ambiguity and provide a clear, actionable approach to improving conversation quality.
 
-### Practical Example – Evaluating a Banking Chatbot  
+### Practical Example – Evaluating a Banking Chatbot
 
-When evaluating, focus on metrics that directly align with your users’ needs. Any change in the score should reflect a meaningful impact on the user experience.  
+When evaluating, focus on metrics that directly align with your users’ needs. Any change in the score should reflect a meaningful impact on the user experience.
 
-Let’s consider an example where you are building a chatbot for a bank.  
+Let’s consider an example where you are building a chatbot for a bank.
 
-After conducting [error analysis](https://hamel.dev/notes/llm/officehours/erroranalysis.html#the-data-first-approach), you find that the chatbot occasionally forgets tasks it was asked to complete or performs them only partially. To improve the chatbot’s performance, you need a reliable method to **measure and evaluate** this behavior.  
+After conducting [error analysis](https://hamel.dev/notes/llm/officehours/erroranalysis.html#the-data-first-approach), you find that the chatbot occasionally forgets tasks it was asked to complete or performs them only partially. To improve the chatbot’s performance, you need a reliable method to **measure and evaluate** this behavior.
 
-> **Note:** When defining the scoring criteria, use standardized terminology.  
-> - Refer to the user’s message as `human` message.  
-> - Refer to the chatbot’s message as `AI` message.  
+> **Note:** When defining the scoring criteria, use standardized terminology.
+> - Refer to the user’s message as `human` message.
+> - Refer to the chatbot’s message as `AI` message.
 
 
 ```python
@@ -148,7 +148,7 @@ Evaluating: 100%|██████████| 2/2 [00:00<?, ?it/s]
 
 
 
-When evaluating with LLM-based metrics, each metric may involve one or more calls to the LLM. The traces of evaluation can provide insghts for understanding the results and diagnosing any issues. You can find more details on this process by visiting [this page](https://docs.ragas.io/en/stable/howtos/applications/_metrics_llm_calls/).
+When evaluating with LLM-based metrics, each metric may involve one or more calls to the LLM. The traces of evaluation can provide insights for understanding the results and diagnosing any issues. You can find more details on this process by visiting [this page](https://docs.ragas.io/en/stable/howtos/applications/_metrics_llm_calls/).
 
 Another pattern identified during error analysis is that your banking chatbot occasionally drifts from discussing basic account services into offering unauthorized investment advice. To maintain user trust and ensure regulatory compliance, you want the system to implement **graceful transitions** when conversations approach these boundaries. You can achieve this by defining a metric like the one below.
 
@@ -387,21 +387,21 @@ Evaluating: 100%|██████████| 4/4 [00:00<?, ?it/s]
 
 The above evaluation result highlights that what is considered polite in Mexico may not be perceived as polite in Japan.
 
-### Checking for Brand Tone  
+### Checking for Brand Tone
 
-In this section, we will explore how to evaluate whether the chatbot’s tone is consistent with the business’s values, target audience, and overall brand identity.  
+In this section, we will explore how to evaluate whether the chatbot’s tone is consistent with the business’s values, target audience, and overall brand identity.
 
 **What is a Brand Tone of Voice?**
-A brand’s tone of voice refers to its choice of words when communicating with its audience in written or spoken interactions. By defining a unique tone of voice, brands can develop an authentic personality, style, and attitude.  
-[Reference](https://filestage.io/blog/brand-tone-of-voice-examples/)  
+A brand’s tone of voice refers to its choice of words when communicating with its audience in written or spoken interactions. By defining a unique tone of voice, brands can develop an authentic personality, style, and attitude.
+[Reference](https://filestage.io/blog/brand-tone-of-voice-examples/)
 
-For example:  
+For example:
 
-**Google – Informative and Helpful Brand Voice**  
-Have you noticed how simple and intuitive everything feels when you use Google products? But as soon as you switch to another tool, things suddenly feel more complicated. This seamless experience results from Google’s mastery of its brand voice.  
+**Google – Informative and Helpful Brand Voice**
+Have you noticed how simple and intuitive everything feels when you use Google products? But as soon as you switch to another tool, things suddenly feel more complicated. This seamless experience results from Google’s mastery of its brand voice.
 
-Google maintains a friendly and approachable tone while keeping user communication clear and concise. Their entire brand voice revolves around being helpful, clear, and accessible, making their products intuitive for everyone.  
-[Reference](https://filestage.io/blog/brand-tone-of-voice-examples/)  
+Google maintains a friendly and approachable tone while keeping user communication clear and concise. Their entire brand voice revolves around being helpful, clear, and accessible, making their products intuitive for everyone.
+[Reference](https://filestage.io/blog/brand-tone-of-voice-examples/)
 
 You can assess whether your chatbot’s responses align with your brand identity by defining a custom evaluation metric like the one below.
 

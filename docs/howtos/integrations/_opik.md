@@ -189,7 +189,7 @@ rag_pipeline("What is the capital of France?")
 
 #### Evaluating datasets
 
-If you looking at evaluating a dataset, you can use the Ragas `evaluate` function. When using this function, the Ragas library will compute the metrics on all the rows of the dataset and return a summary of the results.
+If you are looking at evaluating a dataset, you can use the Ragas `evaluate` function. When using this function, the Ragas library will compute the metrics on all the rows of the dataset and return a summary of the results.
 
 You can use the OpikTracer callback to log the results of the evaluation to the Opik platform. For this we will configure the OpikTracer
 
