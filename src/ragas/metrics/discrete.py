@@ -7,12 +7,12 @@ from dataclasses import dataclass, field
 
 from pydantic import create_model
 
+from .base import SimpleLLMMetric
 from .decorator import DiscreteMetricProtocol, create_metric_decorator
-from .llm_based import LLMMetric
 
 
 @dataclass
-class DiscreteMetric(LLMMetric):
+class DiscreteMetric(SimpleLLMMetric):
     allowed_values: t.List[str] = field(default_factory=lambda: ["pass", "fail"])
 
     def __post_init__(self):

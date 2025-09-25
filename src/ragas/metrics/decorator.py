@@ -25,6 +25,7 @@ else:
     except ImportError:
         from typing import Protocol
 
+from .base import SimpleBaseMetric
 from .result import MetricResult
 
 # Type variables for generic typing
@@ -113,8 +114,9 @@ def create_metric_decorator(metric_class):
 
             # TODO: Move to dataclass type implementation
             @dataclass
-            class CustomMetric(metric_class):
+            class CustomMetric(SimpleBaseMetric):
                 _func: t.Any = field(default=None, init=False)
+                allowed_values: t.Any = field(default=None, init=False)
 
                 def _validate_result_value(self, result_value):
                     """Validate result value based on metric type constraints."""
@@ -335,10 +337,15 @@ def create_metric_decorator(metric_class):
                         return self._func(*args, **kwargs)
 
             # Create the metric instance with all parameters
-            metric_instance = CustomMetric(name=metric_name, **metric_params)
+            metric_instance = CustomMetric(name=metric_name)
 
-            # Store the original function for direct calling
+            # Store metric parameters and original function
+            metric_instance._metric_params = metric_params
             metric_instance._func = func
+
+            # Set allowed_values if provided
+            if "allowed_values" in metric_params:
+                metric_instance.allowed_values = metric_params["allowed_values"]
 
             # Preserve metadata
             metric_instance.__name__ = metric_name

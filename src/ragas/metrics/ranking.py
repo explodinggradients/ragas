@@ -7,12 +7,12 @@ from dataclasses import dataclass
 
 from pydantic import Field, create_model
 
+from .base import SimpleLLMMetric
 from .decorator import RankingMetricProtocol, create_metric_decorator
-from .llm_based import LLMMetric
 
 
 @dataclass
-class RankingMetric(LLMMetric):
+class RankingMetric(SimpleLLMMetric):
     allowed_values: int = 2
 
     def __post_init__(self):
