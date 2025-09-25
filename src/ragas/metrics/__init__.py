@@ -78,7 +78,7 @@ from ragas.metrics.base import (
     SingleTurnMetric,
 )
 from ragas.metrics.discrete import DiscreteMetric, discrete_metric
-from ragas.metrics.llm_based import BaseLLMMetric, LLMMetric
+from ragas.metrics.llm_based import BaseMetric, LLMMetric
 from ragas.metrics.numeric import NumericMetric, numeric_metric
 from ragas.metrics.ranking import RankingMetric, ranking_metric
 from ragas.metrics.result import MetricResult
@@ -93,7 +93,7 @@ __all__ = [
     "MultiTurnMetric",
     "MetricOutputType",
     # LLM-based metrics (moved from experimental)
-    "BaseLLMMetric",
+    "BaseMetric",
     "LLMMetric",
     "MetricResult",
     "DiscreteMetric",
@@ -160,7 +160,3 @@ __all__ = [
     "MultiModalRelevance",
     "multimodal_relevance",
 ]
-
-# Backward compatibility aliases for experimental imports
-# These maintain compatibility while experimental code is migrated
-BaseMetric = BaseLLMMetric  # experimental BaseMetric -> BaseLLMMetric

@@ -1,6 +1,6 @@
 """LLM-based metrics for ragas - moved from experimental"""
 
-__all__ = ["LLMMetric", "BaseLLMMetric"]
+__all__ = ["LLMMetric", "BaseMetric"]
 
 import asyncio
 import string
@@ -24,7 +24,7 @@ if t.TYPE_CHECKING:
 
 
 @dataclass
-class BaseLLMMetric(ABC):
+class BaseMetric(ABC):
     """Base class for simple LLM-based metrics that return MetricResult objects."""
 
     name: str
@@ -57,7 +57,7 @@ class BaseLLMMetric(ABC):
 
 
 @dataclass
-class LLMMetric(BaseLLMMetric):
+class LLMMetric(BaseMetric):
     """LLM-based metric that uses prompts to generate structured responses."""
 
     prompt: t.Optional[t.Union[str, Prompt]] = None
