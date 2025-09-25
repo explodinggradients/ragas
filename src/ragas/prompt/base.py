@@ -144,7 +144,13 @@ class StringPrompt(BasePrompt):
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = [],
     ) -> t.List[str]:
-        return [
-            await self.generate(llm, data, temperature, stop, callbacks)
-            for _ in range(n)
-        ]
+        llm_result = await llm.agenerate_text(
+            StringPromptValue(text=data),
+            n=n,
+            temperature=temperature,
+            stop=stop,
+            callbacks=callbacks,
+        )
+
+        # flatten the generations
+        return [gen.text for gen in llm_result.generations[0]]
