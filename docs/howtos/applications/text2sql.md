@@ -335,8 +335,7 @@ async def text2sql_experiment(row, model: str, prompt_file: Optional[str], exper
     # Create text-to-SQL agent
     agent = get_default_agent(
         model_name=model,
-        prompt_file=prompt_file,
-        logdir="text2sql_logs"
+        prompt_file=prompt_file
     )
     
     # Generate SQL from natural language query (async to enable parallelism)
