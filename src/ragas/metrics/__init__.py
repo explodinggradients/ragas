@@ -75,10 +75,11 @@ from ragas.metrics.base import (
     MetricWithEmbeddings,
     MetricWithLLM,
     MultiTurnMetric,
+    SimpleBaseMetric as BaseMetric,
+    SimpleLLMMetric as LLMMetric,
     SingleTurnMetric,
 )
 from ragas.metrics.discrete import DiscreteMetric, discrete_metric
-from ragas.metrics.llm_based import BaseMetric, LLMMetric
 from ragas.metrics.numeric import NumericMetric, numeric_metric
 from ragas.metrics.ranking import RankingMetric, ranking_metric
 from ragas.metrics.result import MetricResult

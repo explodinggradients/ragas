@@ -118,6 +118,7 @@ def create_metric_decorator():
             @dataclass
             class CustomMetric(SimpleBaseMetric, validator_class):
                 _func: t.Any = field(default=None, init=False)
+                _metric_params: t.Any = field(default=None, init=False)
                 allowed_values: t.Any = field(default=None, init=False)
 
                 def _validate_result_value(self, result_value):
