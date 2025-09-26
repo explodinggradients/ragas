@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 import dotenv
+from openai import AsyncOpenAI
 import openai
 
 dotenv.load_dotenv("../../../.env")
@@ -47,7 +48,7 @@ class Text2SQLAgent:
         Initialize the Text-to-SQL agent.
 
         Args:
-            client: OpenAI client instance
+            client: AsyncOpenAI client instance
             model_name: Name of the model to use (default: gpt-5-mini)
             prompt_file: Path to prompt file (default: prompt.txt)
         """
@@ -94,7 +95,7 @@ class Text2SQLAgent:
             logger.error(error_msg)
             raise IOError(error_msg) from e
 
-    def generate_sql(self, natural_query: str) -> SQLGenerationResult:
+    async def generate_sql(self, natural_query: str) -> SQLGenerationResult:
         """
         Generate SQL query from natural language input.
 
@@ -114,7 +115,7 @@ class Text2SQLAgent:
             ]
 
             # Call OpenAI API
-            response = self.client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model=self.model_name,
                 messages=messages,
             )
@@ -187,73 +188,39 @@ class Text2SQLAgent:
         return "\n".join(sql_lines)
 
 
-def get_default_agent(
-    model_name: str = "gpt-5-mini",
-    prompt_file: Optional[str] = None,
-) -> Text2SQLAgent:
-    """
-    Get a default instance of the Text2SQLAgent with OpenAI client.
-
-    Args:
-        model_name: OpenAI model name
-        prompt_file: Path to prompt file
-
-    Returns:
-        Configured Text2SQLAgent instance
-    """
-    openai_client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-    return Text2SQLAgent(
-        client=openai_client, model_name=model_name, prompt_file=prompt_file
-    )
 
 
 # Demo
-def main():
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Text-to-SQL Agent")
-    parser.add_argument(
-        "--query", "-q", type=str, help="Natural language query to convert"
-    )
-    parser.add_argument(
-        "--model", "-m", type=str, default="gpt-5-mini", help="OpenAI model name"
-    )
-    parser.add_argument("--prompt", "-p", type=str, help="Path to prompt file")
-    parser.add_argument(
-        "--test", "-t", action="store_true", help="Run test with sample query"
-    )
-
-    args = parser.parse_args()
-
-    # Setup logging
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-    )
-
+async def main():
+    import os
+    import pathlib
+    from dotenv import load_dotenv
+    
+    # Load .env from root
+    root_dir = pathlib.Path(__file__).parent.parent.parent.parent
+    load_dotenv(root_dir / ".env")
+    
+    # Configure logging for demo
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+    
+    # Test query
+    test_query = "How much open credit does customer Andrew Bennett?"
+    
+    logger.info("TEXT-TO-SQL AGENT DEMO")
+    logger.info("=" * 40)
+    
     # Create agent
-    agent = get_default_agent(model_name=args.model, prompt_file=args.prompt)
-
-    if args.test:
-        # Test with sample query
-        test_query = "How much open credit does customer Andrew Bennett?"
-        logger.info(f"Running test with query: {test_query}")
-        logger.info("=" * 60)
-
-        result = agent.generate_sql(test_query)
-
-        print(f"Natural Query: {result.natural_language_query}")
-        print(f"Generated SQL: {result.generated_sql}")
-
-    elif args.query:
-        # Single query
-        result = agent.generate_sql(args.query)
-
-        print(f"Natural Query: {result.natural_language_query}")
-        print(f"Generated SQL: {result.generated_sql}")
-
-    else:
-        parser.print_help()
+    logger.info("Creating Text-to-SQL agent...")
+    openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    agent = Text2SQLAgent(client=openai_client, model_name="gpt-5-mini")
+    
+    # Generate SQL
+    logger.info(f"Query: {test_query}")
+    result = await agent.generate_sql(test_query)
+    
+    logger.info(f"Generated SQL: {result.generated_sql}")
 
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main())
