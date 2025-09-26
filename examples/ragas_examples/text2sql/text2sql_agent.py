@@ -8,9 +8,8 @@ This agent converts natural language queries to SQL queries for database evaluat
 import logging
 import os
 import re
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, Optional
 import dotenv
 from openai import AsyncOpenAI
 import openai
@@ -19,14 +18,6 @@ dotenv.load_dotenv("../../../.env")
 
 # Configure logger
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class SQLGenerationResult:
-    """Result of SQL generation process"""
-
-    natural_language_query: str
-    generated_sql: str
 
 
 class Text2SQLAgent:
@@ -61,57 +52,26 @@ class Text2SQLAgent:
         else:
             prompt_path = Path(prompt_file)
 
-        self.system_prompt = self._load_prompt(prompt_path)
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            self.system_prompt = f.read().strip()
 
-    def _load_prompt(self, prompt_file: Path) -> str:
-        """
-        Load system prompt from file.
-
-        Args:
-            prompt_file: Path to the prompt file
-
-        Returns:
-            System prompt string
-
-        Raises:
-            FileNotFoundError: If prompt file doesn't exist
-            IOError: If there's an error reading the file
-        """
-        try:
-            if not prompt_file.exists():
-                raise FileNotFoundError(f"Prompt file not found: {prompt_file}")
-
-            with open(prompt_file, "r", encoding="utf-8") as f:
-                content = f.read().strip()
-
-            if not content:
-                raise IOError(f"Prompt file is empty: {prompt_file}")
-
-            logger.info(f"Loaded prompt from: {prompt_file}")
-            return content
-
-        except Exception as e:
-            error_msg = f"Error reading prompt file {prompt_file}: {e}"
-            logger.error(error_msg)
-            raise IOError(error_msg) from e
-
-    async def generate_sql(self, natural_query: str) -> SQLGenerationResult:
+    async def query(self, question: str) -> Dict[str, Any]:
         """
         Generate SQL query from natural language input.
 
         Args:
-            natural_query: Natural language query to convert
+            question: Natural language query to convert
 
         Returns:
-            SQLGenerationResult with generated SQL
+            Dict with query, sql, and metadata
         """
-        logger.info(f"Generating SQL for query: {natural_query}")
+        logger.info(f"Generating SQL for query: {question}")
 
         try:
             # Prepare messages
             messages = [
                 {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": natural_query},
+                {"role": "user", "content": question},
             ]
 
             # Call OpenAI API
@@ -126,33 +86,19 @@ class Text2SQLAgent:
             # Clean up the SQL (remove code blocks if present)
             generated_sql = self._clean_sql_output(generated_sql)
 
-            # Create result
-            result = SQLGenerationResult(
-                natural_language_query=natural_query, generated_sql=generated_sql
-            )
-
             logger.info(f"Successfully generated SQL ({len(generated_sql)} chars)")
-            return result
-
-        except openai.APIError as e:
-            error_msg = f"OpenAI API error: {e}"
-            logger.error(error_msg)
-
-            # Return error result
-            return SQLGenerationResult(
-                natural_language_query=natural_query,
-                generated_sql=f"-- ERROR: {error_msg}",
-            )
+            return {
+                "query": question,
+                "sql": generated_sql
+            }
 
         except Exception as e:
-            error_msg = f"Unexpected error: {e}"
+            error_msg = f"Error: {e}"
             logger.error(error_msg)
-
-            # Return error result
-            return SQLGenerationResult(
-                natural_language_query=natural_query,
-                generated_sql=f"-- ERROR: {error_msg}",
-            )
+            return {
+                "query": question,
+                "sql": f"-- ERROR: {error_msg}"
+            }
 
     def _clean_sql_output(self, sql_output: str) -> str:
         """
@@ -216,9 +162,9 @@ async def main():
     
     # Generate SQL
     logger.info(f"Query: {test_query}")
-    result = await agent.generate_sql(test_query)
+    result = await agent.query(test_query)
     
-    logger.info(f"Generated SQL: {result.generated_sql}")
+    logger.info(f"Generated SQL: {result['sql']}")
 
 
 if __name__ == "__main__":

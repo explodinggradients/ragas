@@ -162,23 +162,20 @@ async def text2sql_experiment(
 
     # Generate SQL from natural language query with timeout
     gen_start = time.perf_counter()
-    class _Res:
-        def __init__(self, sql: str):
-            self.generated_sql = sql
-
+    
     try:
         result = await asyncio.wait_for(
-            agent.generate_sql(row["Query"]),
+            agent.query(row["Query"]),
             timeout=timeout_gen,
         )
     except asyncio.TimeoutError:
-        result = _Res("-- ERROR: generation timed out")
+        result = {"sql": "-- ERROR: generation timed out"}
     gen_dur = time.perf_counter() - gen_start
 
     # Execute predicted SQL once to share results between metrics
     sql_exec_start = time.perf_counter()
     try:
-        predicted_success, predicted_result = execute_sql(result.generated_sql)
+        predicted_success, predicted_result = execute_sql(result["sql"])
     except Exception as e:
         predicted_success, predicted_result = False, f"SQL execution failed: {str(e)}"
     sql_exec_dur = time.perf_counter() - sql_exec_start
@@ -201,14 +198,14 @@ async def text2sql_experiment(
     if verbose:
         print(
             f"[row={row_id}] gen={gen_dur:.2f}s sql_exec={sql_exec_dur:.2f}s acc={acc_dur:.2f}s "
-            f"query_len={len(row['Query'])} sql_len={len(result.generated_sql)}"
+            f"query_len={len(row['Query'])} sql_len={len(result['sql'])}"
         )
 
     return {
         "id": row.get("id", f"row_{hash(row['Query']) % 10000}"),
         "query": row["Query"],
         "expected_sql": row["SQL"],
-        "predicted_sql": result.generated_sql,
+        "predicted_sql": result["sql"],
         "level": row["Levels"],
         "experiment_name": experiment_name,
         "execution_accuracy": accuracy_score.value,
