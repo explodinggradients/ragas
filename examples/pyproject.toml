@@ -20,7 +20,7 @@ dependencies = [
     "ragas", # workspace dependency - version managed by workspace
     "openai>=1.0.0", # required for LLM calls in examples
     "pandas", # required for benchmark_llm examples
-    
+
 ]
 dynamic = ["version", "readme"]
 
@@ -40,6 +40,11 @@ improverag = [
     "tqdm",
     "python-dotenv>=1.0.0",
     "openai-agents>=0.2.9",
+]
+llamaindex = [
+    "llama-index>=0.10.0",
+    "llama-index-llms-google-genai",
+    "instructor",
 ]
 
 [project.urls]
