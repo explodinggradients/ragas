@@ -11,23 +11,10 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
-
-try:
-    import dotenv
-    dotenv.load_dotenv("../../../.env")
-except ImportError:
-    # dotenv is optional
-    pass
-
-try:
-    import openai
-except ImportError:
-    raise ImportError("openai is required. Install with: pip install openai")
-
-try:
-    from .db_utils import execute_sql
-except ImportError:
-    execute_sql = None
+import dotenv
+dotenv.load_dotenv("../../../.env")
+import openai
+from .db_utils import execute_sql
 
 # Configure logger
 logger = logging.getLogger(__name__)
