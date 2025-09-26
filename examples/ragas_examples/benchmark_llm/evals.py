@@ -1,5 +1,4 @@
 import argparse
-import asyncio
 import datetime
 import json
 import os
@@ -7,6 +6,10 @@ import sys
 from typing import List, Optional
 
 import pandas as pd
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv(".env")
 
 from ragas import experiment
 from ragas.dataset import Dataset
@@ -40,10 +43,8 @@ def create_benchmark_experiment(model_name: str, experiment_name: str):
 
     @experiment()
     async def benchmark_experiment(row):
-        # Get model response (run blocking call in thread to keep async runner responsive)
-        response = await asyncio.to_thread(
-            run_prompt, row["customer_profile"], model=model_name
-        )
+        # Get model response
+        response = await run_prompt(row["customer_profile"], model=model_name)
 
         # Parse response (strict JSON mode expected)
         try:
