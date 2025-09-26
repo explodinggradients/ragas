@@ -14,7 +14,6 @@ from typing import Optional
 import dotenv
 dotenv.load_dotenv("../../../.env")
 import openai
-from .db_utils import execute_sql
 
 # Configure logger
 logger = logging.getLogger(__name__)
