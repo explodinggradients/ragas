@@ -195,7 +195,7 @@ BookSQL is released under CC BY-NC-SA (non‑commercial only). See details and c
     }
     ```
 
-For advice on how to create your own evaluation dataset, refer [Datasets - Core Concepts](/concepts/datasets/).
+For advice on how to create your own evaluation dataset, refer to [Datasets - Core Concepts](/concepts/datasets/).
 
 ## Set up your text-to-SQL system
 
@@ -347,14 +347,18 @@ The [experiment function](/concepts/experimentation) orchestrates the complete e
 ```python
 # File: examples/ragas_examples/text2sql/evals.py
 import asyncio
-import os
+from typing import Optional
 from openai import AsyncOpenAI
 from ragas import experiment
 from ragas_examples.text2sql.text2sql_agent import Text2SQLAgent
 from ragas_examples.text2sql.db_utils import execute_sql
 
 @experiment()
-async def text2sql_experiment(row, model: str, prompt_file: Optional[str], experiment_name: str):
+async def text2sql_experiment(
+    row,
+    model: str,
+    prompt_file: Optional[str],
+):
     """Experiment function for text-to-SQL evaluation."""
     # Create text-to-SQL agent
     openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
@@ -364,27 +368,27 @@ async def text2sql_experiment(row, model: str, prompt_file: Optional[str], exper
         prompt_file=prompt_file
     )
     
-    # Generate SQL from natural language query (async to enable parallelism)
-    result = await agent.generate_sql(row["Query"])
-    
-    # Execute predicted SQL once to share results between metrics
-    predicted_success, predicted_result = await asyncio.to_thread(execute_sql, result.generated_sql)
-    
+    # Generate SQL from natural language query
+    result = await agent.query(row["Query"])
+
+    # Execute predicted SQL
+    try:
+        predicted_success, predicted_result = execute_sql(result["sql"])
+    except Exception as e:
+        predicted_success, predicted_result = False, f"SQL execution failed: {str(e)}"
+
     # Score the response using execution accuracy
-    accuracy_score = await asyncio.to_thread(
-        execution_accuracy.score,
+    accuracy_score = await execution_accuracy.ascore(
         expected_sql=row["SQL"],
         predicted_success=predicted_success,
-        predicted_result=predicted_result
+        predicted_result=predicted_result,
     )
 
     return {
-        "id": row.get("id", f"row_{hash(row['Query']) % 10000}"),
         "query": row["Query"],
         "expected_sql": row["SQL"],
-        "predicted_sql": result.generated_sql,
+        "predicted_sql": result["sql"],
         "level": row["Levels"],
-        "experiment_name": experiment_name,
         "execution_accuracy": accuracy_score.value,
         "accuracy_reason": accuracy_score.reason,
     }
@@ -398,16 +402,19 @@ Load your evaluation dataset into a [Ragas Dataset](/concepts/datasets) object f
 
 ```python
 # File: examples/ragas_examples/text2sql/evals.py
+import pandas as pd
+from pathlib import Path
+from typing import Optional
 from ragas import Dataset
 
 def load_dataset(limit: Optional[int] = None):
     """Load the text-to-SQL dataset from CSV file."""
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    dataset_path = os.path.join(current_dir, "datasets", "booksql_sample.csv")
+    dataset_path = Path(__file__).parent / "datasets" / "booksql_sample.csv"
     
+    # Read CSV
     df = pd.read_csv(dataset_path)
     
-    # Limit dataset size for testing (default 10, None means no limit)
+    # Limit dataset size if requested
     if limit is not None and limit > 0:
         df = df.head(limit)
     
@@ -427,6 +434,18 @@ def load_dataset(limit: Optional[int] = None):
 
 The dataset loader includes a `limit` parameter for development workflows - start with small samples to catch basic errors quickly, then scale to full evaluation.
 
+**Alternatively, you can run the demo directly:**
+
+```python
+import asyncio
+from ragas_examples.text2sql.evals import main
+
+# Run the built-in demo (evaluates 5 samples)
+asyncio.run(main())
+```
+
+The demo function provides a simple example that you can modify for your own experiments.
+
 ## Run baseline evaluation
 
 ### Execute evaluation pipeline and collect results
@@ -438,38 +457,61 @@ For initial testing, run evaluations on a small subset to catch basic errors and
 ```python
 import os
 import asyncio
-from ragas_examples.text2sql.evals import run_command
+from ragas_examples.text2sql.evals import (
+    text2sql_experiment, load_dataset
+)
 
 # Set your OpenAI API key
 os.environ["OPENAI_API_KEY"] = "your-api-key-here"
 
-# Test with limited sample size for quick validation
-await run_command(
-    model="gpt-5-mini",
-    prompt_file=None,
-    name=None,
-    limit=10,  # Only evaluate 10 samples for quick testing
-)
+async def run_evaluation():
+    """Run text-to-SQL evaluation with direct code approach."""
+    # Configuration
+    model = "gpt-5-mini"
+    prompt_file = None  # Use default prompt
+    name = "my_evaluation"
+    limit = 10  # Only evaluate 10 samples for quick testing
+    
+    # Validate API key
+    if not os.environ.get("OPENAI_API_KEY"):
+        print("❌ Error: OPENAI_API_KEY environment variable is not set")
+        return
 
-# Run evaluation on all samples (remove limit parameter)
-await run_command(
-    model="gpt-5-mini",
-    prompt_file=None,
-    name=None,
-    limit=None,  # Evaluate all samples
-)
+    # Load dataset
+    print("Loading dataset...")
+    dataset = load_dataset(limit=limit)
+    print(f"Dataset loaded with {len(dataset)} samples")
+
+    print(f"Running text-to-SQL evaluation with model: {model}")
+    
+    # Run the experiment
+    results = await text2sql_experiment.arun(
+        dataset, 
+        name=name,
+        model=model,
+        prompt_file=prompt_file,
+    )
+    
+    # Report results
+    print(f"✅ {name}: {len(results)} cases evaluated")
+
+    # Calculate and display accuracy
+    accuracy_rate = sum(1 for r in results if r["execution_accuracy"] == "correct") / max(1, len(results))
+    print(f"{name} Execution Accuracy: {accuracy_rate:.2%}")
+
+# Run the evaluation
+await run_evaluation()
 ```
 
-??? "📋 Expected output (with --limit 10)"
+??? "📋 Expected output (with limit=10)"
 
     ```
     Loading dataset...
-    Dataset loaded with 10 samples (limited to 10 for testing)
+    Dataset loaded with 10 samples
     Running text-to-SQL evaluation with model: gpt-5-mini
     Running experiment: 100%|███████████████████████████████████████████████| 10/10 [00:16<00:00,  1.68s/it]
-    ✅ text2sql_gpt_5_mini: 10 cases evaluated
-    Results saved to: experiments/20250829-121726-text2sql_gpt_5_mini.csv
-    text2sql_gpt_5_mini Execution Accuracy: 20.00%
+    ✅ my_evaluation: 10 cases evaluated
+    my_evaluation Execution Accuracy: 20.00%
     ```
 
 **Run full evaluation once basics work:**
@@ -477,34 +519,28 @@ await run_command(
 After validating your setup with limited samples, run the complete evaluation:
 
 ```python
-# Full dataset evaluation (all samples)
-await run_command(
-    model="gpt-5-mini",
-    prompt_file=None,
-    name=None,
-    limit=None,  # Evaluate all samples
-)
+# For full dataset evaluation, change the limit parameter:
+limit = None  # Evaluate all samples instead of 10
 ```
 
 ??? "📋 Output (prompt v1)"
 
     ```text
     Loading dataset...
-    Dataset loaded with 99 samples (full dataset)
+    Dataset loaded with 99 samples
     Running text-to-SQL evaluation with model: gpt-5-mini
     Using prompt file: prompt.txt
     Running experiment: 100%|██████████████████████| 99/99 [01:06<00:00,  1.49it/s]
     ✅ gpt-5-mini-promptv1: 99 cases evaluated
-    Results saved to: experiments/20250905-151023-gpt-5-mini-promptv1.csv
     gpt-5-mini-promptv1 Execution Accuracy: 2.02%
     ```
 
-**CLI options:**
+**Configuration options:**
 
-- `--model`: OpenAI model to use (default: gpt-5-mini)
-- `--prompt_file`: Custom prompt file (default: prompt.txt)
-- `--limit`: Number of samples (default: all samples, specify a number to limit)
-- `--name`: Custom experiment name for result tracking
+- `model`: OpenAI model to use (default: "gpt-5-mini")
+- `prompt_file`: Custom prompt file (default: None for built-in prompt)
+- `limit`: Number of samples (default: None for all samples, specify a number to limit)
+- `name`: Custom experiment name for result tracking
 
 ### Initial performance analysis
 
@@ -645,29 +681,52 @@ We save this improved prompt as `prompt_v2.txt`.
 ```python
 import os
 import asyncio
-from ragas_examples.text2sql.evals import run_command
+from ragas_examples.text2sql.evals import (
+    text2sql_experiment, load_dataset
+)
 
 # Set your OpenAI API key
 os.environ["OPENAI_API_KEY"] = "your-api-key-here"
 
-await run_command(
-    model="gpt-5-mini",
-    prompt_file="prompt_v2.txt",
-    name="gpt-5-mini-promptv2",
-    limit=None,  # Evaluate all samples
-)
+async def run_v2_evaluation():
+    """Run evaluation with prompt v2."""
+    # Configuration
+    model = "gpt-5-mini"
+    prompt_file = "prompt_v2.txt"
+    name = "gpt-5-mini-promptv2"
+    limit = None  # Evaluate all samples
+    
+    # Validate API key and load dataset
+    if not os.environ.get("OPENAI_API_KEY"):
+        print("❌ Error: OPENAI_API_KEY environment variable is not set")
+        return
+        
+    dataset = load_dataset(limit=limit)
+    
+    # Run experiment
+    results = await text2sql_experiment.arun(
+        dataset, 
+        name=name,
+        model=model,
+        prompt_file=prompt_file,
+    )
+    
+    # Calculate accuracy
+    accuracy_rate = sum(1 for r in results if r["execution_accuracy"] == "correct") / max(1, len(results))
+    print(f"{name} Execution Accuracy: {accuracy_rate:.2%}")
+
+await run_v2_evaluation()
 ```
 
 ??? "📋 Output (prompt v2)"
 
     ```text
     Loading dataset...
-    Dataset loaded with 99 samples (full dataset)
+    Dataset loaded with 99 samples
     Running text-to-SQL evaluation with model: gpt-5-mini
     Using prompt file: prompt_v2.txt
     Running experiment: 100%|██████████████████████| 99/99 [01:00<00:00,  1.63it/s]
     ✅ gpt-5-mini-promptv2: 99 cases evaluated
-    Results saved to: experiments/20250905-150957-gpt-5-mini-promptv2.csv
     gpt-5-mini-promptv2 Execution Accuracy: 60.61%
     ```
 
@@ -721,17 +780,41 @@ These new rules are designed to be generic but directly target the observed fail
 ```python
 import os
 import asyncio
-from ragas_examples.text2sql.evals import run_command
+from ragas_examples.text2sql.evals import (
+    text2sql_experiment, load_dataset
+)
 
 # Set your OpenAI API key
 os.environ["OPENAI_API_KEY"] = "your-api-key-here"
 
-await run_command(
-    model="gpt-5-mini",
-    prompt_file="prompt_v3.txt",
-    name="gpt-5-mini-promptv3",
-    limit=None,  # Evaluate all samples
-)
+async def run_v3_evaluation():
+    """Run evaluation with prompt v3."""
+    # Configuration
+    model = "gpt-5-mini"
+    prompt_file = "prompt_v3.txt"
+    name = "gpt-5-mini-promptv3"
+    limit = None  # Evaluate all samples
+    
+    # Validate API key and load dataset
+    if not os.environ.get("OPENAI_API_KEY"):
+        print("❌ Error: OPENAI_API_KEY environment variable is not set")
+        return
+        
+    dataset = load_dataset(limit=limit)
+    
+    # Run experiment
+    results = await text2sql_experiment.arun(
+        dataset, 
+        name=name,
+        model=model,
+        prompt_file=prompt_file,
+    )
+    
+    # Calculate accuracy
+    accuracy_rate = sum(1 for r in results if r["execution_accuracy"] == "correct") / max(1, len(results))
+    print(f"{name} Execution Accuracy: {accuracy_rate:.2%}")
+
+await run_v3_evaluation()
 ```
 
 We see an improvement from 60.61% to 70.71% in execution accuracy with `prompt_v3`.

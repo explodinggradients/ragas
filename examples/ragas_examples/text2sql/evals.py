@@ -1,21 +1,18 @@
 import asyncio
 import logging
 import os
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 import pandas as pd
 from dotenv import load_dotenv
+from openai import AsyncOpenAI
 
 from ragas import Dataset, experiment
 from ragas.metrics.discrete import discrete_metric
 from ragas.metrics.result import MetricResult
 
-try:
-    import datacompy
-except ImportError:
-    raise ImportError("datacompy is required for execution accuracy. Install with: pip install datacompy")
+import datacompy
 
 from .db_utils import execute_sql
 from .text2sql_agent import Text2SQLAgent
@@ -24,28 +21,12 @@ from .text2sql_agent import Text2SQLAgent
 load_dotenv(".env")
 
 # Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger(__name__)
 
 # Suppress HTTP request logs from OpenAI/httpx
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("openai._base_client").setLevel(logging.WARNING)
-
-
-def get_openai_client():
-    """Get AsyncOpenAI client with proper error handling."""
-    from openai import AsyncOpenAI
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        raise ValueError(
-            "OPENAI_API_KEY environment variable is not set. "
-            "Please set your OpenAI API key: export OPENAI_API_KEY='your_key'"
-        )
-    return AsyncOpenAI(api_key=api_key)
-
 
 @discrete_metric(name="execution_accuracy", allowed_values=["correct", "incorrect"])
 def execution_accuracy(expected_sql: str, predicted_success: bool, predicted_result):
@@ -147,26 +128,18 @@ async def text2sql_experiment(
     row,
     model: str,
     prompt_file: Optional[str],
-    experiment_name: str,
-    timeout: int = 60,
 ):
     """Experiment function for text-to-SQL evaluation."""
     # Create text-to-SQL agent
-    openai_client = get_openai_client()
+    openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
     agent = Text2SQLAgent(
         client=openai_client,
         model_name=model,
         prompt_file=prompt_file
     )
     
-    # Generate SQL from natural language query with timeout
-    try:
-        result = await asyncio.wait_for(
-            agent.query(row["Query"]),
-            timeout=timeout,
-        )
-    except asyncio.TimeoutError:
-        result = {"sql": "-- ERROR: generation timed out"}
+    # Generate SQL from natural language query
+    result = await agent.query(row["Query"])
 
     # Execute predicted SQL
     try:
@@ -175,40 +148,31 @@ async def text2sql_experiment(
         predicted_success, predicted_result = False, f"SQL execution failed: {str(e)}"
 
     # Score the response using execution accuracy
-    try:
-        accuracy_score = await asyncio.wait_for(
-            execution_accuracy.ascore(
-                expected_sql=row["SQL"],
-                predicted_success=predicted_success,
-                predicted_result=predicted_result,
-            ),
-            timeout=timeout,
-        )
-    except asyncio.TimeoutError:
-        accuracy_score = MetricResult(value="incorrect", reason="Execution accuracy timed out")
+    accuracy_score = await execution_accuracy.ascore(
+        expected_sql=row["SQL"],
+        predicted_success=predicted_success,
+        predicted_result=predicted_result,
+    )
 
     return {
         "query": row["Query"],
         "expected_sql": row["SQL"],
         "predicted_sql": result["sql"],
         "level": row["Levels"],
-        "experiment_name": experiment_name,
         "execution_accuracy": accuracy_score.value,
         "accuracy_reason": accuracy_score.reason,
     }
 
 
-def load_dataset(limit: Optional[int] = None, only_row: Optional[int] = None):
+def load_dataset(limit: Optional[int] = None):
     """Load the text-to-SQL dataset from CSV file."""
     dataset_path = Path(__file__).parent / "datasets" / "booksql_sample.csv"
     
     # Read CSV
     df = pd.read_csv(dataset_path)
     
-    # If only a single row is requested
-    if only_row is not None:
-        df = df.iloc[[only_row]].copy()
-    elif limit is not None and limit > 0:
+    # Limit dataset size if requested
+    if limit is not None and limit > 0:
         df = df.head(limit)
     
     # Create Ragas Dataset
@@ -225,59 +189,43 @@ def load_dataset(limit: Optional[int] = None, only_row: Optional[int] = None):
     return dataset
 
 
-async def run_experiment(
-    model: str,
-    prompt_file: Optional[str] = None,
-    name: Optional[str] = None,
-    limit: Optional[int] = None,
-    only_row: Optional[int] = None,
-) -> None:
-    """Run a single experiment using the provided model and prompt file."""
-    try:
-        get_openai_client()  # Validate API key is available
-    except ValueError as e:
-        logger.error(f"❌ Error: {e}")
-        return
-
-    logger.info("Loading dataset...")
-    dataset = load_dataset(limit=limit, only_row=only_row)
-    logger.info(f"Dataset loaded with {len(dataset)} samples")
-
-    run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
-    exp_name = name or f"text2sql_{model.replace('-', '_')}"
-
-    logger.info(f"Running text-to-SQL evaluation with model: {model}")
-    if prompt_file:
-        logger.info(f"Using prompt file: {prompt_file}")
-        
-    results = await text2sql_experiment.arun(
-        dataset, 
-        name=f"{run_id}-{exp_name}",
-        model=model,
-        prompt_file=prompt_file,
-        experiment_name=exp_name,
-        timeout=60,
-    )
-    
-    logger.info(f"✅ {exp_name}: {len(results)} cases evaluated")
-
-    # Execution accuracy summary
-    execution_accuracy = sum(1 for r in results if r["execution_accuracy"] == "correct") / max(1, len(results))
-    
-    logger.info(f"{exp_name} Execution Accuracy: {execution_accuracy:.2%}")
-
-
 async def main():
-    """Simple demo function to run text-to-SQL evaluation."""
+    """Simple demo script to run text-to-SQL evaluation."""
     logger.info("TEXT-TO-SQL EVALUATION DEMO")
     logger.info("=" * 40)
     
-    # Run evaluation with limited samples for demo
-    await run_experiment(
-        model="gpt-5-mini",
-        name="demo_evaluation",
-        limit=5,  # Only evaluate 5 samples for demo
+    # Configuration
+    model = "gpt-5-mini"
+    prompt_file = None
+    name = "demo_evaluation"
+    limit = 5  # Only evaluate 5 samples for demo
+    
+    # Validate API key is available
+    if not os.environ.get("OPENAI_API_KEY"):
+        logger.error("❌ Error: OPENAI_API_KEY environment variable is not set")
+        return
+
+    # Load dataset
+    logger.info("Loading dataset...")
+    dataset = load_dataset(limit=limit)
+    logger.info(f"Dataset loaded with {len(dataset)} samples")
+
+    logger.info(f"Running text-to-SQL evaluation with model: {model}")
+        
+    # Run the experiment
+    results = await text2sql_experiment.arun(
+        dataset, 
+        name=name,
+        model=model,
+        prompt_file=prompt_file,
     )
+    
+    # Report results
+    logger.info(f"✅ {name}: {len(results)} cases evaluated")
+
+    # Calculate and display accuracy
+    accuracy_rate = sum(1 for r in results if r["execution_accuracy"] == "correct") / max(1, len(results))
+    logger.info(f"{name} Execution Accuracy: {accuracy_rate:.2%}")
 
 
 if __name__ == "__main__":
