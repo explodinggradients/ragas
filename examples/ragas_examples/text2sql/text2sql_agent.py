@@ -7,14 +7,12 @@ This agent converts natural language queries to SQL queries for database evaluat
 
 import logging
 import os
-import re
 from pathlib import Path
 from typing import Any, Dict, Optional
 import dotenv
 from openai import AsyncOpenAI
-import openai
 
-dotenv.load_dotenv("../../../.env")
+dotenv.load_dotenv(".env")
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -80,11 +78,11 @@ class Text2SQLAgent:
                 messages=messages,
             )
 
-            # Extract generated SQL
+            # Extract and clean generated SQL
             generated_sql = response.choices[0].message.content.strip()
-
-            # Clean up the SQL (remove code blocks if present)
-            generated_sql = self._clean_sql_output(generated_sql)
+            
+            # Remove markdown code blocks
+            generated_sql = generated_sql.replace("```sql", "").replace("```", "").strip()
 
             logger.info(f"Successfully generated SQL ({len(generated_sql)} chars)")
             return {
@@ -100,51 +98,14 @@ class Text2SQLAgent:
                 "sql": f"-- ERROR: {error_msg}"
             }
 
-    def _clean_sql_output(self, sql_output: str) -> str:
-        """
-        Clean the SQL output from the LLM.
-
-        Args:
-            sql_output: Raw SQL output from the model
-
-        Returns:
-            Cleaned SQL query
-        """
-        # Remove markdown code blocks
-        sql_output = re.sub(r"```sql\n?", "", sql_output)
-        sql_output = re.sub(r"```\n?", "", sql_output)
-
-        # Remove leading/trailing whitespace
-        sql_output = sql_output.strip()
-
-        # Remove any explanatory text after the SQL (look for common patterns)
-        lines = sql_output.split("\n")
-        sql_lines = []
-
-        for line in lines:
-            line = line.strip()
-            # Stop at lines that start with explanation markers (but not SQL comments)
-            if line.lower().startswith(
-                ("this query", "explanation:", "note:", "the query")
-            ):
-                break
-            if line:  # Skip empty lines
-                sql_lines.append(line)
-
-        return "\n".join(sql_lines)
-
-
-
 
 # Demo
 async def main():
     import os
-    import pathlib
     from dotenv import load_dotenv
     
     # Load .env from root
-    root_dir = pathlib.Path(__file__).parent.parent.parent.parent
-    load_dotenv(root_dir / ".env")
+    load_dotenv(".env")
     
     # Configure logging for demo
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
