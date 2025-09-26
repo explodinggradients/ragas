@@ -852,6 +852,262 @@ class SimpleLLMMetric(SimpleBaseMetric):
             return await super().abatch_score(inputs_with_llm)
         return await super().abatch_score(inputs)
 
+    def save(self, path: t.Optional[str] = None) -> None:
+        """
+        Save the metric configuration to a JSON file.
+
+        Parameters:
+        -----------
+        path : str, optional
+            File path to save to. If not provided, saves to "./{metric.name}.json"
+            Use .gz extension for compression.
+
+        Note:
+        -----
+        If the metric has a response_model, its schema will be saved for reference
+        but the model itself cannot be serialized. You'll need to provide it when loading.
+
+        Examples:
+        ---------
+        All these work:
+        >>> metric.save()                      # → ./response_quality.json
+        >>> metric.save("custom.json")         # → ./custom.json
+        >>> metric.save("/path/to/metrics/")   # → /path/to/metrics/response_quality.json
+        >>> metric.save("no_extension")        # → ./no_extension.json
+        >>> metric.save("compressed.json.gz")  # → ./compressed.json.gz (compressed)
+        """
+        import gzip
+        import json
+        import warnings
+        from pathlib import Path
+
+        # Handle default path
+        if path is None:
+            # Default to current directory with metric name as filename
+            file_path = Path(f"./{self.name}.json")
+        else:
+            file_path = Path(path)
+
+            # If path is a directory, append the metric name as filename
+            if file_path.is_dir():
+                file_path = file_path / f"{self.name}.json"
+            # If path has no extension, add .json
+            elif not file_path.suffix:
+                file_path = file_path.with_suffix(".json")
+
+        if hasattr(self, "_response_model") and self._response_model:
+            warnings.warn(
+                "response_model cannot be saved and will be lost. "
+                "You'll need to set it manually after loading."
+            )
+
+        # Serialize the prompt
+        prompt_data = self._serialize_prompt()
+
+        # Determine the metric type
+        metric_type = self.__class__.__name__
+
+        # Get metric-specific config
+        config = self._get_metric_config()
+
+        data = {
+            "format_version": "1.0",
+            "metric_type": metric_type,
+            "name": self.name,
+            "prompt": prompt_data,
+            "config": config,
+            "response_model_info": self._serialize_response_model_info(),
+        }
+        try:
+            if file_path.suffix == ".gz":
+                with gzip.open(file_path, "wt", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2)
+            else:
+                with open(file_path, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2)
+        except (OSError, IOError) as e:
+            raise ValueError(f"Cannot save metric to {file_path}: {e}")
+
+    def _serialize_prompt(self) -> t.Dict[str, t.Any]:
+        """Serialize the prompt for storage."""
+        from ragas.prompt.dynamic_few_shot import DynamicFewShotPrompt
+        from ragas.prompt.simple_prompt import Prompt
+
+        if isinstance(self.prompt, str):
+            return {"type": "string", "instruction": self.prompt}
+        elif isinstance(self.prompt, DynamicFewShotPrompt):
+            # Warn about embedding model
+            if self.prompt.example_store.embedding_model:
+                import warnings
+
+                warnings.warn(
+                    "embedding_model cannot be saved and will be lost. "
+                    "You'll need to provide it when loading using: "
+                    "load(path, embedding_model=YourModel)"
+                )
+
+            return {
+                "type": "DynamicFewShotPrompt",
+                "instruction": self.prompt.instruction,
+                "examples": [
+                    {"input": inp, "output": out}
+                    for inp, out in self.prompt.example_store._examples
+                ],
+                "max_similar_examples": self.prompt.max_similar_examples,
+                "similarity_threshold": self.prompt.similarity_threshold,
+            }
+        elif isinstance(self.prompt, Prompt):
+            return {
+                "type": "Prompt",
+                "instruction": self.prompt.instruction,
+                "examples": [
+                    {"input": inp, "output": out} for inp, out in self.prompt.examples
+                ],
+            }
+        else:
+            raise ValueError(f"Unsupported prompt type: {type(self.prompt)}")
+
+    def _get_metric_config(self) -> t.Dict[str, t.Any]:
+        """Get metric-specific configuration."""
+        config = {}
+        if hasattr(self, "allowed_values"):
+            # Convert tuples to lists for JSON serialization
+            allowed_values = self.allowed_values
+            if isinstance(allowed_values, tuple):
+                allowed_values = list(allowed_values)
+            config["allowed_values"] = allowed_values
+        return config
+
+    def _serialize_response_model_info(self) -> t.Optional[t.Dict]:
+        """Serialize response model information for storage."""
+        if not hasattr(self, "_response_model") or not self._response_model:
+            return None
+
+        return {
+            "class_name": self._response_model.__name__,
+            "module": self._response_model.__module__
+            if hasattr(self._response_model, "__module__")
+            else None,
+            "schema": self._response_model.model_json_schema()
+            if hasattr(self._response_model, "model_json_schema")
+            else None,
+            "note": "You must provide this model when loading",
+        }
+
+    @classmethod
+    def load(
+        cls,
+        path: str,
+        response_model: t.Optional[t.Type["BaseModel"]] = None,
+        embedding_model: t.Optional[t.Any] = None,
+    ) -> "SimpleLLMMetric":
+        """
+        Load a metric from a JSON file.
+
+        Parameters:
+        -----------
+        path : str
+            File path to load from. Supports .gz compressed files.
+        response_model : Optional[Type[BaseModel]]
+            Pydantic model to use for response validation. Required for custom SimpleLLMMetrics.
+        embedding_model : Optional[Any]
+            Embedding model for DynamicFewShotPrompt. Required if the original used one.
+
+        Returns:
+        --------
+        SimpleLLMMetric
+            Loaded metric instance
+
+        Raises:
+        -------
+        ValueError
+            If file cannot be loaded, is invalid, or missing required models
+        """
+        import gzip
+        import json
+        from pathlib import Path
+
+        file_path = Path(path)
+
+        # Load JSON data
+        try:
+            if file_path.suffix == ".gz":
+                with gzip.open(file_path, "rt", encoding="utf-8") as f:
+                    data = json.load(f)
+            else:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError, OSError) as e:
+            raise ValueError(f"Cannot load metric from {path}: {e}")
+
+        # Validate format
+        if data.get("format_version") != "1.0":
+            import warnings
+
+            warnings.warn(
+                f"Loading metric with format version {data.get('format_version')}, expected 1.0"
+            )
+
+        # Reconstruct the prompt
+        prompt = cls._deserialize_prompt(data["prompt"], embedding_model)
+
+        # Get config
+        config = data.get("config", {})
+
+        # Create the metric instance
+        metric = cls(name=data["name"], prompt=prompt, **config)
+
+        # Set response model if provided
+        if response_model:
+            metric._response_model = response_model
+
+        return metric
+
+    @classmethod
+    def _deserialize_prompt(
+        cls, prompt_data: t.Dict[str, t.Any], embedding_model: t.Optional[t.Any] = None
+    ):
+        """Deserialize a prompt from saved data."""
+        from ragas.prompt.dynamic_few_shot import DynamicFewShotPrompt
+        from ragas.prompt.simple_prompt import Prompt
+
+        prompt_type = prompt_data.get("type")
+
+        if prompt_type == "string":
+            return prompt_data["instruction"]
+        elif prompt_type == "Prompt":
+            examples = [
+                (ex["input"], ex["output"]) for ex in prompt_data.get("examples", [])
+            ]
+            return Prompt(instruction=prompt_data["instruction"], examples=examples)
+        elif prompt_type == "DynamicFewShotPrompt":
+            if not embedding_model:
+                import warnings
+
+                warnings.warn(
+                    "DynamicFewShotPrompt was saved with an embedding model but none provided. "
+                    "Similarity-based example selection will not work."
+                )
+
+            # Create base prompt first
+            base_prompt = Prompt(instruction=prompt_data["instruction"])
+
+            # Create DynamicFewShotPrompt
+            dynamic_prompt = DynamicFewShotPrompt.from_prompt(
+                base_prompt,
+                embedding_model,
+                max_similar_examples=prompt_data.get("max_similar_examples", 3),
+                similarity_threshold=prompt_data.get("similarity_threshold", 0.7),
+            )
+
+            # Add examples
+            for ex in prompt_data.get("examples", []):
+                dynamic_prompt.add_example(ex["input"], ex["output"])
+
+            return dynamic_prompt
+        else:
+            raise ValueError(f"Unsupported prompt type: {prompt_type}")
+
     @abstractmethod
     def get_correlation(
         self, gold_labels: t.List[str], predictions: t.List[str]

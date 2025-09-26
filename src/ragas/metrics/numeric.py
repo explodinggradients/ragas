@@ -42,6 +42,45 @@ class NumericMetric(SimpleLLMMetric, NumericValidator):
         correlation = t.cast(float, result[0])
         return correlation
 
+    @classmethod
+    def load(
+        cls, path: str, embedding_model: t.Optional[t.Any] = None
+    ) -> "NumericMetric":
+        """
+        Load a NumericMetric from a JSON file.
+
+        Parameters:
+        -----------
+        path : str
+            File path to load from. Supports .gz compressed files.
+        embedding_model : Optional[Any]
+            Embedding model for DynamicFewShotPrompt. Required if the original used one.
+
+        Returns:
+        --------
+        NumericMetric
+            Loaded metric instance
+
+        Raises:
+        -------
+        ValueError
+            If file cannot be loaded or is not a NumericMetric
+        """
+        # Load using parent class method
+        metric = super().load(path, embedding_model=embedding_model)
+
+        # Validate it's the correct type
+        if not isinstance(metric, cls):
+            raise ValueError(f"Loaded metric is not a {cls.__name__}")
+
+        # Convert allowed_values back to tuple if it's a list (due to JSON serialization)
+        if hasattr(metric, "allowed_values") and isinstance(
+            metric.allowed_values, list
+        ):
+            metric.allowed_values = tuple(metric.allowed_values)
+
+        return metric
+
 
 def numeric_metric(
     *,

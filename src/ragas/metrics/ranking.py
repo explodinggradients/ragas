@@ -46,6 +46,39 @@ class RankingMetric(SimpleLLMMetric, RankingValidator):
 
         return sum(kappa_scores) / len(kappa_scores) if kappa_scores else 0.0
 
+    @classmethod
+    def load(
+        cls, path: str, embedding_model: t.Optional[t.Any] = None
+    ) -> "RankingMetric":
+        """
+        Load a RankingMetric from a JSON file.
+
+        Parameters:
+        -----------
+        path : str
+            File path to load from. Supports .gz compressed files.
+        embedding_model : Optional[Any]
+            Embedding model for DynamicFewShotPrompt. Required if the original used one.
+
+        Returns:
+        --------
+        RankingMetric
+            Loaded metric instance
+
+        Raises:
+        -------
+        ValueError
+            If file cannot be loaded or is not a RankingMetric
+        """
+        # Load using parent class method
+        metric = super().load(path, embedding_model=embedding_model)
+
+        # Validate it's the correct type
+        if not isinstance(metric, cls):
+            raise ValueError(f"Loaded metric is not a {cls.__name__}")
+
+        return metric
+
 
 def ranking_metric(
     *,

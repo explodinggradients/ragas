@@ -39,6 +39,39 @@ class DiscreteMetric(SimpleLLMMetric, DiscreteValidator):
             )
         return cohen_kappa_score(gold_labels, predictions)
 
+    @classmethod
+    def load(
+        cls, path: str, embedding_model: t.Optional[t.Any] = None
+    ) -> "DiscreteMetric":
+        """
+        Load a DiscreteMetric from a JSON file.
+
+        Parameters:
+        -----------
+        path : str
+            File path to load from. Supports .gz compressed files.
+        embedding_model : Optional[Any]
+            Embedding model for DynamicFewShotPrompt. Required if the original used one.
+
+        Returns:
+        --------
+        DiscreteMetric
+            Loaded metric instance
+
+        Raises:
+        -------
+        ValueError
+            If file cannot be loaded or is not a DiscreteMetric
+        """
+        # Load using parent class method
+        metric = super().load(path, embedding_model=embedding_model)
+
+        # Validate it's the correct type
+        if not isinstance(metric, cls):
+            raise ValueError(f"Loaded metric is not a {cls.__name__}")
+
+        return metric
+
 
 def discrete_metric(
     *,
