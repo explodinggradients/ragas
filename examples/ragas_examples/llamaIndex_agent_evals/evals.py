@@ -179,7 +179,7 @@ def load_dataset():
             "expected_state": {"shopping_list": ["milk"]},
         },
         {
-            "test_case": "Mixed cctions",
+            "test_case": "Mixed actions",
             "user_input": "Can you show me the list and also add butter?",
             "context": None,
             "ground_truth_calls": [
@@ -269,7 +269,7 @@ The shopping list starts empty. You can add items, remove items by name, and lis
     )
 
     goal_accuracy_without_llm = goal_accuracy_metric_without_llm.score(
-        current_state=initial_state,
+        current_state=final_state,
         expected_state=row["expected_state"],
     )
 
