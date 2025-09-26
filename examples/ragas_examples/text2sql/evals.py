@@ -1,4 +1,3 @@
-import argparse
 import asyncio
 import datetime
 import os
@@ -19,12 +18,24 @@ except ImportError:
     raise ImportError("datacompy is required for execution accuracy. Install with: pip install datacompy")
 
 from .db_utils import execute_sql
-from .text2sql_agent import get_default_agent
+from .text2sql_agent import Text2SQLAgent
 
 dotenv.load_dotenv("../../../.env")
 
 # Global guard for comparison size; configurable via CLI
 MAX_ROWS_COMPARE = 10000
+
+
+def get_openai_client():
+    """Get AsyncOpenAI client with proper error handling."""
+    from openai import AsyncOpenAI
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError(
+            "OPENAI_API_KEY environment variable is not set. "
+            "Please set your OpenAI API key: export OPENAI_API_KEY='your_key'"
+        )
+    return AsyncOpenAI(api_key=api_key)
 
 
 
@@ -140,10 +151,11 @@ async def text2sql_experiment(
 ):
     """Experiment function for text-to-SQL evaluation."""
     # Create text-to-SQL agent
-    agent = get_default_agent(
+    openai_client = get_openai_client()
+    agent = Text2SQLAgent(
+        client=openai_client,
         model_name=model,
-        prompt_file=prompt_file,
-        logdir="text2sql_logs"
+        prompt_file=prompt_file
     )
     
     row_id = row.get("id", f"row_{hash(row['Query']) % 10000}")
@@ -156,7 +168,7 @@ async def text2sql_experiment(
 
     try:
         result = await asyncio.wait_for(
-            asyncio.to_thread(agent.generate_sql, row["Query"]),
+            agent.generate_sql(row["Query"]),
             timeout=timeout_gen,
         )
     except asyncio.TimeoutError:
@@ -178,8 +190,7 @@ async def text2sql_experiment(
     acc_start = time.perf_counter()
     try:
         accuracy_score = await asyncio.wait_for(
-            asyncio.to_thread(
-                execution_accuracy.score,
+            execution_accuracy.ascore(
                 expected_sql=row["SQL"],
                 predicted_success=predicted_success,
                 predicted_result=predicted_result,
@@ -264,9 +275,10 @@ async def run_command(
     only_row: Optional[int] = None,
 ) -> None:
     """Run a single experiment using the provided model and prompt file."""
-    if "OPENAI_API_KEY" not in os.environ:
-        print("❌ Error: OpenAI API key not found!")
-        print("Please set your API key: export OPENAI_API_KEY=your_actual_key")
+    try:
+        get_openai_client()  # Validate API key is available
+    except ValueError as e:
+        print(f"❌ Error: {e}")
         return
 
     print("Loading dataset...")
@@ -318,70 +330,42 @@ async def run_command(
 
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Text-to-SQL Evaluation CLI")
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    # run subcommand
-    run_parser = subparsers.add_parser("run", help="Run a single experiment")
-    run_parser.add_argument(
-        "--model", "-m", type=str, default="gpt-5-mini", help="Model to use for text-to-SQL generation"
+# Demo
+async def main():
+    import os
+    import pathlib
+    from dotenv import load_dotenv
+    
+    # Load .env from root
+    root_dir = pathlib.Path(__file__).parent.parent.parent.parent
+    load_dotenv(root_dir / ".env")
+    
+    # Configure logging for demo
+    import logging
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+    
+    # Suppress HTTP request logs from OpenAI/httpx
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("openai._base_client").setLevel(logging.WARNING)
+    
+    logger = logging.getLogger(__name__)
+    
+    logger.info("TEXT-TO-SQL EVALUATION DEMO")
+    logger.info("=" * 40)
+    
+    # Run evaluation with limited samples for demo
+    await run_command(
+        model="gpt-5-mini",
+        prompt_file=None,
+        name="demo_evaluation",
+        limit=5,  # Only evaluate 5 samples for demo
+        timeout_gen=60,
+        timeout_sql=90,
+        verbose=False,
+        max_rows_compare=10000,
+        only_row=None,
     )
-    run_parser.add_argument(
-        "--prompt_file", "-p", type=str, default=None, help="Prompt file to use (defaults to prompt.txt)"
-    )
-    run_parser.add_argument(
-        "--name", "-n", type=str, default=None, help="Experiment name (defaults to model name)"
-    )
-    run_parser.add_argument(
-        "--limit", "-l", type=int, default=None, help="Number of samples to evaluate (default: all samples, specify a number to limit)"
-    )
-    run_parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose per-row timing logs"
-    )
-    run_parser.add_argument(
-        "--timeout-gen", type=int, default=60, help="Timeout (seconds) for LLM generation"
-    )
-    run_parser.add_argument(
-        "--timeout-sql", type=int, default=90, help="Timeout (seconds) for SQL execution and accuracy evaluation"
-    )
-    run_parser.add_argument(
-        "--max-rows-compare", type=int, default=10000, help="Maximum rows allowed for datacompy comparison"
-    )
-    run_parser.add_argument(
-        "--row", type=int, default=None, help="Run only a single dataset row by index (0-based)"
-    )
-
-
-    return parser
 
 
 if __name__ == "__main__":
-    parser = build_parser()
-    args = parser.parse_args()
-
-    if args.command == "run":
-        limit = args.limit if args.limit is not None and args.limit > 0 else None  # None, -1 or 0 means no limit
-        asyncio.run(
-            run_command(
-                model=args.model,
-                prompt_file=args.prompt_file,
-                name=args.name,
-                limit=limit,
-                timeout_gen=getattr(args, "timeout_gen", 45),
-                timeout_sql=getattr(args, "timeout_sql", 20),
-                verbose=getattr(args, "verbose", False),
-                max_rows_compare=getattr(args, "max_rows_compare", 10000),
-                only_row=getattr(args, "row", None),
-            )
-        )
-        try:
-            sys.stdout.flush()
-            sys.stderr.flush()
-        except Exception:
-            pass
-        # Force shutdown to avoid lingering non-daemon threads in test CLI context
-        os._exit(0)
-    else:
-        parser.print_help()
-        sys.exit(2)
+    asyncio.run(main())
