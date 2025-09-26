@@ -15,9 +15,10 @@ from pathlib import Path
 
 import numpy as np
 import tiktoken
-from datasets import Dataset
 from rich.console import Console
 from tqdm.auto import tqdm
+
+from datasets import Dataset
 
 if t.TYPE_CHECKING:
     from ragas.metrics.base import Metric
