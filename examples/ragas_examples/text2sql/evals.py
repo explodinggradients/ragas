@@ -1,12 +1,12 @@
 import asyncio
-import datetime
+import logging
 import os
-import sys
-import time
+from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
-import dotenv
 import pandas as pd
+from dotenv import load_dotenv
 
 from ragas import Dataset, experiment
 from ragas.metrics.discrete import discrete_metric
@@ -20,10 +20,19 @@ except ImportError:
 from .db_utils import execute_sql
 from .text2sql_agent import Text2SQLAgent
 
-dotenv.load_dotenv("../../../.env")
+# Load environment variables
+load_dotenv(".env")
 
-# Global guard for comparison size; configurable via CLI
-MAX_ROWS_COMPARE = 10000
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Suppress HTTP request logs from OpenAI/httpx
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("openai._base_client").setLevel(logging.WARNING)
 
 
 def get_openai_client():
@@ -36,8 +45,6 @@ def get_openai_client():
             "Please set your OpenAI API key: export OPENAI_API_KEY='your_key'"
         )
     return AsyncOpenAI(api_key=api_key)
-
-
 
 
 @discrete_metric(name="execution_accuracy", allowed_values=["correct", "incorrect"])
@@ -79,18 +86,14 @@ def execution_accuracy(expected_sql: str, predicted_success: bool, predicted_res
                 )
             
             # Guard for very large results to avoid pathological comparisons
-            try:
-                if len(expected_result) > MAX_ROWS_COMPARE or len(predicted_result) > MAX_ROWS_COMPARE:
-                    return MetricResult(
-                        value="incorrect",
-                        reason=(
-                            f"Result too large to compare (expected_rows={len(expected_result)}, "
-                            f"predicted_rows={len(predicted_result)}, max_rows={MAX_ROWS_COMPARE})"
-                        ),
-                    )
-            except Exception:
-                # If len() fails for any reason, fall back to comparison attempt
-                pass
+            if len(expected_result) > 10000 or len(predicted_result) > 10000:
+                return MetricResult(
+                    value="incorrect",
+                    reason=(
+                        f"Result too large to compare (expected_rows={len(expected_result)}, "
+                        f"predicted_rows={len(predicted_result)}, max_rows=10000)"
+                    ),
+                )
 
             # Use datacompy to compare DataFrames
             try:
@@ -145,9 +148,7 @@ async def text2sql_experiment(
     model: str,
     prompt_file: Optional[str],
     experiment_name: str,
-    timeout_gen: int = 60,
-    timeout_sql: int = 90,
-    verbose: bool = False,
+    timeout: int = 60,
 ):
     """Experiment function for text-to-SQL evaluation."""
     # Create text-to-SQL agent
@@ -158,30 +159,22 @@ async def text2sql_experiment(
         prompt_file=prompt_file
     )
     
-    row_id = row.get("id", f"row_{hash(row['Query']) % 10000}")
-
     # Generate SQL from natural language query with timeout
-    gen_start = time.perf_counter()
-    
     try:
         result = await asyncio.wait_for(
             agent.query(row["Query"]),
-            timeout=timeout_gen,
+            timeout=timeout,
         )
     except asyncio.TimeoutError:
         result = {"sql": "-- ERROR: generation timed out"}
-    gen_dur = time.perf_counter() - gen_start
 
-    # Execute predicted SQL once to share results between metrics
-    sql_exec_start = time.perf_counter()
+    # Execute predicted SQL
     try:
         predicted_success, predicted_result = execute_sql(result["sql"])
     except Exception as e:
         predicted_success, predicted_result = False, f"SQL execution failed: {str(e)}"
-    sql_exec_dur = time.perf_counter() - sql_exec_start
 
     # Score the response using execution accuracy
-    acc_start = time.perf_counter()
     try:
         accuracy_score = await asyncio.wait_for(
             execution_accuracy.ascore(
@@ -189,20 +182,12 @@ async def text2sql_experiment(
                 predicted_success=predicted_success,
                 predicted_result=predicted_result,
             ),
-            timeout=timeout_sql,
+            timeout=timeout,
         )
     except asyncio.TimeoutError:
         accuracy_score = MetricResult(value="incorrect", reason="Execution accuracy timed out")
-    acc_dur = time.perf_counter() - acc_start
-
-    if verbose:
-        print(
-            f"[row={row_id}] gen={gen_dur:.2f}s sql_exec={sql_exec_dur:.2f}s acc={acc_dur:.2f}s "
-            f"query_len={len(row['Query'])} sql_len={len(result['sql'])}"
-        )
 
     return {
-        "id": row.get("id", f"row_{hash(row['Query']) % 10000}"),
         "query": row["Query"],
         "expected_sql": row["SQL"],
         "predicted_sql": result["sql"],
@@ -215,31 +200,16 @@ async def text2sql_experiment(
 
 def load_dataset(limit: Optional[int] = None, only_row: Optional[int] = None):
     """Load the text-to-SQL dataset from CSV file."""
-    # Get the directory where this file is located
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    dataset_path = os.path.join(current_dir, "datasets", "booksql_sample.csv")
+    dataset_path = Path(__file__).parent / "datasets" / "booksql_sample.csv"
     
-    if not os.path.exists(dataset_path):
-        raise FileNotFoundError(f"Dataset not found at: {dataset_path}")
-    
-    # Read CSV and create Dataset
+    # Read CSV
     df = pd.read_csv(dataset_path)
     
     # If only a single row is requested
     if only_row is not None:
-        if only_row < 0 or only_row >= len(df):
-            raise IndexError(f"--row index out of range: {only_row} (dataset has {len(df)} rows)")
         df = df.iloc[[only_row]].copy()
-    
-    # Limit dataset size for testing (default 10, None means no limit)
-    if limit is not None and limit > 0:
+    elif limit is not None and limit > 0:
         df = df.head(limit)
-    
-    # Validate required columns
-    required_cols = ["Query", "SQL", "Levels", "split"]
-    missing_cols = [col for col in required_cols if col not in df.columns]
-    if missing_cols:
-        raise ValueError(f"Missing required columns in dataset: {missing_cols}")
     
     # Create Ragas Dataset
     dataset = Dataset(name="text2sql_booksql", backend="local/csv", root_dir=".")
@@ -255,52 +225,30 @@ def load_dataset(limit: Optional[int] = None, only_row: Optional[int] = None):
     return dataset
 
 
-
-
-async def run_command(
+async def run_experiment(
     model: str,
-    prompt_file: Optional[str],
-    name: Optional[str],
+    prompt_file: Optional[str] = None,
+    name: Optional[str] = None,
     limit: Optional[int] = None,
-    timeout_gen: int = 60,
-    timeout_sql: int = 90,
-    verbose: bool = False,
-    max_rows_compare: int = 10000,
     only_row: Optional[int] = None,
 ) -> None:
     """Run a single experiment using the provided model and prompt file."""
     try:
         get_openai_client()  # Validate API key is available
     except ValueError as e:
-        print(f"❌ Error: {e}")
+        logger.error(f"❌ Error: {e}")
         return
 
-    print("Loading dataset...")
+    logger.info("Loading dataset...")
     dataset = load_dataset(limit=limit, only_row=only_row)
-    if limit is not None:
-        print(f"Dataset loaded with {len(dataset)} samples (limited to {limit} for testing)")
-    else:
-        print(f"Dataset loaded with {len(dataset)} samples (full dataset)")
+    logger.info(f"Dataset loaded with {len(dataset)} samples")
 
-    run_id = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     exp_name = name or f"text2sql_{model.replace('-', '_')}"
 
-    # Ensure output directory exists (experiment framework saves under experiments/)
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    experiments_dir = os.path.join(current_dir, "experiments")
-    os.makedirs(experiments_dir, exist_ok=True)
-
-    # Configure global comparison guard
-    global MAX_ROWS_COMPARE
-    MAX_ROWS_COMPARE = int(max_rows_compare)
-
-    print(f"Running text-to-SQL evaluation with model: {model}")
+    logger.info(f"Running text-to-SQL evaluation with model: {model}")
     if prompt_file:
-        print(f"Using prompt file: {prompt_file}")
-    if verbose:
-        print(
-            f"Flags: timeout_gen={timeout_gen}s timeout_sql={timeout_sql}s max_rows_compare={MAX_ROWS_COMPARE}"
-        )
+        logger.info(f"Using prompt file: {prompt_file}")
         
     results = await text2sql_experiment.arun(
         dataset, 
@@ -308,56 +256,27 @@ async def run_command(
         model=model,
         prompt_file=prompt_file,
         experiment_name=exp_name,
-        timeout_gen=timeout_gen,
-        timeout_sql=timeout_sql,
-        verbose=verbose,
+        timeout=60,
     )
     
-    print(f"✅ {exp_name}: {len(results)} cases evaluated")
-    print(f"Results saved to: {os.path.join(experiments_dir, results.name)}.csv")
+    logger.info(f"✅ {exp_name}: {len(results)} cases evaluated")
 
     # Execution accuracy summary
     execution_accuracy = sum(1 for r in results if r["execution_accuracy"] == "correct") / max(1, len(results))
     
-    print(f"{exp_name} Execution Accuracy: {execution_accuracy:.2%}")
+    logger.info(f"{exp_name} Execution Accuracy: {execution_accuracy:.2%}")
 
 
-
-
-# Demo
 async def main():
-    import os
-    import pathlib
-    from dotenv import load_dotenv
-    
-    # Load .env from root
-    root_dir = pathlib.Path(__file__).parent.parent.parent.parent
-    load_dotenv(root_dir / ".env")
-    
-    # Configure logging for demo
-    import logging
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
-    
-    # Suppress HTTP request logs from OpenAI/httpx
-    logging.getLogger("httpx").setLevel(logging.WARNING)
-    logging.getLogger("openai._base_client").setLevel(logging.WARNING)
-    
-    logger = logging.getLogger(__name__)
-    
+    """Simple demo function to run text-to-SQL evaluation."""
     logger.info("TEXT-TO-SQL EVALUATION DEMO")
     logger.info("=" * 40)
     
     # Run evaluation with limited samples for demo
-    await run_command(
+    await run_experiment(
         model="gpt-5-mini",
-        prompt_file=None,
         name="demo_evaluation",
         limit=5,  # Only evaluate 5 samples for demo
-        timeout_gen=60,
-        timeout_sql=90,
-        verbose=False,
-        max_rows_compare=10000,
-        only_row=None,
     )
 
 
