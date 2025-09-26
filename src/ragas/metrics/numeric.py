@@ -9,10 +9,11 @@ from pydantic import create_model
 
 from .base import SimpleLLMMetric
 from .decorator import NumericMetricProtocol, create_metric_decorator
+from .validators import NumericValidator
 
 
 @dataclass
-class NumericMetric(SimpleLLMMetric):
+class NumericMetric(SimpleLLMMetric, NumericValidator):
     allowed_values: t.Union[t.Tuple[float, float], range] = (0.0, 1.0)
 
     def __post_init__(self):
@@ -62,5 +63,5 @@ def numeric_metric(
     if allowed_values is None:
         allowed_values = (0.0, 1.0)
 
-    decorator_factory = create_metric_decorator(NumericMetric)
+    decorator_factory = create_metric_decorator()
     return decorator_factory(name=name, allowed_values=allowed_values, **metric_params)

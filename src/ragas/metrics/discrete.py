@@ -9,10 +9,11 @@ from pydantic import create_model
 
 from .base import SimpleLLMMetric
 from .decorator import DiscreteMetricProtocol, create_metric_decorator
+from .validators import DiscreteValidator
 
 
 @dataclass
-class DiscreteMetric(SimpleLLMMetric):
+class DiscreteMetric(SimpleLLMMetric, DiscreteValidator):
     allowed_values: t.List[str] = field(default_factory=lambda: ["pass", "fail"])
 
     def __post_init__(self):
@@ -59,5 +60,5 @@ def discrete_metric(
     if allowed_values is None:
         allowed_values = ["pass", "fail"]
 
-    decorator_factory = create_metric_decorator(DiscreteMetric)
+    decorator_factory = create_metric_decorator()
     return decorator_factory(name=name, allowed_values=allowed_values, **metric_params)
