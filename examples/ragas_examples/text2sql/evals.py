@@ -178,12 +178,9 @@ async def text2sql_experiment(
     # Execute predicted SQL once to share results between metrics
     sql_exec_start = time.perf_counter()
     try:
-        predicted_success, predicted_result = await asyncio.wait_for(
-            asyncio.to_thread(execute_sql, result.generated_sql),
-            timeout=timeout_sql,
-        )
-    except asyncio.TimeoutError:
-        predicted_success, predicted_result = False, "SQL execution timed out"
+        predicted_success, predicted_result = execute_sql(result.generated_sql)
+    except Exception as e:
+        predicted_success, predicted_result = False, f"SQL execution failed: {str(e)}"
     sql_exec_dur = time.perf_counter() - sql_exec_start
 
     # Score the response using execution accuracy
