@@ -21,10 +21,32 @@ uv pip install "ragas-examples[text2sql]"
 
 Test the text-to-SQL agent to see it convert natural language to SQL:
 
-```bash
-export OPENAI_API_KEY="your-api-key-here"
-uv run python -m ragas_examples.text2sql.text2sql_agent --test
+```python
+import os
+import asyncio
+from openai import AsyncOpenAI
+from ragas_examples.text2sql.text2sql_agent import Text2SQLAgent
+
+# Set your OpenAI API key
+os.environ["OPENAI_API_KEY"] = "your-api-key-here"
+
+# Create agent
+openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
+agent = Text2SQLAgent(client=openai_client, model_name="gpt-5-mini")
+
+# Test with a sample query
+test_query = "How much open credit does customer Andrew Bennett?"
+result = asyncio.run(agent.generate_sql(test_query))
+
+print(f"Natural Query: {result.natural_language_query}")
+print(f"Generated SQL: {result.generated_sql}")
 ```
+
+??? note "Output"
+    ```python
+    Natural Query: How much open credit does customer Andrew Bennett?
+    Generated SQL: select sum(open_balance) from ( select distinct transaction_id, open_balance from master_txn_table where customers = "Andrew Bennett" )
+    ```
 
 This generates SQL from the natural language query. Now let's build a systematic evaluation process.
 
@@ -325,21 +347,25 @@ The [experiment function](/concepts/experimentation) orchestrates the complete e
 ```python
 # File: examples/ragas_examples/text2sql/evals.py
 import asyncio
+import os
+from openai import AsyncOpenAI
 from ragas import experiment
-from ragas_examples.text2sql.text2sql_agent import get_default_agent
+from ragas_examples.text2sql.text2sql_agent import Text2SQLAgent
 from ragas_examples.text2sql.db_utils import execute_sql
 
 @experiment()
 async def text2sql_experiment(row, model: str, prompt_file: Optional[str], experiment_name: str):
     """Experiment function for text-to-SQL evaluation."""
     # Create text-to-SQL agent
-    agent = get_default_agent(
+    openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    agent = Text2SQLAgent(
+        client=openai_client,
         model_name=model,
         prompt_file=prompt_file
     )
     
     # Generate SQL from natural language query (async to enable parallelism)
-    result = await asyncio.to_thread(agent.generate_sql, row["Query"])
+    result = await agent.generate_sql(row["Query"])
     
     # Execute predicted SQL once to share results between metrics
     predicted_success, predicted_result = await asyncio.to_thread(execute_sql, result.generated_sql)
@@ -409,14 +435,29 @@ The dataset loader includes a `limit` parameter for development workflows - star
 
 For initial testing, run evaluations on a small subset to catch basic errors and validate your setup:
 
-```bash
-export OPENAI_API_KEY="your-api-key-here"
+```python
+import os
+import asyncio
+from ragas_examples.text2sql.evals import run_command
 
-# Run evaluation on all samples (default behavior)
-uv run python -m ragas_examples.text2sql.evals run --model gpt-5-mini
+# Set your OpenAI API key
+os.environ["OPENAI_API_KEY"] = "your-api-key-here"
 
 # Test with limited sample size for quick validation
-uv run python -m ragas_examples.text2sql.evals run --model gpt-5-mini --limit 10
+await run_command(
+    model="gpt-5-mini",
+    prompt_file=None,
+    name=None,
+    limit=10,  # Only evaluate 10 samples for quick testing
+)
+
+# Run evaluation on all samples (remove limit parameter)
+await run_command(
+    model="gpt-5-mini",
+    prompt_file=None,
+    name=None,
+    limit=None,  # Evaluate all samples
+)
 ```
 
 ??? "📋 Expected output (with --limit 10)"
@@ -435,9 +476,14 @@ uv run python -m ragas_examples.text2sql.evals run --model gpt-5-mini --limit 10
 
 After validating your setup with limited samples, run the complete evaluation:
 
-```bash
-# Full dataset evaluation (all samples)  
-uv run python -m ragas_examples.text2sql.evals run --model gpt-5-mini
+```python
+# Full dataset evaluation (all samples)
+await run_command(
+    model="gpt-5-mini",
+    prompt_file=None,
+    name=None,
+    limit=None,  # Evaluate all samples
+)
 ```
 
 ??? "📋 Output (prompt v1)"
@@ -596,9 +642,20 @@ We save this improved prompt as `prompt_v2.txt`.
 
 ### Re-run evaluation with the new prompt
 
-```bash
-export OPENAI_API_KEY="your-api-key-here"
-uv run python -m ragas_examples.text2sql.evals run --model gpt-5-mini --prompt_file prompt_v2.txt --name "gpt-5-mini-promptv2"
+```python
+import os
+import asyncio
+from ragas_examples.text2sql.evals import run_command
+
+# Set your OpenAI API key
+os.environ["OPENAI_API_KEY"] = "your-api-key-here"
+
+await run_command(
+    model="gpt-5-mini",
+    prompt_file="prompt_v2.txt",
+    name="gpt-5-mini-promptv2",
+    limit=None,  # Evaluate all samples
+)
 ```
 
 ??? "📋 Output (prompt v2)"
@@ -661,12 +718,20 @@ These new rules are designed to be generic but directly target the observed fail
 
 **Re-run evaluation with `prompt_v3.txt`:**
 
-```bash
-export OPENAI_API_KEY="your-api-key-here"
-uv run python -m ragas_examples.text2sql.evals run \
-  --model gpt-5-mini \
-  --prompt_file prompt_v3.txt \
-  --name "gpt-5-mini-promptv3"
+```python
+import os
+import asyncio
+from ragas_examples.text2sql.evals import run_command
+
+# Set your OpenAI API key
+os.environ["OPENAI_API_KEY"] = "your-api-key-here"
+
+await run_command(
+    model="gpt-5-mini",
+    prompt_file="prompt_v3.txt",
+    name="gpt-5-mini-promptv3",
+    limit=None,  # Evaluate all samples
+)
 ```
 
 We see an improvement from 60.61% to 70.71% in execution accuracy with `prompt_v3`.
