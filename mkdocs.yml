@@ -103,6 +103,7 @@ nav:
               - Write your own Metrics - (advanced): howtos/customizations/metrics/_write_your_own_metric_advanced.md
               - Train and Align Metrics: howtos/customizations/metrics/train_your_own_metric.md
               - Systematic Approach for Prompt Optimization: howtos/applications/prompt_optimization.md
+              - Batch Evaluation: howtos/customizations/metrics/batch_evaluation.md
           - Testset Generation:
               - Non-English Testset Generation: howtos/customizations/testgenerator/_language_adaptation.md
               - Persona Generation: howtos/customizations/testgenerator/_persona_generator.md

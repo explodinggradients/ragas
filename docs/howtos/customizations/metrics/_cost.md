@@ -1,6 +1,43 @@
 # Understand Cost and Usage of Operations
 
-When using LLMs for evaluation and test set generation, cost will be an important factor. Ragas provides you some tools to help you with that.
+When using LLMs for evaluation and test set generation, cost will be an important factor. Ragas provides several tools to help you optimize costs, including **Batch API support** for up to 50% savings on large-scale evaluations.
+
+## Cost Optimization Strategies
+
+### 1. Use Batch API for Large Evaluations (50% Savings)
+
+For non-urgent evaluation workloads, Ragas supports OpenAI's Batch API which provides 50% cost savings:
+
+```python
+from ragas.batch_evaluation import BatchEvaluator, estimate_batch_cost_savings
+from ragas.metrics import Faithfulness
+from langchain_openai import ChatOpenAI
+from ragas.llms import LangchainLLMWrapper
+
+# Setup batch-capable LLM
+llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o-mini"))
+faithfulness = Faithfulness(llm=llm)
+
+# Estimate cost savings
+cost_info = estimate_batch_cost_savings(
+    sample_count=1000,
+    metrics=[faithfulness],
+    regular_cost_per_1k_tokens=0.15,  # GPT-4o-mini cost
+    batch_discount=0.5  # 50% savings
+)
+
+print(f"Regular cost: ${cost_info['regular_cost']}")
+print(f"Batch cost: ${cost_info['batch_cost']}")  
+print(f"Savings: ${cost_info['savings']} ({cost_info['savings_percentage']}%)")
+
+# Run batch evaluation
+evaluator = BatchEvaluator(metrics=[faithfulness])
+results = evaluator.evaluate(samples, wait_for_completion=True)
+```
+
+Learn more about [Batch Evaluation](batch_evaluation.md).
+
+### 2. Monitor Token Usage
 
 ## Understanding `TokenUsageParser`
 
@@ -32,15 +69,12 @@ from ragas.cost import get_token_usage_for_openai
 get_token_usage_for_openai(llm_result)
 ```
 
-    /opt/homebrew/Caskroom/miniforge/base/envs/ragas/lib/python3.9/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
-      from .autonotebook import tqdm as notebook_tqdm
+```py
+/opt/homebrew/Caskroom/miniforge/base/envs/ragas/lib/python3.9/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+    from .autonotebook import tqdm as notebook_tqdm
 
-
-
-
-
-    TokenUsage(input_tokens=9, output_tokens=9, model='')
-
+TokenUsage(input_tokens=9, output_tokens=9, model='')
+```
 
 
 You can define your own or import parsers if they are defined. If you would like to suggest parser for LLM providers or contribute your own ones please check out this [issue](https://github.com/explodinggradients/ragas/issues/1151) 🙂.
@@ -64,9 +98,9 @@ metric = AspectCriticWithReference(
 )
 ```
 
-    Repo card metadata block was not found. Setting CardData to empty.
-
-
+```py
+Repo card metadata block was not found. Setting CardData to empty.
+```
 
 ```python
 from ragas import evaluate
@@ -80,38 +114,27 @@ results = evaluate(
 )
 ```
 
-    Evaluating: 100%|██████████| 5/5 [00:01<00:00,  2.81it/s]
-
-
+```py
+Evaluating: 100%|██████████| 5/5 [00:01<00:00,  2.81it/s]
+```
 
 ```python
 results.total_tokens()
 ```
 
-
-
-
-    TokenUsage(input_tokens=5463, output_tokens=355, model='')
-
+```py
+TokenUsage(input_tokens=5463, output_tokens=355, model='')
+```
 
 
 You can compute the cost for each run by passing in the cost per token to `Result.total_cost()` function.
 
 In this case GPT-4o costs $5 for 1M input tokens and $15 for 1M output tokens.
 
-
 ```python
 results.total_cost(cost_per_input_token=5 / 1e6, cost_per_output_token=15 / 1e6)
 ```
 
-
-
-
-    0.03264
-
-
-
-
-```python
-
+```py
+0.03264
 ```

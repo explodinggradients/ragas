@@ -22,10 +22,12 @@ from ragas.utils import camel_to_snake, deprecated, get_metric_language
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
+    from langchain_core.prompt_values import PromptValue
 
     from ragas.config import DemonstrationConfig, InstructionConfig
     from ragas.embeddings import BaseRagasEmbedding, BaseRagasEmbeddings
     from ragas.llms import BaseRagasLLM
+    from ragas.llms.batch_api import BatchJob
 
 logger = logging.getLogger(__name__)
 
@@ -227,6 +229,111 @@ class MetricWithLLM(Metric, PromptMixin):
                 f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please initantiate a the metric with an LLM to run."  # noqa
             )
         self.llm.set_run_config(run_config)
+
+    def supports_batch_evaluation(self) -> bool:
+        """Check if this metric supports batch evaluation via OpenAI Batch API."""
+        return self.llm is not None and self.llm.supports_batch_api()
+
+    def create_batch_evaluation_job(
+        self,
+        samples: t.List[t.Union[SingleTurnSample, MultiTurnSample]],
+        batch_size: t.Optional[int] = None,
+        metadata: t.Optional[t.Dict[str, str]] = None,
+    ) -> "BatchJob":
+        """
+        Create a batch job for evaluating multiple samples.
+
+        Args:
+            samples: List of samples to evaluate
+            batch_size: Maximum batch size (defaults to 1000)
+            metadata: Optional metadata for the batch job
+
+        Returns:
+            BatchJob instance for monitoring and retrieving results
+
+        Raises:
+            ValueError: If batch evaluation is not supported
+        """
+        if not self.supports_batch_evaluation():
+            raise ValueError(
+                f"Metric '{self.name}' does not support batch evaluation. "
+                "Ensure the LLM supports batch API operations."
+            )
+
+        if batch_size is None:
+            batch_size = 1000
+
+        # Split samples into batches if needed
+        if len(samples) > batch_size:
+            raise ValueError(
+                f"Sample count {len(samples)} exceeds maximum batch size {batch_size}. "
+                "Consider splitting into smaller batches."
+            )
+
+        # Convert samples to prompts for batch processing
+        prompts = self._samples_to_prompts(samples)
+
+        if self.llm is None:
+            raise ValueError(f"Metric '{self.name}' has no LLM configured")
+
+        return self.llm.create_batch_job(
+            prompts=prompts,
+            metadata={
+                **(metadata or {}),
+                "metric_name": self.name,
+                "sample_count": str(len(samples)),
+            },
+        )
+
+    async def acreate_batch_evaluation_job(
+        self,
+        samples: t.List[t.Union[SingleTurnSample, MultiTurnSample]],
+        batch_size: t.Optional[int] = None,
+        metadata: t.Optional[t.Dict[str, str]] = None,
+    ) -> "BatchJob":
+        """Async version of create_batch_evaluation_job."""
+        if not self.supports_batch_evaluation():
+            raise ValueError(
+                f"Metric '{self.name}' does not support batch evaluation. "
+                "Ensure the LLM supports batch API operations."
+            )
+
+        if batch_size is None:
+            batch_size = 1000
+
+        if len(samples) > batch_size:
+            raise ValueError(
+                f"Sample count {len(samples)} exceeds maximum batch size {batch_size}. "
+                "Consider splitting into smaller batches."
+            )
+
+        prompts = self._samples_to_prompts(samples)
+
+        if self.llm is None:
+            raise ValueError(f"Metric '{self.name}' has no LLM configured")
+
+        return await self.llm.acreate_batch_job(
+            prompts=prompts,
+            metadata={
+                **(metadata or {}),
+                "metric_name": self.name,
+                "sample_count": str(len(samples)),
+            },
+        )
+
+    def _samples_to_prompts(
+        self, samples: t.List[t.Union[SingleTurnSample, MultiTurnSample]]
+    ) -> t.List["PromptValue"]:
+        """
+        Convert samples to PromptValue objects for batch processing.
+
+        This method should be overridden by specific metrics to customize
+        how samples are converted to prompts.
+        """
+        raise NotImplementedError(
+            f"Metric '{self.name}' must implement _samples_to_prompts method "
+            "to support batch evaluation."
+        )
 
     def _optimize_instruction(
         self,

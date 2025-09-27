@@ -8,6 +8,15 @@ from ragas.llms.base import (
     instructor_llm_factory,
     llm_factory,
 )
+from ragas.llms.batch_api import (
+    BatchEndpoint,
+    BatchJob,
+    BatchRequest,
+    BatchResponse,
+    BatchStatus,
+    OpenAIBatchAPI,
+    create_batch_api,
+)
 from ragas.llms.haystack_wrapper import HaystackLLMWrapper
 from ragas.utils import DeprecationHelper
 
@@ -38,4 +47,12 @@ __all__ = [
     "InstructorTypeVar",
     "instructor_llm_factory",
     "llm_factory",
+    # Batch API
+    "BatchEndpoint",
+    "BatchJob",
+    "BatchRequest",
+    "BatchResponse",
+    "BatchStatus",
+    "OpenAIBatchAPI",
+    "create_batch_api",
 ]
