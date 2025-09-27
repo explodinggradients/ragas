@@ -199,3 +199,7 @@ examples/ragas_examples/text2sql/experiments/*
 examples/ragas_examples/benchmark_llm/experiments/*
 BookSQL-files
 text2sql_logs
+
+# MLflow artifacts
+mlartifacts
+mlflow.db
