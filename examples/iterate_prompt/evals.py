@@ -69,7 +69,7 @@ def priority_accuracy(prediction: str, expected_priority: str):
 async def support_triage_experiment(row, prompt_file: str, experiment_name: str):
     """Experiment function for support triage evaluation."""
     # Get model response
-    response = await asyncio.to_thread(run_prompt, row["text"], prompt_file=prompt_file)
+    response = await run_prompt(row["text"], prompt_file=prompt_file)
 
     # Parse response to extract predicted values
     try:

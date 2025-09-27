@@ -8,29 +8,48 @@ text-to-SQL evaluation workflows.
 
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
+
+# Load environment variables from ragas root
+try:
+    from dotenv import load_dotenv
+    # Load .env from ragas root directory (3 levels up from this file)
+    ragas_root = Path(__file__).parent.parent.parent.parent
+    env_path = ragas_root / ".env"
+    load_dotenv(env_path)
+except ImportError:
+    # dotenv is optional, continue without it
+    pass
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(levelname)s: %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 try:
     from huggingface_hub import snapshot_download
     from huggingface_hub.errors import GatedRepoError, RepositoryNotFoundError
 except ImportError:
-    print("Error: huggingface_hub is required. Install with: pip install huggingface_hub")
+    logger.error("huggingface_hub is required. Install with: pip install huggingface_hub")
     sys.exit(1)
 
 try:
     import pandas as pd
     from pandas import DataFrame
 except ImportError:
-    print("Error: pandas is required. Install with: pip install pandas")
+    logger.error("pandas is required. Install with: pip install pandas")
     sys.exit(1)
 
 # Import validation functions from validate_sql_dataset.py
 try:
     from .validate_sql_dataset import execute_and_validate_query
 except ImportError:
-    print("Error: validate_sql_dataset.py not found in the same directory")
+    logger.error("validate_sql_dataset.py not found in the same directory")
     sys.exit(1)
 
 
@@ -54,8 +73,8 @@ def download_booksql_dataset() -> bool:
     # Create local directory if it doesn't exist
     Path(local_dir).mkdir(parents=True, exist_ok=True)
     
-    print(f"📥 Downloading BookSQL dataset to {local_dir}...")
-    print(f"📂 Repository: {repo_id}")
+    logger.info(f"Downloading BookSQL dataset to {local_dir}")
+    logger.info(f"Repository: {repo_id}")
     
     try:
         # Download the entire repository
@@ -66,35 +85,35 @@ def download_booksql_dataset() -> bool:
             local_dir_use_symlinks=False  # Create actual files, not symlinks
         )
         
-        print(f"✅ Successfully downloaded dataset to: {downloaded_path}")
+        logger.info(f"Successfully downloaded dataset to: {downloaded_path}")
         
         # List downloaded files
         dataset_path = Path(local_dir)
         files = list(dataset_path.rglob("*"))
-        print(f"📁 Downloaded {len(files)} files:")
-        for file in sorted(files)[:10]:  # Show first 10 files
+        logger.info(f"Downloaded {len(files)} files")
+        for file in sorted(files)[:5]:  # Show first 5 files
             if file.is_file():
-                print(f"   • {file.relative_to(dataset_path)}")
-        if len(files) > 10:
-            print(f"   ... and {len(files) - 10} more files")
+                logger.info(f"  {file.relative_to(dataset_path)}")
+        if len(files) > 5:
+            logger.info(f"  ... and {len(files) - 5} more files")
             
         return True
         
     except GatedRepoError:
-        print("❌ Error: This dataset is gated and requires authentication.")
-        print("Please follow these steps:")
-        print("1. Visit: https://huggingface.co/datasets/Exploration-Lab/BookSQL")
-        print("2. Accept the terms and conditions")
-        print("3. Run: huggingface-cli login")
-        print("4. Try downloading again")
+        logger.error("This dataset is gated and requires authentication")
+        logger.error("Please follow these steps:")
+        logger.error("1. Visit: https://huggingface.co/datasets/Exploration-Lab/BookSQL")
+        logger.error("2. Accept the terms and conditions")
+        logger.error("3. Run: huggingface-cli login")
+        logger.error("4. Try downloading again")
         return False
         
     except RepositoryNotFoundError:
-        print(f"❌ Error: Repository '{repo_id}' not found.")
+        logger.error(f"Repository '{repo_id}' not found")
         return False
         
     except Exception as e:
-        print(f"❌ Error downloading dataset: {e}")
+        logger.error(f"Error downloading dataset: {e}")
         return False
 
 
@@ -123,8 +142,189 @@ def validate_query_data(query_data: Dict[str, Any], require_data: bool = False) 
             return True
             
     except Exception as e:
-        print(f"   ⚠️  Error validating query: {e}")
+        logger.warning(f"Error validating query: {e}")
         return False
+
+
+def load_and_clean_data(input_file: str) -> DataFrame:
+    """
+    Load JSON data and remove duplicates.
+    
+    Args:
+        input_file: Path to the BookSQL train.json file
+        
+    Returns:
+        DataFrame: Cleaned train data with duplicates removed
+        
+    Raises:
+        FileNotFoundError: If input file doesn't exist
+        json.JSONDecodeError: If JSON is invalid
+    """
+    input_path = Path(input_file)
+    
+    if not input_path.exists():
+        raise FileNotFoundError(f"Input file '{input_file}' not found")
+    
+    logger.info(f"Loading data from {input_file}")
+    
+    # Load JSON data
+    with open(input_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    
+    logger.info(f"Loaded {len(data)} total records")
+    
+    # Convert to DataFrame and filter for train split
+    df = pd.DataFrame(data)
+    train_df = df[df['split'] == 'train'].copy()
+    logger.info(f"Found {len(train_df)} train records")
+    
+    # Remove duplicates based on Query + SQL combination
+    original_count = len(train_df)
+    train_df = train_df.drop_duplicates(subset=['Query', 'SQL'], keep='first')
+    duplicate_count = original_count - len(train_df)
+    
+    if duplicate_count > 0:
+        logger.info(f"Removed {duplicate_count} duplicate records")
+    logger.info(f"{len(train_df)} unique records remaining")
+    
+    # Show difficulty distribution
+    level_counts = train_df['Levels'].value_counts()
+    logger.info("Difficulty distribution after deduplication:")
+    for level, count in level_counts.items():
+        logger.info(f"  {level}: {count} records")
+    
+    return train_df
+
+
+def sample_by_difficulty(data: DataFrame, level: str, samples_per_level: int, random_seed: int) -> DataFrame:
+    """
+    Sample data for a specific difficulty level.
+    
+    Args:
+        data: DataFrame containing the data
+        level: Difficulty level ('easy', 'medium', 'hard')
+        samples_per_level: Number of samples to take
+        random_seed: Random seed for reproducible sampling
+        
+    Returns:
+        DataFrame: Sampled data for the specified level
+    """
+    level_data = data[data['Levels'] == level]
+    
+    if len(level_data) == 0:
+        logger.warning(f"No '{level}' records found, skipping")
+        return pd.DataFrame()
+    
+    if len(level_data) < samples_per_level:
+        logger.warning(f"Only {len(level_data)} '{level}' records available, using all")
+        return level_data
+    else:
+        sampled = level_data.sample(n=samples_per_level, random_state=random_seed)
+        logger.info(f"Sampled {len(sampled)} '{level}' records")
+        return sampled
+
+
+def validate_samples(data: DataFrame, level: str, samples_per_level: int, 
+                    random_seed: int, require_data: bool = False) -> DataFrame:
+    """
+    Sample and validate data for a specific difficulty level.
+    
+    Args:
+        data: DataFrame containing the data
+        level: Difficulty level ('easy', 'medium', 'hard')
+        samples_per_level: Number of samples to find
+        random_seed: Random seed for reproducible sampling
+        require_data: If True, only include queries that return data
+        
+    Returns:
+        DataFrame: Validated samples for the specified level
+    """
+    level_data = data[data['Levels'] == level]
+    
+    if len(level_data) == 0:
+        logger.warning(f"No '{level}' records found, skipping")
+        return pd.DataFrame()
+    
+    logger.info(f"Validating '{level}' queries to find {samples_per_level} valid samples")
+    
+    # Shuffle data for random sampling during validation
+    shuffled_data = level_data.sample(frac=1, random_state=random_seed).reset_index(drop=True)
+    
+    valid_samples = []
+    checked_count = 0
+    
+    for idx, row in shuffled_data.iterrows():
+        checked_count += 1
+        
+        # Prepare query data for validation
+        query_data = {
+            'index': idx,
+            'query': row['Query'],
+            'sql': row['SQL'],
+            'level': row['Levels'],
+            'split': row['split']
+        }
+        
+        if validate_query_data(query_data, require_data):
+            valid_samples.append(row)
+            
+            # Stop if we have enough samples
+            if len(valid_samples) >= samples_per_level:
+                break
+    
+    if len(valid_samples) == 0:
+        logger.warning(f"No valid '{level}' queries found, skipping this level")
+        return pd.DataFrame()
+    elif len(valid_samples) < samples_per_level:
+        logger.warning(f"Only found {len(valid_samples)} valid '{level}' queries out of {samples_per_level} requested")
+    else:
+        logger.info(f"Found {len(valid_samples)} valid '{level}' queries")
+    
+    return pd.DataFrame(valid_samples) if valid_samples else pd.DataFrame()
+
+
+def save_results(data: DataFrame, output_dir: str, output_filename: str, random_seed: int) -> bool:
+    """
+    Save final dataset to CSV.
+    
+    Args:
+        data: Final dataset to save
+        output_dir: Directory to save the output CSV
+        output_filename: Name of the output CSV file
+        random_seed: Random seed for final shuffle
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    if data.empty:
+        logger.error("No data to save")
+        return False
+    
+    # Create output directory
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    
+    # Final duplicate check
+    pre_final_count = len(data)
+    data = data.drop_duplicates(subset=['Query', 'SQL'], keep='first')
+    final_duplicate_count = pre_final_count - len(data)
+    
+    if final_duplicate_count > 0:
+        logger.warning(f"Removed {final_duplicate_count} duplicates from final sample")
+    
+    # Shuffle the final dataset
+    data = data.sample(frac=1, random_state=random_seed).reset_index(drop=True)
+    
+    # Save to CSV
+    output_file_path = output_path / output_filename
+    data.to_csv(output_file_path, index=False)
+    
+    logger.info(f"Saved {len(data)} records to {output_file_path}")
+    logger.info("Final distribution:")
+    for level, count in data['Levels'].value_counts().items():
+        logger.info(f"  {level}: {count} records")
+    
+    return True
 
 
 def create_sample_dataset(
@@ -139,6 +339,8 @@ def create_sample_dataset(
     """
     Create a balanced sample dataset from BookSQL train.json.
     
+    This function orchestrates the data loading, sampling, validation, and saving process.
+    
     Args:
         input_file: Path to the BookSQL train.json file
         output_dir: Directory to save the output CSV
@@ -151,160 +353,46 @@ def create_sample_dataset(
     Returns:
         bool: True if successful, False otherwise
     """
-    input_path = Path(input_file)
-    output_path = Path(output_dir)
-    
-    # Check if input file exists
-    if not input_path.exists():
-        print(f"❌ Error: Input file '{input_file}' not found.")
-        print("💡 Tip: Run with --download-data first to download the BookSQL dataset.")
-        return False
-    
-    # Create output directory if it doesn't exist
-    output_path.mkdir(parents=True, exist_ok=True)
-    
-    print(f"📖 Loading data from {input_file}...")
-    
     try:
-        # Load JSON data
-        with open(input_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        # Step 1: Load and clean data
+        train_df = load_and_clean_data(input_file)
         
-        print(f"📊 Loaded {len(data)} total records")
-        
-        # Convert to DataFrame
-        df: DataFrame = pd.DataFrame(data)
-        
-        # Filter for train split only
-        train_df = df[df['split'] == 'train'].copy()  # DataFrame with train split only
-        print(f"🚂 Found {len(train_df)} train records")
-        
-        # Remove duplicates based on Query + SQL combination
-        # Keep track of original count for reporting
-        original_count = len(train_df)
-        train_df = train_df.drop_duplicates(subset=['Query', 'SQL'], keep='first')  # type: ignore
-        duplicate_count = original_count - len(train_df)
-        
-        if duplicate_count > 0:
-            print(f"🔍 Removed {duplicate_count} duplicate records (same Query + SQL)")
-            print(f"📊 {len(train_df)} unique records remaining")
-        
-        # Check available difficulty levels
-        level_counts = train_df['Levels'].value_counts()  # type: ignore
-        print("📈 Difficulty distribution (after deduplication):")
-        for level, count in level_counts.items():
-            print(f"   • {level}: {count} records")
-        
-        # Sample data for each difficulty level
+        # Step 2: Sample data for each difficulty level
         sampled_dfs = []
         
         if validate_queries:
-            print("🔍 Validation enabled - testing SQL queries before including them in sample")
+            logger.info("Validation enabled - testing SQL queries before including them in sample")
             if require_data:
-                print("📊 Only including queries that return actual data")
+                logger.info("Only including queries that return actual data")
         
         for level in ['easy', 'medium', 'hard']:
-            level_data = train_df[train_df['Levels'] == level]
-            
-            if len(level_data) == 0:
-                print(f"⚠️  Warning: No '{level}' records found, skipping...")
-                continue
-            
-            if not validate_queries:
-                # Original sampling logic without validation
-                if len(level_data) < samples_per_level:
-                    print(f"⚠️  Warning: Only {len(level_data)} '{level}' records available, using all of them")
-                    sampled = level_data
-                else:
-                    # Random sampling with fixed seed - explicit DataFrame operation
-                    sampled = level_data.sample(  # type: ignore
-                        n=samples_per_level, 
-                        random_state=random_seed
-                    )
-                    
-                sampled_dfs.append(sampled)
-                print(f"✅ Sampled {len(sampled)} '{level}' records")
+            if validate_queries:
+                sampled = validate_samples(train_df, level, samples_per_level, random_seed, require_data)
             else:
-                # Validation-based sampling
-                print(f"🔍 Validating '{level}' queries to find {samples_per_level} valid samples...")
-                
-                # Shuffle the level data to get random samples during validation
-                shuffled_level_data = level_data.sample(frac=1, random_state=random_seed).reset_index(drop=True)
-                
-                valid_samples = []
-                checked_count = 0
-                
-                for idx, row in shuffled_level_data.iterrows():
-                    checked_count += 1
-                    print(f"   Testing {level} query {checked_count}/{len(shuffled_level_data)}...", end="")
-                    
-                    # Prepare query data for validation
-                    query_data = {
-                        'index': idx,
-                        'query': row['Query'],
-                        'sql': row['SQL'],
-                        'level': row['Levels'],
-                        'split': row['split']
-                    }
-                    
-                    if validate_query_data(query_data, require_data):
-                        valid_samples.append(row)
-                        print(" ✅")
-                        
-                        # Stop if we have enough samples
-                        if len(valid_samples) >= samples_per_level:
-                            break
-                    else:
-                        print(" ❌")
-                
-                if len(valid_samples) == 0:
-                    print(f"⚠️  Warning: No valid '{level}' queries found, skipping this level...")
-                    continue
-                elif len(valid_samples) < samples_per_level:
-                    print(f"⚠️  Warning: Only found {len(valid_samples)} valid '{level}' queries out of {samples_per_level} requested")
-                else:
-                    print(f"✅ Found {len(valid_samples)} valid '{level}' queries")
-                
-                # Convert valid samples back to DataFrame
-                if valid_samples:
-                    sampled = pd.DataFrame(valid_samples)
-                    sampled_dfs.append(sampled)
-                    print(f"✅ Added {len(sampled)} validated '{level}' records")
+                sampled = sample_by_difficulty(train_df, level, samples_per_level, random_seed)
+            
+            if not sampled.empty:
+                sampled_dfs.append(sampled)
         
         if not sampled_dfs:
-            print("❌ Error: No data could be sampled")
+            logger.error("No data could be sampled")
             return False
         
-        # Combine all sampled data
+        # Step 3: Combine all sampled data
         final_df = pd.concat(sampled_dfs, ignore_index=True)
         
-        # Final duplicate check (safety measure)
-        pre_final_count = len(final_df)
-        final_df = final_df.drop_duplicates(subset=['Query', 'SQL'], keep='first')  # type: ignore
-        final_duplicate_count = pre_final_count - len(final_df)
+        # Step 4: Save results
+        return save_results(final_df, output_dir, output_filename, random_seed)
         
-        if final_duplicate_count > 0:
-            print(f"⚠️  Warning: Removed {final_duplicate_count} duplicates from final sample")
-        
-        # Shuffle the final dataset to mix difficulty levels
-        final_df = final_df.sample(frac=1, random_state=random_seed).reset_index(drop=True)
-        
-        # Save to CSV
-        output_file_path = output_path / output_filename
-        final_df.to_csv(output_file_path, index=False)
-        
-        print(f"💾 Saved {len(final_df)} records to {output_file_path}")
-        print("📋 Final distribution:")
-        for level, count in final_df['Levels'].value_counts().items():
-            print(f"   • {level}: {count} records")
-            
-        return True
-        
+    except FileNotFoundError:
+        logger.error(f"Input file '{input_file}' not found")
+        logger.error("Tip: Run with --download-data first to download the BookSQL dataset")
+        return False
     except json.JSONDecodeError as e:
-        print(f"❌ Error: Invalid JSON in {input_file}: {e}")
+        logger.error(f"Invalid JSON in {input_file}: {e}")
         return False
     except Exception as e:
-        print(f"❌ Error processing data: {e}")
+        logger.error(f"Error processing data: {e}")
         return False
 
 
@@ -315,12 +403,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s --download-data                                    # Download BookSQL dataset to ./BookSQL-files
-  %(prog)s --create-sample                                    # Create sample CSV with 15 easy/medium/hard cases
-  %(prog)s --create-sample --samples 5                       # Create sample CSV with 5 easy/medium/hard cases
-  %(prog)s --create-sample --validate                        # Create sample with SQL validation (any executable query)
-  %(prog)s --create-sample --validate --require-data         # Create sample with only queries that return data
-  %(prog)s --create-sample --samples 10 --validate --require-data  # 10 validated queries per level that return data
+  %(prog)s --download-data                          # Download BookSQL dataset
+  %(prog)s --create-sample                          # Create sample CSV (15 per level)
+  %(prog)s --create-sample --samples 5              # Create sample with 5 per level
+  %(prog)s --create-sample --validate               # Create sample with SQL validation
+  %(prog)s --create-sample --validate --require-data # Only queries that return data
         """
     )
     
@@ -333,7 +420,7 @@ Examples:
     parser.add_argument(
         "--create-sample",
         action="store_true",
-        help="Create a balanced sample CSV from BookSQL train.json (15 each: easy, medium, hard)"
+        help="Create a balanced sample CSV from BookSQL train.json"
     )
     
     parser.add_argument(
@@ -346,13 +433,13 @@ Examples:
     parser.add_argument(
         "--validate",
         action="store_true",
-        help="Validate SQL queries before including them in the sample (requires database connection)"
+        help="Validate SQL queries before including them in the sample"
     )
     
     parser.add_argument(
         "--require-data",
         action="store_true",
-        help="Only include queries that return actual data (requires --validate). Excludes empty results and null values."
+        help="Only include queries that return actual data (requires --validate)"
     )
     
     args = parser.parse_args()
@@ -363,7 +450,7 @@ Examples:
     elif args.create_sample:
         # Validate argument combinations
         if args.require_data and not args.validate:
-            print("❌ Error: --require-data requires --validate to be enabled")
+            logger.error("--require-data requires --validate to be enabled")
             sys.exit(1)
             
         success = create_sample_dataset(

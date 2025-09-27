@@ -7,16 +7,15 @@ for rows where execution_accuracy is incorrect using OpenAI's GPT model.
 """
 
 import argparse
-import asyncio
 import json
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import dotenv
 import pandas as pd
-from openai import AsyncOpenAI
+from openai import OpenAI
 
 dotenv.load_dotenv("../../../.env")
 
@@ -32,7 +31,7 @@ ERROR_TAXONOMY = [
 ]
 
 
-async def get_error_analysis(client: AsyncOpenAI, row: Dict[str, Any]) -> Dict[str, Any]:
+def get_error_analysis(client: OpenAI, row: Dict[str, Any]) -> Dict[str, Any]:
     """Get error analysis from OpenAI for a single row."""
     
     prompt = f"""You are analyzing why a Text2SQL prediction failed. Given the following information, identify the error codes and provide a brief analysis.
@@ -59,7 +58,7 @@ Respond with JSON containing:
 - error_codes: array of applicable error codes (1 or more)
 - error_analysis: brief 1-3 sentence explanation of what went wrong"""
 
-    response = await client.chat.completions.create(
+    response = client.chat.completions.create(
         model="gpt-5",
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
@@ -72,40 +71,9 @@ Respond with JSON containing:
     return json.loads(content)
 
 
-async def process_batch(client: AsyncOpenAI, batch_data: List[tuple]) -> List[tuple]:
-    """Process a batch of rows concurrently."""
-    # Create tasks for true concurrent execution
-    tasks = []
-    for idx, row_dict in batch_data:
-        print(f"  Starting analysis for row {idx} (ID: {row_dict.get('id', 'unknown')})")
-        task = asyncio.create_task(get_error_analysis(client, row_dict))
-        tasks.append((idx, task))
-    
-    print(f"  Waiting for {len(tasks)} API calls to complete concurrently...")
-    results = []
-    
-    # Use asyncio.gather for true concurrent execution
-    task_results = await asyncio.gather(
-        *[task for _, task in tasks], 
-        return_exceptions=True
-    )
-    
-    for (idx, _), result in zip(tasks, task_results):
-        if isinstance(result, Exception):
-            print(f"  ✗ Error processing row {idx}: {result}")
-            results.append((idx, {
-                "error_codes": ["OTHER"], 
-                "error_analysis": f"Error during analysis: {str(result)}"
-            }))
-        else:
-            error_codes = result.get('error_codes', ['OTHER']) if isinstance(result, dict) else ['OTHER']
-            print(f"  ✓ Completed row {idx}: {error_codes}")
-            results.append((idx, result))
-    
-    return results
 
 
-async def analyze_errors(input_file: str, output_file: str) -> None:
+def analyze_errors(input_file: str, output_file: str) -> None:
     """Analyze errors in the CSV file and add error analysis columns."""
     
     # Check for OpenAI API key
@@ -113,7 +81,7 @@ async def analyze_errors(input_file: str, output_file: str) -> None:
         print("Error: OPENAI_API_KEY environment variable not set")
         sys.exit(1)
     
-    client = AsyncOpenAI()
+    client = OpenAI()
     
     # Read the CSV file
     df = pd.read_csv(input_file)
@@ -128,23 +96,20 @@ async def analyze_errors(input_file: str, output_file: str) -> None:
     
     print(f"Found {len(incorrect_rows)} rows with incorrect execution accuracy")
     
-    # Prepare batch data
-    batch_data = [(idx, row.to_dict()) for idx, row in incorrect_rows.iterrows()]
-    
-    # Process in batches of 10
-    batch_size = 10
-    for i in range(0, len(batch_data), batch_size):
-        batch = batch_data[i:i + batch_size]
-        print(f"Processing batch {i//batch_size + 1}/{(len(batch_data) + batch_size - 1)//batch_size} ({len(batch)} rows)")
+    # Process rows sequentially
+    total_rows = len(incorrect_rows)
+    for i, (idx, row) in enumerate(incorrect_rows.iterrows(), 1):
+        print(f"Processing row {i}/{total_rows} (ID: {row.get('id', 'unknown')})")
         
-        results = await process_batch(client, batch)
-        
-        # Update DataFrame with results
-        for idx, result in results:
+        try:
+            result = get_error_analysis(client, row.to_dict())
             df.at[idx, 'error_analysis'] = result.get('error_analysis', 'Analysis not available')
             df.at[idx, 'error_codes'] = json.dumps(result.get('error_codes', ['OTHER']))
-        
-        print(f"Batch {i//batch_size + 1} completed successfully!")
+            print(f"  ✓ Completed: {result.get('error_codes', ['OTHER'])}")
+        except Exception as e:
+            print(f"  ✗ Error processing row {idx}: {e}")
+            df.at[idx, 'error_analysis'] = f"Error during analysis: {str(e)}"
+            df.at[idx, 'error_codes'] = json.dumps(["OTHER"])
     
     # Write the output CSV
     df.to_csv(output_file, index=False)
@@ -191,7 +156,7 @@ def main():
     else:
         output_path = input_path.parent / f"{input_path.stem}_annotated.csv"
     
-    asyncio.run(analyze_errors(args.input, str(output_path)))
+    analyze_errors(args.input, str(output_path))
 
 
 if __name__ == "__main__":

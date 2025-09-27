@@ -165,8 +165,8 @@ Each model evaluation follows this experiment pattern:
 ```python
 @experiment()
 async def benchmark_experiment(row):
-    # Get model response (run in thread to keep async runner responsive)
-    response = await asyncio.to_thread(run_prompt, row["customer_profile"], model=model_name)
+    # Get model response
+    response = await run_prompt(row["customer_profile"], model=model_name)
     
     # Parse response (strict JSON mode expected)
     try:
