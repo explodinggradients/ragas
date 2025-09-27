@@ -6,8 +6,7 @@ from pydantic import BaseModel
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics import AspectCritic, MetricResult, SimpleCriteriaScore
-from ragas.metrics.base import MetricType
-from ragas.metrics.llm_based import LLMMetric
+from ragas.metrics.base import MetricType, SimpleLLMMetric as LLMMetric
 
 
 def test_single_turn_metric():
