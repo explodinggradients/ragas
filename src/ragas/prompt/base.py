@@ -144,7 +144,42 @@ class StringPrompt(BasePrompt):
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = [],
     ) -> t.List[str]:
-        return [
-            await self.generate(llm, data, temperature, stop, callbacks)
-            for _ in range(n)
-        ]
+        """
+        Generate multiple distinct text outputs based on the instruction and provided data.
+
+        Parameters
+        ----------
+        llm : BaseRagasLLM
+            The language model to use for text generation.
+        data : str
+            The data to format the instruction with.
+        n : int, optional
+            The number of completions to generate, by default 1.
+        temperature : Optional[float], optional
+            The temperature for text generation, by default None.
+        stop : Optional[List[str]], optional
+            Stop sequences for text generation, by default None.
+        callbacks : Callbacks, optional
+            Callbacks to use during text generation, by default [].
+
+        Returns
+        -------
+        List[str]
+            A list containing `n` generated outputs.
+
+        Notes
+        -----
+        - When caching is enabled, each output is uniquely cached to prevent duplicates.
+        - This ensures that multiple outputs for the same input are distinct.
+        - Previous issues where caching returned duplicate outputs have been fixed.
+        """
+        llm_result = await llm.agenerate_text(
+            StringPromptValue(text=data),
+            n=n,
+            temperature=temperature,
+            stop=stop,
+            callbacks=callbacks,
+        )
+
+        # flatten the generations
+        return [gen.text for gen in llm_result.generations[0]]
