@@ -115,7 +115,7 @@ def create_metric_decorator():
             validator_class = get_validator_for_allowed_values(allowed_values)
 
             # TODO: Move to dataclass type implementation
-            @dataclass
+            @dataclass(repr=False)
             class CustomMetric(SimpleBaseMetric, validator_class):
                 _func: t.Any = field(default=None, init=False)
                 _metric_params: t.Any = field(default=None, init=False)
@@ -307,6 +307,31 @@ def create_metric_decorator():
                     else:
                         # For sync functions, just call directly
                         return self._func(*args, **kwargs)
+
+                def __repr__(self) -> str:
+                    """Return a clean string representation of the decorator-based metric."""
+                    # Get function signature parameters
+                    param_names = list(sig.parameters.keys())
+                    param_str = ", ".join(param_names)
+
+                    # Get metric type based on allowed_values
+                    metric_type = "CustomMetric"
+                    if hasattr(self, "allowed_values"):
+                        if isinstance(self.allowed_values, list):
+                            metric_type = "DiscreteMetric"
+                        elif isinstance(self.allowed_values, tuple):
+                            metric_type = "NumericMetric"
+                        elif isinstance(self.allowed_values, int):
+                            metric_type = "RankingMetric"
+
+                    # Get allowed values string
+                    allowed_values_str = ""
+                    if hasattr(self, "allowed_values"):
+                        allowed_values_str = f"[{self.allowed_values!r}]"
+
+                    return (
+                        f"{self.name}({param_str}) -> {metric_type}{allowed_values_str}"
+                    )
 
             # Create the metric instance with all parameters
             metric_instance = CustomMetric(name=metric_name)

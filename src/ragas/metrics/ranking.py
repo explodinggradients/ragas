@@ -5,20 +5,23 @@ __all__ = ["ranking_metric", "RankingMetric"]
 import typing as t
 from dataclasses import dataclass
 
-from pydantic import Field, create_model
+from pydantic import Field
 
 from .base import SimpleLLMMetric
 from .decorator import RankingMetricProtocol, create_metric_decorator
 from .validators import RankingValidator
 
 
-@dataclass
+@dataclass(repr=False)
 class RankingMetric(SimpleLLMMetric, RankingValidator):
     allowed_values: int = 2
 
     def __post_init__(self):
         super().__post_init__()
-        self._response_model = create_model(
+        # Use the factory to create and mark the model as auto-generated
+        from ragas.metrics.base import create_auto_response_model
+
+        self._response_model = create_auto_response_model(
             "RankingResponseModel",
             reason=(str, Field(..., description="Reasoning for the ranking")),
             value=(t.List[str], Field(..., description="List of ranked items")),

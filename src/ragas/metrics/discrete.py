@@ -5,22 +5,27 @@ __all__ = ["discrete_metric", "DiscreteMetric"]
 import typing as t
 from dataclasses import dataclass, field
 
-from pydantic import create_model
+from pydantic import Field
 
 from .base import SimpleLLMMetric
 from .decorator import DiscreteMetricProtocol, create_metric_decorator
 from .validators import DiscreteValidator
 
 
-@dataclass
+@dataclass(repr=False)
 class DiscreteMetric(SimpleLLMMetric, DiscreteValidator):
     allowed_values: t.List[str] = field(default_factory=lambda: ["pass", "fail"])
 
     def __post_init__(self):
         super().__post_init__()
         values = tuple(self.allowed_values)
-        self._response_model = create_model(
-            "response_model", value=(t.Literal[values], ...), reason=(str, ...)
+        # Use the factory to create and mark the model as auto-generated
+        from ragas.metrics.base import create_auto_response_model
+
+        self._response_model = create_auto_response_model(
+            "DiscreteResponseModel",
+            reason=(str, Field(..., description="Reaoning for the value")),
+            value=(t.Literal[values], Field(..., description="the value predicted")),
         )
 
     def get_correlation(

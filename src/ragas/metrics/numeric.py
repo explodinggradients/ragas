@@ -5,20 +5,23 @@ __all__ = ["numeric_metric", "NumericMetric"]
 import typing as t
 from dataclasses import dataclass
 
-from pydantic import create_model
-
 from .base import SimpleLLMMetric
 from .decorator import NumericMetricProtocol, create_metric_decorator
 from .validators import NumericValidator
 
 
-@dataclass
+@dataclass(repr=False)
 class NumericMetric(SimpleLLMMetric, NumericValidator):
     allowed_values: t.Union[t.Tuple[float, float], range] = (0.0, 1.0)
 
     def __post_init__(self):
         super().__post_init__()
-        self._response_model = create_model("response_model", value=(float, ...))
+        # Use the factory to create and mark the model as auto-generated
+        from ragas.metrics.base import create_auto_response_model
+
+        self._response_model = create_auto_response_model(
+            "NumericResponseModel", reason=(str, ...), value=(float, ...)
+        )
 
     def get_correlation(
         self, gold_labels: t.List[str], predictions: t.List[str]
