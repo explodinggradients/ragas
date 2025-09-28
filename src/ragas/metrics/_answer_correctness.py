@@ -160,34 +160,13 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
 
         prompt = STATEMENT_GENERATOR_PROMPT.format(question=question, answer=text)
 
-        # Use the existing LLM interface but without callbacks
-        from langchain_core.prompt_values import StringPromptValue
+        # Use Instructor LLM interface for direct API calls without LangChain
+        result = await self.llm.agenerate(
+            prompt, response_model=StatementGeneratorOutput
+        )
 
-        prompt_value = StringPromptValue(text=prompt)
-
-        # Generate response using existing LLM interface
-        result = await self.llm.generate(prompt_value, n=1, temperature=0.01)
-
-        # Parse JSON response
-        response_text = result.generations[0][0].text.strip()
-        try:
-            # Extract JSON from response
-            if "```json" in response_text:
-                json_start = response_text.find("```json") + 7
-                json_end = response_text.find("```", json_start)
-                json_text = response_text[json_start:json_end].strip()
-            elif "{" in response_text:
-                json_start = response_text.find("{")
-                json_end = response_text.rfind("}") + 1
-                json_text = response_text[json_start:json_end]
-            else:
-                json_text = response_text
-
-            parsed = json.loads(json_text)
-            return StatementGeneratorOutput(statements=parsed.get("statements", []))
-        except (json.JSONDecodeError, KeyError) as e:
-            logger.warning(f"Failed to parse statement generation response: {e}")
-            return StatementGeneratorOutput(statements=[])
+        # Instructor returns structured objects directly - no JSON parsing needed!
+        return result
 
     async def _classify_statements(
         self, question: str, answer: list[str], ground_truth: list[str]
@@ -204,63 +183,13 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
             ground_truth_json=ground_truth_json,
         )
 
-        # Use the existing LLM interface but without callbacks
-        from langchain_core.prompt_values import StringPromptValue
+        # Use Instructor LLM interface for direct API calls without LangChain
+        result = await self.llm.agenerate(
+            prompt, response_model=ClassificationWithReason
+        )
 
-        prompt_value = StringPromptValue(text=prompt)
-
-        # Generate response using existing LLM interface
-        result = await self.llm.generate(prompt_value, n=1, temperature=0.01)
-
-        # Parse JSON response
-        response_text = result.generations[0][0].text.strip()
-        try:
-            # Extract JSON from response
-            if "```json" in response_text:
-                json_start = response_text.find("```json") + 7
-                json_end = response_text.find("```", json_start)
-                json_text = response_text[json_start:json_end].strip()
-            elif "{" in response_text:
-                json_start = response_text.find("{")
-                json_end = response_text.rfind("}") + 1
-                json_text = response_text[json_start:json_end]
-            else:
-                json_text = response_text
-
-            parsed = json.loads(json_text)
-
-            # Convert to ClassificationWithReason object
-            tp_objects = []
-            for stmt_data in parsed.get("TP", []):
-                tp_objects.append(
-                    StatementsWithReason(
-                        statement=stmt_data.get("statement", ""),
-                        reason=stmt_data.get("reason", ""),
-                    )
-                )
-
-            fp_objects = []
-            for stmt_data in parsed.get("FP", []):
-                fp_objects.append(
-                    StatementsWithReason(
-                        statement=stmt_data.get("statement", ""),
-                        reason=stmt_data.get("reason", ""),
-                    )
-                )
-
-            fn_objects = []
-            for stmt_data in parsed.get("FN", []):
-                fn_objects.append(
-                    StatementsWithReason(
-                        statement=stmt_data.get("statement", ""),
-                        reason=stmt_data.get("reason", ""),
-                    )
-                )
-
-            return ClassificationWithReason(TP=tp_objects, FP=fp_objects, FN=fn_objects)
-        except (json.JSONDecodeError, KeyError) as e:
-            logger.warning(f"Failed to parse classification response: {e}")
-            return ClassificationWithReason(TP=[], FP=[], FN=[])
+        # Instructor returns structured objects directly - no JSON parsing needed!
+        return result
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks=None

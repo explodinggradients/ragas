@@ -147,34 +147,13 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
 
         prompt = STATEMENT_GENERATOR_PROMPT.format(question=question, answer=answer)
 
-        # Use the existing LLM interface but without callbacks
-        from langchain_core.prompt_values import StringPromptValue
+        # Use Instructor LLM interface for direct API calls without LangChain
+        result = await self.llm.agenerate(
+            prompt, response_model=StatementGeneratorOutput
+        )
 
-        prompt_value = StringPromptValue(text=prompt)
-
-        # Generate response using existing LLM interface
-        result = await self.llm.generate(prompt_value, n=1, temperature=0.01)
-
-        # Parse JSON response
-        response_text = result.generations[0][0].text.strip()
-        try:
-            # Extract JSON from response
-            if "```json" in response_text:
-                json_start = response_text.find("```json") + 7
-                json_end = response_text.find("```", json_start)
-                json_text = response_text[json_start:json_end].strip()
-            elif "{" in response_text:
-                json_start = response_text.find("{")
-                json_end = response_text.rfind("}") + 1
-                json_text = response_text[json_start:json_end]
-            else:
-                json_text = response_text
-
-            parsed = json.loads(json_text)
-            return StatementGeneratorOutput(statements=parsed.get("statements", []))
-        except (json.JSONDecodeError, KeyError) as e:
-            logger.warning(f"Failed to parse statement generation response: {e}")
-            return StatementGeneratorOutput(statements=[])
+        # Instructor returns structured objects directly - no JSON parsing needed!
+        return result
 
     async def _create_verdicts(
         self, row: t.Dict, statements: t.List[str]
@@ -189,46 +168,11 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
             context=contexts_str, statements_json=statements_json
         )
 
-        # Use the existing LLM interface but without callbacks
-        from langchain_core.prompt_values import StringPromptValue
+        # Use Instructor LLM interface for direct API calls without LangChain
+        result = await self.llm.agenerate(prompt, response_model=NLIStatementOutput)
 
-        prompt_value = StringPromptValue(text=prompt)
-
-        # Generate response using existing LLM interface
-        result = await self.llm.generate(prompt_value, n=1, temperature=0.01)
-
-        # Parse JSON response
-        response_text = result.generations[0][0].text.strip()
-        try:
-            # Extract JSON from response
-            if "```json" in response_text:
-                json_start = response_text.find("```json") + 7
-                json_end = response_text.find("```", json_start)
-                json_text = response_text[json_start:json_end].strip()
-            elif "{" in response_text:
-                json_start = response_text.find("{")
-                json_end = response_text.rfind("}") + 1
-                json_text = response_text[json_start:json_end]
-            else:
-                json_text = response_text
-
-            parsed = json.loads(json_text)
-
-            # Convert to StatementFaithfulnessAnswer objects
-            verdict_objects = []
-            for stmt_data in parsed.get("statements", []):
-                verdict_objects.append(
-                    StatementFaithfulnessAnswer(
-                        statement=stmt_data.get("statement", ""),
-                        reason=stmt_data.get("reason", ""),
-                        verdict=stmt_data.get("verdict", 0),
-                    )
-                )
-
-            return NLIStatementOutput(statements=verdict_objects)
-        except (json.JSONDecodeError, KeyError) as e:
-            logger.warning(f"Failed to parse NLI response: {e}")
-            return NLIStatementOutput(statements=[])
+        # Instructor returns structured objects directly - no JSON parsing needed!
+        return result
 
     def _compute_score(self, answers: NLIStatementOutput) -> float:
         """Compute faithfulness score from verdicts."""

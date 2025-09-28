@@ -266,34 +266,13 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
             self.atomicity, self.coverage, response
         )
 
-        # Use the existing LLM interface but without callbacks
-        from langchain_core.prompt_values import StringPromptValue
+        # Use Instructor LLM interface for direct API calls without LangChain
+        result = await self.llm.agenerate(
+            prompt, response_model=ClaimDecompositionOutput
+        )
 
-        prompt_value = StringPromptValue(text=prompt)
-
-        # Generate response using existing LLM interface
-        result = await self.llm.generate(prompt_value, n=1, temperature=0.01)
-
-        # Parse JSON response
-        response_text = result.generations[0][0].text.strip()
-        try:
-            # Extract JSON from response
-            if "```json" in response_text:
-                json_start = response_text.find("```json") + 7
-                json_end = response_text.find("```", json_start)
-                json_text = response_text[json_start:json_end].strip()
-            elif "{" in response_text:
-                json_start = response_text.find("{")
-                json_end = response_text.rfind("}") + 1
-                json_text = response_text[json_start:json_end]
-            else:
-                json_text = response_text
-
-            parsed = json.loads(json_text)
-            return parsed.get("claims", [])
-        except (json.JSONDecodeError, KeyError) as e:
-            logger.warning(f"Failed to parse claim decomposition response: {e}")
-            return []
+        # Instructor returns structured objects directly - no JSON parsing needed!
+        return result.claims
 
     async def verify_claims(
         self, premise: str, hypothesis_list: t.List[str]
@@ -309,40 +288,14 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
             context=premise, statements_json=statements_json
         )
 
-        # Use the existing LLM interface but without callbacks
-        from langchain_core.prompt_values import StringPromptValue
+        # Use Instructor LLM interface for direct API calls without LangChain
+        from ragas.metrics._faithfulness import NLIStatementOutput
 
-        prompt_value = StringPromptValue(text=prompt)
+        result = await self.llm.agenerate(prompt, response_model=NLIStatementOutput)
 
-        # Generate response using existing LLM interface
-        result = await self.llm.generate(prompt_value, n=1, temperature=0.01)
-
-        # Parse JSON response
-        response_text = result.generations[0][0].text.strip()
-        try:
-            # Extract JSON from response
-            if "```json" in response_text:
-                json_start = response_text.find("```json") + 7
-                json_end = response_text.find("```", json_start)
-                json_text = response_text[json_start:json_end].strip()
-            elif "{" in response_text:
-                json_start = response_text.find("{")
-                json_end = response_text.rfind("}") + 1
-                json_text = response_text[json_start:json_end]
-            else:
-                json_text = response_text
-
-            parsed = json.loads(json_text)
-
-            # Extract verdicts from the statements
-            verdicts = []
-            for stmt_data in parsed.get("statements", []):
-                verdicts.append(bool(stmt_data.get("verdict", 0)))
-
-            return np.array(verdicts, dtype=bool)
-        except (json.JSONDecodeError, KeyError) as e:
-            logger.warning(f"Failed to parse NLI response: {e}")
-            return np.array([False] * len(hypothesis_list), dtype=bool)
+        # Instructor returns structured objects directly - no JSON parsing needed!
+        verdicts = [bool(stmt.verdict) for stmt in result.statements]
+        return np.array(verdicts, dtype=bool)
 
     @staticmethod
     async def _get_passthrough_value(value: T) -> T:
