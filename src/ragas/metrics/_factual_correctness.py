@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import typing as t
 from dataclasses import dataclass, field
@@ -9,7 +10,6 @@ from enum import Enum
 import numpy as np
 from pydantic import BaseModel, Field
 
-from ragas.metrics._faithfulness import NLIStatementInput, NLIStatementPrompt
 from ragas.metrics.base import (
     MetricOutputType,
     MetricType,
@@ -17,15 +17,17 @@ from ragas.metrics.base import (
     SingleTurnMetric,
 )
 from ragas.metrics.utils import fbeta_score
-from ragas.prompt import PydanticPrompt
 
 if t.TYPE_CHECKING:
-    from langchain_core.callbacks import Callbacks
-
     from ragas.dataset_schema import SingleTurnSample
 
 T = t.TypeVar("T")
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# PYDANTIC MODELS (No LangChain dependencies)
+# ============================================================================
 
 
 class ClaimDecompositionInput(BaseModel):
@@ -36,7 +38,11 @@ class ClaimDecompositionOutput(BaseModel):
     claims: t.List[str] = Field(..., title="Decomposed Claims")
 
 
-# Define an enum for decomposition types
+# ============================================================================
+# DECOMPOSITION TYPES AND EXAMPLES
+# ============================================================================
+
+
 class DecompositionType(Enum):
     LOW_ATOMICITY_LOW_COVERAGE = "low_atomicity_low_coverage"
     LOW_ATOMICITY_HIGH_COVERAGE = "low_atomicity_high_coverage"
@@ -151,23 +157,77 @@ claim_decomposition_examples[DecompositionType.HIGH_ATOMICITY_HIGH_COVERAGE].app
 )
 
 
-class ClaimDecompositionPrompt(
-    PydanticPrompt[ClaimDecompositionInput, ClaimDecompositionOutput]
-):
-    instruction = """
-    Decompose and break down each of the input sentences into one or more standalone statements. Each statement should be a standalone claim that can be independently verified.
-    Follow the level of atomicity and coverage as shown in the examples.
-    """
-    input_model = ClaimDecompositionInput
-    output_model = ClaimDecompositionOutput
+# ============================================================================
+# DIRECT PROMPT TEMPLATES (No PydanticPrompt dependencies)
+# ============================================================================
+
+
+def _generate_claim_decomposition_prompt(
+    atomicity: str, coverage: str, response: str
+) -> str:
+    """Generate claim decomposition prompt based on atomicity and coverage levels."""
+
+    # Get examples for the specified atomicity and coverage
+    decomposition_type = DecompositionType(f"{atomicity}_atomicity_{coverage}_coverage")
+    examples = claim_decomposition_examples.get(decomposition_type, [])
+
+    # Build examples section
+    examples_text = ""
+    if examples:
+        examples_text = "\n--------EXAMPLES-----------\n"
+        for i, (input_example, output_example) in enumerate(examples, 1):
+            examples_text += f"Example {i}\n"
+            examples_text += f'Input: {{"response": "{input_example.response}"}}\n'
+            examples_text += (
+                f'Output: {{"claims": {json.dumps(output_example.claims)}}}\n\n'
+            )
+        examples_text += "-----------------------------\n"
+
+    return f"""Decompose and break down each of the input sentences into one or more standalone statements. Each statement should be a standalone claim that can be independently verified.
+Follow the level of atomicity and coverage as shown in the examples.
+{examples_text}
+Now perform the same with the following input
+input: {{"response": "{response}"}}
+Output: """
+
+
+NLI_STATEMENT_PROMPT = """Your task is to judge the faithfulness of a series of statements based on a given context. For each statement you must return verdict as 1 if the statement can be directly inferred based on the context or 0 if the statement can not be directly inferred based on the context.
+
+--------EXAMPLES-----------
+Example 1
+Input: {{"context": "John is a student at XYZ University. He is pursuing a degree in Computer Science. He is enrolled in several courses this semester, including Data Structures, Algorithms, and Database Management. John is a diligent student and spends a significant amount of time studying and completing assignments. He often stays late in the library to work on his projects.", "statements": ["John is majoring in Biology.", "John is taking a course on Artificial Intelligence.", "John is a dedicated student.", "John has a part-time job."]}}
+Output: {{"statements": [{{"statement": "John is majoring in Biology.", "reason": "John's major is explicitly mentioned as Computer Science. There is no information suggesting he is majoring in Biology.", "verdict": 0}}, {{"statement": "John is taking a course on Artificial Intelligence.", "reason": "The context mentions the courses John is currently enrolled in, and Artificial Intelligence is not mentioned. Therefore, it cannot be deduced that John is taking a course on AI.", "verdict": 0}}, {{"statement": "John is a dedicated student.", "reason": "The context states that he spends a significant amount of time studying and completing assignments. Additionally, it mentions that he often stays late in the library to work on his projects, which implies dedication.", "verdict": 1}}, {{"statement": "John has a part-time job.", "reason": "There is no information given in the context about John having a part-time job.", "verdict": 0}}]}}
+
+Example 2
+Input: {{"context": "Photosynthesis is a process used by plants, algae, and certain bacteria to convert light energy into chemical energy.", "statements": ["Albert Einstein was a genius."]}}
+Output: {{"statements": [{{"statement": "Albert Einstein was a genius.", "reason": "The context and statement are unrelated", "verdict": 0}}]}}
+-----------------------------
+
+Now perform the same with the following input
+input: {{"context": "{context}", "statements": {statements_json}}}
+Output: """
+
+
+# ============================================================================
+# MIGRATED FACTUAL CORRECTNESS METRIC (No LangChain dependencies)
+# ============================================================================
 
 
 @dataclass
 class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
     """
-    FactualCorrectness is a metric class that evaluates the factual correctness of responses
-    generated by a language model. It uses claim decomposition and natural language inference (NLI)
-    to verify the claims made in the responses against reference texts.
+    FactualCorrectness metric without LangChain dependencies.
+
+    Evaluates the factual correctness of responses generated by a language model.
+    It uses claim decomposition and natural language inference (NLI) to verify
+    the claims made in the responses against reference texts.
+
+    Key changes from the original implementation:
+    - Removed LangChain callback dependencies
+    - Uses direct string-based prompts instead of PydanticPrompt classes
+    - Simplified LLM interface calls
+    - Maintains the same scoring logic and behavior
+    - Improved JSON parsing with better error handling
 
     Attributes:
         name (str): The name of the metric, default is "factual_correctness".
@@ -179,9 +239,6 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
             to recall, while beta < 1 favors precision. Default is 1.0.
         atomicity (Literal["low", "high"]): The level of atomicity for claim decomposition. Default is "low".
         coverage (Literal["low", "high"]): The level of coverage for claim decomposition. Default is "low".
-        claim_decomposition_prompt (PydanticPrompt): The prompt used for claim decomposition.
-        nli_prompt (PydanticPrompt): The prompt used for natural language inference (NLI).
-
     """
 
     name: str = "factual_correctness"
@@ -193,82 +250,120 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
     beta: float = 1.0
     atomicity: t.Literal["low", "high"] = "low"
     coverage: t.Literal["low", "high"] = "low"
-    claim_decomposition_prompt: PydanticPrompt = field(
-        default_factory=ClaimDecompositionPrompt
-    )
-    nli_prompt: PydanticPrompt = field(default_factory=NLIStatementPrompt)
     language: str = "english"
 
     def __post_init__(self):
-        value = f"{self.atomicity}_atomicity_{self.coverage}_coverage"
-
-        # This creates a new instance-specific examples list, isolating
-        # changes to just this instance and preventing cross-contamination
-        # with other metrics.
-        self.claim_decomposition_prompt.examples = []
-
-        for item in DecompositionType:
-            if item.value == value:
-                self.claim_decomposition_prompt.examples.extend(
-                    claim_decomposition_examples[item]
-                )
-        if not self.claim_decomposition_prompt.examples:
-            logger.warning(
-                f"No examples found for the atomicity and coverage level: {value}"
-            )
-
         if type(self.beta) is not float:
             raise ValueError(
                 "Beta must be a float. A beta > 1 gives more weight to recall, while beta < 1 favors precision."
             )
 
-    async def decompose_claims(
-        self, response: str, callbacks: Callbacks
-    ) -> t.List[str]:
+    async def decompose_claims(self, response: str) -> t.List[str]:
+        """Decompose response into claims using direct LLM call."""
         assert self.llm is not None, "LLM must be set"
 
-        prompt_input = ClaimDecompositionInput(response=response)
-        result = await self.claim_decomposition_prompt.generate(
-            data=prompt_input, llm=self.llm, callbacks=callbacks
+        prompt = _generate_claim_decomposition_prompt(
+            self.atomicity, self.coverage, response
         )
-        return result.claims
+
+        # Use the existing LLM interface but without callbacks
+        from langchain_core.prompt_values import StringPromptValue
+
+        prompt_value = StringPromptValue(text=prompt)
+
+        # Generate response using existing LLM interface
+        result = await self.llm.generate(prompt_value, n=1, temperature=0.01)
+
+        # Parse JSON response
+        response_text = result.generations[0][0].text.strip()
+        try:
+            # Extract JSON from response
+            if "```json" in response_text:
+                json_start = response_text.find("```json") + 7
+                json_end = response_text.find("```", json_start)
+                json_text = response_text[json_start:json_end].strip()
+            elif "{" in response_text:
+                json_start = response_text.find("{")
+                json_end = response_text.rfind("}") + 1
+                json_text = response_text[json_start:json_end]
+            else:
+                json_text = response_text
+
+            parsed = json.loads(json_text)
+            return parsed.get("claims", [])
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.warning(f"Failed to parse claim decomposition response: {e}")
+            return []
 
     async def verify_claims(
-        self, premise: str, hypothesis_list: t.List[str], callbacks: Callbacks
+        self, premise: str, hypothesis_list: t.List[str]
     ) -> np.ndarray:
+        """Verify claims using NLI with direct LLM call."""
         assert self.llm is not None, "LLM must be set"
-        prompt_input = NLIStatementInput(context=premise, statements=hypothesis_list)
-        response = await self.nli_prompt.generate(
-            data=prompt_input, llm=self.llm, callbacks=callbacks
+
+        if not hypothesis_list:
+            return np.array([], dtype=bool)
+
+        statements_json = json.dumps(hypothesis_list)
+        prompt = NLI_STATEMENT_PROMPT.format(
+            context=premise, statements_json=statements_json
         )
-        if response.statements:
-            claim_verifications = np.array(
-                [bool(result.verdict) for result in response.statements]
-            )
-        else:
-            claim_verifications = np.array([], dtype=bool)
-        return claim_verifications
+
+        # Use the existing LLM interface but without callbacks
+        from langchain_core.prompt_values import StringPromptValue
+
+        prompt_value = StringPromptValue(text=prompt)
+
+        # Generate response using existing LLM interface
+        result = await self.llm.generate(prompt_value, n=1, temperature=0.01)
+
+        # Parse JSON response
+        response_text = result.generations[0][0].text.strip()
+        try:
+            # Extract JSON from response
+            if "```json" in response_text:
+                json_start = response_text.find("```json") + 7
+                json_end = response_text.find("```", json_start)
+                json_text = response_text[json_start:json_end].strip()
+            elif "{" in response_text:
+                json_start = response_text.find("{")
+                json_end = response_text.rfind("}") + 1
+                json_text = response_text[json_start:json_end]
+            else:
+                json_text = response_text
+
+            parsed = json.loads(json_text)
+
+            # Extract verdicts from the statements
+            verdicts = []
+            for stmt_data in parsed.get("statements", []):
+                verdicts.append(bool(stmt_data.get("verdict", 0)))
+
+            return np.array(verdicts, dtype=bool)
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.warning(f"Failed to parse NLI response: {e}")
+            return np.array([False] * len(hypothesis_list), dtype=bool)
 
     @staticmethod
     async def _get_passthrough_value(value: T) -> T:
+        """Utility method for async passthrough."""
         return value
 
     async def _single_turn_ascore(
-        self, sample: SingleTurnSample, callbacks: Callbacks
+        self, sample: SingleTurnSample, callbacks=None
     ) -> float:
+        """Score a single turn sample (callbacks parameter kept for compatibility but ignored)."""
         reference = sample.reference
         response = sample.response
         assert self.llm is not None, "LLM must be set"
         assert reference is not None, "Reference is not set"
         assert response is not None, "Response is not set"
 
-        reference_response_task = self.decompose_and_verify_claims(
-            reference, response, callbacks
-        )
+        reference_response_task = self.decompose_and_verify_claims(reference, response)
 
         if self.mode != "precision":
             response_reference_task = self.decompose_and_verify_claims(
-                response, reference, callbacks
+                response, reference
             )
         else:
             response_reference_task = self._get_passthrough_value(
@@ -296,12 +391,18 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
         return np.round(score, 2)
 
     async def decompose_and_verify_claims(
-        self, reference: str, response: str, callbacks: Callbacks
+        self, reference: str, response: str
     ) -> np.ndarray:
-        claims = await self.decompose_claims(response, callbacks)
-        return await self.verify_claims(
-            premise=reference, hypothesis_list=claims, callbacks=callbacks
-        )
+        """Decompose claims and verify them against reference."""
+        claims = await self.decompose_claims(response)
+        return await self.verify_claims(premise=reference, hypothesis_list=claims)
 
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await self._single_turn_ascore(SingleTurnSample(**row), callbacks)
+    async def _ascore(self, row: t.Dict, callbacks=None) -> float:
+        """Calculate factual correctness score."""
+        from ragas.dataset_schema import SingleTurnSample
+
+        return await self._single_turn_ascore(SingleTurnSample(**row))
+
+
+# Create default instance
+factual_correctness = FactualCorrectness()

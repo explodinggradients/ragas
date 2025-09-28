@@ -16,7 +16,7 @@ from ragas.metrics.base import (
 )
 
 if t.TYPE_CHECKING:
-    from langchain_core.callbacks.base import Callbacks
+    pass
 
 
 logger = logging.getLogger(__name__)
@@ -59,12 +59,12 @@ class SemanticSimilarity(MetricWithEmbeddings, SingleTurnMetric):
             }
 
     async def _single_turn_ascore(
-        self, sample: SingleTurnSample, callbacks: Callbacks
+        self, sample: SingleTurnSample, callbacks=None
     ) -> float:
         row = sample.to_dict()
-        return await self._ascore(row, callbacks)
+        return await self._ascore(row)
 
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
+    async def _ascore(self, row: t.Dict, callbacks=None) -> float:
         assert self.embeddings is not None, (
             f"Error: '{self.name}' requires embeddings to be set."
         )
@@ -109,8 +109,8 @@ class SemanticSimilarity(MetricWithEmbeddings, SingleTurnMetric):
 class AnswerSimilarity(SemanticSimilarity):
     name: str = "answer_similarity"
 
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        return await super()._ascore(row, callbacks)
+    async def _ascore(self, row: t.Dict, callbacks=None) -> float:
+        return await super()._ascore(row)
 
 
 answer_similarity = AnswerSimilarity()
