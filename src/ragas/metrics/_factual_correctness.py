@@ -17,6 +17,7 @@ from ragas.metrics.base import (
     SingleTurnMetric,
 )
 from ragas.metrics.utils import fbeta_score
+from ragas.prompt.metric_prompts import NLI_STATEMENT_PROMPT
 
 if t.TYPE_CHECKING:
     from ragas.dataset_schema import SingleTurnSample
@@ -183,6 +184,7 @@ def _generate_claim_decomposition_prompt(
             )
         examples_text += "-----------------------------\n"
 
+    # Use the centralized prompt template with dynamic examples
     return f"""Decompose and break down each of the input sentences into one or more standalone statements. Each statement should be a standalone claim that can be independently verified.
 Follow the level of atomicity and coverage as shown in the examples.
 {examples_text}
@@ -191,22 +193,7 @@ input: {{"response": "{response}"}}
 Output: """
 
 
-NLI_STATEMENT_PROMPT = """Your task is to judge the faithfulness of a series of statements based on a given context. For each statement you must return verdict as 1 if the statement can be directly inferred based on the context or 0 if the statement can not be directly inferred based on the context.
-
---------EXAMPLES-----------
-Example 1
-Input: {{"context": "John is a student at XYZ University. He is pursuing a degree in Computer Science. He is enrolled in several courses this semester, including Data Structures, Algorithms, and Database Management. John is a diligent student and spends a significant amount of time studying and completing assignments. He often stays late in the library to work on his projects.", "statements": ["John is majoring in Biology.", "John is taking a course on Artificial Intelligence.", "John is a dedicated student.", "John has a part-time job."]}}
-Output: {{"statements": [{{"statement": "John is majoring in Biology.", "reason": "John's major is explicitly mentioned as Computer Science. There is no information suggesting he is majoring in Biology.", "verdict": 0}}, {{"statement": "John is taking a course on Artificial Intelligence.", "reason": "The context mentions the courses John is currently enrolled in, and Artificial Intelligence is not mentioned. Therefore, it cannot be deduced that John is taking a course on AI.", "verdict": 0}}, {{"statement": "John is a dedicated student.", "reason": "The context states that he spends a significant amount of time studying and completing assignments. Additionally, it mentions that he often stays late in the library to work on his projects, which implies dedication.", "verdict": 1}}, {{"statement": "John has a part-time job.", "reason": "There is no information given in the context about John having a part-time job.", "verdict": 0}}]}}
-
-Example 2
-Input: {{"context": "Photosynthesis is a process used by plants, algae, and certain bacteria to convert light energy into chemical energy.", "statements": ["Albert Einstein was a genius."]}}
-Output: {{"statements": [{{"statement": "Albert Einstein was a genius.", "reason": "The context and statement are unrelated", "verdict": 0}}]}}
------------------------------
-
-Now perform the same with the following input
-input: {{"context": "{context}", "statements": {statements_json}}}
-Output: """
-
+# NLI prompt imported from centralized location at top of file
 
 # ============================================================================
 # MIGRATED FACTUAL CORRECTNESS METRIC (No LangChain dependencies)
@@ -267,7 +254,7 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
         )
 
         # Use Instructor LLM interface for direct API calls without LangChain
-        result = await self.llm.agenerate(
+        result = await self.llm.agenerate(  # type: ignore
             prompt, response_model=ClaimDecompositionOutput
         )
 
@@ -291,7 +278,7 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
         # Use Instructor LLM interface for direct API calls without LangChain
         from ragas.metrics._faithfulness import NLIStatementOutput
 
-        result = await self.llm.agenerate(prompt, response_model=NLIStatementOutput)
+        result = await self.llm.agenerate(prompt, response_model=NLIStatementOutput)  # type: ignore
 
         # Instructor returns structured objects directly - no JSON parsing needed!
         verdicts = [bool(stmt.verdict) for stmt in result.statements]

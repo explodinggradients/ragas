@@ -15,10 +15,6 @@ from ragas.metrics.base import (
     SingleTurnMetric,
 )
 
-if t.TYPE_CHECKING:
-    pass
-
-
 logger = logging.getLogger(__name__)
 
 
