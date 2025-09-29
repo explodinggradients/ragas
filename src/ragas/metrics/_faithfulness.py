@@ -49,52 +49,15 @@ class NLIStatementInput(BaseModel):
     statements: t.List[str] = Field(..., description="The statements to judge")
 
 
-# ============================================================================
-# MINIMAL COMPATIBILITY STUBS (No LangChain dependencies)
-# ============================================================================
-# These are minimal stub classes for backward compatibility with other metrics.
-# They don't actually work - metrics using them should be migrated to use
-# direct prompt templates or their own LangChain-free implementations.
-
-
-class _DeprecatedPromptStub:
-    """Minimal stub class for backward compatibility. Does not work - migrate to direct prompts."""
-
-    def __init__(self):
-        raise NotImplementedError(
-            "PydanticPrompt classes have been removed to eliminate LangChain dependencies. "
-            "Please migrate to use direct prompt templates or implement your own LangChain-free version."
-        )
-
-
-# Create aliases for backward compatibility
-NLIStatementPrompt = _DeprecatedPromptStub
-StatementGeneratorPrompt = _DeprecatedPromptStub
-
-
-# ============================================================================
-# CENTRALIZED PROMPTS (Imported from ragas.prompt.metric_prompts)
-# ============================================================================
-
-# ============================================================================
-# MIGRATED FAITHFULNESS METRIC (No LangChain dependencies)
-# ============================================================================
+# Prompts are imported from centralized location
+# Backward compatibility classes moved to _noise_sensitivity.py
 
 
 @dataclass
 class Faithfulness(MetricWithLLM, SingleTurnMetric):
     """
-    Faithfulness metric without LangChain dependencies.
-
-    The Faithfulness metric measures how factually consistent a response is with the
-    retrieved context. It ranges from 0 to 1, with higher scores indicating better consistency.
-
-    Key changes from the original implementation:
-    - Removed LangChain callback dependencies
-    - Uses direct string-based prompts instead of PydanticPrompt classes
-    - Simplified LLM interface calls
-    - Maintains the same scoring logic and behavior
-    - Improved JSON parsing with better error handling
+    Measures how factually consistent a response is with the retrieved context.
+    Ranges from 0 to 1, with higher scores indicating better consistency.
     """
 
     name: str = "faithfulness"
@@ -120,8 +83,9 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
         prompt = STATEMENT_GENERATOR_PROMPT.format(question=question, answer=answer)
 
         # Use Instructor LLM interface for direct API calls without LangChain
-        result = self.llm.generate(  # type: ignore
-            prompt, response_model=StatementGeneratorOutput
+        result = self.llm.generate(
+            prompt,
+            response_model=StatementGeneratorOutput,  # type: ignore
         )
 
         # Instructor returns structured objects directly - no JSON parsing needed!
@@ -186,9 +150,6 @@ class Faithfulness(MetricWithLLM, SingleTurnMetric):
 class FaithfulnesswithHHEM(Faithfulness):
     """
     Faithfulness metric using Vectara's HHEM-2.1-Open model for NLI evaluation.
-
-    This version uses a specialized hallucination detection model instead of LLM calls
-    for the Natural Language Inference step, making it more efficient and cost-effective.
     """
 
     name: str = "faithfulness_with_hhem"

@@ -50,47 +50,19 @@ class ClassificationWithReason(BaseModel):
     FN: list[StatementsWithReason]
 
 
-# ============================================================================
-# REMOVED LANGCHAIN DEPENDENCIES
-# ============================================================================
-# The old PydanticPrompt classes (CorrectnessClassifier) have been removed
-# to eliminate LangChain dependencies.
-#
-# If other metrics need these classes, they should be migrated to use the direct
-# prompt templates below or create their own LangChain-free implementations.
-
-
-# ============================================================================
-# CENTRALIZED PROMPTS (Imported from ragas.prompt.metric_prompts)
-# ============================================================================
-
-# ============================================================================
-# MIGRATED ANSWER CORRECTNESS METRIC (No LangChain dependencies)
-# ============================================================================
+# Prompts imported from centralized location
 
 
 @dataclass
 class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     """
-    Answer Correctness metric without LangChain dependencies.
-
     Measures answer correctness compared to ground truth as a combination of
     factuality and semantic similarity.
 
-    Key changes from the original implementation:
-    - Removed LangChain callback dependencies
-    - Uses direct string-based prompts instead of PydanticPrompt classes
-    - Simplified LLM interface calls
-    - Maintains the same scoring logic and behavior
-    - Improved JSON parsing with better error handling
-
     Attributes
     ----------
-    name: string
-        The name of the metrics
     weights:
-        a list of two weights corresponding to factuality and semantic similarity
-        Defaults [0.75, 0.25]
+        List of two weights for factuality and semantic similarity [0.75, 0.25]
     answer_similarity:
         The AnswerSimilarity object
     """
@@ -145,8 +117,9 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         prompt = STATEMENT_GENERATOR_PROMPT.format(question=question, answer=text)
 
         # Use Instructor LLM interface for direct API calls without LangChain
-        result = self.llm.generate(  # type: ignore
-            prompt, response_model=StatementGeneratorOutput
+        result = self.llm.generate(
+            prompt,
+            response_model=StatementGeneratorOutput,  # type: ignore
         )
 
         # Instructor returns structured objects directly - no JSON parsing needed!
@@ -168,8 +141,9 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         )
 
         # Use Instructor LLM interface for direct API calls without LangChain
-        result = self.llm.generate(  # type: ignore
-            prompt, response_model=ClassificationWithReason
+        result = self.llm.generate(
+            prompt,
+            response_model=ClassificationWithReason,  # type: ignore
         )
 
         # Instructor returns structured objects directly - no JSON parsing needed!

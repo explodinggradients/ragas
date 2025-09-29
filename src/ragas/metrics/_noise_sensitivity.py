@@ -9,9 +9,9 @@ import numpy as np
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics._faithfulness import (
     NLIStatementInput,
-    NLIStatementPrompt,
+    NLIStatementOutput,
     StatementGeneratorInput,
-    StatementGeneratorPrompt,
+    StatementGeneratorOutput,
 )
 from ragas.metrics.base import (
     MetricOutputType,
@@ -20,12 +20,38 @@ from ragas.metrics.base import (
     SingleTurnMetric,
 )
 from ragas.prompt import PydanticPrompt
+from ragas.prompt.metric_prompts import NLI_STATEMENT_PROMPT, STATEMENT_GENERATOR_PROMPT
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# BACKWARD COMPATIBILITY - PYDANTIC PROMPTS FOR NOISE SENSITIVITY
+# ============================================================================
+# These exist for backward compatibility with the noise sensitivity metric
+# which hasn't been migrated to the LangChain-free pattern yet.
+
+
+class NLIStatementPrompt(PydanticPrompt[NLIStatementInput, NLIStatementOutput]):
+    """Backward compatibility PydanticPrompt for NLI statement evaluation."""
+
+    instruction = NLI_STATEMENT_PROMPT
+    input_model = NLIStatementInput
+    output_model = NLIStatementOutput
+
+
+class StatementGeneratorPrompt(
+    PydanticPrompt[StatementGeneratorInput, StatementGeneratorOutput]
+):
+    """Backward compatibility PydanticPrompt for statement generation."""
+
+    instruction = STATEMENT_GENERATOR_PROMPT
+    input_model = StatementGeneratorInput
+    output_model = StatementGeneratorOutput
 
 
 @dataclass
