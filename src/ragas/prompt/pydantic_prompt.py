@@ -236,6 +236,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
                 stop=stop,
                 callbacks=prompt_cb,
             )
+            n = min(n, len(resp.generations))  # adjust n if fewer results
         else:
             # This is a Ragas LLM - use generate()
             ragas_llm = t.cast(BaseRagasLLM, llm)
@@ -246,6 +247,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
                 stop=stop,
                 callbacks=prompt_cb,
             )
+            n = min(n, len(resp.generations[0]))  # adjust n if fewer results
 
         output_models = []
         parser = RagasOutputParser(pydantic_object=self.output_model)
