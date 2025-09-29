@@ -3,8 +3,7 @@ Unit tests for Faithfulness metric.
 Tests both the original and migrated versions to ensure compatibility.
 """
 
-import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -32,11 +31,7 @@ def sample_data():
     )
 
 
-@pytest.fixture
-def mock_llm():
-    """Mock LLM for testing."""
-    llm = AsyncMock()
-    return llm
+# Using mock_llm fixture from conftest.py (MockLLM class)
 
 
 def test_faithfulness_init():
@@ -61,14 +56,17 @@ async def test_faithfulness_create_statements(mock_llm, sample_data):
     """Test statement generation from response."""
     metric = Faithfulness(llm=mock_llm)
 
-    # Mock LLM response
-    from langchain_core.outputs import Generation, LLMResult
+    # Mock LLM response - InstructorLLM returns Pydantic objects directly
+    from unittest.mock import Mock
 
-    mock_generation = Generation(
-        text='{"statements": ["Paris is the capital of France.", "Paris is located in the north of France."]}'
+    mock_llm.generate = Mock(
+        return_value=StatementGeneratorOutput(
+            statements=[
+                "Paris is the capital of France.",
+                "Paris is located in the north of France.",
+            ]
+        )
     )
-    mock_result = LLMResult(generations=[[mock_generation]])
-    mock_llm.generate.return_value = mock_result
 
     result = await metric._create_statements(sample_data.to_dict())
 
@@ -84,26 +82,30 @@ async def test_faithfulness_create_verdicts(mock_llm, sample_data):
 
     statements = ["Paris is the capital of France.", "Paris has 10 million people."]
 
-    # Mock LLM response
-    from langchain_core.outputs import Generation, LLMResult
+    # Mock LLM response - InstructorLLM returns Pydantic objects directly
+    from unittest.mock import Mock
 
-    mock_response = {
-        "statements": [
-            {
-                "statement": "Paris is the capital of France.",
-                "reason": "This can be directly inferred from the context.",
-                "verdict": 1,
-            },
-            {
-                "statement": "Paris has 10 million people.",
-                "reason": "Population information is not provided in the context.",
-                "verdict": 0,
-            },
-        ]
-    }
-    mock_generation = Generation(text=json.dumps(mock_response))
-    mock_result = LLMResult(generations=[[mock_generation]])
-    mock_llm.generate.return_value = mock_result
+    from ragas.metrics._faithfulness import (
+        NLIStatementOutput,
+        StatementFaithfulnessAnswer,
+    )
+
+    mock_llm.generate = Mock(
+        return_value=NLIStatementOutput(
+            statements=[
+                StatementFaithfulnessAnswer(
+                    statement="Paris is the capital of France.",
+                    reason="This can be directly inferred from the context.",
+                    verdict=1,
+                ),
+                StatementFaithfulnessAnswer(
+                    statement="Paris has 10 million people.",
+                    reason="Population information is not provided in the context.",
+                    verdict=0,
+                ),
+            ]
+        )
+    )
 
     result = await metric._create_verdicts(sample_data.to_dict(), statements)
 
@@ -146,36 +148,33 @@ async def test_faithfulness_single_turn_ascore_full_flow(mock_llm, sample_data):
     """Test full faithfulness scoring flow."""
     metric = Faithfulness(llm=mock_llm)
 
-    # Mock statement generation response
-    from langchain_core.outputs import Generation, LLMResult
+    # Mock statement generation response - InstructorLLM returns Pydantic objects directly
+    from unittest.mock import Mock
 
-    def mock_generate_side_effect(prompt_value, **kwargs):
-        prompt_text = prompt_value.text
-        if "analyze the complexity" in prompt_text:
+    from ragas.metrics._faithfulness import (
+        NLIStatementOutput,
+        StatementFaithfulnessAnswer,
+    )
+
+    def mock_generate_side_effect(prompt, response_model=None, **kwargs):
+        if "analyze the complexity" in prompt:
             # Statement generation
-            return LLMResult(
-                generations=[
-                    [
-                        Generation(
-                            text='{"statements": ["Paris is the capital of France."]}'
-                        )
-                    ]
-                ]
+            return StatementGeneratorOutput(
+                statements=["Paris is the capital of France."]
             )
         else:
             # NLI evaluation
-            response = {
-                "statements": [
-                    {
-                        "statement": "Paris is the capital of France.",
-                        "reason": "This can be directly inferred from the context.",
-                        "verdict": 1,
-                    }
+            return NLIStatementOutput(
+                statements=[
+                    StatementFaithfulnessAnswer(
+                        statement="Paris is the capital of France.",
+                        reason="This can be directly inferred from the context.",
+                        verdict=1,
+                    )
                 ]
-            }
-            return LLMResult(generations=[[Generation(text=json.dumps(response))]])
+            )
 
-    mock_llm.generate.side_effect = mock_generate_side_effect
+    mock_llm.generate = Mock(side_effect=mock_generate_side_effect)
 
     score = await metric._single_turn_ascore(sample_data)
 
@@ -188,12 +187,10 @@ async def test_faithfulness_empty_statements(mock_llm, sample_data):
     """Test handling of empty statement generation."""
     metric = Faithfulness(llm=mock_llm)
 
-    # Mock empty statement generation
-    from langchain_core.outputs import Generation, LLMResult
+    # Mock empty statement generation - InstructorLLM returns Pydantic objects directly
+    from unittest.mock import Mock
 
-    mock_generation = Generation(text='{"statements": []}')
-    mock_result = LLMResult(generations=[[mock_generation]])
-    mock_llm.generate.return_value = mock_result
+    mock_llm.generate = Mock(return_value=StatementGeneratorOutput(statements=[]))
 
     score = await metric._single_turn_ascore(sample_data)
 
@@ -229,14 +226,16 @@ async def test_faithfulness_with_hhem_scoring(mock_llm):
             retrieved_contexts=["Test context"],
         )
 
-        # Mock statement generation
-        from langchain_core.outputs import Generation, LLMResult
+        # Mock statement generation - InstructorLLM returns Pydantic objects directly
+        from unittest.mock import Mock
 
-        mock_generation = Generation(
-            text='{"statements": ["Statement 1", "Statement 2"]}'
+        from ragas.metrics._faithfulness import StatementGeneratorOutput
+
+        mock_llm.generate = Mock(
+            return_value=StatementGeneratorOutput(
+                statements=["Statement 1", "Statement 2"]
+            )
         )
-        mock_result = LLMResult(generations=[[mock_generation]])
-        mock_llm.generate.return_value = mock_result
 
         score = await metric._single_turn_ascore(sample)
 
@@ -278,12 +277,10 @@ async def test_faithfulness_json_parsing_error(mock_llm, sample_data):
     """Test Faithfulness handling of malformed JSON responses."""
     metric = Faithfulness(llm=mock_llm)
 
-    # Mock malformed JSON response
-    from langchain_core.outputs import Generation, LLMResult
+    # Mock empty response for error handling - InstructorLLM returns Pydantic objects directly
+    from unittest.mock import Mock
 
-    mock_generation = Generation(text="This is not valid JSON")
-    mock_result = LLMResult(generations=[[mock_generation]])
-    mock_llm.generate.return_value = mock_result
+    mock_llm.generate = Mock(return_value=StatementGeneratorOutput(statements=[]))
 
     result = await metric._create_statements(sample_data.to_dict())
 
@@ -296,28 +293,31 @@ async def test_faithfulness_backward_compatibility(mock_llm, sample_data):
     """Test that Faithfulness maintains backward compatibility with callbacks."""
     metric = Faithfulness(llm=mock_llm)
 
-    # Mock LLM responses
-    from langchain_core.outputs import Generation, LLMResult
+    # Mock LLM responses - InstructorLLM returns Pydantic objects directly
+    from unittest.mock import Mock
 
-    def mock_generate_side_effect(prompt_value, **kwargs):
-        prompt_text = prompt_value.text
-        if "analyze the complexity" in prompt_text:
-            return LLMResult(
-                generations=[[Generation(text='{"statements": ["Test statement."]}')]]
-            )
+    from ragas.metrics._faithfulness import (
+        NLIStatementOutput,
+        StatementFaithfulnessAnswer,
+    )
+
+    def mock_generate_side_effect(prompt, response_model=None, **kwargs):
+        if "analyze the complexity" in prompt:
+            # Statement generation
+            return StatementGeneratorOutput(statements=["Test statement."])
         else:
-            response = {
-                "statements": [
-                    {
-                        "statement": "Test statement.",
-                        "reason": "Test reason.",
-                        "verdict": 1,
-                    }
+            # NLI evaluation
+            return NLIStatementOutput(
+                statements=[
+                    StatementFaithfulnessAnswer(
+                        statement="Test statement.",
+                        reason="Test reason.",
+                        verdict=1,
+                    )
                 ]
-            }
-            return LLMResult(generations=[[Generation(text=json.dumps(response))]])
+            )
 
-    mock_llm.generate.side_effect = mock_generate_side_effect
+    mock_llm.generate = Mock(side_effect=mock_generate_side_effect)
 
     # Test that both callback and non-callback versions work
     score1 = await metric._single_turn_ascore(

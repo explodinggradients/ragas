@@ -1,18 +1,11 @@
-import json
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
-from langchain_core.outputs import Generation, LLMResult
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics._factual_correctness import FactualCorrectness
 
-
-@pytest.fixture
-def mock_llm():
-    """Create a mock LLM for testing."""
-    llm = AsyncMock()
-    return llm
+# Using mock_llm fixture from conftest.py (MockLLM class)
 
 
 @pytest.fixture
@@ -43,16 +36,18 @@ class TestFactualCorrectness:
         self, factual_correctness_metric
     ):
         """Test claim decomposition functionality."""
-        # Mock LLM response for claim decomposition
-        mock_response = {
-            "claims": [
-                "Albert Einstein was a theoretical physicist.",
-                "Albert Einstein developed the theory of relativity.",
-            ]
-        }
+        # Mock LLM response for claim decomposition - InstructorLLM returns Pydantic objects directly
+        from unittest.mock import Mock
 
-        factual_correctness_metric.llm.generate.return_value = LLMResult(
-            generations=[[Generation(text=json.dumps(mock_response))]]
+        from ragas.metrics._factual_correctness import ClaimDecompositionOutput
+
+        factual_correctness_metric.llm.generate = Mock(
+            return_value=ClaimDecompositionOutput(
+                claims=[
+                    "Albert Einstein was a theoretical physicist.",
+                    "Albert Einstein developed the theory of relativity.",
+                ]
+            )
         )
 
         response = "Albert Einstein was a theoretical physicist who developed the theory of relativity."
@@ -64,24 +59,29 @@ class TestFactualCorrectness:
 
     async def test_factual_correctness_verify_claims(self, factual_correctness_metric):
         """Test claim verification functionality."""
-        # Mock LLM response for NLI
-        mock_response = {
-            "statements": [
-                {
-                    "statement": "Einstein was a physicist.",
-                    "verdict": 1,
-                    "reason": "Supported by context",
-                },
-                {
-                    "statement": "Einstein was a chef.",
-                    "verdict": 0,
-                    "reason": "Not supported by context",
-                },
-            ]
-        }
+        # Mock LLM response for NLI - InstructorLLM returns Pydantic objects directly
+        from unittest.mock import Mock
 
-        factual_correctness_metric.llm.generate.return_value = LLMResult(
-            generations=[[Generation(text=json.dumps(mock_response))]]
+        from ragas.metrics._faithfulness import (
+            NLIStatementOutput,
+            StatementFaithfulnessAnswer,
+        )
+
+        factual_correctness_metric.llm.generate = Mock(
+            return_value=NLIStatementOutput(
+                statements=[
+                    StatementFaithfulnessAnswer(
+                        statement="Einstein was a physicist.",
+                        verdict=1,
+                        reason="Supported by context",
+                    ),
+                    StatementFaithfulnessAnswer(
+                        statement="Einstein was a chef.",
+                        verdict=0,
+                        reason="Not supported by context",
+                    ),
+                ]
+            )
         )
 
         premise = "Albert Einstein was a theoretical physicist."
@@ -97,67 +97,50 @@ class TestFactualCorrectness:
         self, factual_correctness_metric
     ):
         """Test full factual correctness evaluation in F1 mode."""
-        # Mock claim decomposition responses
-        claim_responses = [
-            json.dumps(
-                {"claims": ["Response claim 1", "Response claim 2"]}
-            ),  # For response decomposition
-            json.dumps(
-                {"claims": ["Reference claim 1", "Reference claim 2"]}
-            ),  # For reference decomposition
-        ]
+        # Mock LLM responses - InstructorLLM returns Pydantic objects directly
+        from unittest.mock import Mock
 
-        # Mock NLI responses
-        nli_responses = [
-            json.dumps(
-                {  # Reference -> Response verification
-                    "statements": [
-                        {
-                            "statement": "Response claim 1",
-                            "verdict": 1,
-                            "reason": "Supported",
-                        },
-                        {
-                            "statement": "Response claim 2",
-                            "verdict": 0,
-                            "reason": "Not supported",
-                        },
-                    ]
-                }
-            ),
-            json.dumps(
-                {  # Response -> Reference verification
-                    "statements": [
-                        {
-                            "statement": "Reference claim 1",
-                            "verdict": 1,
-                            "reason": "Supported",
-                        },
-                        {
-                            "statement": "Reference claim 2",
-                            "verdict": 0,
-                            "reason": "Not supported",
-                        },
-                    ]
-                }
-            ),
-        ]
+        from ragas.metrics._factual_correctness import ClaimDecompositionOutput
+        from ragas.metrics._faithfulness import (
+            NLIStatementOutput,
+            StatementFaithfulnessAnswer,
+        )
 
-        # Set up mock to return different responses for different calls
-        factual_correctness_metric.llm.generate.side_effect = [
-            LLMResult(
-                generations=[[Generation(text=claim_responses[0])]]
-            ),  # Response decomposition
-            LLMResult(
-                generations=[[Generation(text=nli_responses[0])]]
-            ),  # Reference -> Response NLI
-            LLMResult(
-                generations=[[Generation(text=claim_responses[1])]]
-            ),  # Reference decomposition
-            LLMResult(
-                generations=[[Generation(text=nli_responses[1])]]
-            ),  # Response -> Reference NLI
-        ]
+        def mock_generate_side_effect(prompt, response_model=None, **kwargs):
+            if (
+                "decompose_claims" in str(response_model)
+                or response_model.__name__ == "ClaimDecompositionOutput"
+            ):
+                if "Einstein was a physicist and mathematician" in prompt:
+                    # Response decomposition
+                    return ClaimDecompositionOutput(
+                        claims=["Response claim 1", "Response claim 2"]
+                    )
+                else:
+                    # Reference decomposition
+                    return ClaimDecompositionOutput(
+                        claims=["Reference claim 1", "Reference claim 2"]
+                    )
+            else:
+                # NLI verification
+                return NLIStatementOutput(
+                    statements=[
+                        StatementFaithfulnessAnswer(
+                            statement="Claim 1",
+                            verdict=1,
+                            reason="Supported",
+                        ),
+                        StatementFaithfulnessAnswer(
+                            statement="Claim 2",
+                            verdict=0,
+                            reason="Not supported",
+                        ),
+                    ]
+                )
+
+        factual_correctness_metric.llm.generate = Mock(
+            side_effect=mock_generate_side_effect
+        )
 
         sample = SingleTurnSample(
             user_input="What do you know about Einstein?",
@@ -175,44 +158,36 @@ class TestFactualCorrectness:
         """Test factual correctness in precision mode."""
         factual_correctness_metric.mode = "precision"
 
-        # Mock responses for precision mode (only reference -> response verification)
-        factual_correctness_metric.llm.generate.side_effect = [
-            LLMResult(
-                generations=[
-                    [
-                        Generation(
-                            text=json.dumps(
-                                {"claims": ["Response claim 1", "Response claim 2"]}
-                            )
-                        )
+        # Mock responses for precision mode - InstructorLLM returns Pydantic objects directly
+        from unittest.mock import Mock
+
+        from ragas.metrics._factual_correctness import ClaimDecompositionOutput
+        from ragas.metrics._faithfulness import (
+            NLIStatementOutput,
+            StatementFaithfulnessAnswer,
+        )
+
+        factual_correctness_metric.llm.generate = Mock(
+            side_effect=[
+                ClaimDecompositionOutput(
+                    claims=["Response claim 1", "Response claim 2"]
+                ),
+                NLIStatementOutput(
+                    statements=[
+                        StatementFaithfulnessAnswer(
+                            statement="Response claim 1",
+                            verdict=1,
+                            reason="Supported",
+                        ),
+                        StatementFaithfulnessAnswer(
+                            statement="Response claim 2",
+                            verdict=0,
+                            reason="Not supported",
+                        ),
                     ]
-                ]
-            ),
-            LLMResult(
-                generations=[
-                    [
-                        Generation(
-                            text=json.dumps(
-                                {
-                                    "statements": [
-                                        {
-                                            "statement": "Response claim 1",
-                                            "verdict": 1,
-                                            "reason": "Supported",
-                                        },
-                                        {
-                                            "statement": "Response claim 2",
-                                            "verdict": 0,
-                                            "reason": "Not supported",
-                                        },
-                                    ]
-                                }
-                            )
-                        )
-                    ]
-                ]
-            ),
-        ]
+                ),
+            ]
+        )
 
         sample = SingleTurnSample(
             user_input="What do you know about Einstein?",
@@ -229,68 +204,46 @@ class TestFactualCorrectness:
         """Test factual correctness in recall mode."""
         factual_correctness_metric.mode = "recall"
 
-        # Mock responses for recall mode
-        factual_correctness_metric.llm.generate.side_effect = [
-            LLMResult(
-                generations=[
-                    [Generation(text=json.dumps({"claims": ["Response claim 1"]}))]
-                ]
-            ),
-            LLMResult(
-                generations=[
-                    [
-                        Generation(
-                            text=json.dumps(
-                                {
-                                    "statements": [
-                                        {
-                                            "statement": "Response claim 1",
-                                            "verdict": 1,
-                                            "reason": "Supported",
-                                        }
-                                    ]
-                                }
-                            )
+        # Mock responses for recall mode - InstructorLLM returns Pydantic objects directly
+        from unittest.mock import Mock
+
+        from ragas.metrics._factual_correctness import ClaimDecompositionOutput
+        from ragas.metrics._faithfulness import (
+            NLIStatementOutput,
+            StatementFaithfulnessAnswer,
+        )
+
+        factual_correctness_metric.llm.generate = Mock(
+            side_effect=[
+                ClaimDecompositionOutput(claims=["Response claim 1"]),
+                NLIStatementOutput(
+                    statements=[
+                        StatementFaithfulnessAnswer(
+                            statement="Response claim 1",
+                            verdict=1,
+                            reason="Supported",
                         )
                     ]
-                ]
-            ),
-            LLMResult(
-                generations=[
-                    [
-                        Generation(
-                            text=json.dumps(
-                                {"claims": ["Reference claim 1", "Reference claim 2"]}
-                            )
-                        )
+                ),
+                ClaimDecompositionOutput(
+                    claims=["Reference claim 1", "Reference claim 2"]
+                ),
+                NLIStatementOutput(
+                    statements=[
+                        StatementFaithfulnessAnswer(
+                            statement="Reference claim 1",
+                            verdict=1,
+                            reason="Supported",
+                        ),
+                        StatementFaithfulnessAnswer(
+                            statement="Reference claim 2",
+                            verdict=0,
+                            reason="Not supported",
+                        ),
                     ]
-                ]
-            ),
-            LLMResult(
-                generations=[
-                    [
-                        Generation(
-                            text=json.dumps(
-                                {
-                                    "statements": [
-                                        {
-                                            "statement": "Reference claim 1",
-                                            "verdict": 1,
-                                            "reason": "Supported",
-                                        },
-                                        {
-                                            "statement": "Reference claim 2",
-                                            "verdict": 0,
-                                            "reason": "Not supported",
-                                        },
-                                    ]
-                                }
-                            )
-                        )
-                    ]
-                ]
-            ),
-        ]
+                ),
+            ]
+        )
 
         sample = SingleTurnSample(
             user_input="What do you know about Einstein?",
@@ -305,9 +258,13 @@ class TestFactualCorrectness:
 
     async def test_factual_correctness_empty_claims(self, factual_correctness_metric):
         """Test handling of empty claims."""
-        # Mock empty claims response
-        factual_correctness_metric.llm.generate.return_value = LLMResult(
-            generations=[[Generation(text=json.dumps({"claims": []}))]]
+        # Mock empty claims response - InstructorLLM returns Pydantic objects directly
+        from unittest.mock import Mock
+
+        from ragas.metrics._factual_correctness import ClaimDecompositionOutput
+
+        factual_correctness_metric.llm.generate = Mock(
+            return_value=ClaimDecompositionOutput(claims=[])
         )
 
         claims = await factual_correctness_metric.decompose_claims("Some response")
@@ -321,9 +278,29 @@ class TestFactualCorrectness:
         self, factual_correctness_metric
     ):
         """Test handling of JSON parsing errors."""
-        # Mock invalid JSON response
-        factual_correctness_metric.llm.generate.return_value = LLMResult(
-            generations=[[Generation(text="Invalid JSON response")]]
+        # Mock empty response for error handling - InstructorLLM returns Pydantic objects directly
+        from unittest.mock import Mock
+
+        from ragas.metrics._factual_correctness import ClaimDecompositionOutput
+        from ragas.metrics._faithfulness import (
+            NLIStatementOutput,
+            StatementFaithfulnessAnswer,
+        )
+
+        factual_correctness_metric.llm.generate = Mock(
+            side_effect=[
+                ClaimDecompositionOutput(claims=[]),  # Empty claims for error
+                NLIStatementOutput(
+                    statements=[
+                        StatementFaithfulnessAnswer(
+                            statement="claim1", verdict=0, reason="Error"
+                        ),
+                        StatementFaithfulnessAnswer(
+                            statement="claim2", verdict=0, reason="Error"
+                        ),
+                    ]
+                ),
+            ]
         )
 
         claims = await factual_correctness_metric.decompose_claims("Some response")
@@ -357,57 +334,39 @@ class TestFactualCorrectness:
         self, factual_correctness_metric
     ):
         """Test that callbacks parameter is accepted but ignored for backward compatibility."""
-        # Mock responses
-        factual_correctness_metric.llm.generate.side_effect = [
-            LLMResult(
-                generations=[
-                    [Generation(text=json.dumps({"claims": ["Response claim 1"]}))]
-                ]
-            ),
-            LLMResult(
-                generations=[
-                    [
-                        Generation(
-                            text=json.dumps(
-                                {
-                                    "statements": [
-                                        {
-                                            "statement": "Response claim 1",
-                                            "verdict": 1,
-                                            "reason": "Supported",
-                                        }
-                                    ]
-                                }
-                            )
+        # Mock responses - InstructorLLM returns Pydantic objects directly
+        from unittest.mock import Mock
+
+        from ragas.metrics._factual_correctness import ClaimDecompositionOutput
+        from ragas.metrics._faithfulness import (
+            NLIStatementOutput,
+            StatementFaithfulnessAnswer,
+        )
+
+        factual_correctness_metric.llm.generate = Mock(
+            side_effect=[
+                ClaimDecompositionOutput(claims=["Response claim 1"]),
+                NLIStatementOutput(
+                    statements=[
+                        StatementFaithfulnessAnswer(
+                            statement="Response claim 1",
+                            verdict=1,
+                            reason="Supported",
                         )
                     ]
-                ]
-            ),
-            LLMResult(
-                generations=[
-                    [Generation(text=json.dumps({"claims": ["Reference claim 1"]}))]
-                ]
-            ),
-            LLMResult(
-                generations=[
-                    [
-                        Generation(
-                            text=json.dumps(
-                                {
-                                    "statements": [
-                                        {
-                                            "statement": "Reference claim 1",
-                                            "verdict": 1,
-                                            "reason": "Supported",
-                                        }
-                                    ]
-                                }
-                            )
+                ),
+                ClaimDecompositionOutput(claims=["Reference claim 1"]),
+                NLIStatementOutput(
+                    statements=[
+                        StatementFaithfulnessAnswer(
+                            statement="Reference claim 1",
+                            verdict=1,
+                            reason="Supported",
                         )
                     ]
-                ]
-            ),
-        ]
+                ),
+            ]
+        )
 
         sample = SingleTurnSample(
             user_input="What do you know about Einstein?",
@@ -426,16 +385,15 @@ class TestFactualCorrectness:
         # Test high atomicity, high coverage
         metric = FactualCorrectness(llm=mock_llm, atomicity="high", coverage="high")
 
-        mock_llm.generate.return_value = LLMResult(
-            generations=[
-                [
-                    Generation(
-                        text=json.dumps(
-                            {"claims": ["Claim 1", "Claim 2", "Claim 3", "Claim 4"]}
-                        )
-                    )
-                ]
-            ]
+        # Mock LLM response - InstructorLLM returns Pydantic objects directly
+        from unittest.mock import Mock
+
+        from ragas.metrics._factual_correctness import ClaimDecompositionOutput
+
+        mock_llm.generate = Mock(
+            return_value=ClaimDecompositionOutput(
+                claims=["Claim 1", "Claim 2", "Claim 3", "Claim 4"]
+            )
         )
 
         claims = await metric.decompose_claims(
@@ -445,57 +403,39 @@ class TestFactualCorrectness:
 
     async def test_factual_correctness_ascore_method(self, factual_correctness_metric):
         """Test the _ascore method."""
-        # Mock responses
-        factual_correctness_metric.llm.generate.side_effect = [
-            LLMResult(
-                generations=[
-                    [Generation(text=json.dumps({"claims": ["Response claim 1"]}))]
-                ]
-            ),
-            LLMResult(
-                generations=[
-                    [
-                        Generation(
-                            text=json.dumps(
-                                {
-                                    "statements": [
-                                        {
-                                            "statement": "Response claim 1",
-                                            "verdict": 1,
-                                            "reason": "Supported",
-                                        }
-                                    ]
-                                }
-                            )
+        # Mock responses - InstructorLLM returns Pydantic objects directly
+        from unittest.mock import Mock
+
+        from ragas.metrics._factual_correctness import ClaimDecompositionOutput
+        from ragas.metrics._faithfulness import (
+            NLIStatementOutput,
+            StatementFaithfulnessAnswer,
+        )
+
+        factual_correctness_metric.llm.generate = Mock(
+            side_effect=[
+                ClaimDecompositionOutput(claims=["Response claim 1"]),
+                NLIStatementOutput(
+                    statements=[
+                        StatementFaithfulnessAnswer(
+                            statement="Response claim 1",
+                            verdict=1,
+                            reason="Supported",
                         )
                     ]
-                ]
-            ),
-            LLMResult(
-                generations=[
-                    [Generation(text=json.dumps({"claims": ["Reference claim 1"]}))]
-                ]
-            ),
-            LLMResult(
-                generations=[
-                    [
-                        Generation(
-                            text=json.dumps(
-                                {
-                                    "statements": [
-                                        {
-                                            "statement": "Reference claim 1",
-                                            "verdict": 1,
-                                            "reason": "Supported",
-                                        }
-                                    ]
-                                }
-                            )
+                ),
+                ClaimDecompositionOutput(claims=["Reference claim 1"]),
+                NLIStatementOutput(
+                    statements=[
+                        StatementFaithfulnessAnswer(
+                            statement="Reference claim 1",
+                            verdict=1,
+                            reason="Supported",
                         )
                     ]
-                ]
-            ),
-        ]
+                ),
+            ]
+        )
 
         row = {
             "user_input": "What do you know about Einstein?",

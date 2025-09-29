@@ -254,7 +254,7 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
         )
 
         # Use Instructor LLM interface for direct API calls without LangChain
-        result = await self.llm.agenerate(  # type: ignore
+        result = self.llm.generate(  # type: ignore
             prompt, response_model=ClaimDecompositionOutput
         )
 
@@ -278,7 +278,7 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
         # Use Instructor LLM interface for direct API calls without LangChain
         from ragas.metrics._faithfulness import NLIStatementOutput
 
-        result = await self.llm.agenerate(prompt, response_model=NLIStatementOutput)  # type: ignore
+        result = self.llm.generate(prompt, response_model=NLIStatementOutput)  # type: ignore
 
         # Instructor returns structured objects directly - no JSON parsing needed!
         verdicts = [bool(stmt.verdict) for stmt in result.statements]

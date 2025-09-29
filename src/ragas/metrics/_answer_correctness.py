@@ -145,7 +145,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         prompt = STATEMENT_GENERATOR_PROMPT.format(question=question, answer=text)
 
         # Use Instructor LLM interface for direct API calls without LangChain
-        result = await self.llm.agenerate(  # type: ignore
+        result = self.llm.generate(  # type: ignore
             prompt, response_model=StatementGeneratorOutput
         )
 
@@ -168,7 +168,7 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         )
 
         # Use Instructor LLM interface for direct API calls without LangChain
-        result = await self.llm.agenerate(  # type: ignore
+        result = self.llm.generate(  # type: ignore
             prompt, response_model=ClassificationWithReason
         )
 

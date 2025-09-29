@@ -3,16 +3,12 @@ Unit tests for AnswerCorrectness metric.
 Tests the migrated version without LangChain dependencies.
 """
 
-import json
-from unittest.mock import AsyncMock
-
 import pytest
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics import AnswerCorrectness
 from ragas.metrics._answer_correctness import (
     ClassificationWithReason,
-    StatementGeneratorOutput,
     StatementsWithReason,
 )
 from ragas.metrics.base import MetricType
@@ -28,16 +24,14 @@ def sample_data():
     )
 
 
-@pytest.fixture
-def mock_llm():
-    """Mock LLM for testing."""
-    llm = AsyncMock()
-    return llm
+# Using mock_llm fixture from conftest.py (MockLLM class)
 
 
 @pytest.fixture
 def mock_embeddings():
     """Mock embeddings for testing."""
+    from unittest.mock import AsyncMock
+
     embeddings = AsyncMock()
     embeddings.aembed_text = AsyncMock()
     return embeddings
@@ -80,14 +74,17 @@ async def test_answer_correctness_create_statements(mock_llm, sample_data):
     """Test statement generation in AnswerCorrectness."""
     metric = AnswerCorrectness(llm=mock_llm)
 
-    # Mock LLM response
-    from langchain_core.outputs import Generation, LLMResult
+    # Mock LLM response - InstructorLLM returns Pydantic objects directly
+    from unittest.mock import Mock
 
-    mock_generation = Generation(
-        text='{"statements": ["Paris is the capital of France.", "Paris is a beautiful city."]}'
+    from ragas.metrics._faithfulness import StatementGeneratorOutput
+
+    # Replace the generate method with a mock that returns our test data
+    mock_llm.generate = Mock(
+        return_value=StatementGeneratorOutput(
+            statements=["Paris is the capital of France.", "Paris is a beautiful city."]
+        )
     )
-    mock_result = LLMResult(generations=[[mock_generation]])
-    mock_llm.generate.return_value = mock_result
 
     result = await metric._create_simplified_statements(
         "What is the capital of France?",
@@ -110,32 +107,37 @@ async def test_answer_correctness_classify_statements(mock_llm, sample_data):
         "Paris is located in northern France.",
     ]
 
-    # Mock LLM response
-    from langchain_core.outputs import Generation, LLMResult
+    # Mock LLM response - InstructorLLM returns Pydantic objects directly
+    from unittest.mock import Mock
 
-    mock_response = {
-        "TP": [
-            {
-                "statement": "Paris is the capital of France.",
-                "reason": "This statement is directly supported by the ground truth.",
-            }
-        ],
-        "FP": [
-            {
-                "statement": "Paris has 10 million people.",
-                "reason": "Population information is not provided in the ground truth.",
-            }
-        ],
-        "FN": [
-            {
-                "statement": "Paris is located in northern France.",
-                "reason": "This location information is not mentioned in the answer.",
-            }
-        ],
-    }
-    mock_generation = Generation(text=json.dumps(mock_response))
-    mock_result = LLMResult(generations=[[mock_generation]])
-    mock_llm.generate.return_value = mock_result
+    from ragas.metrics._answer_correctness import (
+        ClassificationWithReason,
+        StatementsWithReason,
+    )
+
+    # Replace the generate method with a mock that returns our test data
+    mock_llm.generate = Mock(
+        return_value=ClassificationWithReason(
+            TP=[
+                StatementsWithReason(
+                    statement="Paris is the capital of France.",
+                    reason="This statement is directly supported by the ground truth.",
+                )
+            ],
+            FP=[
+                StatementsWithReason(
+                    statement="Paris has 10 million people.",
+                    reason="Population information is not provided in the ground truth.",
+                )
+            ],
+            FN=[
+                StatementsWithReason(
+                    statement="Paris is located in northern France.",
+                    reason="This location information is not mentioned in the answer.",
+                )
+            ],
+        )
+    )
 
     result = await metric._classify_statements(
         "What is the capital of France?", answer, ground_truth
@@ -170,37 +172,35 @@ async def test_answer_correctness_full_flow_factuality_only(mock_llm, sample_dat
     """Test full AnswerCorrectness scoring flow with factuality only."""
     metric = AnswerCorrectness(llm=mock_llm, weights=[1.0, 0.0])  # Only factuality
 
-    # Mock statement generation response
-    from langchain_core.outputs import Generation, LLMResult
+    # Mock statement generation response - InstructorLLM returns Pydantic objects directly
+    from unittest.mock import Mock
 
-    def mock_generate_side_effect(prompt_value, **kwargs):
-        prompt_text = prompt_value.text
-        if "analyze the complexity" in prompt_text:
+    from ragas.metrics._answer_correctness import (
+        ClassificationWithReason,
+        StatementsWithReason,
+    )
+    from ragas.metrics._faithfulness import StatementGeneratorOutput
+
+    def mock_generate_side_effect(prompt, response_model=None, **kwargs):
+        if "analyze the complexity" in prompt:
             # Statement generation
-            return LLMResult(
-                generations=[
-                    [
-                        Generation(
-                            text='{"statements": ["Paris is the capital of France."]}'
-                        )
-                    ]
-                ]
+            return StatementGeneratorOutput(
+                statements=["Paris is the capital of France."]
             )
         else:
             # Classification
-            response = {
-                "TP": [
-                    {
-                        "statement": "Paris is the capital of France.",
-                        "reason": "This statement is directly supported by the ground truth.",
-                    }
+            return ClassificationWithReason(
+                TP=[
+                    StatementsWithReason(
+                        statement="Paris is the capital of France.",
+                        reason="This statement is directly supported by the ground truth.",
+                    )
                 ],
-                "FP": [],
-                "FN": [],
-            }
-            return LLMResult(generations=[[Generation(text=json.dumps(response))]])
+                FP=[],
+                FN=[],
+            )
 
-    mock_llm.generate.side_effect = mock_generate_side_effect
+    mock_llm.generate = Mock(side_effect=mock_generate_side_effect)
 
     score = await metric._single_turn_ascore(sample_data)
 
@@ -222,35 +222,33 @@ async def test_answer_correctness_full_flow_with_similarity(
 
     metric.init(RunConfig())
 
-    # Mock statement generation and classification
-    from langchain_core.outputs import Generation, LLMResult
+    # Mock statement generation and classification - InstructorLLM returns Pydantic objects directly
+    from unittest.mock import Mock
 
-    def mock_generate_side_effect(prompt_value, **kwargs):
-        prompt_text = prompt_value.text
-        if "analyze the complexity" in prompt_text:
-            return LLMResult(
-                generations=[
-                    [
-                        Generation(
-                            text='{"statements": ["Paris is the capital of France."]}'
-                        )
-                    ]
-                ]
+    from ragas.metrics._answer_correctness import (
+        ClassificationWithReason,
+        StatementsWithReason,
+    )
+    from ragas.metrics._faithfulness import StatementGeneratorOutput
+
+    def mock_generate_side_effect(prompt, response_model=None, **kwargs):
+        if "analyze the complexity" in prompt:
+            return StatementGeneratorOutput(
+                statements=["Paris is the capital of France."]
             )
         else:
-            response = {
-                "TP": [
-                    {
-                        "statement": "Paris is the capital of France.",
-                        "reason": "Supported by ground truth.",
-                    }
+            return ClassificationWithReason(
+                TP=[
+                    StatementsWithReason(
+                        statement="Paris is the capital of France.",
+                        reason="Supported by ground truth.",
+                    )
                 ],
-                "FP": [],
-                "FN": [],
-            }
-            return LLMResult(generations=[[Generation(text=json.dumps(response))]])
+                FP=[],
+                FN=[],
+            )
 
-    mock_llm.generate.side_effect = mock_generate_side_effect
+    mock_llm.generate = Mock(side_effect=mock_generate_side_effect)
 
     # Mock embeddings for similarity calculation
     mock_embeddings.aembed_text.side_effect = [
@@ -272,11 +270,11 @@ async def test_answer_correctness_empty_statements(mock_llm, sample_data):
     metric = AnswerCorrectness(llm=mock_llm, weights=[1.0, 0.0])
 
     # Mock empty statement generation for both response and reference
-    from langchain_core.outputs import Generation, LLMResult
+    from unittest.mock import Mock
 
-    mock_generation = Generation(text='{"statements": []}')
-    mock_result = LLMResult(generations=[[mock_generation]])
-    mock_llm.generate.return_value = mock_result
+    from ragas.metrics._faithfulness import StatementGeneratorOutput
+
+    mock_llm.generate = Mock(return_value=StatementGeneratorOutput(statements=[]))
 
     score = await metric._single_turn_ascore(sample_data)
 
@@ -289,12 +287,12 @@ async def test_answer_correctness_json_parsing_error(mock_llm, sample_data):
     """Test AnswerCorrectness handling of malformed JSON responses."""
     metric = AnswerCorrectness(llm=mock_llm, weights=[1.0, 0.0])
 
-    # Mock malformed JSON response
-    from langchain_core.outputs import Generation, LLMResult
+    # Mock response - InstructorLLM ensures valid Pydantic objects (no JSON parsing errors possible)
+    from unittest.mock import Mock
 
-    mock_generation = Generation(text="This is not valid JSON")
-    mock_result = LLMResult(generations=[[mock_generation]])
-    mock_llm.generate.return_value = mock_result
+    from ragas.metrics._faithfulness import StatementGeneratorOutput
+
+    mock_llm.generate = Mock(return_value=StatementGeneratorOutput(statements=[]))
 
     result = await metric._create_simplified_statements("Test question", "Test answer")
 
@@ -307,24 +305,30 @@ async def test_answer_correctness_backward_compatibility(mock_llm, sample_data):
     """Test that AnswerCorrectness maintains backward compatibility with callbacks."""
     metric = AnswerCorrectness(llm=mock_llm, weights=[1.0, 0.0])
 
-    # Mock LLM responses
-    from langchain_core.outputs import Generation, LLMResult
+    # Mock LLM responses - InstructorLLM returns Pydantic objects directly
+    from unittest.mock import Mock
 
-    def mock_generate_side_effect(prompt_value, **kwargs):
-        prompt_text = prompt_value.text
-        if "analyze the complexity" in prompt_text:
-            return LLMResult(
-                generations=[[Generation(text='{"statements": ["Test statement."]}')]]
-            )
+    from ragas.metrics._answer_correctness import (
+        ClassificationWithReason,
+        StatementsWithReason,
+    )
+    from ragas.metrics._faithfulness import StatementGeneratorOutput
+
+    def mock_generate_side_effect(prompt, response_model=None, **kwargs):
+        if "analyze the complexity" in prompt:
+            return StatementGeneratorOutput(statements=["Test statement."])
         else:
-            response = {
-                "TP": [{"statement": "Test statement.", "reason": "Test reason."}],
-                "FP": [],
-                "FN": [],
-            }
-            return LLMResult(generations=[[Generation(text=json.dumps(response))]])
+            return ClassificationWithReason(
+                TP=[
+                    StatementsWithReason(
+                        statement="Test statement.", reason="Test reason."
+                    )
+                ],
+                FP=[],
+                FN=[],
+            )
 
-    mock_llm.generate.side_effect = mock_generate_side_effect
+    mock_llm.generate = Mock(side_effect=mock_generate_side_effect)
 
     # Test that both callback and non-callback versions work
     score1 = await metric._single_turn_ascore(
