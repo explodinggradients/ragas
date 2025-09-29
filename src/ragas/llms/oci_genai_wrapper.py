@@ -3,24 +3,39 @@
 import asyncio
 import logging
 import typing as t
-from dataclasses import dataclass
+from typing import Dict, List
 
-from langchain_core.outputs import LLMResult, Generation
+from langchain_core.outputs import Generation, LLMResult
 from langchain_core.prompt_values import PromptValue
-from typing import List, Dict
 
 from ragas._analytics import LLMUsageEvent, track
-from ragas.exceptions import LLMDidNotFinishException
 from ragas.llms.base import BaseRagasLLM
 from ragas.run_config import RunConfig
 
 logger = logging.getLogger(__name__)
 
+# Optional, module-level OCI imports to ease testing/mocking
+try:  # pragma: no cover - environment dependent
+    import oci as _oci  # type: ignore
+except Exception:  # pragma: no cover - absence is okay
+    _oci = None  # type: ignore
+
+try:  # pragma: no cover - environment dependent
+    from oci.generative_ai import (
+        GenerativeAiClient as _GenerativeAiClient,  # type: ignore
+    )
+except Exception:  # pragma: no cover
+    _GenerativeAiClient = None  # type: ignore
+
+# Expose for tests to patch
+oci = _oci  # type: ignore
+GenerativeAiClient = _GenerativeAiClient  # type: ignore
+
 
 class OCIGenAIWrapper(BaseRagasLLM):
     """
     OCI Gen AI LLM wrapper for Ragas.
-    
+
     This wrapper provides direct integration with Oracle Cloud Infrastructure
     Generative AI services without requiring LangChain or LlamaIndex.
     """
@@ -34,10 +49,11 @@ class OCIGenAIWrapper(BaseRagasLLM):
         run_config: t.Optional[RunConfig] = None,
         cache: t.Optional[t.Any] = None,
         default_system_prompt: t.Optional[str] = None,
+        client: t.Optional[t.Any] = None,
     ):
         """
         Initialize OCI Gen AI wrapper.
-        
+
         Args:
             model_id: The OCI model ID to use for generation
             compartment_id: The OCI compartment ID
@@ -47,32 +63,30 @@ class OCIGenAIWrapper(BaseRagasLLM):
             cache: Optional cache backend
         """
         super().__init__(cache=cache)
-        
-        # Import OCI SDK
-        try:
-            import oci
-            from oci.generative_ai import GenerativeAiClient
-        except ImportError:
-            raise ImportError(
-                "OCI SDK not found. Please install it with: pip install oci"
-            )
-        
+
         self.model_id = model_id
         self.compartment_id = compartment_id
         self.endpoint_id = endpoint_id
         self.default_system_prompt = default_system_prompt
-        
-        # Initialize OCI client
-        if config is None:
-            config = oci.config.from_file()
-        
-        self.client = GenerativeAiClient(config)
-        
+
+        # Store client/config; perform lazy initialization to keep import-optional
+        self.client = client
+        self._oci_config = config
+        # If no client and SDK not available and no endpoint fallback, raise early
+        if (
+            self.client is None
+            and GenerativeAiClient is None
+            and self.endpoint_id is None
+        ):  # type: ignore
+            raise ImportError(
+                "OCI SDK not found. Please install it with: pip install oci"
+            )
+
         # Set run config
         if run_config is None:
             run_config = RunConfig()
         self.set_run_config(run_config)
-        
+
         # Track initialization
         track(
             LLMUsageEvent(
@@ -94,7 +108,9 @@ class OCIGenAIWrapper(BaseRagasLLM):
 
         # Add default system prompt first if configured
         if self.default_system_prompt:
-            oci_messages.append({"role": "system", "content": self.default_system_prompt})
+            oci_messages.append(
+                {"role": "system", "content": self.default_system_prompt}
+            )
 
         # If prompt can be converted to messages (LangChain chat-style)
         if hasattr(prompt, "to_messages"):
@@ -144,14 +160,30 @@ class OCIGenAIWrapper(BaseRagasLLM):
                 "temperature": temperature,
             },
         }
-        
+
         if self.endpoint_id:
             request["serving_mode"] = {"endpoint_id": self.endpoint_id}
-        
+
         if stop:
             request["inference_request"]["stop"] = stop
-            
+
         return request
+
+    def _get_client(self):
+        """Lazily initialize and return the OCI client."""
+        if self.client is not None:
+            return self.client
+        if GenerativeAiClient is None:  # type: ignore
+            raise ImportError(
+                "OCI SDK not found. Please install it with: pip install oci"
+            )
+        cfg = self._oci_config
+        if cfg is None and oci is not None:  # type: ignore
+            cfg = oci.config.from_file()  # type: ignore
+        if cfg is None:
+            cfg = {}
+        self.client = GenerativeAiClient(cfg)  # type: ignore
+        return self.client
 
     def generate_text(
         self,
@@ -164,27 +196,29 @@ class OCIGenAIWrapper(BaseRagasLLM):
         """Generate text using OCI Gen AI."""
         if temperature is None:
             temperature = self.get_temperature(n)
-        
+
         messages = self._convert_prompt_to_messages(prompt)
         generations = []
-        
+
         try:
             for _ in range(n):
-                request = self._create_generation_request(messages, temperature, stop=stop)
-                
-                response = self.client.generate_text(**request)
-                
+                request = self._create_generation_request(
+                    messages, temperature, stop=stop
+                )
+
+                response = self._get_client().generate_text(**request)
+
                 # Extract text from response
-                if hasattr(response.data, 'choices') and response.data.choices:
+                if hasattr(response.data, "choices") and response.data.choices:
                     text = response.data.choices[0].message.content
-                elif hasattr(response.data, 'text'):
+                elif hasattr(response.data, "text"):
                     text = response.data.text
                 else:
                     text = str(response.data)
-                
+
                 generation = Generation(text=text)
                 generations.append([generation])
-            
+
             # Track usage
             track(
                 LLMUsageEvent(
@@ -195,9 +229,9 @@ class OCIGenAIWrapper(BaseRagasLLM):
                     is_async=False,
                 )
             )
-            
+
             return LLMResult(generations=generations)
-            
+
         except Exception as e:
             logger.error(f"Error generating text with OCI Gen AI: {e}")
             raise
@@ -213,32 +247,34 @@ class OCIGenAIWrapper(BaseRagasLLM):
         """Generate text asynchronously using OCI Gen AI."""
         if temperature is None:
             temperature = self.get_temperature(n)
-        
+
         messages = self._convert_prompt_to_messages(prompt)
         generations = []
-        
+
         try:
             # Run synchronous calls in thread pool for async compatibility
             loop = asyncio.get_event_loop()
-            
+
             for _ in range(n):
-                request = self._create_generation_request(messages, temperature, stop=stop)
-                
-                response = await loop.run_in_executor(
-                    None, lambda: self.client.generate_text(**request)
+                request = self._create_generation_request(
+                    messages, temperature, stop=stop
                 )
-                
+
+                response = await loop.run_in_executor(
+                    None, lambda: self._get_client().generate_text(**request)
+                )
+
                 # Extract text from response
-                if hasattr(response.data, 'choices') and response.data.choices:
+                if hasattr(response.data, "choices") and response.data.choices:
                     text = response.data.choices[0].message.content
-                elif hasattr(response.data, 'text'):
+                elif hasattr(response.data, "text"):
                     text = response.data.text
                 else:
                     text = str(response.data)
-                
+
                 generation = Generation(text=text)
                 generations.append([generation])
-            
+
             # Track usage
             track(
                 LLMUsageEvent(
@@ -249,9 +285,9 @@ class OCIGenAIWrapper(BaseRagasLLM):
                     is_async=True,
                 )
             )
-            
+
             return LLMResult(generations=generations)
-            
+
         except Exception as e:
             logger.error(f"Error generating text with OCI Gen AI: {e}")
             raise
@@ -279,11 +315,13 @@ def oci_genai_factory(
     config: t.Optional[t.Dict[str, t.Any]] = None,
     endpoint_id: t.Optional[str] = None,
     run_config: t.Optional[RunConfig] = None,
-    **kwargs: t.Any,
+    cache: t.Optional[t.Any] = None,
+    default_system_prompt: t.Optional[str] = None,
+    client: t.Optional[t.Any] = None,
 ) -> OCIGenAIWrapper:
     """
     Factory function to create an OCI Gen AI LLM instance.
-    
+
     Args:
         model_id: The OCI model ID to use for generation
         compartment_id: The OCI compartment ID
@@ -291,17 +329,17 @@ def oci_genai_factory(
         endpoint_id: Optional endpoint ID for the model
         run_config: Ragas run configuration
         **kwargs: Additional arguments passed to OCIGenAIWrapper
-        
+
     Returns:
         OCIGenAIWrapper: An instance of the OCI Gen AI LLM wrapper
-        
+
     Examples:
         # Basic usage with default config
         llm = oci_genai_factory(
             model_id="cohere.command",
             compartment_id="ocid1.compartment.oc1..example"
         )
-        
+
         # With custom config
         llm = oci_genai_factory(
             model_id="cohere.command",
@@ -315,5 +353,7 @@ def oci_genai_factory(
         config=config,
         endpoint_id=endpoint_id,
         run_config=run_config,
-        **kwargs
+        cache=cache,
+        default_system_prompt=default_system_prompt,
+        client=client,
     )
