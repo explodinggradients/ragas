@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from langchain_core.outputs import LLMResult, Generation
 from langchain_core.prompt_values import PromptValue
+from typing import List, Dict
 
 from ragas._analytics import LLMUsageEvent, track
 from ragas.exceptions import LLMDidNotFinishException
@@ -32,6 +33,7 @@ class OCIGenAIWrapper(BaseRagasLLM):
         endpoint_id: t.Optional[str] = None,
         run_config: t.Optional[RunConfig] = None,
         cache: t.Optional[t.Any] = None,
+        default_system_prompt: t.Optional[str] = None,
     ):
         """
         Initialize OCI Gen AI wrapper.
@@ -58,6 +60,7 @@ class OCIGenAIWrapper(BaseRagasLLM):
         self.model_id = model_id
         self.compartment_id = compartment_id
         self.endpoint_id = endpoint_id
+        self.default_system_prompt = default_system_prompt
         
         # Initialize OCI client
         if config is None:
@@ -81,39 +84,65 @@ class OCIGenAIWrapper(BaseRagasLLM):
             )
         )
 
-    def _convert_prompt_to_string(self, prompt: PromptValue) -> str:
-        """Convert PromptValue to string."""
-        if hasattr(prompt, 'to_string'):
-            return prompt.to_string()
-        elif hasattr(prompt, 'to_messages'):
-            messages = prompt.to_messages()
-            return "\n".join([msg.content for msg in messages if hasattr(msg, 'content')])
-        else:
-            return str(prompt)
+    def _convert_prompt_to_messages(self, prompt: PromptValue) -> List[Dict[str, str]]:
+        """Convert PromptValue to a list of role-aware messages for OCI.
+
+        Supports system, user, and assistant roles when provided by the prompt.
+        Falls back to a single user message when only a string is available.
+        """
+        oci_messages: List[Dict[str, str]] = []
+
+        # Add default system prompt first if configured
+        if self.default_system_prompt:
+            oci_messages.append({"role": "system", "content": self.default_system_prompt})
+
+        # If prompt can be converted to messages (LangChain chat-style)
+        if hasattr(prompt, "to_messages"):
+            try:
+                lc_messages = prompt.to_messages()
+                for m in lc_messages:
+                    # Detect role from message type/name attributes
+                    role = getattr(m, "role", None)
+                    if role is None:
+                        cls_name = m.__class__.__name__.lower()
+                        if "system" in cls_name:
+                            role = "system"
+                        elif "human" in cls_name or "user" in cls_name:
+                            role = "user"
+                        elif "ai" in cls_name or "assistant" in cls_name:
+                            role = "assistant"
+                        else:
+                            role = "user"
+                    content = getattr(m, "content", str(m))
+                    oci_messages.append({"role": role, "content": content})
+                return oci_messages
+            except Exception:
+                # Fallback to string conversion below
+                pass
+
+        # If prompt can be converted to string
+        if hasattr(prompt, "to_string"):
+            return oci_messages + [{"role": "user", "content": prompt.to_string()}]
+
+        # Generic fallback
+        return oci_messages + [{"role": "user", "content": str(prompt)}]
 
     def _create_generation_request(
         self,
-        prompt: str,
+        messages: List[Dict[str, str]],
         temperature: float = 0.01,
         max_tokens: t.Optional[int] = None,
         stop: t.Optional[t.List[str]] = None,
     ) -> t.Dict[str, t.Any]:
-        """Create generation request for OCI Gen AI."""
+        """Create generation request for OCI Gen AI using role-aware messages."""
         request = {
             "compartment_id": self.compartment_id,
-            "serving_mode": {
-                "model_id": self.model_id
-            },
+            "serving_mode": {"model_id": self.model_id},
             "inference_request": {
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
+                "messages": messages,
                 "max_tokens": max_tokens or 1000,
                 "temperature": temperature,
-            }
+            },
         }
         
         if self.endpoint_id:
@@ -136,14 +165,12 @@ class OCIGenAIWrapper(BaseRagasLLM):
         if temperature is None:
             temperature = self.get_temperature(n)
         
-        prompt_str = self._convert_prompt_to_string(prompt)
+        messages = self._convert_prompt_to_messages(prompt)
         generations = []
         
         try:
             for _ in range(n):
-                request = self._create_generation_request(
-                    prompt_str, temperature, stop=stop
-                )
+                request = self._create_generation_request(messages, temperature, stop=stop)
                 
                 response = self.client.generate_text(**request)
                 
@@ -187,7 +214,7 @@ class OCIGenAIWrapper(BaseRagasLLM):
         if temperature is None:
             temperature = self.get_temperature(n)
         
-        prompt_str = self._convert_prompt_to_string(prompt)
+        messages = self._convert_prompt_to_messages(prompt)
         generations = []
         
         try:
@@ -195,9 +222,7 @@ class OCIGenAIWrapper(BaseRagasLLM):
             loop = asyncio.get_event_loop()
             
             for _ in range(n):
-                request = self._create_generation_request(
-                    prompt_str, temperature, stop=stop
-                )
+                request = self._create_generation_request(messages, temperature, stop=stop)
                 
                 response = await loop.run_in_executor(
                     None, lambda: self.client.generate_text(**request)

@@ -48,16 +48,20 @@ class TestOCIGenAIWrapper:
         
         assert wrapper.endpoint_id == "ocid1.endpoint.oc1..example"
 
-    def test_convert_prompt_to_string(self, oci_wrapper):
-        """Test prompt conversion to string."""
+    def test_convert_prompt_to_messages(self, oci_wrapper):
+        """Test prompt conversion to role-aware messages."""
         prompt = StringPromptValue(text="Hello, world!")
-        result = oci_wrapper._convert_prompt_to_string(prompt)
-        assert result == "Hello, world!"
+        result = oci_wrapper._convert_prompt_to_messages(prompt)
+        assert isinstance(result, list)
+        # Last message should be the user message with content
+        assert result[-1]["role"] == "user"
+        assert result[-1]["content"] == "Hello, world!"
 
     def test_create_generation_request(self, oci_wrapper):
         """Test generation request creation."""
+        messages = oci_wrapper._convert_prompt_to_messages(StringPromptValue(text="Test prompt"))
         request = oci_wrapper._create_generation_request(
-            prompt="Test prompt",
+            messages=messages,
             temperature=0.5,
             max_tokens=100,
             stop=["stop"]
@@ -65,7 +69,7 @@ class TestOCIGenAIWrapper:
         
         assert request["compartment_id"] == oci_wrapper.compartment_id
         assert request["serving_mode"]["model_id"] == oci_wrapper.model_id
-        assert request["inference_request"]["messages"][0]["content"] == "Test prompt"
+        assert request["inference_request"]["messages"][-1]["content"] == "Test prompt"
         assert request["inference_request"]["temperature"] == 0.5
         assert request["inference_request"]["max_tokens"] == 100
         assert request["inference_request"]["stop"] == ["stop"]
@@ -78,7 +82,8 @@ class TestOCIGenAIWrapper:
             endpoint_id="ocid1.endpoint.oc1..example"
         )
         
-        request = wrapper._create_generation_request("Test prompt")
+        messages = wrapper._convert_prompt_to_messages(StringPromptValue(text="Test prompt"))
+        request = wrapper._create_generation_request(messages)
         assert request["serving_mode"]["endpoint_id"] == "ocid1.endpoint.oc1..example"
 
     def test_generate_text(self, oci_wrapper, mock_oci_client):
