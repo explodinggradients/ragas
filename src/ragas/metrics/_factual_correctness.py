@@ -17,7 +17,10 @@ from ragas.metrics.base import (
     SingleTurnMetric,
 )
 from ragas.metrics.utils import fbeta_score
-from ragas.prompt.metric_prompts import NLI_STATEMENT_PROMPT
+from ragas.prompt.metric_prompts import (
+    NLI_STATEMENT_PROMPT,
+    generate_claim_decomposition_prompt,
+)
 
 if t.TYPE_CHECKING:
     from ragas.dataset_schema import SingleTurnSample
@@ -182,13 +185,13 @@ def _generate_claim_decomposition_prompt(
             )
         examples_text += "-----------------------------\n"
 
-    # Use the centralized prompt template with dynamic examples
-    return f"""Decompose and break down each of the input sentences into one or more standalone statements. Each statement should be a standalone claim that can be independently verified.
-Follow the level of atomicity and coverage as shown in the examples.
-{examples_text}
-Now perform the same with the following input
-input: {{"response": "{response}"}}
-Output: """
+    # Use the centralized prompt template
+    return generate_claim_decomposition_prompt(
+        atomicity=atomicity,
+        coverage=coverage,
+        response=response,
+        examples_text=examples_text,
+    )
 
 
 # NLI prompt imported from centralized location
