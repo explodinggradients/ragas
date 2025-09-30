@@ -5,7 +5,7 @@ requires-python = ">=3.9"
 license = {file = "LICENSE"}
 dependencies = [
     # Core dependencies
-    "numpy",
+    "numpy>=1.21.0,<3.0.0",
     "datasets>=4.0.0",
     "tiktoken",
     "pydantic>=2.0.0",
