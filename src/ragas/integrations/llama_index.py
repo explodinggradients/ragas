@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import logging
 import typing as t
+import math
 
-from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
+from ragas.dataset_schema import EvaluationDataset, SingleTurnSample, EvaluationResult
 from ragas.embeddings import LlamaIndexEmbeddingsWrapper
 from ragas.evaluation import evaluate as ragas_evaluate
 from ragas.executor import Executor
@@ -21,7 +22,6 @@ if t.TYPE_CHECKING:
     from llama_index.core.workflow import Event
 
     from ragas.cost import TokenUsageParser
-    from ragas.evaluation import EvaluationResult
 
 
 logger = logging.getLogger(__name__)
@@ -82,6 +82,12 @@ def evaluate(
     retrieved_contexts: t.List[t.List[str]] = []
     results = exec.results()
     for r in results:
+        # Handle failed jobs which are recorded as NaN in the executor
+        if isinstance(r, float) and math.isnan(r):
+            responses.append("")
+            retrieved_contexts.append([])
+            continue
+
         responses.append(r.response)
         retrieved_contexts.append([n.node.text for n in r.source_nodes])
 
