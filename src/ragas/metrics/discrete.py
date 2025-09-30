@@ -68,10 +68,13 @@ class DiscreteMetric(SimpleLLMMetric, DiscreteValidator):
         ValueError
             If file cannot be loaded or is not a DiscreteMetric
         """
+        # Validate metric type before loading
+        cls._validate_metric_type(path)
+
         # Load using parent class method
         metric = super().load(path, embedding_model=embedding_model)
 
-        # Validate it's the correct type
+        # Additional type check for safety
         if not isinstance(metric, cls):
             raise ValueError(f"Loaded metric is not a {cls.__name__}")
 

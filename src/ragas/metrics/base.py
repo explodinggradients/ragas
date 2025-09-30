@@ -1024,6 +1024,68 @@ class SimpleLLMMetric(SimpleBaseMetric):
         }
 
     @classmethod
+    def _read_metric_type(cls, path: str) -> t.Dict[str, t.Any]:
+        """
+        Read just the metric type from a saved metric file.
+
+        Parameters:
+        -----------
+        path : str
+            File path to read from. Supports .gz compressed files.
+
+        Returns:
+        --------
+        dict
+            Dictionary containing at least the 'metric_type' field
+
+        Raises:
+        -------
+        ValueError
+            If file cannot be read or parsed
+        """
+        import gzip
+        import json
+        from pathlib import Path
+
+        file_path = Path(path)
+
+        try:
+            if file_path.suffix == ".gz":
+                with gzip.open(file_path, "rt", encoding="utf-8") as f:
+                    data = json.load(f)
+            else:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            return data
+        except (FileNotFoundError, json.JSONDecodeError, OSError) as e:
+            raise ValueError(f"Cannot read metric type from {path}: {e}")
+
+    @classmethod
+    def _validate_metric_type(cls, path: str) -> None:
+        """
+        Validate that the saved metric type matches the expected class.
+
+        Parameters:
+        -----------
+        path : str
+            File path to validate
+
+        Raises:
+        -------
+        ValueError
+            If metric type doesn't match expected class name
+        """
+        data = cls._read_metric_type(path)
+        expected_type = cls.__name__
+        actual_type = data.get("metric_type")
+
+        if actual_type != expected_type:
+            raise ValueError(
+                f"Cannot load {actual_type} as {expected_type}. "
+                f"The saved metric is of type '{actual_type}', but you are trying to load it as '{expected_type}'."
+            )
+
+    @classmethod
     def load(
         cls,
         path: str,
