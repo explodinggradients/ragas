@@ -18,6 +18,7 @@ from ragas.llms.batch_api import (
     create_batch_api,
 )
 from ragas.llms.haystack_wrapper import HaystackLLMWrapper
+from ragas.llms.oci_genai_wrapper import OCIGenAIWrapper, oci_genai_factory
 from ragas.utils import DeprecationHelper
 
 # Create deprecation wrappers for legacy classes
@@ -44,9 +45,11 @@ __all__ = [
     "InstructorLLM",
     "LangchainLLMWrapper",
     "LlamaIndexLLMWrapper",
+    "OCIGenAIWrapper",
     "InstructorTypeVar",
     "instructor_llm_factory",
     "llm_factory",
+    "oci_genai_factory",
     # Batch API
     "BatchEndpoint",
     "BatchJob",

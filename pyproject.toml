@@ -59,6 +59,7 @@ gdrive = [
     "google-auth-oauthlib>=1.2.2"
 ]
 ai-frameworks = ["haystack-ai"]
+oci = ["oci>=2.160.1"]
 
 # Minimal dev dependencies for fast development setup (used by make install-minimal)
 dev-minimal = [
