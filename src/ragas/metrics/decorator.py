@@ -112,14 +112,21 @@ def create_metric_decorator():
 
             # Determine the appropriate validator based on allowed_values
             allowed_values = metric_params.get("allowed_values")
+            # If no allowed_values provided, default to discrete with pass/fail
+            if allowed_values is None:
+                allowed_values = ["pass", "fail"]
             validator_class = get_validator_for_allowed_values(allowed_values)
 
             # TODO: Move to dataclass type implementation
             @dataclass(repr=False)
             class CustomMetric(SimpleBaseMetric, validator_class):
-                _func: t.Any = field(default=None, init=False)
-                _metric_params: t.Any = field(default=None, init=False)
-                allowed_values: t.Any = field(default=None, init=False)
+                _func: t.Optional[t.Callable[..., t.Any]] = field(
+                    default=None, init=False
+                )
+                _metric_params: t.Dict[str, t.Any] = field(
+                    default_factory=dict, init=False
+                )
+                # Note: allowed_values is inherited from SimpleBaseMetric
 
                 def _validate_result_value(self, result_value):
                     """Validate result value using the appropriate validator mixin."""

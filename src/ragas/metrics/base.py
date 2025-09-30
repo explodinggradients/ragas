@@ -16,6 +16,7 @@ from ragas.async_utils import apply_nest_asyncio, run
 from ragas.callbacks import ChainType, new_group
 from ragas.dataset_schema import MetricAnnotation, MultiTurnSample, SingleTurnSample
 from ragas.losses import BinaryMetricLoss, MSELoss
+from ragas.metrics.validators import AllowedValuesType
 from ragas.prompt import FewShotPydanticPrompt, PromptMixin
 from ragas.run_config import RunConfig
 from ragas.utils import camel_to_snake, deprecated, get_metric_language
@@ -30,6 +31,9 @@ if t.TYPE_CHECKING:
     from ragas.llms import BaseRagasLLM
     from ragas.metrics.result import MetricResult
     from ragas.prompt.simple_prompt import Prompt
+
+    # Type alias for embedding model parameters (union of old and new embedding interfaces)
+    EmbeddingModelType = t.Union[BaseRagasEmbedding, BaseRagasEmbeddings]
 
 logger = logging.getLogger(__name__)
 
@@ -734,6 +738,7 @@ class SimpleBaseMetric(ABC):
     """Base class for simple metrics that return MetricResult objects."""
 
     name: str
+    allowed_values: AllowedValuesType = field(default_factory=lambda: ["pass", "fail"])
 
     @abstractmethod
     def score(self, **kwargs) -> "MetricResult":
@@ -785,7 +790,7 @@ def create_auto_response_model(name: str, **fields):
     from pydantic import create_model
 
     model = create_model(name, **fields)
-    model.__ragas_auto_generated__ = True
+    setattr(model, "__ragas_auto_generated__", True)  # type: ignore[attr-defined]
     return model
 
 
@@ -999,12 +1004,11 @@ class SimpleLLMMetric(SimpleBaseMetric):
     def _get_metric_config(self) -> t.Dict[str, t.Any]:
         """Get metric-specific configuration."""
         config = {}
-        if hasattr(self, "allowed_values"):
-            # Convert tuples to lists for JSON serialization
-            allowed_values = self.allowed_values
-            if isinstance(allowed_values, tuple):
-                allowed_values = list(allowed_values)
-            config["allowed_values"] = allowed_values
+        # Convert tuples to lists for JSON serialization
+        allowed_values = self.allowed_values
+        if isinstance(allowed_values, tuple):
+            allowed_values = list(allowed_values)
+        config["allowed_values"] = allowed_values
         return config
 
     def _serialize_response_model_info(self) -> t.Optional[t.Dict]:
@@ -1090,7 +1094,7 @@ class SimpleLLMMetric(SimpleBaseMetric):
         cls,
         path: str,
         response_model: t.Optional[t.Type["BaseModel"]] = None,
-        embedding_model: t.Optional[t.Any] = None,
+        embedding_model: t.Optional["EmbeddingModelType"] = None,
     ) -> "SimpleLLMMetric":
         """
         Load a metric from a JSON file.
@@ -1156,7 +1160,9 @@ class SimpleLLMMetric(SimpleBaseMetric):
 
     @classmethod
     def _deserialize_prompt(
-        cls, prompt_data: t.Dict[str, t.Any], embedding_model: t.Optional[t.Any] = None
+        cls,
+        prompt_data: t.Dict[str, t.Any],
+        embedding_model: t.Optional["EmbeddingModelType"] = None,
     ):
         """Deserialize a prompt from saved data."""
         from ragas.prompt.dynamic_few_shot import DynamicFewShotPrompt
@@ -1184,9 +1190,10 @@ class SimpleLLMMetric(SimpleBaseMetric):
             base_prompt = Prompt(instruction=prompt_data["instruction"])
 
             # Create DynamicFewShotPrompt
+            # Note: embedding_model can be None, the constructor handles it gracefully
             dynamic_prompt = DynamicFewShotPrompt.from_prompt(
                 base_prompt,
-                embedding_model,
+                embedding_model,  # type: ignore[arg-type]
                 max_similar_examples=prompt_data.get("max_similar_examples", 3),
                 similarity_threshold=prompt_data.get("similarity_threshold", 0.7),
             )
@@ -1212,7 +1219,7 @@ class SimpleLLMMetric(SimpleBaseMetric):
     def align_and_validate(
         self,
         dataset: "Dataset",
-        embedding_model: t.Union["BaseRagasEmbeddings", "BaseRagasEmbedding"],
+        embedding_model: "EmbeddingModelType",
         llm: "BaseRagasLLM",
         test_size: float = 0.2,
         random_state: int = 42,
@@ -1237,7 +1244,7 @@ class SimpleLLMMetric(SimpleBaseMetric):
     def align(
         self,
         train_dataset: "Dataset",
-        embedding_model: t.Union["BaseRagasEmbeddings", "BaseRagasEmbedding"],
+        embedding_model: "EmbeddingModelType",
         **kwargs: t.Dict[str, t.Any],
     ):
         """
@@ -1374,16 +1381,17 @@ class SimpleLLMMetric(SimpleBaseMetric):
         metric_type = self.__class__.__name__
 
         # Get allowed values in a clean format
-        allowed_values_str = ""
-        if hasattr(self, "allowed_values"):
-            if isinstance(self.allowed_values, list):
-                allowed_values_str = f", allowed_values={self.allowed_values}"
-            elif isinstance(self.allowed_values, tuple):
-                allowed_values_str = f", allowed_values={self.allowed_values}"
-            elif isinstance(self.allowed_values, range):
-                allowed_values_str = f", allowed_values=({self.allowed_values.start}, {self.allowed_values.stop})"
-            else:
-                allowed_values_str = f", allowed_values={self.allowed_values}"
+        allowed_values = self.allowed_values
+        if isinstance(allowed_values, list):
+            allowed_values_str = f", allowed_values={allowed_values}"
+        elif isinstance(allowed_values, tuple):
+            allowed_values_str = f", allowed_values={allowed_values}"
+        elif isinstance(allowed_values, range):
+            allowed_values_str = (
+                f", allowed_values=({allowed_values.start}, {allowed_values.stop})"
+            )
+        else:
+            allowed_values_str = f", allowed_values={allowed_values}"
 
         # Get prompt string (truncated)
         prompt_str = ""

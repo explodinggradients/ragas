@@ -7,6 +7,9 @@ from dataclasses import dataclass, field
 
 from pydantic import Field
 
+if t.TYPE_CHECKING:
+    from ragas.metrics.base import EmbeddingModelType
+
 from .base import SimpleLLMMetric
 from .decorator import DiscreteMetricProtocol, create_metric_decorator
 from .validators import DiscreteValidator
@@ -46,7 +49,7 @@ class DiscreteMetric(SimpleLLMMetric, DiscreteValidator):
 
     @classmethod
     def load(
-        cls, path: str, embedding_model: t.Optional[t.Any] = None
+        cls, path: str, embedding_model: t.Optional["EmbeddingModelType"] = None
     ) -> "DiscreteMetric":
         """
         Load a DiscreteMetric from a JSON file.

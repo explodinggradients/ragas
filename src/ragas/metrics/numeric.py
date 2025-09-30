@@ -5,6 +5,9 @@ __all__ = ["numeric_metric", "NumericMetric"]
 import typing as t
 from dataclasses import dataclass
 
+if t.TYPE_CHECKING:
+    from ragas.metrics.base import EmbeddingModelType
+
 from .base import SimpleLLMMetric
 from .decorator import NumericMetricProtocol, create_metric_decorator
 from .validators import NumericValidator
@@ -47,7 +50,7 @@ class NumericMetric(SimpleLLMMetric, NumericValidator):
 
     @classmethod
     def load(
-        cls, path: str, embedding_model: t.Optional[t.Any] = None
+        cls, path: str, embedding_model: t.Optional["EmbeddingModelType"] = None
     ) -> "NumericMetric":
         """
         Load a NumericMetric from a JSON file.

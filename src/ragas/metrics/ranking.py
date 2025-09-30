@@ -7,6 +7,9 @@ from dataclasses import dataclass
 
 from pydantic import Field
 
+if t.TYPE_CHECKING:
+    from ragas.metrics.base import EmbeddingModelType
+
 from .base import SimpleLLMMetric
 from .decorator import RankingMetricProtocol, create_metric_decorator
 from .validators import RankingValidator
@@ -51,7 +54,7 @@ class RankingMetric(SimpleLLMMetric, RankingValidator):
 
     @classmethod
     def load(
-        cls, path: str, embedding_model: t.Optional[t.Any] = None
+        cls, path: str, embedding_model: t.Optional["EmbeddingModelType"] = None
     ) -> "RankingMetric":
         """
         Load a RankingMetric from a JSON file.
