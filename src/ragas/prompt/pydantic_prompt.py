@@ -249,7 +249,28 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
 
         output_models = []
         parser = RagasOutputParser(pydantic_object=self.output_model)
-        for i in range(n):
+
+        # Handle cases where LLM returns fewer generations than requested
+        if is_langchain_llm(llm):
+            available_generations = len(resp.generations)
+        else:
+            available_generations = len(resp.generations[0]) if resp.generations else 0
+
+        actual_n = min(n, available_generations)
+
+        if actual_n == 0:
+            logger.error(
+                f"LLM returned no generations when {n} were requested. Cannot proceed."
+            )
+            raise ValueError(f"LLM returned no generations when {n} were requested")
+
+        if actual_n < n:
+            logger.warning(
+                f"LLM returned {actual_n} generations instead of requested {n}. "
+                f"Proceeding with {actual_n} generations."
+            )
+
+        for i in range(actual_n):
             if is_langchain_llm(llm):
                 # For LangChain LLMs, each generation is in a separate batch result
                 output_string = resp.generations[i][0].text
