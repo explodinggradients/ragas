@@ -25,7 +25,9 @@ else:
     except ImportError:
         from typing import Protocol
 
+from .base import SimpleBaseMetric
 from .result import MetricResult
+from .validators import get_validator_for_allowed_values
 
 # Type variables for generic typing
 F = t.TypeVar("F", bound=t.Callable[..., t.Any])
@@ -78,15 +80,12 @@ class RankingMetricProtocol(BaseMetricProtocol, Protocol):
     allowed_values: int  # Expected list length
 
 
-def create_metric_decorator(metric_class):
+def create_metric_decorator():
     """
     Factory function that creates decorator factories for different metric types.
 
-    Args:
-        metric_class: The metric class to use (DiscreteMetrics, NumericMetrics, etc.)
-
     Returns:
-        A decorator factory function for the specified metric type
+        A decorator factory function that determines the metric type based on allowed_values
     """
 
     def decorator_factory(
@@ -111,45 +110,20 @@ def create_metric_decorator(metric_class):
             is_async = inspect.iscoroutinefunction(func)
             sig = inspect.signature(func)
 
+            # Determine the appropriate validator based on allowed_values
+            allowed_values = metric_params.get("allowed_values")
+            validator_class = get_validator_for_allowed_values(allowed_values)
+
             # TODO: Move to dataclass type implementation
             @dataclass
-            class CustomMetric(metric_class):
+            class CustomMetric(SimpleBaseMetric, validator_class):
                 _func: t.Any = field(default=None, init=False)
+                _metric_params: t.Any = field(default=None, init=False)
+                allowed_values: t.Any = field(default=None, init=False)
 
                 def _validate_result_value(self, result_value):
-                    """Validate result value based on metric type constraints."""
-                    # Discrete metric validation
-                    if hasattr(self, "allowed_values") and isinstance(
-                        self.allowed_values, list
-                    ):
-                        if result_value not in self.allowed_values:
-                            return f"Metric {self.name} returned '{result_value}' but expected one of {self.allowed_values}"
-
-                    # Numeric metric validation
-                    if hasattr(self, "allowed_values") and isinstance(
-                        self.allowed_values, (tuple, range)
-                    ):
-                        if not isinstance(result_value, (int, float)):
-                            return f"Metric {self.name} returned '{result_value}' but expected a numeric value"
-
-                        if isinstance(self.allowed_values, tuple):
-                            min_val, max_val = self.allowed_values
-                            if not (min_val <= result_value <= max_val):
-                                return f"Metric {self.name} returned {result_value} but expected value in range {self.allowed_values}"
-                        elif isinstance(self.allowed_values, range):
-                            if result_value not in self.allowed_values:
-                                return f"Metric {self.name} returned {result_value} but expected value in range {self.allowed_values}"
-
-                    # Ranking metric validation
-                    if hasattr(self, "allowed_values") and isinstance(
-                        self.allowed_values, int
-                    ):
-                        if not isinstance(result_value, list):
-                            return f"Metric {self.name} returned '{result_value}' but expected a list"
-                        if len(result_value) != self.allowed_values:
-                            return f"Metric {self.name} returned list of length {len(result_value)} but expected {self.allowed_values} items"
-
-                    return None  # No validation error
+                    """Validate result value using the appropriate validator mixin."""
+                    return self.validate_result_value(result_value)
 
                 def _create_positional_error(self, args: tuple, kwargs: dict) -> str:
                     """Create error message for positional arguments."""
@@ -338,10 +312,15 @@ def create_metric_decorator(metric_class):
                         return self._func(*args, **kwargs)
 
             # Create the metric instance with all parameters
-            metric_instance = CustomMetric(name=metric_name, **metric_params)
+            metric_instance = CustomMetric(name=metric_name)
 
-            # Store the original function for direct calling
+            # Store metric parameters and original function
+            metric_instance._metric_params = metric_params
             metric_instance._func = func
+
+            # Set allowed_values if provided
+            if "allowed_values" in metric_params:
+                metric_instance.allowed_values = metric_params["allowed_values"]
 
             # Preserve metadata
             metric_instance.__name__ = metric_name
