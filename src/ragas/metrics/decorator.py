@@ -160,7 +160,10 @@ def create_metric_decorator():
                         # Get type hint, default to str if no hint available
                         type_hint = type_hints.get(name, param.annotation)
                         if type_hint == inspect.Parameter.empty:
-                            type_hint = str
+                            if param.default != inspect.Parameter.empty:
+                                type_hint = type(param.default)
+                            else:
+                                type_hint = str
 
                         # Get default value
                         if param.default != inspect.Parameter.empty:
