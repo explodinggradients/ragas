@@ -805,8 +805,35 @@ class SimpleLLMMetric(SimpleBaseMetric):
 
         response = llm.generate(prompt_input, response_model=self._response_model)
         traces["output"] = response.model_dump()
-        result = MetricResult(**response.model_dump())
-        result.traces = traces
+
+        # Create MetricResult with proper field mapping
+        # MetricResult expects: value, reason, traces
+        # But response models may have different field names
+        response_dict = response.model_dump()
+
+        # Try to map common field names to MetricResult format
+        if "score" in response_dict:
+            # For numeric metrics, use 'score' as the value
+            result = MetricResult(
+                value=response_dict.get("score"),
+                reason=response_dict.get("reasoning") or response_dict.get("reason"),
+                traces=traces,
+            )
+        elif "value" in response_dict:
+            # If already has 'value' field, use it directly
+            result = MetricResult(
+                value=response_dict.get("value"),
+                reason=response_dict.get("reasoning") or response_dict.get("reason"),
+                traces=traces,
+            )
+        else:
+            # Fallback: use the entire response as the value
+            result = MetricResult(
+                value=response,
+                reason=response_dict.get("reasoning") or response_dict.get("reason"),
+                traces=traces,
+            )
+
         return result
 
     async def ascore(self, **kwargs) -> "MetricResult":
@@ -826,8 +853,35 @@ class SimpleLLMMetric(SimpleBaseMetric):
             response_model=self._response_model,
         )
         traces["output"] = response.model_dump()
-        result = MetricResult(**response.model_dump())  # Fixed missing parentheses
-        result.traces = traces
+
+        # Create MetricResult with proper field mapping
+        # MetricResult expects: value, reason, traces
+        # But response models may have different field names
+        response_dict = response.model_dump()
+
+        # Try to map common field names to MetricResult format
+        if "score" in response_dict:
+            # For numeric metrics, use 'score' as the value
+            result = MetricResult(
+                value=response_dict.get("score"),
+                reason=response_dict.get("reasoning") or response_dict.get("reason"),
+                traces=traces,
+            )
+        elif "value" in response_dict:
+            # If already has 'value' field, use it directly
+            result = MetricResult(
+                value=response_dict.get("value"),
+                reason=response_dict.get("reasoning") or response_dict.get("reason"),
+                traces=traces,
+            )
+        else:
+            # Fallback: use the entire response as the value
+            result = MetricResult(
+                value=response,
+                reason=response_dict.get("reasoning") or response_dict.get("reason"),
+                traces=traces,
+            )
+
         return result
 
     def batch_score(
