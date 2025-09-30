@@ -83,7 +83,14 @@ class NumericMetric(SimpleLLMMetric, NumericValidator):
         if hasattr(metric, "allowed_values") and isinstance(
             metric.allowed_values, list
         ):
-            metric.allowed_values = tuple(metric.allowed_values)
+            # Ensure it's a 2-element tuple for NumericMetric
+            if len(metric.allowed_values) == 2:
+                metric.allowed_values = (
+                    metric.allowed_values[0],
+                    metric.allowed_values[1],
+                )
+            else:
+                metric.allowed_values = tuple(metric.allowed_values)  # type: ignore
 
         return metric
 
