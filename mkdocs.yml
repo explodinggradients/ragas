@@ -131,6 +131,7 @@ nav:
           - Haystack: howtos/integrations/haystack.md
           - Griptape: howtos/integrations/griptape.md
           - LangChain: howtos/integrations/langchain.md
+          - OCI Gen AI: howtos/integrations/oci_genai.md
           - LangGraph: howtos/integrations/_langgraph_agent_evaluation.md
           - LangSmith: howtos/integrations/langsmith.md
           - LlamaIndex RAG: howtos/integrations/_llamaindex.md
