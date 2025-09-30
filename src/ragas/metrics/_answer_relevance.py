@@ -116,7 +116,7 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     ) -> float:
         question = row["user_input"]
         gen_questions = [answer.question for answer in answers]
-        committal = np.any([answer.noncommittal for answer in answers])
+        all_noncommittal = np.all([answer.noncommittal for answer in answers])
         if all(q == "" for q in gen_questions):
             logger.warning(
                 "Invalid JSON response. Expected dictionary with key 'question'"
@@ -124,7 +124,7 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
             score = np.nan
         else:
             cosine_sim = self.calculate_similarity(question, gen_questions)
-            score = cosine_sim.mean() * int(not committal)
+            score = cosine_sim.mean() * int(not all_noncommittal)
 
         return score
 
