@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import logging
-import typing as t
 import math
+import typing as t
 
-from ragas.dataset_schema import EvaluationDataset, SingleTurnSample, EvaluationResult
+from ragas.dataset_schema import EvaluationDataset, EvaluationResult, SingleTurnSample
 from ragas.embeddings import LlamaIndexEmbeddingsWrapper
 from ragas.evaluation import evaluate as ragas_evaluate
 from ragas.executor import Executor
