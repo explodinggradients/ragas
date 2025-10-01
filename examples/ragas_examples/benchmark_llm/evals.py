@@ -39,7 +39,7 @@ def discount_accuracy(prediction: str, expected_discount):
 
 
 @experiment()
-async def benchmark_experiment(row, model_name: str, experiment_name: str):
+async def benchmark_experiment(row, model_name: str):
     """Benchmark experiment function that evaluates a model on discount calculation."""
     # Get model response
     response = await run_prompt(row["customer_profile"], model=model_name)
@@ -59,7 +59,6 @@ async def benchmark_experiment(row, model_name: str, experiment_name: str):
     return {
         **row,
         "model": model_name,
-        "experiment_name": experiment_name,
         "response": response,
         "predicted_discount": predicted_discount,
         "score": score.value,
@@ -95,9 +94,9 @@ def compare_inputs_to_output(
     experiment_names = []
     for path in inputs:
         df = pd.read_csv(path)
-        if "experiment_name" not in df.columns:
-            raise ValueError(f"Missing 'experiment_name' column in {path}")
-        exp_name = str(df["experiment_name"].iloc[0])
+        if "model" not in df.columns:
+            raise ValueError(f"Missing 'model' column in {path}")
+        exp_name = str(df["model"].iloc[0])
         experiment_names.append(exp_name)
         dataframes.append(df)
 
@@ -207,8 +206,7 @@ async def run_command(model: str, name: Optional[str]) -> None:
     results = await benchmark_experiment.arun(
         dataset, 
         name=f"{run_id}-{exp_name}",
-        model_name=model,
-        experiment_name=exp_name
+        model_name=model
     )
     print(f"✅ {exp_name}: {len(results)} cases evaluated")
     print(f"Results saved to: {os.path.join(experiments_dir, results.name)}.csv")

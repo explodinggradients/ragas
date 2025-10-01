@@ -29,58 +29,32 @@ export OPENAI_API_KEY=your_actual_api_key
 
 ## Test your setup
 
-Verify your setup works:
+Test the discount calculation with a sample customer profile:
 
-```bash
-python -m ragas_examples.benchmark_llm.prompt
+```python
+from ragas_examples.benchmark_llm.prompt import run_prompt
+
+# Test with a sample customer profile
+customer_profile = """
+Customer Profile:
+- Name: Sarah Johnson
+- Age: 67
+- Student: No
+- Annual Income: $45,000
+- Premium Member: Yes, for 3 years
+- Account Age: 3 years
+"""
+
+result = await run_prompt(customer_profile)
+print(result)
 ```
 
-This will test a sample customer profile to ensure your setup works. 
-
-You should see structured JSON responses showing discount calculations and reasoning.
-
-??? example "Example output"
-    ```bash
-    $ python -m ragas_examples.benchmark_llm.prompt
-    ```
-    Output:
-    ```
-    === System Prompt ===
-
-    You are a discount calculation assistant. I will provide a customer profile and you must calculate their discount percentage and explain your reasoning.
-
-    Discount rules:
-    - Age 65+ OR student status: 15% discount
-    - Annual income < $30,000: 20% discount  
-    - Premium member for 2+ years: 10% discount
-    - New customer (< 6 months): 5% discount
-
-    Rules can stack up to a maximum of 35% discount.
-
-    Respond in JSON format only:
+??? "📋 Output"
+    ```json
     {
-    "discount_percentage": number,
-    "reason": "clear explanation of which rules apply and calculations",
-    "applied_rules": ["list", "of", "applied", "rule", "names"]
-    }
-
-
-    === Customer Profile ===
-
-        Customer Profile:
-        - Name: Sarah Johnson
-        - Age: 67
-        - Student: No
-        - Annual Income: $45,000
-        - Premium Member: Yes, for 3 years
-        - Account Age: 3 years
-        
-
-    === Running Prompt with default model gpt-4.1-nano-2025-04-14 ===
-    {
-    "discount_percentage": 25,
-    "reason": "Sarah qualifies for a 15% discount due to age (67). She also gets a 10% discount for being a premium member for over 2 years. The total stacking of 15% and 10% discounts results in 25%. No other discounts apply based on income or account age.",
-    "applied_rules": ["Age 65+", "Premium member for 2+ years"]
+      "discount_percentage": 25,
+      "reason": "Sarah qualifies for a 15% discount due to age (67). She also gets a 10% discount for being a premium member for over 2 years. The total stacking of 15% and 10% discounts results in 25%. No other discounts apply based on income or account age.",
+      "applied_rules": ["Age 65+", "Premium member for 2+ years"]
     }
     ```
 
@@ -164,7 +138,7 @@ Each model evaluation follows this experiment pattern:
 
 ```python
 @experiment()
-async def benchmark_experiment(row):
+async def benchmark_experiment(row, model_name: str):
     # Get model response
     response = await run_prompt(row["customer_profile"], model=model_name)
     
@@ -184,34 +158,53 @@ async def benchmark_experiment(row):
     return {
         **row,
         "model": model_name,
-        "experiment_name": experiment_name,
         "response": response,
         "predicted_discount": predicted_discount,
         "score": score.value,
         "score_reason": score.reason
     }
-
-return benchmark_experiment
 ```
 
 ## Run experiments
 
-We've setup the main evals code such that you can run it with different models using CLI. We'll use these example models:
+Run evaluation experiments with both baseline and candidate models. We'll compare these example models:
 
 - Baseline: "gpt-4.1-nano-2025-04-14"
 - Candidate: "gpt-5-nano-2025-08-07"
 
-```bash
-# Baseline
-python -m ragas_examples.benchmark_llm.evals run --model "gpt-4.1-nano-2025-04-14"
+```python
+from ragas_examples.benchmark_llm.evals import benchmark_experiment, load_dataset
 
-# Candidate
-python -m ragas_examples.benchmark_llm.evals run --model "gpt-5-nano-2025-08-07"
+# Load dataset
+dataset = load_dataset()
+print(f"Dataset loaded with {len(dataset)} samples")
+
+# Run baseline experiment
+baseline_results = await benchmark_experiment.arun(
+    dataset,
+    name="gpt-4.1-nano-2025-04-14",
+    model_name="gpt-4.1-nano-2025-04-14"
+)
+
+# Calculate and display accuracy
+baseline_accuracy = sum(1 for r in baseline_results if r["score"] == "correct") / len(baseline_results)
+print(f"Baseline Accuracy: {baseline_accuracy:.2%}")
+
+# Run candidate experiment
+candidate_results = await benchmark_experiment.arun(
+    dataset,
+    name="gpt-5-nano-2025-08-07",
+    model_name="gpt-5-nano-2025-08-07"
+)
+
+# Calculate and display accuracy
+candidate_accuracy = sum(1 for r in candidate_results if r["score"] == "correct") / len(candidate_results)
+print(f"Candidate Accuracy: {candidate_accuracy:.2%}")
 ```
 
-Each command saves a CSV under `experiments/` with per-row results, including:
+Each experiment saves a CSV under `experiments/` with per-row results, including:
 
-- id, model, experiment_name, response, predicted_discount, score, score_reason
+- id, model, response, predicted_discount, score, score_reason
 
 ??? example "Sample experiment output (only showing few columns for readability)"
     | ID | Description | Expected | Predicted | Score | Score Reason |
@@ -229,34 +222,39 @@ Each command saves a CSV under `experiments/` with per-row results, including:
 
 ## Compare results
 
-After running experiments with different models, you'll want to see how they performed side-by-side. We've setup a simple compare command that takes your experiment results and puts them in one file so you can easily see which model did better on each test case. You can open this in your CSV viewer (Excel/Google Sheets/Numbers) to review.
+After running experiments with different models, compare their performance side-by-side:
 
-```bash
-python -m ragas_examples.benchmark_llm.evals compare \
-  --inputs 'experiments/exp1.csv' 'experiments/exp2.csv'
+```python
+from ragas_examples.benchmark_llm.evals import compare_inputs_to_output
+
+# Compare the two experiment results
+# Update these paths to match your actual experiment output files
+output_path = compare_inputs_to_output(
+    inputs=[
+        "experiments/gpt-4.1-nano-2025-04-14.csv",
+        "experiments/gpt-5-nano-2025-08-07.csv"
+    ]
+)
+
+print(f"Comparison saved to: {output_path}")
 ```
 
-This command will:
+This comparison:
 
-- Read both experiment files
-- Print the accuracy for each model
-- Create a new comparison file with results side-by-side
+- Reads both experiment files
+- Prints accuracy for each model
+- Creates a new CSV with results side-by-side
 
 The comparison file shows:
 
-- The test case details (customer profile, expected discount)
+- Test case details (customer profile, expected discount)
 - For each model: its response, whether it was correct, and why
 
-??? example "Example evaluation output"
-    ```bash
-    $ python -m ragas_examples.benchmark_llm.evals compare \
-      --inputs 'experiments/20250820-145315-gpt-4.1-nano-2025-04-14.csv' 'experiments/20250820-145327-gpt-5-nano-2025-08-07.csv'
-    ```
-    
+??? "📋 Output"
     ```
     gpt-4.1-nano-2025-04-14 Accuracy: 50.00%
     gpt-5-nano-2025-08-07 Accuracy: 90.00%
-    Combined comparison saved to: experiments/20250820-150548-comparison.csv
+    Comparison saved to: experiments/20250820-150548-comparison.csv
     ```
 
 ### Analyze results with the combined CSV
