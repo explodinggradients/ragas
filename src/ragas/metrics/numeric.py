@@ -119,4 +119,4 @@ def numeric_metric(
         allowed_values = (0.0, 1.0)
 
     decorator_factory = create_metric_decorator()
-    return decorator_factory(name=name, allowed_values=allowed_values, **metric_params)
+    return decorator_factory(name=name, allowed_values=allowed_values, **metric_params)  # type: ignore[return-value]
