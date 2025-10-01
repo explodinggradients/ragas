@@ -110,4 +110,4 @@ def ranking_metric(
         allowed_values = 2
 
     decorator_factory = create_metric_decorator()
-    return decorator_factory(name=name, allowed_values=allowed_values, **metric_params)
+    return decorator_factory(name=name, allowed_values=allowed_values, **metric_params)  # type: ignore[return-value]

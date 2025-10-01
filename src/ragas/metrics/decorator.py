@@ -319,22 +319,15 @@ def create_metric_decorator():
                         return self._func(*args, **kwargs)
 
                 def __repr__(self) -> str:
-                    """Return a clean string representation of the decorator-based metric."""
-                    # Get function signature parameters
+                    from ragas.metrics.validators import get_metric_type_name
+
                     param_names = list(sig.parameters.keys())
                     param_str = ", ".join(param_names)
 
-                    # Get metric type based on allowed_values
                     metric_type = "CustomMetric"
                     if hasattr(self, "allowed_values"):
-                        if isinstance(self.allowed_values, list):
-                            metric_type = "DiscreteMetric"
-                        elif isinstance(self.allowed_values, tuple):
-                            metric_type = "NumericMetric"
-                        elif isinstance(self.allowed_values, int):
-                            metric_type = "RankingMetric"
+                        metric_type = get_metric_type_name(self.allowed_values)
 
-                    # Get allowed values string
                     allowed_values_str = ""
                     if hasattr(self, "allowed_values"):
                         allowed_values_str = f"[{self.allowed_values!r}]"

@@ -781,11 +781,29 @@ def create_auto_response_model(name: str, **fields):
         Name for the model class
     **fields
         Field definitions in create_model format
+        Each field is specified as: field_name=(type, default_or_field_info)
 
     Returns:
     --------
     Type[BaseModel]
         Pydantic model class marked as auto-generated
+
+    Examples:
+    ---------
+    >>> from pydantic import Field
+    >>> # Simple model with required fields
+    >>> ResponseModel = create_auto_response_model(
+    ...     "ResponseModel",
+    ...     value=(str, ...),
+    ...     reason=(str, ...)
+    ... )
+    >>>
+    >>> # Model with Field validators and descriptions
+    >>> ResponseModel = create_auto_response_model(
+    ...     "ResponseModel",
+    ...     value=(str, Field(..., description="The predicted value")),
+    ...     reason=(str, Field(..., description="Reasoning for the prediction"))
+    ... )
     """
     from pydantic import create_model
 
@@ -927,22 +945,32 @@ class SimpleLLMMetric(SimpleBaseMetric):
             elif not file_path.suffix:
                 file_path = file_path.with_suffix(".json")
 
+        # Collect warning messages for data loss
+        warning_messages = []
+
         if hasattr(self, "_response_model") and self._response_model:
             # Only warn for custom response models, not auto-generated ones
             if not getattr(self._response_model, "__ragas_auto_generated__", False):
-                warnings.warn(
-                    "Custom response_model cannot be saved and will be lost. "
-                    "You'll need to set it manually after loading."
+                warning_messages.append(
+                    "- Custom response_model will be lost (set it manually after loading)"
                 )
 
-        # Serialize the prompt
-        prompt_data = self._serialize_prompt()
+        # Serialize the prompt (may add embedding_model warning)
+        prompt_data = self._serialize_prompt(warning_messages)
 
         # Determine the metric type
         metric_type = self.__class__.__name__
 
         # Get metric-specific config
         config = self._get_metric_config()
+
+        # Emit consolidated warning if there's data loss
+        if warning_messages:
+            warnings.warn(
+                "Some metric components cannot be saved and will be lost:\n"
+                + "\n".join(warning_messages)
+                + "\n\nYou'll need to provide these when loading the metric."
+            )
 
         data = {
             "format_version": "1.0",
@@ -962,7 +990,7 @@ class SimpleLLMMetric(SimpleBaseMetric):
         except (OSError, IOError) as e:
             raise ValueError(f"Cannot save metric to {file_path}: {e}")
 
-    def _serialize_prompt(self) -> t.Dict[str, t.Any]:
+    def _serialize_prompt(self, warning_messages: t.List[str]) -> t.Dict[str, t.Any]:
         """Serialize the prompt for storage."""
         from ragas.prompt.dynamic_few_shot import DynamicFewShotPrompt
         from ragas.prompt.simple_prompt import Prompt
@@ -970,14 +998,9 @@ class SimpleLLMMetric(SimpleBaseMetric):
         if isinstance(self.prompt, str):
             return {"type": "string", "instruction": self.prompt}
         elif isinstance(self.prompt, DynamicFewShotPrompt):
-            # Warn about embedding model
             if self.prompt.example_store.embedding_model:
-                import warnings
-
-                warnings.warn(
-                    "embedding_model cannot be saved and will be lost. "
-                    "You'll need to provide it when loading using: "
-                    "load(path, embedding_model=YourModel)"
+                warning_messages.append(
+                    "- embedding_model will be lost (provide it when loading: load(path, embedding_model=YourModel))"
                 )
 
             return {
@@ -1171,13 +1194,26 @@ class SimpleLLMMetric(SimpleBaseMetric):
         prompt_type = prompt_data.get("type")
 
         if prompt_type == "string":
+            if "instruction" not in prompt_data:
+                raise ValueError(
+                    "Prompt data missing required 'instruction' field for string prompt"
+                )
             return prompt_data["instruction"]
         elif prompt_type == "Prompt":
+            if "instruction" not in prompt_data:
+                raise ValueError(
+                    "Prompt data missing required 'instruction' field for Prompt"
+                )
             examples = [
                 (ex["input"], ex["output"]) for ex in prompt_data.get("examples", [])
             ]
             return Prompt(instruction=prompt_data["instruction"], examples=examples)
         elif prompt_type == "DynamicFewShotPrompt":
+            if "instruction" not in prompt_data:
+                raise ValueError(
+                    "Prompt data missing required 'instruction' field for DynamicFewShotPrompt"
+                )
+
             if not embedding_model:
                 import warnings
 
@@ -1380,35 +1416,32 @@ class SimpleLLMMetric(SimpleBaseMetric):
         """Return a clean string representation of the metric."""
         metric_type = self.__class__.__name__
 
-        # Get allowed values in a clean format
         allowed_values = self.allowed_values
-        if isinstance(allowed_values, list):
-            allowed_values_str = f", allowed_values={allowed_values}"
-        elif isinstance(allowed_values, tuple):
-            allowed_values_str = f", allowed_values={allowed_values}"
-        elif isinstance(allowed_values, range):
+        if isinstance(allowed_values, range):
             allowed_values_str = (
                 f", allowed_values=({allowed_values.start}, {allowed_values.stop})"
             )
-        else:
+        elif isinstance(allowed_values, (list, tuple, int)):
             allowed_values_str = f", allowed_values={allowed_values}"
+        else:
+            allowed_values_str = f", allowed_values={repr(allowed_values)}"
 
-        # Get prompt string (truncated)
         prompt_str = ""
         if self.prompt:
-            if isinstance(self.prompt, str):
-                instruction = self.prompt
-            else:
-                instruction = (
+            instruction = (
+                self.prompt
+                if isinstance(self.prompt, str)
+                else (
                     self.prompt.instruction
                     if hasattr(self.prompt, "instruction")
                     else str(self.prompt)
                 )
+            )
 
             if instruction:
-                # Truncate long prompts
-                if len(instruction) > 80:
-                    prompt_str = f", prompt='{instruction[:77]}...'"
+                max_len = 80
+                if len(instruction) > max_len:
+                    prompt_str = f", prompt='{instruction[: max_len - 3]}...'"
                 else:
                     prompt_str = f", prompt='{instruction}'"
 
