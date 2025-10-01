@@ -5,22 +5,30 @@ __all__ = ["discrete_metric", "DiscreteMetric"]
 import typing as t
 from dataclasses import dataclass, field
 
-from pydantic import create_model
+from pydantic import Field
+
+if t.TYPE_CHECKING:
+    from ragas.metrics.base import EmbeddingModelType
 
 from .base import SimpleLLMMetric
 from .decorator import DiscreteMetricProtocol, create_metric_decorator
 from .validators import DiscreteValidator
 
 
-@dataclass
+@dataclass(repr=False)
 class DiscreteMetric(SimpleLLMMetric, DiscreteValidator):
     allowed_values: t.List[str] = field(default_factory=lambda: ["pass", "fail"])
 
     def __post_init__(self):
         super().__post_init__()
         values = tuple(self.allowed_values)
-        self._response_model = create_model(
-            "response_model", value=(t.Literal[values], ...), reason=(str, ...)
+        # Use the factory to create and mark the model as auto-generated
+        from ragas.metrics.base import create_auto_response_model
+
+        self._response_model = create_auto_response_model(
+            "DiscreteResponseModel",
+            reason=(str, Field(..., description="Reaoning for the value")),
+            value=(t.Literal[values], Field(..., description="the value predicted")),
         )
 
     def get_correlation(
@@ -38,6 +46,42 @@ class DiscreteMetric(SimpleLLMMetric, DiscreteValidator):
                 "Please install it with `pip install scikit-learn`."
             )
         return cohen_kappa_score(gold_labels, predictions)
+
+    @classmethod
+    def load(
+        cls, path: str, embedding_model: t.Optional["EmbeddingModelType"] = None
+    ) -> "DiscreteMetric":
+        """
+        Load a DiscreteMetric from a JSON file.
+
+        Parameters:
+        -----------
+        path : str
+            File path to load from. Supports .gz compressed files.
+        embedding_model : Optional[Any]
+            Embedding model for DynamicFewShotPrompt. Required if the original used one.
+
+        Returns:
+        --------
+        DiscreteMetric
+            Loaded metric instance
+
+        Raises:
+        -------
+        ValueError
+            If file cannot be loaded or is not a DiscreteMetric
+        """
+        # Validate metric type before loading
+        cls._validate_metric_type(path)
+
+        # Load using parent class method
+        metric = super().load(path, embedding_model=embedding_model)
+
+        # Additional type check for safety
+        if not isinstance(metric, cls):
+            raise ValueError(f"Loaded metric is not a {cls.__name__}")
+
+        return metric
 
 
 def discrete_metric(
