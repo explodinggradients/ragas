@@ -5,6 +5,8 @@ __all__ = [
     "NumericValidator",
     "RankingValidator",
     "AllowedValuesType",
+    "get_validator_for_allowed_values",
+    "get_metric_type_name",
 ]
 
 import typing as t
@@ -109,3 +111,15 @@ def get_validator_for_allowed_values(
     else:
         # Default to discrete if unclear
         return DiscreteValidator
+
+
+def get_metric_type_name(allowed_values: AllowedValuesType) -> str:
+    """Get the metric type name based on allowed_values type."""
+    if isinstance(allowed_values, list):
+        return "DiscreteMetric"
+    elif isinstance(allowed_values, (tuple, range)):
+        return "NumericMetric"
+    elif isinstance(allowed_values, int):
+        return "RankingMetric"
+    else:
+        return "CustomMetric"
