@@ -173,7 +173,16 @@ class TestFindIndirectClusters:
             ),
             (
                 4,
-                [],  # depth_limit=4 > max(cluster_size), so no paths are identified
+                [
+                    ("A", "C"),
+                    ("E", "F", "G"),
+                    ("B", "C"),
+                    ("A", "B"),
+                    ("F", "G"),
+                    ("A", "B", "C"),
+                    ("E", "F"),
+                    ("E", "G"),
+                ],
             ),
         ],
     )

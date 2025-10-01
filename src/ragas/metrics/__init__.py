@@ -11,6 +11,7 @@ from ragas.metrics._answer_similarity import (
 )
 from ragas.metrics._aspect_critic import AspectCritic
 from ragas.metrics._bleu_score import BleuScore
+from ragas.metrics._chrf_score import ChrfScore
 from ragas.metrics._context_entities_recall import (
     ContextEntityRecall,
     context_entity_recall,
@@ -18,6 +19,7 @@ from ragas.metrics._context_entities_recall import (
 from ragas.metrics._context_precision import (
     ContextPrecision,
     ContextUtilization,
+    IDBasedContextPrecision,
     LLMContextPrecisionWithoutReference,
     LLMContextPrecisionWithReference,
     NonLLMContextPrecisionWithReference,
@@ -25,6 +27,7 @@ from ragas.metrics._context_precision import (
 )
 from ragas.metrics._context_recall import (
     ContextRecall,
+    IDBasedContextRecall,
     LLMContextRecall,
     NonLLMContextRecall,
     context_recall,
@@ -63,6 +66,7 @@ from ragas.metrics._string import (
 )
 from ragas.metrics._summarization import SummarizationScore, summarization_score
 from ragas.metrics._tool_call_accuracy import ToolCallAccuracy
+from ragas.metrics._tool_call_f1 import ToolCallF1
 from ragas.metrics._topic_adherence import TopicAdherenceScore
 from ragas.metrics.base import (
     Metric,
@@ -71,10 +75,11 @@ from ragas.metrics.base import (
     MetricWithEmbeddings,
     MetricWithLLM,
     MultiTurnMetric,
+    SimpleBaseMetric as BaseMetric,
+    SimpleLLMMetric as LLMMetric,
     SingleTurnMetric,
 )
 from ragas.metrics.discrete import DiscreteMetric, discrete_metric
-from ragas.metrics.llm_based import BaseLLMMetric, LLMMetric
 from ragas.metrics.numeric import NumericMetric, numeric_metric
 from ragas.metrics.ranking import RankingMetric, ranking_metric
 from ragas.metrics.result import MetricResult
@@ -89,7 +94,7 @@ __all__ = [
     "MultiTurnMetric",
     "MetricOutputType",
     # LLM-based metrics (moved from experimental)
-    "BaseLLMMetric",
+    "BaseMetric",
     "LLMMetric",
     "MetricResult",
     "DiscreteMetric",
@@ -128,19 +133,23 @@ __all__ = [
     "LLMContextPrecisionWithoutReference",
     "NonLLMContextPrecisionWithReference",
     "LLMContextPrecisionWithoutReference",
+    "IDBasedContextPrecision",
     "LLMContextRecall",
     "NonLLMContextRecall",
+    "IDBasedContextRecall",
     "FactualCorrectness",
     "InstanceRubrics",
     "NonLLMStringSimilarity",
     "ExactMatch",
     "StringPresence",
     "BleuScore",
+    "ChrfScore",
     "RougeScore",
     "DataCompyScore",
     "LLMSQLEquivalence",
     "AgentGoalAccuracyWithoutReference",
     "AgentGoalAccuracyWithReference",
+    "ToolCallF1",
     "ToolCallAccuracy",
     "ResponseRelevancy",
     "SemanticSimilarity",
@@ -152,7 +161,3 @@ __all__ = [
     "MultiModalRelevance",
     "multimodal_relevance",
 ]
-
-# Backward compatibility aliases for experimental imports
-# These maintain compatibility while experimental code is migrated
-BaseMetric = BaseLLMMetric  # experimental BaseMetric -> BaseLLMMetric

@@ -12,6 +12,7 @@ from langchain_openai.embeddings import OpenAIEmbeddings
 from pydantic.dataclasses import dataclass
 from pydantic_core import CoreSchema, core_schema
 
+from ragas._analytics import EmbeddingUsageEvent, track
 from ragas.cache import CacheInterface, cacher
 from ragas.embeddings.utils import run_async_in_current_loop, validate_texts
 from ragas.run_config import RunConfig, add_async_retry, add_retry
@@ -22,31 +23,6 @@ if t.TYPE_CHECKING:
 
 
 DEFAULT_MODEL_NAME = "BAAI/bge-small-en-v1.5"
-
-
-class DeprecationHelper:
-    """Helper class to handle deprecation warnings for exported classes.
-
-    This class allows deprecated classes to be imported and used while emitting
-    appropriate warnings, including support for class method access.
-    """
-
-    def __init__(self, new_target: t.Type, deprecation_message: str):
-        self.new_target = new_target
-        self.deprecation_message = deprecation_message
-
-    def _warn(self):
-        import warnings
-
-        warnings.warn(self.deprecation_message, DeprecationWarning, stacklevel=3)
-
-    def __call__(self, *args, **kwargs):
-        self._warn()
-        return self.new_target(*args, **kwargs)
-
-    def __getattr__(self, attr):
-        self._warn()
-        return getattr(self.new_target, attr)
 
 
 class BaseRagasEmbedding(ABC):
@@ -271,7 +247,7 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
     """
     Wrapper for any embeddings from langchain.
 
-    .. deprecated:: 0.3.0
+    .. deprecated::
         LangchainEmbeddingsWrapper is deprecated and will be removed in a future version.
         Use the modern embedding providers directly with embedding_factory() instead:
 
@@ -310,25 +286,73 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
         """
         Embed a single query text.
         """
-        return self.embeddings.embed_query(text)
+        result = self.embeddings.embed_query(text)
+
+        # Track usage
+        track(
+            EmbeddingUsageEvent(
+                provider="langchain",
+                model=getattr(self.embeddings, "model", None),
+                embedding_type="legacy",
+                num_requests=1,
+                is_async=False,
+            )
+        )
+        return result
 
     def embed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
         """
         Embed multiple documents.
         """
-        return self.embeddings.embed_documents(texts)
+        result = self.embeddings.embed_documents(texts)
+
+        # Track usage
+        track(
+            EmbeddingUsageEvent(
+                provider="langchain",
+                model=getattr(self.embeddings, "model", None),
+                embedding_type="legacy",
+                num_requests=len(texts),
+                is_async=False,
+            )
+        )
+        return result
 
     async def aembed_query(self, text: str) -> t.List[float]:
         """
         Asynchronously embed a single query text.
         """
-        return await self.embeddings.aembed_query(text)
+        result = await self.embeddings.aembed_query(text)
+
+        # Track usage
+        track(
+            EmbeddingUsageEvent(
+                provider="langchain",
+                model=getattr(self.embeddings, "model", None),
+                embedding_type="legacy",
+                num_requests=1,
+                is_async=True,
+            )
+        )
+        return result
 
     async def aembed_documents(self, texts: t.List[str]) -> t.List[t.List[float]]:
         """
         Asynchronously embed multiple documents.
         """
-        return await self.embeddings.aembed_documents(texts)
+        result = await self.embeddings.aembed_documents(texts)
+
+        # Track usage
+        track(
+            EmbeddingUsageEvent(
+                provider="langchain",
+                model=getattr(self.embeddings, "model", None),
+                embedding_type="legacy",
+                num_requests=len(texts),
+                is_async=True,
+            )
+        )
+        return result
 
     def set_run_config(self, run_config: RunConfig):
         """
@@ -426,7 +450,8 @@ class HuggingfaceEmbeddings(BaseRagasEmbeddings):
             np.intersect1d(
                 list(MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING_NAMES.values()),
                 config.architectures or [],
-            )
+            ).size
+            != 0
         )
 
         if self.is_cross_encoder:
@@ -488,7 +513,7 @@ class LlamaIndexEmbeddingsWrapper(BaseRagasEmbeddings):
     """
     Wrapper for any embeddings from llama-index.
 
-    .. deprecated:: 0.3.0
+    .. deprecated::
         LlamaIndexEmbeddingsWrapper is deprecated and will be removed in a future version.
         Use the modern embedding providers directly with embedding_factory() instead:
 
@@ -570,6 +595,7 @@ def embedding_factory(
     run_config: t.Optional[RunConfig] = None,
     client: t.Optional[t.Any] = None,
     interface: str = "auto",
+    base_url: t.Optional[str] = None,
     **kwargs: t.Any,
 ) -> t.Union[BaseRagasEmbeddings, BaseRagasEmbedding]:
     """
@@ -594,6 +620,8 @@ def embedding_factory(
     interface : str, optional
         Interface type: "legacy", "modern", or "auto" (default).
         "auto" detects based on parameters.
+    base_url : str, optional
+        Base URL for the API, by default None.
     **kwargs : Any
         Additional provider-specific arguments.
 
@@ -633,15 +661,41 @@ def embedding_factory(
             if _looks_like_model_name(provider)
             else (model or "text-embedding-ada-002")
         )
-        openai_embeddings = OpenAIEmbeddings(model=model_name)
+        openai_embeddings = OpenAIEmbeddings(model=model_name, base_url=base_url)
         if run_config is not None:
             openai_embeddings.request_timeout = run_config.timeout
         else:
             run_config = RunConfig()
-        return LangchainEmbeddingsWrapper(openai_embeddings, run_config=run_config)
+        result = LangchainEmbeddingsWrapper(openai_embeddings, run_config=run_config)
 
-    # Modern interface
-    return _create_modern_embedding(provider, model, client, **kwargs)
+        # Track factory usage (legacy)
+        track(
+            EmbeddingUsageEvent(
+                provider="openai",
+                model=model_name,
+                embedding_type="factory_legacy",
+                num_requests=1,
+                is_async=False,
+            )
+        )
+        return result
+
+    # Modern interface - pass base_url through kwargs for modern providers
+    if base_url is not None:
+        kwargs["base_url"] = base_url
+    result = _create_modern_embedding(provider, model, client, **kwargs)
+
+    # Track factory usage (modern)
+    track(
+        EmbeddingUsageEvent(
+            provider=provider,
+            model=model,
+            embedding_type="factory_modern",
+            num_requests=1,
+            is_async=False,
+        )
+    )
+    return result
 
 
 def _is_legacy_embedding_call(

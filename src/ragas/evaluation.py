@@ -54,8 +54,7 @@ if t.TYPE_CHECKING:
 RAGAS_EVALUATION_CHAIN_NAME = "ragas evaluation"
 
 
-@track_was_completed  # type: ignore
-def evaluate(
+async def aevaluate(
     dataset: t.Union[Dataset, EvaluationDataset],
     metrics: t.Optional[t.Sequence[Metric]] = None,
     llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
@@ -75,48 +74,12 @@ def evaluate(
     return_executor: bool = False,
 ) -> t.Union[EvaluationResult, Executor]:
     """
-    Perform the evaluation on the dataset with different metrics
+    Async version of evaluate that performs evaluation without applying nest_asyncio.
 
-    Parameters
-    ----------
-    dataset : Dataset, EvaluationDataset
-        The dataset used by the metrics to evaluate the RAG pipeline.
-    metrics : list[Metric], optional
-        List of metrics to use for evaluation. If not provided, ragas will run
-        the evaluation on the best set of metrics to give a complete view.
-    llm : BaseRagasLLM, optional
-        The language model (LLM) to use to generate the score for calculating the metrics.
-        If not provided, ragas will use the default
-        language model for metrics that require an LLM. This can be overridden by the LLM
-        specified in the metric level with `metric.llm`.
-    embeddings : BaseRagasEmbeddings, optional
-        The embeddings model to use for the metrics.
-        If not provided, ragas will use the default embeddings for metrics that require embeddings.
-        This can be overridden by the embeddings specified in the metric level with `metric.embeddings`.
-    experiment_name : str, optional
-        The name of the experiment to track. This is used to track the evaluation in the tracing tool.
-    callbacks : Callbacks, optional
-        Lifecycle Langchain Callbacks to run during evaluation.
-        Check the [Langchain documentation](https://python.langchain.com/docs/modules/callbacks/) for more information.
-    run_config : RunConfig, optional
-        Configuration for runtime settings like timeout and retries. If not provided, default values are used.
-    token_usage_parser : TokenUsageParser, optional
-        Parser to get the token usage from the LLM result.
-        If not provided, the cost and total token count will not be calculated. Default is None.
-    raise_exceptions : False
-        Whether to raise exceptions or not. If set to True, the evaluation will raise an exception
-        if any of the metrics fail. If set to False, the evaluation will return `np.nan` for the row that failed. Default is False.
-    column_map : dict[str, str], optional
-        The column names of the dataset to use for evaluation. If the column names of the dataset are different from the default ones,
-        it is possible to provide the mapping as a dictionary here. Example: If the dataset column name is `contexts_v1`, it is possible to pass column_map as `{"contexts": "contexts_v1"}`.
-    show_progress : bool, optional
-        Whether to show the progress bar during evaluation. If set to False, the progress bar will be disabled. The default is True.
-    batch_size : int, optional
-        How large the batches should be. If set to None (default), no batching is done.
-    return_executor : bool, optional
-        If True, returns the Executor instance instead of running evaluation.
-        The returned executor can be used to cancel execution by calling executor.cancel().
-        To get results, call executor.results(). Default is False.
+    This function is the async-first implementation that doesn't patch the event loop,
+    making it safe to use in production async applications.
+
+    Parameters are identical to evaluate() function.
 
     Returns
     -------
@@ -124,29 +87,17 @@ def evaluate(
         If return_executor is False, returns EvaluationResult object containing the scores of each metric.
         If return_executor is True, returns the Executor instance for cancellable execution.
 
-    Raises
-    ------
-    ValueError
-        if validation fails because the columns required for the metrics are missing or
-        if the columns are of the wrong format.
-
     Examples
     --------
-    the basic usage is as follows:
-    ```
-    from ragas import evaluate
+    ```python
+    import asyncio
+    from ragas import aevaluate
 
-    >>> dataset
-    Dataset({
-        features: ['question', 'ground_truth', 'answer', 'contexts'],
-        num_rows: 30
-    })
+    async def main():
+        result = await aevaluate(dataset, metrics)
+        print(result)
 
-    >>> result = evaluate(dataset)
-    >>> print(result)
-    {'context_precision': 0.817,
-    'faithfulness': 0.892,
-    'answer_relevancy': 0.874}
+    asyncio.run(main())
     ```
     """
     column_map = column_map or {}
@@ -161,6 +112,17 @@ def evaluate(
 
     if dataset is None:
         raise ValueError("Provide dataset!")
+
+    # Check metrics are correct type
+    if not isinstance(metrics, (type(None), list)):
+        raise TypeError(
+            "Metrics should be provided in a list, e.g: metrics=[BleuScore()]"
+        )
+
+    if isinstance(metrics, list) and any(not isinstance(m, Metric) for m in metrics):
+        raise TypeError(
+            "All metrics must be initialised metric objects, e.g: metrics=[BleuScore(), AspectCritic()]"
+        )
 
     # default metrics
     if metrics is None:
@@ -302,8 +264,8 @@ def evaluate(
 
     scores: t.List[t.Dict[str, t.Any]] = []
     try:
-        # get the results
-        results = executor.results()
+        # get the results using async method
+        results = await executor.aresults()
         if results == []:
             raise ExceptionInRunner()
 
@@ -362,3 +324,135 @@ def evaluate(
         _analytics_batcher.flush()
 
     return result
+
+
+@track_was_completed
+def evaluate(
+    dataset: t.Union[Dataset, EvaluationDataset],
+    metrics: t.Optional[t.Sequence[Metric]] = None,
+    llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
+    embeddings: t.Optional[
+        BaseRagasEmbeddings | BaseRagasEmbedding | LangchainEmbeddings
+    ] = None,
+    experiment_name: t.Optional[str] = None,
+    callbacks: Callbacks = None,
+    run_config: t.Optional[RunConfig] = None,
+    token_usage_parser: t.Optional[TokenUsageParser] = None,
+    raise_exceptions: bool = False,
+    column_map: t.Optional[t.Dict[str, str]] = None,
+    show_progress: bool = True,
+    batch_size: t.Optional[int] = None,
+    _run_id: t.Optional[UUID] = None,
+    _pbar: t.Optional[tqdm] = None,
+    return_executor: bool = False,
+    allow_nest_asyncio: bool = True,
+) -> t.Union[EvaluationResult, Executor]:
+    """
+    Perform the evaluation on the dataset with different metrics
+
+    Parameters
+    ----------
+    dataset : Dataset, EvaluationDataset
+        The dataset used by the metrics to evaluate the RAG pipeline.
+    metrics : list[Metric], optional
+        List of metrics to use for evaluation. If not provided, ragas will run
+        the evaluation on the best set of metrics to give a complete view.
+    llm : BaseRagasLLM, optional
+        The language model (LLM) to use to generate the score for calculating the metrics.
+        If not provided, ragas will use the default
+        language model for metrics that require an LLM. This can be overridden by the LLM
+        specified in the metric level with `metric.llm`.
+    embeddings : BaseRagasEmbeddings, optional
+        The embeddings model to use for the metrics.
+        If not provided, ragas will use the default embeddings for metrics that require embeddings.
+        This can be overridden by the embeddings specified in the metric level with `metric.embeddings`.
+    experiment_name : str, optional
+        The name of the experiment to track. This is used to track the evaluation in the tracing tool.
+    callbacks : Callbacks, optional
+        Lifecycle Langchain Callbacks to run during evaluation.
+        Check the [Langchain documentation](https://python.langchain.com/docs/modules/callbacks/) for more information.
+    run_config : RunConfig, optional
+        Configuration for runtime settings like timeout and retries. If not provided, default values are used.
+    token_usage_parser : TokenUsageParser, optional
+        Parser to get the token usage from the LLM result.
+        If not provided, the cost and total token count will not be calculated. Default is None.
+    raise_exceptions : False
+        Whether to raise exceptions or not. If set to True, the evaluation will raise an exception
+        if any of the metrics fail. If set to False, the evaluation will return `np.nan` for the row that failed. Default is False.
+    column_map : dict[str, str], optional
+        The column names of the dataset to use for evaluation. If the column names of the dataset are different from the default ones,
+        it is possible to provide the mapping as a dictionary here. Example: If the dataset column name is `contexts_v1`, it is possible to pass column_map as `{"contexts": "contexts_v1"}`.
+    show_progress : bool, optional
+        Whether to show the progress bar during evaluation. If set to False, the progress bar will be disabled. The default is True.
+    batch_size : int, optional
+        How large the batches should be. If set to None (default), no batching is done.
+    return_executor : bool, optional
+        If True, returns the Executor instance instead of running evaluation.
+        The returned executor can be used to cancel execution by calling executor.cancel().
+        To get results, call executor.results(). Default is False.
+    allow_nest_asyncio : bool, optional
+        Whether to allow nest_asyncio patching for Jupyter compatibility.
+        Set to False in production async applications to avoid event loop conflicts. Default is True.
+
+    Returns
+    -------
+    EvaluationResult or Executor
+        If return_executor is False, returns EvaluationResult object containing the scores of each metric.
+        If return_executor is True, returns the Executor instance for cancellable execution.
+
+    Raises
+    ------
+    ValueError
+        if validation fails because the columns required for the metrics are missing or
+        if the columns are of the wrong format.
+
+    Examples
+    --------
+    the basic usage is as follows:
+    ```
+    from ragas import evaluate
+
+    >>> dataset
+    Dataset({
+        features: ['question', 'ground_truth', 'answer', 'contexts'],
+        num_rows: 30
+    })
+
+    >>> result = evaluate(dataset)
+    >>> print(result)
+    {'context_precision': 0.817,
+    'faithfulness': 0.892,
+    'answer_relevancy': 0.874}
+    ```
+    """
+
+    # Create async wrapper for aevaluate
+    async def _async_wrapper():
+        return await aevaluate(
+            dataset=dataset,
+            metrics=metrics,
+            llm=llm,
+            embeddings=embeddings,
+            experiment_name=experiment_name,
+            callbacks=callbacks,
+            run_config=run_config,
+            token_usage_parser=token_usage_parser,
+            raise_exceptions=raise_exceptions,
+            column_map=column_map,
+            show_progress=show_progress,
+            batch_size=batch_size,
+            _run_id=_run_id,
+            _pbar=_pbar,
+            return_executor=return_executor,
+        )
+
+    if not allow_nest_asyncio:
+        # Run without nest_asyncio - creates a new event loop
+        import asyncio
+
+        return asyncio.run(_async_wrapper())
+    else:
+        # Default behavior: use nest_asyncio for backward compatibility (Jupyter notebooks)
+        from ragas.async_utils import run
+
+        return run(_async_wrapper())

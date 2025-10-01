@@ -114,11 +114,11 @@
     ```python
     from ragas.llms import LangchainLLMWrapper
     from ragas.embeddings import LangchainEmbeddingsWrapper
-    
+
     # Choose the appropriate import based on your API:
     from langchain_google_genai import ChatGoogleGenerativeAI
     from langchain_google_vertexai import ChatVertexAI
-    
+
     # Initialize with Google AI Studio
     generator_llm = LangchainLLMWrapper(ChatGoogleGenerativeAI(
         model=config["model"],
@@ -126,7 +126,7 @@
         max_tokens=config["max_tokens"],
         top_p=config["top_p"],
     ))
-    
+
     # Or initialize with Vertex AI
     generator_llm = LangchainLLMWrapper(ChatVertexAI(
         model=config["model"],
@@ -143,12 +143,12 @@
 
     ```python
     from langchain_google_genai import HarmCategory, HarmBlockThreshold
-    
+
     safety_settings = {
         HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
         # Add other safety settings as needed
     }
-    
+
     # Apply to your LLM initialization
     generator_llm = LangchainLLMWrapper(ChatGoogleGenerativeAI(
         model=config["model"],
@@ -162,7 +162,7 @@
     ```python
     # Google AI Studio Embeddings
     from langchain_google_genai import GoogleGenerativeAIEmbeddings
-    
+
     generator_embeddings = LangchainEmbeddingsWrapper(GoogleGenerativeAIEmbeddings(
         model="models/embedding-001",  # Google's text embedding model
         task_type="retrieval_document"  # Optional: specify the task type
@@ -172,7 +172,7 @@
     ```python
     # Vertex AI Embeddings
     from langchain_google_vertexai import VertexAIEmbeddings
-    
+
     generator_embeddings = LangchainEmbeddingsWrapper(VertexAIEmbeddings(
         model_name="textembedding-gecko@001",  # or other available model
         project=config["project"],  # Your GCP project ID
@@ -237,7 +237,7 @@
     If you want more information on how to use other Azure services, please refer to the [langchain-azure](https://python.langchain.com/docs/integrations/chat/azure_chat_openai/) documentation.
 
 === "Others"
-    If you are using a different LLM provider and using Langchain to interact with it, you can wrap your LLM in `LangchainLLMWrapper` so that it can be used with ragas.
+    If you are using a different LLM provider and using LangChain to interact with it, you can wrap your LLM in `LangchainLLMWrapper` so that it can be used with ragas.
 
     ```python
     from ragas.llms import LangchainLLMWrapper

@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from pydantic import BaseModel
 
+from ragas._analytics import PromptUsageEvent, track
 from ragas.llms.base import BaseRagasLLM
 from ragas.prompt.pydantic_prompt import PydanticPrompt
 
@@ -117,6 +118,18 @@ class FewShotPydanticPrompt(PydanticPrompt, t.Generic[InputModel, OutputModel]):
     ) -> t.List[OutputModel]:
         # Ensure get_examples returns a sequence of tuples (InputModel, OutputModel)
         self.examples = self.example_store.get_examples(data, self.top_k_for_examples)  # type: ignore
+
+        # Track few-shot prompt usage
+        track(
+            PromptUsageEvent(
+                prompt_type="few_shot",
+                has_examples=len(self.examples) > 0,
+                num_examples=len(self.examples),
+                has_response_model=True,  # FewShotPydanticPrompt always has response model
+                language=self.language,
+            )
+        )
+
         return await super().generate_multiple(
             llm, data, n, temperature, stop, callbacks, retries_left
         )

@@ -6,8 +6,7 @@ from pydantic import BaseModel
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics import AspectCritic, MetricResult, SimpleCriteriaScore
-from ragas.metrics.base import MetricType
-from ragas.metrics.llm_based import LLMMetric
+from ragas.metrics.base import MetricType, SimpleLLMMetric as LLMMetric
 
 
 def test_single_turn_metric():
@@ -111,6 +110,134 @@ def test_metrics_with_definition(metric):
     m.definition = "this is a new definition"
     assert m.definition == "this is a new definition"
     assert "this is a new definition" in m.single_turn_prompt.instruction
+
+
+def test_ignored_columns():
+    """Test that :ignored suffixed columns are properly excluded from all column queries."""
+    from ragas.metrics.base import MetricType, SingleTurnMetric
+
+    @dataclass
+    class TestMetricWithIgnored(SingleTurnMetric):
+        name = "test_metric_with_ignored"  # type: ignore
+        _required_columns: t.Dict[MetricType, t.Set[str]] = field(
+            default_factory=lambda: {
+                MetricType.SINGLE_TURN: {
+                    "user_input",  # Required
+                    "response",  # Required
+                    "retrieved_contexts:optional",  # Optional - should be included when with_optional=True
+                    "reference:ignored",  # Ignored
+                    "rubric:ignored",  # Ignored
+                },
+            }
+        )
+
+        def init(self, run_config):
+            pass
+
+        async def _ascore(self, row, callbacks) -> float:
+            return 0.5
+
+        async def _single_turn_ascore(self, sample: SingleTurnSample, callbacks):
+            return 0.5
+
+    metric = TestMetricWithIgnored()
+
+    # Test required_columns property (should exclude both :optional and :ignored)
+    required_cols = metric.required_columns[MetricType.SINGLE_TURN.name]
+    expected_required = {"user_input", "response"}
+    assert required_cols == expected_required, (
+        f"Expected {expected_required}, got {required_cols}"
+    )
+
+    # Test get_required_columns(with_optional=False) - should exclude both :optional and :ignored
+    required_cols_no_optional = metric.get_required_columns(with_optional=False)[
+        MetricType.SINGLE_TURN.name
+    ]
+    assert required_cols_no_optional == expected_required, (
+        f"Expected {expected_required}, got {required_cols_no_optional}"
+    )
+
+    # Test get_required_columns(with_optional=True) - should include :optional but exclude :ignored
+    required_cols_with_optional = metric.get_required_columns(with_optional=True)[
+        MetricType.SINGLE_TURN.name
+    ]
+    expected_with_optional = {"user_input", "response", "retrieved_contexts"}
+    assert required_cols_with_optional == expected_with_optional, (
+        f"Expected {expected_with_optional}, got {required_cols_with_optional}"
+    )
+
+    # Verify that ignored fields are never included anywhere
+    all_results = [
+        required_cols,
+        required_cols_no_optional,
+        required_cols_with_optional,
+    ]
+    for result in all_results:
+        assert "reference" not in result, (
+            f"Ignored field 'reference' found in result: {result}"
+        )
+        assert "rubric" not in result, (
+            f"Ignored field 'rubric' found in result: {result}"
+        )
+        assert "reference:ignored" not in result, (
+            f"Raw ignored field 'reference:ignored' found in result: {result}"
+        )
+        assert "rubric:ignored" not in result, (
+            f"Raw ignored field 'rubric:ignored' found in result: {result}"
+        )
+
+
+def test_ignored_columns_validation():
+    """Test that validation works correctly with :ignored suffixed columns."""
+    from ragas.metrics.base import MetricType, SingleTurnMetric
+
+    class TestMetric(SingleTurnMetric):
+        name = "test_metric"  # type: ignore
+
+        def init(self, run_config):
+            pass
+
+        async def _ascore(self, row, callbacks) -> float:
+            return 0.5
+
+        async def _single_turn_ascore(self, sample: SingleTurnSample, callbacks):
+            return 0.5
+
+    metric = TestMetric()
+
+    # Test that validation passes for valid columns with :ignored suffix
+    valid_columns_with_ignored = {
+        MetricType.SINGLE_TURN: {
+            "user_input",
+            "response",
+            "reference:ignored",  # Valid base column with :ignored
+            "retrieved_contexts:ignored",  # Valid base column with :ignored
+        }
+    }
+    # This should not raise an error
+    metric.required_columns = valid_columns_with_ignored
+
+    # Test that validation fails for invalid base columns with :ignored suffix
+    with pytest.raises(ValueError, match="Invalid column.*must be one of"):
+        invalid_columns_with_ignored = {
+            MetricType.SINGLE_TURN: {
+                "user_input",
+                "invalid_column:ignored",  # Invalid base column
+            }
+        }
+        metric.required_columns = invalid_columns_with_ignored
+
+    # Test mixed valid and invalid columns
+    with pytest.raises(ValueError, match="Invalid column.*must be one of"):
+        mixed_columns = {
+            MetricType.SINGLE_TURN: {
+                "user_input",
+                "response:optional",  # Valid
+                "reference:ignored",  # Valid
+                "bad_column:ignored",  # Invalid base column
+            }
+        }
+        metric.required_columns = mixed_columns
 
 
 # ====================

@@ -1,0 +1,132 @@
+question,expected_answer,
+"What architecture is the `tokenizers-linux-x64-musl` binary designed for?
+",x86_64-unknown-linux-musl,
+"What is the purpose of the BLIP-Diffusion model?
+",The BLIP-Diffusion model is designed for controllable text-to-image generation and editing.,
+"How can a user claim authorship of a paper on the Hugging Face Hub?
+","By clicking their name on the corresponding Paper page and clicking ""claim authorship"", then confirming the request in paper settings for admin team validation.",
+"What is the purpose of the /healthcheck endpoint in the Datasets server API?
+",Ensure the app is running,
+"What is the default context window size for Local Attention in the LongT5 model?
+",127 tokens,
+"What method is used to load a checkpoint for a task using `AutoPipeline`?
+",from_pretrained(),
+"What is the purpose of Diffusers library?
+",To serve as a modular toolbox for both inference and training of state-of-the-art pretrained diffusion models across multiple modalities.,
+"What method does the EulerAncestralDiscreteScheduler use for sampling?
+",Ancestral sampling with Euler method steps.,
+"What is the name of the large multimodal model that can solve image-text tasks and is based on Flamingo?
+",IDEFICS,
+"What is the purpose of the `gradio.Blocks` API?
+","The `gradio.Blocks` API allows you to have full control over the data flows and layout of your application, enabling the building of complex, multi-step applications.",
+"What is the purpose of the two-stage model proposed in the paper ""Hierarchical Text-Conditional Image Generation with CLIP Latents""?
+",The purpose of the two-stage model is to generate a CLIP image embedding given a text caption and then generate an image conditioned on the image embedding.,
+"What command is used to install the requirements for a research project using 🤗 Transformers?
+",pip install -r requirements.txt,
+"What task does the `roberta-large-mnli` checkpoint perform?
+",Text classification,
+"What service is replacing the Paid tier of the Inference API at Hugging Face?
+",Inference Endpoints,
+"What architectural feature does SqueezeBERT use instead of fully-connected layers for the Q, K, V, and FFN layers?
+",Grouped convolutions,
+"What type of license is the HuggingFace Team's software distributed under?
+","Apache License, Version 2.0",
+"What are the two parameter-reduction techniques proposed in the ALBERT model to lower memory consumption and increase training speed?
+",Splitting the embedding matrix into two smaller matrices and using repeating layers split among groups.,
+"What are the three main steps for fine-tuning a model with the 🤗 Datasets library?
+",1. Load a dataset from the Hugging Face Hub. 2. Preprocess the data with `Dataset.map()`. 3. Load and compute metrics.,
+"What is the maximum improvement in throughput achieved by Hugging Face Infinity compared to vanilla transformers?
+",800%,
+"What is the command to upload a spaCy pipeline to the Hugging Face Hub?
+",python -m spacy huggingface-hub push en_ner_fashion-0.0.0-py3-none-any.whl,
+"What is the time and memory complexity of the Nyströmformer's approximation of self-attention?
+",O(n),
+"What is the goal of the Named Entity Recognition task in token classification?
+","The goal of the Named Entity Recognition task is to find the entities in a piece of text, such as person, location, or organization.",
+"What is the resolution of images used by the CLIPSeg model?
+",352 x 352 pixels,
+"What can you use Gradio for?
+","Create a demo for your machine learning model, share your machine learning model with others, and debug your model.",
+"What TensorFlow API function is used to load a saved tensor file?
+",safetensors.tensorflow.load_file,
+"Where can you access the logs of your Endpoints in Hugging Face Endpoints?
+",In the "Logs" tab of your Endpoint through the UI.,
+"What is the latest task added to Hugging Face AutoTrain for Computer Vision?
+",Image Classification,
+"What is the default repository type created by the `create_repo` function on Hugging Face Hub?
+",model,
+"How many splits does the ""duorc"" dataset have?
+",Six,
+"What is the purpose of Fully Sharded Data Parallel (FSDP) in distributed training?
+","FSDP is developed for distributed training of large pretrained models up to 1T parameters by sharding the model parameters, gradients, and optimizer states across data parallel processes.",
+"What file format is used to save and store PyTorch model weights more securely than `.bin` files?
+",`.safetensors`,
+"What type of security certification does Hugging Face have?
+",SOC2 Type 2 certified,
+"What do RAG models combine to generate outputs?
+",Pretrained dense retrieval (DPR) and sequence-to-sequence models.,
+"What library does MarkupLMFeatureExtractor use to extract data from HTML and XML files?
+",Beautiful Soup,
+"What is the file size limit for syncing to HF Spaces without using Git-LFS?
+",10MB,
+"What is the title of the paper introducing the ByT5 model?
+",ByT5: Towards a token-free future with pre-trained byte-to-byte models,
+"What is the dimension of the feature vector for the base BERT model?
+",768,
+"What special identifier does the WordPiece Model use for continuing subwords?
+",##,
+"What is the purpose of the 🧨 Diffusers tutorials?
+",To provide a gentle introduction to diffusion models and help understand the library fundamentals.,
+"What is the default setting for the `allow_flagging` parameter in Gradio's `Interface`?
+","""manual""",
+"Where can the full code for the Stable Diffusion demo be found?
+",https://hf.co/spaces/stabilityai/stable-diffusion/tree/main,
+"What transformation does the FNet model use to replace the self-attention layer in a BERT model?
+",Fourier transform,
+"What type of test should typically accompany a bug fix in Gradio's testing strategy?
+",Dynamic code test,
+"How can you force mixed precision training when initializing the Accelerator in 🤗 Accelerate?
+",By passing `fp16=True` to the Accelerator init.,
+"What is the purpose of tokenizers in the NLP pipeline?
+",To translate text into data that can be processed by the model.,
+"What is the purpose of the Safety Checker in the Diffusers library?
+",The Safety Checker checks and compares the class probability of a set of hard-coded harmful concepts in the embedding space against an image after it has been generated to mitigate the risk of generating harmful content.,
+"What Python class allows you to retrieve Discussions and Pull Requests from a given repository on the Hugging Face Hub?
+",HfApi,
+"What is the name of the new library introduced by Hugging Face for hosting scikit-learn models?
+",Skops,
+"What is the purpose of Textual Inversion?
+",Textual Inversion is a training method for personalizing models by learning new text embeddings from a few example images.,
+"What is the recommended multiple of batch size for fp16 data type on an A100 GPU?
+",,
+ase, d",64
+"How do you run a Gradio Blocks app in reload mode using a Python IDE?
+",Run `gradio run.py` in the terminal.,
+"How can you install the Hugging Face Unity API in your Unity project?
+","To install the Hugging Face Unity API in your Unity project, go to `Window` -> `Package Manager`, click `+` and select `Add Package from git URL`, then enter `https://github.com/huggingface/unity-api.git`.",
+"What is the pretraining objective of the Wav2Vec2 context network?
+",The pretraining objective of the Wav2Vec2 context network is a contrastive task where the model has to predict the true quantized speech representation of the masked prediction from a set of false ones.,
+"What is the default checkpoint used by the sentiment analysis pipeline in the Transformers library?
+",distilbert base uncased finetuned sst2 english,
+"What is the purpose of the notebook ""How to use DeepSpeed to train models with billions of parameters on Habana Gaudi""?
+",To show how to use DeepSpeed to pre-train/fine-tune the 1.6B-parameter GPT2-XL for causal language modeling on Habana Gaudi.,
+"What command line module does PyTorch provide to run a script on multiple GPUs?
+",torchrun,
+"What is the most popular vision transformer model on the Hugging Face Model Hub for image classification?
+",google/vit-base-patch16-224,
+"What is the command to upload an ESPnet model to a Hugging Face repository?
+",./run.sh --stage 15 --skip_upload_hf false --hf_repo username/model_repo,
+"What file should be added to a model repository to install custom Python dependencies for Inference Endpoints?
+",requirements.txt,
+"How many images are needed to teach new concepts to Stable Diffusion using Textual Inversion?
+",3-5 images,
+"What is the maximum size of a model checkpoint before it is automatically sharded in Transformers version 4.18.0?
+",10GB,
+"What is the purpose of Weights and Biases (W&B) for data scientists and machine learning scientists?
+","To track their machine learning experiments at every stage, from training to production.",
+"What is the name of the open-source library created by Hugging Face to simplify Transformer acceleration?
+",Optimum,
+"What parameter is used to ensure that elements in a row have the same height in Gradio?
+",equal_height,
+"What is the command to install the latest version of Optimum with OpenVINO support?
+",pip install --upgrade-strategy eager optimum["openvino"],

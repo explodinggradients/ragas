@@ -3,7 +3,7 @@
 In this tutorial you will get to learn how to create custom multi-hop queries from your documents. This is a very powerful feature that allows you to create queries that are not possible with the standard query types. This also helps you to create queries that are more specific to your use case.
 
 ### Load sample documents
-I am using documents from [sample of gitlab handbook](https://huggingface.co/datasets/explodinggradients/Sample_Docs_Markdown). You can download it by running the below command.
+I am using documents from [sample of GitLab handbook](https://huggingface.co/datasets/explodinggradients/Sample_Docs_Markdown). You can download it by running the below command.
 
 
 ```python
@@ -58,10 +58,10 @@ embedding = OpenAIEmbeddings(client=openai_client)
 
 ### Setup Extractors and Relationship builders
 
-To create multi-hop queries you need to undestand the set of documents that can be used for it. Ragas uses relationships between documents/nodes to quality nodes for creating multi-hop queries. To concretize, if Node A and Node B and conencted by a relationship (say entity or keyphrase overlap) then you can create a multi-hop query between them.
+To create multi-hop queries you need to understand the set of documents that can be used for it. Ragas uses relationships between documents/nodes to quality nodes for creating multi-hop queries. To concretize, if Node A and Node B are connected by a relationship (say entity or keyphrase overlap) then you can create a multi-hop query between them.
 
 Here we are using 2 extractors and 2 relationship builders.
-- Headline extrator: Extracts headlines from the documents
+- Headline extractor: Extracts headlines from the documents
 - Keyphrase extractor: Extracts keyphrases from the documents
 - Headline splitter: Splits the document into nodes based on headlines
 - OverlapScore Builder: Builds relationship between nodes based on keyphrase overlap
@@ -107,7 +107,7 @@ Applying KeyphrasesExtractor:  78%|███████████████
 Property 'keyphrases' already exists in node 'd68f83'. Skipping!
 Applying KeyphrasesExtractor:  83%|████████████████████████████████████████████████████████████████████████████████████████████▌                  | 30/36 [00:03<00:00,  9.35it/s]Property 'keyphrases' already exists in node '8fdbea'. Skipping!
 Applying KeyphrasesExtractor:  89%|██████████████████████████████████████████████████████████████████████████████████████████████████▋            | 32/36 [00:04<00:00,  7.76it/s]Property 'keyphrases' already exists in node 'ef6ae0'. Skipping!
-```                                                                                                                                                                           
+```
 
 ### Configure personas
 
@@ -128,14 +128,14 @@ persona2 = Persona(
 persona_list = [person1, persona2]
 ```
 
-### Create multi-hop query 
+### Create multi-hop query
 
-Inherit from `MultiHopQuerySynthesizer` and modify the function that generates scenarios for query creation. 
+Inherit from `MultiHopQuerySynthesizer` and modify the function that generates scenarios for query creation.
 
 **Steps**:
 - find qualified set of (nodeA, relationship, nodeB) based on the relationships between nodes
 - For each qualified set
-    - Match the keyphrase with one or more persona. 
+    - Match the keyphrase with one or more persona.
     - Create all possible combinations of (Nodes, Persona, Query Style, Query Length)
     - Samples the required number of queries from the combinations
 
@@ -247,4 +247,4 @@ Output
 
 Yay! You have created a multi-hop query. Now you can create any such queries by creating and exploring relationships between documents.
 
-## 
+##

@@ -17,6 +17,7 @@ import numpy as np
 import tiktoken
 from datasets import Dataset
 from rich.console import Console
+from tqdm.auto import tqdm
 
 if t.TYPE_CHECKING:
     from ragas.metrics.base import Metric
@@ -94,6 +95,25 @@ def get_metric_language(metric: "Metric") -> str:
         if isinstance(value, BasePrompt)
     ]
     return languags[0] if len(languags) > 0 else ""
+
+
+class DeprecationHelper:
+    """Helper class to handle deprecation warnings for exported classes."""
+
+    def __init__(self, new_target: t.Type, deprecation_message: str):
+        self.new_target = new_target
+        self.deprecation_message = deprecation_message
+
+    def _warn(self):
+        warnings.warn(self.deprecation_message, DeprecationWarning, stacklevel=3)
+
+    def __call__(self, *args, **kwargs):
+        self._warn()
+        return self.new_target(*args, **kwargs)
+
+    def __getattr__(self, attr):
+        self._warn()
+        return getattr(self.new_target, attr)
 
 
 def deprecated(
@@ -230,7 +250,9 @@ def camel_to_snake(name):
 def num_tokens_from_string(string: str, encoding_name: str = "cl100k_base") -> int:
     """Returns the number of tokens in a text string."""
     encoding = tiktoken.get_encoding(encoding_name)
-    num_tokens = len(encoding.encode(string))
+    # to prevent error case when document has special tokens like `<endoftext>`
+    # set empty tuple in disallowed_special to allow all special tokens
+    num_tokens = len(encoding.encode(string, disallowed_special=()))
     return num_tokens
 
 
@@ -242,6 +264,51 @@ def batched(iterable: t.Iterable, n: int) -> t.Iterator[t.Tuple]:
     iterator = iter(iterable)
     while batch := tuple(itertools.islice(iterator, n)):
         yield batch
+
+
+class ProgressBarManager:
+    """Manages progress bars for batch and non-batch execution."""
+
+    def __init__(self, desc: str, show_progress: bool):
+        self.desc = desc
+        self.show_progress = show_progress
+
+    def create_single_bar(self, total: int) -> tqdm:
+        """Create a single progress bar for non-batch execution."""
+        return tqdm(
+            total=total,
+            desc=self.desc,
+            disable=not self.show_progress,
+        )
+
+    def create_nested_bars(self, total_jobs: int, batch_size: int):
+        """Create nested progress bars for batch execution."""
+        n_batches = (total_jobs + batch_size - 1) // batch_size
+
+        overall_pbar = tqdm(
+            total=total_jobs,
+            desc=self.desc,
+            disable=not self.show_progress,
+            position=0,
+            leave=True,
+        )
+
+        batch_pbar = tqdm(
+            total=min(batch_size, total_jobs),
+            desc=f"Batch 1/{n_batches}",
+            disable=not self.show_progress,
+            position=1,
+            leave=False,
+        )
+
+        return overall_pbar, batch_pbar, n_batches
+
+    def update_batch_bar(
+        self, batch_pbar: tqdm, batch_num: int, n_batches: int, batch_size: int
+    ):
+        """Update batch progress bar for new batch."""
+        batch_pbar.reset(total=batch_size)
+        batch_pbar.set_description(f"Batch {batch_num}/{n_batches}")
 
 
 _LOGGER_DATE_TIME = "%Y-%m-%d %H:%M:%S"
@@ -580,16 +647,16 @@ def async_to_sync(async_func):
     @functools.wraps(async_func)
     def sync_wrapper(*args, **kwargs):
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                import concurrent.futures
+            # Check if we're already in an event loop
+            asyncio.get_running_loop()
+            # If we get here, we're in a running loop
+            import concurrent.futures
 
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(asyncio.run, async_func(*args, **kwargs))
-                    return future.result()
-            else:
-                return loop.run_until_complete(async_func(*args, **kwargs))
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, async_func(*args, **kwargs))
+                return future.result()
         except RuntimeError:
+            # No event loop running, safe to use asyncio.run
             return asyncio.run(async_func(*args, **kwargs))
 
     return sync_wrapper

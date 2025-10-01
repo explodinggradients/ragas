@@ -18,6 +18,7 @@ from langchain_openai.llms import AzureOpenAI, OpenAI
 from langchain_openai.llms.base import BaseOpenAI
 from pydantic import BaseModel
 
+from ragas._analytics import LLMUsageEvent, track
 from ragas.cache import CacheInterface, cacher
 from ragas.exceptions import LLMDidNotFinishException
 from ragas.integrations.helicone import helicone_config
@@ -133,6 +134,12 @@ class LangchainLLMWrapper(BaseRagasLLM):
     interface. it implements 2 functions:
     - generate_text: for generating text from a given PromptValue
     - agenerate_text: for generating text from a given PromptValue asynchronously
+
+    .. deprecated::
+        LangchainLLMWrapper is deprecated and will be removed in a future version.
+        Use the modern LLM providers instead:
+        from ragas.llms.base import llm_factory; llm = llm_factory("gpt-4o-mini")
+        or from ragas.llms.base import instructor_llm_factory; llm = instructor_llm_factory("openai", client=openai_client)
     """
 
     def __init__(
@@ -215,8 +222,8 @@ class LangchainLLMWrapper(BaseRagasLLM):
         if temperature is None:
             temperature = self.get_temperature(n=n)
         if hasattr(self.langchain_llm, "temperature"):
+            old_temperature = self.langchain_llm.temperature  # type: ignore
             self.langchain_llm.temperature = temperature  # type: ignore
-            old_temperature = temperature
 
         if is_multiple_completion_supported(self.langchain_llm):
             result = self.langchain_llm.generate_prompt(
@@ -240,13 +247,25 @@ class LangchainLLMWrapper(BaseRagasLLM):
         if old_temperature is not None:
             self.langchain_llm.temperature = old_temperature  # type: ignore
 
+        # Track the usage
+        track(
+            LLMUsageEvent(
+                provider="langchain",
+                model=getattr(self.langchain_llm, "model_name", None)
+                or getattr(self.langchain_llm, "model", None),
+                llm_type="langchain_wrapper",
+                num_requests=n,
+                is_async=False,
+            )
+        )
+
         return result
 
     async def agenerate_text(
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: t.Optional[float] = None,
+        temperature: t.Optional[float] = 0.01,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ) -> LLMResult:
@@ -255,8 +274,8 @@ class LangchainLLMWrapper(BaseRagasLLM):
         if temperature is None:
             temperature = self.get_temperature(n=n)
         if hasattr(self.langchain_llm, "temperature") and not self.bypass_temperature:
+            old_temperature = self.langchain_llm.temperature  # type: ignore
             self.langchain_llm.temperature = temperature  # type: ignore
-            old_temperature = temperature
 
         # handle n
         if hasattr(self.langchain_llm, "n"):
@@ -280,6 +299,18 @@ class LangchainLLMWrapper(BaseRagasLLM):
         # reset the temperature to the original value
         if old_temperature is not None:
             self.langchain_llm.temperature = old_temperature  # type: ignore
+
+        # Track the usage
+        track(
+            LLMUsageEvent(
+                provider="langchain",
+                model=getattr(self.langchain_llm, "model_name", None)
+                or getattr(self.langchain_llm, "model", None),
+                llm_type="langchain_wrapper",
+                num_requests=n,
+                is_async=True,
+            )
+        )
 
         return result
 
@@ -306,6 +337,12 @@ class LangchainLLMWrapper(BaseRagasLLM):
 class LlamaIndexLLMWrapper(BaseRagasLLM):
     """
     A Adaptor for LlamaIndex LLMs
+
+    .. deprecated::
+        LlamaIndexLLMWrapper is deprecated and will be removed in a future version.
+        Use the modern LLM providers instead:
+        from ragas.llms.base import llm_factory; llm = llm_factory("gpt-4o-mini")
+        or from ragas.llms.base import instructor_llm_factory; llm = instructor_llm_factory("openai", client=openai_client)
     """
 
     def __init__(
@@ -375,7 +412,7 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
         self,
         prompt: PromptValue,
         n: int = 1,
-        temperature: t.Optional[float] = None,
+        temperature: t.Optional[float] = 0.01,
         stop: t.Optional[t.List[str]] = None,
         callbacks: Callbacks = None,
     ) -> LLMResult:
@@ -433,6 +470,18 @@ def llm_factory(
     openai_model = ChatOpenAI(
         model=model, timeout=timeout, default_headers=default_headers, base_url=base_url
     )
+
+    # Track factory usage
+    track(
+        LLMUsageEvent(
+            provider="openai",
+            model=model,
+            llm_type="factory",
+            num_requests=1,
+            is_async=False,
+        )
+    )
+
     return LangchainLLMWrapper(openai_model, run_config)
 
 
@@ -547,17 +596,29 @@ class InstructorLLM(InstructorBaseRagasLLM):
 
         # If client is async, use the appropriate method to run it
         if self.is_async:
-            return self._run_async_in_current_loop(
+            result = self._run_async_in_current_loop(
                 self.agenerate(prompt, response_model)
             )
         else:
             # Regular sync client, just call the method directly
-            return self.client.chat.completions.create(
+            result = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
                 response_model=response_model,
                 **self.model_args,
             )
+
+        # Track the usage
+        track(
+            LLMUsageEvent(
+                provider=self.provider,
+                model=self.model,
+                llm_type="instructor",
+                num_requests=1,
+                is_async=self.is_async,
+            )
+        )
+        return result
 
     async def agenerate(
         self, prompt: str, response_model: t.Type[InstructorTypeVar]
@@ -572,12 +633,24 @@ class InstructorLLM(InstructorBaseRagasLLM):
             )
 
         # Regular async client, call the method directly
-        return await self.client.chat.completions.create(
+        result = await self.client.chat.completions.create(
             model=self.model,
             messages=messages,
             response_model=response_model,
             **self.model_args,
         )
+
+        # Track the usage
+        track(
+            LLMUsageEvent(
+                provider=self.provider,
+                model=self.model,
+                llm_type="instructor",
+                num_requests=1,
+                is_async=True,
+            )
+        )
+        return result
 
     def _get_client_info(self) -> str:
         """Get client type and async status information."""
@@ -656,8 +729,8 @@ def instructor_llm_factory(
         # Cohere
         llm = instructor_llm_factory("cohere", "command-r-plus", client=cohere_client)
 
-        # Gemini
-        llm = instructor_llm_factory("gemini", "gemini-pro", client=gemini_client)
+        # Google
+        llm = instructor_llm_factory(provider="google", model="gemini-2.0-flash", client=google_client)
 
         # LiteLLM (supports 100+ models)
         llm = instructor_llm_factory("litellm", "gpt-4", client=litellm_client)
@@ -690,17 +763,29 @@ def instructor_llm_factory(
             return instructor.from_anthropic(client)
         elif provider_lower == "cohere":
             return instructor.from_cohere(client)
-        elif provider_lower == "gemini":
-            return instructor.from_gemini(client)
+        elif provider_lower == "google":
+            return instructor.from_genai(client)
         elif provider_lower == "litellm":
             return instructor.from_litellm(client)
         else:
             raise ValueError(
                 f"Unsupported provider: {provider}. "
-                f"Supported providers: openai, anthropic, cohere, gemini, litellm"
+                f"Supported providers: openai, anthropic, cohere, google, litellm"
             )
 
     instructor_patched_client = _initialize_client(provider=provider, client=client)
+
+    # Track factory usage
+    track(
+        LLMUsageEvent(
+            provider=provider,
+            model=model,
+            llm_type="instructor_factory",
+            num_requests=1,
+            is_async=False,
+        )
+    )
+
     return InstructorLLM(
         client=instructor_patched_client, model=model, provider=provider, **kwargs
     )

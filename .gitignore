@@ -164,6 +164,11 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 
+# Cursor
+.cursorignore
+.cursor/*
+!.cursor/rules/
+
 # Ragas specific
 _experiments/
 **/fil-result/
@@ -174,7 +179,8 @@ examples/ragas_examples/_version.py
 .envrc
 uv.lock
 .cache/
-.claude
+.claude/*
+!.claude/commands/
 node_modules
 
 # Ragas examples
@@ -190,3 +196,10 @@ examples/build/
 examples/*.egg-info/
 examples/ragas_examples/_version.py
 examples/ragas_examples/text2sql/experiments/*
+examples/ragas_examples/benchmark_llm/experiments/*
+BookSQL-files
+text2sql_logs
+
+# MLflow artifacts
+mlartifacts
+mlflow.db

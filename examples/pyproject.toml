@@ -2,11 +2,25 @@
 name = "ragas-examples"
 description = "Official examples for the ragas project"
 requires-python = ">=3.9"
-license = {file = "LICENSE"}
+license = {text = "Apache-2.0"}
+authors = [{name = "Ragas Team"}]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = [
-    "ragas",  # workspace dependency - version managed by workspace
-    "openai>=1.0.0",  # required for LLM calls in examples
-    "pandas",  # required for benchmark_llm examples
+    "ragas", # workspace dependency - version managed by workspace
+    "openai>=1.0.0", # required for LLM calls in examples
+    "pandas", # required for benchmark_llm examples
+
 ]
 dynamic = ["version", "readme"]
 
@@ -16,6 +30,21 @@ text2sql = [
     "huggingface_hub>=0.16.0",
     "datacompy>=0.8.0", 
     "python-dotenv>=1.0.0",
+]
+improverag = [
+    "mlflow>=3.1.4",
+    "rank_bm25",
+    "datasets",
+    "langchain",
+    "langchain-community",
+    "tqdm",
+    "python-dotenv>=1.0.0",
+    "openai-agents>=0.2.9",
+]
+llamaindex = [
+    "llama-index>=0.10.0",
+    "llama-index-llms-google-genai",
+    "instructor",
 ]
 
 [project.urls]
@@ -48,8 +77,7 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 version_file = "ragas_examples/_version.py"
 root = ".."
-# Sync with main package version tags (v1.2.3)
-tag_regex = "^v(?P<version>\\d+\\.\\d+\\.\\d+)$"
+# Sync with main package version tags - uses default pattern
 
 # Workspace member configuration  
 [tool.uv.sources]

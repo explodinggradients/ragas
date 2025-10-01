@@ -117,7 +117,7 @@ expected_responses = [
 ]
 ```
 
-To evaluate the Q&A system we need to structure the queries, expected_responses and other metric secpific requirments to [EvaluationDataset][ragas.dataset_schema.EvaluationDataset].
+To evaluate the Q&A system we need to structure the queries, expected_responses and other metric specific requirements to [EvaluationDataset][ragas.dataset_schema.EvaluationDataset].
 
 
 ```python
@@ -141,12 +141,12 @@ for query, reference in zip(sample_queries, expected_responses):
 evaluation_dataset = EvaluationDataset.from_list(dataset)
 ```
 
-To evauate our Q&A application we will use the following metrices.  
+To evaluate our Q&A application we will use the following metrics.
 
 
 - `LLMContextRecall`: Evaluates how well retrieved contexts align with claims in the reference answer, estimating recall without manual reference context annotations.
 - `Faithfulness`: Assesses whether all claims in the generated answer can be inferred directly from the provided context.
-- `Factual Correctness`: Checks the factual accuracy of the generated response by comparing it with a reference, using claim-based evaluation and natural language inference.  
+- `Factual Correctness`: Checks the factual accuracy of the generated response by comparing it with a reference, using claim-based evaluation and natural language inference.
 
 For more details on these metrics and how they apply to evaluating RAG systems, visit [Ragas Metrics Documentation](./../../concepts/metrics/available_metrics/).
 

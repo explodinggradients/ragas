@@ -49,7 +49,7 @@ dataset = generator.generate_with_langchain_docs(docs, testset_size=10)
 
 ### Analyzing the testset
 
-Once you have generated a testset, you would want to view it and select the queries you see fit to include in your final testset. You can export the testset to a pandas dataframe and do various analysis on it.
+Once you have generated a testset, you would want to view it and select the queries you see fit to include in your final testset. You can export the testset to a pandas DataFrame and do various analysis on it.
 
 ```python
 dataset.to_pandas()
@@ -104,7 +104,7 @@ Output
 KnowledgeGraph(nodes: 10, relationships: 0)
 ```
 
-Now we will enrich the knowledge graph with additional information using [Transformations][ragas.testset.transforms.base.BaseGraphTransformation]. Here we will use [default_transforms][ragas.testset.transforms.default_transforms] to create a set of default transformations to apply with an LLM and Embedding Model of your choice. 
+Now we will enrich the knowledge graph with additional information using [Transformations][ragas.testset.transforms.base.BaseGraphTransformation]. Here we will use [default_transforms][ragas.testset.transforms.default_transforms] to create a set of default transformations to apply with an LLM and Embedding Model of your choice.
 But you can mix and match transforms or build your own as needed.
 
 ```python

@@ -85,7 +85,9 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
         return statements
 
     def _compute_score(self, answers: t.Dict) -> float:
-        # relevant retrievals
+        incorrect = ~answers["ground_truth2answer"]
+
+        # Compute relevant retrievals (needed for both modes)
         relevant_retrieved = np.max(
             answers["retrieved2ground_truth"], axis=0, keepdims=True
         )
@@ -93,25 +95,20 @@ class NoiseSensitivity(MetricWithLLM, SingleTurnMetric):
             relevant_retrieved & answers["retrieved2answer"], axis=1
         )
 
-        # irrelevant retrievals
-        irrelevant_retrieved = ~np.max(
-            answers["retrieved2ground_truth"], axis=0, keepdims=True
-        )
-        irrelevant_faithful = np.max(
-            irrelevant_retrieved & answers["retrieved2answer"], axis=1
-        )
-
-        # to keep them exclusive
-        irrelevant_faithful &= ~relevant_faithful
-
-        incorrect = ~answers["ground_truth2answer"]
-        noise_sensitivity_in_relevant = np.mean(relevant_faithful & incorrect)
-        noise_sensitivity_in_irrelevant = np.mean(irrelevant_faithful & incorrect)
-
         if self.mode == "irrelevant":
-            return float(noise_sensitivity_in_irrelevant)
+            # Compute irrelevant retrievals
+            irrelevant_retrieved = ~relevant_retrieved
+            irrelevant_faithful = np.max(
+                irrelevant_retrieved & answers["retrieved2answer"], axis=1
+            )
 
-        return float(noise_sensitivity_in_relevant)
+            # Keep them exclusive (irrelevant should not include relevant)
+            irrelevant_faithful &= ~relevant_faithful
+
+            return float(np.mean(irrelevant_faithful & incorrect))
+
+        else:  # mode == "relevant"
+            return float(np.mean(relevant_faithful & incorrect))
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks

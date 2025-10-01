@@ -1,119 +1,45 @@
 name: Upload ragas-examples Package
 
 on:
-  push:
-    tags:
-      - "v*"  # Sync with main package tags
-  workflow_dispatch:
-    inputs:
-      force_examples_release:
-        description: 'Force examples release even without changes'
-        required: false
-        default: false
-        type: boolean
+  release:
+    types: [published]
+
+permissions:
+  contents: read
 
 jobs:
-  check-examples-changes:
+  deploy:
     runs-on: ubuntu-latest
-    outputs:
-      examples-changed: ${{ steps.changes.outputs.examples }}
-      should-release: ${{ steps.decision.outputs.should-release }}
+    environment: pypi-release
+    strategy:
+      matrix:
+        package:
+          - name: ragas-examples
+            directory: examples
+            token: PYPI_API_TOKEN
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      
-      - name: Check for examples changes
-        id: changes
-        run: |
-          # Get the most recent examples release tag
-          LAST_EXAMPLES_TAG=$(git tag -l "examples-v*" --sort=-version:refname | head -n 1 || echo "")
-          
-          if [ -z "$LAST_EXAMPLES_TAG" ]; then
-            echo "No previous examples releases found, marking as changed"
-            echo "examples=true" >> $GITHUB_OUTPUT
-          else
-            echo "Checking changes since $LAST_EXAMPLES_TAG"
-            if git diff --quiet "$LAST_EXAMPLES_TAG"..HEAD -- examples/; then
-              echo "examples=false" >> $GITHUB_OUTPUT
-              echo "No changes in examples/ directory since $LAST_EXAMPLES_TAG"
-            else
-              echo "examples=true" >> $GITHUB_OUTPUT
-              echo "Changes detected in examples/ directory since $LAST_EXAMPLES_TAG"
-            fi
-          fi
-      
-      - name: Make release decision  
-        id: decision
-        run: |
-          EXAMPLES_CHANGED="${{ steps.changes.outputs.examples }}"
-          FORCE_RELEASE="${{ github.event.inputs.force_examples_release }}"
-          
-          if [ "$EXAMPLES_CHANGED" = "true" ] || [ "$FORCE_RELEASE" = "true" ]; then
-            echo "should-release=true" >> $GITHUB_OUTPUT
-            if [ "$FORCE_RELEASE" = "true" ]; then
-              echo "Releasing examples due to manual override"
-            else
-              echo "Releasing examples due to detected changes"
-            fi
-          else
-            echo "should-release=false" >> $GITHUB_OUTPUT
-            echo "Skipping examples release - no changes detected"
-          fi
-
-  deploy-examples:
-    needs: check-examples-changes
-    if: needs.check-examples-changes.outputs.should-release == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-      
-      - name: Install uv
-        uses: astral-sh/setup-uv@v3
-        with:
-          version: "latest"
-      
-      - name: Install build deps (fallback)
-        run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade setuptools setuptools_scm[toml] build
-      
-      - name: Sync workspace dependencies
-        run: uv sync --locked || uv sync
-      
-      - name: Build examples package with uv
-        run: uv build --package ragas-examples || python -m build
-        working-directory: examples
-      
-      - name: Publish examples to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
-          packages-dir: examples/dist/
-          attestations: false
-      
-      - name: Create examples release tag
-        if: success()
-        run: |
-          # Extract version from built package using uv or fallback to setuptools_scm
-          cd examples
-          VERSION=$(uv run python -c "import ragas_examples; print(ragas_examples.__version__)" 2>/dev/null || python -m setuptools_scm)
-          TAG_NAME="examples-v${VERSION}"
-          
-          cd ..
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          git tag "$TAG_NAME" -m "Release ragas-examples $VERSION"
-          git push origin "$TAG_NAME"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade setuptools setuptools_scm[toml] build 
+    - name: get setuptools-scm version 
+      run: python -m setuptools_scm
+      working-directory: ${{ matrix.package.directory }}
+    - name: Build package
+      run: python -m build
+      working-directory: ${{ matrix.package.directory }}
+    - name: Publish package
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets[matrix.package.token] }}
+        packages-dir: ${{ matrix.package.directory }}/dist/
+        attestations: false
 
 

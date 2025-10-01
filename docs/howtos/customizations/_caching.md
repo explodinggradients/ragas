@@ -7,7 +7,7 @@ You can use the [DiskCacheBackend][ragas.cache.DiskCacheBackend] which uses a lo
 
 ## Using DefaultCacher
 
-Let's see how you can use the [DiskCacheBackend][ragas.cache.DiskCacheBackend]  LLM and Embedding models.
+Let's see how you can use the [DiskCacheBackend][ragas.cache.DiskCacheBackend] LLM and Embedding models.
 
 
 
