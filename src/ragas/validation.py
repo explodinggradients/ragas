@@ -4,6 +4,7 @@ import logging
 import typing as t
 
 from datasets import Dataset, Sequence
+
 from ragas.dataset_schema import EvaluationDataset, MultiTurnSample, SingleTurnSample
 from ragas.metrics.base import Metric, MetricType, MultiTurnMetric, SingleTurnMetric
 

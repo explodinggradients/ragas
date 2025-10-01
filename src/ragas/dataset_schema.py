@@ -19,9 +19,9 @@ from ragas.utils import safe_nanmean
 if t.TYPE_CHECKING:
     from pathlib import Path
 
+    from datasets import Dataset as HFDataset
     from pandas import DataFrame as PandasDataframe
 
-    from datasets import Dataset as HFDataset
     from ragas.callbacks import ChainRun
     from ragas.cost import TokenUsage
 

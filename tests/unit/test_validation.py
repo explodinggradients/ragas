@@ -2,8 +2,8 @@ import typing as t
 from dataclasses import dataclass, field
 
 import pytest
-
 from datasets import Dataset
+
 from ragas.metrics.base import MetricType
 from ragas.validation import remap_column_names, validate_supported_metrics
 

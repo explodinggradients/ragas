@@ -3,12 +3,12 @@ from __future__ import annotations
 import typing as t
 from uuid import UUID
 
+from datasets import Dataset
 from langchain_core.callbacks import BaseCallbackHandler, BaseCallbackManager
 from langchain_core.embeddings import Embeddings as LangchainEmbeddings
 from langchain_core.language_models import BaseLanguageModel as LangchainLLM
 from tqdm.auto import tqdm
 
-from datasets import Dataset
 from ragas._analytics import track_was_completed  # type: ignore
 from ragas.callbacks import ChainType, RagasTracer, new_group
 from ragas.dataset_schema import (
