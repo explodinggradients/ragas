@@ -386,6 +386,33 @@ uv run ruff check --no-fix    # Check issues without fixing
 - **Follow existing code style** (enforced by `make format`)
 
 ---
+#### Python 3.13 on macOS ARM: NumPy fails to install (builds from source)
+
+- Symptom: `make install` attempts to build `numpy==2.0.x` from source on Python 3.13 (no prebuilt wheel), failing with C/C++ errors.
+- Status: Ragas CI supports Python 3.9–3.12. Python 3.13 is not officially supported yet.
+
+Workarounds:
+1) Recommended: use Python 3.12
+```bash
+uv python install 3.12
+rm -rf .venv
+uv venv -p 3.12
+make install
+```
+
+2) Stay on 3.13 (best effort):
+- Install minimal first, then add extras as needed:
+```bash
+rm -rf .venv
+uv venv -p 3.13
+make install-minimal
+uv pip install "ragas[tracing,gdrive,ai-frameworks]"
+```
+- Or force a newer NumPy wheel:
+```bash
+uv pip install "numpy>=2.1" --only-binary=:all:
+```
+If conflicts pin NumPy to 2.0.x, temporarily set `numpy>=2.1` in `pyproject.toml` and run `uv sync --group dev`.
 
 **Happy coding! 🚀**
 
