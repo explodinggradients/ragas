@@ -21,15 +21,46 @@ We'll use discount calculation as our test case: given a customer profile, calcu
 
 ## Set up your environment and API access
 
-First, ensure you have your API credentials configured:
+First, install the ragas-examples package which contains the benchmark LLM example code:
+
+```bash
+pip install ragas[examples]
+```
+
+Next, ensure you have your API credentials configured:
 
 ```bash
 export OPENAI_API_KEY=your_actual_api_key
 ```
 
-## Test your setup
+## The LLM application
 
-Test the discount calculation with a sample customer profile:
+We've set up a simple LLM application for you in the examples package so you can focus on evaluation rather than building the application itself. The application calculates customer discounts based on business rules.
+
+Here's the system prompt that defines the discount calculation logic:
+
+```python
+SYSTEM_PROMPT = """
+You are a discount calculation assistant. I will provide a customer profile and you must calculate their discount percentage and explain your reasoning.
+
+Discount rules:
+- Age 65+ OR student status: 15% discount
+- Annual income < $30,000: 20% discount  
+- Premium member for 2+ years: 10% discount
+- New customer (< 6 months): 5% discount
+
+Rules can stack up to a maximum of 35% discount.
+
+Respond in JSON format only:
+{
+  "discount_percentage": number,
+  "reason": "clear explanation of which rules apply and calculations",
+  "applied_rules": ["list", "of", "applied", "rule", "names"]
+}
+"""
+```
+
+You can test the application with a sample customer profile:
 
 ```python
 from ragas_examples.benchmark_llm.prompt import run_prompt
@@ -91,20 +122,18 @@ It is better to sample real data from your application to create the dataset. If
 
 ```python
 def load_dataset():
-    """Load the dataset from CSV file."""
-    import os
-    # Get the directory where this file is located
+    """Load the dataset from CSV file. Downloads from GitHub if not found locally."""
+    import urllib.request
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    dataset = Dataset.load(
-        name="discount_benchmark",
-        backend="local/csv",
-        root_dir=current_dir
-    )
-    return dataset
+    dataset_path = os.path.join(current_dir, "datasets", "discount_benchmark.csv")
+    # Download dataset from GitHub if it doesn't exist locally
+    if not os.path.exists(dataset_path):
+        os.makedirs(os.path.dirname(dataset_path), exist_ok=True)
+        urllib.request.urlretrieve("https://raw.githubusercontent.com/explodinggradients/ragas/main/examples/ragas_examples/benchmark_llm/datasets/discount_benchmark.csv", dataset_path)
+    return Dataset.load(name="discount_benchmark", backend="local/csv", root_dir=current_dir)
 ```
 
-The dataset loader finds your CSV file in the `datasets/` directory and loads it for evaluation. 
+The dataset loader checks if the CSV file exists locally. If not found, it automatically downloads it from GitHub. 
 
 ### Metrics function
 

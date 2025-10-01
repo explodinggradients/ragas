@@ -67,14 +67,15 @@ async def benchmark_experiment(row, model_name: str):
 
 
 def load_dataset():
-    """Load the dataset from CSV file."""
-    # Get the directory where this file is located
+    """Load the dataset from CSV file. Downloads from GitHub if not found locally."""
+    import urllib.request
     current_dir = os.path.dirname(os.path.abspath(__file__))
-
-    dataset = Dataset.load(
-        name="discount_benchmark", backend="local/csv", root_dir=current_dir
-    )
-    return dataset
+    dataset_path = os.path.join(current_dir, "datasets", "discount_benchmark.csv")
+    # Download dataset from GitHub if it doesn't exist locally
+    if not os.path.exists(dataset_path):
+        os.makedirs(os.path.dirname(dataset_path), exist_ok=True)
+        urllib.request.urlretrieve("https://raw.githubusercontent.com/explodinggradients/ragas/main/examples/ragas_examples/benchmark_llm/datasets/discount_benchmark.csv", dataset_path)
+    return Dataset.load(name="discount_benchmark", backend="local/csv", root_dir=current_dir)
 
 
 def compare_inputs_to_output(
