@@ -1,16 +1,24 @@
 """Validation mixins for different metric types."""
 
-__all__ = ["DiscreteValidator", "NumericValidator", "RankingValidator"]
+__all__ = [
+    "DiscreteValidator",
+    "NumericValidator",
+    "RankingValidator",
+    "AllowedValuesType",
+]
 
 import typing as t
 from abc import ABC
+
+# Type alias for all possible allowed_values types across different metric types
+AllowedValuesType = t.Union[t.List[str], t.Tuple[float, float], range, int]
 
 
 class BaseValidator(ABC):
     """Base validator mixin with common validation interface."""
 
     name: str
-    allowed_values: t.Any
+    # Note: allowed_values is now inherited from SimpleBaseMetric base class
 
     def validate_result_value(self, result_value: t.Any) -> t.Optional[str]:
         """
@@ -80,7 +88,9 @@ class RankingValidator(BaseValidator):
         return None
 
 
-def get_validator_for_allowed_values(allowed_values: t.Any) -> t.Type[BaseValidator]:
+def get_validator_for_allowed_values(
+    allowed_values: AllowedValuesType,
+) -> t.Type[BaseValidator]:
     """
     Get the appropriate validator class based on allowed_values type.
 
