@@ -17,7 +17,7 @@ usecases to solve problems you might encounter when you're building.
 - [Single-hop Query Testset](singlehop_testset_gen.md)
 
 ## Benchmarking
-- [Benchmarking Gemini models](gemini_benchmarking.md)
+- [Evaluate a New LLM For Your Use Case](benchmark_llm.md)
 
 ## RAG Evaluation
 
