@@ -1,17 +1,20 @@
 """Shared utilities for project module."""
 
+from __future__ import annotations
+
 import random
 import string
+import typing as t
 import uuid
 
 
-def create_nano_id(size=12):
+def create_nano_id(size: int = 12) -> str:
     """Create a short, URL-safe unique identifier."""
     # Define characters to use (alphanumeric)
     alphabet = string.ascii_letters + string.digits
 
     # Generate UUID and convert to int
-    uuid_int = uuid.uuid4().int
+    uuid_int = t.cast(int, uuid.uuid4().int)
 
     # Convert to base62
     result = ""
