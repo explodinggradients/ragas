@@ -621,13 +621,14 @@ def find_git_root(start_path: t.Union[str, Path, None] = None) -> Path:
     raise ValueError(f"No git repository found in or above {start_path}")
 
 
-def create_nano_id(size=12):
+def create_nano_id(size: int = 12) -> str:
     """Generate a short unique identifier."""
     # Define characters to use (alphanumeric)
     alphabet = string.ascii_letters + string.digits
 
     # Generate UUID and convert to int
-    uuid_int = uuid.uuid4().int
+    uuid_obj = uuid.uuid4()
+    uuid_int = t.cast(int, uuid_obj.int)
 
     # Convert to base62
     result = ""
