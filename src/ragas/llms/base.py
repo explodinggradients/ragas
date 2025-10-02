@@ -434,18 +434,24 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
 
 def llm_factory(
     model: str = "gpt-4o-mini",
+    provider: str = "openai",
+    client: t.Optional[t.Any] = None,
     run_config: t.Optional[RunConfig] = None,
     default_headers: t.Optional[t.Dict[str, str]] = None,
     base_url: t.Optional[str] = None,
+    **kwargs,
 ) -> BaseRagasLLM:
     """
-    Create and return a BaseRagasLLM instance. Used for running default LLMs used
-    in Ragas (OpenAI).
+    Create and return a BaseRagasLLM instance. Automatically detects modern vs legacy based on client.
 
     Parameters
     ----------
     model : str, optional
         The name of the model to use, by default "gpt-4o-mini".
+    provider : str, optional
+        Provider name (e.g., "openai", "anthropic", "cohere"), by default "openai".
+    client : Any, optional
+        Pre-initialized client for modern providers. When provided, uses modern implementation.
     run_config : RunConfig, optional
         Configuration for the run, by default None.
     default_headers : dict of str, optional
@@ -457,35 +463,165 @@ def llm_factory(
     -------
     BaseRagasLLM
         An instance of BaseRagasLLM configured with the specified parameters.
+
+    Examples
+    --------
+    # Legacy (existing code continues working)
+    llm = llm_factory("gpt-4o-mini")
+
+    # Modern (client signals intent)
+    from openai import OpenAI
+    llm = llm_factory("gpt-4o-mini", client=OpenAI())
+    llm = llm_factory("claude-3-5-sonnet", "anthropic", client=Anthropic())
     """
-    timeout = None
-    if run_config is not None:
-        timeout = run_config.timeout
 
-    # if helicone is enabled, use the helicone
-    if helicone_config.is_enabled:
-        default_headers = helicone_config.default_headers()
-        base_url = helicone_config.base_url
+    if client is None:
+        # Legacy path - existing behavior (UNCHANGED)
+        timeout = None
+        if run_config is not None:
+            timeout = run_config.timeout
 
-    openai_model = ChatOpenAI(
-        model=model, timeout=timeout, default_headers=default_headers, base_url=base_url
-    )
+        # if helicone is enabled, use the helicone
+        if helicone_config.is_enabled:
+            default_headers = helicone_config.default_headers()
+            base_url = helicone_config.base_url
 
-    # Track factory usage
-    track(
-        LLMUsageEvent(
-            provider="openai",
+        openai_model = ChatOpenAI(
             model=model,
-            llm_type="factory",
-            num_requests=1,
-            is_async=False,
+            timeout=timeout,
+            default_headers=default_headers,
+            base_url=base_url,
+            **kwargs,
         )
-    )
 
-    return LangchainLLMWrapper(openai_model, run_config)
+        # Track factory usage
+        track(
+            LLMUsageEvent(
+                provider="openai",
+                model=model,
+                llm_type="factory",
+                num_requests=1,
+                is_async=False,
+            )
+        )
+
+        return LangchainLLMWrapper(openai_model, run_config)
+    else:
+        # Modern path - use instructor with compatibility wrapper
+        instructor_llm = instructor_llm_factory(provider, model, client)
+
+        # Track modern factory usage
+        track(
+            LLMUsageEvent(
+                provider=provider,
+                model=model,
+                llm_type="modern_factory",
+                num_requests=1,
+                is_async=False,
+            )
+        )
+
+        return ModernLLMCompatibilityWrapper(instructor_llm, run_config)
 
 
 # Experimental LLM classes migrated from ragas.experimental.llms
+
+
+class ModernLLMCompatibilityWrapper(BaseRagasLLM):
+    """Wraps InstructorBaseRagasLLM to be BaseRagasLLM compatible."""
+
+    def __init__(
+        self,
+        instructor_llm: "InstructorBaseRagasLLM",
+        run_config: t.Optional[RunConfig] = None,
+    ):
+        super().__init__(run_config=run_config or RunConfig())
+        self.instructor_llm = instructor_llm
+
+    def is_finished(self, response: LLMResult) -> bool:
+        return True
+
+    def generate_text(
+        self,
+        prompt: PromptValue,
+        n: int = 1,
+        temperature: float = 0.01,
+        stop: t.Optional[t.List[str]] = None,
+        callbacks: Callbacks = None,
+    ) -> LLMResult:
+        # Sync wrapper around async method
+        import asyncio
+
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If we're already in an async context, we can't use asyncio.run
+                # This is a limitation - sync calls from async contexts won't work
+                raise RuntimeError(
+                    "Cannot call sync generate_text from async context. Use agenerate_text instead."
+                )
+            return asyncio.run(
+                self.agenerate_text(prompt, n, temperature, stop, callbacks)
+            )
+        except RuntimeError:
+            # Fallback for sync contexts
+            return asyncio.new_event_loop().run_until_complete(
+                self.agenerate_text(prompt, n, temperature, stop, callbacks)
+            )
+
+    async def agenerate_text(
+        self,
+        prompt: PromptValue,
+        n: int = 1,
+        temperature: t.Optional[float] = 0.01,
+        stop: t.Optional[t.List[str]] = None,
+        callbacks: Callbacks = None,
+    ) -> LLMResult:
+        # Convert PromptValue to string and call instructor LLM
+        prompt_str = prompt.to_string()
+
+        # For now, instructor LLMs don't support n > 1, so we call multiple times
+        generations = []
+        for _ in range(n):
+            try:
+                # Call instructor LLM - for basic text generation, we need a simple response model
+                from pydantic import BaseModel
+
+                class TextResponse(BaseModel):
+                    text: str
+
+                response = await self.instructor_llm.agenerate(prompt_str, TextResponse)
+                text_response = (
+                    response.text if hasattr(response, "text") else str(response)
+                )
+                generations.append(Generation(text=text_response))
+            except Exception as e:
+                logger.warning(f"Instructor LLM generation failed: {e}")
+                generations.append(Generation(text=""))
+
+        return LLMResult(generations=[generations])
+
+    async def agenerate(
+        self, prompt: str, response_model: t.Type[t.Any], **kwargs
+    ) -> t.Any:
+        """
+        Direct structured generation method for SimpleLLMMetric compatibility.
+
+        This method is called by SimpleLLMMetric and should return structured output.
+        """
+        try:
+            # Call the underlying instructor LLM directly for structured output
+            return await self.instructor_llm.agenerate(prompt, response_model)
+        except Exception as e:
+            logger.error(f"Structured generation failed: {e}")
+            # Return a default instance of the response model
+            try:
+                return response_model()
+            except Exception:
+                raise e
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(instructor_llm={self.instructor_llm.__class__.__name__}(...))"
 
 
 class InstructorBaseRagasLLM(ABC):
