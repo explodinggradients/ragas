@@ -14,8 +14,7 @@ def create_nano_id(size: int = 12) -> str:
     alphabet = string.ascii_letters + string.digits
 
     # Generate UUID and convert to int
-    uuid_obj = uuid.uuid4()
-    uuid_int = t.cast(int, uuid_obj.int)
+    uuid_int = t.cast(int, uuid.uuid4().int)
 
     # Convert to base62
     result = ""
