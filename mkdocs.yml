@@ -285,6 +285,4 @@ extra_javascript:
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
   - _static/js/toggle.js
   - https://cdn.octolane.com/tag.js?pk=c7c9b2b863bf7eaf4e2a # octolane for analytics
-  - _static/js/reo.js # reo analytics
   - _static/js/commonroom.js # commonroom analytics
-  - _static/js/rb2b.js # rb2b analytics
