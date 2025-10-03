@@ -206,7 +206,7 @@ class TestSimpleLLMMetricPersistence:
 
         try:
             # Save (should warn about embedding model)
-            with pytest.warns(UserWarning, match="embedding_model cannot be saved"):
+            with pytest.warns(UserWarning, match="embedding_model will be lost"):
                 original_metric.save(temp_path)
 
             # Load (provide embedding model)
