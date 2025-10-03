@@ -62,7 +62,7 @@ class TestAnswerRelevancyE2EMigration:
 
             from ragas.llms.base import instructor_llm_factory
 
-            client = openai.OpenAI()
+            client = openai.AsyncOpenAI()
             return instructor_llm_factory(
                 "openai", model="gpt-3.5-turbo", client=client
             )
@@ -94,8 +94,8 @@ class TestAnswerRelevancyE2EMigration:
 
             from ragas.embeddings.base import embedding_factory
 
-            # Create OpenAI client
-            client = openai.OpenAI()
+            # Create OpenAI async client
+            client = openai.AsyncOpenAI()
 
             # Use modern interface with explicit provider and client
             return embedding_factory(
