@@ -17,6 +17,33 @@ from .validators import DiscreteValidator
 
 @dataclass(repr=False)
 class DiscreteMetric(SimpleLLMMetric, DiscreteValidator):
+    """
+    Metric for categorical/discrete evaluations with predefined allowed values.
+
+    This class is used for metrics that output categorical values like
+    "pass/fail", "good/bad/excellent", or custom discrete categories.
+
+    Attributes
+    ----------
+    allowed_values : List[str]
+        List of allowed categorical values the metric can output.
+        Default is ["pass", "fail"].
+
+    Examples
+    --------
+    >>> from ragas.metrics import DiscreteMetric
+    >>> from ragas.llms import LangchainLLMWrapper
+    >>> from langchain_openai import ChatOpenAI
+    >>>
+    >>> # Create a custom discrete metric
+    >>> llm = LangchainLLMWrapper(ChatOpenAI())
+    >>> metric = DiscreteMetric(
+    ...     name="quality_check",
+    ...     llm=llm,
+    ...     allowed_values=["excellent", "good", "poor"]
+    ... )
+    """
+
     allowed_values: t.List[str] = field(default_factory=lambda: ["pass", "fail"])
 
     def __post_init__(self):
@@ -27,8 +54,8 @@ class DiscreteMetric(SimpleLLMMetric, DiscreteValidator):
 
         self._response_model = create_auto_response_model(
             "DiscreteResponseModel",
-            reason=(str, Field(..., description="Reaoning for the value")),
-            value=(t.Literal[values], Field(..., description="the value predicted")),
+            reason=(str, Field(..., description="Reasoning for the value")),
+            value=(t.Literal[values], Field(..., description="The value predicted")),
         )
 
     def get_correlation(
@@ -88,18 +115,47 @@ def discrete_metric(
     *,
     name: t.Optional[str] = None,
     allowed_values: t.Optional[t.List[str]] = None,
-    **metric_params,
+    **metric_params: t.Any,
 ) -> t.Callable[[t.Callable[..., t.Any]], DiscreteMetricProtocol]:
     """
-    Decorator for creating discrete metrics.
+    Decorator for creating discrete/categorical metrics.
 
-    Args:
-        name: Optional name for the metric (defaults to function name)
-        allowed_values: List of allowed string values for the metric
-        **metric_params: Additional parameters for the metric
+    This decorator transforms a regular function into a DiscreteMetric instance
+    that can be used for evaluation with predefined categorical outputs.
 
-    Returns:
-        A decorator that transforms a function into a DiscreteMetric instance
+    Parameters
+    ----------
+    name : str, optional
+        Name for the metric. If not provided, uses the function name.
+    allowed_values : List[str], optional
+        List of allowed categorical values for the metric output.
+        Default is ["pass", "fail"].
+    **metric_params : Any
+        Additional parameters to pass to the metric initialization.
+
+    Returns
+    -------
+    Callable[[Callable[..., Any]], DiscreteMetricProtocol]
+        A decorator that transforms a function into a DiscreteMetric instance.
+
+    Examples
+    --------
+    >>> from ragas.metrics import discrete_metric
+    >>>
+    >>> @discrete_metric(name="sentiment", allowed_values=["positive", "neutral", "negative"])
+    >>> def sentiment_analysis(user_input: str, response: str) -> str:
+    ...     '''Analyze sentiment of the response.'''
+    ...     if "great" in response.lower() or "good" in response.lower():
+    ...         return "positive"
+    ...     elif "bad" in response.lower() or "poor" in response.lower():
+    ...         return "negative"
+    ...     return "neutral"
+    >>>
+    >>> result = sentiment_analysis(
+    ...     user_input="How was your day?",
+    ...     response="It was great!"
+    ... )
+    >>> print(result.value)  # "positive"
     """
     if allowed_values is None:
         allowed_values = ["pass", "fail"]
