@@ -17,6 +17,33 @@ from .validators import RankingValidator
 
 @dataclass(repr=False)
 class RankingMetric(SimpleLLMMetric, RankingValidator):
+    """
+    Metric for evaluations that produce ranked lists of items.
+
+    This class is used for metrics that output ordered lists, such as
+    ranking search results, prioritizing features, or ordering responses
+    by relevance.
+
+    Attributes
+    ----------
+    allowed_values : int
+        Expected number of items in the ranking list. Default is 2.
+
+    Examples
+    --------
+    >>> from ragas.metrics import RankingMetric
+    >>> from ragas.llms import LangchainLLMWrapper
+    >>> from langchain_openai import ChatOpenAI
+    >>>
+    >>> # Create a ranking metric that returns top 3 items
+    >>> llm = LangchainLLMWrapper(ChatOpenAI())
+    >>> metric = RankingMetric(
+    ...     name="relevance_ranking",
+    ...     llm=llm,
+    ...     allowed_values=3
+    ... )
+    """
+
     allowed_values: int = 2
 
     def __post_init__(self):
@@ -93,18 +120,49 @@ def ranking_metric(
     *,
     name: t.Optional[str] = None,
     allowed_values: t.Optional[int] = None,
-    **metric_params,
+    **metric_params: t.Any,
 ) -> t.Callable[[t.Callable[..., t.Any]], RankingMetricProtocol]:
     """
-    Decorator for creating ranking metrics.
+    Decorator for creating ranking/ordering metrics.
 
-    Args:
-        name: Optional name for the metric (defaults to function name)
-        allowed_values: Expected length of the returned ranking list
-        **metric_params: Additional parameters for the metric
+    This decorator transforms a regular function into a RankingMetric instance
+    that outputs ordered lists of items.
 
-    Returns:
-        A decorator that transforms a function into a RankingMetric instance
+    Parameters
+    ----------
+    name : str, optional
+        Name for the metric. If not provided, uses the function name.
+    allowed_values : int, optional
+        Expected number of items in the ranking list. Default is 2.
+    **metric_params : Any
+        Additional parameters to pass to the metric initialization.
+
+    Returns
+    -------
+    Callable[[Callable[..., Any]], RankingMetricProtocol]
+        A decorator that transforms a function into a RankingMetric instance.
+
+    Examples
+    --------
+    >>> from ragas.metrics import ranking_metric
+    >>>
+    >>> @ranking_metric(name="priority_ranker", allowed_values=3)
+    >>> def rank_by_urgency(user_input: str, responses: list) -> list:
+    ...     '''Rank responses by urgency keywords.'''
+    ...     urgency_keywords = ["urgent", "asap", "critical"]
+    ...     scored = []
+    ...     for resp in responses:
+    ...         score = sum(kw in resp.lower() for kw in urgency_keywords)
+    ...         scored.append((score, resp))
+    ...     # Sort by score descending and return top items
+    ...     ranked = sorted(scored, key=lambda x: x[0], reverse=True)
+    ...     return [item[1] for item in ranked[:3]]
+    >>>
+    >>> result = rank_by_urgency(
+    ...     user_input="What should I do first?",
+    ...     responses=["This is urgent", "Take your time", "Critical issue!"]
+    ... )
+    >>> print(result.value)  # Ranked list of responses
     """
     if allowed_values is None:
         allowed_values = 2
