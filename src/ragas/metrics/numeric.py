@@ -15,6 +15,33 @@ from .validators import NumericValidator
 
 @dataclass(repr=False)
 class NumericMetric(SimpleLLMMetric, NumericValidator):
+    """
+    Metric for continuous numeric evaluations within a specified range.
+
+    This class is used for metrics that output numeric scores within a
+    defined range, such as 0.0 to 1.0 for similarity scores or 1-10 ratings.
+
+    Attributes
+    ----------
+    allowed_values : Union[Tuple[float, float], range]
+        The valid range for metric outputs. Can be a tuple of (min, max) floats
+        or a range object. Default is (0.0, 1.0).
+
+    Examples
+    --------
+    >>> from ragas.metrics import NumericMetric
+    >>> from ragas.llms import LangchainLLMWrapper
+    >>> from langchain_openai import ChatOpenAI
+    >>>
+    >>> # Create a custom numeric metric with 0-10 range
+    >>> llm = LangchainLLMWrapper(ChatOpenAI())
+    >>> metric = NumericMetric(
+    ...     name="quality_score",
+    ...     llm=llm,
+    ...     allowed_values=(0.0, 10.0)
+    ... )
+    """
+
     allowed_values: t.Union[t.Tuple[float, float], range] = (0.0, 1.0)
 
     def __post_init__(self):
@@ -102,18 +129,49 @@ def numeric_metric(
     *,
     name: t.Optional[str] = None,
     allowed_values: t.Optional[t.Union[t.Tuple[float, float], range]] = None,
-    **metric_params,
+    **metric_params: t.Any,
 ) -> t.Callable[[t.Callable[..., t.Any]], NumericMetricProtocol]:
     """
-    Decorator for creating numeric metrics.
+    Decorator for creating numeric/continuous metrics.
 
-    Args:
-        name: Optional name for the metric (defaults to function name)
-        allowed_values: Tuple specifying (min, max) range or range object for valid values
-        **metric_params: Additional parameters for the metric
+    This decorator transforms a regular function into a NumericMetric instance
+    that outputs continuous values within a specified range.
 
-    Returns:
-        A decorator that transforms a function into a NumericMetric instance
+    Parameters
+    ----------
+    name : str, optional
+        Name for the metric. If not provided, uses the function name.
+    allowed_values : Union[Tuple[float, float], range], optional
+        The valid range for metric outputs as (min, max) tuple or range object.
+        Default is (0.0, 1.0).
+    **metric_params : Any
+        Additional parameters to pass to the metric initialization.
+
+    Returns
+    -------
+    Callable[[Callable[..., Any]], NumericMetricProtocol]
+        A decorator that transforms a function into a NumericMetric instance.
+
+    Examples
+    --------
+    >>> from ragas.metrics import numeric_metric
+    >>>
+    >>> @numeric_metric(name="relevance_score", allowed_values=(0.0, 1.0))
+    >>> def calculate_relevance(user_input: str, response: str) -> float:
+    ...     '''Calculate relevance score between 0 and 1.'''
+    ...     # Simple word overlap example
+    ...     user_words = set(user_input.lower().split())
+    ...     response_words = set(response.lower().split())
+    ...     if not user_words:
+    ...         return 0.0
+    ...     overlap = len(user_words & response_words)
+    ...     return overlap / len(user_words)
+    >>>
+    >>> result = calculate_relevance(
+    ...     user_input="What is Python?",
+    ...     response="Python is a programming language"
+    ... )
+    >>> print(result.value)  # Numeric score between 0.0 and 1.0
     """
     if allowed_values is None:
         allowed_values = (0.0, 1.0)

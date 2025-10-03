@@ -141,7 +141,16 @@ class Metric(ABC):
             return self.required_columns
 
     @abstractmethod
-    def init(self, run_config: RunConfig): ...
+    def init(self, run_config: RunConfig) -> None:
+        """
+        Initialize the metric with the given run configuration.
+
+        Parameters
+        ----------
+        run_config : RunConfig
+            Configuration for the metric run including timeouts and other settings.
+        """
+        ...
 
     @deprecated("0.2", removal="0.3", alternative="single_turn_ascore")
     def score(self, row: t.Dict, callbacks: Callbacks = None) -> float:
@@ -231,10 +240,23 @@ class MetricWithLLM(Metric, PromptMixin):
     llm: t.Optional[BaseRagasLLM] = None
     output_type: t.Optional[MetricOutputType] = None
 
-    def init(self, run_config: RunConfig):
+    def init(self, run_config: RunConfig) -> None:
+        """
+        Initialize the metric with run configuration and validate LLM is present.
+
+        Parameters
+        ----------
+        run_config : RunConfig
+            Configuration for the metric run.
+
+        Raises
+        ------
+        ValueError
+            If no LLM is provided to the metric.
+        """
         if self.llm is None:
             raise ValueError(
-                f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please initantiate a the metric with an LLM to run."  # noqa
+                f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please instantiate the metric with an LLM to run."
             )
         self.llm.set_run_config(run_config)
 
@@ -842,29 +864,106 @@ ensembler = Ensember()
 
 @dataclass
 class SimpleBaseMetric(ABC):
-    """Base class for simple metrics that return MetricResult objects."""
+    """
+    Base class for simple metrics that return MetricResult objects.
+
+    This class provides the foundation for metrics that evaluate inputs
+    and return structured MetricResult objects containing scores and reasoning.
+
+    Attributes
+    ----------
+    name : str
+        The name of the metric.
+    allowed_values : AllowedValuesType
+        Allowed values for the metric output. Can be a list of strings for
+        discrete metrics, a tuple of floats for numeric metrics, or an integer
+        for ranking metrics.
+
+    Examples
+    --------
+    >>> from ragas.metrics import discrete_metric
+    >>>
+    >>> @discrete_metric(name="sentiment", allowed_values=["positive", "negative"])
+    >>> def sentiment_metric(user_input: str, response: str) -> str:
+    ...     return "positive" if "good" in response else "negative"
+    >>>
+    >>> result = sentiment_metric(user_input="How are you?", response="I'm good!")
+    >>> print(result.value)  # "positive"
+    """
 
     name: str
     allowed_values: AllowedValuesType = field(default_factory=lambda: ["pass", "fail"])
 
     @abstractmethod
     def score(self, **kwargs) -> "MetricResult":
+        """
+        Synchronously calculate the metric score.
+
+        Parameters
+        ----------
+        **kwargs : dict
+            Input parameters required by the specific metric implementation.
+
+        Returns
+        -------
+        MetricResult
+            The evaluation result containing the score and reasoning.
+        """
         pass
 
     @abstractmethod
     async def ascore(self, **kwargs) -> "MetricResult":
+        """
+        Asynchronously calculate the metric score.
+
+        Parameters
+        ----------
+        **kwargs : dict
+            Input parameters required by the specific metric implementation.
+
+        Returns
+        -------
+        MetricResult
+            The evaluation result containing the score and reasoning.
+        """
         pass
 
     def batch_score(
         self,
         inputs: t.List[t.Dict[str, t.Any]],
     ) -> t.List["MetricResult"]:
+        """
+        Synchronously calculate scores for a batch of inputs.
+
+        Parameters
+        ----------
+        inputs : List[Dict[str, Any]]
+            List of input dictionaries, each containing parameters for the metric.
+
+        Returns
+        -------
+        List[MetricResult]
+            List of evaluation results, one for each input.
+        """
         return [self.score(**input_dict) for input_dict in inputs]
 
     async def abatch_score(
         self,
         inputs: t.List[t.Dict[str, t.Any]],
     ) -> t.List["MetricResult"]:
+        """
+        Asynchronously calculate scores for a batch of inputs in parallel.
+
+        Parameters
+        ----------
+        inputs : List[Dict[str, Any]]
+            List of input dictionaries, each containing parameters for the metric.
+
+        Returns
+        -------
+        List[MetricResult]
+            List of evaluation results, one for each input.
+        """
         async_tasks = []
         for input_dict in inputs:
             # Process input asynchronously
@@ -874,29 +973,30 @@ class SimpleBaseMetric(ABC):
         return await asyncio.gather(*async_tasks)
 
 
-def create_auto_response_model(name: str, **fields):
-    """Create a response model and mark it as auto-generated by Ragas.
+def create_auto_response_model(name: str, **fields) -> t.Type["BaseModel"]:
+    """
+    Create a response model and mark it as auto-generated by Ragas.
 
     This function creates a Pydantic model using create_model and marks it
     with a special attribute to indicate it was auto-generated. This allows
     the save() method to distinguish between auto-generated models (which
     are recreated on load) and custom user models.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     name : str
         Name for the model class
     **fields
-        Field definitions in create_model format
+        Field definitions in create_model format.
         Each field is specified as: field_name=(type, default_or_field_info)
 
-    Returns:
-    --------
+    Returns
+    -------
     Type[BaseModel]
         Pydantic model class marked as auto-generated
 
-    Examples:
-    ---------
+    Examples
+    --------
     >>> from pydantic import Field
     >>> # Simple model with required fields
     >>> ResponseModel = create_auto_response_model(
