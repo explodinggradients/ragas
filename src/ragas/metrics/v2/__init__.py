@@ -1,9 +1,11 @@
-"""V2 metrics using the decorator pattern for simpler implementation."""
+"""V2 metrics using modern component architecture."""
 
-from ragas.metrics.v2._answer_relevance import answer_relevancy
-from ragas.metrics.v2._rouge_score import rouge_score
+from ragas.metrics.v2._answer_relevancy import AnswerRelevancy
+from ragas.metrics.v2._rouge_score import RougeScore
+from ragas.metrics.v2.base import V2BaseMetric
 
 __all__ = [
-    "answer_relevancy",
-    "rouge_score",
+    "AnswerRelevancy",  # Class-based answer relevancy
+    "RougeScore",  # Class-based rouge score
+    "V2BaseMetric",  # Base class for creating new v2 metrics
 ]
