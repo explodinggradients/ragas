@@ -75,21 +75,6 @@ def create_ragas_dataset(dataset_path: Path) -> Dataset:
     return dataset
 
 
-# Initialize OpenAI client and models
-def get_openai_client():
-    """Get AsyncOpenAI client with proper error handling."""
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        raise ValueError(
-            "OPENAI_API_KEY environment variable is not set. "
-            "Please set your OpenAI API key: export OPENAI_API_KEY='your_key'"
-        )
-    return AsyncOpenAI(api_key=api_key)
-
-def get_llm_client():
-    """Get LLM client for metrics evaluation."""
-    openai_client = get_openai_client()
-    return instructor_llm_factory("openai", model="gpt-5-mini", client=openai_client)
 
 
 def construct_mlflow_trace_url(trace_id: str, mlflow_host: str = "http://127.0.0.1:5000") -> str:
@@ -194,29 +179,34 @@ async def run_experiment(mode: str = "naive", model: str = "gpt-5-mini", name: O
     Returns:
         List of experiment results
     """
-    # Download and prepare dataset
-    dataset_path = download_and_save_dataset()
-    dataset = create_ragas_dataset(dataset_path)
+    # Check for OpenAI API key
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError(
+            "OPENAI_API_KEY environment variable is not set. "
+            "Please set your OpenAI API key: export OPENAI_API_KEY='your_key'"
+        )
     
-    # Initialize RAG and LLM clients
+    # Prepare dataset and initialize system
     logger.info("Initializing RAG system...")
-    openai_client = get_openai_client()
-    retriever = BM25Retriever()
-    rag = RAG(llm_client=openai_client, retriever=retriever, model=model, mode=mode)
-    llm = get_llm_client()
-    logger.info("RAG system initialized!")
+    dataset = create_ragas_dataset(download_and_save_dataset())
     
-    # Generate experiment name if not provided
-    if name is None:
-        mode_label = "agenticrag" if mode == "agentic" else "naiverag"
-        name = f"{datetime.now().strftime('%Y%m%d-%H%M%S')}_{mode_label}"
+    # Initialize RAG system with inline client creation
+    openai_client = AsyncOpenAI(api_key=api_key)
+    rag = RAG(
+        llm_client=openai_client, 
+        retriever=BM25Retriever(), 
+        model=model, 
+        mode=mode
+    )
+    logger.info("RAG system initialized!")
     
     # Run evaluation experiment
     experiment_results = await evaluate_rag.arun(
         dataset, 
-        name=name,
+        name=name or f"{datetime.now().strftime('%Y%m%d-%H%M%S')}_{'agenticrag' if mode == 'agentic' else 'naiverag'}",
         rag=rag,
-        llm=llm
+        llm=instructor_llm_factory("openai", model="gpt-5-mini", client=openai_client)
     )
     
     # Print basic results
@@ -230,28 +220,18 @@ async def run_experiment(mode: str = "naive", model: str = "gpt-5-mini", name: O
     return experiment_results
 
 
-async def main(agentic_rag: bool = False):
-    """
-    Main function to run the evaluation pipeline.
-    
-    Args:
-        agentic_rag: If True, use agentic RAG; otherwise use naive RAG
-    """
-    mode = "agentic" if agentic_rag else "naive"
-    return await run_experiment(mode=mode, model="gpt-5-mini")
-
-
 if __name__ == "__main__":
     import sys
     
     # Simple command line argument parsing
     agentic_mode = "--agentic" in sys.argv
+    mode = "agentic" if agentic_mode else "naive"
     
     if agentic_mode:
         logger.info("Running in AGENTIC mode")
     else:
         logger.info("Running in NAIVE mode")
     
-    asyncio.run(main(agentic_rag=agentic_mode))
+    asyncio.run(run_experiment(mode=mode, model="gpt-5-mini"))
 
 
