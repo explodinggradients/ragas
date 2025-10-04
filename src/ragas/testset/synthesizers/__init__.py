@@ -1,3 +1,4 @@
+import logging
 import typing as t
 
 from ragas.llms import BaseRagasLLM
@@ -11,6 +12,8 @@ from ragas.testset.synthesizers.single_hop.specific import (
 )
 
 from .base import BaseSynthesizer
+
+logger = logging.getLogger(__name__)
 
 QueryDistribution = t.List[t.Tuple[BaseSynthesizer, float]]
 
@@ -27,8 +30,17 @@ def default_query_distribution(
     if kg is not None:
         available_queries = []
         for query in default_queries:
-            if query.get_node_clusters(kg):
-                available_queries.append(query)
+            try:
+                if query.get_node_clusters(kg):
+                    available_queries.append(query)
+            except Exception as e:
+                # Keep broad catch minimal for resilience; log and skip.
+                logger.warning(
+                    "Skipping %s due to unexpected error: %s",
+                    getattr(query, "name", type(query).__name__),
+                    e,
+                )
+                continue
     else:
         available_queries = default_queries
 
