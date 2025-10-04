@@ -41,6 +41,10 @@ def default_query_distribution(
                     e,
                 )
                 continue
+        if not available_queries:
+            raise ValueError(
+                "No compatible query synthesizers for the provided KnowledgeGraph."
+            )
     else:
         available_queries = default_queries
 
