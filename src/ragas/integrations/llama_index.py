@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import logging
+import math
 import typing as t
 
-from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
+from ragas.dataset_schema import EvaluationDataset, EvaluationResult, SingleTurnSample
 from ragas.embeddings import LlamaIndexEmbeddingsWrapper
 from ragas.evaluation import evaluate as ragas_evaluate
 from ragas.executor import Executor
@@ -18,10 +19,10 @@ if t.TYPE_CHECKING:
         BaseEmbedding as LlamaIndexEmbeddings,
     )
     from llama_index.core.base.llms.base import BaseLLM as LlamaindexLLM
+    from llama_index.core.base.response.schema import Response as LlamaIndexResponse
     from llama_index.core.workflow import Event
 
     from ragas.cost import TokenUsageParser
-    from ragas.evaluation import EvaluationResult
 
 
 logger = logging.getLogger(__name__)
@@ -82,8 +83,15 @@ def evaluate(
     retrieved_contexts: t.List[t.List[str]] = []
     results = exec.results()
     for r in results:
-        responses.append(r.response)
-        retrieved_contexts.append([n.node.text for n in r.source_nodes])
+        # Handle failed jobs which are recorded as NaN in the executor
+        if isinstance(r, float) and math.isnan(r):
+            responses.append("")
+            retrieved_contexts.append([])
+        else:
+            # Cast to LlamaIndex Response type for proper type checking
+            response = t.cast("LlamaIndexResponse", r)
+            responses.append(response.response or "")
+            retrieved_contexts.append([n.get_text() for n in response.source_nodes])
 
     # append the extra information to the dataset
     for i, sample in enumerate(samples):
