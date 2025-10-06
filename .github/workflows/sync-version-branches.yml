@@ -91,14 +91,19 @@ jobs:
                   TARGET_BRANCHES="${TARGET_BRANCHES} ${BACKPORT_BRANCH}"
                   echo "✓ Found '$label' label → ${BACKPORT_BRANCH}"
                   ;;
+                v[0-9]*.[0-9]*.x|v[0-9]*.x)
+                  # Direct version branch label (e.g., v0.4.x, v1.2.x, v1.x)
+                  TARGET_BRANCHES="${TARGET_BRANCHES} ${label}"
+                  echo "✓ Found version branch label → ${label}"
+                  ;;
               esac
             fi
           done <<< "$LABELS"
 
-          # If no version labels found, default to minor
+          # If no version labels found, default to patch (current version branch)
           if [ "$HAS_LABELS" = false ] || [ -z "$TARGET_BRANCHES" ]; then
-            TARGET_BRANCHES="v${NEXT_MINOR}.x"
-            echo "⚠ No version labels found, defaulting to 'minor' → v${NEXT_MINOR}.x"
+            TARGET_BRANCHES="v${CURRENT_VERSION}.x"
+            echo "⚠ No version labels found, defaulting to 'patch' → v${CURRENT_VERSION}.x"
           fi
 
           # Remove duplicates and trim
