@@ -2,9 +2,10 @@
 
 import asyncio
 import typing as t
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from dataclasses import dataclass
 
+from ragas.metrics.base import SimpleBaseMetric
 from ragas.metrics.result import MetricResult
 
 if t.TYPE_CHECKING:
@@ -12,7 +13,7 @@ if t.TYPE_CHECKING:
 
 
 @dataclass
-class V2BaseMetric(ABC):
+class V2BaseMetric(SimpleBaseMetric):
     """
     Base class for v2 metrics with modern component validation.
 
@@ -156,11 +157,14 @@ class V2BaseMetric(ABC):
 
     def _validate_llm(self):
         """Validate that a modern InstructorLLM is provided."""
+        from ragas.llms.base import InstructorBaseRagasLLM
+
         llm = getattr(self, "llm", None)
         if llm is None:
-            raise ValueError(f"{self.__class__.__name__} requires an llm parameter")
+            # Skip validation if llm field doesn't exist on this metric
+            return
 
-        if type(llm).__name__ != "InstructorLLM":
+        if not isinstance(llm, InstructorBaseRagasLLM):
             raise ValueError(
                 f"V2 metrics only support modern InstructorLLM. Found: {type(llm).__name__}. "
                 f"Use: instructor_llm_factory('openai', model='gpt-4o-mini', client=openai_client)"
@@ -170,12 +174,18 @@ class V2BaseMetric(ABC):
         """Validate that modern embeddings are provided."""
         embeddings = getattr(self, "embeddings", None)
         if embeddings is None:
-            raise ValueError(
-                f"{self.__class__.__name__} requires an embeddings parameter"
-            )
+            # Skip validation if embeddings field doesn't exist on this metric
+            return
 
-        if type(embeddings).__name__ == "LangchainEmbeddingsWrapper":
-            raise ValueError(
-                "V2 metrics only support modern embeddings. Legacy LangchainEmbeddingsWrapper is not supported. "
-                "Use: embedding_factory('openai', model='text-embedding-ada-002', client=openai_client, interface='modern')"
-            )
+        # Check if it's a legacy wrapper by checking for the wrapper class
+        try:
+            from ragas.embeddings import LangchainEmbeddingsWrapper
+
+            if isinstance(embeddings, LangchainEmbeddingsWrapper):
+                raise ValueError(
+                    "V2 metrics only support modern embeddings. Legacy LangchainEmbeddingsWrapper is not supported. "
+                    "Use: embedding_factory('openai', model='text-embedding-ada-002', client=openai_client, interface='modern')"
+                )
+        except ImportError:
+            # If the wrapper class doesn't exist, skip the check
+            pass

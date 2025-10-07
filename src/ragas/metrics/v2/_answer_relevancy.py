@@ -1,7 +1,7 @@
 """Answer Relevancy metric v2 - Class-based implementation with modern components."""
 
 import typing as t
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 from pydantic import BaseModel
@@ -22,7 +22,7 @@ class AnswerRelevanceOutput(BaseModel):
     noncommittal: int
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AnswerRelevancy(V2BaseMetric):
     """
     Evaluate answer relevancy by generating questions from the response and comparing to original question.
@@ -67,23 +67,9 @@ class AnswerRelevancy(V2BaseMetric):
     """
 
     name: str = "answer_relevancy_v2"
-    llm: t.Optional["InstructorBaseRagasLLM"] = field(default=None)
-    embeddings: t.Optional["BaseRagasEmbedding"] = field(default=None)
+    llm: "InstructorBaseRagasLLM"
+    embeddings: "BaseRagasEmbedding"
     strictness: int = 3
-
-    def __post_init__(self):
-        """Validate that required components are provided."""
-        if self.llm is None:
-            raise TypeError(
-                "AnswerRelevancy.__init__() missing required argument: 'llm'"
-            )
-        if self.embeddings is None:
-            raise TypeError(
-                "AnswerRelevancy.__init__() missing required argument: 'embeddings'"
-            )
-
-        # Call parent validation
-        super().__post_init__()
 
     async def _ascore_impl(self, user_input: str, response: str) -> MetricResult:
         """

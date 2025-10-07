@@ -1,7 +1,7 @@
 """Example of creating a new v2 metric using V2BaseMetric."""
 
 import typing as t
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from ragas.metrics.result import MetricResult
 from ragas.metrics.v2.base import V2BaseMetric
@@ -11,7 +11,7 @@ if t.TYPE_CHECKING:
     from ragas.llms.base import InstructorBaseRagasLLM
 
 
-@dataclass
+@dataclass(kw_only=True)  # Required: allows required fields after fields with defaults
 class ExampleV2Metric(V2BaseMetric):
     """
     Example v2 metric showing how easy it is to create new metrics.
@@ -23,28 +23,20 @@ class ExampleV2Metric(V2BaseMetric):
     - Type safety
     - Async-first design
 
+    Note: We use @dataclass(kw_only=True) because:
+    - The parent class has fields with defaults (name, allowed_values)
+    - We want to add required fields (llm, embeddings) without defaults
+    - In dataclasses, required fields must come before optional fields
+    - kw_only=True makes all fields keyword-only, bypassing this restriction
+
     Usage:
         >>> metric = ExampleV2Metric(llm=modern_llm, embeddings=modern_embeddings)
         >>> result = await metric.ascore(user_input="test", response="test")
     """
 
     name: str = "example_v2_metric"
-    llm: t.Optional["InstructorBaseRagasLLM"] = field(default=None)
-    embeddings: t.Optional["BaseRagasEmbedding"] = field(default=None)
-
-    def __post_init__(self):
-        """Validate that required components are provided."""
-        if self.llm is None:
-            raise TypeError(
-                "ExampleV2Metric.__init__() missing required argument: 'llm'"
-            )
-        if self.embeddings is None:
-            raise TypeError(
-                "ExampleV2Metric.__init__() missing required argument: 'embeddings'"
-            )
-
-        # Call parent validation
-        super().__post_init__()
+    llm: "InstructorBaseRagasLLM"
+    embeddings: "BaseRagasEmbedding"
 
     async def _ascore_impl(self, user_input: str, response: str) -> MetricResult:
         """
