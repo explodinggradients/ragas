@@ -8,11 +8,30 @@ from pydantic import BaseModel
 
 from ragas.metrics.result import MetricResult
 from ragas.metrics.v2.base import V2BaseMetric
-from ragas.prompt.metrics.answer_relevance import answer_relevance_prompt
 
 if t.TYPE_CHECKING:
     from ragas.embeddings.base import BaseRagasEmbedding
     from ragas.llms.base import InstructorBaseRagasLLM
+
+
+# Prompt template for answer relevance evaluation
+# Instructor automatically handles JSON schema generation from AnswerRelevanceOutput
+ANSWER_RELEVANCE_PROMPT = """Generate a question for the given answer and identify if the answer is noncommittal.
+
+A noncommittal answer is evasive, vague, or ambiguous. For example, "I don't know" or "I'm not sure" are noncommittal answers.
+
+Examples:
+
+Response: Albert Einstein was born in Germany.
+Question: Where was Albert Einstein born?
+Noncommittal: 0
+
+Response: I don't know about the groundbreaking feature of the smartphone invented in 2023 as I am unaware of information beyond 2022.
+Question: What was the groundbreaking feature of the smartphone invented in 2023?
+Noncommittal: 1
+
+Now generate for:
+Response: {response}"""
 
 
 class AnswerRelevanceOutput(BaseModel):
@@ -84,7 +103,7 @@ class AnswerRelevancy(V2BaseMetric):
         Returns:
             MetricResult with relevancy score (0.0-1.0)
         """
-        prompt = answer_relevance_prompt(response)
+        prompt = ANSWER_RELEVANCE_PROMPT.format(response=response)
 
         generated_questions = []
         noncommittal_flags = []
