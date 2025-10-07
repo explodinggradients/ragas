@@ -119,7 +119,6 @@ nav:
           - Testset Generation:
             - Single-hop Query Testset: howtos/applications/singlehop_testset_gen.md
           - Benchmarking:
-            - Benchmarking Gemini models: howtos/applications/gemini_benchmarking.md
             - Evaluate a New LLM: howtos/applications/benchmark_llm.md
           - Agent Evaluation:
             - Evaluate a Text-to-SQL Agent: howtos/applications/text2sql.md
