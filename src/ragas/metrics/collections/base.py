@@ -157,8 +157,6 @@ class BaseMetric(ABC):
     def _validate_llm(self):
         """Validate that a modern InstructorLLM is provided."""
         llm = getattr(self, "llm", None)
-        if llm is None:
-            raise ValueError(f"{self.__class__.__name__} requires an llm parameter")
 
         if not isinstance(llm, InstructorBaseRagasLLM):
             raise ValueError(
@@ -169,10 +167,6 @@ class BaseMetric(ABC):
     def _validate_embeddings(self):
         """Validate that modern embeddings are provided."""
         embeddings = getattr(self, "embeddings", None)
-        if embeddings is None:
-            raise ValueError(
-                f"{self.__class__.__name__} requires an embeddings parameter"
-            )
 
         if not isinstance(embeddings, BaseRagasEmbedding):
             raise ValueError(
