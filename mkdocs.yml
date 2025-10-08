@@ -95,7 +95,6 @@ nav:
               - Run Config: howtos/customizations/_run_config.md
               - Caching: howtos/customizations/_caching.md
               - Cancelling Tasks: howtos/customizations/cancellation.md
-              - Iterate Prompts: howtos/customizations/iterate_prompt.md
           - Metrics:
               - Modify Prompts: howtos/customizations/metrics/_modifying-prompts-metrics.md
               - Adapt Metrics to Languages: howtos/customizations/metrics/_metrics_language_adaptation.md
@@ -112,6 +111,9 @@ nav:
 
       - Applications:
           - howtos/applications/index.md
+          - Prompt Evaluation:
+            - Iterate and Improve Prompts: howtos/applications/iterate_prompt.md
+            - Systematic Prompt Optimization: howtos/applications/prompt_optimization.md
           - Metrics:
             - Cost Analysis: howtos/applications/_cost.md
             - Evaluating Multi-turn Conversations: howtos/applications/evaluating_multi_turn_conversations.md
