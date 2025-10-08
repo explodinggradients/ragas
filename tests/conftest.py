@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -12,6 +13,19 @@ from ragas.llms.base import BaseRagasLLM
 
 if t.TYPE_CHECKING:
     from langchain_core.prompt_values import PromptValue
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+
+    # Find the project root directory (where .env is located)
+    project_root = Path(__file__).parent.parent
+    env_file = project_root / ".env"
+    if env_file.exists():
+        load_dotenv(env_file)
+except ImportError:
+    # dotenv is optional
+    pass
 
 
 def pytest_configure(config):
