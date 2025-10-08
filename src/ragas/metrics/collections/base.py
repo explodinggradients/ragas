@@ -10,7 +10,7 @@ from ragas.llms.base import InstructorBaseRagasLLM
 from ragas.metrics.result import MetricResult
 
 
-@dataclass(kw_only=True)
+@dataclass
 class BaseMetric(ABC):
     """
     Base class for metrics collections with modern component validation.

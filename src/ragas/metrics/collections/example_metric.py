@@ -1,14 +1,9 @@
 """Example of creating a new v2 metric using V2BaseMetric."""
 
-import typing as t
 from dataclasses import dataclass
 
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
-
-if t.TYPE_CHECKING:
-    from ragas.embeddings.base import BaseRagasEmbedding
-    from ragas.llms.base import InstructorBaseRagasLLM
 
 
 @dataclass(kw_only=True)
@@ -16,21 +11,17 @@ class ExampleMetric(BaseMetric):
     """
     Example metric showing how easy it is to create new metrics.
 
-    This metric inherits all the validation and base functionality from V2BaseMetric:
-    - Automatic LLM and embedding validation
-    - Numeric validation with configurable ranges
+    This metric inherits all the validation and base functionality from BaseMetric:
     - Batch processing capabilities
     - Type safety
     - Async-first design
 
     Usage:
-        >>> metric = ExampleMetric(llm=modern_llm, embeddings=modern_embeddings)
+        >>> metric = ExampleMetric()
         >>> result = await metric.ascore(user_input="test", response="test")
     """
 
     name: str = "example_metric"
-    llm: "InstructorBaseRagasLLM"
-    embeddings: "BaseRagasEmbedding"
 
     async def _ascore_impl(self, user_input: str, response: str) -> MetricResult:
         """
