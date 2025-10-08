@@ -7,7 +7,7 @@ from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
 
 
-@dataclass(kw_only=True)
+@dataclass
 class RougeScore(BaseMetric):
     """
     Calculate ROUGE score between reference and response texts.

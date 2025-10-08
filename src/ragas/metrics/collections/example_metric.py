@@ -6,7 +6,7 @@ from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
 
 
-@dataclass(kw_only=True)
+@dataclass
 class ExampleMetric(BaseMetric):
     """
     Example metric showing how easy it is to create new metrics.
