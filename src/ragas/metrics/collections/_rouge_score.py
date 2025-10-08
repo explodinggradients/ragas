@@ -47,7 +47,7 @@ class RougeScore(BaseMetric):
     rouge_type: t.Literal["rouge1", "rougeL"] = "rougeL"
     mode: t.Literal["fmeasure", "precision", "recall"] = "fmeasure"
 
-    async def _ascore_impl(
+    async def ascore(
         self,
         reference: str,
         response: str,

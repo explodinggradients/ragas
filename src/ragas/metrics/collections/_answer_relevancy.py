@@ -1,7 +1,7 @@
 """Answer Relevancy metric v2 - Class-based implementation with modern components."""
 
 import typing as t
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 from pydantic import BaseModel
@@ -22,7 +22,7 @@ class AnswerRelevanceOutput(BaseModel):
     noncommittal: int
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AnswerRelevancy(BaseMetric):
     """
     Evaluate answer relevancy by generating questions from the response and comparing to original question.
@@ -59,19 +59,20 @@ class AnswerRelevancy(BaseMetric):
         ... ])
 
     Attributes:
-        name: The metric name
         llm: Modern instructor-based LLM for question generation
         embeddings: Modern embeddings model with embed_text() and embed_texts() methods
+        name: The metric name
         strictness: Number of questions to generate per answer (3-5 recommended)
         allowed_values: Score range (0.0 to 1.0)
     """
 
+    # Required components - cannot be None, must be provided
+    llm: "InstructorBaseRagasLLM"
+    embeddings: "BaseRagasEmbedding"
     name: str = "answer_relevancy"
-    llm: "InstructorBaseRagasLLM" = field()
-    embeddings: "BaseRagasEmbedding" = field()
     strictness: int = 3
 
-    async def _ascore_impl(self, user_input: str, response: str) -> MetricResult:
+    async def ascore(self, user_input: str, response: str) -> MetricResult:
         """
         Calculate answer relevancy score asynchronously.
 

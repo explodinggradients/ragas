@@ -1,36 +1,37 @@
-"""Base class for v2 metrics with modern component validation."""
+"""Base class for collections metrics with modern component validation."""
 
 import asyncio
 import typing as t
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from ragas.embeddings.base import BaseRagasEmbedding
 from ragas.llms.base import InstructorBaseRagasLLM
+from ragas.metrics.base import SimpleBaseMetric
 from ragas.metrics.result import MetricResult
+from ragas.metrics.validators import NumericValidator
 
 
 @dataclass
-class BaseMetric(ABC):
+class BaseMetric(SimpleBaseMetric, NumericValidator):
     """
     Base class for metrics collections with modern component validation.
 
-    This class provides:
-    - Automatic validation of modern LLM and embedding components (when defined by subclass)
-    - Rejection of legacy wrappers with helpful error messages
+    This class inherits from SimpleBaseMetric and NumericValidator to provide:
+    - All the base metric functionality (ascore, abatch_score, score, batch_score)
     - Numeric validation with configurable ranges
+    - Modern LLM and embedding component validation (when defined by subclass)
+    - Rejection of legacy wrappers with helpful error messages
     - Consistent error handling and type safety
-    - Pure async design with concurrent batch processing
-    - Keyword-only arguments for explicit, clear API
 
     Attributes:
         name: The metric name
         allowed_values: Score range for numeric validation (tuple of min, max)
 
-    Note: All arguments are keyword-only. Subclasses define llm and/or embeddings fields only if they need them.
+    Note: Subclasses define llm and/or embeddings fields only if they need them.
+    The base classes handle all the core metric functionality - we just add modern component validation.
     """
 
-    name: str
+    name: str = "base_metric"
     allowed_values: t.Tuple[float, float] = (0.0, 1.0)
 
     def __post_init__(self):
@@ -43,53 +44,16 @@ class BaseMetric(ABC):
 
     async def ascore(self, **kwargs) -> MetricResult:
         """
-        Async scoring method with automatic result validation.
+        Default async scoring method - subclasses should override this.
 
-        Components are guaranteed to be validated and non-None after __post_init__.
-        Results are automatically validated against allowed_values range.
+        This base implementation just returns a placeholder result.
+        Subclasses should override this method with their specific logic.
+
+        The base class handles component validation in __post_init__.
         """
-        # Call the subclass implementation
-        result = await self._ascore_impl(**kwargs)
-
-        # Validate the result value
-        if result.value is not None:
-            validation_error = self.validate_result_value(result.value)
-            if validation_error:
-                return MetricResult(value=None, reason=validation_error)
-
-        return result
-
-    @abstractmethod
-    async def _ascore_impl(self, **kwargs) -> MetricResult:
-        """
-        Metric-specific async scoring implementation.
-
-        Subclasses should override this method instead of ascore().
-        Components are guaranteed to be validated and non-None.
-        Results will be automatically validated by the base class.
-        """
-        pass
-
-    async def abatch_score(
-        self,
-        inputs: t.List[t.Dict[str, t.Any]],
-    ) -> t.List[MetricResult]:
-        """
-        Async batch scoring with concurrent execution.
-
-        Args:
-            inputs: List of input dictionaries for scoring
-
-        Returns:
-            List of MetricResult objects
-        """
-        async_tasks = []
-        for input_dict in inputs:
-            # Process input asynchronously
-            async_tasks.append(self.ascore(**input_dict))
-
-        # Run all tasks concurrently and return results
-        return await asyncio.gather(*async_tasks)
+        return MetricResult(
+            value=0.0, reason="Base metric placeholder - override ascore() in subclass"
+        )
 
     def score(self, **kwargs) -> MetricResult:
         """
@@ -142,17 +106,6 @@ class BaseMetric(ABC):
                 raise  # Re-raise our custom error
             # No running loop found, safe to use asyncio.run()
             return asyncio.run(self.abatch_score(inputs))
-
-    def validate_result_value(self, result_value: t.Any) -> t.Optional[str]:
-        """Validate that result value is within the numeric range."""
-        if not isinstance(result_value, (int, float)):
-            return f"Metric {self.name} returned '{result_value}' but expected a numeric value"
-
-        min_val, max_val = self.allowed_values
-        if not (min_val <= result_value <= max_val):
-            return f"Metric {self.name} returned {result_value} but expected value in range {self.allowed_values}"
-
-        return None
 
     def _validate_llm(self):
         """Validate that a modern InstructorLLM is provided."""
