@@ -3,20 +3,20 @@
 import typing as t
 from dataclasses import dataclass
 
+from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
-from ragas.metrics.v2.base import V2BaseMetric
 
 
-@dataclass
-class RougeScore(V2BaseMetric):
+@dataclass(kw_only=True)
+class RougeScore(BaseMetric):
     """
     Calculate ROUGE score between reference and response texts.
 
-    This v2 implementation provides automatic validation and pure async design
+    This implementation provides automatic validation and pure async design
     without requiring LLM or embedding components.
 
     Usage:
-        >>> from ragas.metrics.v2 import RougeScore
+        >>> from ragas.metrics.collections import RougeScore
         >>>
         >>> # Create metric instance (no LLM/embeddings needed)
         >>> metric = RougeScore(rouge_type="rougeL", mode="fmeasure")
@@ -43,7 +43,7 @@ class RougeScore(V2BaseMetric):
     Note: This metric doesn't define llm or embeddings fields, so no validation is performed.
     """
 
-    name: str = "rouge_score_v2"
+    name: str = "rouge_score"
     rouge_type: t.Literal["rouge1", "rougeL"] = "rougeL"
     mode: t.Literal["fmeasure", "precision", "recall"] = "fmeasure"
 

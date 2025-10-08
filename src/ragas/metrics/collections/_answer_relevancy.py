@@ -1,14 +1,14 @@
 """Answer Relevancy metric v2 - Class-based implementation with modern components."""
 
 import typing as t
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 from pydantic import BaseModel
 
+from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
-from ragas.metrics.v2.base import V2BaseMetric
-from ragas.prompt.metrics.answer_relevance import answer_relevance_prompt
+from ragas.prompt.metrics.answer_relevance import answer_relevancy_prompt
 
 if t.TYPE_CHECKING:
     from ragas.embeddings.base import BaseRagasEmbedding
@@ -22,12 +22,12 @@ class AnswerRelevanceOutput(BaseModel):
     noncommittal: int
 
 
-@dataclass
-class AnswerRelevancy(V2BaseMetric):
+@dataclass(kw_only=True)
+class AnswerRelevancy(BaseMetric):
     """
     Evaluate answer relevancy by generating questions from the response and comparing to original question.
 
-    This v2 implementation uses modern instructor LLMs with structured output and modern embeddings.
+    This implementation uses modern instructor LLMs with structured output and modern embeddings.
     Only supports modern components - legacy wrappers are rejected with clear error messages.
 
     Usage:
@@ -35,7 +35,7 @@ class AnswerRelevancy(V2BaseMetric):
         >>> from openai import AsyncOpenAI
         >>> from ragas.llms.base import instructor_llm_factory
         >>> from ragas.embeddings.base import embedding_factory
-        >>> from ragas.metrics.v2 import AnswerRelevancy
+        >>> from ragas.metrics.collections import AnswerRelevancy
         >>>
         >>> # Setup dependencies
         >>> client = AsyncOpenAI()
@@ -66,24 +66,10 @@ class AnswerRelevancy(V2BaseMetric):
         allowed_values: Score range (0.0 to 1.0)
     """
 
-    name: str = "answer_relevancy_v2"
-    llm: t.Optional["InstructorBaseRagasLLM"] = field(default=None)
-    embeddings: t.Optional["BaseRagasEmbedding"] = field(default=None)
+    name: str = "answer_relevancy"
+    llm: "InstructorBaseRagasLLM"
+    embeddings: "BaseRagasEmbedding"
     strictness: int = 3
-
-    def __post_init__(self):
-        """Validate that required components are provided."""
-        if self.llm is None:
-            raise TypeError(
-                "AnswerRelevancy.__init__() missing required argument: 'llm'"
-            )
-        if self.embeddings is None:
-            raise TypeError(
-                "AnswerRelevancy.__init__() missing required argument: 'embeddings'"
-            )
-
-        # Call parent validation
-        super().__post_init__()
 
     async def _ascore_impl(self, user_input: str, response: str) -> MetricResult:
         """
@@ -98,7 +84,7 @@ class AnswerRelevancy(V2BaseMetric):
         Returns:
             MetricResult with relevancy score (0.0-1.0)
         """
-        prompt = answer_relevance_prompt(response)
+        prompt = answer_relevancy_prompt(response)
 
         generated_questions = []
         noncommittal_flags = []

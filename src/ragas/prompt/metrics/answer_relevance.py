@@ -1,7 +1,7 @@
 """Answer Relevance prompt for generating questions and detecting noncommittal responses."""
 
 
-def answer_relevance_prompt(response: str) -> str:
+def answer_relevancy_prompt(response: str) -> str:
     """
     Generate the prompt for answer relevance evaluation.
 

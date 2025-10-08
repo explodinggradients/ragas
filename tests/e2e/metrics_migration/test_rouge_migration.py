@@ -6,7 +6,7 @@ import pytest
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics import MetricResult, RougeScore as LegacyRougeScore
-from ragas.metrics.v2 import RougeScore
+from ragas.metrics.collections import RougeScore
 
 # Type aliases for better type checking
 RougeType = t.Literal["rouge1", "rougeL"]

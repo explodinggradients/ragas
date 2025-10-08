@@ -4,7 +4,7 @@ import pytest
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics import AnswerRelevancy as LegacyAnswerRelevancy, MetricResult
-from ragas.metrics.v2 import AnswerRelevancy
+from ragas.metrics.collections import AnswerRelevancy
 
 
 class TestAnswerRelevancyE2EMigration:

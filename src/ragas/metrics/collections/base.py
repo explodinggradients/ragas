@@ -5,16 +5,15 @@ import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+from ragas.embeddings.base import BaseRagasEmbedding
+from ragas.llms.base import InstructorBaseRagasLLM
 from ragas.metrics.result import MetricResult
 
-if t.TYPE_CHECKING:
-    pass
 
-
-@dataclass
-class V2BaseMetric(ABC):
+@dataclass(kw_only=True)
+class BaseMetric(ABC):
     """
-    Base class for v2 metrics with modern component validation.
+    Base class for metrics collections with modern component validation.
 
     This class provides:
     - Automatic validation of modern LLM and embedding components (when defined by subclass)
@@ -22,12 +21,13 @@ class V2BaseMetric(ABC):
     - Numeric validation with configurable ranges
     - Consistent error handling and type safety
     - Pure async design with concurrent batch processing
+    - Keyword-only arguments for explicit, clear API
 
     Attributes:
         name: The metric name
         allowed_values: Score range for numeric validation (tuple of min, max)
 
-    Note: Subclasses define llm and/or embeddings fields only if they need them.
+    Note: All arguments are keyword-only. Subclasses define llm and/or embeddings fields only if they need them.
     """
 
     name: str
@@ -160,9 +160,9 @@ class V2BaseMetric(ABC):
         if llm is None:
             raise ValueError(f"{self.__class__.__name__} requires an llm parameter")
 
-        if type(llm).__name__ != "InstructorLLM":
+        if not isinstance(llm, InstructorBaseRagasLLM):
             raise ValueError(
-                f"V2 metrics only support modern InstructorLLM. Found: {type(llm).__name__}. "
+                f"Collections metrics only support modern InstructorLLM. Found: {type(llm).__name__}. "
                 f"Use: instructor_llm_factory('openai', model='gpt-4o-mini', client=openai_client)"
             )
 
@@ -174,8 +174,8 @@ class V2BaseMetric(ABC):
                 f"{self.__class__.__name__} requires an embeddings parameter"
             )
 
-        if type(embeddings).__name__ == "LangchainEmbeddingsWrapper":
+        if not isinstance(embeddings, BaseRagasEmbedding):
             raise ValueError(
-                "V2 metrics only support modern embeddings. Legacy LangchainEmbeddingsWrapper is not supported. "
-                "Use: embedding_factory('openai', model='text-embedding-ada-002', client=openai_client, interface='modern')"
+                f"Collections metrics only support modern embeddings. Found: {type(embeddings).__name__}. "
+                f"Use: embedding_factory('openai', model='text-embedding-ada-002', client=openai_client, interface='modern')"
             )

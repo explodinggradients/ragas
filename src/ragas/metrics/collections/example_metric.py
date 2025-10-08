@@ -1,20 +1,20 @@
 """Example of creating a new v2 metric using V2BaseMetric."""
 
 import typing as t
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
+from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
-from ragas.metrics.v2.base import V2BaseMetric
 
 if t.TYPE_CHECKING:
     from ragas.embeddings.base import BaseRagasEmbedding
     from ragas.llms.base import InstructorBaseRagasLLM
 
 
-@dataclass
-class ExampleV2Metric(V2BaseMetric):
+@dataclass(kw_only=True)
+class ExampleMetric(BaseMetric):
     """
-    Example v2 metric showing how easy it is to create new metrics.
+    Example metric showing how easy it is to create new metrics.
 
     This metric inherits all the validation and base functionality from V2BaseMetric:
     - Automatic LLM and embedding validation
@@ -24,27 +24,13 @@ class ExampleV2Metric(V2BaseMetric):
     - Async-first design
 
     Usage:
-        >>> metric = ExampleV2Metric(llm=modern_llm, embeddings=modern_embeddings)
+        >>> metric = ExampleMetric(llm=modern_llm, embeddings=modern_embeddings)
         >>> result = await metric.ascore(user_input="test", response="test")
     """
 
-    name: str = "example_v2_metric"
-    llm: t.Optional["InstructorBaseRagasLLM"] = field(default=None)
-    embeddings: t.Optional["BaseRagasEmbedding"] = field(default=None)
-
-    def __post_init__(self):
-        """Validate that required components are provided."""
-        if self.llm is None:
-            raise TypeError(
-                "ExampleV2Metric.__init__() missing required argument: 'llm'"
-            )
-        if self.embeddings is None:
-            raise TypeError(
-                "ExampleV2Metric.__init__() missing required argument: 'embeddings'"
-            )
-
-        # Call parent validation
-        super().__post_init__()
+    name: str = "example_metric"
+    llm: "InstructorBaseRagasLLM"
+    embeddings: "BaseRagasEmbedding"
 
     async def _ascore_impl(self, user_input: str, response: str) -> MetricResult:
         """
