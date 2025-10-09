@@ -95,14 +95,12 @@ nav:
               - Run Config: howtos/customizations/_run_config.md
               - Caching: howtos/customizations/_caching.md
               - Cancelling Tasks: howtos/customizations/cancellation.md
-              - Iterate Prompts: howtos/customizations/iterate_prompt.md
           - Metrics:
               - Modify Prompts: howtos/customizations/metrics/_modifying-prompts-metrics.md
               - Adapt Metrics to Languages: howtos/customizations/metrics/_metrics_language_adaptation.md
               - Write your own Metrics: howtos/customizations/metrics/_write_your_own_metric.md
               - Write your own Metrics - (advanced): howtos/customizations/metrics/_write_your_own_metric_advanced.md
               - Train and Align Metrics: howtos/customizations/metrics/train_your_own_metric.md
-              - Systematic Approach for Prompt Optimization: howtos/applications/prompt_optimization.md
           - Testset Generation:
               - Non-English Testset Generation: howtos/customizations/testgenerator/_language_adaptation.md
               - Persona Generation: howtos/customizations/testgenerator/_persona_generator.md
@@ -111,6 +109,9 @@ nav:
 
       - Applications:
           - howtos/applications/index.md
+          - Prompt Evaluation:
+            - Iterate and Improve Prompts: howtos/applications/iterate_prompt.md
+            - Systematic Prompt Optimization: howtos/applications/prompt_optimization.md
           - Metrics:
             - Cost Analysis: howtos/applications/_cost.md
             - Evaluating Multi-turn Conversations: howtos/applications/evaluating_multi_turn_conversations.md
@@ -118,7 +119,6 @@ nav:
           - Testset Generation:
             - Single-hop Query Testset: howtos/applications/singlehop_testset_gen.md
           - Benchmarking:
-            - Benchmarking Gemini models: howtos/applications/gemini_benchmarking.md
             - Evaluate a New LLM: howtos/applications/benchmark_llm.md
           - Agent Evaluation:
             - Evaluate a Text-to-SQL Agent: howtos/applications/text2sql.md
@@ -284,6 +284,4 @@ extra_javascript:
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
   - _static/js/toggle.js
   - https://cdn.octolane.com/tag.js?pk=c7c9b2b863bf7eaf4e2a # octolane for analytics
-  - _static/js/reo.js # reo analytics
   - _static/js/commonroom.js # commonroom analytics
-  - _static/js/rb2b.js # rb2b analytics

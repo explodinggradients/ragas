@@ -1,7 +1,6 @@
 """Answer Relevancy metric v2 - Class-based implementation with modern components."""
 
 import typing as t
-from dataclasses import dataclass
 
 import numpy as np
 from pydantic import BaseModel
@@ -22,7 +21,6 @@ class AnswerRelevanceOutput(BaseModel):
     noncommittal: int
 
 
-@dataclass(kw_only=True)
 class AnswerRelevancy(BaseMetric):
     """
     Evaluate answer relevancy by generating questions from the response and comparing to original question.
@@ -66,11 +64,26 @@ class AnswerRelevancy(BaseMetric):
         allowed_values: Score range (0.0 to 1.0)
     """
 
-    # Required components - cannot be None, must be provided
+    # Type hints for linter (attributes are set in __init__)
     llm: "InstructorBaseRagasLLM"
     embeddings: "BaseRagasEmbedding"
-    name: str = "answer_relevancy"
-    strictness: int = 3
+
+    def __init__(
+        self,
+        llm: "InstructorBaseRagasLLM",
+        embeddings: "BaseRagasEmbedding",
+        name: str = "answer_relevancy",
+        strictness: int = 3,
+        **kwargs,
+    ):
+        """Initialize AnswerRelevancy metric with required components."""
+        # Set attributes explicitly before calling super()
+        self.llm = llm
+        self.embeddings = embeddings
+        self.strictness = strictness
+
+        # Call super() for validation (without passing llm/embeddings in kwargs)
+        super().__init__(name=name, **kwargs)
 
     async def ascore(self, user_input: str, response: str) -> MetricResult:
         """

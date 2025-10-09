@@ -1,5 +1,4 @@
 import argparse
-import asyncio
 import datetime
 import json
 import os
@@ -7,6 +6,10 @@ import sys
 from typing import List, Optional
 
 import pandas as pd
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv(".env")
 
 from ragas import experiment
 from ragas.dataset import Dataset
@@ -35,50 +38,44 @@ def discount_accuracy(prediction: str, expected_discount):
         )
 
 
-def create_benchmark_experiment(model_name: str, experiment_name: str):
-    """Factory function to create experiment functions for different models."""
+@experiment()
+async def benchmark_experiment(row, model_name: str):
+    """Benchmark experiment function that evaluates a model on discount calculation."""
+    # Get model response
+    response = await run_prompt(row["customer_profile"], model=model_name)
 
-    @experiment()
-    async def benchmark_experiment(row):
-        # Get model response (run blocking call in thread to keep async runner responsive)
-        response = await asyncio.to_thread(
-            run_prompt, row["customer_profile"], model=model_name
-        )
+    # Parse response (strict JSON mode expected)
+    try:
+        parsed_json = json.loads(response)
+        predicted_discount = parsed_json.get("discount_percentage")
+    except Exception:
+        predicted_discount = None
 
-        # Parse response (strict JSON mode expected)
-        try:
-            parsed_json = json.loads(response)
-            predicted_discount = parsed_json.get("discount_percentage")
-        except Exception:
-            predicted_discount = None
+    # Score the response
+    score = discount_accuracy.score(
+        prediction=response, expected_discount=row["expected_discount"]
+    )
 
-        # Score the response
-        score = discount_accuracy.score(
-            prediction=response, expected_discount=row["expected_discount"]
-        )
-
-        return {
-            **row,
-            "model": model_name,
-            "experiment_name": experiment_name,
-            "response": response,
-            "predicted_discount": predicted_discount,
-            "score": score.value,
-            "score_reason": score.reason,
-        }
-
-    return benchmark_experiment
+    return {
+        **row,
+        "model": model_name,
+        "response": response,
+        "predicted_discount": predicted_discount,
+        "score": score.value,
+        "score_reason": score.reason,
+    }
 
 
 def load_dataset():
-    """Load the dataset from CSV file."""
-    # Get the directory where this file is located
+    """Load the dataset from CSV file. Downloads from GitHub if not found locally."""
+    import urllib.request
     current_dir = os.path.dirname(os.path.abspath(__file__))
-
-    dataset = Dataset.load(
-        name="discount_benchmark", backend="local/csv", root_dir=current_dir
-    )
-    return dataset
+    dataset_path = os.path.join(current_dir, "datasets", "discount_benchmark.csv")
+    # Download dataset from GitHub if it doesn't exist locally
+    if not os.path.exists(dataset_path):
+        os.makedirs(os.path.dirname(dataset_path), exist_ok=True)
+        urllib.request.urlretrieve("https://raw.githubusercontent.com/explodinggradients/ragas/main/examples/ragas_examples/benchmark_llm/datasets/discount_benchmark.csv", dataset_path)
+    return Dataset.load(name="discount_benchmark", backend="local/csv", root_dir=current_dir)
 
 
 def compare_inputs_to_output(
@@ -98,9 +95,9 @@ def compare_inputs_to_output(
     experiment_names = []
     for path in inputs:
         df = pd.read_csv(path)
-        if "experiment_name" not in df.columns:
-            raise ValueError(f"Missing 'experiment_name' column in {path}")
-        exp_name = str(df["experiment_name"].iloc[0])
+        if "model" not in df.columns:
+            raise ValueError(f"Missing 'model' column in {path}")
+        exp_name = str(df["model"].iloc[0])
         experiment_names.append(exp_name)
         dataframes.append(df)
 
@@ -206,11 +203,12 @@ async def run_command(model: str, name: Optional[str]) -> None:
     experiments_dir = os.path.join(current_dir, "experiments")
     os.makedirs(experiments_dir, exist_ok=True)
 
-    benchmark_experiment = create_benchmark_experiment(
-        model_name=model, experiment_name=exp_name
-    )
     print(f"Running model evaluation ({model})...")
-    results = await benchmark_experiment.arun(dataset, name=f"{run_id}-{exp_name}")
+    results = await benchmark_experiment.arun(
+        dataset, 
+        name=f"{run_id}-{exp_name}",
+        model_name=model
+    )
     print(f"✅ {exp_name}: {len(results)} cases evaluated")
     print(f"Results saved to: {os.path.join(experiments_dir, results.name)}.csv")
 
