@@ -5,10 +5,13 @@ import pytest
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics import AnswerRelevancy as LegacyAnswerRelevancy, MetricResult
 from ragas.metrics.collections import AnswerRelevancy
+from ragas.metrics.collections._answer_relevancy_v2 import (
+    AnswerRelevancy as AnswerRelevancyV2,
+)
 
 
 class TestAnswerRelevancyE2EMigration:
-    """E2E test compatibility between legacy AnswerRelevancy class and new V2 AnswerRelevancy class with automatic validation."""
+    """E2E test compatibility between legacy, new, and new_v2 (simplified prompt system) AnswerRelevancy implementations."""
 
     @pytest.fixture
     def sample_data(self):
@@ -112,7 +115,7 @@ class TestAnswerRelevancyE2EMigration:
             )
 
     @pytest.mark.asyncio
-    async def test_legacy_answer_relevancy_vs_v2_answer_relevancy_e2e_compatibility(
+    async def test_legacy_vs_new_vs_newv2_answer_relevancy_e2e_compatibility(
         self,
         sample_data,
         test_llm,
@@ -120,7 +123,7 @@ class TestAnswerRelevancyE2EMigration:
         test_legacy_embeddings,
         test_modern_embeddings,
     ):
-        """E2E test that legacy and v2 implementations produce similar scores with real LLM."""
+        """E2E test that legacy, new, and new_v2 implementations produce similar scores with real LLM."""
 
         if (
             test_llm is None
@@ -157,24 +160,47 @@ class TestAnswerRelevancyE2EMigration:
                 response=data["response"],
             )
 
+            # New V2 with simplified prompt system
+            new_v2_answer_relevancy = AnswerRelevancyV2(
+                llm=test_modern_llm, embeddings=test_modern_embeddings
+            )
+            new_v2_result = await new_v2_answer_relevancy.ascore(
+                user_input=data["user_input"],
+                response=data["response"],
+            )
+
             # Results might not be exactly identical due to LLM randomness, but should be close
-            score_diff = abs(legacy_score - v2_answer_relevancy_result.value)
-            print(f"   Legacy:    {legacy_score:.6f}")
-            print(f"   V2 Class:  {v2_answer_relevancy_result.value:.6f}")
-            print(f"   Diff:      {score_diff:.6f}")
+            legacy_v2_diff = abs(legacy_score - v2_answer_relevancy_result.value)
+            legacy_newv2_diff = abs(legacy_score - new_v2_result.value)
+            v2_newv2_diff = abs(v2_answer_relevancy_result.value - new_v2_result.value)
+
+            print(f"   Legacy:       {legacy_score:.6f}")
+            print(f"   V2 Class:     {v2_answer_relevancy_result.value:.6f}")
+            print(f"   New V2 Class: {new_v2_result.value:.6f}")
+            print(f"   Legacy-V2 Diff:    {legacy_v2_diff:.6f}")
+            print(f"   Legacy-NewV2 Diff: {legacy_newv2_diff:.6f}")
+            print(f"   V2-NewV2 Diff:     {v2_newv2_diff:.6f}")
 
             # Allow some tolerance for LLM randomness but scores should be reasonably close
-            assert score_diff < 0.2, (
+            assert legacy_v2_diff < 0.2, (
                 f"Case {i + 1} ({data['description']}): Large difference: {legacy_score} vs {v2_answer_relevancy_result.value}"
+            )
+            assert legacy_newv2_diff < 0.2, (
+                f"Case {i + 1} ({data['description']}): Large difference: {legacy_score} vs {new_v2_result.value}"
+            )
+            assert v2_newv2_diff < 0.2, (
+                f"Case {i + 1} ({data['description']}): Large difference: {v2_answer_relevancy_result.value} vs {new_v2_result.value}"
             )
 
             # Verify types
             assert isinstance(legacy_score, float)
             assert isinstance(v2_answer_relevancy_result, MetricResult)
+            assert isinstance(new_v2_result, MetricResult)
             assert 0.0 <= legacy_score <= 1.0
             assert 0.0 <= v2_answer_relevancy_result.value <= 1.0
+            assert 0.0 <= new_v2_result.value <= 1.0
 
-            print("   ✅ Scores within tolerance!")
+            print("   ✅ All scores within tolerance!")
 
     @pytest.mark.asyncio
     async def test_answer_relevancy_noncommittal_detection(
@@ -229,16 +255,19 @@ class TestAnswerRelevancyE2EMigration:
                 response=case["response"],
             )
 
-            # V2 function-based for comparison
-            v2_result_2 = await v2_answer_relevancy.ascore(
+            # New V2 class with simplified prompt system
+            new_v2_answer_relevancy = AnswerRelevancyV2(
+                llm=test_modern_llm, embeddings=test_modern_embeddings
+            )
+            new_v2_result = await new_v2_answer_relevancy.ascore(
                 user_input=case["user_input"],
                 response=case["response"],
             )
 
             print(f"   Response: {case['response']}")
-            print(f"   Legacy:     {legacy_score:.6f}")
-            print(f"   V2 Class:   {v2_result.value:.6f}")
-            print(f"   V2 Class 2: {v2_result_2.value:.6f}")
+            print(f"   Legacy:      {legacy_score:.6f}")
+            print(f"   V2 Class:    {v2_result.value:.6f}")
+            print(f"   New V2 Class: {new_v2_result.value:.6f}")
 
             if case["expected_low"]:
                 # Noncommittal answers should get low scores (close to 0)
@@ -248,6 +277,9 @@ class TestAnswerRelevancyE2EMigration:
                 assert v2_result.value < 0.1, (
                     f"V2 class should detect noncommittal: {v2_result.value}"
                 )
+                assert new_v2_result.value < 0.1, (
+                    f"New V2 class should detect noncommittal: {new_v2_result.value}"
+                )
                 print("   ✅ All detected noncommittal (low scores)")
             else:
                 # Committal answers should get reasonable scores
@@ -256,6 +288,9 @@ class TestAnswerRelevancyE2EMigration:
                 )
                 assert v2_result.value > 0.3, (
                     f"V2 class should score committal higher: {v2_result.value}"
+                )
+                assert new_v2_result.value > 0.3, (
+                    f"New V2 class should score committal higher: {new_v2_result.value}"
                 )
                 print("   ✅ All scored committal answer reasonably")
 
