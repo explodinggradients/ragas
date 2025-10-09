@@ -87,11 +87,8 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
                     ):
                         logger.debug("Overlapped items are not strings or iterables.")
                         continue
-                    themes = (
-                        list(overlapped_items.keys())
-                        if isinstance(overlapped_items, dict)
-                        else overlapped_items
-                    )
+                    themes = self._extract_themes_from_overlaps(overlapped_items)
+
                     prompt_input = ThemesPersonasInput(
                         themes=themes, personas=persona_list
                     )
@@ -100,10 +97,9 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
                             data=prompt_input, llm=self.llm, callbacks=callbacks
                         )
                     )
-                    combinations = [
-                        [item] if isinstance(item, str) else list(item)
-                        for item in themes
-                    ]
+
+                    combinations = [[theme] for theme in themes]
+
                     base_scenarios = self.prepare_combinations(
                         [node_a, node_b],
                         combinations,
@@ -117,3 +113,30 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
                     scenarios.extend(base_scenarios)
 
         return scenarios
+
+    def _extract_themes_from_overlaps(self, overlapped_items: t.Any) -> t.List[str]:
+        """
+        Extract unique entity names from overlapped items.
+
+        Handles multiple formats:
+        - List[Tuple[str, str]]: Entity pairs from overlap detection
+        - List[str]: Direct entity names
+        - Dict[str, Any]: Keys as entity names
+        """
+        if isinstance(overlapped_items, dict):
+            return list(overlapped_items.keys())
+
+        if not isinstance(overlapped_items, list):
+            return []
+
+        unique_entities = set()
+        for item in overlapped_items:
+            if isinstance(item, tuple):
+                # Extract both entities from the pair
+                for entity in item:
+                    if isinstance(entity, str):
+                        unique_entities.add(entity)
+            elif isinstance(item, str):
+                unique_entities.add(item)
+
+        return list(unique_entities)
