@@ -2,7 +2,6 @@
 
 import asyncio
 import typing as t
-from dataclasses import dataclass
 
 from ragas.embeddings.base import BaseRagasEmbedding
 from ragas.llms.base import InstructorBaseRagasLLM
@@ -11,7 +10,6 @@ from ragas.metrics.result import MetricResult
 from ragas.metrics.validators import NumericValidator
 
 
-@dataclass
 class BaseMetric(SimpleBaseMetric, NumericValidator):
     """
     Base class for metrics collections with modern component validation.
@@ -31,15 +29,20 @@ class BaseMetric(SimpleBaseMetric, NumericValidator):
     The base classes handle all the core metric functionality - we just add modern component validation.
     """
 
-    name: str = "base_metric"
-    allowed_values: t.Tuple[float, float] = (0.0, 1.0)
+    def __init__(
+        self,
+        name: str = "base_metric",
+        allowed_values: t.Tuple[float, float] = (0.0, 1.0),
+        **kwargs,
+    ):
+        """Initialize the base metric with validation."""
+        super().__init__(name=name, allowed_values=allowed_values)
 
-    def __post_init__(self):
-        """Validate components only if the metric defines them."""
-        # Check if this specific metric class defines these fields
-        if "llm" in self.__dataclass_fields__:
+        # Validate components only if the metric defines them
+        # Check if this instance has these attributes after initialization
+        if hasattr(self, "llm"):
             self._validate_llm()
-        if "embeddings" in self.__dataclass_fields__:
+        if hasattr(self, "embeddings"):
             self._validate_embeddings()
 
     async def ascore(self, **kwargs) -> MetricResult:

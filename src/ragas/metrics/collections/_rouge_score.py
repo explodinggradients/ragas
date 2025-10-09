@@ -1,13 +1,11 @@
 """Rouge Score metric v2 - Class-based implementation with automatic validation."""
 
 import typing as t
-from dataclasses import dataclass
 
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
 
 
-@dataclass
 class RougeScore(BaseMetric):
     """
     Calculate ROUGE score between reference and response texts.
@@ -43,9 +41,17 @@ class RougeScore(BaseMetric):
     Note: This metric doesn't define llm or embeddings fields, so no validation is performed.
     """
 
-    name: str = "rouge_score"
-    rouge_type: t.Literal["rouge1", "rougeL"] = "rougeL"
-    mode: t.Literal["fmeasure", "precision", "recall"] = "fmeasure"
+    def __init__(
+        self,
+        name: str = "rouge_score",
+        rouge_type: t.Literal["rouge1", "rougeL"] = "rougeL",
+        mode: t.Literal["fmeasure", "precision", "recall"] = "fmeasure",
+        **kwargs,
+    ):
+        """Initialize RougeScore metric."""
+        super().__init__(name=name, **kwargs)
+        self.rouge_type = rouge_type
+        self.mode = mode
 
     async def ascore(
         self,

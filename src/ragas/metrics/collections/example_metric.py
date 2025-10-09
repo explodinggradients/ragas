@@ -1,12 +1,9 @@
 """Example of creating a new v2 metric using V2BaseMetric."""
 
-from dataclasses import dataclass
-
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
 
 
-@dataclass
 class ExampleMetric(BaseMetric):
     """
     Example metric showing how easy it is to create new metrics.
@@ -21,9 +18,11 @@ class ExampleMetric(BaseMetric):
         >>> result = await metric.ascore(user_input="test", response="test")
     """
 
-    name: str = "example_metric"
+    def __init__(self, name: str = "example_metric", **kwargs):
+        """Initialize the example metric."""
+        super().__init__(name=name, **kwargs)
 
-    async def _ascore_impl(self, user_input: str, response: str) -> MetricResult:
+    async def ascore(self, user_input: str, response: str) -> MetricResult:
         """
         Calculate example score asynchronously.
 
