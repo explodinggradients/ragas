@@ -89,6 +89,10 @@ class MockLLM:
         self.model = "mock-model"
         self.is_async = True
 
+    def set_run_config(self, run_config):
+        """Mock method for compatibility with MetricWithLLM."""
+        pass
+
     def generate(self, prompt: str, response_model: t.Type[BaseModel]) -> BaseModel:
         # Return a mock instance of the response model
         return response_model()
