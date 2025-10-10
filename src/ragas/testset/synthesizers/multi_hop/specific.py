@@ -120,6 +120,7 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
 
         Handles multiple formats:
         - List[Tuple[str, str]]: Entity pairs from overlap detection
+        - List[List[str]]: Entity pairs as lists
         - List[str]: Direct entity names
         - Dict[str, Any]: Keys as entity names
         """
@@ -131,7 +132,7 @@ class MultiHopSpecificQuerySynthesizer(MultiHopQuerySynthesizer):
 
         unique_entities = set()
         for item in overlapped_items:
-            if isinstance(item, tuple):
+            if isinstance(item, (tuple, list)):
                 # Extract both entities from the pair
                 for entity in item:
                     if isinstance(entity, str):
