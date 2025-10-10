@@ -166,8 +166,7 @@ cython_debug/
 
 # Cursor
 .cursorignore
-.cursor/*
-!.cursor/rules/
+.cursor/plans
 
 # Ragas specific
 _experiments/

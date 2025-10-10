@@ -351,3 +351,6 @@ Stop iterating when improvements plateau or accuracy meets business requirements
 Once you have your dataset and evaluation loop setup, you can expand this to testing more parameters like model, etc. 
 
 The Ragas framework handles the orchestration, parallel execution, and result aggregation automatically for you, helping you evaluate and focus on your use case!
+
+!!! tip "Advanced: Aligning LLM judges"
+    If you're using LLM-based metrics for evaluation, consider aligning your judge with human expert judgments first to ensure reliable evaluation. See [How to Align an LLM as a Judge](../applications/align-llm-as-judge.md).
