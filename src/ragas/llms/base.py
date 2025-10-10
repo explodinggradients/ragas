@@ -149,6 +149,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
         is_finished_parser: t.Optional[t.Callable[[LLMResult], bool]] = None,
         cache: t.Optional[CacheInterface] = None,
         bypass_temperature: bool = False,
+        bypass_n: bool = False,
     ):
         super().__init__(cache=cache)
         self.langchain_llm = langchain_llm
@@ -158,6 +159,8 @@ class LangchainLLMWrapper(BaseRagasLLM):
         self.is_finished_parser = is_finished_parser
         # Certain LLMs (e.g., OpenAI o1 series) do not support temperature
         self.bypass_temperature = bypass_temperature
+        # Certain Reason LLMs do not support n
+        self.bypass_n = bypass_n
 
     def is_finished(self, response: LLMResult) -> bool:
         """
@@ -225,7 +228,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
             old_temperature = self.langchain_llm.temperature  # type: ignore
             self.langchain_llm.temperature = temperature  # type: ignore
 
-        if is_multiple_completion_supported(self.langchain_llm):
+        if is_multiple_completion_supported(self.langchain_llm) && and not self.bypass_n:
             result = self.langchain_llm.generate_prompt(
                 prompts=[prompt],
                 n=n,
@@ -278,7 +281,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
             self.langchain_llm.temperature = temperature  # type: ignore
 
         # handle n
-        if hasattr(self.langchain_llm, "n"):
+        if hasattr(self.langchain_llm, "n") and not self.bypass_n:
             self.langchain_llm.n = n  # type: ignore
             result = await self.langchain_llm.agenerate_prompt(
                 prompts=[prompt],
