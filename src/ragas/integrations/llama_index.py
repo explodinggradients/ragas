@@ -79,19 +79,21 @@ def evaluate(
         exec.submit(query_engine.aquery, q, name=f"query-{i}")
 
     # get responses and retrieved contexts
-    responses: t.List[str] = []
-    retrieved_contexts: t.List[t.List[str]] = []
+    responses: t.List[t.Optional[str]] = []
+    retrieved_contexts: t.List[t.Optional[t.List[str]]] = []
     results = exec.results()
-    for r in results:
+    for i, r in enumerate(results):
         # Handle failed jobs which are recorded as NaN in the executor
         if isinstance(r, float) and math.isnan(r):
-            responses.append("")
-            retrieved_contexts.append([])
-        else:
-            # Cast to LlamaIndex Response type for proper type checking
-            response = t.cast("LlamaIndexResponse", r)
-            responses.append(response.response or "")
-            retrieved_contexts.append([n.get_text() for n in response.source_nodes])
+            responses.append(None)
+            retrieved_contexts.append(None)
+            logger.warning(f"Query engine failed for query {i}: '{queries[i]}'")
+            continue
+
+        # Cast to LlamaIndex Response type for proper type checking
+        response: LlamaIndexResponse = t.cast("LlamaIndexResponse", r)
+        responses.append(response.response if response.response is not None else "")
+        retrieved_contexts.append([n.get_text() for n in response.source_nodes])
 
     # append the extra information to the dataset
     for i, sample in enumerate(samples):
