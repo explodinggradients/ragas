@@ -8,8 +8,8 @@ from typing import List, Optional
 
 import pandas as pd
 
+from ragas import experiment
 from ragas.dataset import Dataset
-from ragas.experiment import experiment
 from ragas.metrics.discrete import discrete_metric
 from ragas.metrics.result import MetricResult
 
