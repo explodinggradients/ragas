@@ -6,13 +6,14 @@ import os
 import sys
 from typing import List, Optional
 
-
 import pandas as pd
 
-from ragas.experiment import experiment
 from ragas.dataset import Dataset
+from ragas.experiment import experiment
 from ragas.metrics.discrete import discrete_metric
 from ragas.metrics.result import MetricResult
+
+from .prompt import DEFAULT_MODEL, run_prompt
 
 
 
