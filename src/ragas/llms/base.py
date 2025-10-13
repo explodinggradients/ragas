@@ -228,7 +228,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
             old_temperature = self.langchain_llm.temperature  # type: ignore
             self.langchain_llm.temperature = temperature  # type: ignore
 
-        if is_multiple_completion_supported(self.langchain_llm) && and not self.bypass_n:
+        if is_multiple_completion_supported(self.langchain_llm) and not self.bypass_n:
             result = self.langchain_llm.generate_prompt(
                 prompts=[prompt],
                 n=n,
