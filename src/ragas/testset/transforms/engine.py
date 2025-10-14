@@ -3,9 +3,7 @@ from __future__ import annotations
 import logging
 import typing as t
 
-from tqdm.auto import tqdm
-
-from ragas.async_utils import apply_nest_asyncio, as_completed, run_async_tasks
+from ragas.async_utils import apply_nest_asyncio, run_async_tasks
 from ragas.run_config import RunConfig
 from ragas.testset.graph import KnowledgeGraph
 from ragas.testset.transforms.base import BaseGraphTransformation
