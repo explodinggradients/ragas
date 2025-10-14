@@ -85,16 +85,13 @@ async def process_futures(
 
     Yields:
         Results from completed futures as they finish
+    
+    Raises:
+        Exception: Any exception raised by the futures will be propagated
     """
     # Process completed futures as they finish
     for future in futures:
-        try:
-            result = await future
-        except asyncio.CancelledError:
-            raise  # Re-raise CancelledError to ensure proper cancellation
-        except Exception as e:
-            result = e
-
+        result = await future
         yield result
 
 
