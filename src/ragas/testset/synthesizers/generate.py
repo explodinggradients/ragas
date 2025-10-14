@@ -108,6 +108,7 @@ class TestsetGenerator:
         query_distribution: t.Optional[QueryDistribution] = None,
         run_config: t.Optional[RunConfig] = None,
         callbacks: t.Optional[Callbacks] = None,
+        token_usage_parser: t.Optional[TokenUsageParser] = None,
         with_debugging_logs=False,
         raise_exceptions: bool = True,
         return_executor: bool = False,
@@ -133,6 +134,9 @@ class TestsetGenerator:
             Configuration for the generation run, by default None
         callbacks : Optional[Callbacks], optional
             Callbacks to use during generation, by default None
+        token_usage_parser : Optional[TokenUsageParser], optional
+            Parse the LLMResult object and return a TokenUsage object. This is used to
+            calculate the cost of the generation process.
         with_debugging_logs : bool, optional
             Whether to include debug logs, by default False
         raise_exceptions : bool, optional
@@ -196,6 +200,7 @@ class TestsetGenerator:
             query_distribution=query_distribution,
             run_config=run_config,
             callbacks=callbacks,
+            token_usage_parser=token_usage_parser,
             with_debugging_logs=with_debugging_logs,
             raise_exceptions=raise_exceptions,
             return_executor=return_executor,
@@ -211,6 +216,7 @@ class TestsetGenerator:
         query_distribution: t.Optional[QueryDistribution] = None,
         run_config: t.Optional[RunConfig] = None,
         callbacks: t.Optional[Callbacks] = None,
+        token_usage_parser: t.Optional[TokenUsageParser] = None,
         with_debugging_logs=False,
         raise_exceptions: bool = True,
     ):
@@ -274,6 +280,7 @@ class TestsetGenerator:
             query_distribution=query_distribution,
             run_config=run_config,
             callbacks=callbacks,
+            token_usage_parser=token_usage_parser,
             with_debugging_logs=with_debugging_logs,
             raise_exceptions=raise_exceptions,
             return_executor=False,  # Default value for llamaindex_docs method
