@@ -5,9 +5,11 @@ from ragas.prompt.metrics.answer_correctness import (
     statement_generator_prompt,
 )
 from ragas.prompt.metrics.answer_relevance import answer_relevancy_prompt
+from ragas.prompt.metrics.context_entity_recall import extract_entities_prompt
 
 __all__ = [
     "answer_relevancy_prompt",
     "correctness_classifier_prompt",
+    "extract_entities_prompt",
     "statement_generator_prompt",
 ]
