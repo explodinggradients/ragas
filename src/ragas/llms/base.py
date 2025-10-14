@@ -159,7 +159,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
         self.is_finished_parser = is_finished_parser
         # Certain LLMs (e.g., OpenAI o1 series) do not support temperature
         self.bypass_temperature = bypass_temperature
-        # Certain Reason LLMs do not support n
+        # Certain reasoning LLMs (e.g., OpenAI o1 series) do not support n parameter for
         self.bypass_n = bypass_n
 
     def is_finished(self, response: LLMResult) -> bool:

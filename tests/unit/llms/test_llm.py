@@ -9,9 +9,6 @@ from langchain_core.prompt_values import PromptValue
 
 from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
 
-if t.TYPE_CHECKING:
-    from langchain_core.prompt_values import PromptValue
-
 
 class FakeTestLLM(BaseRagasLLM):
     def llm(self):
