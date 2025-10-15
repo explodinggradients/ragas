@@ -47,6 +47,17 @@ llamaindex = [
     "instructor",
 ]
 
+[project.scripts]
+ragas-agent-evals = "ragas_examples.agent_evals.evals:main"
+ragas-benchmark-llm = "ragas_examples.benchmark_llm.evals:main"
+ragas-prompt-evals = "ragas_examples.prompt_evals.evals:main"
+ragas-rag-evals = "ragas_examples.rag_eval.evals:main"
+ragas-workflow-evals = "ragas_examples.workflow_eval.evals:main"
+ragas-improve-rag = "ragas_examples.improve_rag.evals:main"
+ragas-text2sql-evals = "ragas_examples.text2sql.evals:main"
+ragas-llamaindex-agent-evals = "ragas_examples.llamaIndex_agent_evals.evals:main"
+ragas-judge-alignment = "ragas_examples.judge_alignment.evals:main"
+
 [project.urls]
 Homepage = "https://github.com/explodinggradients/ragas"
 Documentation = "https://docs.ragas.io"
