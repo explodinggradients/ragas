@@ -11,11 +11,25 @@ from .llm_setup import (
     create_modern_embeddings,
     create_modern_llm,
 )
+from .metric_comparison import (
+    MetricDiffResult,
+    compare_metrics,
+    export_comparison_results,
+    run_metric_on_dataset,
+    run_metric_on_dataset_with_batching,
+)
 
 __all__ = [
+    # LLM and embeddings setup
     "check_api_key",
     "create_legacy_llm",
     "create_modern_llm",
     "create_legacy_embeddings",
     "create_modern_embeddings",
+    # Metric comparison utilities
+    "MetricDiffResult",
+    "compare_metrics",
+    "export_comparison_results",
+    "run_metric_on_dataset",
+    "run_metric_on_dataset_with_batching",
 ]

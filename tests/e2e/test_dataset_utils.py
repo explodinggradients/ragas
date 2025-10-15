@@ -30,6 +30,39 @@ SAMPLE_AMNESTY_DATA = [
     },
 ]
 
+# Sample data structure matching the fiqa dataset
+SAMPLE_FIQA_DATA = [
+    {
+        "user_input": "How to deposit a cheque issued to an associate in my business account?",
+        "reference": "Have the check reissued to the proper payee. Just have the associate sign the back and then deposit it. It's called a third party cheque and is perfectly legal. I wouldn't be surprised if it has a longer hold period and, as always, you don't get the money if the cheque doesn't clear.",
+        "response": "The best way to deposit a cheque issued to an associate in your business account is to have the associate sign the back of the cheque and deposit it as a third party cheque.",
+        "retrieved_contexts": [
+            "Just have the associate sign the back and then deposit it. It's called a third party cheque and is perfectly legal.",
+            "I wouldn't be surprised if it has a longer hold period and, as always, you don't get the money if the cheque doesn't clear.",
+        ],
+    },
+    {
+        "user_input": "What is the difference between a mutual fund and an ETF?",
+        "reference": "Mutual funds are actively managed investment vehicles that pool money from multiple investors. ETFs are passively managed and trade on exchanges like stocks. ETFs typically have lower fees and can be bought and sold throughout the trading day.",
+        "response": "A mutual fund pools money from investors and is actively managed, while an ETF trades like a stock and typically tracks an index with lower fees.",
+        "retrieved_contexts": [
+            "Mutual funds pool money from multiple investors and are actively managed by professional fund managers.",
+            "ETFs trade on exchanges like stocks and can be bought and sold throughout the trading day.",
+            "ETFs typically have lower expense ratios compared to mutual funds.",
+        ],
+    },
+    {
+        "user_input": "Should I pay off my mortgage early or invest the money?",
+        "reference": "It depends on your mortgage interest rate and expected investment returns. If your mortgage rate is low and you expect higher returns from investments, investing may be better. Consider your risk tolerance and financial goals.",
+        "response": "The decision depends on comparing your mortgage interest rate to expected investment returns, along with your risk tolerance and financial security needs.",
+        "retrieved_contexts": [
+            "Compare your mortgage interest rate to expected investment returns to make an informed decision.",
+            "Consider your risk tolerance and overall financial situation before making this decision.",
+            "Having no mortgage provides peace of mind and guaranteed savings equal to the interest rate.",
+        ],
+    },
+]
+
 
 def load_amnesty_dataset_safe(config: str = "english_v3"):
     """
@@ -52,5 +85,30 @@ def load_amnesty_dataset_safe(config: str = "english_v3"):
 
         # Create a local dataset from sample data
         local_dataset = Dataset.from_list(SAMPLE_AMNESTY_DATA)
+        logger.info(f"Created local dataset with {len(local_dataset)} samples")
+        return local_dataset
+
+
+def load_fiqa_dataset_safe(config: str = "ragas_eval_v3"):
+    """
+    Safely load the fiqa dataset, falling back to local data if remote fails.
+
+    Args:
+        config: Dataset configuration name (default: "ragas_eval_v3" - recommended)
+
+    Returns:
+        Dataset: The loaded dataset
+    """
+    try:
+        logger.info(f"Attempting to load fiqa dataset with config '{config}'")
+        dataset = load_dataset("explodinggradients/fiqa", config)["baseline"]
+        logger.info(f"Successfully loaded dataset with {len(dataset)} samples")
+        return dataset
+    except Exception as e:
+        logger.warning(f"Failed to load remote dataset: {e}")
+        logger.info("Using local sample data as fallback")
+
+        # Create a local dataset from sample data
+        local_dataset = Dataset.from_list(SAMPLE_FIQA_DATA)
         logger.info(f"Created local dataset with {len(local_dataset)} samples")
         return local_dataset
