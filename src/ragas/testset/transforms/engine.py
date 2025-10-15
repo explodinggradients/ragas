@@ -43,25 +43,6 @@ class Parallel:
         return coroutines
 
 
-async def run_coroutines(
-    coroutines: t.Sequence[t.Coroutine], desc: str, max_workers: int
-):
-    """
-    Run a sequence of coroutines in parallel.
-    """
-    for future in tqdm(
-        as_completed(coroutines, max_workers=max_workers),
-        desc=desc,
-        total=len(coroutines),
-        # whether you want to keep the progress bar after completion
-        leave=False,
-    ):
-        try:
-            await future
-        except Exception as e:
-            logger.error(f"unable to apply transformation: {e}")
-
-
 def get_desc(transform: BaseGraphTransformation | Parallel):
     if isinstance(transform, Parallel):
         transform_names = [t.__class__.__name__ for t in transform.transformations]
