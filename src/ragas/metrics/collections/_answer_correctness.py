@@ -232,12 +232,12 @@ class AnswerCorrectness(BaseMetric):
     async def _calculate_similarity(self, response: str, reference: str) -> float:
         """Calculate semantic similarity between response and reference using embeddings."""
         # Get embeddings for both texts
-        response_embedding = np.asarray(self.embeddings.embed_text(response)).reshape(
-            1, -1
-        )
-        reference_embedding = np.asarray(self.embeddings.embed_text(reference)).reshape(
-            1, -1
-        )
+        response_embedding = np.asarray(
+            await self.embeddings.aembed_text(response)
+        ).reshape(1, -1)
+        reference_embedding = np.asarray(
+            await self.embeddings.aembed_text(reference)
+        ).reshape(1, -1)
 
         # Calculate cosine similarity
         norm_response = np.linalg.norm(response_embedding, axis=1)
