@@ -85,13 +85,15 @@ async def process_futures(
 
     Yields:
         Results from completed futures as they finish
-    
-    Raises:
-        Exception: Any exception raised by the futures will be propagated
     """
     # Process completed futures as they finish
     for future in futures:
-        result = await future
+        try:
+            result = await future
+        except asyncio.CancelledError:
+            raise  # Re-raise CancelledError to ensure proper cancellation
+        except Exception as e:
+            result = e
         yield result
 
 
@@ -147,6 +149,7 @@ def run_async_tasks(
     async def _run():
         total_tasks = len(tasks)
         results = []
+        first_exception = None
         pbm = ProgressBarManager(progress_bar_desc, show_progress)
 
         if not batch_size:
@@ -154,6 +157,14 @@ def run_async_tasks(
                 async for result in process_futures(
                     as_completed(tasks, max_workers, cancel_check=cancel_check)
                 ):
+                    if isinstance(result, Exception):
+                        logger.error(
+                            f"Task failed with {type(result).__name__}: {result}",
+                            exc_info=False,
+                        )
+                        # Store first exception to raise after all tasks complete
+                        if first_exception is None:
+                            first_exception = result
                     results.append(result)
                     pbar.update(1)
         else:
@@ -168,10 +179,22 @@ def run_async_tasks(
                     async for result in process_futures(
                         as_completed(batch, max_workers, cancel_check=cancel_check)
                     ):
+                        if isinstance(result, Exception):
+                            logger.error(
+                                f"Task failed with {type(result).__name__}: {result}",
+                                exc_info=False,
+                            )
+                            # Store first exception to raise after all tasks complete
+                            if first_exception is None:
+                                first_exception = result
                         results.append(result)
                         batch_pbar.update(1)
                     overall_pbar.update(len(batch))
 
+        # Raise the first exception encountered to fail fast with clear error message
+        if first_exception is not None:
+            raise first_exception
+        
         return results
 
     return run(_run)
