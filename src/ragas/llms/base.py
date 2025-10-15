@@ -505,7 +505,10 @@ class InstructorBaseRagasLLM(ABC):
 
     @abstractmethod
     async def agenerate(
-        self, prompt: str, response_model: t.Type[InstructorTypeVar]
+        self,
+        prompt: str,
+        response_model: t.Type[InstructorTypeVar],
+        model_args_override: t.Optional[t.Dict[str, t.Any]] = None,
     ) -> InstructorTypeVar:
         """Asynchronously generate a response using the configured LLM."""
 
@@ -624,7 +627,10 @@ class InstructorLLM(InstructorBaseRagasLLM):
         return result
 
     async def agenerate(
-        self, prompt: str, response_model: t.Type[InstructorTypeVar]
+        self,
+        prompt: str,
+        response_model: t.Type[InstructorTypeVar],
+        model_args_override: t.Optional[t.Dict[str, t.Any]] = None,
     ) -> InstructorTypeVar:
         """Asynchronously generate a response using the configured LLM."""
         messages = [{"role": "user", "content": prompt}]
@@ -635,12 +641,17 @@ class InstructorLLM(InstructorBaseRagasLLM):
                 "Cannot use agenerate() with a synchronous client. Use generate() instead."
             )
 
+        # Merge model args with optional overrides
+        model_args = {**self.model_args}
+        if model_args_override:
+            model_args.update(model_args_override)
+
         # Regular async client, call the method directly
         result = await self.client.chat.completions.create(
             model=self.model,
             messages=messages,
             response_model=response_model,
-            **self.model_args,
+            **model_args,
         )
 
         # Track the usage

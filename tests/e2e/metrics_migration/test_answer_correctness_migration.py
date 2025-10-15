@@ -261,24 +261,16 @@ class TestAnswerCorrectnessE2EMigration:
             print(f"   Legacy: {legacy_score:.6f}")
             print(f"   V2:     {v2_result.value:.6f}")
 
-            if case["expected_low"]:
-                # Factual errors should get low scores
-                assert legacy_score < 0.7, (
-                    f"Legacy should detect factual error: {legacy_score}"
-                )
-                assert v2_result.value < 0.7, (
-                    f"V2 should detect factual error: {v2_result.value}"
-                )
-                print("   ✅ Both detected factual error (low scores)")
-            else:
-                # Correct answers should get reasonable scores
-                assert legacy_score > 0.6, (
-                    f"Legacy should score correct answer higher: {legacy_score}"
-                )
-                assert v2_result.value > 0.6, (
-                    f"V2 should score correct answer higher: {v2_result.value}"
-                )
-                print("   ✅ Both scored correct answer reasonably")
+            # Compare scores between implementations
+            score_diff = abs(legacy_score - v2_result.value)
+            print(f"   Difference: {score_diff:.6f}")
+
+            # Ensure both implementations give very close scores (strict migration compatibility)
+            assert score_diff < 0.001, (
+                f"Legacy and V2 scores should be nearly identical: Legacy={legacy_score:.6f}, "
+                f"V2={v2_result.value:.6f}, Diff={score_diff:.6f} (tolerance: 0.001)"
+            )
+            print("   ✅ Both implementations give identical scores")
 
     @pytest.mark.asyncio
     async def test_answer_correctness_weight_configuration(

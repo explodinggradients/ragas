@@ -19,7 +19,7 @@ def statement_generator_prompt(question: str, answer: str) -> str:
     safe_question = json.dumps(question)
     safe_answer = json.dumps(answer)
 
-    return f"""Given a question and an answer, analyze the complexity of each sentence in the answer. Break down each sentence into one or more fully understandable statements. Ensure that no pronouns are used in any statement. Format the outputs in JSON.
+    return f"""Given a question and an answer, analyze the complexity of each sentence in the answer. Break down each sentence into one or more fully understandable statements. Ensure that no pronouns are used in any statement. IMPORTANT: Extract statements EXACTLY as they appear in the answer - do not correct factual errors or change any content. Format the outputs in JSON.
 Please return the output in a JSON format that complies with the following schema as specified in JSON Schema:
 {{"properties": {{"statements": {{"description": "The generated statements", "items": {{"type": "string"}}, "title": "Statements", "type": "array"}}}}, "required": ["statements"], "title": "StatementGeneratorOutput", "type": "object"}}Do not use single quotes in your response but double quotes,properly escaped with a backslash.
 

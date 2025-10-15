@@ -183,7 +183,19 @@ class AnswerCorrectness(BaseMetric):
     async def _generate_statements(self, question: str, text: str) -> List[str]:
         """Generate atomic statements from text using the statement generator prompt."""
         prompt = statement_generator_prompt(question, text)
-        result = await self.llm.agenerate(prompt, StatementGeneratorOutput)
+
+        # Use comprehensive deterministic parameters to prevent hallucination
+        deterministic_args = {
+            "temperature": 0.01,  # Match legacy default exactly
+            "top_p": 0.1,  # Very low top_p for determinism
+            "frequency_penalty": 0.0,
+            "presence_penalty": 0.0,
+            "seed": 42,  # Fixed seed for reproducibility
+        }
+
+        result = await self.llm.agenerate(
+            prompt, StatementGeneratorOutput, model_args_override=deterministic_args
+        )
         return result.statements
 
     async def _classify_statements(
@@ -196,7 +208,19 @@ class AnswerCorrectness(BaseMetric):
         prompt = correctness_classifier_prompt(
             question, answer_statements, ground_truth_statements
         )
-        classification = await self.llm.agenerate(prompt, ClassificationWithReason)
+
+        # Use comprehensive deterministic parameters to prevent hallucination
+        deterministic_args = {
+            "temperature": 0.01,  # Match legacy default exactly
+            "top_p": 0.1,  # Very low top_p for determinism
+            "frequency_penalty": 0.0,
+            "presence_penalty": 0.0,
+            "seed": 42,  # Fixed seed for reproducibility
+        }
+
+        classification = await self.llm.agenerate(
+            prompt, ClassificationWithReason, model_args_override=deterministic_args
+        )
         return classification
 
     def _compute_f1_score(self, classification: ClassificationWithReason) -> float:
