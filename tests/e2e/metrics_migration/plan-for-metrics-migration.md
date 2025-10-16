@@ -268,7 +268,7 @@ __all__ = [
 
 ### 2.2 Generate Metric Configuration
 
-The only thing you need to create is the `METRIC_CONFIG` dictionary for Cell 2 of the notebook. Use the template below based on your metric type:
+Generate the `METRIC_CONFIG` dictionary for Cell 2 of the notebook. Print it to console for easy copy-pasting. Use the template below based on your metric type:
 
 #### Configuration Template
 
@@ -426,14 +426,15 @@ The `dataset_fields` list tells the notebook which fields to extract from the te
    - Adjust your metric implementation
    - Re-run the notebook to verify improvements
 
-6. **Document findings**: Note the following for your E2E tests:
+6. **Document findings**: Print a migration summary with the following information:
    - Mean absolute difference
    - Percentage of samples within tolerance
    - Recommended tolerance level
    - Any patterns or anomalies observed
    - Edge cases that need special handling
+   - Key implementation details and algorithm differences
 
-**No files are saved** - all results are displayed inline for quick validation!
+**Output approach**: Print the METRIC_CONFIG and migration summary directly to console/output instead of creating files. This allows for easy copy-pasting without cluttering the repository.
 
 ---
 
