@@ -3,6 +3,7 @@
 from ragas.metrics.collections._answer_relevancy import AnswerRelevancy
 from ragas.metrics.collections._answer_similarity import AnswerSimilarity
 from ragas.metrics.collections._bleu_score import BleuScore
+from ragas.metrics.collections._context_precision import ContextPrecision
 from ragas.metrics.collections._context_recall import ContextRecall
 from ragas.metrics.collections._rouge_score import RougeScore
 from ragas.metrics.collections._string import (
@@ -18,6 +19,7 @@ __all__ = [
     "AnswerRelevancy",
     "AnswerSimilarity",
     "BleuScore",
+    "ContextPrecision",
     "ContextRecall",
     "DistanceMeasure",
     "ExactMatch",
