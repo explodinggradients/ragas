@@ -4,6 +4,7 @@ from ragas.metrics.collections._answer_relevancy import AnswerRelevancy
 from ragas.metrics.collections._answer_similarity import AnswerSimilarity
 from ragas.metrics.collections._bleu_score import BleuScore
 from ragas.metrics.collections._rouge_score import RougeScore
+from ragas.metrics.collections._semantic_similarity import SemanticSimilarity
 from ragas.metrics.collections._string import (
     DistanceMeasure,
     ExactMatch,
@@ -21,5 +22,6 @@ __all__ = [
     "ExactMatch",
     "NonLLMStringSimilarity",
     "RougeScore",
+    "SemanticSimilarity",
     "StringPresence",
 ]
