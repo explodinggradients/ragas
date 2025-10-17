@@ -544,58 +544,90 @@ def quickstart(
         raise typer.Exit(1)
 
     template_info = templates[template]
-
-    # Download template from GitHub
-    import tempfile
-    import urllib.request
-    import zipfile
-
-    github_repo = "explodinggradients/ragas"
-    branch = "main"
     template_path = template_info["source_path"].replace("ragas_examples/", "")
 
-    # Create temporary directory for download
-    temp_dir = Path(tempfile.mkdtemp())
+    # Try to find examples locally first (for development and testing)
+    # Look for examples in the installed ragas-examples package or local dev environment
+    source_path = None
+    temp_dir = None
 
     try:
-        # Download the specific template folder from GitHub
-        archive_url = (
-            f"https://github.com/{github_repo}/archive/refs/heads/{branch}.zip"
-        )
+        import ragas_examples
 
-        with Live(
-            Spinner("dots", text="Downloading template from GitHub...", style="cyan"),
-            console=console,
-        ):
-            zip_path = temp_dir / "repo.zip"
-            urllib.request.urlretrieve(archive_url, zip_path)
+        if ragas_examples.__file__ is not None:
+            examples_root = Path(ragas_examples.__file__).parent
+            local_source = examples_root / template_path
+            if local_source.exists():
+                source_path = local_source
+                info("Using locally installed examples")
+    except ImportError:
+        pass
 
-            with zipfile.ZipFile(zip_path, "r") as zip_ref:
-                zip_ref.extractall(temp_dir)
+    # If not found locally, check if we're in the ragas repository (dev mode)
+    if source_path is None:
+        # Try to find examples directory relative to this file (development mode)
+        cli_file = Path(__file__).resolve()
+        repo_root = cli_file.parent.parent.parent  # Go up from src/ragas/cli.py
+        local_examples = repo_root / "examples" / "ragas_examples" / template_path
+        if local_examples.exists():
+            source_path = local_examples
+            info("Using local development examples")
 
-            extracted_folders = [
-                f
-                for f in temp_dir.iterdir()
-                if f.is_dir() and f.name.startswith("ragas-")
-            ]
-            if not extracted_folders:
-                error("Failed to extract template from GitHub archive")
-                raise typer.Exit(1)
+    # If still not found, download from GitHub
+    if source_path is None:
+        import tempfile
+        import urllib.request
+        import zipfile
 
-            repo_dir = extracted_folders[0]
-            source_path = repo_dir / "examples" / template_path
+        github_repo = "explodinggradients/ragas"
+        branch = "main"
 
-            if not source_path.exists():
-                error(f"Template not found in repository: {template_path}")
-                console.print(f"Looking for: {source_path}")
-                raise typer.Exit(1)
+        # Create temporary directory for download
+        temp_dir = Path(tempfile.mkdtemp())
 
-    except Exception as e:
-        error(f"Failed to download template from GitHub: {e}")
-        console.print("\nYou can also manually clone the repository:")
-        console.print(f"  git clone https://github.com/{github_repo}.git")
-        console.print(f"  cp -r ragas/examples/{template_path} ./{template}")
-        raise typer.Exit(1)
+        try:
+            # Download the specific template folder from GitHub
+            archive_url = (
+                f"https://github.com/{github_repo}/archive/refs/heads/{branch}.zip"
+            )
+
+            with Live(
+                Spinner(
+                    "dots", text="Downloading template from GitHub...", style="cyan"
+                ),
+                console=console,
+            ):
+                zip_path = temp_dir / "repo.zip"
+                urllib.request.urlretrieve(archive_url, zip_path)
+
+                with zipfile.ZipFile(zip_path, "r") as zip_ref:
+                    zip_ref.extractall(temp_dir)
+
+                extracted_folders = [
+                    f
+                    for f in temp_dir.iterdir()
+                    if f.is_dir() and f.name.startswith("ragas-")
+                ]
+                if not extracted_folders:
+                    error("Failed to extract template from GitHub archive")
+                    raise typer.Exit(1)
+
+                repo_dir = extracted_folders[0]
+                source_path = repo_dir / "examples" / "ragas_examples" / template_path
+
+                if not source_path.exists():
+                    error(f"Template not found in repository: {template_path}")
+                    console.print(f"Looking for: {source_path}")
+                    raise typer.Exit(1)
+
+        except Exception as e:
+            error(f"Failed to download template from GitHub: {e}")
+            console.print("\nYou can also manually clone the repository:")
+            console.print(f"  git clone https://github.com/{github_repo}.git")
+            console.print(
+                f"  cp -r ragas/examples/ragas_examples/{template_path} ./{template}"
+            )
+            raise typer.Exit(1)
 
     # Determine output directory
     output_path = Path(output_dir) / template
@@ -699,10 +731,12 @@ Visit https://docs.ragas.io for more information.
         live.update(Spinner("dots", text="Finalizing project...", style="green"))
         time.sleep(0.3)
 
-    try:
-        shutil.rmtree(temp_dir)
-    except Exception:
-        pass
+    # Cleanup temporary directory if we downloaded from GitHub
+    if temp_dir is not None:
+        try:
+            shutil.rmtree(temp_dir)
+        except Exception:
+            pass
 
     # Success message with next steps
     success(f"\n✓ Created {template_info['name']} project at: {output_path}")

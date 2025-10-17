@@ -62,7 +62,7 @@ def test_quickstart_creates_project(tmp_path):
     result = runner.invoke(app, ["quickstart", "rag_eval", "-o", str(tmp_path)])
 
     # Check exit code
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Command failed with output: {result.stdout}"
 
     # Check success message
     assert "Created RAG Evaluation project" in result.stdout
@@ -71,15 +71,15 @@ def test_quickstart_creates_project(tmp_path):
     project_dir = tmp_path / "rag_eval"
     assert project_dir.exists()
 
-    # Check that key files exist
-    assert (project_dir / "evals.py").exists()
+    # Check that README exists
     assert (project_dir / "README.md").exists()
-    assert (project_dir / "__init__.py").exists()
 
-    # Check that directories were created
-    assert (project_dir / "datasets").exists()
-    assert (project_dir / "experiments").exists()
-    assert (project_dir / "logs").exists()
+    # Check that evals directory structure was created
+    evals_dir = project_dir / "evals"
+    assert evals_dir.exists(), "evals/ directory should exist"
+    assert (evals_dir / "datasets").exists(), "evals/datasets/ should exist"
+    assert (evals_dir / "experiments").exists(), "evals/experiments/ should exist"
+    assert (evals_dir / "logs").exists(), "evals/logs/ should exist"
 
 
 if __name__ == "__main__":
