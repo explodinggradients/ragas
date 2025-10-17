@@ -545,26 +545,56 @@ def quickstart(
 
     template_info = templates[template]
 
-    # Find the examples directory in the installed package
+    # Download template from GitHub
+    import tempfile
+    import urllib.request
+    import zipfile
+
+    github_repo = "explodinggradients/ragas"
+    branch = "main"
+    template_path = template_info["source_path"].replace("ragas_examples/", "")
+
+    # Create temporary directory for download
+    temp_dir = Path(tempfile.mkdtemp())
+
     try:
-        import ragas_examples
+        # Download the specific template folder from GitHub
+        archive_url = (
+            f"https://github.com/{github_repo}/archive/refs/heads/{branch}.zip"
+        )
 
-        if ragas_examples.__file__ is None:
-            error("Could not locate ragas-examples package file.")
-            raise typer.Exit(1)
-        examples_root = Path(ragas_examples.__file__).parent
-    except ImportError:
-        error("ragas-examples package not found.")
-        console.print("\nTo install examples:")
-        console.print("  pip install ragas[examples]")
-        console.print("  # or for development:")
-        console.print("  cd /path/to/ragas && uv pip install -e ./examples")
-        raise typer.Exit(1)
+        with Live(
+            Spinner("dots", text="Downloading template from GitHub...", style="cyan"),
+            console=console,
+        ):
+            zip_path = temp_dir / "repo.zip"
+            urllib.request.urlretrieve(archive_url, zip_path)
 
-    source_path = examples_root / template.replace("ragas_examples/", "")
+            with zipfile.ZipFile(zip_path, "r") as zip_ref:
+                zip_ref.extractall(temp_dir)
 
-    if not source_path.exists():
-        error(f"Template source not found: {source_path}")
+            extracted_folders = [
+                f
+                for f in temp_dir.iterdir()
+                if f.is_dir() and f.name.startswith("ragas-")
+            ]
+            if not extracted_folders:
+                error("Failed to extract template from GitHub archive")
+                raise typer.Exit(1)
+
+            repo_dir = extracted_folders[0]
+            source_path = repo_dir / "examples" / template_path
+
+            if not source_path.exists():
+                error(f"Template not found in repository: {template_path}")
+                console.print(f"Looking for: {source_path}")
+                raise typer.Exit(1)
+
+    except Exception as e:
+        error(f"Failed to download template from GitHub: {e}")
+        console.print("\nYou can also manually clone the repository:")
+        console.print(f"  git clone https://github.com/{github_repo}.git")
+        console.print(f"  cp -r ragas/examples/{template_path} ./{template}")
         raise typer.Exit(1)
 
     # Determine output directory
@@ -593,10 +623,11 @@ def quickstart(
             Spinner("dots", text="Setting up project structure...", style="green")
         )
 
-        # Create additional directories if they don't exist
-        (output_path / "datasets").mkdir(exist_ok=True)
-        (output_path / "experiments").mkdir(exist_ok=True)
-        (output_path / "logs").mkdir(exist_ok=True)
+        evals_dir = output_path / "evals"
+        evals_dir.mkdir(exist_ok=True)
+        (evals_dir / "datasets").mkdir(exist_ok=True)
+        (evals_dir / "experiments").mkdir(exist_ok=True)
+        (evals_dir / "logs").mkdir(exist_ok=True)
         time.sleep(0.2)
 
         # Create a README.md with setup instructions
@@ -621,28 +652,39 @@ def quickstart(
 
 Run the evaluation:
 ```bash
-python evals.py
+python app.py
 ```
 
 Or run via the CLI:
 ```bash
-cd ..
-ragas evals {template}/evals.py --dataset test_data --metrics [metric_names]
+ragas evals evals/evals.py --dataset test_data --metrics [metric_names]
 ```
 
 ## Project Structure
 
-- `evals.py` - Main evaluation script with metrics and experiment definitions
-- `datasets/` - Dataset storage directory
-- `experiments/` - Experiment results storage
-- `logs/` - Application logs and traces
+```
+{template}/
+├── app.py              # Your application code (RAG system, agent, etc.)
+├── evals/              # Evaluation-related code and data
+│   ├── evals.py       # Evaluation metrics and experiment definitions
+│   ├── datasets/      # Test datasets
+│   ├── experiments/   # Experiment results
+│   └── logs/          # Evaluation logs and traces
+└── README.md
+```
+
+This structure separates your application code from evaluation code, making it easy to:
+- Develop and test your application independently
+- Run evaluations without mixing concerns
+- Track evaluation results separately from application logic
 
 ## Next Steps
 
-1. Review and modify the metrics in `evals.py`
-2. Customize the dataset in `datasets/`
-3. Run experiments and analyze results
-4. Iterate on your prompts and system design
+1. Implement your application logic in `app.py`
+2. Review and modify the metrics in `evals/evals.py`
+3. Customize the dataset in `evals/datasets/`
+4. Run experiments and analyze results
+5. Iterate on your prompts and system design
 
 ## Documentation
 
@@ -657,15 +699,23 @@ Visit https://docs.ragas.io for more information.
         live.update(Spinner("dots", text="Finalizing project...", style="green"))
         time.sleep(0.3)
 
+    try:
+        shutil.rmtree(temp_dir)
+    except Exception:
+        pass
+
     # Success message with next steps
     success(f"\n✓ Created {template_info['name']} project at: {output_path}")
     console.print("\n[bold cyan]Next Steps:[/bold cyan]")
     console.print(f"  1. cd {output_path}")
     console.print("  2. export OPENAI_API_KEY='your-api-key'")
     console.print("  3. pip install ragas openai")
-    console.print("  4. python evals.py")
+    console.print("  4. python app.py")
+    console.print("\n[bold]Project Structure:[/bold]")
+    console.print("  app.py       - Your application code")
+    console.print("  evals/       - All evaluation-related code and data")
     console.print("\n[bold]Quick Start:[/bold]")
-    console.print(f"  cd {output_path} && python evals.py\n")
+    console.print(f"  cd {output_path} && python app.py\n")
 
 
 @app.command()
