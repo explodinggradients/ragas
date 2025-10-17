@@ -496,9 +496,6 @@ class InstructorModelArgs(BaseModel):
 
     temperature: float = 0.01
     top_p: float = 0.1
-    frequency_penalty: float = 0.0
-    presence_penalty: float = 0.0
-    seed: int = 42
 
 
 class InstructorBaseRagasLLM(ABC):
