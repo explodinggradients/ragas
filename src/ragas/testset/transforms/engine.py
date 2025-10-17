@@ -58,10 +58,7 @@ async def run_coroutines(
         # whether you want to keep the progress bar after completion
         leave=False,
     ):
-        try:
-            await future
-        except Exception as e:
-            logger.error(f"unable to apply transformation: {e}")
+        await future
 
 
 def get_desc(transform: BaseGraphTransformation | Parallel):
