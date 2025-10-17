@@ -724,7 +724,7 @@ Visit https://docs.ragas.io for more information.
 """
 
         readme_path = output_path / "README.md"
-        with open(readme_path, "w") as f:
+        with open(readme_path, "w", encoding="utf-8") as f:
             f.write(readme_content)
         time.sleep(0.2)
 
@@ -905,7 +905,7 @@ async def run_experiment(row: TestDataRow):
 '''
 
         evals_path = os.path.join(directory, "hello_world", "evals.py")
-        with open(evals_path, "w") as f:
+        with open(evals_path, "w", encoding="utf-8") as f:
             f.write(evals_content)
         time.sleep(0.5)  # Brief pause to show spinner
 
