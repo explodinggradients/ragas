@@ -549,6 +549,9 @@ def quickstart(
     try:
         import ragas_examples
 
+        if ragas_examples.__file__ is None:
+            error("Could not locate ragas-examples package file.")
+            raise typer.Exit(1)
         examples_root = Path(ragas_examples.__file__).parent
     except ImportError:
         error("ragas-examples package not found.")
