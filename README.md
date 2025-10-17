@@ -73,6 +73,28 @@ pip install git+https://github.com/explodinggradients/ragas
 
 ## :fire: Quickstart
 
+### Clone a Complete Example Project
+
+The fastest way to get started is to use the `ragas quickstart` command:
+
+```bash
+# List available templates
+ragas quickstart
+
+# Create a RAG evaluation project
+ragas quickstart rag_eval
+
+# Create an agent evaluation project
+ragas quickstart agent_evals -o ./my-project
+```
+
+Available templates:
+- `rag_eval` - Evaluate RAG systems
+- `agent_evals` - Evaluate AI agents
+- `benchmark_llm` - Benchmark and compare LLMs
+- `prompt_evals` - Evaluate prompt variations
+- `workflow_eval` - Evaluate complex workflows
+
 ### Evaluate your LLM App
 
 This is 5 main lines:
