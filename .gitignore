@@ -202,3 +202,4 @@ text2sql_logs
 # MLflow artifacts
 mlartifacts
 mlflow.db
+plan
