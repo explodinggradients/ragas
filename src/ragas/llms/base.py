@@ -491,6 +491,16 @@ def llm_factory(
 # Experimental LLM classes migrated from ragas.experimental.llms
 
 
+class InstructorModelArgs(BaseModel):
+    """Simple model arguments configuration for instructor LLMs"""
+
+    temperature: float = 0.01
+    top_p: float = 0.1
+    frequency_penalty: float = 0.0
+    presence_penalty: float = 0.0
+    seed: int = 42
+
+
 class InstructorBaseRagasLLM(ABC):
     """Base class for LLMs using the Instructor library pattern."""
 
@@ -516,11 +526,25 @@ class InstructorBaseRagasLLM(ABC):
 class InstructorLLM(InstructorBaseRagasLLM):
     """LLM wrapper using the Instructor library for structured outputs."""
 
-    def __init__(self, client: t.Any, model: str, provider: str, **model_args):
+    def __init__(
+        self,
+        client: t.Any,
+        model: str,
+        provider: str,
+        model_args: t.Optional[InstructorModelArgs] = None,
+        **kwargs,
+    ):
         self.client = client
         self.model = model
         self.provider = provider
-        self.model_args = model_args or {}
+
+        # Use deterministic defaults if no model_args provided
+        if model_args is None:
+            model_args = InstructorModelArgs()
+
+        # Convert to dict and merge with any additional kwargs
+        self.model_args = {**model_args.model_dump(), **kwargs}
+
         # Check if client is async-capable at initialization
         self.is_async = self._check_client_async()
 
@@ -800,6 +824,13 @@ def instructor_llm_factory(
         )
     )
 
+    # Create model args with deterministic defaults, allowing override via kwargs
+    model_args = InstructorModelArgs()
+
     return InstructorLLM(
-        client=instructor_patched_client, model=model, provider=provider, **kwargs
+        client=instructor_patched_client,
+        model=model,
+        provider=provider,
+        model_args=model_args,
+        **kwargs,
     )
