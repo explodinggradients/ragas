@@ -29,6 +29,59 @@ def test_evals_help():
     assert "Run evaluations on a dataset" in result.stdout
 
 
+def test_quickstart_help():
+    """Test that the quickstart help command works."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["quickstart", "--help"])
+    assert result.exit_code == 0
+    assert "Clone a complete example project" in result.stdout
+
+
+def test_quickstart_list_templates():
+    """Test that quickstart lists available templates when no template is specified."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["quickstart"])
+    assert result.exit_code == 0
+    assert "Available Ragas Quickstart Templates" in result.stdout
+    assert "rag_eval" in result.stdout
+    assert "agent_evals" in result.stdout
+    assert "benchmark_llm" in result.stdout
+
+
+def test_quickstart_invalid_template():
+    """Test that quickstart fails gracefully with an invalid template."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["quickstart", "invalid_template"])
+    assert result.exit_code == 1
+    assert "Unknown template" in result.stdout
+
+
+def test_quickstart_creates_project(tmp_path):
+    """Test that quickstart creates a project structure."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["quickstart", "rag_eval", "-o", str(tmp_path)])
+
+    # Check exit code
+    assert result.exit_code == 0
+
+    # Check success message
+    assert "Created RAG Evaluation project" in result.stdout
+
+    # Check that the directory was created
+    project_dir = tmp_path / "rag_eval"
+    assert project_dir.exists()
+
+    # Check that key files exist
+    assert (project_dir / "evals.py").exists()
+    assert (project_dir / "README.md").exists()
+    assert (project_dir / "__init__.py").exists()
+
+    # Check that directories were created
+    assert (project_dir / "datasets").exists()
+    assert (project_dir / "experiments").exists()
+    assert (project_dir / "logs").exists()
+
+
 if __name__ == "__main__":
     print("Running CLI tests...")
     test_cli_help()
@@ -37,4 +90,10 @@ if __name__ == "__main__":
     print("✓ Hello world help test passed")
     test_evals_help()
     print("✓ Evals help test passed")
+    test_quickstart_help()
+    print("✓ Quickstart help test passed")
+    test_quickstart_list_templates()
+    print("✓ Quickstart list templates test passed")
+    test_quickstart_invalid_template()
+    print("✓ Quickstart invalid template test passed")
     print("All CLI tests passed!")
