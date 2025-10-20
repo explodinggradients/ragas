@@ -12,7 +12,6 @@ import instructor
 from langchain_community.chat_models.vertexai import ChatVertexAI
 from langchain_community.llms import VertexAI
 from langchain_core.language_models import BaseLanguageModel
-from langchain_core.messages import BaseMessage
 from langchain_core.outputs import ChatGeneration, Generation, LLMResult
 from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI
 from langchain_openai.llms import AzureOpenAI, OpenAI
@@ -27,6 +26,7 @@ from ragas.run_config import RunConfig, add_async_retry
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
+    from langchain_core.messages import BaseMessage
     from langchain_core.prompt_values import PromptValue
     from llama_index.core.base.llms.base import BaseLLM
 
@@ -144,7 +144,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
 
     def __init__(
         self,
-        langchain_llm: BaseLanguageModel[BaseMessage],
+        langchain_llm: BaseLanguageModel,
         run_config: t.Optional[RunConfig] = None,
         is_finished_parser: t.Optional[t.Callable[[LLMResult], bool]] = None,
         cache: t.Optional[CacheInterface] = None,
