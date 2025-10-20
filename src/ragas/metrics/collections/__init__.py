@@ -2,6 +2,14 @@
 
 from ragas.metrics.collections._answer_relevancy import AnswerRelevancy
 from ragas.metrics.collections._answer_similarity import AnswerSimilarity
+from ragas.metrics.collections._aspect_critic import (
+    AspectCritic,
+    coherence,
+    conciseness,
+    correctness,
+    harmfulness,
+    maliciousness,
+)
 from ragas.metrics.collections._bleu_score import BleuScore
 from ragas.metrics.collections._rouge_score import RougeScore
 from ragas.metrics.collections._semantic_similarity import SemanticSimilarity
@@ -17,6 +25,7 @@ __all__ = [
     "BaseMetric",  # Base class
     "AnswerRelevancy",
     "AnswerSimilarity",
+    "AspectCritic",
     "BleuScore",
     "DistanceMeasure",
     "ExactMatch",
@@ -24,4 +33,10 @@ __all__ = [
     "RougeScore",
     "SemanticSimilarity",
     "StringPresence",
+    # AspectCritic helper functions
+    "coherence",
+    "conciseness",
+    "correctness",
+    "harmfulness",
+    "maliciousness",
 ]
