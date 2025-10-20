@@ -1,5 +1,6 @@
 """Collections of metrics using modern component architecture."""
 
+from ragas.metrics.collections._answer_correctness import AnswerCorrectness
 from ragas.metrics.collections._answer_relevancy import AnswerRelevancy
 from ragas.metrics.collections._answer_similarity import AnswerSimilarity
 from ragas.metrics.collections._aspect_critic import (
@@ -23,6 +24,7 @@ from ragas.metrics.collections.base import BaseMetric
 
 __all__ = [
     "BaseMetric",  # Base class
+    "AnswerCorrectness",
     "AnswerRelevancy",
     "AnswerSimilarity",
     "AspectCritic",
