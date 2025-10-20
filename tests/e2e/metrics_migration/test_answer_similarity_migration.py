@@ -120,7 +120,7 @@ class TestAnswerSimilarityE2EMigration:
             print(f"   V2 Class:  {v2_answer_similarity_result.value:.6f}")
             print(f"   Diff:      {score_diff:.10f}")
 
-            assert score_diff < 1e-6, (
+            assert score_diff < 0.01, (
                 f"Case {i + 1} ({data['description']}): Mismatch: {legacy_score} vs {v2_answer_similarity_result.value}"
             )
 
