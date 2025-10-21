@@ -16,8 +16,6 @@ from ragas.metrics.result import MetricResult
 from .prompt import DEFAULT_MODEL, run_prompt
 
 
-
-
 @discrete_metric(name="discount_accuracy", allowed_values=["correct", "incorrect"])
 def discount_accuracy(prediction: str, expected_discount):
     """Check if the discount prediction is correct."""
