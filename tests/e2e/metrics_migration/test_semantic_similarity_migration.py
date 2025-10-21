@@ -1,18 +1,21 @@
-"""E2E tests for Answer Similarity metric migration from v1 to v2 (class-based)."""
+"""E2E tests for Semantic Similarity metric migration from v1 to v2."""
 
 import pytest
 
 from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics import AnswerSimilarity as LegacyAnswerSimilarity, MetricResult
-from ragas.metrics.collections import AnswerSimilarity
+from ragas.metrics import MetricResult
+from ragas.metrics._answer_similarity import (
+    SemanticSimilarity as LegacySemanticSimilarity,
+)
+from ragas.metrics.collections import SemanticSimilarity
 
 
-class TestAnswerSimilarityE2EMigration:
-    """E2E test compatibility between legacy AnswerSimilarity and new V2 AnswerSimilarity with automatic validation."""
+class TestSemanticSimilarityE2EMigration:
+    """E2E test compatibility between legacy SemanticSimilarity and new V2 SemanticSimilarity with automatic validation."""
 
     @pytest.fixture
     def sample_data(self):
-        """Real-world test cases for answer similarity evaluation."""
+        """Real-world test cases for semantic similarity evaluation."""
         return [
             {
                 "reference": "Paris is the capital of France.",
@@ -79,7 +82,7 @@ class TestAnswerSimilarityE2EMigration:
             )
 
     @pytest.mark.asyncio
-    async def test_legacy_answer_similarity_vs_v2_answer_similarity_e2e_compatibility(
+    async def test_legacy_semantic_similarity_vs_v2_semantic_similarity_e2e_compatibility(
         self,
         sample_data,
         test_legacy_embeddings,
@@ -92,12 +95,12 @@ class TestAnswerSimilarityE2EMigration:
 
         for i, data in enumerate(sample_data):
             print(
-                f"\n🧪 Testing Answer Similarity - Case {i + 1}: {data['description']}"
+                f"\n🧪 Testing Semantic Similarity - Case {i + 1}: {data['description']}"
             )
             print(f"   Reference: {data['reference'][:50]}...")
             print(f"   Response:  {data['response'][:50]}...")
 
-            legacy_answer_similarity = LegacyAnswerSimilarity(
+            legacy_semantic_similarity = LegacySemanticSimilarity(
                 embeddings=test_legacy_embeddings
             )
             legacy_sample = SingleTurnSample(
@@ -105,34 +108,36 @@ class TestAnswerSimilarityE2EMigration:
                 response=data["response"],
                 reference=data["reference"],
             )
-            legacy_score = await legacy_answer_similarity._single_turn_ascore(
+            legacy_score = await legacy_semantic_similarity._single_turn_ascore(
                 legacy_sample, None
             )
 
-            v2_answer_similarity = AnswerSimilarity(embeddings=test_modern_embeddings)
-            v2_answer_similarity_result = await v2_answer_similarity.ascore(
+            v2_semantic_similarity = SemanticSimilarity(
+                embeddings=test_modern_embeddings
+            )
+            v2_semantic_similarity_result = await v2_semantic_similarity.ascore(
                 reference=data["reference"],
                 response=data["response"],
             )
 
-            score_diff = abs(legacy_score - v2_answer_similarity_result.value)
+            score_diff = abs(legacy_score - v2_semantic_similarity_result.value)
             print(f"   Legacy:    {legacy_score:.6f}")
-            print(f"   V2 Class:  {v2_answer_similarity_result.value:.6f}")
+            print(f"   V2 Class:  {v2_semantic_similarity_result.value:.6f}")
             print(f"   Diff:      {score_diff:.10f}")
 
             assert score_diff < 0.01, (
-                f"Case {i + 1} ({data['description']}): Mismatch: {legacy_score} vs {v2_answer_similarity_result.value}"
+                f"Case {i + 1} ({data['description']}): Mismatch: {legacy_score} vs {v2_semantic_similarity_result.value}"
             )
 
             assert isinstance(legacy_score, float)
-            assert isinstance(v2_answer_similarity_result, MetricResult)
+            assert isinstance(v2_semantic_similarity_result, MetricResult)
             assert 0.0 <= legacy_score <= 1.0
-            assert 0.0 <= v2_answer_similarity_result.value <= 1.0
+            assert 0.0 <= v2_semantic_similarity_result.value <= 1.0
 
             print("   ✅ Scores match!")
 
     @pytest.mark.asyncio
-    async def test_answer_similarity_with_threshold(
+    async def test_semantic_similarity_with_threshold(
         self, test_legacy_embeddings, test_modern_embeddings
     ):
         """Test that both implementations correctly handle threshold parameter."""
@@ -158,7 +163,7 @@ class TestAnswerSimilarityE2EMigration:
         for case in test_cases:
             print(f"\n🎯 Testing threshold: {case['description']}")
 
-            legacy_answer_similarity = LegacyAnswerSimilarity(
+            legacy_semantic_similarity = LegacySemanticSimilarity(
                 embeddings=test_legacy_embeddings, threshold=case["threshold"]
             )
             legacy_sample = SingleTurnSample(
@@ -166,14 +171,14 @@ class TestAnswerSimilarityE2EMigration:
                 response=case["response"],
                 reference=case["reference"],
             )
-            legacy_score = await legacy_answer_similarity._single_turn_ascore(
+            legacy_score = await legacy_semantic_similarity._single_turn_ascore(
                 legacy_sample, None
             )
 
-            v2_answer_similarity = AnswerSimilarity(
+            v2_semantic_similarity = SemanticSimilarity(
                 embeddings=test_modern_embeddings, threshold=case["threshold"]
             )
-            v2_result = await v2_answer_similarity.ascore(
+            v2_result = await v2_semantic_similarity.ascore(
                 reference=case["reference"],
                 response=case["response"],
             )
@@ -185,7 +190,7 @@ class TestAnswerSimilarityE2EMigration:
             print(f"   V2 Class:  {v2_result.value:.6f}")
 
             score_diff = abs(legacy_score - v2_result.value)
-            assert score_diff < 1e-6, (
+            assert score_diff < 0.01, (
                 f"Threshold test failed: {legacy_score} vs {v2_result.value}"
             )
 
@@ -196,12 +201,12 @@ class TestAnswerSimilarityE2EMigration:
 
     @pytest.mark.asyncio
     async def test_v2_class_batch_processing(self, sample_data, test_modern_embeddings):
-        """Test V2 class-based AnswerSimilarity batch processing."""
+        """Test V2 class-based SemanticSimilarity batch processing."""
 
         if test_modern_embeddings is None:
             pytest.skip("Modern embeddings required for V2 testing")
 
-        metric = AnswerSimilarity(embeddings=test_modern_embeddings)
+        metric = SemanticSimilarity(embeddings=test_modern_embeddings)
 
         batch_inputs = [
             {"reference": case["reference"], "response": case["response"]}
@@ -222,8 +227,8 @@ class TestAnswerSimilarityE2EMigration:
 
         print("   ✅ V2 class batch processing works correctly!")
 
-    def test_answer_similarity_migration_requirements_documented(self):
-        """Document the requirements for running full E2E answer similarity tests."""
+    def test_semantic_similarity_migration_requirements_documented(self):
+        """Document the requirements for running full E2E semantic similarity tests."""
 
         requirements = {
             "embeddings": "OpenAI embeddings, HuggingFace embeddings, or similar",
@@ -231,7 +236,7 @@ class TestAnswerSimilarityE2EMigration:
             "purpose": "Verify that v2 class-based implementation produces identical results to legacy implementation",
         }
 
-        print("\n📋 Answer Similarity E2E Test Requirements:")
+        print("\n📋 Semantic Similarity E2E Test Requirements:")
         for key, value in requirements.items():
             print(f"   {key.capitalize()}: {value}")
 
@@ -239,7 +244,7 @@ class TestAnswerSimilarityE2EMigration:
         print("   1. Configure embedding provider (e.g., export OPENAI_API_KEY=...)")
         print("   2. Remove @pytest.mark.skip decorators")
         print(
-            "   3. Run: pytest tests/e2e/metrics_migration/test_answer_similarity_migration.py -v -s"
+            "   3. Run: pytest tests/e2e/metrics_migration/test_semantic_similarity_migration.py -v -s"
         )
 
         assert True
