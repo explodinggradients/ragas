@@ -218,3 +218,4 @@ analytics_logger.addHandler(console_handler)
   - **Minimal setup**: `[project.optional-dependencies].dev-minimal` for fast development (79 packages)
   - **Full setup**: `[dependency-groups].dev` for comprehensive development (383 packages)
 - Use `make install-minimal` for most development tasks, `make install` for full ML stack work
+- if the user asks you to save a plan, save it into the plan/ directory with an appropriate file name.
