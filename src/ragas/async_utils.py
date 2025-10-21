@@ -194,7 +194,7 @@ def run_async_tasks(
         # Raise the first exception encountered to fail fast with clear error message
         if first_exception is not None:
             raise first_exception
-        
+
         return results
 
     return run(_run)
