@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import logging
+import math
 import typing as t
 
-from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
+from ragas.dataset_schema import EvaluationDataset, EvaluationResult, SingleTurnSample
 from ragas.embeddings import LlamaIndexEmbeddingsWrapper
 from ragas.evaluation import evaluate as ragas_evaluate
 from ragas.executor import Executor
@@ -18,10 +19,10 @@ if t.TYPE_CHECKING:
         BaseEmbedding as LlamaIndexEmbeddings,
     )
     from llama_index.core.base.llms.base import BaseLLM as LlamaindexLLM
+    from llama_index.core.base.response.schema import Response as LlamaIndexResponse
     from llama_index.core.workflow import Event
 
     from ragas.cost import TokenUsageParser
-    from ragas.evaluation import EvaluationResult
 
 
 logger = logging.getLogger(__name__)
@@ -78,12 +79,21 @@ def evaluate(
         exec.submit(query_engine.aquery, q, name=f"query-{i}")
 
     # get responses and retrieved contexts
-    responses: t.List[str] = []
-    retrieved_contexts: t.List[t.List[str]] = []
+    responses: t.List[t.Optional[str]] = []
+    retrieved_contexts: t.List[t.Optional[t.List[str]]] = []
     results = exec.results()
-    for r in results:
-        responses.append(r.response)
-        retrieved_contexts.append([n.node.text for n in r.source_nodes])
+    for i, r in enumerate(results):
+        # Handle failed jobs which are recorded as NaN in the executor
+        if isinstance(r, float) and math.isnan(r):
+            responses.append(None)
+            retrieved_contexts.append(None)
+            logger.warning(f"Query engine failed for query {i}: '{queries[i]}'")
+            continue
+
+        # Cast to LlamaIndex Response type for proper type checking
+        response: LlamaIndexResponse = t.cast("LlamaIndexResponse", r)
+        responses.append(response.response if response.response is not None else "")
+        retrieved_contexts.append([n.get_text() for n in response.source_nodes])
 
     # append the extra information to the dataset
     for i, sample in enumerate(samples):
