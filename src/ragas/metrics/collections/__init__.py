@@ -21,6 +21,7 @@ from ragas.metrics.collections._string import (
     NonLLMStringSimilarity,
     StringPresence,
 )
+from ragas.metrics.collections._summary_score import SummaryScore
 from ragas.metrics.collections.base import BaseMetric
 
 __all__ = [
@@ -37,6 +38,7 @@ __all__ = [
     "RougeScore",
     "SemanticSimilarity",
     "StringPresence",
+    "SummaryScore",
     # AspectCritic helper functions
     "coherence",
     "conciseness",
