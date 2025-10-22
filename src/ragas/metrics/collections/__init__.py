@@ -3,6 +3,14 @@
 from ragas.metrics.collections._answer_correctness import AnswerCorrectness
 from ragas.metrics.collections._answer_relevancy import AnswerRelevancy
 from ragas.metrics.collections._answer_similarity import AnswerSimilarity
+from ragas.metrics.collections._aspect_critic import (
+    AspectCritic,
+    coherence,
+    conciseness,
+    correctness,
+    harmfulness,
+    maliciousness,
+)
 from ragas.metrics.collections._bleu_score import BleuScore
 from ragas.metrics.collections._context_entity_recall import ContextEntityRecall
 from ragas.metrics.collections._rouge_score import RougeScore
@@ -21,6 +29,7 @@ __all__ = [
     "AnswerCorrectness",
     "AnswerRelevancy",
     "AnswerSimilarity",
+    "AspectCritic",
     "BleuScore",
     "ContextEntityRecall",
     "DistanceMeasure",
@@ -30,4 +39,10 @@ __all__ = [
     "SemanticSimilarity",
     "StringPresence",
     "SummaryScore",
+    # AspectCritic helper functions
+    "coherence",
+    "conciseness",
+    "correctness",
+    "harmfulness",
+    "maliciousness",
 ]
