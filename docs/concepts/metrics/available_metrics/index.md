@@ -21,8 +21,9 @@ Each metric are essentially paradigms that are designed to evaluate a particular
 
 ## Agents or Tool use cases
 
-- [Topic adherence](agents.md#topic_adherence)
+- [Topic adherence](agents.md#topic-adherence)
 - [Tool call Accuracy](agents.md#tool-call-accuracy)
+- [Tool Call F1](agents.md#tool-call-f1)
 - [Agent Goal Accuracy](agents.md#agent-goal-accuracy)
 
 ## Natural Language Comparison
@@ -31,6 +32,7 @@ Each metric are essentially paradigms that are designed to evaluate a particular
 - [Semantic Similarity](semantic_similarity.md)
 - [Non LLM String Similarity](traditional.md#non-llm-string-similarity)
 - [BLEU Score](traditional.md#bleu-score)
+- [CHRF Score](traditional.md#chrf-score)
 - [ROUGE Score](traditional.md#rouge-score)
 - [String Presence](traditional.md#string-presence)
 - [Exact Match](traditional.md#exact-match)

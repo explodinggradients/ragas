@@ -50,6 +50,7 @@ nav:
                     - concepts/metrics/available_metrics/agents.md
                     - Topic Adherence: concepts/metrics/available_metrics/agents/#topic-adherence
                     - Tool Call Accuracy: concepts/metrics/available_metrics/agents/#tool-call-accuracy
+                    - Tool Call F1: concepts/metrics/available_metrics/agents/#tool-call-f1
                     - Agent Goal Accuracy: concepts/metrics/available_metrics/agents/#agent-goal-accuracy
               - Natural Language Comparison:
                   - Factual Correctness: concepts/metrics/available_metrics/factual_correctness.md
@@ -58,6 +59,7 @@ nav:
                     - concepts/metrics/available_metrics/traditional.md
                     - Non LLM String Similarity: concepts/metrics/available_metrics/traditional/#non-llm-string-similarity
                     - BLEU Score: concepts/metrics/available_metrics/traditional/#bleu-score
+                    - CHRF Score: concepts/metrics/available_metrics/traditional/#chrf-score
                     - ROUGE Score: concepts/metrics/available_metrics/traditional/#rouge-score
                     - String Presence: concepts/metrics/available_metrics/traditional/#string-presence
                     - Exact Match: concepts/metrics/available_metrics/traditional/#exact-match
