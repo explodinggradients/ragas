@@ -173,8 +173,7 @@ def test_provider_support():
     supported_providers = {
         "openai": "from_openai",
         "anthropic": "from_anthropic",
-        "cohere": "from_cohere",
-        "google": "from_genai",
+        "google": "from_gemini",
         "litellm": "from_litellm",
     }
 

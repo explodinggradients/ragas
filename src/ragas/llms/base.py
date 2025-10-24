@@ -454,7 +454,7 @@ def llm_factory(
     Args:
         model: Model name (e.g., "gpt-4o", "gpt-4o-mini", "claude-3-sonnet").
         provider: LLM provider. Default: "openai".
-                 Supported: openai, anthropic, cohere, google, litellm.
+                 Supported: openai, anthropic, google, litellm.
         client: Pre-initialized client instance (required). For OpenAI, can be
                OpenAI(...) or AsyncOpenAI(...).
         **kwargs: Additional model arguments (temperature, max_tokens, top_p, etc).
@@ -497,8 +497,7 @@ def llm_factory(
     instructor_funcs = {
         "openai": lambda c: instructor.from_openai(c),
         "anthropic": lambda c: instructor.from_anthropic(c),
-        "cohere": lambda c: instructor.from_cohere(c),
-        "google": lambda c: instructor.from_genai(c),
+        "google": lambda c: instructor.from_gemini(c),
         "litellm": lambda c: instructor.from_litellm(c),
     }
 
@@ -544,6 +543,7 @@ class InstructorModelArgs(BaseModel):
 
     temperature: float = 0.01
     top_p: float = 0.1
+    max_tokens: int = 1024
 
 
 class InstructorBaseRagasLLM(ABC):
@@ -674,13 +674,35 @@ class InstructorLLM(InstructorBaseRagasLLM):
                 self.agenerate(prompt, response_model)
             )
         else:
-            # Regular sync client, just call the method directly
-            result = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                response_model=response_model,
-                **self.model_args,
-            )
+            if self.provider.lower() == "google":
+                google_kwargs = {}
+                generation_config_keys = {"temperature", "max_tokens", "top_p", "top_k"}
+                generation_config = {}
+
+                for key, value in self.model_args.items():
+                    if key in generation_config_keys:
+                        if key == "max_tokens":
+                            generation_config["max_output_tokens"] = value
+                        else:
+                            generation_config[key] = value
+                    else:
+                        google_kwargs[key] = value
+
+                if generation_config:
+                    google_kwargs["generation_config"] = generation_config
+
+                result = self.client.create(
+                    messages=messages,
+                    response_model=response_model,
+                    **google_kwargs,
+                )
+            else:
+                result = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    response_model=response_model,
+                    **self.model_args,
+                )
 
         # Track the usage
         track(
@@ -708,13 +730,35 @@ class InstructorLLM(InstructorBaseRagasLLM):
                 "Cannot use agenerate() with a synchronous client. Use generate() instead."
             )
 
-        # Regular async client, call the method directly
-        result = await self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            response_model=response_model,
-            **self.model_args,
-        )
+        if self.provider.lower() == "google":
+            google_kwargs = {}
+            generation_config_keys = {"temperature", "max_tokens", "top_p", "top_k"}
+            generation_config = {}
+
+            for key, value in self.model_args.items():
+                if key in generation_config_keys:
+                    if key == "max_tokens":
+                        generation_config["max_output_tokens"] = value
+                    else:
+                        generation_config[key] = value
+                else:
+                    google_kwargs[key] = value
+
+            if generation_config:
+                google_kwargs["generation_config"] = generation_config
+
+            result = await self.client.create(
+                messages=messages,
+                response_model=response_model,
+                **google_kwargs,
+            )
+        else:
+            result = await self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                response_model=response_model,
+                **self.model_args,
+            )
 
         # Track the usage
         track(
