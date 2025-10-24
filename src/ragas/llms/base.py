@@ -495,7 +495,7 @@ class InstructorModelArgs(BaseModel):
     """Simple model arguments configuration for instructor LLMs"""
 
     temperature: float = 0.01
-    top_p: float = 0.1
+    top_p: float = 1.0
 
 
 class InstructorBaseRagasLLM(ABC):
