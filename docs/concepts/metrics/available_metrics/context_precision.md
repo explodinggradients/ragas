@@ -195,30 +195,3 @@ Output
 ```
 
 In this example, out of the 4 retrieved context IDs, only 2 ("doc_1" and "doc_4") are found in the reference context IDs, resulting in a precision score of 0.5 or 50%.
-
-## Context Utilization (Deprecated)
-
-!!! warning
-    `ContextUtilization` is deprecated as of version 0.2 and will be removed in version 0.3. Use [`LLMContextPrecisionWithoutReference`](#llm-based-context-precision-without-reference) instead.
-
-`ContextUtilization` is a deprecated alias for `LLMContextPrecisionWithoutReference`. It evaluates how well the retrieved context is utilized to generate a relevant response, without requiring reference contexts.
-
-### Migration Guide
-
-If you are currently using `ContextUtilization`, simply replace it with `LLMContextPrecisionWithoutReference`:
-
-**Old (Deprecated)**:
-```python
-from ragas.metrics import ContextUtilization
-
-scorer = ContextUtilization(llm=evaluator_llm)
-```
-
-**New**:
-```python
-from ragas.metrics import LLMContextPrecisionWithoutReference
-
-scorer = LLMContextPrecisionWithoutReference(llm=evaluator_llm)
-```
-
-Both metrics function identically, so no changes to your evaluation logic are required.
