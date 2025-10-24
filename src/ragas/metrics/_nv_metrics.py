@@ -9,6 +9,7 @@ from langchain_core.callbacks import Callbacks
 from langchain_core.prompt_values import StringPromptValue
 
 from ragas.dataset_schema import SingleTurnSample
+from ragas.llms.base import BaseRagasLLM
 from ragas.metrics.base import MetricType, MetricWithLLM, SingleTurnMetric
 
 logger = logging.getLogger(__name__)
@@ -115,7 +116,7 @@ class AnswerAccuracy(MetricWithLLM, SingleTurnMetric):
                         sentence_true=sample.reference,
                     )
                 )
-                req0 = self.llm.agenerate_text(
+                req0 = t.cast(BaseRagasLLM, self.llm).agenerate_text(
                     formatted_prompt,
                     n=1,
                     temperature=0.10,
@@ -138,7 +139,7 @@ class AnswerAccuracy(MetricWithLLM, SingleTurnMetric):
                         sentence_true=sample.response,
                     )
                 )
-                req1 = self.llm.agenerate_text(
+                req1 = t.cast(BaseRagasLLM, self.llm).agenerate_text(
                     formatted_prompt,
                     n=1,
                     temperature=0.10,
@@ -255,7 +256,7 @@ class ContextRelevance(MetricWithLLM, SingleTurnMetric):
                         context="\n".join(sample.retrieved_contexts),
                     )
                 )
-                req = self.llm.agenerate_text(
+                req = t.cast(BaseRagasLLM, self.llm).agenerate_text(
                     formatted_prompt,
                     n=1,
                     temperature=0.1,
@@ -274,7 +275,7 @@ class ContextRelevance(MetricWithLLM, SingleTurnMetric):
                         context="\n".join(sample.retrieved_contexts),
                     )
                 )
-                req = self.llm.agenerate_text(
+                req = t.cast(BaseRagasLLM, self.llm).agenerate_text(
                     formatted_prompt,
                     n=1,
                     temperature=0.1,
@@ -389,7 +390,7 @@ class ResponseGroundedness(MetricWithLLM, SingleTurnMetric):
                         response=sample.response,
                     )
                 )
-                req = self.llm.agenerate_text(
+                req = t.cast(BaseRagasLLM, self.llm).agenerate_text(
                     formatted_prompt,
                     n=1,
                     temperature=0.1,
@@ -408,7 +409,7 @@ class ResponseGroundedness(MetricWithLLM, SingleTurnMetric):
                         response=sample.response,
                     )
                 )
-                req = self.llm.agenerate_text(
+                req = t.cast(BaseRagasLLM, self.llm).agenerate_text(
                     formatted_prompt,
                     n=1,
                     temperature=0.1,
