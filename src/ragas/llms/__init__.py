@@ -5,7 +5,6 @@ from ragas.llms.base import (
     InstructorTypeVar,
     LangchainLLMWrapper as _LangchainLLMWrapper,
     LlamaIndexLLMWrapper as _LlamaIndexLLMWrapper,
-    instructor_llm_factory,
     llm_factory,
 )
 from ragas.llms.batch_api import (
@@ -25,17 +24,19 @@ from ragas.utils import DeprecationHelper
 LangchainLLMWrapper = DeprecationHelper(
     _LangchainLLMWrapper,
     "LangchainLLMWrapper is deprecated and will be removed in a future version. "
-    "Use the modern LLM providers instead: "
-    "from ragas.llms.base import llm_factory; llm = llm_factory('gpt-4o-mini') "
-    "or from ragas.llms.base import instructor_llm_factory; llm = instructor_llm_factory('openai', client=openai_client)",
+    "Use llm_factory instead: "
+    "from openai import OpenAI; "
+    "from ragas.llms import llm_factory; "
+    "llm = llm_factory('gpt-4o-mini', client=OpenAI(api_key='...'))",
 )
 
 LlamaIndexLLMWrapper = DeprecationHelper(
     _LlamaIndexLLMWrapper,
     "LlamaIndexLLMWrapper is deprecated and will be removed in a future version. "
-    "Use the modern LLM providers instead: "
-    "from ragas.llms.base import llm_factory; llm = llm_factory('gpt-4o-mini') "
-    "or from ragas.llms.base import instructor_llm_factory; llm = instructor_llm_factory('openai', client=openai_client)",
+    "Use llm_factory instead: "
+    "from openai import OpenAI; "
+    "from ragas.llms import llm_factory; "
+    "llm = llm_factory('gpt-4o-mini', client=OpenAI(api_key='...'))",
 )
 
 __all__ = [
@@ -47,7 +48,6 @@ __all__ = [
     "LlamaIndexLLMWrapper",
     "OCIGenAIWrapper",
     "InstructorTypeVar",
-    "instructor_llm_factory",
     "llm_factory",
     "oci_genai_factory",
     # Batch API

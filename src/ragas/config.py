@@ -34,6 +34,3 @@ class InstructionConfig(BaseModel):
     optimizer_config: t.Dict[str, t.Any] = Field(
         default_factory=lambda: DEFAULT_OPTIMIZER_CONFIG
     )
-
-
-InstructionConfig.model_rebuild()

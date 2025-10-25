@@ -21,7 +21,6 @@ from pydantic import BaseModel
 from ragas._analytics import LLMUsageEvent, track
 from ragas.cache import CacheInterface, cacher
 from ragas.exceptions import LLMDidNotFinishException
-from ragas.integrations.helicone import helicone_config
 from ragas.run_config import RunConfig, add_async_retry
 
 if t.TYPE_CHECKING:
@@ -166,9 +165,11 @@ class LangchainLLMWrapper(BaseRagasLLM):
 
     .. deprecated::
         LangchainLLMWrapper is deprecated and will be removed in a future version.
-        Use the modern LLM providers instead:
-        from ragas.llms.base import llm_factory; llm = llm_factory("gpt-4o-mini")
-        or from ragas.llms.base import instructor_llm_factory; llm = instructor_llm_factory("openai", client=openai_client)
+        Use llm_factory instead:
+        from openai import OpenAI
+        from ragas.llms import llm_factory
+        client = OpenAI(api_key="...")
+        llm = llm_factory("gpt-4o-mini", client=client)
     """
 
     def __init__(
@@ -493,9 +494,11 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
 
     .. deprecated::
         LlamaIndexLLMWrapper is deprecated and will be removed in a future version.
-        Use the modern LLM providers instead:
-        from ragas.llms.base import llm_factory; llm = llm_factory("gpt-4o-mini")
-        or from ragas.llms.base import instructor_llm_factory; llm = instructor_llm_factory("openai", client=openai_client)
+        Use llm_factory instead:
+        from openai import OpenAI
+        from ragas.llms import llm_factory
+        client = OpenAI(api_key="...")
+        llm = llm_factory("gpt-4o-mini", client=client)
     """
 
     def __init__(
@@ -586,56 +589,100 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
 
 
 def llm_factory(
-    model: str = "gpt-4o-mini",
-    run_config: t.Optional[RunConfig] = None,
-    default_headers: t.Optional[t.Dict[str, str]] = None,
-    base_url: t.Optional[str] = None,
-) -> BaseRagasLLM:
+    model: str,
+    provider: str = "openai",
+    client: t.Optional[t.Any] = None,
+    **kwargs: t.Any,
+) -> InstructorBaseRagasLLM:
     """
-    Create and return a BaseRagasLLM instance. Used for running default LLMs used
-    in Ragas (OpenAI).
+    Create an LLM instance for structured output generation using Instructor.
 
-    Parameters
-    ----------
-    model : str, optional
-        The name of the model to use, by default "gpt-4o-mini".
-    run_config : RunConfig, optional
-        Configuration for the run, by default None.
-    default_headers : dict of str, optional
-        Default headers to be used in API requests, by default None.
-    base_url : str, optional
-        Base URL for the API, by default None.
+    Supports multiple LLM providers with unified interface for both sync and async
+    operations. Returns instances with .generate() and .agenerate() methods that
+    accept Pydantic models for structured outputs.
 
-    Returns
-    -------
-    BaseRagasLLM
-        An instance of BaseRagasLLM configured with the specified parameters.
+    Args:
+        model: Model name (e.g., "gpt-4o", "gpt-4o-mini", "claude-3-sonnet").
+        provider: LLM provider. Default: "openai".
+                 Supported: openai, anthropic, google, litellm.
+        client: Pre-initialized client instance (required). For OpenAI, can be
+               OpenAI(...) or AsyncOpenAI(...).
+        **kwargs: Additional model arguments (temperature, max_tokens, top_p, etc).
+
+    Returns:
+        InstructorBaseRagasLLM: Instance with generate() and agenerate() methods.
+
+    Raises:
+        ValueError: If client is missing, provider is unsupported, or model is invalid.
+
+    Examples:
+        from openai import OpenAI
+
+        client = OpenAI(api_key="...")
+        llm = llm_factory("gpt-4o", client=client)
+        response = llm.generate(prompt, ResponseModel)
+
+        # Async
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key="...")
+        llm = llm_factory("gpt-4o", client=client)
+        response = await llm.agenerate(prompt, ResponseModel)
     """
-    timeout = None
-    if run_config is not None:
-        timeout = run_config.timeout
+    if client is None:
+        raise ValueError(
+            "llm_factory() requires a client instance. "
+            "Text-only mode has been removed.\n\n"
+            "To migrate:\n"
+            "  from openai import OpenAI\n"
+            "  client = OpenAI(api_key='...')\n"
+            "  llm = llm_factory('gpt-4o-mini', client=client)\n\n"
+            "For more details: https://docs.ragas.io/en/latest/llm-factory"
+        )
 
-    # if helicone is enabled, use the helicone
-    if helicone_config.is_enabled:
-        default_headers = helicone_config.default_headers()
-        base_url = helicone_config.base_url
+    if not model:
+        raise ValueError("model parameter is required")
 
-    openai_model = ChatOpenAI(
-        model=model, timeout=timeout, default_headers=default_headers, base_url=base_url
-    )
+    provider_lower = provider.lower()
 
-    # Track factory usage
+    instructor_funcs = {
+        "openai": lambda c: instructor.from_openai(c),
+        "anthropic": lambda c: instructor.from_anthropic(c),
+        "google": lambda c: instructor.from_gemini(c),
+        "litellm": lambda c: instructor.from_litellm(c),
+    }
+
+    if provider_lower not in instructor_funcs:
+        raise ValueError(
+            f"Unsupported provider: '{provider}'. "
+            f"Supported: {', '.join(instructor_funcs.keys())}"
+        )
+
+    try:
+        patched_client = instructor_funcs[provider_lower](client)
+    except Exception as e:
+        raise ValueError(
+            f"Failed to initialize {provider} client with instructor. "
+            f"Ensure you've created a valid {provider} client.\n"
+            f"Error: {str(e)}"
+        )
+
     track(
         LLMUsageEvent(
-            provider="openai",
+            provider=provider,
             model=model,
-            llm_type="factory",
+            llm_type="llm_factory",
             num_requests=1,
             is_async=False,
         )
     )
 
-    return LangchainLLMWrapper(openai_model, run_config)
+    return InstructorLLM(
+        client=patched_client,
+        model=model,
+        provider=provider,
+        model_args=InstructorModelArgs(),
+        **kwargs,
+    )
 
 
 # Experimental LLM classes migrated from ragas.experimental.llms
@@ -646,6 +693,7 @@ class InstructorModelArgs(BaseModel):
 
     temperature: float = 0.01
     top_p: float = 0.1
+    max_tokens: int = 1024
 
 
 class InstructorBaseRagasLLM(ABC):
@@ -776,13 +824,35 @@ class InstructorLLM(InstructorBaseRagasLLM):
                 self.agenerate(prompt, response_model)
             )
         else:
-            # Regular sync client, just call the method directly
-            result = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                response_model=response_model,
-                **self.model_args,
-            )
+            if self.provider.lower() == "google":
+                google_kwargs = {}
+                generation_config_keys = {"temperature", "max_tokens", "top_p", "top_k"}
+                generation_config = {}
+
+                for key, value in self.model_args.items():
+                    if key in generation_config_keys:
+                        if key == "max_tokens":
+                            generation_config["max_output_tokens"] = value
+                        else:
+                            generation_config[key] = value
+                    else:
+                        google_kwargs[key] = value
+
+                if generation_config:
+                    google_kwargs["generation_config"] = generation_config
+
+                result = self.client.create(
+                    messages=messages,
+                    response_model=response_model,
+                    **google_kwargs,
+                )
+            else:
+                result = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    response_model=response_model,
+                    **self.model_args,
+                )
 
         # Track the usage
         track(
@@ -810,13 +880,35 @@ class InstructorLLM(InstructorBaseRagasLLM):
                 "Cannot use agenerate() with a synchronous client. Use generate() instead."
             )
 
-        # Regular async client, call the method directly
-        result = await self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            response_model=response_model,
-            **self.model_args,
-        )
+        if self.provider.lower() == "google":
+            google_kwargs = {}
+            generation_config_keys = {"temperature", "max_tokens", "top_p", "top_k"}
+            generation_config = {}
+
+            for key, value in self.model_args.items():
+                if key in generation_config_keys:
+                    if key == "max_tokens":
+                        generation_config["max_output_tokens"] = value
+                    else:
+                        generation_config[key] = value
+                else:
+                    google_kwargs[key] = value
+
+            if generation_config:
+                google_kwargs["generation_config"] = generation_config
+
+            result = await self.client.create(
+                messages=messages,
+                response_model=response_model,
+                **google_kwargs,
+            )
+        else:
+            result = await self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                response_model=response_model,
+                **self.model_args,
+            )
 
         # Track the usage
         track(
@@ -873,104 +965,3 @@ class InstructorLLM(InstructorBaseRagasLLM):
         return base_repr
 
     __str__ = __repr__
-
-
-def instructor_llm_factory(
-    provider: str,
-    model: t.Optional[str] = None,
-    client: t.Optional[t.Any] = None,
-    **kwargs: t.Any,
-) -> InstructorBaseRagasLLM:
-    """
-    Factory function to create an InstructorLLM instance based on the provider.
-
-    Args:
-        provider (str): The name of the LLM provider or provider/model string
-                       (e.g., "openai", "openai/gpt-4").
-        model (str, optional): The model name to use for generation.
-        client (Any, optional): Pre-initialized client for the provider.
-        **kwargs: Additional arguments for the LLM (model_args).
-
-    Returns:
-        InstructorBaseRagasLLM: An instance of the specified LLM provider.
-
-    Examples:
-        # OpenAI with separate parameters
-        llm = instructor_llm_factory("openai", "gpt-4", client=openai_client)
-
-        # OpenAI with provider/model string
-        llm = instructor_llm_factory("openai/gpt-4", client=openai_client)
-
-        # Anthropic
-        llm = instructor_llm_factory("anthropic", "claude-3-sonnet-20240229", client=anthropic_client)
-
-        # Cohere
-        llm = instructor_llm_factory("cohere", "command-r-plus", client=cohere_client)
-
-        # Google
-        llm = instructor_llm_factory(provider="google", model="gemini-2.0-flash", client=google_client)
-
-        # LiteLLM (supports 100+ models)
-        llm = instructor_llm_factory("litellm", "gpt-4", client=litellm_client)
-
-    Raises:
-        ValueError: If provider is unsupported or required parameters are missing.
-    """
-    # Handle provider/model string format
-    if "/" in provider and model is None:
-        provider_name, model_name = provider.split("/", 1)
-        provider = provider_name
-        model = model_name
-
-    if not model:
-        raise ValueError(
-            "Model name is required. Either provide it as a separate parameter "
-            "or use provider/model format (e.g., 'openai/gpt-4')"
-        )
-
-    def _initialize_client(provider: str, client: t.Any) -> t.Any:
-        """Initialize the instructor-patched client for the given provider."""
-        if not client:
-            raise ValueError(f"{provider.title()} provider requires a client instance")
-
-        provider_lower = provider.lower()
-
-        if provider_lower == "openai":
-            return instructor.from_openai(client)
-        elif provider_lower == "anthropic":
-            return instructor.from_anthropic(client)
-        elif provider_lower == "cohere":
-            return instructor.from_cohere(client)
-        elif provider_lower == "google":
-            return instructor.from_genai(client)
-        elif provider_lower == "litellm":
-            return instructor.from_litellm(client)
-        else:
-            raise ValueError(
-                f"Unsupported provider: {provider}. "
-                f"Supported providers: openai, anthropic, cohere, google, litellm"
-            )
-
-    instructor_patched_client = _initialize_client(provider=provider, client=client)
-
-    # Track factory usage
-    track(
-        LLMUsageEvent(
-            provider=provider,
-            model=model,
-            llm_type="instructor_factory",
-            num_requests=1,
-            is_async=False,
-        )
-    )
-
-    # Create model args with deterministic defaults, allowing override via kwargs
-    model_args = InstructorModelArgs()
-
-    return InstructorLLM(
-        client=instructor_patched_client,
-        model=model,
-        provider=provider,
-        model_args=model_args,
-        **kwargs,
-    )

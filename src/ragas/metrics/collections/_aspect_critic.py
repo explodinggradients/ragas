@@ -24,14 +24,13 @@ class AspectCritic(BaseMetric):
     Judges the submission to give binary results using the criteria specified.
 
     Usage:
-        >>> import instructor
         >>> from openai import AsyncOpenAI
-        >>> from ragas.llms.base import instructor_llm_factory
+        >>> from ragas.llms import llm_factory
         >>> from ragas.metrics.collections import AspectCritic
         >>>
         >>> # Setup dependencies
         >>> client = AsyncOpenAI()
-        >>> llm = instructor_llm_factory("openai", client=client, model="gpt-4o-mini")
+        >>> llm = llm_factory("gpt-4o-mini", client=client)
         >>>
         >>> # Create metric instance
         >>> metric = AspectCritic(

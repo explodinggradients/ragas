@@ -65,14 +65,10 @@ class TestAnswerCorrectnessE2EMigration:
         try:
             import openai
 
-            from ragas.llms.base import instructor_llm_factory
+            from ragas.llms import llm_factory
 
             client = openai.AsyncOpenAI()
-            return instructor_llm_factory(
-                "openai",
-                model="gpt-4o",
-                client=client,  # Using GPT-4o for better alignment
-            )
+            return llm_factory("gpt-4o", client=client)
         except ImportError as e:
             pytest.skip(f"Instructor LLM factory not available: {e}")
         except Exception as e:

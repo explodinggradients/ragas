@@ -117,7 +117,7 @@ preview = false
 
 [tool.pyright]
 include = ["src/ragas"]
-excludeTypeshedPaths = ["@types/*"]
+exclude = ["@types/*"]
 pythonVersion = "3.9"
 pythonPlatform = "All"
 typeCheckingMode = "basic"

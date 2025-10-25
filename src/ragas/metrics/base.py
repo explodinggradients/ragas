@@ -15,6 +15,7 @@ from ragas._analytics import EvaluationEvent, _analytics_batcher
 from ragas.async_utils import apply_nest_asyncio, run
 from ragas.callbacks import ChainType, new_group
 from ragas.dataset_schema import MetricAnnotation, MultiTurnSample, SingleTurnSample
+from ragas.llms import BaseRagasLLM
 from ragas.losses import BinaryMetricLoss, MSELoss
 from ragas.metrics.validators import AllowedValuesType
 from ragas.prompt import FewShotPydanticPrompt, PromptMixin
@@ -234,7 +235,8 @@ class MetricWithLLM(Metric, PromptMixin):
     Attributes
     ----------
     llm : Optional[BaseRagasLLM]
-        The language model used for the metric.
+        The language model used for the metric. Both BaseRagasLLM and InstructorBaseRagasLLM
+        are accepted at runtime via duck typing (both have compatible methods).
     """
 
     llm: t.Optional[BaseRagasLLM] = None
@@ -258,7 +260,9 @@ class MetricWithLLM(Metric, PromptMixin):
             raise ValueError(
                 f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please instantiate the metric with an LLM to run."
             )
-        self.llm.set_run_config(run_config)
+        # Only BaseRagasLLM has set_run_config method, not InstructorBaseRagasLLM
+        if isinstance(self.llm, BaseRagasLLM):
+            self.llm.set_run_config(run_config)
 
     def supports_batch_evaluation(self) -> bool:
         """Check if this metric supports batch evaluation via OpenAI Batch API."""

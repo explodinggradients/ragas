@@ -8,7 +8,7 @@ import typing as t
 from .pydantic_prompt import PydanticPrompt
 
 if t.TYPE_CHECKING:
-    from ragas.llms.base import BaseRagasLLM
+    from ragas.llms.base import BaseRagasLLM, InstructorBaseRagasLLM
 
 
 logger = logging.getLogger(__name__)
@@ -61,7 +61,10 @@ class PromptMixin:
             setattr(self, name_to_var[key], value)
 
     async def adapt_prompts(
-        self, language: str, llm: BaseRagasLLM, adapt_instruction: bool = False
+        self,
+        language: str,
+        llm: t.Union[BaseRagasLLM, InstructorBaseRagasLLM],
+        adapt_instruction: bool = False,
     ) -> t.Dict[str, PydanticPrompt]:
         """
         Adapts the prompts in the class to the given language and using the given LLM.
