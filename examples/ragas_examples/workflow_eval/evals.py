@@ -3,14 +3,14 @@ import os
 from openai import OpenAI
 
 from ragas import Dataset, experiment
-from ragas.llms import instructor_llm_factory
+from ragas.llms import llm_factory
 from ragas.metrics import DiscreteMetric
 
 from .workflow import default_workflow_client
 
 openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 workflow_client = default_workflow_client()
-llm = instructor_llm_factory("openai", model="gpt-4o", client=openai_client)
+llm = llm_factory("gpt-4o", client=openai_client)
 
 
 def load_dataset():

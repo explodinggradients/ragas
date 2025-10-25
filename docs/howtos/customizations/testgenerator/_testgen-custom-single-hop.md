@@ -44,12 +44,12 @@ for doc in docs:
 You may use any of [your choice](./../../customizations/customize_models.md), here I am using models from open-ai.
 
 ```python
-from ragas.llms.base import llm_factory
+from openai import OpenAI
+from ragas.llms import llm_factory
 from ragas.embeddings import OpenAIEmbeddings
-import openai
 
-llm = llm_factory()
-openai_client = openai.OpenAI()
+openai_client = OpenAI()
+llm = llm_factory("gpt-4o-mini", client=openai_client)
 embedding = OpenAIEmbeddings(client=openai_client)
 ```
 
