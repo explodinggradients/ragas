@@ -53,10 +53,10 @@ In your generated project, you'll see the `DiscreteMetric` - a flexible metric t
 
 ```python
 from ragas.metrics import DiscreteMetric
-from ragas.llms import instructor_llm_factory
+from ragas.llms import llm_factory
 
 # Create your evaluator LLM
-evaluator_llm = instructor_llm_factory("openai", model="gpt-4o")
+evaluator_llm = llm_factory("gpt-4o")
 
 # Define a custom metric
 my_metric = DiscreteMetric(
@@ -78,7 +78,7 @@ What you see in your generated `evals.py` lets you define evaluation logic that 
 
 ### Choosing Your Evaluator LLM
 
-Your evaluation metrics need an LLM to score your application. Ragas works with **any LLM provider** through the `instructor_llm_factory`. Your quickstart project uses OpenAI by default, but you can easily swap to any provider by updating the LLM creation in your `evals.py`:
+Your evaluation metrics need an LLM to score your application. Ragas works with **any LLM provider** through the `llm_factory`. Your quickstart project uses OpenAI by default, but you can easily swap to any provider by updating the LLM creation in your `evals.py`:
 
 === "OpenAI"
     Set your OpenAI API key:
@@ -90,9 +90,9 @@ Your evaluation metrics need an LLM to score your application. Ragas works with 
     In your `evals.py`:
 
     ```python
-    from ragas.llms import instructor_llm_factory
+    from ragas.llms import llm_factory
 
-    llm = instructor_llm_factory("openai", model="gpt-4o")
+    llm = llm_factory("gpt-4o")
     ```
 
     The quickstart project already sets this up for you!
@@ -107,9 +107,9 @@ Your evaluation metrics need an LLM to score your application. Ragas works with 
     In your `evals.py`:
 
     ```python
-    from ragas.llms import instructor_llm_factory
+    from ragas.llms import llm_factory
 
-    llm = instructor_llm_factory("anthropic", model="claude-3-5-sonnet-20241022")
+    llm = llm_factory("claude-3-5-sonnet-20241022", provider="anthropic")
     ```
 
 === "Google Cloud"
@@ -122,20 +122,20 @@ Your evaluation metrics need an LLM to score your application. Ragas works with 
     In your `evals.py`:
 
     ```python
-    from ragas.llms import instructor_llm_factory
+    from ragas.llms import llm_factory
 
-    llm = instructor_llm_factory("google", model="gemini-1.5-pro")
+    llm = llm_factory("gemini-1.5-pro", provider="google")
     ```
 
 === "Local Models (Ollama)"
     Install and run Ollama locally, then in your `evals.py`:
 
     ```python
-    from ragas.llms import instructor_llm_factory
+    from ragas.llms import llm_factory
 
-    llm = instructor_llm_factory(
-        "ollama",
-        model="mistral",
+    llm = llm_factory(
+        "mistral",
+        provider="ollama",
         base_url="http://localhost:11434"  # Default Ollama URL
     )
     ```
@@ -144,10 +144,10 @@ Your evaluation metrics need an LLM to score your application. Ragas works with 
     For any LLM with OpenAI-compatible API:
 
     ```python
-    from ragas.llms import instructor_llm_factory
+    from ragas.llms import llm_factory
 
-    llm = instructor_llm_factory(
-        "openai",
+    llm = llm_factory(
+        "model-name",
         api_key="your-api-key",
         base_url="https://your-api-endpoint"
     )
@@ -161,10 +161,10 @@ Your evaluation metrics need an LLM to score your application. Ragas works with 
 
 ```python
 from ragas.metrics.collections import AspectCritic
-from ragas.llms import instructor_llm_factory
+from ragas.llms import llm_factory
 
 # Setup your evaluator LLM
-evaluator_llm = instructor_llm_factory("openai", model="gpt-4o")
+evaluator_llm = llm_factory("gpt-4o")
 
 # Use a pre-built metric
 metric = AspectCritic(

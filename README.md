@@ -102,10 +102,10 @@ This is a simple example evaluating a summary for accuracy:
 ```python
 import asyncio
 from ragas.metrics.collections import AspectCritic
-from ragas.llms import instructor_llm_factory
+from ragas.llms import llm_factory
 
 # Setup your LLM
-llm = instructor_llm_factory("openai", model="gpt-4o")
+llm = llm_factory("gpt-4o")
 
 # Create a metric
 metric = AspectCritic(
