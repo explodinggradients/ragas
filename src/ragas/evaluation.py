@@ -27,7 +27,7 @@ from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
 from ragas.integrations.helicone import helicone_config
 from ragas.llms import llm_factory
-from ragas.llms.base import BaseRagasLLM, LangchainLLMWrapper
+from ragas.llms.base import BaseRagasLLM, InstructorBaseRagasLLM, LangchainLLMWrapper
 from ragas.metrics import AspectCritic
 from ragas.metrics._answer_correctness import AnswerCorrectness
 from ragas.metrics.base import (
@@ -57,7 +57,7 @@ RAGAS_EVALUATION_CHAIN_NAME = "ragas evaluation"
 async def aevaluate(
     dataset: t.Union[Dataset, EvaluationDataset],
     metrics: t.Optional[t.Sequence[Metric]] = None,
-    llm: t.Optional[BaseRagasLLM | LangchainLLM] = None,
+    llm: t.Optional[BaseRagasLLM | InstructorBaseRagasLLM | LangchainLLM] = None,
     embeddings: t.Optional[
         BaseRagasEmbeddings | BaseRagasEmbedding | LangchainEmbeddings
     ] = None,
@@ -165,8 +165,11 @@ async def aevaluate(
             binary_metrics.append(metric.name)
         if isinstance(metric, MetricWithLLM) and metric.llm is None:
             if llm is None:
-                llm = llm_factory()
-            metric.llm = llm
+                from openai import OpenAI
+
+                client = OpenAI()
+                llm = llm_factory("gpt-4o-mini", client=client)
+            metric.llm = t.cast(t.Optional[BaseRagasLLM], llm)
             llm_changed.append(i)
         if isinstance(metric, MetricWithEmbeddings) and metric.embeddings is None:
             if embeddings is None:
