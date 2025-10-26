@@ -11,6 +11,7 @@ If you have any questions about Ragas, feel free to join and ask in the `#questi
 
 Let's get started!
 
+<!-- - [Quick Start: Get Running in 5 Minutes](./quickstart.md) -->
 - [Evaluate your first AI app](./evals.md)
 - [Run ragas metrics for evaluating RAG](rag_eval.md)
 - [Generate test data for evaluating RAG](rag_testset_generation.md)
