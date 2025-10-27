@@ -1,14 +1,19 @@
 """
 AG-UI Protocol Integration for Ragas.
 
-This module provides conversion utilities to transform AG-UI protocol events into
-Ragas message format for evaluation. It supports both streaming event sequences
-and complete message snapshots.
+This module provides conversion utilities and evaluation functions for AG-UI
+protocol agents. It supports converting AG-UI streaming events to Ragas message
+format and evaluating AG-UI FastAPI endpoints.
 
 AG-UI is an event-based protocol for agent-to-UI communication that uses typed
 events for streaming text messages, tool calls, and state synchronization.
 
-Example:
+Functions:
+    convert_to_ragas_messages: Convert AG-UI event sequences to Ragas messages
+    convert_messages_snapshot: Convert AG-UI message snapshots to Ragas messages
+    evaluate_ag_ui_agent: Batch evaluate an AG-UI FastAPI endpoint
+
+Examples:
     Convert streaming AG-UI events to Ragas messages::
 
         from ragas.integrations.ag_ui import convert_to_ragas_messages
@@ -20,22 +25,39 @@ Example:
         # Convert to Ragas messages
         ragas_messages = convert_to_ragas_messages(ag_ui_events, metadata=True)
 
-    Convert a messages snapshot::
+    Evaluate an AG-UI agent endpoint::
 
-        from ragas.integrations.ag_ui import convert_messages_snapshot
-        from ag_ui.core import MessagesSnapshotEvent
+        from ragas.integrations.ag_ui import evaluate_ag_ui_agent
+        from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
+        from ragas.metrics import AspectCritic
 
-        snapshot = MessagesSnapshotEvent(messages=[...])
-        ragas_messages = convert_messages_snapshot(snapshot)
+        dataset = EvaluationDataset(samples=[
+            SingleTurnSample(user_input="What's the weather in SF?")
+        ])
+
+        result = await evaluate_ag_ui_agent(
+            endpoint_url="http://localhost:8000/agent",
+            dataset=dataset,
+            metrics=[AspectCritic()]
+        )
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import math
+import typing as t
 from typing import Any, Dict, List, Optional, Union
 
+from ragas.dataset_schema import EvaluationDataset, EvaluationResult, SingleTurnSample
+from ragas.evaluation import evaluate as ragas_evaluate
+from ragas.executor import Executor
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
+from ragas.run_config import RunConfig
+
+if t.TYPE_CHECKING:
+    from ragas.metrics.base import Metric
 
 logger = logging.getLogger(__name__)
 
@@ -552,3 +574,298 @@ def convert_messages_snapshot(
     collector = AGUIEventCollector(metadata=metadata)
     collector._handle_messages_snapshot(snapshot_event)
     return collector.get_messages()
+
+
+async def _call_ag_ui_endpoint(
+    endpoint_url: str,
+    user_input: str,
+    thread_id: Optional[str] = None,
+    agent_config: Optional[Dict[str, Any]] = None,
+    timeout: float = 60.0,
+) -> List[Any]:
+    """
+    Call an AG-UI FastAPI endpoint and collect streaming events.
+
+    Makes an HTTP POST request to an AG-UI compatible FastAPI endpoint
+    and parses the Server-Sent Events (SSE) stream to collect all events.
+
+    Parameters
+    ----------
+    endpoint_url : str
+        The URL of the AG-UI FastAPI endpoint (e.g., "http://localhost:8000/agent").
+    user_input : str
+        The user message/query to send to the agent.
+    thread_id : str, optional
+        Optional thread ID for conversation continuity.
+    agent_config : dict, optional
+        Optional agent configuration parameters.
+    timeout : float, optional
+        Request timeout in seconds (default: 60.0).
+
+    Returns
+    -------
+    List[Event]
+        List of AG-UI events collected from the SSE stream.
+
+    Raises
+    ------
+    ImportError
+        If httpx is not installed.
+    httpx.HTTPError
+        If the HTTP request fails.
+
+    Notes
+    -----
+    This function expects the endpoint to return Server-Sent Events (SSE)
+    with content type "text/event-stream". Each event should be in the format:
+
+        data: {"type": "...", ...}\\n\\n
+
+    The function will parse the SSE stream and deserialize each event
+    using AG-UI's RunAgentInput model.
+    """
+    try:
+        import httpx
+    except ImportError as e:
+        raise ImportError(
+            "AG-UI FastAPI integration requires httpx. "
+            "Install it with: pip install httpx"
+        ) from e
+
+    # Import AG-UI types
+    try:
+        from ag_ui.core import Event, RunAgentInput
+    except ImportError as e:
+        raise ImportError(
+            "AG-UI integration requires the ag-ui-protocol package. "
+            "Install it with: pip install ag-ui-protocol"
+        ) from e
+
+    # Prepare request payload
+    payload = RunAgentInput(
+        user_input=user_input,
+        thread_id=thread_id,
+        agent_config=agent_config or {},
+    )
+
+    # Collect events from SSE stream
+    events: List[Event] = []
+
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        async with client.stream(
+            "POST",
+            endpoint_url,
+            json=payload.model_dump(),
+            headers={"Accept": "text/event-stream"},
+        ) as response:
+            response.raise_for_status()
+
+            # Parse SSE stream line by line
+            async for line in response.aiter_lines():
+                line = line.strip()
+
+                # SSE format: "data: {...}"
+                if line.startswith("data: "):
+                    json_data = line[6:]  # Remove "data: " prefix
+
+                    try:
+                        # Parse JSON and convert to Event
+                        event_dict = json.loads(json_data)
+                        # Let Pydantic handle event type discrimination
+                        event = Event.model_validate(event_dict)
+                        events.append(event)
+                    except (json.JSONDecodeError, ValueError) as e:
+                        logger.warning(f"Failed to parse SSE event: {e}")
+                        continue
+
+    return events
+
+
+async def evaluate_ag_ui_agent(
+    endpoint_url: str,
+    dataset: EvaluationDataset,
+    metrics: List["Metric"],
+    metadata: bool = False,
+    run_config: Optional[RunConfig] = None,
+    batch_size: Optional[int] = None,
+    raise_exceptions: bool = False,
+    show_progress: bool = True,
+    timeout: float = 60.0,
+) -> EvaluationResult:
+    """
+    Evaluate an AG-UI agent by calling its FastAPI endpoint with test queries.
+
+    This function runs a batch evaluation by:
+    1. Calling the AG-UI FastAPI endpoint for each query in the dataset
+    2. Collecting streaming AG-UI events from each response
+    3. Converting events to Ragas message format
+    4. Evaluating with specified metrics
+
+    Parameters
+    ----------
+    endpoint_url : str
+        URL of the AG-UI FastAPI endpoint (e.g., "http://localhost:8000/agent").
+    dataset : EvaluationDataset
+        Dataset containing test queries (user_input field).
+    metrics : List[Metric]
+        List of Ragas metrics to evaluate (e.g., AspectCritic, Faithfulness).
+    metadata : bool, optional
+        Whether to include AG-UI metadata in converted messages (default: False).
+    run_config : RunConfig, optional
+        Configuration for the evaluation run.
+    batch_size : int, optional
+        Number of queries to process in parallel (default: None = auto).
+    raise_exceptions : bool, optional
+        Whether to raise exceptions or log warnings (default: False).
+    show_progress : bool, optional
+        Whether to show progress bar (default: True).
+    timeout : float, optional
+        HTTP request timeout in seconds (default: 60.0).
+
+    Returns
+    -------
+    EvaluationResult
+        Results containing metric scores for the dataset.
+
+    Raises
+    ------
+    ImportError
+        If required packages (httpx, ag-ui-protocol) are not installed.
+    ValueError
+        If dataset is not of type EvaluationDataset or is multi-turn.
+
+    Examples
+    --------
+    Evaluate an AG-UI agent endpoint with standard metrics::
+
+        >>> from ragas.integrations.ag_ui import evaluate_ag_ui_agent
+        >>> from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
+        >>> from ragas.metrics import AspectCritic, Faithfulness
+        >>>
+        >>> dataset = EvaluationDataset(samples=[
+        ...     SingleTurnSample(
+        ...         user_input="What's the weather in San Francisco?",
+        ...         reference="Use the weather API to check SF weather"
+        ...     )
+        ... ])
+        >>>
+        >>> result = await evaluate_ag_ui_agent(
+        ...     endpoint_url="http://localhost:8000/agent",
+        ...     dataset=dataset,
+        ...     metrics=[AspectCritic(), Faithfulness()]
+        ... )
+
+    With AG-UI metadata included::
+
+        >>> result = await evaluate_ag_ui_agent(
+        ...     endpoint_url="http://localhost:8000/agent",
+        ...     dataset=dataset,
+        ...     metrics=[AspectCritic()],
+        ...     metadata=True  # Include run_id, thread_id, etc.
+        ... )
+
+    Notes
+    -----
+    - The endpoint must return Server-Sent Events (SSE) with AG-UI protocol events
+    - Each query is sent as a separate HTTP request with RunAgentInput payload
+    - Queries are executed in parallel using Ragas Executor
+    - Failed queries are logged and recorded as NaN in results
+    - Multi-turn conversations are not yet supported
+
+    See Also
+    --------
+    convert_to_ragas_messages : Convert AG-UI events to Ragas messages
+    _call_ag_ui_endpoint : HTTP client helper for calling endpoints
+    """
+    # Validate dataset
+    if dataset is None or not isinstance(dataset, EvaluationDataset):
+        raise ValueError("Please provide a dataset that is of type EvaluationDataset")
+
+    # Check if multi-turn
+    if dataset.is_multi_turn():
+        raise NotImplementedError(
+            "Multi-turn evaluation for AG-UI agents is not implemented yet. "
+            "Please raise an issue on GitHub if you need this feature."
+        )
+
+    samples = t.cast(List[SingleTurnSample], dataset.samples)
+
+    # Create executor for parallel HTTP calls
+    executor = Executor(
+        desc="Calling AG-UI Agent",
+        keep_progress_bar=True,
+        show_progress=show_progress,
+        raise_exceptions=raise_exceptions,
+        run_config=run_config,
+        batch_size=batch_size,
+    )
+
+    # Submit HTTP calls for all queries
+    queries = [sample.user_input for sample in samples]
+    for i, query in enumerate(queries):
+        executor.submit(
+            _call_ag_ui_endpoint,
+            endpoint_url=endpoint_url,
+            user_input=query,
+            timeout=timeout,
+            name=f"query-{i}",
+        )
+
+    # Collect results and convert to messages
+    responses: List[Optional[str]] = []
+    retrieved_contexts: List[Optional[List[str]]] = []
+    results = executor.results()
+
+    for i, result in enumerate(results):
+        # Handle failed jobs which are recorded as NaN in the executor
+        if isinstance(result, float) and math.isnan(result):
+            responses.append(None)
+            retrieved_contexts.append(None)
+            logger.warning(
+                f"AG-UI agent call failed for query {i}: '{queries[i]}'"
+            )
+            continue
+
+        # Convert AG-UI events to Ragas messages
+        events = t.cast(List[Any], result)
+        try:
+            messages = convert_to_ragas_messages(events, metadata=metadata)
+
+            # Extract response text from AI messages
+            response_text = ""
+            context_list: List[str] = []
+
+            for msg in messages:
+                if isinstance(msg, AIMessage) and msg.content:
+                    response_text += msg.content
+                # Tool results could contain retrieved context
+                elif isinstance(msg, ToolMessage) and msg.content:
+                    context_list.append(msg.content)
+
+            responses.append(response_text or None)
+            retrieved_contexts.append(context_list if context_list else None)
+
+        except Exception as e:
+            logger.warning(
+                f"Failed to convert events for query {i}: {e}", exc_info=True
+            )
+            responses.append(None)
+            retrieved_contexts.append(None)
+
+    # Populate dataset with agent responses
+    for i, sample in enumerate(samples):
+        sample.response = responses[i]
+        sample.retrieved_contexts = retrieved_contexts[i]
+
+    # Run evaluation with metrics
+    evaluation_result = ragas_evaluate(
+        dataset=dataset,
+        metrics=metrics,
+        raise_exceptions=raise_exceptions,
+        show_progress=show_progress,
+        run_config=run_config or RunConfig(),
+        return_executor=False,
+    )
+
+    # Type assertion since return_executor=False guarantees EvaluationResult
+    return t.cast(EvaluationResult, evaluation_result)

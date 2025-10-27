@@ -22,7 +22,7 @@ Choose the appropriate installation based on your needs:
 # RECOMMENDED: Minimal dev setup (79 packages - fast)
 make install-minimal
 
-# FULL: Complete dev environment (383 packages - comprehensive)  
+# FULL: Complete dev environment (383 packages - comprehensive)
 make install
 
 # OR manual installation:
@@ -69,7 +69,7 @@ The workspace ensures consistent dependency versions across packages and enables
 ### Commands (from root directory)
 
 ```bash
-# Setup and installation  
+# Setup and installation
 make install-minimal # Minimal dev setup (79 packages - recommended)
 make install        # Full dev environment (383 packages - complete)
 
@@ -212,7 +212,7 @@ analytics_logger.addHandler(console_handler)
 
 ## Memories
 
-- whenever you create such docs put in in /\_experiments because that is gitignored and you can use it as a scratchpad or tmp directory for storing these
+- whenever you create such docs put in in /_experiments because that is gitignored and you can use it as a scratchpad or tmp directory for storing these
 - always use uv to run python and python related commandline tools like isort, ruff, pyright etc. This is because we are using uv to manage the .venv and dependencies.
 - The project uses two distinct dependency management approaches:
   - **Minimal setup**: `[project.optional-dependencies].dev-minimal` for fast development (79 packages)
