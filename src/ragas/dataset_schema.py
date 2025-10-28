@@ -75,6 +75,12 @@ class SingleTurnSample(BaseSample):
         The reference answer for the query.
     rubric : Optional[Dict[str, str]]
         Evaluation rubric for the sample.
+    persona_name : Optional[str]
+        Name of the persona used in query generation.
+    query_style : Optional[str]
+        Style of the generated query (e.g., formal, casual).
+    query_length : Optional[str]
+        Length category of the query (e.g., short, medium, long).
     """
 
     user_input: t.Optional[str] = None
@@ -86,6 +92,9 @@ class SingleTurnSample(BaseSample):
     multi_responses: t.Optional[t.List[str]] = None
     reference: t.Optional[str] = None
     rubrics: t.Optional[t.Dict[str, str]] = None
+    persona_name: t.Optional[str] = None
+    query_style: t.Optional[str] = None
+    query_length: t.Optional[str] = None
 
 
 class MultiTurnSample(BaseSample):
