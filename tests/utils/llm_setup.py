@@ -41,21 +41,26 @@ def check_api_key(provider: str = "openai") -> bool:
 
 
 def create_legacy_llm(model: str = "gpt-3.5-turbo", **kwargs):
-    """Create a legacy LLM instance for old-style metrics.
+    """Create an LLM instance using the unified llm_factory.
 
     Args:
         model: The model name to use
-        **kwargs: Additional arguments to pass to llm_factory
+        **kwargs: Additional arguments to pass to llm_factory (must include client)
 
     Returns:
-        Legacy LLM instance
+        InstructorBaseRagasLLM instance
 
     Raises:
         ImportError: If llm_factory is not available
-        Exception: If LLM creation fails (e.g., missing API key)
+        Exception: If LLM creation fails (e.g., missing API key or client)
     """
     try:
         from ragas.llms.base import llm_factory
+
+        if "client" not in kwargs:
+            import openai
+
+            kwargs["client"] = openai.OpenAI()
 
         return llm_factory(model, **kwargs)
     except ImportError as e:
@@ -70,25 +75,24 @@ def create_modern_llm(
     client: Optional[any] = None,
     **kwargs,
 ):
-    """Create a modern instructor LLM instance for v2 metrics.
+    """Create an LLM instance using the unified llm_factory.
 
     Args:
-        provider: The LLM provider (e.g., "openai", "anthropic")
+        provider: The LLM provider (default: "openai")
         model: The model name to use
-        client: Optional async client instance. If None, will create one.
-        **kwargs: Additional arguments to pass to instructor_llm_factory
+        client: Optional client instance. If None, will create AsyncOpenAI().
+        **kwargs: Additional arguments to pass to llm_factory
 
     Returns:
-        Modern instructor LLM instance
+        InstructorBaseRagasLLM instance
 
     Raises:
         ImportError: If required libraries are not available
         Exception: If LLM creation fails
     """
     try:
-        from ragas.llms.base import instructor_llm_factory
+        from ragas.llms.base import llm_factory
 
-        # Create client if not provided
         if client is None:
             if provider == "openai":
                 import openai
@@ -97,11 +101,11 @@ def create_modern_llm(
             else:
                 raise ValueError(f"Auto-client creation not supported for {provider}")
 
-        return instructor_llm_factory(provider, model=model, client=client, **kwargs)
+        return llm_factory(model=model, provider=provider, client=client, **kwargs)
     except ImportError as e:
-        raise ImportError(f"Instructor LLM factory not available: {e}")
+        raise ImportError(f"LLM factory not available: {e}")
     except Exception as e:
-        raise Exception(f"Could not create modern LLM (API key may be missing): {e}")
+        raise Exception(f"Could not create LLM (API key may be missing): {e}")
 
 
 def create_legacy_embeddings(model: str = "text-embedding-ada-002", **kwargs):

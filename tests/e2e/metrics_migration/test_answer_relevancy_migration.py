@@ -60,12 +60,10 @@ class TestAnswerRelevancyE2EMigration:
         try:
             import openai
 
-            from ragas.llms.base import instructor_llm_factory
+            from ragas.llms import llm_factory
 
             client = openai.AsyncOpenAI()
-            return instructor_llm_factory(
-                "openai", model="gpt-3.5-turbo", client=client
-            )
+            return llm_factory("gpt-3.5-turbo", client=client)
         except ImportError as e:
             pytest.skip(f"Instructor LLM factory not available: {e}")
         except Exception as e:

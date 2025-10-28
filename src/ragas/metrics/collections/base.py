@@ -117,7 +117,7 @@ class BaseMetric(SimpleBaseMetric, NumericValidator):
         if not isinstance(llm, InstructorBaseRagasLLM):
             raise ValueError(
                 f"Collections metrics only support modern InstructorLLM. Found: {type(llm).__name__}. "
-                f"Use: instructor_llm_factory('openai', model='gpt-4o-mini', client=openai_client)"
+                f"Use: llm_factory('gpt-4o-mini', client=openai_client)"
             )
 
     def _validate_embeddings(self):

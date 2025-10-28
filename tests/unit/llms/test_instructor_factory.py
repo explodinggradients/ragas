@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 from pydantic import BaseModel
 
-from ragas.llms.base import instructor_llm_factory as llm_factory
+from ragas.llms.base import llm_factory
 
 
 class LLMResponseModel(BaseModel):
@@ -66,15 +66,14 @@ def mock_async_client():
 
 
 def test_llm_factory_initialization(mock_sync_client, monkeypatch):
-    """Test llm_factory initialization with different providers."""
+    """Test llm_factory initialization."""
 
-    # Mock instructor to return our mock instructor
     def mock_from_openai(client):
         return MockInstructor(client)
 
     monkeypatch.setattr("instructor.from_openai", mock_from_openai)
 
-    llm = llm_factory("openai/gpt-4", client=mock_sync_client)
+    llm = llm_factory("gpt-4", provider="openai", client=mock_sync_client)
 
     assert llm.model == "gpt-4"  # type: ignore
     assert llm.client is not None  # type: ignore
@@ -84,26 +83,27 @@ def test_llm_factory_initialization(mock_sync_client, monkeypatch):
 def test_llm_factory_async_detection(mock_async_client, monkeypatch):
     """Test that llm_factory correctly detects async clients."""
 
-    # Mock instructor to return our mock instructor
     def mock_from_openai(client):
         return MockInstructor(client)
 
     monkeypatch.setattr("instructor.from_openai", mock_from_openai)
 
-    llm = llm_factory("openai/gpt-4", client=mock_async_client)
+    llm = llm_factory("gpt-4", provider="openai", client=mock_async_client)
 
     assert llm.is_async  # type: ignore
 
 
 def test_llm_factory_with_model_args(mock_sync_client, monkeypatch):
-    """Test the llm_factory function with model arguments."""
+    """Test llm_factory with model arguments."""
 
     def mock_from_openai(client):
         return MockInstructor(client)
 
     monkeypatch.setattr("instructor.from_openai", mock_from_openai)
 
-    llm = llm_factory("openai/gpt-4", client=mock_sync_client, temperature=0.7)
+    llm = llm_factory(
+        "gpt-4", provider="openai", client=mock_sync_client, temperature=0.7
+    )
 
     assert llm.model == "gpt-4"  # type: ignore
     assert llm.model_args.get("temperature") == 0.7  # type: ignore
@@ -113,8 +113,8 @@ def test_unsupported_provider():
     """Test that unsupported providers raise ValueError."""
     mock_client = Mock()
 
-    with pytest.raises(ValueError, match="Unsupported provider: unsupported"):
-        llm_factory("unsupported/test-model", client=mock_client)
+    with pytest.raises(ValueError, match="Unsupported provider"):
+        llm_factory("test-model", provider="unsupported", client=mock_client)
 
 
 def test_sync_llm_generate(mock_sync_client, monkeypatch):
@@ -125,7 +125,7 @@ def test_sync_llm_generate(mock_sync_client, monkeypatch):
 
     monkeypatch.setattr("instructor.from_openai", mock_from_openai)
 
-    llm = llm_factory("openai/gpt-4", client=mock_sync_client)
+    llm = llm_factory("gpt-4", provider="openai", client=mock_sync_client)
 
     result = llm.generate("Test prompt", LLMResponseModel)
 
@@ -142,7 +142,7 @@ async def test_async_llm_agenerate(mock_async_client, monkeypatch):
 
     monkeypatch.setattr("instructor.from_openai", mock_from_openai)
 
-    llm = llm_factory("openai/gpt-4", client=mock_async_client)
+    llm = llm_factory("gpt-4", provider="openai", client=mock_async_client)
 
     result = await llm.agenerate("Test prompt", LLMResponseModel)
 
@@ -158,13 +158,11 @@ def test_sync_client_agenerate_error(mock_sync_client, monkeypatch):
 
     monkeypatch.setattr("instructor.from_openai", mock_from_openai)
 
-    llm = llm_factory("openai/gpt-4", client=mock_sync_client)
+    llm = llm_factory("gpt-4", provider="openai", client=mock_sync_client)
 
-    # Test that agenerate raises TypeError with sync client
     with pytest.raises(
         TypeError, match="Cannot use agenerate\\(\\) with a synchronous client"
     ):
-        # Use asyncio.run to handle the coroutine
         import asyncio
 
         asyncio.run(llm.agenerate("Test prompt", LLMResponseModel))
@@ -175,23 +173,20 @@ def test_provider_support():
     supported_providers = {
         "openai": "from_openai",
         "anthropic": "from_anthropic",
-        "cohere": "from_cohere",
-        "google": "from_genai",
+        "google": "from_gemini",
         "litellm": "from_litellm",
     }
 
     for provider, func_name in supported_providers.items():
         mock_client = Mock()
 
-        # Mock the appropriate instructor function
         import instructor
 
         mock_instructor_func = Mock(return_value=MockInstructor(mock_client))
         setattr(instructor, func_name, mock_instructor_func)
 
-        # This should not raise an error
         try:
-            llm = llm_factory(f"{provider}/test-model", client=mock_client)
+            llm = llm_factory("test-model", provider=provider, client=mock_client)
             assert llm.model == "test-model"  # type: ignore
         except Exception as e:
             pytest.fail(f"Provider {provider} should be supported but got error: {e}")
@@ -207,34 +202,20 @@ def test_llm_model_args_storage(mock_sync_client, monkeypatch):
 
     model_args = {"temperature": 0.7, "max_tokens": 1000, "top_p": 0.9}
 
-    llm = llm_factory("openai/gpt-4", client=mock_sync_client, **model_args)
+    llm = llm_factory("gpt-4", provider="openai", client=mock_sync_client, **model_args)
 
     assert llm.model_args == model_args  # type: ignore
 
 
-def test_llm_factory_separate_parameters(mock_sync_client, monkeypatch):
-    """Test llm_factory with separate provider and model parameters."""
-
-    def mock_from_openai(client):
-        return MockInstructor(client)
-
-    monkeypatch.setattr("instructor.from_openai", mock_from_openai)
-
-    llm = llm_factory("openai", "gpt-4", client=mock_sync_client)
-
-    assert llm.model == "gpt-4"  # type: ignore
-    assert llm.client is not None  # type: ignore
+def test_llm_factory_missing_client():
+    """Test that missing client raises ValueError."""
+    with pytest.raises(ValueError, match="requires a client instance"):
+        llm_factory("gpt-4", provider="openai")
 
 
 def test_llm_factory_missing_model():
     """Test that missing model raises ValueError."""
     mock_client = Mock()
 
-    with pytest.raises(ValueError, match="Model name is required"):
-        llm_factory("openai", client=mock_client)
-
-
-def test_llm_factory_missing_client():
-    """Test that missing client raises ValueError."""
-    with pytest.raises(ValueError, match="Openai provider requires a client instance"):
-        llm_factory("openai", "gpt-4")
+    with pytest.raises(ValueError, match="model parameter is required"):
+        llm_factory("", provider="openai", client=mock_client)
