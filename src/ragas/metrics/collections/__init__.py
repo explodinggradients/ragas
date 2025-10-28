@@ -15,6 +15,7 @@ from ragas.metrics.collections._bleu_score import BleuScore
 from ragas.metrics.collections._context_entity_recall import ContextEntityRecall
 from ragas.metrics.collections._rouge_score import RougeScore
 from ragas.metrics.collections._semantic_similarity import SemanticSimilarity
+from ragas.metrics.collections._simple_criteria import SimpleCriteria
 from ragas.metrics.collections._string import (
     DistanceMeasure,
     ExactMatch,
@@ -36,6 +37,7 @@ __all__ = [
     "NonLLMStringSimilarity",
     "RougeScore",
     "SemanticSimilarity",
+    "SimpleCriteria",
     "StringPresence",
     # AspectCritic helper functions
     "coherence",
