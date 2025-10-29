@@ -32,9 +32,11 @@ choose_evaluator_llm.md
 
 
 ```python
+from openai import OpenAI
 from ragas.llms import llm_factory
 
-evaluator_llm = llm_factory("gpt-4o")
+openai_client = OpenAI(api_key="sk-...")
+evaluator_llm = llm_factory("gpt-4o", client=openai_client)
 ```
 
 ## Aspect Critic - Simple Criteria Scoring

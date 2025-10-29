@@ -24,10 +24,12 @@ from .utils import extract_json, get_all_strings, update_strings
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
 
-from ragas.llms.base import BaseRagasLLM
+from ragas.llms.base import BaseRagasLLM, InstructorBaseRagasLLM
 
 
-def is_langchain_llm(llm: t.Union[BaseRagasLLM, BaseLanguageModel]) -> bool:
+def is_langchain_llm(
+    llm: t.Union[BaseRagasLLM, InstructorBaseRagasLLM, BaseLanguageModel],
+) -> bool:
     """
     Detect if an LLM is a LangChain LLM or a Ragas LLM.
 
@@ -39,8 +41,10 @@ def is_langchain_llm(llm: t.Union[BaseRagasLLM, BaseLanguageModel]) -> bool:
 
     .. deprecated::
         Direct usage of LangChain LLMs is deprecated. Use Ragas LLM interfaces instead:
-        from ragas.llms.base import llm_factory; llm = llm_factory("gpt-4o-mini")
-        or from ragas.llms.base import instructor_llm_factory; llm = instructor_llm_factory("openai", client=openai_client)
+        from openai import OpenAI
+        from ragas.llms import llm_factory
+        client = OpenAI(api_key="...")
+        llm = llm_factory("gpt-4o-mini", client=client)
     """
     result = hasattr(llm, "agenerate") and not hasattr(llm, "run_config")
 
@@ -50,8 +54,8 @@ def is_langchain_llm(llm: t.Union[BaseRagasLLM, BaseLanguageModel]) -> bool:
         warnings.warn(
             "Direct usage of LangChain LLMs with Ragas prompts is deprecated and will be removed in a future version. "
             "Use Ragas LLM interfaces instead: "
-            "from ragas.llms.base import llm_factory; llm = llm_factory('gpt-4o-mini') "
-            "or from ragas.llms.base import instructor_llm_factory; llm = instructor_llm_factory('openai', client=openai_client)",
+            "from openai import OpenAI; from ragas.llms import llm_factory; "
+            "client = OpenAI(api_key='...'); llm = llm_factory('gpt-4o-mini', client=client)",
             DeprecationWarning,
             stacklevel=3,
         )
@@ -122,7 +126,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
 
     async def generate(
         self,
-        llm: t.Union[BaseRagasLLM, BaseLanguageModel],
+        llm: t.Union[BaseRagasLLM, InstructorBaseRagasLLM, BaseLanguageModel],
         data: InputModel,
         temperature: t.Optional[float] = None,
         stop: t.Optional[t.List[str]] = None,
@@ -174,7 +178,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
 
     async def generate_multiple(
         self,
-        llm: t.Union[BaseRagasLLM, BaseLanguageModel],
+        llm: t.Union[BaseRagasLLM, InstructorBaseRagasLLM, BaseLanguageModel],
         data: InputModel,
         n: int = 1,
         temperature: t.Optional[float] = None,
@@ -320,7 +324,10 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
         return output
 
     async def adapt(
-        self, target_language: str, llm: BaseRagasLLM, adapt_instruction: bool = False
+        self,
+        target_language: str,
+        llm: t.Union[BaseRagasLLM, InstructorBaseRagasLLM],
+        adapt_instruction: bool = False,
     ) -> "PydanticPrompt[InputModel, OutputModel]":
         """
         Adapt the prompt to a new language.
