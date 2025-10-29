@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
 from ragas import Dataset, experiment
-from ragas.llms import instructor_llm_factory
+from ragas.llms import llm_factory
 from ragas.metrics import DiscreteMetric
 from ragas.metrics.discrete import discrete_metric
 from ragas.metrics.result import MetricResult
@@ -173,8 +173,8 @@ async def main():
     # Initialize LLM client
     logger.info("Initializing LLM client with model: gpt-4o-mini")
     openai_client = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-    llm = instructor_llm_factory("openai", model="gpt-4o-mini", client=openai_client)
-    
+    llm = llm_factory("gpt-4o-mini", client=openai_client)
+
     # Run baseline evaluation
     logger.info("Running baseline evaluation...")
     results = await judge_experiment.arun(
@@ -200,8 +200,8 @@ async def main_v2():
     # Initialize LLM client
     logger.info("Initializing LLM client with model: gpt-4o-mini")
     openai_client = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-    llm = instructor_llm_factory("openai", model="gpt-4o-mini", client=openai_client)
-    
+    llm = llm_factory("gpt-4o-mini", client=openai_client)
+
     # Run v2 evaluation with improved prompt
     logger.info("Running v2 evaluation with improved prompt...")
     results = await judge_experiment.arun(

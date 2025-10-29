@@ -1,5 +1,6 @@
 """Summary Score metric v2 - Modern implementation with function-based prompts."""
 
+import logging
 import typing as t
 from typing import List
 
@@ -127,21 +128,35 @@ class SummaryScore(BaseMetric):
 
         Returns:
             MetricResult with summary score (0.0-1.0)
+
+        Raises:
+            ValueError: If reference_contexts is empty or response is empty/whitespace only
         """
+        # Input validation
+        if not reference_contexts or not any(ctx.strip() for ctx in reference_contexts):
+            raise ValueError(
+                "reference_contexts cannot be empty or contain only whitespace"
+            )
+
+        if not response or not response.strip():
+            raise ValueError("response cannot be empty or whitespace only")
+
         # Step 1: Combine contexts and extract keyphrases
         text = "\n".join(reference_contexts)
         keyphrases = await self._extract_keyphrases(text)
 
         if not keyphrases:
-            # If no keyphrases extracted, return perfect score
-            return MetricResult(value=1.0)
+            # Match legacy behavior: log error and continue with empty list
+            logging.error("No keyphrases generated, unable to calculate the score.")
+            keyphrases = []
 
         # Step 2: Generate questions from keyphrases
         questions = await self._generate_questions(text, keyphrases)
 
         if not questions:
-            # If no questions generated, return perfect score
-            return MetricResult(value=1.0)
+            # Match legacy behavior: log error and continue with empty list
+            logging.error("No questions generated, unable to calculate the score.")
+            questions = []
 
         # Step 3: Check if summary can answer the questions
         answers = await self._generate_answers(response, questions)
@@ -177,12 +192,11 @@ class SummaryScore(BaseMetric):
         return result.answers
 
     def _compute_qa_score(self, answers: List[str]) -> float:
-        """Compute QA score as ratio of correct answers."""
-        if not answers:
-            return 1.0  # Perfect score if no questions to answer
-
+        """Compute QA score as ratio of correct answers. Matches legacy behavior exactly."""
         correct = sum([1 for a in answers if a.lower() == "1"])
-        return correct / len(answers)
+        return correct / len(
+            answers
+        )  # Will raise ZeroDivisionError if answers is empty (legacy behavior)
 
     def _compute_conciseness_score(self, text: str, summary: str) -> float:
         """Compute conciseness score based on length ratio."""

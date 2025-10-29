@@ -29,15 +29,14 @@ class AnswerRelevancy(BaseMetric):
     Only supports modern components - legacy wrappers are rejected with clear error messages.
 
     Usage:
-        >>> import instructor
         >>> from openai import AsyncOpenAI
-        >>> from ragas.llms.base import instructor_llm_factory
+        >>> from ragas.llms import llm_factory
         >>> from ragas.embeddings.base import embedding_factory
         >>> from ragas.metrics.collections import AnswerRelevancy
         >>>
         >>> # Setup dependencies
         >>> client = AsyncOpenAI()
-        >>> llm = instructor_llm_factory("openai", client=client, model="gpt-4o-mini")
+        >>> llm = llm_factory("gpt-4o-mini", client=client)
         >>> embeddings = embedding_factory("openai", model="text-embedding-ada-002", client=client, interface="modern")
         >>>
         >>> # Create metric instance
