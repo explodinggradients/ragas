@@ -1,10 +1,45 @@
-# Quick Start: Get Evaluations Running in a flash
+# Quick Start: Get Evaluations Running in a Flash
 
-Get started with Ragas in seconds. No installation needed! Just set your API key and run one command.
+Get started with Ragas in minutes. Create a complete evaluation project with just a few commands.
 
-## 1. Set Your API Key
+## Step 1: Create Your Project
 
-Choose your LLM provider:
+Choose one of the following methods:
+
+=== "uvx (Recommended)"
+    No installation required. `uvx` automatically downloads and runs ragas:
+
+    ```sh
+    uvx ragas quickstart rag_eval
+    cd rag_eval
+    ```
+
+=== "Install Ragas First"
+    Install ragas first, then create the project:
+
+    ```sh
+    pip install ragas
+    ragas quickstart rag_eval
+    cd rag_eval
+    ```
+
+## Step 2: Install Dependencies
+
+Install the project dependencies:
+
+```sh
+uv sync
+```
+
+Or if you prefer `pip`:
+
+```sh
+pip install -e .
+```
+
+## Step 3: Set Your API Key
+
+Choose your LLM provider and set the environment variable:
 
 ```sh
 # OpenAI (default)
@@ -12,18 +47,10 @@ export OPENAI_API_KEY="your-openai-key"
 
 # Or use Anthropic Claude
 export ANTHROPIC_API_KEY="your-anthropic-key"
+
+# Or use Google Gemini
+export GOOGLE_API_KEY="your-google-key"
 ```
-
-## 2. Create Your Project
-
-Create a complete project with a single command using `uvx` (no installation required):
-
-```sh
-uvx ragas quickstart rag_eval
-cd rag_eval
-```
-
-That's it! You now have a fully configured evaluation project ready to use.
 
 ## Project Structure
 
@@ -32,100 +59,124 @@ Your generated project includes:
 ```sh
 rag_eval/
 ├── README.md              # Project documentation
-├── evals.py               # Evaluation configuration
-├── rag.py                 # Your LLM application
+├── pyproject.toml         # Project configuration
+├── rag.py                 # Your RAG application
+├── evals.py               # Evaluation workflow
+├── export_csv.py          # CSV export utility
+├── __init__.py            # Makes this a Python package
 └── evals/
-    ├── datasets/          # Test data (CSV/JSON files)
+    ├── datasets/          # Test data files
     ├── experiments/       # Evaluation results
     └── logs/              # Execution logs
 ```
 
-## Run Evaluations
+## Step 4: Run Your Evaluation
 
-### Run the Evaluation
-
-Execute the evaluation on your dataset:
+Run the evaluation script:
 
 ```sh
-uvx ragas evals evals.py --dataset test_data --metrics faithfulness,answer_correctness
+uv run python evals.py
 ```
 
-Or, if you prefer to use Python directly (after installing ragas):
+Or if you installed with `pip`:
 
 ```sh
 python evals.py
 ```
 
-This will:
-- Load test data from `evals/datasets/`
-- Evaluate your application using pre-configured metrics
-- Save results to `evals/experiments/`
+The evaluation will:
+- Load test data from the `load_dataset()` function in `evals.py`
+- Query your RAG application with test questions
+- Evaluate responses
+- Display results in the console
 
-### View Results
+## Step 5: Export Results to CSV (Optional)
 
-Results are saved as CSV files in `evals/experiments/`:
+To export your evaluation results to a CSV file with a timestamp:
 
-```python
-import pandas as pd
-
-# Load and view results
-df = pd.read_csv('evals/experiments/results.csv')
-print(df[['user_input', 'response', 'faithfulness', 'answer_correctness']])
-
-# Quick statistics
-print(f"Average Faithfulness: {df['faithfulness'].mean():.2f}")
-print(f"Average Correctness: {df['answer_correctness'].mean():.2f}")
+```sh
+uv run python export_csv.py
 ```
 
-...
+Or if you installed with `pip`:
+
+```sh
+python export_csv.py
+```
+
+This will:
+- Run the complete evaluation workflow
+- Save results to `evals/experiments/evaluation_results_YYYYMMDD_HHMMSS.csv`
+
+![](../_static/imgs/results/rag_eval_result.png)
+
+---
 
 ## Customize Your Evaluation
 
 ### Add More Test Cases
 
-Edit `evals/datasets/test_data.csv`:
+Edit the `load_dataset()` function in `evals.py` to add more test questions:
 
-```csv
-user_input,response,reference
-What is Ragas?,Ragas is an evaluation framework for LLM applications,Ragas provides objective metrics for evaluating LLM applications
-How do metrics work?,Metrics score your LLM outputs,Metrics evaluate the quality and performance of LLM responses
+```python
+from ragas.dataset_schema import SingleTurnSample
+
+def load_dataset():
+    """Load test dataset for evaluation."""
+    data_samples = [
+        SingleTurnSample(
+            user_input="What is Ragas?",
+            response="",  # Will be filled by querying RAG
+            reference="Ragas is an evaluation framework for LLM applications",
+            retrieved_contexts=[],
+        ),
+        SingleTurnSample(
+            user_input="How do metrics work?",
+            response="",
+            reference="Metrics evaluate the quality and performance of LLM responses",
+            retrieved_contexts=[],
+        ),
+        # Add more test cases here
+    ]
+
+    dataset = EvaluationDataset(samples=data_samples)
+    return dataset
 ```
 
 ### Change the LLM Provider
 
-In `evals.py`, update the LLM configuration:
+In the `_init_clients()` function in `evals.py`, update the LLM factory call:
 
 ```python
 from ragas.llms import llm_factory
 
-# Use Anthropic Claude
-llm = llm_factory("claude-3-5-sonnet-20241022", provider="anthropic")
+def _init_clients():
+    """Initialize OpenAI client and RAG system."""
+    openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    rag_client = default_rag_client(llm_client=openai_client)
 
-# Use Google Gemini
-llm = llm_factory("gemini-1.5-pro", provider="google")
+    # Use Anthropic Claude instead
+    llm = llm_factory("claude-3-5-sonnet-20241022", provider="anthropic")
 
-# Use local Ollama
-llm = llm_factory("mistral", provider="ollama", base_url="http://localhost:11434")
+    # Or use Google Gemini
+    # llm = llm_factory("gemini-1.5-pro", provider="google")
+
+    # Or use local Ollama
+    # llm = llm_factory("mistral", provider="ollama", base_url="http://localhost:11434")
+
+    return openai_client, rag_client, llm
 ```
 
-### Select Different Metrics
+### Customize Dataset and RAG System
 
-In `evals.py`, modify the metrics list:
+The template includes:
+- `load_dataset()` - Define your test cases with `SingleTurnSample`
+- `query_rag_system()` - Connect to your RAG system
+- `evaluate_dataset()` - Implement your evaluation logic
+- `display_results()` - Show results in the console
+- `save_results_to_csv()` - Export results to CSV
 
-```python
-from ragas.metrics import (
-    Faithfulness,           # Does response match context?
-    AnswerCorrectness,      # Is the answer correct?
-    ContextPrecision,       # Is retrieved context relevant?
-    ContextRecall,          # Is all needed context retrieved?
-)
-
-# Use only specific metrics
-metrics = [
-    Faithfulness(),
-    AnswerCorrectness(),
-]
-```
+Edit these functions to customize your evaluation workflow.
 
 ## What's Next?
 

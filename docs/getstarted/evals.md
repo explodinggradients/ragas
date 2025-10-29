@@ -5,17 +5,22 @@ The purpose of this guide is to illustrate a simple workflow for testing and eva
 !!! tip "Get a Working Example"
     The fastest way to see these concepts in action is to create a project using the quickstart command:
 
-    ```sh
-    ragas quickstart rag_eval
-    ```
+    === "uvx (Recommended)"
+        ```sh
+        uvx ragas quickstart rag_eval
+        cd rag_eval
+        uv sync
+        ```
 
-    This generates a complete project with sample code. Follow along with this guide to understand what's happening in your generated code.
+    === "Install Ragas First"
+        ```sh
+        pip install ragas
+        ragas quickstart rag_eval
+        cd rag_eval
+        uv sync
+        ```
 
-    ```sh
-    cd rag_eval
-    ```
-
-    Let's get started
+    This generates a complete project with sample code. Follow along with this guide to understand what's happening in your generated code. Let's get started!
 
 ## Project Structure
 
@@ -23,62 +28,59 @@ Here's what gets created for you:
 
 ```sh
 rag_eval/
-├── README.md             # Quick start guide for your project
-├── evals.py              # Your evaluation code (metrics + datasets)
+├── README.md             # Project documentation and setup instructions
+├── pyproject.toml        # Project configuration for uv and pip
+├── evals.py              # Your evaluation workflow
+├── export_csv.py         # Optional CSV export utility
 ├── rag.py                # Your RAG/LLM application
+├── __init__.py           # Makes this a Python package
 └── evals/                # Evaluation artifacts
-    ├── datasets/         # Test data files (edit these to add more test cases)
-    ├── experiments/      # Results from running evaluations
+    ├── datasets/         # Test data files (optional)
+    ├── experiments/      # Results from running evaluations (CSV files saved here)
     └── logs/             # Evaluation execution logs
 ```
 
 **Key files to focus on:**
 
-- **`evals.py`** - Where you define metrics and load test data (we'll explore this next)
-- **`rag.py`** - Your application code (query engine, retrieval, etc.)
-- **`evals/datasets/`** - Add your test cases here as CSV or JSON files
+- **`evals.py`** - Your evaluation workflow with dataset loading and evaluation logic
+- **`export_csv.py`** - Optional standalone script to export results to CSV with timestamp
+- **`rag.py`** - Your RAG/LLM application code (query engine, retrieval, etc.)
 
 ## Understanding the Code
 
-In your generated project's `evals.py` file, you'll see two key patterns for evaluation:
+In your generated project's `evals.py` file, you'll see the main workflow pattern:
 
-1. **Metrics** - Functions that score your application's output
-2. **Datasets** - Test data that your application is evaluated against
+1. **Load Dataset** - Define your test cases with `SingleTurnSample`
+2. **Query RAG System** - Get responses from your application
+3. **Evaluate Responses** - Validate responses against ground truth
+4. **Display Results** - Show evaluation summary in console
+5. **Export to CSV** - Optional: Save results with timestamp
 
-`ragas` offers a variety of evaluation methods, referred to as [metrics](../concepts/metrics/available_metrics/index.md). Let's walk through the most common ones you'll encounter.
-
-### Custom Evaluation with LLMs
-
-In your generated project, you'll see the `DiscreteMetric` - a flexible metric that uses an LLM to evaluate based on any criteria you define:
+The template provides modular functions you can customize:
 
 ```python
-from ragas.metrics import DiscreteMetric
-from ragas.llms import llm_factory
+from ragas.dataset_schema import SingleTurnSample
+from ragas import EvaluationDataset
 
-# Create your evaluator LLM
-evaluator_llm = llm_factory("gpt-4o")
-
-# Define a custom metric
-my_metric = DiscreteMetric(
-    name="correctness",
-    prompt="Check if the response is correct. Return 'pass' or 'fail'.\nResponse: {response}\nExpected: {expected}",
-    allowed_values=["pass", "fail"],
-)
-
-# Use it to score
-score = my_metric.score(
-    llm=evaluator_llm,
-    response="The capital of France is Paris",
-    expected="Paris"
-)
-print(f"Score: {score.value}")  # Output: 'pass'
+def load_dataset():
+    """Load test dataset for evaluation."""
+    data_samples = [
+        SingleTurnSample(
+            user_input="What is Ragas?",
+            response="",  # Will be filled by querying RAG
+            reference="Ragas is an evaluation framework for LLM applications",
+            retrieved_contexts=[],
+        ),
+        # Add more test cases...
+    ]
+    return EvaluationDataset(samples=data_samples)
 ```
 
-What you see in your generated `evals.py` lets you define evaluation logic that matters for your application. Learn more about [custom metrics](../concepts/metrics/index.md).
+You can extend this with [metrics](../concepts/metrics/available_metrics/index.md) and more sophisticated evaluation logic. Learn more about [evaluation in Ragas](../concepts/evaluation/index.md).
 
-### Choosing Your Evaluator LLM
+### Choosing Your LLM Provider
 
-Your evaluation metrics need an LLM to score your application. Ragas works with **any LLM provider** through the `llm_factory`. Your quickstart project uses OpenAI by default, but you can easily swap to any provider by updating the LLM creation in your `evals.py`:
+Your quickstart project initializes the OpenAI LLM by default in the `_init_clients()` function. You can easily swap to any provider through the `llm_factory`:
 
 === "OpenAI"
     Set your OpenAI API key:
@@ -87,7 +89,7 @@ Your evaluation metrics need an LLM to score your application. Ragas works with 
     export OPENAI_API_KEY="your-openai-key"
     ```
 
-    In your `evals.py`:
+    In your `evals.py` `_init_clients()` function:
 
     ```python
     from ragas.llms import llm_factory
@@ -95,7 +97,7 @@ Your evaluation metrics need an LLM to score your application. Ragas works with 
     llm = llm_factory("gpt-4o")
     ```
 
-    The quickstart project already sets this up for you!
+    This is already set up in your quickstart project!
 
 === "Anthropic Claude"
     Set your Anthropic API key:
@@ -104,7 +106,7 @@ Your evaluation metrics need an LLM to score your application. Ragas works with 
     export ANTHROPIC_API_KEY="your-anthropic-key"
     ```
 
-    In your `evals.py`:
+    In your `evals.py` `_init_clients()` function:
 
     ```python
     from ragas.llms import llm_factory
@@ -112,14 +114,14 @@ Your evaluation metrics need an LLM to score your application. Ragas works with 
     llm = llm_factory("claude-3-5-sonnet-20241022", provider="anthropic")
     ```
 
-=== "Google Cloud"
+=== "Google Gemini"
     Set up your Google credentials:
 
     ```sh
     export GOOGLE_API_KEY="your-google-api-key"
     ```
 
-    In your `evals.py`:
+    In your `evals.py` `_init_clients()` function:
 
     ```python
     from ragas.llms import llm_factory
@@ -128,7 +130,7 @@ Your evaluation metrics need an LLM to score your application. Ragas works with 
     ```
 
 === "Local Models (Ollama)"
-    Install and run Ollama locally, then in your `evals.py`:
+    Install and run Ollama locally, then in your `evals.py` `_init_clients()` function:
 
     ```python
     from ragas.llms import llm_factory

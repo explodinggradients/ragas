@@ -11,7 +11,7 @@ nav:
   - "": index.md
   - 🚀 Get Started:
       - getstarted/index.md
-      # - Quick Start: getstarted/quickstart.md
+      - Quick Start: getstarted/quickstart.md
       - Installation: getstarted/install.md
       - Evaluate your first LLM App: getstarted/evals.md
       - Evaluate a simple RAG: getstarted/rag_eval.md
