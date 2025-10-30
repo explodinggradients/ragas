@@ -1,13 +1,14 @@
+import asyncio
 import csv
 import sys
 from datetime import datetime
 from pathlib import Path
 
-from evals import load_dataset, query_rag_system, evaluate_dataset
+from evals import load_dataset, run_experiment
 
 
 def save_results_to_csv(results, output_dir="evals/experiments"):
-    """Save evaluation results to a CSV file."""
+    """Save experiment results to a CSV file."""
     if not results:
         print("No results to save")
         return None
@@ -19,8 +20,13 @@ def save_results_to_csv(results, output_dir="evals/experiments"):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     csv_file = Path(output_dir) / f"evaluation_results_{timestamp}.csv"
 
+    # Extract fieldnames from first result
+    if results:
+        fieldnames = list(results[0].keys())
+    else:
+        fieldnames = []
+
     # Write results to CSV
-    fieldnames = ["index", "user_input", "response", "reference", "valid_response"]
     with open(csv_file, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -30,19 +36,21 @@ def save_results_to_csv(results, output_dir="evals/experiments"):
     return csv_file
 
 
-def main():
+async def main():
     """Run evaluation and export results to CSV."""
-    print("Running evaluation and exporting to CSV...\n")
+    print("Running experiment and exporting to CSV...\n")
 
     # Load test dataset
     dataset = load_dataset()
-    print(f"Loaded {len(dataset.samples)} test cases")
+    print(f"Loaded {len(list(dataset))} test cases")
 
-    # Query RAG system
-    dataset = query_rag_system(dataset)
+    # Run experiment with DiscreteMetric
+    print("Running experiments with DiscreteMetric evaluation...\n")
+    results = await run_experiment.arun(dataset)
 
-    # Evaluate using Ragas
-    results = evaluate_dataset(dataset)
+    # Convert results to list if needed
+    if hasattr(results, '__iter__') and not isinstance(results, list):
+        results = list(results)
 
     # Display results
     print("\n" + "=" * 60)
@@ -50,14 +58,15 @@ def main():
     print("=" * 60)
 
     if results:
-        passed = sum(1 for r in results if r["valid_response"])
-        total = len(results)
-        print(f"\nResults: {passed}/{total} responses valid")
+        print(f"\nTotal experiments: {len(results)}")
         print("\nDetails:")
-        for result in results:
-            print(f"  {result['index']}. {result['user_input']}")
-            print(f"     Response: {result['response']}")
-            print(f"     Reference: {result['reference']}")
+        for i, result in enumerate(results, 1):
+            question = result.get("question", "N/A")
+            response = result.get("response", "N/A")
+            score = result.get("score", "N/A")
+            print(f"  {i}. {question}")
+            print(f"     Response: {response[:100]}...")
+            print(f"     Score: {score}")
 
     # Save to CSV
     csv_file = save_results_to_csv(results)
@@ -70,4 +79,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
