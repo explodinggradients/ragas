@@ -483,32 +483,34 @@ def quickstart(
     from pathlib import Path
 
     # Define available templates with descriptions
+    # Currently only rag_eval is available and fully tested
     templates = {
         "rag_eval": {
             "name": "RAG Evaluation",
             "description": "Evaluate a RAG (Retrieval Augmented Generation) system with custom metrics",
             "source_path": "ragas_examples/rag_eval",
         },
-        "agent_evals": {
-            "name": "Agent Evaluation",
-            "description": "Evaluate AI agents with structured metrics and workflows",
-            "source_path": "ragas_examples/agent_evals",
-        },
-        "benchmark_llm": {
-            "name": "LLM Benchmarking",
-            "description": "Benchmark and compare different LLM models with datasets",
-            "source_path": "ragas_examples/benchmark_llm",
-        },
-        "prompt_evals": {
-            "name": "Prompt Evaluation",
-            "description": "Evaluate and compare different prompt variations",
-            "source_path": "ragas_examples/prompt_evals",
-        },
-        "workflow_eval": {
-            "name": "Workflow Evaluation",
-            "description": "Evaluate complex LLM workflows and pipelines",
-            "source_path": "ragas_examples/workflow_eval",
-        },
+        # Coming soon - not yet fully implemented:
+        # "agent_evals": {
+        #     "name": "Agent Evaluation",
+        #     "description": "Evaluate AI agents with structured metrics and workflows",
+        #     "source_path": "ragas_examples/agent_evals",
+        # },
+        # "benchmark_llm": {
+        #     "name": "LLM Benchmarking",
+        #     "description": "Benchmark and compare different LLM models with datasets",
+        #     "source_path": "ragas_examples/benchmark_llm",
+        # },
+        # "prompt_evals": {
+        #     "name": "Prompt Evaluation",
+        #     "description": "Evaluate and compare different prompt variations",
+        #     "source_path": "ragas_examples/prompt_evals",
+        # },
+        # "workflow_eval": {
+        #     "name": "Workflow Evaluation",
+        #     "description": "Evaluate complex LLM workflows and pipelines",
+        #     "source_path": "ragas_examples/workflow_eval",
+        # },
     }
 
     # If no template specified, list available templates
@@ -533,7 +535,7 @@ def quickstart(
         console.print("  ragas quickstart [template_name]")
         console.print("\n[bold]Example:[/bold]")
         console.print("  ragas quickstart rag_eval")
-        console.print("  ragas quickstart agent_evals --output-dir ./my-project\n")
+        console.print("  ragas quickstart rag_eval --output-dir ./my-project\n")
         return
 
     # Validate template name
