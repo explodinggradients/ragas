@@ -52,15 +52,18 @@ class TestFaithfulnessE2EMigration:
 
     @pytest.fixture
     def test_llm(self):
-        """Create a test LLM for legacy faithfulness evaluation."""
+        """Create a LangChain LLM for legacy faithfulness evaluation."""
         try:
-            from ragas.llms.base import llm_factory
+            from langchain_openai import ChatOpenAI
 
-            return llm_factory("gpt-4o")
+            from ragas.llms import LangchainLLMWrapper
+
+            langchain_llm = ChatOpenAI(model="gpt-4o", temperature=0.01)
+            return LangchainLLMWrapper(langchain_llm)
         except ImportError as e:
-            pytest.skip(f"LLM factory not available: {e}")
+            pytest.skip(f"LangChain LLM not available: {e}")
         except Exception as e:
-            pytest.skip(f"Could not create LLM (API key may be missing): {e}")
+            pytest.skip(f"Could not create LangChain LLM (API key may be missing): {e}")
 
     @pytest.fixture
     def test_modern_llm(self):
@@ -68,16 +71,12 @@ class TestFaithfulnessE2EMigration:
         try:
             import openai
 
-            from ragas.llms.base import instructor_llm_factory
+            from ragas.llms.base import llm_factory
 
             client = openai.AsyncOpenAI()
-            return instructor_llm_factory(
-                "openai",
-                model="gpt-4o",
-                client=client,
-            )
+            return llm_factory("gpt-4o", client=client)
         except ImportError as e:
-            pytest.skip(f"Instructor LLM factory not available: {e}")
+            pytest.skip(f"LLM factory not available: {e}")
         except Exception as e:
             pytest.skip(f"Could not create modern LLM (API key may be missing): {e}")
 
