@@ -35,12 +35,4 @@
 
     Algorithms for synthesizing data to test [RAG](test_data_generation/rag.md), [Agentic workflows](test_data_generation/agents.md)
 
--   :material-widgets:{ .lg .middle } [__Components Guides__](components/index.md)
-
-    ---
-
-    Discover the various components used within Ragas.
-    
-    Components like [Prompt Object](components/prompt.md), [Evaluation Dataset](components/eval_dataset.md) and [more..](components/index.md)
-
 </div>
