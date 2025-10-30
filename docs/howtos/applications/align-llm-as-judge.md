@@ -185,7 +185,7 @@ async def judge_experiment(
 ```python
 import os
 from openai import AsyncOpenAI
-from ragas.llms import instructor_llm_factory
+from ragas.llms import llm_factory
 from ragas_examples.judge_alignment import load_dataset
 
 # Load dataset
@@ -194,7 +194,7 @@ print(f"Dataset loaded with {len(dataset)} samples")
 
 # Initialize LLM client
 openai_client = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-llm = instructor_llm_factory("openai", model="gpt-4o-mini", client=openai_client)
+llm = llm_factory("gpt-4o-mini", client=openai_client)
 
 # Run the experiment
 results = await judge_experiment.arun(
