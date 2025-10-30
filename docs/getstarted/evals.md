@@ -31,7 +31,6 @@ rag_eval/
 ├── README.md             # Project documentation and setup instructions
 ├── pyproject.toml        # Project configuration for uv and pip
 ├── evals.py              # Your evaluation workflow
-├── export_csv.py         # Optional CSV export utility
 ├── rag.py                # Your RAG/LLM application
 ├── __init__.py           # Makes this a Python package
 └── evals/                # Evaluation artifacts
@@ -43,7 +42,6 @@ rag_eval/
 **Key files to focus on:**
 
 - **`evals.py`** - Your evaluation workflow with dataset loading and evaluation logic
-- **`export_csv.py`** - Optional standalone script to export results to CSV with timestamp
 - **`rag.py`** - Your RAG/LLM application code (query engine, retrieval, etc.)
 
 ## Understanding the Code
@@ -54,7 +52,7 @@ In your generated project's `evals.py` file, you'll see the main workflow patter
 2. **Query RAG System** - Get responses from your application
 3. **Evaluate Responses** - Validate responses against ground truth
 4. **Display Results** - Show evaluation summary in console
-5. **Export to CSV** - Optional: Save results with timestamp
+5. **Save Results** - Automatically saved to CSV in `evals/experiments/` directory
 
 The template provides modular functions you can customize:
 

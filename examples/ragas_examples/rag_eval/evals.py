@@ -81,6 +81,11 @@ async def main():
     print("Experiment completed successfully!")
     print("Experiment results:", experiment_results)
 
+    # Save experiment results to CSV
+    experiment_results.save()
+    csv_path = Path(".") / "experiments" / f"{experiment_results.name}.csv"
+    print(f"\nExperiment results saved to: {csv_path.resolve()}")
+
 
 if __name__ == "__main__":
     import asyncio

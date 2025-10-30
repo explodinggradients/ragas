@@ -62,7 +62,6 @@ rag_eval/
 ├── pyproject.toml         # Project configuration
 ├── rag.py                 # Your RAG application
 ├── evals.py               # Evaluation workflow
-├── export_csv.py          # CSV export utility
 ├── __init__.py            # Makes this a Python package
 └── evals/
     ├── datasets/          # Test data files
@@ -89,24 +88,7 @@ The evaluation will:
 - Query your RAG application with test questions
 - Evaluate responses
 - Display results in the console
-
-## Step 5: Export Results to CSV (Optional)
-
-To export your evaluation results to a CSV file with a timestamp:
-
-```sh
-uv run python export_csv.py
-```
-
-Or if you installed with `pip`:
-
-```sh
-python export_csv.py
-```
-
-This will:
-- Run the complete evaluation workflow
-- Save results to `evals/experiments/evaluation_results_YYYYMMDD_HHMMSS.csv`
+- Save results to CSV in the `evals/experiments/` directory
 
 ![](../_static/imgs/results/rag_eval_result.png)
 
