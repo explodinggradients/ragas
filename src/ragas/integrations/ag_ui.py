@@ -49,6 +49,7 @@ import logging
 import math
 import typing as t
 from typing import Any, Dict, List, Optional, Union
+import uuid
 
 from ragas.dataset_schema import EvaluationDataset, EvaluationResult, SingleTurnSample
 from ragas.evaluation import evaluate as ragas_evaluate
@@ -67,6 +68,7 @@ def _import_ag_ui_core():
     """Import AG-UI core types with helpful error message."""
     try:
         from ag_ui.core import (
+            BaseEvent,
             Event,
             EventType,
             MessagesSnapshotEvent,
@@ -80,6 +82,7 @@ def _import_ag_ui_core():
         )
 
         return (
+            BaseEvent,
             Event,
             EventType,
             MessagesSnapshotEvent,
@@ -161,6 +164,7 @@ class AGUIEventCollector:
         - Other events: Silently ignored
         """
         (
+            BaseEvent,
             Event,
             EventType,
             MessagesSnapshotEvent,
@@ -554,6 +558,7 @@ def convert_messages_snapshot(
     convert_to_ragas_messages : Convert streaming event sequences
     """
     (
+        BaseEvent,
         Event,
         EventType,
         MessagesSnapshotEvent,
@@ -582,6 +587,7 @@ async def _call_ag_ui_endpoint(
     thread_id: Optional[str] = None,
     agent_config: Optional[Dict[str, Any]] = None,
     timeout: float = 60.0,
+    extra_headers: Optional[Dict[str, str]] = None,
 ) -> List[Any]:
     """
     Call an AG-UI FastAPI endpoint and collect streaming events.
@@ -601,6 +607,9 @@ async def _call_ag_ui_endpoint(
         Optional agent configuration parameters.
     timeout : float, optional
         Request timeout in seconds (default: 60.0).
+    extra_headers : dict, optional
+        Optional extra HTTP headers to include in the request (default: None).
+        These will be merged with the default "Accept: text/event-stream" header.
 
     Returns
     -------
@@ -634,29 +643,45 @@ async def _call_ag_ui_endpoint(
 
     # Import AG-UI types
     try:
-        from ag_ui.core import Event, RunAgentInput
+        from ag_ui.core import Event, RunAgentInput, UserMessage
+        from pydantic import TypeAdapter
     except ImportError as e:
         raise ImportError(
             "AG-UI integration requires the ag-ui-protocol package. "
             "Install it with: pip install ag-ui-protocol"
         ) from e
 
+    # Create TypeAdapter for Event discriminated union
+    # This properly handles the union of all event types based on the 'type' discriminator
+    event_adapter = TypeAdapter(Event)
+
     # Prepare request payload
     payload = RunAgentInput(
-        user_input=user_input,
         thread_id=thread_id,
-        agent_config=agent_config or {},
+        run_id="run_"+ str(uuid.uuid4()),  # Generate a unique run ID
+        messages=[
+            UserMessage(id="1", role="user", content=user_input)
+        ],
+        state={},
+        tools=[],
+        context=[],
+        forwarded_props={}
     )
 
     # Collect events from SSE stream
-    events: List[Event] = []
+    events: List[Any] = []
 
-    async with httpx.AsyncClient(timeout=timeout) as client:
+    # Merge default headers with extra headers
+    headers = {"Accept": "text/event-stream"}
+    if extra_headers:
+        headers.update(extra_headers)
+
+    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
         async with client.stream(
             "POST",
             endpoint_url,
-            json=payload.model_dump(),
-            headers={"Accept": "text/event-stream"},
+            json=payload.model_dump(exclude_none=True),
+            headers=headers,
         ) as response:
             response.raise_for_status()
 
@@ -669,10 +694,10 @@ async def _call_ag_ui_endpoint(
                     json_data = line[6:]  # Remove "data: " prefix
 
                     try:
-                        # Parse JSON and convert to Event
+                        # Parse JSON and convert to Event using TypeAdapter
+                        # TypeAdapter properly handles discriminated unions based on 'type' field
                         event_dict = json.loads(json_data)
-                        # Let Pydantic handle event type discrimination
-                        event = Event.model_validate(event_dict)
+                        event = event_adapter.validate_python(event_dict)
                         events.append(event)
                     except (json.JSONDecodeError, ValueError) as e:
                         logger.warning(f"Failed to parse SSE event: {e}")
@@ -691,6 +716,8 @@ async def evaluate_ag_ui_agent(
     raise_exceptions: bool = False,
     show_progress: bool = True,
     timeout: float = 60.0,
+    evaluator_llm: Optional[Any] = None,
+    extra_headers: Optional[Dict[str, str]] = None,
 ) -> EvaluationResult:
     """
     Evaluate an AG-UI agent by calling its FastAPI endpoint with test queries.
@@ -721,6 +748,11 @@ async def evaluate_ag_ui_agent(
         Whether to show progress bar (default: True).
     timeout : float, optional
         HTTP request timeout in seconds (default: 60.0).
+    evaluator_llm : Any, optional
+        Optional LLM to use for evaluation metrics (default: None).
+    extra_headers : dict, optional
+        Optional extra HTTP headers to include in requests to the agent endpoint (default: None).
+        These will be merged with the default "Accept: text/event-stream" header.
 
     Returns
     -------
@@ -807,8 +839,10 @@ async def evaluate_ag_ui_agent(
             _call_ag_ui_endpoint,
             endpoint_url=endpoint_url,
             user_input=query,
+            thread_id=f"thread-eval-{i}",
+            agent_config=None,
             timeout=timeout,
-            name=f"query-{i}",
+            extra_headers=extra_headers,
         )
 
     # Collect results and convert to messages
@@ -829,7 +863,9 @@ async def evaluate_ag_ui_agent(
         # Convert AG-UI events to Ragas messages
         events = t.cast(List[Any], result)
         try:
+            logger.info(f"Processing query {i}, received {len(events)} events")
             messages = convert_to_ragas_messages(events, metadata=metadata)
+            logger.info(f"Converted to {len(messages)} messages")
 
             # Extract response text from AI messages
             response_text = ""
@@ -838,10 +874,13 @@ async def evaluate_ag_ui_agent(
             for msg in messages:
                 if isinstance(msg, AIMessage) and msg.content:
                     response_text += msg.content
+                    logger.debug(f"Found AI message with content: {msg.content[:100]}...")
                 # Tool results could contain retrieved context
                 elif isinstance(msg, ToolMessage) and msg.content:
                     context_list.append(msg.content)
+                    logger.debug(f"Found tool message with content: {msg.content[:100]}...")
 
+            logger.info(f"Query {i} - Response length: {len(response_text)}, Contexts: {len(context_list)}")
             responses.append(response_text or None)
             retrieved_contexts.append(context_list if context_list else None)
 
@@ -852,10 +891,24 @@ async def evaluate_ag_ui_agent(
             responses.append(None)
             retrieved_contexts.append(None)
 
-    # Populate dataset with agent responses
+    # Create new samples with all required fields populated
+    # This ensures the dataset schema includes response and retrieved_contexts
+    # Use empty string/list instead of None to ensure fields appear in schema
+    from ragas.dataset_schema import SingleTurnSampleOrMultiTurnSample
+
+    updated_samples: List[SingleTurnSample] = []
     for i, sample in enumerate(samples):
-        sample.response = responses[i]
-        sample.retrieved_contexts = retrieved_contexts[i]
+        updated_sample = SingleTurnSample(
+            user_input=sample.user_input,
+            response=responses[i] if responses[i] is not None else "",
+            retrieved_contexts=retrieved_contexts[i] if retrieved_contexts[i] is not None else [],
+            reference=sample.reference if hasattr(sample, 'reference') else None,
+            reference_contexts=sample.reference_contexts if hasattr(sample, 'reference_contexts') else None,
+        )
+        updated_samples.append(updated_sample)
+
+    # Recreate dataset with updated samples to ensure schema includes all fields
+    dataset = EvaluationDataset(samples=t.cast(List[SingleTurnSampleOrMultiTurnSample], updated_samples))
 
     # Run evaluation with metrics
     evaluation_result = ragas_evaluate(
@@ -865,6 +918,7 @@ async def evaluate_ag_ui_agent(
         show_progress=show_progress,
         run_config=run_config or RunConfig(),
         return_executor=False,
+        llm=evaluator_llm,
     )
 
     # Type assertion since return_executor=False guarantees EvaluationResult
