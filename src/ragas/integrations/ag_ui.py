@@ -6,7 +6,9 @@ protocol agents. It supports converting AG-UI streaming events to Ragas message
 format and evaluating AG-UI FastAPI endpoints.
 
 AG-UI is an event-based protocol for agent-to-UI communication that uses typed
-events for streaming text messages, tool calls, and state synchronization.
+events for streaming text messages, tool calls, and state synchronization. This
+integration supports both streaming events (Start-Content-End triads) and
+convenience chunk events (TextMessageChunk, ToolCallChunk) for complete messages.
 
 Functions:
     convert_to_ragas_messages: Convert AG-UI event sequences to Ragas messages
@@ -72,10 +74,12 @@ def _import_ag_ui_core():
             Event,
             EventType,
             MessagesSnapshotEvent,
+            TextMessageChunkEvent,
             TextMessageContentEvent,
             TextMessageEndEvent,
             TextMessageStartEvent,
             ToolCallArgsEvent,
+            ToolCallChunkEvent,
             ToolCallEndEvent,
             ToolCallResultEvent,
             ToolCallStartEvent,
@@ -89,10 +93,12 @@ def _import_ag_ui_core():
             TextMessageStartEvent,
             TextMessageContentEvent,
             TextMessageEndEvent,
+            TextMessageChunkEvent,
             ToolCallStartEvent,
             ToolCallArgsEvent,
             ToolCallEndEvent,
             ToolCallResultEvent,
+            ToolCallChunkEvent,
         )
     except ImportError as e:
         raise ImportError(
@@ -106,8 +112,10 @@ class AGUIEventCollector:
     Collects and reconstructs complete messages from streaming AG-UI events.
 
     AG-UI uses an event-based streaming protocol where messages are delivered
-    incrementally through Start->Content->End event sequences. This collector
-    accumulates these events and reconstructs complete Ragas messages.
+    incrementally through Start->Content->End event sequences (triads). This
+    collector accumulates these events and reconstructs complete Ragas messages.
+    It also supports convenience chunk events (TextMessageChunk, ToolCallChunk)
+    for complete messages delivered in a single event.
 
     Attributes
     ----------
@@ -159,8 +167,8 @@ class AGUIEventCollector:
         -----
         This method handles different event types:
         - Lifecycle events (RUN_STARTED, STEP_STARTED): Update context
-        - Text message events: Accumulate and reconstruct messages
-        - Tool call events: Reconstruct tool calls and results
+        - Text message events: Accumulate and reconstruct messages (streaming triads or chunks)
+        - Tool call events: Reconstruct tool calls and results (streaming triads or chunks)
         - Other events: Silently ignored
         """
         (
@@ -171,10 +179,12 @@ class AGUIEventCollector:
             TextMessageStartEvent,
             TextMessageContentEvent,
             TextMessageEndEvent,
+            TextMessageChunkEvent,
             ToolCallStartEvent,
             ToolCallArgsEvent,
             ToolCallEndEvent,
             ToolCallResultEvent,
+            ToolCallChunkEvent,
         ) = _import_ag_ui_core()
 
         event_type = event.type
@@ -196,6 +206,8 @@ class AGUIEventCollector:
             self._handle_text_message_content(event)
         elif event_type == EventType.TEXT_MESSAGE_END:
             self._handle_text_message_end(event)
+        elif event_type == EventType.TEXT_MESSAGE_CHUNK:
+            self._handle_text_message_chunk(event)
 
         # Handle tool call events
         elif event_type == EventType.TOOL_CALL_START:
@@ -206,6 +218,8 @@ class AGUIEventCollector:
             self._handle_tool_call_end(event)
         elif event_type == EventType.TOOL_CALL_RESULT:
             self._handle_tool_call_result(event)
+        elif event_type == EventType.TOOL_CALL_CHUNK:
+            self._handle_tool_call_chunk(event)
 
         # MessagesSnapshot provides complete history
         elif event_type == EventType.MESSAGES_SNAPSHOT:
@@ -340,6 +354,93 @@ class AGUIEventCollector:
                 metadata["thread_id"] = self._current_thread_id
 
         self.messages.append(ToolMessage(content=event.content, metadata=metadata))
+
+    def _handle_text_message_chunk(self, event: Any) -> None:
+        """
+        Process a TextMessageChunkEvent - a convenience event combining start, content, and end.
+
+        This handler processes complete messages available at once, bypassing the
+        Start-Content-End streaming sequence.
+        """
+        # Extract message data from chunk event
+        message_id = getattr(event, "message_id", None)
+        role = getattr(event, "role", "assistant")
+        content = getattr(event, "delta", "")
+
+        # Build metadata if requested
+        metadata = None
+        if self.include_metadata:
+            metadata = {
+                "timestamp": event.timestamp,
+            }
+            if message_id:
+                metadata["message_id"] = message_id
+            if self._current_run_id:
+                metadata["run_id"] = self._current_run_id
+            if self._current_thread_id:
+                metadata["thread_id"] = self._current_thread_id
+            if self._current_step:
+                metadata["step_name"] = self._current_step
+
+        # Convert to appropriate Ragas message type
+        if role == "assistant":
+            # Check if there are completed tool calls for this message
+            tool_calls = None
+            if self._completed_tool_calls:
+                tool_calls = list(self._completed_tool_calls.values())
+                self._completed_tool_calls.clear()
+
+            self.messages.append(
+                AIMessage(content=content, tool_calls=tool_calls, metadata=metadata)
+            )
+        elif role == "user":
+            self.messages.append(HumanMessage(content=content, metadata=metadata))
+        else:
+            logger.warning(f"Unexpected message role in chunk event: {role}")
+
+    def _handle_tool_call_chunk(self, event: Any) -> None:
+        """
+        Process a ToolCallChunkEvent - a convenience event combining tool call specification.
+
+        This handler processes complete tool calls available at once, bypassing the
+        Start-Args-End streaming sequence.
+        """
+        # Extract tool call data from chunk event
+        tool_call_id = getattr(event, "tool_call_id", None)
+        tool_call_name = getattr(event, "tool_call_name", None)
+        args_delta = getattr(event, "delta", None)
+
+        if not tool_call_name:
+            logger.warning("Received ToolCallChunk without tool_call_name")
+            return
+
+        # Parse tool arguments from delta if provided
+        args = {}
+        if args_delta:
+            if isinstance(args_delta, str):
+                try:
+                    args = json.loads(args_delta)
+                except json.JSONDecodeError:
+                    logger.error(
+                        f"Failed to parse tool call arguments for {tool_call_name}: {args_delta}"
+                    )
+                    args = {"raw_args": args_delta}
+            elif isinstance(args_delta, dict):
+                args = args_delta
+            else:
+                args = {"raw_args": str(args_delta)}
+
+        # Store completed tool call for association with next AI message
+        if tool_call_id:
+            self._completed_tool_calls[tool_call_id] = ToolCall(
+                name=tool_call_name, args=args
+            )
+        else:
+            # If no ID provided, generate one
+            temp_id = f"chunk_{len(self._completed_tool_calls)}"
+            self._completed_tool_calls[temp_id] = ToolCall(
+                name=tool_call_name, args=args
+            )
 
     def _handle_messages_snapshot(self, event: Any) -> None:
         """
@@ -565,10 +666,12 @@ def convert_messages_snapshot(
         TextMessageStartEvent,
         TextMessageContentEvent,
         TextMessageEndEvent,
+        TextMessageChunkEvent,
         ToolCallStartEvent,
         ToolCallArgsEvent,
         ToolCallEndEvent,
         ToolCallResultEvent,
+        ToolCallChunkEvent,
     ) = _import_ag_ui_core()
 
     if not isinstance(snapshot_event, MessagesSnapshotEvent):
@@ -657,10 +760,10 @@ async def _call_ag_ui_endpoint(
 
     # Prepare request payload
     payload = RunAgentInput(
-        thread_id=thread_id,
-        run_id="run_"+ str(uuid.uuid4()),  # Generate a unique run ID
+        thread_id=thread_id or f"thread_{uuid.uuid4()}",  # Generate thread ID if not provided
+        run_id=f"run_{uuid.uuid4()}",  # Generate a unique run ID
         messages=[
-            UserMessage(id="1", role="user", content=user_input)
+            UserMessage(id="1", content=user_input)
         ],
         state={},
         tools=[],
@@ -891,24 +994,11 @@ async def evaluate_ag_ui_agent(
             responses.append(None)
             retrieved_contexts.append(None)
 
-    # Create new samples with all required fields populated
-    # This ensures the dataset schema includes response and retrieved_contexts
-    # Use empty string/list instead of None to ensure fields appear in schema
-    from ragas.dataset_schema import SingleTurnSampleOrMultiTurnSample
-
-    updated_samples: List[SingleTurnSample] = []
+    # Update samples in place with responses and retrieved_contexts
+    # This ensures the dataset includes all fields needed for evaluation
     for i, sample in enumerate(samples):
-        updated_sample = SingleTurnSample(
-            user_input=sample.user_input,
-            response=responses[i] if responses[i] is not None else "",
-            retrieved_contexts=retrieved_contexts[i] if retrieved_contexts[i] is not None else [],
-            reference=sample.reference if hasattr(sample, 'reference') else None,
-            reference_contexts=sample.reference_contexts if hasattr(sample, 'reference_contexts') else None,
-        )
-        updated_samples.append(updated_sample)
-
-    # Recreate dataset with updated samples to ensure schema includes all fields
-    dataset = EvaluationDataset(samples=t.cast(List[SingleTurnSampleOrMultiTurnSample], updated_samples))
+        sample.response = responses[i] if responses[i] is not None else ""
+        sample.retrieved_contexts = retrieved_contexts[i] if retrieved_contexts[i] is not None else []
 
     # Run evaluation with metrics
     evaluation_result = ragas_evaluate(
