@@ -836,3 +836,253 @@ async def test_evaluate_ag_ui_agent_handles_failures():
     assert dataset.samples[0].response == "Success response"
     assert dataset.samples[1].response == ""
     assert dataset.samples[1].retrieved_contexts == []
+
+
+# ============================================================================
+# Multi-turn evaluation tests
+# ============================================================================
+
+
+def test_convert_ragas_messages_to_ag_ui():
+    """Test converting Ragas messages to AG-UI format."""
+    from ragas.integrations.ag_ui import _convert_ragas_messages_to_ag_ui
+    from ragas.messages import ToolCall
+
+    messages = [
+        HumanMessage(content="What's the weather?"),
+        AIMessage(
+            content="Let me check",
+            tool_calls=[ToolCall(name="get-weather", args={"location": "SF"})],
+        ),
+        HumanMessage(content="Thanks!"),
+    ]
+
+    ag_ui_messages = _convert_ragas_messages_to_ag_ui(messages)
+
+    assert len(ag_ui_messages) == 3
+
+    # Check UserMessage
+    assert ag_ui_messages[0].id == "1"
+    assert ag_ui_messages[0].content == "What's the weather?"
+
+    # Check AssistantMessage with tool calls
+    assert ag_ui_messages[1].id == "2"
+    assert ag_ui_messages[1].content == "Let me check"
+    assert ag_ui_messages[1].tool_calls is not None
+    assert len(ag_ui_messages[1].tool_calls) == 1
+    assert ag_ui_messages[1].tool_calls[0].function.name == "get-weather"
+    assert '"location": "SF"' in ag_ui_messages[1].tool_calls[0].function.arguments
+
+    # Check second UserMessage
+    assert ag_ui_messages[2].id == "3"
+    assert ag_ui_messages[2].content == "Thanks!"
+
+
+@pytest.mark.asyncio
+async def test_evaluate_multi_turn_basic():
+    """Test basic multi-turn evaluation."""
+    from ragas.dataset_schema import EvaluationDataset, MultiTurnSample
+    from ragas.integrations.ag_ui import evaluate_ag_ui_agent
+    from ragas.messages import ToolCall
+    from unittest.mock import MagicMock, patch
+
+    # Create multi-turn sample
+    sample = MultiTurnSample(
+        user_input=[HumanMessage(content="What's the weather in SF?")],
+        reference_tool_calls=[
+            ToolCall(name="get-weather", args={"location": "SF"})
+        ],
+    )
+
+    dataset = EvaluationDataset(samples=[sample])
+
+    # Mock events that agent would return
+    # Note: Tool calls are completed before message, so they attach to the next AIMessage
+    agent_events = [
+        RunStartedEvent(run_id="run-1", thread_id="thread-1"),
+        ToolCallStartEvent(
+            tool_call_id="tc-1",
+            tool_call_name="get-weather",
+            parent_message_id="msg-1",
+        ),
+        ToolCallArgsEvent(tool_call_id="tc-1", delta='{"location": "SF"}'),
+        ToolCallEndEvent(tool_call_id="tc-1"),
+        TextMessageStartEvent(message_id="msg-1", role="assistant"),
+        TextMessageContentEvent(message_id="msg-1", delta="Let me check the weather"),
+        TextMessageEndEvent(message_id="msg-1"),
+        ToolCallResultEvent(
+            tool_call_id="tc-1",
+            message_id="result-1",
+            content="Temperature: 72°F",
+        ),
+        RunFinishedEvent(run_id="run-1", thread_id="thread-1"),
+    ]
+
+    mock_result = MagicMock()
+
+    # Mock Executor
+    class MockExecutor:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def submit(self, func, *args, **kwargs):
+            pass
+
+        def results(self):
+            return [agent_events]
+
+    with patch(
+        "ragas.integrations.ag_ui.Executor",
+        MockExecutor,
+    ), patch(
+        "ragas.integrations.ag_ui.ragas_evaluate",
+        return_value=mock_result,
+    ):
+        await evaluate_ag_ui_agent(
+            endpoint_url="http://localhost:8000/agent",
+            dataset=dataset,
+            metrics=[],
+        )
+
+    # Verify that agent responses were appended to conversation
+    assert len(sample.user_input) > 1  # Should have original + agent responses
+
+    # Check that we have AIMessage and ToolMessage appended
+    ai_messages = [msg for msg in sample.user_input if isinstance(msg, AIMessage)]
+    tool_messages = [msg for msg in sample.user_input if isinstance(msg, ToolMessage)]
+
+    assert len(ai_messages) >= 1  # At least one AI message
+    assert len(tool_messages) >= 1  # At least one tool message
+
+    # Verify tool calls in AIMessage (tool calls completed before message, so attached to it)
+    assert ai_messages[0].tool_calls is not None
+    assert len(ai_messages[0].tool_calls) > 0
+    assert ai_messages[0].tool_calls[0].name == "get-weather"
+
+
+@pytest.mark.asyncio
+async def test_evaluate_multi_turn_with_existing_conversation():
+    """Test multi-turn evaluation with pre-existing conversation."""
+    from ragas.dataset_schema import EvaluationDataset, MultiTurnSample
+    from ragas.integrations.ag_ui import evaluate_ag_ui_agent
+    from ragas.messages import ToolCall
+    from unittest.mock import MagicMock, patch
+
+    # Create sample with existing conversation
+    sample = MultiTurnSample(
+        user_input=[
+            HumanMessage(content="Hello"),
+            AIMessage(content="Hi there!"),
+            HumanMessage(content="What's the weather in SF?"),
+        ],
+        reference_tool_calls=[
+            ToolCall(name="get-weather", args={"location": "SF"})
+        ],
+    )
+
+    original_length = len(sample.user_input)
+    dataset = EvaluationDataset(samples=[sample])
+
+    # Mock agent events
+    agent_events = [
+        TextMessageStartEvent(message_id="msg-1", role="assistant"),
+        TextMessageContentEvent(message_id="msg-1", delta="Let me check the weather"),
+        TextMessageEndEvent(message_id="msg-1"),
+        ToolCallStartEvent(
+            tool_call_id="tc-1",
+            tool_call_name="get-weather",
+            parent_message_id="msg-1",
+        ),
+        ToolCallArgsEvent(tool_call_id="tc-1", delta='{"location": "SF"}'),
+        ToolCallEndEvent(tool_call_id="tc-1"),
+    ]
+
+    mock_result = MagicMock()
+
+    class MockExecutor:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def submit(self, func, *args, **kwargs):
+            pass
+
+        def results(self):
+            return [agent_events]
+
+    with patch(
+        "ragas.integrations.ag_ui.Executor",
+        MockExecutor,
+    ), patch(
+        "ragas.integrations.ag_ui.ragas_evaluate",
+        return_value=mock_result,
+    ):
+        await evaluate_ag_ui_agent(
+            endpoint_url="http://localhost:8000/agent",
+            dataset=dataset,
+            metrics=[],
+        )
+
+    # Verify conversation was extended, not replaced
+    assert len(sample.user_input) > original_length
+
+    # First 3 messages should be unchanged
+    assert isinstance(sample.user_input[0], HumanMessage)
+    assert sample.user_input[0].content == "Hello"
+    assert isinstance(sample.user_input[1], AIMessage)
+    assert sample.user_input[1].content == "Hi there!"
+    assert isinstance(sample.user_input[2], HumanMessage)
+    assert sample.user_input[2].content == "What's the weather in SF?"
+
+    # New messages should be appended
+    new_messages = sample.user_input[original_length:]
+    assert len(new_messages) > 0
+    assert any(isinstance(msg, AIMessage) for msg in new_messages)
+
+
+@pytest.mark.asyncio
+async def test_evaluate_multi_turn_failed_query():
+    """Test multi-turn evaluation handles failed queries correctly."""
+    from ragas.dataset_schema import EvaluationDataset, MultiTurnSample
+    from ragas.integrations.ag_ui import evaluate_ag_ui_agent
+    from unittest.mock import MagicMock, patch
+    import math
+
+    # Create multi-turn sample
+    sample = MultiTurnSample(
+        user_input=[HumanMessage(content="Test query")],
+        reference_tool_calls=[],
+    )
+
+    original_length = len(sample.user_input)
+    dataset = EvaluationDataset(samples=[sample])
+
+    mock_result = MagicMock()
+
+    class MockExecutor:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def submit(self, func, *args, **kwargs):
+            pass
+
+        def results(self):
+            # Return NaN to simulate failure
+            return [math.nan]
+
+    with patch(
+        "ragas.integrations.ag_ui.Executor",
+        MockExecutor,
+    ), patch(
+        "ragas.integrations.ag_ui.ragas_evaluate",
+        return_value=mock_result,
+    ):
+        await evaluate_ag_ui_agent(
+            endpoint_url="http://localhost:8000/agent",
+            dataset=dataset,
+            metrics=[],
+        )
+
+    # Conversation should remain unchanged after failure
+    assert len(sample.user_input) == original_length
+    assert isinstance(sample.user_input[0], HumanMessage)
+    assert sample.user_input[0].content == "Test query"
