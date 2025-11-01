@@ -179,6 +179,38 @@ class AGUIEventCollector:
         self._current_thread_id: Optional[str] = None
         self._current_step: Optional[str] = None
 
+        # Cache AG-UI imports to avoid repeated import calls
+        (
+            self._BaseEvent,
+            self._Event,
+            self._EventType,
+            self._MessagesSnapshotEvent,
+            self._TextMessageStartEvent,
+            self._TextMessageContentEvent,
+            self._TextMessageEndEvent,
+            self._TextMessageChunkEvent,
+            self._ToolCallStartEvent,
+            self._ToolCallArgsEvent,
+            self._ToolCallEndEvent,
+            self._ToolCallResultEvent,
+            self._ToolCallChunkEvent,
+        ) = _import_ag_ui_core()
+
+    def _get_pending_tool_calls(self) -> Optional[List[ToolCall]]:
+        """
+        Retrieve and clear any completed tool calls waiting to be attached to a message.
+
+        Returns
+        -------
+        Optional[List[ToolCall]]
+            List of pending tool calls if any exist, None otherwise.
+        """
+        if self._completed_tool_calls:
+            tool_calls = list(self._completed_tool_calls.values())
+            self._completed_tool_calls.clear()
+            return tool_calls
+        return None
+
     def process_event(self, event: Any) -> None:
         """
         Process a single AG-UI event and update internal state.
@@ -196,21 +228,8 @@ class AGUIEventCollector:
         - Tool call events: Reconstruct tool calls and results (streaming triads or chunks)
         - Other events: Silently ignored
         """
-        (
-            BaseEvent,
-            Event,
-            EventType,
-            MessagesSnapshotEvent,
-            TextMessageStartEvent,
-            TextMessageContentEvent,
-            TextMessageEndEvent,
-            TextMessageChunkEvent,
-            ToolCallStartEvent,
-            ToolCallArgsEvent,
-            ToolCallEndEvent,
-            ToolCallResultEvent,
-            ToolCallChunkEvent,
-        ) = _import_ag_ui_core()
+        # Use cached AG-UI imports
+        EventType = self._EventType
 
         event_type = event.type
 
@@ -304,11 +323,7 @@ class AGUIEventCollector:
         if role == "assistant":
             # Check if there are completed tool calls for this message
             # Tool calls are associated by being emitted before the message end
-            tool_calls = None
-            if self._completed_tool_calls:
-                # Tool calls are accumulated before message ends
-                tool_calls = list(self._completed_tool_calls.values())
-                self._completed_tool_calls.clear()
+            tool_calls = self._get_pending_tool_calls()
 
             self.messages.append(
                 AIMessage(content=content, tool_calls=tool_calls, metadata=metadata)
@@ -485,10 +500,7 @@ class AGUIEventCollector:
         # Convert to appropriate Ragas message type
         if role == "assistant":
             # Check if there are completed tool calls for this message
-            tool_calls = None
-            if self._completed_tool_calls:
-                tool_calls = list(self._completed_tool_calls.values())
-                self._completed_tool_calls.clear()
+            tool_calls = self._get_pending_tool_calls()
 
             self.messages.append(
                 AIMessage(content=content, tool_calls=tool_calls, metadata=metadata)
@@ -766,28 +778,13 @@ def convert_messages_snapshot(
     --------
     convert_to_ragas_messages : Convert streaming event sequences
     """
-    (
-        BaseEvent,
-        Event,
-        EventType,
-        MessagesSnapshotEvent,
-        TextMessageStartEvent,
-        TextMessageContentEvent,
-        TextMessageEndEvent,
-        TextMessageChunkEvent,
-        ToolCallStartEvent,
-        ToolCallArgsEvent,
-        ToolCallEndEvent,
-        ToolCallResultEvent,
-        ToolCallChunkEvent,
-    ) = _import_ag_ui_core()
+    collector = AGUIEventCollector(metadata=metadata)
 
-    if not isinstance(snapshot_event, MessagesSnapshotEvent):
+    # Type check using cached import from collector
+    if not isinstance(snapshot_event, collector._MessagesSnapshotEvent):
         raise TypeError(
             f"Expected MessagesSnapshotEvent, got {type(snapshot_event).__name__}"
         )
-
-    collector = AGUIEventCollector(metadata=metadata)
     collector._handle_messages_snapshot(snapshot_event)
     return collector.get_messages()
 

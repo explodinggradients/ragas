@@ -290,16 +290,72 @@ def test_tool_call_argument_parsing_error(caplog):
     events = [
         TextMessageStartEvent(message_id="msg-1", role="assistant"),
         TextMessageContentEvent(message_id="msg-1", delta="Using tool"),
-        TextMessageEndEvent(message_id="msg-1"),
         ToolCallStartEvent(tool_call_id="tc-1", tool_call_name="broken_tool"),
         ToolCallArgsEvent(tool_call_id="tc-1", delta="{invalid json"),
         ToolCallEndEvent(tool_call_id="tc-1"),
+        TextMessageEndEvent(message_id="msg-1"),  # Message ends AFTER tool call
     ]
 
     messages = convert_to_ragas_messages(events)
 
-    # Should still create message, but tool call might have raw_args
+    # Should still create message with tool call containing raw_args
     assert len(messages) == 1
+    assert isinstance(messages[0], AIMessage)
+    assert messages[0].tool_calls is not None
+    assert len(messages[0].tool_calls) == 1
+    assert messages[0].tool_calls[0].name == "broken_tool"
+    # Invalid JSON should be stored in raw_args
+    assert "raw_args" in messages[0].tool_calls[0].args
+    assert messages[0].tool_calls[0].args["raw_args"] == "{invalid json"
+
+
+def test_tool_call_result_retroactive_attachment():
+    """
+    Tests that ToolCallResultEvent correctly finds the previous AIMessage
+    and attaches the tool call specification if it was missing.
+
+    This can happen when ToolCallEndEvent arrives before TextMessageEndEvent,
+    causing tool_calls to be cleared from _completed_tool_calls before the
+    AIMessage is created.
+    """
+    from ragas.integrations.ag_ui import convert_to_ragas_messages
+
+    # Scenario: TextMessageEnd arrives AFTER ToolCallEnd, so the tool call
+    # is already cleared from _completed_tool_calls when the AIMessage is created
+    events = [
+        # AI message starts
+        TextMessageStartEvent(message_id="msg-1", role="assistant"),
+        TextMessageContentEvent(message_id="msg-1", delta="Let me check that"),
+        # Tool call happens
+        ToolCallStartEvent(tool_call_id="tc-1", tool_call_name="search_tool"),
+        ToolCallArgsEvent(tool_call_id="tc-1", delta='{"query": "weather"}'),
+        ToolCallEndEvent(tool_call_id="tc-1"),
+        # Message ends AFTER tool call ends
+        TextMessageEndEvent(message_id="msg-1"),
+        # Tool result arrives
+        ToolCallResultEvent(
+            tool_call_id="tc-1", message_id="result-1", content="Sunny, 75F"
+        ),
+    ]
+
+    messages = convert_to_ragas_messages(events)
+
+    # Should have AI message with tool call, then Tool message
+    assert len(messages) == 2
+    assert isinstance(messages[0], AIMessage)
+    assert isinstance(messages[1], ToolMessage)
+
+    # The AIMessage should have the tool_calls attached (either from normal flow
+    # or retroactively attached by _handle_tool_call_result)
+    assert messages[0].tool_calls is not None
+    assert len(messages[0].tool_calls) >= 1
+    # At least one tool call should be present (could be synthetic if needed)
+    assert any(
+        tc.name in ["search_tool", "unknown_tool"] for tc in messages[0].tool_calls
+    )
+
+    # Tool message should contain the result
+    assert messages[1].content == "Sunny, 75F"
 
 
 def test_event_collector_reuse(basic_text_message_events):
@@ -373,7 +429,7 @@ def test_role_mapping():
     from ragas.integrations.ag_ui import convert_to_ragas_messages
 
     events = [
-        TextMessageStartEvent(message_id="msg-1", role="assistant"),
+        TextMessageStartEvent(message_id="msg-1", role="user"),
         TextMessageContentEvent(message_id="msg-1", delta="User message"),
         TextMessageEndEvent(message_id="msg-1"),
         TextMessageStartEvent(message_id="msg-2", role="assistant"),
@@ -384,8 +440,10 @@ def test_role_mapping():
     messages = convert_to_ragas_messages(events)
 
     assert len(messages) == 2
-    assert isinstance(messages[0], AIMessage)
+    assert isinstance(messages[0], HumanMessage)
+    assert messages[0].content == "User message"
     assert isinstance(messages[1], AIMessage)
+    assert messages[1].content == "Assistant message"
 
 
 def test_complex_conversation_flow():
@@ -395,7 +453,7 @@ def test_complex_conversation_flow():
     events = [
         RunStartedEvent(run_id="run-1", thread_id="thread-1"),
         # User asks
-        TextMessageStartEvent(message_id="msg-1", role="assistant"),
+        TextMessageStartEvent(message_id="msg-1", role="user"),
         TextMessageContentEvent(message_id="msg-1", delta="What's the weather?"),
         TextMessageEndEvent(message_id="msg-1"),
         # Assistant responds and calls tool
@@ -412,20 +470,20 @@ def test_complex_conversation_flow():
         TextMessageContentEvent(message_id="msg-3", delta="It's sunny and 70F"),
         TextMessageEndEvent(message_id="msg-3"),
         # User thanks
-        TextMessageStartEvent(message_id="msg-4", role="assistant"),
+        TextMessageStartEvent(message_id="msg-4", role="user"),
         TextMessageContentEvent(message_id="msg-4", delta="Thanks!"),
         TextMessageEndEvent(message_id="msg-4"),
     ]
 
     messages = convert_to_ragas_messages(events, metadata=True)
 
-    # Should have: AI, AI, Tool, AI, AI
+    # Should have: Human, AI (with tool_calls), Tool, AI, Human
     assert len(messages) == 5
-    assert isinstance(messages[0], AIMessage)
+    assert isinstance(messages[0], HumanMessage)
     assert isinstance(messages[1], AIMessage)
     assert isinstance(messages[2], ToolMessage)
     assert isinstance(messages[3], AIMessage)
-    assert isinstance(messages[4], AIMessage)
+    assert isinstance(messages[4], HumanMessage)
 
     # Check content
     assert "weather" in messages[0].content.lower()
@@ -475,6 +533,46 @@ def test_tool_call_chunk():
     assert len(messages[0].tool_calls) == 1
     assert messages[0].tool_calls[0].name == "search"
     assert messages[0].tool_calls[0].args == {"query": "test"}
+
+
+def test_tool_call_chunk_with_dict_delta():
+    """
+    Test that _handle_tool_call_chunk can handle delta as dict.
+
+    While the AG-UI protocol specifies delta as a string, the handler code
+    defensively handles dict deltas. We test this by directly calling the
+    handler with a mock event object.
+    """
+    from ragas.integrations.ag_ui import AGUIEventCollector
+
+    collector = AGUIEventCollector()
+
+    # Create a mock event with dict delta (bypassing Pydantic validation)
+    class MockToolCallChunkEvent:
+        type = "TOOL_CALL_CHUNK"
+        tool_call_id = "tc-1"
+        tool_call_name = "calculate"
+        delta = {"operation": "add", "values": [1, 2, 3]}  # dict instead of string
+        timestamp = "2025-01-01T00:00:00Z"
+
+    # Process the mock event directly
+    collector._handle_tool_call_chunk(MockToolCallChunkEvent())
+
+    # Now add an AI message to pick up the tool call
+    from ag_ui.core import TextMessageStartEvent, TextMessageContentEvent, TextMessageEndEvent
+
+    collector.process_event(TextMessageStartEvent(message_id="msg-1", role="assistant"))
+    collector.process_event(TextMessageContentEvent(message_id="msg-1", delta="Result is 6"))
+    collector.process_event(TextMessageEndEvent(message_id="msg-1"))
+
+    messages = collector.get_messages()
+
+    assert len(messages) == 1
+    assert isinstance(messages[0], AIMessage)
+    assert messages[0].tool_calls is not None
+    assert len(messages[0].tool_calls) == 1
+    assert messages[0].tool_calls[0].name == "calculate"
+    assert messages[0].tool_calls[0].args == {"operation": "add", "values": [1, 2, 3]}
 
 
 # ===== FastAPI Integration Tests =====
