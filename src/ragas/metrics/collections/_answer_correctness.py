@@ -8,10 +8,8 @@ from pydantic import BaseModel
 
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
-from ragas.prompt.metrics.answer_correctness import (
-    correctness_classifier_prompt,
-    statement_generator_prompt,
-)
+from ragas.prompt.metrics.answer_correctness import correctness_classifier_prompt
+from ragas.prompt.metrics.common import statement_generator_prompt
 
 if t.TYPE_CHECKING:
     from ragas.embeddings.base import BaseRagasEmbedding

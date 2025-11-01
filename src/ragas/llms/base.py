@@ -134,13 +134,14 @@ class LangchainLLMWrapper(BaseRagasLLM):
     - generate_text: for generating text from a given PromptValue
     - agenerate_text: for generating text from a given PromptValue asynchronously
 
-    .. deprecated::
-        LangchainLLMWrapper is deprecated and will be removed in a future version.
-        Use llm_factory instead:
-        from openai import OpenAI
-        from ragas.llms import llm_factory
-        client = OpenAI(api_key="...")
-        llm = llm_factory("gpt-4o-mini", client=client)
+    # TODO: Revisit deprecation warning
+    # .. deprecated::
+    #     LangchainLLMWrapper is deprecated and will be removed in a future version.
+    #     Use llm_factory instead:
+    #     from openai import OpenAI
+    #     from ragas.llms import llm_factory
+    #     client = OpenAI(api_key="...")
+    #     llm = llm_factory("gpt-4o-mini", client=client)
     """
 
     def __init__(
@@ -342,13 +343,14 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
     """
     A Adaptor for LlamaIndex LLMs
 
-    .. deprecated::
-        LlamaIndexLLMWrapper is deprecated and will be removed in a future version.
-        Use llm_factory instead:
-        from openai import OpenAI
-        from ragas.llms import llm_factory
-        client = OpenAI(api_key="...")
-        llm = llm_factory("gpt-4o-mini", client=client)
+    # TODO: Revisit deprecation warning
+    # .. deprecated::
+    #     LlamaIndexLLMWrapper is deprecated and will be removed in a future version.
+    #     Use llm_factory instead:
+    #     from openai import OpenAI
+    #     from ragas.llms import llm_factory
+    #     client = OpenAI(api_key="...")
+    #     llm = llm_factory("gpt-4o-mini", client=client)
     """
 
     def __init__(

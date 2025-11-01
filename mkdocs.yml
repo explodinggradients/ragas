@@ -11,6 +11,7 @@ nav:
   - "": index.md
   - 🚀 Get Started:
       - getstarted/index.md
+      - Quick Start: getstarted/quickstart.md
       - Installation: getstarted/install.md
       - Evaluate your first LLM App: getstarted/evals.md
       - Evaluate a simple RAG: getstarted/rag_eval.md
@@ -254,7 +255,8 @@ extra:
     provider: google
     property: !ENV GOOGLE_ANALYTICS_KEY
 plugins:
-  - social
+  - social:
+      enabled: !ENV [MKDOCS_CI, true]
   - search
   - git-revision-date-localized:
       enabled: !ENV [MKDOCS_CI, false]
