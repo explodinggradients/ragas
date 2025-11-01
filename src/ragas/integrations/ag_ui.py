@@ -547,11 +547,18 @@ class AGUIEventCollector:
         Process a MessagesSnapshotEvent containing complete message history.
 
         This bypasses streaming reconstruction and directly converts
-        AG-UI Message objects to Ragas format.
+        AG-UI Message objects to Ragas format using type-based checking.
         """
+        # Import AG-UI message types for type checking
+        try:
+            from ag_ui.core import AssistantMessage, ToolMessage as AGUIToolMessage, UserMessage
+        except ImportError as e:
+            raise ImportError(
+                "AG-UI message types are required for snapshot processing. "
+                "Install with: pip install ag-ui-protocol"
+            ) from e
+
         for msg in event.messages:
-            # AG-UI Message structure varies, but typically has role and content
-            role = getattr(msg, "role", None)
             content = str(getattr(msg, "content", ""))
 
             metadata = None
@@ -560,7 +567,8 @@ class AGUIEventCollector:
                 if hasattr(msg, "id"):
                     metadata["message_id"] = msg.id
 
-            if role == "assistant":
+            # Type-based checking for AG-UI Message objects
+            if isinstance(msg, AssistantMessage):
                 # Check for tool calls in message
                 tool_calls = None
                 if hasattr(msg, "tool_calls") and msg.tool_calls:
@@ -570,12 +578,12 @@ class AGUIEventCollector:
                 self.messages.append(
                     AIMessage(content=content, tool_calls=tool_calls, metadata=metadata)
                 )
-            elif role == "user":
+            elif isinstance(msg, UserMessage):
                 self.messages.append(HumanMessage(content=content, metadata=metadata))
-            elif role == "tool":
+            elif isinstance(msg, AGUIToolMessage):
                 self.messages.append(ToolMessage(content=content, metadata=metadata))
             else:
-                logger.debug(f"Skipping message with role: {role}")
+                logger.debug(f"Skipping message with unknown type: {type(msg).__name__}")
 
     def get_messages(self) -> List[Union[HumanMessage, AIMessage, ToolMessage]]:
         """
