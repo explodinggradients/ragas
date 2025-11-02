@@ -12,9 +12,10 @@ Before running these examples, you need to have an AG-UI compatible agent runnin
 
 ### Popular AG-UI Compatible Frameworks
 
-- **Langgraph** - Popular open source agent agent framework, created by LangChain.
 - **Google ADK (Agent Development Kit)** - Google's framework for building AI agents
 - **Pydantic AI** - Type-safe agent framework using Pydantic
+- **Mastra** - Modular, TypeScript-based agentic AI framework
+- **Crew.ai** - Python framework for orchestrating collaborative, specialized AI agent teams
 - And more...
 
 ### Example Setup
