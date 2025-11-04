@@ -92,12 +92,12 @@ class TestAnswerAccuracyE2EMigration:
         try:
             import openai
 
-            from ragas.llms.base import instructor_llm_factory
+            from ragas.llms.base import llm_factory
 
             client = openai.AsyncOpenAI()
-            return instructor_llm_factory(
-                "openai",
+            return llm_factory(
                 model="gpt-4o",
+                provider="openai",
                 client=client,
             )
         except ImportError as e:
