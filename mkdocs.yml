@@ -130,6 +130,7 @@ nav:
             - Evaluate and Improve a RAG App: howtos/applications/evaluate-and-improve-rag.md
       - Integrations:
           - howtos/integrations/index.md
+          - AG-UI: howtos/integrations/ag_ui.md
           - Arize: howtos/integrations/_arize.md
           - Amazon Bedrock: howtos/integrations/amazon_bedrock.md
           - Haystack: howtos/integrations/haystack.md
