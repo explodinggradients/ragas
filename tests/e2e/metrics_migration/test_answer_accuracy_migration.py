@@ -91,6 +91,7 @@ class TestAnswerAccuracyE2EMigration:
         """Create a modern instructor LLM for v2 implementation."""
         try:
             import openai
+
             from ragas.llms.base import llm_factory
 
             client = openai.AsyncOpenAI()

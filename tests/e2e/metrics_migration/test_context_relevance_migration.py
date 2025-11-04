@@ -29,6 +29,7 @@ def nvidia_modern_llm():
     """Create modern LLM with NVIDIA temperature (0.1) for ContextRelevance."""
     try:
         import openai
+
         from ragas.llms.base import llm_factory
 
         client = openai.AsyncOpenAI()
@@ -97,6 +98,7 @@ class TestContextRelevanceE2EMigration:
         """Create a modern instructor LLM for v2 implementation."""
         try:
             import openai
+
             from ragas.llms.base import llm_factory
 
             client = openai.AsyncOpenAI()
