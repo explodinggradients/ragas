@@ -256,3 +256,75 @@ class ContextPrecisionWithoutReference(BaseMetric):
             )
 
         return score
+
+
+class ContextPrecision(ContextPrecisionWithReference):
+    """
+    Modern v2 wrapper for ContextPrecisionWithReference with shorter name.
+
+    This is a simple wrapper that provides the legacy "context_precision" name
+    while using the modern V2 implementation underneath.
+
+    Usage:
+        >>> import openai
+        >>> from ragas.llms.base import llm_factory
+        >>> from ragas.metrics.collections import ContextPrecision
+        >>>
+        >>> # Setup dependencies
+        >>> client = openai.AsyncOpenAI()
+        >>> llm = llm_factory("gpt-4o-mini", client=client)
+        >>>
+        >>> # Create metric instance (same as ContextPrecisionWithReference)
+        >>> metric = ContextPrecision(llm=llm)
+        >>>
+        >>> # Single evaluation
+        >>> result = await metric.ascore(
+        ...     user_input="What is the capital of France?",
+        ...     reference="Paris is the capital of France.",
+        ...     retrieved_contexts=["Paris is the capital and largest city of France."]
+        ... )
+    """
+
+    def __init__(
+        self,
+        llm: "InstructorBaseRagasLLM",
+        **kwargs,
+    ):
+        """Initialize ContextPrecision with the legacy default name."""
+        super().__init__(llm, name="context_precision", **kwargs)
+
+
+class ContextUtilization(ContextPrecisionWithoutReference):
+    """
+    Modern v2 wrapper for ContextPrecisionWithoutReference with shorter name.
+
+    This is a simple wrapper that provides the legacy "context_utilization" name
+    while using the modern V2 implementation underneath.
+
+    Usage:
+        >>> import openai
+        >>> from ragas.llms.base import llm_factory
+        >>> from ragas.metrics.collections import ContextUtilization
+        >>>
+        >>> # Setup dependencies
+        >>> client = openai.AsyncOpenAI()
+        >>> llm = llm_factory("gpt-4o-mini", client=client)
+        >>>
+        >>> # Create metric instance (same as ContextPrecisionWithoutReference)
+        >>> metric = ContextUtilization(llm=llm)
+        >>>
+        >>> # Single evaluation
+        >>> result = await metric.ascore(
+        ...     user_input="What is the capital of France?",
+        ...     response="Paris is the capital of France.",
+        ...     retrieved_contexts=["Paris is the capital and largest city of France."]
+        ... )
+    """
+
+    def __init__(
+        self,
+        llm: "InstructorBaseRagasLLM",
+        **kwargs,
+    ):
+        """Initialize ContextUtilization with the legacy default name."""
+        super().__init__(llm, name="context_utilization", **kwargs)

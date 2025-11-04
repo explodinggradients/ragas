@@ -8,8 +8,10 @@ from ragas.metrics._context_precision import (
     LLMContextPrecisionWithReference as LegacyContextPrecisionWithReference,
 )
 from ragas.metrics.collections import (
+    ContextPrecision,
     ContextPrecisionWithoutReference,
     ContextPrecisionWithReference,
+    ContextUtilization,
 )
 
 
@@ -255,3 +257,65 @@ class TestContextPrecisionE2EMigration:
             retrieved_contexts=["In mathematics, 2+2 equals 4."],
         )
         assert 0.0 <= result.value <= 1.0
+
+    @pytest.mark.asyncio
+    async def test_context_precision_wrappers(self, test_modern_llm):
+        """Test that the wrapper classes work identically to their base classes."""
+
+        if test_modern_llm is None:
+            pytest.skip("Modern LLM required for wrapper testing")
+
+        test_data = {
+            "user_input": "What is the capital of France?",
+            "reference": "Paris is the capital of France.",
+            "response": "Paris is the capital of France.",
+            "retrieved_contexts": ["Paris is the capital and largest city of France."],
+        }
+
+        # Test ContextPrecision wrapper vs ContextPrecisionWithReference
+        wrapper = ContextPrecision(llm=test_modern_llm)
+        base = ContextPrecisionWithReference(llm=test_modern_llm)
+
+        wrapper_result = await wrapper.ascore(
+            user_input=test_data["user_input"],
+            reference=test_data["reference"],
+            retrieved_contexts=test_data["retrieved_contexts"],
+        )
+
+        base_result = await base.ascore(
+            user_input=test_data["user_input"],
+            reference=test_data["reference"],
+            retrieved_contexts=test_data["retrieved_contexts"],
+        )
+
+        # Should have the correct names
+        assert wrapper.name == "context_precision"
+        assert base.name == "context_precision_with_reference"
+
+        # Should produce identical scores
+        assert wrapper_result.value == base_result.value
+        print(f"✅ ContextPrecision wrapper works correctly: {wrapper_result.value}")
+
+        # Test ContextUtilization wrapper vs ContextPrecisionWithoutReference
+        wrapper2 = ContextUtilization(llm=test_modern_llm)
+        base2 = ContextPrecisionWithoutReference(llm=test_modern_llm)
+
+        wrapper2_result = await wrapper2.ascore(
+            user_input=test_data["user_input"],
+            response=test_data["response"],
+            retrieved_contexts=test_data["retrieved_contexts"],
+        )
+
+        base2_result = await base2.ascore(
+            user_input=test_data["user_input"],
+            response=test_data["response"],
+            retrieved_contexts=test_data["retrieved_contexts"],
+        )
+
+        # Should have the correct names
+        assert wrapper2.name == "context_utilization"
+        assert base2.name == "context_precision_without_reference"
+
+        # Should produce identical scores
+        assert wrapper2_result.value == base2_result.value
+        print(f"✅ ContextUtilization wrapper works correctly: {wrapper2_result.value}")
