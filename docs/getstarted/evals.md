@@ -157,28 +157,32 @@ Your quickstart project initializes the OpenAI LLM by default in the `_init_clie
 
 ### Using Pre-Built Metrics
 
-`ragas` comes with pre-built metrics for common evaluation tasks. For example, [AspectCritic](../concepts/metrics/available_metrics/aspect_critic.md) evaluates any aspect of your output:
+`ragas` comes with pre-built metrics for common evaluation tasks. For example, [Aspect Critique](../concepts/metrics/available_metrics/aspect_critic.md) evaluates any aspect of your output using `DiscreteMetric`:
 
 ```python
-from ragas.metrics.collections import AspectCritic
+from ragas.metrics import DiscreteMetric
 from ragas.llms import llm_factory
 
 # Setup your evaluator LLM
 evaluator_llm = llm_factory("gpt-4o")
 
-# Use a pre-built metric
-metric = AspectCritic(
+# Create a custom aspect evaluator
+metric = DiscreteMetric(
     name="summary_accuracy",
-    definition="Verify if the summary is accurate and captures key information.",
+    allowed_values=["accurate", "inaccurate"],
+    prompt="""Evaluate if the summary is accurate and captures key information.
+
+Response: {response}
+
+Answer with only 'accurate' or 'inaccurate'.""",
     llm=evaluator_llm
 )
 
 # Score your application's output
 score = await metric.ascore(
-    user_input="Summarize this text: ...",
     response="The summary of the text is..."
 )
-print(f"Score: {score.value}")  # 1 = pass, 0 = fail
+print(f"Score: {score.value}")  # 'accurate' or 'inaccurate'
 print(f"Reason: {score.reason}")
 ```
 
