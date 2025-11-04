@@ -14,6 +14,10 @@ from ragas.metrics.collections._aspect_critic import (
 )
 from ragas.metrics.collections._bleu_score import BleuScore
 from ragas.metrics.collections._context_entity_recall import ContextEntityRecall
+from ragas.metrics.collections._context_precision import (
+    ContextPrecisionWithoutReference,
+    ContextPrecisionWithReference,
+)
 from ragas.metrics.collections._faithfulness import Faithfulness
 from ragas.metrics.collections._noise_sensitivity import NoiseSensitivity
 from ragas.metrics.collections._rouge_score import RougeScore
@@ -37,6 +41,8 @@ __all__ = [
     "AspectCritic",
     "BleuScore",
     "ContextEntityRecall",
+    "ContextPrecisionWithReference",
+    "ContextPrecisionWithoutReference",
     "ContextRelevance",
     "DistanceMeasure",
     "ExactMatch",
