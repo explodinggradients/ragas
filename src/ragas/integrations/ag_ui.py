@@ -70,8 +70,8 @@ import json
 import logging
 import math
 import typing as t
-from typing import Any, Dict, List, Optional, Union
 import uuid
+from typing import Any, Dict, List, Optional, Union
 
 from ragas.dataset_schema import (
     EvaluationDataset,
@@ -396,7 +396,16 @@ class AGUIEventCollector:
 
         # Ensure the AIMessage has tool_calls
         if ai_msg_idx is not None:
-            ai_msg = self.messages[ai_msg_idx]
+            ai_msg_candidate = self.messages[ai_msg_idx]
+
+            if not isinstance(ai_msg_candidate, AIMessage):
+                logger.warning(
+                    "Expected AIMessage when handling tool call result, "
+                    f"received {type(ai_msg_candidate).__name__}"
+                )
+                return
+
+            ai_msg = ai_msg_candidate
 
             # If it doesn't have tool_calls, we need to add them
             if ai_msg.tool_calls is None or len(ai_msg.tool_calls) == 0:
@@ -407,7 +416,7 @@ class AGUIEventCollector:
                     self.messages[ai_msg_idx] = AIMessage(
                         content=ai_msg.content,
                         metadata=ai_msg.metadata,
-                        tool_calls=new_tool_calls
+                        tool_calls=new_tool_calls,
                     )
                     self._completed_tool_calls.clear()
                 else:
@@ -419,12 +428,12 @@ class AGUIEventCollector:
                     )
                     synthetic_tool_call = ToolCall(
                         name="unknown_tool",  # We don't have the tool name
-                        args={}
+                        args={},
                     )
                     self.messages[ai_msg_idx] = AIMessage(
                         content=ai_msg.content,
                         metadata=ai_msg.metadata,
-                        tool_calls=[synthetic_tool_call]
+                        tool_calls=[synthetic_tool_call],
                     )
             elif self._completed_tool_calls:
                 # AIMessage already has tool_calls, but there are unclaimed ones
@@ -434,13 +443,13 @@ class AGUIEventCollector:
                 self.messages[ai_msg_idx] = AIMessage(
                     content=ai_msg.content,
                     metadata=ai_msg.metadata,
-                    tool_calls=existing_tool_calls + new_tool_calls
+                    tool_calls=existing_tool_calls + new_tool_calls,
                 )
                 self._completed_tool_calls.clear()
         else:
             # No AIMessage found at all - create one
             logger.warning(
-                f"ToolCallResult received but no AIMessage found. Creating synthetic AIMessage."
+                "ToolCallResult received but no AIMessage found. Creating synthetic AIMessage."
             )
             if self._completed_tool_calls:
                 new_tool_calls = list(self._completed_tool_calls.values())
@@ -448,11 +457,7 @@ class AGUIEventCollector:
                 new_tool_calls = [ToolCall(name="unknown_tool", args={})]
 
             self.messages.append(
-                AIMessage(
-                    content="",
-                    metadata=None,
-                    tool_calls=new_tool_calls
-                )
+                AIMessage(content="", metadata=None, tool_calls=new_tool_calls)
             )
             self._completed_tool_calls.clear()
 
@@ -563,7 +568,11 @@ class AGUIEventCollector:
         """
         # Import AG-UI message types for type checking
         try:
-            from ag_ui.core import AssistantMessage, ToolMessage as AGUIToolMessage, UserMessage
+            from ag_ui.core import (
+                AssistantMessage,
+                ToolMessage as AGUIToolMessage,
+                UserMessage,
+            )
         except ImportError as e:
             raise ImportError(
                 "AG-UI message types are required for snapshot processing. "
@@ -584,9 +593,19 @@ class AGUIEventCollector:
                 # Check for tool calls in message
                 tool_calls = None
                 if hasattr(msg, "tool_calls") and msg.tool_calls:
-                    tool_calls = [
-                        ToolCall(name=tc.name, args=tc.args) for tc in msg.tool_calls
-                    ]
+                    tool_calls = []
+                    for tc in msg.tool_calls:
+                        tc_obj = t.cast(Any, tc)
+                        name = t.cast(str, getattr(tc_obj, "name", "unknown_tool"))
+                        raw_args = getattr(tc_obj, "args", {})
+                        if not isinstance(raw_args, dict):
+                            raw_args = {"raw_args": raw_args}
+                        tool_calls.append(
+                            ToolCall(
+                                name=name,
+                                args=t.cast(Dict[str, Any], raw_args),
+                            )
+                        )
                 self.messages.append(
                     AIMessage(content=content, tool_calls=tool_calls, metadata=metadata)
                 )
@@ -595,7 +614,9 @@ class AGUIEventCollector:
             elif isinstance(msg, AGUIToolMessage):
                 self.messages.append(ToolMessage(content=content, metadata=metadata))
             else:
-                logger.debug(f"Skipping message with unknown type: {type(msg).__name__}")
+                logger.debug(
+                    f"Skipping message with unknown type: {type(msg).__name__}"
+                )
 
     def get_messages(self) -> List[Union[HumanMessage, AIMessage, ToolMessage]]:
         """
@@ -790,7 +811,7 @@ def convert_messages_snapshot(
 
 
 def _convert_ragas_messages_to_ag_ui(
-    messages: List[Union[HumanMessage, AIMessage, ToolMessage]]
+    messages: List[Union[HumanMessage, AIMessage, ToolMessage]],
 ) -> List[Any]:
     """
     Convert Ragas messages to AG-UI message format.
@@ -827,7 +848,6 @@ def _convert_ragas_messages_to_ag_ui(
             AssistantMessage,
             FunctionCall,
             ToolCall as AGUIToolCall,
-            ToolMessage as AGUIToolMessage,
             UserMessage,
         )
     except ImportError as e:
@@ -853,7 +873,9 @@ def _convert_ragas_messages_to_ag_ui(
                         id=f"tc-{idx}-{tc_idx}",
                         function=FunctionCall(
                             name=tc.name,
-                            arguments=json.dumps(tc.args) if isinstance(tc.args, dict) else tc.args,
+                            arguments=json.dumps(tc.args)
+                            if isinstance(tc.args, dict)
+                            else tc.args,
                         ),
                     )
                     for tc_idx, tc in enumerate(msg.tool_calls)
@@ -955,22 +977,24 @@ async def _call_ag_ui_endpoint(
     event_adapter = TypeAdapter(Event)
 
     # Convert user_input to AG-UI messages
+    ag_ui_messages: List[Any]
     if isinstance(user_input, str):
         # Single-turn: simple string input
-        ag_ui_messages = [UserMessage(id="1", content=user_input)]
+        ag_ui_messages = t.cast(List[Any], [UserMessage(id="1", content=user_input)])
     else:
         # Multi-turn: list of Ragas messages
         ag_ui_messages = _convert_ragas_messages_to_ag_ui(user_input)
 
     # Prepare request payload
     payload = RunAgentInput(
-        thread_id=thread_id or f"thread_{uuid.uuid4()}",  # Generate thread ID if not provided
+        thread_id=thread_id
+        or f"thread_{uuid.uuid4()}",  # Generate thread ID if not provided
         run_id=f"run_{uuid.uuid4()}",  # Generate a unique run ID
-        messages=ag_ui_messages,
+        messages=t.cast(Any, ag_ui_messages),
         state={},
         tools=[],
         context=[],
-        forwarded_props={}
+        forwarded_props={},
     )
 
     # Collect events from SSE stream
@@ -1186,9 +1210,7 @@ async def evaluate_ag_ui_agent(
         for i, result in enumerate(results):
             # Handle failed jobs which are recorded as NaN in the executor
             if isinstance(result, float) and math.isnan(result):
-                logger.warning(
-                    f"AG-UI agent call failed for query {i}: '{queries[i]}'"
-                )
+                logger.warning(f"AG-UI agent call failed for query {i}: '{queries[i]}'")
                 continue
 
             # Convert AG-UI events to Ragas messages
@@ -1201,15 +1223,16 @@ async def evaluate_ag_ui_agent(
                 # Append agent's response messages to the conversation
                 # Filter out only new messages from agent (AIMessage and ToolMessage)
                 new_messages = [
-                    msg for msg in messages
-                    if isinstance(msg, (AIMessage, ToolMessage))
+                    msg for msg in messages if isinstance(msg, (AIMessage, ToolMessage))
                 ]
 
                 # Update the sample's user_input with complete conversation
                 sample = t.cast(MultiTurnSample, samples[i])
                 sample.user_input = sample.user_input + new_messages
 
-                logger.info(f"Query {i} - Appended {len(new_messages)} messages to conversation")
+                logger.info(
+                    f"Query {i} - Appended {len(new_messages)} messages to conversation"
+                )
 
             except Exception as e:
                 logger.warning(
@@ -1225,9 +1248,7 @@ async def evaluate_ag_ui_agent(
             if isinstance(result, float) and math.isnan(result):
                 responses.append(None)
                 retrieved_contexts.append(None)
-                logger.warning(
-                    f"AG-UI agent call failed for query {i}: '{queries[i]}'"
-                )
+                logger.warning(f"AG-UI agent call failed for query {i}: '{queries[i]}'")
                 continue
 
             # Convert AG-UI events to Ragas messages
@@ -1244,13 +1265,19 @@ async def evaluate_ag_ui_agent(
                 for msg in messages:
                     if isinstance(msg, AIMessage) and msg.content:
                         response_text += msg.content
-                        logger.debug(f"Found AI message with content: {msg.content[:100]}...")
+                        logger.debug(
+                            f"Found AI message with content: {msg.content[:100]}..."
+                        )
                     # Tool results could contain retrieved context
                     elif isinstance(msg, ToolMessage) and msg.content:
                         context_list.append(msg.content)
-                        logger.debug(f"Found tool message with content: {msg.content[:100]}...")
+                        logger.debug(
+                            f"Found tool message with content: {msg.content[:100]}..."
+                        )
 
-                logger.info(f"Query {i} - Response length: {len(response_text)}, Contexts: {len(context_list)}")
+                logger.info(
+                    f"Query {i} - Response length: {len(response_text)}, Contexts: {len(context_list)}"
+                )
                 responses.append(response_text or None)
                 retrieved_contexts.append(context_list if context_list else None)
 
@@ -1266,7 +1293,9 @@ async def evaluate_ag_ui_agent(
         for i, sample in enumerate(samples):
             single_sample = t.cast(SingleTurnSample, sample)
             single_sample.response = responses[i] if responses[i] is not None else ""
-            single_sample.retrieved_contexts = retrieved_contexts[i] if retrieved_contexts[i] is not None else []
+            single_sample.retrieved_contexts = (
+                retrieved_contexts[i] if retrieved_contexts[i] is not None else []
+            )
 
     # Run evaluation with metrics
     evaluation_result = ragas_evaluate(
