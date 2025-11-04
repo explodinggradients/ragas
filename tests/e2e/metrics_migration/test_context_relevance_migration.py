@@ -29,13 +29,12 @@ def nvidia_modern_llm():
     """Create modern LLM with NVIDIA temperature (0.1) for ContextRelevance."""
     try:
         import openai
-
-        from ragas.llms.base import instructor_llm_factory
+        from ragas.llms.base import llm_factory
 
         client = openai.AsyncOpenAI()
         # Set temperature=0.1 to match legacy NVIDIA calls exactly
-        return instructor_llm_factory(
-            "openai", model="gpt-4o", client=client, temperature=0.1
+        return llm_factory(
+            model="gpt-4o", provider="openai", client=client, temperature=0.1
         )
     except Exception as e:
         pytest.skip(str(e))
@@ -98,13 +97,12 @@ class TestContextRelevanceE2EMigration:
         """Create a modern instructor LLM for v2 implementation."""
         try:
             import openai
-
-            from ragas.llms.base import instructor_llm_factory
+            from ragas.llms.base import llm_factory
 
             client = openai.AsyncOpenAI()
-            return instructor_llm_factory(
-                "openai",
+            return llm_factory(
                 model="gpt-4o",
+                provider="openai",
                 client=client,
             )
         except ImportError as e:
