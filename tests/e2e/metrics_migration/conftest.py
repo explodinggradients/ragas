@@ -29,10 +29,10 @@ def legacy_llm():
 
 @pytest.fixture
 def modern_llm():
-    """Create a modern instructor LLM for v2 implementation.
+    """Create a modern LLM for v2 implementation.
 
-    Uses instructor_llm_factory with OpenAI client.
-    Skips if instructor LLM factory is not available or API key is missing.
+    Uses llm_factory with OpenAI client.
+    Skips if LLM factory is not available or API key is missing.
     """
     try:
         return create_modern_llm("openai", model="gpt-3.5-turbo")

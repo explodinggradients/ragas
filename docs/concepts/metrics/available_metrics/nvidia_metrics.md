@@ -78,10 +78,13 @@ Thus, the final **Answer Accuracy** score is **1**.
 
 **Context Relevance** evaluates whether the **retrieved_contexts** (chunks or passages) are pertinent to the **user_input**. This is done via two independent "LLM-as-a-Judge" prompt calls that each rate the relevance on a scale of **0, 1, or 2**. The ratings are then converted to a [0,1] scale and averaged to produce the final score. Higher scores indicate that the contexts are more closely aligned with the user's query.
 
-- **0** → The retrieved contexts are not relevant to the user’s query at all.
+- **0** → The retrieved contexts are not relevant to the user's query at all.
 - **1** → The contexts are partially relevant.
 - **2** → The contexts are completely relevant.
 
+### Implementation Note
+
+**Difference from Original Paper:** The original Ragas paper defines Context Relevance using sentence-level extraction (CR = number of relevant sentences / total sentences), but the current implementation uses a more robust discrete judgment approach. Each LLM is asked to rate overall context relevance on a 0-2 scale, which is more efficient and less prone to sentence boundary errors. This was an intentional design decision to improve reliability and reduce computational overhead while maintaining the core evaluation objective.
 
 ```python
 from ragas.dataset_schema import SingleTurnSample
@@ -104,9 +107,9 @@ Output
 1.0
 ```
 
-### How It’s Calculated
+### How It's Calculated
 
-**Step 1:** The LLM is prompted with two distinct templates (template_relevance1 and template_relevance2) to evaluate the relevance of the retrieved contexts concerning the user's query. Each prompt returns a relevance rating of **0**, **1**, or **2**.
+**Step 1:** The LLM is prompted with two distinct templates (template_relevance1 and template_relevance2) to evaluate the relevance of the retrieved contexts concerning the user's query. Each prompt returns a relevance rating of **0**, **1**, or **2**. Using two independent evaluations provides robustness and helps mitigate individual LLM biases.
 
 **Step 2:** Each rating is normalized to a [0,1] scale by dividing by 2. If both ratings are valid, the final score is the average of these normalized values; if only one is valid, that score is used.
 

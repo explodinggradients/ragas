@@ -8,10 +8,8 @@ from pydantic import BaseModel
 
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
-from ragas.prompt.metrics.answer_correctness import (
-    correctness_classifier_prompt,
-    statement_generator_prompt,
-)
+from ragas.prompt.metrics.answer_correctness import correctness_classifier_prompt
+from ragas.prompt.metrics.common import statement_generator_prompt
 
 if t.TYPE_CHECKING:
     from ragas.embeddings.base import BaseRagasEmbedding
@@ -51,15 +49,14 @@ class AnswerCorrectness(BaseMetric):
     Only supports modern components - legacy wrappers are rejected with clear error messages.
 
     Usage:
-        >>> import instructor
         >>> from openai import AsyncOpenAI
-        >>> from ragas.llms.base import instructor_llm_factory
+        >>> from ragas.llms import llm_factory
         >>> from ragas.embeddings.base import embedding_factory
         >>> from ragas.metrics.collections import AnswerCorrectness
         >>>
         >>> # Setup dependencies
         >>> client = AsyncOpenAI()
-        >>> llm = instructor_llm_factory("openai", client=client, model="gpt-4o-mini")
+        >>> llm = llm_factory("gpt-4o-mini", client=client)
         >>> embeddings = embedding_factory("openai", model="text-embedding-ada-002", client=client, interface="modern")
         >>>
         >>> # Create metric instance

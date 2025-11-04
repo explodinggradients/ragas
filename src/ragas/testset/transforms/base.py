@@ -10,6 +10,9 @@ from ragas.llms import BaseRagasLLM, llm_factory
 from ragas.prompt import PromptMixin
 from ragas.testset.graph import KnowledgeGraph, Node, Relationship
 
+if t.TYPE_CHECKING:
+    from ragas.llms.base import InstructorBaseRagasLLM
+
 DEFAULT_TOKENIZER = tiktoken.get_encoding("o200k_base")
 
 logger = logging.getLogger(__name__)
@@ -17,6 +20,17 @@ logger = logging.getLogger(__name__)
 
 def default_filter(node: Node) -> bool:
     return True
+
+
+def _default_llm_factory() -> t.Union[BaseRagasLLM, "InstructorBaseRagasLLM"]:
+    """Create a default LLM instance with OpenAI gpt-4o-mini.
+
+    Returns InstructorBaseRagasLLM instance which satisfies BaseRagasLLM interface.
+    """
+    from openai import OpenAI
+
+    client = OpenAI()
+    return llm_factory("gpt-4o-mini", client=client)
 
 
 @dataclass
@@ -207,7 +221,9 @@ class Extractor(BaseGraphTransformation):
 
 @dataclass
 class LLMBasedExtractor(Extractor, PromptMixin):
-    llm: BaseRagasLLM = field(default_factory=llm_factory)
+    llm: t.Union[BaseRagasLLM, "InstructorBaseRagasLLM"] = field(
+        default_factory=_default_llm_factory
+    )
     merge_if_possible: bool = True
     max_token_limit: int = 32000
     tokenizer: Encoding = DEFAULT_TOKENIZER
@@ -426,4 +442,6 @@ class NodeFilter(BaseGraphTransformation):
 
 @dataclass
 class LLMBasedNodeFilter(NodeFilter, PromptMixin):
-    llm: BaseRagasLLM = field(default_factory=llm_factory)
+    llm: t.Union[BaseRagasLLM, "InstructorBaseRagasLLM"] = field(
+        default_factory=_default_llm_factory
+    )

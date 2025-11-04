@@ -27,14 +27,13 @@ class ContextEntityRecall(BaseMetric):
     This implementation uses modern instructor LLMs with structured output.
     Only supports modern components - legacy wrappers are rejected with clear error messages.
     Usage:
-        >>> import instructor
         >>> from openai import AsyncOpenAI
-        >>> from ragas.llms.base import instructor_llm_factory
+        >>> from ragas.llms import llm_factory
         >>> from ragas.metrics.collections import ContextEntityRecall
         >>>
         >>> # Setup dependencies
         >>> client = AsyncOpenAI()
-        >>> llm = instructor_llm_factory("openai", client=client, model="gpt-4o")
+        >>> llm = llm_factory("gpt-4o", client=client)
         >>>
         >>> # Create metric instance
         >>> metric = ContextEntityRecall(llm=llm)

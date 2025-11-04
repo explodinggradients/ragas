@@ -30,9 +30,11 @@ As you can see, the instruction and demonstration are both in English. Setting u
 
 
 ```python
+from openai import OpenAI
 from ragas.llms import llm_factory
 
-llm = llm_factory()
+openai_client = OpenAI(api_key="sk-...")
+llm = llm_factory("gpt-4o-mini", client=openai_client)
 ```
 
 Now let's adapt it to 'hindi' as the target language using `adapt` method.
