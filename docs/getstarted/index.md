@@ -13,7 +13,7 @@ If you have any questions about Ragas, feel free to join our [Discord community]
 
 Start here to get up and running with Ragas in minutes:
 
-- [Run your first experiment](experiments_quickstart.md) 
+- [Quick Start: Get Running in 5 Minutes](./quickstart.md) 
 
 ## Tutorials
 

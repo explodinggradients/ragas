@@ -19,7 +19,7 @@ Traditional evaluation metrics don't capture what matters for LLM applications. 
 
     Start evaluating in 5 minutes with our quickstart guide.
 
-    [:octicons-arrow-right-24: Get Started](getstarted/experiments_quickstart.md)
+    [:octicons-arrow-right-24: Get Started](getstarted/quickstart.md)
 
 - 📚 **Core Concepts**
 

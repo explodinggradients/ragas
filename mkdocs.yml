@@ -13,7 +13,6 @@ nav:
       - getstarted/index.md
       - Quick Start: getstarted/quickstart.md
       - Installation: getstarted/install.md
-      - Run your first experiment: getstarted/experiments_quickstart.md
       - Tutorials:
           - Evaluate a prompt: tutorials/prompt.md
           - Evaluate a simple RAG system: tutorials/rag.md
