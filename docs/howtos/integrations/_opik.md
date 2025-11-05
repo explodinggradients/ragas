@@ -208,7 +208,7 @@ dataset = fiqa_eval["baseline"].select(range(3))
 dataset = dataset.map(
     lambda x: {
         "user_input": x["question"],
-        "reference": x["ground_truths"][0],
+        "reference": x["ground_truth"],
         "retrieved_contexts": x["contexts"],
     }
 )
