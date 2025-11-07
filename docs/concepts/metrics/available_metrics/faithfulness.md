@@ -88,7 +88,10 @@ Let's examine how faithfulness was calculated using the low faithfulness answer:
 
 ## Legacy Metrics API
 
-The following examples use the legacy metrics API pattern. For new projects, we recommend using the collections-based API shown above. This is being maintained for backward compatibility.
+The following examples use the legacy metrics API pattern. For new projects, we recommend using the collections-based API shown above.
+
+!!! warning "Deprecation Timeline"
+    This API will be deprecated in version 0.4 and removed in version 1.0. Please migrate to the collections-based API shown above.
 
 ### Example with SingleTurnSample
 
