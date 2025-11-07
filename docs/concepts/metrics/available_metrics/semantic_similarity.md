@@ -1,6 +1,6 @@
-## Answer Similarity
+## Semantic Similarity
 
-The **Answer Similarity** metric evaluates the semantic resemblance between a generated response and a reference (ground truth) answer. It ranges from 0 to 1, with higher scores indicating better alignment between the generated answer and the ground truth.
+The **Semantic Similarity** metric evaluates the semantic resemblance between a generated response and a reference (ground truth) answer. It ranges from 0 to 1, with higher scores indicating better alignment between the generated answer and the ground truth.
 
 This metric uses embeddings and cosine similarity to measure how semantically similar two answers are, which can offer valuable insights into the quality of the generated response.
 
@@ -10,27 +10,27 @@ This metric uses embeddings and cosine similarity to measure how semantically si
 ```python
 from openai import AsyncOpenAI
 from ragas.embeddings import OpenAIEmbeddings
-from ragas.metrics.collections import AnswerSimilarity
+from ragas.metrics.collections import SemanticSimilarity
 
 # Setup embeddings
 client = AsyncOpenAI()
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small", client=client)
 
 # Create metric
-scorer = AnswerSimilarity(embeddings=embeddings)
+scorer = SemanticSimilarity(embeddings=embeddings)
 
 # Evaluate
 result = await scorer.ascore(
     reference="The Eiffel Tower is located in Paris. It has a height of 1000ft.",
     response="The Eiffel Tower is located in Paris."
 )
-print(f"Answer Similarity Score: {result.value}")
+print(f"Semantic Similarity Score: {result.value}")
 ```
 
 Output:
 
 ```
-Answer Similarity Score: 0.8151
+Semantic Similarity Score: 0.8151
 ```
 
 !!! note "Synchronous Usage"
@@ -54,7 +54,7 @@ Answer Similarity Score: 0.8151
 
     **Low similarity response**: Isaac Newton's laws of motion greatly influenced classical physics.
 
-Let's examine how answer similarity was calculated for the high similarity response:
+Let's examine how semantic similarity was calculated for the high similarity response:
 
 - **Step 1:** Vectorize the reference answer using the specified embedding model.
 - **Step 2:** Vectorize the generated response using the same embedding model.
