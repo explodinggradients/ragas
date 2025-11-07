@@ -5,6 +5,60 @@
 `NonLLMStringSimilarity` metric measures the similarity between the reference and the response using traditional string distance measures such as Levenshtein, Hamming, and Jaro. This metric is useful for evaluating the similarity of `response` to the `reference` text without relying on large language models (LLMs). The metric returns a score between 0 and 1, where 1 indicates a perfect match between the response and the reference. This is a non LLM based metric.
 
 ### Example
+
+```python
+from ragas.metrics.collections import NonLLMStringSimilarity, DistanceMeasure
+
+# Create metric (no LLM/embeddings needed)
+scorer = NonLLMStringSimilarity(distance_measure=DistanceMeasure.LEVENSHTEIN)
+
+# Evaluate
+result = await scorer.ascore(
+    reference="The Eiffel Tower is located in Paris.",
+    response="The Eiffel Tower is located in India."
+)
+print(f"NonLLM String Similarity Score: {result.value}")
+```
+
+Output:
+
+```
+NonLLM String Similarity Score: 0.8918918918918919
+```
+
+!!! note "Synchronous Usage"
+    If you prefer synchronous code, you can use the `.score()` method instead of `.ascore()`:
+    
+    ```python
+    result = scorer.score(
+        reference="The Eiffel Tower is located in Paris.",
+        response="The Eiffel Tower is located in India."
+    )
+    ```
+
+### Configuration
+
+You can choose from available string distance measures from `DistanceMeasure`. Here is an example of using Hamming distance:
+
+```python
+scorer = NonLLMStringSimilarity(distance_measure=DistanceMeasure.HAMMING)
+```
+
+Available distance measures include:
+- `DistanceMeasure.LEVENSHTEIN` (default)
+- `DistanceMeasure.HAMMING`
+- `DistanceMeasure.JARO`
+- `DistanceMeasure.JARO_WINKLER`
+
+### Legacy Metrics API
+
+The following examples use the legacy metrics API pattern. For new projects, we recommend using the collections-based API shown above.
+
+!!! warning "Deprecation Timeline"
+    This API will be deprecated in version 0.4 and removed in version 1.0. Please migrate to the collections-based API shown above.
+
+#### Example with SingleTurnSample
+
 ```python
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics._string import NonLLMStringSimilarity
@@ -17,12 +71,14 @@ sample = SingleTurnSample(
 scorer = NonLLMStringSimilarity()
 await scorer.single_turn_ascore(sample)
 ```
-Output
+
+Output:
+
 ```
 0.8918918918918919
 ```
 
-One can choose from available string distance measures from `DistanceMeasure`. Here is an example of using Hamming distance.
+#### Example with Different Distance Measure
 
 ```python
 from ragas.metrics._string import NonLLMStringSimilarity, DistanceMeasure
@@ -183,7 +239,49 @@ Output:
 ```
 
 ## Exact Match
+
 The `ExactMatch` metric checks if the response is exactly the same as the reference text. It is useful in scenarios where you need to ensure that the generated response matches the expected output word-for-word. For example, arguments in tool calls, etc. The metric returns 1 if the response is an exact match with the reference, and 0 otherwise.
+
+### Example
+
+```python
+from ragas.metrics.collections import ExactMatch
+
+# Create metric (no LLM/embeddings needed)
+scorer = ExactMatch()
+
+# Evaluate
+result = await scorer.ascore(
+    reference="Paris",
+    response="India"
+)
+print(f"Exact Match Score: {result.value}")
+```
+
+Output:
+
+```
+Exact Match Score: 0.0
+```
+
+!!! note "Synchronous Usage"
+    If you prefer synchronous code, you can use the `.score()` method instead of `.ascore()`:
+    
+    ```python
+    result = scorer.score(
+        reference="Paris",
+        response="India"
+    )
+    ```
+
+### Legacy Metrics API
+
+The following examples use the legacy metrics API pattern. For new projects, we recommend using the collections-based API shown above.
+
+!!! warning "Deprecation Timeline"
+    This API will be deprecated in version 0.4 and removed in version 1.0. Please migrate to the collections-based API shown above.
+
+#### Example with SingleTurnSample
 
 ```python
 from ragas.dataset_schema import SingleTurnSample
@@ -197,13 +295,57 @@ sample = SingleTurnSample(
 scorer = ExactMatch()
 await scorer.single_turn_ascore(sample)
 ```
-Output
+
+Output:
+
 ```
 0.0
 ```
 
 ## String Presence
+
 The `StringPresence` metric checks if the response contains the reference text. It is useful in scenarios where you need to ensure that the generated response contains certain keywords or phrases. The metric returns 1 if the response contains the reference, and 0 otherwise.
+
+### Example
+
+```python
+from ragas.metrics.collections import StringPresence
+
+# Create metric (no LLM/embeddings needed)
+scorer = StringPresence()
+
+# Evaluate
+result = await scorer.ascore(
+    reference="Eiffel Tower",
+    response="The Eiffel Tower is located in India."
+)
+print(f"String Presence Score: {result.value}")
+```
+
+Output:
+
+```
+String Presence Score: 1.0
+```
+
+!!! note "Synchronous Usage"
+    If you prefer synchronous code, you can use the `.score()` method instead of `.ascore()`:
+    
+    ```python
+    result = scorer.score(
+        reference="Eiffel Tower",
+        response="The Eiffel Tower is located in India."
+    )
+    ```
+
+### Legacy Metrics API
+
+The following examples use the legacy metrics API pattern. For new projects, we recommend using the collections-based API shown above.
+
+!!! warning "Deprecation Timeline"
+    This API will be deprecated in version 0.4 and removed in version 1.0. Please migrate to the collections-based API shown above.
+
+#### Example with SingleTurnSample
 
 ```python
 from ragas.dataset_schema import SingleTurnSample
@@ -216,7 +358,9 @@ sample = SingleTurnSample(
 scorer = StringPresence()
 await scorer.single_turn_ascore(sample)
 ```
-Output
+
+Output:
+
 ```
 1.0
 ```
