@@ -108,6 +108,61 @@ Output:
 
 The `RougeScore` score is a set of metrics used to evaluate the quality of natural language generations. It measures the overlap between the generated `response` and the `reference` text based on n-gram recall, precision, and F1 score. ROUGE score ranges from 0 to 1, where 1 indicates a perfect match between the response and the reference. This is a non LLM based metric.
 
+### Example
+
+```python
+from ragas.metrics.collections import RougeScore
+
+# Create metric (no LLM/embeddings needed)
+scorer = RougeScore(rouge_type="rougeL", mode="fmeasure")
+
+# Evaluate
+result = await scorer.ascore(
+    reference="The Eiffel Tower is located in Paris.",
+    response="The Eiffel Tower is located in India."
+)
+print(f"ROUGE Score: {result.value}")
+```
+
+Output:
+
+```
+ROUGE Score: 0.8571428571428571
+```
+
+!!! note "Synchronous Usage"
+    If you prefer synchronous code, you can use the `.score()` method instead of `.ascore()`:
+    
+    ```python
+    result = scorer.score(
+        reference="The Eiffel Tower is located in Paris.",
+        response="The Eiffel Tower is located in India."
+    )
+    ```
+
+### Configuration
+
+You can change the `rouge_type` to `rouge1` or `rougeL` to calculate the ROUGE score based on unigrams or longest common subsequence respectively.
+
+```python
+scorer = RougeScore(rouge_type="rouge1")
+```
+
+You can change the `mode` to `precision`, `recall`, or `fmeasure` to calculate the ROUGE score based on precision, recall, or F1 score respectively.
+
+```python
+scorer = RougeScore(mode="recall")
+```
+
+### Legacy Metrics API
+
+The following examples use the legacy metrics API pattern. For new projects, we recommend using the collections-based API shown above.
+
+!!! warning "Deprecation Timeline"
+    This API will be deprecated in version 0.4 and removed in version 1.0. Please migrate to the collections-based API shown above.
+
+#### Example with SingleTurnSample
+
 ```python
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics import RougeScore
@@ -120,21 +175,11 @@ sample = SingleTurnSample(
 scorer = RougeScore()
 await scorer.single_turn_ascore(sample)
 ```
-Output
+
+Output:
+
 ```
 0.8571428571428571
-```
-
-You can change the `rouge_type` to `rouge1` or `rougeL` to calculate the ROUGE score based on unigrams or longest common subsequence respectively.
-
-```python
-scorer = RougeScore(rouge_type="rouge1")
-```
-
-You can change the `mode` to `precision`, `recall`, or `fmeasure` to calculate the ROUGE score based on precision, recall, or F1 score respectively.
-
-```python
-scorer = RougeScore(mode="recall")
 ```
 
 ## Exact Match
