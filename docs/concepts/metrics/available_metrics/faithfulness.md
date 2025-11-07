@@ -23,7 +23,7 @@ from ragas.metrics.collections import Faithfulness
 
 # Setup LLM
 client = AsyncOpenAI()
-llm = llm_factory("gpt-5-mini", client=client)
+llm = llm_factory("gpt-4o-mini", client=client)
 
 # Create metric
 scorer = Faithfulness(llm=llm)
