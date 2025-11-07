@@ -133,30 +133,50 @@ Output:
 - **1** → The contexts are partially relevant.
 - **2** → The contexts are completely relevant.
 
-### Implementation Note
-
-**Difference from Original Paper:** The original Ragas paper defines Context Relevance using sentence-level extraction (CR = number of relevant sentences / total sentences), but the current implementation uses a more robust discrete judgment approach. Each LLM is asked to rate overall context relevance on a 0-2 scale, which is more efficient and less prone to sentence boundary errors. This was an intentional design decision to improve reliability and reduce computational overhead while maintaining the core evaluation objective.
+### Example
 
 ```python
-from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics import ContextRelevance
+from openai import AsyncOpenAI
+from ragas.llms import llm_factory
+from ragas.metrics.collections import ContextRelevance
 
-sample = SingleTurnSample(
+# Setup LLM
+client = AsyncOpenAI()
+llm = llm_factory("gpt-4o-mini", client=client)
+
+# Create metric
+scorer = ContextRelevance(llm=llm)
+
+# Evaluate
+result = await scorer.ascore(
     user_input="When and Where Albert Einstein was born?",
     retrieved_contexts=[
         "Albert Einstein was born March 14, 1879.",
         "Albert Einstein was born at Ulm, in Württemberg, Germany.",
     ]
 )
+print(f"Context Relevance Score: {result.value}")
+```
 
-scorer = ContextRelevance(llm=evaluator_llm)
-score = await scorer.single_turn_ascore(sample)
-print(score)
+Output:
+
 ```
-Output
+Context Relevance Score: 1.0
 ```
-1.0
-```
+
+!!! note "Synchronous Usage"
+    If you prefer synchronous code, you can use the `.score()` method instead of `.ascore()`:
+    
+    ```python
+    result = scorer.score(
+        user_input="When and Where Albert Einstein was born?",
+        retrieved_contexts=[...]
+    )
+    ```
+
+### Implementation Note
+
+**Difference from Original Paper:** The original Ragas paper defines Context Relevance using sentence-level extraction (CR = number of relevant sentences / total sentences), but the current implementation uses a more robust discrete judgment approach. Each LLM is asked to rate overall context relevance on a 0-2 scale, which is more efficient and less prone to sentence boundary errors. This was an intentional design decision to improve reliability and reduce computational overhead while maintaining the core evaluation objective.
 
 ### How It's Calculated
 
@@ -187,6 +207,38 @@ In this example, the two retrieved contexts together fully address the user's qu
 - **Token Usage:** Context Precision and Context Recall consume lot more tokens, whereas Context Relevance is more token-efficient.
 - **Explainability:** Context Precision and Context Recall offer high explainability with detailed reasoning, while Context Relevance provides a raw score without explanations.
 - **Robust Evaluation:** Context Relevance delivers a more robust evaluation through dual LLM judgments compared to the single-call approach of Context Precision and Context Recall.
+
+### Legacy Metrics API
+
+The following examples use the legacy metrics API pattern. For new projects, we recommend using the collections-based API shown above.
+
+!!! warning "Deprecation Timeline"
+    This API will be deprecated in version 0.4 and removed in version 1.0. Please migrate to the collections-based API shown above.
+
+#### Example with SingleTurnSample
+
+```python
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics import ContextRelevance
+
+sample = SingleTurnSample(
+    user_input="When and Where Albert Einstein was born?",
+    retrieved_contexts=[
+        "Albert Einstein was born March 14, 1879.",
+        "Albert Einstein was born at Ulm, in Württemberg, Germany.",
+    ]
+)
+
+scorer = ContextRelevance(llm=evaluator_llm)
+score = await scorer.single_turn_ascore(sample)
+print(score)
+```
+
+Output:
+
+```
+1.0
+```
 
 ## Response Groundedness
 
