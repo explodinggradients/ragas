@@ -75,14 +75,14 @@ You can pass additional arguments to the underlying `sacrebleu.corpus_bleu` func
 scorer = BleuScore(kwargs={"smooth_method": "exp"})
 ```
 
-## Legacy Metrics API
+### Legacy Metrics API
 
 The following examples use the legacy metrics API pattern. For new projects, we recommend using the collections-based API shown above.
 
 !!! warning "Deprecation Timeline"
     This API will be deprecated in version 0.4 and removed in version 1.0. Please migrate to the collections-based API shown above.
 
-### Example with SingleTurnSample
+#### Example with SingleTurnSample
 
 ```python
 from ragas.dataset_schema import SingleTurnSample
