@@ -9,24 +9,45 @@
 - **4** → The **response** exactly aligns with the **reference**.
 
 
-```python
-from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics import AnswerAccuracy
+### Example
 
-sample = SingleTurnSample(
+```python
+from openai import AsyncOpenAI
+from ragas.llms import llm_factory
+from ragas.metrics.collections import AnswerAccuracy
+
+# Setup LLM
+client = AsyncOpenAI()
+llm = llm_factory("gpt-4o-mini", client=client)
+
+# Create metric
+scorer = AnswerAccuracy(llm=llm)
+
+# Evaluate
+result = await scorer.ascore(
     user_input="When was Einstein born?",
     response="Albert Einstein was born in 1879.",
     reference="Albert Einstein was born in 1879."
 )
+print(f"Answer Accuracy Score: {result.value}")
+```
 
-scorer = AnswerAccuracy(llm=evaluator_llm) # evaluator_llm wrapped with ragas LLM Wrapper
-score = await scorer.single_turn_ascore(sample)
-print(score)
+Output:
+
 ```
-Output
+Answer Accuracy Score: 1.0
 ```
-1.0
-```
+
+!!! note "Synchronous Usage"
+    If you prefer synchronous code, you can use the `.score()` method instead of `.ascore()`:
+    
+    ```python
+    result = scorer.score(
+        user_input="When was Einstein born?",
+        response="Albert Einstein was born in 1879.",
+        reference="Albert Einstein was born in 1879."
+    )
+    ```
 
 ### How It’s Calculated
 
@@ -73,6 +94,36 @@ Thus, the final **Answer Accuracy** score is **1**.
 - **Token Usage**: Answer Accuracy is minimal since it outputs just a score, whereas Rubric Score generates reasoning, increasing token consumption.
 - **Explainability**: Answer Accuracy provides a raw score without justification, while Rubric Score offers reasoning with verdict.
 - **Efficiency**: Answer Accuracy is lightweight and works very well with smaller models.
+
+### Legacy Metrics API
+
+The following examples use the legacy metrics API pattern. For new projects, we recommend using the collections-based API shown above.
+
+!!! warning "Deprecation Timeline"
+    This API will be deprecated in version 0.4 and removed in version 1.0. Please migrate to the collections-based API shown above.
+
+#### Example with SingleTurnSample
+
+```python
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics import AnswerAccuracy
+
+sample = SingleTurnSample(
+    user_input="When was Einstein born?",
+    response="Albert Einstein was born in 1879.",
+    reference="Albert Einstein was born in 1879."
+)
+
+scorer = AnswerAccuracy(llm=evaluator_llm) # evaluator_llm wrapped with ragas LLM Wrapper
+score = await scorer.single_turn_ascore(sample)
+print(score)
+```
+
+Output:
+
+```
+1.0
+```
 
 ## Context Relevance
 
