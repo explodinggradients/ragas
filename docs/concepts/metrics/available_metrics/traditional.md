@@ -33,9 +33,57 @@ scorer = NonLLMStringSimilarity(distance_measure=DistanceMeasure.HAMMING)
 
 ## BLEU Score
 
-The `BleuScore` score is a metric used to evaluate the quality of `response` by comparing it with `reference`. It measures the similarity between the response and the reference based on n-gram precision and brevity penalty. BLEU score was originally designed to evaluate machine translation systems, but it is also used in other natural language processing tasks. BLEU score ranges from 0 to 1, where 1 indicates a perfect match between the response and the reference. This is a non LLM based metric.
+The `BleuScore` metric is used to evaluate the quality of `response` by comparing it with `reference`. It measures the similarity between the response and the reference based on n-gram precision and brevity penalty. BLEU score was originally designed to evaluate machine translation systems, but it is also used in other natural language processing tasks. BLEU score ranges from 0 to 1, where 1 indicates a perfect match between the response and the reference. This is a non-LLM based metric.
 
 ### Example
+
+```python
+from ragas.metrics.collections import BleuScore
+
+# Create metric
+scorer = BleuScore()
+
+# Evaluate
+result = await scorer.ascore(
+    reference="The Eiffel Tower is located in Paris.",
+    response="The Eiffel Tower is located in India."
+)
+print(f"BLEU Score: {result.value}")
+```
+
+Output:
+
+```
+BLEU Score: 0.7071067811865478
+```
+
+!!! note "Synchronous Usage"
+    If you prefer synchronous code, you can use the `.score()` method instead of `.ascore()`:
+    
+    ```python
+    result = scorer.score(
+        reference="The Eiffel Tower is located in Paris.",
+        response="The Eiffel Tower is located in India."
+    )
+    ```
+
+### Configuration
+
+You can pass additional arguments to the underlying `sacrebleu.corpus_bleu` function using the `kwargs` parameter:
+
+```python
+scorer = BleuScore(kwargs={"smooth_method": "exp"})
+```
+
+## Legacy Metrics API
+
+The following examples use the legacy metrics API pattern. For new projects, we recommend using the collections-based API shown above.
+
+!!! warning "Deprecation Timeline"
+    This API will be deprecated in version 0.4 and removed in version 1.0. Please migrate to the collections-based API shown above.
+
+### Example with SingleTurnSample
+
 ```python
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics import BleuScore
@@ -48,7 +96,9 @@ sample = SingleTurnSample(
 scorer = BleuScore()
 await scorer.single_turn_ascore(sample)
 ```
-Output
+
+Output:
+
 ```
 0.7071067811865478
 ```
