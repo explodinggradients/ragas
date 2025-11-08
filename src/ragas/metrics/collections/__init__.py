@@ -13,6 +13,7 @@ from ragas.metrics.collections._context_precision import (
     ContextUtilization,
 )
 from ragas.metrics.collections._context_relevance import ContextRelevance
+from ragas.metrics.collections._factual_correctness import FactualCorrectness
 from ragas.metrics.collections._faithfulness import Faithfulness
 from ragas.metrics.collections._noise_sensitivity import NoiseSensitivity
 from ragas.metrics.collections._rouge_score import RougeScore
@@ -41,6 +42,7 @@ __all__ = [
     "ContextUtilization",
     "DistanceMeasure",
     "ExactMatch",
+    "FactualCorrectness",
     "Faithfulness",
     "NoiseSensitivity",
     "NonLLMStringSimilarity",
