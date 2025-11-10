@@ -594,6 +594,36 @@ class InstructorLLM(InstructorBaseRagasLLM):
         # Check if client is async-capable at initialization
         self.is_async = self._check_client_async()
 
+    def _map_openai_params(self, model_args: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+        """Map max_tokens to max_completion_tokens for o-series and newer OpenAI models.
+
+        O-series models (o1, o3, etc.) and some newer models like gpt-5-mini
+        require max_completion_tokens instead of the deprecated max_tokens parameter.
+        """
+        mapped_args = model_args.copy()
+
+        # List of models that require max_completion_tokens
+        models_requiring_max_completion_tokens = [
+            "o1",
+            "o3",
+            "o1-mini",
+            "o3-mini",
+            "gpt-5",
+            "gpt-5-mini",
+        ]
+
+        # Check if the model matches any of the patterns
+        model_lower = self.model.lower()
+        requires_max_completion_tokens = any(
+            pattern in model_lower for pattern in models_requiring_max_completion_tokens
+        )
+
+        # If max_tokens is provided and model requires max_completion_tokens, map it
+        if requires_max_completion_tokens and "max_tokens" in mapped_args:
+            mapped_args["max_completion_tokens"] = mapped_args.pop("max_tokens")
+
+        return mapped_args
+
     def _check_client_async(self) -> bool:
         """Determine if the client is async-capable."""
         try:
@@ -699,11 +729,13 @@ class InstructorLLM(InstructorBaseRagasLLM):
                     **google_kwargs,
                 )
             else:
+                # Map parameters for OpenAI models requiring max_completion_tokens
+                openai_kwargs = self._map_openai_params(self.model_args)
                 result = self.client.chat.completions.create(
                     model=self.model,
                     messages=messages,
                     response_model=response_model,
-                    **self.model_args,
+                    **openai_kwargs,
                 )
 
         # Track the usage
@@ -755,11 +787,13 @@ class InstructorLLM(InstructorBaseRagasLLM):
                 **google_kwargs,
             )
         else:
+            # Map parameters for OpenAI models requiring max_completion_tokens
+            openai_kwargs = self._map_openai_params(self.model_args)
             result = await self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
                 response_model=response_model,
-                **self.model_args,
+                **openai_kwargs,
             )
 
         # Track the usage
