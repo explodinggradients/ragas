@@ -59,4 +59,4 @@ I will provide a rating of 0, 1, or 2, without any additional information.
 **Assertion:**
 [{response}]
 
-Do not explain."""
+Do not explain.Based on the provided context and response, the Groundedness score is:"""

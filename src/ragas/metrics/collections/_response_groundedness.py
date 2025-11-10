@@ -3,7 +3,6 @@
 import typing as t
 from typing import List
 
-import numpy as np
 from pydantic import BaseModel
 
 from ragas.metrics.collections.base import BaseMetric
@@ -120,7 +119,7 @@ class ResponseGroundedness(BaseMetric):
         if not response.strip() or not context_str.strip():
             return MetricResult(value=0.0)
 
-        # Get ratings from both judges
+        # Get ratings from both judges (already on 0.0-1.0 scale from legacy parsing)
         judge1_rating = await self._get_judge_rating(
             response_groundedness_judge1_prompt(response, context_str)
         )
@@ -128,21 +127,21 @@ class ResponseGroundedness(BaseMetric):
             response_groundedness_judge2_prompt(response, context_str)
         )
 
-        # Average the scores (convert from 0,1,2 scale to 0.0-1.0)
-        score = self._average_scores(judge1_rating / 2.0, judge2_rating / 2.0)
+        # Average the scores (already on 0.0-1.0 scale like legacy)
+        score = self._average_scores(judge1_rating, judge2_rating)
 
         return MetricResult(value=float(score))
 
     async def _get_judge_rating(self, prompt: str) -> float:
-        """Get rating from judge with retry logic."""
+        """Get rating from judge using structured output with legacy-compatible processing."""
         for retry in range(self.max_retries):
             try:
                 result = await self.llm.agenerate(prompt, GroundednessRating)
                 rating = result.rating
 
-                # Validate rating is in expected range
+                # Validate rating is in expected range and convert to 0.0-1.0 scale
                 if rating in [0, 1, 2]:
-                    return float(rating)
+                    return rating / 2.0  # Convert to legacy 0.0-1.0 scale
                 else:
                     if retry < self.max_retries - 1:
                         continue  # Retry if invalid rating
@@ -158,12 +157,9 @@ class ResponseGroundedness(BaseMetric):
         return float("nan")
 
     def _average_scores(self, score1: float, score2: float) -> float:
-        """Average two judge scores, handling NaN values."""
-        if not np.isnan(score1) and not np.isnan(score2):
+        """Average two judge scores, handling NaN values. Matches legacy logic exactly."""
+        if score1 >= 0 and score2 >= 0:
             return (score1 + score2) / 2.0
-        elif not np.isnan(score1):
-            return score1
-        elif not np.isnan(score2):
-            return score2
         else:
-            return float("nan")
+            # Match legacy behavior: use max() for NaN handling
+            return max(score1, score2)
