@@ -15,6 +15,7 @@ from ragas.metrics.collections._context_relevance import ContextRelevance
 from ragas.metrics.collections._factual_correctness import FactualCorrectness
 from ragas.metrics.collections._faithfulness import Faithfulness
 from ragas.metrics.collections._noise_sensitivity import NoiseSensitivity
+from ragas.metrics.collections._response_groundedness import ResponseGroundedness
 from ragas.metrics.collections._rouge_score import RougeScore
 from ragas.metrics.collections._semantic_similarity import SemanticSimilarity
 from ragas.metrics.collections._string import (
@@ -44,6 +45,7 @@ __all__ = [
     "Faithfulness",
     "NoiseSensitivity",
     "NonLLMStringSimilarity",
+    "ResponseGroundedness",
     "RougeScore",
     "SemanticSimilarity",
     "StringPresence",
