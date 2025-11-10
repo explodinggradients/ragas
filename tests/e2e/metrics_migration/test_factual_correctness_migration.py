@@ -131,10 +131,11 @@ class TestFactualCorrectnessE2EMigration:
                 print(f"   Diff:   {score_diff:.6f}")
 
                 # Ensure implementations give reasonably similar scores
-                # Factual correctness may have more variation due to claim decomposition and different LLM behavior
-                assert score_diff < 0.35, (
+                # After fixing the parameter order bug, factual correctness has excellent compatibility
+                # Max observed difference: 0.1 (down from 0.33 before the fix)
+                assert score_diff < 0.15, (
                     f"Legacy and V2 scores should be similar: Legacy={legacy_score:.6f}, "
-                    f"V2={v2_result.value:.6f}, Diff={score_diff:.6f} (tolerance: 0.35)"
+                    f"V2={v2_result.value:.6f}, Diff={score_diff:.6f} (tolerance: 0.15)"
                 )
                 print("   ✅ Both implementations give consistent scores")
 

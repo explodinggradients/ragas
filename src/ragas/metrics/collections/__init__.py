@@ -3,9 +3,14 @@
 from ragas.metrics.collections._answer_accuracy import AnswerAccuracy
 from ragas.metrics.collections._answer_correctness import AnswerCorrectness
 from ragas.metrics.collections._answer_relevancy import AnswerRelevancy
-from ragas.metrics.collections._answer_similarity import AnswerSimilarity
 from ragas.metrics.collections._bleu_score import BleuScore
 from ragas.metrics.collections._context_entity_recall import ContextEntityRecall
+from ragas.metrics.collections._context_precision import (
+    ContextPrecision,
+    ContextPrecisionWithoutReference,
+    ContextPrecisionWithReference,
+    ContextUtilization,
+)
 from ragas.metrics.collections._context_relevance import ContextRelevance
 from ragas.metrics.collections._factual_correctness import FactualCorrectness
 from ragas.metrics.collections._faithfulness import Faithfulness
@@ -27,10 +32,13 @@ __all__ = [
     "AnswerAccuracy",
     "AnswerCorrectness",
     "AnswerRelevancy",
-    "AnswerSimilarity",
     "BleuScore",
     "ContextEntityRecall",
+    "ContextPrecision",
+    "ContextPrecisionWithReference",
+    "ContextPrecisionWithoutReference",
     "ContextRelevance",
+    "ContextUtilization",
     "DistanceMeasure",
     "ExactMatch",
     "FactualCorrectness",
