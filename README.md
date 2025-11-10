@@ -48,7 +48,7 @@ Ragas is your ultimate toolkit for evaluating and optimizing Large Language Mode
 Don't have a test dataset ready? We also do production-aligned test set generation.
 
 > [!NOTE]
-> Need help setting up Evals for your AI application? We'd love to help! We are conducting Office Hours every week. You can sign up [here](https://cal.com/team/ragas/office-hours).
+> Need help setting up Evals for your AI application? We'd love to help! We are conducting Office Hours every week. You can sign up [here](https://cal.com/team/vibrantlabs/office-hours).
 
 ## Key Features
 
