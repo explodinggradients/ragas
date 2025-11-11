@@ -39,18 +39,14 @@ pip install -e .
 
 ## Step 3: Set Your API Key
 
-Choose your LLM provider and set the environment variable:
+Let's use OpenAI as LLM provider and set the environment variable:
 
 ```sh
 # OpenAI (default)
 export OPENAI_API_KEY="your-openai-key"
-
-# Or use Anthropic Claude
-export ANTHROPIC_API_KEY="your-anthropic-key"
-
-# Or use Google Gemini
-export GOOGLE_API_KEY="your-google-key"
 ```
+
+If you want to use any other LLM provider, check below on how to configure that.
 
 ## Project Structure
 
