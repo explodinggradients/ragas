@@ -9,24 +9,45 @@
 - **4** → The **response** exactly aligns with the **reference**.
 
 
-```python
-from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics import AnswerAccuracy
+### Example
 
-sample = SingleTurnSample(
+```python
+from openai import AsyncOpenAI
+from ragas.llms import llm_factory
+from ragas.metrics.collections import AnswerAccuracy
+
+# Setup LLM
+client = AsyncOpenAI()
+llm = llm_factory("gpt-4o-mini", client=client)
+
+# Create metric
+scorer = AnswerAccuracy(llm=llm)
+
+# Evaluate
+result = await scorer.ascore(
     user_input="When was Einstein born?",
     response="Albert Einstein was born in 1879.",
     reference="Albert Einstein was born in 1879."
 )
+print(f"Answer Accuracy Score: {result.value}")
+```
 
-scorer = AnswerAccuracy(llm=evaluator_llm) # evaluator_llm wrapped with ragas LLM Wrapper
-score = await scorer.single_turn_ascore(sample)
-print(score)
+Output:
+
 ```
-Output
+Answer Accuracy Score: 1.0
 ```
-1.0
-```
+
+!!! note "Synchronous Usage"
+    If you prefer synchronous code, you can use the `.score()` method instead of `.ascore()`:
+    
+    ```python
+    result = scorer.score(
+        user_input="When was Einstein born?",
+        response="Albert Einstein was born in 1879.",
+        reference="Albert Einstein was born in 1879."
+    )
+    ```
 
 ### How It’s Calculated
 
@@ -74,39 +95,92 @@ Thus, the final **Answer Accuracy** score is **1**.
 - **Explainability**: Answer Accuracy provides a raw score without justification, while Rubric Score offers reasoning with verdict.
 - **Efficiency**: Answer Accuracy is lightweight and works very well with smaller models.
 
+### Legacy Metrics API
+
+The following examples use the legacy metrics API pattern. For new projects, we recommend using the collections-based API shown above.
+
+!!! warning "Deprecation Timeline"
+    This API will be deprecated in version 0.4 and removed in version 1.0. Please migrate to the collections-based API shown above.
+
+#### Example with SingleTurnSample
+
+```python
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics import AnswerAccuracy
+
+sample = SingleTurnSample(
+    user_input="When was Einstein born?",
+    response="Albert Einstein was born in 1879.",
+    reference="Albert Einstein was born in 1879."
+)
+
+scorer = AnswerAccuracy(llm=evaluator_llm) # evaluator_llm wrapped with ragas LLM Wrapper
+score = await scorer.single_turn_ascore(sample)
+print(score)
+```
+
+Output:
+
+```
+1.0
+```
+
 ## Context Relevance
 
 **Context Relevance** evaluates whether the **retrieved_contexts** (chunks or passages) are pertinent to the **user_input**. This is done via two independent "LLM-as-a-Judge" prompt calls that each rate the relevance on a scale of **0, 1, or 2**. The ratings are then converted to a [0,1] scale and averaged to produce the final score. Higher scores indicate that the contexts are more closely aligned with the user's query.
 
-- **0** → The retrieved contexts are not relevant to the user’s query at all.
+- **0** → The retrieved contexts are not relevant to the user's query at all.
 - **1** → The contexts are partially relevant.
 - **2** → The contexts are completely relevant.
 
+### Example
 
 ```python
-from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics import ContextRelevance
+from openai import AsyncOpenAI
+from ragas.llms import llm_factory
+from ragas.metrics.collections import ContextRelevance
 
-sample = SingleTurnSample(
+# Setup LLM
+client = AsyncOpenAI()
+llm = llm_factory("gpt-4o-mini", client=client)
+
+# Create metric
+scorer = ContextRelevance(llm=llm)
+
+# Evaluate
+result = await scorer.ascore(
     user_input="When and Where Albert Einstein was born?",
     retrieved_contexts=[
         "Albert Einstein was born March 14, 1879.",
         "Albert Einstein was born at Ulm, in Württemberg, Germany.",
     ]
 )
-
-scorer = ContextRelevance(llm=evaluator_llm)
-score = await scorer.single_turn_ascore(sample)
-print(score)
-```
-Output
-```
-1.0
+print(f"Context Relevance Score: {result.value}")
 ```
 
-### How It’s Calculated
+Output:
 
-**Step 1:** The LLM is prompted with two distinct templates (template_relevance1 and template_relevance2) to evaluate the relevance of the retrieved contexts concerning the user's query. Each prompt returns a relevance rating of **0**, **1**, or **2**.
+```
+Context Relevance Score: 1.0
+```
+
+!!! note "Synchronous Usage"
+    If you prefer synchronous code, you can use the `.score()` method instead of `.ascore()`:
+    
+    ```python
+    result = scorer.score(
+        user_input="When and Where Albert Einstein was born?",
+        retrieved_contexts=[...]
+    )
+    ```
+
+### Implementation Note
+
+**Difference from Original Paper:** The original Ragas paper defines Context Relevance using sentence-level extraction (CR = number of relevant sentences / total sentences), but the current implementation uses a more robust discrete judgment approach. Each LLM is asked to rate overall context relevance on a 0-2 scale, which is more efficient and less prone to sentence boundary errors. This was an intentional design decision to improve reliability and reduce computational overhead while maintaining the core evaluation objective.
+
+### How It's Calculated
+
+**Step 1:** The LLM is prompted with two distinct templates (template_relevance1 and template_relevance2) to evaluate the relevance of the retrieved contexts concerning the user's query. Each prompt returns a relevance rating of **0**, **1**, or **2**. Using two independent evaluations provides robustness and helps mitigate individual LLM biases.
 
 **Step 2:** Each rating is normalized to a [0,1] scale by dividing by 2. If both ratings are valid, the final score is the average of these normalized values; if only one is valid, that score is used.
 
@@ -133,6 +207,38 @@ In this example, the two retrieved contexts together fully address the user's qu
 - **Token Usage:** Context Precision and Context Recall consume lot more tokens, whereas Context Relevance is more token-efficient.
 - **Explainability:** Context Precision and Context Recall offer high explainability with detailed reasoning, while Context Relevance provides a raw score without explanations.
 - **Robust Evaluation:** Context Relevance delivers a more robust evaluation through dual LLM judgments compared to the single-call approach of Context Precision and Context Recall.
+
+### Legacy Metrics API
+
+The following examples use the legacy metrics API pattern. For new projects, we recommend using the collections-based API shown above.
+
+!!! warning "Deprecation Timeline"
+    This API will be deprecated in version 0.4 and removed in version 1.0. Please migrate to the collections-based API shown above.
+
+#### Example with SingleTurnSample
+
+```python
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics import ContextRelevance
+
+sample = SingleTurnSample(
+    user_input="When and Where Albert Einstein was born?",
+    retrieved_contexts=[
+        "Albert Einstein was born March 14, 1879.",
+        "Albert Einstein was born at Ulm, in Württemberg, Germany.",
+    ]
+)
+
+scorer = ContextRelevance(llm=evaluator_llm)
+score = await scorer.single_turn_ascore(sample)
+print(score)
+```
+
+Output:
+
+```
+1.0
+```
 
 ## Response Groundedness
 

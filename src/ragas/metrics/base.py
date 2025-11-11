@@ -15,11 +15,12 @@ from ragas._analytics import EvaluationEvent, _analytics_batcher
 from ragas.async_utils import apply_nest_asyncio, run
 from ragas.callbacks import ChainType, new_group
 from ragas.dataset_schema import MetricAnnotation, MultiTurnSample, SingleTurnSample
+from ragas.llms import BaseRagasLLM
 from ragas.losses import BinaryMetricLoss, MSELoss
 from ragas.metrics.validators import AllowedValuesType
 from ragas.prompt import FewShotPydanticPrompt, PromptMixin
 from ragas.run_config import RunConfig
-from ragas.utils import camel_to_snake, deprecated, get_metric_language
+from ragas.utils import camel_to_snake, get_metric_language
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -28,7 +29,6 @@ if t.TYPE_CHECKING:
     from ragas.config import DemonstrationConfig, InstructionConfig
     from ragas.dataset import Dataset
     from ragas.embeddings import BaseRagasEmbedding, BaseRagasEmbeddings
-    from ragas.llms import BaseRagasLLM
     from ragas.metrics.result import MetricResult
     from ragas.prompt.simple_prompt import Prompt
 
@@ -150,79 +150,6 @@ class Metric(ABC):
         """
         ...
 
-    @deprecated("0.2", removal="0.3", alternative="single_turn_ascore")
-    def score(self, row: t.Dict, callbacks: Callbacks = None) -> float:
-        """
-        Calculates the score for a single row of data.
-
-        Note
-        ----
-        This method is deprecated and will be removed in 0.3. Please use `single_turn_ascore` or `multi_turn_ascore` instead.
-        """
-        callbacks = callbacks or []
-        rm, group_cm = new_group(
-            self.name,
-            inputs=row,
-            callbacks=callbacks,
-            metadata={"type": ChainType.METRIC},
-        )
-
-        async def _async_wrapper():
-            try:
-                result = await self._ascore(row=row, callbacks=group_cm)
-            except Exception as e:
-                if not group_cm.ended:
-                    rm.on_chain_error(e)
-                raise e
-            else:
-                if not group_cm.ended:
-                    rm.on_chain_end({"output": result})
-                return result
-
-        # Apply nest_asyncio logic to ensure compatibility in notebook/Jupyter environments.
-        apply_nest_asyncio()
-        return run(_async_wrapper)
-
-    @deprecated("0.2", removal="0.3", alternative="single_turn_ascore")
-    async def ascore(
-        self,
-        row: t.Dict,
-        callbacks: Callbacks = None,
-        timeout: t.Optional[float] = None,
-    ) -> float:
-        """
-        Asynchronously calculates the score for a single row of data.
-
-        Note
-        ----
-        This method is deprecated and will be removed in 0.3. Please use `single_turn_ascore` instead.
-        """
-        callbacks = callbacks or []
-        rm, group_cm = new_group(
-            self.name,
-            inputs=row,
-            callbacks=callbacks,
-            metadata={"type": ChainType.METRIC},
-        )
-        try:
-            score = await asyncio.wait_for(
-                self._ascore(row=row, callbacks=group_cm),
-                timeout=timeout,
-            )
-        except Exception as e:
-            if not group_cm.ended:
-                rm.on_chain_error(e)
-            raise e
-        else:
-            if not group_cm.ended:
-                rm.on_chain_end({"output": score})
-        return score
-
-    async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
-        raise NotImplementedError(
-            f"Metric '{self.name}' has no implementation for _ascore. score() is deprecated and will be removed in 0.3. Please use single_turn_ascore or multi_turn_ascore instead."
-        )
-
 
 @dataclass
 class MetricWithLLM(Metric, PromptMixin):
@@ -232,7 +159,8 @@ class MetricWithLLM(Metric, PromptMixin):
     Attributes
     ----------
     llm : Optional[BaseRagasLLM]
-        The language model used for the metric.
+        The language model used for the metric. Both BaseRagasLLM and InstructorBaseRagasLLM
+        are accepted at runtime via duck typing (both have compatible methods).
     """
 
     llm: t.Optional[BaseRagasLLM] = None
@@ -256,7 +184,9 @@ class MetricWithLLM(Metric, PromptMixin):
             raise ValueError(
                 f"Metric '{self.name}' has no valid LLM provided (self.llm is None). Please instantiate the metric with an LLM to run."
             )
-        self.llm.set_run_config(run_config)
+        # Only BaseRagasLLM has set_run_config method, not InstructorBaseRagasLLM
+        if isinstance(self.llm, BaseRagasLLM):
+            self.llm.set_run_config(run_config)
 
     def _optimize_instruction(
         self,

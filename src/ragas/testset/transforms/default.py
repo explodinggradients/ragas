@@ -21,18 +21,21 @@ from .engine import Parallel
 
 if t.TYPE_CHECKING:
     from ragas.embeddings.base import BaseRagasEmbeddings
-    from ragas.llms.base import BaseRagasLLM
+    from ragas.llms.base import InstructorBaseRagasLLM
 
     from .engine import Transforms
 
 from langchain_core.documents import Document as LCDocument
 
+from ragas.embeddings.base import BaseRagasEmbeddings
+from ragas.llms.base import BaseRagasLLM
+
 
 def default_transforms(
     documents: t.List[LCDocument],
-    llm: BaseRagasLLM,
+    llm: t.Union[BaseRagasLLM, "InstructorBaseRagasLLM"],
     embedding_model: BaseRagasEmbeddings,
-) -> Transforms:
+) -> "Transforms":
     """
     Creates and returns a default set of transforms for processing a knowledge graph.
 

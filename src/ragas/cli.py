@@ -458,6 +458,359 @@ def evals(
 
 
 @app.command()
+def quickstart(
+    template: Optional[str] = typer.Argument(
+        None,
+        help="Template name (e.g., 'rag_eval', 'agent_evals'). Leave empty to see available templates.",
+    ),
+    output_dir: str = typer.Option(
+        ".", "--output-dir", "-o", help="Directory to create the project in"
+    ),
+):
+    """
+    Clone a complete example project to get started with Ragas.
+
+    Similar to 'uvx hud-python quickstart', this creates a complete example
+    project with all necessary files and dependencies.
+
+    Examples:
+        ragas quickstart                    # List available templates
+        ragas quickstart rag_eval           # Create a RAG evaluation project
+        ragas quickstart agent_evals -o ./my-project
+    """
+    import shutil
+    import time
+    from pathlib import Path
+
+    # Define available templates with descriptions
+    # Currently only rag_eval is available and fully tested
+    templates = {
+        "rag_eval": {
+            "name": "RAG Evaluation",
+            "description": "Evaluate a RAG (Retrieval Augmented Generation) system with custom metrics",
+            "source_path": "ragas_examples/rag_eval",
+        },
+        # Coming soon - not yet fully implemented:
+        # "agent_evals": {
+        #     "name": "Agent Evaluation",
+        #     "description": "Evaluate AI agents with structured metrics and workflows",
+        #     "source_path": "ragas_examples/agent_evals",
+        # },
+        # "benchmark_llm": {
+        #     "name": "LLM Benchmarking",
+        #     "description": "Benchmark and compare different LLM models with datasets",
+        #     "source_path": "ragas_examples/benchmark_llm",
+        # },
+        # "prompt_evals": {
+        #     "name": "Prompt Evaluation",
+        #     "description": "Evaluate and compare different prompt variations",
+        #     "source_path": "ragas_examples/prompt_evals",
+        # },
+        # "workflow_eval": {
+        #     "name": "Workflow Evaluation",
+        #     "description": "Evaluate complex LLM workflows and pipelines",
+        #     "source_path": "ragas_examples/workflow_eval",
+        # },
+    }
+
+    # If no template specified, list available templates
+    if template is None:
+        console.print(
+            "\n[bold cyan]Available Ragas Quickstart Templates:[/bold cyan]\n"
+        )
+
+        # Create a table of templates
+        table = Table(show_header=True, header_style="bold yellow")
+        table.add_column("Template", style="cyan", no_wrap=True)
+        table.add_column("Name", style="green")
+        table.add_column("Description", style="white")
+
+        for template_id, template_info in templates.items():
+            table.add_row(
+                template_id, template_info["name"], template_info["description"]
+            )
+
+        console.print(table)
+        console.print("\n[bold]Usage:[/bold]")
+        console.print("  ragas quickstart [template_name]")
+        console.print("\n[bold]Example:[/bold]")
+        console.print("  ragas quickstart rag_eval")
+        console.print("  ragas quickstart rag_eval --output-dir ./my-project\n")
+        return
+
+    # Validate template name
+    if template not in templates:
+        error(f"Unknown template: {template}")
+        console.print(f"\nAvailable templates: {', '.join(templates.keys())}")
+        console.print("Run 'ragas quickstart' to see all available templates.")
+        raise typer.Exit(1)
+
+    template_info = templates[template]
+    template_path = template_info["source_path"].replace("ragas_examples/", "")
+
+    # Try to find examples locally first (for development and testing)
+    # Look for examples in the installed ragas-examples package or local dev environment
+    source_path = None
+    temp_dir = None
+
+    try:
+        import ragas_examples
+
+        if ragas_examples.__file__ is not None:
+            examples_root = Path(ragas_examples.__file__).parent
+            local_source = examples_root / template_path
+            if local_source.exists():
+                source_path = local_source
+                info("Using locally installed examples")
+    except ImportError:
+        pass
+
+    # If not found locally, check if we're in the ragas repository (dev mode)
+    if source_path is None:
+        # Try to find examples directory relative to this file (development mode)
+        cli_file = Path(__file__).resolve()
+        repo_root = cli_file.parent.parent.parent  # Go up from src/ragas/cli.py
+        local_examples = repo_root / "examples" / "ragas_examples" / template_path
+        if local_examples.exists():
+            source_path = local_examples
+            info("Using local development examples")
+
+    # If still not found, download from GitHub
+    if source_path is None:
+        import tempfile
+        import urllib.request
+        import zipfile
+
+        github_repo = "explodinggradients/ragas"
+        branch = "main"
+
+        # Create temporary directory for download
+        temp_dir = Path(tempfile.mkdtemp())
+
+        try:
+            # Download the specific template folder from GitHub
+            archive_url = (
+                f"https://github.com/{github_repo}/archive/refs/heads/{branch}.zip"
+            )
+
+            with Live(
+                Spinner(
+                    "dots", text="Downloading template from GitHub...", style="cyan"
+                ),
+                console=console,
+            ):
+                zip_path = temp_dir / "repo.zip"
+                urllib.request.urlretrieve(archive_url, zip_path)
+
+                with zipfile.ZipFile(zip_path, "r") as zip_ref:
+                    zip_ref.extractall(temp_dir)
+
+                extracted_folders = [
+                    f
+                    for f in temp_dir.iterdir()
+                    if f.is_dir() and f.name.startswith("ragas-")
+                ]
+                if not extracted_folders:
+                    error("Failed to extract template from GitHub archive")
+                    raise typer.Exit(1)
+
+                repo_dir = extracted_folders[0]
+                source_path = repo_dir / "examples" / "ragas_examples" / template_path
+
+                if not source_path.exists():
+                    error(f"Template not found in repository: {template_path}")
+                    console.print(f"Looking for: {source_path}")
+                    raise typer.Exit(1)
+
+        except Exception as e:
+            error(f"Failed to download template from GitHub: {e}")
+            console.print("\nYou can also manually clone the repository:")
+            console.print(f"  git clone https://github.com/{github_repo}.git")
+            console.print(
+                f"  cp -r ragas/examples/ragas_examples/{template_path} ./{template}"
+            )
+            raise typer.Exit(1)
+
+    # Determine output directory
+    output_path = Path(output_dir) / template
+
+    if output_path.exists():
+        warning(f"Directory already exists: {output_path}")
+        overwrite = typer.confirm("Do you want to overwrite it?", default=False)
+        if not overwrite:
+            info("Operation cancelled.")
+            raise typer.Exit(0)
+        shutil.rmtree(output_path)
+
+    # Copy the template
+    with Live(
+        Spinner(
+            "dots", text=f"Creating {template_info['name']} project...", style="green"
+        ),
+        console=console,
+    ) as live:
+        live.update(Spinner("dots", text="Copying template files...", style="green"))
+
+        # Copy template but exclude .venv and __pycache__
+        def ignore_patterns(directory, files):
+            return {
+                f for f in files if f in {".venv", "__pycache__", "*.pyc", "uv.lock"}
+            }
+
+        shutil.copytree(source_path, output_path, ignore=ignore_patterns)
+        time.sleep(0.3)
+
+        live.update(
+            Spinner("dots", text="Setting up project structure...", style="green")
+        )
+
+        evals_dir = output_path / "evals"
+        evals_dir.mkdir(exist_ok=True)
+        (evals_dir / "datasets").mkdir(exist_ok=True)
+        (evals_dir / "experiments").mkdir(exist_ok=True)
+        (evals_dir / "logs").mkdir(exist_ok=True)
+        time.sleep(0.2)
+
+        # Create a README.md with setup instructions
+        live.update(Spinner("dots", text="Creating documentation...", style="green"))
+        readme_content = f"""# {template_info["name"]}
+
+{template_info["description"]}
+
+## Quick Start
+
+### 1. Set Your API Key
+
+Choose your LLM provider:
+
+```bash
+# OpenAI (default)
+export OPENAI_API_KEY="your-openai-key"
+
+# Or use Anthropic Claude
+export ANTHROPIC_API_KEY="your-anthropic-key"
+
+# Or use Google Gemini
+export GOOGLE_API_KEY="your-google-key"
+```
+
+### 2. Install Dependencies
+
+Using `uv` (recommended):
+
+```bash
+uv sync
+```
+
+Or using `pip`:
+
+```bash
+pip install -e .
+```
+
+### 3. Run the Evaluation
+
+Using `uv`:
+
+```bash
+uv run python evals.py
+```
+
+Or using `pip`:
+
+```bash
+python evals.py
+```
+
+### 4. Export Results to CSV
+
+Using `uv`:
+
+```bash
+uv run python export_csv.py
+```
+
+Or using `pip`:
+
+```bash
+python export_csv.py
+```
+
+## Project Structure
+
+```
+{template}/
+├── README.md           # This file
+├── pyproject.toml      # Project configuration
+├── rag.py              # Your RAG application code
+├── evals.py            # Evaluation workflow
+├── export_csv.py       # CSV export utility
+├── __init__.py         # Makes this a Python package
+└── evals/              # Evaluation-related data
+    ├── datasets/       # Test datasets
+    ├── experiments/    # Experiment results (CSVs saved here)
+    └── logs/           # Evaluation logs and traces
+```
+
+## Customization
+
+### Modify the LLM Provider
+
+In `evals.py`, update the LLM configuration:
+
+```python
+from ragas.llms import llm_factory
+
+# Use Anthropic Claude
+llm = llm_factory("claude-3-5-sonnet-20241022", provider="anthropic")
+
+# Use Google Gemini
+llm = llm_factory("gemini-1.5-pro", provider="google")
+
+# Use local Ollama
+llm = llm_factory("mistral", provider="ollama", base_url="http://localhost:11434")
+```
+
+### Customize Test Cases
+
+Edit the `load_dataset()` function in `evals.py` to add or modify test cases.
+
+### Change Evaluation Metrics
+
+Update the `my_metric` definition in `evals.py` to use different grading criteria.
+
+## Documentation
+
+Visit https://docs.ragas.io for more information.
+"""
+
+        readme_path = output_path / "README.md"
+        with open(readme_path, "w", encoding="utf-8") as f:
+            f.write(readme_content)
+        time.sleep(0.2)
+
+        live.update(Spinner("dots", text="Finalizing project...", style="green"))
+        time.sleep(0.3)
+
+    # Cleanup temporary directory if we downloaded from GitHub
+    if temp_dir is not None:
+        try:
+            shutil.rmtree(temp_dir)
+        except Exception:
+            pass
+
+    # Success message with next steps
+    success(f"\n✓ Created {template_info['name']} project at: {output_path}")
+    console.print("\n[bold cyan]Next Steps:[/bold cyan]")
+    console.print(f"  cd {output_path}")
+    console.print("  uv sync")
+    console.print("  export OPENAI_API_KEY='your-api-key'")
+    console.print("  uv run python evals.py")
+    console.print("\n📚 For detailed instructions, see:")
+    console.print("  https://docs.ragas.io/en/latest/getstarted/quickstart/\n")
+
+
+@app.command()
 def hello_world(
     directory: str = typer.Argument(
         ".", help="Directory to run the hello world example in"
@@ -610,7 +963,7 @@ async def run_experiment(row: TestDataRow):
 '''
 
         evals_path = os.path.join(directory, "hello_world", "evals.py")
-        with open(evals_path, "w") as f:
+        with open(evals_path, "w", encoding="utf-8") as f:
             f.write(evals_content)
         time.sleep(0.5)  # Brief pause to show spinner
 

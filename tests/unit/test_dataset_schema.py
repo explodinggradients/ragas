@@ -115,6 +115,33 @@ def test_evaluation_dataset_load_from_hf(eval_sample):
     assert loaded_dataset == dataset
 
 
+def test_single_turn_sample_metadata_roundtrip_hf_and_jsonl(tmpdir):
+    sample = SingleTurnSample(
+        user_input="Q",
+        response="A",
+        reference_contexts=["ctx"],
+        persona_name="Researcher",
+        query_style="FORMAL",
+        query_length="SHORT",
+    )
+    dataset = EvaluationDataset(samples=[sample])
+
+    # HF round-trip
+    hf = dataset.to_hf_dataset()
+    loaded_hf = EvaluationDataset.from_hf_dataset(hf)
+    assert loaded_hf.samples[0].persona_name == "Researcher"
+    assert loaded_hf.samples[0].query_style == "FORMAL"
+    assert loaded_hf.samples[0].query_length == "SHORT"
+
+    # JSONL round-trip
+    jsonl_path = tmpdir / "ds.jsonl"
+    dataset.to_jsonl(jsonl_path)
+    loaded_jsonl = EvaluationDataset.from_jsonl(jsonl_path)
+    assert loaded_jsonl.samples[0].persona_name == "Researcher"
+    assert loaded_jsonl.samples[0].query_style == "FORMAL"
+    assert loaded_jsonl.samples[0].query_length == "SHORT"
+
+
 @pytest.mark.parametrize("eval_sample", samples)
 def test_single_type_evaluation_dataset(eval_sample):
     single_turn_sample = SingleTurnSample(user_input="What is X", response="Y")

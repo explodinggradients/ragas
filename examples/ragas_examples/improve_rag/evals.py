@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
 from ragas import Dataset, experiment
-from ragas.llms import instructor_llm_factory
+from ragas.llms import llm_factory
 from ragas.metrics import DiscreteMetric
 
 from .rag import RAG, BM25Retriever
@@ -206,7 +206,7 @@ async def run_experiment(mode: str = "naive", model: str = "gpt-5-mini", name: O
         dataset, 
         name=name or f"{datetime.now().strftime('%Y%m%d-%H%M%S')}_{'agenticrag' if mode == 'agentic' else 'naiverag'}",
         rag=rag,
-        llm=instructor_llm_factory("openai", model="gpt-5-mini", client=openai_client)
+        llm=llm_factory("gpt-5-mini", client=openai_client)
     )
     
     # Print basic results

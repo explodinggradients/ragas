@@ -44,6 +44,7 @@ And then you can use these personas in the testset generation process by passing
 
 
 ```python
+from openai import OpenAI
 from ragas.testset import TestsetGenerator
 from ragas.testset.graph import KnowledgeGraph
 from ragas.llms import llm_factory
@@ -51,7 +52,8 @@ from ragas.llms import llm_factory
 # Load the knowledge graph
 kg = KnowledgeGraph.load("../../../../experiments/gitlab_kg.json")
 # Initialize the Generator LLM
-llm = llm_factory("gpt-4o-mini")
+openai_client = OpenAI()
+llm = llm_factory("gpt-4o-mini", client=openai_client)
 
 # Initialize the Testset Generator
 testset_generator = TestsetGenerator(knowledge_graph=kg, persona_list=personas, llm=llm)
