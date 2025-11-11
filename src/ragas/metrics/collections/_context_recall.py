@@ -76,7 +76,14 @@ class ContextRecall(BaseMetric):
         name: str = "context_recall",
         **kwargs,
     ):
-        """Initialize ContextRecall metric with required components."""
+        """
+        Initialize ContextRecall metric with required components.
+
+        Args:
+            llm: Modern instructor-based LLM for classification
+            name: The metric name (default: "context_recall")
+            **kwargs: Additional arguments passed to BaseMetric
+        """
         # Set attributes explicitly before calling super()
         self.llm = llm
 
@@ -102,6 +109,14 @@ class ContextRecall(BaseMetric):
         Returns:
             MetricResult with recall score (0.0-1.0)
         """
+        # Input validation
+        if not user_input:
+            raise ValueError("user_input cannot be empty")
+        if not reference:
+            raise ValueError("reference cannot be empty")
+        if not retrieved_contexts:
+            raise ValueError("retrieved_contexts cannot be empty")
+
         # Combine contexts into a single string
         context = "\n".join(retrieved_contexts) if retrieved_contexts else ""
 
