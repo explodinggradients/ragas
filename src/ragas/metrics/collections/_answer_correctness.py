@@ -88,12 +88,12 @@ class AnswerCorrectness(BaseMetric):
 
     # Type hints for linter (attributes are set in __init__)
     llm: "InstructorBaseRagasLLM"
-    embeddings: "BaseRagasEmbedding"
+    embeddings: t.Optional["BaseRagasEmbedding"]
 
     def __init__(
         self,
         llm: "InstructorBaseRagasLLM",
-        embeddings: "BaseRagasEmbedding",
+        embeddings: t.Optional["BaseRagasEmbedding"] = None,
         name: str = "answer_correctness",
         weights: List[float] = [0.75, 0.25],
         beta: float = 1.0,
@@ -104,9 +104,21 @@ class AnswerCorrectness(BaseMetric):
 
         Args:
             llm: Modern instructor-based LLM for statement generation and classification
-            embeddings: Modern embeddings model for similarity calculation
+            embeddings: Modern embeddings model for similarity calculation. Optional if similarity
+                       weight is 0 (pure factuality evaluation). Required if similarity weight > 0.
+            name: The metric name
             weights: [factuality_weight, similarity_weight]. Must sum to > 0.
             beta: F-beta score parameter. β>1 favors recall, β<1 favors precision.
+
+        Raises:
+            ValueError: If weights are invalid or embeddings are missing when needed for similarity scoring.
+
+        Examples:
+            Pure factuality (no embeddings needed):
+                >>> metric = AnswerCorrectness(llm=llm, weights=[1.0, 0.0])
+
+            Factuality + Similarity (embeddings required):
+                >>> metric = AnswerCorrectness(llm=llm, embeddings=embeddings, weights=[0.75, 0.25])
         """
         # Set attributes explicitly before calling super()
         self.llm = llm
@@ -124,6 +136,14 @@ class AnswerCorrectness(BaseMetric):
         if not all([w >= 0 for w in weights]):
             raise ValueError("Weights must be non-negative")
 
+        # Validate embeddings availability when similarity weight > 0
+        if weights[1] > 0 and embeddings is None:
+            raise ValueError(
+                "Embeddings are required for semantic similarity scoring. "
+                "Either provide embeddings or set similarity weight to 0 (weights=[1.0, 0.0]) "
+                "for pure factuality-only evaluation."
+            )
+
         # Validate beta
         if not isinstance(beta, float):
             raise ValueError(
@@ -132,6 +152,17 @@ class AnswerCorrectness(BaseMetric):
 
         # Call super() for validation (without passing llm/embeddings in kwargs)
         super().__init__(name=name, **kwargs)
+
+    def _validate_embeddings(self) -> None:
+        """Override base validation to allow optional embeddings.
+
+        AnswerCorrectness metric allows embeddings to be None when using
+        pure factuality evaluation (weights=[1.0, 0.0]). The main validation
+        of embeddings availability happens in __init__ based on weights.
+        """
+        # Only validate embeddings if similarity weight > 0
+        # (validation logic already in __init__)
+        pass
 
     async def ascore(
         self, user_input: str, response: str, reference: str
