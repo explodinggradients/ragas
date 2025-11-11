@@ -3,7 +3,6 @@
 from ragas.metrics.collections._answer_accuracy import AnswerAccuracy
 from ragas.metrics.collections._answer_correctness import AnswerCorrectness
 from ragas.metrics.collections._answer_relevancy import AnswerRelevancy
-from ragas.metrics.collections._answer_similarity import AnswerSimilarity
 from ragas.metrics.collections._bleu_score import BleuScore
 from ragas.metrics.collections._context_entity_recall import ContextEntityRecall
 from ragas.metrics.collections._context_precision import (
@@ -12,9 +11,12 @@ from ragas.metrics.collections._context_precision import (
     ContextPrecisionWithReference,
     ContextUtilization,
 )
+from ragas.metrics.collections._context_recall import ContextRecall
 from ragas.metrics.collections._context_relevance import ContextRelevance
+from ragas.metrics.collections._factual_correctness import FactualCorrectness
 from ragas.metrics.collections._faithfulness import Faithfulness
 from ragas.metrics.collections._noise_sensitivity import NoiseSensitivity
+from ragas.metrics.collections._response_groundedness import ResponseGroundedness
 from ragas.metrics.collections._rouge_score import RougeScore
 from ragas.metrics.collections._semantic_similarity import SemanticSimilarity
 from ragas.metrics.collections._string import (
@@ -31,9 +33,9 @@ __all__ = [
     "AnswerAccuracy",
     "AnswerCorrectness",
     "AnswerRelevancy",
-    "AnswerSimilarity",
     "BleuScore",
     "ContextEntityRecall",
+    "ContextRecall",
     "ContextPrecision",
     "ContextPrecisionWithReference",
     "ContextPrecisionWithoutReference",
@@ -41,9 +43,11 @@ __all__ = [
     "ContextUtilization",
     "DistanceMeasure",
     "ExactMatch",
+    "FactualCorrectness",
     "Faithfulness",
     "NoiseSensitivity",
     "NonLLMStringSimilarity",
+    "ResponseGroundedness",
     "RougeScore",
     "SemanticSimilarity",
     "StringPresence",

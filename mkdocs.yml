@@ -13,24 +13,15 @@ nav:
       - getstarted/index.md
       - Quick Start: getstarted/quickstart.md
       - Installation: getstarted/install.md
-      - Evaluate your first LLM App: getstarted/evals.md
-      - Evaluate a simple RAG: getstarted/rag_eval.md
-      - Generate Synthetic Testset for RAG: getstarted/rag_testset_generation.md
-      - Experiments:
-          - Run your first experiment: getstarted/experiments_quickstart.md
+      - Tutorials:
           - Evaluate a prompt: tutorials/prompt.md
           - Evaluate a simple RAG system: tutorials/rag.md
           - Evaluate an AI Workflow: tutorials/workflow.md
           - Evaluate an AI Agent: tutorials/agent.md
   - 📚 Core Concepts:
       - concepts/index.md
-      - Components:
-          - concepts/components/index.md
-          - General:
-              - Prompt: concepts/components/prompt.md
-          - Evaluation:
-              - Evaluation Sample: concepts/components/eval_sample.md
-              - Evaluation Dataset: concepts/components/eval_dataset.md
+      - Experimentation: concepts/experimentation.md
+      - Datasets: concepts/datasets.md
       - Metrics:
           - concepts/metrics/index.md
           - Overview: concepts/metrics/overview/index.md
@@ -84,10 +75,13 @@ nav:
               - Scenario Generation: concepts/test_data_generation/rag/#scenario-generation
           - Agents or tool use:
               - concepts/test_data_generation/agents.md
-      - Feedback Intelligence:
-          - concepts/feedback/index.md
-      - Datasets: concepts/datasets.md
-      - Experimentation: concepts/experimentation.md
+      - Components:
+          - concepts/components/index.md
+          - General:
+              - Prompt: concepts/components/prompt.md
+          - Evaluation:
+              - Evaluation Sample: concepts/components/eval_sample.md
+              - Evaluation Dataset: concepts/components/eval_dataset.md
   
   - 🛠️ How-to Guides:
       - howtos/index.md
