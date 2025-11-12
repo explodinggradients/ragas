@@ -1,11 +1,14 @@
 """Context Precision metrics v2 - Modern implementation with function-based prompts."""
 
+import logging
 import typing as t
 from typing import List
 
 import numpy as np
 from pydantic import BaseModel
 
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics._string import DistanceMeasure, NonLLMStringSimilarity
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
 from ragas.prompt.metrics.context_precision import (
@@ -15,6 +18,8 @@ from ragas.prompt.metrics.context_precision import (
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import InstructorBaseRagasLLM
+
+logger = logging.getLogger(__name__)
 
 
 class ContextPrecisionOutput(BaseModel):
@@ -328,3 +333,190 @@ class ContextUtilization(ContextPrecisionWithoutReference):
     ):
         """Initialize ContextUtilization with the legacy default name."""
         super().__init__(llm, name="context_utilization", **kwargs)
+
+
+class NonLLMContextPrecisionWithReference(BaseMetric):
+    """
+    Evaluate context precision using string similarity without LLM.
+
+    Compares retrieved contexts with reference contexts using string similarity.
+    A retrieved context is considered useful if it has sufficient similarity with
+    at least one reference context. Calculates average precision based on usefulness.
+
+    This implementation provides deterministic evaluation without requiring LLM components.
+
+    Usage:
+        >>> from ragas.metrics.collections import NonLLMContextPrecisionWithReference
+        >>>
+        >>> metric = NonLLMContextPrecisionWithReference(threshold=0.5)
+        >>>
+        >>> result = await metric.ascore(
+        ...     retrieved_contexts=["Albert Einstein was a physicist"],
+        ...     reference_contexts=["Einstein was a theoretical physicist"]
+        ... )
+        >>> print(f"Context Precision: {result.value}")
+
+    Attributes:
+        name: The metric name
+        threshold: Similarity threshold for considering a context as useful (default: 0.5)
+        distance_measure: The string distance measure to use (default: LEVENSHTEIN)
+        allowed_values: Score range (0.0 to 1.0)
+    """
+
+    def __init__(
+        self,
+        name: str = "non_llm_context_precision_with_reference",
+        threshold: float = 0.5,
+        distance_measure: DistanceMeasure = DistanceMeasure.LEVENSHTEIN,
+        **kwargs,
+    ):
+        """
+        Initialize NonLLMContextPrecisionWithReference metric.
+
+        Args:
+            name: The metric name
+            threshold: Similarity threshold (0.0-1.0) for considering a context useful
+            distance_measure: The string distance measure to use
+            **kwargs: Additional arguments passed to BaseMetric
+        """
+        super().__init__(name=name, **kwargs)
+        self.threshold = threshold
+        self._distance_measure = NonLLMStringSimilarity(
+            distance_measure=distance_measure
+        )
+
+    async def ascore(
+        self,
+        retrieved_contexts: List[str],
+        reference_contexts: List[str],
+    ) -> MetricResult:
+        """
+        Calculate context precision score using string similarity.
+
+        Args:
+            retrieved_contexts: List of retrieved context strings
+            reference_contexts: List of reference context strings
+
+        Returns:
+            MetricResult with precision score (0.0-1.0, higher is better)
+        """
+        if not retrieved_contexts:
+            raise ValueError("retrieved_contexts cannot be empty")
+        if not reference_contexts:
+            raise ValueError("reference_contexts cannot be empty")
+
+        scores = []
+        for rc in retrieved_contexts:
+            max_similarity = 0.0
+            for ref in reference_contexts:
+                # Use the distance measure to compute similarity
+                similarity = await self._distance_measure.single_turn_ascore(
+                    SingleTurnSample(reference=rc, response=ref),
+                    callbacks=None,
+                )
+                max_similarity = max(max_similarity, similarity)
+            scores.append(max_similarity)
+
+        # Convert to binary verdicts based on threshold
+        verdicts = [1 if score >= self.threshold else 0 for score in scores]
+
+        # Calculate average precision
+        score = self._calculate_average_precision(verdicts)
+        return MetricResult(value=float(score))
+
+    def _calculate_average_precision(self, verdict_list: List[int]) -> float:
+        """Calculate average precision from binary verdicts."""
+        if not verdict_list:
+            return np.nan
+
+        denominator = sum(verdict_list) + 1e-10
+        numerator = sum(
+            [
+                (sum(verdict_list[: i + 1]) / (i + 1)) * verdict_list[i]
+                for i in range(len(verdict_list))
+            ]
+        )
+        score = numerator / denominator
+        return score
+
+
+class IDBasedContextPrecision(BaseMetric):
+    """
+    Evaluate context precision by comparing retrieved and reference context IDs.
+
+    Directly compares retrieved context IDs with reference context IDs.
+    The score represents the proportion of retrieved IDs that are actually relevant
+    (present in reference IDs). Calculates average precision based on relevance.
+
+    This implementation works with both string and integer IDs and provides
+    deterministic evaluation without requiring LLM components.
+
+    Usage:
+        >>> from ragas.metrics.collections import IDBasedContextPrecision
+        >>>
+        >>> metric = IDBasedContextPrecision()
+        >>>
+        >>> result = await metric.ascore(
+        ...     retrieved_context_ids=["doc1", "doc2", "doc3"],
+        ...     reference_context_ids=["doc1", "doc2", "doc4"]
+        ... )
+        >>> print(f"Context Precision: {result.value}")  # 0.667
+
+    Attributes:
+        name: The metric name
+        allowed_values: Score range (0.0 to 1.0)
+    """
+
+    def __init__(
+        self,
+        name: str = "id_based_context_precision",
+        **kwargs,
+    ):
+        """
+        Initialize IDBasedContextPrecision metric.
+
+        Args:
+            name: The metric name
+            **kwargs: Additional arguments passed to BaseMetric
+        """
+        super().__init__(name=name, **kwargs)
+
+    async def ascore(
+        self,
+        retrieved_context_ids: t.Union[t.List[str], t.List[int]],
+        reference_context_ids: t.Union[t.List[str], t.List[int]],
+    ) -> MetricResult:
+        """
+        Calculate context precision score based on ID matching.
+
+        Args:
+            retrieved_context_ids: List of retrieved context IDs (strings or integers)
+            reference_context_ids: List of reference context IDs (strings or integers)
+
+        Returns:
+            MetricResult with precision score (0.0-1.0, higher is better)
+        """
+        if not retrieved_context_ids:
+            raise ValueError("retrieved_context_ids cannot be empty")
+        if not reference_context_ids:
+            raise ValueError("reference_context_ids cannot be empty")
+
+        # Convert all IDs to strings for consistent comparison
+        retrieved_ids_set = set(str(id_) for id_ in retrieved_context_ids)
+        reference_ids_set = set(str(id_) for id_ in reference_context_ids)
+
+        # Count how many retrieved IDs match reference IDs
+        hits = sum(
+            1 for ret_id in retrieved_ids_set if str(ret_id) in reference_ids_set
+        )
+
+        # For precision: relevant retrieved / total retrieved
+        total_retrieved = len(retrieved_ids_set)
+        if total_retrieved == 0:
+            logger.warning(
+                "No retrieved context IDs provided, cannot calculate precision."
+            )
+            return MetricResult(value=np.nan)
+
+        score = hits / total_retrieved
+        return MetricResult(value=float(score))

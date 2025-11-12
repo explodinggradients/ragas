@@ -10,6 +10,8 @@ from ragas.metrics.collections._context_precision import (
     ContextPrecisionWithoutReference,
     ContextPrecisionWithReference,
     ContextUtilization,
+    IDBasedContextPrecision,
+    NonLLMContextPrecisionWithReference,
 )
 from ragas.metrics.collections._context_recall import (
     ContextRecall,
@@ -49,8 +51,10 @@ __all__ = [
     "ExactMatch",
     "FactualCorrectness",
     "Faithfulness",
+    "IDBasedContextPrecision",
     "IDBasedContextRecall",
     "NoiseSensitivity",
+    "NonLLMContextPrecisionWithReference",
     "NonLLMContextRecall",
     "NonLLMStringSimilarity",
     "ResponseGroundedness",
