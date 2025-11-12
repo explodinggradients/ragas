@@ -39,14 +39,72 @@ pip install -e .
 
 ## Step 3: Set Your API Key
 
-Let's use OpenAI as LLM provider and set the environment variable:
+By default, the quickstart example uses OpenAI. Set your API key and you're ready to go. You can also use some other provider with a minor change:
 
-```sh
-# OpenAI (default)
-export OPENAI_API_KEY="your-openai-key"
-```
+=== "OpenAI (Default)"
+    ```sh
+    export OPENAI_API_KEY="your-openai-key"
+    ```
 
-If you want to use any other LLM provider, check below on how to configure that.
+    The quickstart project is already configured to use OpenAI. You're all set!
+
+=== "Anthropic Claude"
+    Set your Anthropic API key:
+
+    ```sh
+    export ANTHROPIC_API_KEY="your-anthropic-key"
+    ```
+
+    Then update the `_init_clients()` function in `evals.py`:
+
+    ```python
+    from ragas.llms import llm_factory
+
+    llm = llm_factory("claude-3-5-sonnet-20241022", provider="anthropic")
+    ```
+
+=== "Google Gemini"
+    Set up your Google credentials:
+
+    ```sh
+    export GOOGLE_API_KEY="your-google-api-key"
+    ```
+
+    Then update the `_init_clients()` function in `evals.py`:
+
+    ```python
+    from ragas.llms import llm_factory
+
+    llm = llm_factory("gemini-1.5-pro", provider="google")
+    ```
+
+=== "Local Models (Ollama)"
+    Install and run Ollama locally, then update the `_init_clients()` function in `evals.py`:
+
+    ```python
+    from ragas.llms import llm_factory
+
+    llm = llm_factory(
+        "mistral",
+        provider="ollama",
+        base_url="http://localhost:11434"  # Default Ollama URL
+    )
+    ```
+
+=== "Custom / Other Providers"
+    For any LLM with OpenAI-compatible API:
+
+    ```python
+    from ragas.llms import llm_factory
+
+    llm = llm_factory(
+        "model-name",
+        api_key="your-api-key",
+        base_url="https://your-api-endpoint"
+    )
+    ```
+
+    For more details, learn about [LLM integrations](../concepts/metrics/index.md).
 
 ## Project Structure
 
@@ -88,6 +146,8 @@ The evaluation will:
 
 ![](../_static/imgs/results/rag_eval_result.png)
 
+Congratulations! You have a complete evaluation setup running. 🎉
+
 ---
 
 ## Customize Your Evaluation
@@ -119,30 +179,6 @@ def load_dataset():
 
     dataset = EvaluationDataset(samples=data_samples)
     return dataset
-```
-
-### Change the LLM Provider
-
-In the `_init_clients()` function in `evals.py`, update the LLM factory call:
-
-```python
-from ragas.llms import llm_factory
-
-def _init_clients():
-    """Initialize OpenAI client and RAG system."""
-    openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-    rag_client = default_rag_client(llm_client=openai_client)
-
-    # Use Anthropic Claude instead
-    llm = llm_factory("claude-3-5-sonnet-20241022", provider="anthropic")
-
-    # Or use Google Gemini
-    # llm = llm_factory("gemini-1.5-pro", provider="google")
-
-    # Or use local Ollama
-    # llm = llm_factory("mistral", provider="ollama", base_url="http://localhost:11434")
-
-    return openai_client, rag_client, llm
 ```
 
 ### Customize Dataset and RAG System
