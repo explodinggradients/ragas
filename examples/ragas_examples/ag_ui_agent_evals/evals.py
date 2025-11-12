@@ -26,17 +26,23 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
-from langchain_openai import ChatOpenAI
-
+from openai import AsyncOpenAI
 from ragas.dataset_schema import (
     EvaluationDataset,
     MultiTurnSample,
     SingleTurnSample,
 )
 from ragas.integrations.ag_ui import evaluate_ag_ui_agent
-from ragas.llms import LangchainLLMWrapper
+from ragas.llms import llm_factory
+from ragas.llms.base import InstructorBaseRagasLLM
 from ragas.messages import HumanMessage, ToolCall
-from ragas.metrics import FactualCorrectness, ToolCallF1
+from ragas.metrics import ToolCallF1
+from ragas.metrics.collections import (
+    ContextPrecisionWithReference,
+    ContextRecall,
+    FactualCorrectness,
+    ResponseGroundedness,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -104,7 +110,7 @@ def load_weather_dataset() -> EvaluationDataset:
 
 
 async def evaluate_scientist_biographies(
-    endpoint_url: str, evaluator_llm: LangchainLLMWrapper
+    endpoint_url: str, evaluator_llm: InstructorBaseRagasLLM
 ) -> tuple:
     """
     Evaluate the agent's ability to provide factually correct information
@@ -125,8 +131,13 @@ async def evaluate_scientist_biographies(
     # Load dataset
     dataset = load_scientist_dataset()
 
-    # Define metrics
-    metrics = [FactualCorrectness()]
+    # Define metrics using the modern collections portfolio
+    metrics = [
+        FactualCorrectness(llm=evaluator_llm, mode="f1"),
+        ContextPrecisionWithReference(llm=evaluator_llm),
+        ContextRecall(llm=evaluator_llm),
+        ResponseGroundedness(llm=evaluator_llm),
+    ]
 
     # Run evaluation
     logger.info(f"Evaluating against endpoint: {endpoint_url}")
@@ -148,18 +159,26 @@ async def evaluate_scientist_biographies(
     logger.info(f"\nDataFrame shape: {df.shape}")
     logger.info(f"\n{df.to_string()}")
 
+    metric_columns = [
+        "factual_correctness(mode=f1)",
+        "context_precision_with_reference",
+        "context_recall",
+        "response_groundedness",
+    ]
+    for column in metric_columns:
+        if column in df.columns:
+            logger.info(f"Average {column}: {df[column].mean():.4f}")
+
     if "factual_correctness(mode=f1)" in df.columns:
-        avg_correctness = df["factual_correctness(mode=f1)"].mean()
-        logger.info(f"\nAverage Factual Correctness: {avg_correctness:.4f}")
         logger.info(
-            f"Perfect scores (1.0): {(df['factual_correctness(mode=f1)'] == 1.0).sum()}/{len(df)}"
+            f"Perfect factual scores (1.0): {(df['factual_correctness(mode=f1)'] == 1.0).sum()}/{len(df)}"
         )
 
     return result, df
 
 
 async def evaluate_weather_tool_use(
-    endpoint_url: str, evaluator_llm: LangchainLLMWrapper
+    endpoint_url: str, evaluator_llm: InstructorBaseRagasLLM
 ) -> tuple:
     """
     Evaluate the agent's ability to correctly call the weather tool.
@@ -278,8 +297,8 @@ async def main():
 
     # Setup evaluator LLM
     logger.info(f"Setting up evaluator LLM: {args.evaluator_model}")
-    llm = ChatOpenAI(model=args.evaluator_model)
-    evaluator_llm = LangchainLLMWrapper(llm)
+    client = AsyncOpenAI()
+    evaluator_llm = llm_factory(args.evaluator_model, client=client)
 
     # Run evaluations
     try:

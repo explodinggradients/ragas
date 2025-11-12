@@ -26,7 +26,7 @@ import asyncio
 from dotenv import load_dotenv
 import nest_asyncio
 from IPython.display import display
-from langchain_openai import ChatOpenAI
+from openai import AsyncOpenAI
 
 from ragas.dataset_schema import EvaluationDataset, SingleTurnSample, MultiTurnSample
 from ragas.integrations.ag_ui import (
@@ -35,8 +35,14 @@ from ragas.integrations.ag_ui import (
     convert_messages_snapshot,
 )
 from ragas.messages import HumanMessage, ToolCall
-from ragas.metrics import FactualCorrectness, ToolCallF1
-from ragas.llms import LangchainLLMWrapper
+from ragas.metrics import ToolCallF1
+from ragas.metrics.collections import (
+    ContextPrecisionWithReference,
+    ContextRecall,
+    FactualCorrectness,
+    ResponseGroundedness,
+)
+from ragas.llms import llm_factory
 from ag_ui.core import (
     MessagesSnapshotEvent,
     TextMessageChunkEvent,
@@ -109,20 +115,23 @@ weather_queries
 
 
 ## Configure metrics and the evaluator LLM
-Wrap your grading model with the appropriate adapter and instantiate the metrics you plan to use.
+Create an Instructor-compatible grading model with `llm_factory` and instantiate the metrics you plan to use.
 
 
 
 ```python
-evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o-mini"))
+client = AsyncOpenAI()
+evaluator_llm = llm_factory("gpt-4o-mini", client=client)
 
-qa_metrics = [FactualCorrectness(llm=evaluator_llm)]
+qa_metrics = [
+    FactualCorrectness(llm=evaluator_llm, mode="f1"),
+    ContextPrecisionWithReference(llm=evaluator_llm),
+    ContextRecall(llm=evaluator_llm),
+    ResponseGroundedness(llm=evaluator_llm),
+]
 tool_metrics = [ToolCallF1()]  # rule-based, no LLM required
 
 ```
-
-    /var/folders/8k/tf3xr1rd1fl_dz35dfhfp_tc0000gn/T/ipykernel_93918/2135722072.py:1: DeprecationWarning: LangchainLLMWrapper is deprecated and will be removed in a future version. Use llm_factory instead: from openai import OpenAI; from ragas.llms import llm_factory; llm = llm_factory('gpt-4o-mini', client=OpenAI(api_key='...'))
-      evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o-mini"))
 
 
 ## Evaluate a live AG-UI endpoint
@@ -189,6 +198,9 @@ if RUN_FACTUAL_EVAL:
       <th>response</th>
       <th>reference</th>
       <th>factual_correctness(mode=f1)</th>
+      <th>context_precision_with_reference</th>
+      <th>context_recall</th>
+      <th>response_groundedness</th>
     </tr>
   </thead>
   <tbody>
@@ -199,6 +211,9 @@ if RUN_FACTUAL_EVAL:
       <td>The theory of relativity was originated by Alb...</td>
       <td>Albert Einstein originated the theory of relat...</td>
       <td>0.33</td>
+      <td>0.50</td>
+      <td>0.75</td>
+      <td>0.80</td>
     </tr>
     <tr>
       <th>1</th>
@@ -207,6 +222,9 @@ if RUN_FACTUAL_EVAL:
       <td>Penicillin was discovered by Alexander Fleming...</td>
       <td>Alexander Fleming discovered penicillin in 1928.</td>
       <td>1.00</td>
+      <td>0.75</td>
+      <td>1.00</td>
+      <td>0.95</td>
     </tr>
   </tbody>
 </table>

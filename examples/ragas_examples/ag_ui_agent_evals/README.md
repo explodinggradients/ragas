@@ -36,18 +36,18 @@ Install the required dependencies:
 uv pip install -e ".[dev]"
 
 # Or install specific dependencies
-pip install ragas langchain-openai
+pip install ragas openai
 ```
 
 ## Evaluation Scenarios
 
 This example includes two evaluation scenarios:
 
-### 1. Scientist Biographies (Factual Correctness)
+### 1. Scientist Biographies (Factuality & Grounding)
 
-Tests the agent's ability to provide factually correct information about famous scientists.
+Tests the agent's ability to provide factually correct information about famous scientists and ground its answers in retrieved evidence.
 
-- **Metric**: `FactualCorrectness` - Measures how accurate the agent's responses are compared to reference answers
+- **Metrics**: Collections metrics — `FactualCorrectness`, `ContextPrecisionWithReference`, `ContextRecall`, `ResponseGroundedness`
 - **Dataset**: `test_data/scientist_biographies.csv` - 5 questions about scientists (Einstein, Fleming, Newton, etc.)
 - **Sample Type**: `SingleTurnSample` - Simple question-answer pairs
 
@@ -120,13 +120,16 @@ Evaluating against endpoint: http://localhost:8000/agentic_chat
 ================================================================================
 Scientist Biographies Evaluation Results
 ================================================================================
-                                          user_input  ...  factual_correctness(mode=f1)
-0  Who originated the theory of relativity...     ...                          0.75
-1  Who discovered penicillin and when...           ...                          1.00
+                                          user_input  ...  response_groundedness
+0  Who originated the theory of relativity...     ...                   0.83
+1  Who discovered penicillin and when...           ...                   1.00
 ...
 
 Average Factual Correctness: 0.7160
-Perfect scores (1.0): 2/5
+Average Context Precision: 0.6500
+Average Context Recall: 0.7200
+Average Response Groundedness: 0.7800
+Perfect factual scores (1.0): 2/5
 
 Results saved to: .../scientist_biographies_results_20250101_143022.csv
 
@@ -155,8 +158,8 @@ Results are saved as timestamped CSV files:
 Example CSV structure:
 
 ```csv
-user_input,response,reference,factual_correctness(mode=f1)
-"Who originated the theory of relativity...","Albert Einstein...","Albert Einstein originated...",0.75
+user_input,response,reference,factual_correctness(mode=f1),context_precision_with_reference,context_recall,response_groundedness
+"Who originated the theory of relativity...","Albert Einstein...","Albert Einstein originated...",0.75,0.50,0.75,0.83
 ```
 
 ## Customizing the Evaluation
@@ -183,15 +186,16 @@ user_input,reference_tool_calls
 
 ### Using Different Metrics
 
-Modify `evals.py` to include additional Ragas metrics:
+Modify `evals.py` to include additional collections metrics:
 
 ```python
-from ragas.metrics import AnswerRelevancy, ContextPrecision
+from ragas.metrics.collections import AnswerRelevancy, ContextPrecisionWithoutReference
 
 # In evaluate_scientist_biographies function:
 metrics = [
-    FactualCorrectness(),
-    AnswerRelevancy(),  # Add additional metrics
+    AnswerRelevancy(llm=evaluator_llm),
+    ContextPrecisionWithoutReference(llm=evaluator_llm),
+    ResponseGroundedness(llm=evaluator_llm),
 ]
 ```
 
