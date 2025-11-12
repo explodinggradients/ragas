@@ -1,16 +1,22 @@
 """Context Recall metric v2 - Class-based implementation with modern components."""
 
+import logging
 import typing as t
+from typing import List
 
 import numpy as np
 from pydantic import BaseModel
 
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics._string import DistanceMeasure, NonLLMStringSimilarity
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
 from ragas.prompt.metrics.context_recall import context_recall_prompt
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import InstructorBaseRagasLLM
+
+logger = logging.getLogger(__name__)
 
 
 class ContextRecallClassification(BaseModel):
@@ -135,5 +141,175 @@ class ContextRecall(BaseMetric):
         # Count attributions
         attributions = [c.attributed for c in result.classifications]
         score = sum(attributions) / len(attributions) if attributions else np.nan
+
+        return MetricResult(value=float(score))
+
+
+class NonLLMContextRecall(BaseMetric):
+    """
+    Evaluate context recall using string similarity without LLM.
+
+    Compares retrieved contexts with reference contexts using string similarity metrics.
+    A reference context is considered recalled if it has sufficient similarity with
+    at least one retrieved context.
+
+    This implementation provides deterministic evaluation without requiring LLM components.
+
+    Usage:
+        >>> from ragas.metrics.collections import NonLLMContextRecall
+        >>>
+        >>> metric = NonLLMContextRecall(threshold=0.5)
+        >>>
+        >>> result = await metric.ascore(
+        ...     retrieved_contexts=["Albert Einstein was a physicist"],
+        ...     reference_contexts=["Einstein was a theoretical physicist"]
+        ... )
+        >>> print(f"Context Recall: {result.value}")
+
+    Attributes:
+        name: The metric name
+        threshold: Similarity threshold for considering a context as recalled (default: 0.5)
+        distance_measure: The string distance measure to use (default: LEVENSHTEIN)
+        allowed_values: Score range (0.0 to 1.0)
+    """
+
+    def __init__(
+        self,
+        name: str = "non_llm_context_recall",
+        threshold: float = 0.5,
+        distance_measure: DistanceMeasure = DistanceMeasure.LEVENSHTEIN,
+        **kwargs,
+    ):
+        """
+        Initialize NonLLMContextRecall metric.
+
+        Args:
+            name: The metric name
+            threshold: Similarity threshold (0.0-1.0) for considering a context recalled
+            distance_measure: The string distance measure to use
+            **kwargs: Additional arguments passed to BaseMetric
+        """
+        super().__init__(name=name, **kwargs)
+        self.threshold = threshold
+        self._distance_measure = NonLLMStringSimilarity(
+            distance_measure=distance_measure
+        )
+
+    async def ascore(
+        self,
+        retrieved_contexts: List[str],
+        reference_contexts: List[str],
+    ) -> MetricResult:
+        """
+        Calculate context recall score using string similarity.
+
+        Args:
+            retrieved_contexts: List of retrieved context strings
+            reference_contexts: List of reference context strings
+
+        Returns:
+            MetricResult with recall score (0.0-1.0, higher is better)
+        """
+        if not retrieved_contexts:
+            raise ValueError("retrieved_contexts cannot be empty")
+        if not reference_contexts:
+            raise ValueError("reference_contexts cannot be empty")
+
+        scores = []
+        for ref in reference_contexts:
+            max_similarity = 0.0
+            for rc in retrieved_contexts:
+                # Use the distance measure to compute similarity
+                similarity = await self._distance_measure.single_turn_ascore(
+                    SingleTurnSample(reference=rc, response=ref),
+                    callbacks=None,
+                )
+                max_similarity = max(max_similarity, similarity)
+            scores.append(max_similarity)
+
+        # Compute recall: proportion of reference contexts above threshold
+        recalled = [1 if score > self.threshold else 0 for score in scores]
+        score = sum(recalled) / len(recalled) if recalled else np.nan
+
+        return MetricResult(value=float(score))
+
+
+class IDBasedContextRecall(BaseMetric):
+    """
+    Evaluate context recall by comparing retrieved and reference context IDs.
+
+    Directly compares retrieved context IDs with reference context IDs.
+    The score represents the proportion of reference IDs that were successfully retrieved.
+
+    This implementation works with both string and integer IDs and provides
+    deterministic evaluation without requiring LLM components.
+
+    Usage:
+        >>> from ragas.metrics.collections import IDBasedContextRecall
+        >>>
+        >>> metric = IDBasedContextRecall()
+        >>>
+        >>> result = await metric.ascore(
+        ...     retrieved_context_ids=["doc1", "doc2", "doc3"],
+        ...     reference_context_ids=["doc1", "doc2", "doc4"]
+        ... )
+        >>> print(f"Context Recall: {result.value}")  # 0.667
+
+    Attributes:
+        name: The metric name
+        allowed_values: Score range (0.0 to 1.0)
+    """
+
+    def __init__(
+        self,
+        name: str = "id_based_context_recall",
+        **kwargs,
+    ):
+        """
+        Initialize IDBasedContextRecall metric.
+
+        Args:
+            name: The metric name
+            **kwargs: Additional arguments passed to BaseMetric
+        """
+        super().__init__(name=name, **kwargs)
+
+    async def ascore(
+        self,
+        retrieved_context_ids: t.Union[t.List[str], t.List[int]],
+        reference_context_ids: t.Union[t.List[str], t.List[int]],
+    ) -> MetricResult:
+        """
+        Calculate context recall score based on ID matching.
+
+        Args:
+            retrieved_context_ids: List of retrieved context IDs (strings or integers)
+            reference_context_ids: List of reference context IDs (strings or integers)
+
+        Returns:
+            MetricResult with recall score (0.0-1.0, higher is better)
+        """
+        if not retrieved_context_ids:
+            raise ValueError("retrieved_context_ids cannot be empty")
+        if not reference_context_ids:
+            raise ValueError("reference_context_ids cannot be empty")
+
+        # Convert all IDs to strings for consistent comparison
+        retrieved_ids_set = set(str(id_) for id_ in retrieved_context_ids)
+        reference_ids_set = set(str(id_) for id_ in reference_context_ids)
+
+        # Calculate how many reference IDs appear in retrieved IDs
+        hits = sum(
+            1 for ref_id in reference_ids_set if str(ref_id) in retrieved_ids_set
+        )
+
+        # Calculate recall score
+        total_refs = len(reference_ids_set)
+        score = hits / total_refs if total_refs > 0 else np.nan
+
+        if np.isnan(score):
+            logger.warning(
+                "No reference context IDs provided, cannot calculate recall."
+            )
 
         return MetricResult(value=float(score))

@@ -11,7 +11,11 @@ from ragas.metrics.collections._context_precision import (
     ContextPrecisionWithReference,
     ContextUtilization,
 )
-from ragas.metrics.collections._context_recall import ContextRecall
+from ragas.metrics.collections._context_recall import (
+    ContextRecall,
+    IDBasedContextRecall,
+    NonLLMContextRecall,
+)
 from ragas.metrics.collections._context_relevance import ContextRelevance
 from ragas.metrics.collections._factual_correctness import FactualCorrectness
 from ragas.metrics.collections._faithfulness import Faithfulness
@@ -45,7 +49,9 @@ __all__ = [
     "ExactMatch",
     "FactualCorrectness",
     "Faithfulness",
+    "IDBasedContextRecall",
     "NoiseSensitivity",
+    "NonLLMContextRecall",
     "NonLLMStringSimilarity",
     "ResponseGroundedness",
     "RougeScore",
