@@ -691,7 +691,11 @@ def llm_factory(
 
 
 class InstructorModelArgs(BaseModel):
-    """Simple model arguments configuration for instructor LLMs"""
+    """Simple model arguments configuration for instructor LLMs
+
+    Note: For GPT-5 and o-series models, you may need to increase max_tokens
+    to 4096+ for structured output to work properly. See documentation for details.
+    """
 
     temperature: float = 0.01
     top_p: float = 0.1
@@ -764,12 +768,19 @@ class InstructorLLM(InstructorBaseRagasLLM):
             return self.model_args.copy()
 
     def _map_openai_params(self) -> t.Dict[str, t.Any]:
-        """Map max_tokens to max_completion_tokens for OpenAI reasoning models.
+        """Map parameters for OpenAI reasoning models with special constraints.
 
-        Reasoning models (o-series and gpt-5 series) require max_completion_tokens
-        instead of the deprecated max_tokens parameter when using Chat Completions API.
+        Reasoning models (o-series and gpt-5 series) have unique requirements:
+        1. max_tokens must be mapped to max_completion_tokens
+        2. temperature must be set to 1.0 (only supported value)
+        3. top_p parameter must be removed (not supported)
 
         Legacy OpenAI models (gpt-4, gpt-4o, etc.) continue to use max_tokens unchanged.
+
+        For GPT-5 and o-series models with structured output (Pydantic models):
+        - Default max_tokens=1024 may not be sufficient
+        - Consider increasing to 4096+ via: llm_factory(..., max_tokens=4096)
+        - If structured output is truncated, increase max_tokens further
 
         Pattern-based matching for future-proof coverage:
         - O-series: o1, o2, o3, o4, o5, ... (all reasoning versions)
@@ -821,6 +832,14 @@ class InstructorLLM(InstructorBaseRagasLLM):
         # If max_tokens is provided and model requires max_completion_tokens, map it
         if requires_max_completion_tokens and "max_tokens" in mapped_args:
             mapped_args["max_completion_tokens"] = mapped_args.pop("max_tokens")
+
+        # Handle parameter constraints for reasoning models (GPT-5 and o-series)
+        if requires_max_completion_tokens:
+            # GPT-5 and o-series models have strict parameter requirements:
+            # 1. Temperature must be exactly 1.0 (only supported value)
+            # 2. top_p parameter is not supported and must be removed
+            mapped_args["temperature"] = 1.0
+            mapped_args.pop("top_p", None)
 
         return mapped_args
 
