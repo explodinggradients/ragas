@@ -188,11 +188,33 @@ rag_pipeline("What is the capital of France?")
 
 
 
-#### Evaluating datasets
+from datasets import load_dataset
 
-If you looking at evaluating a dataset, you can use the Ragas `evaluate` function. When using this function, the Ragas library will compute the metrics on all the rows of the dataset and return a summary of the results.
+from ragas import evaluate
+from ragas.metrics import answer_relevancy, context_precision, faithfulness
 
-You can use the OpikTracer callback to log the results of the evaluation to the Opik platform. For this we will configure the OpikTracer
+fiqa_eval = load_dataset("explodinggradients/fiqa", "ragas_eval")
+
+# Reformat the dataset to match the schema expected by the Ragas evaluate function
+dataset = fiqa_eval["baseline"].select(range(3))
+
+dataset = dataset.map(
+    lambda x: {
+        "user_input": x["question"],
+        "reference": x["ground_truth"],
+        "retrieved_contexts": x["contexts"],
+    }
+)
+
+opik_tracer_eval = OpikTracer(tags=["ragas_eval"], metadata={"evaluation_run": True})
+
+result = evaluate(
+    dataset,
+    metrics=[context_precision, faithfulness, answer_relevancy],
+    callbacks=[opik_tracer_eval],
+)
+
+print(result)
 
 
 ```python

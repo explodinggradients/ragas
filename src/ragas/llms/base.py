@@ -440,6 +440,62 @@ class LlamaIndexLLMWrapper(BaseRagasLLM):
         return f"{self.__class__.__name__}(llm={self.llm.__class__.__name__}(...))"
 
 
+def _patch_client_for_provider(client: t.Any, provider: str) -> t.Any:
+    """
+    Patch a client with Instructor for generic providers.
+
+    Maps provider names to Provider enum and instantiates Instructor/AsyncInstructor.
+    Supports anthropic, google, and any other provider Instructor recognizes.
+    """
+    from instructor import Provider
+
+    provider_map = {
+        "anthropic": Provider.ANTHROPIC,
+        "google": Provider.GENAI,
+        "gemini": Provider.GENAI,
+        "azure": Provider.OPENAI,
+        "groq": Provider.GROQ,
+        "mistral": Provider.MISTRAL,
+        "cohere": Provider.COHERE,
+        "xai": Provider.XAI,
+        "bedrock": Provider.BEDROCK,
+        "deepseek": Provider.DEEPSEEK,
+    }
+
+    provider_enum = provider_map.get(provider, Provider.OPENAI)
+
+    if hasattr(client, "acompletion"):
+        return instructor.AsyncInstructor(
+            client=client,
+            create=client.messages.create,
+            provider=provider_enum,
+        )
+    else:
+        return instructor.Instructor(
+            client=client,
+            create=client.messages.create,
+            provider=provider_enum,
+        )
+
+
+def _get_instructor_client(client: t.Any, provider: str) -> t.Any:
+    """
+    Get an instructor-patched client for the specified provider.
+
+    Uses provider-specific methods when available, falls back to generic patcher.
+    """
+    provider_lower = provider.lower()
+
+    if provider_lower == "openai":
+        return instructor.from_openai(client)
+    elif provider_lower == "litellm":
+        return instructor.from_litellm(client)
+    elif provider_lower == "perplexity":
+        return instructor.from_perplexity(client)
+    else:
+        return _patch_client_for_provider(client, provider_lower)
+
+
 def llm_factory(
     model: str,
     provider: str = "openai",
@@ -455,8 +511,8 @@ def llm_factory(
 
     Args:
         model: Model name (e.g., "gpt-4o", "gpt-4o-mini", "claude-3-sonnet").
-        provider: LLM provider. Default: "openai".
-                 Supported: openai, anthropic, google, litellm.
+        provider: LLM provider (default: "openai").
+                 Can be any provider supported by Instructor: openai, anthropic, google, litellm, etc.
         client: Pre-initialized client instance (required). For OpenAI, can be
                OpenAI(...) or AsyncOpenAI(...).
         **kwargs: Additional model arguments (temperature, max_tokens, top_p, etc).
@@ -471,13 +527,18 @@ def llm_factory(
         from openai import OpenAI
 
         client = OpenAI(api_key="...")
-        llm = llm_factory("gpt-4o", client=client)
+        llm = llm_factory("gpt-4o-mini", client=client)
         response = llm.generate(prompt, ResponseModel)
+
+        # Anthropic
+        from anthropic import Anthropic
+        client = Anthropic(api_key="...")
+        llm = llm_factory("claude-3-sonnet", provider="anthropic", client=client)
 
         # Async
         from openai import AsyncOpenAI
         client = AsyncOpenAI(api_key="...")
-        llm = llm_factory("gpt-4o", client=client)
+        llm = llm_factory("gpt-4o-mini", client=client)
         response = await llm.agenerate(prompt, ResponseModel)
     """
     if client is None:
@@ -496,21 +557,8 @@ def llm_factory(
 
     provider_lower = provider.lower()
 
-    instructor_funcs = {
-        "openai": lambda c: instructor.from_openai(c),
-        "anthropic": lambda c: instructor.from_anthropic(c),
-        "google": lambda c: instructor.from_gemini(c),
-        "litellm": lambda c: instructor.from_litellm(c),
-    }
-
-    if provider_lower not in instructor_funcs:
-        raise ValueError(
-            f"Unsupported provider: '{provider}'. "
-            f"Supported: {', '.join(instructor_funcs.keys())}"
-        )
-
     try:
-        patched_client = instructor_funcs[provider_lower](client)
+        patched_client = _get_instructor_client(client, provider_lower)
     except Exception as e:
         raise ValueError(
             f"Failed to initialize {provider} client with instructor. "
@@ -541,7 +589,11 @@ def llm_factory(
 
 
 class InstructorModelArgs(BaseModel):
-    """Simple model arguments configuration for instructor LLMs"""
+    """Simple model arguments configuration for instructor LLMs
+
+    Note: For GPT-5 and o-series models, you may need to increase max_tokens
+    to 4096+ for structured output to work properly. See documentation for details.
+    """
 
     temperature: float = 0.01
     top_p: float = 0.1
@@ -599,7 +651,7 @@ class InstructorLLM(InstructorBaseRagasLLM):
 
         Each provider may have different parameter requirements:
         - Google: Wraps parameters in generation_config and renames max_tokens
-        - OpenAI: Maps max_tokens to max_completion_tokens for o-series models
+        - OpenAI/Azure: Maps max_tokens to max_completion_tokens for o-series models
         - Anthropic: No special handling required (pass-through)
         - LiteLLM: No special handling required (routes internally, pass-through)
         """
@@ -607,19 +659,30 @@ class InstructorLLM(InstructorBaseRagasLLM):
 
         if provider_lower == "google":
             return self._map_google_params()
-        elif provider_lower == "openai":
+        elif provider_lower in ("openai", "azure"):
             return self._map_openai_params()
         else:
-            # Anthropic, LiteLLM - pass through unchanged
+            # Anthropic, LiteLLM, and other providers - pass through unchanged
             return self.model_args.copy()
 
     def _map_openai_params(self) -> t.Dict[str, t.Any]:
-        """Map max_tokens to max_completion_tokens for OpenAI reasoning models.
+        """Map parameters for OpenAI/Azure reasoning models with special constraints.
 
-        Reasoning models (o-series and gpt-5 series) require max_completion_tokens
-        instead of the deprecated max_tokens parameter when using Chat Completions API.
+        Reasoning models (o-series and gpt-5 series) have unique requirements:
+        1. max_tokens must be mapped to max_completion_tokens
+        2. temperature must be set to 1.0 (only supported value)
+        3. top_p parameter must be removed (not supported)
 
-        Legacy OpenAI models (gpt-4, gpt-4o, etc.) continue to use max_tokens unchanged.
+        Legacy OpenAI/Azure models (gpt-4, gpt-4o, etc.) continue to use max_tokens unchanged.
+
+        Note on Azure deployments: Some Azure deployments restrict temperature to 1.0.
+        If your Azure deployment has this constraint, pass temperature=1.0 explicitly:
+        llm_factory("gpt-4o-mini", provider="azure", client=client, temperature=1.0)
+
+        For GPT-5 and o-series models with structured output (Pydantic models):
+        - Default max_tokens=1024 may not be sufficient
+        - Consider increasing to 4096+ via: llm_factory(..., max_tokens=4096)
+        - If structured output is truncated, increase max_tokens further
 
         Pattern-based matching for future-proof coverage:
         - O-series: o1, o2, o3, o4, o5, ... (all reasoning versions)
@@ -671,6 +734,14 @@ class InstructorLLM(InstructorBaseRagasLLM):
         # If max_tokens is provided and model requires max_completion_tokens, map it
         if requires_max_completion_tokens and "max_tokens" in mapped_args:
             mapped_args["max_completion_tokens"] = mapped_args.pop("max_tokens")
+
+        # Handle parameter constraints for reasoning models (GPT-5 and o-series)
+        if requires_max_completion_tokens:
+            # GPT-5 and o-series models have strict parameter requirements:
+            # 1. Temperature must be exactly 1.0 (only supported value)
+            # 2. top_p parameter is not supported and must be removed
+            mapped_args["temperature"] = 1.0
+            mapped_args.pop("top_p", None)
 
         return mapped_args
 

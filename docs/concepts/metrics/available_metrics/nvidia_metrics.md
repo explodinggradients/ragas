@@ -248,27 +248,46 @@ Output:
 - **1** → The response is partially grounded.
 - **2** → The response is fully grounded (every statement can be found or inferred from the retrieved context).
 
+### Example
 
 ```python
-from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics import ResponseGroundedness
+from openai import AsyncOpenAI
+from ragas.llms import llm_factory
+from ragas.metrics.collections import ResponseGroundedness
 
-sample = SingleTurnSample(
+# Setup LLM
+client = AsyncOpenAI()
+llm = llm_factory("gpt-4o-mini", client=client)
+
+# Create metric
+scorer = ResponseGroundedness(llm=llm)
+
+# Evaluate
+result = await scorer.ascore(
     response="Albert Einstein was born in 1879.",
     retrieved_contexts=[
         "Albert Einstein was born March 14, 1879.",
         "Albert Einstein was born at Ulm, in Württemberg, Germany.",
     ]
 )
+print(f"Response Groundedness Score: {result.value}")
+```
 
-scorer = ResponseGroundedness(llm=evaluator_llm)
-score = await scorer.single_turn_ascore(sample)
-print(score)
+Output:
+
 ```
-Output
+Response Groundedness Score: 1.0
 ```
-1.0
-```
+
+!!! note "Synchronous Usage"
+    If you prefer synchronous code, you can use the `.score()` method instead of `.ascore()`:
+    
+    ```python
+    result = scorer.score(
+        response="Albert Einstein was born in 1879.",
+        retrieved_contexts=[...]
+    )
+    ```
 
 ### How It’s Calculated
 
@@ -299,3 +318,35 @@ In this example, the retrieved contexts provide both the birthdate and location 
 - **Token Usage:** Faithfulness consumes more tokens, whereas Response Groundedness is more token-efficient.
 - **Explainability:** Faithfulness provides transparent, reasoning for each claim, while Response Groundedness provides a raw score.
 - **Robust Evaluation:** Faithfulness incorporates user input for a comprehensive assessment, whereas Response Groundedness ensures consistency through dual LLM evaluations.
+
+### Legacy Metrics API
+
+The following examples use the legacy metrics API pattern. For new projects, we recommend using the collections-based API shown above.
+
+!!! warning "Deprecation Timeline"
+    This API will be deprecated in version 0.4 and removed in version 1.0. Please migrate to the collections-based API shown above.
+
+#### Example with SingleTurnSample
+
+```python
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics import ResponseGroundedness
+
+sample = SingleTurnSample(
+    response="Albert Einstein was born in 1879.",
+    retrieved_contexts=[
+        "Albert Einstein was born March 14, 1879.",
+        "Albert Einstein was born at Ulm, in Württemberg, Germany.",
+    ]
+)
+
+scorer = ResponseGroundedness(llm=evaluator_llm)
+score = await scorer.single_turn_ascore(sample)
+print(score)
+```
+
+Output:
+
+```
+1.0
+```
