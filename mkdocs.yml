@@ -139,6 +139,7 @@ nav:
           - Swarm: howtos/integrations/swarm_agent_evaluation.md
       - Migrations:
           - From v0.1 to v0.2: howtos/migrations/migrate_from_v01_to_v02.md
+          - From v0.3 to v0.4: howtos/migrations/migrate_from_v03_to_v04.md
   - 📖 References:
     - references/index.md
     - Core:
