@@ -4,24 +4,17 @@ import typing as t
 from typing import List
 
 import numpy as np
-from pydantic import BaseModel
 
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
 from ragas.prompt.metrics.context_precision import (
-    context_precision_with_reference_prompt,
-    context_precision_without_reference_prompt,
+    ContextPrecisionInput,
+    ContextPrecisionOutput,
+    ContextPrecisionPrompt,
 )
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import InstructorBaseRagasLLM
-
-
-class ContextPrecisionOutput(BaseModel):
-    """Structured output for context precision evaluation."""
-
-    reason: str
-    verdict: int
 
 
 class ContextPrecisionWithReference(BaseMetric):
@@ -79,6 +72,7 @@ class ContextPrecisionWithReference(BaseMetric):
         """
         # Set attributes explicitly before calling super()
         self.llm = llm
+        self.prompt = ContextPrecisionPrompt()  # Initialize prompt class once
 
         # Call super() for validation (without passing llm in kwargs)
         super().__init__(name=name, **kwargs)
@@ -108,10 +102,12 @@ class ContextPrecisionWithReference(BaseMetric):
         # Evaluate each retrieved context
         verdicts = []
         for context in retrieved_contexts:
-            prompt = context_precision_with_reference_prompt(
-                user_input, context, reference
+            # Create input data and generate prompt
+            input_data = ContextPrecisionInput(
+                question=user_input, context=context, answer=reference
             )
-            result = await self.llm.agenerate(prompt, ContextPrecisionOutput)
+            prompt_string = self.prompt.to_string(input_data)
+            result = await self.llm.agenerate(prompt_string, ContextPrecisionOutput)
             verdicts.append(result.verdict)
 
         # Calculate average precision
@@ -196,6 +192,7 @@ class ContextPrecisionWithoutReference(BaseMetric):
         """
         # Set attributes explicitly before calling super()
         self.llm = llm
+        self.prompt = ContextPrecisionPrompt()  # Initialize prompt class once
 
         # Call super() for validation (without passing llm in kwargs)
         super().__init__(name=name, **kwargs)
@@ -225,10 +222,12 @@ class ContextPrecisionWithoutReference(BaseMetric):
         # Evaluate each retrieved context
         verdicts = []
         for context in retrieved_contexts:
-            prompt = context_precision_without_reference_prompt(
-                user_input, context, response
+            # Create input data and generate prompt
+            input_data = ContextPrecisionInput(
+                question=user_input, context=context, answer=response
             )
-            result = await self.llm.agenerate(prompt, ContextPrecisionOutput)
+            prompt_string = self.prompt.to_string(input_data)
+            result = await self.llm.agenerate(prompt_string, ContextPrecisionOutput)
             verdicts.append(result.verdict)
 
         # Calculate average precision

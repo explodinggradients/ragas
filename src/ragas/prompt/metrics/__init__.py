@@ -4,16 +4,16 @@ from ragas.prompt.metrics.answer_correctness import correctness_classifier_promp
 from ragas.prompt.metrics.answer_relevance import answer_relevancy_prompt
 from ragas.prompt.metrics.common import nli_statement_prompt, statement_generator_prompt
 from ragas.prompt.metrics.context_precision import (
-    context_precision_prompt,
-    context_precision_with_reference_prompt,
-    context_precision_without_reference_prompt,
+    ContextPrecisionInput,
+    ContextPrecisionOutput,
+    ContextPrecisionPrompt,
 )
 
 __all__ = [
     "answer_relevancy_prompt",
-    "context_precision_prompt",
-    "context_precision_with_reference_prompt",
-    "context_precision_without_reference_prompt",
+    "ContextPrecisionPrompt",
+    "ContextPrecisionInput",
+    "ContextPrecisionOutput",
     "correctness_classifier_prompt",
     "nli_statement_prompt",
     "statement_generator_prompt",
