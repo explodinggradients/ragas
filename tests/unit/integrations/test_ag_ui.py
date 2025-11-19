@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -759,7 +759,11 @@ async def test_evaluate_ag_ui_agent():
     from unittest.mock import MagicMock
 
     from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
-    from ragas.integrations.ag_ui import evaluate_ag_ui_agent
+    from ragas.integrations.ag_ui import (
+        MISSING_CONTEXT_PLACEHOLDER,
+        MISSING_RESPONSE_PLACEHOLDER,
+        evaluate_ag_ui_agent,
+    )
 
     # Create mock dataset
     dataset = EvaluationDataset(
@@ -803,7 +807,7 @@ async def test_evaluate_ag_ui_agent():
         else:
             return joke_events
 
-    # Mock ragas_evaluate to return a simple result
+    # Mock ragas_aevaluate to return a simple result
     mock_result = MagicMock()
     mock_result.to_pandas = MagicMock(return_value=MagicMock())
 
@@ -813,8 +817,8 @@ async def test_evaluate_ag_ui_agent():
             side_effect=mock_call_endpoint,
         ),
         patch(
-            "ragas.integrations.ag_ui.ragas_evaluate",
-            return_value=mock_result,
+            "ragas.integrations.ag_ui.ragas_aevaluate",
+            new=AsyncMock(return_value=mock_result),
         ),
     ):
         result = await evaluate_ag_ui_agent(
@@ -843,7 +847,11 @@ async def test_evaluate_ag_ui_agent_with_tool_calls():
     from unittest.mock import MagicMock
 
     from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
-    from ragas.integrations.ag_ui import evaluate_ag_ui_agent
+    from ragas.integrations.ag_ui import (
+        MISSING_CONTEXT_PLACEHOLDER,
+        MISSING_RESPONSE_PLACEHOLDER,
+        evaluate_ag_ui_agent,
+    )
 
     dataset = EvaluationDataset(
         samples=[
@@ -881,8 +889,8 @@ async def test_evaluate_ag_ui_agent_with_tool_calls():
             side_effect=mock_call_endpoint,
         ),
         patch(
-            "ragas.integrations.ag_ui.ragas_evaluate",
-            return_value=mock_result,
+            "ragas.integrations.ag_ui.ragas_aevaluate",
+            new=AsyncMock(return_value=mock_result),
         ),
     ):
         await evaluate_ag_ui_agent(
@@ -909,7 +917,11 @@ async def test_evaluate_ag_ui_agent_handles_failures():
     from unittest.mock import MagicMock
 
     from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
-    from ragas.integrations.ag_ui import evaluate_ag_ui_agent
+    from ragas.integrations.ag_ui import (
+        MISSING_CONTEXT_PLACEHOLDER,
+        MISSING_RESPONSE_PLACEHOLDER,
+        evaluate_ag_ui_agent,
+    )
 
     dataset = EvaluationDataset(
         samples=[
@@ -951,14 +963,17 @@ async def test_evaluate_ag_ui_agent_handles_failures():
             # First result succeeds, second is NaN (failed)
             return [success_events, math.nan]
 
+        async def aresults(self):
+            return self.results()
+
     with (
         patch(
             "ragas.integrations.ag_ui.Executor",
             MockExecutor,
         ),
         patch(
-            "ragas.integrations.ag_ui.ragas_evaluate",
-            return_value=mock_result,
+            "ragas.integrations.ag_ui.ragas_aevaluate",
+            new=AsyncMock(return_value=mock_result),
         ),
     ):
         await evaluate_ag_ui_agent(
@@ -967,10 +982,10 @@ async def test_evaluate_ag_ui_agent_handles_failures():
             metrics=[],
         )
 
-    # First sample should have response, second should be empty string
+    # First sample should have response, second should use placeholders
     assert dataset.samples[0].response == "Success response"
-    assert dataset.samples[1].response == ""
-    assert dataset.samples[1].retrieved_contexts == []
+    assert dataset.samples[1].response == MISSING_RESPONSE_PLACEHOLDER
+    assert dataset.samples[1].retrieved_contexts == [MISSING_CONTEXT_PLACEHOLDER]
 
 
 # ============================================================================
@@ -1065,14 +1080,20 @@ async def test_evaluate_multi_turn_basic():
         def results(self):
             return [agent_events]
 
+        async def aresults(self):
+            return self.results()
+
+        async def aresults(self):
+            return self.results()
+
     with (
         patch(
             "ragas.integrations.ag_ui.Executor",
             MockExecutor,
         ),
         patch(
-            "ragas.integrations.ag_ui.ragas_evaluate",
-            return_value=mock_result,
+            "ragas.integrations.ag_ui.ragas_aevaluate",
+            new=AsyncMock(return_value=mock_result),
         ),
     ):
         await evaluate_ag_ui_agent(
@@ -1151,8 +1172,8 @@ async def test_evaluate_multi_turn_with_existing_conversation():
             MockExecutor,
         ),
         patch(
-            "ragas.integrations.ag_ui.ragas_evaluate",
-            return_value=mock_result,
+            "ragas.integrations.ag_ui.ragas_aevaluate",
+            new=AsyncMock(return_value=mock_result),
         ),
     ):
         await evaluate_ag_ui_agent(
@@ -1209,14 +1230,17 @@ async def test_evaluate_multi_turn_failed_query():
             # Return NaN to simulate failure
             return [math.nan]
 
+        async def aresults(self):
+            return self.results()
+
     with (
         patch(
             "ragas.integrations.ag_ui.Executor",
             MockExecutor,
         ),
         patch(
-            "ragas.integrations.ag_ui.ragas_evaluate",
-            return_value=mock_result,
+            "ragas.integrations.ag_ui.ragas_aevaluate",
+            new=AsyncMock(return_value=mock_result),
         ),
     ):
         await evaluate_ag_ui_agent(

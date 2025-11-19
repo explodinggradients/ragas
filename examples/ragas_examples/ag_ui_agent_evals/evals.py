@@ -26,23 +26,20 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
-from openai import AsyncOpenAI
+from dotenv import load_dotenv
+from openai import AsyncOpenAI, OpenAI
 from ragas.dataset_schema import (
     EvaluationDataset,
     MultiTurnSample,
     SingleTurnSample,
 )
+from ragas.embeddings import embedding_factory
 from ragas.integrations.ag_ui import evaluate_ag_ui_agent
 from ragas.llms import llm_factory
-from ragas.llms.base import InstructorBaseRagasLLM
 from ragas.messages import HumanMessage, ToolCall
-from ragas.metrics import ToolCallF1
-from ragas.metrics.collections import (
-    ContextPrecisionWithReference,
-    ContextRecall,
-    FactualCorrectness,
-    ResponseGroundedness,
-)
+from ragas.metrics import DiscreteMetric, ToolCallF1
+from ragas.metrics.collections import AnswerRelevancy, FactualCorrectness
+from ragas.run_config import RunConfig
 
 # Configure logging
 logging.basicConfig(
@@ -51,7 +48,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Get the directory where this script is located
-SCRIPT_DIR = Path(__file__).parent
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parents[2]
+load_dotenv(REPO_ROOT / ".env")
 TEST_DATA_DIR = SCRIPT_DIR / "test_data"
 
 
@@ -109,8 +108,24 @@ def load_weather_dataset() -> EvaluationDataset:
     return EvaluationDataset(samples=samples)
 
 
+def create_evaluator_components(model_name: str):
+    """Instantiate a fresh evaluator LLM and embeddings for the current loop."""
+
+    llm_client = AsyncOpenAI()
+    evaluator_llm = llm_factory(model_name, client=llm_client, max_tokens=6000)
+    setattr(evaluator_llm, "is_async", True)
+    embedding_client = OpenAI()
+    evaluator_embeddings = embedding_factory(
+        "openai",
+        model="text-embedding-3-small",
+        client=embedding_client,
+        interface="modern",
+    )
+    return evaluator_llm, evaluator_embeddings
+
+
 async def evaluate_scientist_biographies(
-    endpoint_url: str, evaluator_llm: InstructorBaseRagasLLM
+    endpoint_url: str, evaluator_model: str
 ) -> tuple:
     """
     Evaluate the agent's ability to provide factually correct information
@@ -118,7 +133,7 @@ async def evaluate_scientist_biographies(
 
     Args:
         endpoint_url: The AG-UI endpoint URL
-        evaluator_llm: The LLM to use for evaluation
+        evaluator_model: The evaluator LLM model name
 
     Returns:
         Tuple of (result, dataframe) where result is the EvaluationResult
@@ -132,25 +147,52 @@ async def evaluate_scientist_biographies(
     dataset = load_scientist_dataset()
 
     # Define metrics using the modern collections portfolio
+    evaluator_llm, evaluator_embeddings = create_evaluator_components(
+        evaluator_model
+    )
+
+    conciseness_metric = DiscreteMetric(
+        name="conciseness",
+        allowed_values=["verbose", "concise"],
+        prompt=(
+            "Is the response concise and efficiently conveys information?\n\n"
+            "Response: {response}\n\n"
+            "Answer with only 'verbose' or 'concise'."
+        ),
+    )
     metrics = [
-        FactualCorrectness(llm=evaluator_llm, mode="f1"),
-        ContextPrecisionWithReference(llm=evaluator_llm),
-        ContextRecall(llm=evaluator_llm),
-        ResponseGroundedness(llm=evaluator_llm),
+        FactualCorrectness(
+            llm=evaluator_llm, mode="f1", atomicity="high", coverage="high"
+        ),
+        AnswerRelevancy(
+            llm=evaluator_llm, embeddings=evaluator_embeddings, strictness=2
+        ),
     ]
 
     # Run evaluation
     logger.info(f"Evaluating against endpoint: {endpoint_url}")
+    run_config = RunConfig(max_workers=10, timeout=300)
     result = await evaluate_ag_ui_agent(
         endpoint_url=endpoint_url,
         dataset=dataset,
         metrics=metrics,
         evaluator_llm=evaluator_llm,
+        run_config=run_config,
     )
 
     # Convert to DataFrame and clean up
     df = result.to_pandas()
     df = df.drop(columns=["retrieved_contexts"], errors="ignore")
+
+    if "response" in df.columns:
+        conciseness_scores = []
+        for response_text in df["response"].fillna(""):
+            conciseness_result = await conciseness_metric.ascore(
+                response=response_text,
+                llm=evaluator_llm,
+            )
+            conciseness_scores.append(conciseness_result.value)
+        df["conciseness"] = conciseness_scores
 
     # Print summary
     logger.info("\n" + "=" * 80)
@@ -161,9 +203,7 @@ async def evaluate_scientist_biographies(
 
     metric_columns = [
         "factual_correctness(mode=f1)",
-        "context_precision_with_reference",
-        "context_recall",
-        "response_groundedness",
+        "answer_relevancy",
     ]
     for column in metric_columns:
         if column in df.columns:
@@ -173,19 +213,19 @@ async def evaluate_scientist_biographies(
         logger.info(
             f"Perfect factual scores (1.0): {(df['factual_correctness(mode=f1)'] == 1.0).sum()}/{len(df)}"
         )
+    if "conciseness" in df.columns:
+        concise_ratio = (df["conciseness"] == "concise").mean()
+        logger.info(f"Concise responses: {concise_ratio:.2%}")
 
     return result, df
 
 
-async def evaluate_weather_tool_use(
-    endpoint_url: str, evaluator_llm: InstructorBaseRagasLLM
-) -> tuple:
+async def evaluate_weather_tool_use(endpoint_url: str) -> tuple:
     """
     Evaluate the agent's ability to correctly call the weather tool.
 
     Args:
         endpoint_url: The AG-UI endpoint URL
-        evaluator_llm: The LLM to use for evaluation
 
     Returns:
         Tuple of (result, dataframe) where result is the EvaluationResult
@@ -207,7 +247,6 @@ async def evaluate_weather_tool_use(
         endpoint_url=endpoint_url,
         dataset=dataset,
         metrics=metrics,
-        evaluator_llm=evaluator_llm,
     )
 
     # Convert to DataFrame and clean up
@@ -295,23 +334,32 @@ async def main():
 
     args = parser.parse_args()
 
-    # Setup evaluator LLM
-    logger.info(f"Setting up evaluator LLM: {args.evaluator_model}")
-    client = AsyncOpenAI()
-    evaluator_llm = llm_factory(args.evaluator_model, client=client)
+    # Sanity check the embedding endpoint before evaluation
+    async def sanity_check():
+        sanity_client = AsyncOpenAI()
+        logger.info("Running embeddings sanity check before evaluation")
+        try:
+            await sanity_client.embeddings.create(
+                input="Sanity check",
+                model="text-embedding-3-small",
+                timeout=10.0,
+            )
+            logger.info("Embeddings sanity check succeeded")
+        except Exception as exc:
+            logger.warning("Embeddings sanity check failed: %s", exc)
+
+    await sanity_check()
 
     # Run evaluations
     try:
         if not args.skip_factual:
             result, df = await evaluate_scientist_biographies(
-                args.endpoint_url, evaluator_llm
+                args.endpoint_url, args.evaluator_model
             )
             save_results(df, "scientist_biographies", args.output_dir)
 
         if not args.skip_tool_eval:
-            result, df = await evaluate_weather_tool_use(
-                args.endpoint_url, evaluator_llm
-            )
+            result, df = await evaluate_weather_tool_use(args.endpoint_url)
             save_results(df, "weather_tool_calls", args.output_dir)
 
         logger.info("\n" + "=" * 80)
