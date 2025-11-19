@@ -7,7 +7,8 @@ import numpy as np
 
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
-from ragas.prompt.metrics.context_precision import (
+
+from .util import (
     ContextPrecisionInput,
     ContextPrecisionOutput,
     ContextPrecisionPrompt,

@@ -1,8 +1,8 @@
-"""Context Precision prompt - Class-based implementation with structured input/output."""
+"""Context Precision prompt classes and models."""
 
 from pydantic import BaseModel, Field
 
-from .base_prompt import BasePrompt
+from ragas.prompt.metrics.base_prompt import BasePrompt
 
 
 class ContextPrecisionInput(BaseModel):
