@@ -261,6 +261,10 @@ class AnswerCorrectness(BaseMetric):
 
     async def _calculate_similarity(self, response: str, reference: str) -> float:
         """Calculate semantic similarity between response and reference using embeddings."""
+        # Type guard: embeddings must be non-None when similarity weight > 0
+        if self.embeddings is None:
+            raise RuntimeError("Embeddings required for similarity calculation")
+
         # Get embeddings for both texts
         response_embedding = np.asarray(
             await self.embeddings.aembed_text(response)
