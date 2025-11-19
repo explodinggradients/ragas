@@ -4,7 +4,7 @@ This example demonstrates how to evaluate agents built with the **AG-UI protocol
 
 ## What is AG-UI?
 
-AG-UI (Agent-to-UI) is a protocol for streaming agent events from backend to frontend. It defines a standardized event format for agent-to-UI communication, enabling real-time streaming of agent actions, tool calls, and responses.
+AG-UI (Agent-User Interaction) is a protocol for streaming agent events from backend to frontend. It defines a standardized event format for agent-to-UI communication, enabling real-time streaming of agent actions, tool calls, and responses.
 
 ## Prerequisites
 
@@ -20,7 +20,7 @@ Before running these examples, you need to have an AG-UI compatible agent runnin
 
 ### Example Setup
 
-Here's a quick overview of setting up an AG-UI agent (refer to the [official documentation](https://docs.ag-ui.com/quickstart/applications) for detailed instructions):
+Here's a quick overview of setting up an AG-UI agent (refer to the [official documentation](https://docs.ag-ui.com/quickstart/applications) for detailed instructions):u
 
 1. Choose your agent framework (e.g., Google ADK, Pydantic AI)
 2. Implement your agent with the required tools
@@ -36,18 +36,18 @@ Install the required dependencies:
 uv pip install -e ".[dev]"
 
 # Or install specific dependencies
-pip install ragas langchain-openai
+pip install ragas openai
 ```
 
 ## Evaluation Scenarios
 
 This example includes two evaluation scenarios:
 
-### 1. Scientist Biographies (Factual Correctness)
+### 1. Scientist Biographies (Factuality & Grounding)
 
-Tests the agent's ability to provide factually correct information about famous scientists.
+Tests the agent's ability to provide factually correct information about famous scientists and keep responses concise. The evaluation uses the modern collections portfolio plus a discrete conciseness check implemented with `DiscreteMetric`.
 
-- **Metric**: `FactualCorrectness` - Measures how accurate the agent's responses are compared to reference answers
+- **Metrics**: Collections metrics — `FactualCorrectness` (mode `f1`, atomicity `high`, coverage `high`), `AnswerRelevancy` (strictness `2`), and a custom `conciseness` metric (DiscreteMetric)
 - **Dataset**: `test_data/scientist_biographies.csv` - 5 questions about scientists (Einstein, Fleming, Newton, etc.)
 - **Sample Type**: `SingleTurnSample` - Simple question-answer pairs
 
@@ -103,6 +103,14 @@ cd examples
 uv run python ragas_examples/ag_ui_agent_evals/evals.py --endpoint-url http://localhost:8000/agentic_chat
 ```
 
+### Environment variables
+
+The script loads `.env` from the repository root, so configure your evaluator credentials there:
+
+```bash
+echo "OPENAI_API_KEY=sk-..." > .env
+```
+
 ## Expected Output
 
 ### Console Output
@@ -120,13 +128,15 @@ Evaluating against endpoint: http://localhost:8000/agentic_chat
 ================================================================================
 Scientist Biographies Evaluation Results
 ================================================================================
-                                          user_input  ...  factual_correctness(mode=f1)
-0  Who originated the theory of relativity...     ...                          0.75
-1  Who discovered penicillin and when...           ...                          1.00
+                                          user_input  ... conciseness
+0  Who originated the theory of relativity...     ...    concise
+1  Who discovered penicillin and when...           ...    verbose
 ...
 
 Average Factual Correctness: 0.7160
-Perfect scores (1.0): 2/5
+Average Answer Relevancy: 0.8120
+Concise responses: 60.00%
+Perfect factual scores (1.0): 2/5
 
 Results saved to: .../scientist_biographies_results_20250101_143022.csv
 
@@ -155,8 +165,8 @@ Results are saved as timestamped CSV files:
 Example CSV structure:
 
 ```csv
-user_input,response,reference,factual_correctness(mode=f1)
-"Who originated the theory of relativity...","Albert Einstein...","Albert Einstein originated...",0.75
+user_input,response,reference,factual_correctness(mode=f1),answer_relevancy,conciseness
+"Who originated the theory of relativity...","Albert Einstein...","Albert Einstein originated...",0.75,0.82,concise
 ```
 
 ## Customizing the Evaluation
@@ -183,15 +193,16 @@ user_input,reference_tool_calls
 
 ### Using Different Metrics
 
-Modify `evals.py` to include additional Ragas metrics:
+Modify `evals.py` to include additional collections metrics:
 
 ```python
-from ragas.metrics import AnswerRelevancy, ContextPrecision
+from ragas.metrics.collections import AnswerRelevancy, ContextPrecisionWithoutReference
 
 # In evaluate_scientist_biographies function:
 metrics = [
-    FactualCorrectness(),
-    AnswerRelevancy(),  # Add additional metrics
+    AnswerRelevancy(llm=evaluator_llm),
+    ContextPrecisionWithoutReference(llm=evaluator_llm),
+    ResponseGroundedness(llm=evaluator_llm),
 ]
 ```
 
@@ -258,6 +269,19 @@ Error: Request timeout after 60.0 seconds
 - **1.0**: Perfect match between response and reference
 - **0.5-0.9**: Partially correct with some missing or incorrect information
 - **<0.5**: Significant discrepancies with the reference
+
+### Answer Relevancy Metric
+
+- **Range**: 0.0 to 1.0
+- **1.0**: All generated follow-up questions align tightly with the original user input
+- **0.5-0.9**: Mostly relevant answers with minor drift or non-committal language
+- **<0.5**: Response is largely unrelated or evasive compared to the user query
+
+### Conciseness Metric
+
+- **Values**: `concise` or `verbose`
+- **concise**: The evaluator judged the answer as efficient and to the point
+- **verbose**: The answer included unnecessary repetition or tangents
 
 ### Tool Call F1 Metric
 

@@ -37,11 +37,13 @@ uv run python evals.py --endpoint-url http://localhost:8000/agentic_chat
 
 This package includes two evaluation scenarios:
 
-1. **Scientist Biographies** - Tests factual correctness of agent responses
-   using the FactualCorrectness metric with SingleTurnSample datasets.
+1. **Scientist Biographies** - Uses the modern collections metrics
+   (`FactualCorrectness`, `ContextPrecisionWithReference`, `ContextRecall`,
+   `ResponseGroundedness`) with `SingleTurnSample` datasets to score factuality
+   and grounding in one pass.
 
-2. **Weather Tool Usage** - Tests tool calling accuracy using the ToolCallF1
-   metric with MultiTurnSample datasets.
+2. **Weather Tool Usage** - Tests tool calling accuracy using the `ToolCallF1`
+   metric with `MultiTurnSample` datasets.
 
 ## Results
 

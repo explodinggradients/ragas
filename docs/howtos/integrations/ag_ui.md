@@ -78,16 +78,28 @@ weather_queries = EvaluationDataset(
 
 ## Choose metrics and evaluator model
 
-The integration works with any Ragas metric. For most text-based evaluations you will want a grading LLM. Wrap your model with the appropriate adapter (LangChain shown here, but llama-index and LiteLLM wrappers work as well).
+The integration works with any Ragas metric. To unlock the modern collections portfolio, build an Instructor-compatible LLM with `llm_factory`.
 
 ```python
-from ragas.metrics import FactualCorrectness, ToolCallF1
-from ragas.llms import LangchainLLMWrapper
-from langchain_openai import ChatOpenAI
+from openai import AsyncOpenAI
+from ragas.llms import llm_factory
+from ragas.metrics import ToolCallF1
+from ragas.metrics.collections import (
+    ContextPrecisionWithReference,
+    ContextRecall,
+    FactualCorrectness,
+    ResponseGroundedness,
+)
 
-evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o-mini"))
+client = AsyncOpenAI()
+evaluator_llm = llm_factory("gpt-4o-mini", client=client)
 
-qa_metrics = [FactualCorrectness(llm=evaluator_llm)]
+qa_metrics = [
+    FactualCorrectness(llm=evaluator_llm, mode="f1"),
+    ContextPrecisionWithReference(llm=evaluator_llm),
+    ContextRecall(llm=evaluator_llm),
+    ResponseGroundedness(llm=evaluator_llm),
+]
 tool_metrics = [ToolCallF1()]  # rule-based metric, no LLM required
 ```
 
