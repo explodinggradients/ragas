@@ -206,7 +206,7 @@ async def run_experiment(mode: str = "naive", model: str = "gpt-5-mini", name: O
         dataset, 
         name=name or f"{datetime.now().strftime('%Y%m%d-%H%M%S')}_{'agenticrag' if mode == 'agentic' else 'naiverag'}",
         rag=rag,
-        llm=llm_factory("gpt-5-mini", client=openai_client)
+        llm=llm_factory("gpt-5-mini", client=openai_client, temperature=1, top_p=None)
     )
     
     # Print basic results
