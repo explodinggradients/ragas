@@ -1,48 +1,42 @@
-"""Context Recall metric v2 - Class-based implementation with modern components."""
+"""Context Recall metrics v2 - Modern implementation with structured prompts."""
 
 import typing as t
+from typing import List
 
 import numpy as np
-from pydantic import BaseModel
 
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
-from ragas.prompt.metrics.context_recall import context_recall_prompt
+
+from .util import (
+    ContextRecallInput,
+    ContextRecallOutput,
+    ContextRecallPrompt,
+)
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import InstructorBaseRagasLLM
 
 
-class ContextRecallClassification(BaseModel):
-    """Structured output for a single statement classification."""
-
-    statement: str
-    reason: str
-    attributed: int
-
-
-class ContextRecallOutput(BaseModel):
-    """Structured output for context recall classifications."""
-
-    classifications: t.List[ContextRecallClassification]
-
-
 class ContextRecall(BaseMetric):
     """
-    Evaluate context recall by classifying if statements can be attributed to context.
+    Modern v2 implementation of context recall evaluation.
+
+    Evaluates context recall by classifying if statements in a reference answer
+    can be attributed to the retrieved context. Uses an LLM to verify attribution
+    for each statement and calculates recall as the proportion of attributed statements.
 
     This implementation uses modern instructor LLMs with structured output.
     Only supports modern components - legacy wrappers are rejected with clear error messages.
 
     Usage:
-        >>> import instructor
-        >>> from openai import AsyncOpenAI
-        >>> from ragas.llms.base import instructor_llm_factory
+        >>> import openai
+        >>> from ragas.llms.base import llm_factory
         >>> from ragas.metrics.collections import ContextRecall
         >>>
         >>> # Setup dependencies
-        >>> client = AsyncOpenAI()
-        >>> llm = instructor_llm_factory("openai", client=client, model="gpt-4o-mini")
+        >>> client = openai.AsyncOpenAI()
+        >>> llm = llm_factory("gpt-4o-mini", client=client)
         >>>
         >>> # Create metric instance
         >>> metric = ContextRecall(llm=llm)
@@ -53,18 +47,12 @@ class ContextRecall(BaseMetric):
         ...     retrieved_contexts=["Paris is the capital of France."],
         ...     reference="Paris is the capital and largest city of France."
         ... )
-        >>> print(f"Score: {result.value}")
-        >>>
-        >>> # Batch evaluation
-        >>> results = await metric.abatch_score([
-        ...     {"user_input": "Q1", "retrieved_contexts": ["C1"], "reference": "A1"},
-        ...     {"user_input": "Q2", "retrieved_contexts": ["C2"], "reference": "A2"},
-        ... ])
+        >>> print(f"Context Recall: {result.value}")
 
     Attributes:
-        llm: Modern instructor-based LLM for classification
+        llm: Modern instructor-based LLM for statement classification
         name: The metric name
-        allowed_values: Score range (0.0 to 1.0)
+        allowed_values: Score range (0.0 to 1.0, higher is better)
     """
 
     # Type hints for linter (attributes are set in __init__)
@@ -80,12 +68,13 @@ class ContextRecall(BaseMetric):
         Initialize ContextRecall metric with required components.
 
         Args:
-            llm: Modern instructor-based LLM for classification
+            llm: Modern instructor-based LLM for statement classification
             name: The metric name (default: "context_recall")
             **kwargs: Additional arguments passed to BaseMetric
         """
         # Set attributes explicitly before calling super()
         self.llm = llm
+        self.prompt = ContextRecallPrompt()  # Initialize prompt class once
 
         # Call super() for validation
         super().__init__(name=name, **kwargs)
@@ -93,7 +82,7 @@ class ContextRecall(BaseMetric):
     async def ascore(
         self,
         user_input: str,
-        retrieved_contexts: t.List[str],
+        retrieved_contexts: List[str],
         reference: str,
     ) -> MetricResult:
         """
@@ -107,7 +96,7 @@ class ContextRecall(BaseMetric):
             reference: The reference answer to evaluate
 
         Returns:
-            MetricResult with recall score (0.0-1.0)
+            MetricResult with recall score (0.0-1.0, higher is better)
         """
         # Input validation
         if not user_input:
@@ -120,13 +109,14 @@ class ContextRecall(BaseMetric):
         # Combine contexts into a single string
         context = "\n".join(retrieved_contexts) if retrieved_contexts else ""
 
-        # Generate prompt
-        prompt = context_recall_prompt(
+        # Create input data and generate prompt
+        input_data = ContextRecallInput(
             question=user_input, context=context, answer=reference
         )
+        prompt_string = self.prompt.to_string(input_data)
 
         # Get classifications from LLM
-        result = await self.llm.agenerate(prompt, ContextRecallOutput)
+        result = await self.llm.agenerate(prompt_string, ContextRecallOutput)
 
         # Calculate score
         if not result.classifications:
