@@ -5,12 +5,6 @@ from ragas.metrics.collections._answer_correctness import AnswerCorrectness
 from ragas.metrics.collections._answer_relevancy import AnswerRelevancy
 from ragas.metrics.collections._bleu_score import BleuScore
 from ragas.metrics.collections._context_entity_recall import ContextEntityRecall
-from ragas.metrics.collections._context_precision import (
-    ContextPrecision,
-    ContextPrecisionWithoutReference,
-    ContextPrecisionWithReference,
-    ContextUtilization,
-)
 from ragas.metrics.collections._context_recall import ContextRecall
 from ragas.metrics.collections._context_relevance import ContextRelevance
 from ragas.metrics.collections._factual_correctness import FactualCorrectness
@@ -27,6 +21,12 @@ from ragas.metrics.collections._string import (
 )
 from ragas.metrics.collections._summary_score import SummaryScore
 from ragas.metrics.collections.base import BaseMetric
+from ragas.metrics.collections.context_precision import (
+    ContextPrecision,
+    ContextPrecisionWithoutReference,
+    ContextPrecisionWithReference,
+    ContextUtilization,
+)
 
 __all__ = [
     "BaseMetric",  # Base class
