@@ -50,7 +50,7 @@ The Code of Conduct applies equally to all participants, including maintainers, 
 
 ## Reporting Violations
 
-If you experience or witness behaviour that violates this Code of Conduct, please report it by emailing **support@vibrantlabs.com**. Include as much detail as you're comfortable sharing, including:
+If you experience or witness behaviour that violates this Code of Conduct, please report it by emailing **support@ragas.io**. Include as much detail as you're comfortable sharing, including:
 
 - What happened
 - Who was involved
@@ -100,7 +100,7 @@ Anyone who violates this Code of Conduct may face consequences determined by the
 
 ## Appeal Process
 
-If you believe you have been unfairly sanctioned under this Code of Conduct, you may appeal by sending a detailed explanation to **support@vibrantlabs.com**. The appeal will be reviewed by a different set of maintainers when possible, and a decision will be communicated to you within a reasonable timeframe.
+If you believe you have been unfairly sanctioned under this Code of Conduct, you may appeal by sending a detailed explanation to **support@ragas.io**. The appeal will be reviewed by a different set of maintainers when possible, and a decision will be communicated to you within a reasonable timeframe.
 
 ## Attribution
 
@@ -108,7 +108,7 @@ This Code of Conduct is adapted from the Contributor Covenant (https://www.contr
 
 ## Questions?
 
-If you have questions about this Code of Conduct or how it applies to a specific situation, please reach out to the maintainers at **support@vibrantlabs.com** or through a project maintainer you trust.
+If you have questions about this Code of Conduct or how it applies to a specific situation, please reach out to the maintainers at **support@ragas.io** or through a project maintainer you trust.
 
 ---
 
