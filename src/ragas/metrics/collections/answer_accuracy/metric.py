@@ -3,28 +3,24 @@
 import typing as t
 
 import numpy as np
-from pydantic import BaseModel
 
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
-from ragas.prompt.metrics.answer_accuracy import (
-    answer_accuracy_judge1_prompt,
-    answer_accuracy_judge2_prompt,
+
+from .util import (
+    AnswerAccuracyInput,
+    AnswerAccuracyJudge1Prompt,
+    AnswerAccuracyJudge2Prompt,
+    AnswerAccuracyOutput,
 )
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import InstructorBaseRagasLLM
 
 
-class JudgeRating(BaseModel):
-    """Structured output for judge rating."""
-
-    rating: int
-
-
 class AnswerAccuracy(BaseMetric):
     """
-    Modern v2 implementation of answer accuracy evaluation.
+    Answer Accuracy metric using dual-judge evaluation.
 
     Measures answer accuracy compared to ground truth using a dual-judge system.
     This metric averages two distinct judge prompts to ensure robust evaluation.
@@ -40,12 +36,12 @@ class AnswerAccuracy(BaseMetric):
     Usage:
         >>> import instructor
         >>> from openai import AsyncOpenAI
-        >>> from ragas.llms.base import instructor_llm_factory
+        >>> from ragas.llms.base import llm_factory
         >>> from ragas.metrics.collections import AnswerAccuracy
         >>>
         >>> # Setup dependencies
         >>> client = AsyncOpenAI()
-        >>> llm = instructor_llm_factory("openai", client=client, model="gpt-4o")
+        >>> llm = llm_factory("gpt-4o", client=client)
         >>>
         >>> # Create metric instance
         >>> metric = AnswerAccuracy(llm=llm)
@@ -86,6 +82,8 @@ class AnswerAccuracy(BaseMetric):
         # Set attributes explicitly before calling super()
         self.llm = llm
         self.max_retries = max_retries
+        self.judge1_prompt = AnswerAccuracyJudge1Prompt()
+        self.judge2_prompt = AnswerAccuracyJudge2Prompt()
 
         # Call super() for validation (without passing llm in kwargs)
         super().__init__(name=name, **kwargs)
@@ -118,27 +116,32 @@ class AnswerAccuracy(BaseMetric):
                 "reference is missing. Please add reference to the test sample."
             )
 
-        # Get ratings from both judges with NVIDIA temperature (0.1)
+        # Get ratings from both judges
         judge1_rating = await self._get_judge_rating(
-            answer_accuracy_judge1_prompt(user_input, response, reference)
+            self.judge1_prompt, user_input, response, reference
         )
         judge2_rating = await self._get_judge_rating(
-            answer_accuracy_judge2_prompt(
-                user_input, reference, response
-            )  # Note: swapped order
-        )
+            self.judge2_prompt, user_input, reference, response
+        )  # Note: swapped order for judge 2
 
         # Average the scores (convert from 0,2,4 scale to 0.0-1.0)
         score = self._average_scores(judge1_rating / 4.0, judge2_rating / 4.0)
 
         return MetricResult(value=float(score))
 
-    async def _get_judge_rating(self, prompt: str) -> float:
-        """Get rating from judge using structured JSON output."""
+    async def _get_judge_rating(
+        self, prompt_obj, query: str, user_answer: str, reference_answer: str
+    ) -> float:
+        """Get rating from judge with retry logic."""
         for retry in range(self.max_retries):
             try:
-                # Use structured output with JSON - clean and reliable
-                result = await self.llm.agenerate(prompt, JudgeRating)
+                input_data = AnswerAccuracyInput(
+                    query=query,
+                    user_answer=user_answer,
+                    reference_answer=reference_answer,
+                )
+                prompt_str = prompt_obj.to_string(input_data)
+                result = await self.llm.agenerate(prompt_str, AnswerAccuracyOutput)
                 rating = result.rating
 
                 # Validate rating is in expected range

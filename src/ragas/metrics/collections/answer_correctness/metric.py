@@ -1,45 +1,30 @@
-"""Answer Correctness metric v2 - Modern implementation with function-based prompts."""
+"""Answer Correctness metric v2 - Modern implementation with multi-step pipeline."""
 
 import typing as t
 from typing import List
 
 import numpy as np
-from pydantic import BaseModel
 
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
-from ragas.prompt.metrics.answer_correctness import correctness_classifier_prompt
-from ragas.prompt.metrics.common import statement_generator_prompt
+
+from .util import (
+    ClassificationWithReason,
+    CorrectnessClassifierInput,
+    CorrectnessClassifierPrompt,
+    StatementGeneratorInput,
+    StatementGeneratorOutput,
+    StatementGeneratorPrompt,
+)
 
 if t.TYPE_CHECKING:
     from ragas.embeddings.base import BaseRagasEmbedding
     from ragas.llms.base import InstructorBaseRagasLLM
 
 
-class StatementGeneratorOutput(BaseModel):
-    """Structured output for statement generation."""
-
-    statements: List[str]
-
-
-class StatementsWithReason(BaseModel):
-    """Individual statement with reasoning for classification."""
-
-    statement: str
-    reason: str
-
-
-class ClassificationWithReason(BaseModel):
-    """Structured output for TP/FP/FN classification."""
-
-    TP: List[StatementsWithReason]
-    FP: List[StatementsWithReason]
-    FN: List[StatementsWithReason]
-
-
 class AnswerCorrectness(BaseMetric):
     """
-    Modern v2 implementation of answer correctness evaluation.
+    Answer Correctness metric using multi-step pipeline evaluation.
 
     Measures answer correctness as a weighted combination of:
     - Factuality: F1 score from statement-level TP/FP/FN classification
@@ -125,6 +110,8 @@ class AnswerCorrectness(BaseMetric):
         self.embeddings = embeddings
         self.weights = weights
         self.beta = beta
+        self.statement_generator_prompt = StatementGeneratorPrompt()
+        self.correctness_classifier_prompt = CorrectnessClassifierPrompt()
 
         # Validate weights
         if len(weights) != 2:
@@ -168,7 +155,7 @@ class AnswerCorrectness(BaseMetric):
         self, user_input: str, response: str, reference: str
     ) -> MetricResult:
         """
-        Calculate answer correctness score.
+        Calculate answer correctness score using multi-step pipeline.
 
         Components are guaranteed to be validated and non-None by the base class.
 
@@ -210,9 +197,9 @@ class AnswerCorrectness(BaseMetric):
 
     async def _generate_statements(self, question: str, text: str) -> List[str]:
         """Generate atomic statements from text using the statement generator prompt."""
-        prompt = statement_generator_prompt(question, text)
-        # Use deterministic defaults set in LLM constructor
-        result = await self.llm.agenerate(prompt, StatementGeneratorOutput)
+        input_data = StatementGeneratorInput(question=question, answer=text)
+        prompt_str = self.statement_generator_prompt.to_string(input_data)
+        result = await self.llm.agenerate(prompt_str, StatementGeneratorOutput)
         return result.statements
 
     async def _classify_statements(
@@ -221,12 +208,14 @@ class AnswerCorrectness(BaseMetric):
         answer_statements: List[str],
         ground_truth_statements: List[str],
     ) -> ClassificationWithReason:
-        """Classify statements as TP/FP/FN using the correctness classifier prompt with strict behavior."""
-        prompt = correctness_classifier_prompt(
-            question, answer_statements, ground_truth_statements
+        """Classify statements as TP/FP/FN using the correctness classifier prompt."""
+        input_data = CorrectnessClassifierInput(
+            question=question,
+            answer=answer_statements,
+            ground_truth=ground_truth_statements,
         )
-        # Use deterministic defaults set in LLM constructor
-        classification = await self.llm.agenerate(prompt, ClassificationWithReason)
+        prompt_str = self.correctness_classifier_prompt.to_string(input_data)
+        classification = await self.llm.agenerate(prompt_str, ClassificationWithReason)
         return classification
 
     def _compute_f1_score(self, classification: ClassificationWithReason) -> float:
