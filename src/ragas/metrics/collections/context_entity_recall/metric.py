@@ -1,39 +1,41 @@
+"""Context Entity Recall metrics v2 - Modern implementation with structured prompts."""
+
 import typing as t
 from typing import List, Sequence
 
-from pydantic import BaseModel
-
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
-from ragas.prompt.metrics.context_entity_recall import extract_entities_prompt
+
+from .util import (
+    EntitiesList,
+    ExtractEntitiesInput,
+    ExtractEntitiesPrompt,
+)
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import InstructorBaseRagasLLM
 
 
-class EntitiesList(BaseModel):
-    """Structured output for entity extraction."""
-
-    entities: List[str]
-
-
 class ContextEntityRecall(BaseMetric):
     """
     Modern v2 implementation of context entity recall evaluation.
+
     Calculates recall based on entities present in ground truth and retrieved contexts.
     Let CN be the set of entities present in context,
     GN be the set of entities present in the ground truth.
     Context Entity recall = | CN ∩ GN | / | GN |
+
     This implementation uses modern instructor LLMs with structured output.
     Only supports modern components - legacy wrappers are rejected with clear error messages.
+
     Usage:
-        >>> from openai import AsyncOpenAI
-        >>> from ragas.llms import llm_factory
+        >>> import openai
+        >>> from ragas.llms.base import llm_factory
         >>> from ragas.metrics.collections import ContextEntityRecall
         >>>
         >>> # Setup dependencies
-        >>> client = AsyncOpenAI()
-        >>> llm = llm_factory("gpt-4o", client=client)
+        >>> client = openai.AsyncOpenAI()
+        >>> llm = llm_factory("gpt-4o-mini", client=client)
         >>>
         >>> # Create metric instance
         >>> metric = ContextEntityRecall(llm=llm)
@@ -44,16 +46,11 @@ class ContextEntityRecall(BaseMetric):
         ...     retrieved_contexts=["France's capital city is Paris.", "The city was founded in ancient times."]
         ... )
         >>> print(f"Entity Recall: {result.value}")
-        >>>
-        >>> # Batch evaluation
-        >>> results = await metric.abatch_score([
-        ...     {"reference": "Text 1", "retrieved_contexts": ["Context 1"]},
-        ...     {"reference": "Text 2", "retrieved_contexts": ["Context 2"]},
-        ... ])
+
     Attributes:
         llm: Modern instructor-based LLM for entity extraction
         name: The metric name
-        allowed_values: Score range (0.0 to 1.0)
+        allowed_values: Score range (0.0 to 1.0, higher is better)
     """
 
     # Type hints for linter (attributes are set in __init__)
@@ -65,11 +62,19 @@ class ContextEntityRecall(BaseMetric):
         name: str = "context_entity_recall",
         **kwargs,
     ):
-        """Initialize ContextEntityRecall metric with required components."""
+        """
+        Initialize ContextEntityRecall metric with required components.
+
+        Args:
+            llm: Modern instructor-based LLM for entity extraction
+            name: The metric name (default: "context_entity_recall")
+            **kwargs: Additional arguments passed to BaseMetric
+        """
         # Set attributes explicitly before calling super()
         self.llm = llm
+        self.prompt = ExtractEntitiesPrompt()  # Initialize prompt class once
 
-        # Call super() for validation (without passing llm in kwargs)
+        # Call super() for validation
         super().__init__(name=name, **kwargs)
 
     async def ascore(
@@ -77,12 +82,15 @@ class ContextEntityRecall(BaseMetric):
     ) -> MetricResult:
         """
         Calculate context entity recall score.
+
         Components are guaranteed to be validated and non-None by the base class.
+
         Args:
             reference: The ground truth reference text
             retrieved_contexts: List of retrieved context strings
+
         Returns:
-            MetricResult with entity recall score (0.0-1.0)
+            MetricResult with entity recall score (0.0-1.0, higher is better)
         """
         # Extract entities from reference (ground truth)
         reference_entities = await self._extract_entities(reference)
@@ -97,9 +105,19 @@ class ContextEntityRecall(BaseMetric):
         return MetricResult(value=float(recall_score))
 
     async def _extract_entities(self, text: str) -> List[str]:
-        """Extract entities from text using the V1-identical entity extraction prompt."""
-        prompt = extract_entities_prompt(text)
-        result = await self.llm.agenerate(prompt, EntitiesList)
+        """
+        Extract entities from text using the entity extraction prompt.
+
+        Args:
+            text: The text to extract entities from
+
+        Returns:
+            List of extracted entities
+        """
+        # Create input data and generate prompt
+        input_data = ExtractEntitiesInput(text=text)
+        prompt_string = self.prompt.to_string(input_data)
+        result = await self.llm.agenerate(prompt_string, EntitiesList)
         return result.entities
 
     def _compute_recall_score(
@@ -107,7 +125,15 @@ class ContextEntityRecall(BaseMetric):
     ) -> float:
         """
         Compute entity recall score using set intersection.
-        This is identical to V1's _compute_score method.
+
+        Recall = |intersection| / |reference|
+
+        Args:
+            reference_entities: Entities from the reference text
+            context_entities: Entities from the context
+
+        Returns:
+            Entity recall score (0.0-1.0)
         """
         reference_set = set(reference_entities)
         context_set = set(context_entities)
