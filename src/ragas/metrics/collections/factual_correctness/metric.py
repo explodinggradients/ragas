@@ -1,4 +1,4 @@
-"""Factual Correctness metric v2 - Modern implementation with multi-modal scoring."""
+"""Factual Correctness metrics v2 - Modern implementation with multi-modal scoring."""
 
 import typing as t
 from typing import List
@@ -10,16 +10,15 @@ from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
 from ragas.metrics.utils import fbeta_score
 from ragas.prompt.metrics.common import nli_statement_prompt
-from ragas.prompt.metrics.factual_correctness import claim_decomposition_prompt
+
+from .util import (
+    ClaimDecompositionInput,
+    ClaimDecompositionOutput,
+    ClaimDecompositionPrompt,
+)
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import InstructorBaseRagasLLM
-
-
-class ClaimDecompositionOutput(BaseModel):
-    """Structured output for claim decomposition."""
-
-    claims: List[str]
 
 
 class StatementFaithfulnessAnswer(BaseModel):
@@ -113,6 +112,7 @@ class FactualCorrectness(BaseMetric):
         self.beta = beta
         self.atomicity = atomicity
         self.coverage = coverage
+        self.prompt = ClaimDecompositionPrompt()
 
         # Validate beta parameter
         if not isinstance(beta, (int, float)):
@@ -176,12 +176,13 @@ class FactualCorrectness(BaseMetric):
 
         return MetricResult(value=float(np.round(score, 2)))
 
-    async def _decompose_claims(self, response: str) -> List[str]:
-        """Break response into claims using configurable decomposition."""
-        prompt = claim_decomposition_prompt(
-            response, atomicity=self.atomicity, coverage=self.coverage
+    async def _decompose_claims(self, text: str) -> List[str]:
+        """Break text into claims using configurable decomposition."""
+        input_data = ClaimDecompositionInput(
+            response=text, atomicity=self.atomicity, coverage=self.coverage
         )
-        result = await self.llm.agenerate(prompt, ClaimDecompositionOutput)
+        prompt_str = self.prompt.to_string(input_data)
+        result = await self.llm.agenerate(prompt_str, ClaimDecompositionOutput)
         return result.claims
 
     async def _verify_claims(

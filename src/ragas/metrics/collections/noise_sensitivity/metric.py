@@ -1,37 +1,24 @@
-"""Noise Sensitivity metric v2 - Modern implementation with function-based prompts."""
+"""Noise Sensitivity metrics v2 - Modern implementation with function-based prompts."""
 
 import typing as t
 from typing import Dict, List, Literal
 
 import numpy as np
-from pydantic import BaseModel
 
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
-from ragas.prompt.metrics.common import nli_statement_prompt, statement_generator_prompt
+
+from .util import (
+    StatementFaithfulnessInput,
+    StatementFaithfulnessOutput,
+    StatementFaithfulnessPrompt,
+    StatementGeneratorInput,
+    StatementGeneratorOutput,
+    StatementGeneratorPrompt,
+)
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import InstructorBaseRagasLLM
-
-
-class StatementGeneratorOutput(BaseModel):
-    """Structured output for statement generation."""
-
-    statements: List[str]
-
-
-class StatementFaithfulnessAnswer(BaseModel):
-    """Individual statement with reason and verdict for NLI evaluation."""
-
-    statement: str
-    reason: str
-    verdict: int
-
-
-class NLIStatementOutput(BaseModel):
-    """Structured output for NLI statement evaluation."""
-
-    statements: List[StatementFaithfulnessAnswer]
 
 
 class NoiseSensitivity(BaseMetric):
@@ -102,6 +89,8 @@ class NoiseSensitivity(BaseMetric):
         # Set attributes explicitly before calling super()
         self.llm = llm
         self.mode = mode
+        self.statement_prompt = StatementGeneratorPrompt()
+        self.faithfulness_prompt = StatementFaithfulnessPrompt()
 
         # Validate mode
         if mode not in {"relevant", "irrelevant"}:
@@ -199,16 +188,18 @@ class NoiseSensitivity(BaseMetric):
         self, text: str, question: str
     ) -> List[str]:
         """Decompose answer text into atomic statements."""
-        prompt = statement_generator_prompt(question, text)
-        result = await self.llm.agenerate(prompt, StatementGeneratorOutput)
+        input_data = StatementGeneratorInput(question=question, text=text)
+        prompt_str = self.statement_prompt.to_string(input_data)
+        result = await self.llm.agenerate(prompt_str, StatementGeneratorOutput)
         return result.statements
 
     async def _evaluate_statement_faithfulness(
         self, statements: List[str], context: str
     ) -> List[int]:
         """Evaluate faithfulness of statements against context using NLI."""
-        prompt = nli_statement_prompt(context, statements)
-        result = await self.llm.agenerate(prompt, NLIStatementOutput)
+        input_data = StatementFaithfulnessInput(context=context, statements=statements)
+        prompt_str = self.faithfulness_prompt.to_string(input_data)
+        result = await self.llm.agenerate(prompt_str, StatementFaithfulnessOutput)
 
         verdict_list = [
             1 if statement.verdict else 0 for statement in result.statements
