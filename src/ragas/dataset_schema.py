@@ -128,7 +128,7 @@ class MultiTurnSample(BaseSample):
         messages: t.List[t.Union[HumanMessage, AIMessage, ToolMessage]],
     ) -> t.List[t.Union[HumanMessage, AIMessage, ToolMessage]]:
         """Validates the user input messages."""
-        if not (
+        if not all(
             isinstance(m, (HumanMessage, AIMessage, ToolMessage)) for m in messages
         ):
             raise ValueError(
