@@ -1,44 +1,31 @@
-"""Summary Score metric v2 - Modern implementation with function-based prompts."""
+"""Summary Score metric v2 - Modern implementation with multi-step pipeline."""
 
 import logging
 import typing as t
 from typing import List
 
-from pydantic import BaseModel
-
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
-from ragas.prompt.metrics.summary_score import (
-    extract_keyphrases_prompt,
-    generate_answers_prompt,
-    generate_questions_prompt,
+
+from .util import (
+    AnswersGenerated,
+    ExtractedKeyphrases,
+    ExtractedKeyphrasesInput,
+    ExtractKeyphrasesPrompt,
+    GenerateAnswersInput,
+    GenerateAnswersPrompt,
+    GenerateQuestionsInput,
+    GenerateQuestionsPrompt,
+    QuestionsGenerated,
 )
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import InstructorBaseRagasLLM
 
 
-class ExtractedKeyphrases(BaseModel):
-    """Structured output for keyphrase extraction."""
-
-    keyphrases: List[str]
-
-
-class QuestionsGenerated(BaseModel):
-    """Structured output for question generation."""
-
-    questions: List[str]
-
-
-class AnswersGenerated(BaseModel):
-    """Structured output for answer generation."""
-
-    answers: List[str]
-
-
 class SummaryScore(BaseMetric):
     """
-    Modern v2 implementation of summarization score evaluation.
+    Summary Score metric using multi-step pipeline evaluation.
 
     Measures how well a summary captures important information from contexts by:
     1. Extracting keyphrases from the original contexts
@@ -52,12 +39,12 @@ class SummaryScore(BaseMetric):
     Usage:
         >>> import instructor
         >>> from openai import AsyncOpenAI
-        >>> from ragas.llms.base import instructor_llm_factory
+        >>> from ragas.llms.base import llm_factory
         >>> from ragas.metrics.collections import SummaryScore
         >>>
         >>> # Setup dependencies
         >>> client = AsyncOpenAI()
-        >>> llm = instructor_llm_factory("openai", client=client, model="gpt-4o-mini")
+        >>> llm = llm_factory("gpt-4o-mini", client=client)
         >>>
         >>> # Create metric instance
         >>> metric = SummaryScore(llm=llm)
@@ -108,6 +95,9 @@ class SummaryScore(BaseMetric):
         self.llm = llm
         self.length_penalty = length_penalty
         self.coeff = coeff
+        self.extract_keyphrases_prompt = ExtractKeyphrasesPrompt()
+        self.generate_questions_prompt = GenerateQuestionsPrompt()
+        self.generate_answers_prompt = GenerateAnswersPrompt()
 
         # Validate coefficient
         if not (0.0 <= coeff <= 1.0):
@@ -120,7 +110,7 @@ class SummaryScore(BaseMetric):
         self, reference_contexts: List[str], response: str
     ) -> MetricResult:
         """
-        Calculate summary score.
+        Calculate summary score using multi-step pipeline.
 
         Args:
             reference_contexts: The original contexts that were summarized
@@ -175,20 +165,23 @@ class SummaryScore(BaseMetric):
 
     async def _extract_keyphrases(self, text: str) -> List[str]:
         """Extract keyphrases from text using the keyphrase extraction prompt."""
-        prompt = extract_keyphrases_prompt(text)
-        result = await self.llm.agenerate(prompt, ExtractedKeyphrases)
+        input_data = ExtractedKeyphrasesInput(text=text)
+        prompt_str = self.extract_keyphrases_prompt.to_string(input_data)
+        result = await self.llm.agenerate(prompt_str, ExtractedKeyphrases)
         return result.keyphrases
 
     async def _generate_questions(self, text: str, keyphrases: List[str]) -> List[str]:
         """Generate questions from text and keyphrases."""
-        prompt = generate_questions_prompt(text, keyphrases)
-        result = await self.llm.agenerate(prompt, QuestionsGenerated)
+        input_data = GenerateQuestionsInput(text=text, keyphrases=keyphrases)
+        prompt_str = self.generate_questions_prompt.to_string(input_data)
+        result = await self.llm.agenerate(prompt_str, QuestionsGenerated)
         return result.questions
 
     async def _generate_answers(self, summary: str, questions: List[str]) -> List[str]:
         """Generate answers by checking if summary can answer questions."""
-        prompt = generate_answers_prompt(summary, questions)
-        result = await self.llm.agenerate(prompt, AnswersGenerated)
+        input_data = GenerateAnswersInput(summary=summary, questions=questions)
+        prompt_str = self.generate_answers_prompt.to_string(input_data)
+        result = await self.llm.agenerate(prompt_str, AnswersGenerated)
         return result.answers
 
     def _compute_qa_score(self, answers: List[str]) -> float:
