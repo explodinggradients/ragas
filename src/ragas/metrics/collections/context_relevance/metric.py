@@ -1,62 +1,59 @@
-"""Response Groundedness metric v2 - Modern implementation with dual-judge evaluation."""
+"""Context Relevance metric v2 - Modern implementation with dual-judge evaluation."""
 
 import typing as t
 from typing import List
 
-from pydantic import BaseModel
+import numpy as np
 
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
-from ragas.prompt.metrics.response_groundedness import (
-    response_groundedness_judge1_prompt,
-    response_groundedness_judge2_prompt,
+
+from .util import (
+    ContextRelevanceInput,
+    ContextRelevanceJudge1Prompt,
+    ContextRelevanceJudge2Prompt,
+    ContextRelevanceOutput,
 )
 
 if t.TYPE_CHECKING:
     from ragas.llms.base import InstructorBaseRagasLLM
 
 
-class GroundednessRating(BaseModel):
-    """Structured output for groundedness rating."""
-
-    rating: int
-
-
-class ResponseGroundedness(BaseMetric):
+class ContextRelevance(BaseMetric):
     """
-    Modern v2 implementation of response groundedness evaluation.
+    Context Relevance metric using dual-judge evaluation.
 
-    Evaluates how well grounded a response is in the retrieved contexts
+    Evaluates whether the retrieved contexts are pertinent to the user input
     using a dual-judge system. This metric averages two distinct judge prompts
     to ensure robust evaluation.
 
     The metric uses NVIDIA's proven dual-judge approach:
-    1. Judge 1: Direct groundedness evaluation with structured instructions
+    1. Judge 1: Direct context relevance evaluation
     2. Judge 2: Alternative perspective for fairness
     3. Average both judges for final score
 
-    Rating scale: 0 (not grounded), 1 (partially grounded), 2 (fully grounded)
+    Rating scale: 0 (not relevant), 1 (partially relevant), 2 (fully relevant)
     Final score: Average of both judges converted to 0.0-1.0 scale
 
     Usage:
         >>> import instructor
         >>> from openai import AsyncOpenAI
         >>> from ragas.llms.base import llm_factory
-        >>> from ragas.metrics.collections import ResponseGroundedness
+        >>> from ragas.metrics.collections import ContextRelevance
         >>>
         >>> # Setup dependencies
         >>> client = AsyncOpenAI()
-        >>> llm = llm_factory("gpt-4o", client=client)
+        >>> llm = llm_factory("openai", client=client, model="gpt-4o")
         >>>
         >>> # Create metric instance
-        >>> metric = ResponseGroundedness(llm=llm)
+        >>> metric = ContextRelevance(llm=llm)
         >>>
         >>> # Single evaluation
         >>> result = await metric.ascore(
-        ...     response="Einstein was born in Germany in 1879.",
-        ...     retrieved_contexts=["Albert Einstein was born in Ulm, Germany on March 14, 1879."]
+        ...     user_input="When was Einstein born?",
+        ...     retrieved_contexts=["Albert Einstein was born March 14, 1879."]
         ... )
-        >>> print(f"Response Groundedness: {result.value}")
+        >>> print(f"Context Relevance: {result.value}")
 
     Attributes:
         llm: Modern instructor-based LLM for dual-judge evaluation
@@ -71,12 +68,12 @@ class ResponseGroundedness(BaseMetric):
     def __init__(
         self,
         llm: "InstructorBaseRagasLLM",
-        name: str = "response_groundedness",
+        name: str = "context_relevance",
         max_retries: int = 5,
         **kwargs,
     ):
         """
-        Initialize ResponseGroundedness metric with required components.
+        Initialize ContextRelevance metric with required components.
 
         Args:
             llm: Modern instructor-based LLM for dual-judge evaluation
@@ -86,27 +83,29 @@ class ResponseGroundedness(BaseMetric):
         # Set attributes explicitly before calling super()
         self.llm = llm
         self.max_retries = max_retries
+        self.judge1_prompt = ContextRelevanceJudge1Prompt()
+        self.judge2_prompt = ContextRelevanceJudge2Prompt()
 
         # Call super() for validation (without passing llm in kwargs)
         super().__init__(name=name, **kwargs)
 
     async def ascore(
-        self, response: str, retrieved_contexts: List[str]
+        self, user_input: str, retrieved_contexts: List[str]
     ) -> MetricResult:
         """
-        Calculate response groundedness score using dual-judge evaluation.
+        Calculate context relevance score using dual-judge evaluation.
 
         Args:
-            response: The response to evaluate for groundedness
-            retrieved_contexts: The retrieved contexts to check groundedness against
+            user_input: The original question
+            retrieved_contexts: The retrieved contexts to evaluate for relevance
 
         Returns:
-            MetricResult with response groundedness score (0.0-1.0, higher is better)
+            MetricResult with context relevance score (0.0-1.0, higher is better)
         """
         # Input validation
-        if not response:
+        if not user_input:
             raise ValueError(
-                "response is missing. Please add response to the test sample."
+                "user_input is missing. Please add user_input to the test sample."
             )
         if not retrieved_contexts:
             raise ValueError(
@@ -116,32 +115,46 @@ class ResponseGroundedness(BaseMetric):
         # Handle edge cases like legacy
         context_str = "\n".join(retrieved_contexts)
 
-        if not response.strip() or not context_str.strip():
+        if not user_input.strip() or not context_str.strip():
             return MetricResult(value=0.0)
 
-        # Get ratings from both judges (already on 0.0-1.0 scale from legacy parsing)
+        # Edge case: if user input matches context exactly
+        if user_input.strip() == context_str.strip():
+            return MetricResult(value=0.0)
+
+        # Edge case: if context is contained in user input
+        if context_str.strip() in user_input.strip():
+            return MetricResult(value=0.0)
+
+        # Get ratings from both judges
         judge1_rating = await self._get_judge_rating(
-            response_groundedness_judge1_prompt(response, context_str)
+            self.judge1_prompt, user_input, context_str
         )
         judge2_rating = await self._get_judge_rating(
-            response_groundedness_judge2_prompt(response, context_str)
+            self.judge2_prompt, user_input, context_str
         )
 
-        # Average the scores (already on 0.0-1.0 scale like legacy)
-        score = self._average_scores(judge1_rating, judge2_rating)
+        # Average the scores (convert from 0,1,2 scale to 0.0-1.0)
+        score = self._average_scores(judge1_rating / 2.0, judge2_rating / 2.0)
 
         return MetricResult(value=float(score))
 
-    async def _get_judge_rating(self, prompt: str) -> float:
-        """Get rating from judge using structured output with legacy-compatible processing."""
+    async def _get_judge_rating(
+        self, prompt_obj, user_input: str, context: str
+    ) -> float:
+        """Get rating from judge with retry logic."""
         for retry in range(self.max_retries):
             try:
-                result = await self.llm.agenerate(prompt, GroundednessRating)
+                input_data = ContextRelevanceInput(
+                    user_input=user_input, context=context
+                )
+                prompt_str = prompt_obj.to_string(input_data)
+                result = await self.llm.agenerate(prompt_str, ContextRelevanceOutput)
                 rating = result.rating
 
-                # Validate rating is in expected range and convert to 0.0-1.0 scale
+                # Validate rating is in expected range
                 if rating in [0, 1, 2]:
-                    return rating / 2.0  # Convert to legacy 0.0-1.0 scale
+                    return float(rating)
                 else:
                     if retry < self.max_retries - 1:
                         continue  # Retry if invalid rating
@@ -157,9 +170,12 @@ class ResponseGroundedness(BaseMetric):
         return float("nan")
 
     def _average_scores(self, score1: float, score2: float) -> float:
-        """Average two judge scores, handling NaN values. Matches legacy logic exactly."""
-        if score1 >= 0 and score2 >= 0:
+        """Average two judge scores, handling NaN values."""
+        if not np.isnan(score1) and not np.isnan(score2):
             return (score1 + score2) / 2.0
+        elif not np.isnan(score1):
+            return score1
+        elif not np.isnan(score2):
+            return score2
         else:
-            # Match legacy behavior: use max() for NaN handling
-            return max(score1, score2)
+            return float("nan")
