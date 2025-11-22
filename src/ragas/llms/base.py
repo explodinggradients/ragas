@@ -188,7 +188,7 @@ class LangchainLLMWrapper(BaseRagasLLM):
                     )
 
                 # provied more conditions here
-                # https://github.com/explodinggradients/ragas/issues/1548
+                # https://github.com/vibrantlabsai/ragas/issues/1548
 
             # if generation_info is empty, we parse the response_metadata
             # this is less reliable

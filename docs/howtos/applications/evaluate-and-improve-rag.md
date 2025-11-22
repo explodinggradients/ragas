@@ -13,7 +13,7 @@ In this guide, you'll learn how to evaluate and iteratively improve a RAG (Retri
 
 We've built a simple RAG system that retrieves relevant documents from the [Hugging Face documentation dataset](https://huggingface.co/datasets/m-ric/huggingface_doc) and generates answers using an LLM. This dataset contains documentation pages for many Hugging Face packages stored as markdown, providing a rich knowledge base for testing RAG capabilities.
 
-The complete implementation is available at: [ragas_examples/improve_rag/](https://github.com/explodinggradients/ragas/blob/main/examples/ragas_examples/improve_rag/)
+The complete implementation is available at: [ragas_examples/improve_rag/](https://github.com/vibrantlabsai/ragas/blob/main/examples/ragas_examples/improve_rag/)
 
 ```mermaid
 flowchart LR
@@ -118,7 +118,7 @@ Here are a few sample rows from the dataset:
 | What is the purpose of the BLIP-Diffusion model? | The BLIP-Diffusion model is designed for controllable text-to-image generation and editing. |
 | What is the purpose of the /healthcheck endpoint in the Datasets server API? | Ensure the app is running |
 
-The evaluation script downloads the dataset from [here](https://raw.githubusercontent.com/explodinggradients/ragas/main/examples/ragas_examples/improve_rag/datasets/hf_doc_qa_eval.csv) and converts it into Ragas Dataset format:
+The evaluation script downloads the dataset from [here](https://raw.githubusercontent.com/vibrantlabsai/ragas/main/examples/ragas_examples/improve_rag/datasets/hf_doc_qa_eval.csv) and converts it into Ragas Dataset format:
 
 ```python
 # examples/ragas_examples/improve_rag/evals.py
@@ -132,7 +132,7 @@ def download_and_save_dataset() -> Path:
     dataset_path.parent.mkdir(exist_ok=True)
     
     if not dataset_path.exists():
-        github_url = "https://raw.githubusercontent.com/explodinggradients/ragas/main/examples/ragas_examples/improve_rag/datasets/hf_doc_qa_eval.csv"
+        github_url = "https://raw.githubusercontent.com/vibrantlabsai/ragas/main/examples/ragas_examples/improve_rag/datasets/hf_doc_qa_eval.csv"
         urllib.request.urlretrieve(github_url, dataset_path)
     
     return dataset_path
