@@ -1,8 +1,8 @@
 site_name: Ragas
 site_description: Evaluation framework for your AI Application
 site_url: !ENV READTHEDOCS_CANONICAL_URL
-repo_name: explodinggradients/ragas
-repo_url: https://github.com/explodinggradients/ragas
+repo_name: vibrantlabsai/ragas
+repo_url: https://github.com/vibrantlabsai/ragas
 watch:
   - src
 
@@ -257,7 +257,7 @@ plugins:
       enable_creation_date: true
   - git-committers:
       enabled: !ENV [MKDOCS_CI, false]
-      repository: explodinggradients/ragas
+      repository: vibrantlabsai/ragas
       branch: main
   - mkdocstrings:
       handlers:

@@ -581,7 +581,7 @@ def quickstart(
         import urllib.request
         import zipfile
 
-        github_repo = "explodinggradients/ragas"
+        github_repo = "vibrantlabsai/ragas"
         branch = "main"
 
         # Create temporary directory for download
