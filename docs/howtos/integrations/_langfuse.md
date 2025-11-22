@@ -53,7 +53,7 @@ The dataset contains the following columns:
 ```python
 from datasets import load_dataset
 
-amnesty_qa = load_dataset("vibrantlabs/amnesty_qa", "english_v2")["eval"]
+amnesty_qa = load_dataset("vibrantlabsai/amnesty_qa", "english_v2")["eval"]
 amnesty_qa
 ```
 

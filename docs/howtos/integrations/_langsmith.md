@@ -30,7 +30,7 @@ from datasets import load_dataset
 from ragas import evaluate
 from ragas.metrics import answer_relevancy, context_precision, faithfulness
 
-fiqa_eval = load_dataset("vibrantlabs/fiqa", "ragas_eval")
+fiqa_eval = load_dataset("vibrantlabsai/fiqa", "ragas_eval")
 
 result = evaluate(
     fiqa_eval["baseline"].select(range(3)),

@@ -41,7 +41,7 @@ Let's use the `get_token_usage_for_openai` parser to calculate the token usage f
 from ragas import EvaluationDataset
 from datasets import load_dataset
 
-dataset = load_dataset("vibrantlabs/amnesty_qa", "english_v3")
+dataset = load_dataset("vibrantlabsai/amnesty_qa", "english_v3")
 
 eval_dataset = EvaluationDataset.from_hf_dataset(dataset["eval"])
 ```

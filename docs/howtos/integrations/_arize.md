@@ -62,7 +62,7 @@ Run the cell below to download a dataset of prompt engineering papers in PDF for
 
 
 ```python
-!git clone https://huggingface.co/datasets/vibrantlabs/prompt-engineering-papers
+!git clone https://huggingface.co/datasets/vibrantlabsai/prompt-engineering-papers
 ```
 
 

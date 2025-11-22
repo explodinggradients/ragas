@@ -7,10 +7,10 @@ Let's walk through a quick example of generating a testset for a RAG pipeline. F
 
 ### Load Sample Documents
 
-For the sake of this tutorial we will use sample documents from this [repository](https://huggingface.co/datasets/vibrantlabs/Sample_Docs_Markdown). You can replace this with your own documents.
+For the sake of this tutorial we will use sample documents from this [repository](https://huggingface.co/datasets/vibrantlabsai/Sample_Docs_Markdown). You can replace this with your own documents.
 
 ```bash
-git clone https://huggingface.co/datasets/vibrantlabs/Sample_Docs_Markdown
+git clone https://huggingface.co/datasets/vibrantlabsai/Sample_Docs_Markdown
 ```
 
 ### Load documents

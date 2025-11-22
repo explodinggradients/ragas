@@ -29,7 +29,7 @@ from ragas.metrics import Faithfulness
 from datasets import load_dataset
 from ragas import evaluate
 
-dataset = load_dataset("vibrantlabs/amnesty_qa", "english_v3")
+dataset = load_dataset("vibrantlabsai/amnesty_qa", "english_v3")
 
 samples = []
 for row in dataset["eval"]:

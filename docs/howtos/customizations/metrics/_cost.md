@@ -53,7 +53,7 @@ from datasets import load_dataset
 from ragas import EvaluationDataset
 from ragas.metrics._aspect_critic import AspectCriticWithReference
 
-dataset = load_dataset("vibrantlabs/amnesty_qa", "english_v3")
+dataset = load_dataset("vibrantlabsai/amnesty_qa", "english_v3")
 
 
 eval_dataset = EvaluationDataset.from_hf_dataset(dataset["eval"])
