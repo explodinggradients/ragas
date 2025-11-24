@@ -30,29 +30,9 @@ pip install "ragas[gemini]"
 
 ## Configuration
 
-### Option 1: Using LiteLLM (Recommended)
+### Option 1: Using Google's Official Library (Recommended)
 
-LiteLLM provides the best compatibility and handles API differences automatically:
-
-```python
-import os
-from litellm import OpenAI as LiteLLMClient
-from ragas.llms import llm_factory
-
-# Initialize with your Google API key
-api_key = os.environ.get("GOOGLE_API_KEY")
-client = LiteLLMClient(
-    api_key=api_key,
-    model="gemini-2.0-flash"
-)
-
-# Create LLM - adapter is auto-detected as "litellm"
-llm = llm_factory("gemini-2.0-flash", client=client)
-```
-
-### Option 2: Using Google's Official Library
-
-You can also use Google's official generativeai library:
+Google's official generativeai library is the simplest and most direct approach:
 
 ```python
 import os
@@ -63,14 +43,33 @@ from ragas.llms import llm_factory
 genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
 
 # Create client
-client = genai.GenerativeModel("gemini-1.5-pro")
+client = genai.GenerativeModel("gemini-2.0-flash")
 
 # Create LLM - adapter is auto-detected for google provider
 llm = llm_factory(
-    "gemini-1.5-pro",
+    "gemini-2.0-flash",
     provider="google",
     client=client
 )
+```
+
+### Option 2: Using LiteLLM Proxy (Advanced)
+
+For advanced use cases where you need LiteLLM's proxy capabilities, set up the LiteLLM proxy server first, then use:
+
+```python
+import os
+from openai import OpenAI
+from ragas.llms import llm_factory
+
+# Requires running: litellm --model gemini-2.0-flash
+client = OpenAI(
+    api_key="anything",
+    base_url="http://0.0.0.0:4000"  # LiteLLM proxy endpoint
+)
+
+# Create LLM with explicit adapter selection
+llm = llm_factory("gemini-2.0-flash", client=client, adapter="litellm")
 ```
 
 ## Supported Models
@@ -90,7 +89,7 @@ Here's a complete example evaluating a RAG application with Gemini:
 ```python
 import os
 from datasets import Dataset
-from litellm import OpenAI as LiteLLMClient
+import google.generativeai as genai
 from ragas import evaluate
 from ragas.llms import llm_factory
 from ragas.metrics import (
@@ -101,12 +100,9 @@ from ragas.metrics import (
 )
 
 # Initialize Gemini client
-api_key = os.environ.get("GOOGLE_API_KEY")
-client = LiteLLMClient(
-    api_key=api_key,
-    model="gemini-2.0-flash"
-)
-llm = llm_factory("gemini-2.0-flash", client=client)
+genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
+client = genai.GenerativeModel("gemini-2.0-flash")
+llm = llm_factory("gemini-2.0-flash", provider="google", client=client)
 
 # Create sample evaluation data
 data = {
@@ -149,20 +145,19 @@ Gemini models are cost-effective. For large-scale evaluations:
 
 ### Async Support
 
-For high-throughput evaluations, use async operations:
+For high-throughput evaluations, use async operations with google-generativeai:
 
 ```python
-from litellm import AsyncOpenAI
+import google.generativeai as genai
+from ragas.llms import llm_factory
 
-# Create async client
-async_client = AsyncOpenAI(
-    api_key=os.environ.get("GOOGLE_API_KEY"),
-    model="gemini-2.0-flash"
-)
-llm = llm_factory("gemini-2.0-flash", client=async_client)
+# Configure and create client (same as sync)
+genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
+client = genai.GenerativeModel("gemini-2.0-flash")
+llm = llm_factory("gemini-2.0-flash", provider="google", client=client)
 
 # Use in async evaluation
-# await llm.agenerate(prompt, response_model)
+# response = await llm.agenerate(prompt, ResponseModel)
 ```
 
 ## Adapter Selection
@@ -231,13 +226,11 @@ from openai import OpenAI
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 llm = llm_factory("gpt-4o", client=client)
 
-# After: Gemini with same code pattern
-from litellm import OpenAI as LiteLLMClient
-client = LiteLLMClient(
-    api_key=os.environ.get("GOOGLE_API_KEY"),
-    model="gemini-2.0-flash"
-)
-llm = llm_factory("gemini-2.0-flash", client=client)
+# After: Gemini with similar code pattern
+import google.generativeai as genai
+genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
+client = genai.GenerativeModel("gemini-2.0-flash")
+llm = llm_factory("gemini-2.0-flash", provider="google", client=client)
 ```
 
 ### From Anthropic
@@ -249,12 +242,10 @@ client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 llm = llm_factory("claude-3-sonnet", provider="anthropic", client=client)
 
 # After: Gemini
-from litellm import OpenAI as LiteLLMClient
-client = LiteLLMClient(
-    api_key=os.environ.get("GOOGLE_API_KEY"),
-    model="gemini-2.0-flash"
-)
-llm = llm_factory("gemini-2.0-flash", client=client)
+import google.generativeai as genai
+genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
+client = genai.GenerativeModel("gemini-2.0-flash")
+llm = llm_factory("gemini-2.0-flash", provider="google", client=client)
 ```
 
 ## Supported Metrics

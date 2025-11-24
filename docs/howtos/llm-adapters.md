@@ -28,11 +28,12 @@ llm = llm_factory("gpt-4o-mini", client=client)
 
 ```python
 from ragas.llms import llm_factory
-from litellm import OpenAI as LiteLLMClient
+import google.generativeai as genai
 
 # For Gemini - automatically uses LiteLLM adapter
-client = LiteLLMClient(api_key="...", model="gemini-2.0-flash")
-llm = llm_factory("gemini-2.0-flash", client=client)
+genai.configure(api_key="...")
+client = genai.GenerativeModel("gemini-2.0-flash")
+llm = llm_factory("gemini-2.0-flash", provider="google", client=client)
 ```
 
 ### Explicit Adapter Selection
@@ -92,27 +93,31 @@ llm = llm_factory("claude-3-sonnet", provider="anthropic", client=client)
 # Uses Instructor adapter automatically
 ```
 
-### Google Gemini (with google-generativeai)
+### Google Gemini (with google-generativeai - Recommended)
 
 ```python
 import google.generativeai as genai
 from ragas.llms import llm_factory
 
 genai.configure(api_key="your-key")
-client = genai.GenerativeModel("gemini-1.5-pro")
-llm = llm_factory("gemini-1.5-pro", provider="google", client=client)
-# Uses LiteLLM adapter automatically
+client = genai.GenerativeModel("gemini-2.0-flash")
+llm = llm_factory("gemini-2.0-flash", provider="google", client=client)
+# Uses LiteLLM adapter automatically for google provider
 ```
 
-### Google Gemini (with LiteLLM - Recommended)
+### Google Gemini (with LiteLLM Proxy - Advanced)
 
 ```python
-from litellm import OpenAI as LiteLLMClient
+from openai import OpenAI
 from ragas.llms import llm_factory
 
-client = LiteLLMClient(api_key="your-key", model="gemini-2.0-flash")
-llm = llm_factory("gemini-2.0-flash", client=client)
-# Uses LiteLLM adapter automatically
+# Requires running: litellm --model gemini-2.0-flash
+client = OpenAI(
+    api_key="anything",
+    base_url="http://0.0.0.0:4000"  # LiteLLM proxy endpoint
+)
+llm = llm_factory("gemini-2.0-flash", client=client, adapter="litellm")
+# Uses LiteLLM adapter explicitly
 ```
 
 ### Local Models (Ollama)
@@ -133,12 +138,14 @@ llm = llm_factory("mistral", provider="openai", client=client)
 ### AWS Bedrock
 
 ```python
-from litellm import OpenAI as LiteLLMClient
+from openai import OpenAI
 from ragas.llms import llm_factory
 
-client = LiteLLMClient(
+# Use LiteLLM proxy for Bedrock
+# Note: Set up LiteLLM with Bedrock credentials first
+client = OpenAI(
     api_key="",  # Bedrock uses IAM auth
-    model="bedrock/claude-3-sonnet"
+    base_url="http://0.0.0.0:4000"  # LiteLLM proxy endpoint
 )
 llm = llm_factory("claude-3-sonnet", client=client, adapter="litellm")
 ```
@@ -252,22 +259,29 @@ response = await llm.agenerate(prompt, ResponseModel)
 
 ### Custom Providers with LiteLLM
 
-LiteLLM supports many providers beyond what Instructor covers:
+LiteLLM supports many providers beyond what Instructor covers. Use the LiteLLM proxy approach:
 
 ```python
-from litellm import OpenAI as LiteLLMClient
+from openai import OpenAI
 from ragas.llms import llm_factory
 
+# Set up LiteLLM proxy first:
+# litellm --model grok-1  (for xAI)
+# litellm --model deepseek-chat  (for DeepSeek)
+# etc.
+
+client = OpenAI(
+    api_key="your-provider-api-key",
+    base_url="http://0.0.0.0:4000"  # LiteLLM proxy endpoint
+)
+
 # xAI Grok
-client = LiteLLMClient(api_key="...", model="grok-1")
 llm = llm_factory("grok-1", client=client, adapter="litellm")
 
 # DeepSeek
-client = LiteLLMClient(api_key="...", model="deepseek-chat")
 llm = llm_factory("deepseek-chat", client=client, adapter="litellm")
 
 # Together AI
-client = LiteLLMClient(api_key="...", model="together_ai/mistral-7b")
 llm = llm_factory("mistral-7b", client=client, adapter="litellm")
 ```
 
@@ -285,9 +299,10 @@ from ragas.metrics import (
 )
 
 # Initialize LLM with your provider
-from litellm import OpenAI as LiteLLMClient
-client = LiteLLMClient(api_key="...", model="gemini-2.0-flash")
-llm = llm_factory("gemini-2.0-flash", client=client)
+import google.generativeai as genai
+genai.configure(api_key="...")
+client = genai.GenerativeModel("gemini-2.0-flash")
+llm = llm_factory("gemini-2.0-flash", provider="google", client=client)
 
 # Create evaluation dataset
 data = {
@@ -379,11 +394,12 @@ from openai import OpenAI
 client = OpenAI(api_key="...")
 llm = llm_factory("gpt-4o", client=client)
 
-# After: Gemini (same code pattern!)
-from litellm import OpenAI as LiteLLMClient
-client = LiteLLMClient(api_key="...", model="gemini-2.0-flash")
-llm = llm_factory("gemini-2.0-flash", client=client)
-# Adapter automatically switches to LiteLLM
+# After: Gemini (similar code pattern!)
+import google.generativeai as genai
+genai.configure(api_key="...")
+client = genai.GenerativeModel("gemini-2.0-flash")
+llm = llm_factory("gemini-2.0-flash", provider="google", client=client)
+# Adapter automatically switches to LiteLLM for google provider
 ```
 
 ## See Also
