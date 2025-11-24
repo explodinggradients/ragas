@@ -1,0 +1,297 @@
+# Google Gemini Integration Guide
+
+This guide covers setting up and using Google's Gemini models with Ragas for evaluation.
+
+## Overview
+
+Ragas supports Google Gemini models with automatic adapter selection. The framework intelligently routes Gemini requests through the LiteLLM adapter, which provides seamless compatibility with Gemini's API.
+
+## Setup
+
+### Prerequisites
+
+- Google API Key with Gemini API access
+- Python 3.8+
+- Ragas installed
+
+### Installation
+
+Install required dependencies:
+
+```bash
+pip install ragas google-generativeai litellm
+```
+
+Or with the Ragas extras:
+
+```bash
+pip install "ragas[gemini]"
+```
+
+## Configuration
+
+### Option 1: Using LiteLLM (Recommended)
+
+LiteLLM provides the best compatibility and handles API differences automatically:
+
+```python
+import os
+from litellm import OpenAI as LiteLLMClient
+from ragas.llms import llm_factory
+
+# Initialize with your Google API key
+api_key = os.environ.get("GOOGLE_API_KEY")
+client = LiteLLMClient(
+    api_key=api_key,
+    model="gemini-2.0-flash"
+)
+
+# Create LLM - adapter is auto-detected as "litellm"
+llm = llm_factory("gemini-2.0-flash", client=client)
+```
+
+### Option 2: Using Google's Official Library
+
+You can also use Google's official generativeai library:
+
+```python
+import os
+import google.generativeai as genai
+from ragas.llms import llm_factory
+
+# Configure with your API key
+genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
+
+# Create client
+client = genai.GenerativeModel("gemini-1.5-pro")
+
+# Create LLM - adapter is auto-detected for google provider
+llm = llm_factory(
+    "gemini-1.5-pro",
+    provider="google",
+    client=client
+)
+```
+
+## Supported Models
+
+Ragas works with all Gemini models:
+
+- **Latest**: `gemini-2.0-flash` (recommended)
+- **1.5 Series**: `gemini-1.5-pro`, `gemini-1.5-flash`
+- **1.0 Series**: `gemini-1.0-pro`
+
+For the latest models and pricing, see [Google AI Studio](https://aistudio.google.com/apikey).
+
+## Example: Complete Evaluation
+
+Here's a complete example evaluating a RAG application with Gemini:
+
+```python
+import os
+from datasets import Dataset
+from litellm import OpenAI as LiteLLMClient
+from ragas import evaluate
+from ragas.llms import llm_factory
+from ragas.metrics import (
+    AnswerCorrectness,
+    ContextPrecision,
+    ContextRecall,
+    Faithfulness
+)
+
+# Initialize Gemini client
+api_key = os.environ.get("GOOGLE_API_KEY")
+client = LiteLLMClient(
+    api_key=api_key,
+    model="gemini-2.0-flash"
+)
+llm = llm_factory("gemini-2.0-flash", client=client)
+
+# Create sample evaluation data
+data = {
+    "question": ["What is the capital of France?"],
+    "answer": ["Paris is the capital of France."],
+    "contexts": [["France is a country in Western Europe. Paris is its capital."]],
+    "ground_truth": ["Paris"]
+}
+
+dataset = Dataset.from_dict(data)
+
+# Define metrics
+metrics = [
+    ContextPrecision(llm=llm),
+    ContextRecall(llm=llm),
+    Faithfulness(llm=llm),
+    AnswerCorrectness(llm=llm)
+]
+
+# Run evaluation
+results = evaluate(dataset, metrics=metrics)
+print(results)
+```
+
+## Performance Considerations
+
+### Model Selection
+
+- **gemini-2.0-flash**: Best for speed and efficiency
+- **gemini-1.5-pro**: Better reasoning for complex evaluations
+- **gemini-1.5-flash**: Good balance of speed and cost
+
+### Cost Optimization
+
+Gemini models are cost-effective. For large-scale evaluations:
+
+1. Use `gemini-2.0-flash` for most metrics
+2. Consider batch processing for multiple evaluations
+3. Cache prompts when possible (Gemini supports prompt caching)
+
+### Async Support
+
+For high-throughput evaluations, use async operations:
+
+```python
+from litellm import AsyncOpenAI
+
+# Create async client
+async_client = AsyncOpenAI(
+    api_key=os.environ.get("GOOGLE_API_KEY"),
+    model="gemini-2.0-flash"
+)
+llm = llm_factory("gemini-2.0-flash", client=async_client)
+
+# Use in async evaluation
+# await llm.agenerate(prompt, response_model)
+```
+
+## Adapter Selection
+
+Ragas automatically selects the appropriate adapter based on your setup:
+
+```python
+# Auto-detection happens automatically
+# For Gemini: uses LiteLLM adapter
+# For other providers: uses Instructor adapter
+
+# Explicit selection (if needed)
+llm = llm_factory(
+    "gemini-2.0-flash",
+    client=client,
+    adapter="litellm"  # Explicit adapter selection
+)
+
+# Check auto-detected adapter
+from ragas.llms.adapters import auto_detect_adapter
+adapter_name = auto_detect_adapter(client, "google")
+print(f"Using adapter: {adapter_name}")  # Output: Using adapter: litellm
+```
+
+## Troubleshooting
+
+### API Key Issues
+
+```python
+# Make sure your API key is set
+import os
+if not os.environ.get("GOOGLE_API_KEY"):
+    raise ValueError("GOOGLE_API_KEY environment variable not set")
+```
+
+### Rate Limits
+
+Gemini has rate limits. For production:
+
+```python
+from ragas.run_config import RunConfig
+
+# Configure retries and timeouts
+config = RunConfig(
+    timeout=60,
+    max_retries=3,
+)
+llm.set_run_config(config)
+```
+
+### Model Availability
+
+If a model isn't available:
+
+1. Check your region/quota in [Google Cloud Console](https://console.cloud.google.com)
+2. Try a different model from the supported list
+3. Verify your API key has access to the Generative AI API
+
+## Migration from Other Providers
+
+### From OpenAI
+
+```python
+# Before: OpenAI-only
+from openai import OpenAI
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+llm = llm_factory("gpt-4o", client=client)
+
+# After: Gemini with same code pattern
+from litellm import OpenAI as LiteLLMClient
+client = LiteLLMClient(
+    api_key=os.environ.get("GOOGLE_API_KEY"),
+    model="gemini-2.0-flash"
+)
+llm = llm_factory("gemini-2.0-flash", client=client)
+```
+
+### From Anthropic
+
+```python
+# Before: Anthropic
+from anthropic import Anthropic
+client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+llm = llm_factory("claude-3-sonnet", provider="anthropic", client=client)
+
+# After: Gemini
+from litellm import OpenAI as LiteLLMClient
+client = LiteLLMClient(
+    api_key=os.environ.get("GOOGLE_API_KEY"),
+    model="gemini-2.0-flash"
+)
+llm = llm_factory("gemini-2.0-flash", client=client)
+```
+
+## Supported Metrics
+
+All Ragas metrics work with Gemini:
+
+- Answer Correctness
+- Answer Relevancy
+- Answer Similarity
+- Aspect Critique
+- Context Precision
+- Context Recall
+- Context Entities Recall
+- Faithfulness
+- NLI Eval
+- Response Relevancy
+
+See [Metrics Reference](../../concepts/metrics/index.md) for details.
+
+## Advanced: Custom Model Parameters
+
+Pass custom parameters to Gemini:
+
+```python
+llm = llm_factory(
+    "gemini-2.0-flash",
+    client=client,
+    temperature=0.5,
+    max_tokens=2048,
+    top_p=0.9,
+    top_k=40,
+)
+```
+
+## Resources
+
+- [Google Gemini API Docs](https://ai.google.dev/gemini-2/docs)
+- [LiteLLM Documentation](https://docs.litellm.ai/)
+- [Ragas Metrics Documentation](../../concepts/metrics/index.md)
+- [Ragas LLM Factory Guide](../llm-factory.md)
