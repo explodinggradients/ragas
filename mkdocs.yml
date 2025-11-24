@@ -92,6 +92,7 @@ nav:
               - Run Config: howtos/customizations/_run_config.md
               - Caching: howtos/customizations/_caching.md
               - Cancelling Tasks: howtos/customizations/cancellation.md
+          - LLM Adapters: howtos/llm-adapters.md
           - Metrics:
               - Modify Prompts: howtos/customizations/metrics/_modifying-prompts-metrics.md
               - Adapt Metrics to Languages: howtos/customizations/metrics/_metrics_language_adaptation.md
@@ -126,6 +127,7 @@ nav:
           - howtos/integrations/index.md
           - Arize: howtos/integrations/_arize.md
           - Amazon Bedrock: howtos/integrations/amazon_bedrock.md
+          - Google Gemini: howtos/integrations/gemini.md
           - Haystack: howtos/integrations/haystack.md
           - Griptape: howtos/integrations/griptape.md
           - LangChain: howtos/integrations/langchain.md
