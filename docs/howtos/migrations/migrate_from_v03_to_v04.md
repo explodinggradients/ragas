@@ -55,8 +55,9 @@ We recommend migrating in this order:
 
 1. **Update your LLM setup** (Section: [LLM Initialization](#llm-initialization))
 2. **Migrate metrics** (Section: [Metrics Migration](#metrics-migration))
-3. **Update data schemas** (Section: [Data Schema Changes](#data-schema-changes))
-4. **Refactor custom metrics** (Section: [Custom Metrics](#custom-metrics))
+3. **Update prompts** (Section: [Prompt System Migration](#prompt-system-migration)) - If you're customizing prompts
+4. **Update data schemas** (Section: [Data Schema Changes](#data-schema-changes))
+5. **Refactor custom metrics** (Section: [Custom Metrics](#custom-metrics))
 
 ---
 
@@ -473,6 +474,252 @@ score = result.value
 
 ---
 
+## Prompt System Migration
+
+### Why Prompts Changed
+
+The shift to a modular architecture means prompts are now **first-class components** that can be:
+
+- **Customized per metric** - Each metric has a well-defined prompt interface
+- **Type-safe** - Input/Output models define exact structure expected
+- **Reusable** - Prompt classes follow a consistent pattern across metrics
+- **Testable** - Prompts can be generated and inspected independently
+
+v0.3 used simple string-based or dataclass prompts scattered throughout metrics. v0.4 consolidates them into a unified `BasePrompt` architecture with dedicated input/output models.
+
+### Architectural Changes
+
+#### Base Prompt System
+
+| Aspect | v0.3 | v0.4 |
+|--------|------|------|
+| **Prompt Definition** | `PydanticPrompt` dataclasses or strings | `BasePrompt` classes with `to_string()` method |
+| **Input/Output Types** | Generic Pydantic models | Metric-specific Input/Output models |
+| **Access Method** | Scatter across metric code | Centralized in metric's `util.py` module |
+| **Customization** | Difficult, requires deep changes | Simple subclassing with `instruction` and `examples` properties |
+| **Organization** | Mixed in metric files | Organized in separate `util.py` files |
+
+### Available Metric Prompts in v0.4
+
+The following metrics now have well-defined, customizable prompts:
+
+- **Faithfulness** - `FaithfulnessPrompt`, `FaithfulnessInput`, `FaithfulnessOutput`
+- **Context Recall** - `ContextRecallPrompt`, `ContextRecallInput`, `ContextRecallOutput`
+- **Context Precision** - `ContextPrecisionPrompt`, `ContextPrecisionInput`, `ContextPrecisionOutput`
+- **Answer Relevancy** - `AnswerRelevancyPrompt`, `AnswerRelevancyInput`, `AnswerRelevancyOutput`
+- **Answer Correctness** - `AnswerCorrectnessPrompt`, `AnswerCorrectnessInput`, `AnswerCorrectnessOutput`
+- **Response Groundedness** - `ResponseGroundednessPrompt`, `ResponseGroundednessInput`, `ResponseGroundednessOutput`
+- **Answer Accuracy** - `AnswerAccuracyPrompt`, `AnswerAccuracyInput`, `AnswerAccuracyOutput`
+- **Context Relevance** - `ContextRelevancePrompt`, `ContextRelevanceInput`, `ContextRelevanceOutput`
+- **Context Entity Recall** - `ContextEntityRecallPrompt`, `ContextEntityRecallInput`, `ContextEntityRecallOutput`
+- **Factual Correctness** - `ClaimDecompositionPrompt`, `VerificationPrompt`, with associated Input/Output models
+- **Noise Sensitivity** - `NoiseAugmentationPrompt` with associated models
+- **Summary Score** - `SummaryScorePrompt`, `SummaryScoreInput`, `SummaryScoreOutput`
+
+### Step-by-Step Migration
+
+#### Step 1: Access Prompts in Your Metrics
+
+```python
+from ragas.metrics.collections import Faithfulness
+from ragas.llms import llm_factory
+
+# Create metric instance
+metric = Faithfulness(llm=llm)
+
+# Access the prompt object
+print(metric.prompt)  # <ragas.metrics.collections.faithfulness.util.FaithfulnessPrompt>
+```
+
+#### Step 2: View Prompt Strings
+
+```python
+from ragas.metrics.collections.faithfulness.util import FaithfulnessInput
+
+# Create sample input
+sample_input = FaithfulnessInput(
+    response="The Eiffel Tower is in Paris.",
+    context="The Eiffel Tower is located in Paris, France."
+)
+
+# Generate prompt string
+prompt_string = metric.prompt.to_string(sample_input)
+print(prompt_string)
+```
+
+#### Step 3: Customize Prompts (If Needed)
+
+**Option A: Subclass the default prompt**
+
+```python
+from ragas.metrics.collections import Faithfulness
+from ragas.metrics.collections.faithfulness.util import FaithfulnessPrompt
+
+# Create custom prompt by subclassing
+class CustomFaithfulnessPrompt(FaithfulnessPrompt):
+    @property
+    def instruction(self):
+        return """Your custom instruction here."""
+
+# Apply to metric
+metric = Faithfulness(llm=llm)
+metric.prompt = CustomFaithfulnessPrompt()
+```
+
+**Option B: Customize examples for domain-specific evaluation**
+
+```python
+from ragas.metrics.collections.faithfulness.util import (
+    FaithfulnessInput,
+    FaithfulnessOutput,
+    FaithfulnessPrompt,
+    StatementFaithfulnessAnswer,
+)
+
+class DomainSpecificPrompt(FaithfulnessPrompt):
+    examples = [
+        (
+            FaithfulnessInput(
+                response="ML uses statistical techniques.",
+                context="Machine learning is a field that uses algorithms to learn from data.",
+            ),
+            FaithfulnessOutput(
+                statements=[
+                    StatementFaithfulnessAnswer(
+                        statement="ML uses statistical techniques.",
+                        reason="Related to learning from data, but context doesn't explicitly mention statistical techniques.",
+                        verdict=0
+                    ),
+                ]
+            ),
+        ),
+    ]
+
+# Apply custom prompt
+metric = Faithfulness(llm=llm)
+metric.prompt = DomainSpecificPrompt()
+```
+
+### Common Prompt Customizations
+
+#### Changing Instructions
+
+Most metrics allow overriding the instruction property:
+
+```python
+class StrictFaithfulnessPrompt(FaithfulnessPrompt):
+    @property
+    def instruction(self):
+        return """Be very strict when judging faithfulness.
+Only mark statements as faithful (verdict=1) if they are directly stated or strongly implied."""
+```
+
+#### Adding Domain Examples
+
+Domain-specific examples significantly improve metric accuracy (10-20% improvement):
+
+```python
+class MedicalFaithfulnessPrompt(FaithfulnessPrompt):
+    examples = [
+        # Medical domain examples here
+    ]
+```
+
+#### Changing Output Format
+
+For advanced customization, subclass the prompt and override the `to_string()` method:
+
+```python
+class CustomPrompt(FaithfulnessPrompt):
+    def to_string(self, input: FaithfulnessInput) -> str:
+        # Custom prompt generation logic
+        return "..."
+```
+
+### Verifying Custom Prompts
+
+Always verify your custom prompts before using them:
+
+```python
+# Test prompt generation
+sample_input = FaithfulnessInput(
+    response="Test response.",
+    context="Test context."
+)
+
+custom_metric = Faithfulness(llm=llm)
+custom_metric.prompt = MyCustomPrompt()
+
+# View the generated prompt
+prompt_string = custom_metric.prompt.to_string(sample_input)
+print(prompt_string)
+
+# Then use it for evaluation
+result = await custom_metric.ascore(
+    response="Test response.",
+    context="Test context."
+)
+```
+
+### Migration from v0.3 Custom Prompts
+
+If you had custom prompts in v0.3 using `PydanticPrompt`:
+
+**Before (v0.3) - Dataclass approach:**
+```python
+from ragas.prompt.pydantic_prompt import PydanticPrompt
+from pydantic import BaseModel
+
+class MyInput(BaseModel):
+    response: str
+    context: str
+
+class MyOutput(BaseModel):
+    is_faithful: bool
+
+class MyPrompt(PydanticPrompt[MyInput, MyOutput]):
+    instruction = "Check if response is faithful to context"
+    input_model = MyInput
+    output_model = MyOutput
+    examples = [...]
+```
+
+**After (v0.4) - BasePrompt approach:**
+```python
+from ragas.metrics.collections.base import BasePrompt
+from pydantic import BaseModel
+
+class MyInput(BaseModel):
+    response: str
+    context: str
+
+class MyOutput(BaseModel):
+    is_faithful: bool
+
+class MyPrompt(BasePrompt):
+    @property
+    def instruction(self):
+        return "Check if response is faithful to context"
+
+    @property
+    def input_model(self):
+        return MyInput
+
+    @property
+    def output_model(self):
+        return MyOutput
+
+    @property
+    def examples(self):
+        return [...]
+
+    def to_string(self, input: MyInput) -> str:
+        # Generate prompt string from input
+        return f"Check if this is faithful: {input.response}"
+```
+
+---
+
 ## Data Schema Changes
 
 ### SingleTurnSample Updates
@@ -856,8 +1103,8 @@ ragas_llm = llm_factory("gpt-4o", client=client)
 #### Dataclass-based prompts (PydanticPrompt) - Deprecated
 
 - **Status**: Legacy prompts still work but discouraged
-- **Deprecation**: Function-based prompts are now preferred
-- **Migration**: See [Prompt System Updates](#prompt-system-updates) section
+- **Deprecation**: Modular BasePrompt architecture is now preferred
+- **Migration**: See [Prompt System Migration](#prompt-system-migration) section
 
 **Before (v0.3) - Deprecated approach:**
 ```python
@@ -878,8 +1125,13 @@ class RelevancePrompt(PydanticPrompt[Input, Output]):
 
 **After (v0.4) - Recommended approach:**
 ```python
-def relevance_prompt(query: str) -> str:
-    return f"Is this relevant? Query: {query}"
+# Use BasePrompt classes instead - see Prompt System Migration section
+from ragas.metrics.collections.faithfulness.util import FaithfulnessPrompt
+
+class CustomPrompt(FaithfulnessPrompt):
+    @property
+    def instruction(self):
+        return "Your custom instruction here"
 ```
 
 ### Legacy Metric Methods
