@@ -84,12 +84,14 @@ ragas quickstart
 # Create a RAG evaluation project
 ragas quickstart rag_eval
 
-# Create an agent evaluation project
-ragas quickstart agent_evals -o ./my-project
+# Specify where you want to create it.
+ragas quickstart rag_eval -o ./my-project
 ```
 
 Available templates:
 - `rag_eval` - Evaluate RAG systems
+
+Coming Soon:
 - `agent_evals` - Evaluate AI agents
 - `benchmark_llm` - Benchmark and compare LLMs
 - `prompt_evals` - Evaluate prompt variations
@@ -136,7 +138,7 @@ Find the complete [Quickstart Guide](https://docs.ragas.io/en/latest/getstarted/
 
 In the past 2 years, we have seen and helped improve many AI applications using evals. If you want help with improving and scaling up your AI application using evals.
 
-🔗 Book a [slot](https://bit.ly/3EBYq4J) or drop us a line: [founders@explodinggradients.com](mailto:founders@explodinggradients.com).
+🔗 Book a [slot](https://cal.com/team/vibrantlabs/app) or drop us a line: [founders@explodinggradients.com](mailto:founders@explodinggradients.com).
 
 ## 🫂 Community
 

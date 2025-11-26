@@ -13,10 +13,10 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 3. Choose your installation type:
 
-# RECOMMENDED: Minimal dev setup (79 packages - fast)  
+# RECOMMENDED: Minimal dev setup (fast)
 make install-minimal
 
-# FULL: Complete dev environment (383 packages - comprehensive)
+# FULL: Complete dev environment (comprehensive)
 make install
 
 # 4. Verify everything works
@@ -33,8 +33,8 @@ AI agents working with this codebase should use these standardized commands:
 ```bash
 # Essential commands for AI development
 make help           # See all available targets
-make install-minimal # Minimal dev setup (fast - 79 packages) 
-make install        # Full environment (modern uv sync - 383 packages)
+make install-minimal # Minimal dev setup (fast)
+make install        # Full environment (modern uv sync)
 make check          # Quick health check (format + type)
 make test           # Run all tests
 make run-ci         # Full CI pipeline locally
@@ -92,10 +92,10 @@ This repository is organized as a single project with integrated experimental fe
 
 #### Option 1: Using Make (Recommended)
 ```bash
-# Recommended: Minimal dev setup (79 packages)  
+# Recommended: Minimal dev setup
 make install-minimal
 
-# Full: Complete environment (383 packages)
+# Full: Complete environment
 make install
 ```
 
@@ -113,13 +113,13 @@ uv sync --group dev
 
 #### Which Option to Choose?
 
-**Use `make install-minimal` (79 packages) if you're:**
+**Use `make install-minimal` if you're:**
 - Contributing to ragas development
 - Need testing and linting tools
 - Want fast CI/CD builds
 - Working on code quality, docs, or basic features
 
-**Use `make install` (383 packages) if you're:**
+**Use `make install` if you're:**
 - Working on ML features requiring the full stack
 - Need observability tools (Phoenix, MLflow)
 - Developing with notebooks and advanced integrations
@@ -127,8 +127,8 @@ uv sync --group dev
 
 #### Installation Methods Explained
 
-- **`install-minimal`**: Uses `uv pip install -e ".[dev-minimal]"` for selective minimal dev dependencies (79 packages)
-- **`install`**: Uses `uv sync --group dev` for complete modern dependency management (383 packages)
+- **`install-minimal`**: Uses `uv pip install -e ".[dev-minimal]"` for selective minimal dev dependencies
+- **`install`**: Uses `uv sync --group dev` for complete modern dependency management
 
 ### Verification
 ```bash
@@ -141,8 +141,8 @@ make test   # Runs all tests
 Run `make help` to see all targets. Here are the essential commands:
 
 ### Setup & Installation
-- `make install-minimal` - Install minimal dev setup (79 packages - recommended)
-- `make install` - Install full environment with uv sync (383 packages - complete)
+- `make install-minimal` - Install minimal dev setup (recommended)
+- `make install` - Install full environment with uv sync (complete)
 
 ### Code Quality
 - `make format` - Format and lint all code (includes unused import cleanup)
@@ -218,16 +218,16 @@ make test
 
 # Specific test categories
 uv run pytest tests/unit
-uv run pytest tests/e2e  
-cd experimental && uv run pytest
+uv run pytest tests/e2e
 
 # With coverage or specific options
 uv run pytest tests/unit -k "test_name"
 ```
 
 ### Test Organization
-- **Ragas Core**: `tests/` (unit, e2e, benchmarks)
-- **Experimental**: `experimental/tests/` (unit, e2e)
+- **Unit Tests**: `tests/unit/`
+- **End-to-End Tests**: `tests/e2e/`
+- **Benchmarks**: `tests/benchmarks/`
 
 ## Code Quality & CI/CD
 
