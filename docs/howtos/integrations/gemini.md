@@ -195,18 +195,7 @@ if not os.environ.get("GOOGLE_API_KEY"):
 
 ### Rate Limits
 
-Gemini has rate limits. For production:
-
-```python
-from ragas.run_config import RunConfig
-
-# Configure retries and timeouts
-config = RunConfig(
-    timeout=60,
-    max_retries=3,
-)
-llm.set_run_config(config)
-```
+Gemini has rate limits. For production use, the LLM adapter handles retries and timeouts automatically. If you need fine-grained control, ensure your client is properly configured with appropriate timeouts at the HTTP client level.
 
 ### Model Availability
 
