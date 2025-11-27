@@ -37,24 +37,28 @@ azure_configs = {
     "embedding_deployment": "your-embedding-deployment-name",
 }
 
-# Configure LiteLLM for Azure OpenAI
+# Configure LiteLLM for Azure OpenAI (used by LLM calls)
 litellm.api_base = azure_configs["api_base"]
 litellm.api_key = azure_configs["api_key"]
 litellm.api_version = azure_configs["api_version"]
 
 # Create LLM using llm_factory with litellm provider
 # Note: Use deployment name, not model name for Azure
+# Important: Pass litellm.completion (the function), not the module
 azure_llm = llm_factory(
     f"azure/{azure_configs['model_deployment']}",
     provider="litellm",
-    client=litellm,
+    client=litellm.completion,
 )
 
 # Create embeddings using embedding_factory
-# Note: Embeddings use the global litellm configuration set above
+# Note: Pass Azure config directly to embedding_factory
 azure_embeddings = embedding_factory(
     "litellm",
     model=f"azure/{azure_configs['embedding_deployment']}",
+    api_base=azure_configs["api_base"],
+    api_key=azure_configs["api_key"],
+    api_version=azure_configs["api_version"],
 )
 ```
 Yay! Now you are ready to use ragas with Azure OpenAI endpoints
@@ -78,15 +82,16 @@ config = {
     "embedding_model_id": "text-embedding-005",
 }
 
-# Set environment variables for Vertex AI
+# Set environment variables for Vertex AI (used by litellm)
 os.environ["VERTEXAI_PROJECT"] = config["project_id"]
 os.environ["VERTEXAI_LOCATION"] = config["location"]
 
 # Create LLM using llm_factory with litellm provider
+# Important: Pass litellm.completion (the function), not the module
 vertex_llm = llm_factory(
     f"vertex_ai/{config['chat_model_id']}",
     provider="litellm",
-    client=litellm,
+    client=litellm.completion,
 )
 
 # Create embeddings using embedding_factory
@@ -125,10 +130,11 @@ os.environ["AWS_REGION_NAME"] = config["region_name"]
 # os.environ["AWS_SECRET_ACCESS_KEY"] = "your-secret-key"
 
 # Create LLM using llm_factory with litellm provider
+# Important: Pass litellm.completion (the function), not the module
 bedrock_llm = llm_factory(
     f"bedrock/{config['llm']}",
     provider="litellm",
-    client=litellm,
+    client=litellm.completion,
     temperature=config["temperature"],
 )
 
