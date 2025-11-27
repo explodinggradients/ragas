@@ -21,6 +21,6 @@ def hamming_distance(vectors: np.ndarray) -> np.ndarray:
     # Use vectorized scipy implementation for 10-50x speedup
     # pdist computes pairwise distances efficiently, squareform converts to matrix
     vectors_array = np.array(vectors)
-    distances = squareform(pdist(vectors_array, metric='hamming') * length)
+    distances = squareform(pdist(vectors_array, metric="hamming") * length)
 
     return distances.astype(int)

@@ -157,7 +157,9 @@ class KnowledgeGraph:
 
     nodes: t.List[Node] = field(default_factory=list)
     relationships: t.List[Relationship] = field(default_factory=list)
-    _node_id_cache: t.Dict[uuid.UUID, Node] = field(default_factory=dict, init=False, repr=False)
+    _node_id_cache: t.Dict[uuid.UUID, Node] = field(
+        default_factory=dict, init=False, repr=False
+    )
 
     def add(self, item: t.Union[Node, Relationship]):
         """
