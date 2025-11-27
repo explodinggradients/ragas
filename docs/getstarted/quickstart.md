@@ -74,14 +74,19 @@ By default, the quickstart example uses OpenAI. Set your API key and you're read
 
     Then update the LLM initialization in `evals.py`:
 
+    **Option 1: Using Google's Official Library (Recommended)**
+
     ```python
     import google.generativeai as genai
     from ragas.llms import llm_factory
 
     genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
-    client = genai.GenerativeModel("gemini-1.5-pro")
-    llm = llm_factory("gemini-1.5-pro", provider="google", client=client)
+    client = genai.GenerativeModel("gemini-2.0-flash")
+    llm = llm_factory("gemini-2.0-flash", provider="google", client=client)
+    # Adapter is auto-detected as "litellm" for google provider
     ```
+
+    For more Gemini options and detailed setup, see the [Google Gemini Integration Guide](../howtos/integrations/gemini.md).
 
 === "Local Models (Ollama)"
     Install and run Ollama locally, then update the LLM initialization in `evals.py`:
