@@ -72,6 +72,24 @@ dataset = Dataset.load(name="test_data", backend="local/csv", root_dir="./data")
 results = await my_experiment.arun(dataset)
 ```
 
+### Control Concurrency
+
+When calling `.arun()` you can throttle concurrent scoring to match your LLM provider’s rate limits by passing a `RunConfig` or the `max_workers` keyword argument.
+
+```python
+from ragas.run_config import RunConfig
+
+rate_limited = RunConfig(max_workers=4)
+
+results = await my_experiment.arun(
+    dataset,
+    run_config=rate_limited,
+)
+
+# You can also override per call:
+# results = await my_experiment.arun(dataset, max_workers=2)
+```
+
 ### Parameterized Experiments
 
 You can create parameterized experiments to test different configurations:

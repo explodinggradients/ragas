@@ -50,3 +50,25 @@ _ = evaluate(
     run_config=my_run_config,
 )
 ```
+
+### Experiments
+
+Experiments accept the same configuration through `arun()`, letting you align ad-hoc scoring runs with provider rate limits.
+
+```python
+from ragas import experiment
+from ragas.run_config import RunConfig
+
+@experiment()
+async def my_rate_limited_experiment(row):
+    # your logic here
+    return {"question": row.question, "response": "..."}
+
+results = await my_rate_limited_experiment.arun(
+    dataset,
+    run_config=RunConfig(max_workers=4),
+)
+
+# For one-off overrides you can pass max_workers directly:
+# results = await my_rate_limited_experiment.arun(dataset, max_workers=2)
+```
