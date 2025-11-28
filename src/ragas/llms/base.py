@@ -805,11 +805,66 @@ class InstructorLLM(InstructorBaseRagasLLM):
         return google_kwargs
 
     def _check_client_async(self) -> bool:
-        """Determine if the client is async-capable."""
+        """Determine if the client is async-capable.
+
+        Handles multiple cases:
+        1. Instructor-wrapped AsyncInstructor clients (OpenAI/Anthropic/etc)
+        2. Instructor-wrapped Instructor clients that wrap async underlying clients
+        3. Direct async clients with chat.completions.create
+        4. Instructor-wrapped clients where the underlying client is in a closure
+        """
         try:
+            # Check if this is an AsyncInstructor wrapper
+            if self.client.__class__.__name__ == "AsyncInstructor":
+                return True
+
+            # Check if this is a sync Instructor wrapper that wraps an async client
+            if hasattr(self.client, "client"):
+                underlying = self.client.client
+                # For OpenAI/Anthropic async clients
+                if hasattr(underlying, "chat") and hasattr(
+                    underlying.chat, "completions"
+                ):
+                    if hasattr(underlying.chat.completions, "create"):
+                        if inspect.iscoroutinefunction(
+                            underlying.chat.completions.create
+                        ):
+                            return True
+
             # Check if this is an async client by checking for a coroutine method
-            if hasattr(self.client.chat.completions, "create"):
-                return inspect.iscoroutinefunction(self.client.chat.completions.create)
+            if hasattr(self.client, "chat") and hasattr(
+                self.client.chat, "completions"
+            ):
+                if hasattr(self.client.chat.completions, "create"):
+                    return inspect.iscoroutinefunction(
+                        self.client.chat.completions.create
+                    )
+
+            # For instructor-wrapped clients, also check the closure of create_fn
+            # This handles cases where the underlying client is stored in a closure
+            if (
+                hasattr(self.client, "create_fn")
+                and hasattr(self.client.create_fn, "__closure__")
+                and self.client.create_fn.__closure__
+            ):
+                for cell in self.client.create_fn.__closure__:
+                    try:
+                        obj = cell.cell_contents
+                        # Check if the closure object is an async client
+                        if hasattr(obj, "chat") and hasattr(obj.chat, "completions"):
+                            if hasattr(obj.chat.completions, "create"):
+                                if inspect.iscoroutinefunction(
+                                    obj.chat.completions.create
+                                ):
+                                    return True
+                        # Also check for acompletion (e.g., litellm Router)
+                        if hasattr(obj, "acompletion"):
+                            if inspect.iscoroutinefunction(obj.acompletion):
+                                return True
+                    except (ValueError, AttributeError):
+                        # cell_contents might not be accessible
+                        pass
+
             return False
         except (AttributeError, TypeError):
             return False

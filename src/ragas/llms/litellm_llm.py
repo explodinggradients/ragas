@@ -45,19 +45,61 @@ class LiteLLMStructuredLLM(InstructorBaseRagasLLM):
         self.is_async = self._check_client_async()
 
     def _check_client_async(self) -> bool:
-        """Determine if the client is async-capable."""
+        """Determine if the client is async-capable.
+
+        Handles multiple cases:
+        1. Direct async clients (e.g., litellm Router with acompletion)
+        2. Instructor-wrapped AsyncInstructor clients
+        3. Instructor-wrapped Instructor clients (need to check underlying client)
+        """
         try:
-            # Check for async completion method
+            # Check if this is an AsyncInstructor wrapper (instructor.AsyncInstructor)
+            if self.client.__class__.__name__ == "AsyncInstructor":
+                return True
+
+            # Check for direct async completion method (e.g., litellm Router)
             if hasattr(self.client, "acompletion"):
-                return inspect.iscoroutinefunction(self.client.acompletion)
-            # Check for async chat completion
+                is_coroutine = inspect.iscoroutinefunction(self.client.acompletion)
+                if is_coroutine:
+                    return True
+
+            # Check for async chat completion (works with instructor-wrapped OpenAI clients)
             if hasattr(self.client, "chat") and hasattr(
                 self.client.chat, "completions"
             ):
                 if hasattr(self.client.chat.completions, "create"):
-                    return inspect.iscoroutinefunction(
-                        self.client.chat.completions.create
-                    )
+                    if inspect.iscoroutinefunction(self.client.chat.completions.create):
+                        return True
+
+            # For instructor-wrapped sync clients that wrap async underlying clients,
+            # check if the wrapped client has async methods
+            if hasattr(self.client, "client"):
+                # This is an instructor-wrapped client, check the underlying client
+                underlying = self.client.client
+                if hasattr(underlying, "acompletion"):
+                    is_coroutine = inspect.iscoroutinefunction(underlying.acompletion)
+                    if is_coroutine:
+                        return True
+
+            # For instructor-wrapped clients, also check the closure of create_fn
+            # This handles cases where the underlying client is stored in a closure
+            # (e.g., when instructor.from_litellm wraps a litellm Router)
+            if (
+                hasattr(self.client, "create_fn")
+                and hasattr(self.client.create_fn, "__closure__")
+                and self.client.create_fn.__closure__
+            ):
+                for cell in self.client.create_fn.__closure__:
+                    try:
+                        obj = cell.cell_contents
+                        # Check if the closure object has acompletion (e.g., litellm Router)
+                        if hasattr(obj, "acompletion"):
+                            if inspect.iscoroutinefunction(obj.acompletion):
+                                return True
+                    except (ValueError, AttributeError):
+                        # cell_contents might not be accessible, or object might not have acompletion
+                        pass
+
             return False
         except (AttributeError, TypeError):
             return False
