@@ -82,9 +82,30 @@ Ragas works with all Gemini models:
 
 For the latest models and pricing, see [Google AI Studio](https://aistudio.google.com/apikey).
 
-## Example: Complete Evaluation
+## Embeddings Configuration
 
-Here's a complete example evaluating a RAG application with Gemini:
+Ragas metrics fall into two categories:
+
+1. **LLM-only metrics** (don't require embeddings):
+   - ContextPrecision
+   - ContextRecall
+   - Faithfulness
+   - AspectCritic
+
+2. **Embedding-dependent metrics** (require embeddings):
+   - AnswerCorrectness
+   - AnswerRelevancy
+   - AnswerSimilarity
+   - SemanticSimilarity
+   - ContextEntityRecall
+
+### Automatic Provider Matching
+
+When using Ragas with Gemini, the embedding provider is **automatically matched** to your LLM provider. If you provide a Gemini LLM, Ragas will default to using Google embeddings. **No OpenAI API key is needed.**
+
+### Option 1: Default Embeddings (Recommended)
+
+Let Ragas automatically select the right embeddings based on your LLM:
 
 ```python
 import os
@@ -114,7 +135,96 @@ data = {
 
 dataset = Dataset.from_dict(data)
 
-# Define metrics
+# Define metrics - embeddings are auto-configured for Google
+metrics = [
+    ContextPrecision(llm=llm),
+    ContextRecall(llm=llm),
+    Faithfulness(llm=llm),
+    AnswerCorrectness(llm=llm)  # Uses Google embeddings automatically
+]
+
+# Run evaluation
+results = evaluate(dataset, metrics=metrics)
+print(results)
+```
+
+### Option 2: Explicit Embeddings
+
+For explicit control, provide embeddings explicitly:
+
+```python
+import os
+import google.generativeai as genai
+from ragas.llms import llm_factory
+from ragas.embeddings import GoogleEmbeddings
+from datasets import Dataset
+from ragas import evaluate
+from ragas.metrics import AnswerCorrectness, ContextPrecision, ContextRecall, Faithfulness
+
+# Initialize Gemini client
+genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
+client = genai.GenerativeModel("gemini-2.0-flash")
+llm = llm_factory("gemini-2.0-flash", provider="google", client=client)
+
+# Initialize Google embeddings
+embeddings = GoogleEmbeddings(model="models/embedding-001")
+
+# Create sample evaluation data
+data = {
+    "question": ["What is the capital of France?"],
+    "answer": ["Paris is the capital of France."],
+    "contexts": [["France is a country in Western Europe. Paris is its capital."]],
+    "ground_truth": ["Paris"]
+}
+
+dataset = Dataset.from_dict(data)
+
+# Define metrics with explicit embeddings
+metrics = [
+    ContextPrecision(llm=llm),
+    ContextRecall(llm=llm),
+    Faithfulness(llm=llm),
+    AnswerCorrectness(llm=llm, embeddings=embeddings)
+]
+
+# Run evaluation
+results = evaluate(dataset, metrics=metrics)
+print(results)
+```
+
+## Example: Complete Evaluation
+
+Here's a complete example evaluating a RAG application with Gemini (using automatic embedding provider matching):
+
+```python
+import os
+from datasets import Dataset
+import google.generativeai as genai
+from ragas import evaluate
+from ragas.llms import llm_factory
+from ragas.metrics import (
+    AnswerCorrectness,
+    ContextPrecision,
+    ContextRecall,
+    Faithfulness
+)
+
+# Initialize Gemini client
+genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
+client = genai.GenerativeModel("gemini-2.0-flash")
+llm = llm_factory("gemini-2.0-flash", provider="google", client=client)
+
+# Create sample evaluation data
+data = {
+    "question": ["What is the capital of France?"],
+    "answer": ["Paris is the capital of France."],
+    "contexts": [["France is a country in Western Europe. Paris is its capital."]],
+    "ground_truth": ["Paris"]
+}
+
+dataset = Dataset.from_dict(data)
+
+# Define metrics - embeddings automatically use Google provider
 metrics = [
     ContextPrecision(llm=llm),
     ContextRecall(llm=llm),
