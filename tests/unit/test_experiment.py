@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from ragas.backends.inmemory import InMemoryBackend
 from ragas.dataset import Dataset
 from ragas.experiment import Experiment, experiment, version_experiment
+from ragas.run_config import RunConfig
 from ragas.utils import find_git_root, memorable_names
 
 
@@ -352,6 +353,134 @@ class TestExperimentDecorator:
 
         assert isinstance(experiment_result, Experiment)
         assert len(experiment_result) == 3
+
+    @pytest.mark.asyncio
+    async def test_experiment_run_config_max_workers(
+        self, sample_dataset, experiment_backend
+    ):
+        """Ensure run_config.max_workers is honored via async_utils.as_completed."""
+
+        @experiment(experiment_model=ExperimentResultRow, backend=experiment_backend)
+        async def controlled_experiment(row: SampleDataRow) -> ExperimentResultRow:
+            await asyncio.sleep(0)
+            return ExperimentResultRow(
+                question=row.question,
+                processed_answer=row.answer,
+                sentiment="neutral",
+                processing_time=0.01,
+            )
+
+        run_config = RunConfig(max_workers=1)
+        from ragas.async_utils import as_completed as original_as_completed
+
+        def assert_as_completed(coros, worker_limit, *args, **kwargs):
+            assert worker_limit == 1
+            return original_as_completed(coros, worker_limit, *args, **kwargs)
+
+        with patch("ragas.experiment.as_completed", side_effect=assert_as_completed):
+            experiment_result = await controlled_experiment.arun(
+                sample_dataset, run_config=run_config
+            )
+
+        assert isinstance(experiment_result, Experiment)
+        assert len(experiment_result) == len(sample_dataset)
+
+    @pytest.mark.asyncio
+    async def test_experiment_max_workers_override(
+        self, sample_dataset, experiment_backend
+    ):
+        """Ensure explicit max_workers overrides run_config defaults."""
+
+        @experiment(experiment_model=ExperimentResultRow, backend=experiment_backend)
+        async def override_experiment(row: SampleDataRow) -> ExperimentResultRow:
+            await asyncio.sleep(0)
+            return ExperimentResultRow(
+                question=row.question,
+                processed_answer=row.answer,
+                sentiment="neutral",
+                processing_time=0.01,
+            )
+
+        run_config = RunConfig(max_workers=1)
+        override_limit = 3
+        from ragas.async_utils import as_completed as original_as_completed
+
+        def assert_as_completed(coros, worker_limit, *args, **kwargs):
+            assert worker_limit == override_limit
+            return original_as_completed(coros, worker_limit, *args, **kwargs)
+
+        with patch("ragas.experiment.as_completed", side_effect=assert_as_completed):
+            experiment_result = await override_experiment.arun(
+                sample_dataset,
+                run_config=run_config,
+                max_workers=override_limit,
+            )
+
+        assert isinstance(experiment_result, Experiment)
+        assert len(experiment_result) == len(sample_dataset)
+
+    @pytest.mark.asyncio
+    async def test_experiment_run_config_zero_max_workers_defaults_unlimited(
+        self, sample_dataset, experiment_backend
+    ):
+        """Ensure run_config max_workers=0 downgrades to unlimited (-1)."""
+
+        @experiment(experiment_model=ExperimentResultRow, backend=experiment_backend)
+        async def zero_run_config(row: SampleDataRow) -> ExperimentResultRow:
+            await asyncio.sleep(0)
+            return ExperimentResultRow(
+                question=row.question,
+                processed_answer=row.answer,
+                sentiment="neutral",
+                processing_time=0.01,
+            )
+
+        run_config = RunConfig(max_workers=0)
+        from ragas.async_utils import as_completed as original_as_completed
+
+        def assert_as_completed(coros, worker_limit, *args, **kwargs):
+            assert worker_limit == -1
+            return original_as_completed(coros, worker_limit, *args, **kwargs)
+
+        with patch("ragas.experiment.as_completed", side_effect=assert_as_completed):
+            experiment_result = await zero_run_config.arun(
+                sample_dataset,
+                run_config=run_config,
+            )
+
+        assert isinstance(experiment_result, Experiment)
+        assert len(experiment_result) == len(sample_dataset)
+
+    @pytest.mark.asyncio
+    async def test_experiment_explicit_zero_max_workers_defaults_unlimited(
+        self, sample_dataset, experiment_backend
+    ):
+        """Ensure max_workers=0 argument downgrades to unlimited (-1)."""
+
+        @experiment(experiment_model=ExperimentResultRow, backend=experiment_backend)
+        async def zero_override(row: SampleDataRow) -> ExperimentResultRow:
+            await asyncio.sleep(0)
+            return ExperimentResultRow(
+                question=row.question,
+                processed_answer=row.answer,
+                sentiment="neutral",
+                processing_time=0.01,
+            )
+
+        from ragas.async_utils import as_completed as original_as_completed
+
+        def assert_as_completed(coros, worker_limit, *args, **kwargs):
+            assert worker_limit == -1
+            return original_as_completed(coros, worker_limit, *args, **kwargs)
+
+        with patch("ragas.experiment.as_completed", side_effect=assert_as_completed):
+            experiment_result = await zero_override.arun(
+                sample_dataset,
+                max_workers=0,
+            )
+
+        assert isinstance(experiment_result, Experiment)
+        assert len(experiment_result) == len(sample_dataset)
 
 
 class TestMemorableNames:
