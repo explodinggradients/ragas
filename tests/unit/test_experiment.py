@@ -1,6 +1,7 @@
 """Tests for the experiment module."""
 
 import asyncio
+import importlib
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -13,6 +14,8 @@ from ragas.dataset import Dataset
 from ragas.experiment import Experiment, experiment, version_experiment
 from ragas.run_config import RunConfig
 from ragas.utils import find_git_root, memorable_names
+
+experiment_module = importlib.import_module("ragas.experiment")
 
 
 # Test data models
@@ -377,7 +380,9 @@ class TestExperimentDecorator:
             assert worker_limit == 1
             return original_as_completed(coros, worker_limit, *args, **kwargs)
 
-        with patch("ragas.experiment.as_completed", side_effect=assert_as_completed):
+        with patch.object(
+            experiment_module, "as_completed", side_effect=assert_as_completed
+        ):
             experiment_result = await controlled_experiment.arun(
                 sample_dataset, run_config=run_config
             )
@@ -409,7 +414,9 @@ class TestExperimentDecorator:
             assert worker_limit == override_limit
             return original_as_completed(coros, worker_limit, *args, **kwargs)
 
-        with patch("ragas.experiment.as_completed", side_effect=assert_as_completed):
+        with patch.object(
+            experiment_module, "as_completed", side_effect=assert_as_completed
+        ):
             experiment_result = await override_experiment.arun(
                 sample_dataset,
                 run_config=run_config,
@@ -442,7 +449,9 @@ class TestExperimentDecorator:
             assert worker_limit == -1
             return original_as_completed(coros, worker_limit, *args, **kwargs)
 
-        with patch("ragas.experiment.as_completed", side_effect=assert_as_completed):
+        with patch.object(
+            experiment_module, "as_completed", side_effect=assert_as_completed
+        ):
             experiment_result = await zero_run_config.arun(
                 sample_dataset,
                 run_config=run_config,
@@ -473,7 +482,9 @@ class TestExperimentDecorator:
             assert worker_limit == -1
             return original_as_completed(coros, worker_limit, *args, **kwargs)
 
-        with patch("ragas.experiment.as_completed", side_effect=assert_as_completed):
+        with patch.object(
+            experiment_module, "as_completed", side_effect=assert_as_completed
+        ):
             experiment_result = await zero_override.arun(
                 sample_dataset,
                 max_workers=0,
