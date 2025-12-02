@@ -796,6 +796,213 @@ class MyPrompt(BasePrompt):
         return f"Check if this is faithful: {input.response}"
 ```
 
+### Language Adaptation with BasePrompt.adapt()
+
+v0.4 introduces the `adapt()` method on `BasePrompt` instances for language translation, replacing the deprecated `PromptMixin.adapt_prompts()` approach.
+
+#### Before (v0.3) - PromptMixin Approach
+
+```python
+from ragas.prompt.mixin import PromptMixin
+from ragas.metrics import Faithfulness
+
+# Metrics inherited from PromptMixin to use adapt_prompts
+class MyFaithfulness(Faithfulness, PromptMixin):
+    pass
+
+metric = MyFaithfulness(llm=llm)
+
+# Adapt ALL prompts to another language
+adapted_prompts = await metric.adapt_prompts(
+    language="spanish",
+    llm=llm,
+    adapt_instruction=True
+)
+
+# Apply all adapted prompts
+metric.set_prompts(**adapted_prompts)
+```
+
+**Issues with v0.3 approach:**
+- Required mixin inheritance (tightly coupled)
+- All prompts adapted together (inflexible)
+- Mixin methods scattered across codebase
+
+#### After (v0.4) - BasePrompt.adapt() Method
+
+```python
+from ragas.metrics.collections import Faithfulness
+
+# Create metric with default prompt
+metric = Faithfulness(llm=llm)
+
+# Adapt individual prompt to another language
+adapted_prompt = await metric.prompt.adapt(
+    target_language="spanish",
+    llm=llm,
+    adapt_instruction=True
+)
+
+# Apply adapted prompt
+metric.prompt = adapted_prompt
+
+# Use metric with adapted language
+result = await metric.ascore(
+    response="...",
+    retrieved_contexts=[...]
+)
+```
+
+!!! note ""
+    Save and load prompts will be available in a future version of v0.4.x using BasePrompt. Currently, PromptMixin only has it.
+
+#### Language Adaptation Examples
+
+**Adapt without instruction text (lightweight):**
+```python
+from ragas.metrics.collections import AnswerRelevancy
+
+metric = AnswerRelevancy(llm=llm)
+
+# Only update language field, keep instruction in English
+adapted_prompt = await metric.prompt.adapt(
+    target_language="french",
+    llm=llm,
+    adapt_instruction=False  # Default - just updates language
+)
+
+metric.prompt = adapted_prompt
+print(metric.prompt.language)  # "french"
+```
+
+**Adapt with instruction translation (full translation):**
+```python
+# Translate both instruction and examples
+adapted_prompt = await metric.prompt.adapt(
+    target_language="german",
+    llm=llm,
+    adapt_instruction=True  # Translate instruction text too
+)
+
+metric.prompt = adapted_prompt
+
+# Examples are also automatically translated
+# Both instruction and examples in German now
+```
+
+**Adapt custom prompts:**
+```python
+from ragas.metrics.collections.faithfulness.util import FaithfulnessPrompt
+
+class CustomFaithfulnessPrompt(FaithfulnessPrompt):
+    @property
+    def instruction(self):
+        return "Custom instruction in English"
+
+prompt = CustomFaithfulnessPrompt(language="english")
+
+# Adapt to Italian
+adapted = await prompt.adapt(
+    target_language="italian",
+    llm=llm,
+    adapt_instruction=True
+)
+
+# Check language was updated
+assert adapted.language == "italian"
+```
+
+#### Migration from v0.3 to v0.4
+
+**Step 1: Remove PromptMixin inheritance**
+
+```python
+# v0.3
+from ragas.prompt.mixin import PromptMixin
+from ragas.metrics import Faithfulness
+
+class MyMetric(Faithfulness, PromptMixin):  # ← Remove PromptMixin
+    pass
+
+# v0.4
+from ragas.metrics.collections import Faithfulness
+
+# No mixin needed - just use the metric directly
+metric = Faithfulness(llm=llm)
+```
+
+**Step 2: Replace adapt_prompts() with adapt()**
+
+```python
+# v0.3
+adapted_prompts = await metric.adapt_prompts(
+    language="spanish",
+    llm=llm,
+    adapt_instruction=True
+)
+metric.set_prompts(**adapted_prompts)
+
+# v0.4
+adapted_prompt = await metric.prompt.adapt(
+    target_language="spanish",
+    llm=llm,
+    adapt_instruction=True
+)
+metric.prompt = adapted_prompt
+```
+
+#### Complete Migration Example
+
+**Before (v0.3):**
+```python
+from ragas.prompt.mixin import PromptMixin
+from ragas.metrics import Faithfulness, AnswerRelevancy
+
+class MyMetrics(Faithfulness, AnswerRelevancy, PromptMixin):
+    pass
+
+# Setup
+metrics = MyMetrics(llm=llm)
+
+# Adapt multiple metrics to Spanish
+adapted = await metrics.adapt_prompts(
+    language="spanish",
+    llm=best_llm,
+    adapt_instruction=True
+)
+
+metrics.set_prompts(**adapted)
+metrics.save_prompts("./spanish_prompts")
+```
+
+**After (v0.4):**
+```python
+from ragas.metrics.collections import Faithfulness, AnswerRelevancy
+
+# Setup individual metrics
+faith_metric = Faithfulness(llm=llm)
+answer_metric = AnswerRelevancy(llm=llm)
+
+# Adapt each metric's prompt independently
+faith_adapted = await faith_metric.prompt.adapt(
+    target_language="spanish",
+    llm=best_llm,
+    adapt_instruction=True
+)
+faith_metric.prompt = faith_adapted
+
+answer_adapted = await answer_metric.prompt.adapt(
+    target_language="spanish",
+    llm=best_llm,
+    adapt_instruction=True
+)
+answer_metric.prompt = answer_adapted
+
+# Use metrics with adapted prompts
+faith_result = await faith_metric.ascore(...)
+answer_result = await answer_metric.ascore(...)
+```
+
 ---
 
 ## Data Schema Changes
