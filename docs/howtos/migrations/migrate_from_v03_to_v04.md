@@ -53,11 +53,89 @@ Metrics now work within an experimentation context where evaluation, analysis, a
 
 We recommend migrating in this order:
 
-1. **Update your LLM setup** (Section: [LLM Initialization](#llm-initialization))
-2. **Migrate metrics** (Section: [Metrics Migration](#metrics-migration))
-3. **Update prompts** (Section: [Prompt System Migration](#prompt-system-migration)) - If you're customizing prompts
-4. **Update data schemas** (Section: [Data Schema Changes](#data-schema-changes))
-5. **Refactor custom metrics** (Section: [Custom Metrics](#custom-metrics))
+1. **Update evaluation approach** (Section: [Evaluation to Experiment](#evaluation-to-experiment)) - Switch from `evaluate()` to `experiment()`
+2. **Update your LLM setup** (Section: [LLM Initialization](#llm-initialization))
+3. **Migrate metrics** (Section: [Metrics Migration](#metrics-migration))
+4. **Migrate embeddings** (Section: [Embeddings Migration](#embeddings-migration))
+5. **Update prompts** (Section: [Prompt System Migration](#prompt-system-migration)) - If you're customizing prompts
+6. **Update data schemas** (Section: [Data Schema Changes](#data-schema-changes))
+7. **Refactor custom metrics** (Section: [Custom Metrics](#custom-metrics))
+
+---
+
+## Evaluation to Experiment
+
+v0.4 replaces the `evaluate()` function with an `experiment()`-based approach to better support iterative evaluation workflows and structured result tracking.
+
+### What Changed
+
+The key shift: move from a **simple evaluation function** (`evaluate()`) that returns scores to an **experiment decorator** (`@experiment()`) that supports structured workflows with built-in tracking and versioning.
+
+### Before (v0.3)
+
+```python
+from ragas import evaluate
+from ragas.metrics.collections import Faithfulness, AnswerRelevancy
+
+# Setup
+dataset = ...  # Your dataset
+metrics = [Faithfulness(llm=llm), AnswerRelevancy(llm=llm)]
+
+# Simple evaluation
+result = evaluate(
+    dataset=dataset,
+    metrics=metrics,
+    llm=llm,
+    embeddings=embeddings
+)
+
+print(result)  # Returns EvaluationResult with scores
+```
+
+### After (v0.4)
+
+```python
+from ragas import experiment
+from ragas.metrics.collections import Faithfulness, AnswerRelevancy
+from pydantic import BaseModel
+
+# Define experiment result structure
+class ExperimentResult(BaseModel):
+    faithfulness: float
+    answer_relevancy: float
+
+# Create experiment function
+@experiment(ExperimentResult)
+async def run_evaluation(row):
+    faithfulness = Faithfulness(llm=llm)
+    answer_relevancy = AnswerRelevancy(llm=llm)
+
+    faith_result = await faithfulness.ascore(
+        response=row.response,
+        retrieved_contexts=row.contexts
+    )
+
+    relevancy_result = await answer_relevancy.ascore(
+        user_input=row.user_input,
+        response=row.response
+    )
+
+    return ExperimentResult(
+        faithfulness=faith_result.value,
+        answer_relevancy=relevancy_result.value
+    )
+
+# Run experiment
+exp_results = await run_evaluation(dataset)
+```
+
+### Benefits of Using `experiment()`
+
+1. **Structured Results** - Define exactly what you want to track
+2. **Per-Row Control** - Customize evaluation per sample if needed
+3. **Version Tracking** - Optional git integration via `version_experiment()`
+4. **Iterative Workflows** - Easy to modify and re-run experiments
+5. **Better Integration** - Works seamlessly with modern metrics and datasets
 
 ---
 
@@ -1032,6 +1110,35 @@ Three metrics have been completely removed from the collections API. They are no
 
 These features still work but show deprecation warnings. They will be removed in a **future release**.
 
+### evaluate() Function - Deprecated
+
+- **Status**: Still works but discouraged
+- **Reason**: Replaced by `@experiment()` decorator for better structured workflows
+- **Migration**: See [Evaluation to Experiment](#evaluation-to-experiment) section
+
+**Before (v0.3) - Deprecated:**
+```python
+from ragas import evaluate
+
+result = evaluate(dataset=dataset, metrics=metrics, llm=llm, embeddings=embeddings)
+```
+
+**After (v0.4) - Recommended:**
+```python
+from ragas import experiment
+from pydantic import BaseModel
+
+class Results(BaseModel):
+    score: float
+
+@experiment(Results)
+async def run(row):
+    result = await metric.ascore(**row.dict())
+    return Results(score=result.value)
+
+result = await run(dataset)
+```
+
 ### LLM Wrapper Classes
 
 #### LangchainLLMWrapper - Deprecated
@@ -1086,17 +1193,112 @@ client = AsyncOpenAI(api_key="...")
 ragas_llm = llm_factory("gpt-4o", client=client)
 ```
 
-### Embedding Wrapper Classes
+### Embeddings Migration
 
-#### LangchainEmbeddingsWrapper - Deprecated
+#### LangchainEmbeddingsWrapper & LlamaIndexEmbeddingsWrapper - Deprecated
 
-- **Status**: Still works but shows deprecation warning
-- **Migration**: Use native Ragas embedding classes
+- **Status**: Still work but show deprecation warnings
+- **Reason**: Replaced by native embedding providers with direct client integration
+- **Migration**: See [Embeddings Migration](#embeddings-migration) section
 
-#### LlamaIndexEmbeddingsWrapper - Deprecated
+v0.4 replaces wrapper classes with **native embedding providers** that integrate directly with client libraries instead of using LangChain wrappers.
 
-- **Status**: Still works but discouraged
-- **Migration**: Use native Ragas embedding classes
+### What Changed
+
+| Aspect | v0.3 | v0.4 |
+|--------|------|------|
+| **Class** | `LangchainEmbeddingsWrapper`, `LlamaIndexEmbeddingsWrapper` | `OpenAIEmbeddings`, `GoogleEmbeddings`, `HuggingFaceEmbeddings` |
+| **Client** | LangChain/LlamaIndex wrapper | Native client (OpenAI, Google, etc.) |
+| **Methods** | `embed_query()`, `embed_documents()` | `embed_text()`, `embed_texts()` |
+| **Setup** | Wrap existing LangChain object | Pass native client directly |
+
+#### OpenAI Migration
+
+**Before (v0.3):**
+```python
+from langchain_openai import OpenAIEmbeddings as LangChainEmbeddings
+from ragas.embeddings import LangchainEmbeddingsWrapper
+
+embeddings = LangchainEmbeddingsWrapper(
+    LangChainEmbeddings(api_key="sk-...")
+)
+embedding = embeddings.embed_query("text")
+```
+
+**After (v0.4):**
+```python
+from openai import AsyncOpenAI
+from ragas.embeddings import OpenAIEmbeddings
+
+embeddings = OpenAIEmbeddings(
+    client=AsyncOpenAI(api_key="sk-..."),
+    model="text-embedding-3-small"
+)
+embedding = embeddings.embed_text("text")  # Different method name
+```
+
+#### Google Embeddings Migration
+
+**Before (v0.3):**
+```python
+from langchain_community.embeddings import VertexAIEmbeddings
+from ragas.embeddings import LangchainEmbeddingsWrapper
+
+embeddings = LangchainEmbeddingsWrapper(
+    VertexAIEmbeddings(model_name="textembedding-gecko@001", project="my-project")
+)
+```
+
+**After (v0.4):**
+```python
+from ragas.embeddings import GoogleEmbeddings
+
+embeddings = GoogleEmbeddings(
+    model="text-embedding-004",
+    use_vertex=True,
+    project_id="my-project"
+)
+```
+
+#### HuggingFace Migration
+
+**Before (v0.3):**
+```python
+from ragas.embeddings import HuggingfaceEmbeddings
+
+embeddings = HuggingfaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+```
+
+**After (v0.4):**
+```python
+from ragas.embeddings import HuggingFaceEmbeddings  # Capitalization changed
+
+embeddings = HuggingFaceEmbeddings(
+    model="sentence-transformers/all-MiniLM-L6-v2",
+    device="cuda"  # Optional GPU acceleration
+)
+```
+
+### Using embedding_factory()
+
+**Before (v0.3):**
+```python
+from ragas.embeddings import embedding_factory
+
+embeddings = embedding_factory()  # Defaults to OpenAI
+```
+
+**After (v0.4):**
+```python
+from ragas.embeddings import embedding_factory
+from openai import AsyncOpenAI
+
+embeddings = embedding_factory(
+    provider="openai",
+    model="text-embedding-3-small",
+    client=AsyncOpenAI(api_key="sk-...")
+)
+```
 
 ### Prompt System
 
@@ -1191,10 +1393,13 @@ Here's a complete list of breaking changes between v0.3 and v0.4:
 
 | Change | v0.3 | v0.4 | Migration |
 |--------|------|------|-----------|
+| **Evaluation approach** | `evaluate()` function | `@experiment()` decorator | See [Evaluation to Experiment](#evaluation-to-experiment) |
 | **Metrics location** | `ragas.metrics` | `ragas.metrics.collections` | Update import paths |
 | **Scoring method** | `single_turn_ascore(sample)` | `ascore(**kwargs)` | Change method calls |
 | **Score return type** | `float` | `MetricResult` | Use `.value` property |
 | **LLM factory** | `instructor_llm_factory()` | `llm_factory()` | Use unified factory |
+| **Embeddings approach** | Wrapper classes (LangChain) | Native providers | See [Embeddings Migration](#embeddings-migration) |
+| **Embedding methods** | `embed_query()`, `embed_documents()` | `embed_text()`, `embed_texts()` | Update method calls |
 | **ground_truths param** | `ground_truths: list[str]` | `reference: str` | Rename, change type |
 | **Sample type** | `SingleTurnSample` | `SingleTurnSample` (updated) | Update sample creation |
 | **Prompt system** | Dataclass-based | Function-based | Refactor custom prompts |
