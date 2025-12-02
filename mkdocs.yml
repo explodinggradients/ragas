@@ -11,8 +11,8 @@ nav:
   - "": index.md
   - 🚀 Get Started:
       - getstarted/index.md
-      - Quick Start: getstarted/quickstart.md
       - Installation: getstarted/install.md
+      - Quick Start: getstarted/quickstart.md
       - Tutorials:
           - Evaluate a prompt: tutorials/prompt.md
           - Evaluate a simple RAG system: tutorials/rag.md
