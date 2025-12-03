@@ -150,24 +150,35 @@ print(results)
 
 ### Option 2: Explicit Embeddings
 
-For explicit control, provide embeddings explicitly:
+For explicit control over embeddings, you can create them separately. Google embeddings work with multiple configuration options:
 
 ```python
 import os
 import google.generativeai as genai
 from ragas.llms import llm_factory
 from ragas.embeddings import GoogleEmbeddings
+from ragas.embeddings.base import embedding_factory
 from datasets import Dataset
 from ragas import evaluate
 from ragas.metrics import AnswerCorrectness, ContextPrecision, ContextRecall, Faithfulness
 
-# Initialize Gemini client
+# Configure Google AI
 genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
+
+# Initialize Gemini LLM
 client = genai.GenerativeModel("gemini-2.0-flash")
 llm = llm_factory("gemini-2.0-flash", provider="google", client=client)
 
-# Initialize Google embeddings
-embeddings = GoogleEmbeddings(model="models/embedding-001")
+# Initialize Google embeddings (multiple options):
+
+# Option A: Simplest - auto-import (recommended)
+embeddings = embedding_factory("google", model="text-embedding-004")
+
+# Option B: From genai module directly
+embeddings = GoogleEmbeddings(client=genai, model="text-embedding-004")
+
+# Option C: No client (auto-imports genai)
+embeddings = GoogleEmbeddings(model="text-embedding-004")
 
 # Create sample evaluation data
 data = {
@@ -346,6 +357,51 @@ genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
 client = genai.GenerativeModel("gemini-2.0-flash")
 llm = llm_factory("gemini-2.0-flash", provider="google", client=client)
 ```
+
+## Using with Metrics Collections (Modern Approach)
+
+For the modern metrics collections API, you need to explicitly create both LLM and embeddings:
+
+```python
+import os
+import google.generativeai as genai
+from ragas.llms import llm_factory
+from ragas.embeddings.base import embedding_factory
+from ragas.metrics.collections import AnswerCorrectness, ContextPrecision
+
+# Configure Google AI
+genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
+
+# Create LLM
+llm_client = genai.GenerativeModel("gemini-2.0-flash")
+llm = llm_factory("gemini-2.0-flash", provider="google", client=llm_client)
+
+# Create embeddings - multiple options work:
+# Option 1: Auto-import (simplest)
+embeddings = embedding_factory("google", model="text-embedding-004")
+
+# Option 2: From LLM client (now works with the fix!)
+embeddings = embedding_factory("google", client=llm.client, model="text-embedding-004")
+
+# Create metrics with explicit LLM and embeddings
+metrics = [
+    ContextPrecision(llm=llm),  # LLM-only metric
+    AnswerCorrectness(llm=llm, embeddings=embeddings),  # Needs both
+]
+
+# Use metrics with your evaluation workflow
+result = await metrics[1].ascore(
+    user_input="What is the capital of France?",
+    response="Paris",
+    reference="Paris is the capital of France."
+)
+```
+
+**Key difference from legacy approach:**
+- Legacy `evaluate()`: Auto-creates embeddings from LLM provider
+- Modern collections: You explicitly pass embeddings to each metric
+
+This gives you more control and works seamlessly with Gemini!
 
 ## Supported Metrics
 
