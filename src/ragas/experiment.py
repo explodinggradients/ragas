@@ -9,8 +9,10 @@ from pathlib import Path
 from pydantic import BaseModel
 from tqdm import tqdm
 
+from ragas.async_utils import as_completed
 from ragas.backends.base import BaseBackend
 from ragas.dataset import Dataset, DataTable
+from ragas.run_config import RunConfig
 from ragas.utils import find_git_root, memorable_names
 
 
@@ -108,6 +110,8 @@ class ExperimentProtocol(t.Protocol):
         dataset: Dataset,
         name: t.Optional[str] = None,
         backend: t.Optional[t.Union[BaseBackend, str]] = None,
+        run_config: t.Optional[RunConfig] = None,
+        max_workers: t.Optional[int] = None,
         *args,
         **kwargs,
     ) -> "Experiment": ...
@@ -121,11 +125,13 @@ class ExperimentWrapper:
         func: t.Callable,
         experiment_model: t.Optional[t.Type[BaseModel]] = None,
         default_backend: t.Optional[t.Union[BaseBackend, str]] = None,
+        default_run_config: t.Optional[RunConfig] = None,
         name_prefix: str = "",
     ):
         self.func = func
         self.experiment_model = experiment_model
         self.default_backend = default_backend
+        self.default_run_config = default_run_config
         self.name_prefix = name_prefix
         # Preserve function metadata
         self.__name__ = getattr(func, "__name__", "experiment_function")
@@ -143,6 +149,8 @@ class ExperimentWrapper:
         dataset: Dataset,
         name: t.Optional[str] = None,
         backend: t.Optional[t.Union[BaseBackend, str]] = None,
+        run_config: t.Optional[RunConfig] = None,
+        max_workers: t.Optional[int] = None,
         *args,
         **kwargs,
     ) -> "Experiment":
@@ -167,6 +175,10 @@ class ExperimentWrapper:
             backend=resolved_backend,
         )
 
+        # Determine concurrency limit
+        effective_run_config = run_config or self.default_run_config
+        worker_limit = self._resolve_max_workers(effective_run_config, max_workers)
+
         # Create tasks for all items
         tasks = []
         for item in dataset:
@@ -177,7 +189,7 @@ class ExperimentWrapper:
             progress_bar = tqdm(total=len(dataset), desc="Running experiment")
 
             # Process all items
-            for future in asyncio.as_completed(tasks):
+            for future in as_completed(tasks, worker_limit):
                 try:
                     result = await future
                     if result is not None:
@@ -197,11 +209,42 @@ class ExperimentWrapper:
 
         return experiment_view
 
+    @staticmethod
+    def _resolve_max_workers(
+        run_config: t.Optional[RunConfig],
+        max_workers: t.Optional[int],
+    ) -> int:
+        """
+        Determine the concurrency limit from explicit overrides or RunConfig defaults.
+        """
+        if max_workers is not None:
+            return ExperimentWrapper._coerce_worker_limit(max_workers)
+
+        if run_config and getattr(run_config, "max_workers", None) is not None:
+            value = run_config.max_workers
+            return ExperimentWrapper._coerce_worker_limit(value)
+
+        return -1
+
+    @staticmethod
+    def _coerce_worker_limit(value: t.Optional[int]) -> int:
+        """
+        Normalize worker limits so that values <= 0 map to unlimited (-1).
+        """
+        if value is None or value < 0:
+            return -1
+
+        if value == 0:
+            return -1
+
+        return value
+
 
 def experiment(
     experiment_model: t.Optional[t.Type[BaseModel]] = None,
     backend: t.Optional[t.Union[BaseBackend, str]] = None,
     name_prefix: str = "",
+    run_config: t.Optional[RunConfig] = None,
 ) -> t.Callable[[t.Callable], ExperimentProtocol]:
     """Decorator for creating experiment functions.
 
@@ -209,6 +252,7 @@ def experiment(
         experiment_model: The Pydantic model type to use for experiment results
         backend: Optional backend to use for storing experiment results
         name_prefix: Optional prefix for experiment names
+        run_config: Optional default RunConfig applied to arun() calls
 
     Returns:
         Decorator function that wraps experiment functions
@@ -225,6 +269,7 @@ def experiment(
             func=func,
             experiment_model=experiment_model,
             default_backend=backend,
+            default_run_config=run_config,
             name_prefix=name_prefix,
         )
         return t.cast(ExperimentProtocol, wrapper)
