@@ -89,7 +89,7 @@ nav:
           - howtos/customizations/index.md
           - General:
               - Customise models: howtos/customizations/customize_models.md
-              - Run Config: howtos/customizations/_run_config.md
+              - Run Config: howtos/customizations/run_config.md
               - Caching: howtos/customizations/_caching.md
               - Cancelling Tasks: howtos/customizations/cancellation.md
           - LLM Adapters: howtos/llm-adapters.md
