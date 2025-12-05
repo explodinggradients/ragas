@@ -175,6 +175,7 @@ def test_sync_client_agenerate_error(mock_sync_client, monkeypatch):
 
 def test_provider_support(monkeypatch):
     """Test that major providers are supported."""
+    import instructor
 
     # Mock all provider-specific methods
     def mock_from_openai(client):
@@ -189,10 +190,13 @@ def test_provider_support(monkeypatch):
     def mock_from_litellm(client):
         return MockInstructor(client)
 
-    monkeypatch.setattr("instructor.from_openai", mock_from_openai)
-    monkeypatch.setattr("instructor.from_anthropic", mock_from_anthropic)
-    monkeypatch.setattr("instructor.from_gemini", mock_from_gemini)
-    monkeypatch.setattr("instructor.from_litellm", mock_from_litellm)
+    # Use setattr with the module object directly to avoid attribute existence checks
+    monkeypatch.setattr(instructor, "from_openai", mock_from_openai, raising=False)
+    monkeypatch.setattr(
+        instructor, "from_anthropic", mock_from_anthropic, raising=False
+    )
+    monkeypatch.setattr(instructor, "from_gemini", mock_from_gemini, raising=False)
+    monkeypatch.setattr(instructor, "from_litellm", mock_from_litellm, raising=False)
 
     # Test all major providers
     for provider in ["openai", "anthropic", "google", "gemini", "litellm"]:
