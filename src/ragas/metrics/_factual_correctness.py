@@ -279,19 +279,26 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
             reference_response_task, response_reference_task
         )
 
-        tp = sum(reference_response)
-        fp = sum(~reference_response)
-        if self.mode != "precision":
-            fn = sum(~response_reference)
-        else:
-            fn = 0
-
         if self.mode == "precision":
+            tp = sum(reference_response)
+            fp = sum(~reference_response)
             score = tp / (tp + fp + 1e-8)
         elif self.mode == "recall":
+            tp = sum(response_reference)
+            fn = sum(~response_reference)
             score = tp / (tp + fn + 1e-8)
         else:
-            score = fbeta_score(tp, fp, fn, self.beta)
+            # For F1, compute precision and recall separately then combine
+            precision_tp = sum(reference_response)
+            precision_fp = sum(~reference_response)
+            recall_tp = sum(response_reference)
+            recall_fn = sum(~response_reference)
+            precision = precision_tp / (precision_tp + precision_fp + 1e-8)
+            recall = recall_tp / (recall_tp + recall_fn + 1e-8)
+            if precision + recall < 1e-8:
+                score = 0.0
+            else:
+                score = (1 + self.beta**2) * precision * recall / (self.beta**2 * precision + recall + 1e-8)
 
         return np.round(score, 2)
 
