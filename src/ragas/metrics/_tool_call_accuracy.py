@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 import warnings
+from collections import Counter
 from dataclasses import dataclass, field
 
 from ragas.dataset_schema import MultiTurnSample, SingleTurnSample
@@ -101,11 +102,27 @@ class ToolCallAccuracy(MultiTurnMetric):
     def is_sequence_aligned(
         self, pred_sequence: t.List[str], ref_sequence: t.List[str]
     ) -> bool:
+        compared_length = min(len(pred_sequence), len(ref_sequence))
+        if compared_length == 0:
+            return True
         if self.strict_order:
-            return pred_sequence == ref_sequence
+            # In strict mode, verify the overlapping portion matches in order
+            return pred_sequence[:compared_length] == ref_sequence[:compared_length]
         else:
-            # For non-strict mode, sort both sequences before comparison
-            return sorted(pred_sequence) == sorted(ref_sequence)
+            # In non-strict mode, check if the smaller set's tool names
+            # are contained in the larger set (accounting for multiplicity)
+            pred_counts = Counter(pred_sequence)
+            ref_counts = Counter(ref_sequence)
+            if len(pred_sequence) >= len(ref_sequence):
+                return all(
+                    pred_counts[name] >= count
+                    for name, count in ref_counts.items()
+                )
+            else:
+                return all(
+                    ref_counts[name] >= count
+                    for name, count in pred_counts.items()
+                )
 
     async def _multi_turn_ascore(
         self, sample: MultiTurnSample, callbacks: Callbacks
@@ -175,7 +192,7 @@ class ToolCallAccuracy(MultiTurnMetric):
             coverage_penalty = compared_count / len(reference_tool_calls)
             score *= coverage_penalty
 
-        return score * sequence_aligned
+        return min(score * sequence_aligned, 1.0)
 
     async def _ascore(self, row: t.Dict, callbacks: Callbacks) -> float:
         return await self._multi_turn_ascore(MultiTurnSample(**row), callbacks)
