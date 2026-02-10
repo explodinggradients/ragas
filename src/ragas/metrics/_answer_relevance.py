@@ -125,6 +125,7 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         else:
             cosine_sim = self.calculate_similarity(question, gen_questions)
             score = cosine_sim.mean() * int(not all_noncommittal)
+            score = max(0.0, float(score))  # Clamp to non-negative
 
         return score
 
