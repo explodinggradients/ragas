@@ -30,6 +30,7 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          allowed_non_write_users: "*"
 
           prompt: |
             REPO: ${{ github.repository }}
