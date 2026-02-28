@@ -889,9 +889,10 @@ class InstructorLLM(InstructorBaseRagasLLM):
             if model_str.startswith("gpt-"):
                 version_str = (
                     model_str[4:].split("-")[0].split("_")[0]
-                )  # Get version number
+                )  # Get version number (may contain decimal, e.g. "5.2")
                 try:
-                    version = int(version_str)
+                    # Use major version only: "5.2" -> 5, "5" -> 5
+                    version = int(version_str.split(".")[0])
                     if 5 <= version <= 19:
                         return True
                 except ValueError:
