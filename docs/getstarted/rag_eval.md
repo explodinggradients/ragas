@@ -1,6 +1,6 @@
 # Evaluate a simple RAG system
 
-The purpose of this guide is to illustrate a simple workflow for testing and evaluating a RAG system with `ragas`. It assumes minimum knowledge in building RAG system and evaluation. Please refer to our [installation instruction](./install.md) for installing `ragas`.
+The purpose of this guide is to illustrate a simple workflow for testing and evaluating a RAG system with `ragas`. It assumes minimum knowledge in building RAG system and evaluation. Please refer to our [installation instructions](./install.md) for installing `ragas`.
 
 ## Basic Setup
 
@@ -115,7 +115,7 @@ Answer: Albert Einstein introduced the theory of relativity.
 
 ## Collect Evaluation Data
 
-To collect evaluation data, we first need a set of queries to run against our RAG. We can run the queries through the RAG system and collect the `response`, `retrieved_contexts`for each query. You may also optionally prepare a set of golden answers for each query to evaluate the system's performance.
+To collect evaluation data, we first need a set of queries to run against our RAG. We can run the queries through the RAG system and collect the `response`, `retrieved_contexts` for each query. You may also optionally prepare a set of golden answers for each query to evaluate the system's performance.
 
 
 
@@ -142,16 +142,16 @@ expected_responses = [
 ```python
 dataset = []
 
-for query,reference in zip(sample_queries,expected_responses):
+for query, reference in zip(sample_queries, expected_responses):
     
     relevant_docs = rag.get_most_relevant_docs(query)
     response = rag.generate_answer(query, relevant_docs)
     dataset.append(
         {
-            "user_input":query,
-            "retrieved_contexts":relevant_docs,
-            "response":response,
-            "reference":reference
+            "user_input": query,
+            "retrieved_contexts": relevant_docs,
+            "response": response,
+            "reference": reference
         }
     )
 ```
@@ -193,7 +193,7 @@ We are compressing this knowledge into a product to replace vibe checks with eva
 If you want help with improving and scaling up your AI application using evals.
 
 
-🔗 Book a [slot](https://bit.ly/3EBYq4J) or drop us a line: [founders@vibrantlabs.com](mailto:founders@vibrantlabs.com).
+ð Book a [slot](https://bit.ly/3EBYq4J) or drop us a line: [founders@vibrantlabs.com](mailto:founders@vibrantlabs.com).
 
 ![](../_static/ragas_app.gif)
 
