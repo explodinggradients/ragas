@@ -168,14 +168,20 @@ evaluation_dataset = EvaluationDataset.from_list(dataset)
 We have successfully collected the evaluation data. Now, we can evaluate our RAG system on the collected dataset using a set of commonly used RAG evaluation metrics. You may choose any model as [evaluator LLM](./../howtos/customizations/customize_models.md) for evaluation. 
 
 ```python
+import openai
 from ragas import evaluate
-from ragas.llms import LangchainLLMWrapper
-
-
-evaluator_llm = LangchainLLMWrapper(llm)
+from ragas.llms import llm_factory
 from ragas.metrics import LLMContextRecall, Faithfulness, FactualCorrectness
 
-result = evaluate(dataset=evaluation_dataset,metrics=[LLMContextRecall(), Faithfulness(), FactualCorrectness()],llm=evaluator_llm)
+# Use llm_factory to create the evaluator LLM instance
+openai_client = openai.OpenAI()
+evaluator_llm = llm_factory("gpt-4o", client=openai_client)
+
+result = evaluate(
+    dataset=evaluation_dataset,
+    metrics=[LLMContextRecall(), Faithfulness(), FactualCorrectness()],
+    llm=evaluator_llm,
+)
 result
 ```
 
