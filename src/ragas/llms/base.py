@@ -891,7 +891,7 @@ class InstructorLLM(InstructorBaseRagasLLM):
                     model_str[4:].split("-")[0].split("_")[0]
                 )  # Get version number
                 try:
-                    version = int(version_str)
+                    version = float(version_str)
                     if 5 <= version <= 19:
                         return True
                 except ValueError:
