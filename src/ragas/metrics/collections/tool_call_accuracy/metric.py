@@ -2,6 +2,7 @@
 
 import typing as t
 import warnings
+from collections import Counter
 from typing import List
 
 from ragas.messages import AIMessage, ToolCall
@@ -80,11 +81,33 @@ class ToolCallAccuracy(BaseMetric):
     def _is_sequence_aligned(
         self, pred_sequence: List[str], ref_sequence: List[str]
     ) -> bool:
-        """Check if tool call sequences are aligned."""
+        """Check if tool call sequences are aligned.
+
+        When sequence lengths differ (e.g. agent retries or parallel calls),
+        only the overlapping portion is compared instead of requiring exact
+        list equality.
+        """
+        compared_length = min(len(pred_sequence), len(ref_sequence))
+        if compared_length == 0:
+            return True
         if self.strict_order:
-            return pred_sequence == ref_sequence
+            # In strict mode, verify the overlapping portion matches in order
+            return pred_sequence[:compared_length] == ref_sequence[:compared_length]
         else:
-            return sorted(pred_sequence) == sorted(ref_sequence)
+            # In non-strict mode, check if the smaller set's tool names
+            # are contained in the larger set (accounting for multiplicity)
+            pred_counts = Counter(pred_sequence)
+            ref_counts = Counter(ref_sequence)
+            if len(pred_sequence) >= len(ref_sequence):
+                return all(
+                    pred_counts[name] >= count
+                    for name, count in ref_counts.items()
+                )
+            else:
+                return all(
+                    ref_counts[name] >= count
+                    for name, count in pred_counts.items()
+                )
 
     async def ascore(
         self,
@@ -164,7 +187,7 @@ class ToolCallAccuracy(BaseMetric):
             coverage_penalty = compared_count / len(reference_tool_calls)
             score *= coverage_penalty
 
-        # Apply sequence alignment factor
-        final_score = score * sequence_aligned
+        # Apply sequence alignment factor and clamp to [0, 1]
+        final_score = min(score * sequence_aligned, 1.0)
 
         return MetricResult(value=float(final_score))
