@@ -592,7 +592,7 @@ def _get_instructor_client(
         return instructor.from_anthropic(client)
     elif provider_lower in ("google", "gemini"):
         if _is_new_google_genai_client(client):
-            return instructor.from_genai(client)
+            return instructor.from_genai(client, use_async=True)
         else:
             return instructor.from_gemini(client)
     elif provider_lower == "litellm":

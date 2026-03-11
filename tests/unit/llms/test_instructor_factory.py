@@ -97,6 +97,34 @@ def test_llm_factory_async_detection(mock_async_client, monkeypatch):
     assert llm.is_async  # type: ignore
 
 
+def test_llm_factory_async_detection_google_genai(monkeypatch):
+    """
+    Test that llm_factory correctly forces async wrappers for the new google-genai client.
+    """
+    import instructor
+
+    class MockGoogleGenAIClient:
+        __module__ = "google.genai.client"
+
+    mock_client = MockGoogleGenAIClient()
+    captured_kwargs = {}
+
+    def mock_from_genai(client, **kwargs):
+        captured_kwargs.update(kwargs)
+
+        if kwargs.get("use_async") is True:
+            return type("AsyncInstructor", (), {"client": client})()
+
+        return type("Instructor", (), {"client": client})()
+
+    monkeypatch.setattr(instructor, "from_genai", mock_from_genai, raising=False)
+
+    llm = llm_factory("gemini-2.0-flash", provider="google", client=mock_client)
+
+    assert captured_kwargs.get("use_async")
+    assert llm.is_async  # type: ignore
+
+
 def test_llm_factory_with_model_args(mock_sync_client, monkeypatch):
     """Test llm_factory with model arguments."""
 
