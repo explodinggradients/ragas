@@ -53,7 +53,7 @@ async def run_experiment(row):
     prediction = math_agent.solve(question)
 
     # Calculate the correctness metric
-    correctness = correctness_metric.score(
+    correctness = await correctness_metric.ascore(
         prediction=prediction.get("result"), actual=expected_answer
     )
 
