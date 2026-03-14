@@ -531,6 +531,28 @@ def _patch_client_for_provider(
         )
 
 
+def _is_new_google_genai_async_client(client: t.Any) -> bool:
+    """
+    Detect if client is the async client from the new google-genai SDK.
+
+    New SDK (google-genai):
+        - Import: from google import genai / import google.genai
+        - Client: genai.Client(api_key="...").aio
+        - Module: google.genai.client.AsyncClient
+
+    Note: The async client is accessed via the `.aio` property on a sync Client instance.
+    It must be passed explicitly — ragas does not construct it automatically.
+    """
+    client_module = getattr(client, "__module__", "") or ""
+    client_class = client.__class__.__name__
+
+    # New SDK: google.genai.client.AsyncClient for the async client initialized using `.aio`
+    if client_class == "AsyncClient" and "genai" in client_module.lower():
+        return True
+
+    return False
+
+
 def _is_new_google_genai_client(client: t.Any) -> bool:
     """
     Detect if client is from the new google-genai SDK vs old google-generativeai.
@@ -591,7 +613,9 @@ def _get_instructor_client(
     elif provider_lower == "anthropic":
         return instructor.from_anthropic(client)
     elif provider_lower in ("google", "gemini"):
-        if _is_new_google_genai_client(client):
+        if _is_new_google_genai_async_client(client):
+            return instructor.from_genai(client, use_async=True)
+        elif _is_new_google_genai_client(client):
             return instructor.from_genai(client)
         else:
             return instructor.from_gemini(client)

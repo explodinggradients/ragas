@@ -97,6 +97,42 @@ def test_llm_factory_async_detection(mock_async_client, monkeypatch):
     assert llm.is_async  # type: ignore
 
 
+def test_llm_factory_async_detection_google_genai(monkeypatch):
+    """
+    Test that llm_factory passes use_async=True for the new google-genai async client
+    (genai.Client().aio), but NOT for the sync client (genai.Client()).
+    """
+    import instructor
+
+    captured_use_async: list = []
+
+    def mock_from_genai(client, **kwargs):
+        captured_use_async.append(kwargs.get("use_async"))
+        return type(
+            "AsyncInstructor" if kwargs.get("use_async") else "Instructor",
+            (),
+            {"client": client},
+        )()
+
+    monkeypatch.setattr(instructor, "from_genai", mock_from_genai, raising=False)
+
+    # Mirrors genai.Client(api_key=...).aio — an AsyncClient instance
+    class AsyncClient:
+        __module__ = "google.genai.client"
+
+    llm = llm_factory("gemini-2.0-flash", provider="google", client=AsyncClient())
+    assert captured_use_async[-1] is True, "async client must pass use_async=True"
+    assert llm.is_async  # type: ignore
+
+    # Mirrors genai.Client(api_key=...) — a plain Client instance (sync)
+    class Client:
+        __module__ = "google.genai.client"
+
+    llm = llm_factory("gemini-2.0-flash", provider="google", client=Client())
+    assert captured_use_async[-1] is None, "sync client must NOT pass use_async=True"
+    assert not llm.is_async  # type: ignore
+
+
 def test_llm_factory_with_model_args(mock_sync_client, monkeypatch):
     """Test llm_factory with model arguments."""
 
