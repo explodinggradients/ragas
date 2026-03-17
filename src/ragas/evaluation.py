@@ -129,9 +129,9 @@ async def aevaluate(
             "Metrics should be provided in a list, e.g: metrics=[BleuScore()]"
         )
 
-    if isinstance(metrics, list) and any(not isinstance(m, Metric) for m in metrics):
+    if isinstance(metrics, list) and any(not isinstance(m, (Metric, SingleTurnMetric, MultiTurnMetric)) for m in metrics):
         raise TypeError(
-            "All metrics must be initialised metric objects, e.g: metrics=[BleuScore(), AspectCritic()]"
+            "All metrics must be initialised metric objects from legacy or modern collections."
         )
 
     # default metrics
