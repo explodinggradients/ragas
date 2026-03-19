@@ -1125,10 +1125,10 @@ class InstructorLLM(InstructorBaseRagasLLM):
             messages.append({"role": "system", "content": self.system_prompt})
         messages.append({"role": "user", "content": prompt})
 
-        # If client is not async, raise a helpful error
         if not self.is_async:
-            raise TypeError(
-                "Cannot use agenerate() with a synchronous client. Use generate() instead."
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(
+                None, self.generate, prompt, response_model
             )
 
         # Map parameters based on provider requirements
