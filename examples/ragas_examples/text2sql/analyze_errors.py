@@ -81,7 +81,7 @@ def analyze_errors(input_file: str, output_file: str) -> None:
         print("Error: OPENAI_API_KEY environment variable not set")
         sys.exit(1)
     
-    client = OpenAI()
+    client = OpenAI(timeout=60.0, max_retries=3)
     
     # Read the CSV file
     df = pd.read_csv(input_file)

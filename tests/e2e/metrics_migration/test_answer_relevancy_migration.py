@@ -62,7 +62,7 @@ class TestAnswerRelevancyE2EMigration:
 
             from ragas.llms import llm_factory
 
-            client = openai.AsyncOpenAI()
+            client = openai.AsyncOpenAI(timeout=60.0, max_retries=3)
             return llm_factory("gpt-3.5-turbo", client=client)
         except ImportError as e:
             pytest.skip(f"Instructor LLM factory not available: {e}")
@@ -93,7 +93,7 @@ class TestAnswerRelevancyE2EMigration:
             from ragas.embeddings.base import embedding_factory
 
             # Create OpenAI async client
-            client = openai.AsyncOpenAI()
+            client = openai.AsyncOpenAI(timeout=60.0, max_retries=3)
 
             # Use modern interface with explicit provider and client
             return embedding_factory(

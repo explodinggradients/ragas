@@ -18,7 +18,7 @@ def nvidia_legacy_llm():
         from ragas.llms.base import LangchainLLMWrapper
 
         # Legacy sets temperature=0.1 in the metric calls, so use default here
-        langchain_llm = ChatOpenAI(model="gpt-4o", temperature=0.01)
+        langchain_llm = ChatOpenAI(model="gpt-4o", temperature=0.01, request_timeout=60, max_retries=3)
         return LangchainLLMWrapper(langchain_llm)
     except Exception as e:
         pytest.skip(str(e))
@@ -32,7 +32,7 @@ def nvidia_modern_llm():
 
         from ragas.llms.base import llm_factory
 
-        client = openai.AsyncOpenAI()
+        client = openai.AsyncOpenAI(timeout=60.0, max_retries=3)
         # Set temperature=0.1 to match legacy NVIDIA calls exactly
         return llm_factory(
             model="gpt-4o", provider="openai", client=client, temperature=0.1
@@ -101,7 +101,7 @@ class TestContextRelevanceE2EMigration:
 
             from ragas.llms.base import llm_factory
 
-            client = openai.AsyncOpenAI()
+            client = openai.AsyncOpenAI(timeout=60.0, max_retries=3)
             return llm_factory(
                 model="gpt-4o",
                 provider="openai",

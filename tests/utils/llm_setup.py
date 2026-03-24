@@ -60,7 +60,7 @@ def create_legacy_llm(model: str = "gpt-3.5-turbo", **kwargs):
         if "client" not in kwargs:
             import openai
 
-            kwargs["client"] = openai.OpenAI()
+            kwargs["client"] = openai.OpenAI(timeout=60.0, max_retries=3)
 
         return llm_factory(model, **kwargs)
     except ImportError as e:
@@ -97,7 +97,7 @@ def create_modern_llm(
             if provider == "openai":
                 import openai
 
-                client = openai.AsyncOpenAI()
+                client = openai.AsyncOpenAI(timeout=60.0, max_retries=3)
             else:
                 raise ValueError(f"Auto-client creation not supported for {provider}")
 
@@ -165,7 +165,7 @@ def create_modern_embeddings(
             if provider == "openai":
                 import openai
 
-                client = openai.AsyncOpenAI()
+                client = openai.AsyncOpenAI(timeout=60.0, max_retries=3)
             else:
                 raise ValueError(f"Auto-client creation not supported for {provider}")
 

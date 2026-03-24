@@ -172,7 +172,7 @@ async def main():
     
     # Initialize LLM client
     logger.info("Initializing LLM client with model: gpt-4o-mini")
-    openai_client = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    openai_client = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"), timeout=60.0, max_retries=3)
     llm = llm_factory("gpt-4o-mini", client=openai_client)
 
     # Run baseline evaluation
@@ -199,7 +199,7 @@ async def main_v2():
     
     # Initialize LLM client
     logger.info("Initializing LLM client with model: gpt-4o-mini")
-    openai_client = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    openai_client = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"), timeout=60.0, max_retries=3)
     llm = llm_factory("gpt-4o-mini", client=openai_client)
 
     # Run v2 evaluation with improved prompt

@@ -78,7 +78,7 @@ class TestContextEntityRecallE2EMigration:
 
             from ragas.llms import llm_factory
 
-            client = openai.AsyncOpenAI()
+            client = openai.AsyncOpenAI(timeout=60.0, max_retries=3)
             return llm_factory("gpt-4o", client=client)
         except ImportError as e:
             pytest.skip(f"Instructor LLM factory not available: {e}")

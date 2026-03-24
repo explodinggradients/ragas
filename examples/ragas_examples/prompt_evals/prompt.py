@@ -2,7 +2,7 @@ import os
 
 from openai import OpenAI
 
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], timeout=60.0, max_retries=3)
 
 
 SYSTEM_PROMPT = """

@@ -465,7 +465,7 @@ if __name__ == "__main__":
         exit(1)
 
     # Initialize RAG system with tracing enabled
-    llm = OpenAI(api_key=api_key)
+    llm = OpenAI(api_key=api_key, timeout=60.0, max_retries=3)
     r = SimpleKeywordRetriever()
     rag_client = ExampleRAG(llm_client=llm, retriever=r, logdir="logs")
 

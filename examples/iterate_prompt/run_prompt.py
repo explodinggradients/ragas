@@ -2,7 +2,7 @@ import os
 
 from openai import AsyncOpenAI
 
-client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
+client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"], timeout=60.0, max_retries=3)
 
 
 def load_prompt(prompt_file: str) -> str:

@@ -233,7 +233,7 @@ async def main():
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("openai._base_client").setLevel(logging.WARNING)
     
-    openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"], timeout=60.0, max_retries=3)
     # Test with a question that failed in previous evaluation
     query = "What command is used to upload an ESPnet model to a Hugging Face repository?"
     

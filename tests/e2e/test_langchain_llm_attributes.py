@@ -10,7 +10,7 @@ try:
     LANGCHAIN_AVAILABLE = True
 
     models = [
-        ChatOpenAI(model="gpt-4o"),
+        ChatOpenAI(model="gpt-4o", request_timeout=60, max_retries=3),
         # AzureChatOpenAI(model="gpt-4o", api_version="2024-04-09"),
         ChatGoogleGenerativeAI(model="gemini-1.5-pro"),
         ChatAnthropic(

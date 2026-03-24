@@ -52,7 +52,7 @@ class TestFactualCorrectnessE2EMigration:
 
             from ragas.llms import LangchainLLMWrapper
 
-            langchain_llm = ChatOpenAI(model="gpt-4o", temperature=0.01)
+            langchain_llm = ChatOpenAI(model="gpt-4o", temperature=0.01, request_timeout=60, max_retries=3)
             return LangchainLLMWrapper(langchain_llm)
         except ImportError as e:
             pytest.skip(f"LangChain LLM not available: {e}")
@@ -67,7 +67,7 @@ class TestFactualCorrectnessE2EMigration:
 
             from ragas.llms.base import llm_factory
 
-            client = openai.AsyncOpenAI()
+            client = openai.AsyncOpenAI(timeout=60.0, max_retries=3)
             return llm_factory("gpt-4o", client=client)
         except ImportError as e:
             pytest.skip(f"LLM factory not available: {e}")

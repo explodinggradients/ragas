@@ -27,7 +27,7 @@ def _default_llm_factory() -> t.Union[BaseRagasLLM, "InstructorBaseRagasLLM"]:
     """
     from openai import OpenAI
 
-    client = OpenAI(timeout=60.0)
+    client = OpenAI(timeout=60.0, max_retries=3)
     return llm_factory("gpt-4o-mini", client=client)
 
 
