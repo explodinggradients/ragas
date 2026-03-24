@@ -195,7 +195,7 @@ async def run_experiment(mode: str = "naive", model: str = "gpt-4o-mini", name: 
     dataset = create_ragas_dataset(download_and_save_dataset())
     
     # Initialize RAG system with inline client creation
-    openai_client = AsyncOpenAI(api_key=api_key)
+    openai_client = AsyncOpenAI(api_key=api_key, timeout=60.0, max_retries=3)
     rag = RAG(
         llm_client=openai_client, 
         retriever=BM25Retriever(), 

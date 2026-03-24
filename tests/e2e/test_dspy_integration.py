@@ -87,7 +87,7 @@ def test_dspy_optimizer_basic_optimization():
 
     from openai import OpenAI
 
-    client = OpenAI()
+    client = OpenAI(timeout=60.0, max_retries=3)
     llm = llm_factory("gpt-4o-mini", client=client)
     optimizer = DSPyOptimizer(
         num_candidates=2,

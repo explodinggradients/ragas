@@ -393,13 +393,13 @@ def get_default_agent(
     model_name: str = "gpt-4o", logdir: str = "logs"
 ) -> MathToolsAgent:
     """Get a default instance of the MathToolsAgent with OpenAI client"""
-    openai_client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    openai_client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"), timeout=60.0, max_retries=3)
     return MathToolsAgent(client=openai_client, model_name=model_name, logdir=logdir)
 
 
 if __name__ == "__main__":
     # Example usage
-    client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"), timeout=60.0, max_retries=3)
     agent = MathToolsAgent(client, logdir="agent_logs")
 
     problem = "((2 + 3) * 4) - (6 / 2)"

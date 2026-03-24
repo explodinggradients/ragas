@@ -12,7 +12,7 @@ from ragas.metrics import DiscreteMetric
 sys.path.insert(0, str(Path(__file__).parent))
 from rag import default_rag_client
 
-openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"), timeout=60.0, max_retries=3)
 rag_client = default_rag_client(llm_client=openai_client, logdir="evals/logs")
 llm = llm_factory("gpt-4o", client=openai_client)
 

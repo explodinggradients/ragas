@@ -3,7 +3,7 @@ from llama_index.core import download_loader
 
 from ragas.testset.synthesizers.generate import TestsetGenerator
 
-generator_llm = ChatOpenAI(model="gpt-4o")
+generator_llm = ChatOpenAI(model="gpt-4o", request_timeout=60, max_retries=3)
 embeddings = OpenAIEmbeddings()
 
 generator = TestsetGenerator.from_langchain(generator_llm, embeddings)

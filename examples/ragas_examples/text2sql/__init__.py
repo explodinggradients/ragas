@@ -17,7 +17,7 @@ Usage:
     from ragas_examples.text2sql import Text2SQLAgent, execute_sql, text2sql_experiment, load_dataset
     
     # Create and use agent
-    client = AsyncOpenAI(api_key="your-api-key")
+    client = AsyncOpenAI(api_key="your-api-key", timeout=60.0, max_retries=3)
     agent = Text2SQLAgent(client=client, model_name="gpt-5-mini")
     result = await agent.query("What is the total revenue?")
     

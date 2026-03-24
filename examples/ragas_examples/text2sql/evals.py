@@ -131,7 +131,7 @@ async def text2sql_experiment(
 ):
     """Experiment function for text-to-SQL evaluation."""
     # Create text-to-SQL agent
-    openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"], timeout=60.0, max_retries=3)
     agent = Text2SQLAgent(
         client=openai_client,
         model_name=model,

@@ -235,7 +235,7 @@ class ConfigurableSupportTriageAgent:
         extractor: Optional[BaseExtractor] = None,
         logdir: str = "logs",
     ):
-        self.client = OpenAI(api_key=api_key)
+        self.client = OpenAI(api_key=api_key, timeout=60.0, max_retries=3)
         self.traces = []
         self.logdir = logdir
 
@@ -628,7 +628,7 @@ def default_workflow_client(
             raise ValueError(
                 "OPENAI_API_KEY environment variable is required for LLM extractor"
             )
-        client = OpenAI(api_key=api_key)
+        client = OpenAI(api_key=api_key, timeout=60.0, max_retries=3)
         extractor = LLMExtractor(client)
     else:
         raise ValueError(f"Unsupported extractor type: {extractor_type}")

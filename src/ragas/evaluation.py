@@ -175,7 +175,7 @@ async def aevaluate(
             if llm is None:
                 from openai import OpenAI
 
-                client = OpenAI()
+                client = OpenAI(timeout=60.0, max_retries=3)
                 llm = llm_factory("gpt-4o-mini", client=client)
             metric.llm = t.cast(t.Optional[BaseRagasLLM], llm)
             llm_changed.append(i)

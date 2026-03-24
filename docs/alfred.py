@@ -65,7 +65,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     directory = args.directory
     docs = load_docs(directory)
-    gpt4 = ChatOpenAI(model="gpt-4")
+    gpt4 = ChatOpenAI(model="gpt-4", request_timeout=60, max_retries=3)
     fix_docs = asyncio.run(main(docs, gpt4))
     for doc in fix_docs:
         with open(doc.name, "w") as f:

@@ -19,7 +19,7 @@ def get_client() -> AsyncOpenAI:
         raise RuntimeError(
             "OPENAI_API_KEY is not set. Please export it before running prompts."
         )
-    return AsyncOpenAI(api_key=api_key)
+    return AsyncOpenAI(api_key=api_key, timeout=60.0, max_retries=3)
 
 
 SYSTEM_PROMPT = """

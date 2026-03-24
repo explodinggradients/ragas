@@ -104,10 +104,10 @@ def load_weather_dataset() -> Dataset:
 def create_evaluator_components(model_name: str):
     """Instantiate a fresh evaluator LLM and embeddings for the current loop."""
 
-    llm_client = AsyncOpenAI()
+    llm_client = AsyncOpenAI(timeout=60.0, max_retries=3)
     evaluator_llm = llm_factory(model_name, client=llm_client, max_tokens=6000)
     setattr(evaluator_llm, "is_async", True)
-    embedding_client = AsyncOpenAI()
+    embedding_client = AsyncOpenAI(timeout=60.0, max_retries=3)
     evaluator_embeddings = embedding_factory(
         "openai",
         model="text-embedding-3-small",
@@ -351,7 +351,7 @@ async def main():
 
     # Sanity check the embedding endpoint before experiments
     async def sanity_check():
-        sanity_client = AsyncOpenAI()
+        sanity_client = AsyncOpenAI(timeout=60.0, max_retries=3)
         logger.info("Running embeddings sanity check before experiments")
         try:
             await sanity_client.embeddings.create(

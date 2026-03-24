@@ -66,7 +66,7 @@ class TestSemanticSimilarityE2EMigration:
 
             from ragas.embeddings.base import embedding_factory
 
-            client = openai.AsyncOpenAI()
+            client = openai.AsyncOpenAI(timeout=60.0, max_retries=3)
 
             return embedding_factory(
                 provider="openai",
