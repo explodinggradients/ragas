@@ -333,3 +333,64 @@ def test_llm_factory_mode_with_generic_provider(monkeypatch):
 
     assert llm.model == "custom-model"
     assert captured_mode == instructor.Mode.TOOLS
+
+
+def test_anthropic_map_provider_params_strips_top_p(monkeypatch):
+    """Anthropic API rejects top_p < 0.99 for models after Claude Opus 4.6 — must be stripped."""
+    import instructor
+
+    def mock_from_anthropic(client):
+        return MockInstructor(client)
+
+    monkeypatch.setattr(instructor, "from_anthropic", mock_from_anthropic, raising=False)
+
+    llm = llm_factory(
+        "claude-sonnet-4-6", provider="anthropic", client=MockClient(is_async=False)
+    )
+
+    mapped = llm._map_provider_params()  # type: ignore
+
+    assert "top_p" not in mapped
+
+
+def test_anthropic_map_provider_params_preserves_other_args(monkeypatch):
+    """Stripping top_p must not remove temperature or max_tokens."""
+    import instructor
+
+    def mock_from_anthropic(client):
+        return MockInstructor(client)
+
+    monkeypatch.setattr(instructor, "from_anthropic", mock_from_anthropic, raising=False)
+
+    llm = llm_factory(
+        "claude-sonnet-4-6",
+        provider="anthropic",
+        client=MockClient(is_async=False),
+        temperature=0.5,
+        max_tokens=2048,
+    )
+
+    mapped = llm._map_provider_params()  # type: ignore
+
+    assert mapped["temperature"] == 0.5
+    assert mapped["max_tokens"] == 2048
+    assert "top_p" not in mapped
+
+
+def test_anthropic_map_provider_params_does_not_mutate_model_args(monkeypatch):
+    """_map_anthropic_params must return a copy — model_args must not be modified."""
+    import instructor
+
+    def mock_from_anthropic(client):
+        return MockInstructor(client)
+
+    monkeypatch.setattr(instructor, "from_anthropic", mock_from_anthropic, raising=False)
+
+    llm = llm_factory(
+        "claude-sonnet-4-6", provider="anthropic", client=MockClient(is_async=False)
+    )
+
+    original_model_args = llm.model_args.copy()  # type: ignore
+    llm._map_provider_params()  # type: ignore
+
+    assert llm.model_args == original_model_args  # type: ignore
