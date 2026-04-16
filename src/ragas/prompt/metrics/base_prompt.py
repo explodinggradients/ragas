@@ -105,7 +105,7 @@ class BasePrompt(ABC, t.Generic[InputModel, OutputModel]):
             Complete prompt string ready for LLM
         """
         # Generate JSON schema for output
-        output_schema = json.dumps(self.output_model.model_json_schema())
+        output_schema = json.dumps(self.output_model.model_json_schema(), ensure_ascii=False)
 
         # Generate examples section
         examples_str = self._generate_examples()
