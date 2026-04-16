@@ -16,8 +16,8 @@ def statement_generator_prompt(question: str, answer: str) -> str:
         V1-identical prompt string for the LLM
     """
     # Format inputs exactly like V1's model_dump_json(indent=4, exclude_none=True)
-    safe_question = json.dumps(question)
-    safe_answer = json.dumps(answer)
+    safe_question = json.dumps(question, ensure_ascii=False)
+    safe_answer = json.dumps(answer, ensure_ascii=False)
 
     return f"""Given a question and an answer, analyze the complexity of each sentence in the answer. Break down each sentence into one or more fully understandable statements. Ensure that no pronouns are used in any statement. Format the outputs in JSON.
 Please return the output in a JSON format that complies with the following schema as specified in JSON Schema:
@@ -59,8 +59,8 @@ def nli_statement_prompt(context: str, statements: t.List[str]) -> str:
         V1-identical prompt string for the LLM
     """
     # Format inputs exactly like V1's model_dump_json(indent=4, exclude_none=True)
-    safe_context = json.dumps(context)
-    safe_statements = json.dumps(statements, indent=4).replace("\n", "\n    ")
+    safe_context = json.dumps(context, ensure_ascii=False)
+    safe_statements = json.dumps(statements, indent=4, ensure_ascii=False).replace("\n", "\n    ")
 
     return f"""Your task is to judge the faithfulness of a series of statements based on a given context. For each statement you must return verdict as 1 if the statement can be directly inferred based on the context or 0 if the statement can not be directly inferred based on the context.
 Please return the output in a JSON format that complies with the following schema as specified in JSON Schema:
