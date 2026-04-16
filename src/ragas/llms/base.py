@@ -826,7 +826,7 @@ class InstructorLLM(InstructorBaseRagasLLM):
         Each provider may have different parameter requirements:
         - Google: Wraps parameters in generation_config and renames max_tokens
         - OpenAI/Azure: Maps max_tokens to max_completion_tokens for o-series models
-        - Anthropic: No special handling required (pass-through)
+        - Anthropic: Removes deprecated top_p for current-gen Claude models
         - LiteLLM: No special handling required (routes internally, pass-through)
         """
         provider_lower = self.provider.lower()
@@ -835,8 +835,10 @@ class InstructorLLM(InstructorBaseRagasLLM):
             return self._map_google_params()
         elif provider_lower in ("openai", "azure"):
             return self._map_openai_params()
+        elif provider_lower == "anthropic":
+            return self._map_anthropic_params()
         else:
-            # Anthropic, LiteLLM, and other providers - pass through unchanged
+            # LiteLLM and other providers - pass through unchanged
             return self.model_args.copy()
 
     def _map_openai_params(self) -> t.Dict[str, t.Any]:
@@ -942,6 +944,17 @@ class InstructorLLM(InstructorBaseRagasLLM):
             google_kwargs["generation_config"] = generation_config
 
         return google_kwargs
+
+    def _map_anthropic_params(self) -> t.Dict[str, t.Any]:
+        """Map parameters for Anthropic models.
+
+        Anthropic deprecated top_p for models released after Claude Opus 4.6.
+        Current models reject the default top_p=0.1 when temperature is also set,
+        so remove top_p from the outgoing request parameters.
+        """
+        mapped_args = self.model_args.copy()
+        mapped_args.pop("top_p", None)
+        return mapped_args
 
     def _check_client_async(self) -> bool:
         """Determine if the client is async-capable.

@@ -221,6 +221,28 @@ def test_llm_model_args_storage(mock_sync_client, monkeypatch):
     assert llm.model_args == model_args  # type: ignore
 
 
+def test_anthropic_provider_params_drop_top_p(mock_sync_client, monkeypatch):
+    """Test that Anthropic mapping drops deprecated top_p parameter."""
+
+    def mock_from_anthropic(client):
+        return MockInstructor(client)
+
+    monkeypatch.setattr("instructor.from_anthropic", mock_from_anthropic)
+
+    llm = llm_factory(
+        "claude-sonnet-4-6",
+        provider="anthropic",
+        client=mock_sync_client,
+        temperature=0,
+    )
+
+    mapped_args = llm._map_provider_params()  # type: ignore
+
+    assert mapped_args["temperature"] == 0
+    assert mapped_args["max_tokens"] == 1024
+    assert "top_p" not in mapped_args
+
+
 def test_llm_factory_missing_client():
     """Test that missing client raises ValueError."""
     with pytest.raises(ValueError, match="requires a client instance"):
