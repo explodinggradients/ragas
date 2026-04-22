@@ -489,6 +489,7 @@ def _patch_client_for_provider(
         "xai": Provider.XAI,
         "bedrock": Provider.BEDROCK,
         "deepseek": Provider.DEEPSEEK,
+        "minimax": Provider.OPENAI,
     }
 
     provider_enum = provider_map.get(provider, Provider.OPENAI)
@@ -599,6 +600,9 @@ def _get_instructor_client(
         return instructor.from_litellm(client, mode=mode)
     elif provider_lower == "perplexity":
         return instructor.from_perplexity(client)
+    elif provider_lower == "minimax":
+        # MiniMax exposes an OpenAI-compatible chat completions API
+        return instructor.from_openai(client, mode=mode)
     else:
         return _patch_client_for_provider(client, provider_lower, mode=mode)
 
@@ -826,6 +830,7 @@ class InstructorLLM(InstructorBaseRagasLLM):
         Each provider may have different parameter requirements:
         - Google: Wraps parameters in generation_config and renames max_tokens
         - OpenAI/Azure: Maps max_tokens to max_completion_tokens for o-series models
+        - MiniMax: Temperature must be in (0.0, 1.0]; clamps 0.0 to a small positive value
         - Anthropic: No special handling required (pass-through)
         - LiteLLM: No special handling required (routes internally, pass-through)
         """
@@ -835,6 +840,8 @@ class InstructorLLM(InstructorBaseRagasLLM):
             return self._map_google_params()
         elif provider_lower in ("openai", "azure"):
             return self._map_openai_params()
+        elif provider_lower == "minimax":
+            return self._map_minimax_params()
         else:
             # Anthropic, LiteLLM, and other providers - pass through unchanged
             return self.model_args.copy()
@@ -942,6 +949,24 @@ class InstructorLLM(InstructorBaseRagasLLM):
             google_kwargs["generation_config"] = generation_config
 
         return google_kwargs
+
+    def _map_minimax_params(self) -> t.Dict[str, t.Any]:
+        """Map parameters for MiniMax models.
+
+        MiniMax has one key constraint:
+        - temperature must be in (0.0, 1.0]; a value of 0.0 is invalid.
+          If temperature is 0.0, clamp it to the smallest positive value (0.01)
+          to avoid an API error.
+
+        All other parameters are passed through unchanged.
+        """
+        mapped_args = self.model_args.copy()
+
+        temperature = mapped_args.get("temperature")
+        if temperature is not None and temperature <= 0.0:
+            mapped_args["temperature"] = 0.01
+
+        return mapped_args
 
     def _check_client_async(self) -> bool:
         """Determine if the client is async-capable.

@@ -333,3 +333,90 @@ def test_llm_factory_mode_with_generic_provider(monkeypatch):
 
     assert llm.model == "custom-model"
     assert captured_mode == instructor.Mode.TOOLS
+
+
+def test_minimax_provider_uses_openai_instructor(monkeypatch):
+    """Test that MiniMax provider uses the OpenAI instructor path (OpenAI-compatible API)."""
+    captured_calls = []
+
+    def mock_from_openai(client, mode=None):
+        captured_calls.append(("from_openai", mode))
+        return MockInstructor(client)
+
+    monkeypatch.setattr("instructor.from_openai", mock_from_openai)
+
+    mock_client = MockClient(is_async=False)
+    llm = llm_factory("MiniMax-M2.7", provider="minimax", client=mock_client)
+
+    assert llm.model == "MiniMax-M2.7"
+    assert llm.provider == "minimax"
+    assert len(captured_calls) == 1
+    assert captured_calls[0][0] == "from_openai"
+
+
+def test_minimax_provider_async_client(monkeypatch):
+    """Test that MiniMax provider correctly detects async clients."""
+
+    def mock_from_openai(client, mode=None):
+        return MockInstructor(client)
+
+    monkeypatch.setattr("instructor.from_openai", mock_from_openai)
+
+    mock_client = MockClient(is_async=True)
+    llm = llm_factory("MiniMax-M2.7", provider="minimax", client=mock_client)
+
+    assert llm.model == "MiniMax-M2.7"
+    assert llm.is_async
+
+
+def test_minimax_temperature_clamping():
+    """Test that MiniMax clamps temperature=0.0 to 0.01 (MiniMax range is (0.0, 1.0])."""
+    from ragas.llms.base import InstructorLLM, InstructorModelArgs
+    from unittest.mock import Mock
+
+    mock_client = Mock()
+    llm = InstructorLLM(
+        client=mock_client,
+        model="MiniMax-M2.7",
+        provider="minimax",
+        model_args=InstructorModelArgs(temperature=0.0),
+    )
+
+    mapped = llm._map_minimax_params()
+    assert mapped["temperature"] == 0.01
+
+
+def test_minimax_temperature_valid_range():
+    """Test that valid MiniMax temperatures (0.0 < t <= 1.0) are passed through unchanged."""
+    from ragas.llms.base import InstructorLLM, InstructorModelArgs
+    from unittest.mock import Mock
+
+    mock_client = Mock()
+    for temp in [0.01, 0.5, 1.0]:
+        llm = InstructorLLM(
+            client=mock_client,
+            model="MiniMax-M2.7",
+            provider="minimax",
+            model_args=InstructorModelArgs(temperature=temp),
+        )
+        mapped = llm._map_minimax_params()
+        assert mapped["temperature"] == temp
+
+
+def test_minimax_map_provider_params_routes_to_minimax():
+    """Test that _map_provider_params routes minimax to _map_minimax_params."""
+    from ragas.llms.base import InstructorLLM, InstructorModelArgs
+    from unittest.mock import Mock, patch
+
+    mock_client = Mock()
+    llm = InstructorLLM(
+        client=mock_client,
+        model="MiniMax-M2.7",
+        provider="minimax",
+        model_args=InstructorModelArgs(temperature=0.5),
+    )
+
+    with patch.object(llm, "_map_minimax_params", wraps=llm._map_minimax_params) as mock_map:
+        llm._map_provider_params()
+        mock_map.assert_called_once()
+
