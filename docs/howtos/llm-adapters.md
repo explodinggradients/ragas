@@ -183,12 +183,44 @@ llm = llm_factory("command-r-plus", provider="cohere", client=client)
 # Uses Instructor adapter automatically
 ```
 
+### MiniMax
+
+MiniMax exposes an OpenAI-compatible API. Use the `openai` SDK pointed at the MiniMax endpoint,
+or pass `provider="minimax"` so Ragas applies MiniMax-specific parameter handling
+(temperature must be in `(0.0, 1.0]`).
+
+```python
+from openai import OpenAI
+from ragas.llms import llm_factory
+
+client = OpenAI(
+    api_key="your-minimax-api-key",
+    base_url="https://api.minimax.io/v1",  # use https://api.minimaxi.com/v1 in China
+)
+llm = llm_factory("MiniMax-M2.7", provider="minimax", client=client)
+# Uses Instructor adapter automatically via the OpenAI-compatible endpoint
+```
+
+For async usage:
+
+```python
+from openai import AsyncOpenAI
+from ragas.llms import llm_factory
+
+client = AsyncOpenAI(
+    api_key="your-minimax-api-key",
+    base_url="https://api.minimax.io/v1",
+)
+llm = llm_factory("MiniMax-M2.7", provider="minimax", client=client)
+result = await llm.agenerate(prompt, ResponseModel)
+```
+
 ## Adapter Selection Guide
 
 Choose your adapter based on your needs:
 
 ### Use Instructor Adapter if:
-- Using OpenAI, Anthropic, Azure, Groq, Mistral, or Cohere
+- Using OpenAI, Anthropic, Azure, Groq, Mistral, Cohere, or MiniMax
 - Provider is natively supported by Instructor
 - You want the most stable, well-tested option
 - Provider doesn't require special handling
