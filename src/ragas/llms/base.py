@@ -826,7 +826,7 @@ class InstructorLLM(InstructorBaseRagasLLM):
         Each provider may have different parameter requirements:
         - Google: Wraps parameters in generation_config and renames max_tokens
         - OpenAI/Azure: Maps max_tokens to max_completion_tokens for o-series models
-        - Anthropic: No special handling required (pass-through)
+        - Anthropic: Drops the deprecated top_p default (rejected by current models)
         - LiteLLM: No special handling required (routes internally, pass-through)
         """
         provider_lower = self.provider.lower()
@@ -835,9 +835,34 @@ class InstructorLLM(InstructorBaseRagasLLM):
             return self._map_google_params()
         elif provider_lower in ("openai", "azure"):
             return self._map_openai_params()
+        elif provider_lower == "anthropic":
+            return self._map_anthropic_params()
         else:
-            # Anthropic, LiteLLM, and other providers - pass through unchanged
+            # LiteLLM and other providers - pass through unchanged
             return self.model_args.copy()
+
+    def _map_anthropic_params(self) -> t.Dict[str, t.Any]:
+        """Map parameters for Anthropic Claude models.
+
+        Anthropic deprecated ``top_p`` for models released after Claude Opus 4.6.
+        The API rejects values < 0.99 with a 400 error, so the default
+        ``InstructorModelArgs.top_p = 0.1`` would break every Ragas evaluation
+        on current Anthropic models out of the box.
+
+        We drop ``top_p`` only when it equals the library default; users who
+        explicitly opt in (e.g. ``llm_factory(..., top_p=0.99)``) keep the
+        value they set.
+
+        See https://github.com/explodinggradients/ragas/issues/2674
+        and the Anthropic Messages API reference for the deprecation notice.
+        """
+        mapped_args = self.model_args.copy()
+        if (
+            mapped_args.get("top_p")
+            == InstructorModelArgs.model_fields["top_p"].default
+        ):
+            mapped_args.pop("top_p", None)
+        return mapped_args
 
     def _map_openai_params(self) -> t.Dict[str, t.Any]:
         """Map parameters for OpenAI/Azure reasoning models with special constraints.

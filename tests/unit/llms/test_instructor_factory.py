@@ -333,3 +333,52 @@ def test_llm_factory_mode_with_generic_provider(monkeypatch):
 
     assert llm.model == "custom-model"
     assert captured_mode == instructor.Mode.TOOLS
+
+
+def test_anthropic_drops_default_top_p(mock_sync_client, monkeypatch):
+    """Anthropic deprecated ``top_p`` for models past Claude Opus 4.6.
+
+    The library default of 0.1 would always be rejected with HTTP 400,
+    so ``_map_provider_params`` must strip the default before dispatch.
+
+    See https://github.com/explodinggradients/ragas/issues/2674.
+    """
+    import instructor
+
+    monkeypatch.setattr(
+        instructor,
+        "from_anthropic",
+        lambda client: MockInstructor(client),
+        raising=False,
+    )
+
+    llm = llm_factory(
+        "claude-sonnet-4-6", provider="anthropic", client=mock_sync_client
+    )
+
+    mapped = llm._map_provider_params()
+    assert "top_p" not in mapped
+    assert mapped.get("temperature") == 0.01
+    assert mapped.get("max_tokens") == 1024
+
+
+def test_anthropic_keeps_explicit_top_p(mock_sync_client, monkeypatch):
+    """Users who explicitly opt into ``top_p`` (e.g. 0.99) keep their value."""
+    import instructor
+
+    monkeypatch.setattr(
+        instructor,
+        "from_anthropic",
+        lambda client: MockInstructor(client),
+        raising=False,
+    )
+
+    llm = llm_factory(
+        "claude-sonnet-4-6",
+        provider="anthropic",
+        client=mock_sync_client,
+        top_p=0.99,
+    )
+
+    mapped = llm._map_provider_params()
+    assert mapped.get("top_p") == 0.99
