@@ -805,6 +805,8 @@ class InstructorLLM(InstructorBaseRagasLLM):
         if model_args is None:
             model_args = InstructorModelArgs()
 
+        self._explicit_model_args = set(model_args.model_fields_set) | set(kwargs)
+
         # Convert to dict and merge with any additional kwargs
         self.model_args = {**model_args.model_dump(), **kwargs}
 
@@ -835,9 +837,18 @@ class InstructorLLM(InstructorBaseRagasLLM):
             return self._map_google_params()
         elif provider_lower in ("openai", "azure"):
             return self._map_openai_params()
+        elif provider_lower == "anthropic":
+            return self._map_anthropic_params()
         else:
-            # Anthropic, LiteLLM, and other providers - pass through unchanged
+            # LiteLLM and other providers - pass through unchanged
             return self.model_args.copy()
+
+    def _map_anthropic_params(self) -> t.Dict[str, t.Any]:
+        """Map parameters for Anthropic models."""
+        mapped_args = self.model_args.copy()
+        if "top_p" not in self._explicit_model_args:
+            mapped_args.pop("top_p", None)
+        return mapped_args
 
     def _map_openai_params(self) -> t.Dict[str, t.Any]:
         """Map parameters for OpenAI/Azure reasoning models with special constraints.
