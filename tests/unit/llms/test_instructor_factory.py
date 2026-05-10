@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 from pydantic import BaseModel
 
-from ragas.llms.base import llm_factory
+from ragas.llms.base import InstructorLLM, llm_factory
 
 
 class LLMResponseModel(BaseModel):
@@ -204,6 +204,33 @@ def test_provider_support(monkeypatch):
         mock_client = MockClient(is_async=False)
         llm = llm_factory("test-model", provider=provider, client=mock_client)
         assert llm.model == "test-model"  # type: ignore
+
+
+def test_anthropic_does_not_pass_default_top_p(mock_sync_client):
+    """Anthropic should not receive default top_p when the user did not set it."""
+    llm = InstructorLLM(
+        client=mock_sync_client,
+        model="claude-sonnet-4-5",
+        provider="anthropic",
+    )
+
+    provider_params = llm._map_provider_params()
+
+    assert "top_p" not in provider_params
+
+
+def test_anthropic_preserves_explicit_top_p(mock_sync_client):
+    """Anthropic should receive top_p when the user explicitly sets it."""
+    llm = InstructorLLM(
+        client=mock_sync_client,
+        model="claude-sonnet-4-5",
+        provider="anthropic",
+        top_p=0.9,
+    )
+
+    provider_params = llm._map_provider_params()
+
+    assert provider_params["top_p"] == 0.9
 
 
 def test_llm_model_args_storage(mock_sync_client, monkeypatch):
