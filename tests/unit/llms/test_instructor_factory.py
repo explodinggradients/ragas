@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 from pydantic import BaseModel
 
-from ragas.llms.base import llm_factory
+from ragas.llms.base import InstructorLLM, llm_factory
 
 
 class LLMResponseModel(BaseModel):
@@ -111,6 +111,43 @@ def test_llm_factory_with_model_args(mock_sync_client, monkeypatch):
 
     assert llm.model == "gpt-4"  # type: ignore
     assert llm.model_args.get("temperature") == 0.7  # type: ignore
+
+
+@pytest.mark.parametrize(
+    ("model_name", "expects_reasoning_mapping"),
+    [
+        ("gpt-4o", False),
+        ("gpt-5", True),
+        ("gpt-5-mini", True),
+        ("gpt-5.1", True),
+        ("gpt-5.1-mini", True),
+        ("gpt-20", True),
+    ],
+)
+def test_openai_reasoning_model_detection_for_gpt_series(
+    mock_sync_client, model_name, expects_reasoning_mapping
+):
+    llm = InstructorLLM(
+        client=mock_sync_client,
+        model=model_name,
+        provider="openai",
+        temperature=0.7,
+        max_tokens=1000,
+        top_p=0.9,
+    )
+
+    mapped_args = llm._map_openai_params()
+
+    if expects_reasoning_mapping:
+        assert mapped_args["max_completion_tokens"] == 1000
+        assert "max_tokens" not in mapped_args
+        assert mapped_args["temperature"] == 1.0
+        assert "top_p" not in mapped_args
+    else:
+        assert mapped_args["max_tokens"] == 1000
+        assert "max_completion_tokens" not in mapped_args
+        assert mapped_args["temperature"] == 0.7
+        assert mapped_args["top_p"] == 0.9
 
 
 def test_unsupported_provider(monkeypatch):
