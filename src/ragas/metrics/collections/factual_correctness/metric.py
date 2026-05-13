@@ -158,7 +158,8 @@ class FactualCorrectness(BaseMetric):
         if self.mode == "precision":
             score = tp / (tp + fp + 1e-8)
         elif self.mode == "recall":
-            score = tp / (tp + fn + 1e-8)
+            tp_recall = int(np.sum(response_reference))
+            score = tp_recall / (tp_recall + fn + 1e-8)
         else:  # f1
             score = fbeta_score(tp, fp, fn, self.beta)
 
