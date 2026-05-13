@@ -12,7 +12,7 @@ from pydantic import ValidationError
 from tqdm import tqdm
 
 from ragas._analytics import EvaluationEvent, _analytics_batcher
-from ragas.async_utils import apply_nest_asyncio, run
+from ragas.async_utils import FailurePolicy, apply_nest_asyncio, run, run_indexed_batch
 from ragas.callbacks import ChainType, new_group
 from ragas.dataset_schema import MetricAnnotation, MultiTurnSample, SingleTurnSample
 from ragas.llms import BaseRagasLLM
@@ -773,6 +773,9 @@ class SimpleBaseMetric(ABC):
     async def abatch_score(
         self,
         inputs: t.List[t.Dict[str, t.Any]],
+        *,
+        max_concurrency: t.Optional[int] = None,
+        failure_policy: FailurePolicy = "raise",
     ) -> t.List["MetricResult"]:
         """
         Asynchronously calculate scores for a batch of inputs in parallel.
@@ -787,13 +790,46 @@ class SimpleBaseMetric(ABC):
         List[MetricResult]
             List of evaluation results, one for each input.
         """
-        async_tasks = []
-        for input_dict in inputs:
-            # Process input asynchronously
-            async_tasks.append(self.ascore(**input_dict))
+        from ragas.metrics.result import MetricResult
 
-        # Run all tasks concurrently and return results
-        return await asyncio.gather(*async_tasks)
+        async def score_input(
+            index: int, input_dict: t.Dict[str, t.Any]
+        ) -> "MetricResult":
+            return await self.ascore(**input_dict)
+
+        batch_result = await run_indexed_batch(
+            inputs,
+            score_input,
+            max_concurrency=max_concurrency,
+            failure_policy=failure_policy,
+            error_context=f"metric {self.name}",
+        )
+
+        results_by_index = dict(batch_result.successes)
+        errors_by_index = {error.index: error for error in batch_result.errors}
+
+        if failure_policy == "skip":
+            return [
+                result
+                for _, result in sorted(
+                    batch_result.successes, key=lambda item: item[0]
+                )
+            ]
+
+        ordered_results: t.List[MetricResult] = []
+        for index in range(len(inputs)):
+            if index in results_by_index:
+                ordered_results.append(results_by_index[index])
+            elif index in errors_by_index:
+                error = errors_by_index[index]
+                ordered_results.append(
+                    MetricResult(
+                        value=None,
+                        reason=f"{error.error_type}: {error.message}",
+                    )
+                )
+
+        return ordered_results
 
 
 def create_auto_response_model(name: str, **fields) -> t.Type["BaseModel"]:
@@ -925,12 +961,24 @@ class SimpleLLMMetric(SimpleBaseMetric):
         self, inputs: t.List[t.Dict[str, t.Any]], **kwargs
     ) -> t.List["MetricResult"]:
         # Override base method to maintain compatibility
-        llm = kwargs.get("llm") or inputs[0].get("llm") if inputs else None
+        llm = kwargs.pop("llm", None)
+        max_concurrency = kwargs.pop("max_concurrency", None)
+        failure_policy = kwargs.pop("failure_policy", "raise")
+        if llm is None and inputs:
+            llm = inputs[0].get("llm")
         if llm:
             # Add llm to each input
             inputs_with_llm = [{**input_dict, "llm": llm} for input_dict in inputs]
-            return await super().abatch_score(inputs_with_llm)
-        return await super().abatch_score(inputs)
+            return await super().abatch_score(
+                inputs_with_llm,
+                max_concurrency=max_concurrency,
+                failure_policy=failure_policy,
+            )
+        return await super().abatch_score(
+            inputs,
+            max_concurrency=max_concurrency,
+            failure_policy=failure_policy,
+        )
 
     def save(self, path: t.Optional[str] = None) -> None:
         """
