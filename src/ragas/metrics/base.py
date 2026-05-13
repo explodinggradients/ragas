@@ -777,18 +777,27 @@ class SimpleBaseMetric(ABC):
         max_concurrency: t.Optional[int] = None,
         failure_policy: FailurePolicy = "raise",
     ) -> t.List["MetricResult"]:
-        """
-        Asynchronously calculate scores for a batch of inputs in parallel.
+        """Asynchronously calculate scores for a batch of inputs in parallel.
 
         Parameters
         ----------
         inputs : List[Dict[str, Any]]
             List of input dictionaries, each containing parameters for the metric.
+        max_concurrency : int, optional
+            Maximum number of active ``ascore()`` calls. ``None`` preserves the
+            existing unbounded behavior for the provided input size.
+        failure_policy : {"skip", "record", "raise"}, default "raise"
+            How failed inputs are handled. ``"raise"`` preserves the historical
+            behavior by raising ``BatchExecutionError`` when an input fails.
+            ``"record"`` returns one result per input and inserts
+            ``MetricResult(value=None, reason=...)`` for failed inputs.
+            ``"skip"`` returns only successful results.
 
         Returns
         -------
         List[MetricResult]
-            List of evaluation results, one for each input.
+            Evaluation results. Successful results are ordered by input index
+            for all failure policies.
         """
         from ragas.metrics.result import MetricResult
 
@@ -960,7 +969,24 @@ class SimpleLLMMetric(SimpleBaseMetric):
     async def abatch_score(
         self, inputs: t.List[t.Dict[str, t.Any]], **kwargs
     ) -> t.List["MetricResult"]:
-        # Override base method to maintain compatibility
+        """Asynchronously calculate LLM metric scores for a batch of inputs.
+
+        Parameters
+        ----------
+        inputs : List[Dict[str, Any]]
+            List of input dictionaries, each containing parameters for the
+            metric. An ``llm`` can be supplied in each input or as a keyword
+            argument.
+        **kwargs
+            Supports ``llm`` for compatibility with existing LLM metric usage,
+            plus ``max_concurrency`` and ``failure_policy`` from
+            ``SimpleBaseMetric.abatch_score``.
+
+        Returns
+        -------
+        List[MetricResult]
+            Evaluation results from ``SimpleBaseMetric.abatch_score``.
+        """
         llm = kwargs.pop("llm", None)
         max_concurrency = kwargs.pop("max_concurrency", None)
         failure_policy = kwargs.pop("failure_policy", "raise")

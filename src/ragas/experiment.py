@@ -32,6 +32,26 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ExperimentExecutionConfig:
+    """Execution controls for running an experiment over a dataset.
+
+    Parameters
+    ----------
+    max_concurrency : int, optional
+        Maximum number of experiment rows to execute at the same time.
+        ``None`` preserves the default unbounded behavior for the provided
+        dataset size.
+    failure_policy : {"skip", "record", "raise"}, default "skip"
+        How row failures are handled. ``"skip"`` keeps the historical partial
+        success behavior by omitting failed rows from saved results and storing
+        structured errors on ``experiment.run_errors``. ``"record"`` keeps the
+        same successful experiment rows while recording failures in
+        ``experiment.run_errors`` and ``experiment.run_summary``. ``"raise"``
+        stops execution and raises ``ragas.async_utils.BatchExecutionError``.
+    preserve_order : bool, default False
+        Whether successful rows are appended in original dataset order.
+        ``False`` preserves the historical completion-order append behavior.
+    """
+
     max_concurrency: t.Optional[int] = None
     failure_policy: FailurePolicy = "skip"
     preserve_order: bool = False
@@ -42,6 +62,23 @@ class ExperimentExecutionConfig:
 
 @dataclass
 class ExperimentRunSummary:
+    """Non-persisted summary of an experiment run.
+
+    Attributes
+    ----------
+    total_rows : int
+        Number of dataset rows submitted to the experiment runner.
+    succeeded : int
+        Number of successful, non-``None`` results appended to the experiment.
+    failed : int
+        Number of rows that raised an exception during execution.
+    skipped : int
+        Number of failed rows omitted because ``failure_policy="skip"`` was
+        used.
+    failure_policy : {"skip", "record", "raise"}
+        Failure policy used for the run.
+    """
+
     total_rows: int
     succeeded: int
     failed: int
@@ -50,6 +87,18 @@ class ExperimentRunSummary:
 
 
 class Experiment(DataTable):
+    """Experiment results stored in a ``DataTable``.
+
+    Attributes
+    ----------
+    run_errors : List[RowExecutionError]
+        Structured errors from the most recent in-memory run. These errors are
+        not persisted to experiment backends.
+    run_summary : ExperimentRunSummary, optional
+        Summary of the most recent in-memory run. This metadata is not
+        persisted to experiment backends.
+    """
+
     DATATABLE_TYPE = "Experiment"
 
     def __init__(self, *args, **kwargs):
@@ -188,7 +237,38 @@ class ExperimentWrapper:
         execution_config: t.Optional[ExperimentExecutionConfig] = None,
         **kwargs,
     ) -> "Experiment":
-        """Run the experiment against a dataset."""
+        """Run the experiment against a dataset.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            Dataset whose rows are passed to the decorated experiment function.
+        name : str, optional
+            Name for the saved experiment. If omitted, a generated name is used.
+        backend : BaseBackend or str, optional
+            Backend used to save the experiment results. Defaults to the
+            decorator backend or the dataset backend.
+        *args
+            Positional arguments forwarded to the decorated experiment function
+            after the dataset row.
+        execution_config : ExperimentExecutionConfig, optional
+            Optional execution controls for concurrency, failure handling, and
+            result ordering.
+        **kwargs
+            Keyword arguments forwarded to the decorated experiment function.
+
+        Returns
+        -------
+        Experiment
+            Saved experiment results. ``run_errors`` and ``run_summary`` are
+            attached to the returned object for the current run only.
+
+        Notes
+        -----
+        The default execution config preserves historical behavior: rows run
+        with unbounded concurrency, failed rows are skipped, and successful
+        rows are appended in completion order.
+        """
         execution_config = execution_config or ExperimentExecutionConfig()
 
         # Generate name if not provided
