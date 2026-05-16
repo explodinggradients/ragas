@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from curses import version
 import inspect
 import logging
 import threading
@@ -22,6 +23,7 @@ from ragas._analytics import LLMUsageEvent, track
 from ragas.cache import CacheInterface, cacher
 from ragas.exceptions import LLMDidNotFinishException
 from ragas.run_config import RunConfig, add_async_retry
+import re as _re 
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -874,25 +876,18 @@ class InstructorLLM(InstructorBaseRagasLLM):
             # O-series reasoning models (o1, o1-mini, o1-2024-12-17, o2, o3, o4, o5, o6, o7, o8, o9)
             # Pattern: "o" followed by single digit 1-9, then optional "-" or end of string
             # TODO: Update to support o10+ when OpenAI releases models beyond o9
-            if (
-                len(model_str) >= 2
-                and model_str[0] == "o"
-                and model_str[1] in "123456789"
-            ):
-                # Allow single digit o-series: o1, o2, ..., o9
-                if len(model_str) == 2 or model_str[2] in ("-", "_"):
-                    return True
+            if _re.match(r'^o[1-9]\d*(-|_|$)', model_str):
+                return True
+
 
             # GPT-5 and newer generation models (gpt-5, gpt-5-*, gpt-6, gpt-7, ..., gpt-19)
             # Pattern: "gpt-" followed by single or double digit >= 5, max 19
             # TODO: Update to support gpt-20+ when OpenAI releases models beyond gpt-19
             if model_str.startswith("gpt-"):
-                version_str = (
-                    model_str[4:].split("-")[0].split("_")[0]
-                )  # Get version number
+                version_str = model_str[4:].split("-")[0].split("_")[0]
                 try:
-                    version = int(version_str)
-                    if 5 <= version <= 19:
+                    version = float(version_str)
+                    if version >= 5:
                         return True
                 except ValueError:
                     pass
