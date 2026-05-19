@@ -195,6 +195,8 @@ Output:
 
 ## Non LLM Based Context Precision
 
+> **Note:** `NonLLMContextPrecisionWithReference` is **not deprecated**. Only the legacy LLM-based classes (`LLMContextPrecisionWithReference` and `LLMContextPrecisionWithoutReference`) under the deprecation notice above are being phased out. If you are using non-LLM based context precision, no migration is needed.
+
 This metric uses non-LLM-based methods (such as [Levenshtein distance measure](https://en.wikipedia.org/wiki/Levenshtein_distance)) to determine whether a retrieved context is relevant.
 
 ### Context Precision with reference contexts
