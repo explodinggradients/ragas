@@ -26,6 +26,7 @@ dependencies = [
     "langchain-core",
     "langchain-community",
     "langchain_openai",
+    "langchain-google-genai",
 ]
 dynamic = ["version", "readme"]
 
