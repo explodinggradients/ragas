@@ -98,22 +98,21 @@ jobs:
 
       - name: Add label and comment if docs needed
         if: steps.parse.outputs.needs_update == 'true'
-        run: |
-          # Add the needs-doc-update label
-          gh pr edit ${{ github.event.pull_request.number }} --add-label "needs-doc-update"
-
-          # Comment with instructions
-          gh pr comment ${{ github.event.pull_request.number }} --body "📝 **Documentation update may be needed**
-
-          ${{ steps.parse.outputs.reason }}
-
-          **To apply documentation updates:** Add the \`update-docs\` label to this PR."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REASON: ${{ steps.parse.outputs.reason }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr edit "$PR_NUMBER" --add-label "needs-doc-update"
+          printf '📝 **Documentation update may be needed**\n\n%s\n\n**To apply documentation updates:** Add the `update-docs` label to this PR.' "$REASON" \
+            | gh pr comment "$PR_NUMBER" --body-file -
 
       - name: Comment if no docs needed
         if: steps.parse.outputs.needs_update == 'false'
-        run: |
-          gh pr comment ${{ github.event.pull_request.number }} --body "✅ No documentation update needed — ${{ steps.parse.outputs.reason }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REASON: ${{ steps.parse.outputs.reason }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          printf '✅ No documentation update needed — %s' "$REASON" \
+            | gh pr comment "$PR_NUMBER" --body-file -
