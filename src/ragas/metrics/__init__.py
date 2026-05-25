@@ -181,17 +181,23 @@ _DEPRECATED_METRICS = {
     "AgentGoalAccuracyWithReference": _AgentGoalAccuracyWithReference,
 }
 
+_RENAMED_METRICS = {
+    "LLMContextPrecisionWithoutReference": "ContextPrecisionWithoutReference",
+}
+
+
 _DEPRECATION_MESSAGE = (
     "Importing {name} from 'ragas.metrics' is deprecated and will be removed in v1.0. "
     "Please use 'ragas.metrics.collections' instead. "
-    "Example: from ragas.metrics.collections import {name}"
+    "Example: from ragas.metrics.collections import {new_name}"
 )
 
 
 def __getattr__(name: str):
     if name in _DEPRECATED_METRICS:
+        new_name = _RENAMED_METRICS.get(name, name)
         warnings.warn(
-            _DEPRECATION_MESSAGE.format(name=name),
+            _DEPRECATION_MESSAGE.format(name=name, new_name=new_name),
             DeprecationWarning,
             stacklevel=2,
         )
