@@ -9,8 +9,17 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 import instructor
-from langchain_community.chat_models.vertexai import ChatVertexAI
-from langchain_community.llms import VertexAI
+
+try:
+    from langchain_community.chat_models.vertexai import ChatVertexAI
+except ImportError:
+    ChatVertexAI = None
+
+try:
+    from langchain_community.llms import VertexAI
+except ImportError:
+    VertexAI = None
+
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import ChatGeneration, Generation, LLMResult
 from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI
@@ -40,9 +49,11 @@ MULTIPLE_COMPLETION_SUPPORTED = [
     ChatOpenAI,
     AzureOpenAI,
     AzureChatOpenAI,
-    ChatVertexAI,
-    VertexAI,
 ]
+if ChatVertexAI is not None:
+    MULTIPLE_COMPLETION_SUPPORTED.append(ChatVertexAI)
+if VertexAI is not None:
+    MULTIPLE_COMPLETION_SUPPORTED.append(VertexAI)
 
 
 def is_multiple_completion_supported(llm: BaseLanguageModel) -> bool:
