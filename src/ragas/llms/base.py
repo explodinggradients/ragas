@@ -9,7 +9,14 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 import instructor
-from langchain_community.chat_models.vertexai import ChatVertexAI
+try:
+    from langchain_community.chat_models.vertexai import ChatVertexAI
+except ModuleNotFoundError:
+    try:
+        from langchain_google_vertexai import ChatVertexAI  # type: ignore[no-redef,unused-ignore]
+    except ModuleNotFoundError:
+        ChatVertexAI = None  # type: ignore[assignment,misc]
+        logger.warning("ChatVertexAI not available — install langchain-google-vertexai")
 from langchain_community.llms import VertexAI
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import ChatGeneration, Generation, LLMResult
@@ -40,7 +47,7 @@ MULTIPLE_COMPLETION_SUPPORTED = [
     ChatOpenAI,
     AzureOpenAI,
     AzureChatOpenAI,
-    ChatVertexAI,
+    *(t.cast(list, [ChatVertexAI]) if ChatVertexAI is not None else []),
     VertexAI,
 ]
 

@@ -37,6 +37,7 @@ Issues = "https://github.com/vibrantlabsai/ragas/issues"
 
 [project.optional-dependencies]
 # Core optional features
+juryeval = ["juryeval>=0.4.0"]
 all = [
     "sentence-transformers",
     "transformers",
@@ -48,6 +49,7 @@ all = [
     "sacrebleu",
     "llama_index",
     "r2r",
+    "juryeval",
     "GitPython"
 ]
 

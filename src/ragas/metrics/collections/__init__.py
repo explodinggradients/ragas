@@ -1,6 +1,7 @@
 """Collections of metrics using modern component architecture."""
 
 from ragas.metrics.collections._bleu_score import BleuScore
+from ragas.metrics.collections._juryeval_score import JuryEvalScore
 from ragas.metrics.collections._rouge_score import RougeScore
 from ragas.metrics.collections._semantic_similarity import SemanticSimilarity
 from ragas.metrics.collections._string import (
@@ -50,6 +51,7 @@ from ragas.metrics.collections.topic_adherence import TopicAdherence
 
 __all__ = [
     "BaseMetric",  # Base class
+    "JuryEvalScore",
     # RAG metrics
     "AnswerAccuracy",
     "AnswerCorrectness",
