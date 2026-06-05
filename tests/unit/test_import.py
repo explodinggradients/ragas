@@ -1,9 +1,41 @@
 from __future__ import annotations
 
 import builtins
+import subprocess
+import sys
 from unittest.mock import MagicMock
 
 import pytest
+
+
+def test_import_without_legacy_vertexai_classes():
+    script = """
+import builtins
+
+real_import = builtins.__import__
+
+def blocked_import(name, globals=None, locals=None, fromlist=(), level=0):
+    if name == "langchain_community.chat_models.vertexai":
+        raise ImportError("legacy ChatVertexAI is unavailable")
+    if name == "langchain_community.llms" and "VertexAI" in fromlist:
+        raise ImportError("legacy VertexAI is unavailable")
+    return real_import(name, globals, locals, fromlist, level)
+
+builtins.__import__ = blocked_import
+
+from ragas.llms import base
+
+assert base.ChatVertexAI is None
+assert base.VertexAI is None
+assert None not in base.MULTIPLE_COMPLETION_SUPPORTED
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def test_missing_haystack_llmwrapper(monkeypatch):
