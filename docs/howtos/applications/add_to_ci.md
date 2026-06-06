@@ -5,13 +5,12 @@ search:
 
 # Adding to your CI pipeline with Pytest
 
-You can add Ragas evaluations as part of your Continious Integration pipeline
+You can add Ragas evaluations as part of your Continuous Integration pipeline
 to keep track of the qualitative performance of your RAG pipeline. Consider these as
 part of your end-to-end test suite which you run before major changes and releases.
 
-The usage is straight forward, but the main thing is to set the `in_ci` argument for the
-`evaluate()` function to `True`. This runs Ragas metrics in a special mode that ensures
-it produces more reproducible metrics but will be costlier.
+The most direct way to fail a CI job on quality regressions is to assert thresholds
+against the aggregate metric scores in an `EvaluationResult`.
 
 You can easily write a Pytest test as follows
 
@@ -22,7 +21,6 @@ You can easily write a Pytest test as follows
     [Building HF `Dataset` with your own Data](./data_preparation.md) docs.
 
 ```python
-import pytest
 from datasets import load_dataset
 
 from ragas import evaluate
@@ -33,12 +31,6 @@ from ragas.metrics import (
     context_precision,
 )
 
-def assert_in_range(score: float, value: float, plus_or_minus: float):
-    """
-    Check if computed score is within the range of value +/- max_range
-    """
-    assert value - plus_or_minus <= score <= value + plus_or_minus
-
 
 def test_amnesty_e2e():
     # loading the V2 dataset
@@ -48,13 +40,33 @@ def test_amnesty_e2e():
     result = evaluate(
         amnesty_qa,
         metrics=[answer_relevancy, faithfulness, context_recall, context_precision],
-        in_ci=True,
     )
-    assert result["answer_relevancy"] >= 0.9
-    assert result["context_recall"] >= 0.95
-    assert result["context_precision"] >= 0.95
-    assert_in_range(result["faithfulness"], value=0.4, plus_or_minus=0.1)
+    result.assert_thresholds(
+        min_scores={
+            "answer_relevancy": 0.9,
+            "context_recall": 0.95,
+            "context_precision": 0.95,
+        },
+        ranges={
+            "faithfulness": (0.3, 0.5),
+        },
+    )
 ```
+
+You can also inspect a threshold report without raising immediately:
+
+```python
+report = result.check_thresholds(
+    min_scores={"faithfulness": 0.8}
+)
+
+assert report["passed"], report["failures"]
+```
+
+`result.summary()` returns aggregate metric values as a plain dictionary.
+`result["metric_name"]` still returns the per-row scores for that metric, and
+`result.to_pandas()` remains useful when you want a dataframe with the input rows and
+their metric scores.
 
 ## Using Pytest Markers for Ragas E2E tests
 
@@ -86,12 +98,6 @@ from ragas.metrics import (
     context_precision,
 )
 
-def assert_in_range(score: float, value: float, plus_or_minus: float):
-    """
-    Check if computed score is within the range of value +/- max_range
-    """
-    assert value - plus_or_minus <= score <= value + plus_or_minus
-
 
 @pytest.mark.ragas_ci
 def test_amnesty_e2e():
@@ -102,10 +108,15 @@ def test_amnesty_e2e():
     result = evaluate(
         amnesty_qa,
         metrics=[answer_relevancy, faithfulness, context_recall, context_precision],
-        in_ci=True,
     )
-    assert result["answer_relevancy"] >= 0.9
-    assert result["context_recall"] >= 0.95
-    assert result["context_precision"] >= 0.95
-    assert_in_range(result["faithfulness"], value=0.4, plus_or_minus=0.1)
+    result.assert_thresholds(
+        min_scores={
+            "answer_relevancy": 0.9,
+            "context_recall": 0.95,
+            "context_precision": 0.95,
+        },
+        ranges={
+            "faithfulness": (0.3, 0.5),
+        },
+    )
 ```
