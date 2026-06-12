@@ -13,10 +13,11 @@ import requests
 from PIL import Image
 from pydantic import BaseModel, Field
 
+from ragas.url_safety import prepare_safe_http_url
+
 logger = logging.getLogger(__name__)
 
 # Constants for security/processing
-ALLOWED_URL_SCHEMES = {"http", "https"}
 MAX_DOWNLOAD_SIZE_BYTES = 10 * 1024 * 1024
 REQUESTS_TIMEOUT_SECONDS = 10
 DATA_URI_REGEX = re.compile(
@@ -123,12 +124,15 @@ def _try_process_base64_uri(item: str) -> t.Optional[t.Dict[str, str]]:
 def _try_process_url(item: str) -> t.Optional[t.Dict[str, str]]:
     """Download and process image from URL."""
     try:
-        parsed_url = urlparse(item)
-        if parsed_url.scheme not in ALLOWED_URL_SCHEMES:
+        if urlparse(item).scheme not in {"http", "https"}:
+            return None
+
+        prepared_url = prepare_safe_http_url(item)
+        if not prepared_url:
             return None
 
         response = requests.get(
-            item,
+            prepared_url,
             timeout=REQUESTS_TIMEOUT_SECONDS,
             stream=True,
         )

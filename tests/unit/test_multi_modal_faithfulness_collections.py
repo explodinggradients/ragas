@@ -3,6 +3,7 @@
 import base64
 import os
 import tempfile
+from unittest.mock import Mock
 
 import pytest
 from PIL import Image
@@ -79,6 +80,15 @@ class TestImageProcessingUtilities:
     def test_process_image_to_base64_with_text(self):
         """Test that text is not processed as image."""
         result = process_image_to_base64("This is just text")
+        assert result is None
+
+    def test_process_image_to_base64_blocks_backslash_ssrf(self, monkeypatch):
+        """Test that parser mismatches cannot bypass host validation."""
+        monkeypatch.setattr(
+            "ragas.metrics.collections.multi_modal_faithfulness.util.requests.get",
+            Mock(side_effect=AssertionError("requests.get should not be called")),
+        )
+        result = process_image_to_base64("http://127.0.0.1:6666\\@1.1.1.1")
         assert result is None
 
     def test_process_image_to_base64_with_valid_base64(self):
