@@ -9,8 +9,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 import instructor
-from langchain_community.chat_models.vertexai import ChatVertexAI
-from langchain_community.llms import VertexAI
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import ChatGeneration, Generation, LLMResult
 from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI
@@ -40,9 +38,18 @@ MULTIPLE_COMPLETION_SUPPORTED = [
     ChatOpenAI,
     AzureOpenAI,
     AzureChatOpenAI,
-    ChatVertexAI,
-    VertexAI,
 ]
+
+# ``ChatVertexAI``/``VertexAI`` were moved out of ``langchain-community`` into the
+# dedicated ``langchain-google-vertexai`` package. Import them optionally so that
+# ragas does not hard-depend on the Google stack; if the package is installed we
+# include them in the multiple-completion support list.
+try:
+    from langchain_google_vertexai import ChatVertexAI, VertexAI
+
+    MULTIPLE_COMPLETION_SUPPORTED.extend([ChatVertexAI, VertexAI])
+except ImportError:
+    pass
 
 
 def is_multiple_completion_supported(llm: BaseLanguageModel) -> bool:
