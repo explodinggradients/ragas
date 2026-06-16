@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import math
+import numbers
 import random
 import typing as t
 from abc import ABC, abstractmethod
@@ -450,11 +452,301 @@ class EvaluationResult:
 
         # parse the traces
         run_id = str(self.run_id) if self.run_id is not None else None
-        self.traces = parse_run_traces(self.ragas_traces, run_id)
+        self.traces = (
+            parse_run_traces(self.ragas_traces, run_id) if self.ragas_traces else []
+        )
 
     def __repr__(self) -> str:
         score_strs = [f"'{k}': {v:0.4f}" for k, v in self._repr_dict.items()]
         return "{" + ", ".join(score_strs) + "}"
+
+    def summary(self) -> dict[str, t.Any]:
+        """
+        Return aggregate metric scores for the evaluation result.
+
+        Returns:
+            A copy of the aggregate metric summary keyed by metric name.
+        """
+        return self._repr_dict.copy()
+
+    @staticmethod
+    def _normalise_threshold_value(
+        metric_name: str, constraint: str, value: t.Any
+    ) -> float:
+        if isinstance(value, bool) or not isinstance(value, numbers.Real):
+            raise ValueError(
+                f"{constraint} threshold for metric '{metric_name}' must be numeric."
+            )
+
+        normalised_value = float(value)
+        if not math.isfinite(normalised_value):
+            raise ValueError(
+                f"{constraint} threshold for metric '{metric_name}' must be a "
+                "finite numeric value."
+            )
+        return normalised_value
+
+    @classmethod
+    def _validate_threshold_mapping(
+        cls,
+        thresholds: t.Optional[dict[str, float]],
+        constraint: str,
+    ) -> dict[str, float]:
+        if thresholds is None:
+            return {}
+        if not isinstance(thresholds, dict):
+            raise ValueError(f"{constraint} thresholds must be provided as a dict.")
+
+        return {
+            metric_name: cls._normalise_threshold_value(metric_name, constraint, value)
+            for metric_name, value in thresholds.items()
+        }
+
+    @classmethod
+    def _validate_range_mapping(
+        cls,
+        ranges: t.Optional[dict[str, tuple[float, float]]],
+    ) -> dict[str, tuple[float, float]]:
+        if ranges is None:
+            return {}
+        if not isinstance(ranges, dict):
+            raise ValueError("range thresholds must be provided as a dict.")
+
+        validated_ranges = {}
+        for metric_name, allowed_range in ranges.items():
+            if not isinstance(allowed_range, tuple) or len(allowed_range) != 2:
+                raise ValueError(
+                    f"range threshold for metric '{metric_name}' must be a tuple of "
+                    "(min_value, max_value)."
+                )
+            min_value = cls._normalise_threshold_value(
+                metric_name, "range minimum", allowed_range[0]
+            )
+            max_value = cls._normalise_threshold_value(
+                metric_name, "range maximum", allowed_range[1]
+            )
+            if min_value > max_value:
+                raise ValueError(
+                    f"range threshold for metric '{metric_name}' is invalid: "
+                    "minimum cannot exceed maximum."
+                )
+            validated_ranges[metric_name] = (min_value, max_value)
+
+        return validated_ranges
+
+    @staticmethod
+    def _normalise_score(value: t.Any) -> t.Optional[float]:
+        if isinstance(value, bool) or not isinstance(value, numbers.Real):
+            return None
+
+        score = float(value)
+        return score if math.isfinite(score) else None
+
+    @classmethod
+    def _validate_relative_thresholds(
+        cls,
+        relative_thresholds: t.Optional[dict[str, float]],
+        baseline_scores: t.Optional[dict[str, float]],
+    ) -> dict[str, float]:
+        if relative_thresholds is None:
+            return {}
+        if not isinstance(relative_thresholds, dict):
+            raise ValueError("relative_thresholds must be provided as a dict.")
+        if baseline_scores is None or not isinstance(baseline_scores, dict):
+            raise ValueError(
+                "baseline_scores must be provided as a dict when using relative_thresholds."
+            )
+
+        validated: dict[str, float] = {}
+        for metric_name, value in relative_thresholds.items():
+            normalised = cls._normalise_threshold_value(
+                metric_name, "relative", value
+            )
+            if not (0.0 <= normalised <= 1.0):
+                raise ValueError(
+                    f"relative threshold for metric '{metric_name}' must be "
+                    "between 0 and 1."
+                )
+            if metric_name not in baseline_scores:
+                raise ValueError(
+                    f"baseline_scores is missing metric '{metric_name}' "
+                    "required by relative_thresholds."
+                )
+            validated[metric_name] = normalised
+
+        return validated
+
+    def _compute_relative_bounds(
+        self,
+        metric_name: str,
+        relative: float,
+        baseline_scores: dict[str, float],
+    ) -> tuple[float, float]:
+        baseline = baseline_scores[metric_name]
+        normalised_baseline = self._normalise_score(baseline)
+        if normalised_baseline is None:
+            raise ValueError(
+                f"baseline score for metric '{metric_name}' is not a finite numeric value."
+            )
+        margin = abs(normalised_baseline * relative)
+        return (normalised_baseline - margin, normalised_baseline + margin)
+
+    def check_thresholds(
+        self,
+        min_scores: t.Optional[dict[str, float]] = None,
+        max_scores: t.Optional[dict[str, float]] = None,
+        ranges: t.Optional[dict[str, tuple[float, float]]] = None,
+        relative_thresholds: t.Optional[dict[str, float]] = None,
+        baseline_scores: t.Optional[dict[str, float]] = None,
+    ) -> dict[str, t.Any]:
+        """
+        Check aggregate metric scores against threshold constraints.
+
+        Args:
+            min_scores: Minimum allowed score per metric.
+            max_scores: Maximum allowed score per metric.
+            ranges: Inclusive allowed score range per metric as (min_value, max_value).
+            relative_thresholds: Max fractional deviation from baseline per metric.
+                Each metric must also have an entry in baseline_scores.
+            baseline_scores: Baseline aggregate scores used with relative_thresholds.
+
+        Returns:
+            A structured threshold report.
+
+        Raises:
+            ValueError: If threshold inputs are invalid.
+        """
+        min_scores = self._validate_threshold_mapping(min_scores, "minimum")
+        max_scores = self._validate_threshold_mapping(max_scores, "maximum")
+        ranges = self._validate_range_mapping(ranges)
+        relative_thresholds = self._validate_relative_thresholds(
+            relative_thresholds, baseline_scores
+        )
+
+        scores = self.summary()
+        checks = {}
+        failures = []
+
+        metric_names = sorted(
+            set(min_scores) | set(max_scores) | set(ranges) | set(relative_thresholds)
+        )
+        for metric_name in metric_names:
+            constraints = {}
+            if metric_name in min_scores:
+                constraints["min"] = min_scores[metric_name]
+            if metric_name in max_scores:
+                constraints["max"] = max_scores[metric_name]
+            if metric_name in ranges:
+                constraints["range"] = ranges[metric_name]
+            if metric_name in relative_thresholds:
+                constraints["relative"] = relative_thresholds[metric_name]
+                constraints["baseline"] = baseline_scores[metric_name]  # type: ignore[index]
+
+            score = scores.get(metric_name)
+            check_failures = []
+            if metric_name not in scores:
+                check_failures.append("metric is missing from summary")
+                score = None
+            else:
+                numeric_score = self._normalise_score(score)
+                if numeric_score is None:
+                    check_failures.append(
+                        f"score {score} is not a finite numeric score"
+                    )
+                else:
+                    if (
+                        metric_name in min_scores
+                        and numeric_score < min_scores[metric_name]
+                    ):
+                        check_failures.append(
+                            f"score {numeric_score} is below minimum "
+                            f"{min_scores[metric_name]}"
+                        )
+                    if (
+                        metric_name in max_scores
+                        and numeric_score > max_scores[metric_name]
+                    ):
+                        check_failures.append(
+                            f"score {numeric_score} is above maximum "
+                            f"{max_scores[metric_name]}"
+                        )
+                    if metric_name in ranges:
+                        min_value, max_value = ranges[metric_name]
+                        if numeric_score < min_value or numeric_score > max_value:
+                            check_failures.append(
+                                f"score {numeric_score} is outside inclusive range "
+                                f"between {min_value} and {max_value}"
+                            )
+                    if metric_name in relative_thresholds:
+                        rel_min, rel_max = self._compute_relative_bounds(
+                            metric_name,
+                            relative_thresholds[metric_name],
+                            baseline_scores,  # type: ignore[arg-type]
+                        )
+                        if numeric_score < rel_min or numeric_score > rel_max:
+                            check_failures.append(
+                                f"score {numeric_score} is outside relative threshold "
+                                f"bounds [{rel_min:.4f}, {rel_max:.4f}] "
+                                f"(baseline {baseline_scores[metric_name]} "  # type: ignore[index]
+                                f"± {relative_thresholds[metric_name] * 100:.1f}%)"
+                            )
+
+            checks[metric_name] = {
+                "score": score,
+                "passed": not check_failures,
+                "constraints": constraints,
+                "failures": check_failures,
+            }
+            failures.extend(f"{metric_name}: {failure}" for failure in check_failures)
+
+        return {
+            "passed": not failures,
+            "scores": scores,
+            "checks": checks,
+            "failures": failures,
+        }
+
+    def assert_thresholds(
+        self,
+        min_scores: t.Optional[dict[str, float]] = None,
+        max_scores: t.Optional[dict[str, float]] = None,
+        ranges: t.Optional[dict[str, tuple[float, float]]] = None,
+        relative_thresholds: t.Optional[dict[str, float]] = None,
+        baseline_scores: t.Optional[dict[str, float]] = None,
+    ) -> None:
+        """
+        Assert that aggregate metric scores satisfy threshold constraints.
+
+        Args:
+            min_scores: Minimum allowed score per metric.
+            max_scores: Maximum allowed score per metric.
+            ranges: Inclusive allowed score range per metric as (min_value, max_value).
+            relative_thresholds: Max fractional deviation from baseline per metric.
+            baseline_scores: Baseline aggregate scores used with relative_thresholds.
+
+        Raises:
+            AssertionError: If any threshold check fails.
+            ValueError: If threshold inputs are invalid.
+        """
+        report = self.check_thresholds(
+            min_scores=min_scores,
+            max_scores=max_scores,
+            ranges=ranges,
+            relative_thresholds=relative_thresholds,
+            baseline_scores=baseline_scores,
+        )
+        if report["passed"]:
+            return None
+
+        failed_checks = [
+            f"{metric_name}: score {check['score']} failed constraints "
+            f"{check['constraints']} ({'; '.join(check['failures'])})"
+            for metric_name, check in report["checks"].items()
+            if not check["passed"]
+        ]
+        raise AssertionError(
+            "EvaluationResult threshold checks failed: " + "; ".join(failed_checks)
+        )
 
     def __getitem__(self, key: str) -> t.List[float]:
         return self._scores_dict[key]
