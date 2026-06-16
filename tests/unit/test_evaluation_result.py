@@ -180,6 +180,99 @@ def test_assert_thresholds_raises_assertion_error_on_failure():
     assert "minimum 0.8" in error_message
 
 
+def test_check_thresholds_relative_passes():
+    result = make_result([{"faithfulness": 0.8}, {"faithfulness": 0.9}])
+
+    report = result.check_thresholds(
+        relative_thresholds={"faithfulness": 0.1},
+        baseline_scores={"faithfulness": 0.85},
+    )
+
+    assert report["passed"] is True
+    assert "faithfulness" in report["checks"]
+    assert report["checks"]["faithfulness"]["passed"] is True
+    assert report["checks"]["faithfulness"]["constraints"]["relative"] == 0.1
+    assert report["checks"]["faithfulness"]["constraints"]["baseline"] == 0.85
+
+
+def test_check_thresholds_relative_fails():
+    result = make_result([{"faithfulness": 0.5}, {"faithfulness": 0.6}])
+
+    report = result.check_thresholds(
+        relative_thresholds={"faithfulness": 0.05},
+        baseline_scores={"faithfulness": 0.85},
+    )
+
+    assert report["passed"] is False
+    assert report["checks"]["faithfulness"]["passed"] is False
+    assert "outside relative threshold" in report["failures"][0]
+
+
+def test_check_thresholds_relative_requires_baseline():
+    result = make_result([{"faithfulness": 0.8}, {"faithfulness": 0.9}])
+
+    with pytest.raises(ValueError, match="baseline_scores"):
+        result.check_thresholds(relative_thresholds={"faithfulness": 0.1})
+
+
+def test_check_thresholds_relative_requires_matching_baseline():
+    result = make_result([{"faithfulness": 0.8}, {"faithfulness": 0.9}])
+
+    with pytest.raises(ValueError, match="missing metric"):
+        result.check_thresholds(
+            relative_thresholds={"faithfulness": 0.1},
+            baseline_scores={"other_metric": 0.5},
+        )
+
+
+def test_check_thresholds_relative_must_be_between_zero_and_one():
+    result = make_result([{"faithfulness": 0.8}, {"faithfulness": 0.9}])
+
+    with pytest.raises(ValueError, match="between 0 and 1"):
+        result.check_thresholds(
+            relative_thresholds={"faithfulness": 1.5},
+            baseline_scores={"faithfulness": 0.85},
+        )
+
+
+def test_assert_thresholds_relative_silent():
+    result = make_result([{"faithfulness": 0.8}, {"faithfulness": 0.9}])
+
+    assert result.assert_thresholds(
+        relative_thresholds={"faithfulness": 0.1},
+        baseline_scores={"faithfulness": 0.85},
+    ) is None
+
+
+def test_assert_thresholds_relative_raises():
+    result = make_result([{"faithfulness": 0.5}, {"faithfulness": 0.6}])
+
+    with pytest.raises(AssertionError, match="relative threshold"):
+        result.assert_thresholds(
+            relative_thresholds={"faithfulness": 0.05},
+            baseline_scores={"faithfulness": 0.85},
+        )
+
+
+def test_check_thresholds_combined_absolute_and_relative():
+    result = make_result(
+        [
+            {"faithfulness": 0.8, "answer_relevancy": 0.9},
+            {"faithfulness": 0.9, "answer_relevancy": 0.92},
+        ]
+    )
+
+    report = result.check_thresholds(
+        min_scores={"faithfulness": 0.8},
+        relative_thresholds={"answer_relevancy": 0.05},
+        baseline_scores={"answer_relevancy": 0.91},
+    )
+
+    assert report["passed"] is True
+    assert report["checks"]["faithfulness"]["passed"] is True
+    assert report["checks"]["answer_relevancy"]["passed"] is True
+
+
 def test_existing_getitem_and_to_pandas_behavior_remains_intact():
     result = make_result(
         [

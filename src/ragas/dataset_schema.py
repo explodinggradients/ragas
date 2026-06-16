@@ -542,11 +542,62 @@ class EvaluationResult:
         score = float(value)
         return score if math.isfinite(score) else None
 
+    @classmethod
+    def _validate_relative_thresholds(
+        cls,
+        relative_thresholds: t.Optional[dict[str, float]],
+        baseline_scores: t.Optional[dict[str, float]],
+    ) -> dict[str, float]:
+        if relative_thresholds is None:
+            return {}
+        if not isinstance(relative_thresholds, dict):
+            raise ValueError("relative_thresholds must be provided as a dict.")
+        if baseline_scores is None or not isinstance(baseline_scores, dict):
+            raise ValueError(
+                "baseline_scores must be provided as a dict when using relative_thresholds."
+            )
+
+        validated: dict[str, float] = {}
+        for metric_name, value in relative_thresholds.items():
+            normalised = cls._normalise_threshold_value(
+                metric_name, "relative", value
+            )
+            if not (0.0 <= normalised <= 1.0):
+                raise ValueError(
+                    f"relative threshold for metric '{metric_name}' must be "
+                    "between 0 and 1."
+                )
+            if metric_name not in baseline_scores:
+                raise ValueError(
+                    f"baseline_scores is missing metric '{metric_name}' "
+                    "required by relative_thresholds."
+                )
+            validated[metric_name] = normalised
+
+        return validated
+
+    def _compute_relative_bounds(
+        self,
+        metric_name: str,
+        relative: float,
+        baseline_scores: dict[str, float],
+    ) -> tuple[float, float]:
+        baseline = baseline_scores[metric_name]
+        normalised_baseline = self._normalise_score(baseline)
+        if normalised_baseline is None:
+            raise ValueError(
+                f"baseline score for metric '{metric_name}' is not a finite numeric value."
+            )
+        margin = abs(normalised_baseline * relative)
+        return (normalised_baseline - margin, normalised_baseline + margin)
+
     def check_thresholds(
         self,
         min_scores: t.Optional[dict[str, float]] = None,
         max_scores: t.Optional[dict[str, float]] = None,
         ranges: t.Optional[dict[str, tuple[float, float]]] = None,
+        relative_thresholds: t.Optional[dict[str, float]] = None,
+        baseline_scores: t.Optional[dict[str, float]] = None,
     ) -> dict[str, t.Any]:
         """
         Check aggregate metric scores against threshold constraints.
@@ -555,6 +606,9 @@ class EvaluationResult:
             min_scores: Minimum allowed score per metric.
             max_scores: Maximum allowed score per metric.
             ranges: Inclusive allowed score range per metric as (min_value, max_value).
+            relative_thresholds: Max fractional deviation from baseline per metric.
+                Each metric must also have an entry in baseline_scores.
+            baseline_scores: Baseline aggregate scores used with relative_thresholds.
 
         Returns:
             A structured threshold report.
@@ -565,12 +619,17 @@ class EvaluationResult:
         min_scores = self._validate_threshold_mapping(min_scores, "minimum")
         max_scores = self._validate_threshold_mapping(max_scores, "maximum")
         ranges = self._validate_range_mapping(ranges)
+        relative_thresholds = self._validate_relative_thresholds(
+            relative_thresholds, baseline_scores
+        )
 
         scores = self.summary()
         checks = {}
         failures = []
 
-        metric_names = sorted(set(min_scores) | set(max_scores) | set(ranges))
+        metric_names = sorted(
+            set(min_scores) | set(max_scores) | set(ranges) | set(relative_thresholds)
+        )
         for metric_name in metric_names:
             constraints = {}
             if metric_name in min_scores:
@@ -579,6 +638,9 @@ class EvaluationResult:
                 constraints["max"] = max_scores[metric_name]
             if metric_name in ranges:
                 constraints["range"] = ranges[metric_name]
+            if metric_name in relative_thresholds:
+                constraints["relative"] = relative_thresholds[metric_name]
+                constraints["baseline"] = baseline_scores[metric_name]  # type: ignore[index]
 
             score = scores.get(metric_name)
             check_failures = []
@@ -615,6 +677,19 @@ class EvaluationResult:
                                 f"score {numeric_score} is outside inclusive range "
                                 f"between {min_value} and {max_value}"
                             )
+                    if metric_name in relative_thresholds:
+                        rel_min, rel_max = self._compute_relative_bounds(
+                            metric_name,
+                            relative_thresholds[metric_name],
+                            baseline_scores,  # type: ignore[arg-type]
+                        )
+                        if numeric_score < rel_min or numeric_score > rel_max:
+                            check_failures.append(
+                                f"score {numeric_score} is outside relative threshold "
+                                f"bounds [{rel_min:.4f}, {rel_max:.4f}] "
+                                f"(baseline {baseline_scores[metric_name]} "  # type: ignore[index]
+                                f"± {relative_thresholds[metric_name] * 100:.1f}%)"
+                            )
 
             checks[metric_name] = {
                 "score": score,
@@ -636,9 +711,18 @@ class EvaluationResult:
         min_scores: t.Optional[dict[str, float]] = None,
         max_scores: t.Optional[dict[str, float]] = None,
         ranges: t.Optional[dict[str, tuple[float, float]]] = None,
+        relative_thresholds: t.Optional[dict[str, float]] = None,
+        baseline_scores: t.Optional[dict[str, float]] = None,
     ) -> None:
         """
         Assert that aggregate metric scores satisfy threshold constraints.
+
+        Args:
+            min_scores: Minimum allowed score per metric.
+            max_scores: Maximum allowed score per metric.
+            ranges: Inclusive allowed score range per metric as (min_value, max_value).
+            relative_thresholds: Max fractional deviation from baseline per metric.
+            baseline_scores: Baseline aggregate scores used with relative_thresholds.
 
         Raises:
             AssertionError: If any threshold check fails.
@@ -648,6 +732,8 @@ class EvaluationResult:
             min_scores=min_scores,
             max_scores=max_scores,
             ranges=ranges,
+            relative_thresholds=relative_thresholds,
+            baseline_scores=baseline_scores,
         )
         if report["passed"]:
             return None
