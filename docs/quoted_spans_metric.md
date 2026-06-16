@@ -49,28 +49,3 @@ print(f"Reason: {result.reason}")  # "Matched 1/1 quoted spans"
 
 ---
 
-## Legacy API (Deprecated)
-
-> **Warning:** The legacy `quoted_spans_alignment` function is deprecated.
-> Please use `QuotedSpansAlignment` from `ragas.metrics.collections` instead.
-
-**Input shape:**
-
-- `answers: List[str]` – list of model answers (length N)
-- `sources: List[List[str]]` – list (length N) of lists of source passages
-
-**Output:** A dictionary containing:
-
-```python
-{
-  "citation_alignment_quoted_spans": float,  # score in [0,1]
-  "matched": float,                          # number of spans found in sources
-  "total": float                            # total number of spans considered
-}
-```
-
-**Notes:**
-
-- If no quoted spans are found across all answers, the score is defined as 0.0 with
-  `total = 0`.
-  
