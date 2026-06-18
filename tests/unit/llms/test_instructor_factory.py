@@ -35,6 +35,46 @@ class MockClient:
             self.messages.create = sync_create
 
 
+class MockMistralChat:
+    """Mimics mistralai.Mistral's `client.chat` (has `.complete`, not `.completions`)."""
+
+    def __init__(self):
+        def complete(*args, **kwargs):
+            return LLMResponseModel(response="Mock response")
+
+        self.complete = complete
+
+
+class MockMistralClient:
+    """Mimics a native mistralai.Mistral client.
+
+    Unlike OpenAI-style clients (chat.completions.create) or Anthropic-style
+    clients (messages.create), the native Mistral SDK exposes chat.complete.
+    """
+
+    def __init__(self):
+        self.chat = MockMistralChat()
+
+
+class AsyncInstructor:
+    """Mimics instructor.AsyncInstructor's exact class name.
+
+    InstructorLLM._check_client_async() detects async clients by checking
+    `self.client.__class__.__name__ == "AsyncInstructor"`, so the class name
+    here must match exactly for tests to exercise the real detection path.
+    """
+
+    def __init__(self, client):
+        self.client = client
+        self.chat = Mock()
+        self.chat.completions = Mock()
+
+        async def async_create(*args, **kwargs):
+            return LLMResponseModel(response="Instructor response")
+
+        self.chat.completions.create = async_create
+
+
 class MockInstructor:
     """Mock instructor client that wraps the base client."""
 
@@ -306,6 +346,136 @@ def test_llm_factory_default_mode_is_json(mock_sync_client, monkeypatch):
 
     assert llm.model == "gpt-4"
     assert captured_mode == instructor.Mode.JSON
+
+
+def test_native_mistral_client_uses_from_mistral(monkeypatch):
+    """
+    Test the fix for issue #2774: llm_factory crashed for native mistralai.Mistral
+    clients because _patch_client_for_provider only recognizes OpenAI-style
+    (chat.completions.create) and Anthropic-style (messages.create) clients,
+    not Mistral's native chat.complete. It should be routed to
+    instructor.from_mistral() instead.
+
+    Also verifies use_async=True is passed: the native Mistral SDK exposes
+    both chat.complete and chat.complete_async on the same client, so we
+    always request the async wrapper. instructor.from_mistral() then returns
+    an AsyncInstructor, which InstructorLLM detects as async-capable -
+    letting both .generate() (run via an event loop) and .agenerate() work.
+    """
+    import instructor
+
+    captured = {}
+
+    def mock_from_mistral(client, mode=None, **kwargs):
+        captured["mode"] = mode
+        captured["use_async"] = kwargs.get("use_async")
+        return AsyncInstructor(client)
+
+    monkeypatch.setattr(instructor, "from_mistral", mock_from_mistral, raising=False)
+
+    mock_client = MockMistralClient()
+
+    llm = llm_factory("mistral-large", provider="mistral", client=mock_client)
+
+    assert llm.model == "mistral-large"  # type: ignore
+    assert llm.client is not None  # type: ignore
+    # JSON mode is invalid for instructor.from_mistral(), so we default to
+    # MISTRAL_TOOLS instead of ragas' usual default of Mode.JSON.
+    assert captured["mode"] == instructor.Mode.MISTRAL_TOOLS
+    assert captured["use_async"] is True
+    assert llm.is_async  # type: ignore
+
+
+def test_native_mistral_client_respects_explicit_mode(monkeypatch):
+    """Test that an explicitly passed mode is forwarded to instructor.from_mistral()."""
+    import instructor
+
+    captured_mode = None
+
+    def mock_from_mistral(client, mode=None, **kwargs):
+        nonlocal captured_mode
+        captured_mode = mode
+        return AsyncInstructor(client)
+
+    monkeypatch.setattr(instructor, "from_mistral", mock_from_mistral, raising=False)
+
+    mock_client = MockMistralClient()
+
+    llm = llm_factory(
+        "mistral-large",
+        provider="mistral",
+        client=mock_client,
+        mode=instructor.Mode.MISTRAL_STRUCTURED_OUTPUTS,
+    )
+
+    assert llm.model == "mistral-large"  # type: ignore
+    assert captured_mode == instructor.Mode.MISTRAL_STRUCTURED_OUTPUTS
+
+
+def test_native_mistral_client_generate_works(monkeypatch):
+    """
+    Test that .generate() works for a native Mistral client even though it's
+    wrapped as async-capable: InstructorLLM runs the coroutine on an event
+    loop on behalf of the sync caller.
+    """
+    import instructor
+
+    def mock_from_mistral(client, mode=None, **kwargs):
+        return AsyncInstructor(client)
+
+    monkeypatch.setattr(instructor, "from_mistral", mock_from_mistral, raising=False)
+
+    mock_client = MockMistralClient()
+    llm = llm_factory("mistral-large", provider="mistral", client=mock_client)
+
+    result = llm.generate("Test prompt", LLMResponseModel)
+
+    assert isinstance(result, LLMResponseModel)
+    assert result.response == "Instructor response"
+
+
+@pytest.mark.asyncio
+async def test_native_mistral_client_agenerate_works(monkeypatch):
+    """
+    Test that .agenerate() works for a native Mistral client. This is the
+    behavior that would silently break if from_mistral() defaulted to
+    use_async=False, since most ragas metrics call .agenerate().
+    """
+    import instructor
+
+    def mock_from_mistral(client, mode=None, **kwargs):
+        return AsyncInstructor(client)
+
+    monkeypatch.setattr(instructor, "from_mistral", mock_from_mistral, raising=False)
+
+    mock_client = MockMistralClient()
+    llm = llm_factory("mistral-large", provider="mistral", client=mock_client)
+
+    result = await llm.agenerate("Test prompt", LLMResponseModel)
+
+    assert isinstance(result, LLMResponseModel)
+    assert result.response == "Instructor response"
+
+
+def test_mistral_openai_compatible_client_still_uses_from_openai(monkeypatch):
+    """
+    OpenAI-compatible clients (e.g. OpenAI SDK pointed at Mistral's
+    OpenAI-compatible endpoint) used with provider="mistral" should keep
+    going through the generic chat.completions.create path, not from_mistral().
+    """
+
+    def mock_from_openai(client, mode=None):
+        return MockInstructor(client)
+
+    monkeypatch.setattr("instructor.from_openai", mock_from_openai)
+
+    mock_client = MockClient(is_async=False)
+    delattr(mock_client, "messages")
+
+    llm = llm_factory("mistral-large", provider="mistral", client=mock_client)
+
+    assert llm.model == "mistral-large"  # type: ignore
+    assert not llm.is_async  # type: ignore
 
 
 def test_llm_factory_mode_with_generic_provider(monkeypatch):

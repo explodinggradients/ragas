@@ -563,6 +563,27 @@ def _is_new_google_genai_client(client: t.Any) -> bool:
     return False
 
 
+def _is_native_mistral_client(client: t.Any) -> bool:
+    """
+    Detect a native mistralai.Mistral client vs. an OpenAI-compatible client
+    used with provider="mistral" (e.g. OpenAI SDK pointed at Mistral's
+    OpenAI-compatible endpoint).
+
+    The native Mistral SDK exposes `client.chat.complete` (no `.completions`
+    attribute), unlike the OpenAI-style `client.chat.completions.create`.
+    """
+    client_module = getattr(client, "__module__", "") or ""
+    if "mistralai" in client_module:
+        return True
+
+    return (
+        hasattr(client, "chat")
+        and client.chat is not None
+        and hasattr(client.chat, "complete")
+        and not hasattr(client.chat, "completions")
+    )
+
+
 def _get_instructor_client(
     client: t.Any, provider: str, mode: t.Optional[instructor.Mode] = None
 ) -> t.Any:
@@ -580,11 +601,35 @@ def _get_instructor_client(
     For Google/Gemini, supports both SDKs:
     - New SDK (google-genai): Uses instructor.from_genai()
     - Old SDK (google-generativeai): Uses instructor.from_gemini()
+
+    For Mistral, native mistralai.Mistral clients (chat.complete) are routed
+    through instructor.from_mistral(), since they don't match the OpenAI
+    (chat.completions.create) or Anthropic (messages.create) shapes that
+    _patch_client_for_provider() detects. OpenAI-compatible clients used with
+    provider="mistral" keep going through the generic patcher below.
+    instructor.from_mistral() only accepts MISTRAL_TOOLS/MISTRAL_STRUCTURED_OUTPUTS
+    modes, so we default to MISTRAL_TOOLS instead of JSON when no mode is given.
+
+    The native Mistral SDK exposes both chat.complete and chat.complete_async
+    on the same client instance (unlike OpenAI/Anthropic, which have distinct
+    sync/async client classes), so there's no way to detect sync-vs-async
+    intent from the client itself. We always pass use_async=True so
+    instructor.from_mistral() returns an AsyncInstructor: InstructorLLM.generate()
+    runs coroutines on an event loop even for sync callers, so both
+    .generate() and .agenerate() work. Defaulting to use_async=False would
+    silently break .agenerate(), which most metrics rely on.
     """
-    if mode is None:
-        mode = instructor.Mode.JSON
+    mode_was_unset = mode is None
 
     provider_lower = provider.lower()
+
+    if provider_lower == "mistral" and _is_native_mistral_client(client):
+        if mode_was_unset:
+            mode = instructor.Mode.MISTRAL_TOOLS
+        return instructor.from_mistral(client, mode=mode, use_async=True)
+
+    if mode is None:
+        mode = instructor.Mode.JSON
 
     if provider_lower == "openai":
         return instructor.from_openai(client, mode=mode)
