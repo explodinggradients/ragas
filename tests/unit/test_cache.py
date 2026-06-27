@@ -1,4 +1,5 @@
 import asyncio
+import builtins
 
 import pytest
 
@@ -58,6 +59,21 @@ def test_generate_cache_key_bound_method():
     assert key1 == key2, (
         "Cache keys should match even if the originating objects the methods are bound to are not the same, as long as the arguments match"
     )
+
+
+def test_disk_cache_backend_missing_dependency_message(monkeypatch):
+    """Disk cache should point users at the optional cache extra."""
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "diskcache":
+            raise ImportError("No module named 'diskcache'")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+
+    with pytest.raises(ImportError, match=r"pip install 'ragas\[cache\]'"):
+        DiskCacheBackend()
 
 
 def test_no_cache_backend():

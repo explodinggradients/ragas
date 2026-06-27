@@ -11,7 +11,6 @@ dependencies = [
     "pydantic>=2.0.0",
     "nest-asyncio",
     "appdirs",
-    "diskcache>=5.6.3",
     "typer",
     "rich",
     "openai>=1.0.0",
@@ -48,10 +47,12 @@ all = [
     "sacrebleu",
     "llama_index",
     "r2r",
-    "GitPython"
+    "GitPython",
+    "diskcache>=5.6.3",
 ]
 
 # Specific integrations
+cache = ["diskcache>=5.6.3"]
 git = ["GitPython"]
 tracing = ["langfuse>=3.2.4", "mlflow>=3.1.4"]
 gdrive = [

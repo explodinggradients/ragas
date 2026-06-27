@@ -82,7 +82,8 @@ class DiskCacheBackend(CacheInterface):
             from diskcache import Cache
         except ImportError:
             raise ImportError(
-                "For using the diskcache backend, please install it with `pip install diskcache`."
+                "For using the diskcache backend, please install it with "
+                "`pip install 'ragas[cache]'`."
             )
 
         self.cache = Cache(cache_dir)
