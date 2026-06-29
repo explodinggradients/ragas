@@ -86,7 +86,11 @@ class Faithfulness(BaseMetric):
         super().__init__(name=name, **kwargs)
 
     async def ascore(
-        self, user_input: str, response: str, retrieved_contexts: List[str]
+        self,
+        user_input: str,
+        response: str,
+        retrieved_contexts: List[str],
+        include_reason: bool = False,
     ) -> MetricResult:
         """
         Calculate faithfulness score using multi-step pipeline.
@@ -95,6 +99,8 @@ class Faithfulness(BaseMetric):
             user_input: The original question
             response: The response to evaluate for faithfulness
             retrieved_contexts: The retrieved contexts to check against
+            include_reason: When True, populate MetricResult.reason with
+                per-statement NLI verdicts from the evaluation pipeline.
 
         Returns:
             MetricResult with faithfulness score (0.0-1.0, higher is better)
@@ -124,10 +130,10 @@ class Faithfulness(BaseMetric):
         context_str = "\n".join(retrieved_contexts)
         verdicts = await self._create_verdicts(statements, context_str)
 
-        # Step 3: Compute faithfulness score
         score = self._compute_score(verdicts)
+        reason = self._format_verdict_reason(verdicts) if include_reason else None
 
-        return MetricResult(value=float(score))
+        return MetricResult(value=float(score), reason=reason)
 
     async def _create_statements(self, question: str, response: str) -> List[str]:
         """Break response into atomic statements using statement generator."""
@@ -161,3 +167,11 @@ class Faithfulness(BaseMetric):
             score = float("nan")
 
         return score
+
+    @staticmethod
+    def _format_verdict_reason(verdicts: NLIStatementOutput) -> str:
+        lines: List[str] = []
+        for item in verdicts.statements:
+            label = "supported" if item.verdict else "not supported"
+            lines.append(f"[{label}] {item.statement}: {item.reason}")
+        return "\n".join(lines)
