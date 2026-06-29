@@ -353,15 +353,26 @@ class ImageTextPromptValue(PromptValue):
         If so, attempts to download, validate, and encode the image.
         Returns dict with 'mime_type' and 'encoded_data' or None.
         """
-        try:
-            parsed_url = urlparse(item)
-            if parsed_url.scheme in ALLOWED_URL_SCHEMES:
-                # URL seems plausible, attempt download and validation
-                return self._download_validate_and_encode(item)
-        except ValueError:
-            # Invalid URL format
-            pass
+        if self._is_allowed_image_url(item):
+            return self._download_validate_and_encode(item)
         return None
+
+    def _is_allowed_image_url(self, url: str) -> bool:
+        """Validate URL syntax before DNS and request-level SSRF checks."""
+        try:
+            parsed_url = urlparse(url)
+            _ = parsed_url.port
+        except ValueError:
+            return False
+
+        if parsed_url.scheme not in ALLOWED_URL_SCHEMES or not parsed_url.hostname:
+            return False
+
+        if "\\" in parsed_url.netloc or parsed_url.username or parsed_url.password:
+            logger.error(f"Rejecting ambiguous image URL '{url}'")
+            return False
+
+        return True
 
     def _download_validate_and_encode(self, url: str) -> t.Optional[dict]:
         """
@@ -371,6 +382,9 @@ class ImageTextPromptValue(PromptValue):
         try:
             # <<< SSRF CHECK START >>>
             parsed_url = urlparse(url)
+            if not self._is_allowed_image_url(url):
+                return None
+
             if not parsed_url.hostname:
                 logger.error(
                     f"Could not extract hostname from URL '{url}' for SSRF check."

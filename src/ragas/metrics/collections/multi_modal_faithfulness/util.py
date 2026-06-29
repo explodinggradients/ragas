@@ -2,9 +2,11 @@
 
 import base64
 import binascii
+import ipaddress
 import logging
 import os
 import re
+import socket
 import typing as t
 from io import BytesIO
 from urllib.parse import urlparse
@@ -23,6 +25,7 @@ DATA_URI_REGEX = re.compile(
     r"^data:(image\/(?:png|jpeg|gif|webp));base64,([a-zA-Z0-9+/=]+)$"
 )
 COMMON_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
+DISALLOWED_IP_CHECKS = {"is_loopback", "is_private", "is_link_local", "is_reserved"}
 
 
 class MultiModalFaithfulnessInput(BaseModel):
@@ -63,13 +66,15 @@ def is_image_path_or_url(item: str) -> bool:
     # Check for URL
     try:
         parsed = urlparse(item)
-        if parsed.scheme in ALLOWED_URL_SCHEMES:
+        if _is_allowed_image_url(item):
             path_part = parsed.path
             _, ext = os.path.splitext(path_part)
             if ext.lower() in COMMON_IMAGE_EXTENSIONS:
                 return True
             # Could be an image URL without extension
-            return True if parsed.scheme in ALLOWED_URL_SCHEMES else False
+            return True
+        if parsed.scheme:
+            return False
     except ValueError:
         pass
 
@@ -124,7 +129,10 @@ def _try_process_url(item: str) -> t.Optional[t.Dict[str, str]]:
     """Download and process image from URL."""
     try:
         parsed_url = urlparse(item)
-        if parsed_url.scheme not in ALLOWED_URL_SCHEMES:
+        if not _is_allowed_image_url(item) or not parsed_url.hostname:
+            return None
+
+        if not _is_safe_url_target(parsed_url.hostname):
             return None
 
         response = requests.get(
@@ -173,6 +181,60 @@ def _try_process_url(item: str) -> t.Optional[t.Dict[str, str]]:
         return None
     except Exception:
         return None
+
+
+def _is_allowed_image_url(url: str) -> bool:
+    """Validate URL syntax before DNS and request-level SSRF checks."""
+    try:
+        parsed_url = urlparse(url)
+        _ = parsed_url.port
+    except ValueError:
+        return False
+
+    if parsed_url.scheme not in ALLOWED_URL_SCHEMES or not parsed_url.hostname:
+        return False
+
+    if "\\" in parsed_url.netloc or parsed_url.username or parsed_url.password:
+        logger.error(f"Rejecting ambiguous image URL '{url}'")
+        return False
+
+    return True
+
+
+def _is_safe_url_target(url_hostname: str) -> bool:
+    """Return False when a URL hostname resolves to an internal address."""
+    try:
+        addrinfo_results = socket.getaddrinfo(
+            url_hostname, None, family=socket.AF_UNSPEC
+        )
+    except socket.gaierror as dns_err:
+        logger.error(
+            f"SSRF check: DNS resolution error for hostname '{url_hostname}': {dns_err}"
+        )
+        return False
+
+    if not addrinfo_results:
+        return False
+
+    for _family, _type, _proto, _canonname, sockaddr in addrinfo_results:
+        try:
+            ip = ipaddress.ip_address(sockaddr[0])
+        except ValueError as ip_err:
+            logger.error(
+                f"SSRF check: Error parsing resolved IP address '{sockaddr[0]}' "
+                f"for hostname '{url_hostname}': {ip_err}"
+            )
+            return False
+
+        for check_name in DISALLOWED_IP_CHECKS:
+            if getattr(ip, check_name, False):
+                logger.error(
+                    f"SSRF check: Hostname '{url_hostname}' resolved to disallowed "
+                    f"IP '{sockaddr[0]}' ({check_name}=True). Blocking request."
+                )
+                return False
+
+    return True
 
 
 def _try_process_local_file(item: str) -> t.Optional[t.Dict[str, str]]:
