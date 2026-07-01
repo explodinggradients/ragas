@@ -55,7 +55,7 @@ By default, the quickstart example uses OpenAI. Set your API key and you're read
     export ANTHROPIC_API_KEY="your-anthropic-key"
     ```
 
-    Then update the LLM initialization in `evals.py`:
+    Then update the LLM initialization in `evals.py`. The same `llm` is passed to both RAG generation and metric scoring:
 
     ```python
     from anthropic import Anthropic
@@ -63,6 +63,7 @@ By default, the quickstart example uses OpenAI. Set your API key and you're read
 
     client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
     llm = llm_factory("claude-3-5-sonnet-20241022", provider="anthropic", client=client)
+    rag_client = default_rag_client(llm=llm, logdir="evals/logs")
     ```
 
 === "Google Gemini"
@@ -72,7 +73,7 @@ By default, the quickstart example uses OpenAI. Set your API key and you're read
     export GOOGLE_API_KEY="your-google-api-key"
     ```
 
-    Then update the LLM initialization in `evals.py`:
+    Then update the LLM initialization in `evals.py`. The same `llm` is passed to both RAG generation and metric scoring:
 
     **Option 1: Using Google's Official Library (Recommended)**
 
@@ -83,6 +84,7 @@ By default, the quickstart example uses OpenAI. Set your API key and you're read
     genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
     client = genai.GenerativeModel("gemini-2.0-flash")
     llm = llm_factory("gemini-2.0-flash", provider="google", client=client)
+    rag_client = default_rag_client(llm=llm, logdir="evals/logs")
     # Adapter is auto-detected as "litellm" for google provider
     ```
 
