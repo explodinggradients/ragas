@@ -38,13 +38,14 @@ pip install -e .
     export ANTHROPIC_API_KEY="your-anthropic-key"
     ```
 
-    Update `evals.py`:
+    Update `evals.py`. The same `llm` is passed to both RAG generation and metric scoring:
     ```python
     from anthropic import Anthropic
     from ragas.llms import llm_factory
 
     client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
     llm = llm_factory("claude-3-5-sonnet-20241022", provider="anthropic", client=client)
+    rag_client = default_rag_client(llm=llm, logdir="evals/logs")
     ```
 
 === "Google Gemini"
@@ -52,7 +53,7 @@ pip install -e .
     export GOOGLE_API_KEY="your-google-api-key"
     ```
 
-    Update `evals.py`:
+    Update `evals.py`. The same `llm` is passed to both RAG generation and metric scoring:
     ```python
     import google.generativeai as genai
     from ragas.llms import llm_factory
@@ -60,6 +61,7 @@ pip install -e .
     genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
     client = genai.GenerativeModel("gemini-2.0-flash")
     llm = llm_factory("gemini-2.0-flash", provider="google", client=client)
+    rag_client = default_rag_client(llm=llm, logdir="evals/logs")
     ```
 
 === "Local Models (Ollama)"
