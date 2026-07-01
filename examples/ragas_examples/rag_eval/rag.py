@@ -5,6 +5,14 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from openai import OpenAI
+from pydantic import BaseModel
+
+from ragas.llms import InstructorBaseRagasLLM
+from ragas.llms import llm_factory as create_llm
+
+
+class _RAGAnswer(BaseModel):
+    answer: str
 
 DOCUMENTS = [
     "Ragas are melodic frameworks in Indian classical music.",
@@ -75,14 +83,14 @@ class SimpleKeywordRetriever(BaseRetriever):
 class ExampleRAG:
     """
     Simple RAG system that:
-    1. accepts a llm client
+    1. accepts a Ragas LLM from llm_factory
     2. uses simple keyword matching to retrieve relevant documents
-    3. uses the llm client to generate a response based on the retrieved documents when a query is made
+    3. uses the LLM to generate a response based on the retrieved documents when a query is made
     """
 
     def __init__(
         self,
-        llm_client,
+        llm: InstructorBaseRagasLLM,
         retriever: Optional[BaseRetriever] = None,
         system_prompt: Optional[str] = None,
         logdir: str = "logs",
@@ -91,12 +99,12 @@ class ExampleRAG:
         Initialize RAG system
 
         Args:
-            llm_client: LLM client with a generate() method
+            llm: Ragas LLM from llm_factory
             retriever: Document retriever (defaults to SimpleKeywordRetriever)
             system_prompt: System prompt template for generation
             logdir: Directory for trace log files
         """
-        self.llm_client = llm_client
+        self.llm = llm
         self.retriever = retriever or SimpleKeywordRetriever()
         self.system_prompt = (
             system_prompt
@@ -280,16 +288,16 @@ class ExampleRAG:
 
         context = "\n\n".join(context_parts)
 
-        # Generate response using LLM client
         prompt = self.system_prompt.format(query=query, context=context)
+        model_name = getattr(self.llm, "model", type(self.llm).__name__)
 
         self.traces.append(
             TraceEvent(
                 event_type="llm_call",
-                component="openai_api",
+                component="llm",
                 data={
                     "operation": "generate_response",
-                    "model": "gpt-4o",
+                    "model": model_name,
                     "query": query,
                     "prompt_length": len(prompt),
                     "context_length": len(context),
@@ -299,27 +307,17 @@ class ExampleRAG:
         )
 
         try:
-            response = self.llm_client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": prompt},
-                ],
-            )
-
-            response_text = response.choices[0].message.content.strip()
+            result = self.llm.generate(prompt, response_model=_RAGAnswer)
+            response_text = result.answer.strip()
 
             self.traces.append(
                 TraceEvent(
                     event_type="llm_response",
-                    component="openai_api",
+                    component="llm",
                     data={
                         "operation": "generate_response",
                         "response_length": len(response_text),
-                        "usage": (
-                            response.usage.model_dump() if response.usage else None
-                        ),
-                        "model": "gpt-4o",
+                        "model": model_name,
                     },
                 )
             )
@@ -330,7 +328,7 @@ class ExampleRAG:
             self.traces.append(
                 TraceEvent(
                     event_type="error",
-                    component="openai_api",
+                    component="llm",
                     data={"operation": "generate_response", "error": str(e)},
                 )
             )
@@ -439,18 +437,18 @@ class ExampleRAG:
         return log_filepath
 
 
-def default_rag_client(llm_client, logdir: str = "logs") -> ExampleRAG:
+def default_rag_client(llm: InstructorBaseRagasLLM, logdir: str = "logs") -> ExampleRAG:
     """
-    Create a default RAG client with OpenAI LLM and optional retriever.
+    Create a default RAG client with a Ragas LLM and optional retriever.
 
     Args:
-        retriever: Optional retriever instance (defaults to SimpleKeywordRetriever)
+        llm: Ragas LLM from llm_factory
         logdir: Directory for trace logs
     Returns:
         ExampleRAG instance
     """
     retriever = SimpleKeywordRetriever()
-    client = ExampleRAG(llm_client=llm_client, retriever=retriever, logdir=logdir)
+    client = ExampleRAG(llm=llm, retriever=retriever, logdir=logdir)
     client.add_documents(DOCUMENTS)  # Add default documents
     return client
 
@@ -465,9 +463,10 @@ if __name__ == "__main__":
         exit(1)
 
     # Initialize RAG system with tracing enabled
-    llm = OpenAI(api_key=api_key)
+    openai_client = OpenAI(api_key=api_key)
+    llm = create_llm("gpt-4o", client=openai_client)
     r = SimpleKeywordRetriever()
-    rag_client = ExampleRAG(llm_client=llm, retriever=r, logdir="logs")
+    rag_client = ExampleRAG(llm=llm, retriever=r, logdir="logs")
 
     # Add documents (this will be traced)
     rag_client.add_documents(DOCUMENTS)
