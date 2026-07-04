@@ -1,3 +1,16 @@
+def split_bleu_sentences(text: str) -> list[str]:
+    """Split text into sentences for sacrebleu corpus_bleu."""
+    if not text:
+        return [text]
+    if "\n" in text:
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+        if lines:
+            return lines
+    if ". " in text:
+        return text.split(". ")
+    return [text]
+
+
 def fbeta_score(tp, fp, fn, beta=1.0):
     if tp + fp == 0:
         precision = 0

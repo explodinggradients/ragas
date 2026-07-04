@@ -4,6 +4,7 @@ import typing as t
 
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
+from ragas.metrics.utils import split_bleu_sentences
 
 
 class BleuScore(BaseMetric):
@@ -71,8 +72,8 @@ class BleuScore(BaseMetric):
         assert isinstance(reference, str), "BleuScore expects a valid reference string"
         assert isinstance(response, str), "BleuScore expects a valid response string"
 
-        reference_sentences = reference.split(". ")
-        response_sentences = response.split(". ")
+        reference_sentences = split_bleu_sentences(reference)
+        response_sentences = split_bleu_sentences(response)
 
         reference_formatted = [[ref] for ref in reference_sentences]
         response_formatted = response_sentences

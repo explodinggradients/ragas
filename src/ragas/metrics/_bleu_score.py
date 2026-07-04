@@ -5,6 +5,7 @@ from langchain_core.callbacks import Callbacks
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics.base import MetricType, SingleTurnMetric
+from ragas.metrics.utils import split_bleu_sentences
 from ragas.run_config import RunConfig
 
 
@@ -35,8 +36,8 @@ class BleuScore(SingleTurnMetric):
         assert isinstance(reference, str), "BleuScore expects a valid reference string"
         assert isinstance(response, str), "BleuScore expects a valid response string"
 
-        reference_sentences = reference.split(". ")
-        response_sentences = response.split(". ")
+        reference_sentences = split_bleu_sentences(reference)
+        response_sentences = split_bleu_sentences(response)
 
         reference = [[reference] for reference in reference_sentences]
         response = response_sentences
