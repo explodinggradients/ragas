@@ -9,7 +9,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 import instructor
-from langchain_community.chat_models.vertexai import ChatVertexAI
+try:
+    # Try importing from the legacy community path (for LangChain 0.1 users)
+    from langchain_community.chat_models.vertexai import ChatVertexAI
+except ImportError:
+    # Fallback to the new independent package path (for LangChain 0.2+ users)
+    from langchain_google_vertexai import ChatVertexAI
 from langchain_community.llms import VertexAI
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import ChatGeneration, Generation, LLMResult
