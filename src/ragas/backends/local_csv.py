@@ -51,7 +51,21 @@ class LocalCSVBackend(BaseBackend):
 
     def _get_file_path(self, data_type: str, name: str) -> Path:
         """Get the full file path for a dataset or experiment."""
-        return self._get_data_dir(data_type) / f"{name}.csv"
+        if (
+            not name
+            or name in {".", ".."}
+            or Path(name).is_absolute()
+            or any(separator in name for separator in ("/", "\\"))
+        ):
+            raise ValueError(f"Invalid {data_type[:-1]} name: {name!r}")
+
+        data_dir = self._get_data_dir(data_type)
+        file_path = data_dir / f"{name}.csv"
+
+        if data_dir.resolve() not in file_path.resolve().parents:
+            raise ValueError(f"Invalid {data_type[:-1]} name: {name!r}")
+
+        return file_path
 
     def _load(self, data_type: str, name: str) -> t.List[t.Dict[str, t.Any]]:
         """Load data from CSV file, raising FileNotFoundError if file doesn't exist."""

@@ -56,7 +56,21 @@ class LocalJSONLBackend(BaseBackend):
 
     def _get_file_path(self, data_type: str, name: str) -> Path:
         """Get the full file path for a dataset or experiment."""
-        return self._get_data_dir(data_type) / f"{name}.jsonl"
+        if (
+            not name
+            or name in {".", ".."}
+            or Path(name).is_absolute()
+            or any(separator in name for separator in ("/", "\\"))
+        ):
+            raise ValueError(f"Invalid {data_type[:-1]} name: {name!r}")
+
+        data_dir = self._get_data_dir(data_type)
+        file_path = data_dir / f"{name}.jsonl"
+
+        if data_dir.resolve() not in file_path.resolve().parents:
+            raise ValueError(f"Invalid {data_type[:-1]} name: {name!r}")
+
+        return file_path
 
     def _serialize_datetime(self, obj: t.Any) -> t.Any:
         """Serialize datetime objects to ISO format strings."""

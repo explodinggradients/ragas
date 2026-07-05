@@ -366,6 +366,48 @@ class TestBaseModelIntegration:
 class TestErrorHandling:
     """Test error scenarios and edge cases."""
 
+    @pytest.mark.parametrize(
+        "name",
+        ["", ".", "..", "../escape", "../../escape", "..\\escape", "..\\..\\escape"],
+    )
+    def test_rejects_dataset_names_outside_data_dir(self, backend, temp_dir, name):
+        """Test dataset names cannot resolve outside the datasets directory."""
+        with pytest.raises(ValueError, match="Invalid dataset name"):
+            backend.save_dataset(name, [{"value": "test"}])
+
+        assert not (Path(temp_dir).parent / "escape.csv").exists()
+
+    @pytest.mark.parametrize(
+        "name",
+        ["", ".", "..", "../escape", "../../escape", "..\\escape", "..\\..\\escape"],
+    )
+    def test_rejects_experiment_names_outside_data_dir(self, backend, temp_dir, name):
+        """Test experiment names cannot resolve outside the experiments directory."""
+        with pytest.raises(ValueError, match="Invalid experiment name"):
+            backend.save_experiment(name, [{"value": "test"}])
+
+        assert not (Path(temp_dir).parent / "escape.csv").exists()
+
+    @pytest.mark.parametrize(
+        "name",
+        ["../escape", "../../escape", "..\\escape", "..\\..\\escape"],
+    )
+    def test_rejects_loading_dataset_names_outside_data_dir(
+        self, backend, temp_dir, name
+    ):
+        """Test dataset loads cannot read outside the datasets directory."""
+        outside_file = Path(temp_dir).parent / "escape.csv"
+        outside_file.write_text("value\nsentinel\n", encoding="utf-8")
+
+        with pytest.raises(ValueError, match="Invalid dataset name"):
+            backend.load_dataset(name)
+
+    def test_accepts_safe_dataset_names(self, backend, simple_data):
+        """Test normal dataset names still save and load."""
+        backend.save_dataset("dataset-1_v1.0", simple_data)
+
+        assert backend.load_dataset("dataset-1_v1.0")[0]["name"] == "Alice"
+
     def test_load_nonexistent_file(self, backend):
         """Test loading non-existent files."""
         with pytest.raises(FileNotFoundError):
