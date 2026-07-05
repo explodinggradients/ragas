@@ -43,9 +43,8 @@ def convert_to_ragas_messages(
 
     def handle_assistant_message(message: Dict[str, Any]) -> AIMessage:
         """Convert assistant message to Ragas AIMessage"""
-        tool_calls = (
-            convert_tool_calls(message["tool_calls"]) if message["tool_calls"] else []
-        )
+        tool_calls_data = message.get("tool_calls") or []
+        tool_calls = convert_tool_calls(tool_calls_data)
         ai_message_content = message.get("content")
         return AIMessage(
             content=ai_message_content if ai_message_content else "",
