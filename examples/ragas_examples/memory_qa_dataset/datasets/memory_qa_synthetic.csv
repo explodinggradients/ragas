@@ -1,0 +1,6 @@
+user_input,reference_contexts,retrieved_contexts,reference
+"What meeting time does the user prefer?","User prefers morning meetings before 10am.|User avoids back-to-back meetings on Fridays.","User prefers morning meetings before 10am.|User works in the Pacific timezone.","Schedule meetings before 10am and avoid Friday afternoon stacks."
+"What dietary restrictions should we remember?","User is vegetarian.|User is allergic to peanuts.","User is vegetarian.|User drinks oat milk in coffee.","Offer vegetarian options and avoid peanuts."
+"What is the user's project focus?","User is building a customer support agent.|Launch target is Q3.","User is building a customer support agent.|Launch target is Q3.|Team uses Python and FastAPI.","Customer support agent with a Q3 launch target."
+"Where does the user live?","User lives in Seattle.|User commutes by light rail.","User lives in Portland.|User commutes by light rail.","User lives in Seattle and commutes by light rail."
+"What communication channel does the user prefer?","User prefers email over chat for async updates.|User checks email twice daily.","User prefers email over chat for async updates.|User uses Slack for urgent issues.","Use email for async updates."
