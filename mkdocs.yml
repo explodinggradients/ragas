@@ -124,6 +124,7 @@ nav:
             - Align an LLM as a Judge: howtos/applications/align-llm-as-judge.md
           - RAG Evaluation:
             - Evaluate and Improve a RAG App: howtos/applications/evaluate-and-improve-rag.md
+            - Retrieval Drift Regression: howtos/applications/retrieval_drift_regression.md
       - CLI:
           - howtos/cli/index.md
           - RAG Evaluation: howtos/cli/rag_eval.md
