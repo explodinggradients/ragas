@@ -40,6 +40,45 @@ sample = SingleTurnSample(
 )
 ```
 
+### Retrieved context fields
+
+Ragas uses two related list fields for retrieval evaluation. Keeping them
+distinct avoids mixing expected labels with runtime retriever output.
+
+| Field | Meaning | Typical source |
+| --- | --- | --- |
+| `retrieved_contexts` | Text chunks the retriever returned for the query | RAG index lookup or agent memory search |
+| `reference_contexts` | Gold chunks that should have been retrieved | Human labels or curated synthetic benchmarks |
+| `retrieved_context_ids` | IDs of retrieved chunks | Vector DB or memory store record IDs |
+| `reference_context_ids` | IDs of chunks that should have been retrieved | Labeled evaluation set |
+
+**RAG systems:** put document passages from your retriever in
+`retrieved_contexts`. Add `reference_contexts` when you have labeled relevant
+passages for recall or precision metrics.
+
+**Agent memory systems:** treat stored memory facts the same way. Expected
+facts go in `reference_contexts`; facts returned by the memory retriever go in
+`retrieved_contexts`. Each list item should be one atomic fact or chunk.
+
+```python
+from ragas import SingleTurnSample
+
+memory_sample = SingleTurnSample(
+    user_input="What meeting time does the user prefer?",
+    reference_contexts=[
+        "User prefers morning meetings before 10am.",
+        "User avoids back-to-back meetings on Fridays.",
+    ],
+    retrieved_contexts=[
+        "User prefers morning meetings before 10am.",
+        "User works in the Pacific timezone.",
+    ],
+)
+```
+
+Use `reference` for a single gold answer string. Use `reference_contexts` when
+you need to score retrieval coverage directly.
+
 ## MultiTurnSample
 
 MultiTurnSample represents a multi-turn interaction between Human, AI and optionally a Tool and expected results for evaluation. It is suitable for representing conversational agents in more complex interactions for evaluation. In `MultiTurnSample`, the `user_input` attribute represents a sequence of messages that collectively form a multi-turn conversation between a human user and an AI system. These messages are instances of the classes  `HumanMessage`, `AIMessage`, and `ToolMessage`
