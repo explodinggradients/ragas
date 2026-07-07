@@ -13,6 +13,7 @@ usecases to solve problems you might encounter when you're building.
 
 - [Debug LLM based metrics using tracing](_metrics_llm_calls.md)
 - [Evaluating Multi-turn Conversations](evaluating_multi_turn_conversations.md)
+- [Context Relevance for Agent Memory](agent_memory_context_relevance.md)
 - [Estimate cost of evaluation](_cost.md)
 - [Evaluations with Vertex AI models](vertexai_x_ragas.md)
 

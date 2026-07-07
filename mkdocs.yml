@@ -114,6 +114,7 @@ nav:
           - Metrics:
             - Cost Analysis: howtos/applications/_cost.md
             - Evaluating Multi-turn Conversations: howtos/applications/evaluating_multi_turn_conversations.md
+            - Context Relevance for Agent Memory: howtos/applications/agent_memory_context_relevance.md
             - Evaluations with Vertex AI models: howtos/applications/vertexai_x_ragas.md
           - Testset Generation:
             - Single-hop Query Testset: howtos/applications/singlehop_testset_gen.md
