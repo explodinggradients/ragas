@@ -252,7 +252,8 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             )
         elif isinstance(llm, InstructorBaseRagasLLM):
             # This is an InstructorLLM - use its generate()/agenerate() method
-            # InstructorLLM.generate()/agenerate() only takes prompt and response_model parameters
+            # InstructorLLM.generate()/agenerate() forwards callbacks to handlers
+            # like CostCallbackHandler so token_usage_parser still fires here.
             from ragas.llms.base import InstructorLLM
 
             instructor_llm = t.cast(InstructorLLM, llm)
@@ -260,11 +261,13 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
                 result = await llm.agenerate(
                     prompt=prompt_value.text,
                     response_model=self.output_model,
+                    callbacks=prompt_cb,
                 )
             else:
                 result = llm.generate(
                     prompt=prompt_value.text,
                     response_model=self.output_model,
+                    callbacks=prompt_cb,
                 )
             # Wrap the single response in an LLMResult-like structure for consistency
             from langchain_core.outputs import Generation, LLMResult

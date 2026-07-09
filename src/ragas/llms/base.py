@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 import instructor
 from langchain_community.chat_models.vertexai import ChatVertexAI
 from langchain_community.llms import VertexAI
+from langchain_core.callbacks import CallbackManager
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import ChatGeneration, Generation, LLMResult
 from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI
@@ -769,7 +770,10 @@ class InstructorBaseRagasLLM(ABC):
 
     @abstractmethod
     def generate(
-        self, prompt: str, response_model: t.Type[InstructorTypeVar]
+        self,
+        prompt: str,
+        response_model: t.Type[InstructorTypeVar],
+        callbacks: t.Optional["Callbacks"] = None,
     ) -> InstructorTypeVar:
         """Generate a response using the configured LLM.
 
@@ -781,6 +785,7 @@ class InstructorBaseRagasLLM(ABC):
         self,
         prompt: str,
         response_model: t.Type[InstructorTypeVar],
+        callbacks: t.Optional["Callbacks"] = None,
     ) -> InstructorTypeVar:
         """Asynchronously generate a response using the configured LLM."""
 
@@ -1066,7 +1071,10 @@ class InstructorLLM(InstructorBaseRagasLLM):
                 asyncio.set_event_loop(None)
 
     def generate(
-        self, prompt: str, response_model: t.Type[InstructorTypeVar]
+        self,
+        prompt: str,
+        response_model: t.Type[InstructorTypeVar],
+        callbacks: t.Optional["Callbacks"] = None,
     ) -> InstructorTypeVar:
         """Generate a response using the configured LLM.
 
@@ -1076,6 +1084,15 @@ class InstructorLLM(InstructorBaseRagasLLM):
         if self.system_prompt:
             messages.append({"role": "system", "content": self.system_prompt})
         messages.append({"role": "user", "content": prompt})
+
+        # Set up callback management so handler.on_llm_start/on_llm_end fire for
+        # callers like CostCallbackHandler (token_usage_parser), even though we
+        # bypass LangChain's BaseLanguageModel to reach the underlying client.
+        callback_manager = CallbackManager.configure(inheritable_callbacks=callbacks)
+        run_managers = callback_manager.on_llm_start(
+            serialized={"name": self.model},
+            prompts=[prompt],
+        )
 
         # If client is async, use the appropriate method to run it
         if self.is_async:
@@ -1102,6 +1119,13 @@ class InstructorLLM(InstructorBaseRagasLLM):
                     **provider_kwargs,
                 )
 
+        # Build an LLMResult-shaped response so legacy callbacks (e.g.
+        # CostCallbackHandler.on_llm_end with token_usage_parser) receive the
+        # structured payload they expect.
+        llm_result = self._build_llm_result(result)
+        for run_manager in run_managers:
+            run_manager.on_llm_end(llm_result)
+
         # Track the usage
         track(
             LLMUsageEvent(
@@ -1118,6 +1142,7 @@ class InstructorLLM(InstructorBaseRagasLLM):
         self,
         prompt: str,
         response_model: t.Type[InstructorTypeVar],
+        callbacks: t.Optional["Callbacks"] = None,
     ) -> InstructorTypeVar:
         """Asynchronously generate a response using the configured LLM."""
         messages = []
@@ -1130,6 +1155,12 @@ class InstructorLLM(InstructorBaseRagasLLM):
             raise TypeError(
                 "Cannot use agenerate() with a synchronous client. Use generate() instead."
             )
+
+        callback_manager = CallbackManager.configure(inheritable_callbacks=callbacks)
+        run_managers = callback_manager.on_llm_start(
+            serialized={"name": self.model},
+            prompts=[prompt],
+        )
 
         # Map parameters based on provider requirements
         provider_kwargs = self._map_provider_params()
@@ -1150,6 +1181,10 @@ class InstructorLLM(InstructorBaseRagasLLM):
                 **provider_kwargs,
             )
 
+        llm_result = self._build_llm_result(result)
+        for run_manager in run_managers:
+            run_manager.on_llm_end(llm_result)
+
         # Track the usage
         track(
             LLMUsageEvent(
@@ -1161,6 +1196,58 @@ class InstructorLLM(InstructorBaseRagasLLM):
             )
         )
         return result
+
+    def _build_llm_result(self, result: t.Any) -> LLMResult:
+        """Wrap an Instructor response in a LangChain ``LLMResult``.
+
+        The Instructor client returns a Pydantic model instance. Cost-tracking
+        callbacks consume ``LLMResult.llm_output`` for usage metadata and
+        ``generations`` for messages, so we surface both.
+        """
+        try:
+            text = result.model_dump_json()
+        except Exception:
+            text = str(result)
+
+        llm_output: t.Dict[str, t.Any] = {
+            "model_name": self.model,
+            "token_usage": {
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+            },
+        }
+
+        # Some Instructor clients nest usage info on the response. Surface any
+        # existing counts so prompt-side cost parsers don't reset to zero when
+        # usage data is actually available.
+        usage_obj: t.Any = None
+        for attr in ("usage", "_raw_response"):
+            if hasattr(result, attr):
+                usage_obj = getattr(result, attr)
+                break
+        if usage_obj is not None:
+            usage = getattr(usage_obj, "usage", None) or getattr(
+                usage_obj, "token_usage", None
+            )
+            if usage is not None:
+                usage_dict = (
+                    usage.model_dump() if hasattr(usage, "model_dump") else dict(usage)
+                )
+                llm_output["token_usage"] = {
+                    "prompt_tokens": usage_dict.get("prompt_tokens", 0)
+                    or usage_dict.get("input_tokens", 0),
+                    "completion_tokens": usage_dict.get("completion_tokens", 0)
+                    or usage_dict.get("output_tokens", 0),
+                }
+                if usage_dict.get("model") or usage_dict.get("model_name"):
+                    llm_output["model_name"] = usage_dict.get(
+                        "model"
+                    ) or usage_dict.get("model_name")
+
+        return LLMResult(
+            generations=[[Generation(text=text)]],
+            llm_output=llm_output,
+        )
 
     def _get_client_info(self) -> str:
         """Get client type and async status information."""
