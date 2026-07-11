@@ -293,6 +293,15 @@ class FactualCorrectness(MetricWithLLM, SingleTurnMetric):
             tp_recall = 0
             fn = 0
 
+        if tp == 0 and fp == 0 and fn == 0:
+            # No claims could be decomposed from either text (e.g. both
+            # response and reference are correct abstentions such as
+            # "Not found in provided context."). Nothing was measured, so
+            # return NaN instead of scoring a correct abstention as 0.0
+            # (total failure). This mirrors how Faithfulness handles the
+            # equivalent "no statements generated" case.
+            return float("nan")
+
         if self.mode == "precision":
             score = tp_precision / (tp_precision + fp + 1e-8)
         elif self.mode == "recall":
