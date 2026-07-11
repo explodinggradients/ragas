@@ -9,8 +9,18 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 import instructor
-from langchain_community.chat_models.vertexai import ChatVertexAI
-from langchain_community.llms import VertexAI
+
+try:
+    # ChatVertexAI/VertexAI were moved to the optional `langchain-google-vertexai`
+    # package and removed from modern `langchain-community`. Import them lazily so
+    # that `import ragas` does not crash for users who are not on Google VertexAI
+    # (e.g. OpenAI, Anthropic, Groq, Bedrock users). See issue #2753.
+    from langchain_community.chat_models.vertexai import ChatVertexAI
+    from langchain_community.llms import VertexAI
+except ImportError:  # pragma: no cover
+    ChatVertexAI = None
+    VertexAI = None
+
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import ChatGeneration, Generation, LLMResult
 from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI
@@ -40,9 +50,12 @@ MULTIPLE_COMPLETION_SUPPORTED = [
     ChatOpenAI,
     AzureOpenAI,
     AzureChatOpenAI,
-    ChatVertexAI,
-    VertexAI,
 ]
+# Register the VertexAI classes only when the optional dependency is available.
+if ChatVertexAI is not None:
+    MULTIPLE_COMPLETION_SUPPORTED.append(ChatVertexAI)
+if VertexAI is not None:
+    MULTIPLE_COMPLETION_SUPPORTED.append(VertexAI)
 
 
 def is_multiple_completion_supported(llm: BaseLanguageModel) -> bool:
