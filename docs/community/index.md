@@ -9,7 +9,7 @@ Our project thrives on the vibrant energy, diverse skills, and shared passion of
 Join our Discord community [here](https://discord.com/invite/5djav8GGNZ) to connect with other developers, share your ideas, and get support.
 
 ## **🌟  Contributors**
-Meet some of our outstanding contributors! 
+Meet some of our outstanding contributors!
 
 <a href="https://github.com/vibrantlabsai/ragas/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=vibrantlabsai/ragas" />

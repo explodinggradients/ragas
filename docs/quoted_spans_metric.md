@@ -73,4 +73,4 @@ print(f"Reason: {result.reason}")  # "Matched 1/1 quoted spans"
 
 - If no quoted spans are found across all answers, the score is defined as 0.0 with
   `total = 0`.
-  
+

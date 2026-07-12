@@ -23,10 +23,10 @@
         <img alt="Join Ragas community on Discord" src="https://img.shields.io/discord/1119637219561451644">
     </a>
     <a target="_blank" href="https://deepwiki.com/vibrantlabsai/ragas">
-      <img 
-        src="https://devin.ai/assets/deepwiki-badge.png" 
-        alt="Ask DeepWiki.com" 
-        height="20" 
+      <img
+        src="https://devin.ai/assets/deepwiki-badge.png"
+        alt="Ask DeepWiki.com"
+        height="20"
       />
     </a>
 </p>

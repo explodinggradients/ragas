@@ -84,7 +84,7 @@ This repository is organized as a single project with integrated experimental fe
 ## Development Environment Setup
 
 ### Prerequisites
-- Python 3.9+ 
+- Python 3.9+
 - [uv](https://docs.astral.sh/uv/) (recommended) or pip
 - Git
 
@@ -305,7 +305,7 @@ make run-ci
 
 # Individual checks
 make format  # Must pass
-make type    # Must pass  
+make type    # Must pass
 make test    # Must pass
 ```
 
