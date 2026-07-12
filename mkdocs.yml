@@ -161,6 +161,7 @@ nav:
       - RunConfig: references/run_config.md
       - Executor: references/executor.md
       - Cache: references/cache.md
+      - Storage backends: references/storage_backends.md
       - Optimizers: references/optimizers.md
     - Evaluation:
       - Schemas: references/evaluation_schema.md
