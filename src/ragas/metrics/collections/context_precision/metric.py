@@ -5,6 +5,7 @@ from typing import List
 
 import numpy as np
 
+from ragas.metrics.collections._async_compat import call_llm_async
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
 
@@ -108,7 +109,9 @@ class ContextPrecisionWithReference(BaseMetric):
                 question=user_input, context=context, answer=reference
             )
             prompt_string = self.prompt.to_string(input_data)
-            result = await self.llm.agenerate(prompt_string, ContextPrecisionOutput)
+            result = await call_llm_async(
+                self.llm, prompt_string, ContextPrecisionOutput
+            )
             verdicts.append(result.verdict)
 
         # Calculate average precision
@@ -228,7 +231,9 @@ class ContextPrecisionWithoutReference(BaseMetric):
                 question=user_input, context=context, answer=response
             )
             prompt_string = self.prompt.to_string(input_data)
-            result = await self.llm.agenerate(prompt_string, ContextPrecisionOutput)
+            result = await call_llm_async(
+                self.llm, prompt_string, ContextPrecisionOutput
+            )
             verdicts.append(result.verdict)
 
         # Calculate average precision

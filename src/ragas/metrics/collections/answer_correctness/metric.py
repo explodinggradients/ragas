@@ -5,6 +5,7 @@ from typing import List
 
 import numpy as np
 
+from ragas.metrics.collections._async_compat import call_llm_async
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
 
@@ -199,7 +200,7 @@ class AnswerCorrectness(BaseMetric):
         """Generate atomic statements from text using the statement generator prompt."""
         input_data = StatementGeneratorInput(question=question, answer=text)
         prompt_str = self.statement_generator_prompt.to_string(input_data)
-        result = await self.llm.agenerate(prompt_str, StatementGeneratorOutput)
+        result = await call_llm_async(self.llm, prompt_str, StatementGeneratorOutput)
         return result.statements
 
     async def _classify_statements(
@@ -215,7 +216,9 @@ class AnswerCorrectness(BaseMetric):
             ground_truth=ground_truth_statements,
         )
         prompt_str = self.correctness_classifier_prompt.to_string(input_data)
-        classification = await self.llm.agenerate(prompt_str, ClassificationWithReason)
+        classification = await call_llm_async(
+            self.llm, prompt_str, ClassificationWithReason
+        )
         return classification
 
     def _compute_f1_score(self, classification: ClassificationWithReason) -> float:

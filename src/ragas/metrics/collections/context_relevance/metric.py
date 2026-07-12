@@ -5,6 +5,7 @@ from typing import List
 
 import numpy as np
 
+from ragas.metrics.collections._async_compat import call_llm_async
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
 
@@ -149,7 +150,9 @@ class ContextRelevance(BaseMetric):
                     user_input=user_input, context=context
                 )
                 prompt_str = prompt_obj.to_string(input_data)
-                result = await self.llm.agenerate(prompt_str, ContextRelevanceOutput)
+                result = await call_llm_async(
+                    self.llm, prompt_str, ContextRelevanceOutput
+                )
                 rating = result.rating
 
                 # Validate rating is in expected range
