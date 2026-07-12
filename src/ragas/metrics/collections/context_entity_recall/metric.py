@@ -3,6 +3,7 @@
 import typing as t
 from typing import List, Sequence
 
+from ragas.metrics.collections._async_compat import call_llm_async
 from ragas.metrics.collections.base import BaseMetric
 from ragas.metrics.result import MetricResult
 
@@ -117,7 +118,7 @@ class ContextEntityRecall(BaseMetric):
         # Create input data and generate prompt
         input_data = ExtractEntitiesInput(text=text)
         prompt_string = self.prompt.to_string(input_data)
-        result = await self.llm.agenerate(prompt_string, EntitiesList)
+        result = await call_llm_async(self.llm, prompt_string, EntitiesList)
         return result.entities
 
     def _compute_recall_score(
