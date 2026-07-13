@@ -135,6 +135,28 @@ llm = llm_factory("mistral", provider="openai", client=client)
 # Uses Instructor adapter
 ```
 
+### OpenAI-compatible gateway (DaoXE)
+
+[DaoXE](https://daoxe.com) is a multi-model multi-protocol API gateway. For Ragas evaluations, use the OpenAI-compatible Chat Completions path with the standard `OpenAI` client and `base_url="https://daoxe.com/v1"`.
+
+Paste a live account-scoped model ID from your DaoXE dashboard (or `GET /v1/models`) — do not hardcode a public catalog. DaoXE also supports other protocol routes (for example Anthropic Messages) outside this Ragas path.
+
+```python
+import os
+from openai import OpenAI
+from ragas.llms import llm_factory
+
+client = OpenAI(
+    api_key=os.environ["DAOXE_API_KEY"],
+    base_url="https://daoxe.com/v1",
+)
+# Replace with a model id available on your DaoXE account
+llm = llm_factory("<account-model-id>", provider="openai", client=client)
+# Uses Instructor adapter via the OpenAI-compatible client
+```
+
+Disclosure: DaoXE is operated by the author of this example and is not available in mainland China.
+
 ### AWS Bedrock
 
 ```python
