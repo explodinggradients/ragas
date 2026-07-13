@@ -95,6 +95,7 @@ class LocalJSONLBackend(BaseBackend):
 
     def _load(self, data_type: str, name: str) -> t.List[t.Dict[str, t.Any]]:
         """Load data from JSONL file, raising FileNotFoundError if file doesn't exist."""
+        self._validate_resource_name(name)
         file_path = self._get_file_path(data_type, name)
 
         if not file_path.exists():
@@ -130,6 +131,7 @@ class LocalJSONLBackend(BaseBackend):
         data_model: t.Optional[t.Type[BaseModel]],
     ) -> None:
         """Save data to JSONL file, creating directory if needed."""
+        self._validate_resource_name(name)
         file_path = self._get_file_path(data_type, name)
 
         # Create directory if it doesn't exist
