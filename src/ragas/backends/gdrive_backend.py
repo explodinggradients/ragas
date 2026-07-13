@@ -397,10 +397,12 @@ class GDriveBackend(BaseBackend):
 
     def load_dataset(self, name: str) -> t.List[t.Dict[str, t.Any]]:
         """Load dataset by name."""
+        self._validate_resource_name(name)
         return self._load_data_from_spreadsheet(name, "datasets")
 
     def load_experiment(self, name: str) -> t.List[t.Dict[str, t.Any]]:
         """Load experiment by name."""
+        self._validate_resource_name(name)
         return self._load_data_from_spreadsheet(name, "experiments")
 
     def save_dataset(
@@ -410,6 +412,7 @@ class GDriveBackend(BaseBackend):
         data_model: t.Optional[t.Type[BaseModel]] = None,
     ) -> None:
         """Save dataset with given name."""
+        self._validate_resource_name(name)
         self._save_data_to_spreadsheet(name, data, "datasets", data_model)
 
     def save_experiment(
@@ -419,6 +422,7 @@ class GDriveBackend(BaseBackend):
         data_model: t.Optional[t.Type[BaseModel]] = None,
     ) -> None:
         """Save experiment with given name."""
+        self._validate_resource_name(name)
         self._save_data_to_spreadsheet(name, data, "experiments", data_model)
 
     def list_datasets(self) -> t.List[str]:

@@ -31,8 +31,12 @@ class BaseBackend(ABC):
                 # Initialize your storage connection
 
             def load_dataset(self, name: str):
-                # Load dataset by name, raise FileNotFoundError if missing
-                pass
+                # Load dataset by name, raise FileNotFoundError if missing.
+                # Subclasses that override the public methods MUST call
+                # ``self._validate_resource_name(name)`` at the entry so the
+                # API-level guard fires consistently across backends.
+                self._validate_resource_name(name)
+                ...
 
     Usage by End Users:
         # Via string backend registration
@@ -42,6 +46,43 @@ class BaseBackend(ABC):
         backend = MyBackend(config)
         dataset = Dataset("my_data", backend)
     """
+
+    @staticmethod
+    def _validate_resource_name(name: t.Any) -> None:
+        """Validate a dataset / experiment name at the API boundary.
+
+        Rejects names that cannot be safely turned into a storage path
+        or dict key:
+
+        - non-strings,
+        - empty or whitespace-only strings,
+        - names containing path separators (``/``, ``\\``) or null bytes,
+        - reserved path tokens (``.``, ``..``) and names starting with
+          ``.`` (which would hide files on POSIX).
+
+        Args:
+            name: The user-supplied dataset or experiment name.
+
+        Raises:
+            TypeError: If ``name`` is not a string.
+            ValueError: If ``name`` is empty, whitespace-only, contains
+                a path separator or null byte, equals ``.`` or ``..``,
+                or starts with ``.``.
+        """
+        if not isinstance(name, str):
+            raise TypeError(
+                f"Dataset/experiment name must be a string, got {type(name).__name__}"
+            )
+        if not name or not name.strip():
+            raise ValueError("Dataset/experiment name must be a non-empty string")
+        if "/" in name or "\\" in name or "\x00" in name:
+            raise ValueError(
+                "Dataset/experiment name must not contain path separators or null bytes"
+            )
+        if name in (".", "..") or name.startswith("."):
+            raise ValueError(
+                "Dataset/experiment name must not be a hidden / relative path"
+            )
 
     @abstractmethod
     def load_dataset(self, name: str) -> t.List[t.Dict[str, t.Any]]:

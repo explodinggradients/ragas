@@ -46,7 +46,11 @@ class InMemoryBackend(BaseBackend):
 
         Raises:
             FileNotFoundError: If dataset doesn't exist
+            TypeError: If ``name`` is not a string
+            ValueError: If ``name`` is empty, contains path separators,
+                equals ``.`` or ``..``, or starts with ``.``
         """
+        self._validate_resource_name(name)
         if name not in self._datasets:
             raise FileNotFoundError(f"Dataset '{name}' not found")
 
@@ -64,7 +68,11 @@ class InMemoryBackend(BaseBackend):
 
         Raises:
             FileNotFoundError: If experiment doesn't exist
+            TypeError: If ``name`` is not a string
+            ValueError: If ``name`` is empty, contains path separators,
+                equals ``.`` or ``..``, or starts with ``.``
         """
+        self._validate_resource_name(name)
         if name not in self._experiments:
             raise FileNotFoundError(f"Experiment '{name}' not found")
 
@@ -89,6 +97,7 @@ class InMemoryBackend(BaseBackend):
             - Handles empty data list gracefully
             - data_model is ignored (for compatibility with BaseBackend interface)
         """
+        self._validate_resource_name(name)
         # Store a deep copy to prevent accidental modification of original data
         self._datasets[name] = deepcopy(data)
 
@@ -110,6 +119,7 @@ class InMemoryBackend(BaseBackend):
             - Handles empty data list gracefully
             - data_model is ignored (for compatibility with BaseBackend interface)
         """
+        self._validate_resource_name(name)
         # Store a deep copy to prevent accidental modification of original data
         self._experiments[name] = deepcopy(data)
 
