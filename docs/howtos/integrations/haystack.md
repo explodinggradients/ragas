@@ -12,7 +12,7 @@ In this tutorial, we will build a RAG pipeline using Haystack and evaluate it wi
 
 
 ```python
-%pip install ragas-haystack
+%pip install -U "ragas-haystack>=4.0.0"
 ```
 
 #### Getting the data
@@ -123,17 +123,23 @@ Make sure to include all relevant data for each metric to ensure accurate evalua
 
 ```python
 from haystack_integrations.components.evaluators.ragas import RagasEvaluator
+from openai import AsyncOpenAI
+from ragas.embeddings.base import embedding_factory
+from ragas.llms import llm_factory
+from ragas.metrics.collections import AnswerRelevancy, ContextPrecision, Faithfulness
 
-from langchain_openai import ChatOpenAI
-from ragas.llms import LangchainLLMWrapper
-from ragas.metrics import AnswerRelevancy, ContextPrecision, Faithfulness
-
-llm = ChatOpenAI(model="gpt-4o-mini")
-evaluator_llm = LangchainLLMWrapper(llm)
+client = AsyncOpenAI()
+evaluator_llm = llm_factory("gpt-4o-mini", client=client)
+evaluator_embeddings = embedding_factory(
+    "openai", model="text-embedding-3-small", client=client
+)
 
 ragas_evaluator = RagasEvaluator(
-    ragas_metrics=[AnswerRelevancy(), ContextPrecision(), Faithfulness()],
-    evaluator_llm=evaluator_llm,
+    ragas_metrics=[
+        AnswerRelevancy(llm=evaluator_llm, embeddings=evaluator_embeddings),
+        ContextPrecision(llm=evaluator_llm),
+        Faithfulness(llm=evaluator_llm),
+    ],
 )
 ```
 
@@ -169,8 +175,6 @@ rag_pipeline.connect("retriever", "prompt_builder")
 rag_pipeline.connect("prompt_builder.prompt", "llm.messages")
 rag_pipeline.connect("llm.replies", "answer_builder.replies")
 rag_pipeline.connect("retriever", "answer_builder.documents")
-rag_pipeline.connect("llm.replies", "answer_builder.replies")
-rag_pipeline.connect("retriever", "answer_builder.documents")
 rag_pipeline.connect("retriever", "ragas_evaluator.documents")
 rag_pipeline.connect("llm.replies", "ragas_evaluator.response")
 ```
@@ -199,46 +203,38 @@ result = rag_pipeline.run(
     }
 )
 
-print(result['answer_builder']['answers'][0].data, '\n')
-print(result['ragas_evaluator']['result'])
-```
-Output
-```
-Evaluating: 100%|██████████| 3/3 [00:14<00:00,  4.72s/it]
+print(result["answer_builder"]["answers"][0].data, "\n")
 
-Meta AI's LLaMA models stand out due to their open-source nature, which allows researchers and developers easy access to high-quality language models without the need for expensive resources. This accessibility fosters innovation and experimentation, enabling collaboration across various industries. Moreover, the strong performance of the LLaMA models further enhances their appeal, making them valuable tools for advancing AI development.
-
-{'answer_relevancy': 0.9782, 'context_precision': 1.0000, 'faithfulness': 1.0000}
+for metric_name, metric_result in result["ragas_evaluator"]["result"].items():
+    print(metric_name, metric_result.value)
 ```
 
 ## Advance Usage
 
 Instead of using the default ragas metrics, you can change them to fit your needs or even create your own custom metrics. After that, you can pass these to the RagasEvaluator component. To learn more about how to customize ragas metrics, check out the [docs](https://docs.ragas.io/en/stable/howtos/customizations/).
 
-In the example below, we will define two custom Ragas metrics:
-
-1. **SportsRelevanceMetric**: This metric evaluates whether a question and its response are related to sports.
-2. **AnswerQualityMetric**: This metric measures how well the response provided by the LLM answers the user's question.
+In the example below, we configure a rubric-based metric that evaluates whether a question and its response are related to sports.
 
 
 ```python
-from ragas.metrics import RubricsScore, AspectCritic
+from ragas.metrics.collections import DomainSpecificRubrics
 
-SportsRelevanceMetric = AspectCritic(
-    name="sports_relevance_metric",
-    definition="Were the question and response related to sports?",
-    llm=evaluator_llm,
-)
-
-rubrics = {
-    "score1_description": "The response does not answer the user input.",
-    "score2_description": "The response partially answers the user input.",
-    "score3_description": "The response fully answer the user input"
+sports_rubrics = {
+    "score1_description": "The question and response are unrelated to sports.",
+    "score2_description": "They contain only a weak or incidental sports connection.",
+    "score3_description": "They are generally related to sports but contain some irrelevant content.",
+    "score4_description": "They are clearly related to sports with only minor irrelevant content.",
+    "score5_description": "Both the question and response are entirely related to sports.",
 }
 
 evaluator = RagasEvaluator(
-    ragas_metrics=[SportsRelevanceMetric, RubricsScore(llm=evaluator_llm, rubrics=rubrics)],
-    evaluator_llm=evaluator_llm
+    ragas_metrics=[
+        DomainSpecificRubrics(
+            llm=evaluator_llm,
+            rubrics=sports_rubrics,
+            name="sports_relevance",
+        )
+    ]
 )
 
 output = evaluator.run(
@@ -253,12 +249,6 @@ output = evaluator.run(
                 " followers worldwide",
 )
 
-output['result']
+metric_result = output["result"]["sports_relevance"]
+print(metric_result.value, metric_result.reason)
 ```
-Output
-```
-Evaluating: 100%|██████████| 2/2 [00:01<00:00,  1.62it/s]
-
-{'sports_relevance_metric': 1.0000, 'domain_specific_rubrics': 3.0000}
-```
-
