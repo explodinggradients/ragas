@@ -13,7 +13,7 @@ from langchain_openai.embeddings import OpenAIEmbeddings
 from pydantic.dataclasses import dataclass
 from pydantic_core import CoreSchema, core_schema
 
-from ragas._analytics import EmbeddingUsageEvent, track
+from ragas._analytics import EmbeddingUsageEvent, _safe_model_attr, track
 from ragas.cache import CacheInterface, cacher
 from ragas.embeddings.utils import run_async_in_current_loop, validate_texts
 from ragas.run_config import RunConfig, add_async_retry, add_retry
@@ -305,7 +305,7 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
         track(
             EmbeddingUsageEvent(
                 provider="langchain",
-                model=getattr(self.embeddings, "model", None),
+                model=_safe_model_attr(getattr(self.embeddings, "model", None)),
                 embedding_type="legacy",
                 num_requests=1,
                 is_async=False,
@@ -323,7 +323,7 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
         track(
             EmbeddingUsageEvent(
                 provider="langchain",
-                model=getattr(self.embeddings, "model", None),
+                model=_safe_model_attr(getattr(self.embeddings, "model", None)),
                 embedding_type="legacy",
                 num_requests=len(texts),
                 is_async=False,
@@ -341,7 +341,7 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
         track(
             EmbeddingUsageEvent(
                 provider="langchain",
-                model=getattr(self.embeddings, "model", None),
+                model=_safe_model_attr(getattr(self.embeddings, "model", None)),
                 embedding_type="legacy",
                 num_requests=1,
                 is_async=True,
@@ -359,7 +359,7 @@ class LangchainEmbeddingsWrapper(BaseRagasEmbeddings):
         track(
             EmbeddingUsageEvent(
                 provider="langchain",
-                model=getattr(self.embeddings, "model", None),
+                model=_safe_model_attr(getattr(self.embeddings, "model", None)),
                 embedding_type="legacy",
                 num_requests=len(texts),
                 is_async=True,

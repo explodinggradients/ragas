@@ -237,6 +237,27 @@ class IsCompleteEvent(BaseEvent):
     is_completed: bool = True  # True if the event was completed, False otherwise
 
 
+def _safe_model_attr(model_obj: t.Any) -> t.Optional[str]:
+    """Coerce a possibly-non-string model attribute into a safe string.
+
+    Returns ``None`` when the attribute is missing or ``None`` itself,
+    returns the value unchanged when it is already a ``str``,
+    and otherwise returns ``str(model_obj)``.
+
+    This is the single coercion point for the ``EmbeddingUsageEvent.model``
+    field (typed ``Optional[str]``). Several call sites read
+    ``getattr(self.embeddings, "model", None)`` where the wrapped object
+    can expose a non-string model — a loaded ``SentenceTransformer`` /
+    ``CrossEncoder`` (HuggingFace's ``langchain_community.embeddings``),
+    a ``FastEmbedEmbeddings`` instance, or a custom embedding wrapper —
+    which would crash Pydantic's ``ValidationError`` inside ``track(...)``
+    before the ``@silent`` decorator can swallow it.
+    """
+    if model_obj is None or isinstance(model_obj, str):
+        return model_obj
+    return str(model_obj)
+
+
 class LLMUsageEvent(BaseEvent):
     provider: str  # "openai", "anthropic", "langchain", etc.
     model: t.Optional[str] = None  # Model name (if available)
