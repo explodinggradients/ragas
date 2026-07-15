@@ -8,7 +8,12 @@ from ragas.cost import (
     get_token_usage_for_anthropic,
     get_token_usage_for_azure_ai,
     get_token_usage_for_bedrock,
+    get_token_usage_for_cohere,
+    get_token_usage_for_google_genai,
+    get_token_usage_for_langchain_chat_models,
+    get_token_usage_for_mistral,
     get_token_usage_for_openai,
+    get_token_usage_for_vertex_ai,
 )
 
 """
@@ -142,6 +147,102 @@ azure_ai_result = LLMResult(
     },
 )
 
+# Real langchain-google-genai shape: usage_metadata on message, model_name in
+# response_metadata.
+google_genai_result = LLMResult(
+    generations=[
+        [
+            ChatGeneration(
+                message=AIMessage(
+                    content="Hello, world!",
+                    usage_metadata={
+                        "input_tokens": 12,
+                        "output_tokens": 826,
+                        "total_tokens": 838,
+                        "input_token_details": {"cache_read": 0},
+                        "output_token_details": {"reasoning": 777},
+                    },
+                    response_metadata={
+                        "model_provider": "google_genai",
+                        "model_name": "models/gemini-2.5-flash",
+                    },
+                )
+            )
+        ]
+    ],
+    llm_output={},
+)
+
+# Real langchain-google-vertexai shape.
+vertex_ai_result = LLMResult(
+    generations=[
+        [
+            ChatGeneration(
+                message=AIMessage(
+                    content="Hello, world!",
+                    usage_metadata={
+                        "input_tokens": 18,
+                        "output_tokens": 1,
+                        "total_tokens": 19,
+                    },
+                    response_metadata={
+                        "model_provider": "google_vertexai",
+                        "model_name": "gemini-1.5-pro",
+                    },
+                )
+            )
+        ]
+    ],
+    llm_output={},
+)
+
+# Real langchain-mistralai shape (stream-final chunk sets model_name).
+mistral_result = LLMResult(
+    generations=[
+        [
+            ChatGeneration(
+                message=AIMessage(
+                    content="Hello, world!",
+                    usage_metadata={
+                        "input_tokens": 32,
+                        "output_tokens": 52,
+                        "total_tokens": 84,
+                    },
+                    response_metadata={
+                        "model_provider": "mistralai",
+                        "model_name": "mistral-small",
+                        "finish_reason": "stop",
+                    },
+                )
+            )
+        ]
+    ],
+    llm_output={},
+)
+
+# Real langchain-cohere shape.
+cohere_result = LLMResult(
+    generations=[
+        [
+            ChatGeneration(
+                message=AIMessage(
+                    content="Hello, world!",
+                    usage_metadata={
+                        "input_tokens": 24,
+                        "output_tokens": 7,
+                        "total_tokens": 31,
+                    },
+                    response_metadata={
+                        "model_provider": "cohere",
+                        "model_name": "command-r-plus",
+                    },
+                )
+            )
+        ]
+    ],
+    llm_output={},
+)
+
 
 def test_parse_llm_results():
     # openai
@@ -228,4 +329,167 @@ def test_cost_callback_handler():
     assert cost_cb.total_cost(0.1) == 2.0
     assert (
         cost_cb.total_cost(cost_per_input_token=0.1, cost_per_output_token=0.1) == 2.0
+    )
+
+
+def test_parse_llm_results_modern_chat_providers():
+    # Google GenAI
+    token_usage = get_token_usage_for_google_genai(google_genai_result)
+    assert token_usage == TokenUsage(
+        input_tokens=12, output_tokens=826, model="models/gemini-2.5-flash"
+    )
+
+    # Vertex AI
+    token_usage = get_token_usage_for_vertex_ai(vertex_ai_result)
+    assert token_usage == TokenUsage(
+        input_tokens=18, output_tokens=1, model="gemini-1.5-pro"
+    )
+
+    # Mistral
+    token_usage = get_token_usage_for_mistral(mistral_result)
+    assert token_usage == TokenUsage(
+        input_tokens=32, output_tokens=52, model="mistral-small"
+    )
+
+    # Cohere
+    token_usage = get_token_usage_for_cohere(cohere_result)
+    assert token_usage == TokenUsage(
+        input_tokens=24, output_tokens=7, model="command-r-plus"
+    )
+
+
+def test_langchain_chat_models_parser_edge_cases():
+    # Empty generations → zeros
+    empty_result = LLMResult(generations=[], llm_output={})
+    assert get_token_usage_for_langchain_chat_models(empty_result) == TokenUsage(
+        input_tokens=0, output_tokens=0
+    )
+
+    # ChatGeneration without usage_metadata → zeros, no model
+    no_usage = LLMResult(
+        generations=[
+            [
+                ChatGeneration(
+                    message=AIMessage(
+                        content="hi",
+                        response_metadata={"model_name": "anything"},
+                    )
+                )
+            ]
+        ],
+        llm_output={},
+    )
+    assert get_token_usage_for_langchain_chat_models(no_usage) == TokenUsage(
+        input_tokens=0, output_tokens=0, model="anything"
+    )
+
+    # usage_metadata present, no response_metadata → counts, no model
+    no_model = LLMResult(
+        generations=[
+            [
+                ChatGeneration(
+                    message=AIMessage(
+                        content="hi",
+                        usage_metadata={
+                            "input_tokens": 5,
+                            "output_tokens": 7,
+                            "total_tokens": 12,
+                        },
+                    )
+                )
+            ]
+        ],
+        llm_output={},
+    )
+    assert get_token_usage_for_langchain_chat_models(no_model) == TokenUsage(
+        input_tokens=5, output_tokens=7, model=""
+    )
+
+    # Partial usage_metadata (only input_tokens)
+    partial = LLMResult(
+        generations=[
+            [
+                ChatGeneration(
+                    message=AIMessage(
+                        content="hi",
+                        usage_metadata={
+                            "input_tokens": 11,
+                            "output_tokens": 0,
+                            "total_tokens": 11,
+                        },
+                        response_metadata={"model_name": "any-model"},
+                    )
+                )
+            ]
+        ],
+        llm_output={},
+    )
+    assert get_token_usage_for_langchain_chat_models(partial) == TokenUsage(
+        input_tokens=11, output_tokens=0, model="any-model"
+    )
+
+    # usage_metadata explicitly None
+    explicit_none = LLMResult(
+        generations=[
+            [
+                ChatGeneration(
+                    message=AIMessage(
+                        content="hi",
+                        usage_metadata=None,
+                        response_metadata={"model_name": "any-model"},
+                    )
+                )
+            ]
+        ],
+        llm_output={},
+    )
+    assert get_token_usage_for_langchain_chat_models(explicit_none) == TokenUsage(
+        input_tokens=0, output_tokens=0, model="any-model"
+    )
+
+    # Multi-generation sum (n > 1) — picks first non-empty model
+    multi = LLMResult(
+        generations=[
+            [
+                ChatGeneration(
+                    message=AIMessage(
+                        content="a",
+                        usage_metadata={
+                            "input_tokens": 2,
+                            "output_tokens": 3,
+                            "total_tokens": 5,
+                        },
+                        response_metadata={"model_name": "models/multi"},
+                    )
+                ),
+                ChatGeneration(
+                    message=AIMessage(
+                        content="b",
+                        usage_metadata={
+                            "input_tokens": 4,
+                            "output_tokens": 5,
+                            "total_tokens": 9,
+                        },
+                        response_metadata={"model_name": "models/multi"},
+                    )
+                ),
+            ]
+        ],
+        llm_output={},
+    )
+    assert get_token_usage_for_langchain_chat_models(multi) == TokenUsage(
+        input_tokens=6, output_tokens=8, model="models/multi"
+    )
+
+
+def test_langchain_chat_models_parser_handles_non_dict_usage_metadata():
+    # Some downstream code may set `usage_metadata` to a non-dict after
+    # construction. The parser must fall back to zeros rather than raise.
+    weird_msg = AIMessage(content="hi", response_metadata={"model_name": "any-model"})
+    # Bypass pydantic validation to inject a non-dict value (the realistic
+    # # case is downstream code reassigning the attribute).
+    object.__setattr__(weird_msg, "usage_metadata", "not-a-dict")
+    weird = LLMResult(generations=[[ChatGeneration(message=weird_msg)]], llm_output={})
+    assert get_token_usage_for_langchain_chat_models(weird) == TokenUsage(
+        input_tokens=0, output_tokens=0, model="any-model"
     )
