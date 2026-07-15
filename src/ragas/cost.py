@@ -2,6 +2,7 @@ import logging
 import typing as t
 
 from langchain_core.callbacks.base import BaseCallbackHandler
+from langchain_core.messages import AIMessage
 from langchain_core.outputs import ChatGeneration, ChatResult, LLMResult
 from pydantic import BaseModel
 
@@ -156,6 +157,71 @@ def get_token_usage_for_azure_ai(
     return TokenUsage(
         input_tokens=input_tokens, output_tokens=output_tokens, model=model
     )
+
+
+def get_token_usage_for_langchain_chat_models(
+    llm_result: t.Union[LLMResult, ChatResult],
+) -> TokenUsage:
+    """Parse LangChain-standard chat-model usage.
+
+    Reads ``message.usage_metadata`` (the LangChain-standard
+    ``{"input_tokens", "output_tokens", "total_tokens"}`` mapping) and
+    ``message.response_metadata["model_name"]`` from every ChatGeneration in
+    ``llm_result.generations``. Used by every modern LangChain chat model that
+    follows the LangChain-standard usage surface (Google GenAI, Vertex AI,
+    Mistral, Cohere, and any future provider that emits the standard shape).
+    """
+    token_usages: t.List[TokenUsage] = []
+    for gs in llm_result.generations:
+        for g in gs:
+            if not isinstance(g, ChatGeneration):
+                continue
+            message: AIMessage = t.cast(AIMessage, g.message)
+            usage = message.usage_metadata or {}
+            if not isinstance(usage, dict):
+                usage = {}
+            input_tokens = int(usage.get("input_tokens", 0) or 0)
+            output_tokens = int(usage.get("output_tokens", 0) or 0)
+            model = get_from_dict(message.response_metadata, "model_name", "")
+            token_usages.append(
+                TokenUsage(
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    model=model,
+                )
+            )
+    if not token_usages:
+        return TokenUsage(input_tokens=0, output_tokens=0)
+    model = next((u.model for u in token_usages if u.model), "")
+    return sum(token_usages, TokenUsage(input_tokens=0, output_tokens=0, model=model))
+
+
+def get_token_usage_for_google_genai(
+    llm_result: t.Union[LLMResult, ChatResult],
+) -> TokenUsage:
+    """Parse token usage from ``langchain_google_genai.ChatGoogleGenerativeAI``."""
+    return get_token_usage_for_langchain_chat_models(llm_result)
+
+
+def get_token_usage_for_vertex_ai(
+    llm_result: t.Union[LLMResult, ChatResult],
+) -> TokenUsage:
+    """Parse token usage from ``langchain_google_vertexai.ChatVertexAI``."""
+    return get_token_usage_for_langchain_chat_models(llm_result)
+
+
+def get_token_usage_for_mistral(
+    llm_result: t.Union[LLMResult, ChatResult],
+) -> TokenUsage:
+    """Parse token usage from ``langchain_mistralai.ChatMistralAI``."""
+    return get_token_usage_for_langchain_chat_models(llm_result)
+
+
+def get_token_usage_for_cohere(
+    llm_result: t.Union[LLMResult, ChatResult],
+) -> TokenUsage:
+    """Parse token usage from ``langchain_cohere.ChatCohere``."""
+    return get_token_usage_for_langchain_chat_models(llm_result)
 
 
 class CostCallbackHandler(BaseCallbackHandler):
