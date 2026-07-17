@@ -2,7 +2,8 @@ import logging
 import typing as t
 
 from langchain_core.callbacks.base import BaseCallbackHandler
-from langchain_core.outputs import ChatGeneration, ChatResult, LLMResult
+from langchain_core.messages import AIMessage
+from langchain_core.outputs import ChatGeneration, ChatResult, Generation, LLMResult
 from pydantic import BaseModel
 
 from ragas.utils import get_from_dict
@@ -75,38 +76,103 @@ def get_token_usage_for_openai(
     )
 
 
+def _legacy_text_usage(
+    llm_result: t.Union[LLMResult, ChatResult],
+    *,
+    usage_keys: t.Tuple[str, str],
+    model_keys: t.Tuple[str, ...],
+) -> TokenUsage:
+    """Read token usage from legacy text-completion `Generation` entries.
+
+    Some LangChain `BaseLLM` integrations expose the result as a `Generation`
+    (not `ChatGeneration`) with usage living in ``generation_info`` or
+    ``llm_output["usage"]``. This helper walks every entry in
+    ``llm_result.generations``, picks the first non-zero match, and falls back
+    to ``llm_output["usage"]`` for the same counts when needed.
+
+    Returns ``TokenUsage(0, 0)`` if nothing usable is present.
+    """
+    for gs in llm_result.generations:
+        for g in gs:
+            if isinstance(g, ChatGeneration):
+                continue
+            if not isinstance(g, Generation):
+                continue
+            gen_info = g.generation_info or {}
+            input_tokens = int(gen_info.get(usage_keys[0], 0) or 0)
+            output_tokens = int(gen_info.get(usage_keys[1], 0) or 0)
+            model = next(
+                (gen_info.get(k, "") for k in model_keys if gen_info.get(k)), ""
+            )
+            if input_tokens or output_tokens:
+                return TokenUsage(
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    model=model,
+                )
+    llm_output = llm_result.llm_output or {}
+    if not isinstance(llm_output, dict):
+        return TokenUsage(input_tokens=0, output_tokens=0)
+    usage = llm_output.get("usage") or {}
+    if not isinstance(usage, dict):
+        usage = {}
+    input_tokens = int(usage.get(usage_keys[0], 0) or 0)
+    output_tokens = int(usage.get(usage_keys[1], 0) or 0)
+    if not (input_tokens or output_tokens):
+        return TokenUsage(input_tokens=0, output_tokens=0)
+    model = next((llm_output.get(k, "") for k in model_keys if llm_output.get(k)), "")
+    return TokenUsage(
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        model=model,
+    )
+
+
 def get_token_usage_for_anthropic(
     llm_result: t.Union[LLMResult, ChatResult],
 ) -> TokenUsage:
     token_usages = []
     for gs in llm_result.generations:
         for g in gs:
-            if isinstance(g, ChatGeneration):
-                if g.message.response_metadata != {}:
-                    # Anthropic
-                    token_usages.append(
-                        TokenUsage(
-                            input_tokens=get_from_dict(
-                                g.message.response_metadata,
-                                "usage.input_tokens",
-                                0,
-                            ),
-                            output_tokens=get_from_dict(
-                                g.message.response_metadata,
-                                "usage.output_tokens",
-                                0,
-                            ),
-                            model=get_from_dict(
-                                g.message.response_metadata, "model", ""
-                            ),
-                        )
-                    )
-        model = next((usage.model for usage in token_usages if usage.model), "")
+            if not isinstance(g, ChatGeneration):
+                continue
+            message: AIMessage = t.cast(AIMessage, g.message)
+            usage_meta = message.usage_metadata or {}
+            if not isinstance(usage_meta, dict):
+                usage_meta = {}
+            um_input = int(usage_meta.get("input_tokens", 0) or 0)
+            um_output = int(usage_meta.get("output_tokens", 0) or 0)
+            response_meta = message.response_metadata or {}
+            if not isinstance(response_meta, dict):
+                response_meta = {}
+            r_input = int(get_from_dict(response_meta, "usage.input_tokens", 0) or 0)
+            r_output = int(get_from_dict(response_meta, "usage.output_tokens", 0) or 0)
+            # Prefer the LangChain-standard usage_metadata when populated; fall
+            # back to response_metadata["usage.*"] for legacy chat integrations.
+            input_tokens = um_input or r_input
+            output_tokens = um_output or r_output
+            if not (input_tokens or output_tokens):
+                continue
+            model = get_from_dict(response_meta, "model", "") or get_from_dict(
+                response_meta, "model_name", ""
+            )
+            token_usages.append(
+                TokenUsage(
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    model=model,
+                )
+            )
+    if token_usages:
+        model = next((u.model for u in token_usages if u.model), "")
         return sum(
             token_usages, TokenUsage(input_tokens=0, output_tokens=0, model=model)
         )
-    else:
-        return TokenUsage(input_tokens=0, output_tokens=0)
+    return _legacy_text_usage(
+        llm_result,
+        usage_keys=("input_tokens", "output_tokens"),
+        model_keys=("model", "model_name", "model_id"),
+    )
 
 
 def get_token_usage_for_bedrock(
@@ -115,30 +181,45 @@ def get_token_usage_for_bedrock(
     token_usages = []
     for gs in llm_result.generations:
         for g in gs:
-            if isinstance(g, ChatGeneration):
-                if g.message.response_metadata != {}:
-                    token_usages.append(
-                        TokenUsage(
-                            input_tokens=get_from_dict(
-                                g.message.response_metadata,
-                                "usage.prompt_tokens",
-                                0,
-                            ),
-                            output_tokens=get_from_dict(
-                                g.message.response_metadata,
-                                "usage.completion_tokens",
-                                0,
-                            ),
-                            model=get_from_dict(
-                                g.message.response_metadata, "model_id", ""
-                            ),
-                        )
-                    )
-        model = next((usage.model for usage in token_usages if usage.model), "")
+            if not isinstance(g, ChatGeneration):
+                continue
+            message: AIMessage = t.cast(AIMessage, g.message)
+            usage_meta = message.usage_metadata or {}
+            if not isinstance(usage_meta, dict):
+                usage_meta = {}
+            um_input = int(usage_meta.get("input_tokens", 0) or 0)
+            um_output = int(usage_meta.get("output_tokens", 0) or 0)
+            response_meta = message.response_metadata or {}
+            if not isinstance(response_meta, dict):
+                response_meta = {}
+            r_input = int(get_from_dict(response_meta, "usage.prompt_tokens", 0) or 0)
+            r_output = int(
+                get_from_dict(response_meta, "usage.completion_tokens", 0) or 0
+            )
+            input_tokens = um_input or r_input
+            output_tokens = um_output or r_output
+            if not (input_tokens or output_tokens):
+                continue
+            model = get_from_dict(response_meta, "model_id", "") or get_from_dict(
+                response_meta, "model_name", ""
+            )
+            token_usages.append(
+                TokenUsage(
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    model=model,
+                )
+            )
+    if token_usages:
+        model = next((u.model for u in token_usages if u.model), "")
         return sum(
             token_usages, TokenUsage(input_tokens=0, output_tokens=0, model=model)
         )
-    return TokenUsage(input_tokens=0, output_tokens=0)
+    return _legacy_text_usage(
+        llm_result,
+        usage_keys=("prompt_tokens", "completion_tokens"),
+        model_keys=("model_id", "model_name", "model"),
+    )
 
 
 def get_token_usage_for_azure_ai(

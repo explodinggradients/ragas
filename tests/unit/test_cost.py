@@ -1,6 +1,6 @@
 import pytest
 from langchain_core.messages import AIMessage
-from langchain_core.outputs import ChatGeneration, LLMResult
+from langchain_core.outputs import ChatGeneration, Generation, LLMResult
 
 from ragas.cost import (
     CostCallbackHandler,
@@ -228,4 +228,113 @@ def test_cost_callback_handler():
     assert cost_cb.total_cost(0.1) == 2.0
     assert (
         cost_cb.total_cost(cost_per_input_token=0.1, cost_per_output_token=0.1) == 2.0
+    )
+
+
+# Legacy BaseLLM (text-completion) shape — Generation (not ChatGeneration).
+anthropic_legacy_generation_result = LLMResult(
+    generations=[
+        [
+            Generation(
+                text="Hello, world!",
+                generation_info={
+                    "usage": {"input_tokens": 12, "output_tokens": 7},
+                    "model": "claude-3-haiku-20240307",
+                },
+            )
+        ]
+    ],
+    llm_output={
+        "usage": {"input_tokens": 12, "output_tokens": 7},
+        "model": "claude-3-haiku-20240307",
+    },
+)
+
+bedrock_legacy_generation_result = LLMResult(
+    generations=[
+        [
+            Generation(
+                text="Hello, world!",
+                generation_info={
+                    "usage": {"prompt_tokens": 24, "completion_tokens": 9},
+                    "model_id": "anthropic.claude-3-haiku-20240307-v1:0",
+                },
+            )
+        ]
+    ],
+    llm_output={
+        "usage": {"prompt_tokens": 24, "completion_tokens": 9},
+        "model_id": "anthropic.claude-3-haiku-20240307-v1:0",
+    },
+)
+
+
+def test_get_token_usage_for_anthropic_legacy_generation():
+    # Legacy Generation result with usage in generation_info AND llm_output
+    # — previously returned TokenUsage(0, 0) because the parser gated on
+    # response_metadata != {} and skipped non-chat Generation entries.
+    token_usage = get_token_usage_for_anthropic(anthropic_legacy_generation_result)
+    assert token_usage == TokenUsage(
+        input_tokens=12, output_tokens=7, model="claude-3-haiku-20240307"
+    )
+
+
+def test_get_token_usage_for_bedrock_legacy_generation():
+    # Same legacy shape for Bedrock — usage uses prompt_tokens / completion_tokens
+    # and the model lives under model_id, both surfaced via the new fallback.
+    token_usage = get_token_usage_for_bedrock(bedrock_legacy_generation_result)
+    assert token_usage == TokenUsage(
+        input_tokens=24,
+        output_tokens=9,
+        model="anthropic.claude-3-haiku-20240307-v1:0",
+    )
+
+
+def test_get_token_usage_for_anthropic_empty_response_metadata_falls_back_to_usage_metadata():
+    # Chat result whose response_metadata is empty but usage_metadata is
+    # populated — the LangChain-standard surface — must still be picked up.
+    chat_result = LLMResult(
+        generations=[
+            [
+                ChatGeneration(
+                    message=AIMessage(
+                        content="hi",
+                        usage_metadata={
+                            "input_tokens": 5,
+                            "output_tokens": 3,
+                            "total_tokens": 8,
+                        },
+                        response_metadata={},
+                    )
+                )
+            ]
+        ],
+        llm_output={},
+    )
+    token_usage = get_token_usage_for_anthropic(chat_result)
+    assert token_usage == TokenUsage(input_tokens=5, output_tokens=3, model="")
+
+
+def test_get_token_usage_for_bedrock_empty_response_metadata_falls_back_to_usage_metadata():
+    chat_result = LLMResult(
+        generations=[
+            [
+                ChatGeneration(
+                    message=AIMessage(
+                        content="hi",
+                        usage_metadata={
+                            "input_tokens": 11,
+                            "output_tokens": 4,
+                            "total_tokens": 15,
+                        },
+                        response_metadata={"model_name": "amazon.titan-text-lite-v1"},
+                    )
+                )
+            ]
+        ],
+        llm_output={},
+    )
+    token_usage = get_token_usage_for_bedrock(chat_result)
+    assert token_usage == TokenUsage(
+        input_tokens=11, output_tokens=4, model="amazon.titan-text-lite-v1"
     )
