@@ -86,10 +86,24 @@ class LocalCSVBackend(BaseBackend):
                 pass
             return
 
-        # Write data to CSV
+        # Write data to CSV. Rows may not share the exact same keys (e.g.
+        # experiment results with optional diagnostic fields). Union all keys
+        # so DictWriter does not raise ValueError (#2860).
+        fieldnames: list[str] = []
+        seen: set[str] = set()
+        for row in data:
+            for key in row.keys():
+                if key not in seen:
+                    seen.add(key)
+                    fieldnames.append(str(key))
+
         with open(file_path, "w", newline="", encoding="utf-8") as f:
-            fieldnames = data[0].keys()
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer = csv.DictWriter(
+                f,
+                fieldnames=fieldnames,
+                extrasaction="ignore",
+                restval="",
+            )
             writer.writeheader()
             writer.writerows(data)
 

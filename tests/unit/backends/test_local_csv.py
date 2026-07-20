@@ -466,3 +466,20 @@ class TestErrorHandling:
             print(f"Malformed CSV loaded: {loaded_data}")
         except Exception as e:
             print(f"Malformed CSV failed to load: {e}")
+
+
+def test_save_dataset_rows_with_different_keys(backend, temp_dir):
+    """Rows with optional fields must not crash DictWriter (#2860)."""
+    data = [
+        {"input": "q1", "score": 0.9},
+        {"input": "q2", "score": 0.8, "reason": "optional diagnostic"},
+        {"input": "q3", "error": "timeout"},
+    ]
+    backend.save_dataset("mixed", data)
+    loaded = backend.load_dataset("mixed")
+    assert len(loaded) == 3
+    # Union header: all keys present; missing cells become empty strings.
+    assert set(loaded[0].keys()) == {"input", "score", "reason", "error"}
+    assert loaded[0]["reason"] == ""
+    assert loaded[1]["reason"] == "optional diagnostic"
+    assert loaded[2]["error"] == "timeout"
