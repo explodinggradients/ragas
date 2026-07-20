@@ -511,3 +511,64 @@ if __name__ == "__main__":
             print(f"Expected ImportError: {e}")
         except Exception as e:
             print(f"Unexpected error: {e}")
+
+
+# 5. Type-Preservation Regression Tests
+class TestTypePreservation:
+    """Round-trip tests for #2865: user strings must not be silently coerced
+    into date / datetime on load, while genuine date / datetime values must
+    still be restored."""
+
+    def test_load_preserves_date_string(self, backend):
+        # A plain string that happens to look like an ISO 8601 date must
+        # come back as a string — the previous behavior coerced it to date.
+        backend.save_dataset("date_string", [{"x": "2026-07-20"}])
+        rows = backend.load_dataset("date_string")
+        assert rows[0]["x"] == "2026-07-20"
+        assert isinstance(rows[0]["x"], str)
+
+    def test_load_preserves_datetime_string(self, backend):
+        backend.save_dataset("datetime_string", [{"x": "2026-07-20T12:00:00"}])
+        rows = backend.load_dataset("datetime_string")
+        assert rows[0]["x"] == "2026-07-20T12:00:00"
+        assert isinstance(rows[0]["x"], str)
+
+    def test_load_preserves_short_hyphenated_string(self, backend):
+        # A 10-character string containing '-' was previously matched by the
+        # `len == 10 and "-" in obj` heuristic; if the string did not parse
+        # as a date the load silently dropped data or raised. It must now
+        # come back untouched.
+        backend.save_dataset("hyphenated", [{"x": "hi-jk-lm-no"}])
+        rows = backend.load_dataset("hyphenated")
+        assert rows[0]["x"] == "hi-jk-lm-no"
+        assert isinstance(rows[0]["x"], str)
+
+    def test_load_restores_actual_date(self, backend):
+        # A value that genuinely was a date at save time must come back as
+        # a date object.
+        backend.save_dataset("date_value", [{"d": date(2026, 7, 20)}])
+        rows = backend.load_dataset("date_value")
+        assert rows[0]["d"] == date(2026, 7, 20)
+        assert isinstance(rows[0]["d"], date)
+
+    def test_load_restores_actual_datetime(self, backend):
+        backend.save_dataset(
+            "datetime_value", [{"dt": datetime(2026, 7, 20, 12, 0, 0)}]
+        )
+        rows = backend.load_dataset("datetime_value")
+        assert rows[0]["dt"] == datetime(2026, 7, 20, 12, 0, 0)
+        assert isinstance(rows[0]["dt"], datetime)
+
+    def test_load_legacy_row_without_tag_does_not_coerce_string(self, temp_dir):
+        # A hand-written legacy JSONL row that lacks the discriminator:
+        # the load path should fall back to the regex-anchored ISO 8601
+        # check, which must leave "hi-jk-lm-no" as a string (it does not
+        # match the regex).
+        legacy_path = Path(temp_dir) / "datasets" / "legacy.jsonl"
+        legacy_path.parent.mkdir(parents=True, exist_ok=True)
+        legacy_path.write_text('{"x": "hi-jk-lm-no"}\n', encoding="utf-8")
+
+        backend = LocalJSONLBackend(temp_dir)
+        rows = backend.load_dataset("legacy")
+        assert rows[0]["x"] == "hi-jk-lm-no"
+        assert isinstance(rows[0]["x"], str)

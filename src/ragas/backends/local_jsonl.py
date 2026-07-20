@@ -1,6 +1,7 @@
 """Local JSONL backend implementation for projects and datasets."""
 
 import json
+import re
 import typing as t
 from datetime import date, datetime
 from pathlib import Path
@@ -9,6 +10,22 @@ from pydantic import BaseModel
 
 from .base import BaseBackend
 
+_TYPE_TAG_KEY = "__ragas_type__"
+_TYPE_TAG_DATETIME = "datetime"
+_TYPE_TAG_DATE = "date"
+
+# Every row written by this version of the backend carries a top-level
+# ``__ragas_format__`` field. The load path uses it to distinguish
+# "authoritative new-format" rows from legacy rows saved by older versions:
+# only legacy rows fall back to the regex-anchored ISO 8601 coercion.
+_FORMAT_KEY = "__ragas_format__"
+_FORMAT_VERSION = "v2"
+
+_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_DATETIME_RE = re.compile(
+    r"^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$"
+)
+
 
 class LocalJSONLBackend(BaseBackend):
     """File-based backend using JSONL format for local storage.
@@ -16,6 +33,26 @@ class LocalJSONLBackend(BaseBackend):
     Stores datasets and experiments as JSONL files (one JSON object per line).
     Preserves data types and supports complex nested structures including
     datetime objects, lists, and nested dictionaries.
+
+    On-disk format:
+        Records are written as JSONL (one JSON object per line). ``date`` and
+        ``datetime`` values are tagged with a discriminator so the load path
+        can restore them without relying on string shape heuristics:
+
+            {"d": {"__ragas_type__": "date", "value": "2026-07-20"}}
+            {"d": {"__ragas_type__": "datetime", "value": "2026-07-20T12:00:00"}}
+
+        Strings, numbers, booleans, ``None``, lists, and nested dicts are
+        written verbatim. Values that were not a ``date`` / ``datetime`` at
+        save time stay as their original type on load — even if the string
+        happens to look like an ISO 8601 date.
+
+    Legacy compatibility:
+        Records written by older versions of this backend do not carry the
+        discriminator. For such records the load path uses a
+        regex-anchored ISO 8601 fallback so that genuine ISO strings (e.g.
+        ``"2026-07-20"``) are still coerced, but arbitrary user strings
+        such as ``"hi-jk-lm-no"`` are left untouched.
 
     Directory Structure:
         root_dir/
@@ -30,8 +67,8 @@ class LocalJSONLBackend(BaseBackend):
         root_dir: Directory path for storing JSONL files
 
     Features:
-        - Preserves Python data types (int, float, bool, None)
-        - Automatic datetime/date serialization to ISO format
+        - Preserves Python data types (int, float, bool, None, str)
+        - Round-trips ``date`` / ``datetime`` values via a tagged representation
         - Supports nested dictionaries and lists
         - Handles malformed JSON lines gracefully (skips with warning)
         - UTF-8 encoding for international text
@@ -58,40 +95,80 @@ class LocalJSONLBackend(BaseBackend):
         """Get the full file path for a dataset or experiment."""
         return self._get_data_dir(data_type) / f"{name}.jsonl"
 
-    def _serialize_datetime(self, obj: t.Any) -> t.Any:
-        """Serialize datetime objects to ISO format strings."""
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        elif isinstance(obj, date):
-            return obj.isoformat()
-        elif isinstance(obj, dict):
-            return {k: self._serialize_datetime(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [self._serialize_datetime(item) for item in obj]
-        else:
-            return obj
+    @staticmethod
+    def _serialize_with_type_tag(obj: t.Any) -> t.Any:
+        """Tag ``datetime`` / ``date`` values with a discriminator on save.
 
-    def _deserialize_datetime(self, obj: t.Any) -> t.Any:
-        """Attempt to deserialize ISO format strings back to datetime objects."""
+        Other values pass through unchanged.
+        """
+        if isinstance(obj, datetime):
+            return {_TYPE_TAG_KEY: _TYPE_TAG_DATETIME, "value": obj.isoformat()}
+        if isinstance(obj, date):
+            return {_TYPE_TAG_KEY: _TYPE_TAG_DATE, "value": obj.isoformat()}
+        if isinstance(obj, dict):
+            return {
+                k: LocalJSONLBackend._serialize_with_type_tag(v) for k, v in obj.items()
+            }
+        if isinstance(obj, list):
+            return [LocalJSONLBackend._serialize_with_type_tag(item) for item in obj]
+        return obj
+
+    @staticmethod
+    def _deserialize_with_type_tag(obj: t.Any) -> t.Any:
+        """Restore tagged ``date`` / ``datetime`` values on load.
+
+        Tagged values are restored to their original type. Anything else is
+        returned untouched, including strings that happen to look like ISO
+        8601 dates — the discriminator is the only signal we trust.
+        """
+        if isinstance(obj, dict):
+            if _TYPE_TAG_KEY in obj and set(obj.keys()).issubset(
+                {_TYPE_TAG_KEY, "value"}
+            ):
+                tag = obj.get(_TYPE_TAG_KEY)
+                raw = obj.get("value")
+                if not isinstance(raw, str):
+                    return obj
+                try:
+                    if tag == _TYPE_TAG_DATETIME:
+                        return datetime.fromisoformat(raw.replace("Z", "+00:00"))
+                    if tag == _TYPE_TAG_DATE:
+                        return date.fromisoformat(raw)
+                except (ValueError, TypeError):
+                    return obj
+                return obj
+            return {
+                k: LocalJSONLBackend._deserialize_with_type_tag(v)
+                for k, v in obj.items()
+            }
+        if isinstance(obj, list):
+            return [LocalJSONLBackend._deserialize_with_type_tag(item) for item in obj]
+        return obj
+
+    @classmethod
+    def _deserialize_legacy_value(cls, obj: t.Any) -> t.Any:
+        """Coerce strings that match ISO 8601 *exactly* on legacy records.
+
+        Used only for records written by older versions of this backend that
+        lacked the discriminator. Non-matching strings pass through.
+        """
         if isinstance(obj, str):
-            # Try to parse as datetime
-            try:
-                if "T" in obj and (":" in obj or "." in obj):
-                    # Looks like datetime ISO format
+            if _DATE_RE.match(obj):
+                try:
+                    return date.fromisoformat(obj)
+                except ValueError:
+                    return obj
+            if _DATETIME_RE.match(obj):
+                try:
                     return datetime.fromisoformat(obj.replace("Z", "+00:00"))
-                elif "-" in obj and len(obj) == 10:
-                    # Looks like date ISO format (YYYY-MM-DD)
-                    return datetime.fromisoformat(obj + "T00:00:00").date()
-            except (ValueError, TypeError):
-                # Not a valid datetime string, return as-is
-                pass
+                except ValueError:
+                    return obj
             return obj
-        elif isinstance(obj, dict):
-            return {k: self._deserialize_datetime(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [self._deserialize_datetime(item) for item in obj]
-        else:
-            return obj
+        if isinstance(obj, dict):
+            return {k: cls._deserialize_legacy_value(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [cls._deserialize_legacy_value(item) for item in obj]
+        return obj
 
     def _load(self, data_type: str, name: str) -> t.List[t.Dict[str, t.Any]]:
         """Load data from JSONL file, raising FileNotFoundError if file doesn't exist."""
@@ -110,10 +187,19 @@ class LocalJSONLBackend(BaseBackend):
                     continue
 
                 try:
-                    # Parse JSON line
                     json_obj = json.loads(line)
-                    # Deserialize datetime objects
-                    json_obj = self._deserialize_datetime(json_obj)
+                    if LocalJSONLBackend._is_new_format_row(json_obj):
+                        # Authoritative new-format row: restore tagged values,
+                        # leave everything else untouched, and strip the
+                        # internal format marker.
+                        json_obj = LocalJSONLBackend._deserialize_with_type_tag(
+                            json_obj
+                        )
+                        json_obj.pop(_FORMAT_KEY, None)
+                    else:
+                        # Legacy row: only coerce values that *exactly* match
+                        # an ISO 8601 regex; everything else is left as-is.
+                        json_obj = LocalJSONLBackend._deserialize_legacy_value(json_obj)
                     data.append(json_obj)
                 except json.JSONDecodeError as e:
                     # Handle malformed JSON gracefully
@@ -121,6 +207,11 @@ class LocalJSONLBackend(BaseBackend):
                     continue
 
         return data
+
+    @classmethod
+    def _is_new_format_row(cls, obj: t.Any) -> bool:
+        """Return True if obj is a top-level dict emitted by this backend."""
+        return isinstance(obj, dict) and obj.get(_FORMAT_KEY) == _FORMAT_VERSION
 
     def _save(
         self,
@@ -145,8 +236,12 @@ class LocalJSONLBackend(BaseBackend):
         # Write data to JSONL
         with open(file_path, "w", encoding="utf-8") as f:
             for item in data:
-                # Serialize datetime objects
-                serialized_item = self._serialize_datetime(item)
+                # Tag date / datetime values so the load path can restore them
+                # without string-shape heuristics, and stamp a row-level format
+                # marker so the loader knows the file came from this version.
+                serialized_item = self._serialize_with_type_tag(item)
+                if isinstance(serialized_item, dict):
+                    serialized_item[_FORMAT_KEY] = _FORMAT_VERSION
                 # Write as JSON line
                 json_line = json.dumps(
                     serialized_item, ensure_ascii=False, separators=(",", ":")
