@@ -77,6 +77,12 @@ def default_transforms(
     def filter_chunks(node):
         return node.type == NodeType.CHUNK
 
+    if not documents:
+        raise ValueError(
+            "The documents list is empty. Please provide at least one document to "
+            "generate default transforms for."
+        )
+
     bin_ranges = [(0, 100), (101, 500), (501, float("inf"))]
     result = count_doc_length_bins(documents, bin_ranges)
     result = {k: v / len(documents) for k, v in result.items()}
