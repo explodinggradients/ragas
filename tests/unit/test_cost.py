@@ -229,3 +229,106 @@ def test_cost_callback_handler():
     assert (
         cost_cb.total_cost(cost_per_input_token=0.1, cost_per_output_token=0.1) == 2.0
     )
+
+
+def test_anthropic_multi_generation_aggregation():
+    """Two generation lists: first has no usage metadata, second does.
+
+    Regression for the early-return bug where the parser summed only the
+    first gs and silently dropped the rest.
+    """
+    multi_anthropic_result = LLMResult(
+        generations=[
+            [ChatGeneration(message=AIMessage(content="first prompt response"))],
+            [
+                ChatGeneration(
+                    message=AIMessage(
+                        content="second prompt response",
+                        response_metadata={
+                            "model": "claude-3-opus-20240229",
+                            "usage": {"input_tokens": 7, "output_tokens": 11},
+                        },
+                    )
+                )
+            ],
+        ],
+        llm_output={},
+    )
+    token_usage = get_token_usage_for_anthropic(multi_anthropic_result)
+    assert token_usage == TokenUsage(
+        input_tokens=7, output_tokens=11, model="claude-3-opus-20240229"
+    )
+
+
+def test_bedrock_multi_generation_aggregation():
+    """Two generation lists: first has no usage metadata, second does."""
+    multi_bedrock_result = LLMResult(
+        generations=[
+            [ChatGeneration(message=AIMessage(content="first prompt response"))],
+            [
+                ChatGeneration(
+                    message=AIMessage(
+                        content="second prompt response",
+                        response_metadata={
+                            "model_id": "us.anthropic.claude-3-5-sonnet-20240620-v1:0",
+                            "usage": {"prompt_tokens": 13, "completion_tokens": 5},
+                        },
+                    )
+                )
+            ],
+        ],
+        llm_output={},
+    )
+    token_usage = get_token_usage_for_bedrock(multi_bedrock_result)
+    assert token_usage == TokenUsage(
+        input_tokens=13,
+        output_tokens=5,
+        model="us.anthropic.claude-3-5-sonnet-20240620-v1:0",
+    )
+
+
+def test_anthropic_multi_n_same_prompt():
+    """Single gs with two ChatGenerations (n=2): both completions must sum."""
+    multi_n_anthropic_result = LLMResult(
+        generations=[
+            [
+                ChatGeneration(
+                    message=AIMessage(
+                        content="first completion",
+                        response_metadata={
+                            "model": "claude-3-opus-20240229",
+                            "usage": {"input_tokens": 4, "output_tokens": 6},
+                        },
+                    )
+                ),
+                ChatGeneration(
+                    message=AIMessage(
+                        content="second completion",
+                        response_metadata={
+                            "model": "claude-3-opus-20240229",
+                            "usage": {"input_tokens": 4, "output_tokens": 9},
+                        },
+                    )
+                ),
+            ]
+        ],
+        llm_output={},
+    )
+    token_usage = get_token_usage_for_anthropic(multi_n_anthropic_result)
+    assert token_usage == TokenUsage(
+        input_tokens=8, output_tokens=15, model="claude-3-opus-20240229"
+    )
+
+
+def test_anthropic_empty_generations_returns_zero():
+    """Empty generations list returns zero usage without raising."""
+    empty_result = LLMResult(generations=[], llm_output={})
+    token_usage = get_token_usage_for_anthropic(empty_result)
+    assert token_usage == TokenUsage(input_tokens=0, output_tokens=0)
+
+
+def test_bedrock_empty_generations_returns_zero():
+    """Empty generations list returns zero usage without raising."""
+    empty_result = LLMResult(generations=[], llm_output={})
+    token_usage = get_token_usage_for_bedrock(empty_result)
+    assert token_usage == TokenUsage(input_tokens=0, output_tokens=0)
