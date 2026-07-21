@@ -76,6 +76,8 @@ class SimpleInMemoryExampleStore(SimpleExampleStore):
 
         if not self.embedding_model or not self._embeddings_list:
             # If no embedding model, return the most recent examples
+            if top_k <= 0:
+                return []
             return self._examples[-top_k:]
 
         # Get embedding for the query
@@ -97,6 +99,9 @@ class SimpleInMemoryExampleStore(SimpleExampleStore):
         threshold: float = 0.7,
     ) -> t.List[int]:
         """Find indices of the nearest examples based on cosine similarity."""
+        if top_k <= 0:
+            return []
+
         # Convert to numpy arrays for efficient computation
         query = np.array(query_embedding)
         embed_matrix = np.array(embeddings)
