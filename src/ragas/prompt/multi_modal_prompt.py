@@ -12,11 +12,12 @@ from io import BytesIO
 from urllib.parse import urlparse
 
 import requests
+from langchain_core.exceptions import OutputParserException
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.prompt_values import PromptValue
 from PIL import Image
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from typing_extensions import TypedDict
 
 from ragas.callbacks import ChainType, new_group
@@ -209,10 +210,20 @@ class ImageTextPrompt(PydanticPrompt, t.Generic[InputModel, OutputModel]):
                     )
                 processed_output = self.process_output(answer, data)  # type: ignore
                 output_models.append(processed_output)
-            except RagasOutputParserException as e:
+            except (
+                RagasOutputParserException,
+                ValidationError,
+                OutputParserException,
+            ) as e:
+                # Mirror pydantic_prompt.generate_multiple: LangChain path
+                # raises ValidationError; RagasLLM retry fallback can raise
+                # OutputParserException. Both must fire on_chain_error and
+                # surface as the documented RagasOutputParserException.
                 prompt_rm.on_chain_error(error=e)
                 logger.error("Prompt %s failed to parse output: %s", self.name, e)
-                raise e
+                if isinstance(e, RagasOutputParserException):
+                    raise
+                raise RagasOutputParserException() from e
 
         prompt_rm.on_chain_end({"output": output_models})
         return output_models
