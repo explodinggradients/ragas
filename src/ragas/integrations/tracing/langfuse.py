@@ -11,6 +11,8 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 if t.TYPE_CHECKING:
     from langfuse import Langfuse, observe
     from langfuse.api import Observation, TraceWithFullDetails
+
+    LANGFUSE_AVAILABLE = True
 else:
     try:
         from langfuse import Langfuse, observe  # type: ignore
@@ -89,9 +91,14 @@ class LangfuseTrace:
         return self._langfuse_client.get_trace_url()
 
     def filter(self, span_name: str) -> t.List["Observation"]:
-        # Note: In modern Langfuse, filtering would need to be done differently
-        # This is a placeholder implementation for backward compatibility
-        return []
+        """Return observations on this trace whose ``name`` matches ``span_name``.
+
+        The match is exact and case-sensitive on the observation's ``name``
+        attribute. Returns an empty list when the trace has no observations
+        or no observation matches.
+        """
+        observations = getattr(self.trace, "observations", None) or []
+        return [obs for obs in observations if getattr(obs, "name", None) == span_name]
 
 
 async def sync_trace(
@@ -99,14 +106,33 @@ async def sync_trace(
 ) -> LangfuseTrace:
     """Wait for a Langfuse trace to be synced to the server.
 
+    Polls ``Langfuse().api.trace.get(trace_id)`` up to ``max_retries`` times
+    with a ``delay`` second pause between attempts. Returns the first
+    successful fetch as a :class:`LangfuseTrace`.
+
     Args:
-        trace_id: The ID of the trace to wait for
-        max_retries: Maximum number of retry attempts (default: 10)
-        delay: Delay between retries in seconds (default: 0.5)
+        trace_id: The ID of the trace to wait for. If ``None``, the trace id
+            of the currently active Langfuse observation is used.
+        max_retries: Maximum number of retry attempts (default: 10).
+        delay: Delay between retries in seconds (default: 2).
 
     Returns:
-        Trace object if found, None if not found after retries
+        A :class:`LangfuseTrace` wrapping the fetched
+        :class:`TraceWithFullDetails` from the Langfuse API.
+
+    Raises:
+        RuntimeError: If the ``langfuse`` package is not installed.
+        ValueError: If no trace id is available (neither provided nor
+            discoverable from the current observation), or if the trace
+            cannot be fetched after ``max_retries`` attempts.
     """
+    if not LANGFUSE_AVAILABLE:
+        raise RuntimeError(
+            "sync_trace requires the langfuse package. "
+            "Install it with `pip install ragas[tracing]` "
+            "or `pip install 'langfuse>=3.2.4'`."
+        )
+
     langfuse_client = Langfuse()
 
     if trace_id is None:
@@ -115,32 +141,31 @@ async def sync_trace(
 
     if not trace_id:
         raise ValueError(
-            "No trace id found. Please ensure you are running this function within a function decorated with @observe()."
+            "No trace id found. Please ensure you are running this function "
+            "within a function decorated with @observe()."
         )
 
-    for _ in range(max_retries):
+    last_error: t.Optional[BaseException] = None
+    for attempt in range(max_retries):
         try:
-            # In modern Langfuse, we would use a different method to fetch traces
-            # This is a placeholder that creates a mock trace for backward compatibility
-            trace = TraceWithFullDetails(
-                id=trace_id,
-                timestamp=datetime.now(),
-                htmlPath="",
-                latency=0,
-                totalCost=0.0,
-                observations=[],
-                scores=[],
-                tags=[],
-                public=False,
-                environment="",
-            )
+            trace = langfuse_client.api.trace.get(trace_id)
             return LangfuseTrace(trace=trace)
         except Exception as e:
-            logger.debug(f"Trace {trace_id} not yet synced: {str(e)}")
+            last_error = e
+            logger.debug(
+                "Trace %s not yet synced (attempt %d/%d): %s",
+                trace_id,
+                attempt + 1,
+                max_retries,
+                e,
+            )
+            if attempt < max_retries - 1:
+                await asyncio.sleep(delay)
 
-        await asyncio.sleep(delay)
-
-    raise ValueError(f"Trace {trace_id} not found after {max_retries} attempts")
+    raise ValueError(
+        f"Trace {trace_id} not found after {max_retries} attempts. "
+        f"Last error: {last_error}"
+    )
 
 
 def add_query_param(url: str, param_name: str, param_value: str) -> str:
