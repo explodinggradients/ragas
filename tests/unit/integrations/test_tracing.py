@@ -72,14 +72,17 @@ class TestLangfuseIntegration:
 
     @pytest.mark.asyncio
     async def test_sync_trace_with_trace_id(self):
-        """Test sync_trace function with explicit trace ID."""
+        """Test sync_trace function with explicit trace ID actually fetches the trace."""
         from ragas.integrations.tracing.langfuse import sync_trace
 
-        # Mock the Langfuse client
+        # Mock the Langfuse client and its api.trace.get
         with patch(
             "ragas.integrations.tracing.langfuse.Langfuse"
         ) as mock_langfuse_class:
             mock_client = MagicMock()
+            mock_trace = MagicMock()
+            mock_trace.id = "test-trace-id"
+            mock_client.api.trace.get.return_value = mock_trace
             mock_langfuse_class.return_value = mock_client
 
             result = await sync_trace(
@@ -87,7 +90,8 @@ class TestLangfuseIntegration:
             )
 
             assert result is not None
-            assert hasattr(result, "trace")
+            assert result.trace is mock_trace
+            mock_client.api.trace.get.assert_called_once_with("test-trace-id")
 
     @pytest.mark.asyncio
     async def test_sync_trace_without_trace_id(self):
@@ -99,12 +103,15 @@ class TestLangfuseIntegration:
         ) as mock_langfuse_class:
             mock_client = MagicMock()
             mock_client.get_current_trace_id.return_value = "current-trace-id"
+            mock_trace = MagicMock()
+            mock_client.api.trace.get.return_value = mock_trace
             mock_langfuse_class.return_value = mock_client
 
             result = await sync_trace(max_retries=1, delay=0.1)
 
             assert result is not None
             mock_client.get_current_trace_id.assert_called_once()
+            mock_client.api.trace.get.assert_called_once_with("current-trace-id")
 
     @pytest.mark.asyncio
     async def test_sync_trace_no_trace_found(self):
@@ -120,6 +127,106 @@ class TestLangfuseIntegration:
 
             with pytest.raises(ValueError, match="No trace id found"):
                 await sync_trace(max_retries=1, delay=0.1)
+
+    @pytest.mark.asyncio
+    async def test_sync_trace_retries_on_transient_error(self):
+        """sync_trace retries when api.trace.get raises, succeeds when fetch eventually works."""
+        from ragas.integrations.tracing.langfuse import sync_trace
+
+        with patch(
+            "ragas.integrations.tracing.langfuse.Langfuse"
+        ) as mock_langfuse_class:
+            mock_client = MagicMock()
+            mock_trace = MagicMock()
+            mock_trace.id = "test-trace-id"
+            # Fail twice, then succeed.
+            mock_client.api.trace.get.side_effect = [
+                RuntimeError("trace not found yet"),
+                RuntimeError("still syncing"),
+                mock_trace,
+            ]
+            mock_langfuse_class.return_value = mock_client
+
+            result = await sync_trace(trace_id="test-trace-id", max_retries=3, delay=0)
+
+            assert result.trace is mock_trace
+            assert mock_client.api.trace.get.call_count == 3
+
+    @pytest.mark.asyncio
+    async def test_sync_trace_raises_after_max_retries(self):
+        """sync_trace raises ValueError with the last error when retries are exhausted."""
+        from ragas.integrations.tracing.langfuse import sync_trace
+
+        with patch(
+            "ragas.integrations.tracing.langfuse.Langfuse"
+        ) as mock_langfuse_class:
+            mock_client = MagicMock()
+            mock_client.api.trace.get.side_effect = RuntimeError("network error")
+            mock_langfuse_class.return_value = mock_client
+
+            with pytest.raises(
+                ValueError,
+                match="Trace test-trace-id not found after 3 attempts",
+            ) as exc_info:
+                await sync_trace(trace_id="test-trace-id", max_retries=3, delay=0)
+            # The last underlying error should be referenced in the message.
+            assert "network error" in str(exc_info.value)
+            assert mock_client.api.trace.get.call_count == 3
+
+    @pytest.mark.asyncio
+    async def test_sync_trace_raises_when_langfuse_not_installed(self):
+        """sync_trace raises a clear RuntimeError when the langfuse package is missing."""
+        from ragas.integrations import tracing
+        from ragas.integrations.tracing import langfuse as langfuse_mod
+
+        with (
+            patch.object(langfuse_mod, "LANGFUSE_AVAILABLE", False),
+            patch.object(tracing, "LANGFUSE_AVAILABLE", False, create=True),
+        ):
+            with pytest.raises(RuntimeError, match="langfuse package"):
+                await langfuse_mod.sync_trace(trace_id="any")
+
+    def test_langfuse_trace_filter_returns_matching_observations(self):
+        """LangfuseTrace.filter returns observations whose name matches span_name."""
+        from ragas.integrations.tracing.langfuse import LangfuseTrace
+
+        span_match = MagicMock()
+        span_match.name = "openai.chat"
+        span_other = MagicMock()
+        span_other.name = "retrieval.query"
+
+        mock_trace = MagicMock()
+        mock_trace.observations = [span_match, span_other]
+
+        langfuse_trace = LangfuseTrace(mock_trace)
+        matched = langfuse_trace.filter("openai.chat")
+
+        assert matched == [span_match]
+
+    def test_langfuse_trace_filter_returns_empty_when_no_match(self):
+        """LangfuseTrace.filter returns an empty list when no observation matches."""
+        from ragas.integrations.tracing.langfuse import LangfuseTrace
+
+        span_other = MagicMock()
+        span_other.name = "retrieval.query"
+
+        mock_trace = MagicMock()
+        mock_trace.observations = [span_other]
+
+        langfuse_trace = LangfuseTrace(mock_trace)
+        matched = langfuse_trace.filter("openai.chat")
+
+        assert matched == []
+
+    def test_langfuse_trace_filter_returns_empty_when_no_observations(self):
+        """LangfuseTrace.filter returns an empty list when the trace has no observations."""
+        from ragas.integrations.tracing.langfuse import LangfuseTrace
+
+        mock_trace = MagicMock()
+        mock_trace.observations = None
+
+        langfuse_trace = LangfuseTrace(mock_trace)
+        assert langfuse_trace.filter("any") == []
 
     def test_add_query_param(self):
         """Test URL query parameter addition utility."""
