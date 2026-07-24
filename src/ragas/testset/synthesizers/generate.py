@@ -18,6 +18,7 @@ from ragas.embeddings.base import (
 )
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper, LlamaIndexLLMWrapper
+from ragas.prompt import PromptMixin
 from ragas.run_config import RunConfig
 from ragas.testset.graph import KnowledgeGraph, Node, NodeType
 from ragas.testset.persona import Persona, generate_personas_from_kg
@@ -25,6 +26,7 @@ from ragas.testset.synthesizers import default_query_distribution
 from ragas.testset.synthesizers.testset_schema import Testset, TestsetSample
 from ragas.testset.synthesizers.utils import calculate_split_values
 from ragas.testset.transforms import (
+    Parallel,
     Transforms,
     apply_transforms,
     default_transforms,
@@ -42,7 +44,7 @@ if t.TYPE_CHECKING:
     from llama_index.core.schema import Document as LlamaIndexDocument
 
     from ragas.embeddings.base import BaseRagasEmbeddings
-    from ragas.llms.base import BaseRagasLLM
+    from ragas.llms.base import BaseRagasLLM, InstructorBaseRagasLLM
     from ragas.testset.synthesizers import QueryDistribution
     from ragas.testset.synthesizers.base import BaseScenario
 
@@ -58,7 +60,7 @@ class TestsetGenerator:
 
     Attributes
     ----------
-    llm : BaseRagasLLL
+    llm : BaseRagasLLM
         The language model to use for the generation process.
     knowledge_graph : KnowledgeGraph, default empty
         The knowledge graph to use for the generation process.
@@ -411,7 +413,6 @@ class TestsetGenerator:
             return_executor=return_executor,
         )
 
-
     async def adapt_all_prompts(
         self,
         language: str,
@@ -475,25 +476,31 @@ class TestsetGenerator:
                 query_distribution=distribution,
             )
         """
-        from ragas.prompt import PromptMixin
-
         if query_distribution is None:
             query_distribution = default_query_distribution(
                 self.llm, self.knowledge_graph, self.llm_context
             )
 
-        components: t.List[PromptMixin] = []
+        def iter_prompt_mixins(value: t.Any) -> t.Iterator[PromptMixin]:
+            if isinstance(value, PromptMixin):
+                yield value
+            if isinstance(value, Parallel):
+                for transformation in value.transformations:
+                    yield from iter_prompt_mixins(transformation)
+            elif isinstance(value, t.Sequence) and not isinstance(value, (str, bytes)):
+                for transformation in value:
+                    yield from iter_prompt_mixins(transformation)
 
-        for synthesizer, _ in query_distribution:
-            components.append(synthesizer)
+        components = [synthesizer for synthesizer, _ in query_distribution]
+        if transforms is not None:
+            components.extend(iter_prompt_mixins(transforms))
 
-        if transforms:
-            for transform in transforms:
-                if isinstance(transform, PromptMixin):
-                    components.append(transform)
-
+        seen: t.Set[int] = set()
         for component in components:
-            adapted = await component.adapt_prompts(language, llm)
+            if id(component) in seen:
+                continue
+            seen.add(id(component))
+            adapted = await component.adapt_prompts(language=language, llm=llm)
             component.set_prompts(**adapted)
 
     def generate(
