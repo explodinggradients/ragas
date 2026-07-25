@@ -93,11 +93,17 @@ class RagasDSPyLM:
         Parameters
         ----------
         n : int
-            Number of recent calls to return.
+            Number of recent calls to return. Must be positive; a non-positive
+            value returns an empty list (avoiding the Python
+            ``list[-0:]`` quirk that would otherwise hand back the entire
+            history).
 
         Returns
         -------
         List[Dict[str, Any]]
-            Recent call history.
+            Recent call history. Empty when ``n <= 0``; the full history
+            when ``n`` is greater than or equal to ``len(self.history)``.
         """
+        if n <= 0:
+            return []
         return self.history[-n:]
