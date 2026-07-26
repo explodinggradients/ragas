@@ -26,6 +26,21 @@ if t.TYPE_CHECKING:
     from ragas.cost import TokenUsage
 
 
+def _is_nan(value: t.Any) -> bool:
+    """Return True for NaN / NaT values without coercing strings or None.
+
+    A plain ``None`` is not considered NaN here; it is filtered by the
+    ``v is not None`` check at the call site. This helper only catches
+    the floating-point NaN (and pandas NaT), both of which behave as
+    \"missing\" for aggregation purposes.
+    """
+    if value is None:
+        return False
+    if isinstance(value, float):
+        return value != value  # NaN is the only float that is not equal to itself
+    return False
+
+
 class BaseSample(BaseModel):
     """
     Base class for evaluation samples.
@@ -458,6 +473,50 @@ class EvaluationResult:
 
     def __getitem__(self, key: str) -> t.List[float]:
         return self._scores_dict[key]
+
+    def summary(self) -> t.Dict[str, t.Dict[str, t.Any]]:
+        """Return per-metric aggregate statistics as a structured dict.
+
+        The result is a two-level mapping: the outer key is the metric
+        name, the inner value is a dict with three keys:
+
+        - ``mean`` (``float``): the per-metric mean, computed via
+          :func:`safe_nanmean` so a single NaN does not poison the
+          aggregate. ``float("nan")`` when every score for the metric
+          is null.
+        - ``count`` (``int``): the number of non-null scores.
+        - ``missing`` (``int``): the number of null scores.
+
+        The method reuses the cached ``_scores_dict`` built in
+        :meth:`__post_init__`, so it is O(N metrics) per call regardless
+        of how many rows the evaluation produced.
+
+        Returns
+        -------
+        dict of str to dict
+            ``{metric_name: {"mean": float, "count": int, "missing": int}}``
+            for every metric in ``scores``.
+
+        Examples
+        --------
+        >>> result.summary()
+        {'faithfulness': {'mean': 0.89, 'count': 30, 'missing': 0},
+         'answer_relevancy': {'mean': 0.77, 'count': 28, 'missing': 2}}
+        """
+        summary: t.Dict[str, t.Dict[str, t.Any]] = {}
+        for name, values in self._scores_dict.items():
+            non_null = [v for v in values if v is not None and not _is_nan(v)]
+            count = len(non_null)
+            if count == 0:
+                mean = float("nan")
+            else:
+                mean = safe_nanmean(non_null)
+            summary[name] = {
+                "mean": mean,
+                "count": count,
+                "missing": len(values) - count,
+            }
+        return summary
 
     def to_pandas(self, batch_size: int | None = None, batched: bool = False):
         """
