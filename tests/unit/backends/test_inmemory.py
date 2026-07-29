@@ -610,6 +610,38 @@ class TestInMemoryBackendIntegration:
         assert isinstance(train_dataset.backend, InMemoryBackend)
         assert isinstance(test_dataset.backend, InMemoryBackend)
 
+    def test_train_test_split_rehydrates_from_backend_when_data_empty(
+        self, simple_data
+    ):
+        """
+        Scenario: train_test_split reloads rows from the backend when the
+        DataTable was constructed without data= and _data is therefore empty.
+        Given: A Dataset with rows already persisted to LocalCSVBackend.
+        When: A fresh Dataset("same_name", same_backend) is constructed and
+              train_test_split is called.
+        Then: The split reflects the persisted rows, not two empty datasets.
+        """
+        import tempfile
+
+        from ragas.backends.local_csv import LocalCSVBackend
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            csv_backend = LocalCSVBackend(tmp_dir)
+
+            Dataset("rehydrate_split", csv_backend, data=simple_data).save()
+
+            fresh = Dataset("rehydrate_split", csv_backend)
+            assert len(fresh) == 0
+
+            train, test = fresh.train_test_split(test_size=0.4, random_state=42)
+
+            assert len(train) + len(test) == len(simple_data)
+            assert len(train) == 1  # int(3 * 0.6) = 1
+            assert len(test) == 2
+
+            names = [item["name"] for item in train] + [item["name"] for item in test]
+            assert sorted(names) == sorted(item["name"] for item in simple_data)
+
     def test_pydantic_model_validation_with_inmemory(self, backend, simple_data):
         """
         Scenario: Pydantic model validation works with inmemory backend

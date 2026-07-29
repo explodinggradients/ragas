@@ -392,7 +392,7 @@ class DataTable(t.Generic[T]):
             A tuple of two Datasets: (train_dataset, test_dataset)
         """
         if not self._data:
-            self.load(self.name, self.backend, self.data_model)
+            self.reload()
 
         # Shuffle entries if random_state is set
         if random_state is not None:
