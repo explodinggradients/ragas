@@ -494,3 +494,77 @@ class TestDynamicFewShotPromptSaveLoad:
         formatted = loaded.format(question="Comment ça va? 🌈")
         assert "Comment ça va? 🌈" in formatted
         assert "😊" in formatted
+
+
+class TestTopKZeroReturnsEmpty:
+    """Regression tests for top_k=0 returning all examples instead of none.
+
+    Root cause: Python's negative-slice quirk where -0 == 0, so
+    ``list[-top_k:]`` with ``top_k=0`` becomes ``list[0:]`` == the full list.
+    """
+
+    def test_recency_path_top_k_zero_returns_empty(self):
+        """Without embedding model, top_k=0 must return []."""
+        from ragas.prompt.dynamic_few_shot import SimpleInMemoryExampleStore
+
+        store = SimpleInMemoryExampleStore()
+        for i in range(5):
+            store.add_example({"q": f"question {i}"}, {"a": f"answer {i}"})
+
+        result = store.get_examples({"q": "new question"}, top_k=0)
+        assert result == []
+
+    def test_cosine_path_top_k_zero_returns_empty(self):
+        """With embedding model, top_k=0 must return []."""
+        from ragas.prompt.dynamic_few_shot import SimpleInMemoryExampleStore
+
+        mock_embedding = MockEmbeddingModel(dimension=8)
+        store = SimpleInMemoryExampleStore(embedding_model=mock_embedding)
+        for i in range(5):
+            store.add_example({"q": f"question {i}"}, {"a": f"answer {i}"})
+
+        result = store.get_examples({"q": "new question"}, top_k=0)
+        assert result == []
+
+    def test_get_nearest_examples_top_k_zero(self):
+        """_get_nearest_examples with top_k=0 must return []."""
+        from ragas.prompt.dynamic_few_shot import SimpleInMemoryExampleStore
+
+        store = SimpleInMemoryExampleStore()
+        query = [0.1, 0.2, 0.3]
+        embeddings = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]]
+        result = store._get_nearest_examples(query, embeddings, top_k=0)
+        assert result == []
+
+    def test_in_memory_example_store_top_k_zero(self):
+        """InMemoryExampleStore.get_nearest_examples with top_k=0 must return []."""
+        from ragas.prompt.few_shot_pydantic_prompt import InMemoryExampleStore
+
+        query = [0.1, 0.2, 0.3]
+        embeddings = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]]
+        result = InMemoryExampleStore.get_nearest_examples(query, embeddings, top_k=0)
+        assert result == []
+
+    def test_negative_top_k_returns_empty(self):
+        """Negative top_k should also return empty list."""
+        from ragas.prompt.dynamic_few_shot import SimpleInMemoryExampleStore
+
+        store = SimpleInMemoryExampleStore()
+        for i in range(3):
+            store.add_example({"q": f"q{i}"}, {"a": f"a{i}"})
+
+        assert store.get_examples({"q": "new"}, top_k=-1) == []
+
+    def test_positive_top_k_still_works(self):
+        """Sanity check: positive top_k still returns correct count."""
+        from ragas.prompt.dynamic_few_shot import SimpleInMemoryExampleStore
+
+        store = SimpleInMemoryExampleStore()
+        for i in range(5):
+            store.add_example({"q": f"question {i}"}, {"a": f"answer {i}"})
+
+        result = store.get_examples({"q": "new question"}, top_k=3)
+        assert len(result) == 3
+
+        result = store.get_examples({"q": "new question"}, top_k=1)
+        assert len(result) == 1

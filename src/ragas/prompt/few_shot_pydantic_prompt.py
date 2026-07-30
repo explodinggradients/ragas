@@ -81,6 +81,8 @@ class InMemoryExampleStore(ExampleStore):
         valid_indices = np.where(similarities >= threshold)[0]
 
         # Sort by similarity and get top-k
+        if top_k <= 0:
+            return []
         top_indices = valid_indices[np.argsort(similarities[valid_indices])[-top_k:]]
 
         # Ensure the result is a proper List[int]

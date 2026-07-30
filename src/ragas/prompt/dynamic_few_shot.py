@@ -76,6 +76,8 @@ class SimpleInMemoryExampleStore(SimpleExampleStore):
 
         if not self.embedding_model or not self._embeddings_list:
             # If no embedding model, return the most recent examples
+            if top_k <= 0:
+                return []
             return self._examples[-top_k:]
 
         # Get embedding for the query
@@ -111,6 +113,8 @@ class SimpleInMemoryExampleStore(SimpleExampleStore):
 
         # Sort by similarity and get top-k
         if len(valid_indices) > 0:
+            if top_k <= 0:
+                return []
             top_indices = valid_indices[
                 np.argsort(similarities[valid_indices])[-top_k:]
             ]
