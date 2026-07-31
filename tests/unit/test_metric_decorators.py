@@ -8,6 +8,7 @@ Following TDD approach: Write failing tests first, then implement the fix.
 """
 
 import typing as t
+import warnings
 
 import pytest
 
@@ -882,3 +883,103 @@ class TestIDESupport:
         score_result = test_metric.score(input_val="hello")
         assert isinstance(score_result, MetricResult)
         assert score_result.value == "yes"
+
+
+class TestDecoratorValidationFallback:
+    """Regression tests for the early-return fallback path in
+    `CustomMetric._validate_inputs` (src/ragas/metrics/decorator.py).
+
+    When `_create_pydantic_model` raises, the decorator used to return
+    without setting `_validated_data`, so `ascore` then called the
+    wrapped function with `**{}` — silently dropping the caller's
+    kwargs. The fix preserves the kwargs so the function still receives
+    them, and emits a warning that explains what happened.
+    """
+
+    def test_kwargs_preserved_when_pydantic_model_creation_fails(self, monkeypatch):
+        """If pydantic.create_model raises, the wrapped function must
+        still receive the caller's kwargs. Today this returns a
+        MetricResult whose reason blames a missing argument; the fix
+        makes the function run with the user's input.
+        """
+        import pydantic
+
+        import ragas.metrics.decorator as dec_mod
+        from ragas.metrics import discrete_metric
+
+        def boom(*args, **kwargs):
+            raise RuntimeError("simulated: pydantic.create_model failure")
+
+        # Patch both the import inside the decorator module and the
+        # pydantic module symbol so the call inside `_create_pydantic_model`
+        # raises regardless of which one is bound at call time.
+        monkeypatch.setattr(dec_mod, "create_model", boom)
+        monkeypatch.setattr(pydantic, "create_model", boom)
+
+        captured = []
+
+        @discrete_metric(name="fallback_metric", allowed_values=["a", "b"])
+        def my_metric(question: str) -> str:
+            captured.append(question)
+            return "a"
+
+        with pytest.warns(UserWarning, match="Could not create validation model"):
+            result = my_metric.score(question="hello world")
+
+        # Bug: the wrapped function was called with no kwargs, so
+        # `captured` was empty and result.reason blamed a missing
+        # argument. Fix: the function received the kwargs and ran.
+        assert captured == ["hello world"], (
+            f"expected the wrapped function to receive question='hello world', "
+            f"got {captured!r}"
+        )
+        assert result.value == "a"
+        assert result.reason is None
+
+    def test_sync_score_path_also_preserves_kwargs(self, monkeypatch):
+        """Same regression but through the public `score()` (sync) entry
+        point, not the async ascore(). Both share `_validate_inputs`.
+        """
+        import pydantic
+
+        import ragas.metrics.decorator as dec_mod
+        from ragas.metrics import discrete_metric
+
+        def boom(*args, **kwargs):
+            raise RuntimeError("simulated: pydantic.create_model failure")
+
+        monkeypatch.setattr(dec_mod, "create_model", boom)
+        monkeypatch.setattr(pydantic, "create_model", boom)
+
+        captured = []
+
+        @discrete_metric(name="fallback_sync", allowed_values=["x", "y"])
+        def my_metric(question: str) -> str:
+            captured.append(question)
+            return "x"
+
+        with pytest.warns(UserWarning, match="Could not create validation model"):
+            result = my_metric.score(question="hi")
+
+        assert captured == ["hi"]
+        assert result.value == "x"
+        assert result.reason is None
+
+    def test_validation_model_creation_success_does_not_warn(self, monkeypatch):
+        """Sanity check: when pydantic model creation succeeds, the
+        fallback warning is NOT emitted and behaviour is unchanged from
+        today.
+        """
+        from ragas.metrics import discrete_metric
+
+        @discrete_metric(name="happy_path", allowed_values=["a", "b"])
+        def my_metric(question: str) -> str:
+            return "a"
+
+        # If a UserWarning IS emitted, the test fails.
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
+            result = my_metric.score(question="x")
+
+        assert result.value == "a"
+        assert result.reason is None
