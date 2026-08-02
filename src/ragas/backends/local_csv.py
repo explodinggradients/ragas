@@ -86,10 +86,22 @@ class LocalCSVBackend(BaseBackend):
                 pass
             return
 
-        # Write data to CSV
+        # Write data to CSV. The header is the union of keys across every row
+        # in first-seen order, so rows with optional / conditionally-attached
+        # fields (a common shape for `@experiment()` results) don't blow up
+        # DictWriter's default `extrasaction="raise"`. Missing values are
+        # written as empty strings via `restval=""` and round-trip cleanly
+        # through `csv.DictReader`, which uses the file's header row.
+        fieldnames: t.List[str] = []
+        seen: t.Set[str] = set()
+        for row in data:
+            for key in row.keys():
+                if key not in seen:
+                    fieldnames.append(key)
+                    seen.add(key)
+
         with open(file_path, "w", newline="", encoding="utf-8") as f:
-            fieldnames = data[0].keys()
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer = csv.DictWriter(f, fieldnames=fieldnames, restval="")
             writer.writeheader()
             writer.writerows(data)
 
