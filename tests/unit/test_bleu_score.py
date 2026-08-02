@@ -7,10 +7,14 @@ misaligns the streams, which makes sacrebleu score only the first sentence and
 return a plausible-looking but wrong number instead of raising.
 """
 
+import inspect
+
 import pytest
 
 try:
+    import sacrebleu
     from sacrebleu import corpus_bleu
+    from sacrebleu.metrics import BLEU
 except ImportError:
     pytest.skip("sacrebleu not available", allow_module_level=True)
 
@@ -34,6 +38,28 @@ async def score_legacy(reference: str, response: str) -> float:
 async def score_v2(reference: str, response: str) -> float:
     result = await BleuScore().ascore(reference=reference, response=response)
     return result.value
+
+
+# sacrebleu's BLEU settings that the hardcoded expectations below depend on.
+#
+# The expected scores in MULTI_SENTENCE_CASES -- and the documented-example
+# value in TestBleuScoreEdgeCases -- are exact sacrebleu outputs rather than
+# hand-derived numbers, generated with ``corpus_bleu([response], [[reference]])``
+# on sacrebleu 2.6.0 with stock settings. They are therefore only stable while
+# sacrebleu's defaults are unchanged: a release that switched the default
+# tokenizer or flipped ``effective_order`` would move every one of them.
+#
+# ``TestSacrebleuAssumptions`` pins these so that such a release fails there,
+# naming sacrebleu as the cause, instead of surfacing as several opaque float
+# mismatches that read like a scoring regression in ragas. Pinning the defaults
+# rather than ``sacrebleu.__version__`` keeps routine upgrades green -- only a
+# behavioural change trips it.
+SACREBLEU_BLEU_DEFAULTS = {
+    "tokenizer": "13a",
+    "smooth_method": "exp",
+    "effective_order": False,
+    "max_ngram_order": 4,
+}
 
 
 # Cases where the sentence-splitting bug silently produced a wrong score.
@@ -64,6 +90,26 @@ MULTI_SENTENCE_CASES = [
         0.5296,
     ),
 ]
+
+
+class TestSacrebleuAssumptions:
+    """Pin the sacrebleu behaviour the hardcoded expectations rely on."""
+
+    def test_bleu_defaults_unchanged(self):
+        params = inspect.signature(BLEU.__init__).parameters
+        actual = {
+            "tokenizer": BLEU.TOKENIZER_DEFAULT,
+            "smooth_method": params["smooth_method"].default,
+            "effective_order": params["effective_order"].default,
+            "max_ngram_order": params["max_ngram_order"].default,
+        }
+        assert actual == SACREBLEU_BLEU_DEFAULTS, (
+            f"sacrebleu {sacrebleu.__version__} changed its BLEU defaults: "
+            f"expected {SACREBLEU_BLEU_DEFAULTS}, got {actual}. The hardcoded "
+            "scores in MULTI_SENTENCE_CASES and the documented-example value "
+            "were generated under the previous defaults and need regenerating. "
+            "This is a sacrebleu behaviour change, not a ragas scoring regression."
+        )
 
 
 class TestBleuScoreInit:
