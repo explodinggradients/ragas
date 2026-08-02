@@ -183,6 +183,99 @@ class TestBasicFunctionality:
         assert loaded_data == []
 
 
+# 1b. Heterogeneous-row regression tests (issue #2860)
+class TestHeterogeneousRows:
+    """Rows with different key sets must save without crashing.
+
+    Pre-fix: LocalCSVBackend._save picked the CSV header from only the first
+    row, then any later row carrying a key absent from the first row made
+    csv.DictWriter raise (its default `extrasaction="raise"`). The fix
+    computes the union of keys across every row and uses `restval=""` for
+    missing values, so heterogeneous rows save and round-trip cleanly.
+    """
+
+    def test_save_dataset_with_optional_field_on_some_rows(self, backend):
+        """Repro of issue #2860 — first row has [a, b, c], second has [a, b, c, reason]."""
+        data = [
+            {"question": "capital of France?", "response": "Paris", "score": 1.0},
+            {
+                "question": "capital of UK?",
+                "response": "London",
+                "score": 0.0,
+                "reason": "wrong span matched",
+            },
+        ]
+        backend.save_dataset("demo", data, data_model=None)
+
+        loaded = backend.load_dataset("demo")
+        assert len(loaded) == 2
+        # Both rows now carry all four keys; the missing one round-trips as "".
+        assert loaded[0]["question"] == "capital of France?"
+        assert loaded[0]["response"] == "Paris"
+        assert loaded[0]["score"] == "1.0"
+        assert loaded[0]["reason"] == ""
+        assert loaded[1]["question"] == "capital of UK?"
+        assert loaded[1]["reason"] == "wrong span matched"
+
+    def test_save_experiment_with_optional_field_on_some_rows(self, backend):
+        """Same bug in save_experiment (shares _save with save_dataset)."""
+        data = [
+            {"id": 1, "metric": "faithfulness", "value": 0.9},
+            {"id": 2, "metric": "answer_relevancy", "value": 0.8, "error": "timeout"},
+        ]
+        backend.save_experiment("exp", data, data_model=None)
+
+        loaded = backend.load_experiment("exp")
+        assert len(loaded) == 2
+        assert loaded[0]["error"] == ""
+        assert loaded[1]["error"] == "timeout"
+
+    def test_first_seen_order_of_keys_preserved(self, backend):
+        """Header must be deterministic: first-seen order across all rows."""
+        data = [
+            {"a": 1, "b": 2, "c": 3},
+            {"a": 4, "d": 5},
+            {"b": 6, "e": 7},
+        ]
+        backend.save_dataset("ordered", data, data_model=None)
+
+        import csv as _csv
+
+        with open(
+            backend._get_file_path("datasets", "ordered"), "r", encoding="utf-8"
+        ) as f:
+            reader = _csv.reader(f)
+            header = next(reader)
+        assert header == ["a", "b", "c", "d", "e"]
+
+    def test_single_row_unchanged(self, backend):
+        """Single-row save path must be byte-identical to before the fix."""
+        data = [{"a": 1, "b": 2}]
+        backend.save_dataset("single", data, data_model=None)
+
+        loaded = backend.load_dataset("single")
+        assert loaded == [{"a": "1", "b": "2"}]
+
+    def test_save_and_load_roundtrip_with_varied_keys(self, backend):
+        """Full round-trip: save heterogeneous rows, load them back, every key present."""
+        data = [
+            {"id": "row1", "name": "alpha", "value": "1.0"},
+            {"id": "row2", "name": "beta", "value": "2.0", "note": "second pass"},
+            {"id": "row3", "name": "gamma"},
+        ]
+        backend.save_dataset("varied", data, data_model=None)
+
+        loaded = backend.load_dataset("varied")
+        assert len(loaded) == 3
+        # All loaded rows have exactly the same set of keys (the union).
+        key_sets = {tuple(sorted(row.keys())) for row in loaded}
+        assert len(key_sets) == 1
+        assert key_sets.pop() == ("id", "name", "note", "value")
+        # Missing values round-trip as empty strings.
+        assert loaded[0]["note"] == ""
+        assert loaded[2]["note"] == ""
+
+
 # 2. Data Type Edge Cases (The Real Challenge)
 class TestDataTypeEdgeCases:
     """Test complex data types that reveal CSV serialization issues."""
