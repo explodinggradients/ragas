@@ -205,16 +205,18 @@ class LiteLLMStructuredLLM(InstructorBaseRagasLLM):
                 **self.model_args,
             )
 
-        # Track the usage
-        track(
-            LLMUsageEvent(
-                provider=self.provider,
-                model=self.model,
-                llm_type="litellm",
-                num_requests=1,
-                is_async=self.is_async,
+        # Track the usage. The async path already tracks inside agenerate, so only
+        # the sync path tracks here to avoid double-counting.
+        if not self.is_async:
+            track(
+                LLMUsageEvent(
+                    provider=self.provider,
+                    model=self.model,
+                    llm_type="litellm",
+                    num_requests=1,
+                    is_async=self.is_async,
+                )
             )
-        )
         return result
 
     async def agenerate(
