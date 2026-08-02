@@ -575,7 +575,7 @@ class MultiTurnMetric(Metric):
             EvaluationEvent(
                 metrics=[self.name],
                 num_rows=1,
-                evaluation_type=MetricType.SINGLE_TURN.name,
+                evaluation_type=MetricType.MULTI_TURN.name,
                 language=get_metric_language(self),
             )
         )
@@ -619,7 +619,7 @@ class MultiTurnMetric(Metric):
             EvaluationEvent(
                 metrics=[self.name],
                 num_rows=1,
-                evaluation_type=MetricType.SINGLE_TURN.name,
+                evaluation_type=MetricType.MULTI_TURN.name,
                 language=get_metric_language(self),
             )
         )
