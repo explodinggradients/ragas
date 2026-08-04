@@ -8,9 +8,10 @@ import typing as t
 from datetime import datetime
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
+LANGFUSE_AVAILABLE = False
+
 if t.TYPE_CHECKING:
-    from langfuse import observe
-    from langfuse._client.client import Langfuse
+    from langfuse import Langfuse, observe
     from langfuse.api import Observation, TraceWithFullDetails
 else:
     try:
@@ -84,7 +85,7 @@ logger = logging.getLogger(__name__)
 class LangfuseTrace:
     def __init__(self, trace: "TraceWithFullDetails"):
         self.trace = trace
-        self._langfuse_client = Langfuse()
+        self._langfuse_client = Langfuse()  # pyright: ignore[reportCallIssue]
 
     def get_url(self) -> t.Optional[str]:
         return self._langfuse_client.get_trace_url()
@@ -110,7 +111,7 @@ async def sync_trace(
     Returns:
         The trace fetched from Langfuse
     """
-    langfuse_client = Langfuse()
+    langfuse_client = Langfuse()  # pyright: ignore[reportCallIssue]
 
     if trace_id is None:
         # if no trace id is provided, get the current trace id
@@ -119,6 +120,11 @@ async def sync_trace(
     if not trace_id:
         raise ValueError(
             "No trace id found. Please ensure you are running this function within a function decorated with @observe()."
+        )
+
+    if not LANGFUSE_AVAILABLE:
+        raise ImportError(
+            "Langfuse is not installed. Install it with `pip install langfuse` to fetch traces."
         )
 
     last_error: t.Optional[Exception] = None

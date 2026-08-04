@@ -199,6 +199,15 @@ class TestLangfuseIntegration:
             with pytest.raises(ValueError, match="No trace id found"):
                 await sync_trace(max_retries=1, delay=0.1)
 
+    @pytest.mark.asyncio
+    async def test_sync_trace_without_langfuse(self):
+        """Test sync_trace reports the missing dependency for an explicit trace ID."""
+        from ragas.integrations.tracing.langfuse import sync_trace
+
+        with patch("ragas.integrations.tracing.langfuse.LANGFUSE_AVAILABLE", False):
+            with pytest.raises(ImportError, match="pip install langfuse"):
+                await sync_trace(trace_id="test-trace-id", max_retries=1)
+
     def test_add_query_param(self):
         """Test URL query parameter addition utility."""
         from ragas.integrations.tracing.langfuse import add_query_param
