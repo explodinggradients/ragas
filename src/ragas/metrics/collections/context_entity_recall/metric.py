@@ -138,11 +138,15 @@ class ContextEntityRecall(BaseMetric):
         reference_set = set(reference_entities)
         context_set = set(context_entities)
 
+        # With no reference entities there is nothing to recall.
+        if not reference_set:
+            return 0.0
+
         # Calculate intersection
         entities_in_both = len(reference_set.intersection(context_set))
 
-        # Calculate recall: |intersection| / |reference|
-        # Add small epsilon to avoid division by zero
-        recall = entities_in_both / (len(reference_set) + 1e-8)
-
-        return recall
+        # Recall = |intersection| / |reference|. Divide by the exact count. A
+        # previous "+ 1e-8" epsilon (meant to avoid division by zero) was added
+        # to a real denominator, so perfect recall returned 0.99999999 instead
+        # of 1.0 and every score was biased slightly low.
+        return entities_in_both / len(reference_set)
