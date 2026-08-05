@@ -87,17 +87,6 @@ class RagasDSPyLM:
             return str(result)
 
     def inspect_history(self, n: int = 1) -> t.List[t.Dict[str, t.Any]]:
-        """
-        Inspect recent history of LLM calls.
-
-        Parameters
-        ----------
-        n : int
-            Number of recent calls to return.
-
-        Returns
-        -------
-        List[Dict[str, Any]]
-            Recent call history.
-        """
+        if n <= 0:
+            return []
         return self.history[-n:]

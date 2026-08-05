@@ -316,3 +316,30 @@ class TestSetupDSPyLLM:
 
         mock_wrapper_class.assert_called_once_with(fake_llm)
         mock_dspy.settings.configure.assert_called_once_with(lm=mock_wrapper)
+
+
+class TestRagasDSPyLMInspectHistory:
+    @pytest.fixture
+    def ragas_dspy_lm(self, fake_llm):
+        from ragas.optimizers.dspy_llm_wrapper import RagasDSPyLM
+        return RagasDSPyLM(ragas_llm=fake_llm)
+
+    def test_inspect_history_n_zero_returns_empty(self, ragas_dspy_lm):
+        """inspect_history(n=0) should return [] not the full history."""
+        ragas_dspy_lm.history = [{"prompt": "a"}, {"prompt": "b"}]
+        assert ragas_dspy_lm.inspect_history(n=0) == []
+
+    def test_inspect_history_negative_n_returns_empty(self, ragas_dspy_lm):
+        """inspect_history(n=-1) should return []."""
+        ragas_dspy_lm.history = [{"prompt": "a"}]
+        assert ragas_dspy_lm.inspect_history(n=-1) == []
+
+    def test_inspect_history_n_one_returns_last_entry(self, ragas_dspy_lm):
+        """inspect_history(n=1) should return only the most recent entry."""
+        ragas_dspy_lm.history = [{"prompt": "first"}, {"prompt": "second"}]
+        assert len(ragas_dspy_lm.inspect_history(n=1)) == 1
+
+    def test_inspect_history_n_exceeds_length_returns_all(self, ragas_dspy_lm):
+        """inspect_history(n=100) should return full history when n > len."""
+        ragas_dspy_lm.history = [{"prompt": "a"}, {"prompt": "b"}]
+        assert len(ragas_dspy_lm.inspect_history(n=100)) == 2
