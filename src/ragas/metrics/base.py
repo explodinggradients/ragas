@@ -1433,9 +1433,12 @@ class SimpleLLMMetric(SimpleBaseMetric):
         df = test_dataset.to_pandas()
         df[f"{self.name}_pred"] = pred_scores
         correlation = self.get_correlation(gold_scores, pred_scores_str)
-        agreement_rate = sum(
-            x == y for x, y in zip(gold_scores, pred_scores_str)
-        ) / len(gold_scores)
+        agreement_rate = (
+            sum(x == y for x, y in zip(gold_scores, pred_scores_str))
+            / len(gold_scores)
+            if gold_scores
+            else float("nan")
+        )
         return {
             "correlation": correlation,
             "agreement_rate": agreement_rate,
