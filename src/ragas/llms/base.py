@@ -9,8 +9,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 import instructor
-from langchain_community.chat_models.vertexai import ChatVertexAI
-from langchain_community.llms import VertexAI
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import ChatGeneration, Generation, LLMResult
 from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI
@@ -35,13 +33,23 @@ logger = logging.getLogger(__name__)
 # TypeVar for Instructor LLM response models
 InstructorTypeVar = t.TypeVar("T", bound=BaseModel)  # type: ignore
 
+try:
+    # VertexAI classes moved out of langchain_community in LangChain 1.x.
+    # They are only used to advertise multiple-completion support, so treat
+    # them as optional and skip them when the import path is unavailable.
+    from langchain_community.chat_models.vertexai import ChatVertexAI
+    from langchain_community.llms import VertexAI
+
+    _VERTEXAI_COMPLETION_LLMS: t.List[type] = [ChatVertexAI, VertexAI]
+except ImportError:
+    _VERTEXAI_COMPLETION_LLMS = []
+
 MULTIPLE_COMPLETION_SUPPORTED = [
     OpenAI,
     ChatOpenAI,
     AzureOpenAI,
     AzureChatOpenAI,
-    ChatVertexAI,
-    VertexAI,
+    *_VERTEXAI_COMPLETION_LLMS,
 ]
 
 
