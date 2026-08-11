@@ -80,6 +80,11 @@ class InMemoryExampleStore(ExampleStore):
         # Get indices of similarities above threshold
         valid_indices = np.where(similarities >= threshold)[0]
 
+        # Non-positive top_k must return nothing. Note: [-0:] is [0:] in Python/numpy
+        # (same class of bug as SimpleInMemoryExampleStore / #2872).
+        if top_k <= 0 or len(valid_indices) == 0:
+            return []
+
         # Sort by similarity and get top-k
         top_indices = valid_indices[np.argsort(similarities[valid_indices])[-top_k:]]
 
