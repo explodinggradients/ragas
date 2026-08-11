@@ -27,7 +27,7 @@ scorer = ContextRecall(llm=llm)
 # Evaluate
 result = await scorer.ascore(
     user_input="Where is the Eiffel Tower located?",
-    retrieved_contexts=["Paris is the capital of France."],
+    retrieved_contexts=["The Eiffel Tower is located in Paris."],
     reference="The Eiffel Tower is located in Paris."
 )
 print(f"Context Recall Score: {result.value}")
@@ -45,7 +45,7 @@ Context Recall Score: 1.0
     ```python
     result = scorer.score(
         user_input="Where is the Eiffel Tower located?",
-        retrieved_contexts=["Paris is the capital of France."],
+        retrieved_contexts=["The Eiffel Tower is located in Paris."],
         reference="The Eiffel Tower is located in Paris."
     )
     ```
@@ -63,7 +63,7 @@ sample = SingleTurnSample(
     user_input="Where is the Eiffel Tower located?",
     response="The Eiffel Tower is located in Paris.",
     reference="The Eiffel Tower is located in Paris.",
-    retrieved_contexts=["Paris is the capital of France."],
+    retrieved_contexts=["The Eiffel Tower is located in Paris."],
 )
 
 context_recall = LLMContextRecall(llm=evaluator_llm)
