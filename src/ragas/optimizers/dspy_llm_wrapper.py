@@ -100,4 +100,8 @@ class RagasDSPyLM:
         List[Dict[str, Any]]
             Recent call history.
         """
+        # Python evaluates -0 as 0, so history[-0:] is the full list. Treat
+        # non-positive n as "return nothing" (same class of bug as #2872/#2877).
+        if n <= 0:
+            return []
         return self.history[-n:]
