@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import asyncio
+import importlib
 import inspect
 import logging
 import threading
 import typing as t
+import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 import instructor
-from langchain_community.chat_models.vertexai import ChatVertexAI
-from langchain_community.llms import VertexAI
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import ChatGeneration, Generation, LLMResult
 from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI
@@ -35,13 +35,52 @@ logger = logging.getLogger(__name__)
 # TypeVar for Instructor LLM response models
 InstructorTypeVar = t.TypeVar("T", bound=BaseModel)  # type: ignore
 
+_LANGCHAIN_COMMUNITY_SUNSET_WARNING = "`langchain-community` is being sunset.*"
+
+
+def _import_langchain_class(
+    module_name: str, class_name: str
+) -> t.Optional[t.Type[t.Any]]:
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=_LANGCHAIN_COMMUNITY_SUNSET_WARNING,
+            category=DeprecationWarning,
+        )
+        try:
+            module = importlib.import_module(module_name)
+        except ImportError:
+            return None
+
+    imported_class = getattr(module, class_name, None)
+    return imported_class if isinstance(imported_class, type) else None
+
+
+def _get_vertexai_completion_types() -> t.Tuple[t.Type[t.Any], ...]:
+    """Return installed Vertex AI LangChain classes that support n-completion."""
+    vertexai_types: t.List[t.Type[t.Any]] = []
+
+    chat_vertexai = _import_langchain_class(
+        "langchain_google_vertexai", "ChatVertexAI"
+    ) or _import_langchain_class(
+        "langchain_community.chat_models.vertexai", "ChatVertexAI"
+    )
+    if chat_vertexai is not None:
+        vertexai_types.append(chat_vertexai)
+
+    vertexai = _import_langchain_class("langchain_community.llms", "VertexAI")
+    if vertexai is not None:
+        vertexai_types.append(vertexai)
+
+    return tuple(vertexai_types)
+
+
 MULTIPLE_COMPLETION_SUPPORTED = [
     OpenAI,
     ChatOpenAI,
     AzureOpenAI,
     AzureChatOpenAI,
-    ChatVertexAI,
-    VertexAI,
+    *_get_vertexai_completion_types(),
 ]
 
 

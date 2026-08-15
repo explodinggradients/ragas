@@ -88,6 +88,7 @@ def test_wrappers_with_missing_haystack(monkeypatch):
 
 
 def test_import_module():
+    import ragas
     import ragas.metrics
     import ragas.metrics._aspect_critic
 
