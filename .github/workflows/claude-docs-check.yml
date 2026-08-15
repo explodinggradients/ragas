@@ -23,6 +23,12 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
+          # Required to check out fork PR code in a pull_request_target workflow.
+          # Safe here: the workflow only performs read-only doc analysis (no build,
+          # no test execution, no artifact upload) and permissions are scoped to
+          # contents: read / pull-requests: write. See:
+          # https://gh.io/securely-using-pull_request_target
+          allow-unsafe-pr-checkout: true
 
       - name: Analyze PR for documentation needs
         id: analyze
