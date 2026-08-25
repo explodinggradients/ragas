@@ -192,13 +192,22 @@ _COLLECTIONS_NAMES = {
     "LLMContextPrecisionWithReference": "ContextPrecisionWithReference",
     "LLMContextRecall": "ContextRecall",
     "LLMSQLEquivalence": "SQLSemanticEquivalence",
-    "multimodal_faithness": "multi_modal_faithfulness",
-    "multimodal_relevance": "multi_modal_relevance",
+    "multimodal_faithness": "MultiModalFaithfulness",
+    "multimodal_relevance": "MultiModalRelevance",
     "ResponseRelevancy": "AnswerRelevancy",
     "RubricsScore": "DomainSpecificRubrics",
     "SummarizationScore": "SummaryScore",
-    "summarization_score": "summary_score",
+    "summarization_score": "SummaryScore",
     "TopicAdherenceScore": "TopicAdherence",
+    # lowercase legacy instances: collections exports only the CamelCase
+    # classes, and a submodule of the same name would otherwise shadow the
+    # suggested import
+    "answer_correctness": "AnswerCorrectness",
+    "answer_relevancy": "AnswerRelevancy",
+    "context_entity_recall": "ContextEntityRecall",
+    "context_precision": "ContextPrecision",
+    "context_recall": "ContextRecall",
+    "faithfulness": "Faithfulness",
 }
 
 # Deprecated names that have no direct equivalent in ragas.metrics.collections

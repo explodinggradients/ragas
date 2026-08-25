@@ -149,6 +149,9 @@ def test_deprecation_warning_import_resolves(name):
     The warning for deprecated names used to copy the legacy name into the
     example import, which raises an ImportError whenever the
     ragas.metrics.collections equivalent has a different name (#2748).
+    Suggestions are checked against __all__ rather than with hasattr, because
+    a submodule of the same name (e.g. faithfulness) would otherwise shadow
+    the check and resolve the import to a module, not a metric.
     """
     import re
     import warnings
@@ -160,8 +163,9 @@ def test_deprecation_warning_import_resolves(name):
         warnings.simplefilter("always")
         getattr(ragas.metrics, name)
 
-    assert caught, f"expected a deprecation warning for {name!r}"
-    message = str(caught[0].message)
+    deprecations = [w for w in caught if issubclass(w.category, DeprecationWarning)]
+    assert deprecations, f"expected a deprecation warning for {name!r}"
+    message = str(deprecations[0].message)
 
     if "no direct equivalent" in message:
         assert "Example:" not in message
@@ -170,6 +174,7 @@ def test_deprecation_warning_import_resolves(name):
     match = re.search(r"from ragas\.metrics\.collections import (\w+)", message)
     assert match is not None, f"no example import in deprecation warning for {name!r}"
     suggested = match.group(1)
-    assert hasattr(collections_module, suggested), (
-        f"warning for {name!r} suggests 'ragas.metrics.collections.{suggested}', which does not exist"
+    assert suggested in collections_module.__all__, (
+        f"warning for {name!r} suggests 'ragas.metrics.collections.{suggested}', "
+        "which the module does not export"
     )
