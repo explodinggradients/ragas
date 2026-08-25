@@ -113,24 +113,26 @@ jobs:
           make install-minimal
 
       - name: Run unit tests
+        env:
+          MATRIX_OS: ${{ matrix.os }}
+          MATRIX_TEST_TYPE: ${{ matrix.test-type }}
+          __RAGAS_DEBUG_TRACKING: true
+          RAGAS_DO_NOT_TRACK: true
         run: |
           # Configure test options based on OS and test type
-          if [ "${{ matrix.os }}" != 'windows-latest' ]; then
+          if [ "$MATRIX_OS" != 'windows-latest' ]; then
             # Use pytest-xdist to improve test run-time on Linux/macOS
             OPTS=(--dist loadfile -n auto)
           fi
 
           # Run different test suites based on test type
-          if [ "${{ matrix.test-type }}" = "full" ]; then
+          if [ "$MATRIX_TEST_TYPE" = "full" ]; then
             # Full test suite with notebook tests
             uv run pytest --nbmake tests/unit "${OPTS[@]}"
           else
             # Essential tests only (faster for cross-platform validation)
             uv run pytest tests/unit -k "not slow" "${OPTS[@]}"
           fi
-        env:
-          __RAGAS_DEBUG_TRACKING: true
-          RAGAS_DO_NOT_TRACK: true
 
   code_quality_check:
     runs-on: ubuntu-latest
