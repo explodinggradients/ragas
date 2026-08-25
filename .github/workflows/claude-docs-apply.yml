@@ -93,12 +93,13 @@ jobs:
 
       - name: Remove labels after completion
         if: always()
-        run: |
-          # Remove both labels
-          gh pr edit ${{ github.event.pull_request.number }} --remove-label "update-docs" || true
-          gh pr edit ${{ github.event.pull_request.number }} --remove-label "needs-doc-update" || true
-
-          # Comment that docs were updated
-          gh pr comment ${{ github.event.pull_request.number }} --body "✅ Documentation update completed."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # Remove both labels
+          gh pr edit "$PR_NUMBER" --remove-label "update-docs" || true
+          gh pr edit "$PR_NUMBER" --remove-label "needs-doc-update" || true
+
+          # Comment that docs were updated
+          gh pr comment "$PR_NUMBER" --body "✅ Documentation update completed."

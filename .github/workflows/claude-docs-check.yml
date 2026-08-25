@@ -78,42 +78,44 @@ jobs:
 
       - name: Parse analysis result
         id: parse
+        env:
+          STRUCTURED_OUTPUT: ${{ steps.analyze.outputs.structured_output }}
         run: |
-          # Use heredoc to safely handle JSON with special characters
-          cat <<'EOF' > /tmp/output.json
-          ${{ steps.analyze.outputs.structured_output }}
-          EOF
+          # Write the untrusted analyzer output via env var (never interpolated into the script)
+          printf '%s' "$STRUCTURED_OUTPUT" > /tmp/output.json
 
-          echo "structured_output=$(cat /tmp/output.json)"
           NEEDS_UPDATE=$(jq -r '.needs_update' /tmp/output.json)
-          REASON=$(jq -r '.reason' /tmp/output.json)
-          echo "needs_update=$NEEDS_UPDATE" >> $GITHUB_OUTPUT
+          echo "needs_update=$NEEDS_UPDATE" >> "$GITHUB_OUTPUT"
 
           # Use multiline string format for reason to handle special characters
           {
             echo 'reason<<EOF'
             jq -r '.reason' /tmp/output.json
             echo 'EOF'
-          } >> $GITHUB_OUTPUT
+          } >> "$GITHUB_OUTPUT"
 
       - name: Add label and comment if docs needed
         if: steps.parse.outputs.needs_update == 'true'
-        run: |
-          # Add the needs-doc-update label
-          gh pr edit ${{ github.event.pull_request.number }} --add-label "needs-doc-update"
-
-          # Comment with instructions
-          gh pr comment ${{ github.event.pull_request.number }} --body "📝 **Documentation update may be needed**
-
-          ${{ steps.parse.outputs.reason }}
-
-          **To apply documentation updates:** Add the \`update-docs\` label to this PR."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REASON: ${{ steps.parse.outputs.reason }}
+        run: |
+          # Add the needs-doc-update label
+          gh pr edit "$PR_NUMBER" --add-label "needs-doc-update"
+
+          # Comment with instructions
+          gh pr comment "$PR_NUMBER" --body "📝 **Documentation update may be needed**
+
+          ${REASON}
+
+          **To apply documentation updates:** Add the \`update-docs\` label to this PR."
 
       - name: Comment if no docs needed
         if: steps.parse.outputs.needs_update == 'false'
-        run: |
-          gh pr comment ${{ github.event.pull_request.number }} --body "✅ No documentation update needed — ${{ steps.parse.outputs.reason }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REASON: ${{ steps.parse.outputs.reason }}
+        run: |
+          gh pr comment "$PR_NUMBER" --body "✅ No documentation update needed — ${REASON}"
