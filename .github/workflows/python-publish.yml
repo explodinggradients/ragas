@@ -26,11 +26,11 @@ jobs:
             directory: .
             token: PYPI_API_TOKEN
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3
       with:
         fetch-depth: 0
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@3542bca2639a428e1796aaa6a2ffef0c0f575566 # v3
       with:
         python-version: '3.x'
     - name: Install dependencies
@@ -44,7 +44,7 @@ jobs:
       run: python -m build
       working-directory: ${{ matrix.package.directory }}
     - name: Publish package
-      uses: pypa/gh-action-pypi-publish@release/v1
+      uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
       with:
         password: ${{ secrets[matrix.package.token] }}
         packages-dir: ${{ matrix.package.directory }}/dist/

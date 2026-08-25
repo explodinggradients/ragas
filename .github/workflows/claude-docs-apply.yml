@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.ref }}
@@ -30,7 +30,7 @@ jobs:
           git config --global user.email "noreply@anthropic.com"
 
       - name: Apply documentation updates
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@16b3b310c3d7b5279df73130324d5205aeea8eac # v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.CLAUDE_CODE_PAT || secrets.GITHUB_TOKEN }}
