@@ -23,6 +23,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
+          allow-unsafe-pr-checkout: true  # 允许 fork PR checkout 代码
 
       - name: Analyze PR for documentation needs
         id: analyze
