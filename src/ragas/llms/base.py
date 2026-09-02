@@ -891,14 +891,14 @@ class InstructorLLM(InstructorBaseRagasLLM):
                     model_str[4:].split("-")[0].split("_")[0]
                 )  # Get version number
                 try:
-                    version = int(version_str)
-                    if 5 <= version <= 19:
+                    major_version = int(version_str.split(".")[0])
+                    if 5 <= major_version <= 19:
                         return True
                 except ValueError:
                     pass
 
             # Other specific reasoning models
-            if model_str == "codex-mini":
+            if model_str == "codex-mini" or model_str.startswith("codex-mini-"):
                 return True
 
             return False
