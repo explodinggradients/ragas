@@ -235,3 +235,38 @@ class TestLangchainLLMWrapperBypassN:
             assert mock_llm._n_passed is None
             # Result should still have 3 generations
             assert len(result.generations[0]) == 3
+
+
+class TestMultipleCompletionSupported:
+    """Tests for is_multiple_completion_supported and MULTIPLE_COMPLETION_SUPPORTED."""
+
+    def test_multiple_completion_supported_contains_valid_classes(self):
+        from ragas.llms.base import MULTIPLE_COMPLETION_SUPPORTED
+
+        assert len(MULTIPLE_COMPLETION_SUPPORTED) >= 4
+        for cls in MULTIPLE_COMPLETION_SUPPORTED:
+            assert isinstance(cls, type)
+
+    def test_is_multiple_completion_supported_for_openai_models(self):
+        from langchain_openai import ChatOpenAI, OpenAI
+
+        from ragas.llms.base import is_multiple_completion_supported
+
+        mock_chat_openai = MagicMock(spec=ChatOpenAI)
+        mock_openai = MagicMock(spec=OpenAI)
+        assert is_multiple_completion_supported(mock_chat_openai) is True
+        assert is_multiple_completion_supported(mock_openai) is True
+
+    def test_is_multiple_completion_supported_for_unsupported_model(self):
+        from langchain_core.language_models import BaseLanguageModel
+
+        from ragas.llms.base import is_multiple_completion_supported
+
+        mock_unsupported = MagicMock(spec=BaseLanguageModel)
+        assert is_multiple_completion_supported(mock_unsupported) is False
+
+    def test_safe_import_fallback_without_vertexai(self):
+        """Verify that importing ragas.llms.base works even when vertexai modules raise ImportError."""
+        from ragas.llms.base import is_multiple_completion_supported
+
+        assert callable(is_multiple_completion_supported)

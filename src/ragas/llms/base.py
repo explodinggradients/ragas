@@ -9,8 +9,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 import instructor
-from langchain_community.chat_models.vertexai import ChatVertexAI
-from langchain_community.llms import VertexAI
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import ChatGeneration, Generation, LLMResult
 from langchain_openai.chat_models import AzureChatOpenAI, ChatOpenAI
@@ -22,6 +20,35 @@ from ragas._analytics import LLMUsageEvent, track
 from ragas.cache import CacheInterface, cacher
 from ragas.exceptions import LLMDidNotFinishException
 from ragas.run_config import RunConfig, add_async_retry
+
+try:
+    from langchain_google_vertexai import ChatVertexAI as GoogleChatVertexAI
+except ImportError:
+    GoogleChatVertexAI = None  # type: ignore
+
+try:
+    from langchain_community.chat_models.vertexai import (
+        ChatVertexAI as CommunityChatVertexAI,
+    )
+except ImportError:
+    CommunityChatVertexAI = None  # type: ignore
+
+ChatVertexAI = GoogleChatVertexAI or CommunityChatVertexAI
+
+try:
+    from langchain_google_vertexai import VertexAI as GoogleVertexAI
+except ImportError:
+    GoogleVertexAI = None  # type: ignore
+
+try:
+    from langchain_community.llms import VertexAI as CommunityVertexAI
+except ImportError:
+    try:
+        from langchain_community.llms.vertexai import VertexAI as CommunityVertexAI
+    except ImportError:
+        CommunityVertexAI = None  # type: ignore
+
+VertexAI = GoogleVertexAI or CommunityVertexAI
 
 if t.TYPE_CHECKING:
     from langchain_core.callbacks import Callbacks
@@ -35,14 +62,20 @@ logger = logging.getLogger(__name__)
 # TypeVar for Instructor LLM response models
 InstructorTypeVar = t.TypeVar("T", bound=BaseModel)  # type: ignore
 
-MULTIPLE_COMPLETION_SUPPORTED = [
+MULTIPLE_COMPLETION_SUPPORTED: list[type] = [
     OpenAI,
     ChatOpenAI,
     AzureOpenAI,
     AzureChatOpenAI,
-    ChatVertexAI,
-    VertexAI,
 ]
+for _candidate in (
+    GoogleChatVertexAI,
+    CommunityChatVertexAI,
+    GoogleVertexAI,
+    CommunityVertexAI,
+):
+    if _candidate is not None and _candidate not in MULTIPLE_COMPLETION_SUPPORTED:
+        MULTIPLE_COMPLETION_SUPPORTED.append(_candidate)
 
 
 def is_multiple_completion_supported(llm: BaseLanguageModel) -> bool:
