@@ -16,6 +16,7 @@ from ragas.embeddings.base import (
     LangchainEmbeddingsWrapper,
     LlamaIndexEmbeddingsWrapper,
 )
+from ragas.exceptions import ExceptionInRunner
 from ragas.executor import Executor
 from ragas.llms import BaseRagasLLM, LangchainLLMWrapper, LlamaIndexLLMWrapper
 from ragas.run_config import RunConfig
@@ -556,6 +557,8 @@ class TestsetGenerator:
 
         try:
             scenario_sample_list: t.List[t.List[BaseScenario]] = exec.results()
+            if scenario_sample_list == []:
+                raise ExceptionInRunner()
         except Exception as e:
             scenario_generation_rm.on_chain_error(e)
             raise e
@@ -598,6 +601,8 @@ class TestsetGenerator:
 
         try:
             eval_samples = exec.results()
+            if eval_samples == []:
+                raise ExceptionInRunner()
         except Exception as e:
             sample_generation_rm.on_chain_error(e)
             raise e
