@@ -88,6 +88,93 @@ class DiscreteMetric(SimpleLLMMetric, DiscreteValidator):
             )
         return cohen_kappa_score(gold_labels, predictions)
 
+    def get_classification_report(
+        self,
+        gold_labels: t.List[str],
+        predictions: t.List[str],
+        positive_label: t.Optional[str] = None,
+    ) -> t.Dict[str, t.Any]:
+        """
+        Compute per-class judge-validation stats (TPR, TNR, precision, confusion
+        matrix) for a binary DiscreteMetric.
+
+        Overall agreement rate and Cohen's kappa can look healthy even when a
+        judge systematically misses the minority class -- e.g. a pass/fail
+        judge on a mostly-passing dataset can rarely catch real failures and
+        still post a high agreement rate, since agreement is dominated by the
+        easy "pass" majority. Reporting TPR/TNR separately surfaces that
+        failure mode before the judge is trusted in a pipeline.
+
+        Parameters
+        ----------
+        gold_labels : List[str]
+            Human-annotated ground truth labels.
+        predictions : List[str]
+            Labels predicted by this metric.
+        positive_label : str, optional
+            Which of the two allowed_values counts as "positive" for TPR/TNR
+            purposes. Defaults to "fail" if present in allowed_values,
+            otherwise the second allowed value.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary with `positive_label`, `negative_label`, `tpr`, `tnr`,
+            `precision`, `recall`, and `confusion_matrix` (tp/fp/tn/fn counts).
+
+        Raises
+        ------
+        ValueError
+            If the metric does not have exactly two allowed_values, or if
+            `positive_label` is not one of them.
+        """
+        values = list(self.allowed_values)
+        if len(values) != 2:
+            raise ValueError(
+                "get_classification_report is only supported for binary "
+                f"DiscreteMetric (got allowed_values={values})."
+            )
+
+        if positive_label is None:
+            positive_label = "fail" if "fail" in values else values[-1]
+        if positive_label not in values:
+            raise ValueError(
+                f"positive_label={positive_label!r} is not one of "
+                f"allowed_values={values}."
+            )
+        negative_label = values[0] if values[1] == positive_label else values[1]
+
+        try:
+            from sklearn.metrics import confusion_matrix
+        except ImportError:
+            raise ImportError(
+                "scikit-learn is required for classification report "
+                "calculation. Please install it with `pip install scikit-learn`."
+            )
+
+        tn, fp, fn, tp = confusion_matrix(
+            gold_labels, predictions, labels=[negative_label, positive_label]
+        ).ravel()
+
+        tpr = tp / (tp + fn) if (tp + fn) > 0 else float("nan")
+        tnr = tn / (tn + fp) if (tn + fp) > 0 else float("nan")
+        precision = tp / (tp + fp) if (tp + fp) > 0 else float("nan")
+
+        return {
+            "positive_label": positive_label,
+            "negative_label": negative_label,
+            "tpr": tpr,
+            "tnr": tnr,
+            "precision": precision,
+            "recall": tpr,
+            "confusion_matrix": {
+                "tp": int(tp),
+                "fp": int(fp),
+                "tn": int(tn),
+                "fn": int(fn),
+            },
+        }
+
     @classmethod
     def load(
         cls, path: str, embedding_model: t.Optional["EmbeddingModelType"] = None

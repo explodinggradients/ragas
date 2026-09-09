@@ -1436,11 +1436,28 @@ class SimpleLLMMetric(SimpleBaseMetric):
         agreement_rate = sum(
             x == y for x, y in zip(gold_scores, pred_scores_str)
         ) / len(gold_scores)
-        return {
+        result = {
             "correlation": correlation,
             "agreement_rate": agreement_rate,
             "df": df,
         }
+
+        # Binary discrete metrics (e.g. pass/fail judges) can look well
+        # calibrated on agreement_rate/correlation alone while still missing
+        # most real failures on an imbalanced dataset. Where available, add a
+        # per-class breakdown (TPR/TNR/precision/confusion matrix) so that
+        # kind of miscalibration is visible before the judge is trusted.
+        get_classification_report = getattr(self, "get_classification_report", None)
+        if callable(get_classification_report):
+            try:
+                result["classification_report"] = get_classification_report(
+                    gold_scores, pred_scores_str
+                )
+            except ValueError:
+                # Not a binary metric (allowed_values != 2); nothing to add.
+                pass
+
+        return result
 
     def __repr__(self) -> str:
         """Return a clean string representation of the metric."""

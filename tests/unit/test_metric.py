@@ -5,7 +5,12 @@ import pytest
 from pydantic import BaseModel
 
 from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics import AspectCritic, MetricResult, SimpleCriteriaScore
+from ragas.metrics import (
+    AspectCritic,
+    DiscreteMetric,
+    MetricResult,
+    SimpleCriteriaScore,
+)
 from ragas.metrics.base import MetricType, SimpleLLMMetric as LLMMetric
 
 
@@ -338,3 +343,76 @@ def test_metric_prompt_conversion():
 
     # After __post_init__, prompt should be converted to Prompt object
     assert hasattr(metric.prompt, "format")
+
+
+# ====================
+# DiscreteMetric.get_classification_report Tests
+# ====================
+
+
+def test_classification_report_perfect_judge():
+    """A judge that matches every gold label should report TPR=TNR=1.0."""
+    metric = DiscreteMetric(name="judge", allowed_values=["pass", "fail"])
+    gold = ["pass", "pass", "fail", "fail"]
+    pred = ["pass", "pass", "fail", "fail"]
+
+    report = metric.get_classification_report(gold, pred)
+
+    assert report["positive_label"] == "fail"
+    assert report["negative_label"] == "pass"
+    assert report["tpr"] == 1.0
+    assert report["tnr"] == 1.0
+    assert report["precision"] == 1.0
+    assert report["confusion_matrix"] == {"tp": 2, "fp": 0, "tn": 2, "fn": 0}
+
+
+def test_classification_report_defaults_positive_label_to_fail():
+    """positive_label should default to 'fail' when present in allowed_values."""
+    metric = DiscreteMetric(name="judge", allowed_values=["pass", "fail"])
+    report = metric.get_classification_report(["pass", "fail"], ["pass", "fail"])
+    assert report["positive_label"] == "fail"
+
+
+def test_classification_report_respects_explicit_positive_label():
+    metric = DiscreteMetric(name="judge", allowed_values=["good", "bad"])
+    report = metric.get_classification_report(
+        ["good", "bad"], ["good", "bad"], positive_label="good"
+    )
+    assert report["positive_label"] == "good"
+    assert report["negative_label"] == "bad"
+
+
+def test_classification_report_rejects_non_binary_metric():
+    """Should only apply to metrics with exactly two allowed_values."""
+    metric = DiscreteMetric(name="judge", allowed_values=["excellent", "good", "poor"])
+    with pytest.raises(ValueError, match="only supported for binary"):
+        metric.get_classification_report(["good"], ["good"])
+
+
+def test_classification_report_rejects_unknown_positive_label():
+    metric = DiscreteMetric(name="judge", allowed_values=["pass", "fail"])
+    with pytest.raises(ValueError, match="not one of allowed_values"):
+        metric.get_classification_report(
+            ["pass", "fail"], ["pass", "fail"], positive_label="maybe"
+        )
+
+
+def test_classification_report_surfaces_trap_metric():
+    """
+    Demonstrates why agreement_rate/Cohen's kappa alone can hide a judge that
+    misses real failures: on an imbalanced dataset where a judge just always
+    predicts "pass", agreement_rate looks high, but TPR (catching real
+    failures) is 0.
+    """
+    metric = DiscreteMetric(name="judge", allowed_values=["pass", "fail"])
+
+    gold = ["pass"] * 18 + ["fail"] * 2
+    pred = ["pass"] * 20  # judge never predicts "fail"
+
+    agreement_rate = sum(g == p for g, p in zip(gold, pred)) / len(gold)
+    report = metric.get_classification_report(gold, pred)
+
+    assert agreement_rate == 0.9  # looks healthy in isolation
+    assert report["tpr"] == 0.0  # but the judge catches zero real failures
+    assert report["tnr"] == 1.0
+    assert report["confusion_matrix"] == {"tp": 0, "fp": 0, "tn": 18, "fn": 2}
