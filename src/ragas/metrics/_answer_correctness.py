@@ -196,7 +196,9 @@ class AnswerCorrectness(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         tp = len(prediction.TP)
         fp = len(prediction.FP)
         fn = len(prediction.FN)
-        score = fbeta_score(tp, fp, fn, self.beta)
+        # Single classification pass, so the same TP count is used for both
+        # the precision and recall legs of fbeta_score.
+        score = fbeta_score(tp, fp, tp, fn, self.beta)
         return score
 
     async def _create_simplified_statements(

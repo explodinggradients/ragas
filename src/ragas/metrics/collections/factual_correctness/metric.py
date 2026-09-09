@@ -146,16 +146,22 @@ class FactualCorrectness(BaseMetric):
         else:
             response_reference = np.array([], dtype=bool)
 
-        # Step 2: Compute TP, FP, FN exactly like legacy
-        tp = int(np.sum(reference_response))
+        # Step 2: Compute TP, FP, FN exactly like legacy.
+        # tp_precision: response claims supported by reference (precision direction)
+        # fp:           response claims NOT supported by reference
+        tp_precision = int(np.sum(reference_response))
         fp = int(np.sum(~reference_response))
         if self.mode != "precision":
+            # tp_recall: reference claims supported by response (recall direction)
+            # fn:        reference claims NOT supported by response
+            tp_recall = int(np.sum(response_reference))
             fn = int(np.sum(~response_reference))
         else:
+            tp_recall = 0
             fn = 0
 
         # Step 3: Compute final score based on mode
-        if tp == 0 and fp == 0 and fn == 0:
+        if tp_precision == 0 and fp == 0 and tp_recall == 0 and fn == 0:
             # No claims could be decomposed from either text (e.g. both
             # response and reference are correct abstentions such as
             # "Not found in provided context."). Nothing was measured, so
@@ -165,11 +171,11 @@ class FactualCorrectness(BaseMetric):
             return MetricResult(value=float("nan"))
 
         if self.mode == "precision":
-            score = tp / (tp + fp + 1e-8)
+            score = tp_precision / (tp_precision + fp + 1e-8)
         elif self.mode == "recall":
-            score = tp / (tp + fn + 1e-8)
+            score = tp_recall / (tp_recall + fn + 1e-8)
         else:  # f1
-            score = fbeta_score(tp, fp, fn, self.beta)
+            score = fbeta_score(tp_precision, fp, tp_recall, fn, self.beta)
 
         return MetricResult(value=float(np.round(score, 2)))
 
