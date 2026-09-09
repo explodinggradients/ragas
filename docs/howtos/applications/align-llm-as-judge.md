@@ -257,6 +257,24 @@ Let's examine the error distribution
 
 **Key observation:** All 39 misalignments (24.4%) are false positives - cases where the judge said "pass" but human experts said "fail". The baseline judge is too lenient, missing responses that omit critical concepts from the grading notes.
 
+!!! tip "Use `get_classification_report` instead of computing this by hand"
+    The false-positive/false-negative counts above can also be computed directly from a `DiscreteMetric`, which additionally reports **TPR** and **TNR** - the metrics that actually matter for judge calibration. Overall agreement rate (or Cohen's kappa from `validate_alignment`) can look healthy even when a judge is missing most real failures, since agreement is dominated by whichever label is more common in your dataset. TPR/TNR surface that miscalibration directly, and are worth checking on every judge before you trust it in a pipeline:
+
+    ```python
+    report = accuracy_metric.get_classification_report(
+        gold_labels=df["target"].tolist(),
+        predictions=df["judge_label"].tolist(),
+    )
+    print(report)
+    # {
+    #     "positive_label": "fail", "negative_label": "pass",
+    #     "tpr": ..., "tnr": 1.0, "precision": ..., "recall": ...,
+    #     "confusion_matrix": {"tp": ..., "fp": 0, "tn": ..., "fn": 39},
+    # }
+    ```
+
+    With `positive_label="fail"` (the default, so TPR = "catches real failures"), the 39 misalignments above are all `fn` (judge said "pass", human said "fail") since the manual analysis found zero cases of the opposite mistake - so `fp` is exactly `0` and `tnr` is exactly `1.0`: the judge never wrongly fails a response the human approved. `tpr` will be below `1.0` since `fn > 0` - the judge is missing some real failures, consistent with the "too lenient" finding above. The exact `tpr` value depends on how many real "fail" cases exist in the dataset overall (`tp + fn`), which the manual false-positive/false-negative count alone doesn't tell you but `get_classification_report` does.
+
 ### Sample failure cases
 
 Here are examples where the judge incorrectly passed responses that were missing key concepts:
