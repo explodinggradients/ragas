@@ -9,7 +9,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 import instructor
-from langchain_community.chat_models.vertexai import ChatVertexAI
 from langchain_community.llms import VertexAI
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.outputs import ChatGeneration, Generation, LLMResult
@@ -35,13 +34,26 @@ logger = logging.getLogger(__name__)
 # TypeVar for Instructor LLM response models
 InstructorTypeVar = t.TypeVar("T", bound=BaseModel)  # type: ignore
 
+try:
+    # Removed from langchain-community in recent releases (the Vertex AI
+    # chat integration moved to the standalone langchain-google-vertexai
+    # package); importing it unconditionally broke `import ragas` outright
+    # for anyone on a langchain-community version that no longer has it.
+    from langchain_community.chat_models.vertexai import ChatVertexAI
+except ImportError:
+    ChatVertexAI = None
+
 MULTIPLE_COMPLETION_SUPPORTED = [
-    OpenAI,
-    ChatOpenAI,
-    AzureOpenAI,
-    AzureChatOpenAI,
-    ChatVertexAI,
-    VertexAI,
+    llm_type
+    for llm_type in (
+        OpenAI,
+        ChatOpenAI,
+        AzureOpenAI,
+        AzureChatOpenAI,
+        ChatVertexAI,
+        VertexAI,
+    )
+    if llm_type is not None
 ]
 
 

@@ -134,3 +134,29 @@ def test_import_in_debug_mode():
 
     del os.environ["RAGAS_DEBUG"]
     get_debug_mode.cache_clear()
+
+
+def test_import_survives_missing_chat_vertexai():
+    """Regression: `ragas.llms.base` used to import
+    `langchain_community.chat_models.vertexai.ChatVertexAI` unconditionally
+    at module load time. That submodule was removed from langchain-community
+    in favor of the standalone `langchain-google-vertexai` package, and
+    `langchain-community` is an unpinned dependency, so any fresh install
+    pulling a recent langchain-community broke `import ragas` outright.
+
+    This asserts the specific symptom: the multi-completion allowlist must
+    never contain a bare `None` placeholder for a class that failed to
+    import, since `isinstance(llm, None)` raises TypeError.
+    """
+    from ragas.llms.base import (
+        MULTIPLE_COMPLETION_SUPPORTED,
+        is_multiple_completion_supported,
+    )
+
+    assert None not in MULTIPLE_COMPLETION_SUPPORTED
+    assert all(isinstance(cls, type) for cls in MULTIPLE_COMPLETION_SUPPORTED)
+
+    from langchain_openai.llms import OpenAI
+
+    # Must not raise even though ChatVertexAI is unavailable in this env.
+    assert is_multiple_completion_supported(OpenAI(api_key="test")) is True
