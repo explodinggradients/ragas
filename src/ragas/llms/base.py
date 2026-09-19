@@ -581,20 +581,26 @@ def _get_instructor_client(
     - New SDK (google-genai): Uses instructor.from_genai()
     - Old SDK (google-generativeai): Uses instructor.from_gemini()
     """
-    if mode is None:
-        mode = instructor.Mode.JSON
-
     provider_lower = provider.lower()
+    is_new_google_genai_client = _is_new_google_genai_client(client)
+
+    if mode is None:
+        if provider_lower in ("google", "gemini") and not is_new_google_genai_client:
+            # google-generativeai has no JSON mode: it supports only
+            # Mode.TOOLS and Mode.MD_JSON, which is also instructor's default.
+            mode = instructor.Mode.MD_JSON
+        else:
+            mode = instructor.Mode.JSON
 
     if provider_lower == "openai":
         return instructor.from_openai(client, mode=mode)
     elif provider_lower == "anthropic":
-        return instructor.from_anthropic(client)
+        return instructor.from_anthropic(client, mode=mode)
     elif provider_lower in ("google", "gemini"):
-        if _is_new_google_genai_client(client):
-            return instructor.from_genai(client)
+        if is_new_google_genai_client:
+            return instructor.from_genai(client, mode=mode)
         else:
-            return instructor.from_gemini(client)
+            return instructor.from_gemini(client, mode=mode)
     elif provider_lower == "litellm":
         return instructor.from_litellm(client, mode=mode)
     elif provider_lower == "perplexity":

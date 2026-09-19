@@ -35,6 +35,12 @@ class MockClient:
             self.messages.create = sync_create
 
 
+class MockGenAIClient(MockClient):
+    """Mock client from the new google-genai SDK (google.genai.client.Client)."""
+
+    __module__ = "google.genai.client"
+
+
 class MockInstructor:
     """Mock instructor client that wraps the base client."""
 
@@ -182,10 +188,10 @@ def test_provider_support(monkeypatch):
     def mock_from_openai(client, mode=None):
         return MockInstructor(client)
 
-    def mock_from_anthropic(client):
+    def mock_from_anthropic(client, mode=None):
         return MockInstructor(client)
 
-    def mock_from_gemini(client):
+    def mock_from_gemini(client, mode=None):
         return MockInstructor(client)
 
     def mock_from_litellm(client, mode=None):
@@ -333,3 +339,60 @@ def test_llm_factory_mode_with_generic_provider(monkeypatch):
 
     assert llm.model == "custom-model"
     assert captured_mode == instructor.Mode.TOOLS
+
+
+def test_llm_factory_mode_reaches_provider_factories(monkeypatch):
+    """
+    Test that llm_factory forwards mode to the provider-specific factories it
+    selects, not only to from_openai/from_litellm.
+
+    Those branches used to call the factory without the mode argument, so the
+    mode - both an explicitly requested one and the Mode.JSON default - was
+    silently dropped and instructor applied its own default instead
+    (Mode.TOOLS for from_anthropic and from_genai).
+    """
+    import instructor
+
+    captured_mode = {}
+
+    def record_mode(factory_name):
+        def factory(client, mode=None):
+            captured_mode[factory_name] = mode
+            return MockInstructor(client)
+
+        return factory
+
+    for factory_name in ("from_anthropic", "from_genai", "from_gemini"):
+        monkeypatch.setattr(
+            instructor, factory_name, record_mode(factory_name), raising=False
+        )
+
+    cases = [
+        ("anthropic", MockClient(is_async=False), "from_anthropic"),
+        ("google", MockGenAIClient(is_async=False), "from_genai"),
+        ("gemini", MockClient(is_async=False), "from_gemini"),
+    ]
+
+    for provider, client, factory_name in cases:
+        captured_mode.clear()
+        llm_factory(
+            "test-model",
+            provider=provider,
+            client=client,
+            adapter="instructor",
+            mode=instructor.Mode.TOOLS,
+        )
+        assert captured_mode[factory_name] == instructor.Mode.TOOLS
+
+        # google-generativeai has no JSON mode (instructor supports only
+        # TOOLS and MD_JSON for it), so its default stays MD_JSON.
+        default_mode = (
+            instructor.Mode.MD_JSON
+            if factory_name == "from_gemini"
+            else instructor.Mode.JSON
+        )
+        captured_mode.clear()
+        llm_factory(
+            "test-model", provider=provider, client=client, adapter="instructor"
+        )
+        assert captured_mode[factory_name] == default_mode
