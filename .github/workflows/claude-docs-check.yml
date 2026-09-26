@@ -19,9 +19,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.sha }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # NOTE: this workflow runs on pull_request_target, i.e. with the base
+          # repository's token and secrets. Never check out the fork's head ref
+          # here: actions/checkout refuses untrusted fork code in this privileged
+          # context (see #2989). The analysis below reads the PR via `gh pr diff`,          # so the base tree is sufficient.
           fetch-depth: 0
 
       - name: Analyze PR for documentation needs
@@ -56,7 +57,7 @@ jobs:
             ## Your Task
 
             1. Run `gh pr diff` to review code changes
-            2. Check if docstrings are present for API changes
+            2. Check if docstrings are present for API changes (from the `gh pr diff` output — the checked-out tree is the base branch, not the PR head)
             3. Return JSON immediately with your decision
 
             Return format:
