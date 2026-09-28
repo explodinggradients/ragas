@@ -333,3 +333,66 @@ def test_llm_factory_mode_with_generic_provider(monkeypatch):
 
     assert llm.model == "custom-model"
     assert captured_mode == instructor.Mode.TOOLS
+
+
+@pytest.mark.parametrize(
+    "provider,factory_attr",
+    [
+        ("anthropic", "from_anthropic"),
+        ("perplexity", "from_perplexity"),
+    ],
+)
+def test_mode_forwarded_to_provider_factory(
+    mock_sync_client, monkeypatch, provider, factory_attr
+):
+    import instructor
+
+    captured: dict = {}
+
+    def mock_factory(client, mode=None):
+        captured["mode"] = mode
+        return MockInstructor(client)
+
+    monkeypatch.setattr(f"instructor.{factory_attr}", mock_factory)
+
+    expected_mode = instructor.Mode.JSON
+    llm_factory(model="test-model", provider=provider, client=mock_sync_client, mode=expected_mode)
+    assert captured.get("mode") == expected_mode, (
+        f"instructor.{factory_attr} did not receive mode={expected_mode!r}"
+    )
+
+
+@pytest.mark.parametrize(
+    "new_genai,factory_attr",
+    [
+        (True, "from_genai"),
+        (False, "from_gemini"),
+    ],
+)
+def test_mode_forwarded_to_google_factory(
+    mock_sync_client, monkeypatch, new_genai, factory_attr
+):
+    import instructor
+    from ragas.llms.base import _is_new_google_genai_client
+
+    captured: dict = {}
+
+    def mock_factory(client, mode=None):
+        captured["mode"] = mode
+        return MockInstructor(client)
+
+    monkeypatch.setattr(f"instructor.{factory_attr}", mock_factory)
+    monkeypatch.setattr(
+        "ragas.llms.base._is_new_google_genai_client", lambda _: new_genai
+    )
+
+    expected_mode = instructor.Mode.JSON
+    llm_factory(
+        model="gemini-2.0-flash",
+        provider="google",
+        client=mock_sync_client,
+        mode=expected_mode,
+    )
+    assert captured.get("mode") == expected_mode, (
+        f"instructor.{factory_attr} did not receive mode={expected_mode!r}"
+    )

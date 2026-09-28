@@ -571,10 +571,8 @@ def _get_instructor_client(
 
     Uses provider-specific methods when available, falls back to generic patcher.
 
-    Note: For OpenAI, we use Mode.JSON by default instead of Mode.TOOLS because
-    OpenAI's function calling (TOOLS mode) has issues with Dict type annotations
-    in Pydantic models - it returns empty objects `{}` instead of proper structured
-    data. Mode.JSON works correctly with all Pydantic types including Dict.
+    Note: Mode.JSON is used as the default for all providers because it works
+    correctly with all Pydantic types including Dict annotations.
     See: https://github.com/vibrantlabsai/ragas/issues/2490
 
     For Google/Gemini, supports both SDKs:
@@ -589,16 +587,16 @@ def _get_instructor_client(
     if provider_lower == "openai":
         return instructor.from_openai(client, mode=mode)
     elif provider_lower == "anthropic":
-        return instructor.from_anthropic(client)
+        return instructor.from_anthropic(client, mode=mode)
     elif provider_lower in ("google", "gemini"):
         if _is_new_google_genai_client(client):
-            return instructor.from_genai(client)
+            return instructor.from_genai(client, mode=mode)
         else:
-            return instructor.from_gemini(client)
+            return instructor.from_gemini(client, mode=mode)
     elif provider_lower == "litellm":
         return instructor.from_litellm(client, mode=mode)
     elif provider_lower == "perplexity":
-        return instructor.from_perplexity(client)
+        return instructor.from_perplexity(client, mode=mode)
     else:
         return _patch_client_for_provider(client, provider_lower, mode=mode)
 
