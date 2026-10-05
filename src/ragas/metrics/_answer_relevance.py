@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import typing as t
 from dataclasses import dataclass, field
@@ -101,6 +102,49 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
         gen_question_vec = np.asarray(
             self.embeddings.embed_documents(generated_questions)  # type: ignore[attr-defined]
         ).reshape(len(generated_questions), -1)
+        return self._cosine_similarity(question_vec, gen_question_vec)
+
+    async def _acalculate_similarity(
+        self, question: str, generated_questions: list[str]
+    ) -> np.ndarray:
+        assert self.embeddings is not None, (
+            f"Error: '{self.name}' requires embeddings to be set."
+        )
+
+        async_embed_query = getattr(self.embeddings, "aembed_query", None)
+        if async_embed_query is None:
+            async_embed_query = getattr(self.embeddings, "aembed_text", None)
+        if async_embed_query is not None:
+            question_embedding = await async_embed_query(question)
+        else:
+            embed_query = getattr(self.embeddings, "embed_query", None)
+            if embed_query is None:
+                embed_query = getattr(self.embeddings, "embed_text")
+            question_embedding = await asyncio.to_thread(embed_query, question)
+
+        async_embed_documents = getattr(self.embeddings, "aembed_documents", None)
+        if async_embed_documents is None:
+            async_embed_documents = getattr(self.embeddings, "aembed_texts", None)
+        if async_embed_documents is not None:
+            generated_embeddings = await async_embed_documents(generated_questions)
+        else:
+            embed_documents = getattr(self.embeddings, "embed_documents", None)
+            if embed_documents is None:
+                embed_documents = getattr(self.embeddings, "embed_texts")
+            generated_embeddings = await asyncio.to_thread(
+                embed_documents, generated_questions
+            )
+
+        question_vec = np.asarray(question_embedding).reshape(1, -1)
+        gen_question_vec = np.asarray(generated_embeddings).reshape(
+            len(generated_questions), -1
+        )
+        return self._cosine_similarity(question_vec, gen_question_vec)
+
+    @staticmethod
+    def _cosine_similarity(
+        question_vec: np.ndarray, gen_question_vec: np.ndarray
+    ) -> np.ndarray:
         norm = np.linalg.norm(gen_question_vec, axis=1) * np.linalg.norm(
             question_vec, axis=1
         )
@@ -114,19 +158,22 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
     def _calculate_score(
         self, answers: t.Sequence[ResponseRelevanceOutput], row: t.Dict
     ) -> float:
-        question = row["user_input"]
         gen_questions = [answer.question for answer in answers]
-        all_noncommittal = np.all([answer.noncommittal for answer in answers])
         if all(q == "" for q in gen_questions):
             logger.warning(
                 "Invalid JSON response. Expected dictionary with key 'question'"
             )
-            score = np.nan
-        else:
-            cosine_sim = self.calculate_similarity(question, gen_questions)
-            score = cosine_sim.mean() * int(not all_noncommittal)
+            return np.nan
 
-        return score
+        cosine_sim = self.calculate_similarity(row["user_input"], gen_questions)
+        return self._score_from_similarity(answers, cosine_sim)
+
+    @staticmethod
+    def _score_from_similarity(
+        answers: t.Sequence[ResponseRelevanceOutput], cosine_sim: np.ndarray
+    ) -> float:
+        all_noncommittal = np.all([answer.noncommittal for answer in answers])
+        return cosine_sim.mean() * int(not all_noncommittal)
 
     async def _single_turn_ascore(
         self, sample: SingleTurnSample, callbacks: Callbacks
@@ -143,7 +190,12 @@ class ResponseRelevancy(MetricWithLLM, MetricWithEmbeddings, SingleTurnMetric):
             data=prompt_input, llm=self.llm, callbacks=callbacks, n=self.strictness
         )
 
-        return self._calculate_score(responses, row)
+        gen_questions = [answer.question for answer in responses]
+        if all(q == "" for q in gen_questions):
+            return self._calculate_score(responses, row)
+
+        cosine_sim = await self._acalculate_similarity(row["user_input"], gen_questions)
+        return self._score_from_similarity(responses, cosine_sim)
 
 
 class AnswerRelevancy(ResponseRelevancy):
