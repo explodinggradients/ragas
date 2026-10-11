@@ -236,6 +236,77 @@ def test_snapshot_with_metadata():
     assert messages[0].metadata["message_id"] == "msg-1"
 
 
+@pytest.mark.parametrize("answer", [None, "It's sunny and 72°F."])
+def test_snapshot_with_none_content_does_not_pollute_response(answer):
+    """Absent assistant content stays empty through response extraction and scoring."""
+    from ragas.integrations.ag_ui import (
+        MISSING_RESPONSE_PLACEHOLDER,
+        build_sample,
+        convert_messages_snapshot,
+        convert_to_ragas_messages,
+        extract_response,
+    )
+
+    snapshot = MessagesSnapshotEvent(
+        messages=[
+            UserMessage(id="msg-1", content="What's the weather?"),
+            AssistantMessage(id="msg-2"),
+        ]
+    )
+    if answer is not None:
+        snapshot.messages.append(AssistantMessage(id="msg-3", content=answer))
+
+    # Both public conversion paths use the snapshot handler.
+    for messages in (
+        convert_messages_snapshot(snapshot),
+        convert_to_ragas_messages([snapshot]),
+    ):
+        assert isinstance(messages[1], AIMessage)
+        assert messages[1].content == ""
+        assert extract_response(messages) == (answer or "")
+        sample = build_sample(user_input="What's the weather?", messages=messages)
+        assert sample.response == (answer or MISSING_RESPONSE_PLACEHOLDER)
+
+
+@pytest.mark.parametrize("shape", ["text", "mixed", "binary", "empty"])
+def test_snapshot_with_multimodal_content_keeps_only_text(shape):
+    """Multimodal content becomes text, never a repr of text or binary parts."""
+    import ag_ui.core as core
+
+    from ragas.integrations.ag_ui import convert_messages_snapshot
+
+    if not hasattr(core, "TextInputContent"):
+        pytest.skip("Installed ag-ui-protocol does not support multimodal content")
+
+    text = core.TextInputContent(text="What is in this screenshot?")
+    binary = core.BinaryInputContent(
+        mime_type="image/png", url="https://example.com/screenshot.png"
+    )
+    contents = {
+        "text": ([text], text.text),
+        "mixed": (
+            [text, binary, core.TextInputContent(text="Describe it.")],
+            "What is in this screenshot? Describe it.",
+        ),
+        "binary": ([binary], ""),
+        "empty": ([], ""),
+    }
+    content, expected = contents[shape]
+    snapshot = MessagesSnapshotEvent(
+        messages=[UserMessage(id="msg-1", content=content)]
+    )
+
+    messages = convert_messages_snapshot(snapshot, metadata=True)
+
+    assert len(messages) == 1
+    assert isinstance(messages[0], HumanMessage)
+    assert messages[0].content == expected
+    assert messages[0].metadata == {
+        "source": "messages_snapshot",
+        "message_id": "msg-1",
+    }
+
+
 def test_non_message_events_filtered():
     """Test that non-message events are silently filtered."""
     from ragas.integrations.ag_ui import convert_to_ragas_messages
