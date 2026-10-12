@@ -254,7 +254,10 @@ def test_snapshot_with_none_content_is_empty():
 
 def test_snapshot_with_multimodal_content_keeps_text():
     """User messages with multimodal content must keep their text parts."""
-    from ag_ui.core import TextInputContent
+    try:
+        from ag_ui.core import TextInputContent
+    except ImportError:
+        pytest.skip("TextInputContent not available in installed ag-ui-protocol")
 
     from ragas.integrations.ag_ui import convert_messages_snapshot
 
