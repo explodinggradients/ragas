@@ -234,6 +234,21 @@ class AGUIEventCollector:
             self._ToolCallChunkEvent,
         ) = _import_ag_ui_core()
 
+        # Events that the AG-UI spec defines as no-ops for open chunk streams
+        # (RAW, ACTIVITY_SNAPSHOT, ACTIVITY_DELTA and REASONING_ENCRYPTED_VALUE).
+        # Older ag-ui-protocol releases may not define all of them, so any
+        # missing members are skipped.
+        self._text_chunk_noop_event_types = {
+            event_type
+            for name in (
+                "RAW",
+                "ACTIVITY_SNAPSHOT",
+                "ACTIVITY_DELTA",
+                "REASONING_ENCRYPTED_VALUE",
+            )
+            if (event_type := getattr(self._EventType, name, None)) is not None
+        }
+
     def _get_pending_tool_calls(self) -> Optional[List[ToolCall]]:
         """
         Retrieve and clear any completed tool calls waiting to be attached to a message.
@@ -270,6 +285,16 @@ class AGUIEventCollector:
         EventType = self._EventType
 
         event_type = event.type
+
+        # Per the AG-UI spec, any event other than a text chunk closes the
+        # open chunk stream, except the spec's no-op events. This keeps a
+        # later chunk without message_id from attaching to a message that is
+        # already complete.
+        if (
+            event_type != EventType.TEXT_MESSAGE_CHUNK
+            and event_type not in self._text_chunk_noop_event_types
+        ):
+            self._active_text_chunk = None
 
         # Update context from lifecycle events
         if event_type == EventType.RUN_STARTED:
@@ -564,6 +589,9 @@ class AGUIEventCollector:
             message = HumanMessage(content=content, metadata=metadata)
         else:
             logger.warning(f"Unexpected message role in chunk event: {role}")
+            # A rejected chunk also closes the open message so later chunks
+            # cannot attach to it
+            self._active_text_chunk = None
             return
 
         self.messages.append(message)
