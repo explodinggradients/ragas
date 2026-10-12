@@ -63,6 +63,7 @@ ai-frameworks = ["haystack-ai"]
 oci = ["oci>=2.160.1"]
 ag-ui = ["ag-ui-protocol>=0.1.9", "httpx>=0.27.0"]
 dspy = ["dspy-ai>=2.4.0"]
+litellm = ["litellm>=1.84.0,<2; python_version >= '3.10'"]
 
 # Minimal dev dependencies for fast development setup (used by make install-minimal)
 dev-minimal = [

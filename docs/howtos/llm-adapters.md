@@ -11,6 +11,8 @@ Ragas uses adapters to handle structured output from different LLM providers:
 
 The framework automatically selects the best adapter for your provider, but you can also choose explicitly.
 
+The LiteLLM adapter needs the `litellm` package. Install it with `pip install "ragas[litellm]"`.
+
 ## Quick Start
 
 ### Automatic Adapter Selection (Recommended)
