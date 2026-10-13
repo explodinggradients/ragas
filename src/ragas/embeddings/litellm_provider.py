@@ -31,7 +31,7 @@ class LiteLLMEmbeddings(BaseRagasEmbedding):
         **litellm_params: t.Any,
     ):
         super().__init__(cache=cache)
-        self.litellm = safe_import("litellm", "litellm")
+        self.litellm = safe_import("litellm", '"ragas[litellm]"')
         self.model = model
         self.api_key = api_key
         self.api_base = api_base
