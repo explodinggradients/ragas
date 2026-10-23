@@ -136,12 +136,19 @@ async def aevaluate(
 
     # default metrics
     if metrics is None:
-        from ragas.metrics._answer_relevance import answer_relevancy
-        from ragas.metrics._context_precision import context_precision
-        from ragas.metrics._context_recall import context_recall
-        from ragas.metrics._faithfulness import faithfulness
+        from ragas.metrics._answer_relevance import AnswerRelevancy
+        from ragas.metrics._context_precision import ContextPrecision
+        from ragas.metrics._context_recall import ContextRecall
+        from ragas.metrics._faithfulness import Faithfulness
 
-        metrics = [answer_relevancy, context_precision, faithfulness, context_recall]
+        # Initialization and cleanup mutate metrics, so each evaluation needs
+        # its own defaults rather than the shared module-level instances.
+        metrics = [
+            AnswerRelevancy(),
+            ContextPrecision(),
+            Faithfulness(),
+            ContextRecall(),
+        ]
 
     if isinstance(dataset, Dataset):
         # remap column names from the dataset
