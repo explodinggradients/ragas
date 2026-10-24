@@ -62,7 +62,7 @@ class ContextPrecisionWithReference(BaseMetric):
         self,
         llm: "InstructorBaseRagasLLM",
         name: str = "context_precision_with_reference",
-        prompt: ContextPrecisionPrompt | None = None,
+        prompt: t.Optional[ContextPrecisionPrompt] = None,
         **kwargs,
     ):
         """
@@ -183,7 +183,7 @@ class ContextPrecisionWithoutReference(BaseMetric):
         self,
         llm: "InstructorBaseRagasLLM",
         name: str = "context_precision_without_reference",
-        prompt: ContextPrecisionPrompt | None = None,
+        prompt: t.Optional[ContextPrecisionPrompt] = None,
         **kwargs,
     ):
         """
@@ -290,7 +290,7 @@ class ContextPrecision(ContextPrecisionWithReference):
     def __init__(
         self,
         llm: "InstructorBaseRagasLLM",
-        prompt: ContextPrecisionPrompt | None = None,
+        prompt: t.Optional[ContextPrecisionPrompt] = None,
         **kwargs,
     ):
         """Initialize ContextPrecision with the legacy default name."""
