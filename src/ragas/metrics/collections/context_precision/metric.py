@@ -71,6 +71,7 @@ class ContextPrecisionWithReference(BaseMetric):
         Args:
             llm: Modern instructor-based LLM for context evaluation
             name: The metric name
+            prompt: Optional custom prompt; defaults to ContextPrecisionPrompt()
         """
         # Set attributes explicitly before calling super()
         self.llm = llm
@@ -192,6 +193,7 @@ class ContextPrecisionWithoutReference(BaseMetric):
         Args:
             llm: Modern instructor-based LLM for context evaluation
             name: The metric name
+            prompt: Optional custom prompt; defaults to ContextPrecisionPrompt()
         """
         # Set attributes explicitly before calling super()
         self.llm = llm
