@@ -1,7 +1,8 @@
 """Tests for configurable Context Precision prompts."""
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from ragas.metrics.collections.context_precision.metric import (
     ContextPrecision,
