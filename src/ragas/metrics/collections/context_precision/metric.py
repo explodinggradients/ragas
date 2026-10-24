@@ -183,6 +183,7 @@ class ContextPrecisionWithoutReference(BaseMetric):
         self,
         llm: "InstructorBaseRagasLLM",
         name: str = "context_precision_without_reference",
+        prompt: ContextPrecisionPrompt | None = None,
         **kwargs,
     ):
         """
@@ -194,7 +195,7 @@ class ContextPrecisionWithoutReference(BaseMetric):
         """
         # Set attributes explicitly before calling super()
         self.llm = llm
-        self.prompt = ContextPrecisionPrompt()  # Initialize prompt class once
+        self.prompt = prompt if prompt is not None else ContextPrecisionPrompt()
 
         # Call super() for validation (without passing llm in kwargs)
         super().__init__(name=name, **kwargs)
