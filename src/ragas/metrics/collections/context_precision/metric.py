@@ -62,6 +62,7 @@ class ContextPrecisionWithReference(BaseMetric):
         self,
         llm: "InstructorBaseRagasLLM",
         name: str = "context_precision_with_reference",
+        prompt: ContextPrecisionPrompt | None = None,
         **kwargs,
     ):
         """
@@ -73,7 +74,7 @@ class ContextPrecisionWithReference(BaseMetric):
         """
         # Set attributes explicitly before calling super()
         self.llm = llm
-        self.prompt = ContextPrecisionPrompt()  # Initialize prompt class once
+        self.prompt = prompt if prompt is not None else ContextPrecisionPrompt()
 
         # Call super() for validation (without passing llm in kwargs)
         super().__init__(name=name, **kwargs)
@@ -288,10 +289,11 @@ class ContextPrecision(ContextPrecisionWithReference):
     def __init__(
         self,
         llm: "InstructorBaseRagasLLM",
+        prompt: ContextPrecisionPrompt | None = None,
         **kwargs,
     ):
         """Initialize ContextPrecision with the legacy default name."""
-        super().__init__(llm, name="context_precision", **kwargs)
+        super().__init__(llm, name="context_precision", prompt=prompt, **kwargs)
 
 
 class ContextUtilization(ContextPrecisionWithoutReference):
